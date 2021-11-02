@@ -1,15 +1,30 @@
-# Basic Sample Hardhat Project
+# Compound Protocol v2.5
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts.
+## Getting started
 
-Try running some of the following tasks:
+1. Clone the repo
+2. Run `yarn install`
 
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-node scripts/sample-script.js
-npx hardhat help
-```
+## Usage
+
+Look at the scripts section inside `package.json` to find all commands.
+
+### Build contracts
+
+Compiles contracts.
+
+`yarn build`
+
+### Run tests
+
+Runs all tests in the `/test` directory.
+
+`yarn test`
+
+### Run tests with coverage tool
+
+Runs all tests while also evaluating code coverage.
+
+`yarn test:coverage`
+
+The coverage report will be saved in the `/coverage` directory.
