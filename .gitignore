@@ -1,8 +1,6 @@
-node_modules
-.env
-coverage
-coverage.json
-typechain
+# Ignore node stuff
+node_modules/
+yarn-error.log
 
 .DS_Store
 
@@ -10,9 +8,8 @@ typechain
 cache
 artifacts
 
-node_modules
 .env
-coverage
+coverage/
 coverage.json
 typechain
 
