@@ -10,6 +10,7 @@ artifacts
 
 .env
 coverage/
+coverage.json
 typechain
 
 #Hardhat files
