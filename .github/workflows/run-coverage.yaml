@@ -1,0 +1,23 @@
+name: Run Coverage
+on:
+  workflow_dispatch:
+  pull_request:
+jobs:
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+    
+      - name: Install packages  
+        run: yarn install --non-interactive --frozen-lockfile
+
+      - name: Run tests
+        run: yarn test:coverage
+
+# TODO: Upload coverage to Coveralls
