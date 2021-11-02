@@ -1,20 +1,26 @@
 {
   "name": "compound-protocol-v2.5",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "scripts/build",
+    "clean": "rm -rf build/ cache/ dist/",
+    "compile": "hardhat compile",
+    "test": "scripts/test",
+    "test:coverage": "scripts/coverage"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Compound Finance",
+  "license": "UNLICENSED",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "chai": "^4.3.4",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.5.1",
-    "hardhat": "^2.6.7"
-  }
+    "hardhat": "^2.6.7",
+    "solidity-coverage": "^0.7.17"
+  },
+  "repository": "git@github.com:compound-finance/compound-protocol-v2.5.git"
 }
