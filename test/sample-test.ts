@@ -1,10 +1,12 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 
+import { Greeter__factory, Greeter } from '../build/types'
+
 describe('Greeter', function () {
   it('Should return the new greeting once it\'s changed', async function () {
-    const Greeter = await ethers.getContractFactory('Greeter');
-    const greeter = await Greeter.deploy('Hello, world!');
+    const greeterFactory = await ethers.getContractFactory('Greeter') as Greeter__factory;
+    const greeter: Greeter = await greeterFactory.deploy('Hello, world!');
     await greeter.deployed();
 
     expect(await greeter.greet()).to.equal('Hello, world!');
