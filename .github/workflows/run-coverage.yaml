@@ -16,7 +16,7 @@ jobs:
           node-version: '16'
 
       - name: Install packages
-        run: yarn install --non-interactive --frozen-lockfile
+        run: yarn install --non-interactive --frozen-lockfile && yarn build
 
       - name: Run tests
         run: yarn test:coverage

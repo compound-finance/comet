@@ -7,7 +7,6 @@ jobs:
     name: Gas profiler
     runs-on: ubuntu-latest
     env:
-      REPORT_GAS: true
       COINMARKETCAP_API_KEY: b52b18a2-d44f-4646-9949-0eb0e9c68574
     steps:
       - name: Checkout repository
@@ -16,12 +15,9 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
-    
-      - name: Install packages  
-        run: yarn install --non-interactive --frozen-lockfile
 
-      - name: Compile
-        run: yarn compile
-      
-      - name: Run tests
-        run: yarn test
+      - name: Install packages
+        run: yarn install --non-interactive --frozen-lockfile && yarn build
+
+      - name: Measure
+        run: yarn gas
