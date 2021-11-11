@@ -4,11 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "scripts/build",
-    "clean": "rm -rf build/ cache/ dist/",
-    "compile": "hardhat compile",
-    "test": "scripts/test",
-    "test:coverage": "scripts/coverage"
+    "build": "hardhat compile",
+    "clean": "hardhat clean && rm -rf build/ cache/ coverage* dist/",
+    "gas": "REPORT_GAS=true yarn test",
+    "test": "hardhat test",
+    "test:coverage": "hardhat coverage"
   },
   "keywords": [],
   "author": "Compound Finance",

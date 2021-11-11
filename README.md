@@ -1,4 +1,4 @@
-# Compound Protocol v2.5
+# Compound Comet
 
 ## Getting started
 
@@ -17,7 +17,7 @@ Compiles contracts.
 
 ### Run tests
 
-Runs all tests in the `/test` directory.
+Runs all tests in the `test` directory.
 
 `yarn test`
 
@@ -27,10 +27,12 @@ Runs all tests while also evaluating code coverage.
 
 `yarn test:coverage`
 
-The coverage report will be saved in the `/coverage` directory.
+The coverage report will be saved in the `coverage` directory.
 
 ### Run tests with gas profiler
 
-Set up the following env variables:  
-```export GAS_PROFILER=true```  
-```export COINMARKETCAP_API_KEY=your_coinmarket_api_key```, optional, only if you want to see cost in USD.
+Set up the following env variables:
+
+ - `REPORT_GAS=true`
+ - `COINMARKETCAP_API_KEY=your_coinmarket_api_key`
+   optional, only if you want to see cost in USD
