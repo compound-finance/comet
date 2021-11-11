@@ -1,10 +1,13 @@
-require("@nomiclabs/hardhat-waffle");
-require('solidity-coverage');
-require('hardhat-gas-reporter');
+import { task } from 'hardhat/config';
+import '@nomiclabs/hardhat-waffle';
+import '@nomiclabs/hardhat-ethers'
+import '@typechain/hardhat'
+import 'solidity-coverage';
+import 'hardhat-gas-reporter';
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
-task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
+task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   const accounts = await hre.ethers.getSigners();
 
   for (const account of accounts) {
@@ -18,7 +21,7 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
-module.exports = {
+export default {
   solidity: {
     version: "0.8.4",
     settings: {
@@ -34,5 +37,9 @@ module.exports = {
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
     // denominated in gwei
     gasPrice: 200 
-  }
+  },
+  typechain: {
+    outDir: 'build/types',
+    target: 'ethers-v5',
+  },
 };
