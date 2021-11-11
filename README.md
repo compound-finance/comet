@@ -28,3 +28,9 @@ Runs all tests while also evaluating code coverage.
 `yarn test:coverage`
 
 The coverage report will be saved in the `/coverage` directory.
+
+### Run tests with gas profiler
+
+Set up the following env variables:  
+```export GAS_PROFILER=true```  
+```export COINMARKETCAP_API_KEY=your_coinmarket_api_key```, optional, only if you want to see cost in USD.
