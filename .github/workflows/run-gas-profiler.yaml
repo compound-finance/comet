@@ -1,4 +1,4 @@
-name: Run tests with gas profiler
+name: Run Tests With Gas Profiler
 on:
   workflow_dispatch:
   pull_request:
