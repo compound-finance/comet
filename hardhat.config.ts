@@ -4,6 +4,7 @@ import '@nomiclabs/hardhat-ethers'
 import '@typechain/hardhat'
 import 'solidity-coverage';
 import 'hardhat-gas-reporter';
+import '@tenderly/hardhat-tenderly'
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -42,4 +43,13 @@ export default {
     outDir: 'build/types',
     target: 'ethers-v5',
   },
+  tenderly: {
+    username: "freeta",
+    project: "project"
+  },
+  networks: {
+    local: {
+      url: 'http://127.0.0.1:8545'
+    }
+  }
 };
