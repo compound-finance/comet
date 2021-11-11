@@ -21,11 +21,6 @@ jobs:
       - name: Run tests
         run: yarn test:coverage
 
-  upload-coverage-report:
-    needs:
-      - run-coverage
-    runs-on: ubuntu-latest
-    steps:
       - name: Upload the coverage reports to Coveralls
         uses: coverallsapp/github-action@master
         with:
