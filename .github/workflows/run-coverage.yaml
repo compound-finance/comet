@@ -14,8 +14,8 @@ jobs:
         with:
           cache: 'yarn'
           node-version: '16'
-    
-      - name: Install packages  
+
+      - name: Install packages
         run: yarn install --non-interactive --frozen-lockfile
 
       - name: Run tests
@@ -30,4 +30,3 @@ jobs:
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          parallel-finished: true
