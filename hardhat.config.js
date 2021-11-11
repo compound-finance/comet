@@ -29,8 +29,9 @@ module.exports = {
     },
   },
   gasReporter: {
+    enabled: (process.env.REPORT_GAS) ? true : false,
     currency: 'USD',
-    coinmarketcap: "b52b18a2-d44f-4646-9949-0eb0e9c68574",
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
     // denominated in gwei
     gasPrice: 200 
   }

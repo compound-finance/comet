@@ -6,6 +6,9 @@ jobs:
   gas_profiler:
     name: Gas profiler
     runs-on: ubuntu-latest
+    env:
+      REPORT_GAS: true
+      COINMARKETCAP_API_KEY: b52b18a2-d44f-4646-9949-0eb0e9c68574
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
