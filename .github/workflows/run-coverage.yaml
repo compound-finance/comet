@@ -3,8 +3,8 @@ on:
   workflow_dispatch:
   pull_request:
 jobs:
-  coverage:
-    name: Coverage
+  run-coverage:
+    name: Run coverage
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -12,12 +12,16 @@ jobs:
 
       - uses: actions/setup-node@v2
         with:
+          cache: 'yarn'
           node-version: '16'
-    
-      - name: Install packages  
+
+      - name: Install packages
         run: yarn install --non-interactive --frozen-lockfile
 
       - name: Run tests
         run: yarn test:coverage
 
-# TODO: Upload coverage to Coveralls
+      - name: Upload the coverage reports to Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
