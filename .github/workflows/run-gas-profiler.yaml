@@ -18,7 +18,10 @@ jobs:
           node-version: '16'
     
       - name: Install packages  
-        run: yarn install --frozen-lockfile
+        run: yarn install --non-interactive --frozen-lockfile
 
+      - name: Compile
+        run: yarn compile
+      
       - name: Run tests
         run: yarn test
