@@ -4,15 +4,13 @@ yarn-error.log
 
 .DS_Store
 
-#Hardhat files
-cache
-artifacts
+# Build files
+artifacts/
+build/
+cache/
+dist/
 
 .env
 coverage/
 coverage.json
-typechain
-
-#Hardhat files
-cache
-artifacts
+typechain/
