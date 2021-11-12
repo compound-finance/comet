@@ -2,6 +2,10 @@ import { ethers } from 'hardhat';
 import { Contract } from 'ethers';
 import axios from 'axios';
 
+/**
+ * PROOF OF CONCEPT CRAWLER FOR COMPOUND V2 CONTRACTS
+ */
+
 const PROVIDER = new ethers.providers.InfuraProvider;
 
 // A node within the contract dependency tree.
@@ -124,7 +128,7 @@ async function expand(startingAddress: string): Promise<ContractNode> {
   // TODO: If name is empty, might as well set it to the rule name.
   let name = '';
   try {
-    name = await contract.name();
+    name = await contract.symbol();
   } catch { }
   contractNode = { name, contractName, address: startingAddress, children }
   return contractNode;
