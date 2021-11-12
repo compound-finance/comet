@@ -2,6 +2,8 @@
 title: Compound Comet Specification
 tags: comet, v2.5, protocol, spec
 output: pdf_document
+margin-left: 3cm
+linestretch: 1.3
 header-includes:
 - \usepackage[mathscr]{eucal}
 - |
@@ -166,9 +168,8 @@ A _factor_ through this document refers to a fixed-digit decimal number. Specifi
 
 ### Configuration Constants
 
-### Configuration Constants
-| Name          | Type | Description |
-| ------------- | ---- | ----------- |
+| Name       | Type | Description |
+| ---------- | ---- | ----------- |
 | $\Governor$ | $address$ | The governor of the protocol.
 | $\PriceOracle$ | $address$   | Address of the [price oracle](#Prices). |
 | $\BaseToken$ | $address$   | Address of the base token. |
@@ -190,8 +191,8 @@ A _factor_ through this document refers to a fixed-digit decimal number. Specifi
 
 ### Storage
 
-| Name             | Type | Description |
-| ---------------- | ---  | ----------- |
+| Name          | Type | Description |
+| ------------- | ---  | ----------- |
 | $\TotalSupplyBase$ | $uint72$ | Total amount of base token principal which the protocol owes to suppliers. |
 | $\TotalBorrowBase$ | $uint72$ | Total amount of base token principal which borrowers owe to the protocol. |
 | $\LastAccrualTime$ | $uint48$ | Timestamp of last interest accrual.<br/><br/>_Note_: Split storage between 2 slots with 24-bits available each. |
@@ -247,7 +248,7 @@ Supplies a collateral token to the protocol, which the account can later borrow 
 
 * **Require** $\CheckPerms{\From}{\Operator}$
 * **External Trx** $\transferFrom{\Asset}{\From, \This, \Amount}$
-  * Let $\txAmount$ be the actual amount transferred less any fees.
+  * **Let** $\txAmount$ be the actual amount transferred less any fees.
 * **Write** $\TotalCollateral{\Asset} \pluseq \txAmount$
 * **Write** $\UserCollateral{\Asset}{\Dst} \pluseq \txAmount$
 * **Require** $\TotalCollateral{\Asset} \leq \SupplyCap{\Asset}$
@@ -257,16 +258,16 @@ Transfers in borrow token pegged to the user's account. This will repay any outs
 
 * **Require** $\CheckPerms{\From}{\Operator}$
 * **External Trx** $\transferFrom{\Asset}{\From, \This, \Amount}$
-  * Let $\txAmount$ be the actual amount transferred less any fees.
+  * **Let** $\txAmount$ be the actual amount transferred less any fees.
 * **Call** $\Accrue$
 * **Read** $\var{dstPrincipal}=\UserPrincipal{\Dst}$
-* Let $\var{dstBalance} = \PresentValue{\var{dstPrincipal}}$
+* **Let** $\var{dstBalance} = \PresentValue{\var{dstPrincipal}}$
 * **Read** $\var{totalSupplyBaseBalance} = \PresentValueSupply{\TotalSupplyBase}$
 * **Read** $\var{totalBorrowBaseBalance} = \PresentValueBorrow{\TotalBorrowBase}$
-* Let $\var{repaySupply} = \RepayAndSupplyAmount{\var{dstBalance}}{\txAmount}$
-* Let $\var{dstBalance'} = \var{dstBalance} + \txAmount$
-* Let $\var{totalSupplyBaseBalance'} = \var{totalSupplyBaseBalance} + \var{repaySupply_{supply}}$
-* Let $\var{totalBorrowBaseBalance'} = \var{totalBorrowBaseBalance} - \var{repaySupply_{repay}}$
+* **Let** $\var{repaySupply} = \RepayAndSupplyAmount{\var{dstBalance}}{\txAmount}$
+* **Let** $\var{dstBalance'} = \var{dstBalance} + \txAmount$
+* **Let** $\var{totalSupplyBaseBalance'} = \var{totalSupplyBaseBalance} + \var{repaySupply_{supply}}$
+* **Let** $\var{totalBorrowBaseBalance'} = \var{totalBorrowBaseBalance} - \var{repaySupply_{repay}}$
 * **Call** $\UpdateBaseBalance{\Dst}{\var{dstPrincipal}}{\PrincipalValue{\var{dstBalance'}}}$
 * **Write** $\TotalSupplyBase = \PrincipalValueSupply{\var{totalSupplyBaseBalance'}}$
 * **Write** $\TotalBorrowBase = \PrincipalValueBorrow{\var{totalBorrowBaseBalance'}}$
@@ -296,21 +297,21 @@ Transfers base token between accounts. Reverts if $\Src$ account would have nega
 * **Call** $\Accrue$
 * **Read** $\var{srcPrincipal} = \UserPrincipal{\Src}$
 * **Read** $\var{dstPrincipal} = \UserPrincipal{\Dst}$
-* Let $\var{srcBalance} = \PresentValue{\var{srcPrincipal}}$
-* Let $\var{dstBalance} = \PresentValue{\var{dstPrincipal}}$
+* **Let** $\var{srcBalance} = \PresentValue{\var{srcPrincipal}}$
+* **Let** $\var{dstBalance} = \PresentValue{\var{dstPrincipal}}$
 * **Read** $\var{totalSupplyBaseBalance} = \PresentValueSupply{\TotalSupplyBase}$
 * **Read** $\var{totalBorrowBaseBalance} = \PresentValueBorrow{\TotalBorrowBase}$
-* Let $\var{withdrawBorrow} = \WithdrawAndBorrowAmount{\var{srcBalance}}{\Amount}$
-* Let $\var{repaySupply} = \RepayAndSupplyAmount{\var{dstBalance}}{\Amount}$
-* Let $\var{srcBalance'} = \var{srcBalance} - \Amount$
-* Let $\var{dstBalance'} = \var{dstBalance} + \Amount$
-* Let $\var{totalSupplyBaseBalance'} = \var{totalSupplyBaseBalance} + \var{repaySupply_{supply}} - \var{withdrawBorrow_{withdraw}}$
-* Let $\var{totalBorrowBaseBalance'} = \var{totalBorrowBaseBalance} + \var{withdrawBorrow_{borrow}} - \var{repaySupply_{repay}}$
+* **Let** $\var{withdrawBorrow} = \WithdrawAndBorrowAmount{\var{srcBalance}}{\Amount}$
+* **Let** $\var{repaySupply} = \RepayAndSupplyAmount{\var{dstBalance}}{\Amount}$
+* **Let** $\var{srcBalance'} = \var{srcBalance} - \Amount$
+* **Let** $\var{dstBalance'} = \var{dstBalance} + \Amount$
+* **Let** $\var{totalSupplyBaseBalance'} = \var{totalSupplyBaseBalance} + \var{repaySupply_{supply}} - \var{withdrawBorrow_{withdraw}}$
+* **Let** $\var{totalBorrowBaseBalance'} = \var{totalBorrowBaseBalance} + \var{withdrawBorrow_{borrow}} - \var{repaySupply_{repay}}$
 * **Call** $\UpdateBaseBalance{\Src}{\var{srcPrincipal}}{\PrincipalValue{\var{srcBalance'}}}$
 * **Call** $\UpdateBaseBalance{\Dst}{\var{dstPrincipal}}{\PrincipalValue{\var{dstBalance'}}}$
 * **Write** $\TotalSupplyBase = \PrincipalValueSupply{\var{totalSupplyBaseBalance'}}$
 * **Write** $\TotalBorrowBase = \PrincipalValueBorrow{\var{totalBorrowBaseBalance'}}$
-* If $\var{srcBalance'} < 0$
+* **If** $\var{srcBalance'} < 0$
    * **Require** $|\var{srcBalance'}| \geq \BorrowMin$
 
 #### Withdraw(Asset, Amount) [External] 
@@ -341,17 +342,17 @@ Transfers out base token from the $\Sender$ account to the $\To$ account. Revert
 * **Require** $\CheckPerms{\Src}{\Operator}$
 * **Call** $\Accrue$
 * **Read** $\var{srcPrincipal} = \UserPrincipal{\Src}$
-* Let $\var{srcBalance} = \PresentValue{\var{srcPrincipal}}$
+* **Let** $\var{srcBalance} = \PresentValue{\var{srcPrincipal}}$
 * **Read** $\var{totalSupplyBaseBalance} = \PresentValueSupply{\TotalSupplyBase}$
 * **Read** $\var{totalBorrowBaseBalance} = \PresentValueBorrow{\TotalBorrowBase}$
-* Let $\var{withdrawBorrow} = \WithdrawAndBorrowAmount{\var{srcBalance}}{\Amount}$
-* Let $\var{srcBalance'} = \var{srcBalance} - \Amount$
-* Let $\var{totalSupplyBaseBalance'} = \var{totalSupplyBaseBalance} - \var{withdrawBorrow_{withdraw}}$
-* Let $\var{totalBorrowBaseBalance'} = \var{totalBorrowBaseBalance} + \var{withdrawBorrow_{borrow}}$
+* **Let** $\var{withdrawBorrow} = \WithdrawAndBorrowAmount{\var{srcBalance}}{\Amount}$
+* **Let** $\var{srcBalance'} = \var{srcBalance} - \Amount$
+* **Let** $\var{totalSupplyBaseBalance'} = \var{totalSupplyBaseBalance} - \var{withdrawBorrow_{withdraw}}$
+* **Let** $\var{totalBorrowBaseBalance'} = \var{totalBorrowBaseBalance} + \var{withdrawBorrow_{borrow}}$
 * **Call** $\UpdateBaseBalance{\Src}{\var{srcPrincipal}}{\PrincipalValue{\var{srcBalance'}}}$
 * **Write** $\TotalSupplyBase = \PrincipalValueSupply{\var{totalSupplyBaseBalance'}}$
 * **Write** $\TotalBorrowBase = \PrincipalValueBorrow{\var{totalBorrowBaseBalance'}}$
-* If $\var{srcBalance'} < 0$
+* **If** $\var{srcBalance'} < 0$
   * **Require** $|\var{srcBalance'}| \geq \BorrowMin$
 * **Require** $\IsBorrowCollateralized{\Src}$
 * **External Trx** $\transfer{\BaseToken}{\To}{\Amount}$
@@ -362,7 +363,7 @@ Transfers out base token from the $\Sender$ account to the $\To$ account. Revert
 Accrue interest in base token supply and borrows. This function also tracks participation in the protocol.
 
 * **Read** $\var{timeElapsed} = \Now - \LastAccrualTime$
-* When $\var{timeElapsed} > 0$:
+* **When** $\var{timeElapsed} > 0$:
   * **Write** $\BaseSupplyIndex \pluseq \BaseSupplyIndex \cdot \GetSupplyRate \cdot \var{timeElapsed}$
   * **Write** $\BaseBorrowIndex \pluseq \BaseBorrowIndex \cdot \GetBorrowRate \cdot \var{timeElapsed}$
   * **Write** $\TrackingSupplyIndex \pluseq \frac{\BaseTrackingSupplySpeed}{\TotalSupplyBase} \cdot \var{timeElapsed}$
@@ -372,13 +373,13 @@ Accrue interest in base token supply and borrows. This function also tracks part
 #### UpdateBaseBalance(Account, InitialUserBalance, FinalUserBalance) [Internal]
 Write updated balance to store and tracking participation.
 
-* When $\Param{InitialUserBalance} \geq 0$:
+* **When** $\Param{InitialUserBalance} \geq 0$:
   * **Read** $\var{indexDelta} = \TrackingSupplyIndex - \UserBaseTrackingIndex{\Account}$
-* Otherwise
+* **Otherwise**:
   * **Read** $\var{indexDelta} = \TrackingBorrowIndex - \UserBaseTrackingIndex{\Account}$
-* When $\Param{FinalUserBalance} \geq 0$:
+* **When** $\Param{FinalUserBalance} \geq 0$:
   * **Write** $\UserBaseTrackingIndex{\Account} = \TrackingSupplyIndex$
-* Otherwise
+* **Otherwise**:
   * **Write** $\UserBaseTrackingIndex{\Account} = \TrackingBorrowIndex$
 * **Write** $\UserBaseTrackingAccrued{Account} \pluseq \Param{InitialUserBalance} \cdot \var{indexDelta}$
 
@@ -418,12 +419,12 @@ Transfer user's debt to protocol accounts, decreasing cash reserves and adding c
 
 * **Require** $\IsLiquidatable{\Account}$
 * **Read** $\var{acctPrincipal}=\UserPrincipal{\Account}$
-* Let $\var{basePrice} = \GetPrice{\BaseToken}$ :new: :male-cook:
-* Let $\var{acctBalance} = \PresentValue{\var{acctPrincipal}}$
+* **Let** $\var{basePrice} = \GetPrice{\BaseToken}$ :new: :male-cook:
+* **Let** $\var{acctBalance} = \PresentValue{\var{acctPrincipal}}$
 * Initialize $\var{acctBalance'} = \var{acctBalance}$
 * For $\var{asset} \in \CollateralAssets$ `# TODO: Assets you're in?`
   * **Read** $\var{seizeAmount} = \UserCollateral{\var{asset}}{\Account}$
-  * If $\var{seizeAmount} > 0$:
+  * **If** $\var{seizeAmount} > 0$:
     * **Write** $\UserCollateral{\var{asset}}{\Account} \subeq \var{seizeAmount}$
       * TODO: is this always eq 0?
     * **Write** $\UserCollateral{\var{asset}}{\This} \pluseq \var{seizeAmount}$
@@ -435,7 +436,7 @@ Transfer user's debt to protocol accounts, decreasing cash reserves and adding c
   * TODO: Why don't we use UpdateBaseBalance here?
 * **Write** $\TotalSupplyBase \pluseq \PrincipalValueSupply{\var{acctBalance'}}$
 * **Write** $\TotalBorrowBase \subeq \PrincipalValueBorrow{|\var{acctBalance}|}$
-* Let $\var{absorptionIncentive} = \text{total gas of transaction} (BASEFEE + \AbsorbTip)$
+* **Let** $\var{absorptionIncentive} = \text{total gas of transaction} (BASEFEE + \AbsorbTip)$
 * **External Trx** $\transfer{\BaseToken}{\Sender, \var{absorptionIncentive}}$
 
 :::danger
@@ -484,7 +485,7 @@ Returns true if the account has non-negative liquidity using the borrow collater
 
 * **Read** $\var{liquidity} = -\GetPrice{\BaseToken} \times \PresentValue{\UserPrincipal{\Account}}$ :new: :male-cook:
 * For $\var{asset} \in \CollateralAssets$
-    * If $\var{liquidity} \geq 0$
+    * **If** $\var{liquidity} \geq 0$
         * **Return** $true$
     * $\var{liquidity} \pluseq \UserCollateral{\var{asset}}{\Account} \cdot \GetPrice{\Asset} \cdot \BorrowCollateralFactor{\Asset}$
 * **Return** $\var{liquidity} \geq 0$
@@ -494,7 +495,7 @@ Returns true if the account has negative liquidity using the liquidation collate
 
 * **Read** $\var{liquidity} = -\GetPrice{\BaseToken} \times \PresentValue{\UserPrincipal{\Account}}$ :new: :male-cook:
 * For $\var{asset} \in \CollateralAssets$
-    * If $\var{liquidity} \geq 0$
+    * **If** $\var{liquidity} \geq 0$
         * **Return** $true$
     * $\var{liquidity} \pluseq \UserCollateral{\var{asset}}{\Account} \cdot \GetPrice{\Asset} \cdot \LiquidateCollateralFactor{\Asset}$
 * **Return** $\var{liquidity} \geq 0$
@@ -508,9 +509,9 @@ Get the price of an asset.
 #### PrincipalValue(int PresentValue): int [Internal]
 Return the positive principal supply balance if positive or the negative borrow balance if negative.
 
-* If $\Param{PresentValue} \geq 0$:
+* **If** $\Param{PresentValue} \geq 0$:
   * **Return** $\PrincipalValueSupply{\Param{PresentValue}}$
-* Else:
+* **Else**:
   * **Return** $\PrincipalValueBorrow{\Param{PresentValue}}$
 
 #### PrincipalValue<sub>Supply</sub>(uint PresentValue): uint [Internal]
@@ -525,9 +526,9 @@ Return the amount projected backward by the borrow index.
 #### PresentValue(int PrincipalValue): int [Internal]
 Return the positive present supply balance if positive or the negative borrow balance if negative.
 
-* If $\Param{PrincipalValue} \geq 0$:
+* **If** $\Param{PrincipalValue} \geq 0$:
   * **Return** $\PresentValueSupply{\Param{PrincipalValue}}$
-* Else
+* **Else**:
   * **Return** $\PresentValueBorrow{\Param{PrincipalValue}}$
 
 #### PresentValue<sub>Supply</sub>(uint PrincipalValue): uint [Internal]
@@ -542,14 +543,14 @@ Return the principal amount projected forward by the borrow index.
 
 #### RepayAndSupplyAmount(int Balance, uint Amount): (uint, uint) [Internal]
 
-* Let $\var{repayAmount} = max(min(-\Param{Balance}, \Amount), 0)$
-* Let $\var{supplyAmount} = \Amount - \var{repayAmount}$
+* **Let** $\var{repayAmount} = max(min(-\Param{Balance}, \Amount), 0)$
+* **Let** $\var{supplyAmount} = \Amount - \var{repayAmount}$
 * **Return** $\{\var{repay}=\var{repayAmount}, \var{supply}=\var{supplyAmount}\}$
 
 #### WithdrawAndBorrowAmount(int Balance, uint Amount): (uint, uint) [Internal]
 
-* Let $\var{withdrawAmount} = max(min(\Param{Balance}, \Amount), 0)$
-* Let $\var{borrowAmount} = \Amount - \var{withdrawAmount}$
+* **Let** $\var{withdrawAmount} = max(min(\Param{Balance}, \Amount), 0)$
+* **Let** $\var{borrowAmount} = \Amount - \var{withdrawAmount}$
 * **Return** $\{\var{withdraw}=\var{withdrawAmount}, \var{borrow}=\var{borrowAmount}\}$
 
 ## Liquidation
