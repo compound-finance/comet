@@ -1,20 +1,27 @@
 import { ethers } from 'hardhat';
+import { Contract } from 'ethers';
 import axios from 'axios';
 
 const PROVIDER = new ethers.providers.InfuraProvider;
 
+// A node within the contract dependency tree.
 interface ContractNode {
   name: string,
   contractName: string,
   // abi,
   address: string,
-  children: ContractNode[],
+  children: ContractNode[], // Make into a map to remove dupes
+}
+
+// A rule to apply to a contract to find its children.
+interface Rule {
+  name: string;
+  findChild: (contract: Contract) => Promise<string> | null;
 }
 
 async function main() {
-
+  // cSUSHI token
   let web = await expand('0x4b0181102a0112a2ef11abee5563bb4a3176c9d7');
-
   console.log(web);
 }
 
@@ -26,7 +33,6 @@ async function getAbi(address: string): Promise<string> {
       apikey: process.env.ETHERSCAN_KEY,
     }
   }).then((response) => {
-    console.log(response.data.result);
     return response.data.result;
   })
     .catch((error) => {
@@ -42,7 +48,6 @@ async function getContractName(address: string): Promise<string> {
       apikey: process.env.ETHERSCAN_KEY,
     }
   }).then((response) => {
-    console.log(response.data.result[0]);
     return response.data.result[0].ContractName;
   })
     .catch((error) => {
@@ -50,7 +55,21 @@ async function getContractName(address: string): Promise<string> {
     })
 }
 
-// DFS expansion starting from root contract
+function createRules(): Rule[] {
+  let rules: Rule[] = [];
+  // TODO: Some rules might only apply to certain types of parent contracts.
+  rules.push({
+    name: 'Implementation', 
+    findChild: async (contract: Contract) => await contract.implementation()
+  });
+  rules.push({
+    name: 'Underlying',
+    findChild: async (contract: Contract) => await contract.underlying()
+  });
+  return rules;
+}
+
+// DFS expansion starting from root contract.
 async function expand(startingAddress: string): Promise<ContractNode> {
   let contractNode: ContractNode;
   const abi = await getAbi(startingAddress);
@@ -58,17 +77,20 @@ async function expand(startingAddress: string): Promise<ContractNode> {
   const contract = new ethers.Contract(startingAddress, abi, PROVIDER);
   const name = await contract.name();
   let children = [];
-  try {
-    // TODO: Add more rules here for fetching dependent contracts.
-    // One idea is to have a list of rules that are iterated over. Each
-    // rule can add more children to the `children` list.
-    const implementationAddress = await contract.implementation();
-    children.push(await expand(implementationAddress));
-  } catch {
-    // do nothing
-    console.log('no such field for ' + contractName);
+
+  // Apply each rule to find child contracts.
+  const rules = createRules();
+  for (var rule of rules) {
+    try {
+      const childAddress = await rule.findChild(contract);
+      children.push(await expand(childAddress));
+    } catch {
+      // do nothing
+      console.log('rule ' + rule.name + ' does not apply to ' + contractName);
+    }
   }
-  contractNode = {name, contractName, address: startingAddress, children}
+
+  contractNode = { name, contractName, address: startingAddress, children }
   return contractNode;
 }
 
