@@ -25,9 +25,7 @@ interface Rule {
 }
 
 async function main() {
-  // cSUSHI token: '0x4b0181102a0112a2ef11abee5563bb4a3176c9d7'
-  // Unitroller:   '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B'
-  let web = await expand('0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B');
+  let web = await expand('0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B', 'Unitroller');
   console.log(JSON.stringify(web, null, 4));
 }
 
@@ -67,7 +65,7 @@ function createRules(): Rule[] {
   let rules: Rule[] = [];
   rules.push({
     // Ctoken implementation
-    name: 'Implementation',
+    name: 'Delegate',
     applies: (contractName: string) => ['CErc20Delegator'].includes(contractName),
     findChild: async (contract: Contract) => await contract.implementation()
   });
@@ -91,6 +89,26 @@ function createRules(): Rule[] {
       return await proxy.getAllMarkets();
     }
   });
+  rules.push({
+    name: 'Oracle',
+    applies: (contractName: string) => ['Unitroller'].includes(contractName),
+    findChild: async (contract: Contract) => {
+      // Read implementation as proxy.
+      const implAbi = await getAbi(await contract.comptrollerImplementation());
+      const proxy = new ethers.Contract(contract.address, implAbi, PROVIDER);
+      return await proxy.oracle();
+    }
+  });
+  rules.push({
+    name: 'Timelock',
+    applies: (contractName: string) => ['Unitroller'].includes(contractName),
+    findChild: async (contract: Contract) => {
+      // Read implementation as proxy.
+      const implAbi = await getAbi(await contract.comptrollerImplementation());
+      const proxy = new ethers.Contract(contract.address, implAbi, PROVIDER);
+      return await proxy.admin();
+    }
+  });
   
   return rules;
 }
@@ -98,11 +116,15 @@ function createRules(): Rule[] {
 // DFS expansion starting from root contract.
 // TODO: Return a flat map with {k: address, v: node object} instead. 
 // Can check if address is already visited and reduce computation that way.
-async function expand(startingAddress: string): Promise<ContractNode> {
+async function expand(startingAddress: string, name: string): Promise<ContractNode> {
   let contractNode: ContractNode;
   const abi = await getAbi(startingAddress);
   const contractName = await getContractName(startingAddress);
   const contract = new ethers.Contract(startingAddress, abi, PROVIDER);
+  try {
+    const symbol = await contract.symbol();
+    name = symbol ? symbol : name;
+  } catch { }
   let children = [];
 
   // Apply each rule to find child contracts.
@@ -112,11 +134,11 @@ async function expand(startingAddress: string): Promise<ContractNode> {
     try {
       const addresses = await rule.findChild(contract);
       if (typeof addresses === 'string') {
-        children.push(await expand(addresses));
+        children.push(await expand(addresses, name + rule.name));
       } else {
         // addresses is string[]
         for (var addr of addresses) {
-          children.push(await expand(addr));
+          children.push(await expand(addr, name + rule.name));
         }
       }
     } catch (e) {
@@ -125,11 +147,6 @@ async function expand(startingAddress: string): Promise<ContractNode> {
     }
   }
 
-  // TODO: If name is empty, might as well set it to the rule name.
-  let name = '';
-  try {
-    name = await contract.symbol();
-  } catch { }
   contractNode = { name, contractName, address: startingAddress, children }
   return contractNode;
 }
