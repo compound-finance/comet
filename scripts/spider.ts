@@ -16,6 +16,7 @@ interface ContractNode {
 // A rule to apply to a contract to find its children.
 interface Rule {
   name: string;
+  applies: (contractName: string) => boolean;
   findChild: (contract: Contract) => Promise<string> | Promise<string[]> | null;
 }
 
@@ -56,24 +57,29 @@ async function getContractName(address: string): Promise<string> {
     })
 }
 
+// TODO: Stretch goal - make a generalized rule that can just pull all fields that store
+// an address of a contract.
 function createRules(): Rule[] {
   let rules: Rule[] = [];
-  // TODO: Some rules might only apply to certain types of parent contracts.
   rules.push({
     // Ctoken implementation
     name: 'Implementation',
+    applies: (contractName: string) => ['CErc20Delegator'].includes(contractName),
     findChild: async (contract: Contract) => await contract.implementation()
   });
   rules.push({
     name: 'Underlying',
+    applies: (contractName: string) => ['CErc20Delegator'].includes(contractName),
     findChild: async (contract: Contract) => await contract.underlying()
   });
   rules.push({
     name: 'ComptrollerImplementation',
+    applies: (contractName: string) => ['Unitroller'].includes(contractName),
     findChild: async (contract: Contract) => await contract.comptrollerImplementation()
   });
   rules.push({
     name: 'AllMarkets',
+    applies: (contractName: string) => ['Unitroller'].includes(contractName),
     findChild: async (contract: Contract) => {
       // Read implementation as proxy.
       const implAbi = await getAbi(await contract.comptrollerImplementation());
@@ -86,6 +92,8 @@ function createRules(): Rule[] {
 }
 
 // DFS expansion starting from root contract.
+// TODO: Return a flat map with {k: address, v: node object} instead. 
+// Can check if address is already visited and reduce computation that way.
 async function expand(startingAddress: string): Promise<ContractNode> {
   let contractNode: ContractNode;
   const abi = await getAbi(startingAddress);
@@ -94,9 +102,9 @@ async function expand(startingAddress: string): Promise<ContractNode> {
   let children = [];
 
   // Apply each rule to find child contracts.
-  // TODO: Optimize so we don't have to apply all rules to all contracts.
   const rules = createRules();
   for (var rule of rules) {
+    if (!rule.applies(contractName)) continue;
     try {
       const addresses = await rule.findChild(contract);
       if (typeof addresses === 'string') {
