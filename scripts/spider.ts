@@ -16,13 +16,14 @@ interface ContractNode {
 // A rule to apply to a contract to find its children.
 interface Rule {
   name: string;
-  findChild: (contract: Contract) => Promise<string> | null;
+  findChild: (contract: Contract) => Promise<string> | Promise<string[]> | null;
 }
 
 async function main() {
-  // cSUSHI token
-  let web = await expand('0x4b0181102a0112a2ef11abee5563bb4a3176c9d7');
-  console.log(web);
+  // cSUSHI token: '0x4b0181102a0112a2ef11abee5563bb4a3176c9d7'
+  // Unitroller:   '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B'
+  let web = await expand('0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B');
+  console.log(JSON.stringify(web, null, 4));
 }
 
 async function getAbi(address: string): Promise<string> {
@@ -59,13 +60,28 @@ function createRules(): Rule[] {
   let rules: Rule[] = [];
   // TODO: Some rules might only apply to certain types of parent contracts.
   rules.push({
-    name: 'Implementation', 
+    // Ctoken implementation
+    name: 'Implementation',
     findChild: async (contract: Contract) => await contract.implementation()
   });
   rules.push({
     name: 'Underlying',
     findChild: async (contract: Contract) => await contract.underlying()
   });
+  rules.push({
+    name: 'ComptrollerImplementation',
+    findChild: async (contract: Contract) => await contract.comptrollerImplementation()
+  });
+  rules.push({
+    name: 'AllMarkets',
+    findChild: async (contract: Contract) => {
+      // Read implementation as proxy.
+      const implAbi = await getAbi(await contract.comptrollerImplementation());
+      const proxy = new ethers.Contract(contract.address, implAbi, PROVIDER);
+      return await proxy.getAllMarkets();
+    }
+  });
+  
   return rules;
 }
 
@@ -75,21 +91,33 @@ async function expand(startingAddress: string): Promise<ContractNode> {
   const abi = await getAbi(startingAddress);
   const contractName = await getContractName(startingAddress);
   const contract = new ethers.Contract(startingAddress, abi, PROVIDER);
-  const name = await contract.name();
   let children = [];
 
   // Apply each rule to find child contracts.
+  // TODO: Optimize so we don't have to apply all rules to all contracts.
   const rules = createRules();
   for (var rule of rules) {
     try {
-      const childAddress = await rule.findChild(contract);
-      children.push(await expand(childAddress));
-    } catch {
+      const addresses = await rule.findChild(contract);
+      if (typeof addresses === 'string') {
+        children.push(await expand(addresses));
+      } else {
+        // addresses is string[]
+        for (var addr of addresses) {
+          children.push(await expand(addr));
+        }
+      }
+    } catch (e) {
       // do nothing
       console.log('rule ' + rule.name + ' does not apply to ' + contractName);
     }
   }
 
+  // TODO: If name is empty, might as well set it to the rule name.
+  let name = '';
+  try {
+    name = await contract.name();
+  } catch { }
   contractNode = { name, contractName, address: startingAddress, children }
   return contractNode;
 }
