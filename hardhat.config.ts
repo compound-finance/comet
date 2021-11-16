@@ -23,12 +23,22 @@ export default {
       },
     },
   },
+
+  // networks: {
+  //   hardhat: {
+  //     forking: {
+  //       url: 'https://mainnet-eth.compound.finance/',
+  //     }
+  //   }
+  // },
+
   gasReporter: {
     enabled: (process.env.REPORT_GAS) ? true : false,
     currency: 'USD',
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
     gasPrice: 200, // gwei
   },
+
   typechain: {
     outDir: 'build/types',
     target: 'ethers-v5',
