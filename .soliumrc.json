@@ -11,7 +11,7 @@
     "indentation": "off",
     "max-len": [
       "error",
-      20
+      200
     ]
   }
 }
