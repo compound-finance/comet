@@ -7,6 +7,8 @@
     "build": "hardhat compile",
     "clean": "hardhat clean && rm -rf build/ cache/ coverage* dist/",
     "gas": "REPORT_GAS=true yarn test",
+    "lint-contracts": "solium -d contracts/",
+    "lint-contracts:fix": "solium -d contracts/ --fix",
     "test": "hardhat test",
     "test:coverage": "hardhat coverage"
   },
@@ -25,11 +27,14 @@
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.5.1",
     "hardhat": "^2.6.7",
+    "hardhat-gas-reporter": "^1.0.4",
     "solidity-coverage": "^0.7.17",
     "ts-node": "^10.4.0",
     "typechain": "^6.0.2",
-    "typescript": "^4.4.4",
-    "hardhat-gas-reporter": "^1.0.4"
+    "typescript": "^4.4.4"
   },
-  "repository": "git@github.com:compound-finance/compound-protocol-v2.5.git"
+  "repository": "git@github.com:compound-finance/compound-protocol-v2.5.git",
+  "dependencies": {
+    "ethlint": "^1.2.5"
+  }
 }

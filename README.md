@@ -15,6 +15,18 @@ Compiles contracts.
 
 `yarn build`
 
+### Lint contracts
+
+Contract linting is done via [Ethlint](https://github.com/duaraghav8/Ethlint) (formerly
+known as Solium).
+
+```
+yarn lint-contracts
+yarn lint-contracts:fix // will attempt to automatically fix errors
+```
+
+Ethlint configuration is saved in `.soliumrc.json`.
+
 ### Run tests
 
 Runs all tests in the `test` directory.
