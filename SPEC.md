@@ -31,9 +31,10 @@ $$
   \newcommand{\Msg}{\SystemParam{System}{Msg}}
   \newcommand{\Now}{\SystemParam{System}{Now}}
   \newcommand{\This}{\SystemParam{Contract}{This}}
+  \newcommand{\Sender}{\SystemParam{Msg}{Sender}}
+  \newcommand{\EVM}[1]{\SystemParam{EVM}{#1}}
   %
   % common params
-  \newcommand{\Sender}{\Param{Sender}}
   \newcommand{\Operator}{\Param{Operator}}
   \newcommand{\Account}{\Param{Account}}
   \newcommand{\Asset}{\Param{Asset}}
@@ -43,6 +44,9 @@ $$
   \newcommand{\Dst}{\Param{Dst}}
   \newcommand{\Amount}{\Param{Amount}}
   %
+  % evm opcodes
+  \newcommand{GASLEFT}{\EVM{GASLEFT}}
+  \newcommand{BASEFEE}{\EVM{BASEFEE}}
   % common vars
   \newcommand{\txAmount}{\var{txAmount}}
   %
@@ -79,6 +83,8 @@ $$
   \newcommand{\CheckPerms}[2]{\HasPermission{#1}{#2}}
   % config
   \newcommand{\Governor}{\Config{Governor}}
+  \newcommand{\PauseGuardian}
+{\Config{PauseGuardian}}
   \newcommand{\PriceOracle}{\Config{PriceOracle}}
   \newcommand{\BaseToken}{\Config{BaseToken}}
   \newcommand{\CollateralAssets}{\Config{CollateralAssets}}
@@ -88,6 +94,7 @@ $$
   \newcommand{\StoreFrontDiscountFactor}[1]{\Config{StoreFrontDiscountFactor}_{#1}}
   \newcommand{\TargetReserves}{\Config{TargetReserves}}
   \newcommand{\AbsorbTip}{\Config{AbsorbTip}}
+  \newcommand{\AbsorbBaseGas}{\Config{AbsorbBaseGas}}
   \newcommand{\BorrowMin}{\Config{BorrowMin}}
   \newcommand{\SupplyCap}[1]{\Config{SupplyCap}_{#1}}
   \newcommand{\BaseTrackingSupplySpeed}{\Config{BaseTrackingSupplySpeed}}
@@ -96,6 +103,12 @@ $$
   \newcommand{\SupplyRateSlope}{\Config{SupplyRateSlope}}
   \newcommand{\BorrowRateBase}{\Config{BorrowRateBase}}
   \newcommand{\BorrowRateSlope}{\Config{BorrowRateSlope}}
+  \newcommand{\Kink}{\Config{Kink}}
+  \newcommand{\InterestRateSlopeLow}{\Config{InterestRateSlopeLow}}
+  \newcommand{\InterestRateSlopeHigh}
+{\Config{InterestRateSlopeHigh}}
+  \newcommand{\InterestRateBase}{\Config{InterestRateBase}}
+  \newcommand{\ReserveRate}{\Config{ReserveRate}}
   %
   % storage
   \newcommand{\TotalSupplyBase}{\Storage{TotalSupplyBase}}
@@ -105,14 +118,18 @@ $$
   \newcommand{\BaseBorrowIndex}{\Storage{BaseBorrowIndex}}
   \newcommand{\TrackingSupplyIndex}{\Storage{TrackingSupplyIndex}}
   \newcommand{\TrackingBorrowIndex}{\Storage{TrackingBorrowIndex}}
+  \newcommand{\PauseFlags}
+{\Storage{PauseFlags}}
   \newcommand{\UserPrincipal}[1]{\Storage{UserPrincipal}_{#1}}
   \newcommand{\UserBaseTrackingIndex}[1]{\Storage{UserBaseTrackingIndex}_{#1}}
   \newcommand{\UserBaseTrackingAccrued}[1]{\Storage{UserBaseTrackingAccrued}_{#1}}
+\newcommand{\UserAssets}[1]{\Storage{UserAssets}_{#1}}
   \newcommand{\TotalCollateral}[1]{\Storage{TotalCollateral}_{#1}}
   \newcommand{\CollateralTrackingIndex}[1]{\Storage{CollateralTrackingIndex}_{#1}}
   \newcommand{\IsPermitted}[2]{\Storage{IsPermitted}_{#1,\ #2}}
   \newcommand{\UserCollateral}[2]{\Storage{UserCollateral}_{#1,\ #2}}
   \newcommand{\UserCollateralTrackingIndex}[2]{\Storage{UserCollateralTrackingIndex}_{#1,\ #2}}
+  \newcommand{\UserNonce}[1]{\Storage{UserNonce}_{#1}}
   % postamble
 $$
 
@@ -135,14 +152,25 @@ Given that most borrowing activity in DeFi today consists of supplying volatile 
 ## Architecture
 
 ### Contracts
+
 As the goal of Comet is to be highly optimized for a particular use case, we seek to minimize the number of contracts involved. The protocol is implemented primarily in a monolithic contract. We assume all math operations revert in the case of overflow or underflow. We assume all values are unsigned 32-byte integers unless otherwise specified.
 
-### Prices
-:::info
-This section is incomplete.
-:::
+### Prices :new: :male-cook:
+The protocol will use a price oracle, similar to that of the Compound V2 protocol. Specifically, the price oracle should satisfy the following interface:
 
-The protocol will use the v2 price feed
+$getPrice(address) \mapsto uint256$
+
+where the value returned in the price of the native value of the asset, such that:
+
+$$
+\forall \var{asset0}, \var{asset1} \in {({\CollateralAssets \cup \BaseToken})}^2,\\ \frac{\mathop{getPrice}(\var{asset0})}{\mathop{getPrice}(\var{asset1})} \varpropto  \frac{price_{\var{asset0}} \cdot 10^{\var{decimals}_{\var{asset0}}}}{price_{\var{asset1}} \cdot 10^{\var{decimals}_{\var{asset1}}}}
+$$
+
+Where $price$ and $decimals$ refer to a real-life approxmiation of the current price of an asset and decimals is the number of decimals for the native value of the token. Effectively, this is saying that the ratio of the price of any two assets must equal the real-life ratio of the assets, accounting for the token's decimals. Additionally, this does _not_ say that the price needs to be specifically denominated in USD or any other currency, so long as the prices are consistent.
+
+* Note: in the future, we may wish that the price oracle implements: $getPrices(address[]) \mapsto uint256[]$, but this is not currently required for an oracle.
+
+For Ethereum main-net, the oracle used in Compound v2 satisfies these constraints. For other deployment chains, a satisfactory oracle would need to be found or deployed.
 
 ### Interest Rates
 Unlike Compound v2, where the supply rate is derived from the borrow rate and reserve factor, in Compound Comet the protocol has a distinct borrow and supply rate curve for the borrowed token. Separating the rate curves gives governance more fine-grained control over supply rates and reserves, the downside is that it requires twice as much work from governance to maintain. However, since Comet only supports borrowing and supply rates in the stable coin market, the management complexity is still less than v2.
@@ -160,13 +188,13 @@ Indices are always assumed to be unsigned integers, while balances are signed in
 
 ### Factors
 
-A _factor_ through this document refers to a fixed-digit decimal number. Specifically, a decimal number scaled by 1e18. These numbers should be treated as real numbers scaled down by 1e18. For example, the number 50% would be represented as $0.5e18$ and stored in binary as $0x4563918244f40000$.
+A _factor_ through this document refers to a fixed-digit decimal number. Specifically, a decimal number scaled by 1e18. These numbers should be treated as real numbers scaled down by 1e18. For example, the number 50% would be represented as $0.5e18$ and stored in binary as $0x4563918244f40000.$ In this specification, we may write constant factors as $1.5f$ to imply 1.5e18 as a factor.
 
 \* Note: not to be confused with $CollateralFactor$ values, which may themselves, be stored as _factors_.
 
-## Protocol Contract
+## Configuration Constants
 
-### Configuration Constants
+Configuration constants are immutable constants on contract deployment. In the EVM, it thus costs nothing to read a configuration variable, but to change a constant, we require a new deployment of the contract. Note: in Solidity, arrays will need to be unwound (e.g. $\Config{ArrayEl0}$, $\Config{ArrayEl1}$, etc).
 
 | Name       | Type | Description |
 | ---------- | ---- | ----------- |
@@ -177,59 +205,73 @@ A _factor_ through this document refers to a fixed-digit decimal number. Specifi
 | $\BorrowCollateralFactor{Asset}$ | $factor$ | Collateral factor for given asset required in order to initiate a borrow. |
 | $\LiquidateCollateralFactor{Asset}$| $factor$ | Collateral factor for given asset used when performing liquidity checks. Greater than the $\BorrowCollateralFactor{Asset}$ to avoid excessive liquidation.
 | $\LiquidationPenalty{Asset}$ | $factor$ | Fraction of collateral value received in borrow token when liquidated. |
-| $\StoreFrontDiscountFactor{Asset}$ | $factor$ | Factor to multiply by when calculating the store-front collateral price. |
+| $\StoreFrontDiscountFactor{Asset}$ | $factor$ | Factor to multiply by when calculating the store-front collateral price. (e.g. a 2% discount would use a 0.98 factor) |
 | $\TargetReserves$ | $uint$ | Minimum borrow token reserves which must be held before collateral is hodled. |
-| $\AbsorbTip$ | $uint$ | _TO BE DEFINED_ |
+| $\AbsorbTip$ | $factor$ | Multipler on gas used to be given in base token to absorber :new: :male-cook: |
+| $\AbsorbBaseGas$ | $uint$ | Base gas to repay absorber to cover transaction start-up fees and base unit transfer :new: :male-cook: |
 | $\BorrowMin$ | $uint$ | The minimum borrow amount required to enter into a borrow position. |
 | $\SupplyCap{Asset}$ | $uint$ | Maximum supply of asset which is allowed to be supplied. |
 | $\BaseTrackingSupplySpeed$ | $factor$ | Speed to track per second for suppliers. |
 | $\BaseTrackingBorrowSpeed$ | $factor$ | Speed to track per second for borrowers. |
-| $\SupplyRateBase$ | $factor$ | Base rate for supply. |
-| $\SupplyRateSlope$ | $factor$ | Slope of supply rate curve as a function of utilization. |
-| $\BorrowRateBase$ | $factor$ | Base rate for borrow. |
-| $\BorrowRateSlope$ | $factor$ | Slope of borrow rate curve as a function of utilization. |
+| $\Kink$ | $factor$ | Point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope|
+| $\InterestRateSlopeLow$ | $factor$ | Interest rate slope applied when utilization is below kink. |
+| $\InterestRateSlopeHigh$ | $factor$ | Interest rate slope applied when utilization is above kink. |
+| $\InterestRateBase$ | $factor$ | The base interest rate. |
+| $\ReserveRate$ | $factor$ | The rate of total interest paid that goes into reserves. |
 
-### Storage
+## Storage
 
 | Name          | Type | Description |
 | ------------- | ---  | ----------- |
-| $\TotalSupplyBase$ | $uint72$ | Total amount of base token principal which the protocol owes to suppliers. |
-| $\TotalBorrowBase$ | $uint72$ | Total amount of base token principal which borrowers owe to the protocol. |
-| $\LastAccrualTime$ | $uint48$ | Timestamp of last interest accrual.<br/><br/>_Note_: Split storage between 2 slots with 24-bits available each. |
-| $\BaseSupplyIndex$ | $uint64$ | Interest index for base token supply principal. |
-| $\BaseBorrowIndex$ | $uint64$ | Interest index for base token borrow principal. |
-| $\TrackingSupplyIndex$ | $uint96$ | Index tracking total protocol participation for supply. |
-| $\TrackingBorrowIndex$ | $uint96$ | Index tracking the total protocol partipcation for borrows. |
-| $\IsPermitted{Owner}{Manager}$ | $bool$ | Whether or not the $Manager$ has permission to manage the $Owner$ account. |
-| $\UserPrincipal{Account}$ | $int72$ | Amount of stable coin principal which is owed to a given account (+) or by it (-). |
-| $\UserBaseTrackingIndex{Account}$ | $uint96$ | The index tracking user participation for a given account. |
-| $\UserBaseTrackingAccrued{Account}$ | $uint48$ | Total participation tracking index previously earned by an account.
-| $\TotalCollateral{Asset}$ | $uint128$ | Total amount of given collateral asset which the protocol owes to borrowers. |
-| $\CollateralTrackingIndex{Asset}$ | $uint128$ | The global tracking index for an asset.  [TBD] |
-| $\UserCollateral{Asset}{Account}$ | $uint128$ | Amount of given collateral asset owed to a given account. |
-| $\UserCollateralTrackingIndex{Asset}{Account}$ | $uint128$ | The collateral tracking index for an asset as of the last balance interaction by an account. [TBD] |
+| $\TotalSupplyBase$ 🟩 | $uint72$ | Total amount of base token principal which the protocol owes to suppliers. |
+| $\TotalBorrowBase$ 🟨 | $uint72$ | Total amount of base token principal which borrowers owe to the protocol. |
+| $\LastAccrualTime$ 🟩🟨 | $uint40$ | Timestamp of last interest accrual.<br/><br/>_Note_: Split storage between 2 slots with 24-bits available in 🟨 and 20-bits availbile in 🟩. |
+| $\BaseSupplyIndex$ 🟩 | $uint64$ | Interest index for base token supply principal. |
+| $\BaseBorrowIndex$ 🟨 | $uint64$ | Interest index for base token borrow principal. |
+| $\TrackingSupplyIndex$  🟩 | $uint96$ | Index tracking total protocol participation for supply. |
+| $\TrackingBorrowIndex$ 🟨 | $uint96$ | Index tracking the total protocol partipcation for borrows. |
+| $\PauseFlags$ 🟩 | $uint8$ | Flags for per function pause state.
+| $\IsPermitted{Owner}{Manager}$ 🟧 | $bool$ | Whether or not the $Manager$ has permission to manage the $Owner$ account. |
+| $\UserPrincipal{Account}$ 🟪 | $int72$ | Amount of stable coin principal which is owed to a given account (+) or by it (-). |
+| $\UserBaseTrackingIndex{Account}$ 🟪 | $uint96$ | The index tracking user participation for a given account. |
+| $\UserBaseTrackingAccrued{Account}$ 🟪 | $uint48$ | Total participation tracking index previously earned by an account.
+| $\UserAssets{Account}$ 🟪 :new: | $uint16$ | Bit vector mapping collateral assets the user has a non-zero balance in. 
+| $\TotalCollateral{Asset}$ 🟦 | $uint128$ | Total amount of given collateral asset which the protocol owes to borrowers. |
+| $\CollateralTrackingIndex{Asset}$ 🟦 | $uint128$ | The global tracking index for an asset.  [TBD] |
+| $\UserCollateral{Asset}{Account}$ 🟥 | $uint128$ | Amount of given collateral asset owed to a given account. |
+| $\UserCollateralTrackingIndex{Asset}{Account}$ 🟥 | $uint128$ | The collateral tracking index for an asset as of the last balance interaction by an account. [TBD] |
+| $\UserNonce{Account}$ :new: | $uint$ | The next expected nonce for a given account.
 
-> **TODO**: We're pretty much going to need implicit assets you're in, otherwise liquidity checks are too expensive
-> * 16-bit vector stored with UserStable?
-> [name=Jared] [time=Mon, Nov 8, 2021 10:00 PM] [color=blue]
- 
+## Constructor
 
-### Constructor
-
-#### Constructor()
+### Constructor()
 
 * **Write** $\LastAccrualTime = \Now$
-* **Write** $\BaseSupplyIndex = 1.0$
-* **Write** $\BaseBorrowIndex = 1.0$
-* **Write** $\TrackingSupplyIndex = 1.0$
-* **Write** $\TrackingBorrowIndex = 1.0$
+* **Write** $\BaseSupplyIndex = 1.0f$
+* **Write** $\BaseBorrowIndex = 1.0f$
+* **Write** $\TrackingSupplyIndex = 1.0f$
+* **Write** $\TrackingBorrowIndex = 1.0f$
 
-### Account Functions
+## Account Functions
 
-#### Allow(Owner, Manager, IsAllowed) [External]
-Allow or disallow another address to withdraw, or transfer from the Sender address.
+#### Allow(Manager, IsAllowed) [External]
+Allow or disallow another address to supply, withdraw, or transfer from the $\Sender$ address.
+
+* **Call** $\mathop{Allow}(\Sender, Manager, IsAllowed)$
+
+#### Allow(*Owner*, Manager, IsAllowed) [Internal]
+Allow or disallow another address to supply, withdraw, or transfer from the given Sender address.
 
 * **Write** $\IsPermitted{Owner}{Manager} = \Param{IsAllowed}$
+
+#### AllowBySig(Manager, IsAllowed, Nonce, Expiry, Signature) :new:
+Allow or disallow another address to supply, withdraw, or transfer from the signer of an [EIP-712](https://eips.ethereum.org/EIPS/eip-712) encoded message.
+
+* Recover $Signatory$ from EIP-712 encoded $(\Param{Manager}, \Param{IsAllowed}, \Param{Nonce}, \Param{Expiry})$ via $\Param{Signature}$
+* Require $Signatory$ is valid
+* Require $Nonce = \UserNonce{Signatory}++$
+* Require $\Now ≤ Expiry$
+* **Call** $\mathop{Allow}(Signatory, Manager, IsAllowed)$
 
 #### Supply(Asset, Amount) [External]
   * **Call** $\mathop{Supply}(\Sender, \Asset, \Amount)$
@@ -238,10 +280,15 @@ Allow or disallow another address to withdraw, or transfer from the Sender addre
   * **Call** $\mathop{Supply}(\Sender, \Dst, \Asset, \Amount)$
 
 #### Supply(From, Dst, Asset, Amount) [External]
+
+  * **Call** $\mathop{Supply}(\Sender, \From, \Dst, \Asset, \Amount)$
+
+#### Supply(*Operator*, From, Dst, Asset, Amount) [Internal]
+
   * **When** $\Asset = \BaseToken$:
-    * **Call** $\mathop{SupplyBase}(\Sender, \From, \Dst, \Amount)$
+    * **Call** $\mathop{SupplyBase}(Operator, \From, \Dst, \Amount)$
   * **Else**
-    * **Call** $\mathop{SupplyCollateral}(\Sender, \From, \Dst, \Asset, \Amount)$
+    * **Call** $\mathop{SupplyCollateral}(Operator, \From, \Dst, \Asset, \Amount)$
 
 #### SupplyCollateral(Operator, From, Dst, Asset, Amount) [Internal]
 Supplies a collateral token to the protocol, which the account can later borrow against.
@@ -249,8 +296,11 @@ Supplies a collateral token to the protocol, which the account can later borrow 
 * **Require** $\CheckPerms{\From}{\Operator}$
 * **External Trx** $\transferFrom{\Asset}{\From, \This, \Amount}$
   * **Let** $\txAmount$ be the actual amount transferred less any fees.
+* **Read** $dstCollateral = \UserCollateral{\Asset}{\Dst}$
+* Let $dstCollateralNew = dstCollateral + txAmount$
 * **Write** $\TotalCollateral{\Asset} \pluseq \txAmount$
-* **Write** $\UserCollateral{\Asset}{\Dst} \pluseq \txAmount$
+* **Write** $\UserCollateral{\Asset}{\Dst} = dstCollateralNew$
+* **Call** $\mathop{UpdateUserAssets}(\Dst, \Asset, dstCollateral, dstCollateralNew)$
 * **Require** $\TotalCollateral{\Asset} \leq \SupplyCap{\Asset}$
 
 #### SupplyBase(Operator, From, Dst, Amount) [Internal]
@@ -276,17 +326,27 @@ Transfers in borrow token pegged to the user's account. This will repay any outs
 * **Call** $\mathop{Transfer}(\Sender, \Dst, \Asset, \Amount)$
 
 #### Transfer(Src, Dst, Asset, Amount) [External]
+* **Call** $\mathop{Transfer}(\Sender, \Src, \Dst, \Asset, \Amount)$
+
+#### Transfer(*Operator*, Src, Dst, Asset, Amount) [Internal]
+
 * **When** $\Asset = \BaseToken$:
-    * **Call** $\mathop{TransferBase}(\Sender, \Src, \Dst, \Amount)$
+    * **Call** $\mathop{TransferBase}(Operator, \Src, \Dst, \Amount)$
 * **Else**
-    * **Call** $\mathop{TransferCollateral}(\Sender, \Src, \Dst, \Asset, \Amount)$
+    * **Call** $\mathop{TransferCollateral}(Operator, \Src, \Dst, \Asset, \Amount)$
 
 #### TransferCollateral(Operator, Src, Dst, Asset, Amount) [Internal]
 Transfers collateral between users. Reverts if the Src user would have negative liquidity after the transfer. 
 
 * **Require** $\CheckPerms{\Src}{\Operator}$
-* **Write** $\UserCollateral{\Asset}{\Src} \subeq \Amount$
-* **Write** $\UserCollateral{\Asset}{\Dst} \pluseq \Amount$
+* **Read** $srcCollateral = \UserCollateral{\Asset}{\Src}$
+* **Read** $dstCollateral = \UserCollateral{\Asset}{\Dst}$
+* Let $srcCollateralNew = srcCollateral - txAmount$
+* Let $dstCollateralNew = dstCollateral + txAmount$
+* **Write** $\UserCollateral{\Asset}{\Src} = srcCollateralNew$
+* **Write** $\UserCollateral{\Asset}{\Dst} = dstCollateralNew$
+* **Call** $\mathop{UpdateUserAssets}(\Src, \Asset, srcCollateral, srcCollateralNew)$
+* **Call** $\mathop{UpdateUserAssets}(\Dst, \Asset, dstCollateral, dstCollateralNew)$
 * **Require** $\IsBorrowCollateralized{\Src}$
   * _Note_: We don't need to accrue interest since $Borrow CF < Liquidation CF$ covers small changes
 
@@ -313,6 +373,7 @@ Transfers base token between accounts. Reverts if $\Src$ account would have nega
 * **Write** $\TotalBorrowBase = \PrincipalValueBorrow{\var{totalBorrowBaseBalance'}}$
 * **If** $\var{srcBalance'} < 0$
    * **Require** $|\var{srcBalance'}| \geq \BorrowMin$
+   * **Require** $\IsBorrowCollateralized{\Src}$
 
 #### Withdraw(Asset, Amount) [External] 
 * **Call** $\mathop{Withdraw}(\Sender, \Asset, \Amount)$
@@ -321,19 +382,24 @@ Transfers base token between accounts. Reverts if $\Src$ account would have nega
 * **Call** $\mathop{Withdraw}(\Sender, \To, \Asset, \Amount)$
 
 #### Withdraw(Src, To, Asset, Amount) [External]
+* **Call** $\mathop{Withdraw}(\Sender, \Src, \To, \Asset, \Amount)$
+
+#### Withdraw(*Operator*, Src, To, Asset, Amount) [Internal]
 * **When** $\Asset = \BaseToken$:
-    * **Call** $\mathop{WithdrawBase}(\Sender, \Src, \To, \Amount)$
+    * **Call** $\mathop{WithdrawBase}(Operator, \Src, \To, \Amount)$
 * **Else**
-    * **Call** $\mathop{WithdrawCollateral}(\Sender, \Src, \To, \Asset, \Amount)$
+    * **Call** $\mathop{WithdrawCollateral}(Operator, \Src, \To, \Asset, \Amount)$
 
 #### WithdrawCollateral(Operator, Src, To, Asset, Amount) [Internal]
 Transfers out collateral from the $\Sender$ account to the $\To$ account. Reverts if the caller would have negative liquidity after withdrawal.
 
 * **Require** $\CheckPerms{\Src}{\Operator}$
+* **Read** $srcCollateral = \UserCollateral{\Asset}{\Src}$
+* Let $srcCollateralNew = srcCollateral - Amount$
 * **Write** $\TotalCollateral{\Asset} \subeq \Amount$
-* **Write** $\UserCollateral{\Asset}{\Src} \subeq \Amount$
-* **Require** $\IsBorrowCollateralized{\Src} \lor \Sender = \This$
-  * _Note_: Primary conditional allows selling reclaimed collateral while underwater.
+* **Write** $\UserCollateral{\Asset}{\Src} = srcCollateralNew$
+* **Call** $\mathop{UpdateUserAssets}(\Src, \Asset, srcCollateral, srcCollateralNew)$
+* **Require** $\IsBorrowCollateralized{\Src}$
 * **External Trx** $\transfer{\Asset}{\To, \Amount}$
 
 #### WithdrawBase(Operator, Src, To, Amount) [Internal]
@@ -354,10 +420,10 @@ Transfers out base token from the $\Sender$ account to the $\To$ account. Revert
 * **Write** $\TotalBorrowBase = \PrincipalValueBorrow{\var{totalBorrowBaseBalance'}}$
 * **If** $\var{srcBalance'} < 0$
   * **Require** $|\var{srcBalance'}| \geq \BorrowMin$
-* **Require** $\IsBorrowCollateralized{\Src}$
-* **External Trx** $\transfer{\BaseToken}{\To}{\Amount}$
+  * **Require** $\IsBorrowCollateralized{\Src}$
+* **External Trx** $\transfer{\BaseToken}{\To, \Amount}$
 
-### Interest and Tracking Functions
+## Interest and Tracking Functions
 
 #### Accrue() [Internal]
 Accrue interest in base token supply and borrows. This function also tracks participation in the protocol.
@@ -382,18 +448,40 @@ Write updated balance to store and tracking participation.
 * **Otherwise**:
   * **Write** $\UserBaseTrackingIndex{\Account} = \TrackingBorrowIndex$
 * **Write** $\UserBaseTrackingAccrued{Account} \pluseq \Param{InitialUserBalance} \cdot \var{indexDelta}$
+* **Write** $\UserPrincipal{Account} = \var{FinalUserBalance}$
+
+#### UpdateAssetsIn(Account, Asset, InitialUserBalance, FinalUserBalance) [Internal] :new:
+Update the "assets in" for an account based on the initial final collateral balances for an asset.
+
+* If $InitialUserBalance = 0$ and $FinalUserBalance \neq 0$
+    * **Read** $assetOffset = \mathop{GetAssetOffset}(\Asset)$
+    * **Write** $UserAssets{Account}\ \mathrel{|}=\ (1 << assetOffset)$
+        * Set the bit for the asset
+* Else if $InitialUserBalance \neq 0$ and $FinalUserBalance = 0$
+    * **Read** $assetOffset = GetAssetOffset(Asset)$
+    * **Write** $UserAssets{Account}\ \mathrel{\&}=\ \lnot (1 << assetOffset)$
+        * Clear the bit for the asset
+
 
 #### GetSupplyRate(): factor [External]
 Return the current supply rate.
 
   * **Let** $\var{utilization} = \GetUtilization$
-  * **Return** $\SupplyRateBase + \var{utilization} \times \SupplyRateSlope$
+  * **Let** $\var{totalSupply} = \PresentValue{\TotalSupplyBase}$
+  * **Let** $\var{totalBorrow} = \PresentValue{\TotalBorrowBase}$  
+  * If $\var{utilization} \leq \Kink$
+      * **Return** $(\InterestRateBase + \InterestRateSlopeLow \cdot \var{utilization}) \cdot \frac{\var{totalBorrow}}{\var{totalSupply}}(1 - \ReserveRate)$
+  * Else if $\var{utilization} > \Kink$
+      * **Return $(\InterestRateBase + \InterestRateSlopeLow \cdot \Kink + \InterestRateSlopeHigh \cdot (\var{utilization} - \Kink)) \cdot \frac{\var{totalBorrow}}{\var{totalSupply}}(1 - \ReserveRate)$**
 
 #### GetBorrowRate(): factor [External] 
 Return the current borrow rate.
 
   * **Let** $\var{utilization} = \GetUtilization$
-  * **Return** $\BorrowRateBase + \var{utilization} \times \BorrowRateSlope$
+  * If $\var{utilization} \leq \Kink$
+      * **Return $\InterestRateBase + \InterestRateSlopeLow \times \var{utilization}$**
+  * Else if $\var{utilization} > \Kink$
+      * **Return $\InterestRateBase + \InterestRateSlopeLow \times \Kink + \InterestRateSlopeHigh \times (\var{utilization} - \Kink)$**
 
 #### GetUtilization(): factor [External] 
 Returns the current protocol utilization.
@@ -403,70 +491,67 @@ Returns the current protocol utilization.
   * **When** $\var{totalSupply} = 0$:
     * **Return** $0$
   * **Otherwise**
-    * **Return** $\var{totalBorrows} \div \var{totalSupply}$
+    * **Return** $\var{totalBorrows} \over \var{totalSupply}$
 
-:::danger
-Do we need to factor in reserves here? That could be an expensive extra operation.
-:::
+## Liquidation Functions
 
-> No I don't think so, this looks good - we used to use cash and reserves to get supply
-> [name=Jared] [color=yellow]
-
-### Liquidation Functions
-
-#### Absorb(Account) [External]
+#### AbsorbInternal(To, Account) [Internal]
 Transfer user's debt to protocol accounts, decreasing cash reserves and adding collateral to the protocol's own balance. The caller is given an absorption incentive.
 
 * **Require** $\IsLiquidatable{\Account}$
 * **Read** $\var{acctPrincipal}=\UserPrincipal{\Account}$
-* **Let** $\var{basePrice} = \GetPrice{\BaseToken}$ :new: :male-cook:
-* **Let** $\var{acctBalance} = \PresentValue{\var{acctPrincipal}}$
-* Initialize $\var{acctBalance'} = \var{acctBalance}$
-* For $\var{asset} \in \CollateralAssets$ `# TODO: Assets you're in?`
+* **Read** $assetsIn = \UserAssets{\Account}$
+* **Let** $\var{basePrice} = \GetPrice{\BaseToken}$
+* **Let** $\var{accountBalance} = \PresentValue{\var{accountPrincipal}}$
+* Initialize $\var{accountBalance'} = \var{accountBalance}$
+* For $\var{asset} \in \mathop{GetAssetsList}(assetsIn)$ 
   * **Read** $\var{seizeAmount} = \UserCollateral{\var{asset}}{\Account}$
   * **If** $\var{seizeAmount} > 0$:
-    * **Write** $\UserCollateral{\var{asset}}{\Account} \subeq \var{seizeAmount}$
-      * TODO: is this always eq 0?
+    * **Write** $\UserCollateral{\var{asset}}{\Account} = 0$
     * **Write** $\UserCollateral{\var{asset}}{\This} \pluseq \var{seizeAmount}$
-      * TODO: liq dao?
-    * $\var{acctBalance'} \pluseq \var{seizeAmount} \times \GetPrice{\var{asset}} \cdot \LiquidationPenalty{\var{asset}}$
-* $\var{acctBalance'} = \frac{max(\var{acctBalance'}, 0)}{\var{basePrice}}$ :new: :male-cook:
-    * TODO: Should we track any deficit here?
-* **Write** $\UserPrincipal{\Account} = \PrincipalValue{\var{acctBalance'}}$
-  * TODO: Why don't we use UpdateBaseBalance here?
-* **Write** $\TotalSupplyBase \pluseq \PrincipalValueSupply{\var{acctBalance'}}$
-* **Write** $\TotalBorrowBase \subeq \PrincipalValueBorrow{|\var{acctBalance}|}$
-* **Let** $\var{absorptionIncentive} = \text{total gas of transaction} (BASEFEE + \AbsorbTip)$
-* **External Trx** $\transfer{\BaseToken}{\Sender, \var{absorptionIncentive}}$
+    * $\var{accountBalance'} \pluseq \var{seizeAmount} \cdot \GetPrice{\var{asset}} \cdot \LiquidationPenalty{\var{asset}}$
+* Note:
+    * **Log** $\var{deficitToReserves} = |\mathop{min}(\var{accountBalance'}, 0)|$
+    * **Log** $\var{debtRepaidByReserves} = \var{accountBalance' - accountBalance}$
+* **Let** $\var{accountBalance'} = { \mathop{max}(\var{accountBalance'}, 0) \over \var{basePrice} }$
+* **Let** $accountPrincipal' = \PrincipalValue{\var{accountBalance'}}$
+* **Call** $\UpdateBaseBalance{\Account}{\var{accountPrincipal}}{accountPrincipal'}$
+* **Write** $\TotalSupplyBase \pluseq \PrincipalValueSupply{\var{accountBalance'}}$
+* **Write** $\TotalBorrowBase \subeq \PrincipalValueBorrow{|\var{accountBalance}|}$
+  * **Note**: We've added supply and decreased borrows. These both act to decrease reserves. The PCV of the protocol, however, may offset this by the collateral collected (except in cases of underwater accounts or if the collateral is not sold in a timely manner).
 
-:::danger
-XXX: Fix Absorption incentive
-We need gas of absorb not the transaction, we should be able to make a good/safe over-estimate, assuming we cap what external calls can cost
-:::
-
-#### Absorb(Accounts) [External]
+#### Absorb(To, Accounts) [External]
 Absorb multiple accounts at once.
 
-* For $\var{account} \in \Param{Accounts}$:
-  * Call $\mathop{Absorb}(\var{account})$
+* **Let** $\var{startGas} = \GASLEFT$ :new: :male-cook:
+* **For** $\var{account} \in \Param{Accounts}$:
+  * **Call** $\mathop{AbsorbInternal}(\To, \var{account})$
+* **Let** $\var{gasUsed} = gasStart - \GASLEFT + \AbsorbBaseGas$ :new: :male-cook:
+* **Let** $\var{absorptionIncentive} = \var{gasUsed} \cdot (\BASEFEE + \AbsorbTip)$
+* **External Trx** $\transfer{\BaseToken}{\To, \var{absorptionIncentive}}$
+  
+#### Absorb(To, Account) [External]
+Absorb a single account.
+
+* **Call** $\mathop{Absorb}(\Param{To}, [\Param{Account}])$
 
 #### AskPrice(Asset, Amount) [External]
 Calculate the store-front price for a given amount of collateral for sale. Does not check if the quantity is actually available for sale.
 
 * Return $\GetPrice{\Asset} \cdot \StoreFrontDiscountFactor{\Asset}$
 
-#### BuyCollateral(Asset, Amount, BaseAmount)
+#### BuyCollateral(Asset, MinCollateralAmount, BaseAmount, Recipient)
 Buy collateral from the protocol using base tokens, increasing reserves. A minimum collateral amount should be specified to indicate the maximum slippage acceptable for the buyer.
 
 Note: we choose to implement a simple auction strategy which seemed to do well in simulations, this is a likely point for experimentation within the protocol. 
 
 * **When** $\GetReserves < \TargetReserves$:
-  * **Read** $\var{collateralAmount} = {\Param{BaseAmount} \over AskPrice(Asset, Amount)}$
+  * **Read** $\var{collateralAmount} = {\Param{BaseAmount} \div AskPrice(Asset)}$
   * **Require** $\var{collateralAmount} \geq MinCollateralAmount$
-  * **Call** $SupplyReserves(\Sender, \Sender, BaseAmount)$
+  * **External Trx** $\transferFrom{\BaseToken}{\Sender, \This, \Param{BaseAmount}}$
   * **Call** $WithdrawCollateral(\This, \This, Recipient, Asset, collateralAmount)$
 
-### Reserves Functions
+## Reserves Functions
 
 #### _WithdrawReserves(To, Amount) [Internal]
 Withdraw reserves from the protocol to another account. 
@@ -478,13 +563,55 @@ Withdraw reserves from the protocol to another account.
 * **External Call** $\var{thisBalance} = \balanceOf{\BaseToken}{\This}$
 * **Return** $\var{thisBalance} - \PresentValueSupply{\TotalSupplyBase} + \PresentValueBorrow{\TotalBorrowBase}$
 
-### Helper Functions
+#### pcv(): int [External View] :new: :male-cook:
+* **Let** $\var{pcv} = \GetReserves$
+* **For** $\var{asset} \in \CollateralAssets$
+  * **Let** $\var{price} = \GetPrice{\var{asset}}$
+  * **Let** $\var{balance} = \UserCollateral{\var{asset}}{\This}$
+  * **Let** $\var{pcv} \pluseq \var{price} \cdot \var{balance}$
+* **Return** $\var{pcv}$
+
+## Pause Guardian Functions
+
+
+#### Pause(SupplyPaused, TransferPaused, WithdrawPaused, AbsorbPaused, BuyPaused) [External]
+Pause/Unpause the indicated functions. 
+* **Require** $\Sender = \Governor || \PauseGuardian$
+* **Write** $$\PauseFlags = 0 \\ \mathbin{|} (SupplyPaused \ll PauseSupplyOffset) \\ \mathbin{|} (TransferPaused \ll PauseTransferOffset)  \\ \mathbin{|} (WithdrawPaused \ll PauseWithdrawOffset) \\ \mathbin{|} (AbsorbPaused \ll PauseAbsorbOffset)  \\ \mathbin{|} (BuyPaused \ll PauseBuyOffset)$$
+
+#### IsSupplyPaused(): bool [Public]
+Returns true if supply is paused for all markets
+* **Read** $isPaused = \PauseFlags \mathbin{\&} (1 \ll PauseSupplyOffset)$
+* **Return** $isPaused$
+
+#### IsTransferPaused(): bool [Public]
+Returns true if transfer is paused for all markets
+* **Read** $isPaused = \PauseFlags \mathbin{\&} (1 \ll PauseTransferOffset)$
+* **Return** $isPaused$
+
+#### IsWithdrawPaused(): bool [Public]
+Returns true if withdraw is paused for all markets
+* **Read** $isPaused = \PauseFlags \mathbin{\&} (1 \ll PauseWithdrawOffset)$
+* **Return** $isPaused$
+
+#### IsAbsorbPaused(): bool [Public]
+Returns true if absorb is paused for all markets
+* **Read** $isPaused = \PauseFlags \mathbin{\&} (1 \ll PauseAbsorbOffset)$
+* **Return** $isPaused$
+
+#### IsBuyPaused(): bool [Public]
+Returns true if buy is paused for all markets
+* **Read** $isPaused = \PauseFlags \mathbin{\&} (1 \ll PauseBuyOffset)$
+* **Return** $isPaused$
+
+## Helper Functions
 
 #### IsBorrowCollateralized(Account): bool [External]
 Returns true if the account has non-negative liquidity using the borrow collateral factors.
 
-* **Read** $\var{liquidity} = -\GetPrice{\BaseToken} \times \PresentValue{\UserPrincipal{\Account}}$ :new: :male-cook:
-* For $\var{asset} \in \CollateralAssets$
+* **Read** $assetsIn = \UserAssets{\Account}$
+* **Read** $\var{liquidity} = \GetPrice{\BaseToken} \times \PresentValue{\UserPrincipal{\Account}}$
+* For $\var{asset} \in \mathop{GetAssetsList}(assetsIn)$
     * **If** $\var{liquidity} \geq 0$
         * **Return** $true$
     * $\var{liquidity} \pluseq \UserCollateral{\var{asset}}{\Account} \cdot \GetPrice{\Asset} \cdot \BorrowCollateralFactor{\Asset}$
@@ -493,15 +620,33 @@ Returns true if the account has non-negative liquidity using the borrow collater
 #### IsLiquidatable(Account): bool [External]
 Returns true if the account has negative liquidity using the liquidation collateral factors.
 
-* **Read** $\var{liquidity} = -\GetPrice{\BaseToken} \times \PresentValue{\UserPrincipal{\Account}}$ :new: :male-cook:
-* For $\var{asset} \in \CollateralAssets$
+* **Read** $assetsIn = \UserAssets{\Account}$
+* **Read** $\var{liquidity} = \GetPrice{\BaseToken} \times \PresentValue{\UserPrincipal{\Account}}$
+* For $\var{asset} \in \mathop{GetAssetsList}(assetsIn)$
     * **If** $\var{liquidity} \geq 0$
-        * **Return** $true$
+        * **Return** $false$
     * $\var{liquidity} \pluseq \UserCollateral{\var{asset}}{\Account} \cdot \GetPrice{\Asset} \cdot \LiquidateCollateralFactor{\Asset}$
-* **Return** $\var{liquidity} \geq 0$
+* **Return** $\var{liquidity} < 0$
+
+#### GetAssetOffset(Asset): uint8
+Return the offset of the asset within the list (index into bit vector). :new: :male-cook:
+
+* **For** ($\var{asset}, \var{index}) \in \CollateralAssets$
+  * **When** $\var{asset} = \Param{Asset}$:
+    * **Return** $\var{index}$
+* **Revert** Asset Not Found
+
+#### GetAssetList(AssetsIn): Asset[]
+Return the list of asset addresses, given a bit vector of 'assets in'. :new: :male-cook:
+
+* **Let** $\var{assets} = []$
+* **For** $\var{index} \in 0..{|\CollateralAssets|}$
+  * **When** $(1 \ll \var{index}) \land \Param{AssetsIn} \neq 0$:
+    * **Append** ${\CollateralAssets}_\var{index}$ to $\var{assets}$
+* **Return** $\var{assets}$
 
 #### GetPrice(Asset): factor [External]
-Get the price of an asset.
+Get the price of an asset
 
 #### HasPermission(address Owner, address Manager): bool [Internal]
 * **Return** $\Param{Owner} = \Param{Manager} \lor \IsPermitted{\Param{Owner}}{\Param{Manager}}$
@@ -559,7 +704,102 @@ When an account goes underwater, its position can be absorbed into the protocol 
 ## Tracking
 The protocol tracks participation in markets and accrues that to each account. This allows external contracts to confidently pull information about how long an account has participated in the Compound Protocol and how much value that account has provided to the protocol, in general.
 
-## Optional or External Helpers
+## Interest Rate Calculations
+The aim is to support two kinked interest models for supply and borrow that allow for a fixed reserve factor at each point of utilization. The following section derives a mathematical formula to achieve this goal.
+
+A spreadsheet of the interest rate model can be found $\href{https://docs.google.com/spreadsheets/d/1G3BWcFPEQYnH-IrHHye5oA0oFIP0Jyj7pybdpMuDOuI}{\textrm{here}}$.
+
+### Formula derivation
+
+Start with the invariant, where $\var{S}=total \space supplies$, $\var{B}=total \space borrows$, $\var{r_S}=supply \space rate$, $\var{r_B}=borrow \space rate$, $\var{r_R}=reserve \space rate$:
+
+$$
+\var{B}\var{r_B} - \var{S}\var{r_S} = \var{r_R}\var{B}\var{r_B}
+$$
+
+In words, this states that the total reserves accrued is equals to the difference between total borrow interest and total supply interest.
+
+Knowing $\var{r_R}$ is a constant, we can isolate it on one side:
+
+$$
+1-\frac{\var{S}\var{r_S}}{\var{B}\var{r_B}}=\var{r_R}
+$$
+
+$$
+\frac{\var{S}\var{r_S}}{\var{B}\var{r_B}}=1-\var{r_R}
+$$
+
+Since the RHS is a constant, we need to find a way to make $\frac{\var{S}\var{r_S}}{\var{B}\var{r_B}}$ a constant as well. Since $\var{S}$ and $\var{B}$ are both variables, this can only be done by having $\var{r_S}$ be a product of $\var{B}$ and $\var{r_B}$ a product of $\var{S}$. We can normalize both rates by dividing each by $\var{S}$. Thus, we can define the interest rates as follows, where $\var{c}=constant$, $\var{U}=utilization$:
+
+$$
+\var{r_S}=\var{c} * \var{U} * \frac{B}{S} (1 - \var{r_R})
+$$
+
+$$
+\var{r_B}=\var{c} * \var{U} * \frac{S}{S} = \var{c} * \var{U}
+$$
+
+This formula can be extended to support kinks:
+
+$$
+\var{r_S}= 
+\begin{array}{ll}
+    \var{c_{low}} * \var{U} * \frac{B}{S} (1 - \var{r_R}) & \quad \var{U} \leq kink \\
+    (\var{c_{low}} * kink + \var{c_{high}} * (\var{U} - kink)) \frac{B}{S} (1 - \var{r_R}) & \quad \var{U} \gt kink \\
+\end{array}
+$$
+
+$$
+\var{r_B}= 
+\begin{array}{ll}
+    \var{c_{low}} * \var{U} & \quad \var{U} \leq kink \\
+    \var{c_{low}} * kink + \var{c_{high}} * (\var{U} - kink) & \quad \var{U} \gt kink \\
+\end{array}
+$$
+
+
+
+## Bulker etc. Contract :new:
+
+We will have a contract outside of the monolithic protocol contract which provides bulking and other functionality. This isolates some of the code risk. However, this separate contract is still extremely potent, as users which interact with it will need to allow it to operate on their behalf.
+
+See [RFC 018](https://docs.google.com/document/d/1MBO5EfLSt3uHPSUJ1I3shZzkxmpZHxA4k4vz3NNwEe0/edit#heading=h.ufct22s8n9zn)
+
+### Types
+
+```
+struct Command {
+ name: string or uint+enum;
+ args: bytes;	
+}
+```
+
+### Functions
+
+#### invoke(bytes action, uint32 nonce) [External]
+
+* handleCommand(Parsed(action))
+
+#### invokeAll(bytes actions, uint32 nonce) [External]
+* For command in Parsed(actions)
+    * handleCommand(command)
+
+#### handleCommand(Command cmd) [Internal]
+* When $cmd.name$
+    * SUPPLY
+        * Let (from, dst, asset, amount) = abi.decode(cmd.args, (address, address, address, uint))
+        * Require $from = \Sender$
+        * Supply(from, dst, asset, amount)
+    * TRANSFER
+        * Let (src, dst, asset, amount) = abi.decode(cmd.args, (address, address, address, uint))
+        * Require $src = \Sender$
+        * Transfer(src, dst, asset, amount)
+    * WITHDRAW
+        * Let (src, to, asset, amount) = abi.decode(cmd.args, (address, address, address, uint))
+        * Require $src = \Sender$
+        * Withdraw(src, to, asset, amount)
+
+### Optional Helpers
 
 :::info
 This section is incomplete.
@@ -569,5 +809,3 @@ This section is incomplete.
 #### TransferStableMaxWithBorrowing(Operator, Src, Dst)
 #### WithdrawStableMaxWithoutBorrowing(Operator, Src, To)
 #### WithdrawStableMaxWithBorrowing(Operator, Src, To)
-#### XXXAndCall(Operator, ...)
-#### GaslessSigning
