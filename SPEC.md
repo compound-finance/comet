@@ -45,15 +45,15 @@ $$
   \newcommand{\Amount}{\Param{Amount}}
   %
   % evm opcodes
-  \newcommand{\GASLEFT}{\SystemParam{EVM}{GASLEFT}}
-  \newcommand{\BASEFEE}{\SystemParam{EVM}{BASEFEE}}
+  \newcommand{\GASLEFT}{\EVM{GASLEFT}}
+  \newcommand{\BASEFEE}{\EVM{BASEFEE}}
   % common vars
   \newcommand{\txAmount}{\var{txAmount}}
   %
   % external contracts
-  \newcommand{\transfer}[2]{\ContractCall{E\text{rc}\text{20}}{#1}{ \text{transfer}}{#2}}
-  \newcommand{\transferFrom}[2]{\ContractCall{E\text{rc}\text{20}}{#1}{ \text{transfer}F\text{rom}}{#2}}
-  \newcommand{\balanceOf}[2]{\ContractCall{E\text{rc}\text{20}}{#1}{ \text{balance}O\text{f}}{#2}}
+  \newcommand{\transfer}[2]{\ContractCall{Erc20}{#1}{ transfer}{#2}}
+  \newcommand{\transferFrom}[2]{\ContractCall{Erc20}{#1}{ transferFrom}{#2}}
+  \newcommand{\balanceOf}[2]{\ContractCall{Erc20}{#1}{ balanceOf}{#2}}
   %
   % global funcs
   \newcommand{\HasPermission}[2]{\Func{HasPermission}{#1,\ #2}}
@@ -82,51 +82,51 @@ $$
   % complete funcs
   \newcommand{\CheckPerms}[2]{\HasPermission{#1}{#2}}
   % config
-  \newcommand{\Governor}{\Config{G\text{overnor}}}
-  \newcommand{\PauseGuardian}{\Config{P\text{ause}G\text{uardian}}}
-  \newcommand{\PriceOracle}{\Config{P\text{rice}O\text{racle}}}
-  \newcommand{\BaseToken}{\Config{B\text{ase}T\text{oken}}}
-  \newcommand{\CollateralAssets}{\Config{C\text{ollateral}A\text{ssets}}}
-  \newcommand{\BorrowCollateralFactor}[1]{\Config{B\text{orrow}C\text{ollateral}F\text{actor}}_{#1}}
-  \newcommand{\LiquidateCollateralFactor}[1]{\Config{L\text{iquidate}C\text{ollateral}F\text{actor}}_{#1}}
-  \newcommand{\LiquidationPenalty}[1]{\Config{L\text{iquidation}P\text{enalty}}_{#1}}
-  \newcommand{\StoreFrontDiscountFactor}[1]{\Config{S\text{tore}F\text{ront}D\text{iscount}F\text{actor}}_{#1}}
-  \newcommand{\TargetReserves}{\Config{T\text{arget}R\text{eserves}}}
-  \newcommand{\AbsorbTip}{\Config{A\text{bsorb}T\text{ip}}}
-  \newcommand{\AbsorbBaseGas}{\Config{A\text{bsorb}B\text{ase}G\text{as}}}
-  \newcommand{\BorrowMin}{\Config{B\text{orrow}M\text{in}}}
-  \newcommand{\SupplyCap}[1]{\Config{S\text{upply}C\text{ap}}_{#1}}
-  \newcommand{\BaseTrackingSupplySpeed}{\Config{B\text{ase}T\text{racking}S\text{upply}S\text{peed}}}
-  \newcommand{\BaseTrackingBorrowSpeed}{\Config{B\text{ase}T\text{racking}B\text{orrow}S\text{peed}}}
-  \newcommand{\SupplyRateBase}{\Config{S\text{upply}R\text{ate}B\text{ase}}}
-  \newcommand{\SupplyRateSlope}{\Config{S\text{upply}R\text{ate}S\text{lope}}}
-  \newcommand{\BorrowRateBase}{\Config{B\text{orrow}R\text{ate}B\text{ase}}}
-  \newcommand{\BorrowRateSlope}{\Config{B\text{orrow}R\text{ate}S\text{lope}}}
-  \newcommand{\Kink}{\Config{K\text{ink}}}
-  \newcommand{\InterestRateSlopeLow}{\Config{I\text{nterest}R\text{ate}S\text{lope}L\text{ow}}}
+  \newcommand{\Governor}{\Config{Governor}}
+  \newcommand{\PauseGuardian}{\Config{PauseGuardian}}
+  \newcommand{\PriceOracle}{\Config{PriceOracle}}
+  \newcommand{\BaseToken}{\Config{BaseToken}}
+  \newcommand{\CollateralAssets}{\Config{CollateralAssets}}
+  \newcommand{\BorrowCollateralFactor}[1]{\Config{BorrowCollateralFactor}_{#1}}
+  \newcommand{\LiquidateCollateralFactor}[1]{\Config{LiquidateCollateralFactor}_{#1}}
+  \newcommand{\LiquidationPenalty}[1]{\Config{LiquidationPenalty}_{#1}}
+  \newcommand{\StoreFrontDiscountFactor}[1]{\Config{StoreFrontDiscountFactor}_{#1}}
+  \newcommand{\TargetReserves}{\Config{TargetReserves}}
+  \newcommand{\AbsorbTip}{\Config{AbsorbTip}}
+  \newcommand{\AbsorbBaseGas}{\Config{AbsorbBaseGas}}
+  \newcommand{\BorrowMin}{\Config{BorrowMin}}
+  \newcommand{\SupplyCap}[1]{\Config{SupplyCap}_{#1}}
+  \newcommand{\BaseTrackingSupplySpeed}{\Config{BaseTrackingSupplySpeed}}
+  \newcommand{\BaseTrackingBorrowSpeed}{\Config{BaseTrackingBorrowSpeed}}
+  \newcommand{\SupplyRateBase}{\Config{SupplyRateBase}}
+  \newcommand{\SupplyRateSlope}{\Config{SupplyRateSlope}}
+  \newcommand{\BorrowRateBase}{\Config{BorrowRateBase}}
+  \newcommand{\BorrowRateSlope}{\Config{BorrowRateSlope}}
+  \newcommand{\Kink}{\Config{Kink}}
+  \newcommand{\InterestRateSlopeLow}{\Config{InterestRateSlopeLow}}
   \newcommand{\InterestRateSlopeHigh}{\Config{InterestRateSlopeHigh}}
-  \newcommand{\InterestRateBase}{\Config{I\text{nterest}R\text{ate}B\text{ase}}}
-  \newcommand{\ReserveRate}{\Config{R\text{eserve}R\text{ate}}}
+  \newcommand{\InterestRateBase}{\Config{InterestRateBase}}
+  \newcommand{\ReserveRate}{\Config{ReserveRate}}
   %
   % storage
-  \newcommand{\TotalSupplyBase}{\Storage{T\text{otal}S\text{upply}B\text{ase}}}
-  \newcommand{\TotalBorrowBase}{\Storage{T\text{otal}B\text{orrow}B\text{ase}}}
-  \newcommand{\LastAccrualTime}{\Storage{L\text{ast}A\text{ccrual}T\text{ime}}}
-  \newcommand{\BaseSupplyIndex}{\Storage{B\text{ase}S\text{upply}I\text{ndex}}}
-  \newcommand{\BaseBorrowIndex}{\Storage{B\text{ase}B\text{orrow}I\text{ndex}}}
-  \newcommand{\TrackingSupplyIndex}{\Storage{T\text{racking}S\text{upply}I\text{ndex}}}
-  \newcommand{\TrackingBorrowIndex}{\Storage{T\text{racking}B\text{orrow}I\text{ndex}}}
-  \newcommand{\PauseFlags}{\Storage{P\text{ause}F\text{lags}}}
-  \newcommand{\UserPrincipal}[1]{\Storage{U\text{ser}P\text{rincipal}}_{#1}}
-  \newcommand{\UserBaseTrackingIndex}[1]{\Storage{U\text{ser}B\text{ase}T\text{racking}I\text{ndex}}_{#1}}
-  \newcommand{\UserBaseTrackingAccrued}[1]{\Storage{U\text{ser}B\text{ase}T\text{racking}A\text{ccrued}}_{#1}}
-  \newcommand{\UserAssets}[1]{\Storage{U\text{ser}A\text{ssets}}_{#1}}
-  \newcommand{\TotalCollateral}[1]{\Storage{T\text{otal}C\text{ollateral}}_{#1}}
-  \newcommand{\CollateralTrackingIndex}[1]{\Storage{C\text{ollateral}T\text{racking}I\text{ndex}}_{#1}}
-  \newcommand{\IsPermitted}[2]{\Storage{I\text{s}P\text{ermitted}}_{#1,\ #2}}
-  \newcommand{\UserCollateral}[2]{\Storage{U\text{ser}C\text{ollateral}}_{#1,\ #2}}
-  \newcommand{\UserCollateralTrackingIndex}[2]{\Storage{U\text{ser}C\text{ollateral}T\text{racking}I\text{ndex}}_{#1,\ #2}}
-  \newcommand{\UserNonce}[1]{\Storage{U\text{ser}N\text{once}}_{#1}}
+  \newcommand{\TotalSupplyBase}{\Storage{TotalSupplyBase}}
+  \newcommand{\TotalBorrowBase}{\Storage{TotalBorrowBase}}
+  \newcommand{\LastAccrualTime}{\Storage{LastAccrualTime}}
+  \newcommand{\BaseSupplyIndex}{\Storage{BaseSupplyIndex}}
+  \newcommand{\BaseBorrowIndex}{\Storage{BaseBorrowIndex}}
+  \newcommand{\TrackingSupplyIndex}{\Storage{TrackingSupplyIndex}}
+  \newcommand{\TrackingBorrowIndex}{\Storage{TrackingBorrowIndex}}
+  \newcommand{\PauseFlags}{\Storage{PauseFlags}}
+  \newcommand{\UserPrincipal}[1]{\Storage{UserPrincipal}_{#1}}
+  \newcommand{\UserBaseTrackingIndex}[1]{\Storage{UserBaseTrackingIndex}_{#1}}
+  \newcommand{\UserBaseTrackingAccrued}[1]{\Storage{UserBaseTrackingAccrued}_{#1}}
+  \newcommand{\UserAssets}[1]{\Storage{UserAssets}_{#1}}
+  \newcommand{\TotalCollateral}[1]{\Storage{TotalCollateral}_{#1}}
+  \newcommand{\CollateralTrackingIndex}[1]{\Storage{CollateralTrackingIndex}_{#1}}
+  \newcommand{\IsPermitted}[2]{\Storage{IsPermitted}_{#1,\ #2}}
+  \newcommand{\UserCollateral}[2]{\Storage{UserCollateral}_{#1,\ #2}}
+  \newcommand{\UserCollateralTrackingIndex}[2]{\Storage{UserCollateralTrackingIndex}_{#1,\ #2}}
+  \newcommand{\UserNonce}[1]{\Storage{UserNonce}_{#1}}
   % postamble
 $$
 
@@ -218,8 +218,6 @@ Configuration constants are immutable constants on contract deployment. In the E
 
 ## Storage
 
-| Name          | Type | Description |
-| ------------- | ---  | ----------- |
 | $\TotalSupplyBase$ :green_heart: | $uint72$ | Total amount of base token principal which the protocol owes to suppliers. |
 | $\TotalBorrowBase$ :yellow_heart: | $uint72$ | Total amount of base token principal which borrowers owe to the protocol. |
 | $\LastAccrualTime$ :green_heart::yellow_heart: | $uint40$ | Timestamp of last interest accrual.<br/><br/>_Note_: Split storage between 2 slots with 24-bits available in :yellow_heart: and 20-bits availbile in :green_heart:. |
@@ -267,7 +265,7 @@ Allow or disallow another address to supply, withdraw, or transfer from the sign
 * Recover $Signatory$ from EIP-712 encoded $(\Param{Manager}, \Param{IsAllowed}, \Param{Nonce}, \Param{Expiry})$ via $\Param{Signature}$
 * Require $Signatory$ is valid
 * Require $Nonce = \UserNonce{Signatory}++$
-* Require $\Now ≤ Expiry$
+* Require $\Now \leq Expiry$
 * **Call** $\mathop{Allow}(Signatory, Manager, IsAllowed)$
 
 #### Supply(Asset, Amount) [External]
@@ -741,16 +739,16 @@ This formula can be extended to support kinks:
 $$
 \var{r_S}= 
 \begin{array}{ll}
-    \var{c_{low}} * \var{U} * \frac{B}{S} (1 - \var{r_R}) & \quad \var{U} \leq kink \\
-    (\var{c_{low}} * kink + \var{c_{high}} * (\var{U} - kink)) \frac{B}{S} (1 - \var{r_R}) & \quad \var{U} \gt kink \\
+    \var{c_{low}} * \var{U} * \frac{B}{S} (1 - \var{r_R}) \& \quad \var{U} \leq kink \\
+    (\var{c_{low}} * kink + \var{c_{high}} * (\var{U} - kink)) \frac{B}{S} (1 - \var{r_R}) \& \quad \var{U} > kink \\
 \end{array}
 $$
 
 $$
 \var{r_B}= 
 \begin{array}{ll}
-    \var{c_{low}} * \var{U} & \quad \var{U} \leq kink \\
-    \var{c_{low}} * kink + \var{c_{high}} * (\var{U} - kink) & \quad \var{U} \gt kink \\
+    \var{c_{low}} * \var{U} \& \quad \var{U} \leq kink \\
+    \var{c_{low}} * kink + \var{c_{high}} * (\var{U} - kink) \& \quad \var{U} > kink \\
 \end{array}
 $$
 
