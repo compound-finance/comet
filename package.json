@@ -8,7 +8,8 @@
     "clean": "hardhat clean && rm -rf build/ cache/ coverage* dist/",
     "gas": "REPORT_GAS=true yarn test",
     "test": "hardhat test",
-    "test:coverage": "hardhat coverage"
+    "test:coverage": "hardhat coverage",
+    "scenario": "NODE_OPTIONS=--openssl-legacy-provider hardhat test ./test/scenario/*"
   },
   "keywords": [],
   "author": "Compound Finance",
