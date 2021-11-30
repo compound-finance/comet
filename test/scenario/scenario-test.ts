@@ -6,7 +6,7 @@ describe('Scenario test framework', function () {
   it('allows you to create a Scenario via factory method', async function () {
     const scenario = await Scenario.with({
       greeter: {
-        message: "Hello, whirled"
+        message: "Hello, world"
       }
     });
 
@@ -16,11 +16,23 @@ describe('Scenario test framework', function () {
   it('allows you to simulate time passing', async function () {
     const scenario = await Scenario.with({
       greeter: {
-        message: "Hello, whirled"
+        message: "Hello, world"
       }
     });
 
     await scenario.increaseTime(300); // simulate 5 minutes passing
+
+    expect(await scenario.greeter.greet()).to.equal('Hello, world!');
+  });
+
+  it('allows you to simulate blocks being mined', async function () {
+    const scenario = await Scenario.with({
+      greeter: {
+        message: "Hello, world"
+      }
+    });
+
+    await scenario.mineBlock(); // simulate block being mined
 
     expect(await scenario.greeter.greet()).to.equal('Hello, world!');
   });

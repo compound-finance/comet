@@ -27,6 +27,18 @@ class Scenario {
         });
         */
     }
+
+    async mineBlock() {
+        /*
+        wrapper around `evm_mine`
+        https://hardhat.org/hardhat-network/reference/#evm-mine
+
+        await hre.network.provider.request({
+            method: "evm_mine",
+            params: [],
+        });
+        */
+    }
 }
 
 export default Scenario;
