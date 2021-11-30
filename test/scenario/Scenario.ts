@@ -15,6 +15,18 @@ class Scenario {
 
         return new Scenario({greeterContract})
     }
+
+    async increaseTime(seconds) {
+        /*
+        // wrapper around `evm_increaseTime`
+        // https://hardhat.org/hardhat-network/reference/#evm-increasetime
+
+        await hre.network.provider.request({
+            method: "evm_increaseTime",
+            params: [seconds],
+        });
+        */
+    }
 }
 
 export default Scenario;
