@@ -44,8 +44,8 @@ describe('Scenario test framework', function () {
       }
     });
 
-    await scenario.greeter.connect(scenario.owner).setGreeting("Owner message");
+    await scenario.greeter.connect(scenario.users[0]).setGreeting("User message");
 
-    expect(await scenario.greeter.greet()).to.equal('Owner message');
+    expect(await scenario.greeter.greet()).to.equal('User message');
   });
 });

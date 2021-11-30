@@ -5,10 +5,12 @@ import { Greeter__factory, Greeter } from '../../build/types'
 class Scenario {
     greeter: Greeter;
     owner: Signer;
+    users: Array<Signer>;
 
-    constructor({greeterContract, owner}) {
+    constructor({greeterContract, owner, users}) {
         this.greeter = greeterContract;
         this.owner = owner;
+        this.users = users;
     }
 
     static async with({greeter}) {
@@ -16,11 +18,12 @@ class Scenario {
         const greeterContract: Greeter = await greeterFactory.deploy(greeter.message);
         await greeterContract.deployed();
 
-        const [owner] = await ethers.getSigners();
+        const [owner, ...users] = await ethers.getSigners();
 
         return new Scenario({
             greeterContract,
-            owner
+            owner,
+            users
         })
     }
 
