@@ -36,4 +36,16 @@ describe('Scenario test framework', function () {
 
     expect(await scenario.greeter.greet()).to.equal('Hello, world!');
   });
+
+  it('allows you to take actions as the contract\'s owner', async function () {
+    const scenario = await Scenario.with({
+      greeter: {
+        message: "Hello, world"
+      }
+    });
+
+    await scenario.greeter.connect(scenario.owner).setGreeting("Owner message");
+
+    expect(await scenario.greeter.greet()).to.equal('Owner message');
+  });
 });
