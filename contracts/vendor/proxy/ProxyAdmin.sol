@@ -8,6 +8,7 @@ import "./TransparentUpgradeableProxy.sol";
 /**
  * @dev This is an auxiliary contract meant to be assigned as the admin of a {TransparentUpgradeableProxy}. For an
  * explanation of why you would want to use this see the documentation for {TransparentUpgradeableProxy}.
+ * @dev Modified from the original OZ Proxy to save 1 SLOAD per delegated call. Admin variable is immutable, no admin upgrades are allowed.
  */
 contract ProxyAdmin is Ownable {
 
@@ -39,17 +40,6 @@ contract ProxyAdmin is Ownable {
         (bool success, bytes memory returndata) = address(proxy).staticcall(hex"f851a440");
         require(success);
         return abi.decode(returndata, (address));
-    }
-
-    /**
-     * @dev Changes the admin of `proxy` to `newAdmin`.
-     *
-     * Requirements:
-     *
-     * - This contract must be the current admin of `proxy`.
-     */
-    function changeProxyAdmin(TransparentUpgradeableProxy proxy, address newAdmin) public virtual onlyOwner {
-        proxy.changeAdmin(newAdmin);
     }
 
     /**
