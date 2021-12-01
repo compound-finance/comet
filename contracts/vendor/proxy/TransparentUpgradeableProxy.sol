@@ -36,11 +36,6 @@ contract TransparentUpgradeableProxy is UpgradeableProxy {
     }
 
     /**
-     * @dev Emitted when the admin account has changed.
-     */
-    event AdminChanged(address previousAdmin, address newAdmin);
-
-    /**
      * @dev The immutable admin of the contract.
      * This is a modificaton comparing to standard recommended OpenZeppelin Transparent Upgradable Proxy.
      * It allows us to save 1 SLOAD per delegation call without using newest UUP pattern.
