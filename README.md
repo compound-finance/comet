@@ -15,6 +15,17 @@ Compiles contracts.
 
 `yarn build`
 
+### Lint contracts
+
+Contract linting is done via [Solhint](https://github.com/protofire/solhint).
+
+```
+yarn lint-contracts
+yarn lint-contracts:fix // will attempt to automatically fix errors
+```
+
+Solhint configuration is saved in `.solhint.json`.
+
 ### Run tests
 
 Runs all tests in the `test` directory.
