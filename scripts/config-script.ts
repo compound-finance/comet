@@ -32,9 +32,25 @@ async function main() {
   await protocol.deployed();
   console.log('Protocol deployed to:', protocol.address);
 
+  // Get data from initial config
   const tx = await protocol.getData();
   const receipt = await tx.wait();
-  console.log("Events = ", receipt.events[0].args.toString());
+  console.log("Data with initial config = ", receipt.events[0].args.toString());
+
+  // Deploy new config contract
+  const NewConfig = await ethers.getContractFactory('Config');
+  const newConfig = await NewConfig.deploy(300000, 400000);
+  await newConfig.deployed();
+  console.log('New Config deployed to:', newConfig.address);
+
+  // Upgrade proxy to the new config contract
+  const upgradeTx = await proxy.connect(admin).upgradeTo(newConfig.address);
+  await upgradeTx.wait();
+
+  // Get data from the new config
+  const tx2 = await protocol.getData();
+  const receipt2 = await tx2.wait();
+  console.log("Data with updated config = ", receipt2.events[0].args.toString());
 }
 
 // We recommend this pattern to be able to use async/await everywhere
