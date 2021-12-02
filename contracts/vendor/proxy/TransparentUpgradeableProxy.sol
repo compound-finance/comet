@@ -6,7 +6,7 @@ import "./UpgradeableProxy.sol";
 
 /**
  * @dev This contract implements a proxy that is upgradeable by an admin.
- * @dev Modified from the original OZ Proxy to save 1 SLOAD per delegated call. Admin variable is immutable.
+ * @dev Modified from the original OZ Proxy to save 1 SLOAD per delegated call. Admin variable is immutable, no admin upgrades are allowed.
  *
  * To avoid https://medium.com/nomic-labs-blog/malicious-backdoors-in-ethereum-proxies-62629adf3357[proxy selector
  * clashing], which can potentially be used in an attack, this contract uses the
