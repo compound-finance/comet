@@ -9,11 +9,15 @@ interface ConfigInterface {
 
 contract Protocol {
     ConfigInterface immutable config;
+    uint var1;
+    uint var2;
 
     event Values(uint targetReserves, uint borrowMin);
 
     constructor(address config_) {
         config = ConfigInterface(config_);
+        var1 = 1;
+        var2 = 2;
     }
 
     function getData() public returns (uint, uint) {
@@ -25,5 +29,9 @@ contract Protocol {
         uint borrowMin = abi.decode(data2, (uint));
         emit Values(targetReserves, borrowMin);
         return (targetReserves, borrowMin);
+    }
+
+    function getLocalData() public returns (uint) {
+        return (var1 + var2);
     }
 }
