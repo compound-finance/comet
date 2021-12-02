@@ -21,7 +21,6 @@ contract Protocol {
         (bool success1, bytes memory data1) = address(config).call(abi.encodePacked(config.targetReserves.selector));
         // Ignore success here
         (bool success2, bytes memory data2) = address(config).call(abi.encodePacked(config.borrowMin.selector));
-
         uint targetReserves = abi.decode(data1, (uint));
         uint borrowMin = abi.decode(data2, (uint));
         emit Values(targetReserves, borrowMin);
