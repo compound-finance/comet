@@ -17,7 +17,7 @@ contract ProtocolFactory {
 
     function createProtocol() external returns (address) {
         MockProtocol protocol = new MockProtocol(configurator.targetReserves(), configurator.borrowMin());
-        emit NewProtocol(address(configurator));
+        emit NewProtocol(address(protocol));
         return address(protocol);
     }
 }

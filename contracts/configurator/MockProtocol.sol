@@ -18,4 +18,12 @@ contract MockProtocol {
         return (targetReserves, borrowMin);
     }
 
+    function getTargetReserves() public view returns (uint) {
+        return targetReserves;
+    }
+
+    function getBorrowMin() public view returns (uint) {
+        return borrowMin;
+    }
+
 }
