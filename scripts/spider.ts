@@ -1,13 +1,13 @@
-import { ethers } from 'hardhat';
 import { Contract } from 'ethers';
+import * as path from 'path';
+import * as fs from 'fs';
 import axios from 'axios';
 import { loadContract } from './import';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 /**
  * PROOF OF CONCEPT CRAWLER FOR COMPOUND V2 CONTRACTS
  */
-
-const PROVIDER = new ethers.providers.InfuraProvider;
 
 // A node within the contract dependency tree.
 interface ContractNode {
@@ -25,10 +25,15 @@ interface Rule {
   findChild: (contract: Contract) => Promise<string> | Promise<string[]> | null;
 }
 
-// TODO: Make into script with inputs. Read root contracts from config.
-async function main() {
-  let web = await expand('mainnet', '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B', 'Unitroller');
-  console.log(JSON.stringify(web, null, 4));
+export async function pullConfigs(hre: HardhatRuntimeEnvironment, network: string) {
+  let rootsFile = path.join(__dirname, `../deployments/${network}/roots.json`);
+  let roots = JSON.parse(fs.readFileSync(rootsFile, 'utf-8'));
+  console.log('Reading roots.js: ' + roots);
+  for (let contractName in roots) {
+    let address = roots[contractName];
+    let web = await expand(hre, network, address, contractName);
+    console.log(JSON.stringify(web, null, 4));
+  }
 }
 
 async function getAbi(address: string): Promise<string> {
@@ -48,7 +53,8 @@ async function getAbi(address: string): Promise<string> {
 
 // TODO: Stretch goal - make a generalized rule that can just pull all fields that store
 // an address of a contract.
-function createRules(): Rule[] {
+function createRules(hre: HardhatRuntimeEnvironment): Rule[] {
+  const provider = new hre.ethers.providers.InfuraProvider;
   let rules: Rule[] = [];
   rules.push({
     // Ctoken implementation
@@ -72,7 +78,7 @@ function createRules(): Rule[] {
     findChild: async (contract: Contract) => {
       // Read implementation as proxy.
       const implAbi = await getAbi(await contract.comptrollerImplementation());
-      const proxy = new ethers.Contract(contract.address, implAbi, PROVIDER);
+      const proxy = new hre.ethers.Contract(contract.address, implAbi, provider);
       return await proxy.getAllMarkets();
     }
   });
@@ -82,7 +88,7 @@ function createRules(): Rule[] {
     findChild: async (contract: Contract) => {
       // Read implementation as proxy.
       const implAbi = await getAbi(await contract.comptrollerImplementation());
-      const proxy = new ethers.Contract(contract.address, implAbi, PROVIDER);
+      const proxy = new hre.ethers.Contract(contract.address, implAbi, provider);
       return await proxy.oracle();
     }
   });
@@ -92,7 +98,7 @@ function createRules(): Rule[] {
     findChild: async (contract: Contract) => {
       // Read implementation as proxy.
       const implAbi = await getAbi(await contract.comptrollerImplementation());
-      const proxy = new ethers.Contract(contract.address, implAbi, PROVIDER);
+      const proxy = new hre.ethers.Contract(contract.address, implAbi, provider);
       return await proxy.admin();
     }
   });
@@ -105,12 +111,13 @@ function createRules(): Rule[] {
 // TODO: Need to handle naming of exported configs when multiple dependencies have same contract name (e.g. CTokens).
 // TODO: Can optimize by checking if address already exists in cache and reduce computation that way. Have an option
 // to force overwrite of cache if necessary.
-async function expand(network: string, startingAddress: string, name: string): Promise<ContractNode> {
+async function expand(hre: HardhatRuntimeEnvironment, network: string, startingAddress: string, name: string): Promise<ContractNode> {
   let contractNode: ContractNode;
   let loadedContract = await loadContract('etherscan', network, startingAddress, `../deployments/${network}/cache`, 0);
   const abi = loadedContract.contract.abi;
   const contractName = loadedContract.contract.name;
-  const contract = new ethers.Contract(startingAddress, abi, PROVIDER);
+  const provider = new hre.ethers.providers.InfuraProvider;
+  const contract = new hre.ethers.Contract(startingAddress, abi, provider);
   try {
     const symbol = await contract.symbol();
     name = symbol ? symbol : name;
@@ -118,17 +125,17 @@ async function expand(network: string, startingAddress: string, name: string): P
   let children = [];
 
   // Apply each rule to find child contracts.
-  const rules = createRules();
+  const rules = createRules(hre);
   for (var rule of rules) {
     if (!rule.applies(contractName)) continue;
     try {
       const addresses = await rule.findChild(contract);
       if (typeof addresses === 'string') {
-        children.push(await expand(network, addresses, name + rule.name));
+        children.push(await expand(hre, network, addresses, name + rule.name));
       } else {
         // addresses is string[]
         for (var addr of addresses) {
-          children.push(await expand(network, addr, name + rule.name));
+          children.push(await expand(hre, network, addr, name + rule.name));
         }
       }
     } catch (e) {
@@ -140,12 +147,3 @@ async function expand(network: string, startingAddress: string, name: string): P
   contractNode = { name, contractName, address: startingAddress, children }
   return contractNode;
 }
-
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
