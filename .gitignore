@@ -9,6 +9,7 @@ artifacts/
 build/
 cache/
 dist/
+deployments/*/cache
 
 .env
 coverage/

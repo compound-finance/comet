@@ -1,6 +1,7 @@
 import { ethers } from 'hardhat';
 import { Contract } from 'ethers';
 import axios from 'axios';
+import { loadContract } from './import';
 
 /**
  * PROOF OF CONCEPT CRAWLER FOR COMPOUND V2 CONTRACTS
@@ -24,8 +25,9 @@ interface Rule {
   findChild: (contract: Contract) => Promise<string> | Promise<string[]> | null;
 }
 
+// TODO: Make into script with inputs. Read root contracts from config.
 async function main() {
-  let web = await expand('0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B', 'Unitroller');
+  let web = await expand('mainnet', '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B', 'Unitroller');
   console.log(JSON.stringify(web, null, 4));
 }
 
@@ -38,21 +40,6 @@ async function getAbi(address: string): Promise<string> {
     }
   }).then((response) => {
     return response.data.result;
-  })
-    .catch((error) => {
-      console.log(error);
-    })
-}
-
-async function getContractName(address: string): Promise<string> {
-  return await axios.get('https://api.etherscan.io/api?module=contract', {
-    params: {
-      address,
-      action: 'getsourcecode',
-      apikey: process.env.ETHERSCAN_KEY,
-    }
-  }).then((response) => {
-    return response.data.result[0].ContractName;
   })
     .catch((error) => {
       console.log(error);
@@ -115,11 +102,14 @@ function createRules(): Rule[] {
 
 // DFS expansion starting from root contract.
 // TODO: Return a flat map with {k: address, v: node object} instead. 
-// Can check if address is already visited and reduce computation that way.
-async function expand(startingAddress: string, name: string): Promise<ContractNode> {
+// TODO: Need to handle naming of exported configs when multiple dependencies have same contract name (e.g. CTokens).
+// TODO: Can optimize by checking if address already exists in cache and reduce computation that way. Have an option
+// to force overwrite of cache if necessary.
+async function expand(network: string, startingAddress: string, name: string): Promise<ContractNode> {
   let contractNode: ContractNode;
-  const abi = await getAbi(startingAddress);
-  const contractName = await getContractName(startingAddress);
+  let loadedContract = await loadContract('etherscan', network, startingAddress, `../deployments/${network}/cache`, 0);
+  const abi = loadedContract.contract.abi;
+  const contractName = loadedContract.contract.name;
   const contract = new ethers.Contract(startingAddress, abi, PROVIDER);
   try {
     const symbol = await contract.symbol();
@@ -134,15 +124,15 @@ async function expand(startingAddress: string, name: string): Promise<ContractNo
     try {
       const addresses = await rule.findChild(contract);
       if (typeof addresses === 'string') {
-        children.push(await expand(addresses, name + rule.name));
+        children.push(await expand(network, addresses, name + rule.name));
       } else {
         // addresses is string[]
         for (var addr of addresses) {
-          children.push(await expand(addr, name + rule.name));
+          children.push(await expand(network, addr, name + rule.name));
         }
       }
     } catch (e) {
-      // do nothing
+      console.log(e);
       console.log('rule ' + rule.name + ' does not apply to ' + contractName);
     }
   }
