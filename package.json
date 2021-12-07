@@ -33,7 +33,6 @@
   },
   "repository": "git@github.com:compound-finance/compound-protocol-v2.5.git",
   "dependencies": {
-    "axios": "^0.24.0",
     "dotenv": "^10.0.0"
   }
 }

@@ -79,6 +79,7 @@ function createRelations(): Relations {
 // DFS expansion starting from root contract.
 // TODO: Can optimize by checking if address already exists in cache and reduce computation that way. Have an option
 // to force overwrite of cache if necessary.
+// TODO: Need to think about merging implementation ABIs to proxies.
 async function expand(hre: HardhatRuntimeEnvironment, network: string, relations: Relations, address: address, name: string, visited: Map<string, address>): Promise<ContractNode> {
   const loadedContract = await loadContract('etherscan', network, address, `../deployments/${network}/cache`, 0);
   const abi = loadedContract.contract.abi;
@@ -108,5 +109,6 @@ async function expand(hre: HardhatRuntimeEnvironment, network: string, relations
     }
   }
 
+  // TODO: Write a simplified, flattened set of configs to `config.json`.
   return { name, contractName, address, children };
 }
