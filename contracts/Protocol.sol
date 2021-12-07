@@ -23,12 +23,13 @@ contract Protocol {
 
     mapping(address => mapping(address => bool)) public isPermitted;
 
-    // 232 bits, maybe let's add more bits to fields here up till 256?
+    // 256 bits total
     struct User {
-        int72 userPrincipal;
-        uint96 userBaseTrackingIndex;
-        uint48 userBaseTrackingAccrued;
-        uint16 userAssets;
+        int72 principal;
+        uint96 baseTrackingIndex;
+        uint48 baseTrackingAccrued;
+        uint16 assets;
+        uint24 nonce;
     }
     mapping(address => User) public users;
 
@@ -38,8 +39,6 @@ contract Protocol {
         uint128 collateralTrackingIndex;
     }
     mapping(address => Asset) public assets;
-
-    mapping(address => uint256) public userNonce;
 
     uint256 public constant FACTOR = 1e18;
 
@@ -75,5 +74,97 @@ contract Protocol {
     function getLastAccrualTime() external view returns (uint40) {
         uint40 lastAccrualTime = uint40(borrow.lastAccrualTime) << 24;
         return lastAccrualTime | supply.lastAccrualTime;
+    }
+
+    function setUser(
+        address userAddress,
+        int72 userPrincipal,
+        uint96 userBaseTrackingIndex,
+        uint48 userBaseTrackingAccrued,
+        uint16 userAssets,
+        uint24 userNonce
+    ) external {
+        users[userAddress] = User({
+            principal: userPrincipal,
+            baseTrackingIndex: userBaseTrackingIndex,
+            baseTrackingAccrued: userBaseTrackingAccrued,
+            assets: userAssets,
+            nonce: userNonce
+        });
+    }
+
+    function getUser(address userAddress)
+        external
+        view
+        returns (
+            int72,
+            uint96,
+            uint48,
+            uint16,
+            uint24
+        )
+    {
+        User memory user = users[userAddress];
+        return (
+            user.principal,
+            user.baseTrackingIndex,
+            user.baseTrackingAccrued,
+            user.assets,
+            user.nonce
+        );
+    }
+
+    function setAsset(
+        address assetAddress,
+        uint128 assetTotalCollateral,
+        uint128 assetCollateralTrackingIndex
+    ) external {
+        assets[assetAddress] = Asset({
+            totalCollateral: assetTotalCollateral,
+            collateralTrackingIndex: assetCollateralTrackingIndex
+        });
+    }
+
+    function getAsset(address assetAddress)
+        external
+        view
+        returns (uint128, uint128)
+    {
+        Asset memory asset = assets[assetAddress];
+        return (asset.totalCollateral, asset.collateralTrackingIndex);
+    }
+
+    function getSupply()
+        external
+        view
+        returns (
+            uint72,
+            uint64,
+            uint96,
+            uint8
+        )
+    {
+        return (
+            supply.totalSupplyBase,
+            supply.baseSupplyIndex,
+            supply.trackingSupplyIndex,
+            supply.pauseFlags
+        );
+    }
+
+    function getBorrow()
+        external
+        view
+        returns (
+            uint72,
+            uint64,
+            uint96
+        )
+    {
+        return (
+            borrow.totalBorrowBase,
+            borrow.baseBorrowIndex,
+            borrow.trackingBorrowIndex
+        );
     }
 }
