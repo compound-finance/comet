@@ -40,7 +40,7 @@ export function getEtherscanUrl(network: string): string {
 
 export function post(url, data): Promise<object> {
   return new Promise((resolve, reject) => {
-    request.post(url, {form: data}, (err, httpResponse, body) => {
+    request.post(url, { form: data }, (err, httpResponse, body) => {
       if (err) {
         reject(err);
       } else {
@@ -50,13 +50,13 @@ export function post(url, data): Promise<object> {
   });
 }
 
-export function get(url, data, parser: any=JSON.parse): Promise<object | string> {
+export function get(url, data, parser: any = JSON.parse): Promise<object | string> {
   return new Promise((resolve, reject) => {
-    request.get(url, {form: data}, (err, httpResponse, body) => {
+    request.get(url, { form: data }, (err, httpResponse, body) => {
       if (err) {
         reject(err);
       } else {
-        resolve(parser ? parser(body): body);
+        resolve(parser ? parser(body) : body);
       }
     });
   });

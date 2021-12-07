@@ -5,7 +5,10 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 /**
- * PROOF OF CONCEPT CRAWLER FOR COMPOUND V2 CONTRACTS
+ * PROOF OF CONCEPT CRAWLER FOR COMPOUND V2 CONTRACTS.
+ * 
+ * Can be easily adapted for Comet or any other system of contracts by
+ * modifying the createRelations() method.
  */
 
 type address = string;
@@ -74,12 +77,10 @@ function createRelations(): Relations {
 }
 
 // DFS expansion starting from root contract.
-// TODO: Need to handle naming of exported configs when multiple dependencies have same contract name (e.g. CTokens).
 // TODO: Can optimize by checking if address already exists in cache and reduce computation that way. Have an option
 // to force overwrite of cache if necessary.
 async function expand(hre: HardhatRuntimeEnvironment, network: string, relations: Relations, address: address, name: string, visited: Map<string, address>): Promise<ContractNode> {
-  let contractNode: ContractNode;
-  let loadedContract = await loadContract('etherscan', network, address, `../deployments/${network}/cache`, 0);
+  const loadedContract = await loadContract('etherscan', network, address, `../deployments/${network}/cache`, 0);
   const abi = loadedContract.contract.abi;
   const contractName = loadedContract.contract.name;
   const provider = new hre.ethers.providers.InfuraProvider;
@@ -87,18 +88,18 @@ async function expand(hre: HardhatRuntimeEnvironment, network: string, relations
   visited.set(contractName, address);
 
   // This is only used to better label ERC20 tokens.
-  try {
+  if (typeof contract.symbol === 'function') {
     const symbol = await contract.symbol();
     name = symbol ? symbol : name;
-  } catch { }
+  }
 
   let children = [];
   // Iterate through dependencies if contract has any relations.
   if (contractName in relations) {
-    let relation = relations[contractName];
+    const relation = relations[contractName];
     // If contract has proxy, set the proxy as the contract to read from.
     if (relation.proxy) {
-      let proxyAddr = visited.get(relation.proxy); // The proxy should always exist in the map already.
+      const proxyAddr = visited.get(relation.proxy); // The proxy should always exist in the map already.
       contract = new hre.ethers.Contract(proxyAddr, abi, provider);
     }
     const dependencies: address[] = await relations[contractName].relations(contract);
@@ -107,6 +108,5 @@ async function expand(hre: HardhatRuntimeEnvironment, network: string, relations
     }
   }
 
-  contractNode = { name, contractName, address, children }
-  return contractNode;
+  return { name, contractName, address, children };
 }
