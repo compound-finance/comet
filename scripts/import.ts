@@ -111,7 +111,7 @@ export async function loadEtherscanContract(network: string, address: string, ou
   };
 
   outdir = path.join(__dirname, outdir);
-  let outfile = path.join(outdir, `${contract}.json`);
+  let outfile = path.join(outdir, `${address}.json`);
 
   await fs.promises.mkdir(outdir, { recursive: true }).catch(console.error);
   await util.promisify(fs.writeFile)(outfile, JSON.stringify(contractBuild, null, 2));
