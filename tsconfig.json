@@ -3,7 +3,6 @@
     "target": "es2018",
     "module": "commonjs",
     "esModuleInterop": true,
-    "resolveJsonModule": true,
     "outDir": "dist"
   },
   "include": ["./scripts", "./test"],
