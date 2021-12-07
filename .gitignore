@@ -10,6 +10,7 @@ build/
 cache/
 dist/
 deployments/*/cache
+deployments/*/config.json
 
 .env
 coverage/

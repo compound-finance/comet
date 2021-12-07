@@ -19,7 +19,7 @@ interface ContractNode {
   contractName: string,
   // abi,
   address: address,
-  children: ContractNode[], // Make into a map to remove dupes
+  children: ContractNode[],
 }
 
 interface Relation {
@@ -33,18 +33,23 @@ interface Relations {
 }
 
 export async function pullConfigs(hre: HardhatRuntimeEnvironment, network: string) {
-  let rootsFile = path.join(__dirname, `../deployments/${network}/roots.json`);
+  let configDir = path.join(__dirname, `../deployments/${network}`);
+  let rootsFile = path.join(configDir, `roots.json`);
   let roots = JSON.parse(fs.readFileSync(rootsFile, 'utf-8'));
   console.log('Reading roots.js: ' + JSON.stringify(roots));
   const relations = createRelations();
+  let visited = new Map<address, string>(); // mapping from address to contract name
   // Start branching out from each root contract.
+  let config = {};
   for (let contractName in roots) {
     let address = roots[contractName];
-    let web = await expand(hre, network, relations, address, contractName, new Map());
-    console.log(JSON.stringify(web, null, 4));
+    let rootNode = await expand(hre, network, relations, address, contractName, visited);
+    mergeConfig(config, rootNode);
   }
+  // Write config to file
+  let configFile = path.join(configDir, `config.json`);
+  fs.writeFileSync(configFile, JSON.stringify(config, null, 4));
 }
-
 function createRelations(): Relations {
   let relations: Relations = {
     'CErc20Delegator': {
@@ -76,17 +81,28 @@ function createRelations(): Relations {
   return relations;
 }
 
+function mergeConfig(config, rootNode: ContractNode) {
+  let contractName = rootNode.contractName;
+  // TODO: Naming of contracts could be better.
+  if (rootNode.name.toLowerCase() !== rootNode.contractName.toLowerCase()) {
+    contractName = rootNode.name + rootNode.contractName;
+  }
+  config[contractName] = rootNode.address;
+  for (let child of rootNode.children) {
+    mergeConfig(config, child);
+  }
+}
+
 // DFS expansion starting from root contract.
-// TODO: Can optimize by checking if address already exists in cache and reduce computation that way. Have an option
-// to force overwrite of cache if necessary.
+// TODO: Short-circuit function if address has already been visited. Though some CTokens share the same Delegator contract.
 // TODO: Need to think about merging implementation ABIs to proxies.
-async function expand(hre: HardhatRuntimeEnvironment, network: string, relations: Relations, address: address, name: string, visited: Map<string, address>): Promise<ContractNode> {
+async function expand(hre: HardhatRuntimeEnvironment, network: string, relations: Relations, address: address, name: string, visited: Map<address, string>): Promise<ContractNode> {
   const loadedContract = await loadContract('etherscan', network, address, `../deployments/${network}/cache`, 0);
   const abi = loadedContract.contract.abi;
   const contractName = loadedContract.contract.name;
   const provider = new hre.ethers.providers.InfuraProvider;
   let contract = new hre.ethers.Contract(address, abi, provider);
-  visited.set(contractName, address);
+  visited.set(address, contractName);
 
   // This is only used to better label ERC20 tokens.
   if (typeof contract.symbol === 'function') {
@@ -100,7 +116,7 @@ async function expand(hre: HardhatRuntimeEnvironment, network: string, relations
     const relation = relations[contractName];
     // If contract has proxy, set the proxy as the contract to read from.
     if (relation.proxy) {
-      const proxyAddr = visited.get(relation.proxy); // The proxy should always exist in the map already.
+      const proxyAddr = findAddressByName(relation.proxy, visited); // The proxy should always exist in the map already.
       contract = new hre.ethers.Contract(proxyAddr, abi, provider);
     }
     const dependencies: address[] = await relations[contractName].relations(contract);
@@ -109,6 +125,12 @@ async function expand(hre: HardhatRuntimeEnvironment, network: string, relations
     }
   }
 
-  // TODO: Write a simplified, flattened set of configs to `config.json`.
   return { name, contractName, address, children };
+}
+
+function findAddressByName(name: string, addressesToName: Map<address, string>): address {
+  for (let [k, v] of addressesToName) {
+    if (v === name) return k;
+  }
+  throw new Error('Spider Error: Cannot find contract address by name.');
 }
