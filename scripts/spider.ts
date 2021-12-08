@@ -92,10 +92,10 @@ async function expand(hre: HardhatRuntimeEnvironment, relations: Relations, addr
 async function loadContractConfig(hre: HardhatRuntimeEnvironment, address: Address) {
   const network = hre.network.name;
   const outdir = path.join(__dirname, '..', 'deployments', network, 'cache');
-  // Hardhat-import plugin (fork of Saddle import)
   const outfile = path.join(outdir, `${address}.json`);
   return await fs.promises.readFile(outfile, 'utf-8')
     .then((config) => JSON.parse(config))
+    // Hardhat-import plugin (fork of Saddle import)
     .catch(async () => await hre.run('import', { address, outdir }));
 }
 
