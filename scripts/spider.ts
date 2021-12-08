@@ -1,35 +1,22 @@
-import { Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { Address, Relations, createRelations } from './spider/relation';
 import * as path from 'path';
 import * as fs from 'fs';
-import * as util from 'util';
 
 /**
  * PROOF OF CONCEPT CRAWLER FOR COMPOUND V2 CONTRACTS.
  * 
  * Can be easily adapted for Comet or any other system of contracts by
- * modifying the createRelations() method.
+ * modifying the createRelations() method in `scripts/spider/relation.ts`.
  */
-
-type address = string;
 
 // A node within the contract dependency tree.
 interface ContractNode {
   name: string,
   contractName: string,
   // abi,
-  address: address,
+  address: Address,
   children: ContractNode[],
-}
-
-interface Relation {
-  // TODO: What if proxy's contract name is non-unique?
-  proxy?: string; // contract name of proxy, if one exists.
-  relations: (contract: Contract) => Promise<address[]>;
-}
-
-interface Relations {
-  [contractName: string]: Relation;
 }
 
 export async function pullConfigs(hre: HardhatRuntimeEnvironment) {
@@ -39,7 +26,7 @@ export async function pullConfigs(hre: HardhatRuntimeEnvironment) {
   const roots = JSON.parse(await fs.promises.readFile(rootsFile, 'utf-8'));
   console.log('Reading roots.js: ' + JSON.stringify(roots));
   const relations = createRelations();
-  let visited = new Map<address, string>(); // mapping from address to contract name
+  let visited = new Map<Address, string>(); // mapping from address to contract name
   // Start branching out from each root contract.
   let config = {};
   for (let contractName in roots) {
@@ -50,36 +37,6 @@ export async function pullConfigs(hre: HardhatRuntimeEnvironment) {
   // Write config to file
   let configFile = path.join(configDir, 'config.json');
   await fs.promises.writeFile(configFile, JSON.stringify(config, null, 4));
-}
-function createRelations(): Relations {
-  let relations: Relations = {
-    'CErc20Delegator': {
-      relations: async (contract: Contract) => {
-        return [
-          await contract.implementation(),
-          await contract.underlying(),
-        ];
-      },
-    },
-    'Unitroller': {
-      relations: async (contract: Contract) => {
-        return [
-          await contract.comptrollerImplementation(),
-        ];
-      },
-    },
-    'Comptroller': {
-      proxy: 'Unitroller',
-      relations: async (contract: Contract) => {
-        return [
-          ...(await contract.getAllMarkets()),
-          await contract.oracle(),
-          await contract.admin(),
-        ];
-      },
-    },
-  };
-  return relations;
 }
 
 function mergeConfig(config, rootNode: ContractNode) {
@@ -97,7 +54,7 @@ function mergeConfig(config, rootNode: ContractNode) {
 // DFS expansion starting from root contract.
 // TODO: Short-circuit function if address has already been visited. Though some CTokens share the same Delegator contract.
 // TODO: Need to think about merging implementation ABIs to proxies.
-async function expand(hre: HardhatRuntimeEnvironment, relations: Relations, address: address, name: string, visited: Map<address, string>): Promise<ContractNode> {
+async function expand(hre: HardhatRuntimeEnvironment, relations: Relations, address: Address, name: string, visited: Map<Address, string>): Promise<ContractNode> {
   const network = hre.network.name;
   const outdir = path.join(__dirname, '..', 'deployments', network, 'cache');
   const loadedContract = await hre.run('import', { address, outdir }); // hardhat-import plugin (Saddle import)
@@ -123,7 +80,7 @@ async function expand(hre: HardhatRuntimeEnvironment, relations: Relations, addr
       const proxyAddr = findAddressByName(relation.proxy, visited); // The proxy should always exist in the map already.
       contract = new hre.ethers.Contract(proxyAddr, abi, provider);
     }
-    const dependencies: address[] = await relations[contractName].relations(contract);
+    const dependencies: Address[] = await relations[contractName].relations(contract);
     for (let addr of dependencies) {
       children.push(await expand(hre, relations, addr, name, visited));
     }
@@ -132,7 +89,7 @@ async function expand(hre: HardhatRuntimeEnvironment, relations: Relations, addr
   return { name, contractName, address, children };
 }
 
-function findAddressByName(name: string, addressesToName: Map<address, string>): address {
+function findAddressByName(name: string, addressesToName: Map<Address, string>): Address {
   for (let [k, v] of addressesToName) {
     if (v === name) return k;
   }
