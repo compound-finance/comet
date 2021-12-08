@@ -44,4 +44,4 @@ This is just a prototype and it currently pulls relevant contracts for V2.
 
 > Note: Make sure $ETHERSCAN_KEY is set in your `.env`.
 
-`npx hardhat spider --chain mainnet`
+`npx hardhat spider --network mainnet`

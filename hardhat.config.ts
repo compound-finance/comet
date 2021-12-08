@@ -2,9 +2,11 @@ import 'dotenv/config';
 
 import { HardhatUserConfig } from 'hardhat/types'
 import { task } from 'hardhat/config';
+import '@compound-finance/hardhat-import';
 import '@nomiclabs/hardhat-waffle';
-import '@nomiclabs/hardhat-ethers'
-import '@typechain/hardhat'
+import '@nomiclabs/hardhat-ethers';
+import '@nomiclabs/hardhat-etherscan';
+import '@typechain/hardhat';
 import 'solidity-coverage';
 import 'hardhat-gas-reporter';
 
@@ -78,6 +80,11 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
         mnemonic: 'myth like bonus scare over problem client lizard pioneer submit female collect',
       },
     },
+  },
+  etherscan: {
+    // Your API key for Etherscan
+    // Obtain one at https://etherscan.io/
+    apiKey: process.env.ETHERSCAN_KEY,
   },
   gasReporter: {
     enabled: (process.env.REPORT_GAS) ? true : false,

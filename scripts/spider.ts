@@ -1,5 +1,4 @@
 import { Contract } from 'ethers';
-import { loadContract } from './import';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -32,10 +31,11 @@ interface Relations {
   [contractName: string]: Relation;
 }
 
-export async function pullConfigs(hre: HardhatRuntimeEnvironment, network: string) {
-  let configDir = path.join(__dirname, `../deployments/${network}`);
-  let rootsFile = path.join(configDir, `roots.json`);
-  let roots = JSON.parse(fs.readFileSync(rootsFile, 'utf-8'));
+export async function pullConfigs(hre: HardhatRuntimeEnvironment) {
+  const network = hre.network.name;
+  const configDir = path.join(__dirname, `../deployments/${network}`);
+  const rootsFile = path.join(configDir, `roots.json`);
+  const roots = JSON.parse(fs.readFileSync(rootsFile, 'utf-8'));
   console.log('Reading roots.js: ' + JSON.stringify(roots));
   const relations = createRelations();
   let visited = new Map<address, string>(); // mapping from address to contract name
@@ -43,7 +43,7 @@ export async function pullConfigs(hre: HardhatRuntimeEnvironment, network: strin
   let config = {};
   for (let contractName in roots) {
     let address = roots[contractName];
-    let rootNode = await expand(hre, network, relations, address, contractName, visited);
+    let rootNode = await expand(hre, relations, address, contractName, visited);
     mergeConfig(config, rootNode);
   }
   // Write config to file
@@ -96,10 +96,13 @@ function mergeConfig(config, rootNode: ContractNode) {
 // DFS expansion starting from root contract.
 // TODO: Short-circuit function if address has already been visited. Though some CTokens share the same Delegator contract.
 // TODO: Need to think about merging implementation ABIs to proxies.
-async function expand(hre: HardhatRuntimeEnvironment, network: string, relations: Relations, address: address, name: string, visited: Map<address, string>): Promise<ContractNode> {
-  const loadedContract = await loadContract('etherscan', network, address, `../deployments/${network}/cache`, 0);
-  const abi = loadedContract.contract.abi;
-  const contractName = loadedContract.contract.name;
+async function expand(hre: HardhatRuntimeEnvironment, relations: Relations, address: address, name: string, visited: Map<address, string>): Promise<ContractNode> {
+  const network = hre.network.name;
+  const outdir = path.join(__dirname, `../deployments/${network}/cache`);
+  const loadedContract = await hre.run("import", { address, outdir }); // hardhat-import plugin (Saddle import)
+  const key = Object.keys(loadedContract.contracts)[0]; // TODO: assert contracts length is 1
+  const abi = loadedContract.contracts[key].abi;
+  const contractName = loadedContract.contracts[key].name;
   const provider = new hre.ethers.providers.InfuraProvider;
   let contract = new hre.ethers.Contract(address, abi, provider);
   visited.set(address, contractName);
@@ -121,7 +124,7 @@ async function expand(hre: HardhatRuntimeEnvironment, network: string, relations
     }
     const dependencies: address[] = await relations[contractName].relations(contract);
     for (let addr of dependencies) {
-      children.push(await expand(hre, network, relations, addr, name, visited));
+      children.push(await expand(hre, relations, addr, name, visited));
     }
   }
 
