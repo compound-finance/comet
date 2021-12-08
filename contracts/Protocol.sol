@@ -42,6 +42,10 @@ contract Protocol {
 
     uint256 public constant FACTOR = 1e18;
 
+    uint72 public res1;
+    uint64 public res2;
+    uint96 public res3;
+
     constructor() {
         // Split last accrual time between 2 structs
         uint40 lastAccrualTime = uint40(block.timestamp);
@@ -72,7 +76,7 @@ contract Protocol {
     }
 
     function getLastAccrualTime() external view returns (uint40) {
-        uint40 lastAccrualTime = uint40(borrow.lastAccrualTime) << 24;
+        uint40 lastAccrualTime = uint40(borrow.lastAccrualTime) << 16;
         return lastAccrualTime | supply.lastAccrualTime;
     }
 
@@ -166,5 +170,11 @@ contract Protocol {
             borrow.baseBorrowIndex,
             borrow.trackingBorrowIndex
         );
+    }
+
+    function experiment() external {
+        res1 = supply.totalSupplyBase + borrow.totalBorrowBase;
+        res2 = supply.baseSupplyIndex + borrow.baseBorrowIndex;
+        res3 = supply.trackingSupplyIndex + borrow.trackingBorrowIndex;
     }
 }

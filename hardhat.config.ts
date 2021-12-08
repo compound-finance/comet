@@ -4,6 +4,7 @@ import '@nomiclabs/hardhat-ethers'
 import '@typechain/hardhat'
 import 'solidity-coverage';
 import 'hardhat-gas-reporter';
+import '@tenderly/hardhat-tenderly';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners())
@@ -33,4 +34,13 @@ export default {
     outDir: 'build/types',
     target: 'ethers-v5',
   },
+  tenderly: {
+    username: "freeta",
+    project: "project"
+  },
+  networks: {
+    local: {
+      url: 'http://127.0.0.1:8545'
+    }
+  }
 };
