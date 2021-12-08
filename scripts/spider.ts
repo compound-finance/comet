@@ -2,6 +2,7 @@ import { Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as util from 'util';
 
 /**
  * PROOF OF CONCEPT CRAWLER FOR COMPOUND V2 CONTRACTS.
@@ -33,9 +34,9 @@ interface Relations {
 
 export async function pullConfigs(hre: HardhatRuntimeEnvironment) {
   const network = hre.network.name;
-  const configDir = path.join(__dirname, `../deployments/${network}`);
-  const rootsFile = path.join(configDir, `roots.json`);
-  const roots = JSON.parse(fs.readFileSync(rootsFile, 'utf-8'));
+  const configDir = path.join(__dirname, '..', 'deployments', network);
+  const rootsFile = path.join(configDir, 'roots.json');
+  const roots = JSON.parse(await fs.promises.readFile(rootsFile, 'utf-8'));
   console.log('Reading roots.js: ' + JSON.stringify(roots));
   const relations = createRelations();
   let visited = new Map<address, string>(); // mapping from address to contract name
@@ -47,8 +48,8 @@ export async function pullConfigs(hre: HardhatRuntimeEnvironment) {
     mergeConfig(config, rootNode);
   }
   // Write config to file
-  let configFile = path.join(configDir, `config.json`);
-  fs.writeFileSync(configFile, JSON.stringify(config, null, 4));
+  let configFile = path.join(configDir, 'config.json');
+  await fs.promises.writeFile(configFile, JSON.stringify(config, null, 4));
 }
 function createRelations(): Relations {
   let relations: Relations = {
@@ -98,8 +99,8 @@ function mergeConfig(config, rootNode: ContractNode) {
 // TODO: Need to think about merging implementation ABIs to proxies.
 async function expand(hre: HardhatRuntimeEnvironment, relations: Relations, address: address, name: string, visited: Map<address, string>): Promise<ContractNode> {
   const network = hre.network.name;
-  const outdir = path.join(__dirname, `../deployments/${network}/cache`);
-  const loadedContract = await hre.run("import", { address, outdir }); // hardhat-import plugin (Saddle import)
+  const outdir = path.join(__dirname, '..', 'deployments', network, 'cache');
+  const loadedContract = await hre.run('import', { address, outdir }); // hardhat-import plugin (Saddle import)
   const key = Object.keys(loadedContract.contracts)[0]; // TODO: assert contracts length is 1
   const abi = loadedContract.contracts[key].abi;
   const contractName = loadedContract.contracts[key].name;
