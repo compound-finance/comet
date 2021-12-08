@@ -7,6 +7,8 @@
     "build": "hardhat compile",
     "clean": "hardhat clean && rm -rf build/ cache/ coverage* dist/",
     "gas": "REPORT_GAS=true yarn test",
+    "lint-contracts": "solhint 'contracts/**/*.sol'",
+    "lint-contracts:fix": "solhint --fix 'contracts/**/*.sol'",
     "test": "hardhat test",
     "test:coverage": "hardhat coverage"
   },
@@ -28,6 +30,7 @@
     "ethers": "^5.5.1",
     "hardhat": "^2.6.7",
     "hardhat-gas-reporter": "^1.0.4",
+    "solhint": "^3.3.6",
     "solidity-coverage": "^0.7.17",
     "ts-node": "^10.4.0",
     "typechain": "^6.0.2",
