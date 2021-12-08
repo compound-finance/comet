@@ -55,9 +55,7 @@ function mergeConfig(config, rootNode: ContractNode) {
 // TODO: Short-circuit function if address has already been visited. Though some CTokens share the same Delegator contract.
 // TODO: Need to think about merging implementation ABIs to proxies.
 async function expand(hre: HardhatRuntimeEnvironment, relations: Relations, address: Address, name: string, visited: Map<Address, string>): Promise<ContractNode> {
-  const network = hre.network.name;
-  const outdir = path.join(__dirname, '..', 'deployments', network, 'cache');
-  const loadedContract = await hre.run('import', { address, outdir }); // hardhat-import plugin (Saddle import)
+  const loadedContract = await loadContractConfig(hre, address);
   const key = Object.keys(loadedContract.contracts)[0]; // TODO: assert contracts length is 1
   const abi = loadedContract.contracts[key].abi;
   const contractName = loadedContract.contracts[key].name;
@@ -87,6 +85,18 @@ async function expand(hre: HardhatRuntimeEnvironment, relations: Relations, addr
   }
 
   return { name, contractName, address, children };
+}
+
+// Loads a contract's config by reading it from cache or pulling it from Etherscan if it does not exist.
+// TODO: Have an command-line argument to override all cached configs.
+async function loadContractConfig(hre: HardhatRuntimeEnvironment, address: Address) {
+  const network = hre.network.name;
+  const outdir = path.join(__dirname, '..', 'deployments', network, 'cache');
+  // Hardhat-import plugin (fork of Saddle import)
+  const outfile = path.join(outdir, `${address}.json`);
+  return await fs.promises.readFile(outfile, 'utf-8')
+    .then((config) => JSON.parse(config))
+    .catch(async () => await hre.run('import', { address, outdir }));
 }
 
 function findAddressByName(name: string, addressesToName: Map<Address, string>): Address {
