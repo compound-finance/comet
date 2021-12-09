@@ -21,7 +21,7 @@ async function main() {
 
   await hre.tenderly.persistArtifacts({
     name: "Protocol",
-    address:protocol.address
+    address: protocol.address
   });
 
   console.log('Protocol deployed to:', protocol.address);
@@ -35,8 +35,21 @@ async function main() {
   await setAssetTx.wait();
 
   // Measure gas for this transaction
-  const experimentTx = await protocol.experiment();
-  await experimentTx.wait();
+  const totalsTx = await protocol.setTotals();
+  await totalsTx.wait();
+
+  // Count SSTOREs for this transaction
+  const totalsTrace = await hre.network.provider.send("debug_traceTransaction", [
+    totalsTx.hash,
+  ]);
+  let sstoreCount = 0
+  totalsTrace.structLogs.forEach(elem => {
+    if (elem.op == 'SSTORE') {
+      sstoreCount++;
+      console.log("Elem = ", elem);
+    }
+  });
+  console.log("TOTALS SSTORE count = ", sstoreCount);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

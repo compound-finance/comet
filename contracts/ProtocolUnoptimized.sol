@@ -11,12 +11,6 @@ contract ProtocolUnoptimized {
     uint256 public trackingBorrowIndex;
     uint256 public lastAccrualTime;
 
-    uint256 public res1;
-    uint256 public res2;
-    uint256 public res3;
-    uint256 public res4;
-    uint256 public res5;
-
     mapping(address => mapping(address => bool)) public isPermitted;
 
     struct User {
@@ -132,11 +126,15 @@ contract ProtocolUnoptimized {
         );
     }
 
-    function experiment() external {
-        res1 = totalSupplyBase + totalBorrowBase;
-        res2 = baseSupplyIndex + baseBorrowIndex;
-        res3 = trackingSupplyIndex + trackingBorrowIndex;
-        res4 = pauseFlags;
-        res5 = lastAccrualTime;
+     function setTotals() external {
+        lastAccrualTime = block.timestamp;
+
+        baseBorrowIndex = FACTOR;
+        baseSupplyIndex = FACTOR;
+        trackingSupplyIndex = FACTOR;
+        trackingBorrowIndex = FACTOR;
+
+        pauseFlags = 0;
+        totalSupplyBase = 0;
     }
 }

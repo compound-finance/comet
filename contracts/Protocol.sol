@@ -2,13 +2,12 @@
 pragma solidity ^0.8.0;
 
 contract Protocol {
-    // 512 bits total
+    // 512 bits total = 2 slots
     struct Totals {
         // 1st slot
         uint96 trackingSupplyIndex;
         uint96 trackingBorrowIndex;
         uint64 baseSupplyIndex;
-
         // 2nd slot
         uint64 baseBorrowIndex;
         uint72 totalSupplyBase;
@@ -35,34 +34,20 @@ contract Protocol {
         uint128 collateralTrackingIndex;
     }
     mapping(address => Asset) public assets;
-    mapping(address => uint) public userNonces;
+    mapping(address => uint256) public userNonces;
 
     uint256 public constant FACTOR = 1e18;
 
-    uint72 public res1;
-    uint64 public res2;
-    uint96 public res3;
-    uint8 public res4;
-    uint40 public res5;
-
     constructor() {
-        // Split last accrual time between 2 structs
-        uint40 lastAccrualTime = uint40(block.timestamp);
-
-        uint64 baseBorrowIndex = uint64(FACTOR);
-        uint64 baseSupplyIndex = uint64(FACTOR);
-        uint96 trackingSupplyIndex = uint64(FACTOR);
-        uint96 trackingBorrowIndex = uint64(FACTOR);
-
         totals = Totals({
             totalSupplyBase: 0,
-            baseSupplyIndex: baseSupplyIndex,
-            trackingSupplyIndex: trackingSupplyIndex,
+            baseSupplyIndex: uint64(FACTOR),
+            trackingSupplyIndex: uint96(FACTOR),
             totalBorrowBase: 0,
-            baseBorrowIndex: baseBorrowIndex,
-            trackingBorrowIndex: trackingBorrowIndex,
+            baseBorrowIndex: uint64(FACTOR),
+            trackingBorrowIndex: uint96(FACTOR),
             pauseFlags: 0,
-            lastAccrualTime: lastAccrualTime
+            lastAccrualTime: uint40(block.timestamp)
         });
     }
 
@@ -146,11 +131,16 @@ contract Protocol {
         );
     }
 
-    function experiment() external {
-        res1 = totals.totalSupplyBase + totals.totalBorrowBase;
-        res2 = totals.baseSupplyIndex + totals.baseBorrowIndex;
-        res3 = totals.trackingSupplyIndex + totals.trackingBorrowIndex;
-        res4 = totals.pauseFlags;
-        res5 = totals.lastAccrualTime;
+    function setTotals() external {
+        totals = Totals({
+            totalSupplyBase: 0,
+            baseSupplyIndex: uint64(FACTOR),
+            trackingSupplyIndex: uint96(FACTOR),
+            totalBorrowBase: 0,
+            baseBorrowIndex: uint64(FACTOR),
+            trackingBorrowIndex: uint96(FACTOR),
+            pauseFlags: 0,
+            lastAccrualTime: uint40(block.timestamp)
+        });
     }
 }
