@@ -2,34 +2,30 @@
 pragma solidity ^0.8.0;
 
 contract Protocol {
-    // 256 bits total
-    struct Supply {
-        uint72 totalSupplyBase;
-        uint64 baseSupplyIndex;
+    // 512 bits total
+    struct Totals {
+        // 1st slot
         uint96 trackingSupplyIndex;
-        uint8 pauseFlags;
-        uint16 lastAccrualTime;
-    }
-    Supply public supply;
-
-    // 256 bits total
-    struct Borrow {
-        uint72 totalBorrowBase;
-        uint64 baseBorrowIndex;
         uint96 trackingBorrowIndex;
-        uint24 lastAccrualTime;
+        uint64 baseSupplyIndex;
+
+        // 2nd slot
+        uint64 baseBorrowIndex;
+        uint72 totalSupplyBase;
+        uint72 totalBorrowBase;
+        uint40 lastAccrualTime;
+        uint8 pauseFlags;
     }
-    Borrow public borrow;
+    Totals public totals;
 
     mapping(address => mapping(address => bool)) public isPermitted;
 
-    // 256 bits total
+    // 232 bits total, 24 reserved
     struct User {
         int72 principal;
         uint96 baseTrackingIndex;
         uint48 baseTrackingAccrued;
         uint16 assets;
-        uint24 nonce;
     }
     mapping(address => User) public users;
 
@@ -39,45 +35,35 @@ contract Protocol {
         uint128 collateralTrackingIndex;
     }
     mapping(address => Asset) public assets;
+    mapping(address => uint) public userNonces;
 
     uint256 public constant FACTOR = 1e18;
 
     uint72 public res1;
     uint64 public res2;
     uint96 public res3;
+    uint8 public res4;
+    uint40 public res5;
 
     constructor() {
         // Split last accrual time between 2 structs
         uint40 lastAccrualTime = uint40(block.timestamp);
-        // Get last 16 bits
-        uint16 supplyLastAccrualTime = uint16(lastAccrualTime & 65535);
-        // Get first 24 bits
-        uint24 borrowLastAccrualTime = uint24(lastAccrualTime >> 16);
 
         uint64 baseBorrowIndex = uint64(FACTOR);
         uint64 baseSupplyIndex = uint64(FACTOR);
         uint96 trackingSupplyIndex = uint64(FACTOR);
         uint96 trackingBorrowIndex = uint64(FACTOR);
 
-        supply = Supply({
+        totals = Totals({
             totalSupplyBase: 0,
             baseSupplyIndex: baseSupplyIndex,
             trackingSupplyIndex: trackingSupplyIndex,
-            pauseFlags: 0,
-            lastAccrualTime: supplyLastAccrualTime
-        });
-
-        borrow = Borrow({
             totalBorrowBase: 0,
             baseBorrowIndex: baseBorrowIndex,
             trackingBorrowIndex: trackingBorrowIndex,
-            lastAccrualTime: borrowLastAccrualTime
+            pauseFlags: 0,
+            lastAccrualTime: lastAccrualTime
         });
-    }
-
-    function getLastAccrualTime() external view returns (uint40) {
-        uint40 lastAccrualTime = uint40(borrow.lastAccrualTime) << 16;
-        return lastAccrualTime | supply.lastAccrualTime;
     }
 
     function setUser(
@@ -85,15 +71,13 @@ contract Protocol {
         int72 userPrincipal,
         uint96 userBaseTrackingIndex,
         uint48 userBaseTrackingAccrued,
-        uint16 userAssets,
-        uint24 userNonce
+        uint16 userAssets
     ) external {
         users[userAddress] = User({
             principal: userPrincipal,
             baseTrackingIndex: userBaseTrackingIndex,
             baseTrackingAccrued: userBaseTrackingAccrued,
-            assets: userAssets,
-            nonce: userNonce
+            assets: userAssets
         });
     }
 
@@ -104,8 +88,7 @@ contract Protocol {
             int72,
             uint96,
             uint48,
-            uint16,
-            uint24
+            uint16
         )
     {
         User memory user = users[userAddress];
@@ -113,8 +96,7 @@ contract Protocol {
             user.principal,
             user.baseTrackingIndex,
             user.baseTrackingAccrued,
-            user.assets,
-            user.nonce
+            user.assets
         );
     }
 
@@ -138,43 +120,37 @@ contract Protocol {
         return (asset.totalCollateral, asset.collateralTrackingIndex);
     }
 
-    function getSupply()
+    function getTotals()
         external
         view
         returns (
             uint72,
+            uint72,
+            uint64,
             uint64,
             uint96,
-            uint8
+            uint96,
+            uint8,
+            uint40
         )
     {
         return (
-            supply.totalSupplyBase,
-            supply.baseSupplyIndex,
-            supply.trackingSupplyIndex,
-            supply.pauseFlags
-        );
-    }
-
-    function getBorrow()
-        external
-        view
-        returns (
-            uint72,
-            uint64,
-            uint96
-        )
-    {
-        return (
-            borrow.totalBorrowBase,
-            borrow.baseBorrowIndex,
-            borrow.trackingBorrowIndex
+            totals.totalSupplyBase,
+            totals.totalBorrowBase,
+            totals.baseSupplyIndex,
+            totals.baseBorrowIndex,
+            totals.trackingSupplyIndex,
+            totals.trackingBorrowIndex,
+            totals.pauseFlags,
+            totals.lastAccrualTime
         );
     }
 
     function experiment() external {
-        res1 = supply.totalSupplyBase + borrow.totalBorrowBase;
-        res2 = supply.baseSupplyIndex + borrow.baseBorrowIndex;
-        res3 = supply.trackingSupplyIndex + borrow.trackingBorrowIndex;
+        res1 = totals.totalSupplyBase + totals.totalBorrowBase;
+        res2 = totals.baseSupplyIndex + totals.baseBorrowIndex;
+        res3 = totals.trackingSupplyIndex + totals.trackingBorrowIndex;
+        res4 = totals.pauseFlags;
+        res5 = totals.lastAccrualTime;
     }
 }

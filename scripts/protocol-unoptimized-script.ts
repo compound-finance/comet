@@ -28,15 +28,7 @@ async function main() {
 
   const [user, asset] = await hre.ethers.getSigners();
 
-  // Get data from initial config
-  const lastAccrualTime = await protocol.getLastAccrualTime();
-  const [totalSupplyBase, baseSupplyIndex, trackingSupplyIndex, pauseFlags] = await protocol.getSupply();
-  const [totalBorrowBase, totalBorrowIndex, trackingBorrowIndex] = await protocol.getBorrow();
-  console.log("Last accrual time = ", lastAccrualTime);
-  console.log(`Supply: ${totalSupplyBase.toString()}, ${baseSupplyIndex.toString()}, ${trackingSupplyIndex.toString()} ${pauseFlags}`);
-  console.log(`Borrow ${totalBorrowBase.toString()}, ${totalBorrowIndex.toString()}, ${trackingBorrowIndex.toString()}`);
-
-  const setUserTx = await protocol.setUser(user.address, 1, 1, 1, 1, 1);
+  const setUserTx = await protocol.setUser(user.address, 1, 1, 1, 1);
   await setUserTx.wait();
 
   const setAssetTx = await protocol.setAsset(asset.address, 1, 1);

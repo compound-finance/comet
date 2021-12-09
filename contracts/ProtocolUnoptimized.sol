@@ -14,23 +14,25 @@ contract ProtocolUnoptimized {
     uint256 public res1;
     uint256 public res2;
     uint256 public res3;
+    uint256 public res4;
+    uint256 public res5;
 
     mapping(address => mapping(address => bool)) public isPermitted;
 
     struct User {
-        int principal;
-        uint baseTrackingIndex;
-        uint baseTrackingAccrued;
-        uint assets;
-        uint nonce;
+        int256 principal;
+        uint256 baseTrackingIndex;
+        uint256 baseTrackingAccrued;
+        uint256 assets;
     }
     mapping(address => User) public users;
 
     struct Asset {
-        uint totalCollateral;
-        uint collateralTrackingIndex;
+        uint256 totalCollateral;
+        uint256 collateralTrackingIndex;
     }
     mapping(address => Asset) public assets;
+    mapping(address => uint256) public userNonces;
 
     uint256 public constant FACTOR = 1e18;
 
@@ -46,24 +48,22 @@ contract ProtocolUnoptimized {
         totalSupplyBase = 0;
     }
 
-    function getLastAccrualTime() external view returns (uint) {
+    function getLastAccrualTime() external view returns (uint256) {
         return lastAccrualTime;
     }
 
     function setUser(
         address userAddress,
-        int userPrincipal,
-        uint userBaseTrackingIndex,
-        uint userBaseTrackingAccrued,
-        uint userAssets,
-        uint userNonce
+        int256 userPrincipal,
+        uint256 userBaseTrackingIndex,
+        uint256 userBaseTrackingAccrued,
+        uint256 userAssets
     ) external {
         users[userAddress] = User({
             principal: userPrincipal,
             baseTrackingIndex: userBaseTrackingIndex,
             baseTrackingAccrued: userBaseTrackingAccrued,
-            assets: userAssets,
-            nonce: userNonce
+            assets: userAssets
         });
     }
 
@@ -71,11 +71,10 @@ contract ProtocolUnoptimized {
         external
         view
         returns (
-            int,
-            uint,
-            uint,
-            uint,
-            uint
+            int256,
+            uint256,
+            uint256,
+            uint256
         )
     {
         User memory user = users[userAddress];
@@ -83,15 +82,14 @@ contract ProtocolUnoptimized {
             user.principal,
             user.baseTrackingIndex,
             user.baseTrackingAccrued,
-            user.assets,
-            user.nonce
+            user.assets
         );
     }
 
     function setAsset(
         address assetAddress,
-        uint assetTotalCollateral,
-        uint assetCollateralTrackingIndex
+        uint256 assetTotalCollateral,
+        uint256 assetCollateralTrackingIndex
     ) external {
         assets[assetAddress] = Asset({
             totalCollateral: assetTotalCollateral,
@@ -102,16 +100,20 @@ contract ProtocolUnoptimized {
     function getAsset(address assetAddress)
         external
         view
-        returns (uint, uint)
+        returns (uint256, uint256)
     {
         Asset memory asset = assets[assetAddress];
         return (asset.totalCollateral, asset.collateralTrackingIndex);
     }
 
-    function getSupply()
+    function getTotals()
         external
         view
         returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256,
             uint256,
             uint256,
             uint256,
@@ -120,28 +122,21 @@ contract ProtocolUnoptimized {
     {
         return (
             totalSupplyBase,
+            totalBorrowBase,
             baseSupplyIndex,
+            baseBorrowIndex,
             trackingSupplyIndex,
-            pauseFlags
+            trackingBorrowIndex,
+            pauseFlags,
+            lastAccrualTime
         );
-    }
-
-    function getBorrow()
-        external
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256
-        )
-    {
-        return (totalBorrowBase, baseBorrowIndex, trackingBorrowIndex);
     }
 
     function experiment() external {
         res1 = totalSupplyBase + totalBorrowBase;
         res2 = baseSupplyIndex + baseBorrowIndex;
         res3 = trackingSupplyIndex + trackingBorrowIndex;
+        res4 = pauseFlags;
+        res5 = lastAccrualTime;
     }
-
 }
