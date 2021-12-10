@@ -1,10 +1,12 @@
 import hre from 'hardhat'
 
-import Runner from './scen/Runner'
-import SupplyScen from './scen/Supply'
-import LiquidationScen from './scen/Liquidation'
+// XXX
+import { Runner } from './scen2/Runner'
+import { BalanceConstraint } from './scen2/CometScenario'
 
-const runner = new Runner([
-  SupplyScen,
-  LiquidationScen,
-]).run(hre)
+new Runner({
+  bases: ['mainnet@>=100000', 'mainnet@1000000'],
+  supposers: [BalanceConstraint]
+}).run(hre)
+  .then(r => { /* console.trace(r) */ })
+  .catch(e => { throw(e) });
