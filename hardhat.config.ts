@@ -11,7 +11,7 @@ import 'solidity-coverage';
 import 'hardhat-gas-reporter';
 
 // Hardhat tasks
-import './tasks/spider.ts';
+import './tasks/spider/task.ts';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners())

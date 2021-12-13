@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { Address, Relations, createRelations } from './spider/relation';
+import { Address, Relations, createRelations } from './relation';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -7,7 +7,7 @@ import * as fs from 'fs';
  * PROOF OF CONCEPT CRAWLER FOR COMPOUND V2 CONTRACTS.
  * 
  * Can be easily adapted for Comet or any other system of contracts by
- * modifying the createRelations() method in `scripts/spider/relation.ts`.
+ * modifying the createRelations() method in `tasks/spider/relation.ts`.
  */
 
 // A node within the contract dependency tree.
@@ -21,7 +21,7 @@ interface ContractNode {
 
 export async function pullConfigs(hre: HardhatRuntimeEnvironment) {
   const network = hre.network.name;
-  const configDir = path.join(__dirname, '..', 'deployments', network);
+  const configDir = path.join(__dirname, '..', '..', 'deployments', network);
   const rootsFile = path.join(configDir, 'roots.json');
   const roots = JSON.parse(await fs.promises.readFile(rootsFile, 'utf-8'));
   console.log('Reading roots.js: ' + JSON.stringify(roots));
@@ -91,7 +91,7 @@ async function expand(hre: HardhatRuntimeEnvironment, relations: Relations, addr
 // TODO: Have an command-line argument to override all cached configs.
 async function loadContractConfig(hre: HardhatRuntimeEnvironment, address: Address) {
   const network = hre.network.name;
-  const outdir = path.join(__dirname, '..', 'deployments', network, 'cache');
+  const outdir = path.join(__dirname, '..', '..', 'deployments', network, 'cache');
   const outfile = path.join(outdir, `${address}.json`);
   return await fs.promises.readFile(outfile, 'utf-8')
     .then((config) => JSON.parse(config))
