@@ -11,6 +11,7 @@ cache/
 dist/
 deployments/*/cache
 deployments/*/config.json
+deployments/*/proxies.json
 
 .env
 coverage/

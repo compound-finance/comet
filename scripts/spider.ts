@@ -27,16 +27,21 @@ export async function pullConfigs(hre: HardhatRuntimeEnvironment) {
   console.log('Reading roots.js: ' + JSON.stringify(roots));
   const relations = createRelations();
   let visited = new Map<Address, string>(); // mapping from address to contract name
+  let proxies = new Map<Address, Address>();
   // Start branching out from each root contract.
   let config = {};
   for (let contractName in roots) {
     let address = roots[contractName];
-    let rootNode = await expand(hre, relations, address, contractName, visited);
+    let rootNode = await expand(hre, relations, address, contractName, visited, proxies);
     mergeConfig(config, rootNode);
   }
   // Write config to file
   let configFile = path.join(configDir, 'config.json');
   await fs.promises.writeFile(configFile, JSON.stringify(config, null, 4));
+
+  // Write proxies to file
+  const proxiesFile = path.join(configDir, "proxies.json");
+  await fs.promises.writeFile(proxiesFile, JSON.stringify(proxies, null, 4));
 }
 
 function mergeConfig(config, rootNode: ContractNode) {
@@ -54,13 +59,28 @@ function mergeConfig(config, rootNode: ContractNode) {
 // DFS expansion starting from root contract.
 // TODO: Short-circuit function if address has already been visited. Though some CTokens share the same Delegator contract.
 // TODO: Need to think about merging implementation ABIs to proxies.
-async function expand(hre: HardhatRuntimeEnvironment, relations: Relations, address: Address, name: string, visited: Map<Address, string>): Promise<ContractNode> {
+async function expand(
+  hre: HardhatRuntimeEnvironment,
+  relations: Relations,
+  address: Address,
+  name: string,
+  visited: Map<Address, string>,
+  // Proxy to impl
+  proxies: Map<Address, Address>,
+  currentProxy?: Address
+): Promise<ContractNode> {
+  if (address === "0x0000000000000000000000000000000000000000") return null;
+
   const loadedContract = await loadContractConfig(hre, address);
   const key = Object.keys(loadedContract.contracts)[0]; // TODO: assert contracts length is 1
   const abi = loadedContract.contracts[key].abi;
   const contractName = loadedContract.contracts[key].name;
-  const provider = new hre.ethers.providers.InfuraProvider;
-  let contract = new hre.ethers.Contract(address, abi, provider);
+  const provider = new hre.ethers.providers.InfuraProvider();
+  let contract = new hre.ethers.Contract(
+    currentProxy ?? address,
+    abi,
+    provider
+  );
   visited.set(address, contractName);
 
   // This is only used to better label ERC20 tokens.
@@ -73,14 +93,44 @@ async function expand(hre: HardhatRuntimeEnvironment, relations: Relations, addr
   // Iterate through dependencies if contract has any relations.
   if (contractName in relations) {
     const relation = relations[contractName];
-    // If contract has proxy, set the proxy as the contract to read from.
-    if (relation.proxy) {
-      const proxyAddr = findAddressByName(relation.proxy, visited); // The proxy should always exist in the map already.
-      contract = new hre.ethers.Contract(proxyAddr, abi, provider);
+    let dependencies: Address[], implementation: Address;
+    [dependencies, implementation] = await Promise.all([
+      relations[contractName].relations
+        ? relations[contractName].relations(contract)
+        : null,
+      relations[contractName].implementation
+        ? relations[contractName].implementation(contract)
+        : null,
+    ]);
+    if (implementation) {
+      proxies[address] = implementation;
+      const newChild = await expand(
+        hre,
+        relations,
+        implementation,
+        name,
+        visited,
+        proxies,
+        address
+      );
+      if (newChild) {
+        children.push(newChild);
+      }
     }
-    const dependencies: Address[] = await relations[contractName].relations(contract);
-    for (let addr of dependencies) {
-      children.push(await expand(hre, relations, addr, name, visited));
+    if (dependencies) {
+      for (let addr of dependencies) {
+        const newChild = await expand(
+          hre,
+          relations,
+          addr,
+          name,
+          visited,
+          proxies
+        );
+        if (newChild) {
+          children.push(newChild);
+        }
+      }
     }
   }
 
@@ -89,7 +139,14 @@ async function expand(hre: HardhatRuntimeEnvironment, relations: Relations, addr
 
 // Loads a contract's config by reading it from cache or pulling it from Etherscan if it does not exist.
 // TODO: Have an command-line argument to override all cached configs.
-async function loadContractConfig(hre: HardhatRuntimeEnvironment, address: Address) {
+async function loadContractConfig(
+  hre: HardhatRuntimeEnvironment,
+  address: Address
+) {
+  if (address === "0x0000000000000000000000000000000000000000") {
+    throw "Spider Error: loading zero address";
+  }
+
   const network = hre.network.name;
   const outdir = path.join(__dirname, '..', 'deployments', network, 'cache');
   const outfile = path.join(outdir, `${address}.json`);
