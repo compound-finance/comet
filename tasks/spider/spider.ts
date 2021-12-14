@@ -69,7 +69,7 @@ async function expand(
   proxies: Map<Address, Address>,
   currentProxy?: Address
 ): Promise<ContractNode> {
-  if (address === "0x0000000000000000000000000000000000000000") return null;
+  if (address === '0x0000000000000000000000000000000000000000') return null;
 
   const loadedContract = await loadContractConfig(hre, address);
   const key = Object.keys(loadedContract.contracts)[0]; // TODO: assert contracts length is 1
@@ -143,7 +143,7 @@ async function loadContractConfig(
   hre: HardhatRuntimeEnvironment,
   address: Address
 ) {
-  if (address === "0x0000000000000000000000000000000000000000") {
+  if (address === '0x0000000000000000000000000000000000000000') {
     throw "Spider Error: loading zero address";
   }
 
@@ -154,11 +154,4 @@ async function loadContractConfig(
     .then((config) => JSON.parse(config))
     // Hardhat-import plugin (fork of Saddle import)
     .catch(async () => await hre.run('import', { address, outdir }));
-}
-
-function findAddressByName(name: string, addressesToName: Map<Address, string>): Address {
-  for (let [k, v] of addressesToName) {
-    if (v === name) return k;
-  }
-  throw new Error('Spider Error: Cannot find contract address by name.');
 }
