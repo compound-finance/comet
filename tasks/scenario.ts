@@ -19,7 +19,7 @@ const scenarioNetworks = {
   },
   rinkeby: {
     forking: {
-      url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHMEY_RINKEBY_KEY}`,
+      url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_RINKEBY_KEY}`,
       enabled: true
     }
   }
