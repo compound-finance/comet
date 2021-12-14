@@ -1,4 +1,4 @@
-import { Contract } from "ethers";
+import { Contract } from 'ethers';
 
 /**
  * Types, interfaces, and functions used to define relationships between contracts.
