@@ -70,6 +70,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
       },
     },
   },
+
   networks: {
     hardhat: {
       chainId: 1337,
@@ -82,17 +83,18 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
       },
     },
   },
+
   etherscan: {
-    // Your API key for Etherscan
-    // Obtain one at https://etherscan.io/
     apiKey: process.env.ETHERSCAN_KEY,
   },
+
   gasReporter: {
     enabled: (process.env.REPORT_GAS) ? true : false,
     currency: 'USD',
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
     gasPrice: 200, // gwei
   },
+
   typechain: {
     outDir: 'build/types',
     target: 'ethers-v5',
