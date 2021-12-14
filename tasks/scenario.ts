@@ -9,7 +9,10 @@ import { Environment } from "hardhat/internal/core/runtime-environment";
 
 import { expect } from "chai";
 
-// TODO: move into hardhat.config.ts
+import * as path from 'path';
+import * as fs from 'fs';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+
 const scenarioNetworks = {
   mainnet: {
     forking: {
@@ -17,12 +20,14 @@ const scenarioNetworks = {
       enabled: true
     }
   },
+  /*
   rinkeby: {
     forking: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_RINKEBY_KEY}`,
       enabled: true
     }
   }
+  */
 };
 
 async function testRunner(networkName, hre) {
@@ -49,6 +54,41 @@ async function testRunner(networkName, hre) {
   expect(await greeter.greet()).to.equal("Hola, mundo!");
 
   console.log('\n');
+}
+
+// build contracts from Spider script artifacts
+async function buildContractsForDeployment(deploymentName, hre) {
+  const {ethers} = hre;
+
+  const [admin, ...signers] = await ethers.getSigners();
+
+  const configDir = path.join(__dirname, '..', 'deployments', deploymentName);
+  const configFile = path.join(configDir, 'config.json');
+  const configJSON = JSON.parse(await fs.promises.readFile(configFile, 'utf-8'));
+
+  const cacheDir = path.join(configDir, "cache");
+
+  const contractInstances = {};
+
+  for (const configKey in configJSON) {
+    const artifactFile = path.join(cacheDir, `${configJSON[configKey]}.json`);
+    const artifactJson = JSON.parse(await fs.promises.readFile(artifactFile, 'utf-8'));
+
+    const { contracts } = artifactJson;
+
+    // there should only ever be one key on the contracts object
+    for (const contractKey in contracts) {
+      const contractArtifact = contracts[contractKey];
+
+      contractInstances[configKey] = await new ethers.Contract(
+        contractArtifact.address,
+        contractArtifact.abi,
+        admin
+      )
+    }
+  }
+
+  return contractInstances;
 }
 
 task("scenario", "Runs scenario tests")
@@ -88,6 +128,10 @@ task("scenario", "Runs scenario tests")
         ctx.experimentalHardhatNetworkMessageTraceHooks
       );
 
-      await testRunner(networkName, forkedHre);
+      // await testRunner(networkName, forkedHre);
+      const contracts = await buildContractsForDeployment(networkName, forkedHre);
+
+      console.log(contracts);
+
     }
   });
