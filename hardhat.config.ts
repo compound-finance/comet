@@ -12,7 +12,7 @@ import 'hardhat-gas-reporter';
 
 // Hardhat tasks
 import './tasks/spider/task.ts';
-import './tasks/scenario.ts';
+import './tasks/scenario/task.ts';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners())

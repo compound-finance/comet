@@ -1,8 +1,12 @@
-import { HardhatRuntimeEnvironment } from 'hardhat/types'
 import { Constraint, World, Scenario } from './Scenario'
+import hreForBase from "./utils/hreForBase";
 
 export type Address = string;
-export type ForkSpec = string; // XXX
+export type ForkSpec = {
+  name: string;
+  url: string;
+  blockNumber?: number;
+};
 
 export type Deploy = (World) => Promise<void>;
 
@@ -27,7 +31,6 @@ function *combos(choices: object[][]) {
         yield [option, ...combo];
   }
 }
-
 export class Runner<T> {
   config: Config<T>;
 
@@ -35,18 +38,17 @@ export class Runner<T> {
     this.config = config;
   }
 
-  async run(hre: HardhatRuntimeEnvironment, scenarios: Scenario<T>[]): Promise<Runner<T>> {
+  async run(scenarios: Scenario<T>[]): Promise<Runner<T>> {
     const {
       bases = [],
       constraints = [],
     } = this.config;
 
     for (const base of bases) {
-      // XXX load fork for base
       // XXX read deployment for base
-      // XXX can we actually construct new/modified hres for each?
       //  should we *just* use an ethers instance?
-      const world = new World;
+      const world = new World(hreForBase(base));
+
       console.log('xxx world for base', base, world)
 
       const context = await this.config.getInitialContext(world) as T;

@@ -3,6 +3,10 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types'
 export class World {
   hre: HardhatRuntimeEnvironment;
 
+  constructor(hre) {
+    this.hre = hre;
+  }
+
   async _snapshot() {
     // XXX
     console.log('xxx snapshot')
