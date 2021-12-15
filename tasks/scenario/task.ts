@@ -16,5 +16,4 @@ task("scenario", "Runs scenario tests")
     }).run([])
       .then(r => { /* console.trace(r) */ })
       .catch(e => { throw(e) });
-
   });
