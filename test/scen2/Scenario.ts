@@ -9,12 +9,12 @@ export class World {
 
   async _snapshot() {
     // XXX
-    console.log('xxx snapshot')
+    // console.log('xxx snapshot')
   }
 
   async _revert() {
     // XXX
-    console.log('xxx revert')
+    // console.log('xxx revert')
   }
 }
 
@@ -32,7 +32,13 @@ export interface Constraint<T> {
 export type Property<T> = (context: T, world: World) => Promise<any>;
 
 export class Scenario<T> {
-  description: string;
+  name: string;
   requirements: object;
   property: Property<T>;
+
+  constructor(name, requirements, property) {
+    this.name = name;
+    this.requirements = requirements;
+    this.property = property;
+  }
 }
