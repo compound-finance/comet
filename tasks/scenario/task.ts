@@ -1,5 +1,5 @@
 import { task } from 'hardhat/config';
-import { run } from '../../test/scen2/worker/Parent';
+import { run } from '../../plugins/scenario/worker/Parent';
 
 task("scenario", "Runs scenario tests")
   .setAction(async (taskArgs) => {

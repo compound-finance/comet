@@ -1,4 +1,4 @@
-import { scenario, World } from '../scen2';
+import { scenario, World } from '../plugins/scenario';
 import { CometContext } from './Context';
 import { expect } from 'chai';
 

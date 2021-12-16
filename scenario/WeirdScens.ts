@@ -1,4 +1,4 @@
-import { scenario, World } from '../scen2';
+import { scenario, World } from '../plugins/scenario';
 import { CometContext } from './Context';
 
 async function rando(name: string) {

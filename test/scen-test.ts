@@ -1,6 +1,6 @@
 // XXX
-import { Runner } from './scen2/Runner'
-import { CometContext, BalanceConstraint } from './scen2/CometScenario'
+import { Runner } from '../plugins/scenario/Runner'
+import { CometContext, BalanceConstraint } from '../plugins/scenario/CometScenario'
 
 const scenarios = []; // XXX
 new Runner({

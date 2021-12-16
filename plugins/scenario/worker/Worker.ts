@@ -4,7 +4,7 @@ import { Scenario } from '../Scenario';
 import { loadScenarios } from '../Loader';
 import { HardhatContext } from "hardhat/internal/context";
 import { scenarioGlob } from './Config';
-import { getEthersContractsForDeployment } from "../../../tasks/spider/spider";
+import { getEthersContractsForDeployment } from "../../spider";
 
 interface Message {
   scenario?: string
