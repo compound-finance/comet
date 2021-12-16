@@ -15,11 +15,7 @@ export interface Config<T> {
   constraints?: Constraint<T>[];
 
   getInitialContext(world: World): Promise<T>;
-}
-
-function clone(context) {
-  // XXX how do we deep clone those appropriately
-  return Object.assign({}, context);
+  forkContext(context: T): Promise<T>;
 }
 
 function *combos(choices: object[][]) {
@@ -39,40 +35,43 @@ export class Runner<T> {
   }
 
   async run(scenarios: Scenario<T>[]): Promise<Runner<T>> {
+    const { config } = this;
     const {
       bases = [],
       constraints = [],
-    } = this.config;
+    } = config;
 
     for (const base of bases) {
-      // XXX read deployment for base
-      //  should we *just* use an ethers instance?
+      // construct a base world and context
       const world = new World(hreForBase(base));
-
-      console.log('xxx world for base', base, world)
-
-      const context = await this.config.getInitialContext(world) as T;
+      const context = await config.getInitialContext(world);
 
       // freeze the world as it was before we run any scenarios
       await world._snapshot();
 
       for (const scenario of scenarios) {
-        let ctx = clone(context);
-
         // generate worlds which satisfy the constraints
-        // note: `solve` is expected not to modify world, and constraints should be independent
+        // note: `solve` is expected not to modify context or world
+        //  and constraints should be independent or conflicts will be detected
         const solutionChoices = await Promise.all(
-          constraints.map(c => c.solve(scenario.requirements, world))
+          constraints.map(c => c.solve(scenario.requirements, context, world))
         );
         for (const combo of combos(solutionChoices)) {
+          // create a fresh copy of context that solutions can modify
+          let ctx = await config.forkContext(context);
+
+          // apply each solution in the combo, then check they all still hold
           for (const solution of combo)
             ctx = await solution(ctx, world);
           for (const constraint of constraints)
-            await constraint.check(scenario.requirements, world);
+            await constraint.check(scenario.requirements, ctx, world);
 
-          // XXX wrap in try/catch, add reporting
           // requirements met, run the property
-          await scenario.property(ctx, world);
+          try {
+            await scenario.property(ctx, world);
+          } catch (e) {
+            // XXX add scenario failure on ctx, world to report
+          }
 
           // revert back to the frozen world for the next scenario
           await world._revert();

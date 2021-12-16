@@ -1,6 +1,6 @@
 // XXX
 import { Runner } from './scen2/Runner'
-import { BalanceConstraint } from './scen2/CometScenario'
+import { CometContext, BalanceConstraint } from './scen2/CometScenario'
 
 const scenarios = []; // XXX
 new Runner({
@@ -17,7 +17,8 @@ new Runner({
     }
   ],
   constraints: [new BalanceConstraint],
-  getInitialContext: async (world) => ({})
+  getInitialContext: async (world) => new CometContext(world),
+  forkContext: async (context) => Object.assign({}, context), // XXX how to clone
 }).run(scenarios)
   .then(r => { /* console.trace(r) */ })
   .catch(e => { throw(e) });
