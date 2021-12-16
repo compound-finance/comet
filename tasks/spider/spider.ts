@@ -25,7 +25,7 @@ export async function pullConfigs(hre: HardhatRuntimeEnvironment) {
   const rootsFile = path.join(configDir, 'roots.json');
   const roots = JSON.parse(await fs.promises.readFile(rootsFile, 'utf-8'));
   console.log('Reading roots.js: ' + JSON.stringify(roots));
-  const relations = await createRelations(hre);
+  const relations = await createRelations(hre.network.name);
   let visited = new Map<Address, string>(); // mapping from address to contract name
   let proxies = new Map<Address, Address>();
   // Start branching out from each root contract.

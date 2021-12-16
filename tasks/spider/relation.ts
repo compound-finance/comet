@@ -25,8 +25,7 @@ export interface Relations {
 
 // TODO: Consider abstracting this even more (Hardhat plugin?) so separate relations
 // can be defined in one repo. (e.g. different relations on each chain)
-export async function createRelations(hre: HardhatRuntimeEnvironment) {
-  const network = hre.network.name;
+export async function createRelations(network: string) {
   const outdir = path.join(__dirname, "..", "..", "deployments", network);
   const outfile = path.join(outdir, `relations.json`);
   const relationsData = JSON.parse(
