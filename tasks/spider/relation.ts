@@ -25,11 +25,11 @@ export interface Relations {
 
 // TODO: Consider abstracting this even more (Hardhat plugin?) so separate relations
 // can be defined in one repo. (e.g. different relations on each chain)
-export async function createRelations(network: string) {
-  const outdir = path.join(__dirname, "..", "..", "deployments", network);
-  const outfile = path.join(outdir, `relations.json`);
+export async function createRelations(network: string): Promise<Relations> {
+  const dir = path.join(__dirname, "..", "..", "deployments", network);
+  const file = path.join(dir, `relations.json`);
   const relationsData = JSON.parse(
-    await fs.promises.readFile(outfile, "utf-8")
+    await fs.promises.readFile(file, "utf-8")
   );
 
   let relationsOutput: Relations = {};
