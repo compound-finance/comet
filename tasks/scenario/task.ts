@@ -17,7 +17,5 @@ task("scenario", "Runs scenario tests")
         return contracts;
       },
       forkContext: async (context) => Object.assign({}, context), // XXX how to clone
-    }).run([])
-      .then(r => { /* console.trace(r) */ })
-      .catch(e => { throw(e) });
+    }).run([]);
   });

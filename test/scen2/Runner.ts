@@ -17,11 +17,6 @@ export interface Config<T> {
   forkContext(context: T): Promise<T>;
 }
 
-function clone(context) {
-  // XXX how do we deep clone those appropriately
-  return Object.assign({}, context);
-}
-
 function *combos(choices: object[][]) {
   if (choices.length == 0) {
     yield [];
