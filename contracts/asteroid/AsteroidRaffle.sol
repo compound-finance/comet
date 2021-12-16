@@ -18,16 +18,24 @@ contract AsteroidRaffle {
     enum RaffleState { Active, Finished }
     RaffleState public state;
 
-    address public immutable owner;
+    // Raffle governor
+    address public immutable governor;
     // Accept payment in this token as well in addition to Eth
     Token public immutable token;
+    // Allows to get price of eth in tokens
     Oracle public immutable oracle;
     // Ticket price in wei
     uint public ticketPrice;
+    // All current round participants
     address[] public players;
 
+    /*** Events ***/
+    event NewPlayer(bool isToken, address participant, uint ticketPrice);
+    event NewWinner(address winner, uint ethPrizeAmount, uint tokenPrizeAmount);
+    event RaffleRestarted(address governor, uint ticketPrice);
+
     constructor(uint ticketPrice_, Token token_, Oracle oracle_) {
-        owner = msg.sender;
+        governor = msg.sender;
         state = RaffleState.Active;
         ticketPrice = ticketPrice_;
         token = token_;
@@ -37,7 +45,6 @@ contract AsteroidRaffle {
     function enterWithEth() external payable {
         require(state == RaffleState.Active, "Raffle is not active");
         require(msg.value == ticketPrice, "Incorrect ticket price");
-
         players.push(msg.sender);
     }
 
@@ -48,36 +55,37 @@ contract AsteroidRaffle {
       players.push(msg.sender);
     }
 
-
     function determineWinner() external {
-        require(msg.sender == owner, "Only owner can determine winner");
+        require(msg.sender == governor, "Only owner can determine winner");
+        // Finish the raffle
         state = RaffleState.Finished;
-        address winningPlayer = players[random() % players.length];
+        // Pseudo-randolmly pick winner
+        address winner = players[random() % players.length];
 
-        // Send funds to the raffle winner
-        distributeFunds(winningPlayer);
+        // Distribute Eth prize pool to the winner
+        uint ethPrizeAmount = address(this).balance;
+        payable(winner).transfer(ethPrizeAmount);
+
+        // Distribute token prize pool to the winner
+        uint tokenPrizeAmount = token.balanceOf(address(this));
+        require(token.transfer(winner, tokenPrizeAmount), "Token transfer failed");
+
+        emit NewWinner(winner, ethPrizeAmount, tokenPrizeAmount);
     }
 
     function restartRaffle(uint newTicketPrice) external {
         require(state == RaffleState.Finished, "Raffle is already active");
-        require(msg.sender == owner, "Only owner can restart raffle");
+        require(msg.sender == governor, "Only owner can restart raffle");
         state = RaffleState.Active;
         ticketPrice = newTicketPrice;
 
         // Delete previous players
         delete players;
+
+        emit RaffleRestarted(governor, ticketPrice);
     }
 
-    function distributeFunds(address winner) internal {
-        // Distribute Eth prize pool
-        uint prizeAmount = address(this).balance;
-        payable(winner).transfer(prizeAmount);
-
-        // Distribute token prize pool to the winner
-        token.transfer(winner, token.balanceOf(address(this)));
-    }
-
-    function random() private view returns (uint) {
+    function random() internal view returns (uint) {
       return uint(keccak256(abi.encodePacked(block.difficulty, block.timestamp, players)));
     }
 }
