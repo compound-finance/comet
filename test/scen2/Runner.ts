@@ -13,9 +13,13 @@ export type Deploy = (World) => Promise<void>;
 export interface Config<T> {
   bases?: ForkSpec[];
   constraints?: Constraint<T>[];
-
-  getInitialContext(world: World): Promise<T>;
+  getInitialContext(world: World, base: ForkSpec): Promise<T>;
   forkContext(context: T): Promise<T>;
+}
+
+function clone(context) {
+  // XXX how do we deep clone those appropriately
+  return Object.assign({}, context);
 }
 
 function *combos(choices: object[][]) {
@@ -44,7 +48,7 @@ export class Runner<T> {
     for (const base of bases) {
       // construct a base world and context
       const world = new World(hreForBase(base));
-      const context = await config.getInitialContext(world);
+      const context = await config.getInitialContext(world, base);
 
       // freeze the world as it was before we run any scenarios
       await world._snapshot();
