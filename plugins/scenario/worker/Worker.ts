@@ -33,8 +33,8 @@ export async function run<T>() {
         }
       ],
       constraints: [],
-      getInitialContext: async (world, base) => {
-        const contracts = await getEthersContractsForDeployment(world.hre, base.name);
+      getInitialContext: async (world) => {
+        const contracts = await getEthersContractsForDeployment(world.hre, world.network);
         return contracts;
       },
       forkContext: async (context) => Object.assign({}, context), // XXX how to clone

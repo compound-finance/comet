@@ -3,8 +3,13 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types'
 export class World {
   hre: HardhatRuntimeEnvironment;
 
-  constructor(hre) {
+  // network that the HRE is forked from
+  // NOTE: this will differ from `hre.network.name`, which will be `hardhat`
+  network: string;
+
+  constructor(hre: HardhatRuntimeEnvironment, network: string) {
     this.hre = hre;
+    this.network = network;
   }
 
   async _snapshot() {
