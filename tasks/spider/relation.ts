@@ -1,4 +1,7 @@
 import { Contract } from 'ethers';
+import fs from 'fs';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import * as path from 'path';
 
 /**
  * Types, interfaces, and functions used to define relationships between contracts.
@@ -22,45 +25,42 @@ export interface Relations {
 
 // TODO: Consider abstracting this even more (Hardhat plugin?) so separate relations
 // can be defined in one repo. (e.g. different relations on each chain)
-export function createRelations(): Relations {
-  let relations: Relations = {
-    CErc20Delegator: {
-      relations: async (contract: Contract) => {
-        return [await contract.underlying()];
-      },
-      implementation: async (contract: Contract) => {
-        return await contract.implementation();
-      },
-    },
-    CErc20Delegate: {
-      relations: async (contract: Contract) => {
-        return [await contract.interestRateModel()];
-      },
-    },
-    Unitroller: {
-      implementation: async (contract: Contract) => {
-        return await contract.comptrollerImplementation();
-      },
-    },
-    Comptroller: {
-      relations: async (contract: Contract) => {
-        return [
-          ...(await contract.getAllMarkets()),
-          await contract.oracle(),
-          await contract.admin(),
-        ];
-      },
-    },
-    Timelock: {
-      relations: async (contract: Contract) => {
-        return [await contract.admin()];
-      },
-    },
-    GovernorBravoDelegator: {
-      implementation: async (contract: Contract) => {
-        return await contract.implementation();
-      },
-    },
-  };
-  return relations;
+export async function createRelations(network: string): Promise<Relations> {
+  const dir = path.join(__dirname, "..", "..", "deployments", network);
+  const file = path.join(dir, `relations.json`);
+  const relationsData = JSON.parse(
+    await fs.promises.readFile(file, "utf-8")
+  );
+
+  let relationsOutput: Relations = {};
+
+  for (const contract in relationsData) {
+    const contractRelations = relationsData[contract].relations;
+    const contractImplementation = relationsData[contract].implementation;
+
+    let implementationValue;
+    if (contractImplementation) {
+      implementationValue = async (contract: Contract) => {
+          return (await contract.functions[contractImplementation]())[0];
+        };
+    }
+
+    let relationsValue;
+    if (contractRelations) {
+      relationsValue = async (contract: Contract) => {
+        const toFlatten =  await Promise.all(contractRelations.map(async (relation) => {
+          const res = await contract.functions[relation]();
+          return res[0];
+        }));
+        return toFlatten.flat();
+      }
+    }
+
+    relationsOutput[contract] = {
+      relations: relationsValue,
+      implementation: implementationValue
+    }
+  }
+
+  return relationsOutput;
 }

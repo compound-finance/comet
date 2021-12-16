@@ -1,0 +1,21 @@
+{
+  "Comptroller": {
+    "relations": ["oracle", "getAllMarkets", "admin"]
+  },
+  "Unitroller": {
+    "implementation": "comptrollerImplementation"
+  },
+  "CErc20Delegator": {
+    "relations": ["underlying"],
+    "implementation": "implementation"
+  },
+  "CErc20Delegate": {
+    "relations": ["interestRateModel"]
+  },
+  "Timelock": {
+    "relations": ["admin"]
+  },
+  "GovernorBravoDelegator": {
+    "implementation": "implementation"
+  }
+}
