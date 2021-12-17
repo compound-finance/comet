@@ -46,13 +46,16 @@ contract AsteroidRaffle {
         require(state == RaffleState.Active, "Raffle is not active");
         require(msg.value == ticketPrice, "Incorrect ticket price");
         players.push(msg.sender);
+
+        emit NewPlayer(false, msg.sender, ticketPrice);
     }
 
     function enterWithToken() external {
       uint tokenTicketPrice = (ticketPrice * oracle.getEthPriceInTokens()) / 1e18;
       require(token.transferFrom(msg.sender, address(this), tokenTicketPrice), "Token transfer failed");
-
       players.push(msg.sender);
+
+      emit NewPlayer(true, msg.sender, tokenTicketPrice);
     }
 
     function determineWinner() external {
@@ -65,6 +68,8 @@ contract AsteroidRaffle {
         // Distribute Eth prize pool to the winner
         uint ethPrizeAmount = address(this).balance;
         payable(winner).transfer(ethPrizeAmount);
+        // (bool sent, bytes memory data) = winner.call{value: ethPrizeAmount}("");
+        // require(sent, "Failed to send Ether");
 
         // Distribute token prize pool to the winner
         uint tokenPrizeAmount = token.balanceOf(address(this));
