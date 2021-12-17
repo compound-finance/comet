@@ -7,12 +7,12 @@ new Runner({
   bases: [
     {
       name: "mainnet",
-      url: `https://eth-mainnet.alchemyapi.io/v2/-lH3DVZ5yNTgaJjsituB9PssBzM3SN-R`
+      url: `https://eth-mainnet.alchemyapi.io/v2/-lH3DVZ5yNTgaJjsituB9PssBzM3SN-R`,
       blockNumber: 10000
     },
     {
       name: "mainnet",
-      url: `https://eth-mainnet.alchemyapi.io/v2/-lH3DVZ5yNTgaJjsituB9PssBzM3SN-R`
+      url: `https://eth-mainnet.alchemyapi.io/v2/-lH3DVZ5yNTgaJjsituB9PssBzM3SN-R`,
       blockNumber: 1000000
     }
   ],
