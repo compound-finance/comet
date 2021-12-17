@@ -24,9 +24,9 @@ function showReportConsole(results: Result[]) {
   let errCount = 0;
   let skipCount = 0;
   let totalTime = 0;
-  let errors: Map<string, Error> = new Map();
+  let errors: Map<string, [Error, string]> = new Map();
 
-  for (let {scenario, elapsed, error, skipped} of results) {
+  for (let {scenario, elapsed, error, trace, skipped} of results) {
     if (skipped) {
       skipCount++;
     } else {
@@ -34,15 +34,15 @@ function showReportConsole(results: Result[]) {
       totalTime += elapsed;
       if (error) {
         errCount++;
-        errors[scenario] = error;
+        errors[scenario] = [error, trace];
       } else {
         succCount++;
       }
     }
   }
 
-  for (let [scenario, error] of Object.entries(errors)) {
-    console.error(`❌ ${scenario}: Error ${error.message}\n${error.stack}`);
+  for (let [scenario, [error, trace]] of Object.entries(errors)) {
+    console.error(`❌ ${scenario}: Error ${trace || error.message}`);
   }
 
   let prefix = errCount === 0 ? "✅" : "❌";

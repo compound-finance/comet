@@ -42,10 +42,10 @@ export async function run<T>(scenarioConfig: ScenarioConfig) {
       try {
         await runScenario(scenario);
         // Add timeout for flush
-        eventually(() => parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error: null }}));
+        eventually(() => parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error: null, trace: null }}));
       } catch (error) {
         // Add timeout for flush
-        eventually(() => parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error }}));
+        eventually(() => parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error, trace: error.stack.toString() }}));
       }
     } else {
       throw new Error(`Unknown or invalid worker message: ${JSON.stringify(message)}`);
