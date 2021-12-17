@@ -4,24 +4,47 @@ import { Scenario } from '../Scenario';
 import { loadScenarios } from '../Loader';
 import { defaultFormats, scenarioGlob, workerCount } from './Config';
 import { loadFormat, showReport, Format } from './Report';
+import { getContext, getConfig, getHardhatArguments } from './HardhatContext';
 
 export interface Result {
   scenario: string,
-  elapsed: number,
-  error?: Error
+  elapsed?: number,
+  error?: Error,
+  skipped?: boolean
 }
 
 interface WorkerMessage {
   result?: Result
 }
 
-export async function run(taskArgs) {
-  let formats = defaultFormats.map(loadFormat);
-  let scenarios: string[] = Object.values(await loadScenarios(scenarioGlob)).map((scenario) => scenario.name);
+function filterRunning<T>(scenarios: Scenario<T>[]): [Scenario<T>[], Scenario<T>[]] {
+  let rest = scenarios.filter((scenario) => scenario.flags === null);
+  let only = scenarios.filter((scenario) => scenario.flags === "only");
+  let skip = scenarios.filter((scenario) => scenario.flags === "skip");
 
-  let results: Result[] = [];
-  let pending: Set<string> = new Set(scenarios);
-  let assignable: Iterator<string> = scenarios[Symbol.iterator]();
+  if (only.length > 0) {
+    return [only, skip.concat(rest)];
+  } else {
+    return [rest, skip];
+  }
+}
+
+export async function run<T>(taskArgs) {
+  let hardhatConfig = getConfig();
+  let hardhatArguments = getHardhatArguments();
+
+  let formats = defaultFormats.map(loadFormat);
+  let scenarios: Scenario<T>[] = Object.values(await loadScenarios(scenarioGlob));
+  let [runningScenarios, skippedScenarios] = filterRunning(scenarios);
+
+  let results: Result[] = skippedScenarios.map((scenario) => ({
+    scenario: scenario.name,
+    elapsed: undefined,
+    error: undefined,
+    skipped: true
+  }));
+  let pending: Set<string> = new Set(runningScenarios.map((scenario) => scenario.name));
+  let assignable: Iterator<Scenario<T>> = runningScenarios[Symbol.iterator]();
   let done;
   let hasError = false;
   let isDone = new Promise((resolve, reject_) => {
@@ -36,10 +59,18 @@ export async function run(taskArgs) {
 
   checkDone(); // Just in case we don't have any scens
 
-  function assignWork(worker: Worker) {
+  function getNextScenario(): Scenario<T> | null {
     let next = assignable.next();
     if (!next.done && next.value) {
-      worker.postMessage({ scenario: next.value });
+      return next.value;
+    }
+    return null;
+  }
+
+  function assignWork(worker: Worker) {
+    let scenario = getNextScenario();
+    if (scenario) {
+      worker.postMessage({ scenario: scenario.name });
     }
   }
 
@@ -60,6 +91,7 @@ export async function run(taskArgs) {
       }
     });
 
+    worker.postMessage({config: [hardhatConfig, hardhatArguments]});
     assignWork(worker);
   });
 

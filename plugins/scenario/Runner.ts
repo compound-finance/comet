@@ -13,8 +13,6 @@ export type Deploy = (World) => Promise<void>;
 export interface Config<T> {
   bases?: ForkSpec[];
   constraints?: Constraint<T>[];
-  getInitialContext(world: World, base: ForkSpec): Promise<T>;
-  forkContext(context: T): Promise<T>;
 }
 
 function *combos(choices: object[][]) {
@@ -43,12 +41,13 @@ export class Runner<T> {
     for (const base of bases) {
       // construct a base world and context
       const world = new World(hreForBase(base));
-      const context = await config.getInitialContext(world, base);
 
       // freeze the world as it was before we run any scenarios
       await world._snapshot();
 
       for (const scenario of scenarios) {
+        const context = await scenario.initializer(world, base);
+
         // generate worlds which satisfy the constraints
         // note: `solve` is expected not to modify context or world
         //  and constraints should be independent or conflicts will be detected
@@ -57,20 +56,20 @@ export class Runner<T> {
         );
         for (const combo of combos(solutionChoices)) {
           // create a fresh copy of context that solutions can modify
-          let ctx = await config.forkContext(context);
+          let ctx = await scenario.forker(context);
 
           // apply each solution in the combo, then check they all still hold
-          for (const solution of combo)
+          for (const solution of combo){
             ctx = await solution(ctx, world);
-          for (const constraint of constraints)
+          }
+
+          for (const constraint of constraints){
             await constraint.check(scenario.requirements, ctx, world);
+          }
 
           // requirements met, run the property
-          try {
-            await scenario.property(ctx, world);
-          } catch (e) {
-            // XXX add scenario failure on ctx, world to report
-          }
+          await scenario.property(ctx, world);
+          // XXX add scenario failure on ctx, world to report
 
           // revert back to the frozen world for the next scenario
           await world._revert();

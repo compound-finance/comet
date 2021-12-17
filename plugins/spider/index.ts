@@ -12,7 +12,7 @@ import * as fs from 'fs';
  */
 
 // A node within the contract dependency tree.
-interface ContractNode {
+export interface ContractNode {
   name: string,
   contractName: string,
   abi: string,
@@ -20,7 +20,7 @@ interface ContractNode {
   children: ContractNode[],
 }
 
-type ContractMap = {[name: string]: Contract};
+export type ContractMap = {[name: string]: Contract};
 
 async function getRootsForDeployment(network: string) {
   const configDir = path.join(__dirname, '..', '..', 'deployments', network);
@@ -201,7 +201,7 @@ async function loadContractConfig(
 
   const outdir = path.join(__dirname, '..', '..', 'deployments', network, 'cache');
   const outfile = path.join(outdir, `${address}.json`);
-  return await fs.promises.readFile(outfile, 'utf-8')
+  return await fs.promises.readFile(outfile, 'utf-8') // fsStat
     .then((config) => JSON.parse(config))
     // Hardhat-import plugin (fork of Saddle import)
     .catch(async () => await hre.run('import', { address, outdir }));

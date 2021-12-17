@@ -1,6 +1,6 @@
 import fg from 'fast-glob';
 import * as path from 'path';
-import { Scenario, Property } from './Scenario';
+import { Scenario, ScenarioFlags, Property, Initializer, Forker } from './Scenario';
 
 class Loader<T> {
   scenarios: { [name: string]: Scenario<T> };
@@ -9,11 +9,11 @@ class Loader<T> {
     this.scenarios = {};
   }
 
-  addScenario(name: string, requirements: object, property: Property<T>) {
+  addScenario(name: string, requirements: object, property: Property<T>, initializer: Initializer<T>, forker: Forker<T>, flags: ScenarioFlags = null) {
     if (this.scenarios[name]) {
       throw new Error(`Duplicate scenarios by name: ${name}`);
     }
-    this.scenarios[name] = new Scenario<T>(name, requirements, property);
+    this.scenarios[name] = new Scenario<T>(name, requirements, property, initializer, forker, flags);
   }
 
   getScenarios(): { [name: string]: Scenario<T> } {
