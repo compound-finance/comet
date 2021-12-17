@@ -10,8 +10,8 @@ export class CometContext {
     this.contracts = contracts;
   }
 
-  async btcBalance(): Promise<number> {
-    return await this.contracts.WBTC.balanceOf("0x0000000000000000000000000000000000000000");;
+  async btcBalance(address: string): Promise<number> {
+    return await this.contracts.WBTC.balanceOf(address) / 1e8;
   }
 }
 
