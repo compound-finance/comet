@@ -37,10 +37,6 @@ export async function run<T>(taskArgs) {
   let formats = defaultFormats.map(loadFormat);
   let scenarios: Scenario<T>[] = Object.values(await loadScenarios(scenarioGlob));
   let [runningScenarios, skippedScenarios] = filterRunning(scenarios);
-  console.log({
-    runningScenarios,
-    skippedScenarios
-  });
 
   let results: Result[] = skippedScenarios.map((scenario) => ({
     scenario: scenario.name,

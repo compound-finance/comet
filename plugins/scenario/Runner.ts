@@ -59,17 +59,17 @@ export class Runner<T> {
           let ctx = await scenario.forker(context);
 
           // apply each solution in the combo, then check they all still hold
-          for (const solution of combo)
+          for (const solution of combo){
             ctx = await solution(ctx, world);
-          for (const constraint of constraints)
+          }
+
+          for (const constraint of constraints){
             await constraint.check(scenario.requirements, ctx, world);
+          }
 
           // requirements met, run the property
-          try {
-            await scenario.property(ctx, world);
-          } catch (e) {
-            // XXX add scenario failure on ctx, world to report
-          }
+          await scenario.property(ctx, world);
+          // XXX add scenario failure on ctx, world to report
 
           // revert back to the frozen world for the next scenario
           await world._revert();

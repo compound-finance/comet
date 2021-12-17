@@ -9,6 +9,10 @@ export class CometContext {
     this.dog = dog;
     this.contracts = contracts;
   }
+
+  async btcBalance(): Promise<number> {
+    return await this.contracts.WBTC.balanceOf("0x0000000000000000000000000000000000000000");;
+  }
 }
 
 const getInitialContext = async (world: World, base: ForkSpec): Promise<CometContext> => {
@@ -17,7 +21,7 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
 }
 
 async function forkContext(c: CometContext): Promise<CometContext> {
-  return {...c};
+  return c;
 }
 
 export const scenario = buildScenarioFn(getInitialContext, forkContext);

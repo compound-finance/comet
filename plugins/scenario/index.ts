@@ -17,7 +17,6 @@ export function addScenario<T>(name: string, requirements: object, property: Pro
 
 export function buildScenarioFn<T>(initializer: Initializer<T>, forker: Forker<T>) {
   let addScenarioWithOpts = (flags: ScenarioFlags) => (name: string, requirements: object, property: Property<T>) => {
-    console.log({flags});
     addScenario<T>(name, requirements, property, initializer, forker, flags);
   };
 

@@ -18,7 +18,6 @@ export async function run<T>() {
   let scenarios: { [name: string]: Scenario<T> } = await loadScenarios(scenarioGlob);
 
   async function runScenario<T>(scenario: Scenario<T>) {
-/** SCOTT **/
     await new Runner({
       bases: [
         {
@@ -43,9 +42,11 @@ export async function run<T>() {
       let startTime = Date.now();
       try {
         await runScenario(scenario);
-        parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error: null }});
+        // Add timeout for flush
+        setTimeout(() => parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error: null }}), 0);
       } catch (error) {
-        parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error }});
+        // Add timeout for flush
+        setTimeout(() => parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error }}), 0);
       }
     } else {
       throw new Error(`Unknown or invalid worker message: ${JSON.stringify(message)}`);

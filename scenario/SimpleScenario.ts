@@ -1,9 +1,9 @@
 import { scenario } from './Context';
 import { expect } from 'chai';
 
-scenario("my scenario", {}, async (context, world) => {
-  console.log({context});
-  console.log("Roof said " + context.dog);
+scenario.only("my scenario", {}, async (ctx, world) => {
+  console.log({btc: await ctx.btcBalance()});
+  console.log("Roof said " + ctx.dog);
 });
 
 scenario("scen 2", {}, async (context, world) => {
