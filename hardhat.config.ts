@@ -103,6 +103,9 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
   scenario: {
     bases: [
       {
+        name: "development",
+      },
+      {
         name: "goerli",
         url: "https://eth-goerli.alchemyapi.io/v2/Xs9F4EHXAb1wg_PvxlKu3HaXglyPkc2E"
       }
