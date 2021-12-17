@@ -27,19 +27,12 @@ yarn lint-contracts:fix // will attempt to automatically fix errors
 Solhint configuration is saved in `.solhint.json`.
 
 ### Run tests
-
 Runs all tests in the `test` directory.
-
 `yarn test`
-
 ### Run tests with coverage tool
-
 Runs all tests while also evaluating code coverage.
-
 `yarn test:coverage`
-
 The coverage report will be saved in the `coverage` directory.
-
 ### Run tests with gas profiler
 
 Set up the following env variables:
@@ -50,7 +43,7 @@ Set up the following env variables:
 
 ### Run spider task
 
-The spider script programmatically fetches all protocol-related contracts from mainnet. 
+The spider script programmatically fetches all protocol-related contracts from mainnet.
 This is just a prototype and it currently pulls relevant contracts for V2.
 
 > Note: Make sure $ETHERSCAN_KEY is set in your `.env`.

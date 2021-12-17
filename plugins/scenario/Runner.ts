@@ -1,4 +1,4 @@
-import { Constraint, World, Scenario } from './Scenario'
+import { Constraint, Context, ContextCreator, World, Scenario } from './Scenario'
 import hreForBase from "./utils/hreForBase";
 
 export type Address = string;
@@ -8,13 +8,10 @@ export type ForkSpec = {
   blockNumber?: number;
 };
 
-export type Deploy = (World) => Promise<void>;
-
-export interface Config<T> {
+export interface Config<T extends Context> {
   bases?: ForkSpec[];
   constraints?: Constraint<T>[];
-  getInitialContext(world: World, base: ForkSpec): Promise<T>;
-  forkContext(context: T): Promise<T>;
+  contextCreator: ContextCreator<T>;
 }
 
 function *combos(choices: object[][]) {
@@ -26,7 +23,7 @@ function *combos(choices: object[][]) {
         yield [option, ...combo];
   }
 }
-export class Runner<T> {
+export class Runner<T extends Context> {
   config: Config<T>;
 
   constructor(config: Config<T>) {
@@ -43,7 +40,7 @@ export class Runner<T> {
     for (const base of bases) {
       // construct a base world and context
       const world = new World(hreForBase(base));
-      const context = await config.getInitialContext(world, base);
+      const context = await config.contextCreator.initContext(world);
 
       // freeze the world as it was before we run any scenarios
       await world._snapshot();
@@ -57,7 +54,7 @@ export class Runner<T> {
         );
         for (const combo of combos(solutionChoices)) {
           // create a fresh copy of context that solutions can modify
-          let ctx = await config.forkContext(context);
+          let ctx = await config.contextCreator.forkContext(context);
 
           // apply each solution in the combo, then check they all still hold
           for (const solution of combo)

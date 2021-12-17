@@ -1,7 +1,7 @@
-import { Property } from './Scenario';
 import { getLoader } from './Loader';
-export { World } from './Scenario';
+import { Context, Property } from './Scenario';
+export { Context, ContextCreator, World, Scenario, Constraint, Solution } from './Scenario';
 
-export function scenario<T>(name: string, requirements: object, property: Property<T>) {
+export function scenario<T extends Context>(name: string, requirements: object, property: Property<T>) {
   getLoader().addScenario(name, requirements, property);
 }

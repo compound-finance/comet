@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { Worker } from 'worker_threads';
-import { Scenario } from '../Scenario';
+import { Scenario, Context } from '../Scenario';
 import { loadScenarios } from '../Loader';
 import { defaultFormats, scenarioGlob, workerCount } from './Config';
 import { loadFormat, showReport, Format } from './Report';
@@ -15,9 +15,9 @@ interface WorkerMessage {
   result?: Result
 }
 
-export async function run(taskArgs) {
+export async function run<T extends Context>(taskArgs) {
   let formats = defaultFormats.map(loadFormat);
-  let scenarios: string[] = Object.values(await loadScenarios(scenarioGlob)).map((scenario) => scenario.name);
+  let scenarios: string[] = Object.values(await loadScenarios(scenarioGlob)).map((scenario: Scenario<T>) => scenario.name);
 
   let results: Result[] = [];
   let pending: Set<string> = new Set(scenarios);

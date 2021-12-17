@@ -1,22 +1,5 @@
-import {Constraint, Scenario, Solution, World} from './Scenario'
-
-export class CometActor {
-
-}
-
-export class CometAsset {
-
-}
-
-export class CometContext {
-  actors: { [name: string]: CometActor};
-  assets: { [name: string]: CometAsset};
-
-  constructor(world: World) {
-    // XXX wrap assets from world
-    // XXX wrap actors from world
-  }
-}
+import { Constraint, Scenario, Solution, World } from '../plugins/scenario'
+import { CometContext } from './Context'
 
 export class BalanceConstraint<T extends CometContext> implements Constraint<T> {
   async solve(requirements: object, context: T, world: World) {
