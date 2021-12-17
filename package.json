@@ -10,7 +10,9 @@
     "lint-contracts": "solhint 'contracts/**/*.sol'",
     "lint-contracts:fix": "solhint --fix 'contracts/**/*.sol'",
     "test": "hardhat test",
-    "test:coverage": "hardhat coverage"
+    "test:coverage": "hardhat coverage",
+    "scenario": "hardhat scenario",
+    "spider": "hardhat spider"
   },
   "keywords": [],
   "author": "Compound Finance",
@@ -29,6 +31,7 @@
     "dotenv": "^10.0.0",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.5.1",
+    "fast-glob": "^3.2.7",
     "hardhat": "^2.6.7",
     "hardhat-gas-reporter": "^1.0.4",
     "solhint": "^3.3.6",
@@ -37,5 +40,6 @@
     "typechain": "^6.0.2",
     "typescript": "^4.4.4"
   },
-  "repository": "git@github.com:compound-finance/compound-protocol-v2.5.git"
+  "repository": "git@github.com:compound-finance/comet.git",
+  "dependencies": {}
 }

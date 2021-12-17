@@ -1,14 +1,24 @@
-import hre from 'hardhat'
-
 // XXX
-import { Runner } from './scen2/Runner'
-import { BalanceConstraint } from './scen2/CometScenario'
+import { Runner } from '../plugins/scenario/Runner'
+import { CometContext, BalanceConstraint } from '../plugins/scenario/CometScenario'
 
 const scenarios = []; // XXX
 new Runner({
-  bases: ['mainnet@>=100000', 'mainnet@1000000'],
+  bases: [
+    {
+      name: "mainnet",
+      url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_MAINNET_KEY}`,
+      blockNumber: 10000
+    },
+    {
+      name: "mainnet",
+      url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_MAINNET_KEY}`,
+      blockNumber: 1000000
+    }
+  ],
   constraints: [new BalanceConstraint],
-  getInitialContext: async (world) => ({})
-}).run(hre, scenarios)
+  getInitialContext: async (world) => new CometContext(world),
+  forkContext: async (context) => Object.assign({}, context), // XXX how to clone
+}).run(scenarios)
   .then(r => { /* console.trace(r) */ })
   .catch(e => { throw(e) });

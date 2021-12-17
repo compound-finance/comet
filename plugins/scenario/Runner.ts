@@ -1,21 +1,18 @@
-import { HardhatRuntimeEnvironment } from 'hardhat/types'
 import { Constraint, World, Scenario } from './Scenario'
+import hreForBase from "./utils/hreForBase";
 
 export type Address = string;
-export type ForkSpec = string; // XXX
+export type ForkSpec = {
+  name: string;
+  url: string;
+  blockNumber?: number;
+};
 
 export type Deploy = (World) => Promise<void>;
 
 export interface Config<T> {
   bases?: ForkSpec[];
   constraints?: Constraint<T>[];
-
-  getInitialContext(world: World): Promise<T>;
-}
-
-function clone(context) {
-  // XXX how do we deep clone those appropriately
-  return Object.assign({}, context);
 }
 
 function *combos(choices: object[][]) {
@@ -27,7 +24,6 @@ function *combos(choices: object[][]) {
         yield [option, ...combo];
   }
 }
-
 export class Runner<T> {
   config: Config<T>;
 
@@ -35,42 +31,45 @@ export class Runner<T> {
     this.config = config;
   }
 
-  async run(hre: HardhatRuntimeEnvironment, scenarios: Scenario<T>[]): Promise<Runner<T>> {
+  async run(scenarios: Scenario<T>[]): Promise<Runner<T>> {
+    const { config } = this;
     const {
       bases = [],
       constraints = [],
-    } = this.config;
+    } = config;
 
     for (const base of bases) {
-      // XXX load fork for base
-      // XXX read deployment for base
-      // XXX can we actually construct new/modified hres for each?
-      //  should we *just* use an ethers instance?
-      const world = new World;
-      console.log('xxx world for base', base, world)
-
-      const context = await this.config.getInitialContext(world) as T;
+      // construct a base world and context
+      const world = new World(hreForBase(base));
 
       // freeze the world as it was before we run any scenarios
       await world._snapshot();
 
       for (const scenario of scenarios) {
-        let ctx = clone(context);
+        const context = await scenario.initializer(world, base);
 
         // generate worlds which satisfy the constraints
-        // note: `solve` is expected not to modify world, and constraints should be independent
+        // note: `solve` is expected not to modify context or world
+        //  and constraints should be independent or conflicts will be detected
         const solutionChoices = await Promise.all(
-          constraints.map(c => c.solve(scenario.requirements, world))
+          constraints.map(c => c.solve(scenario.requirements, context, world))
         );
         for (const combo of combos(solutionChoices)) {
-          for (const solution of combo)
-            ctx = await solution(ctx, world);
-          for (const constraint of constraints)
-            await constraint.check(scenario.requirements, world);
+          // create a fresh copy of context that solutions can modify
+          let ctx = await scenario.forker(context);
 
-          // XXX wrap in try/catch, add reporting
+          // apply each solution in the combo, then check they all still hold
+          for (const solution of combo){
+            ctx = await solution(ctx, world);
+          }
+
+          for (const constraint of constraints){
+            await constraint.check(scenario.requirements, ctx, world);
+          }
+
           // requirements met, run the property
           await scenario.property(ctx, world);
+          // XXX add scenario failure on ctx, world to report
 
           // revert back to the frozen world for the next scenario
           await world._revert();
