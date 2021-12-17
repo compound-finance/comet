@@ -19,8 +19,6 @@ function eventually(fn: () => void) {
 }
 
 export async function run<T>(scenarioConfig: ScenarioConfig) {
-  setHardhatContext();
-
   let scenarios: { [name: string]: Scenario<T> } = await loadScenarios(scenarioGlob);
 
   async function runScenario<T>(scenario: Scenario<T>) {

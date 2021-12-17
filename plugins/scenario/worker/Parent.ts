@@ -30,7 +30,7 @@ function filterRunning<T>(scenarios: Scenario<T>[]): [Scenario<T>[], Scenario<T>
   }
 }
 
-export async function run(scenarioConfig: ScenarioConfig) {
+export async function run<T>(scenarioConfig: ScenarioConfig) {
   let hardhatConfig = getConfig();
   let hardhatArguments = getHardhatArguments();
   let formats = defaultFormats.map(loadFormat);
