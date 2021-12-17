@@ -124,7 +124,7 @@ async function expand(
   const key = Object.keys(loadedContract.contracts)[0]; // TODO: assert contracts length is 1
   const abi = loadedContract.contracts[key].abi;
   const contractName = loadedContract.contracts[key].name;
-  const provider = new hre.ethers.providers.InfuraProvider();
+  const provider = new hre.ethers.providers.EtherscanProvider(network, process.env.ETHERSCAN_KEY);
   let contract = new hre.ethers.Contract(
     currentProxy ?? address,
     abi,

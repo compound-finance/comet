@@ -5,6 +5,25 @@
 1. Clone the repo
 2. Run `yarn install`
 
+## Env variables
+
+The following env variables are used in the repo. One way to set up these env
+variables is to create a `.env` in the root directory of this repo. 
+
+Required env variables:
+
+```
+ETHERSCAN_KEY=<key>
+```
+
+Optional env variables:
+```
+INFURA_KEY=<key>
+COINMARKETCAP_API_KEY=<key> 
+REPORT_GAS=true
+MNEMONIC=<mnemonic>
+```
+
 ## Usage
 
 Look at the scripts section inside `package.json` to find all commands.
@@ -53,7 +72,7 @@ Set up the following env variables:
 The spider script programmatically fetches all protocol-related contracts from mainnet. 
 This is just a prototype and it currently pulls relevant contracts for V2.
 
-> Note: Make sure $ETHERSCAN_KEY is set in your `.env`.
+> Note: Make sure $ETHERSCAN_KEY is set as an env variable.
 
 `npx hardhat spider --network mainnet`
 
