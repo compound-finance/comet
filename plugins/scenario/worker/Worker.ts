@@ -6,13 +6,16 @@ import { HardhatContext } from "hardhat/internal/context";
 import { scenarioGlob } from './Config';
 import { getEthersContractsForDeployment } from "../../spider";
 import { HardhatConfig, HardhatArguments, createContext, setConfig, getContext } from './HardhatContext';
-// import 'hardhat/internal/lib/hardhat-lib'
 import * as util from 'util';
 
 interface Message {
   config?: [HardhatConfig, HardhatArguments],
   scenario?: string
 };
+
+function eventually(fn: () => void) {
+  setTimeout(fn, 0);
+}
 
 export async function run<T>() {
   let scenarios: { [name: string]: Scenario<T> } = await loadScenarios(scenarioGlob);
@@ -43,10 +46,10 @@ export async function run<T>() {
       try {
         await runScenario(scenario);
         // Add timeout for flush
-        setTimeout(() => parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error: null }}), 0);
+        eventually(() => parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error: null }}));
       } catch (error) {
         // Add timeout for flush
-        setTimeout(() => parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error }}), 0);
+        eventually(() => parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error }}));
       }
     } else {
       throw new Error(`Unknown or invalid worker message: ${JSON.stringify(message)}`);

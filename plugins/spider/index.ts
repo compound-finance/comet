@@ -42,7 +42,7 @@ export async function getEthersContractsForDeployment(
   const [admin] = await hre.ethers.getSigners();
   for (let contractName in roots) {
     let address = roots[contractName];
-    let rootNode = await expand(deploymentName, hre, relations, address, contractName, visited, proxies); // !!
+    let rootNode = await expand(deploymentName, hre, relations, address, contractName, visited, proxies);
     buildContractMap(hre, admin, contractMap, rootNode);
   }
   return contractMap;
@@ -120,7 +120,7 @@ async function expand(
 ): Promise<ContractNode> {
   if (address === '0x0000000000000000000000000000000000000000') return null;
 
-  const loadedContract = await loadContractConfig(network, hre, address); // !!
+  const loadedContract = await loadContractConfig(network, hre, address);
   const key = Object.keys(loadedContract.contracts)[0]; // TODO: assert contracts length is 1
   const abi = loadedContract.contracts[key].abi;
   const contractName = loadedContract.contracts[key].name;
@@ -190,7 +190,7 @@ async function expand(
 
 // Loads a contract's config by reading it from cache or pulling it from Etherscan if it does not exist.
 // TODO: Have an command-line argument to override all cached configs.
-async function loadContractConfig( // !!
+async function loadContractConfig(
   network: string,
   hre: HardhatRuntimeEnvironment,
   address: Address

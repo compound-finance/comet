@@ -32,7 +32,6 @@ function filterRunning<T>(scenarios: Scenario<T>[]): [Scenario<T>[], Scenario<T>
 export async function run<T>(taskArgs) {
   let hardhatConfig = getConfig();
   let hardhatArguments = getHardhatArguments();
-  // console.log({hardhatConfig});
 
   let formats = defaultFormats.map(loadFormat);
   let scenarios: Scenario<T>[] = Object.values(await loadScenarios(scenarioGlob));
