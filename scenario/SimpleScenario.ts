@@ -2,7 +2,7 @@ import { scenario } from './Context';
 import { expect } from 'chai';
 
 scenario.only("my scenario", {}, async (ctx, world) => {
-  expect(await ctx.players()).to.equal(["0xbf72da2bd84c5170618fbe5914b0eca9638d5eb5"]);
+  expect(await ctx.players()).to.eql([]);
   console.log("Roof said " + ctx.dog);
 });
 

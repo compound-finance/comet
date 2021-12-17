@@ -6,7 +6,13 @@ async function getUntilEmpty<T>(emptyVal: T, fn: (index: number) => Promise<T>):
   // Inner for TCO
   let index = 0;
   async function getUntilEmptyInner<T>(emptyVal: T, fn: (index: number) => Promise<T>, acc: T[]): Promise<T[]> {
-    let curr = await fn(index++);
+    let curr;
+    try {
+      curr = await fn(index++);
+    } catch (e) {
+      return acc;
+    }
+
     if (curr === emptyVal) {
       return acc;
     } else {
