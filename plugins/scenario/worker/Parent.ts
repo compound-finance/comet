@@ -10,6 +10,7 @@ export interface Result {
   scenario: string,
   elapsed?: number,
   error?: Error,
+  trace?: string,
   skipped?: boolean
 }
 
