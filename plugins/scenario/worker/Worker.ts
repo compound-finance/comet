@@ -8,6 +8,7 @@ import { getEthersContractsForDeployment } from "../../spider";
 import { HardhatConfig, HardhatArguments, createContext, setConfig, getContext } from './HardhatContext';
 import * as util from 'util';
 import { ScenarioConfig } from '../types';
+import { AssertionError } from 'chai';
 
 interface Message {
   config?: [HardhatConfig, HardhatArguments],
@@ -44,8 +45,15 @@ export async function run<T>(scenarioConfig: ScenarioConfig) {
         // Add timeout for flush
         eventually(() => parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error: null, trace: null }}));
       } catch (error) {
+        let diff = null;
+        if (error instanceof AssertionError) {
+          let { actual, expected } = <any>error; // Types unclear
+          if (actual !== expected) {
+            diff = { actual, expected };
+          }
+        }
         // Add timeout for flush
-        eventually(() => parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error, trace: error.stack.toString() }}));
+        eventually(() => parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error, trace: error.stack.toString(), diff }}));
       }
     } else {
       throw new Error(`Unknown or invalid worker message: ${JSON.stringify(message)}`);

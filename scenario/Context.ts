@@ -10,7 +10,11 @@ async function getUntilEmpty<T>(emptyVal: T, fn: (index: number) => Promise<T>):
     try {
       curr = await fn(index++);
     } catch (e) {
-      return acc;
+      if (e.message.includes("Transaction reverted without a reason string")) {
+        return acc;
+      } else {
+        throw e;
+      }
     }
 
     if (curr === emptyVal) {
@@ -38,26 +42,32 @@ export class CometContext {
   }
 }
 
-let contractDeployers: {[name: string]: ((world: World, contracts: ContractMap, signers: Signer[]) => Promise<Contract>)} = {
-  token: async (world, contracts, signers) => {
-    console.log("Deploying FaucetToken", 100000, "DAI", 18, "DAI");
-    const FaucetToken = await world.hre.ethers.getContractFactory('FaucetToken');
-    const token = await FaucetToken.deploy(100000, "DAI", 18, "DAI");
-    return await token.deployed();
+let contractDeployers: {[name: string]: { contract: string, deployer: ((world: World, contracts: ContractMap, signers: Signer[]) => Promise<Contract>) }} = {
+  token: {
+    contract: "DAIFaucetToken", // TODO: This should be handled by pointers.json
+    deployer: async (world, contracts, signers) => {
+      const FaucetToken = await world.hre.ethers.getContractFactory('FaucetToken');
+      const token = await FaucetToken.deploy(100000, "DAI", 18, "DAI");
+      return await token.deployed();
+    },
   },
 
-  oracle: async (world, contracts, signers) => {
-    console.log("Deploying Oracle", (<any>signers[1]).address);
-    const Oracle = await world.hre.ethers.getContractFactory('MockedOracle');
-    const oracle = await Oracle.connect(signers[1]).deploy();
-    return await oracle.deployed();
+  oracle: {
+    contract: "AsteroidRaffleMockedOracle", // TODO: This should be handled by pointers.json
+    deployer: async (world, contracts, signers) => {
+      const Oracle = await world.hre.ethers.getContractFactory('MockedOracle');
+      const oracle = await Oracle.connect(signers[1]).deploy();
+      return await oracle.deployed();
+    },
   },
 
-  raffle: async (world, contracts, signers) => {
-    console.log("Deploying Raffle", '100000000000000000', contracts.token.address, contracts.oracle.address);
-    const AsteroidRaffle = await world.hre.ethers.getContractFactory('AsteroidRaffle');
-    const raffle = await AsteroidRaffle.deploy('100000000000000000', contracts.token.address, contracts.oracle.address);
-    return await raffle.deployed();
+  raffle: {
+    contract: "AsteroidRaffle", // TODO: This should be handled by pointers.json
+    deployer: async (world, contracts, signers) => {
+      const AsteroidRaffle = await world.hre.ethers.getContractFactory('AsteroidRaffle');
+      const raffle = await AsteroidRaffle.deploy('100000000000000000', contracts.token.address, contracts.oracle.address);
+      return await raffle.deployed();
+    },
   },
 }
 
@@ -66,11 +76,14 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
   let signers = await world.hre.ethers.getSigners();
 
   // Deploy missing contracts
-  for (let [name, deployer] of Object.entries(contractDeployers)) {
-    if (!contracts[name]) {
+  for (let [name, {contract, deployer}] of Object.entries(contractDeployers)) {
+    let contractInst = contracts[contract];
+
+    if (contractInst) {
+      contracts[name] = contractInst;
+    } else {
       console.log("Deploying " + name);
       contracts[name] = await deployer(world, contracts, signers);
-      console.log("Deployed " + name);
     }
   }
 

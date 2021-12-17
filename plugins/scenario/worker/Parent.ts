@@ -12,6 +12,7 @@ export interface Result {
   elapsed?: number,
   error?: Error,
   trace?: string,
+  diff?: { actual: any, expected: any },
   skipped?: boolean
 }
 
