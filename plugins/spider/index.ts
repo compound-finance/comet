@@ -80,26 +80,21 @@ function buildContractMap(
 
 export async function pullConfigs(hre: HardhatRuntimeEnvironment) {
   const network = hre.network.name;
-  const roots = await getRootsForDeployment(network);
+  const roots:{string:string} = await getRootsForDeployment(network);
   const relations = await createRelations(network);
   let visited = new Map<Address, string>(); // mapping from address to contract name
   let proxies = new Map<Address, Address>();
   // Start branching out from each root contract.
   let config = {};
-  for (let contractName in roots) {
-    let address = roots[contractName];
-    let rootNode = await expand({
-      network,
-      hre,
-      relations,
-      address,
-      name: contractName,
-      visited,
-      proxies,
-      writeToCache: true
-    });
-    mergeConfig(config, rootNode);
-  }
+  let runs = Object.entries(roots).map(([contractName, address]) => {
+    return async () => {
+      const rootNode = await expand(network, hre, relations, address, contractName, visited, proxies);
+      mergeConfig(config, rootNode);
+    }
+  })
+
+  await Promise.all(runs.map(fn => fn()));
+
   // Write config to file
   const configDir = path.join(__dirname, '..', '..', 'deployments', network);
   let configFile = path.join(configDir, 'config.json');
@@ -199,18 +194,9 @@ async function expand({
       }
     }
     if (dependencies) {
-      for (let addr of dependencies) {
-        const newChild = await expand({
-          network,
-          hre,
-          relations,
-          address: addr,
-          name,
-          visited,
-          proxies,
-          writeToCache
-        });
-        if (newChild) {
+      const newChildren = await Promise.all(dependencies.map(item => expand(network, hre, relations, item, name, visited, proxies)));
+      for(const newChild of newChildren) {
+        if(newChild) {
           children.push(newChild);
         }
       }
@@ -241,14 +227,22 @@ async function loadContractConfig({
 
   const outdir = path.join(__dirname, '..', '..', 'deployments', network, 'cache');
   const outfile = path.join(outdir, `${address}.json`);
-  return await fs.promises.readFile(outfile, 'utf-8') // fsStat
-    .then((config) => JSON.parse(config))
-    // Hardhat-import plugin (fork of Saddle import)
-    .catch(async () => {
-      if (writeToCache) {
-        return await hre.run('import', { address, outdir, networkNameOverride: network });
-      } else {
-        return await hre.run('import', { address, networkNameOverride: network });
-      }
-    });
+
+  let res;
+  try {
+    res = JSON.parse(fs.readFileSync(outfile, 'utf-8'));
+  }
+  catch {
+    res = await importContract(hre, address, outdir);
+  }
+  return res;
+}
+
+async function importContract(hre, address, outdir) {
+  try {
+    return await hre.run('import', { address, outdir });
+  } catch {
+    await new Promise(r => setTimeout(r, 2000));
+    return await importContract(hre, address, outdir);
+  }
 }
