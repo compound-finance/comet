@@ -105,6 +105,10 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
       {
         name: "mainnet",
         url: `https://eth-mainnet.alchemyapi.io/v2/-lH3DVZ5yNTgaJjsituB9PssBzM3SN-R`
+      },
+      {
+        name: "goerli",
+        url: "https://eth-goerli.alchemyapi.io/v2/Xs9F4EHXAb1wg_PvxlKu3HaXglyPkc2E"
       }
     ],
   },
