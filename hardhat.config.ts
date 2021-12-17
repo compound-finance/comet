@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { HardhatUserConfig } from 'hardhat/types'
+import { HardhatUserConfig } from 'hardhat/types';
 import { task } from 'hardhat/config';
 import '@compound-finance/hardhat-import';
 import '@nomiclabs/hardhat-waffle';
@@ -99,6 +99,16 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
     outDir: 'build/types',
     target: 'ethers-v5',
   },
+
+  scenario: {
+    bases: [
+      {
+        name: "mainnet",
+        url: `https://eth-mainnet.alchemyapi.io/v2/-lH3DVZ5yNTgaJjsituB9PssBzM3SN-R`
+      }
+    ],
+  },
+
 };
 
 setupDefaultNetworkProviders(config);

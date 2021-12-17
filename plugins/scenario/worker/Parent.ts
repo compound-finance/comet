@@ -5,6 +5,7 @@ import { loadScenarios } from '../Loader';
 import { defaultFormats, scenarioGlob, workerCount } from './Config';
 import { loadFormat, showReport, Format } from './Report';
 import { getContext, getConfig, getHardhatArguments } from './HardhatContext';
+import { ScenarioConfig } from '../types';
 
 export interface Result {
   scenario: string,
@@ -29,10 +30,9 @@ function filterRunning<T>(scenarios: Scenario<T>[]): [Scenario<T>[], Scenario<T>
   }
 }
 
-export async function run<T>(taskArgs) {
+export async function run(scenarioConfig: ScenarioConfig) {
   let hardhatConfig = getConfig();
   let hardhatArguments = getHardhatArguments();
-
   let formats = defaultFormats.map(loadFormat);
   let scenarios: Scenario<T>[] = Object.values(await loadScenarios(scenarioGlob));
   let [runningScenarios, skippedScenarios] = filterRunning(scenarios);
@@ -82,7 +82,10 @@ export async function run<T>(taskArgs) {
   }
 
   const worker = [...new Array(workerCount)].map((_, index) => {
-    let worker = new Worker(path.resolve(__dirname, './BootstrapWorker.js'));
+    let worker = new Worker(
+      path.resolve(__dirname, './BootstrapWorker.js'),
+      {workerData: scenarioConfig}
+    );
 
     worker.on('message', (message) => {
       if (message.result) {

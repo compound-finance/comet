@@ -7,6 +7,7 @@ import { scenarioGlob } from './Config';
 import { getEthersContractsForDeployment } from "../../spider";
 import { HardhatConfig, HardhatArguments, createContext, setConfig, getContext } from './HardhatContext';
 import * as util from 'util';
+import { ScenarioConfig } from '../types';
 
 interface Message {
   config?: [HardhatConfig, HardhatArguments],
@@ -17,17 +18,14 @@ function eventually(fn: () => void) {
   setTimeout(fn, 0);
 }
 
-export async function run<T>() {
+export async function run<T>(scenarioConfig: ScenarioConfig) {
+  setHardhatContext();
+
   let scenarios: { [name: string]: Scenario<T> } = await loadScenarios(scenarioGlob);
 
   async function runScenario<T>(scenario: Scenario<T>) {
     await new Runner({
-      bases: [
-        {
-          name: "mainnet",
-          url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_MAINNET_KEY}`
-        }
-      ],
+      bases: scenarioConfig.bases,
       constraints: [],
     }).run([scenario]);
   }
