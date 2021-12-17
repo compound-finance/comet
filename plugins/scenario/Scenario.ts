@@ -1,4 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types'
+import { ForkSpec } from './Runner';
 
 export class World {
   hre: HardhatRuntimeEnvironment;
@@ -30,15 +31,21 @@ export interface Constraint<T> {
 }
 
 export type Property<T> = (context: T, world: World) => Promise<any>;
+export type Initializer<T> = (world: World, base: ForkSpec) => Promise<T>;
+export type Forker<T> = (T) => Promise<T>;
 
 export class Scenario<T> {
   name: string;
   requirements: object;
   property: Property<T>;
+  initializer: Initializer<T>;
+  forker: Forker<T>;
 
-  constructor(name, requirements, property) {
+  constructor(name, requirements, property, initializer, forker) {
     this.name = name;
     this.requirements = requirements;
     this.property = property;
+    this.initializer = initializer;
+    this.forker = forker;
   }
 }

@@ -4,6 +4,7 @@ import { Scenario } from '../Scenario';
 import { loadScenarios } from '../Loader';
 import { defaultFormats, scenarioGlob, workerCount } from './Config';
 import { loadFormat, showReport, Format } from './Report';
+import { getContext, getConfig, getHardhatArguments } from './HardhatContext';
 
 export interface Result {
   scenario: string,
@@ -16,6 +17,10 @@ interface WorkerMessage {
 }
 
 export async function run(taskArgs) {
+  let hardhatConfig = getConfig();
+  let hardhatArguments = getHardhatArguments();
+  // console.log({hardhatConfig});
+
   let formats = defaultFormats.map(loadFormat);
   let scenarios: string[] = Object.values(await loadScenarios(scenarioGlob)).map((scenario) => scenario.name);
 
@@ -60,6 +65,7 @@ export async function run(taskArgs) {
       }
     });
 
+    worker.postMessage({config: [hardhatConfig, hardhatArguments]});
     assignWork(worker);
   });
 

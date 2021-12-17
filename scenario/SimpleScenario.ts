@@ -1,15 +1,14 @@
-import { scenario, World } from '../plugins/scenario';
-import { CometContext } from './Context';
+import { scenario } from './Context';
 import { expect } from 'chai';
 
-scenario("my scenario", {}, async (context: CometContext, world: World) => {
+scenario("my scenario", {}, async (context, world) => {
   console.log("Roof said " + context.dog);
 });
 
-scenario("scen 2", {}, async (context: CometContext, world: World) => {
+scenario("scen 2", {}, async (context, world) => {
   expect(context.dog).to.equal("jack");
 });
 
-scenario("scen 3", {}, async (context: CometContext, world: World) => {
+scenario("scen 3", {}, async (context, world) => {
   expect(context.dog).to.equal("spot");
 });

@@ -70,7 +70,7 @@ function hreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
       forking: {
         enabled: true,
         url: base.url,
-        ...(base.blockNumber && {blockNumber: base.blockNumber})
+        ...(base.blockNumber && {blockNumber: base.blockNumber}),
       }
     }
   };

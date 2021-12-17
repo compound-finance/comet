@@ -1,5 +1,5 @@
-import { scenario, World } from '../plugins/scenario';
-import { CometContext } from './Context';
+import { scenario } from './Context';
+import { expect } from 'chai';
 
 async function rando(name: string) {
   return new Promise((resolve, reject) => {
@@ -13,14 +13,14 @@ async function rando(name: string) {
   })
 }
 
-scenario("scen 4", {}, async (context: CometContext, world: World) => {
+scenario("scen 4", {}, async (context, world) => {
   await rando("scen 4");
 });
 
-scenario("scen 5", {}, async (context: CometContext, world: World) => {
+scenario("scen 5", {}, async (context, world) => {
   await rando("scen 4");
 });
 
-scenario("scen 6", {}, async (context: CometContext, world: World) => {
+scenario("scen 6", {}, async (context, world) => {
   await rando("scen 4");
 });

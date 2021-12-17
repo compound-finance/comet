@@ -36,7 +36,7 @@ function showReportConsole(results: Result[]) {
   }
 
   for (let [scenario, error] of Object.entries(errors)) {
-    console.error(`❌ ${scenario}: Error ${error.message}`);
+    console.error(`❌ ${scenario}: Error ${error.message}\n${error.stack}`);
   }
 
   let prefix = errCount === 0 ? "✅" : "❌";
