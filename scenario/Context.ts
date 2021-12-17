@@ -1,4 +1,4 @@
-import { ForkSpec, Property, World, addScenario } from '../plugins/scenario';
+import { ForkSpec, Property, World, buildScenarioFn } from '../plugins/scenario';
 import { ContractMap, getEthersContractsForDeployment } from '../plugins/spider';
 
 export class CometContext {
@@ -20,6 +20,4 @@ async function forkContext(c: CometContext): Promise<CometContext> {
   return {...c};
 }
 
-export function scenario(name: string, requirements: object, property: Property<CometContext>) {
-  addScenario<CometContext>(name, requirements, property, getInitialContext, forkContext);
-}
+export const scenario = buildScenarioFn(getInitialContext, forkContext);

@@ -2,6 +2,7 @@ import { scenario } from './Context';
 import { expect } from 'chai';
 
 scenario("my scenario", {}, async (context, world) => {
+  console.log({context});
   console.log("Roof said " + context.dog);
 });
 

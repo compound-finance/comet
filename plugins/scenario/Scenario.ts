@@ -34,18 +34,22 @@ export type Property<T> = (context: T, world: World) => Promise<any>;
 export type Initializer<T> = (world: World, base: ForkSpec) => Promise<T>;
 export type Forker<T> = (T) => Promise<T>;
 
+export type ScenarioFlags = null | "only" | "skip";
+
 export class Scenario<T> {
   name: string;
   requirements: object;
   property: Property<T>;
   initializer: Initializer<T>;
   forker: Forker<T>;
+  flags: ScenarioFlags;
 
-  constructor(name, requirements, property, initializer, forker) {
+  constructor(name, requirements, property, initializer, forker, flags) {
     this.name = name;
     this.requirements = requirements;
     this.property = property;
     this.initializer = initializer;
     this.forker = forker;
+    this.flags = flags;
   }
 }
