@@ -1,6 +1,7 @@
-import { ForkSpec, Property, World, buildScenarioFn } from '../plugins/scenario';
-import { ContractMap, getEthersContractsForDeployment } from '../plugins/spider';
-import { Contract, Signer } from 'ethers';
+import { ForkSpec, Property, World, buildScenarioFn } from '../plugins/scenario'
+import { ContractMap, getEthersContractsForDeployment } from '../plugins/spider'
+import { BalanceConstraint } from './Constraints'
+import { Contract, Signer } from 'ethers'
 
 async function getUntilEmpty<T>(emptyVal: T, fn: (index: number) => Promise<T>): Promise<T[]> {
   // Inner for TCO
@@ -26,9 +27,14 @@ async function getUntilEmpty<T>(emptyVal: T, fn: (index: number) => Promise<T>):
   return await getUntilEmptyInner(emptyVal, fn, []);
 }
 
+export class CometActor {}
+export class CometAsset {}
+
 export class CometContext {
   dog: string;
   contracts: ContractMap;
+  actors: { [name: string]: CometActor }; // XXX
+  assets: { [name: string]: CometAsset }; // XXX
 
   constructor(dog: string, contracts: ContractMap) {
     this.dog = dog;
@@ -100,4 +106,8 @@ async function forkContext(c: CometContext): Promise<CometContext> {
   return c;
 }
 
-export const scenario = buildScenarioFn(getInitialContext, forkContext);
+export const constraints = [
+  new BalanceConstraint,
+];
+
+export const scenario = buildScenarioFn(getInitialContext, forkContext, constraints);
