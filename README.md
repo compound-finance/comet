@@ -76,6 +76,12 @@ This is just a prototype and it currently pulls relevant contracts for V2.
 
 `npx hardhat spider --network mainnet`
 
+#### delete artifacts
+
+You can delete all spider artifacts using the `--clean` flag:
+
+`npx hardhat spider --clean`
+
 ### Scenarios
 
 Scenarios are high-level property and ad-hoc tests for the Comet protocol. To run and check scenarios:
