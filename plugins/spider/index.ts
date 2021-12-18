@@ -203,5 +203,7 @@ async function loadContractConfig(
   return await fs.promises.readFile(outfile, 'utf-8') // fsStat
     .then((config) => JSON.parse(config))
     // Hardhat-import plugin (fork of Saddle import)
-    .catch(async () => await hre.run('import', { address, outdir }));
+    .catch(async () => {
+      await hre.run('import', { address, outdir, networkNameOverride: network });
+    });
 }
