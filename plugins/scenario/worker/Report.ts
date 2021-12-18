@@ -25,9 +25,9 @@ function showReportConsole(results: Result[]) {
   let errCount = 0;
   let skipCount = 0;
   let totalTime = 0;
-  let errors: Map<string, { error: Error, trace?: string, diff?: { actual: any, expected: any } }> = new Map();
+  let errors: { base: string, scenario: string, error: Error, trace?: string, diff?: { actual: any, expected: any } }[] = [];
 
-  for (let {scenario, elapsed, error, trace, diff, skipped} of results) {
+  for (let {base, scenario, elapsed, error, trace, diff, skipped} of results) {
     if (skipped) {
       skipCount++;
     } else {
@@ -35,15 +35,15 @@ function showReportConsole(results: Result[]) {
       totalTime += elapsed;
       if (error) {
         errCount++;
-        errors[scenario] = { error, trace, diff };
+        errors.push({ base, scenario, error, trace, diff });
       } else {
         succCount++;
       }
     }
   }
 
-  for (let [scenario, { error, trace, diff }] of Object.entries(errors)) {
-    console.error(`❌ ${scenario}: Error ${trace || error.message}`);
+  for (let { base, scenario, error, trace, diff } of errors) {
+    console.error(`❌ ${scenario}@${base}: Error ${trace || error.message}`);
     if (diff) {
       console.error(showDiff(diff.expected, diff.actual));
     }

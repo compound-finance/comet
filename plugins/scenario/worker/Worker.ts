@@ -1,5 +1,5 @@
 import { parentPort } from 'worker_threads';
-import { Runner } from '../Runner';
+import { ForkSpec, Runner } from '../Runner';
 import { Scenario } from '../Scenario';
 import { loadScenarios } from '../Loader';
 import { HardhatContext } from "hardhat/internal/context";
@@ -11,39 +11,47 @@ import { ScenarioConfig } from '../types';
 import { AssertionError } from 'chai';
 
 interface Message {
-  config?: [HardhatConfig, HardhatArguments],
-  scenario?: string
+  scenario?: {
+    base: string,
+    scenario: string
+  }
 };
 
 function eventually(fn: () => void) {
   setTimeout(fn, 0);
 }
 
-export async function run<T>(scenarioConfig: ScenarioConfig) {
+export async function run<T>({scenarioConfig, bases, config}: {scenarioConfig: ScenarioConfig, bases: ForkSpec[], config: [HardhatConfig, HardhatArguments]}) {
+  createContext(...config);
   let scenarios: { [name: string]: Scenario<T> } = await loadScenarios(scenarioGlob);
+  let baseMap = Object.fromEntries(bases.map((base) => [base.name, base]));
 
-  async function runScenario<T>(scenario: Scenario<T>) {
+  async function runScenario<T>(base: ForkSpec, scenario: Scenario<T>) {
     await new Runner({
-      bases: scenarioConfig.bases,
+      bases: [base],
       constraints: [],
     }).run([scenario]);
   }
 
   parentPort.on('message', async (message: Message) => {
-    if (message.config) {
-      createContext(...message.config);
-    } else if (message.scenario) {
-      let scenarioName = message.scenario;
+    if (message.scenario) {
+      console.log(message);
+      let { scenario: scenarioName, base: baseName } = message.scenario;
+      console.log({scenarioName, baseName});
       let scenario = scenarios[scenarioName];
       if (!scenario) {
         throw new Error(`Worker encountered unknown scenario: ${scenarioName}`);
       }
+      let base = baseMap[baseName];
+      if (!base) {
+        throw new Error(`Worker encountered unknown base: ${baseName}`);
+      }
 
       let startTime = Date.now();
       try {
-        await runScenario(scenario);
+        await runScenario(base, scenario);
         // Add timeout for flush
-        eventually(() => parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error: null, trace: null }}));
+        eventually(() => parentPort.postMessage({result: { base: base.name, scenario: scenario.name, elapsed: Date.now() - startTime, error: null, trace: null }}));
       } catch (error) {
         let diff = null;
         if (error instanceof AssertionError) {
@@ -53,7 +61,7 @@ export async function run<T>(scenarioConfig: ScenarioConfig) {
           }
         }
         // Add timeout for flush
-        eventually(() => parentPort.postMessage({result: { scenario: scenario.name, elapsed: Date.now() - startTime, error, trace: error.stack.toString(), diff }}));
+        eventually(() => parentPort.postMessage({result: { base: base.name, scenario: scenario.name, elapsed: Date.now() - startTime, error, trace: error.stack.toString(), diff }}));
       }
     } else {
       throw new Error(`Unknown or invalid worker message: ${JSON.stringify(message)}`);
