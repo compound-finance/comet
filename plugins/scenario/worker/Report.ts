@@ -42,7 +42,7 @@ function showReportConsole(results: Result[]) {
     }
   }
 
-  for (let [scenario, { error, trace, diff: diff }] of Object.entries(errors)) {
+  for (let [scenario, { error, trace, diff }] of Object.entries(errors)) {
     console.error(`❌ ${scenario}: Error ${trace || error.message}`);
     if (diff) {
       console.error(showDiff(diff.expected, diff.actual));
