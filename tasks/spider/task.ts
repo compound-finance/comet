@@ -7,7 +7,6 @@ async function deleteSpiderArtifacts() {
     "rm -rf deployments/*/cache",
     "rm deployments/*/config.json",
     "rm deployments/*/proxies.json"
-
   ].forEach(async (command) => {
     console.log(command);
     execSync(command);
