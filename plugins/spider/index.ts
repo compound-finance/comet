@@ -150,6 +150,7 @@ async function expand({
   writeToCache = false
 }: ExpandParameters): Promise<ContractNode> {
   if (address === '0x0000000000000000000000000000000000000000') return null;
+
   const loadedContract = await loadContractConfig({network, hre, address, writeToCache});
   const key = Object.keys(loadedContract.contracts)[0]; // TODO: assert contracts length is 1
   const abi = loadedContract.contracts[key].abi;
