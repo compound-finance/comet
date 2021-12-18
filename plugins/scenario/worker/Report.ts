@@ -1,4 +1,5 @@
 import { Result } from './Parent';
+import { diff as showDiff } from 'jest-diff';
 
 export type Format = "console";
 
@@ -24,9 +25,9 @@ function showReportConsole(results: Result[]) {
   let errCount = 0;
   let skipCount = 0;
   let totalTime = 0;
-  let errors: Map<string, [Error, string]> = new Map();
+  let errors: Map<string, { error: Error, trace?: string, diff?: { actual: any, expected: any } }> = new Map();
 
-  for (let {scenario, elapsed, error, trace, skipped} of results) {
+  for (let {scenario, elapsed, error, trace, diff, skipped} of results) {
     if (skipped) {
       skipCount++;
     } else {
@@ -34,15 +35,18 @@ function showReportConsole(results: Result[]) {
       totalTime += elapsed;
       if (error) {
         errCount++;
-        errors[scenario] = [error, trace];
+        errors[scenario] = { error, trace, diff };
       } else {
         succCount++;
       }
     }
   }
 
-  for (let [scenario, [error, trace]] of Object.entries(errors)) {
+  for (let [scenario, { error, trace, diff }] of Object.entries(errors)) {
     console.error(`❌ ${scenario}: Error ${trace || error.message}`);
+    if (diff) {
+      console.error(showDiff(diff.expected, diff.actual));
+    }
   }
 
   let prefix = errCount === 0 ? "✅" : "❌";

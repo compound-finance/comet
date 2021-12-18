@@ -1,0 +1,5 @@
+{
+  "AsteroidRaffle": {
+    "relations": ["token", "oracle"]
+  }
+}

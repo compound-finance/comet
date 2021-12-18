@@ -24,6 +24,13 @@ function *combos(choices: object[][]) {
         yield [option, ...combo];
   }
 }
+
+function bindFunctions(obj: any) {
+  for (let property of Object.getOwnPropertyNames(Object.getPrototypeOf(obj))) {
+    obj[property] = obj[property].bind(obj);
+  }
+}
+
 export class Runner<T> {
   config: Config<T>;
 
@@ -66,6 +73,9 @@ export class Runner<T> {
           for (const constraint of constraints){
             await constraint.check(scenario.requirements, ctx, world);
           }
+
+          // Prebind all functions on object
+          bindFunctions(ctx);
 
           // requirements met, run the property
           await scenario.property(ctx, world);
