@@ -72,7 +72,13 @@ let contractDeployers: {[name: string]: { contract: string, deployer: ((world: W
 }
 
 const getInitialContext = async (world: World, base: ForkSpec): Promise<CometContext> => {
-  let contracts = await getEthersContractsForDeployment(world.hre, base.name);
+  const isDevelopment = !base.url;
+
+  if (isDevelopment) {
+    await world.hre.run("compile");
+  }
+
+  let contracts = isDevelopment ? {} : await getEthersContractsForDeployment(world.hre, base.name);
   let signers = await world.hre.ethers.getSigners();
 
   // Deploy missing contracts

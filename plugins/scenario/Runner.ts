@@ -4,7 +4,7 @@ import hreForBase from "./utils/hreForBase";
 export type Address = string;
 export type ForkSpec = {
   name: string;
-  url: string;
+  url?: string;
   blockNumber?: number;
 };
 
