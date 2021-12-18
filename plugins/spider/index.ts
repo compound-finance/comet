@@ -42,7 +42,16 @@ export async function getEthersContractsForDeployment(
   const [admin] = await hre.ethers.getSigners();
   for (let contractName in roots) {
     let address = roots[contractName];
-    let rootNode = await expand(deploymentName, hre, relations, address, contractName, visited, proxies);
+    let rootNode = await expand({
+      network: deploymentName,
+      hre,
+      relations,
+      address,
+      name: contractName,
+      visited,
+      proxies,
+      writeToCache: false
+    });
     buildContractMap(hre, admin, contractMap, rootNode);
   }
   return contractMap;
@@ -79,7 +88,16 @@ export async function pullConfigs(hre: HardhatRuntimeEnvironment) {
   let config = {};
   for (let contractName in roots) {
     let address = roots[contractName];
-    let rootNode = await expand(network, hre, relations, address, contractName, visited, proxies);
+    let rootNode = await expand({
+      network,
+      hre,
+      relations,
+      address,
+      name: contractName,
+      visited,
+      proxies,
+      writeToCache: true
+    });
     mergeConfig(config, rootNode);
   }
   // Write config to file
@@ -107,20 +125,32 @@ function mergeConfig(config, rootNode: ContractNode) {
 // DFS expansion starting from root contract.
 // TODO: Short-circuit function if address has already been visited. Though some CTokens share the same Delegator contract.
 // TODO: Need to think about merging implementation ABIs to proxies.
-async function expand(
-  network: string,
-  hre: HardhatRuntimeEnvironment,
-  relations: Relations,
-  address: Address,
-  name: string,
-  visited: Map<Address, string>,
+interface ExpandParameters {
+  network: string;
+  hre: HardhatRuntimeEnvironment;
+  relations: Relations;
+  address: Address;
+  name: string;
+  visited: Map<Address, string>;
   // Proxy to impl
-  proxies: Map<Address, Address>,
-  currentProxy?: Address
-): Promise<ContractNode> {
-  if (address === '0x0000000000000000000000000000000000000000') return null;
+  proxies: Map<Address, Address>;
+  currentProxy?: Address;
+  writeToCache?: boolean;
+};
 
-  const loadedContract = await loadContractConfig(network, hre, address);
+async function expand({
+  network,
+  hre,
+  relations,
+  address,
+  name,
+  visited,
+  proxies,
+  currentProxy,
+  writeToCache = false
+}: ExpandParameters): Promise<ContractNode> {
+  if (address === '0x0000000000000000000000000000000000000000') return null;
+  const loadedContract = await loadContractConfig({network, hre, address, writeToCache});
   const key = Object.keys(loadedContract.contracts)[0]; // TODO: assert contracts length is 1
   const abi = loadedContract.contracts[key].abi;
   const contractName = loadedContract.contracts[key].name;
@@ -152,31 +182,33 @@ async function expand(
     ]);
     if (implementation) {
       proxies[address] = implementation;
-      const newChild = await expand(
+      const newChild = await expand({
         network,
         hre,
         relations,
-        implementation,
+        address: implementation,
         name,
         visited,
         proxies,
-        address
-      );
+        currentProxy: address,
+        writeToCache
+      });
       if (newChild) {
         children.push(newChild);
       }
     }
     if (dependencies) {
       for (let addr of dependencies) {
-        const newChild = await expand(
+        const newChild = await expand({
           network,
           hre,
           relations,
-          addr,
+          address: addr,
           name,
           visited,
-          proxies
-        );
+          proxies,
+          writeToCache
+        });
         if (newChild) {
           children.push(newChild);
         }
@@ -189,11 +221,19 @@ async function expand(
 
 // Loads a contract's config by reading it from cache or pulling it from Etherscan if it does not exist.
 // TODO: Have an command-line argument to override all cached configs.
-async function loadContractConfig(
-  network: string,
-  hre: HardhatRuntimeEnvironment,
-  address: Address
-) {
+interface LoadContracConfigParameters {
+  network: string;
+  hre: HardhatRuntimeEnvironment;
+  address: Address;
+  writeToCache?: boolean;
+}
+
+async function loadContractConfig({
+  network,
+  hre,
+  address,
+  writeToCache = false
+}: LoadContracConfigParameters) {
   if (address === '0x0000000000000000000000000000000000000000') {
     throw "Spider Error: loading zero address";
   }
@@ -204,6 +244,10 @@ async function loadContractConfig(
     .then((config) => JSON.parse(config))
     // Hardhat-import plugin (fork of Saddle import)
     .catch(async () => {
-      return await hre.run('import', { address, outdir, networkNameOverride: network });
+      if (writeToCache) {
+        return await hre.run('import', { address, outdir, networkNameOverride: network });
+      } else {
+        return await hre.run('import', { address, networkNameOverride: network });
+      }
     });
 }
