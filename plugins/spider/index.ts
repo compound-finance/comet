@@ -204,6 +204,6 @@ async function loadContractConfig(
     .then((config) => JSON.parse(config))
     // Hardhat-import plugin (fork of Saddle import)
     .catch(async () => {
-      await hre.run('import', { address, outdir, networkNameOverride: network });
+      return await hre.run('import', { address, outdir, networkNameOverride: network });
     });
 }
