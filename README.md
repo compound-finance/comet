@@ -24,6 +24,24 @@ REPORT_GAS=true
 MNEMONIC=<mnemonic>
 ```
 
+## Git hooks
+
+The repo's Git hooks are defined the `.githooks/` directory.
+
+You can enable them by running:
+
+```
+# requires git version 2.9 or greater
+git config core.hooksPath .githooks
+```
+
+You can skip pre-commit checks with the `-n` flag:
+
+```
+# skip pre-commit hook
+git commit -n -m "commit without running pre-commit hook"
+```
+
 ## Usage
 
 Look at the scripts section inside `package.json` to find all commands.

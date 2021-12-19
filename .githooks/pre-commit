@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# exit when any command fails
+set -e
+ 
+# typescript
+yarn tsc
+# solhint
+yarn lint-contracts
