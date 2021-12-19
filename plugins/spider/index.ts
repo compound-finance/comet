@@ -222,7 +222,7 @@ async function expand({
 
 // Loads a contract's config by reading it from cache or pulling it from Etherscan if it does not exist.
 // TODO: Have an command-line argument to override all cached configs.
-interface LoadContracConfigParameters {
+interface LoadContractConfigParameters {
   network: string;
   hre: HardhatRuntimeEnvironment;
   address: Address;
@@ -234,7 +234,7 @@ async function loadContractConfig({
   hre,
   address,
   writeToCache = false
-}: LoadContracConfigParameters) {
+}: LoadContractConfigParameters) {
   if (address === '0x0000000000000000000000000000000000000000') {
     throw "Spider Error: loading zero address";
   }
