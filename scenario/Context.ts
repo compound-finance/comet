@@ -1,5 +1,5 @@
 import { ForkSpec, Property, World, buildScenarioFn } from '../plugins/scenario'
-import { ContractMap, getEthersContractsForDeployment } from '../plugins/spider'
+import { ContractMap, DeploymentManager } from '../plugins/deployment_manager/DeploymentManager'
 import { BalanceConstraint } from './Constraints'
 import { Contract, Signer } from 'ethers'
 
@@ -84,7 +84,8 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
     await world.hre.run("compile");
   }
 
-  let contracts = isDevelopment ? {} : await getEthersContractsForDeployment(world.hre, base.name);
+  let deploymentManager = new DeploymentManager(base.name, world.hre);
+  let contracts = isDevelopment ? {} : await await deploymentManager.spider();
   let signers = await world.hre.ethers.getSigners();
 
   // Deploy missing contracts
