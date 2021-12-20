@@ -226,10 +226,19 @@ async function loadContractConfig({
 
   let res;
   try {
+    if(!fs.existsSync(outfile)) throw Error("File DNE");
     res = JSON.parse(fs.readFileSync(outfile, 'utf-8'));
   }
-  catch {
-    res = await importContract(hre, address, outdir);
+  catch (err) {
+    switch(err.name) {
+      case "SyntaxError":
+        // JSON parsing error
+      case "Error":
+        // File does not exist or read error
+      default:
+        res = await importContract(hre, address, outdir);
+        break;
+    }
   }
   return res;
 }
