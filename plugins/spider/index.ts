@@ -86,8 +86,8 @@ export async function pullConfigs(hre: HardhatRuntimeEnvironment) {
   let proxies = new Map<Address, Address>();
   // Start branching out from each root contract.
   let config = {};
-  await Promise.all(Object.entries(roots).map(async ([contractName, address]) => {
-    const rootNode = await expand(network, hre, relations, address, contractName, visited, proxies);
+  await Promise.all(Object.entries(roots).map(async ([name, address]) => {
+    const rootNode = await expand({network, hre, relations, address, name, visited, proxies});
     mergeConfig(config, rootNode);
   }));
 
@@ -190,7 +190,7 @@ async function expand({
       }
     }
     if (dependencies) {
-      const newChildren = await Promise.all(dependencies.map(item => expand(network, hre, relations, item, name, visited, proxies)));
+      const newChildren = await Promise.all(dependencies.map(addr => expand({network, hre, relations, address: addr, name, visited, proxies, writeToCache})));
       for (const newChild of newChildren) {
         if (newChild) {
           children.push(newChild);
