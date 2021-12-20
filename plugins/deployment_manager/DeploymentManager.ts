@@ -131,39 +131,39 @@ export class DeploymentManager {
 
     let { address, proxy } = discovered.shift();
 
-    // if (address === '0x0000000000000000000000000000000000000000') { // TODO?
+    if (address !== '0x0000000000000000000000000000000000000000') {
+      const buildFile = await this.readOrImportContract(address);
 
-    const buildFile = await this.readOrImportContract(address);
+      const { name, abi } = getPrimaryContract(buildFile);
 
-    const { name, abi } = getPrimaryContract(buildFile);
+      let contract = new this.hre.ethers.Contract(
+        proxy ?? address,
+        abi,
+        this.hre.ethers.provider
+      );
 
-    let contract = new this.hre.ethers.Contract(
-      proxy ?? address,
-      abi,
-      this.hre.ethers.provider
-    );
+      visited.set(address, buildFile);
 
-    visited.set(address, buildFile);
+      // TODO: Allow aliasing, e.g. `.symbol`
 
-    // TODO: Allow aliasing, e.g. `.symbol`
+      let relationConfig = relationConfigMap[name];
+      if (relationConfig) {
+        let relations = relationConfig.relations ?? [];
+        let relatedAddresses = await Promise.all(relations.map((relation) => getRelation(contract, relation)));
+        let newNodes = relatedAddresses.map((address) => ({ address, proxy: null }));
 
-    let relationConfig = relationConfigMap[name];
-    if (relationConfig) {
-      let relations = relationConfig.relations ?? [];
-      let relatedAddresses = await Promise.all(relations.map((relation) => getRelation(contract, relation)));
-      let newNodes = relatedAddresses.map((address) => ({ address, proxy: null }));
+        if (relationConfig.implementation) {
+          let implementationAddress = await getRelation(contract, relationConfig.implementation);
 
-      if (relationConfig.implementation) {
-        let implementationAddress = await getRelation(contract, relationConfig.implementation);
+          newNodes.push({
+            address: implementationAddress,
+            proxy: address
+          });
+        }
 
-        newNodes.push({
-          address: implementationAddress,
-          proxy: address
-        });
+        newNodes.filter(({address}) => !visited.has(address))
+        discovered.push(...newNodes);
       }
-
-      newNodes.filter(({address}) => !visited.has(address))
-      discovered.push(...newNodes);
     }
 
     return await this.runSpider(relationConfigMap, discovered, visited);
