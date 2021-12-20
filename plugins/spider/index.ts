@@ -80,20 +80,16 @@ function buildContractMap(
 
 export async function pullConfigs(hre: HardhatRuntimeEnvironment) {
   const network = hre.network.name;
-  const roots:{string:string} = await getRootsForDeployment(network);
+  const roots :{string:string} = await getRootsForDeployment(network);
   const relations = await createRelations(network);
   let visited = new Map<Address, string>(); // mapping from address to contract name
   let proxies = new Map<Address, Address>();
   // Start branching out from each root contract.
   let config = {};
-  let runs = Object.entries(roots).map(([contractName, address]) => {
-    return async () => {
-      const rootNode = await expand(network, hre, relations, address, contractName, visited, proxies);
-      mergeConfig(config, rootNode);
-    }
-  })
-
-  await Promise.all(runs.map(fn => fn()));
+  await Promise.all(Object.entries(roots).map(async ([contractName, address]) => {
+    const rootNode = await expand(network, hre, relations, address, contractName, visited, proxies);
+    mergeConfig(config, rootNode);
+  }));
 
   // Write config to file
   const configDir = path.join(__dirname, '..', '..', 'deployments', network);
@@ -195,8 +191,8 @@ async function expand({
     }
     if (dependencies) {
       const newChildren = await Promise.all(dependencies.map(item => expand(network, hre, relations, item, name, visited, proxies)));
-      for(const newChild of newChildren) {
-        if(newChild) {
+      for (const newChild of newChildren) {
+        if (newChild) {
           children.push(newChild);
         }
       }
@@ -238,11 +234,12 @@ async function loadContractConfig({
   return res;
 }
 
-async function importContract(hre, address, outdir) {
+async function importContract(hre, address, outdir, count = 0) {
+  if (count == 10) throw "Error: Etherscan API not resolving";
   try {
     return await hre.run('import', { address, outdir });
   } catch {
     await new Promise(r => setTimeout(r, 2000));
-    return await importContract(hre, address, outdir);
+    return await importContract(hre, address, outdir, count + 1);
   }
 }
