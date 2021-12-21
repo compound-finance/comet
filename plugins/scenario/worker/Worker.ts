@@ -26,18 +26,9 @@ export async function run<T>({scenarioConfig, bases, config}: {scenarioConfig: S
   let scenarios: { [name: string]: Scenario<T> } = await loadScenarios(scenarioGlob);
   let baseMap = Object.fromEntries(bases.map((base) => [base.name, base]));
 
-  async function runScenario<T>(base: ForkSpec, scenario: Scenario<T>) {
-    await new Runner({
-      bases: [base],
-      constraints: [],
-    }).run([scenario]);
-  }
-
   parentPort.on('message', async (message: Message) => {
     if (message.scenario) {
-      console.log(message);
       let { scenario: scenarioName, base: baseName } = message.scenario;
-      console.log({scenarioName, baseName});
       let scenario = scenarios[scenarioName];
       if (!scenario) {
         throw new Error(`Worker encountered unknown scenario: ${scenarioName}`);
@@ -47,22 +38,31 @@ export async function run<T>({scenarioConfig, bases, config}: {scenarioConfig: S
         throw new Error(`Worker encountered unknown base: ${baseName}`);
       }
 
-      let startTime = Date.now();
-      try {
-        await runScenario(base, scenario);
-        // Add timeout for flush
-        eventually(() => parentPort.postMessage({result: { base: base.name, scenario: scenario.name, elapsed: Date.now() - startTime, error: null, trace: null }}));
-      } catch (error) {
+      let resultFn = (base: ForkSpec, scenario: Scenario<T>, err: any) => {
         let diff = null;
-        if (error instanceof AssertionError) {
-          let { actual, expected } = <any>error; // Types unclear
+        if (err instanceof AssertionError) {
+          let { actual, expected } = <any>err; // Types unclear
           if (actual !== expected) {
             diff = { actual, expected };
           }
         }
         // Add timeout for flush
-        eventually(() => parentPort.postMessage({result: { base: base.name, scenario: scenario.name, elapsed: Date.now() - startTime, error, trace: error.stack.toString(), diff }}));
+        eventually(() => parentPort.postMessage({
+          result: {
+            base: base.name,
+            scenario: scenario.name,
+            elapsed: Date.now() - startTime,
+            error: err || null,
+            trace: err ? err.stack : null,
+            diff // XXX can we move this into parent?
+          }
+        }))
       }
+
+      console.log('Running', message.scenario);
+      let startTime = Date.now();
+      await new Runner({bases: [base]}).run([scenario], resultFn);
+      console.log('Ran', scenario);;
     } else {
       throw new Error(`Unknown or invalid worker message: ${JSON.stringify(message)}`);
     }
