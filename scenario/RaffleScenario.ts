@@ -134,6 +134,21 @@ scenario.only("restartRaffle > resets raffle state", {}, async ({actors, contrac
   expect(await raffle.state()).to.equal(0);
 });
 
+scenario.only("restartRaffle > updates ticket price", {}, async ({actors, contracts, players}, world) => {
+  const { admin, albert } = actors;
+  const { raffle } = contracts;
 
+  // enter one player into the raffle
+  const ticketPrice = await raffle.ticketPrice();
+  await raffle.connect(albert).enterWithEth({value: ticketPrice})
 
-// updates ticket price
+  // end raffle
+  await raffle.connect(admin).determineWinner();
+
+  const newTicketPrice = ticketPrice.add(1);
+
+  // restart raffle
+  await raffle.connect(admin).restartRaffle(newTicketPrice);
+
+  expect(await raffle.ticketPrice()).to.equal(newTicketPrice);
+});
