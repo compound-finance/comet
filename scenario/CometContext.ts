@@ -28,7 +28,32 @@ async function getUntilEmpty<T>(emptyVal: T, fn: (index: number) => Promise<T>):
   return await getUntilEmptyInner(emptyVal, fn, []);
 }
 
-export class CometActor {}
+export class CometActor {
+  signer: Signer;
+  raffleContract: Contract;
+
+  constructor(signer, raffleContract) {
+    this.signer = signer;
+    this.raffleContract = raffleContract;
+  }
+
+  async getAddress(): Promise<string> {
+    return this.signer.getAddress();
+  }
+
+  async enterWithEth(ticketPrice: number) {
+    await this.raffleContract.connect(this.signer).enterWithEth({ value: ticketPrice });
+  }
+
+  async determineWinner() {
+    await this.raffleContract.connect(this.signer).determineWinner();
+  }
+
+  async restartRaffle(ticketPrice: number) {
+    await this.raffleContract.connect(this.signer).restartRaffle(ticketPrice);
+  }
+}
+
 export class CometAsset {}
 
 export class CometContext {
@@ -98,26 +123,25 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
   }
 
   let signers = await world.hre.ethers.getSigners();
+  const [localAdminSigner, albertSigner, bettySigner, charlesSigner] = signers;
+  let adminSigner;
 
-  const [localAdmin, albert, betty, charles, denise] = signers;
-  let admin;
   if (isDevelopment) {
-    admin = localAdmin;
+    adminSigner = localAdminSigner;
   } else {
     const governorAddress = await contracts.raffle.governor();
     await world.hre.network.provider.request({
       method: "hardhat_impersonateAccount",
       params: [governorAddress],
     });
-    admin = await world.hre.ethers.getSigner(governorAddress);
+    adminSigner = await world.hre.ethers.getSigner(governorAddress);
   }
 
   const actors = {
-    admin,
-    albert,
-    betty,
-    charles,
-    denise
+    admin: new CometActor(adminSigner, contracts.raffle),
+    albert: new CometActor(albertSigner, contracts.raffle),
+    betty: new CometActor(bettySigner, contracts.raffle),
+    charles: new CometActor(charlesSigner, contracts.raffle),
   };
 
   // Deploy missing contracts
