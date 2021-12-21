@@ -38,9 +38,10 @@ export class CometContext {
   assets: { [name: string]: CometAsset }; // XXX
   remoteToken: Contract | undefined
 
-  constructor(dog: string, deploymentManager: DeploymentManager) {
+  constructor(dog: string, deploymentManager: DeploymentManager, actors: { [name: string]: CometActor }) {
     this.dog = dog;
     this.deploymentManager = deploymentManager;
+    this.actors = actors;
   }
 
   contracts(): ContractMap {
@@ -97,6 +98,26 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
   }
 
   let signers = await world.hre.ethers.getSigners();
+  const [localAdmin, albert, betty, charles, denise] = signers;
+  let admin;
+  if (isDevelopment) {
+    admin = localAdmin;
+  } else {
+    const governorAddress = await contracts.AsteroidRaffle.governor();
+    await world.hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [governorAddress],
+    });
+    admin = await world.hre.ethers.getSigner(governorAddress);
+  }
+
+  const actors = {
+    admin,
+    albert,
+    betty,
+    charles,
+    denise
+  };
 
   // Deploy missing contracts
   for (let [name, {contract, deployer}] of Object.entries(contractDeployers)) {
@@ -110,7 +131,7 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
     }
   }
 
-  return new CometContext("spot", deploymentManager);
+  return new CometContext("spot", deploymentManager, actors);
 }
 
 async function forkContext(c: CometContext): Promise<CometContext> {
