@@ -192,8 +192,7 @@ export class DeploymentManager {
             visited.set(implementationAddress, implBuildFile);
           }
 
-          // This should only ever have one contract.
-          maybeProxyABI = Object.values(implBuildFile.contracts)[0].abi;
+          maybeProxyABI = getPrimaryContract(implBuildFile).abi;
         }
 
         let contract = new this.hre.ethers.Contract(
