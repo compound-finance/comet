@@ -9,13 +9,17 @@ export class World {
   }
 
   async _snapshot() {
-    // XXX
-    // console.log('xxx snapshot')
+    return this.hre.network.provider.request({
+      method: 'evm_snapshot',
+      params: [],
+    });
   }
 
-  async _revert() {
-    // XXX
-    // console.log('xxx revert')
+  async _revert(snapshot) {
+    return this.hre.network.provider.request({
+      method: 'evm_revert',
+      params: [snapshot],
+    });
   }
 }
 

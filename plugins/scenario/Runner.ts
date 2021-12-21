@@ -8,11 +8,10 @@ export type ForkSpec = {
   blockNumber?: number;
 };
 
-export type Deploy = (World) => Promise<void>;
+export type ResultFn<T> = (base: ForkSpec, scenario: Scenario<T>, err?: any) => void;
 
 export interface Config<T> {
   bases?: ForkSpec[];
-  constraints?: Constraint<T>[];
 }
 
 function *combos(choices: object[][]) {
@@ -38,21 +37,19 @@ export class Runner<T> {
     this.config = config;
   }
 
-  async run(scenarios: Scenario<T>[]): Promise<Runner<T>> {
+  async run(scenarios: Scenario<T>[], resultFn: ResultFn<T>): Promise<Runner<T>> {
     const { config } = this;
-    const {
-      bases = [],
-      constraints = [],
-    } = config;
+    const { bases = [] } = config;
 
     for (const base of bases) {
       // construct a base world and context
-      const world = new World(hreForBase(base));
+      const world = new World(hreForBase(base)); // XXX can cache/re-use HREs per base
 
       // freeze the world as it was before we run any scenarios
-      await world._snapshot();
+      let snapshot = await world._snapshot();
 
       for (const scenario of scenarios) {
+        const { constraints = [] } = scenario;
         const context = await scenario.initializer(world, base);
 
         // generate worlds which satisfy the constraints
@@ -74,15 +71,22 @@ export class Runner<T> {
             await constraint.check(scenario.requirements, ctx, world);
           }
 
-          // Prebind all functions on object
+          // bind all functions on object
           bindFunctions(ctx);
 
           // requirements met, run the property
-          await scenario.property(ctx, world);
-          // XXX add scenario failure on ctx, world to report
+          try {
+            await scenario.property(ctx, world);
+            resultFn(base, scenario);
+          } catch (e) {
+            resultFn(base, scenario, e);
+          }
 
           // revert back to the frozen world for the next scenario
-          await world._revert();
+          await world._revert(snapshot);
+
+          // snapshots can only be used once, so take another for next time
+          snapshot = await world._snapshot();
         }
       }
     }
