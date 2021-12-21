@@ -5,7 +5,7 @@ import { Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Address, ContractMetadata, BuildFile, ContractMap, BuildMap } from './Types';
 export { ContractMap } from './Types';
-import { getPrimaryContract, getRelation, fileExists, mergeContracts, readAddressFromFilename } from './Utils';
+import { getPrimaryContract, getImplementation, getRelations, fileExists, mergeContracts, readAddressFromFilename } from './Utils';
 
 type Roots = { [contractName: string]: Address };
 
@@ -182,17 +182,18 @@ export class DeploymentManager {
         );
 
         if (relationConfig.implementation) {
-          let implementationAddress = await getRelation(baseContract, relationConfig.implementation);
+          let implementationAddress = await getImplementation(baseContract, relationConfig.implementation);
 
-          let proxyBuildFile;
+          let implBuildFile: BuildFile;
           if (visited[implementationAddress]) {
-            proxyBuildFile = visited[implementationAddress];
+            implBuildFile = visited[implementationAddress];
           } else {
-            proxyBuildFile = await this.readOrImportContract(address);
-            visited.set(implementationAddress, proxyBuildFile);
+            implBuildFile = await this.readOrImportContract(implementationAddress);
+            visited.set(implementationAddress, implBuildFile);
           }
 
-          maybeProxyABI = proxyBuildFile.abi;
+          // This should only ever have one contract.
+          maybeProxyABI = Object.values(implBuildFile.contracts)[0].abi;
         }
 
         let contract = new this.hre.ethers.Contract(
@@ -202,9 +203,9 @@ export class DeploymentManager {
         );
 
         let relations = relationConfig.relations ?? [];
-        let relatedAddresses = await Promise.all(relations.map((relation) => getRelation(contract, relation)));
+        let relatedAddresses = await Promise.all(relations.flatMap((relation) => getRelations(contract, relation)));
 
-        discovered.push(...relatedAddresses.filter((address) => !visited.has(address)));
+        discovered.push(...relatedAddresses.flat().filter((address) => !visited.has(address)));
       }
     }
 
