@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 
 import { Contract } from 'ethers';
-import { Address, BuildFile, ContractMetadata } from './Types';
+import { Address, BuildFile, ContractMap, ContractMetadata } from './Types';
 
 async function asAddress(contract: Contract, fnName: string): Promise<Address> {
   let fn = contract.functions[fnName];
@@ -47,4 +47,11 @@ export function getPrimaryContract(buildFile: BuildFile): ContractMetadata {
 // TODO: Should this raise or do something more interesting if it fails?
 export async function getRelation(contract: Contract, relation: string): Promise<string> {
   return await asAddress(contract, relation);
+}
+
+export function mergeContracts(a: ContractMap, b: ContractMap): ContractMap {
+  return {
+    ...a,
+    ...b,
+  };
 }
