@@ -71,12 +71,16 @@ scenario.only("determineWinner > changes raffle state", {}, async ({actors, cont
   expect(await raffle.state()).to.equal(1);
 });
 
-  // transfers prize money to someone
+// TODO: test determineWinner > transfers prize money to someone
 
+scenario.only("restartRaffle > rejects if raffle is active", {}, async ({actors, contracts}, world) => {
+  const { raffle } = contracts;
+  const newTicketPrice = 1;
+  expect(
+    raffle.restartRaffle(newTicketPrice)
+  ).to.be.revertedWith('Raffle is already active');
+});
 
-// restartRaffle
-
-  // rejects if raffle is already active
 
   // rejects if not the owner
 
