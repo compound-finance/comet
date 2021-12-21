@@ -72,7 +72,10 @@ let contractDeployers: {[name: string]: { contract: string, deployer: ((world: W
     deployer: async (world, contracts, signers) => {
       const AsteroidRaffle = await world.hre.ethers.getContractFactory('AsteroidRaffle');
       const raffle = await AsteroidRaffle.deploy('100000000000000000', contracts.token.address, contracts.oracle.address);
-      return await raffle.deployed();
+      const contract = await raffle.deployed();
+      const tx = await raffle.initialize('100000000000000000', 3 * 60);
+      await tx.wait();
+      return contract;
     },
   },
 }
