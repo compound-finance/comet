@@ -3,7 +3,9 @@ import { CometContext } from './CometContext'
 
 export class BalanceConstraint<T extends CometContext> implements Constraint<T> {
   async solve(requirements: object, context: T, world: World) {
+    console.log('xxxx', requirements)
     const solutions = [];
+    solutions.push(async (ctx: T, world: World) => ctx); // XXXX temp identity
     const assetsByActor = requirements['balance'];
     if (assetsByActor) {
       // XXX not meaningful right now, needs a strategy with the impl per block
