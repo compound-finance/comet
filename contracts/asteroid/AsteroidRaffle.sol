@@ -28,15 +28,17 @@ contract AsteroidRaffle is Initializable {
     Oracle public immutable oracle;
     // Ticket price in wei
     uint public ticketPrice;
+    // Raffle end time
+    uint public endTime;
     // All current round participants
     address[] public players;
-
+    // Used for upgradability initialize function
     bool public initialized = false;
 
     /*** Events ***/
     event NewPlayer(bool isToken, address participant, uint ticketPrice);
     event NewWinner(address winner, uint ethPrizeAmount, uint tokenPrizeAmount);
-    event RaffleRestarted(address governor, uint ticketPrice);
+    event RaffleRestarted(address governor, uint ticketPrice, uint endTime);
 
     // @dev You must call `initialize()` after construction
     constructor(Token token_, Oracle oracle_) {
@@ -45,11 +47,13 @@ contract AsteroidRaffle is Initializable {
         oracle = oracle_;
     }
 
-    function initialize(uint ticketPrice_) public initializer {
+    function initialize(uint ticketPrice_, uint duration_) public initializer {
         require(initialized == false, "Raffle already initialized");
 
+        // Save raffle parameters and state
         state = RaffleState.Active;
         ticketPrice = ticketPrice_;
+        endTime = block.timestamp + duration_;
 
         initialized = true;
     }
@@ -57,24 +61,31 @@ contract AsteroidRaffle is Initializable {
     function enterWithEth() external payable {
         require(state == RaffleState.Active, "Raffle is not active");
         require(msg.value == ticketPrice, "Incorrect ticket price");
+
+        // Add player to the raffle
         players.push(msg.sender);
 
         emit NewPlayer(false, msg.sender, ticketPrice);
     }
 
     function enterWithToken() external {
+        require(state == RaffleState.Active, "Raffle is not active");
         uint tokenTicketPrice = (ticketPrice * oracle.getEthPriceInTokens()) / 1e18;
         require(token.transferFrom(msg.sender, address(this), tokenTicketPrice), "Token transfer failed");
+
+        // Add player to the raffle
         players.push(msg.sender);
 
         emit NewPlayer(true, msg.sender, tokenTicketPrice);
     }
 
     function determineWinner() external {
-        require(msg.sender == governor, "Only owner can determine winner");
+        require(state == RaffleState.Active, "Raffle is already finished");
+        require(msg.sender == governor, "Only owner can end raffle");
+        require(block.timestamp > endTime, "Raffle time is not over yet");
         // Finish the raffle
         state = RaffleState.Finished;
-        // Pseudo-randolmly pick winner
+        // Pseudo-randomly pick a winner
         address winner = players[random() % players.length];
 
         // Distribute Eth prize pool to the winner
@@ -90,16 +101,19 @@ contract AsteroidRaffle is Initializable {
         emit NewWinner(winner, ethPrizeAmount, tokenPrizeAmount);
     }
 
-    function restartRaffle(uint newTicketPrice) external {
-        require(state == RaffleState.Finished, "Raffle is already active");
+    function restartRaffle(uint newTicketPrice, uint newDuration) external {
+        require(state == RaffleState.Finished, "Raffle is still active");
         require(msg.sender == governor, "Only owner can restart raffle");
+
+        // Update raffle parameters and state
         state = RaffleState.Active;
         ticketPrice = newTicketPrice;
+        endTime = block.timestamp + newDuration;
 
         // Delete previous players
         delete players;
 
-        emit RaffleRestarted(governor, ticketPrice);
+        emit RaffleRestarted(governor, ticketPrice, endTime);
     }
 
     function random() internal view returns (uint) {

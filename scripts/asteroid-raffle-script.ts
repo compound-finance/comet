@@ -30,7 +30,7 @@ async function main() {
   await raffle.deployed();
   console.log('Raffle deployed to:', raffle.address);
 
-  const tx1 = await raffle.initialize('100000000000000000');
+  const tx1 = await raffle.initialize('100000000000000000', 3 * 60);
   await tx1.wait();
 
   const Proxy = await ethers.getContractFactory('TransparentUpgradeableProxy');
