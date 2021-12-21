@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# exit when any command fails
+set -e
+
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | sed 's| |\\ |g')
+[ -z "$STAGED_FILES" ] && exit 0
+
+# typescript
+./node_modules/.bin/tsc
+
+# solhint
+echo "$STAGED_FILES" | egrep '\.sol$' | xargs ./node_modules/.bin/solhint --fix
+
+# Add back the modified/prettified files to staging
+echo "$STAGED_FILES" | xargs git add
+
+exit 0
