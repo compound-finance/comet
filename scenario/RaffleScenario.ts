@@ -113,6 +113,27 @@ scenario.only("restartRaffle > delete previous players", {}, async ({actors, con
   expect(await players()).to.be.empty;
 });
 
-  // resets Raffle State
+scenario.only("restartRaffle > resets raffle state", {}, async ({actors, contracts, players}, world) => {
+  const { admin, albert } = actors;
+  const { raffle } = contracts;
 
-  // updates ticket price
+  // enter one player into the raffle
+  const ticketPrice = await raffle.ticketPrice();
+  await raffle.connect(albert).enterWithEth({value: ticketPrice})
+
+  // end raffle
+  await raffle.connect(admin).determineWinner();
+
+  // Finished = 1
+  expect(await raffle.state()).to.equal(1);
+
+  // restart raffle
+  await raffle.connect(admin).restartRaffle(ticketPrice);
+
+  // Active = 0
+  expect(await raffle.state()).to.equal(0);
+});
+
+
+
+// updates ticket price
