@@ -1,6 +1,11 @@
 import { scenario } from "./Context";
 import { expect } from "chai";
 
+enum RaffleState {
+  Active = 0,
+  Finished = 1,
+}
+
 scenario(
   "enterWithEth > a player can enter via enterWithEth",
   {},
@@ -78,14 +83,12 @@ scenario(
     const ticketPrice = await raffle.ticketPrice();
     await raffle.connect(albert).enterWithEth({ value: ticketPrice });
 
-    // Active = 0
-    expect(await raffle.state()).to.equal(0);
+    expect(await raffle.state()).to.equal(RaffleState.Active);
 
     // end raffle
     await raffle.connect(admin).determineWinner();
 
-    // Finished = 1
-    expect(await raffle.state()).to.equal(1);
+    expect(await raffle.state()).to.equal(RaffleState.Finished);
   }
 );
 
@@ -157,14 +160,12 @@ scenario(
     // end raffle
     await raffle.connect(admin).determineWinner();
 
-    // Finished = 1
-    expect(await raffle.state()).to.equal(1);
+    expect(await raffle.state()).to.equal(RaffleState.Finished);
 
     // restart raffle
     await raffle.connect(admin).restartRaffle(ticketPrice);
 
-    // Active = 0
-    expect(await raffle.state()).to.equal(0);
+    expect(await raffle.state()).to.equal(RaffleState.Active);
   }
 );
 
