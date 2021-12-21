@@ -81,10 +81,9 @@ scenario.only("restartRaffle > rejects if raffle is active", {}, async ({actors,
   ).to.be.revertedWith('Raffle is already active');
 });
 
-scenario.only("restartRaffle > rejects if called is not the owner", {}, async ({actors, contracts}, world) => {
+scenario.only("restartRaffle > rejects if caller is not the owner", {}, async ({actors, contracts}, world) => {
   const { admin, albert } = actors;
   const { raffle } = contracts;
-  const newTicketPrice = 1;
 
   // enter one player into the raffle
   const ticketPrice = await raffle.ticketPrice();
@@ -94,7 +93,7 @@ scenario.only("restartRaffle > rejects if called is not the owner", {}, async ({
   await raffle.connect(admin).determineWinner();
 
   expect(
-    raffle.connect(albert).restartRaffle(newTicketPrice)
+    raffle.connect(albert).restartRaffle(ticketPrice)
   ).to.be.revertedWith('Only owner can restart raffle');
 });
 
