@@ -98,12 +98,13 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
   }
 
   let signers = await world.hre.ethers.getSigners();
+
   const [localAdmin, albert, betty, charles, denise] = signers;
   let admin;
   if (isDevelopment) {
     admin = localAdmin;
   } else {
-    const governorAddress = await contracts.AsteroidRaffle.governor();
+    const governorAddress = await contracts.raffle.governor();
     await world.hre.network.provider.request({
       method: "hardhat_impersonateAccount",
       params: [governorAddress],
