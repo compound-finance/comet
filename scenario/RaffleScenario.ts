@@ -1,8 +1,7 @@
 import { scenario } from './Context';
 import { expect } from 'chai';
 
-// enterWithEth
-scenario.only("a player can enter via enterWithEth", {}, async ({actors, contracts, players}, world) => {
+scenario.only("enterWithEth > a player can enter via enterWithEth", {}, async ({actors, contracts, players}, world) => {
   const { albert } = actors;
   const { raffle } = contracts;
 
@@ -13,8 +12,24 @@ scenario.only("a player can enter via enterWithEth", {}, async ({actors, contrac
   expect(await players()).to.include(await albert.getAddress());
 });
 
-  // rejects when raffle is not active
-scenario.only("enterWithEth rejects incorrect ticketPrice", {}, async ({actors, contracts}, world) => {
+scenario.only("enterWithEth > fails when raffle is inactive", {}, async ({actors, contracts}, world) => {
+  const { admin, albert, betty } = actors;
+  const { raffle } = contracts;
+
+  const ticketPrice = await raffle.ticketPrice();
+
+  // enter one player into the raffle
+  await raffle.connect(albert).enterWithEth({value: ticketPrice})
+
+  // end raffle
+  await raffle.connect(admin).determineWinner();
+
+  expect(
+    raffle.connect(betty).enterWithEth({value: ticketPrice})
+  ).to.be.revertedWith("Raffle is not active");
+});
+
+scenario.only("enterWithEth > rejects incorrect ticketPrice", {}, async ({actors, contracts}, world) => {
   const { albert } = actors;
   const { raffle } = contracts;
 
