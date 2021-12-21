@@ -52,7 +52,24 @@ scenario.only("determineWinner can only be called by owner", {}, async ({actors,
   ).to.be.revertedWith('Only owner can determine winner');
 });
 
-  // changes raffle state
+// changes raffle state
+scenario.only("determineWinner > changes raffle state", {}, async ({actors, contracts}, world) => {
+  const { admin, albert, betty } = actors;
+  const { raffle } = contracts;
+
+  // enter one player into the raffle
+  const ticketPrice = await raffle.ticketPrice();
+  await raffle.connect(albert).enterWithEth({value: ticketPrice})
+
+  // Active = 0
+  expect(await raffle.state()).to.equal(0);
+
+  // end raffle
+  await raffle.connect(admin).determineWinner();
+
+  // Finished = 1
+  expect(await raffle.state()).to.equal(1);
+});
 
   // transfers prize money to someone
 
