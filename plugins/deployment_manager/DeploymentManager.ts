@@ -7,11 +7,6 @@ import { Address, ContractMetadata, BuildFile, ContractMap, BuildMap } from './T
 export { ContractMap } from './Types';
 import { getPrimaryContract, getRelation, fileExists, mergeContracts, readAddressFromFilename } from './Utils';
 
-export interface ProxyAddress {
-  address: Address,
-  proxy: Address | null
-}
-
 type Roots = { [contractName: string]: Address };
 
 export interface RelationConfig {
@@ -26,7 +21,7 @@ interface DeploymentConfig {
   baseDir?: string;
   importRetries?: number;
   importRetryDelay?: number;
-  writeImports?: boolean;
+  memoryImports?: boolean;
 }
 
 export class DeploymentManager {
@@ -100,6 +95,10 @@ export class DeploymentManager {
 
   // Write a contract metadata to file cache
   private async writeBuildFileToCache(address: Address, buildFile: BuildFile): Promise<void> {
+    if (!(await fileExists(this.cacheDir()))) {
+      await fs.mkdir(this.cacheDir());
+    }
+
     let cacheBuildFile = this.cacheBuildFile(address);
     await fs.writeFile(cacheBuildFile, JSON.stringify(buildFile));
   }
@@ -156,23 +155,17 @@ export class DeploymentManager {
   }
 
   // Tail-call optimized version of spider method, which crawls a dependency graph gathering contract data
-  private async runSpider(relationConfigMap: RelationConfigMap, discovered: ProxyAddress[], visited: BuildMap): Promise<BuildMap> {
+  private async runSpider(relationConfigMap: RelationConfigMap, discovered: Address[], visited: BuildMap): Promise<BuildMap> {
     if (discovered.length === 0) {
       return visited;
     }
 
-    let { address, proxy } = discovered.shift();
+    let address = discovered.shift();
 
     if (address !== '0x0000000000000000000000000000000000000000') {
       const buildFile = await this.readOrImportContract(address);
 
       const { name, abi } = getPrimaryContract(buildFile);
-
-      let contract = new this.hre.ethers.Contract(
-        proxy ?? address,
-        abi,
-        this.hre.ethers.provider
-      );
 
       visited.set(address, buildFile);
 
@@ -180,21 +173,38 @@ export class DeploymentManager {
 
       let relationConfig = relationConfigMap[name];
       if (relationConfig) {
-        let relations = relationConfig.relations ?? [];
-        let relatedAddresses = await Promise.all(relations.map((relation) => getRelation(contract, relation)));
-        let newNodes = relatedAddresses.map((address) => ({ address, proxy: null }));
+        let maybeProxyABI = abi;
+
+        let baseContract = new this.hre.ethers.Contract(
+          address,
+          abi,
+          this.hre.ethers.provider
+        );
 
         if (relationConfig.implementation) {
-          let implementationAddress = await getRelation(contract, relationConfig.implementation);
+          let implementationAddress = await getRelation(baseContract, relationConfig.implementation);
 
-          newNodes.push({
-            address: implementationAddress,
-            proxy: address
-          });
+          let proxyBuildFile;
+          if (visited[implementationAddress]) {
+            proxyBuildFile = visited[implementationAddress];
+          } else {
+            proxyBuildFile = await this.readOrImportContract(address);
+            visited.set(implementationAddress, proxyBuildFile);
+          }
+
+          maybeProxyABI = proxyBuildFile.abi;
         }
 
-        newNodes.filter(({address}) => !visited.has(address))
-        discovered.push(...newNodes);
+        let contract = new this.hre.ethers.Contract(
+          address,
+          maybeProxyABI,
+          this.hre.ethers.provider
+        );
+
+        let relations = relationConfig.relations ?? [];
+        let relatedAddresses = await Promise.all(relations.map((relation) => getRelation(contract, relation)));
+
+        discovered.push(...relatedAddresses.filter((address) => !visited.has(address)));
       }
     }
 
@@ -205,7 +215,7 @@ export class DeploymentManager {
   private async importContract(address: Address, retries: number): Promise<BuildFile> {
     let buildFile;
     try {
-      buildFile = (await this.hre.run('import', { address })) as BuildFile;
+      buildFile = (await this.hre.run('import', { address, networkNameOverride: this.deployment })) as BuildFile;
     } catch (e) {
       if (retries === 0) {
         throw e;
@@ -215,7 +225,7 @@ export class DeploymentManager {
       return await this.importContract(address, retries - 1);
     }
 
-    if (this.config.writeImports === true) {
+    if (!this.config.memoryImports) {
       await this.writeBuildFileToCache(address, buildFile);
     }
     return buildFile;
@@ -225,13 +235,7 @@ export class DeploymentManager {
     * Runs Spider method to pull full contract configuration from base roots using relation metadata.
     */
   async spider(): Promise<ContractMap> {
-    let nodes = Object.values(await this.getRoots()).map((root: string): ProxyAddress => {
-      return {
-        address: root,
-        proxy: null
-      };
-    });
-
+    let nodes = Object.values(await this.getRoots());
     let buildMap = await this.runSpider(await this.getRelationConfig(), nodes, new Map());
 
     return await this.loadContractsFromBuildMap(buildMap);
