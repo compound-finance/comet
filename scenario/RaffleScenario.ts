@@ -98,7 +98,21 @@ scenario.only("restartRaffle > rejects if called is not the owner", {}, async ({
   ).to.be.revertedWith('Only owner can restart raffle');
 });
 
-  // deletes previous players
+scenario.only("restartRaffle > delete previous players", {}, async ({actors, contracts, players}, world) => {
+  const { admin, albert } = actors;
+  const { raffle } = contracts;
+
+  // enter one player into the raffle
+  const ticketPrice = await raffle.ticketPrice();
+  await raffle.connect(albert).enterWithEth({value: ticketPrice})
+
+  // end raffle
+  await raffle.connect(admin).determineWinner();
+  // restart raffle
+  await raffle.connect(admin).restartRaffle(ticketPrice);
+
+  expect(await players()).to.be.empty;
+});
 
   // resets Raffle State
 
