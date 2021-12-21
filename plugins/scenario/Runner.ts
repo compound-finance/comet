@@ -42,7 +42,7 @@ function asList<T>(v: T | T[]): T[] {
 }
 
 function mapSolution<T>(s: Solution<T> | Solution<T>[] | null): Solution<T>[] {
-  if (s === null) {
+  if (s == null) {
     return [identity];
   } else {
     return asList(s);
@@ -90,7 +90,7 @@ export class Runner<T> {
 
           // apply each solution in the combo, then check they all still hold
           for (const solution of combo) {
-            ctx = (await solution(ctx, world)) || ctx;
+            ctx = await solution(ctx, world) || ctx;
           }
 
           for (const constraint of constraints) {
