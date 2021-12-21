@@ -1,6 +1,8 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
 interface Token {
   function balanceOf(address) external view returns (uint);
   function transfer(address, uint) external returns (bool);
@@ -13,7 +15,7 @@ interface Oracle {
 }
 
 // This was done as a toy contract deliberately, use cautiosly and with skepticism
-contract AsteroidRaffle {
+contract AsteroidRaffle is Initializable {
 
     enum RaffleState { Active, Finished }
     RaffleState public state;
@@ -29,17 +31,27 @@ contract AsteroidRaffle {
     // All current round participants
     address[] public players;
 
+    bool public initialized = false;
+
     /*** Events ***/
     event NewPlayer(bool isToken, address participant, uint ticketPrice);
     event NewWinner(address winner, uint ethPrizeAmount, uint tokenPrizeAmount);
     event RaffleRestarted(address governor, uint ticketPrice);
 
-    constructor(uint ticketPrice_, Token token_, Oracle oracle_) {
+    // @dev You must call `initialize()` after construction
+    constructor(Token token_, Oracle oracle_) {
         governor = msg.sender;
-        state = RaffleState.Active;
-        ticketPrice = ticketPrice_;
         token = token_;
         oracle = oracle_;
+    }
+
+    function initialize(uint ticketPrice_) public initializer {
+        require(initialized == false, "Raffle already initialized");
+
+        state = RaffleState.Active;
+        ticketPrice = ticketPrice_;
+
+        initialized = true;
     }
 
     function enterWithEth() external payable {
@@ -51,11 +63,11 @@ contract AsteroidRaffle {
     }
 
     function enterWithToken() external {
-      uint tokenTicketPrice = (ticketPrice * oracle.getEthPriceInTokens()) / 1e18;
-      require(token.transferFrom(msg.sender, address(this), tokenTicketPrice), "Token transfer failed");
-      players.push(msg.sender);
+        uint tokenTicketPrice = (ticketPrice * oracle.getEthPriceInTokens()) / 1e18;
+        require(token.transferFrom(msg.sender, address(this), tokenTicketPrice), "Token transfer failed");
+        players.push(msg.sender);
 
-      emit NewPlayer(true, msg.sender, tokenTicketPrice);
+        emit NewPlayer(true, msg.sender, tokenTicketPrice);
     }
 
     function determineWinner() external {
@@ -91,6 +103,6 @@ contract AsteroidRaffle {
     }
 
     function random() internal view returns (uint) {
-      return uint(keccak256(abi.encodePacked(block.difficulty, block.timestamp, players)));
+        return uint(keccak256(abi.encodePacked(block.difficulty, block.timestamp, players)));
     }
 }
