@@ -1,5 +1,5 @@
 import { ForkSpec, Property, World, buildScenarioFn } from '../plugins/scenario'
-import { ContractMap, getEthersContractsForDeployment } from '../plugins/spider'
+import { ContractMap, DeploymentManager } from '../plugins/deployment_manager/DeploymentManager'
 import { BalanceConstraint } from './Constraints'
 import { Contract, Signer } from 'ethers'
 
@@ -32,25 +32,29 @@ export class CometAsset {}
 
 export class CometContext {
   dog: string;
-  contracts: ContractMap;
+  deploymentManager: DeploymentManager;
   actors: { [name: string]: CometActor }; // XXX
   assets: { [name: string]: CometAsset }; // XXX
 
-  constructor(dog: string, contracts: ContractMap) {
+  constructor(dog: string, deploymentManager: DeploymentManager) {
     this.dog = dog;
-    this.contracts = contracts;
+    this.deploymentManager = deploymentManager;
+  }
+
+  contracts(): ContractMap {
+    return this.deploymentManager.contracts;
   }
 
   async players(): Promise<string[]> {
     return await getUntilEmpty("0x0000000000000000000000000000000000000000", async (index) => {
-      return await this.contracts.raffle.players(index);
+      return await this.contracts().raffle.players(index);
     });
   }
 }
 
 let contractDeployers: {[name: string]: { contract: string, deployer: ((world: World, contracts: ContractMap, signers: Signer[]) => Promise<Contract>) }} = {
   token: {
-    contract: "DAIFaucetToken", // TODO: This should be handled by pointers.json
+    contract: "FaucetToken", // TODO: This should be handled by pointers.json
     deployer: async (world, contracts, signers) => {
       const FaucetToken = await world.hre.ethers.getContractFactory('FaucetToken');
       const token = await FaucetToken.deploy(100000, "DAI", 18, "DAI");
@@ -59,7 +63,7 @@ let contractDeployers: {[name: string]: { contract: string, deployer: ((world: W
   },
 
   oracle: {
-    contract: "AsteroidRaffleMockedOracle", // TODO: This should be handled by pointers.json
+    contract: "MockedOracle", // TODO: This should be handled by pointers.json
     deployer: async (world, contracts, signers) => {
       const Oracle = await world.hre.ethers.getContractFactory('MockedOracle');
       const oracle = await Oracle.connect(signers[1]).deploy();
@@ -82,27 +86,29 @@ let contractDeployers: {[name: string]: { contract: string, deployer: ((world: W
 
 const getInitialContext = async (world: World, base: ForkSpec): Promise<CometContext> => {
   const isDevelopment = !base.url;
+  let deploymentManager = new DeploymentManager(base.name, world.hre);
 
   if (isDevelopment) {
-    await world.hre.run("compile");
+    await world.hre.run("compile"); // I mean, should we compile anyway?
+  } else {
+    await deploymentManager.spider()
   }
 
-  let contracts = isDevelopment ? {} : await getEthersContractsForDeployment(world.hre, base.name);
   let signers = await world.hre.ethers.getSigners();
 
   // Deploy missing contracts
   for (let [name, {contract, deployer}] of Object.entries(contractDeployers)) {
-    let contractInst = contracts[contract];
+    let contractInst = deploymentManager.contracts[contract];
 
     if (contractInst) {
-      contracts[name] = contractInst;
+      deploymentManager.contracts[name] = contractInst;
     } else {
       console.log("Deploying " + name);
-      contracts[name] = await deployer(world, contracts, signers);
+      deploymentManager.contracts[name] = await deployer(world, deploymentManager.contracts, signers);
     }
   }
 
-  return new CometContext("spot", contracts);
+  return new CometContext("spot", deploymentManager);
 }
 
 async function forkContext(c: CometContext): Promise<CometContext> {
