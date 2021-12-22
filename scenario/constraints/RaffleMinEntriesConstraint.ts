@@ -1,11 +1,11 @@
 import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
-import { CometContext } from '../Context';
+import { CometContext } from '../CometContext';
 
 function randomElement<T>(array: T[]): T {
   return array[Math.floor(Math.random() * array.length)];
 }
 
-class RaffleConstraint<T extends CometContext> implements Constraint<T> {
+class RaffleMinEntriesConstraint<T extends CometContext> implements Constraint<T> {
   async solve(requirements, _context, _world) {
     const minEntries = requirements?.raffle?.minEntries || 0;
 
@@ -13,9 +13,10 @@ class RaffleConstraint<T extends CometContext> implements Constraint<T> {
       return null;
     }
 
-    return async (context) => {
-      const { actors, contracts } = context;
-      const { raffle } = contracts;
+    return async (context: CometContext) => {
+      const { actors } = context;
+      const raffle = context.contracts().raffle;
+      // const { raffle } = contracts();
 
       let playerCount = (await context.players()).length;
       const actorNames = Object.keys(actors);
@@ -34,4 +35,4 @@ class RaffleConstraint<T extends CometContext> implements Constraint<T> {
   }
 }
 
-export default RaffleConstraint;
+export default RaffleMinEntriesConstraint;

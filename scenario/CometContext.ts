@@ -1,8 +1,10 @@
+import { Contract, Signer } from 'ethers'
 import { ForkSpec, Property, World, buildScenarioFn } from '../plugins/scenario'
 import { ContractMap, DeploymentManager } from '../plugins/deployment_manager/DeploymentManager'
-import { BalanceConstraint } from './Constraints'
 import { RemoteTokenConstraint } from './constraints/RemoteTokenConstraint'
-import { Contract, Signer } from 'ethers'
+import RaffleMinEntriesConstraint from "./constraints/RaffleMinEntriesConstraint"
+import RaffleStateConstraint from "./constraints/RaffleStateConstraint"
+
 
 async function getUntilEmpty<T>(emptyVal: T, fn: (index: number) => Promise<T>): Promise<T[]> {
   // Inner for TCO
@@ -59,7 +61,7 @@ export class CometAsset {}
 export class CometContext {
   dog: string;
   deploymentManager: DeploymentManager;
-  actors: { [name: string]: CometActor }; // XXX
+  actors: { [name: string]: CometActor };
   assets: { [name: string]: CometAsset }; // XXX
   remoteToken: Contract | undefined
 
@@ -123,26 +125,6 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
   }
 
   let signers = await world.hre.ethers.getSigners();
-  const [localAdminSigner, albertSigner, bettySigner, charlesSigner] = signers;
-  let adminSigner;
-
-  if (isDevelopment) {
-    adminSigner = localAdminSigner;
-  } else {
-    const governorAddress = await contracts.raffle.governor();
-    await world.hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [governorAddress],
-    });
-    adminSigner = await world.hre.ethers.getSigner(governorAddress);
-  }
-
-  const actors = {
-    admin: new CometActor(adminSigner, contracts.raffle),
-    albert: new CometActor(albertSigner, contracts.raffle),
-    betty: new CometActor(bettySigner, contracts.raffle),
-    charles: new CometActor(charlesSigner, contracts.raffle),
-  };
 
   // Deploy missing contracts
   for (let [name, {contract, deployer}] of Object.entries(contractDeployers)) {
@@ -156,6 +138,27 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
     }
   }
 
+  const [localAdminSigner, albertSigner, bettySigner, charlesSigner] = signers;
+  let adminSigner;
+
+  if (isDevelopment) {
+    adminSigner = localAdminSigner;
+  } else {
+    const governorAddress = await deploymentManager.contracts.raffle.governor();
+    await world.hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [governorAddress],
+    });
+    adminSigner = await world.hre.ethers.getSigner(governorAddress);
+  }
+
+  const actors = {
+    admin: new CometActor(adminSigner, deploymentManager.contracts.raffle),
+    albert: new CometActor(albertSigner, deploymentManager.contracts.raffle),
+    betty: new CometActor(bettySigner, deploymentManager.contracts.raffle),
+    charles: new CometActor(charlesSigner, deploymentManager.contracts.raffle),
+  };
+
   return new CometContext("spot", deploymentManager, actors);
 }
 
@@ -165,6 +168,8 @@ async function forkContext(c: CometContext): Promise<CometContext> {
 
 export const constraints = [
   new RemoteTokenConstraint,
+  new RaffleMinEntriesConstraint,
+  new RaffleStateConstraint,
 ];
 
 export const scenario = buildScenarioFn<CometContext>(getInitialContext, forkContext, constraints);

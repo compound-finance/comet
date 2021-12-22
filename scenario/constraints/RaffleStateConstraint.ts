@@ -1,5 +1,5 @@
 import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
-import { CometContext } from '../Context';
+import { CometContext } from '../CometContext';
 
 export enum RaffleState {
   Active = 0,
@@ -20,10 +20,10 @@ class RaffleStateConstraint<T extends CometContext> implements Constraint<T> {
       return null;
     }
 
-    return async (context) => {
-      const { contracts, actors } = context;
+    return async (context: CometContext) => {
+      const { actors } = context;
       const { admin } = actors;
-      const { raffle } = contracts;
+      const raffle = context.contracts().raffle;
 
       const currentState = await raffle.state();
 

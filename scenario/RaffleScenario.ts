@@ -1,4 +1,4 @@
-import { scenario } from "./Context";
+import { scenario } from "./CometContext";
 import { expect } from "chai";
 import { RaffleState } from "./constraints/RaffleStateConstraint";
 
@@ -11,7 +11,7 @@ scenario(
   },
   async ({ actors, contracts, players }) => {
     const { albert } = actors;
-    const { raffle } = contracts;
+    const { raffle } = contracts();
 
     const ticketPrice = await raffle.ticketPrice();
 
@@ -31,11 +31,11 @@ scenario(
   },
   async ({ actors, contracts }) => {
     const { betty } = actors;
-    const { raffle } = contracts;
+    const { raffle } = contracts();
 
     const ticketPrice = await raffle.ticketPrice();
 
-    expect(
+    await expect(
       betty.enterWithEth(ticketPrice)
     ).to.be.revertedWith("Raffle is not active");
   }
@@ -46,7 +46,7 @@ scenario(
   {},
   async ({ actors, contracts }) => {
     const { albert } = actors;
-    const { raffle } = contracts;
+    const { raffle } = contracts();
 
     const ticketPrice = await raffle.ticketPrice();
 
@@ -80,7 +80,7 @@ scenario(
   },
   async ({ actors, contracts }) => {
     const { admin } = actors;
-    const { raffle } = contracts;
+    const { raffle } = contracts();
 
     await admin.determineWinner();
 
@@ -98,11 +98,11 @@ scenario(
     }
   },
   async ({ contracts }) => {
-    const { raffle } = contracts;
+    const { raffle } = contracts();
 
     const newTicketPrice = 1;
 
-    expect(raffle.restartRaffle(newTicketPrice)).to.be.revertedWith(
+    await expect(raffle.restartRaffle(newTicketPrice)).to.be.revertedWith(
       "Raffle is already active"
     );
   }
@@ -118,11 +118,11 @@ scenario(
   },
   async ({ actors, contracts }) => {
     const { albert } = actors;
-    const { raffle } = contracts;
+    const { raffle } = contracts();
 
     const newTicketPrice = 1;
 
-    expect(
+    await expect(
       albert.restartRaffle(newTicketPrice)
     ).to.be.revertedWith("Only owner can restart raffle");
   }
@@ -138,7 +138,7 @@ scenario(
   },
   async ({ actors, contracts, players }) => {
     const { admin } = actors;
-    const { raffle } = contracts;
+    const { raffle } = contracts();
 
     expect(await players()).to.not.be.empty;
 
@@ -149,7 +149,7 @@ scenario(
   }
 );
 
-scenario(
+scenario.only(
   "restartRaffle > resets raffle state",
   {
     raffle: {
@@ -159,7 +159,7 @@ scenario(
   },
   async ({ actors, contracts }) => {
     const { admin } = actors;
-    const { raffle } = contracts;
+    const { raffle } = contracts();
 
     expect(await raffle.state()).to.equal(RaffleState.Finished);
 
@@ -181,7 +181,7 @@ scenario(
   },
   async ({ actors, contracts }) => {
     const { admin } = actors;
-    const { raffle } = contracts;
+    const { raffle } = contracts();
 
     const ticketPrice = await raffle.ticketPrice();
     const newTicketPrice = ticketPrice.add(1);
