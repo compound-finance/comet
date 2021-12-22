@@ -1,5 +1,5 @@
 import { Constraint, Scenario, Solution, World } from '../plugins/scenario'
-import { CometContext } from './Context'
+import { CometContext } from './CometContext'
 
 export class BalanceConstraint<T extends CometContext> implements Constraint<T> {
   async solve(requirements: object, context: T, world: World) {

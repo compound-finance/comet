@@ -1,6 +1,7 @@
 import { ForkSpec, Property, World, buildScenarioFn } from '../plugins/scenario'
 import { ContractMap, DeploymentManager } from '../plugins/deployment_manager/DeploymentManager'
 import { BalanceConstraint } from './Constraints'
+import { RemoteTokenConstraint } from './constraints/RemoteTokenConstraint'
 import { Contract, Signer } from 'ethers'
 
 async function getUntilEmpty<T>(emptyVal: T, fn: (index: number) => Promise<T>): Promise<T[]> {
@@ -35,6 +36,7 @@ export class CometContext {
   deploymentManager: DeploymentManager;
   actors: { [name: string]: CometActor }; // XXX
   assets: { [name: string]: CometAsset }; // XXX
+  remoteToken: Contract | undefined
 
   constructor(dog: string, deploymentManager: DeploymentManager) {
     this.dog = dog;
@@ -113,7 +115,7 @@ async function forkContext(c: CometContext): Promise<CometContext> {
 }
 
 export const constraints = [
-  new BalanceConstraint,
+  new RemoteTokenConstraint,
 ];
 
-export const scenario = buildScenarioFn(getInitialContext, forkContext, constraints);
+export const scenario = buildScenarioFn<CometContext>(getInitialContext, forkContext, constraints);

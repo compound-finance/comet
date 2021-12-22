@@ -1,4 +1,4 @@
-import { Constraint, World, Scenario } from './Scenario'
+import { Constraint, World, Scenario, Solution } from './Scenario'
 import hreForBase from "./utils/hreForBase";
 
 export type Address = string;
@@ -30,6 +30,22 @@ function bindFunctions(obj: any) {
   }
 }
 
+async function identity<T>(ctx: T, world: World): Promise<T> {
+  return ctx;
+}
+
+function asList<T>(v: T | T[]): T[] {
+  return [].concat(v);
+}
+
+function mapSolution<T>(s: Solution<T> | Solution<T>[] | null): Solution<T>[] {
+  if (s === null) {
+    return [identity];
+  } else {
+    return asList(s);
+  }
+}
+
 export class Runner<T> {
   config: Config<T>;
 
@@ -55,16 +71,18 @@ export class Runner<T> {
         // generate worlds which satisfy the constraints
         // note: `solve` is expected not to modify context or world
         //  and constraints should be independent or conflicts will be detected
-        const solutionChoices = await Promise.all(
-          constraints.map(c => c.solve(scenario.requirements, context, world))
+        const solutionChoices: Solution<T>[][] = await Promise.all(
+          constraints.map(c => c.solve(scenario.requirements, context, world).then(mapSolution))
         );
-        for (const combo of combos(solutionChoices)) {
+        const baseSolutions: Solution<T>[][] = [[identity]];
+
+        for (const combo of combos(baseSolutions.concat(solutionChoices))) {
           // create a fresh copy of context that solutions can modify
           let ctx = await scenario.forker(context);
 
           // apply each solution in the combo, then check they all still hold
           for (const solution of combo){
-            ctx = await solution(ctx, world);
+            ctx = await solution(ctx, world) || ctx;
           }
 
           for (const constraint of constraints){
