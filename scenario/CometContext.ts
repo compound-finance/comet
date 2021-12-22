@@ -1,7 +1,7 @@
 import { ForkSpec, Property, World, buildScenarioFn } from '../plugins/scenario'
 import { ContractMap, DeploymentManager } from '../plugins/deployment_manager/DeploymentManager'
 import { BalanceConstraint } from './Constraints'
-import { RemoteTokenConstraint } from './constraints/RemoteTokenConstraint';
+import { RemoteTokenConstraint } from './constraints/RemoteTokenConstraint'
 import { Contract, Signer } from 'ethers'
 
 async function getUntilEmpty<T>(emptyVal: T, fn: (index: number) => Promise<T>): Promise<T[]> {

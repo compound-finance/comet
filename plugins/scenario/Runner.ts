@@ -35,11 +35,7 @@ async function identity<T>(ctx: T, world: World): Promise<T> {
 }
 
 function asList<T>(v: T | T[]): T[] {
-  if (Array.isArray(v)) {
-    return v;
-  } else {
-    return [v];
-  }
+  return [].concat(v);
 }
 
 function mapSolution<T>(s: Solution<T> | Solution<T>[] | null): Solution<T>[] {
@@ -75,11 +71,12 @@ export class Runner<T> {
         // generate worlds which satisfy the constraints
         // note: `solve` is expected not to modify context or world
         //  and constraints should be independent or conflicts will be detected
-        const solutionChoices = await Promise.all(
+        const solutionChoices: Solution<T>[][] = await Promise.all(
           constraints.map(c => c.solve(scenario.requirements, context, world).then(mapSolution))
         );
+        const baseSolutions: Solution<T>[][] = [[identity]];
 
-        for (const combo of combos(solutionChoices)) {
+        for (const combo of combos(baseSolutions.concat(solutionChoices))) {
           // create a fresh copy of context that solutions can modify
           let ctx = await scenario.forker(context);
 
