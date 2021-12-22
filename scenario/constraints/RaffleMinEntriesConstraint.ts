@@ -16,7 +16,6 @@ class RaffleMinEntriesConstraint<T extends CometContext> implements Constraint<T
     return async (context: CometContext) => {
       const { actors } = context;
       const raffle = context.contracts().raffle;
-      // const { raffle } = contracts();
 
       let playerCount = (await context.players()).length;
       const actorNames = Object.keys(actors);

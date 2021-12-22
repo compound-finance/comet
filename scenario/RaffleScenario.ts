@@ -149,7 +149,7 @@ scenario(
   }
 );
 
-scenario.only(
+scenario(
   "restartRaffle > resets raffle state",
   {
     raffle: {
