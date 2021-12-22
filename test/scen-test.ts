@@ -1,7 +1,7 @@
 /* Check basic scenario compilation */
 
 import { Runner } from '../plugins/scenario/Runner'
-import { CometContext } from '../scenario/Context'
+import { CometContext } from '../scenario/CometContext'
 
 const scenarios = [];
 new Runner({
