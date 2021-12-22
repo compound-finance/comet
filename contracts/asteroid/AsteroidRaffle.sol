@@ -88,6 +88,11 @@ contract AsteroidRaffle is Initializable {
         // Pseudo-randomly pick a winner
         address winner = players[random() % players.length];
 
+        // End raffle, nobody participated, no funds to distribute
+        if (players.length == 0) {
+          return;
+        }
+
         // Distribute Eth prize pool to the winner
         uint ethPrizeAmount = address(this).balance;
         payable(winner).transfer(ethPrizeAmount);
