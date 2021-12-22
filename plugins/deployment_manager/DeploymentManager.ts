@@ -5,7 +5,7 @@ import { Contract, Signer } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Address, ContractMetadata, BuildFile, ContractMap, BuildMap } from './Types';
 export { ContractMap } from './Types';
-import { getPrimaryContract, getRelation, fileExists, mergeContracts, readAddressFromFilename } from './Utils';
+import { getPrimaryContract, getRelations, fileExists, mergeContracts, readAddressFromFilename } from './Utils';
 
 type Roots = { [contractName: string]: Address };
 
@@ -197,17 +197,17 @@ export class DeploymentManager {
         );
 
         if (relationConfig.implementation) {
-          let implementationAddress = await getRelation(baseContract, relationConfig.implementation);
+          let [implAddress] = await getRelations(baseContract, relationConfig.implementation);
 
-          let proxyBuildFile;
-          if (visited[implementationAddress]) {
-            proxyBuildFile = visited[implementationAddress];
+          let implBuildFile: BuildFile;
+          if (visited[implAddress]) {
+            implBuildFile = visited[implAddress];
           } else {
-            proxyBuildFile = await this.readOrImportContract(address);
-            visited.set(implementationAddress, proxyBuildFile);
+            implBuildFile = await this.readOrImportContract(implAddress);
+            visited.set(implAddress, implBuildFile);
           }
 
-          maybeProxyABI = proxyBuildFile.abi;
+          maybeProxyABI = getPrimaryContract(implBuildFile).abi;
         }
 
         let contract = new this.hre.ethers.Contract(
@@ -217,9 +217,9 @@ export class DeploymentManager {
         );
 
         let relations = relationConfig.relations ?? [];
-        let relatedAddresses = await Promise.all(relations.map((relation) => getRelation(contract, relation)));
+        let relatedAddresses = await Promise.all(relations.map((relation) => getRelations(contract, relation)));
 
-        discovered.push(...relatedAddresses.filter((address) => !visited.has(address)));
+        discovered.push(...relatedAddresses.flat().filter((address) => !visited.has(address)));
       }
     }
 

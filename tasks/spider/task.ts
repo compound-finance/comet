@@ -1,6 +1,7 @@
 import { task } from 'hardhat/config';
 import { pullConfigs } from '../../plugins/spider';
 import { execSync } from "child_process";
+import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 
 async function deleteSpiderArtifacts() {
   [
@@ -19,6 +20,7 @@ task('spider', 'Use Spider method to pull in contract configs')
     if (clean) {
       await deleteSpiderArtifacts();
     } else {
-      await pullConfigs(hre);
+      let dm = new DeploymentManager(hre.network.name, hre);
+      await dm.spider();
     }
   });
