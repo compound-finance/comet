@@ -50,10 +50,6 @@ export async function getRelations(contract: Contract, relationFnName: string): 
   return await asAddresses(contract, relationFnName);
 }
 
-export async function getImplementation(contract: Contract, implFnName: string): Promise<Address> {
-  return (await asAddresses(contract, implFnName))[0];
-}
-
 export function mergeContracts(a: ContractMap, b: ContractMap): ContractMap {
   return {
     ...a,

@@ -5,7 +5,7 @@ import { Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Address, ContractMetadata, BuildFile, ContractMap, BuildMap } from './Types';
 export { ContractMap } from './Types';
-import { getPrimaryContract, getImplementation, getRelations, fileExists, mergeContracts, readAddressFromFilename } from './Utils';
+import { getPrimaryContract, getRelations, fileExists, mergeContracts, readAddressFromFilename } from './Utils';
 
 type Roots = { [contractName: string]: Address };
 
@@ -182,14 +182,14 @@ export class DeploymentManager {
         );
 
         if (relationConfig.implementation) {
-          let implementationAddress = await getImplementation(baseContract, relationConfig.implementation);
+          let [implAddress] = await getRelations(baseContract, relationConfig.implementation);
 
           let implBuildFile: BuildFile;
-          if (visited[implementationAddress]) {
-            implBuildFile = visited[implementationAddress];
+          if (visited[implAddress]) {
+            implBuildFile = visited[implAddress];
           } else {
-            implBuildFile = await this.readOrImportContract(implementationAddress);
-            visited.set(implementationAddress, implBuildFile);
+            implBuildFile = await this.readOrImportContract(implAddress);
+            visited.set(implAddress, implBuildFile);
           }
 
           maybeProxyABI = getPrimaryContract(implBuildFile).abi;
@@ -202,7 +202,7 @@ export class DeploymentManager {
         );
 
         let relations = relationConfig.relations ?? [];
-        let relatedAddresses = await Promise.all(relations.flatMap((relation) => getRelations(contract, relation)));
+        let relatedAddresses = await Promise.all(relations.map((relation) => getRelations(contract, relation)));
 
         discovered.push(...relatedAddresses.flat().filter((address) => !visited.has(address)));
       }
