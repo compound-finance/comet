@@ -23,15 +23,16 @@ scenario.only(
 
 scenario.only(
   "enterWithEth > fails when raffle is inactive",
-  {},
+  {
+    raffle: {
+      minEntries: 1
+    }
+  },
   async ({ actors, contracts }) => {
-    const { admin, albert, betty } = actors;
+    const { admin, betty } = actors;
     const { raffle } = contracts;
 
     const ticketPrice = await raffle.ticketPrice();
-
-    // enter one player into the raffle
-    await albert.enterWithEth(ticketPrice);
 
     // end raffle
     await admin.determineWinner();
@@ -42,7 +43,7 @@ scenario.only(
   }
 );
 
-scenario.only(
+scenario(
   "enterWithEth > rejects incorrect ticketPrice",
   {},
   async ({ actors, contracts }) => {
@@ -59,12 +60,11 @@ scenario.only(
 
 // TODO: enterWithToken
 
-scenario.only(
+scenario(
   "determineWinner > can only be called by owner",
   {},
-  async ({ actors, contracts }) => {
+  async ({ actors }) => {
     const { albert } = actors;
-    const { raffle } = contracts;
 
     expect(albert.determineWinner()).to.be.revertedWith(
       "Only owner can determine winner"
@@ -74,14 +74,14 @@ scenario.only(
 
 scenario.only(
   "determineWinner > changes raffle state",
-  {},
+  {
+    raffle: {
+      minEntries: 1
+    }
+  },
   async ({ actors, contracts }) => {
-    const { admin, albert, betty } = actors;
+    const { admin } = actors;
     const { raffle } = contracts;
-
-    // enter one player into the raffle
-    const ticketPrice = await raffle.ticketPrice();
-    await albert.enterWithEth(ticketPrice);
 
     expect(await raffle.state()).to.equal(RaffleState.Active);
 
@@ -108,14 +108,16 @@ scenario.only(
 
 scenario.only(
   "restartRaffle > rejects if caller is not the owner",
-  {},
+  {
+    raffle: {
+      minEntries: 1
+    }
+  },
   async ({ actors, contracts }) => {
     const { admin, albert } = actors;
     const { raffle } = contracts;
 
-    // enter one player into the raffle
     const ticketPrice = await raffle.ticketPrice();
-    await albert.enterWithEth(ticketPrice);
 
     // end raffle
     await admin.determineWinner();
@@ -128,14 +130,16 @@ scenario.only(
 
 scenario.only(
   "restartRaffle > delete previous players",
-  {},
+  {
+    raffle: {
+      minEntries: 1
+    }
+  },
   async ({ actors, contracts, players }) => {
     const { admin, albert } = actors;
     const { raffle } = contracts;
 
-    // enter one player into the raffle
     const ticketPrice = await raffle.ticketPrice();
-    await albert.enterWithEth(ticketPrice);
 
     // end raffle
     await admin.determineWinner();
@@ -148,14 +152,16 @@ scenario.only(
 
 scenario.only(
   "restartRaffle > resets raffle state",
-  {},
+  {
+    raffle: {
+      minEntries: 1
+    }
+  },
   async ({ actors, contracts }) => {
-    const { admin, albert } = actors;
+    const { admin } = actors;
     const { raffle } = contracts;
 
-    // enter one player into the raffle
     const ticketPrice = await raffle.ticketPrice();
-    await albert.enterWithEth(ticketPrice);
 
     // end raffle
     await admin.determineWinner();
@@ -171,14 +177,16 @@ scenario.only(
 
 scenario.only(
   "restartRaffle > updates ticket price",
-  {},
+  {
+    raffle: {
+      minEntries: 1
+    }
+  },
   async ({ actors, contracts }) => {
-    const { admin, albert } = actors;
+    const { admin } = actors;
     const { raffle } = contracts;
 
-    // enter one player into the raffle
     const ticketPrice = await raffle.ticketPrice();
-    await albert.enterWithEth(ticketPrice);
 
     // end raffle
     await admin.determineWinner();
