@@ -1,0 +1,45 @@
+import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
+import { CometContext } from '../Context';
+
+export enum RaffleState {
+  Active = 0,
+  Finished = 1,
+}
+
+function randomInt(min: number, max: number) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min) + min);
+}
+
+class RaffleStateConstraint<T extends CometContext> implements Constraint<T> {
+  async solve(requirements, _context, _world) {
+
+    const desiredState = requirements?.raffle?.state;
+    if (desiredState === null) {
+      return null;
+    }
+
+    return async (context) => {
+      const { contracts, actors } = context;
+      const { admin } = actors;
+      const { raffle } = contracts;
+
+      const currentState = await raffle.state();
+
+      if (currentState == RaffleState.Active && desiredState == RaffleState.Finished) {
+        console.log('attempting to deactivate Raffle');
+        await admin.determineWinner();
+      } else if (currentState == RaffleState.Finished && desiredState == RaffleState.Active) {
+        console.log('attempting to restart Raffle');
+        await admin.restartRaffle(randomInt(1, 99999999999));
+      } 
+    }
+  }
+
+  async check(requirements: object, context: T, world: World) {
+    return; // XXX
+  }
+}
+
+export default RaffleStateConstraint;

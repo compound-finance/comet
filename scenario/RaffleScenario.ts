@@ -1,14 +1,14 @@
 import { scenario } from "./Context";
 import { expect } from "chai";
+import { RaffleState } from "./constraints/RaffleStateConstraint";
 
-enum RaffleState {
-  Active = 0,
-  Finished = 1,
-}
-
-scenario.only(
+scenario(
   "enterWithEth > a player can enter via enterWithEth",
-  {},
+  {
+    raffle: {
+      state: RaffleState.Active
+    }
+  },
   async ({ actors, contracts, players }) => {
     const { albert } = actors;
     const { raffle } = contracts;
@@ -21,21 +21,19 @@ scenario.only(
   }
 );
 
-scenario.only(
-  "enterWithEth > fails when raffle is inactive",
+scenario(
+  "enterWithEth > fails when raffle is finished",
   {
     raffle: {
-      minEntries: 1
+      minEntries: 1, // ending a raffle currently requires at least one entry
+      state: RaffleState.Finished
     }
   },
   async ({ actors, contracts }) => {
-    const { admin, betty } = actors;
+    const { betty } = actors;
     const { raffle } = contracts;
 
     const ticketPrice = await raffle.ticketPrice();
-
-    // end raffle
-    await admin.determineWinner();
 
     expect(
       betty.enterWithEth(ticketPrice)
@@ -72,20 +70,18 @@ scenario(
   }
 );
 
-scenario.only(
+scenario(
   "determineWinner > changes raffle state",
   {
     raffle: {
-      minEntries: 1
+      minEntries: 1,
+      state: RaffleState.Active
     }
   },
   async ({ actors, contracts }) => {
     const { admin } = actors;
     const { raffle } = contracts;
 
-    expect(await raffle.state()).to.equal(RaffleState.Active);
-
-    // end raffle
     await admin.determineWinner();
 
     expect(await raffle.state()).to.equal(RaffleState.Finished);
@@ -94,92 +90,93 @@ scenario.only(
 
 // TODO: test determineWinner > transfers prize money to someone
 
-scenario.only(
+scenario(
   "restartRaffle > rejects if raffle is active",
-  {},
+  {
+    raffle: {
+      state: RaffleState.Active
+    }
+  },
   async ({ contracts }) => {
     const { raffle } = contracts;
+
     const newTicketPrice = 1;
+
     expect(raffle.restartRaffle(newTicketPrice)).to.be.revertedWith(
       "Raffle is already active"
     );
   }
 );
 
-scenario.only(
+scenario(
   "restartRaffle > rejects if caller is not the owner",
   {
     raffle: {
-      minEntries: 1
+      minEntries: 1, // ending a Raffle currently requires at least one entry
+      state: RaffleState.Finished
     }
   },
   async ({ actors, contracts }) => {
-    const { admin, albert } = actors;
+    const { albert } = actors;
     const { raffle } = contracts;
 
-    const ticketPrice = await raffle.ticketPrice();
-
-    // end raffle
-    await admin.determineWinner();
+    const newTicketPrice = 1;
 
     expect(
-      albert.restartRaffle(ticketPrice)
+      albert.restartRaffle(newTicketPrice)
     ).to.be.revertedWith("Only owner can restart raffle");
   }
 );
 
-scenario.only(
+scenario(
   "restartRaffle > delete previous players",
   {
     raffle: {
-      minEntries: 1
+      minEntries: 1, // ending a Raffle currently requires at least one entry
+      state: RaffleState.Finished
     }
   },
   async ({ actors, contracts, players }) => {
-    const { admin, albert } = actors;
+    const { admin } = actors;
     const { raffle } = contracts;
 
-    const ticketPrice = await raffle.ticketPrice();
+    expect(await players()).to.not.be.empty;
 
-    // end raffle
-    await admin.determineWinner();
-    // restart raffle
-    await admin.restartRaffle(ticketPrice);
+    const newTicketPrice = 1;
+    await admin.restartRaffle(newTicketPrice);
 
     expect(await players()).to.be.empty;
   }
 );
 
-scenario.only(
+scenario(
   "restartRaffle > resets raffle state",
   {
     raffle: {
-      minEntries: 1
+      minEntries: 1, // ending a Raffle currently requires at least one entry
+      state: RaffleState.Finished
     }
   },
   async ({ actors, contracts }) => {
     const { admin } = actors;
     const { raffle } = contracts;
 
-    const ticketPrice = await raffle.ticketPrice();
-
-    // end raffle
-    await admin.determineWinner();
-
     expect(await raffle.state()).to.equal(RaffleState.Finished);
 
     // restart raffle
-    await admin.restartRaffle(ticketPrice);
+    const newTicketPrice = 1;
+    await admin.restartRaffle(newTicketPrice);
 
     expect(await raffle.state()).to.equal(RaffleState.Active);
   }
 );
 
-scenario.only(
+scenario(
   "restartRaffle > updates ticket price",
   {
     raffle: {
-      minEntries: 1
+      minEntries: 1,
+      state: RaffleState.Finished
     }
   },
   async ({ actors, contracts }) => {
@@ -187,10 +184,6 @@ scenario.only(
     const { raffle } = contracts;
 
     const ticketPrice = await raffle.ticketPrice();
-
-    // end raffle
-    await admin.determineWinner();
-
     const newTicketPrice = ticketPrice.add(1);
 
     // restart raffle
