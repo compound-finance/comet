@@ -93,11 +93,26 @@ This is just a prototype and it currently pulls relevant contracts for V2.
 
 `npx hardhat spider --network mainnet`
 
-#### delete artifacts
+#### Delete artifacts
 
 You can delete all spider artifacts using the `--clean` flag:
 
 `npx hardhat spider --clean`
+
+#### Spider configs
+
+The spider script uses configuration from two files to start its crawl:
+* `roots.json`
+* `relations.json`
+
+Both these contracts are committed to the repo under `deployments/<chain>/<file>.json`. The `roots.json` config contains the address of the root contract for spider to start crawling from. The `relations.json` config defines all the different relationships and rules that spider will follow when crawling. The following section will go over in detail the set of rules defined in `relations.json`.
+
+#### Defining relations
+
+Currently, these are the 3 types of rules in `relations.json` that can be defined for a contract:
+1. **Alias** - A rule to derive the key that is assigned to this contract in `pointers.json`. If this rule is not provided, the contract name will be used as the alias instead. This rule has two special characters: `@` and `+`. `@` followed by a function name is used to read a value from that contract's function. `+` is used as a delimiter. Example: `@symbol+Delegator` will equate to `cDaiDelegator` for `cDai`'s delegator contract.
+2. **Relations** - The names of the contract's functions to call to fetch dependent contracts.
+3. **Implementation** - The name of the contract's function to call to grab its implementation address. This should only be defined for proxy contracts.
 
 ### Scenarios
 

@@ -11,10 +11,10 @@ async function asAddresses(contract: Contract, fnName: string): Promise<Address[
   }
   let val = (await fn())[0]; // Return val is always stored as first item in array
 
-  if (typeof(val) === 'string') {
+  if (typeof (val) === 'string') {
     return [val];
   } else if (Array.isArray(val)) {
-    if (val.every(x => typeof(x) === 'string')) {
+    if (val.every(x => typeof (x) === 'string')) {
       return val;
     }
   }
@@ -43,6 +43,21 @@ export function readAddressFromFilename(fileName: string): Address {
 export function getPrimaryContract(buildFile: BuildFile): ContractMetadata {
   // TODO: Handle multiple files
   return Object.values(buildFile.contracts)[0];
+}
+
+export async function getAlias(contract: Contract, contractMetadata: ContractMetadata, aliasRule: string | undefined): Promise<string> {
+  if (!aliasRule) {
+    return contractMetadata.name;
+  }
+  const tokens = aliasRule.split('+');
+  const names = await Promise.all(tokens.map(async (token) => {
+    if (token[0] == '@') {
+      return (await contract.functions[token.slice(1)]())[0];
+    } else {
+      return token;
+    }
+  }));
+  return names.join('');
 }
 
 // TODO: Should this raise or do something more interesting if it fails?
