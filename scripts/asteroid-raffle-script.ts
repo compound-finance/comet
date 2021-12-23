@@ -15,7 +15,6 @@ async function main() {
 
   const [governor, user1] = await ethers.getSigners();
 
-  // We get the contract to deploy
   const FaucetToken = await ethers.getContractFactory('FaucetToken');
   const token = await FaucetToken.deploy(100000, "DAI", 18, "DAI");
   await token.deployed();
@@ -27,15 +26,17 @@ async function main() {
   console.log('Oracle deployed to:', oracle.address);
 
   const AsteroidRaffle = await ethers.getContractFactory('AsteroidRaffle');
-  const raffle = await AsteroidRaffle.deploy('100000000000000000', token.address, oracle.address);
+  const raffle = await AsteroidRaffle.deploy(token.address, oracle.address);
   await raffle.deployed();
   console.log('Raffle deployed to:', raffle.address);
 
-  const tx1 = await raffle.connect(user1).enterWithEth({ value: ethers.utils.parseEther("0.1")});
+  const tx1 = await raffle.initialize('100000000000000000', 3 * 60);
   await tx1.wait();
 
-  const tx2 = await raffle.determineWinner();
-  await tx2.wait();
+  const Proxy = await ethers.getContractFactory('TransparentUpgradeableProxy');
+  const proxy = await Proxy.deploy(raffle.address, governor.address, []);
+  await proxy.deployed();
+  console.log('Proxy deployed to:', proxy.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

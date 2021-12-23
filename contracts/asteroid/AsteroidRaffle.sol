@@ -1,6 +1,8 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
 interface Token {
   function balanceOf(address) external view returns (uint);
   function transfer(address, uint) external returns (bool);
@@ -13,7 +15,7 @@ interface Oracle {
 }
 
 // This was done as a toy contract deliberately, use cautiosly and with skepticism
-contract AsteroidRaffle {
+contract AsteroidRaffle is Initializable {
 
     enum RaffleState { Active, Finished }
     RaffleState public state;
@@ -26,44 +28,70 @@ contract AsteroidRaffle {
     Oracle public immutable oracle;
     // Ticket price in wei
     uint public ticketPrice;
+    // Raffle end time
+    uint public endTime;
     // All current round participants
     address[] public players;
+    // Used for upgradability initialize function
+    bool public initialized = false;
 
     /*** Events ***/
     event NewPlayer(bool isToken, address participant, uint ticketPrice);
     event NewWinner(address winner, uint ethPrizeAmount, uint tokenPrizeAmount);
-    event RaffleRestarted(address governor, uint ticketPrice);
+    event RaffleRestarted(address governor, uint ticketPrice, uint endTime);
 
-    constructor(uint ticketPrice_, Token token_, Oracle oracle_) {
+    // @dev You must call `initialize()` after construction
+    constructor(Token token_, Oracle oracle_) {
         governor = msg.sender;
-        state = RaffleState.Active;
-        ticketPrice = ticketPrice_;
         token = token_;
         oracle = oracle_;
+    }
+
+    function initialize(uint ticketPrice_, uint duration_) public initializer {
+        require(initialized == false, "Raffle already initialized");
+
+        // Save raffle parameters and state
+        state = RaffleState.Active;
+        ticketPrice = ticketPrice_;
+        endTime = block.timestamp + duration_;
+
+        initialized = true;
     }
 
     function enterWithEth() external payable {
         require(state == RaffleState.Active, "Raffle is not active");
         require(msg.value == ticketPrice, "Incorrect ticket price");
+
+        // Add player to the raffle
         players.push(msg.sender);
 
         emit NewPlayer(false, msg.sender, ticketPrice);
     }
 
     function enterWithToken() external {
-      uint tokenTicketPrice = (ticketPrice * oracle.getEthPriceInTokens()) / 1e18;
-      require(token.transferFrom(msg.sender, address(this), tokenTicketPrice), "Token transfer failed");
-      players.push(msg.sender);
+        require(state == RaffleState.Active, "Raffle is not active");
+        uint tokenTicketPrice = (ticketPrice * oracle.getEthPriceInTokens()) / 1e18;
+        require(token.transferFrom(msg.sender, address(this), tokenTicketPrice), "Token transfer failed");
 
-      emit NewPlayer(true, msg.sender, tokenTicketPrice);
+        // Add player to the raffle
+        players.push(msg.sender);
+
+        emit NewPlayer(true, msg.sender, tokenTicketPrice);
     }
 
     function determineWinner() external {
-        require(msg.sender == governor, "Only owner can determine winner");
+        require(state == RaffleState.Active, "Raffle is already finished");
+        require(msg.sender == governor, "Only owner can end raffle");
+        require(block.timestamp > endTime, "Raffle time is not over yet");
         // Finish the raffle
         state = RaffleState.Finished;
-        // Pseudo-randolmly pick winner
+        // Pseudo-randomly pick a winner
         address winner = players[random() % players.length];
+
+        // End raffle, nobody participated, no funds to distribute
+        if (players.length == 0) {
+          return;
+        }
 
         // Distribute Eth prize pool to the winner
         uint ethPrizeAmount = address(this).balance;
@@ -78,19 +106,22 @@ contract AsteroidRaffle {
         emit NewWinner(winner, ethPrizeAmount, tokenPrizeAmount);
     }
 
-    function restartRaffle(uint newTicketPrice) external {
-        require(state == RaffleState.Finished, "Raffle is already active");
+    function restartRaffle(uint newTicketPrice, uint newDuration) external {
+        require(state == RaffleState.Finished, "Raffle is still active");
         require(msg.sender == governor, "Only owner can restart raffle");
+
+        // Update raffle parameters and state
         state = RaffleState.Active;
         ticketPrice = newTicketPrice;
+        endTime = block.timestamp + newDuration;
 
         // Delete previous players
         delete players;
 
-        emit RaffleRestarted(governor, ticketPrice);
+        emit RaffleRestarted(governor, ticketPrice, endTime);
     }
 
     function random() internal view returns (uint) {
-      return uint(keccak256(abi.encodePacked(block.difficulty, block.timestamp, players)));
+        return uint(keccak256(abi.encodePacked(block.difficulty, block.timestamp, players)));
     }
 }
