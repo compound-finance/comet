@@ -23,8 +23,7 @@ scenario(
   }
 );
 
-// TODO: add minTimestamp constraint
-scenario.skip(
+scenario(
   "enterWithEth > fails when raffle is finished",
   {
     raffle: {
@@ -171,8 +170,7 @@ scenario(
   }
 );
 
-// TODO: add minTimestamp constraint
-scenario.skip(
+scenario(
   "restartRaffle > rejects if caller is not the owner",
   {
     raffle: {
@@ -180,12 +178,8 @@ scenario.skip(
       state: RaffleState.Finished
     }
   },
-  async ({ actors, contracts }, world) => {
+  async ({ actors }) => {
     const { albert } = actors;
-    const { raffle } = contracts();
-
-    const endTime = (await raffle.endTime()).toNumber();
-    await world.advanceToTimestampOrBeyond(endTime);
 
     await expect(
       albert.restartRaffle({ticketPrice: 1, duration: 1})
@@ -193,18 +187,16 @@ scenario.skip(
   }
 );
 
-// TODO: add minTimestamp constraint
-scenario.skip(
+scenario(
   "restartRaffle > delete previous players",
   {
     raffle: {
-      minEntries: 1, // ending a Raffle currently requires at least one entry
+      minEntries: 1,
       state: RaffleState.Finished
     }
   },
-  async ({ actors, contracts, players }) => {
+  async ({ actors, players }) => {
     const { admin } = actors;
-    const { raffle } = contracts();
 
     expect(await players()).to.not.be.empty;
 
@@ -214,8 +206,7 @@ scenario.skip(
   }
 );
 
-// TODO: add minTimestamp constraint
-scenario.skip(
+scenario(
   "restartRaffle > resets raffle state",
   {
     raffle: {
@@ -229,7 +220,6 @@ scenario.skip(
 
     expect(await raffle.state()).to.equal(RaffleState.Finished);
 
-    // restart raffle
     await admin.restartRaffle({
       ticketPrice: 1,
       duration: 1
@@ -239,8 +229,7 @@ scenario.skip(
   }
 );
 
-// TODO: add minTimestamp constraint
-scenario.skip(
+scenario(
   "restartRaffle > updates ticket price",
   {
     raffle: {
@@ -255,9 +244,12 @@ scenario.skip(
     const ticketPrice = await raffle.ticketPrice();
     const newTicketPrice = ticketPrice.add(1);
 
-    // restart raffle
-    await admin.restartRaffle(newTicketPrice);
+    await admin.restartRaffle({
+      ticketPrice: newTicketPrice,
+      duration: 1
+    });
 
+    // expect((await raffle.ticketPrice()).eq(newTicketPrice)).to.be.true;
     expect(await raffle.ticketPrice()).to.equal(newTicketPrice);
   }
 );
