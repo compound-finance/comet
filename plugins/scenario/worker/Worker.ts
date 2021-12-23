@@ -4,7 +4,6 @@ import { Scenario } from '../Scenario';
 import { loadScenarios } from '../Loader';
 import { HardhatContext } from "hardhat/internal/context";
 import { scenarioGlob } from './Config';
-import { getEthersContractsForDeployment } from "../../spider";
 import { HardhatConfig, HardhatArguments, createContext, setConfig, getContext } from './HardhatContext';
 import * as util from 'util';
 import { ScenarioConfig } from '../types';

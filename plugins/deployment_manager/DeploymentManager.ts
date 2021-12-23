@@ -21,7 +21,7 @@ interface DeploymentConfig {
   baseDir?: string;
   importRetries?: number;
   importRetryDelay?: number;
-  memoryImports?: boolean;
+  writeCacheToDisk?: boolean;
 }
 
 export class DeploymentManager {
@@ -297,7 +297,7 @@ export class DeploymentManager {
       return await this.importContract(address, retries - 1);
     }
 
-    if (!this.config.memoryImports) {
+    if (this.config.writeCacheToDisk) {
       await this.writeBuildFileToCache(address, buildFile);
     }
     return buildFile;
@@ -321,11 +321,11 @@ export class DeploymentManager {
   /**
     * Runs Spider method to pull full contract configuration from base roots using relation metadata.
     */
-  async spider(writeToDisk: boolean = false): Promise<ContractMap> {
+  async spider(): Promise<ContractMap> {
     let nodes = Object.values(await this.getRoots());
     let [ buildMap, aliasesMap ] = await this.runSpider(await this.getRelationConfig(), nodes, new Map(), new Map());
 
-    if (writeToDisk) {
+    if (this.config.writeCacheToDisk) {
       let pointers = await this.getPointersFromBuildMap(buildMap, aliasesMap);
       await this.writePointersFileToCache(pointers);
     }
