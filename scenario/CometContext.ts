@@ -46,21 +46,21 @@ export class CometActor {
   }
 
   async enterWithEth(ticketPrice: number) {
-    await this.raffleContract.connect(this.signer).enterWithEth({ value: ticketPrice });
+    (await this.raffleContract.connect(this.signer).enterWithEth({ value: ticketPrice })).wait();
   }
 
   async enterWithToken(ticketPrice: number) {
-    await this.tokenContract.allocateTo(this.signer.getAddress(), ticketPrice);
-    await this.tokenContract.connect(this.signer).approve(this.raffleContract.address, ticketPrice);
-    await this.raffleContract.connect(this.signer).enterWithToken();
+    (await this.tokenContract.allocateTo(this.signer.getAddress(), ticketPrice)).wait();
+    (await this.tokenContract.connect(this.signer).approve(this.raffleContract.address, ticketPrice)).wait();
+    (await this.raffleContract.connect(this.signer).enterWithToken()).wait();
   }
 
   async determineWinner() {
-    await this.raffleContract.connect(this.signer).determineWinner();
+    (await this.raffleContract.connect(this.signer).determineWinner()).wait();
   }
 
   async restartRaffle(ticketPrice: number) {
-    await this.raffleContract.connect(this.signer).restartRaffle(ticketPrice);
+    (await this.raffleContract.connect(this.signer).restartRaffle(ticketPrice)).wait();
   }
 }
 
