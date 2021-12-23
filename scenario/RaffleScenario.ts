@@ -56,7 +56,21 @@ scenario(
   }
 );
 
-// TODO: enterWithToken
+scenario(
+  "enterWithToken > a player can enter via enterWithToken",
+  {
+    raffle: {
+      state: RaffleState.Active
+    }
+  },
+  async ({ actors, contracts, players }) => {
+    const { albert } = actors;
+
+    await albert.enterWithToken(400000000);
+
+    expect(await players()).to.include(await albert.getAddress());
+  }
+);
 
 scenario(
   "determineWinner > can only be called by owner",

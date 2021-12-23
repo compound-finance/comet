@@ -33,10 +33,12 @@ async function getUntilEmpty<T>(emptyVal: T, fn: (index: number) => Promise<T>):
 export class CometActor {
   signer: Signer;
   raffleContract: Contract;
+  tokenContract: Contract;
 
-  constructor(signer, raffleContract) {
+  constructor(signer, raffleContract, tokenContract) {
     this.signer = signer;
     this.raffleContract = raffleContract;
+    this.tokenContract = tokenContract;
   }
 
   async getAddress(): Promise<string> {
@@ -45,6 +47,12 @@ export class CometActor {
 
   async enterWithEth(ticketPrice: number) {
     await this.raffleContract.connect(this.signer).enterWithEth({ value: ticketPrice });
+  }
+
+  async enterWithToken(ticketPrice: number) {
+    await this.tokenContract.allocateTo(this.signer.getAddress(), ticketPrice);
+    await this.tokenContract.connect(this.signer).approve(this.raffleContract.address, ticketPrice);
+    await this.raffleContract.connect(this.signer).enterWithToken();
   }
 
   async determineWinner() {
@@ -149,10 +157,10 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
   }
 
   const actors = {
-    admin: new CometActor(adminSigner, deploymentManager.contracts.raffle),
-    albert: new CometActor(albertSigner, deploymentManager.contracts.raffle),
-    betty: new CometActor(bettySigner, deploymentManager.contracts.raffle),
-    charles: new CometActor(charlesSigner, deploymentManager.contracts.raffle),
+    admin: new CometActor(adminSigner, deploymentManager.contracts.raffle, deploymentManager.contracts.token),
+    albert: new CometActor(albertSigner, deploymentManager.contracts.raffle, deploymentManager.contracts.token),
+    betty: new CometActor(bettySigner, deploymentManager.contracts.raffle, deploymentManager.contracts.token),
+    charles: new CometActor(charlesSigner, deploymentManager.contracts.raffle, deploymentManager.contracts.token),
   };
 
   return new CometContext("spot", deploymentManager, actors);
