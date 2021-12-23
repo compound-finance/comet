@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { RaffleState } from "./constraints/RaffleStateConstraint";
 import { BigNumber } from "ethers";
 import { World } from "../plugins/scenario";
+import { BigNumber } from "ethers";
 
 scenario(
   "enterWithEth > a player can enter via enterWithEth",
@@ -241,15 +242,14 @@ scenario(
     const { admin } = actors;
     const { raffle } = contracts();
 
-    const ticketPrice = await raffle.ticketPrice();
-    const newTicketPrice = ticketPrice.add(1);
+    const ticketPrice: BigNumber = await raffle.ticketPrice();
+    const newTicketPrice: BigNumber = ticketPrice.add(1);
 
     await admin.restartRaffle({
       ticketPrice: newTicketPrice,
       duration: 1
     });
 
-    // expect((await raffle.ticketPrice()).eq(newTicketPrice)).to.be.true;
     expect(await raffle.ticketPrice()).to.equal(newTicketPrice);
   }
 );

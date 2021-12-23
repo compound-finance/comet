@@ -1,5 +1,5 @@
-import { Contract, Signer } from 'ethers'
-import { ForkSpec, Property, World, buildScenarioFn } from '../plugins/scenario'
+import { BigNumberish, Contract, Signer } from 'ethers'
+import { ForkSpec, World, buildScenarioFn } from '../plugins/scenario'
 import { ContractMap, DeploymentManager } from '../plugins/deployment_manager/DeploymentManager'
 import { RemoteTokenConstraint } from './constraints/RemoteTokenConstraint'
 import RaffleMinEntriesConstraint from "./constraints/RaffleMinEntriesConstraint"
@@ -59,7 +59,7 @@ export class CometActor {
     (await this.raffleContract.connect(this.signer).determineWinner()).wait();
   }
 
-  async restartRaffle({ticketPrice, duration}: {ticketPrice: number, duration: number}) {
+  async restartRaffle({ticketPrice, duration}: {ticketPrice: BigNumberish, duration: BigNumberish}) {
     (await this.raffleContract.connect(this.signer).restartRaffle(ticketPrice, duration)).wait();
   }
 }
