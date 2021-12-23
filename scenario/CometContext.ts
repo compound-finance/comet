@@ -59,8 +59,8 @@ export class CometActor {
     (await this.raffleContract.connect(this.signer).determineWinner()).wait();
   }
 
-  async restartRaffle(ticketPrice: number) {
-    (await this.raffleContract.connect(this.signer).restartRaffle(ticketPrice)).wait();
+  async restartRaffle({ticketPrice, duration}: {ticketPrice: number, duration: number}) {
+    (await this.raffleContract.connect(this.signer).restartRaffle(ticketPrice, duration)).wait();
   }
 }
 

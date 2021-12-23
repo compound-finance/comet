@@ -32,7 +32,11 @@ class RaffleStateConstraint<T extends CometContext> implements Constraint<T> {
         await admin.determineWinner();
       } else if (currentState == RaffleState.Finished && desiredState == RaffleState.Active) {
         console.log('attempting to restart Raffle');
-        await admin.restartRaffle(randomInt(1, 99999999999));
+        // restart with a random number between 1 and maxInt?
+        await admin.restartRaffle({
+          ticketPrice: randomInt(1, 9999999),
+          duration: randomInt(1, 9999999)
+        });
       } 
     }
   }
