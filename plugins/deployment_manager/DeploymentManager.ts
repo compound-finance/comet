@@ -228,15 +228,15 @@ export class DeploymentManager {
     if (address !== '0x0000000000000000000000000000000000000000') {
       const buildFile = await this.readOrImportContract(address);
 
-      const { name, abi } = getPrimaryContract(buildFile);
+      const contractMetadata = getPrimaryContract(buildFile);
 
       visited.set(address, buildFile);
 
-      let relationConfig = relationConfigMap[name];
+      let relationConfig = relationConfigMap[contractMetadata.name];
       if (relationConfig) {
         let baseContract = new this.hre.ethers.Contract(
           address,
-          abi,
+          contractMetadata.abi,
           this.hre.ethers.provider
         );
 
@@ -258,18 +258,16 @@ export class DeploymentManager {
 
         let contract = new this.hre.ethers.Contract(
           address,
-          implContractMetadata ? implContractMetadata.abi : abi,
+          implContractMetadata ? implContractMetadata.abi : contractMetadata.abi,
           this.hre.ethers.provider
         );
 
-        let aliasRule = relationConfig.alias ?? '';
-        let alias = await getAlias(contract, aliasRule);
+        let alias = await getAlias(contract, contractMetadata, relationConfig.alias);
         this.addAlias(alias, address, aliases);
 
         // If there is an impl contract, add its alias as well.
         if (implContractMetadata && relationConfigMap[implContractMetadata.name]) {
-          let aliasRule = relationConfigMap[implContractMetadata.name].alias ?? '';
-          let alias = await getAlias(contract, aliasRule);
+          let alias = await getAlias(contract, implContractMetadata, relationConfigMap[implContractMetadata.name].alias);
           this.addAlias(alias, implContractMetadata.address, aliases);
         }
 
