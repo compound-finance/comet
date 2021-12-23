@@ -23,10 +23,10 @@
     chalk "^2.0.0"
     js-tokens "^4.0.0"
 
-"@compound-finance/hardhat-import@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@compound-finance/hardhat-import/-/hardhat-import-1.0.2.tgz#fe80be6c0ab63637a2ce714bc009c433ed57d56f"
-  integrity sha512-FHRkFNJ1nMOUhjCbk5dGQi3uK1Io2DNCr/2yNiqumvz1OS2SaZNbEowIC4/Nqj/RH3AdaXlMUpcP3H8rADXGUg==
+"@compound-finance/hardhat-import@^1.0.3":
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@compound-finance/hardhat-import/-/hardhat-import-1.0.3.tgz#261623dbf3c6e4c314a0767391636d73084e904f"
+  integrity sha512-/WpuUeUshsJEBibT+6Bx5A8vdfhSXWeQiwypQbVi9E6fq73fTYHKs+Ys/PV62eNitVKO3wjsq0TP7AFxmu/CGQ==
   dependencies:
     "@ethersproject/address" "^5.5.0"
     axios "^0.24.0"

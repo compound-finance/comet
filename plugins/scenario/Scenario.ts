@@ -1,3 +1,4 @@
+import { Signer } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types'
 import { ForkSpec } from './Runner';
 
@@ -20,6 +21,14 @@ export class World {
       method: 'evm_revert',
       params: [snapshot],
     });
+  }
+
+  async impersonateAddress(address: string): Promise<Signer> {
+    await this.hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [address],
+    });
+    return await this.hre.ethers.getSigner(address);
   }
 }
 

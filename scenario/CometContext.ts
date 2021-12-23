@@ -1,8 +1,10 @@
+import { Contract, Signer } from 'ethers'
 import { ForkSpec, Property, World, buildScenarioFn } from '../plugins/scenario'
 import { ContractMap, DeploymentManager } from '../plugins/deployment_manager/DeploymentManager'
-import { BalanceConstraint } from './Constraints'
 import { RemoteTokenConstraint } from './constraints/RemoteTokenConstraint'
-import { Contract, Signer } from 'ethers'
+import RaffleMinEntriesConstraint from "./constraints/RaffleMinEntriesConstraint"
+import RaffleStateConstraint from "./constraints/RaffleStateConstraint"
+
 
 async function getUntilEmpty<T>(emptyVal: T, fn: (index: number) => Promise<T>): Promise<T[]> {
   // Inner for TCO
@@ -28,19 +30,45 @@ async function getUntilEmpty<T>(emptyVal: T, fn: (index: number) => Promise<T>):
   return await getUntilEmptyInner(emptyVal, fn, []);
 }
 
-export class CometActor {}
+export class CometActor {
+  signer: Signer;
+  raffleContract: Contract;
+
+  constructor(signer, raffleContract) {
+    this.signer = signer;
+    this.raffleContract = raffleContract;
+  }
+
+  async getAddress(): Promise<string> {
+    return this.signer.getAddress();
+  }
+
+  async enterWithEth(ticketPrice: number) {
+    await this.raffleContract.connect(this.signer).enterWithEth({ value: ticketPrice });
+  }
+
+  async determineWinner() {
+    await this.raffleContract.connect(this.signer).determineWinner();
+  }
+
+  async restartRaffle(ticketPrice: number) {
+    await this.raffleContract.connect(this.signer).restartRaffle(ticketPrice);
+  }
+}
+
 export class CometAsset {}
 
 export class CometContext {
   dog: string;
   deploymentManager: DeploymentManager;
-  actors: { [name: string]: CometActor }; // XXX
+  actors: { [name: string]: CometActor };
   assets: { [name: string]: CometAsset }; // XXX
   remoteToken: Contract | undefined
 
-  constructor(dog: string, deploymentManager: DeploymentManager) {
+  constructor(dog: string, deploymentManager: DeploymentManager, actors: { [name: string]: CometActor }) {
     this.dog = dog;
     this.deploymentManager = deploymentManager;
+    this.actors = actors;
   }
 
   contracts(): ContractMap {
@@ -110,7 +138,24 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
     }
   }
 
-  return new CometContext("spot", deploymentManager);
+  const [localAdminSigner, albertSigner, bettySigner, charlesSigner] = signers;
+  let adminSigner;
+
+  if (isDevelopment) {
+    adminSigner = localAdminSigner;
+  } else {
+    const governorAddress = await deploymentManager.contracts.raffle.governor();
+    adminSigner = await world.impersonateAddress(governorAddress);
+  }
+
+  const actors = {
+    admin: new CometActor(adminSigner, deploymentManager.contracts.raffle),
+    albert: new CometActor(albertSigner, deploymentManager.contracts.raffle),
+    betty: new CometActor(bettySigner, deploymentManager.contracts.raffle),
+    charles: new CometActor(charlesSigner, deploymentManager.contracts.raffle),
+  };
+
+  return new CometContext("spot", deploymentManager, actors);
 }
 
 async function forkContext(c: CometContext): Promise<CometContext> {
@@ -119,6 +164,8 @@ async function forkContext(c: CometContext): Promise<CometContext> {
 
 export const constraints = [
   new RemoteTokenConstraint,
+  new RaffleMinEntriesConstraint,
+  new RaffleStateConstraint,
 ];
 
 export const scenario = buildScenarioFn<CometContext>(getInitialContext, forkContext, constraints);
