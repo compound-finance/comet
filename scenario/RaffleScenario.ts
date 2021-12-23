@@ -2,6 +2,7 @@ import { scenario } from "./CometContext";
 import { expect } from "chai";
 import { RaffleState } from "./constraints/RaffleStateConstraint";
 import { BigNumber } from "ethers";
+import { World } from "../plugins/scenario";
 
 scenario(
   "enterWithEth > a player can enter via enterWithEth",
@@ -22,6 +23,7 @@ scenario(
   }
 );
 
+// TODO: add minTimestamp constraint
 scenario.skip(
   "enterWithEth > fails when raffle is finished",
   {
@@ -130,8 +132,7 @@ scenario(
   }
 );
 
-// TODO: add time travel to avoid: "Raffle time is not over yet"
-scenario.skip(
+scenario(
   "determineWinner > changes raffle state",
   {
     raffle: {
@@ -139,9 +140,12 @@ scenario.skip(
       state: RaffleState.Active
     }
   },
-  async ({ actors, contracts }) => {
+  async ({ actors, contracts }, world: World) => {
     const { admin } = actors;
     const { raffle } = contracts();
+
+    const endTime = (await raffle.endTime()).toNumber();
+    await world.advanceToTimestampOrBeyond(endTime + 1);
 
     await admin.determineWinner();
 
@@ -151,26 +155,23 @@ scenario.skip(
 
 // TODO: test determineWinner > transfers prize money to someone
 
-// TODO: add second argument to .restartRaffle
-scenario.skip(
+scenario(
   "restartRaffle > rejects if raffle is active",
   {
     raffle: {
       state: RaffleState.Active
     }
   },
-  async ({ contracts }) => {
-    const { raffle } = contracts();
+  async ({ actors }) => {
+    const { admin } = actors;
 
-    const newTicketPrice = 1;
-
-    await expect(raffle.restartRaffle(newTicketPrice)).to.be.revertedWith(
-      "Raffle is already active"
+    await expect(admin.restartRaffle({ticketPrice: 1, duration: 1})).to.be.revertedWith(
+      "Raffle is still active"
     );
   }
 );
 
-// TODO: add time travel to avoid: "Raffle time is not over yet"
+// TODO: add minTimestamp constraint
 scenario.skip(
   "restartRaffle > rejects if caller is not the owner",
   {
@@ -179,19 +180,20 @@ scenario.skip(
       state: RaffleState.Finished
     }
   },
-  async ({ actors, contracts }) => {
+  async ({ actors, contracts }, world) => {
     const { albert } = actors;
     const { raffle } = contracts();
 
-    const newTicketPrice = 1;
+    const endTime = (await raffle.endTime()).toNumber();
+    await world.advanceToTimestampOrBeyond(endTime);
 
     await expect(
-      albert.restartRaffle(newTicketPrice)
+      albert.restartRaffle({ticketPrice: 1, duration: 1})
     ).to.be.revertedWith("Only owner can restart raffle");
   }
 );
 
-// TODO: add time travel to avoid: "Raffle time is not over yet"
+// TODO: add minTimestamp constraint
 scenario.skip(
   "restartRaffle > delete previous players",
   {
@@ -206,14 +208,13 @@ scenario.skip(
 
     expect(await players()).to.not.be.empty;
 
-    const newTicketPrice = 1;
-    await admin.restartRaffle(newTicketPrice);
+    await admin.restartRaffle({ticketPrice: 1, duration: 1});
 
     expect(await players()).to.be.empty;
   }
 );
 
-// TODO: add time travel to avoid: "Raffle time is not over yet"
+// TODO: add minTimestamp constraint
 scenario.skip(
   "restartRaffle > resets raffle state",
   {
@@ -229,14 +230,16 @@ scenario.skip(
     expect(await raffle.state()).to.equal(RaffleState.Finished);
 
     // restart raffle
-    const newTicketPrice = 1;
-    await admin.restartRaffle(newTicketPrice);
+    await admin.restartRaffle({
+      ticketPrice: 1,
+      duration: 1
+    });
 
     expect(await raffle.state()).to.equal(RaffleState.Active);
   }
 );
 
-// TODO: add time travel to avoid: "Raffle time is not over yet"
+// TODO: add minTimestamp constraint
 scenario.skip(
   "restartRaffle > updates ticket price",
   {
