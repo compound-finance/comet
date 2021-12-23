@@ -13,7 +13,7 @@ function randomInt(min: number, max: number) {
 }
 
 class RaffleStateConstraint<T extends CometContext> implements Constraint<T> {
-  async solve(requirements, _context, _world) {
+  async solve(requirements, _context, world) {
 
     const desiredState = requirements?.raffle?.state;
     if (desiredState === null) {
@@ -29,6 +29,10 @@ class RaffleStateConstraint<T extends CometContext> implements Constraint<T> {
 
       if (currentState == RaffleState.Active && desiredState == RaffleState.Finished) {
         console.log('attempting to deactivate Raffle');
+
+        const endTime = (await raffle.endTime()).toNumber();
+        await world.advanceToTimestampOrBeyond(endTime + 1);
+
         await admin.determineWinner();
       } else if (currentState == RaffleState.Finished && desiredState == RaffleState.Active) {
         console.log('attempting to restart Raffle');
