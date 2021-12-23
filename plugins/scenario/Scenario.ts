@@ -31,7 +31,6 @@ export class World {
     return await this.hre.ethers.getSigner(address);
   }
 
-  // rename: blockTimestamp ?
   async timestamp() {
     const blockNumber = await this.hre.ethers.provider.getBlockNumber();
     return (await this.hre.ethers.provider.getBlock(blockNumber)).timestamp
@@ -44,7 +43,6 @@ export class World {
     });
   }
 
-  // Rename to: ensureMinTimestamp ?
   async advanceToTimestampOrBeyond(timestamp: number) {
     const currentTimestamp = await this.timestamp();
     if (currentTimestamp < timestamp) {
