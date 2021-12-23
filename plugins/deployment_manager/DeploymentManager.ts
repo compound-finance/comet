@@ -1,11 +1,11 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
 
-import { Contract } from 'ethers';
+import { Contract, Signer } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Address, ContractMetadata, BuildFile, ContractMap, BuildMap } from './Types';
 export { ContractMap } from './Types';
-import { getPrimaryContract, getRelation, fileExists, mergeContracts, readAddressFromFilename } from './Utils';
+import { getPrimaryContract, getRelations, fileExists, mergeContracts, readAddressFromFilename } from './Utils';
 
 type Roots = { [contractName: string]: Address };
 
@@ -121,21 +121,36 @@ export class DeploymentManager {
     })));
   }
 
+  // Returns an ethers' wrapped contract from a given build file (based on its name and address)
+  private getContractFromBuildFile(buildFile: BuildFile, signer: Signer): [string, Contract] {
+    let metadata = getPrimaryContract(buildFile);
+    return [metadata.name, new this.hre.ethers.Contract(
+      metadata.address,
+      metadata.abi,
+      signer,
+    )];
+  }
+
   // Builds ether contract wrappers around a map of contract metadata
   private async getContractsFromBuildMap(buildMap: BuildMap): Promise<ContractMap> {
     let contracts: ContractMap = {};
     const [ signer ] = await this.hre.ethers.getSigners(); // TODO: Hmm?
 
     for (let [address, buildFile] of buildMap) {
-      let metadata = getPrimaryContract(buildFile);
-      contracts[metadata.name] = new this.hre.ethers.Contract(
-        metadata.address,
-        metadata.abi,
-        signer,
-      );
+      let [name, contract] = this.getContractFromBuildFile(buildFile, signer);
+      contracts[name] = contract;
     }
 
     return contracts;
+  }
+
+  // Deploys a contract given a build file (e.g. something imported or spidered)
+  private async deployFromBuildFile(buildFile: BuildFile, deployArgs: any[]): Promise<Contract> {
+    let metadata = getPrimaryContract(buildFile);
+    const [ signer ] = await this.hre.ethers.getSigners(); // TODO: Hmm?
+    const contractFactory = new this.hre.ethers.ContractFactory(metadata.abi, metadata.bin, signer);
+    const contract = await contractFactory.deploy(...deployArgs);
+    return await contract.deployed();
   }
 
   // Builds ether contract wrappers around a map of contract metadata and merges into `this.contracts` variable
@@ -182,17 +197,17 @@ export class DeploymentManager {
         );
 
         if (relationConfig.implementation) {
-          let implementationAddress = await getRelation(baseContract, relationConfig.implementation);
+          let [implAddress] = await getRelations(baseContract, relationConfig.implementation);
 
-          let proxyBuildFile;
-          if (visited[implementationAddress]) {
-            proxyBuildFile = visited[implementationAddress];
+          let implBuildFile: BuildFile;
+          if (visited[implAddress]) {
+            implBuildFile = visited[implAddress];
           } else {
-            proxyBuildFile = await this.readOrImportContract(address);
-            visited.set(implementationAddress, proxyBuildFile);
+            implBuildFile = await this.readOrImportContract(implAddress);
+            visited.set(implAddress, implBuildFile);
           }
 
-          maybeProxyABI = proxyBuildFile.abi;
+          maybeProxyABI = getPrimaryContract(implBuildFile).abi;
         }
 
         let contract = new this.hre.ethers.Contract(
@@ -202,9 +217,9 @@ export class DeploymentManager {
         );
 
         let relations = relationConfig.relations ?? [];
-        let relatedAddresses = await Promise.all(relations.map((relation) => getRelation(contract, relation)));
+        let relatedAddresses = await Promise.all(relations.map((relation) => getRelations(contract, relation)));
 
-        discovered.push(...relatedAddresses.filter((address) => !visited.has(address)));
+        discovered.push(...relatedAddresses.flat().filter((address) => !visited.has(address)));
       }
     }
 
@@ -231,6 +246,21 @@ export class DeploymentManager {
     return buildFile;
   }
 
+  private async withDeployment<T>(deployment: string | undefined, fn: () => Promise<T>): Promise<T> {
+    let originalDeployment = this.deployment;
+    if (deployment) {
+      this.deployment = deployment;
+    }
+
+    try {
+      return await fn();
+    } finally {
+      if (deployment) {
+        this.deployment = originalDeployment
+      }
+    }
+  }
+
   /**
     * Runs Spider method to pull full contract configuration from base roots using relation metadata.
     */
@@ -244,8 +274,17 @@ export class DeploymentManager {
   /**
     * Imports a contract from remote, e.g. Etherscan, generating local build file.
     */
-  async import(address: Address): Promise<BuildFile> {
-    return await this.importContract(address, this.importRetries());
+  async import(address: Address, deployment?: string): Promise<BuildFile> {
+    return await this.withDeployment(deployment, async () => {
+      return await this.readOrImportContract(address);
+    });
+  }
+
+  /**
+    * Deploy a new contract from a build file, e.g. something imported or crawled
+    */
+  async deployBuild(buildFile: BuildFile, deployArgs: any[]): Promise<Contract> {
+    return this.deployFromBuildFile(buildFile, deployArgs);
   }
 
   /**

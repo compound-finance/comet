@@ -3,18 +3,19 @@ import * as fs from 'fs/promises';
 import { Contract } from 'ethers';
 import { Address, BuildFile, ContractMap, ContractMetadata } from './Types';
 
-async function asAddress(contract: Contract, fnName: string): Promise<Address> {
+async function asAddresses(contract: Contract, fnName: string): Promise<Address[]> {
   let fn = contract.functions[fnName];
   if (!fn) {
+    // TODO: `contract.name` is undefined. Find a better way to log this error.
     throw new Error(`Cannot find contract function ${contract.name}.${fnName}()`);
   }
-  let val = await fn();
+  let val = (await fn())[0]; // Return val is always stored as first item in array
 
   if (typeof(val) === 'string') {
-    return val;
+    return [val];
   } else if (Array.isArray(val)) {
-    if (typeof(val[0]) === 'string') {
-      return val[0];
+    if (val.every(x => typeof(x) === 'string')) {
+      return val;
     }
   }
 
@@ -45,8 +46,8 @@ export function getPrimaryContract(buildFile: BuildFile): ContractMetadata {
 }
 
 // TODO: Should this raise or do something more interesting if it fails?
-export async function getRelation(contract: Contract, relation: string): Promise<string> {
-  return await asAddress(contract, relation);
+export async function getRelations(contract: Contract, relationFnName: string): Promise<Address[]> {
+  return await asAddresses(contract, relationFnName);
 }
 
 export function mergeContracts(a: ContractMap, b: ContractMap): ContractMap {

@@ -1,4 +1,4 @@
-import { scenario } from './Context';
+import { scenario } from './CometContext';
 import { expect } from 'chai';
 
 async function rando(name: string) {
