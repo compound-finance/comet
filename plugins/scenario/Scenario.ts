@@ -1,4 +1,4 @@
-import { Signer } from 'ethers';
+import { BigNumber, Signer } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types'
 import { ForkSpec } from './Runner';
 
@@ -29,6 +29,27 @@ export class World {
       params: [address],
     });
     return await this.hre.ethers.getSigner(address);
+  }
+
+  // rename: blockTimestamp ?
+  async timestamp() {
+    const blockNumber = await this.hre.ethers.provider.getBlockNumber();
+    return (await this.hre.ethers.provider.getBlock(blockNumber)).timestamp
+  }
+
+  async _setNextBlockTimestamp(timestamp: number) {
+    await this.hre.network.provider.request({
+      method: "evm_setNextBlockTimestamp",
+      params: [timestamp],
+    });
+  }
+
+  // Rename to: ensureMinTimestamp ?
+  async advanceToTimestampOrBeyond(timestamp: number) {
+    const currentTimestamp = await this.timestamp();
+    if (currentTimestamp < timestamp) {
+      await this._setNextBlockTimestamp(timestamp);
+    }
   }
 }
 
