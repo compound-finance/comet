@@ -10,7 +10,7 @@ build/
 cache/
 dist/
 deployments/*/cache
-deployments/*/config.json
+deployments/*/pointers.json
 deployments/*/proxies.json
 
 .env

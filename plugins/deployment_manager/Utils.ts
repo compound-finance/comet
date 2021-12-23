@@ -45,6 +45,21 @@ export function getPrimaryContract(buildFile: BuildFile): ContractMetadata {
   return Object.values(buildFile.contracts)[0];
 }
 
+export async function getAlias(contract: Contract, aliasRule: string): Promise<string> {
+  if (!aliasRule) {
+    return '';
+  }
+  const tokens = aliasRule.split('+');
+  const names = await Promise.all(tokens.map(async (token) => {
+    if (token[0] == '@') {
+      return (await contract.functions[token.slice(1)]())[0];
+    } else {
+      return token;
+    }
+  }));
+  return names.join('');
+}
+
 // TODO: Should this raise or do something more interesting if it fails?
 export async function getRelations(contract: Contract, relationFnName: string): Promise<Address[]> {
   return await asAddresses(contract, relationFnName);

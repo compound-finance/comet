@@ -4,8 +4,13 @@
     "relations": ["oracle", "getAllMarkets", "admin"]
   },
   "CErc20Delegator": {
+    "alias": "@symbol+Delegator",
     "relations": ["underlying", "interestRateModel"],
     "implementation": "implementation"
+  },
+  "CErc20Delegate": {
+    "alias": "@symbol+Delegate",
+    "relations": ["interestRateModel"]
   },
   "Timelock": {
     "relations": ["admin"]

@@ -15,6 +15,7 @@ import * as path from 'path';
 export type Address = string;
 
 export interface Relation {
+  canonicalName?: (contract: Contract) => Promise<string>,
   relations?: (contract: Contract) => Promise<Address[]>;
   implementation?: (contract: Contract) => Promise<Address>;
 }
@@ -23,8 +24,6 @@ export interface Relations {
   [contractName: string]: Relation;
 }
 
-// TODO: Consider abstracting this even more (Hardhat plugin?) so separate relations
-// can be defined in one repo. (e.g. different relations on each chain)
 export async function createRelations(network: string): Promise<Relations> {
   const dir = path.join(__dirname, "..", "..", "deployments", network);
   const file = path.join(dir, `relations.json`);
@@ -37,6 +36,7 @@ export async function createRelations(network: string): Promise<Relations> {
   for (const contract in relationsData) {
     const contractRelations = relationsData[contract].relations;
     const contractImplementation = relationsData[contract].implementation;
+    const canonicalName = relationsData[contract].canonicalName;
 
     let implementationValue;
     if (contractImplementation) {
@@ -48,7 +48,7 @@ export async function createRelations(network: string): Promise<Relations> {
     let relationsValue;
     if (contractRelations) {
       relationsValue = async (contract: Contract) => {
-        const toFlatten =  await Promise.all(contractRelations.map(async (relation) => {
+        const toFlatten = await Promise.all(contractRelations.map(async (relation) => {
           const res = await contract.functions[relation]();
           return res[0];
         }));
@@ -56,7 +56,23 @@ export async function createRelations(network: string): Promise<Relations> {
       }
     }
 
+    let nameValue;
+    if (canonicalName) {
+      nameValue = async (contract: Contract) => {
+        const tokens = canonicalName.split('+');
+        const names = await Promise.all(tokens.map(async (token) => {
+          if (token[0] == '@') {
+            return (await contract.functions[token.slice(1)]())[0];
+          } else {
+            return token;
+          }
+        }));
+        return names.join('');
+      }
+    }
+
     relationsOutput[contract] = {
+      canonicalName: nameValue,
       relations: relationsValue,
       implementation: implementationValue
     }

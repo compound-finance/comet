@@ -21,6 +21,6 @@ task('spider', 'Use Spider method to pull in contract configs')
       await deleteSpiderArtifacts();
     } else {
       let dm = new DeploymentManager(hre.network.name, hre);
-      await dm.spider();
+      await dm.spider(true);
     }
   });

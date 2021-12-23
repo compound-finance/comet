@@ -3,9 +3,9 @@ import * as fs from 'fs/promises';
 
 import { Contract, Signer } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { Address, ContractMetadata, BuildFile, ContractMap, BuildMap } from './Types';
+import { Address, ContractMetadata, BuildFile, ContractMap, BuildMap, AliasesMap, PointersMap } from './Types';
 export { ContractMap } from './Types';
-import { getPrimaryContract, getRelations, fileExists, mergeContracts, readAddressFromFilename } from './Utils';
+import { getPrimaryContract, getAlias, getRelations, fileExists, mergeContracts, readAddressFromFilename } from './Utils';
 
 type Roots = { [contractName: string]: Address };
 
@@ -100,7 +100,17 @@ export class DeploymentManager {
     }
 
     let cacheBuildFile = this.cacheBuildFile(address);
-    await fs.writeFile(cacheBuildFile, JSON.stringify(buildFile));
+    await fs.writeFile(cacheBuildFile, JSON.stringify(buildFile, null, 4));
+  }
+
+  // Write a pointers map to file cache
+  private async writePointersFileToCache(pointers: PointersMap): Promise<void> {
+    if (!(await fileExists(this.cacheDir()))) {
+      await fs.mkdir(this.cacheDir());
+    }
+
+    let pointersFile = this.pointersFile();
+    await fs.writeFile(pointersFile, JSON.stringify(pointers, null, 4));
   }
 
   // Read root information for given deployment
@@ -121,6 +131,28 @@ export class DeploymentManager {
     })));
   }
 
+  // Reads all cached aliases for given deployment into a map
+  private async getCachedAliases(): Promise<AliasesMap> {
+    // TODO: Can read aliases from `pointers.json`.
+    return new Map();
+  }
+
+  // Builds a pointer map from aliases to addresses
+  private async getPointersFromBuildMap(buildMap: BuildMap, aliasesMap: AliasesMap): Promise<PointersMap> {
+    let pointers: PointersMap = {};
+
+    for (let [address, buildFile] of buildMap) {
+      const metadata = getPrimaryContract(buildFile);
+      if (aliasesMap.has(metadata.address)) {
+        aliasesMap.get(metadata.address).forEach((alias) => pointers[alias] = metadata.address);
+      } else {
+        pointers[metadata.name] = metadata.address;
+      }
+    }
+
+    return pointers;
+  }
+
   // Returns an ethers' wrapped contract from a given build file (based on its name and address)
   private getContractFromBuildFile(buildFile: BuildFile, signer: Signer): [string, Contract] {
     let metadata = getPrimaryContract(buildFile);
@@ -132,13 +164,17 @@ export class DeploymentManager {
   }
 
   // Builds ether contract wrappers around a map of contract metadata
-  private async getContractsFromBuildMap(buildMap: BuildMap): Promise<ContractMap> {
+  private async getContractsFromBuildMap(buildMap: BuildMap, aliasesMap: AliasesMap): Promise<ContractMap> {
     let contracts: ContractMap = {};
     const [ signer ] = await this.hre.ethers.getSigners(); // TODO: Hmm?
 
     for (let [address, buildFile] of buildMap) {
       let [name, contract] = this.getContractFromBuildFile(buildFile, signer);
-      contracts[name] = contract;
+      if (aliasesMap.has(address)) {
+        aliasesMap.get(address).forEach((alias) => contracts[alias] = contract);
+      } else {
+        contracts[name] = contract;
+      }
     }
 
     return contracts;
@@ -154,8 +190,8 @@ export class DeploymentManager {
   }
 
   // Builds ether contract wrappers around a map of contract metadata and merges into `this.contracts` variable
-  private async loadContractsFromBuildMap(buildMap: BuildMap): Promise<ContractMap> {
-    let newContracts = await this.getContractsFromBuildMap(buildMap);
+  private async loadContractsFromBuildMap(buildMap: BuildMap, aliasesMap: AliasesMap): Promise<ContractMap> {
+    let newContracts = await this.getContractsFromBuildMap(buildMap, aliasesMap);
     this.contracts = mergeContracts(this.contracts, newContracts);
     return newContracts;
   }
@@ -169,10 +205,22 @@ export class DeploymentManager {
     }
   }
 
+  // Adds an alias for an address to the aliases map.
+  private addAlias(alias: string, address: Address, aliases: AliasesMap) {
+    if (alias) {
+      if (aliases.has(address)) {
+        let existingAliases = aliases.get(address);
+        aliases.set(address, existingAliases.concat([alias]))
+      } else {
+        aliases.set(address, [alias]);
+      }
+    }
+  }
+
   // Tail-call optimized version of spider method, which crawls a dependency graph gathering contract data
-  private async runSpider(relationConfigMap: RelationConfigMap, discovered: Address[], visited: BuildMap): Promise<BuildMap> {
+  private async runSpider(relationConfigMap: RelationConfigMap, discovered: Address[], visited: BuildMap, aliases: AliasesMap): Promise<[BuildMap, AliasesMap]> {
     if (discovered.length === 0) {
-      return visited;
+      return [visited, aliases];
     }
 
     let address = discovered.shift();
@@ -184,18 +232,16 @@ export class DeploymentManager {
 
       visited.set(address, buildFile);
 
-      // TODO: Allow aliasing, e.g. `.symbol`
-
       let relationConfig = relationConfigMap[name];
       if (relationConfig) {
-        let maybeProxyABI = abi;
-
         let baseContract = new this.hre.ethers.Contract(
           address,
           abi,
           this.hre.ethers.provider
         );
 
+        // TODO: Consider using a Java-like Optional here?
+        let implContractMetadata: ContractMetadata | null = null;
         if (relationConfig.implementation) {
           let [implAddress] = await getRelations(baseContract, relationConfig.implementation);
 
@@ -207,14 +253,25 @@ export class DeploymentManager {
             visited.set(implAddress, implBuildFile);
           }
 
-          maybeProxyABI = getPrimaryContract(implBuildFile).abi;
+          implContractMetadata = getPrimaryContract(implBuildFile);
         }
 
         let contract = new this.hre.ethers.Contract(
           address,
-          maybeProxyABI,
+          implContractMetadata ? implContractMetadata.abi : abi,
           this.hre.ethers.provider
         );
+
+        let aliasRule = relationConfig.alias ?? '';
+        let alias = await getAlias(contract, aliasRule);
+        this.addAlias(alias, address, aliases);
+
+        // If there is an impl contract, add its alias as well.
+        if (implContractMetadata && relationConfigMap[implContractMetadata.name]) {
+          let aliasRule = relationConfigMap[implContractMetadata.name].alias ?? '';
+          let alias = await getAlias(contract, aliasRule);
+          this.addAlias(alias, implContractMetadata.address, aliases);
+        }
 
         let relations = relationConfig.relations ?? [];
         let relatedAddresses = await Promise.all(relations.map((relation) => getRelations(contract, relation)));
@@ -223,7 +280,7 @@ export class DeploymentManager {
       }
     }
 
-    return await this.runSpider(relationConfigMap, discovered, visited);
+    return await this.runSpider(relationConfigMap, discovered, visited, aliases);
   }
 
   // Wrapper for pulling contract data from Etherscan
@@ -264,11 +321,16 @@ export class DeploymentManager {
   /**
     * Runs Spider method to pull full contract configuration from base roots using relation metadata.
     */
-  async spider(): Promise<ContractMap> {
+  async spider(writeToDisk: boolean = false): Promise<ContractMap> {
     let nodes = Object.values(await this.getRoots());
-    let buildMap = await this.runSpider(await this.getRelationConfig(), nodes, new Map());
+    let [ buildMap, aliasesMap ] = await this.runSpider(await this.getRelationConfig(), nodes, new Map(), new Map());
 
-    return await this.loadContractsFromBuildMap(buildMap);
+    if (writeToDisk) {
+      let pointers = await this.getPointersFromBuildMap(buildMap, aliasesMap);
+      await this.writePointersFileToCache(pointers);
+    }
+
+    return await this.loadContractsFromBuildMap(buildMap, aliasesMap);
   }
 
   /**
@@ -292,6 +354,7 @@ export class DeploymentManager {
     */
   async getContracts(): Promise<ContractMap> {
     let buildMap = await this.getCachedContracts();
-    return await this.loadContractsFromBuildMap(buildMap);
+    let aliasesMap = await this.getCachedAliases();
+    return await this.loadContractsFromBuildMap(buildMap, aliasesMap);
   }
 }

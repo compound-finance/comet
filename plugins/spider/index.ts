@@ -13,7 +13,7 @@ import * as fs from 'fs';
 
 // A node within the contract dependency tree.
 export interface ContractNode {
-  name: string,
+  canonicalName: string,
   contractName: string,
   abi: string,
   address: Address,
@@ -47,7 +47,6 @@ export async function getEthersContractsForDeployment(
       hre,
       relations,
       address,
-      name: contractName,
       visited,
       proxies,
       writeToCache: false
@@ -63,12 +62,8 @@ function buildContractMap(
   contractMap: ContractMap,
   rootNode: ContractNode
 ) {
-  let contractName = rootNode.contractName;
-  // TODO: Naming of contracts could be better.
-  if (rootNode.name.toLowerCase() !== rootNode.contractName.toLowerCase()) {
-    contractName = rootNode.name + rootNode.contractName;
-  }
-  contractMap[contractName] = new hre.ethers.Contract(
+  let canonicalName = rootNode.canonicalName ? rootNode.canonicalName : rootNode.contractName;
+  contractMap[canonicalName] = new hre.ethers.Contract(
     rootNode.address,
     rootNode.abi,
     admin
@@ -87,13 +82,13 @@ export async function pullConfigs(hre: HardhatRuntimeEnvironment) {
   // Start branching out from each root contract.
   let config = {};
   await Promise.all(Object.entries(roots).map(async ([name, address]) => {
-    const rootNode = await expand({network, hre, relations, address, name, visited, proxies});
+    const rootNode = await expand({network, hre, relations, address, visited, proxies});
     mergeConfig(config, rootNode);
   }));
 
   // Write config to file
   const configDir = path.join(__dirname, '..', '..', 'deployments', network);
-  let configFile = path.join(configDir, 'config.json');
+  let configFile = path.join(configDir, 'pointers.json');
   await fs.promises.writeFile(configFile, JSON.stringify(config, null, 4));
 
   // Write proxies to file
@@ -102,12 +97,8 @@ export async function pullConfigs(hre: HardhatRuntimeEnvironment) {
 }
 
 function mergeConfig(config, rootNode: ContractNode) {
-  let contractName = rootNode.contractName;
-  // TODO: Naming of contracts could be better.
-  if (rootNode.name.toLowerCase() !== rootNode.contractName.toLowerCase()) {
-    contractName = rootNode.name + rootNode.contractName;
-  }
-  config[contractName] = rootNode.address;
+  let canonicalName = rootNode.canonicalName ? rootNode.canonicalName : rootNode.contractName;
+  config[canonicalName] = rootNode.address;
   for (let child of rootNode.children) {
     mergeConfig(config, child);
   }
@@ -121,7 +112,6 @@ interface ExpandParameters {
   hre: HardhatRuntimeEnvironment;
   relations: Relations;
   address: Address;
-  name: string;
   visited: Map<Address, string>;
   // Proxy to impl
   proxies: Map<Address, Address>;
@@ -134,7 +124,6 @@ async function expand({
   hre,
   relations,
   address,
-  name,
   visited,
   proxies,
   currentProxy,
@@ -155,23 +144,21 @@ async function expand({
   );
   visited.set(address, contractName);
 
-  // This is only used to better label ERC20 tokens.
-  if (typeof contract.symbol === 'function') {
-    const symbol = await contract.symbol();
-    name = symbol ? symbol : name;
-  }
-
+  let canonicalName;
   let children = [];
   // Iterate through dependencies if contract has any relations.
   if (contractName in relations) {
     const relation = relations[contractName];
     let dependencies: Address[], implementation: Address;
-    [dependencies, implementation] = await Promise.all([
-      relations[contractName].relations
-        ? relations[contractName].relations(contract)
+    [dependencies, implementation, canonicalName] = await Promise.all([
+      relation.relations
+        ? relation.relations(contract)
         : null,
-      relations[contractName].implementation
-        ? relations[contractName].implementation(contract)
+        relation.implementation
+        ? relation.implementation(contract)
+        : null,
+      relation.canonicalName
+        ? relation.canonicalName(contract)
         : null,
     ]);
     if (implementation) {
@@ -181,7 +168,6 @@ async function expand({
         hre,
         relations,
         address: implementation,
-        name,
         visited,
         proxies,
         currentProxy: address,
@@ -192,7 +178,7 @@ async function expand({
       }
     }
     if (dependencies) {
-      const newChildren = await Promise.all(dependencies.map(addr => expand({network, hre, relations, address: addr, name, visited, proxies, writeToCache})));
+      const newChildren = await Promise.all(dependencies.map(addr => expand({network, hre, relations, address: addr, visited, proxies, writeToCache})));
       for (const newChild of newChildren) {
         if (newChild) {
           children.push(newChild);
@@ -201,7 +187,7 @@ async function expand({
     }
   }
 
-  return { name, contractName, address, abi, children };
+  return { canonicalName, contractName, address, abi, children };
 }
 
 // Loads a contract's config by reading it from cache or pulling it from Etherscan if it does not exist.
