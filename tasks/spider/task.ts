@@ -1,5 +1,4 @@
 import { task } from 'hardhat/config';
-import { pullConfigs } from '../../plugins/spider';
 import { execSync } from "child_process";
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 
