@@ -1,6 +1,7 @@
 import { scenario } from "./CometContext";
 import { expect } from "chai";
 import { RaffleState } from "./constraints/RaffleStateConstraint";
+import { BigNumber } from "ethers";
 
 scenario(
   "enterWithEth > a player can enter via enterWithEth",
@@ -56,7 +57,66 @@ scenario(
   }
 );
 
-// TODO: enterWithToken
+scenario(
+  "enterWithToken > a player can enter via enterWithToken",
+  {
+    raffle: {
+      state: RaffleState.Active
+    }
+  },
+  async ({ actors, contracts, players }) => {
+    const { albert } = actors;
+    const { raffle, oracle} = contracts();
+
+    const ticketPrice = await raffle.ticketPrice();
+    const ethPrice  = await oracle.getEthPriceInTokens();
+    // Calculate ticket price in tokens
+    const ticketPriceInTokens = ticketPrice.mul(ethPrice).div(BigNumber.from('1000000000000000000'));
+    await albert.enterWithToken(ticketPriceInTokens);
+
+    expect(await players()).to.include(await albert.getAddress());
+  }
+);
+
+scenario(
+  "enterWithToken > rejects incorrect ticketPrice",
+  {
+    raffle: {
+      state: RaffleState.Active
+    }
+  },
+  async ({ actors, contracts, players }) => {
+    const { albert } = actors;
+    const { raffle, oracle} = contracts();
+
+    const ticketPrice = await raffle.ticketPrice();
+    const ethPrice  = await oracle.getEthPriceInTokens();
+    // Calculate ticket price in tokens
+    const ticketPriceInTokens = ticketPrice.mul(ethPrice).div(BigNumber.from('1000000000000000000'));
+
+    await expect(albert.enterWithToken(ticketPriceInTokens.sub(1))).to.be.reverted;
+  }
+);
+
+// Skip for now, requires PR with time increase
+scenario.skip(
+  "enterWithToken > fails when raffle is finished",
+  {
+    raffle: {
+      state: RaffleState.Finished
+    }
+  },
+  async ({ actors, contracts }) => {
+    const { betty } = actors;
+    const { raffle } = contracts();
+
+    // const ticketPrice = await raffle.ticketPrice();
+
+    await expect(
+      betty.enterWithToken(400000000)
+    ).to.be.revertedWith("Raffle is not active");
+  }
+);
 
 scenario(
   "determineWinner > can only be called by owner",
