@@ -183,6 +183,11 @@ export class DeploymentManager {
     return new Map();
   }
 
+  // Reads the cached proxy map for a given deployment into a map
+  private async getCachedProxies(): Promise<ProxiesMap> {
+    return JSON.parse(await fs.readFile(this.proxiesFile(), 'utf8')) as ProxiesMap;
+  }
+
   // Builds a pointer map from aliases to addresses
   private async getPointersFromBuildMap(
     buildMap: BuildMap,
