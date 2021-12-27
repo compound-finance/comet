@@ -90,7 +90,7 @@ export class Runner<T> {
 
           // apply each solution in the combo, then check they all still hold
           for (const solution of combo) {
-            ctx = await solution(ctx, world) || ctx;
+            ctx = (await solution(ctx, world)) || ctx;
           }
 
           for (const constraint of constraints) {

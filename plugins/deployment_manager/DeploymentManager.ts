@@ -11,6 +11,7 @@ import {
   BuildMap,
   AliasesMap,
   PointersMap,
+  ProxiesMap,
 } from './Types';
 import { loadContract } from '../import/import';
 import {
@@ -21,8 +22,6 @@ import {
   mergeContracts,
   readAddressFromFilename,
 } from './Utils';
-
-export { ContractMap } from './Types';
 
 export type Roots = { [contractName: string]: Address };
 
@@ -93,6 +92,11 @@ export class DeploymentManager {
     return path.join(this.deploymentDir(), 'pointers.json');
   }
 
+  // File to store pointers in, e.g. `$pwd/deployments/$network/proxies.json`
+  private proxiesFile(): string {
+    return path.join(this.deploymentDir(), 'proxies.json');
+  }
+
   // File to store relation config in, e.g. `$pwd/deployments/$network/relations.json`
   private relationsFile(): string {
     return path.join(this.deploymentDir(), 'relations.json');
@@ -135,6 +139,16 @@ export class DeploymentManager {
 
     let pointersFile = this.pointersFile();
     await fs.writeFile(pointersFile, JSON.stringify(pointers, null, 4));
+  }
+
+  // Write a proxies map to file cache
+  private async writeProxiesFileToCache(proxies: ProxiesMap): Promise<void> {
+    if (!(await fileExists(this.cacheDir()))) {
+      await fs.mkdir(this.cacheDir());
+    }
+
+    let proxiesFile = this.proxiesFile();
+    await fs.writeFile(proxiesFile, JSON.stringify(proxies, null, 4));
   }
 
   // Read root information for given deployment
@@ -279,10 +293,11 @@ export class DeploymentManager {
     relationConfigMap: RelationConfigMap,
     discovered: Address[],
     visited: BuildMap,
-    aliases: AliasesMap
-  ): Promise<[BuildMap, AliasesMap]> {
+    aliases: AliasesMap,
+    proxies: ProxiesMap
+  ): Promise<[BuildMap, AliasesMap, ProxiesMap]> {
     if (discovered.length === 0) {
-      return [visited, aliases];
+      return [visited, aliases, proxies];
     }
 
     let address = discovered.shift();
@@ -309,6 +324,7 @@ export class DeploymentManager {
             baseContract,
             relationConfig.implementation
           );
+          proxies[address] = implAddress;
 
           let implBuildFile: BuildFile;
           if (visited[implAddress]) {
@@ -364,7 +380,8 @@ export class DeploymentManager {
       relationConfigMap,
       discovered,
       visited,
-      aliases
+      aliases,
+      proxies
     );
   }
 
@@ -420,9 +437,10 @@ export class DeploymentManager {
    */
   async spider(): Promise<ContractMap> {
     let nodes = Object.values(await this.getRoots());
-    let [buildMap, aliasesMap] = await this.runSpider(
+    let [buildMap, aliasesMap, proxiesMap] = await this.runSpider(
       await this.getRelationConfig(),
       nodes,
+      new Map(),
       new Map(),
       new Map()
     );
@@ -430,6 +448,7 @@ export class DeploymentManager {
     if (this.config.writeCacheToDisk) {
       let pointers = await this.getPointersFromBuildMap(buildMap, aliasesMap);
       await this.writePointersFileToCache(pointers);
+      await this.writeProxiesFileToCache(proxiesMap);
     }
 
     return await this.loadContractsFromBuildMap(buildMap, aliasesMap);
