@@ -5,6 +5,7 @@ import { Contract, Signer } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Address, ContractMetadata, BuildFile, ContractMap, BuildMap, AliasesMap, PointersMap } from './Types';
 export { ContractMap } from './Types';
+import { loadContract } from '../import/index';
 import { getPrimaryContract, getAlias, getRelations, fileExists, mergeContracts, readAddressFromFilename } from './Utils';
 
 type Roots = { [contractName: string]: Address };
@@ -166,7 +167,7 @@ export class DeploymentManager {
   // Builds ether contract wrappers around a map of contract metadata
   private async getContractsFromBuildMap(buildMap: BuildMap, aliasesMap: AliasesMap): Promise<ContractMap> {
     let contracts: ContractMap = {};
-    const [ signer ] = await this.hre.ethers.getSigners(); // TODO: Hmm?
+    const [signer] = await this.hre.ethers.getSigners(); // TODO: Hmm?
 
     for (let [address, buildFile] of buildMap) {
       let [name, contract] = this.getContractFromBuildFile(buildFile, signer);
@@ -183,7 +184,7 @@ export class DeploymentManager {
   // Deploys a contract given a build file (e.g. something imported or spidered)
   private async deployFromBuildFile(buildFile: BuildFile, deployArgs: any[]): Promise<Contract> {
     let metadata = getPrimaryContract(buildFile);
-    const [ signer ] = await this.hre.ethers.getSigners(); // TODO: Hmm?
+    const [signer] = await this.hre.ethers.getSigners(); // TODO: Hmm?
     const contractFactory = new this.hre.ethers.ContractFactory(metadata.abi, metadata.bin, signer);
     const contract = await contractFactory.deploy(...deployArgs);
     return await contract.deployed();
@@ -285,7 +286,7 @@ export class DeploymentManager {
   private async importContract(address: Address, retries: number): Promise<BuildFile> {
     let buildFile;
     try {
-      buildFile = (await this.hre.run('import', { address, networkNameOverride: this.deployment })) as BuildFile;
+      buildFile = (await loadContract('etherscan', this.deployment, address, '')) as BuildFile;
     } catch (e) {
       if (retries === 0) {
         throw e;
@@ -321,7 +322,7 @@ export class DeploymentManager {
     */
   async spider(): Promise<ContractMap> {
     let nodes = Object.values(await this.getRoots());
-    let [ buildMap, aliasesMap ] = await this.runSpider(await this.getRelationConfig(), nodes, new Map(), new Map());
+    let [buildMap, aliasesMap] = await this.runSpider(await this.getRelationConfig(), nodes, new Map(), new Map());
 
     if (this.config.writeCacheToDisk) {
       let pointers = await this.getPointersFromBuildMap(buildMap, aliasesMap);
