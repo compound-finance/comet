@@ -72,6 +72,7 @@ async function getContractCreationCode(network: string, address: string) {
         /<div id='verifiedbytecode2'>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
     let matches = [...result.matchAll(regex)];
     if (matches.length === 0) {
+        console.log('Response is: ', result);
         throw new Error(`Failed to pull deployed contract code from Etherscan: ${url}`);
     }
     return matches[0][1];
