@@ -69,7 +69,7 @@ async function getContractCreationCode(network: string, address: string) {
     let url = `${getEtherscanUrl(network)}/address/${address}#code`;
     let result = <string>await get(url, {}, null);
     let regex =
-        /<div id='verifiedbytecode2'>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
+        /<div id=(?:'|")verifiedbytecode2(?:'|")>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
     let matches = [...result.matchAll(regex)];
     if (matches.length === 0) {
         console.log('Response is: ', result);
