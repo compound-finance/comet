@@ -3,7 +3,6 @@ import { expect } from "chai";
 import { RaffleState } from "./constraints/RaffleStateConstraint";
 import { BigNumber } from "ethers";
 import { World } from "../plugins/scenario";
-import { BigNumber } from "ethers";
 
 scenario(
   "enterWithEth > a player can enter via enterWithEth",
