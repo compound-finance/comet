@@ -12,7 +12,7 @@ scenario("add remote token",
     expect(await remoteToken.symbol()).to.equal('DAI');
   });
 
-scenario("scen 2", {}, async (context, world) => {
+scenario.skip("scen 2", {}, async (context, world) => {
   expect(context.dog).to.equal("jack");
 });
 
