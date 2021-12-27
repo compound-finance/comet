@@ -39,6 +39,7 @@ export function getEtherscanUrl(network: string): string {
 }
 
 export async function get(url, data, parser: any = JSON.parse) {
+  console.log(`get called for url: ${url}`);
   const res = (await axios.get(url, { params: data }))["data"];
   return res;
 }

@@ -67,12 +67,11 @@ async function getEtherscanApiData(
 
 async function getContractCreationCode(network: string, address: string) {
     let url = `${getEtherscanUrl(network)}/address/${address}#code`;
-    console.log(url);
     let result = <string>await get(url, {}, null);
     let regex =
         /<div id='verifiedbytecode2'>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
     let matches = [...result.matchAll(regex)];
-    console.log(matches);
+    console.log(`matches: ${matches}`);
     if (matches.length === 0) {
         throw new Error(`Failed to pull deployed contract code from Etherscan: ${url}`);
     }
