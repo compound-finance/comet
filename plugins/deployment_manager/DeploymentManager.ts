@@ -284,12 +284,15 @@ export class DeploymentManager {
 
   // Wrapper for pulling contract data from Etherscan
   private async importContract(address: Address, retries: number): Promise<BuildFile> {
+    console.log(`importContract(address: ${address}) called with ${retries} retries`);
+    console.log(`importRetryDelay: ${this.importRetryDelay()}`)
     let buildFile;
     try {
       // buildFile = (await this.hre.run('import', { address, networkNameOverride: this.deployment })) as BuildFile;
       buildFile = (await loadContract('etherscan', this.deployment, address, '')) as BuildFile;
     } catch (e) {
       if (retries === 0) {
+        console.log(`no retries left for address: ${address}`);
         throw e;
       }
 

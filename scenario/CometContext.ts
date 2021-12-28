@@ -124,7 +124,8 @@ let contractDeployers: {[name: string]: { contract: string, deployer: ((world: W
 
 const getInitialContext = async (world: World, base: ForkSpec): Promise<CometContext> => {
   const isDevelopment = !base.url;
-  let deploymentManager = new DeploymentManager(base.name, world.hre, { writeCacheToDisk: true });
+  // let deploymentManager = new DeploymentManager(base.name, world.hre, { writeCacheToDisk: true });
+  let deploymentManager = new DeploymentManager(base.name, world.hre);
 
   if (isDevelopment) {
     await world.hre.run("compile"); // I mean, should we compile anyway?
