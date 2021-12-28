@@ -3,6 +3,8 @@ import { expect } from "chai";
 import { RaffleState } from "./constraints/RaffleStateConstraint";
 import { BigNumber } from "ethers";
 
+const TOKEN_BASE = '1000000000000000000';
+
 scenario(
   "enterWithEth > a player can enter via enterWithEth",
   {
@@ -71,7 +73,7 @@ scenario(
     const ticketPrice = await raffle.ticketPrice();
     const ethPrice  = await oracle.getEthPriceInTokens();
     // Calculate ticket price in tokens
-    const ticketPriceInTokens = ticketPrice.mul(ethPrice).div(BigNumber.from('1000000000000000000'));
+    const ticketPriceInTokens = ticketPrice.mul(ethPrice).div(BigNumber.from(TOKEN_BASE));
     await albert.enterWithToken(ticketPriceInTokens);
 
     expect(await players()).to.include(await albert.getAddress());
@@ -92,7 +94,7 @@ scenario(
     const ticketPrice = await raffle.ticketPrice();
     const ethPrice  = await oracle.getEthPriceInTokens();
     // Calculate ticket price in tokens
-    const ticketPriceInTokens = ticketPrice.mul(ethPrice).div(BigNumber.from('1000000000000000000'));
+    const ticketPriceInTokens = ticketPrice.mul(ethPrice).div(BigNumber.from(TOKEN_BASE));
 
     await expect(albert.enterWithToken(ticketPriceInTokens.sub(1))).to.be.reverted;
   }
@@ -108,12 +110,15 @@ scenario.skip(
   },
   async ({ actors, contracts }) => {
     const { betty } = actors;
-    const { raffle } = contracts();
+    const { raffle, oracle } = contracts();
 
-    // const ticketPrice = await raffle.ticketPrice();
+    const ticketPrice = await raffle.ticketPrice();
+    const ethPrice  = await oracle.getEthPriceInTokens();
+    // Calculate ticket price in tokens
+    const ticketPriceInTokens = ticketPrice.mul(ethPrice).div(BigNumber.from(TOKEN_BASE));
 
     await expect(
-      betty.enterWithToken(400000000)
+      betty.enterWithToken(ticketPriceInTokens)
     ).to.be.revertedWith("Raffle is not active");
   }
 );
@@ -149,7 +154,44 @@ scenario.skip(
   }
 );
 
-// TODO: test determineWinner > transfers prize money to someone
+scenario(
+  "determineWinner > transfers prize money to winner",
+  {
+    raffle: {
+      state: RaffleState.Active
+    }
+  },
+  async ({ actors, contracts }) => {
+    const { admin, betty, albert, charles} = actors;
+    const { raffle, oracle } = contracts();
+
+    // Albert and Betty enter raffle with ETH
+    const ticketPrice = await raffle.ticketPrice();
+    await albert.enterWithEth(ticketPrice);
+    await betty.enterWithEth(ticketPrice);
+
+    console.log("albert = ", await albert.getAddress());
+    console.log("betty = ", await betty.getAddress());
+    console.log("charles = ", await charles.getAddress());
+
+    // Charles enters raffle with token
+    const ethPrice  = await oracle.getEthPriceInTokens();
+    const ticketPriceInTokens = ticketPrice.mul(ethPrice).div(BigNumber.from(TOKEN_BASE));
+    await charles.enterWithToken(ticketPriceInTokens);
+
+    // Determine winner and get transaction receipt
+    const receipt = await admin.determineWinner();
+    // Filter `NewWinner` event
+    const newWinnerEvent = receipt.events?.filter((x) => {return x.event == "NewWinner"})[0];
+    const [winner, ethPrize, tokenPrize] = newWinnerEvent.args;
+    expect(winner == await albert.getAddress() || winner == await betty.getAddress() || winner == await charles.getAddress()).to.equal(true);
+
+    expect(ethPrize).to.equal(ticketPrice.mul(2))
+    expect(tokenPrize).to.equal(ticketPriceInTokens);
+
+    expect(await raffle.state()).to.equal(RaffleState.Finished);
+  }
+);
 
 // TODO: add second argument to .restartRaffle
 scenario.skip(

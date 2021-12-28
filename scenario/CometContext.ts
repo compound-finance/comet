@@ -56,11 +56,11 @@ export class CometActor {
   }
 
   async determineWinner() {
-    (await this.raffleContract.connect(this.signer).determineWinner()).wait();
+    return (await this.raffleContract.connect(this.signer).determineWinner()).wait();
   }
 
   async restartRaffle(ticketPrice: number) {
-    (await this.raffleContract.connect(this.signer).restartRaffle(ticketPrice)).wait();
+    return (await this.raffleContract.connect(this.signer).restartRaffle(ticketPrice)).wait();
   }
 }
 
