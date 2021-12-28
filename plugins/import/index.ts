@@ -73,6 +73,8 @@ async function getContractCreationCode(network: string, address: string) {
     let matches = [...result.matchAll(regex)];
     // console.log(`matches: ${matches}`);
     if (matches.length === 0) {
+        console.log('result:');
+        console.log(result);
         throw new Error(`Failed to pull deployed contract code from Etherscan: ${url}`);
     }
     return matches[0][1];
