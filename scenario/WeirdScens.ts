@@ -13,14 +13,14 @@ async function rando(name: string) {
   })
 }
 
-scenario.skip("scen 4", {}, async (context, world) => {
+scenario("scen 4", {}, async (context, world) => {
   await rando("scen 4");
 });
 
-scenario.skip("scen 5", {}, async (context, world) => {
+scenario("scen 5", {}, async (context, world) => {
   await rando("scen 4");
 });
 
-scenario.skip("scen 6", {}, async (context, world) => {
+scenario("scen 6", {}, async (context, world) => {
   await rando("scen 4");
 });

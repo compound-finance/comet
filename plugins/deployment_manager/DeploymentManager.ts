@@ -4,9 +4,10 @@ import * as fs from 'fs/promises';
 import { Contract, Signer } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Address, ContractMetadata, BuildFile, ContractMap, BuildMap, AliasesMap, PointersMap } from './Types';
-export { ContractMap } from './Types';
-import { loadContract } from '../import/index';
+import { loadContract } from '../import/import';
 import { getPrimaryContract, getAlias, getRelations, fileExists, mergeContracts, readAddressFromFilename } from './Utils';
+
+export { ContractMap } from './Types';
 
 type Roots = { [contractName: string]: Address };
 
@@ -286,7 +287,7 @@ export class DeploymentManager {
   private async importContract(address: Address, retries: number): Promise<BuildFile> {
     let buildFile;
     try {
-      buildFile = (await loadContract('etherscan', this.deployment, address, '')) as BuildFile;
+      buildFile = (await loadContract('etherscan', this.deployment, address)) as BuildFile;
     } catch (e) {
       if (retries === 0) {
         throw e;

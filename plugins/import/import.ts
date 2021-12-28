@@ -1,17 +1,18 @@
-import * as util from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Result, get, getEtherscanApiUrl, getEtherscanUrl } from './etherscan';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { get, getEtherscanApiUrl, getEtherscanUrl } from './etherscan';
 
 /**
  * Copied from Saddle import with some small modifications.
+ * 
+ * NOTE: This program also exists as a Hardhat plugin in a separate repo, but we
+ * are temporarily moving it back into the protocol repo for easier development.
  */
 
-export async function loadContract(source: string, network: string, address: string, outdir: string) {
+export async function loadContract(source: string, network: string, address: string) {
     switch (source) {
         case 'etherscan':
-            return await loadEtherscanContract(network, address, outdir);
+            return await loadEtherscanContract(network, address);
         default:
             throw new Error(`Unknown source \`${source}\`, expected one of [etherscan]`);
     }
@@ -69,7 +70,7 @@ async function getContractCreationCode(network: string, address: string) {
     let url = `${await getEtherscanUrl(network)}/address/${address}#code`;
     let result = <string>await get(url, {}, null);
     let regex =
-        /<div id=(?:'|")verifiedbytecode2(?:'|")>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
+        /<div id='verifiedbytecode2'>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
     let matches = [...result.matchAll(regex)];
     if (matches.length === 0) {
         console.log('Response is: ', result);
@@ -78,7 +79,7 @@ async function getContractCreationCode(network: string, address: string) {
     return matches[0][1];
 }
 
-export async function loadEtherscanContract(network: string, address: string, outdir: string) {
+export async function loadEtherscanContract(network: string, address: string) {
     const apiKey = process.env.ETHERSCAN_KEY;
 
     const networkName = network;
@@ -123,10 +124,5 @@ export async function loadEtherscanContract(network: string, address: string, ou
         version: compiler,
     };
 
-    if (outdir) {
-        const outfile = path.join(outdir, `${address}.json`);
-        await fs.promises.mkdir(outdir, { recursive: true }).catch(console.error);
-        await fs.promises.writeFile(outfile, JSON.stringify(contractBuild, null, 2));
-    }
     return contractBuild;
 } 
