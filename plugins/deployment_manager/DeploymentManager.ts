@@ -6,6 +6,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Address, ContractMetadata, BuildFile, ContractMap, BuildMap, AliasesMap, PointersMap } from './Types';
 export { ContractMap } from './Types';
 import { getPrimaryContract, getAlias, getRelations, fileExists, mergeContracts, readAddressFromFilename } from './Utils';
+import { loadContract } from '../import/index';
 
 type Roots = { [contractName: string]: Address };
 
@@ -285,7 +286,8 @@ export class DeploymentManager {
   private async importContract(address: Address, retries: number): Promise<BuildFile> {
     let buildFile;
     try {
-      buildFile = (await this.hre.run('import', { address, networkNameOverride: this.deployment })) as BuildFile;
+      // buildFile = (await this.hre.run('import', { address, networkNameOverride: this.deployment })) as BuildFile;
+      buildFile = (await loadContract('etherscan', this.deployment, address, '')) as BuildFile;
     } catch (e) {
       if (retries === 0) {
         throw e;
