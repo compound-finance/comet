@@ -1,4 +1,4 @@
-import { BigNumber, Signer } from 'ethers';
+import { BigNumber, Signer, Transaction } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types'
 import { ForkSpec } from './Runner';
 
@@ -36,18 +36,12 @@ export class World {
     return (await this.hre.ethers.provider.getBlock(blockNumber)).timestamp
   }
 
-  async _setNextBlockTimestamp(timestamp: number) {
-    await this.hre.network.provider.request({
-      method: "evm_setNextBlockTimestamp",
-      params: [timestamp],
-    });
-  }
-
-  async advanceToTimestampOrBeyond(timestamp: number) {
-    const currentTimestamp = await this.timestamp();
-    if (currentTimestamp < timestamp) {
-      await this._setNextBlockTimestamp(timestamp);
-    }
+  async increaseTime(amount: number) {
+    await this.hre.network.provider.send(
+      'evm_increaseTime',
+      [amount]
+    );
+    await this.hre.network.provider.send("evm_mine"); // ensure block is mined
   }
 }
 

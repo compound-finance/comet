@@ -31,7 +31,12 @@ class RaffleStateConstraint<T extends CometContext> implements Constraint<T> {
         console.log('attempting to deactivate Raffle');
 
         const endTime = (await raffle.endTime()).toNumber();
-        await world.advanceToTimestampOrBeyond(endTime + 1);
+        const currentTime = await world.timestamp();
+
+        // advance time past endtime
+        if (currentTime < endTime) {
+          await world.increaseTime(endTime - currentTime);
+        }
 
         await admin.determineWinner();
       } else if (currentState == RaffleState.Finished && desiredState == RaffleState.Active) {

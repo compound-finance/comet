@@ -144,7 +144,12 @@ scenario(
     const { raffle } = contracts();
 
     const endTime = (await raffle.endTime()).toNumber();
-    await world.advanceToTimestampOrBeyond(endTime + 1);
+    const currentTime = await world.timestamp();
+
+    // advance time past endtime
+    if (currentTime < endTime) {
+      await world.increaseTime(endTime - currentTime);
+    }
 
     await admin.determineWinner();
 
@@ -153,6 +158,8 @@ scenario(
 );
 
 // TODO: test determineWinner > transfers prize money to someone
+
+// TODO: test determineWinner > rejects if raffle time is not over yet
 
 scenario(
   "restartRaffle > rejects if raffle is active",
