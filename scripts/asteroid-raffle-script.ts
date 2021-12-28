@@ -14,6 +14,7 @@ async function main() {
   // await hre.run('compile');
 
   const [governor, user1] = await ethers.getSigners();
+  console.log("governor address = ", governor.address);
 
   const FaucetToken = await ethers.getContractFactory('FaucetToken');
   const token = await FaucetToken.deploy(100000, "DAI", 18, "DAI");

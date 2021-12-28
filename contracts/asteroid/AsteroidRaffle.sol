@@ -85,13 +85,14 @@ contract AsteroidRaffle is Initializable {
         require(block.timestamp > endTime, "Raffle time is not over yet");
         // Finish the raffle
         state = RaffleState.Finished;
-        // Pseudo-randomly pick a winner
-        address winner = players[random() % players.length];
 
         // End raffle, nobody participated, no funds to distribute
         if (players.length == 0) {
           return;
         }
+
+        // Pseudo-randomly pick a winner
+        address winner = players[random() % players.length];
 
         // Distribute Eth prize pool to the winner
         uint ethPrizeAmount = address(this).balance;
