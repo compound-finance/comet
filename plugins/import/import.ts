@@ -12,7 +12,7 @@ import { get, getEtherscanApiUrl, getEtherscanUrl } from './etherscan';
 export async function loadContract(source: string, network: string, address: string) {
     switch (source) {
         case 'etherscan':
-            return await loadEtherscanContract(network, address);
+            return await loadEtherscanContractMemoized(network, address);
         default:
             throw new Error(`Unknown source \`${source}\`, expected one of [etherscan]`);
     }
@@ -129,3 +129,25 @@ export async function loadEtherscanContract(network: string, address: string) {
 
     return contractBuild;
 } 
+
+const memoizeEtherscanContract = (
+  fn: (network: string, address: string) => Promise<any>,
+  debug: boolean = false
+) => {
+  const cache = {};
+
+  return async (network: string, address: string) => {
+    const key = `${network},${address}`;
+    if (key in cache) {
+      if (debug) { console.log(`Using cached Etherscan value: [${key}]`) }
+      return cache[key];
+    } else {
+      if (debug) { console.log(`Pulling from Etherscan: [${key}]`) }
+      const result = await fn(network, address);
+      cache[key] = result;
+      return result;
+    }
+  }
+}
+
+const loadEtherscanContractMemoized = memoizeEtherscanContract(loadEtherscanContract, true);
