@@ -45,7 +45,7 @@ class RaffleStateConstraint<T extends CometContext> implements Constraint<T> {
           ticketPrice: randomInt(1, 9999999),
           duration: randomInt(1, 9999999)
         });
-      } 
+      }
     }
   }
 

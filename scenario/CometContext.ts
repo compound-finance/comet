@@ -4,6 +4,7 @@ import { ContractMap, DeploymentManager } from '../plugins/deployment_manager/De
 import { RemoteTokenConstraint } from './constraints/RemoteTokenConstraint'
 import RaffleMinEntriesConstraint from "./constraints/RaffleMinEntriesConstraint"
 import RaffleStateConstraint from "./constraints/RaffleStateConstraint"
+import RaffleTimeConstraint from "./constraints/RaffleTimeConstraint"
 
 
 async function getUntilEmpty<T>(emptyVal: T, fn: (index: number) => Promise<T>): Promise<T[]> {
@@ -187,6 +188,7 @@ export const constraints = [
   new RemoteTokenConstraint,
   new RaffleMinEntriesConstraint,
   new RaffleStateConstraint,
+  new RaffleTimeConstraint,
 ];
 
 export const scenario = buildScenarioFn<CometContext>(getInitialContext, forkContext, constraints);

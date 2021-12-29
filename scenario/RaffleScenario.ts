@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { RaffleState } from "./constraints/RaffleStateConstraint";
 import { BigNumber } from "ethers";
 import { World } from "../plugins/scenario";
+import { RaffleTime } from "./constraints/RaffleTimeConstraint";
 
 const TOKEN_BASE = '1000000000000000000';
 
@@ -244,6 +245,7 @@ scenario(
   "determineWinner > rejects if raffle time is not over yet",
   {
     raffle: {
+      time: RaffleTime.NotOver,
       state: RaffleState.Active
     }
   },
