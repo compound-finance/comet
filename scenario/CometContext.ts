@@ -1,5 +1,5 @@
-import { Contract, Signer } from 'ethers'
-import { ForkSpec, Property, World, buildScenarioFn } from '../plugins/scenario'
+import { BigNumberish, Contract, Signer } from 'ethers'
+import { ForkSpec, World, buildScenarioFn } from '../plugins/scenario'
 import { ContractMap, DeploymentManager } from '../plugins/deployment_manager/DeploymentManager'
 import { RemoteTokenConstraint } from './constraints/RemoteTokenConstraint'
 import RaffleMinEntriesConstraint from "./constraints/RaffleMinEntriesConstraint"
@@ -59,8 +59,8 @@ export class CometActor {
     (await this.raffleContract.connect(this.signer).determineWinner()).wait();
   }
 
-  async restartRaffle(ticketPrice: number) {
-    (await this.raffleContract.connect(this.signer).restartRaffle(ticketPrice)).wait();
+  async restartRaffle({ticketPrice, duration}: {ticketPrice: BigNumberish, duration: BigNumberish}) {
+    (await this.raffleContract.connect(this.signer).restartRaffle(ticketPrice, duration)).wait();
   }
 }
 
@@ -124,7 +124,11 @@ let contractDeployers: {[name: string]: { contract: string, deployer: ((world: W
 
 const getInitialContext = async (world: World, base: ForkSpec): Promise<CometContext> => {
   const isDevelopment = !base.url;
-  let deploymentManager = new DeploymentManager(base.name, world.hre);
+  let deploymentManager = new DeploymentManager(
+    base.name,
+    world.hre,
+    { importRetryDelay: 7000 } // !! very high retry delay to avoid Etherscan throttling
+  );
 
   if (isDevelopment) {
     await world.hre.run("compile"); // I mean, should we compile anyway?

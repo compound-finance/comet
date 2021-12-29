@@ -30,6 +30,19 @@ export class World {
     });
     return await this.hre.ethers.getSigner(address);
   }
+
+  async timestamp() {
+    const blockNumber = await this.hre.ethers.provider.getBlockNumber();
+    return (await this.hre.ethers.provider.getBlock(blockNumber)).timestamp
+  }
+
+  async increaseTime(amount: number) {
+    await this.hre.network.provider.send(
+      'evm_increaseTime',
+      [amount]
+    );
+    await this.hre.network.provider.send("evm_mine"); // ensure block is mined
+  }
 }
 
 // A solution modifies a given context and world in a way that satisfies a constraint.
