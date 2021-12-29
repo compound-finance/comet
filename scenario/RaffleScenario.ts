@@ -170,21 +170,45 @@ scenario(
     await albert.enterWithEth(ticketPrice);
     await betty.enterWithEth(ticketPrice);
 
-    console.log("albert = ", await albert.getAddress());
-    console.log("betty = ", await betty.getAddress());
-    console.log("charles = ", await charles.getAddress());
-
     // Charles enters raffle with token
     const ethPrice  = await oracle.getEthPriceInTokens();
     const ticketPriceInTokens = ticketPrice.mul(ethPrice).div(BigNumber.from(TOKEN_BASE));
     await charles.enterWithToken(ticketPriceInTokens);
 
-    // Determine winner and get transaction receipt
-    const receipt = await admin.determineWinner();
-    // Filter `NewWinner` event
-    const newWinnerEvent = receipt.events?.filter((x) => {return x.event == "NewWinner"})[0];
-    const [winner, ethPrize, tokenPrize] = newWinnerEvent.args;
+    // Eth and token balances of all players before the end of current raffle
+    const ethBalancesBefore = {
+      'charles': await charles.getEthBalance(),
+      'betty': await betty.getEthBalance(),
+      'albert': await albert.getEthBalance()
+    };
+    const tokenBalancesBefore = {
+      'charles': await charles.getTokenBalance(),
+      'betty': await betty.getTokenBalance(),
+      'albert': await albert.getTokenBalance()
+    };
+
+    // Determine winner and get `NewWinner` event data
+    const [winner, ethPrize, tokenPrize] = await admin.determineWinner('NewWinner');
+    const winnerName = winner == await charles.getAddress() ? 'charles' : winner == await betty.getAddress() ? 'betty' : 'albert';
+
+    // Eth and token balances of all players after the end of current raffle
+    const ethBalancesAfter = {
+      'charles': await charles.getEthBalance(),
+      'betty': await betty.getEthBalance(),
+      'albert': await albert.getEthBalance()
+    };
+    const tokenBalancesAfter = {
+      'charles': await charles.getTokenBalance(),
+      'betty': await betty.getTokenBalance(),
+      'albert': await albert.getTokenBalance()
+    };
+
+    // Check that winner is one of the players
     expect(winner == await albert.getAddress() || winner == await betty.getAddress() || winner == await charles.getAddress()).to.equal(true);
+
+    // Check that winner received eth and token prizes
+    expect(ethBalancesAfter[winnerName]).to.equal(ethBalancesBefore[winnerName].add(ethPrize));
+    expect(tokenBalancesAfter[winnerName]).to.equal(tokenBalancesBefore[winnerName].add(tokenPrize));
 
     expect(ethPrize).to.equal(ticketPrice.mul(2))
     expect(tokenPrize).to.equal(ticketPriceInTokens);

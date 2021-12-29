@@ -55,26 +55,36 @@ export class CometActor {
     (await this.raffleContract.connect(this.signer).enterWithToken()).wait();
   }
 
-  async determineWinner() {
-    return (await this.raffleContract.connect(this.signer).determineWinner()).wait();
+  async determineWinner(event: string = 'NewWinner') {
+    const receipt = await (await this.raffleContract.connect(this.signer).determineWinner()).wait();
+    const filteredEvent = receipt.events?.filter((x) => {return x.event == event})[0];
+    return filteredEvent && filteredEvent.args;
   }
 
-  async restartRaffle(ticketPrice: number) {
-    return (await this.raffleContract.connect(this.signer).restartRaffle(ticketPrice)).wait();
+  async restartRaffle(ticketPrice: number, event: string = 'RaffleRestarted') {
+    const receipt = await (await this.raffleContract.connect(this.signer).restartRaffle(ticketPrice)).wait();
+    const filteredEvent = receipt.events?.filter((x) => {return x.event == event})[0];
+    return filteredEvent && filteredEvent.args;
+  }
+
+  async getEthBalance() {
+    return this.signer.getBalance();
+  }
+
+  async getTokenBalance() {
+    return this.tokenContract.balanceOf(await this.signer.getAddress());
   }
 }
 
 export class CometAsset {}
 
 export class CometContext {
-  dog: string;
   deploymentManager: DeploymentManager;
   actors: { [name: string]: CometActor };
   assets: { [name: string]: CometAsset }; // XXX
   remoteToken: Contract | undefined
 
-  constructor(dog: string, deploymentManager: DeploymentManager, actors: { [name: string]: CometActor }) {
-    this.dog = dog;
+  constructor(deploymentManager: DeploymentManager, actors: { [name: string]: CometActor }) {
     this.deploymentManager = deploymentManager;
     this.actors = actors;
   }
@@ -163,7 +173,7 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
     charles: new CometActor(charlesSigner, deploymentManager.contracts.raffle, deploymentManager.contracts.token),
   };
 
-  return new CometContext("spot", deploymentManager, actors);
+  return new CometContext(deploymentManager, actors);
 }
 
 async function forkContext(c: CometContext): Promise<CometContext> {
