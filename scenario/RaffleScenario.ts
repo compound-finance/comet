@@ -2,6 +2,7 @@ import { scenario } from "./CometContext";
 import { expect } from "chai";
 import { RaffleState } from "./constraints/RaffleStateConstraint";
 import { BigNumber } from "ethers";
+import { World } from "../plugins/scenario";
 
 const TOKEN_BASE = '1000000000000000000';
 
@@ -24,7 +25,7 @@ scenario(
   }
 );
 
-scenario.skip(
+scenario(
   "enterWithEth > fails when raffle is finished",
   {
     raffle: {
@@ -100,15 +101,14 @@ scenario(
   }
 );
 
-// Skip for now, requires PR with time increase
-scenario.skip(
+scenario(
   "enterWithToken > fails when raffle is finished",
   {
     raffle: {
       state: RaffleState.Finished
     }
   },
-  async ({ actors, contracts }) => {
+  async ({ actors, contracts }, world: World) => {
     const { betty } = actors;
     const { raffle, oracle } = contracts();
 
@@ -116,6 +116,14 @@ scenario.skip(
     const ethPrice  = await oracle.getEthPriceInTokens();
     // Calculate ticket price in tokens
     const ticketPriceInTokens = ticketPrice.mul(ethPrice).div(BigNumber.from(TOKEN_BASE));
+
+    const endTime = (await raffle.endTime()).toNumber();
+    const currentTime = await world.timestamp();
+
+    // advance time past endtime
+    if (currentTime < endTime) {
+      await world.increaseTime(endTime - currentTime);
+    }
 
     await expect(
       betty.enterWithToken(ticketPriceInTokens)
@@ -135,8 +143,7 @@ scenario(
   }
 );
 
-// TODO: add time travel to avoid: "Raffle time is not over yet"
-scenario.skip(
+scenario(
   "determineWinner > changes raffle state",
   {
     raffle: {
@@ -144,9 +151,17 @@ scenario.skip(
       state: RaffleState.Active
     }
   },
-  async ({ actors, contracts }) => {
+  async ({ actors, contracts }, world: World) => {
     const { admin } = actors;
     const { raffle } = contracts();
+
+    const endTime = (await raffle.endTime()).toNumber();
+    const currentTime = await world.timestamp();
+
+    // advance time past endtime
+    if (currentTime < endTime) {
+      await world.increaseTime(endTime - currentTime);
+    }
 
     await admin.determineWinner();
 
@@ -161,7 +176,7 @@ scenario(
       state: RaffleState.Active
     }
   },
-  async ({ actors, contracts }) => {
+  async ({ actors, contracts }, world: World) => {
     const { admin, betty, albert, charles} = actors;
     const { raffle, oracle } = contracts();
 
@@ -186,6 +201,14 @@ scenario(
       'betty': await betty.getTokenBalance(),
       'albert': await albert.getTokenBalance()
     };
+
+    const endTime = (await raffle.endTime()).toNumber();
+    const currentTime = await world.timestamp();
+
+    // advance time past endtime
+    if (currentTime < endTime) {
+      await world.increaseTime(endTime - currentTime);
+    }
 
     // Determine winner and get `NewWinner` event data
     const [winner, ethPrize, tokenPrize] = await admin.determineWinner('NewWinner');
@@ -217,27 +240,25 @@ scenario(
   }
 );
 
-// TODO: add second argument to .restartRaffle
-scenario.skip(
+// TODO: test determineWinner > rejects if raffle time is not over yet
+
+scenario(
   "restartRaffle > rejects if raffle is active",
   {
     raffle: {
       state: RaffleState.Active
     }
   },
-  async ({ contracts }) => {
-    const { raffle } = contracts();
+  async ({ actors }) => {
+    const { admin } = actors;
 
-    const newTicketPrice = 1;
-
-    await expect(raffle.restartRaffle(newTicketPrice)).to.be.revertedWith(
-      "Raffle is already active"
+    await expect(admin.restartRaffle({ticketPrice: 1, duration: 1})).to.be.revertedWith(
+      "Raffle is still active"
     );
   }
 );
 
-// TODO: add time travel to avoid: "Raffle time is not over yet"
-scenario.skip(
+scenario(
   "restartRaffle > rejects if caller is not the owner",
   {
     raffle: {
@@ -245,42 +266,35 @@ scenario.skip(
       state: RaffleState.Finished
     }
   },
-  async ({ actors, contracts }) => {
+  async ({ actors }) => {
     const { albert } = actors;
-    const { raffle } = contracts();
-
-    const newTicketPrice = 1;
 
     await expect(
-      albert.restartRaffle(newTicketPrice)
+      albert.restartRaffle({ticketPrice: 1, duration: 1})
     ).to.be.revertedWith("Only owner can restart raffle");
   }
 );
 
-// TODO: add time travel to avoid: "Raffle time is not over yet"
-scenario.skip(
+scenario(
   "restartRaffle > delete previous players",
   {
     raffle: {
-      minEntries: 1, // ending a Raffle currently requires at least one entry
+      minEntries: 1,
       state: RaffleState.Finished
     }
   },
-  async ({ actors, contracts, players }) => {
+  async ({ actors, players }) => {
     const { admin } = actors;
-    const { raffle } = contracts();
 
     expect(await players()).to.not.be.empty;
 
-    const newTicketPrice = 1;
-    await admin.restartRaffle(newTicketPrice);
+    await admin.restartRaffle({ticketPrice: 1, duration: 1});
 
     expect(await players()).to.be.empty;
   }
 );
 
-// TODO: add time travel to avoid: "Raffle time is not over yet"
-scenario.skip(
+scenario(
   "restartRaffle > resets raffle state",
   {
     raffle: {
@@ -294,16 +308,16 @@ scenario.skip(
 
     expect(await raffle.state()).to.equal(RaffleState.Finished);
 
-    // restart raffle
-    const newTicketPrice = 1;
-    await admin.restartRaffle(newTicketPrice);
+    await admin.restartRaffle({
+      ticketPrice: 1,
+      duration: 1
+    });
 
     expect(await raffle.state()).to.equal(RaffleState.Active);
   }
 );
 
-// TODO: add time travel to avoid: "Raffle time is not over yet"
-scenario.skip(
+scenario(
   "restartRaffle > updates ticket price",
   {
     raffle: {
@@ -315,11 +329,13 @@ scenario.skip(
     const { admin } = actors;
     const { raffle } = contracts();
 
-    const ticketPrice = await raffle.ticketPrice();
-    const newTicketPrice = ticketPrice.add(1);
+    const ticketPrice: BigNumber = await raffle.ticketPrice();
+    const newTicketPrice: BigNumber = ticketPrice.add(1);
 
-    // restart raffle
-    await admin.restartRaffle(newTicketPrice);
+    await admin.restartRaffle({
+      ticketPrice: newTicketPrice,
+      duration: 1
+    });
 
     expect(await raffle.ticketPrice()).to.equal(newTicketPrice);
   }

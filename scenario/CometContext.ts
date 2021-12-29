@@ -1,5 +1,5 @@
-import { Contract, Signer } from 'ethers'
-import { ForkSpec, Property, World, buildScenarioFn } from '../plugins/scenario'
+import { BigNumberish, Contract, Signer } from 'ethers'
+import { ForkSpec, World, buildScenarioFn } from '../plugins/scenario'
 import { ContractMap, DeploymentManager } from '../plugins/deployment_manager/DeploymentManager'
 import { RemoteTokenConstraint } from './constraints/RemoteTokenConstraint'
 import RaffleMinEntriesConstraint from "./constraints/RaffleMinEntriesConstraint"
@@ -61,10 +61,8 @@ export class CometActor {
     return filteredEvent && filteredEvent.args;
   }
 
-  async restartRaffle(ticketPrice: number, event: string = 'RaffleRestarted') {
-    const receipt = await (await this.raffleContract.connect(this.signer).restartRaffle(ticketPrice)).wait();
-    const filteredEvent = receipt.events?.filter((x) => {return x.event == event})[0];
-    return filteredEvent && filteredEvent.args;
+  async restartRaffle({ticketPrice, duration}: {ticketPrice: BigNumberish, duration: BigNumberish}) {
+    (await this.raffleContract.connect(this.signer).restartRaffle(ticketPrice, duration)).wait();
   }
 
   async getEthBalance() {
@@ -74,6 +72,7 @@ export class CometActor {
   async getTokenBalance() {
     return this.tokenContract.balanceOf(await this.signer.getAddress());
   }
+
 }
 
 export class CometAsset {}
@@ -134,7 +133,11 @@ let contractDeployers: {[name: string]: { contract: string, deployer: ((world: W
 
 const getInitialContext = async (world: World, base: ForkSpec): Promise<CometContext> => {
   const isDevelopment = !base.url;
-  let deploymentManager = new DeploymentManager(base.name, world.hre);
+  let deploymentManager = new DeploymentManager(
+    base.name,
+    world.hre,
+    { importRetryDelay: 7000 } // !! very high retry delay to avoid Etherscan throttling
+  );
 
   if (isDevelopment) {
     await world.hre.run("compile"); // I mean, should we compile anyway?
