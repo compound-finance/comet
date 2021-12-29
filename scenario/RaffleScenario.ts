@@ -5,7 +5,7 @@ import { BigNumber } from "ethers";
 import { World } from "../plugins/scenario";
 import { RaffleTime } from "./constraints/RaffleTimeConstraint";
 
-const TOKEN_BASE = '1000000000000000000';
+const TOKEN_BASE = 1e18.toString();
 
 scenario(
   "enterWithEth > a player can enter via enterWithEth",
@@ -117,14 +117,6 @@ scenario(
     const ethPrice  = await oracle.getEthPriceInTokens();
     // Calculate ticket price in tokens
     const ticketPriceInTokens = ticketPrice.mul(ethPrice).div(BigNumber.from(TOKEN_BASE));
-
-    const endTime = (await raffle.endTime()).toNumber();
-    const currentTime = await world.timestamp();
-
-    // advance time past endtime
-    if (currentTime < endTime) {
-      await world.increaseTime(endTime - currentTime);
-    }
 
     await expect(
       betty.enterWithToken(ticketPriceInTokens)
