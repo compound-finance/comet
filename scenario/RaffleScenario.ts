@@ -54,7 +54,7 @@ scenario(
 
     const ticketPrice = await raffle.ticketPrice();
 
-    expect(
+    await expect(
       albert.enterWithEth(ticketPrice.add(1))
     ).to.be.revertedWith("Incorrect ticket price");
   }
@@ -137,7 +137,7 @@ scenario(
   async ({ actors }) => {
     const { albert } = actors;
 
-    expect(albert.determineWinner()).to.be.revertedWith(
+    await expect(albert.determineWinner()).to.be.revertedWith(
       "Only owner can end raffle"
     );
   }
@@ -240,7 +240,21 @@ scenario(
   }
 );
 
-// TODO: test determineWinner > rejects if raffle time is not over yet
+scenario(
+  "determineWinner > rejects if raffle time is not over yet",
+  {
+    raffle: {
+      state: RaffleState.Active
+    }
+  },
+  async ({ actors }) => {
+    const { admin } = actors;
+
+    await expect(admin.determineWinner()).to.be.revertedWith(
+      "Raffle time is not over yet"
+    );
+  }
+);
 
 scenario(
   "restartRaffle > rejects if raffle is active",
