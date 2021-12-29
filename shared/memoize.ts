@@ -19,7 +19,7 @@ export function memoize<T extends any[], U>(
       if (debug) {
         console.log(`Populating ${fn.name} cache for: ${key}`);
       }
-      const result = fn.apply(undefined, arguments);
+      const result = fn.apply(undefined, args);
       cache[key] = result;
       return result;
     }
@@ -43,7 +43,7 @@ export function memoizeAsync<T extends any[], U>(
       if (debug) {
         console.log(`Populating ${fn.name} cache for: ${key}`);
       }
-      const result = await fn.apply(undefined, arguments);
+      const result = await fn.apply(undefined, args);
       cache[key] = result;
       return result;
     }
