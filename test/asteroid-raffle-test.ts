@@ -1,7 +1,6 @@
 import { expect } from 'chai';
-import { ethers, waffle } from 'hardhat';
+import { ethers } from 'hardhat';
 
-const provider = waffle.provider;
 const ticketPrice = ethers.utils.parseEther("0.1");
 const raffleDuration = 24 * 60 * 60;
 let token, raffle, governor;
@@ -32,10 +31,10 @@ describe('AsteroidRaffle', function () {
     const tx1 = await raffle.connect(user).enterWithEth({ value: ticketPrice });
     await tx1.wait();
 
-    const raffleEthBalance1 = await provider.getBalance(raffle.address);
+    const raffleEthBalance1 = await ethers.provider.getBalance(raffle.address);
     expect(ethers.utils.formatEther(raffleEthBalance1)).to.equal(ethers.utils.formatEther(ticketPrice));
 
-    const userEthBalance = await provider.getBalance(user.address);
+    const userEthBalance = await user.getBalance();
 
     // Increase time to end the raffle
     await ethers.provider.send('evm_increaseTime', [raffleDuration + 1]);
@@ -43,10 +42,10 @@ describe('AsteroidRaffle', function () {
     const tx2 = await raffle.connect(governor).determineWinner();
     await tx2.wait();
 
-    const raffleEthBalance2 = await provider.getBalance(raffle.address);
+    const raffleEthBalance2 = await ethers.provider.getBalance(raffle.address);
     expect(ethers.utils.formatEther(raffleEthBalance2)).to.equal(ethers.utils.formatEther('0'));
 
-    const winnerEthBalance = await provider.getBalance(user.address);
+    const winnerEthBalance = await user.getBalance();
     expect(winnerEthBalance.sub(userEthBalance)).to.equal(ticketPrice);
   });
 
@@ -126,7 +125,7 @@ describe('AsteroidRaffle', function () {
     const receipt4 = await tx6.wait();
     const restartEvent = receipt4.events?.filter((x) => {return x.event == "RaffleRestarted"})[0];
 
-    const block = await provider.getBlock(restartEvent.blockNumber);
+    const block = await ethers.provider.getBlock(restartEvent.blockNumber);
     const [governorAddress, price, endTime] = restartEvent.args;
     expect(governorAddress).to.equal(governor.address);
     expect(price).to.equal(newTicketPrice);
