@@ -1,4 +1,5 @@
 import { BigNumberish, Contract, Signer } from 'ethers'
+import { AsteroidRaffle__factory, AsteroidRaffle, FaucetToken__factory, FaucetToken, MockedOracle__factory } from '../build/types'
 import { ForkSpec, World, buildScenarioFn } from '../plugins/scenario'
 import { ContractMap, DeploymentManager } from '../plugins/deployment_manager/DeploymentManager'
 import { RemoteTokenConstraint } from './constraints/RemoteTokenConstraint'
@@ -33,8 +34,8 @@ async function getUntilEmpty<T>(emptyVal: T, fn: (index: number) => Promise<T>):
 
 export class CometActor {
   signer: Signer;
-  raffleContract: Contract;
-  tokenContract: Contract;
+  raffleContract: AsteroidRaffle;
+  tokenContract: FaucetToken;
 
   constructor(signer, raffleContract, tokenContract) {
     this.signer = signer;
@@ -51,7 +52,7 @@ export class CometActor {
   }
 
   async enterWithToken(ticketPrice: number) {
-    (await this.tokenContract.allocateTo(this.signer.getAddress(), ticketPrice)).wait();
+    (await this.tokenContract.allocateTo(await this.signer.getAddress(), ticketPrice)).wait();
     (await this.tokenContract.connect(this.signer).approve(this.raffleContract.address, ticketPrice)).wait();
     (await this.raffleContract.connect(this.signer).enterWithToken()).wait();
   }
@@ -104,8 +105,8 @@ let contractDeployers: {[name: string]: { contract: string, deployer: ((world: W
   token: {
     contract: "FaucetToken", // TODO: This should be handled by pointers.json
     deployer: async (world, contracts, signers) => {
-      const FaucetToken = await world.hre.ethers.getContractFactory('FaucetToken');
-      const token = await FaucetToken.deploy(100000, "DAI", 18, "DAI");
+      const FaucetTokenFactory = await world.hre.ethers.getContractFactory('FaucetToken') as FaucetToken__factory;
+      const token = await FaucetTokenFactory.deploy(100000, "DAI", 18, "DAI");
       return await token.deployed();
     },
   },
@@ -113,8 +114,8 @@ let contractDeployers: {[name: string]: { contract: string, deployer: ((world: W
   oracle: {
     contract: "MockedOracle", // TODO: This should be handled by pointers.json
     deployer: async (world, contracts, signers) => {
-      const Oracle = await world.hre.ethers.getContractFactory('MockedOracle');
-      const oracle = await Oracle.connect(signers[1]).deploy();
+      const OracleFactory = await world.hre.ethers.getContractFactory('MockedOracle') as MockedOracle__factory;
+      const oracle = await OracleFactory.connect(signers[1]).deploy();
       return await oracle.deployed();
     },
   },
@@ -122,8 +123,8 @@ let contractDeployers: {[name: string]: { contract: string, deployer: ((world: W
   raffle: {
     contract: "AsteroidRaffle", // TODO: This should be handled by pointers.json
     deployer: async (world, contracts, signers) => {
-      const AsteroidRaffle = await world.hre.ethers.getContractFactory('AsteroidRaffle');
-      const raffle = await AsteroidRaffle.deploy(contracts.token.address, contracts.oracle.address);
+      const AsteroidRaffleFactory = await world.hre.ethers.getContractFactory('AsteroidRaffle') as AsteroidRaffle__factory;
+      const raffle = await AsteroidRaffleFactory.deploy(contracts.token.address, contracts.oracle.address);
       const contract = await raffle.deployed();
       const tx = await raffle.initialize('100000000000000000', 3 * 60);
       await tx.wait();
