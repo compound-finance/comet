@@ -34,6 +34,7 @@ function throwIfMissing(envVariable, msg: string) {
 
 // required environmnet variables
 throwIfMissing(ETHERSCAN_KEY, "Missing required environment variable: ETHERSCAN_KEY")
+throwIfMissing(INFURA_KEY, "Missing required environment variable: INFURA_KEY")
 
 // Networks
 interface NetworkConfig {
