@@ -1,6 +1,5 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import { get, getEtherscanApiUrl, getEtherscanUrl } from './etherscan';
+import { memoizeAsync } from "../../shared/memoize";
 
 /**
  * Copied from Saddle import with some small modifications.
@@ -12,7 +11,7 @@ import { get, getEtherscanApiUrl, getEtherscanUrl } from './etherscan';
 export async function loadContract(source: string, network: string, address: string) {
     switch (source) {
         case 'etherscan':
-            return await loadEtherscanContract(network, address);
+            return await loadEtherscanContractMemoized(network, address);
         default:
             throw new Error(`Unknown source \`${source}\`, expected one of [etherscan]`);
     }
@@ -129,3 +128,8 @@ export async function loadEtherscanContract(network: string, address: string) {
 
     return contractBuild;
 } 
+
+const loadEtherscanContractMemoized = memoizeAsync(
+  loadEtherscanContract,
+  { debug: true }
+);

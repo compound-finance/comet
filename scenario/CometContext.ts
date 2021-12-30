@@ -136,8 +136,7 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
   const isDevelopment = !base.url;
   let deploymentManager = new DeploymentManager(
     base.name,
-    world.hre,
-    { importRetryDelay: 7000 } // !! very high retry delay to avoid Etherscan throttling
+    world.hre
   );
 
   if (isDevelopment) {
