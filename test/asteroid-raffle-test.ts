@@ -1,24 +1,26 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
+import { AsteroidRaffle__factory, AsteroidRaffle, FaucetToken__factory, FaucetToken, MockedOracle__factory } from '../build/types'
+
 
 const ticketPrice = ethers.utils.parseEther("0.1");
 const raffleDuration = 24 * 60 * 60;
-let token, raffle, governor;
+let token: FaucetToken, raffle: AsteroidRaffle, governor;
 
 describe('AsteroidRaffle', function () {
   beforeEach(async () => {
     [governor] = await ethers.getSigners();
 
-    const FaucetToken = await ethers.getContractFactory('FaucetToken');
-    token = await FaucetToken.deploy(100000, "DAI", 18, "DAI");
+    const FaucetTokenFactory = await ethers.getContractFactory('FaucetToken') as FaucetToken__factory;
+    token = await FaucetTokenFactory.deploy(100000, "DAI", 18, "DAI");
     await token.deployed();
 
-    const Oracle = await ethers.getContractFactory('MockedOracle');
-    const oracle = await Oracle.deploy();
+    const OracleFactory = await ethers.getContractFactory('MockedOracle') as MockedOracle__factory;
+    const oracle = await OracleFactory.deploy();
     await oracle.deployed();
 
-    const raffleFactory = await ethers.getContractFactory('AsteroidRaffle');
-    raffle = await raffleFactory.connect(governor).deploy(token.address, oracle.address);
+    const RaffleFactory = await ethers.getContractFactory('AsteroidRaffle') as AsteroidRaffle__factory;
+    raffle = await RaffleFactory.connect(governor).deploy(token.address, oracle.address);
     await raffle.deployed();
 
     const tx = await raffle.connect(governor).initialize(ticketPrice, 24 * 60 * 60);
