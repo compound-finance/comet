@@ -24,7 +24,7 @@ import {
 
 export { ContractMap } from './Types';
 
-type Roots = { [contractName: string]: Address };
+export type Roots = { [contractName: string]: Address };
 
 export interface RelationConfig {
   relations?: string[];
@@ -461,5 +461,17 @@ export class DeploymentManager {
     let buildMap = await this.getCachedContracts();
     let aliasesMap = await this.getCachedAliases();
     return await this.loadContractsFromBuildMap(buildMap, aliasesMap);
+  }
+
+  /**
+   * Write a roots file to file cache 
+   */
+  async writeRootsFileToCache(roots: Roots): Promise<void> {
+    if (!(await fileExists(this.cacheDir()))) {
+      await fs.mkdir(this.cacheDir());
+    }
+
+    let rootsFile = this.rootsFile();
+    await fs.writeFile(rootsFile, JSON.stringify(roots, null, 4));
   }
 }

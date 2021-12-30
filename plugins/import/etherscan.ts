@@ -13,6 +13,8 @@ export function getEtherscanApiUrl(network: string): string {
     ropsten: 'api-ropsten.etherscan.io',
     goerli: 'api-goerli.etherscan.io',
     mainnet: 'api.etherscan.io',
+    fuji: 'api-testnet.snowtrace.io',
+    avalanche: 'api.snowtrace.io',
   }[network];
 
   if (!host) {
@@ -36,6 +38,24 @@ export function getEtherscanUrl(network: string): string {
   }
 
   return `https://${host}`;
+}
+
+export function getEtherscanApiKey(network: string): string {
+  let apiKey = {
+    kovan: process.env.ETHERSCAN_KEY,
+    rinkeby: process.env.ETHERSCAN_KEY,
+    ropsten: process.env.ETHERSCAN_KEY,
+    goerli: process.env.ETHERSCAN_KEY,
+    mainnet: process.env.ETHERSCAN_KEY,
+    fuji: process.env.SNOWTRACE_KEY,
+    avalanche: process.env.SNOWTRACE_KEY,
+  }[network];
+
+  if (!apiKey) {
+    throw new Error(`Unknown etherscan API key for network ${network}`);
+  }
+
+  return apiKey;
 }
 
 export async function get(url, data, parser: any = JSON.parse) {

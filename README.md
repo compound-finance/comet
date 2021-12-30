@@ -85,6 +85,12 @@ Set up the following env variables:
 - `COINMARKETCAP_API_KEY=your_coinmarket_api_key`
   optional, only if you want to see cost in USD
 
+### Deploy contracts
+
+Deploys contracts to a specified chain using a deployment script.
+
+`yarn deploy --network mainnet`
+
 ### Run spider task
 
 The spider script programmatically fetches all protocol-related contracts from mainnet.

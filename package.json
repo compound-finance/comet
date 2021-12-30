@@ -6,6 +6,7 @@
   "scripts": {
     "build": "hardhat compile",
     "clean": "hardhat clean && rm -rf build/ cache/ coverage* dist/",
+    "deploy": "npx hardhat run ./scripts/deploy-asteroid-raffle.ts",
     "gas": "REPORT_GAS=true yarn test",
     "lint-contracts": "solhint 'contracts/**/*.sol'",
     "lint-contracts:fix": "solhint --fix 'contracts/**/*.sol'",
@@ -20,7 +21,7 @@
   "devDependencies": {
     "@compound-finance/hardhat-import": "^1.0.3",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
-    "@nomiclabs/hardhat-etherscan": "^2.1.8",
+    "@nomiclabs/hardhat-etherscan": "https://gitpkg.now.sh/nomiclabs/hardhat/packages/hardhat-etherscan?master",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@openzeppelin/contracts-upgradeable": "^4.4.1",
     "@typechain/ethers-v5": "^8.0.2",
@@ -44,6 +45,5 @@
     "typechain": "^6.0.2",
     "typescript": "^4.4.4"
   },
-  "repository": "git@github.com:compound-finance/comet.git",
-  "dependencies": {}
+  "repository": "git@github.com:compound-finance/comet.git"
 }

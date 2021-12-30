@@ -23,6 +23,7 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
 const {
   COINMARKETCAP_API_KEY,
   ETHERSCAN_KEY,
+  SNOWTRACE_KEY,
   INFURA_KEY,
   MNEMONIC = '',
   REPORT_GAS = 'false',
@@ -45,6 +46,7 @@ throwIfMissing(INFURA_KEY, 'Missing required environment variable: INFURA_KEY');
 interface NetworkConfig {
   network: string;
   chainId: number;
+  url?: string;
   gas?: number | 'auto';
   gasPrice?: number | 'auto';
 }
@@ -55,6 +57,8 @@ const networkConfigs: NetworkConfig[] = [
   { network: 'rinkeby', chainId: 4 },
   { network: 'goerli', chainId: 5 },
   { network: 'kovan', chainId: 42 },
+  { network: 'avalanche', chainId: 43114, url: 'https://api.avax.network/ext/bc/C/rpc' },
+  { network: 'fuji', chainId: 43113, url: 'https://api.avax-test.network/ext/bc/C/rpc' },
 ];
 
 function getDefaultProviderURL(network: string) {
@@ -65,7 +69,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
   for (const netConfig of networkConfigs) {
     hardhatConfig.networks[netConfig.network] = {
       chainId: netConfig.chainId,
-      url: getDefaultProviderURL(netConfig.network),
+      url: netConfig.url || getDefaultProviderURL(netConfig.network),
       gas: netConfig.gasPrice || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
       accounts: {
@@ -103,8 +107,18 @@ const config: HardhatUserConfig = {
     },
   },
 
+  // See https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#multiple-api-keys-and-alternative-block-explorers
   etherscan: {
-    apiKey: ETHERSCAN_KEY,
+    apiKey: {
+      mainnet: ETHERSCAN_KEY,
+      ropsten: ETHERSCAN_KEY,
+      rinkeby: ETHERSCAN_KEY,
+      goerli: ETHERSCAN_KEY,
+      kovan: ETHERSCAN_KEY,
+      // Avalanche
+      avalanche = SNOWTRACE_KEY,
+      avalancheFujiTestnet = SNOWTRACE_KEY,
+    },
   },
 
   gasReporter: {
