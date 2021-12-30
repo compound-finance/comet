@@ -6,6 +6,8 @@ jobs:
   run-coverage:
     name: Run coverage
     runs-on: ubuntu-latest
+    env:
+      ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2

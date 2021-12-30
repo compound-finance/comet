@@ -19,6 +19,22 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     console.log(account.address);
 });
 
+/* note: boolean environment variables are imported as strings */
+const {
+  COINMARKETCAP_API_KEY,
+  ETHERSCAN_KEY,
+  INFURA_KEY,
+  MNEMONIC = "",
+  REPORT_GAS = "false",
+} = process.env;
+
+function throwIfMissing(envVariable, msg: string) {
+  if (!envVariable) { throw new Error(msg) }
+}
+
+// required environmnet variables
+throwIfMissing(ETHERSCAN_KEY, "Missing required environment variable: ETHERSCAN_KEY")
+
 // Networks
 interface NetworkConfig {
   network: string
@@ -35,12 +51,8 @@ const networkConfigs: NetworkConfig[] = [
   { network: 'kovan', chainId: 42 },
 ]
 
-function getAccountMnemonic() {
-  return process.env.MNEMONIC || ''
-}
-
 function getDefaultProviderURL(network: string) {
-  return `https://${network}.infura.io/v3/${process.env.INFURA_KEY}`
+  return `https://${network}.infura.io/v3/${INFURA_KEY}`
 }
 
 function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
@@ -51,7 +63,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
       gas: netConfig.gasPrice || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
       accounts: {
-        mnemonic: getAccountMnemonic(),
+        mnemonic: MNEMONIC,
       },
     };
   }
@@ -86,13 +98,13 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
   },
 
   etherscan: {
-    apiKey: process.env.ETHERSCAN_KEY,
+    apiKey: ETHERSCAN_KEY,
   },
 
   gasReporter: {
-    enabled: (process.env.REPORT_GAS) ? true : false,
+    enabled: REPORT_GAS === "true" ? true : false,
     currency: 'USD',
-    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+    coinmarketcap: COINMARKETCAP_API_KEY,
     gasPrice: 200, // gwei
   },
 
