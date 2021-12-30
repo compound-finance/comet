@@ -19,6 +19,7 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     console.log(account.address);
 });
 
+/* note: boolean environment variables are imported as strings */
 const {
   COINMARKETCAP_API_KEY,
   ETHERSCAN_KEY,
