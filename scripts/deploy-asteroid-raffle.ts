@@ -33,9 +33,6 @@ async function main() {
   // await hre.run('compile');
 
   const [governor, user1] = await hre.ethers.getSigners();
-  console.log('governor address = ', governor.address);
-  console.log('api key is', hre.config.etherscan.apiKey)
-  console.log('network is ', hre.network.name)
 
   const FaucetToken = await hre.ethers.getContractFactory('FaucetToken') as FaucetToken__factory;
   const tokenArgs: [number, string, number, string] = [100000, 'DAI', 18, 'DAI'];
