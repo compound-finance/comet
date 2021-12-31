@@ -591,9 +591,10 @@
   resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-ethers/-/hardhat-ethers-2.0.3.tgz#06e20a57274f6ce3148132910e723948a711edf1"
   integrity sha512-IJ0gBotVtO7YyLZyHNgbxzskUtFok+JkRlKPo8YELqj1ms9XL6Qm3vsfsGdZr22wnJeVEF5TQPotKuwQk21Dag==
 
-"@nomiclabs/hardhat-etherscan@https://gitpkg.now.sh/nomiclabs/hardhat/packages/hardhat-etherscan?master":
+"@nomiclabs/hardhat-etherscan@^2.1.8":
   version "2.1.8"
-  resolved "https://gitpkg.now.sh/nomiclabs/hardhat/packages/hardhat-etherscan?master#63572dfcff6f8b8b2c8a58348f782453f8d019fc"
+  resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-etherscan/-/hardhat-etherscan-2.1.8.tgz#e206275e96962cd15e5ba9148b44388bc922d8c2"
+  integrity sha512-0+rj0SsZotVOcTLyDOxnOc3Gulo8upo0rsw/h+gBPcmtj91YqYJNhdARHoBxOhhE8z+5IUQPx+Dii04lXT14PA==
   dependencies:
     "@ethersproject/abi" "^5.1.2"
     "@ethersproject/address" "^5.0.2"

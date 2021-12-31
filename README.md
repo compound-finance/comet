@@ -14,15 +14,17 @@ Required env variables:
 
 ```
 ETHERSCAN_KEY=<key>
+INFURA_KEY=<key>
 ```
 
 Optional env variables:
 
 ```
-INFURA_KEY=<key>
+SNOWTRACE_KEY=<key>
 COINMARKETCAP_API_KEY=<key>
 REPORT_GAS=true
 MNEMONIC=<mnemonic>
+NETWORK=<network name>
 ```
 
 ## Git hooks
@@ -41,6 +43,19 @@ You can skip pre-commit checks with the `-n` flag:
 ```
 git commit -n -m "commit without running pre-commit hook"
 ```
+
+## Multi-chain support
+
+Currently, Avalanche mainnet and testnet (fuji) are supported. This means that deployment scripts, scenarios, and spider all work for Avalanche. 
+
+To use this project with other chains, a few extra variables must be set in your environment:
+
+* The block explorer API key for your chain (e.g. `SNOWTRACE_KEY` for Avalanche)
+* `NETWORK`. This is temporarily needed to fetch the appropriate API key for your target chain
+
+An example command looks like:
+
+`yarn deploy --network fuji`
 
 ## Usage
 

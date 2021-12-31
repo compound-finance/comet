@@ -468,7 +468,7 @@ export class DeploymentManager {
    */
   async writeRootsFileToCache(roots: Roots): Promise<void> {
     if (!(await fileExists(this.cacheDir()))) {
-      await fs.mkdir(this.cacheDir());
+      await fs.mkdir(this.cacheDir(), { recursive: true });
     }
 
     let rootsFile = this.rootsFile();

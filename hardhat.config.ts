@@ -27,6 +27,7 @@ const {
   INFURA_KEY,
   MNEMONIC = '',
   REPORT_GAS = 'false',
+  NETWORK,
 } = process.env;
 
 function throwIfMissing(envVariable, msg: string) {
@@ -35,10 +36,14 @@ function throwIfMissing(envVariable, msg: string) {
   }
 }
 
-// required environmnet variables
+// required environment variables
 throwIfMissing(
   ETHERSCAN_KEY,
   'Missing required environment variable: ETHERSCAN_KEY'
+);
+throwIfMissing(
+  SNOWTRACE_KEY,
+  'Missing required environment variable: SNOWTRACE_KEY'
 );
 throwIfMissing(INFURA_KEY, 'Missing required environment variable: INFURA_KEY');
 
@@ -79,6 +84,23 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
   }
 }
 
+// TODO: Use the multi API key config feature when it is published to npm by hardhat-etherscan.
+// See https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#multiple-api-keys-and-alternative-block-explorers
+function getApiKey() {
+  switch (NETWORK) {
+    case 'mainnet':
+    case 'rinkeby':
+    case 'goerli':
+    case 'ropsten':
+      return ETHERSCAN_KEY;
+    case 'avalanche':
+    case 'fuji':
+      return SNOWTRACE_KEY;
+    default:
+      return ETHERSCAN_KEY;
+  }
+}
+
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -107,18 +129,8 @@ const config: HardhatUserConfig = {
     },
   },
 
-  // See https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#multiple-api-keys-and-alternative-block-explorers
   etherscan: {
-    apiKey: {
-      mainnet: ETHERSCAN_KEY,
-      ropsten: ETHERSCAN_KEY,
-      rinkeby: ETHERSCAN_KEY,
-      goerli: ETHERSCAN_KEY,
-      kovan: ETHERSCAN_KEY,
-      // Avalanche
-      avalanche = SNOWTRACE_KEY,
-      avalancheFujiTestnet = SNOWTRACE_KEY,
-    },
+    apiKey: getApiKey()
   },
 
   gasReporter: {
@@ -141,6 +153,10 @@ const config: HardhatUserConfig = {
       {
         name: 'goerli',
         url: 'https://eth-goerli.alchemyapi.io/v2/Xs9F4EHXAb1wg_PvxlKu3HaXglyPkc2E',
+      },
+      {
+        name: 'fuji',
+        url: 'https://api.avax-test.network/ext/bc/C/rpc',
       },
     ],
   },

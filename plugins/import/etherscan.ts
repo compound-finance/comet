@@ -31,6 +31,8 @@ export function getEtherscanUrl(network: string): string {
     ropsten: 'ropsten.etherscan.io',
     goerli: 'goerli.etherscan.io',
     mainnet: 'etherscan.io',
+    fuji: 'testnet.snowtrace.io',
+    avalanche: 'snowtrace.io',
   }[network];
 
   if (!host) {
