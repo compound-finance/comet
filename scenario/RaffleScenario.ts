@@ -30,7 +30,6 @@ scenario(
   "enterWithEth > fails when raffle is finished",
   {
     raffle: {
-      minEntries: 1, // ending a raffle currently requires at least one entry
       state: RaffleState.Finished
     }
   },
@@ -140,7 +139,6 @@ scenario(
   "determineWinner > changes raffle state",
   {
     raffle: {
-      minEntries: 1,
       state: RaffleState.Active,
       time: RaffleTime.Over
     }
@@ -256,7 +254,6 @@ scenario(
   "restartRaffle > rejects if caller is not the owner",
   {
     raffle: {
-      minEntries: 1, // ending a Raffle currently requires at least one entry
       state: RaffleState.Finished
     }
   },
@@ -292,7 +289,6 @@ scenario(
   "restartRaffle > resets raffle state",
   {
     raffle: {
-      minEntries: 1, // ending a Raffle currently requires at least one entry
       state: RaffleState.Finished
     }
   },
@@ -315,7 +311,6 @@ scenario(
   "restartRaffle > updates ticket price",
   {
     raffle: {
-      minEntries: 1,
       state: RaffleState.Finished
     }
   },
