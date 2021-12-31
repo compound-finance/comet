@@ -141,20 +141,13 @@ scenario(
   {
     raffle: {
       minEntries: 1,
-      state: RaffleState.Active
+      state: RaffleState.Active,
+      time: RaffleTime.Over
     }
   },
   async ({ actors, contracts }, world: World) => {
     const { admin } = actors;
     const { raffle } = contracts();
-
-    const endTime = (await raffle.endTime()).toNumber();
-    const currentTime = await world.timestamp();
-
-    // advance time past endtime
-    if (currentTime < endTime) {
-      await world.increaseTime(endTime - currentTime);
-    }
 
     await admin.determineWinner();
 
@@ -166,7 +159,8 @@ scenario(
   "determineWinner > transfers prize money to winner",
   {
     raffle: {
-      state: RaffleState.Active
+      state: RaffleState.Active,
+      time: RaffleTime.Over
     }
   },
   async ({ actors, contracts }, world: World) => {
@@ -194,14 +188,6 @@ scenario(
       'betty': await betty.getTokenBalance(),
       'albert': await albert.getTokenBalance()
     };
-
-    const endTime = (await raffle.endTime()).toNumber();
-    const currentTime = await world.timestamp();
-
-    // advance time past endtime
-    if (currentTime < endTime) {
-      await world.increaseTime(endTime - currentTime);
-    }
 
     // Determine winner and get `NewWinner` event data
     const [winner, ethPrize, tokenPrize] = await admin.determineWinner('NewWinner');
