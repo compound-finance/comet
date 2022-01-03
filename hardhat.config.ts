@@ -62,8 +62,16 @@ const networkConfigs: NetworkConfig[] = [
   { network: 'rinkeby', chainId: 4 },
   { network: 'goerli', chainId: 5 },
   { network: 'kovan', chainId: 42 },
-  { network: 'avalanche', chainId: 43114, url: 'https://api.avax.network/ext/bc/C/rpc' },
-  { network: 'fuji', chainId: 43113, url: 'https://api.avax-test.network/ext/bc/C/rpc' },
+  {
+    network: 'avalanche',
+    chainId: 43114,
+    url: 'https://api.avax.network/ext/bc/C/rpc',
+  },
+  {
+    network: 'fuji',
+    chainId: 43113,
+    url: 'https://api.avax-test.network/ext/bc/C/rpc',
+  },
 ];
 
 function getDefaultProviderURL(network: string) {
@@ -130,7 +138,7 @@ const config: HardhatUserConfig = {
   },
 
   etherscan: {
-    apiKey: getApiKey()
+    apiKey: getApiKey(),
   },
 
   gasReporter: {

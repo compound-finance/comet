@@ -4,8 +4,18 @@
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
 import hre from 'hardhat';
-import { AsteroidRaffle__factory, AsteroidRaffle, FaucetToken__factory, FaucetToken, MockedOracle__factory, TransparentUpgradeableProxy__factory } from '../build/types'
-import { DeploymentManager, Roots } from '../plugins/deployment_manager/DeploymentManager';
+import {
+  AsteroidRaffle__factory,
+  AsteroidRaffle,
+  FaucetToken__factory,
+  FaucetToken,
+  MockedOracle__factory,
+  TransparentUpgradeableProxy__factory,
+} from '../build/types';
+import {
+  DeploymentManager,
+  Roots,
+} from '../plugins/deployment_manager/DeploymentManager';
 
 async function verifyContract(address: string, constructorArguments) {
   try {
@@ -17,7 +27,9 @@ async function verifyContract(address: string, constructorArguments) {
     const regex = /Already Verified/i;
     const result = e.message.match(regex);
     if (result) {
-      console.log('Contract at address ' + address + ' is already verified on Etherscan');
+      console.log(
+        'Contract at address ' + address + ' is already verified on Etherscan'
+      );
       return;
     }
     throw e;
@@ -34,20 +46,31 @@ async function main() {
 
   const [governor, user1] = await hre.ethers.getSigners();
 
-  const FaucetToken = await hre.ethers.getContractFactory('FaucetToken') as FaucetToken__factory;
-  const tokenArgs: [number, string, number, string] = [100000, 'DAI', 18, 'DAI'];
+  const FaucetToken = (await hre.ethers.getContractFactory(
+    'FaucetToken'
+  )) as FaucetToken__factory;
+  const tokenArgs: [number, string, number, string] = [
+    100000,
+    'DAI',
+    18,
+    'DAI',
+  ];
   const token = await FaucetToken.deploy(...tokenArgs);
   await token.deployed();
   await verifyContract(token.address, tokenArgs);
   console.log('FaucetToken deployed to:', token.address);
 
-  const Oracle = await hre.ethers.getContractFactory('MockedOracle') as MockedOracle__factory;
+  const Oracle = (await hre.ethers.getContractFactory(
+    'MockedOracle'
+  )) as MockedOracle__factory;
   const oracle = await Oracle.connect(governor).deploy();
   await oracle.deployed();
   await verifyContract(oracle.address, []);
   console.log('Oracle deployed to:', oracle.address);
 
-  const AsteroidRaffle = await hre.ethers.getContractFactory('AsteroidRaffle') as AsteroidRaffle__factory;
+  const AsteroidRaffle = (await hre.ethers.getContractFactory(
+    'AsteroidRaffle'
+  )) as AsteroidRaffle__factory;
   const raffleArgs: [string, string] = [token.address, oracle.address];
   const raffle = await AsteroidRaffle.deploy(...raffleArgs);
   await raffle.deployed();
@@ -57,16 +80,24 @@ async function main() {
   const tx1 = await raffle.initialize('100000000000000000', 3 * 60);
   await tx1.wait();
 
-  const Proxy = await hre.ethers.getContractFactory('TransparentUpgradeableProxy') as TransparentUpgradeableProxy__factory;
-  const proxyArgs: [string, string, []] = [raffle.address, governor.address, []]
+  const Proxy = (await hre.ethers.getContractFactory(
+    'TransparentUpgradeableProxy'
+  )) as TransparentUpgradeableProxy__factory;
+  const proxyArgs: [string, string, []] = [
+    raffle.address,
+    governor.address,
+    [],
+  ];
   const proxy = await Proxy.deploy(...proxyArgs);
   await proxy.deployed();
   await verifyContract(proxy.address, proxyArgs);
   console.log('Proxy deployed to:', proxy.address);
 
   // Create a `roots.json` pointing to a just deployed contract and run spider on it.
-  let dm = new DeploymentManager(hre.network.name, hre, { writeCacheToDisk: true });
-  await dm.writeRootsFileToCache({ 'AsteroidRaffle': raffle.address } as Roots);
+  let dm = new DeploymentManager(hre.network.name, hre, {
+    writeCacheToDisk: true,
+  });
+  await dm.writeRootsFileToCache({ AsteroidRaffle: raffle.address } as Roots);
   await dm.spider();
 }
 

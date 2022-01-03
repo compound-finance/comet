@@ -1,4 +1,9 @@
-import { get, getEtherscanApiKey, getEtherscanApiUrl, getEtherscanUrl } from './etherscan';
+import {
+  get,
+  getEtherscanApiKey,
+  getEtherscanApiUrl,
+  getEtherscanUrl,
+} from './etherscan';
 import { memoizeAsync } from '../../shared/memoize';
 
 /**

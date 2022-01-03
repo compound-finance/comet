@@ -464,7 +464,7 @@ export class DeploymentManager {
   }
 
   /**
-   * Write a roots file to file cache 
+   * Write a roots file to file cache
    */
   async writeRootsFileToCache(roots: Roots): Promise<void> {
     if (!(await fileExists(this.cacheDir()))) {
