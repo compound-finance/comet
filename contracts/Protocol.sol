@@ -2,6 +2,9 @@
 pragma solidity ^0.8.0;
 
 contract Protocol {
+    uint constant baseTrackingSupplySpeed = 1e18;
+    uint constant baseTrackingBorrowSpeed = 1e18;
+
     // 512 bits total = 2 slots
     struct Totals {
         // 1st slot
@@ -133,14 +136,67 @@ contract Protocol {
 
     function setTotals() external {
         totals = Totals({
-            totalSupplyBase: 0,
+            totalSupplyBase: 1e18,
             baseSupplyIndex: uint64(FACTOR),
             trackingSupplyIndex: uint96(FACTOR),
-            totalBorrowBase: 0,
+            totalBorrowBase: 1e18,
             baseBorrowIndex: uint64(FACTOR),
             trackingBorrowIndex: uint96(FACTOR),
             pauseFlags: 0,
             lastAccrualTime: uint40(block.timestamp)
         });
+    }
+
+    function getSupplyRate() public pure returns (uint) {
+        return 1e18;
+    }
+
+    function getBorrowRate() public pure returns (uint) {
+        return 1e18;
+    }
+
+    // Make it external for testing purposes
+    function accrue1() external {
+        uint timeElapsed = block.timestamp - totals.lastAccrualTime;
+        if (timeElapsed > 0) {
+            totals.baseSupplyIndex += uint64(totals.baseSupplyIndex * getSupplyRate() * timeElapsed);
+            totals.baseBorrowIndex += uint64(totals.baseBorrowIndex * getBorrowRate() * timeElapsed);
+            totals.trackingSupplyIndex += uint96(baseTrackingSupplySpeed / totals.totalSupplyBase * timeElapsed);
+            totals.trackingBorrowIndex += uint96(baseTrackingBorrowSpeed / totals.totalBorrowBase * timeElapsed);
+
+            totals.lastAccrualTime = uint40(block.timestamp);
+
+        }
+
+    }
+
+    function accrue2() external {
+        Totals memory _totals = totals;
+        uint timeElapsed = block.timestamp - _totals.lastAccrualTime;
+        if (timeElapsed > 0) {
+            totals.baseSupplyIndex += uint64(_totals.baseSupplyIndex * getSupplyRate() * timeElapsed);
+            totals.baseBorrowIndex += uint64(_totals.baseBorrowIndex * getBorrowRate() * timeElapsed);
+            totals.trackingSupplyIndex += uint96(baseTrackingSupplySpeed / _totals.totalSupplyBase * timeElapsed);
+            totals.trackingBorrowIndex += uint96(baseTrackingBorrowSpeed / _totals.totalBorrowBase * timeElapsed);
+
+            totals.lastAccrualTime = uint40(block.timestamp);
+        }
+
+    }
+
+    function accrue3() external {
+        Totals memory _totals = totals;
+        uint timeElapsed = block.timestamp - _totals.lastAccrualTime;
+        if (timeElapsed > 0) {
+            _totals.baseSupplyIndex += uint64(_totals.baseSupplyIndex * getSupplyRate() * timeElapsed);
+            _totals.baseBorrowIndex += uint64(_totals.baseBorrowIndex * getBorrowRate() * timeElapsed);
+            _totals.trackingSupplyIndex += uint96(baseTrackingSupplySpeed / _totals.totalSupplyBase * timeElapsed);
+            _totals.trackingBorrowIndex += uint96(baseTrackingBorrowSpeed / _totals.totalBorrowBase * timeElapsed);
+
+            _totals.lastAccrualTime = uint40(block.timestamp);
+
+            totals = _totals;
+        }
+
     }
 }
