@@ -473,11 +473,6 @@ export class DeploymentManager {
    * Write a roots file to file cache
    */
   async writeRootsFileToCache(roots: Roots): Promise<void> {
-    if (!(await fileExists(this.cacheDir()))) {
-      await fs.mkdir(this.cacheDir(), { recursive: true });
-    }
-
-    let rootsFile = this.rootsFile();
-    await fs.writeFile(rootsFile, JSON.stringify(roots, null, 4));
+    await this.writeObjectToCache(roots, this.rootsFile());
   }
 }
