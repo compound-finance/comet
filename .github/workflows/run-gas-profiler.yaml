@@ -9,7 +9,7 @@ jobs:
     env:
       COINMARKETCAP_API_KEY: b52b18a2-d44f-4646-9949-0eb0e9c68574
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
-      INFURA_KEY: ${{ secrets.INFURA_KEY }}
+      SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
