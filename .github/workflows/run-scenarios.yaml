@@ -7,6 +7,7 @@ jobs:
     name: Run scenarios
     env:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
+      SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
     runs-on: ubuntu-latest
     steps:

@@ -1,4 +1,9 @@
-import { get, getEtherscanApiUrl, getEtherscanUrl } from './etherscan';
+import {
+  get,
+  getEtherscanApiKey,
+  getEtherscanApiUrl,
+  getEtherscanUrl,
+} from './etherscan';
 import { memoizeAsync } from '../../shared/memoize';
 
 /**
@@ -90,7 +95,7 @@ async function getContractCreationCode(network: string, address: string) {
 }
 
 export async function loadEtherscanContract(network: string, address: string) {
-  const apiKey = process.env.ETHERSCAN_KEY;
+  const apiKey = getEtherscanApiKey(network);
 
   const networkName = network;
   let { source, abi, contract, compiler } = await getEtherscanApiData(
