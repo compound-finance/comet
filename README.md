@@ -8,7 +8,7 @@
 ## Env variables
 
 The following env variables are used in the repo. One way to set up these env
-variables is to create a `.env` in the root directory of this repo. 
+variables is to create a `.env` in the root directory of this repo.
 
 Required env variables:
 
@@ -17,9 +17,10 @@ ETHERSCAN_KEY=<key>
 ```
 
 Optional env variables:
+
 ```
 INFURA_KEY=<key>
-COINMARKETCAP_API_KEY=<key> 
+COINMARKETCAP_API_KEY=<key>
 REPORT_GAS=true
 MNEMONIC=<mnemonic>
 ```
@@ -80,13 +81,13 @@ The coverage report will be saved in the `coverage` directory.
 
 Set up the following env variables:
 
- - `REPORT_GAS=true`
- - `COINMARKETCAP_API_KEY=your_coinmarket_api_key`
-   optional, only if you want to see cost in USD
+- `REPORT_GAS=true`
+- `COINMARKETCAP_API_KEY=your_coinmarket_api_key`
+  optional, only if you want to see cost in USD
 
 ### Run spider task
 
-The spider script programmatically fetches all protocol-related contracts from mainnet. 
+The spider script programmatically fetches all protocol-related contracts from mainnet.
 This is just a prototype and it currently pulls relevant contracts for V2.
 
 > Note: Make sure $ETHERSCAN_KEY is set as an env variable.
@@ -102,14 +103,16 @@ You can delete all spider artifacts using the `--clean` flag:
 #### Spider configs
 
 The spider script uses configuration from two files to start its crawl:
-* `roots.json`
-* `relations.json`
+
+- `roots.json`
+- `relations.json`
 
 Both these contracts are committed to the repo under `deployments/<chain>/<file>.json`. The `roots.json` config contains the address of the root contract for spider to start crawling from. The `relations.json` config defines all the different relationships and rules that spider will follow when crawling. The following section will go over in detail the set of rules defined in `relations.json`.
 
 #### Defining relations
 
 Currently, these are the 3 types of rules in `relations.json` that can be defined for a contract:
+
 1. **Alias** - A rule to derive the key that is assigned to this contract in `pointers.json`. If this rule is not provided, the contract name will be used as the alias instead. This rule has two special characters: `@` and `+`. `@` followed by a function name is used to read a value from that contract's function. `+` is used as a delimiter. Example: `@symbol+Delegator` will equate to `cDaiDelegator` for `cDai`'s delegator contract.
 2. **Relations** - The names of the contract's functions to call to fetch dependent contracts.
 3. **Implementation** - The name of the contract's function to call to grab its implementation address. This should only be defined for proxy contracts.
@@ -137,14 +140,18 @@ import { scenario, World } from '../plugins/scenario';
 import { CometContext } from './Context';
 import { expect } from 'chai';
 
-scenario("add eth token 0x...", { remote_token: "eth-mainnet@0x..." }, async ({user, oracle, comet, remoteToken}: CometContext, world: World) => {
-  await oracle.setPrice(remoteToken, 100);
-  await comet.support(remoteToken);
-  await comet.supply(user, 100, remoteToken);
-  await comet.borrow(user, 1000);
-  expect(await comet.collateralBalance(user, remoteToken)).to.equal(100);
-  expect(await comet.borrowBalance(user)).to.equal(1000);
-});
-````
+scenario(
+  'add eth token 0x...',
+  { remote_token: 'eth-mainnet@0x...' },
+  async ({ user, oracle, comet, remoteToken }: CometContext, world: World) => {
+    await oracle.setPrice(remoteToken, 100);
+    await comet.support(remoteToken);
+    await comet.supply(user, 100, remoteToken);
+    await comet.borrow(user, 1000);
+    expect(await comet.collateralBalance(user, remoteToken)).to.equal(100);
+    expect(await comet.borrowBalance(user)).to.equal(1000);
+  }
+);
+```
 
 For more information, see the Scenarios Hardhat plugin.

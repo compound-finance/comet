@@ -1,5 +1,5 @@
-import type { ethers, Contract, providers, Signer } from "ethers";
-import type { HardhatEthersHelpers } from "@nomiclabs/hardhat-ethers/types";
+import type { ethers, Contract, providers, Signer } from 'ethers';
+import type { HardhatEthersHelpers } from '@nomiclabs/hardhat-ethers/types';
 import type {
   createFixtureLoader,
   link,
@@ -7,16 +7,16 @@ import type {
   MockContract,
   MockProvider,
   solidity,
-} from "ethereum-waffle";
-import type { ContractJSON } from "ethereum-waffle/dist/esm/ContractJSON";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { HardhatContext } from "hardhat/internal/context";
-import { loadConfigAndTasks } from "hardhat/internal/core/config/config-loading";
-import { getEnvHardhatArguments } from "hardhat/internal/core/params/env-variables";
-import { HARDHAT_PARAM_DEFINITIONS } from "hardhat/internal/core/params/hardhat-params";
-import { Environment } from "hardhat/internal/core/runtime-environment";
-import { ForkSpec } from "../Runner";
-import { memoize } from "../../../shared/memoize";
+} from 'ethereum-waffle';
+import type { ContractJSON } from 'ethereum-waffle/dist/esm/ContractJSON';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { HardhatContext } from 'hardhat/internal/context';
+import { loadConfigAndTasks } from 'hardhat/internal/core/config/config-loading';
+import { getEnvHardhatArguments } from 'hardhat/internal/core/params/env-variables';
+import { HARDHAT_PARAM_DEFINITIONS } from 'hardhat/internal/core/params/hardhat-params';
+import { Environment } from 'hardhat/internal/core/runtime-environment';
+import { ForkSpec } from '../Runner';
+import { memoize } from '../../../shared/memoize';
 
 /*
 Hardhat's Environment class implements the HardhatRuntimeEnvironment interface.
@@ -32,7 +32,7 @@ additional packages that alter the HardhatRuntimeEnvironment interface.
 ethers type extension: https://github.com/nomiclabs/hardhat/blob/master/packages/hardhat-ethers/src/internal/type-extensions.ts
 waffle type extension: https://github.com/nomiclabs/hardhat/blob/master/packages/hardhat-waffle/src/type-extensions.ts
 */
-declare module "hardhat/internal/core/runtime-environment" {
+declare module 'hardhat/internal/core/runtime-environment' {
   interface Environment {
     waffle: {
       provider: MockProvider;
@@ -63,7 +63,9 @@ function hreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
 
   const config = loadConfigAndTasks(hardhatArguments);
 
-  const { networks: { hardhat: defaultNetwork } } = config;
+  const {
+    networks: { hardhat: defaultNetwork },
+  } = config;
 
   const forkedNetwork = {
     ...defaultNetwork,
@@ -71,21 +73,21 @@ function hreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
       forking: {
         enabled: true,
         url: base.url,
-        ...(base.blockNumber && {blockNumber: base.blockNumber}),
-      }
-    }
+        ...(base.blockNumber && { blockNumber: base.blockNumber }),
+      },
+    },
   };
 
   const forkedConfig = {
     ...config,
     ...{
-      defaultNetwork: "hardhat",
+      defaultNetwork: 'hardhat',
       networks: {
         hardhat: forkedNetwork,
-        localhost: config.networks.localhost
-      }
-    }
-  }
+        localhost: config.networks.localhost,
+      },
+    },
+  };
 
   return new Environment(
     forkedConfig,

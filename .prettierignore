@@ -1,0 +1,9 @@
+artifacts
+build
+cache
+coverage
+deployments/*/cache
+deployments/*/config.json
+deployments/*/proxies.json
+dist
+SPEC.md

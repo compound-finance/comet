@@ -1,11 +1,13 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 
-import { Greeter__factory, Greeter } from '../build/types'
+import { Greeter__factory, Greeter } from '../build/types';
 
 describe('Greeter', function () {
-  it('Should return the new greeting once it\'s changed', async function () {
-    const greeterFactory = await ethers.getContractFactory('Greeter') as Greeter__factory;
+  it("Should return the new greeting once it's changed", async function () {
+    const greeterFactory = (await ethers.getContractFactory(
+      'Greeter'
+    )) as Greeter__factory;
     const greeter: Greeter = await greeterFactory.deploy('Hello, world!');
     await greeter.deployed();
 

@@ -5,7 +5,9 @@ function randomElement<T>(array: T[]): T {
   return array[Math.floor(Math.random() * array.length)];
 }
 
-class RaffleMinEntriesConstraint<T extends CometContext> implements Constraint<T> {
+class RaffleMinEntriesConstraint<T extends CometContext>
+  implements Constraint<T>
+{
   async solve(requirements, _context, _world) {
     const minEntries = requirements?.raffle?.minEntries || 0;
 
@@ -26,7 +28,7 @@ class RaffleMinEntriesConstraint<T extends CometContext> implements Constraint<T
         await actors[randomActorName].enterWithEth(ticketPrice);
         playerCount = (await context.players()).length;
       }
-    }
+    };
   }
 
   async check(requirements: object, context: T, world: World) {

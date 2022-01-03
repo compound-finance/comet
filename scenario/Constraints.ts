@@ -1,21 +1,24 @@
-import { Constraint, Scenario, Solution, World } from '../plugins/scenario'
-import { CometContext } from './CometContext'
+import { Constraint, Scenario, Solution, World } from '../plugins/scenario';
+import { CometContext } from './CometContext';
 
-export class BalanceConstraint<T extends CometContext> implements Constraint<T> {
+export class BalanceConstraint<T extends CometContext>
+  implements Constraint<T>
+{
   async solve(requirements: object, context: T, world: World) {
     const solutions = [];
     const assetsByActor = requirements['balance'];
     if (assetsByActor) {
       // XXX not meaningful right now, needs a strategy with the impl per block
-      const actorsByAsset = Object.entries(assetsByActor)
-        .reduce((a, [actor, assets]) => {
-          return Object.entries(assets)
-            .reduce((a, [asset, amount]) => {
-              const v = a[asset] || {};
-              a[asset] = { [actor]: amount, ...v };
-              return a;
-            }, a);
-        }, {});
+      const actorsByAsset = Object.entries(assetsByActor).reduce(
+        (a, [actor, assets]) => {
+          return Object.entries(assets).reduce((a, [asset, amount]) => {
+            const v = a[asset] || {};
+            a[asset] = { [actor]: amount, ...v };
+            return a;
+          }, a);
+        },
+        {}
+      );
       solutions.push(async (ctx: T, world: World) => {
         for (const assetName in Object.keys(actorsByAsset)) {
           const asset = ctx.assets[assetName];

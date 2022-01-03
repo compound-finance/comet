@@ -24,24 +24,29 @@ const {
   COINMARKETCAP_API_KEY,
   ETHERSCAN_KEY,
   INFURA_KEY,
-  MNEMONIC = "",
-  REPORT_GAS = "false",
+  MNEMONIC = '',
+  REPORT_GAS = 'false',
 } = process.env;
 
 function throwIfMissing(envVariable, msg: string) {
-  if (!envVariable) { throw new Error(msg) }
+  if (!envVariable) {
+    throw new Error(msg);
+  }
 }
 
 // required environmnet variables
-throwIfMissing(ETHERSCAN_KEY, "Missing required environment variable: ETHERSCAN_KEY")
-throwIfMissing(INFURA_KEY, "Missing required environment variable: INFURA_KEY")
+throwIfMissing(
+  ETHERSCAN_KEY,
+  'Missing required environment variable: ETHERSCAN_KEY'
+);
+throwIfMissing(INFURA_KEY, 'Missing required environment variable: INFURA_KEY');
 
 // Networks
 interface NetworkConfig {
-  network: string
-  chainId: number
-  gas?: number | 'auto'
-  gasPrice?: number | 'auto'
+  network: string;
+  chainId: number;
+  gas?: number | 'auto';
+  gasPrice?: number | 'auto';
 }
 
 const networkConfigs: NetworkConfig[] = [
@@ -50,10 +55,10 @@ const networkConfigs: NetworkConfig[] = [
   { network: 'rinkeby', chainId: 4 },
   { network: 'goerli', chainId: 5 },
   { network: 'kovan', chainId: 42 },
-]
+];
 
 function getDefaultProviderURL(network: string) {
-  return `https://${network}.infura.io/v3/${INFURA_KEY}`
+  return `https://${network}.infura.io/v3/${INFURA_KEY}`;
 }
 
 function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
@@ -70,11 +75,10 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
   }
 }
 
-
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
- const config: HardhatUserConfig = {
+const config: HardhatUserConfig = {
   solidity: {
     version: '0.8.4',
     settings: {
@@ -93,7 +97,8 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
       gasPrice: 'auto',
       blockGasLimit: 12000000,
       accounts: {
-        mnemonic: 'myth like bonus scare over problem client lizard pioneer submit female collect',
+        mnemonic:
+          'myth like bonus scare over problem client lizard pioneer submit female collect',
       },
     },
   },
@@ -103,7 +108,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
   },
 
   gasReporter: {
-    enabled: REPORT_GAS === "true" ? true : false,
+    enabled: REPORT_GAS === 'true' ? true : false,
     currency: 'USD',
     coinmarketcap: COINMARKETCAP_API_KEY,
     gasPrice: 200, // gwei
@@ -117,15 +122,14 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
   scenario: {
     bases: [
       {
-        name: "development",
+        name: 'development',
       },
       {
-        name: "goerli",
-        url: "https://eth-goerli.alchemyapi.io/v2/Xs9F4EHXAb1wg_PvxlKu3HaXglyPkc2E"
-      }
+        name: 'goerli',
+        url: 'https://eth-goerli.alchemyapi.io/v2/Xs9F4EHXAb1wg_PvxlKu3HaXglyPkc2E',
+      },
     ],
   },
-
 };
 
 setupDefaultNetworkProviders(config);

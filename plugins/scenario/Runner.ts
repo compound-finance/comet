@@ -1,5 +1,5 @@
-import { Constraint, World, Scenario, Solution } from './Scenario'
-import hreForBase from "./utils/hreForBase";
+import { Constraint, World, Scenario, Solution } from './Scenario';
+import hreForBase from './utils/hreForBase';
 
 export type Address = string;
 export type ForkSpec = {
@@ -8,19 +8,22 @@ export type ForkSpec = {
   blockNumber?: number;
 };
 
-export type ResultFn<T> = (base: ForkSpec, scenario: Scenario<T>, err?: any) => void;
+export type ResultFn<T> = (
+  base: ForkSpec,
+  scenario: Scenario<T>,
+  err?: any
+) => void;
 
 export interface Config<T> {
   bases?: ForkSpec[];
 }
 
-function *combos(choices: object[][]) {
+function* combos(choices: object[][]) {
   if (choices.length == 0) {
     yield [];
   } else {
     for (const option of choices[0])
-      for (const combo of combos(choices.slice(1)))
-        yield [option, ...combo];
+      for (const combo of combos(choices.slice(1))) yield [option, ...combo];
   }
 }
 
@@ -53,7 +56,10 @@ export class Runner<T> {
     this.config = config;
   }
 
-  async run(scenarios: Scenario<T>[], resultFn: ResultFn<T>): Promise<Runner<T>> {
+  async run(
+    scenarios: Scenario<T>[],
+    resultFn: ResultFn<T>
+  ): Promise<Runner<T>> {
     const { config } = this;
     const { bases = [] } = config;
 
@@ -72,7 +78,9 @@ export class Runner<T> {
         // note: `solve` is expected not to modify context or world
         //  and constraints should be independent or conflicts will be detected
         const solutionChoices: Solution<T>[][] = await Promise.all(
-          constraints.map(c => c.solve(scenario.requirements, context, world).then(mapSolution))
+          constraints.map((c) =>
+            c.solve(scenario.requirements, context, world).then(mapSolution)
+          )
         );
         const baseSolutions: Solution<T>[][] = [[identity]];
 
@@ -81,11 +89,11 @@ export class Runner<T> {
           let ctx = await scenario.forker(context);
 
           // apply each solution in the combo, then check they all still hold
-          for (const solution of combo){
-            ctx = await solution(ctx, world) || ctx;
+          for (const solution of combo) {
+            ctx = (await solution(ctx, world)) || ctx;
           }
 
-          for (const constraint of constraints){
+          for (const constraint of constraints) {
             await constraint.check(scenario.requirements, ctx, world);
           }
 

@@ -1,5 +1,5 @@
 import { Signer } from 'ethers';
-import { HardhatRuntimeEnvironment } from 'hardhat/types'
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { ForkSpec } from './Runner';
 
 export class World {
@@ -25,7 +25,7 @@ export class World {
 
   async impersonateAddress(address: string): Promise<Signer> {
     await this.hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
+      method: 'hardhat_impersonateAccount',
       params: [address],
     });
     return await this.hre.ethers.getSigner(address);
@@ -33,15 +33,12 @@ export class World {
 
   async timestamp() {
     const blockNumber = await this.hre.ethers.provider.getBlockNumber();
-    return (await this.hre.ethers.provider.getBlock(blockNumber)).timestamp
+    return (await this.hre.ethers.provider.getBlock(blockNumber)).timestamp;
   }
 
   async increaseTime(amount: number) {
-    await this.hre.network.provider.send(
-      'evm_increaseTime',
-      [amount]
-    );
-    await this.hre.network.provider.send("evm_mine"); // ensure block is mined
+    await this.hre.network.provider.send('evm_increaseTime', [amount]);
+    await this.hre.network.provider.send('evm_mine'); // ensure block is mined
   }
 }
 
@@ -52,7 +49,11 @@ export type Solution<T> = (T, World) => Promise<T | void>;
 // A constraint can also check a given context and world to see if they *actually* satisfy it.
 // Note: `solve` and `check` are expected to treat the context and world as immutable.
 export interface Constraint<T> {
-  solve(requirements: object, context: T, world: World): Promise<Solution<T> | Solution<T>[] | null>;
+  solve(
+    requirements: object,
+    context: T,
+    world: World
+  ): Promise<Solution<T> | Solution<T>[] | null>;
   check(requirements: object, context: T, world: World): Promise<void>;
 }
 
@@ -60,7 +61,7 @@ export type Property<T> = (context: T, world: World) => Promise<any>;
 export type Initializer<T> = (world: World, base: ForkSpec) => Promise<T>;
 export type Forker<T> = (T) => Promise<T>;
 
-export type ScenarioFlags = null | "only" | "skip";
+export type ScenarioFlags = null | 'only' | 'skip';
 
 export class Scenario<T> {
   name: string;
@@ -71,7 +72,15 @@ export class Scenario<T> {
   constraints: Constraint<T>[];
   flags: ScenarioFlags;
 
-  constructor(name, requirements, property, initializer, forker, constraints, flags) {
+  constructor(
+    name,
+    requirements,
+    property,
+    initializer,
+    forker,
+    constraints,
+    flags
+  ) {
     this.name = name;
     this.requirements = requirements;
     this.property = property;

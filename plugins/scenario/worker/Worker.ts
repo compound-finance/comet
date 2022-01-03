@@ -2,27 +2,43 @@ import { parentPort } from 'worker_threads';
 import { ForkSpec, Runner } from '../Runner';
 import { Scenario } from '../Scenario';
 import { loadScenarios } from '../Loader';
-import { HardhatContext } from "hardhat/internal/context";
+import { HardhatContext } from 'hardhat/internal/context';
 import { scenarioGlob } from './Config';
-import { HardhatConfig, HardhatArguments, createContext, setConfig, getContext } from './HardhatContext';
+import {
+  HardhatConfig,
+  HardhatArguments,
+  createContext,
+  setConfig,
+  getContext,
+} from './HardhatContext';
 import * as util from 'util';
 import { ScenarioConfig } from '../types';
 import { AssertionError } from 'chai';
 
 interface Message {
   scenario?: {
-    base: string,
-    scenario: string
-  }
-};
+    base: string;
+    scenario: string;
+  };
+}
 
 function eventually(fn: () => void) {
   setTimeout(fn, 0);
 }
 
-export async function run<T>({scenarioConfig, bases, config}: {scenarioConfig: ScenarioConfig, bases: ForkSpec[], config: [HardhatConfig, HardhatArguments]}) {
+export async function run<T>({
+  scenarioConfig,
+  bases,
+  config,
+}: {
+  scenarioConfig: ScenarioConfig;
+  bases: ForkSpec[];
+  config: [HardhatConfig, HardhatArguments];
+}) {
   createContext(...config);
-  let scenarios: { [name: string]: Scenario<T> } = await loadScenarios(scenarioGlob);
+  let scenarios: { [name: string]: Scenario<T> } = await loadScenarios(
+    scenarioGlob
+  );
   let baseMap = Object.fromEntries(bases.map((base) => [base.name, base]));
 
   parentPort.on('message', async (message: Message) => {
@@ -46,24 +62,28 @@ export async function run<T>({scenarioConfig, bases, config}: {scenarioConfig: S
           }
         }
         // Add timeout for flush
-        eventually(() => parentPort.postMessage({
-          result: {
-            base: base.name,
-            scenario: scenario.name,
-            elapsed: Date.now() - startTime,
-            error: err || null,
-            trace: err ? err.stack : null,
-            diff // XXX can we move this into parent?
-          }
-        }))
-      }
+        eventually(() =>
+          parentPort.postMessage({
+            result: {
+              base: base.name,
+              scenario: scenario.name,
+              elapsed: Date.now() - startTime,
+              error: err || null,
+              trace: err ? err.stack : null,
+              diff, // XXX can we move this into parent?
+            },
+          })
+        );
+      };
 
       console.log('Running', message.scenario);
       let startTime = Date.now();
-      await new Runner({bases: [base]}).run([scenario], resultFn);
-      console.log('Ran', scenario);;
+      await new Runner({ bases: [base] }).run([scenario], resultFn);
+      console.log('Ran', scenario);
     } else {
-      throw new Error(`Unknown or invalid worker message: ${JSON.stringify(message)}`);
+      throw new Error(
+        `Unknown or invalid worker message: ${JSON.stringify(message)}`
+      );
     }
   });
 }
