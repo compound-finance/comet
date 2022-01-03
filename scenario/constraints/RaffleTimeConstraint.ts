@@ -14,7 +14,6 @@ function randomInt(min: number, max: number) {
 
 class RaffleTimeConstraint<T extends CometContext> implements Constraint<T> {
   async solve(requirements, _context, world) {
-
     const desiredTime = requirements?.raffle?.time;
     if (desiredTime === null) {
       return null;
@@ -34,12 +33,12 @@ class RaffleTimeConstraint<T extends CometContext> implements Constraint<T> {
         await admin.determineWinner();
         await admin.restartRaffle({
           ticketPrice: randomInt(1, 9999999),
-          duration: randomInt(1, 9999999)
+          duration: randomInt(1, 9999999),
         });
       } else if (currentTime <= endTime && desiredTime == RaffleTime.Over) {
         await world.increaseTime(endTime - currentTime);
       }
-    }
+    };
   }
 
   async check(requirements: object, context: T, world: World) {

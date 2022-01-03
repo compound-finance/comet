@@ -4,7 +4,7 @@
     "module": "commonjs",
     "esModuleInterop": true,
     "outDir": "dist",
-    "moduleResolution": "node",
+    "moduleResolution": "node"
   },
   "include": ["./scripts", "./test", "./tasks"],
   "files": [

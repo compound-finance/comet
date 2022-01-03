@@ -29,8 +29,8 @@ async function pandoc(doc) {
 }
 
 async function run() {
-  let file = await readFile("SPEC.md", 'utf8');
-  let innerRegex = /% preamble((.|\n)+?)(?=% postamble)/mig;
+  let file = await readFile('SPEC.md', 'utf8');
+  let innerRegex = /% preamble((.|\n)+?)(?=% postamble)/gim;
   let templateRegex = /% header %/;
   let postambleRegex = /\$\$\s*\n\s*% postamble\s*\n\s*\$\$/;
 
@@ -38,12 +38,15 @@ async function run() {
   let template = templateRegex.exec(file);
   let preamble = inner[0];
 
-  preamble = preamble.replace(/(?<=[\]\}]\{\\(Config|Storage|ContractCall).*)(([a-z]+)|((?<!#)[0-9]+))/g, '\\text{$2}');
+  preamble = preamble.replace(
+    /(?<=[\]\}]\{\\(Config|Storage|ContractCall).*)(([a-z]+)|((?<!#)[0-9]+))/g,
+    '\\text{$2}'
+  );
 
   let doc = file
     .replace(innerRegex, '')
     .replace(templateRegex, preamble)
-    .replace(postambleRegex, '')
+    .replace(postambleRegex, '');
 
   // await writeFile("SPEC_DOC.md", doc);
 

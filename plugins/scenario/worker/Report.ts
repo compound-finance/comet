@@ -1,7 +1,7 @@
 import { Result } from './Parent';
 import { diff as showDiff } from 'jest-diff';
 
-export type Format = "console";
+export type Format = 'console';
 
 function pluralize(n, singular, plural = null) {
   if (n === 1) {
@@ -12,8 +12,8 @@ function pluralize(n, singular, plural = null) {
 }
 
 export function loadFormat(str: string): Format {
-  if (str === "console") {
-    return "console";
+  if (str === 'console') {
+    return 'console';
   } else {
     throw new Error(`Unknown report format: ${str}`);
   }
@@ -25,9 +25,23 @@ function showReportConsole(results: Result[]) {
   let errCount = 0;
   let skipCount = 0;
   let totalTime = 0;
-  let errors: { base: string, scenario: string, error: Error, trace?: string, diff?: { actual: any, expected: any } }[] = [];
+  let errors: {
+    base: string;
+    scenario: string;
+    error: Error;
+    trace?: string;
+    diff?: { actual: any; expected: any };
+  }[] = [];
 
-  for (let {base, scenario, elapsed, error, trace, diff, skipped} of results) {
+  for (let {
+    base,
+    scenario,
+    elapsed,
+    error,
+    trace,
+    diff,
+    skipped,
+  } of results) {
     if (skipped) {
       skipCount++;
     } else {
@@ -49,19 +63,21 @@ function showReportConsole(results: Result[]) {
     }
   }
 
-  let prefix = errCount === 0 ? "✅" : "❌";
+  let prefix = errCount === 0 ? '✅' : '❌';
   let avgTime = testCount > 0 ? totalTime / testCount : 0;
-  let succText = pluralize(succCount, "success", "successes");
-  let errText = pluralize(errCount, "error", "errors");
-  let skipText = pluralize(skipCount, "skipped");
+  let succText = pluralize(succCount, 'success', 'successes');
+  let errText = pluralize(errCount, 'error', 'errors');
+  let skipText = pluralize(skipCount, 'skipped');
   let avgText = `[avg time: ${avgTime.toFixed(0)}ms]`;
 
-  console.log(`\n\n${prefix} Results: ${succText}, ${errText}, ${skipText} ${avgText}\n`);
+  console.log(
+    `\n\n${prefix} Results: ${succText}, ${errText}, ${skipText} ${avgText}\n`
+  );
 }
 
 export function showReport(results: Result[], formats: Format[]) {
   formats.forEach((format) => {
-    if (format === "console") {
+    if (format === 'console') {
       showReportConsole(results);
     }
   });

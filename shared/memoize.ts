@@ -8,13 +8,13 @@ export function memoize<T extends any[], U>(
 ) {
   const cache = {};
 
-  return function(...args: T): U {
+  return function (...args: T): U {
     const key = JSON.stringify(args);
     if (key in cache) {
       if (debug) {
         console.log(`Returning from ${fn.name} cache: ${key}`);
       }
-      return cache[key]
+      return cache[key];
     } else {
       if (debug) {
         console.log(`Populating ${fn.name} cache for: ${key}`);
@@ -23,7 +23,7 @@ export function memoize<T extends any[], U>(
       cache[key] = result;
       return result;
     }
-  }
+  };
 }
 
 export function memoizeAsync<T extends any[], U>(
@@ -32,13 +32,13 @@ export function memoizeAsync<T extends any[], U>(
 ) {
   const cache = {};
 
-  return async function(...args: T): Promise<U> {
+  return async function (...args: T): Promise<U> {
     const key = JSON.stringify(args);
     if (key in cache) {
       if (debug) {
         console.log(`Returning from ${fn.name} cache: ${key}`);
       }
-      return cache[key]
+      return cache[key];
     } else {
       if (debug) {
         console.log(`Populating ${fn.name} cache for: ${key}`);
@@ -47,5 +47,5 @@ export function memoizeAsync<T extends any[], U>(
       cache[key] = result;
       return result;
     }
-  }
+  };
 }

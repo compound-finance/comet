@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from 'axios';
 
 export interface Result {
   status: string;
@@ -8,11 +8,11 @@ export interface Result {
 
 export function getEtherscanApiUrl(network: string): string {
   let host = {
-    kovan: "api-kovan.etherscan.io",
-    rinkeby: "api-rinkeby.etherscan.io",
-    ropsten: "api-ropsten.etherscan.io",
-    goerli: "api-goerli.etherscan.io",
-    mainnet: "api.etherscan.io",
+    kovan: 'api-kovan.etherscan.io',
+    rinkeby: 'api-rinkeby.etherscan.io',
+    ropsten: 'api-ropsten.etherscan.io',
+    goerli: 'api-goerli.etherscan.io',
+    mainnet: 'api.etherscan.io',
   }[network];
 
   if (!host) {
@@ -24,11 +24,11 @@ export function getEtherscanApiUrl(network: string): string {
 
 export function getEtherscanUrl(network: string): string {
   let host = {
-    kovan: "kovan.etherscan.io",
-    rinkeby: "rinkeby.etherscan.io",
-    ropsten: "ropsten.etherscan.io",
-    goerli: "goerli.etherscan.io",
-    mainnet: "etherscan.io",
+    kovan: 'kovan.etherscan.io',
+    rinkeby: 'rinkeby.etherscan.io',
+    ropsten: 'ropsten.etherscan.io',
+    goerli: 'goerli.etherscan.io',
+    mainnet: 'etherscan.io',
   }[network];
 
   if (!host) {
@@ -39,6 +39,6 @@ export function getEtherscanUrl(network: string): string {
 }
 
 export async function get(url, data, parser: any = JSON.parse) {
-  const res = (await axios.get(url, { params: data }))["data"];
+  const res = (await axios.get(url, { params: data }))['data'];
   return res;
 }
