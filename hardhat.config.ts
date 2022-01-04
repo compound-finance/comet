@@ -9,6 +9,7 @@ import '@nomiclabs/hardhat-etherscan';
 import '@typechain/hardhat';
 import 'solidity-coverage';
 import 'hardhat-gas-reporter';
+import 'hardhat-abi-exporter';
 
 // Hardhat tasks
 import './tasks/spider/task.ts';
@@ -168,6 +169,15 @@ const config: HardhatUserConfig = {
       },
     ],
   },
+  abiExporter: {
+    path: 'build/abi',
+    runOnCompile: true,
+    clear: true,
+    flat: true,
+    only: [],
+    spacing: 2,
+    pretty: true,
+  }
 };
 
 setupDefaultNetworkProviders(config);
