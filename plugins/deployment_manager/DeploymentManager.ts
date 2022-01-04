@@ -23,6 +23,8 @@ import {
   readAddressFromFilename,
 } from './Utils';
 
+export { ContractMap } from './Types';
+
 export type Roots = { [contractName: string]: Address };
 
 export interface RelationConfig {
