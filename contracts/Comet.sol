@@ -46,8 +46,6 @@ contract Comet {
     }
     mapping(address => Asset) public assets;
 
-    mapping(address => uint256) public userNonces;
-
     uint256 public constant FACTOR = 1e18;
 
     constructor(Configuration memory config) {
