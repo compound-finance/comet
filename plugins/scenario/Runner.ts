@@ -8,11 +8,7 @@ export type ForkSpec = {
   blockNumber?: number;
 };
 
-export type ResultFn<T> = (
-  base: ForkSpec,
-  scenario: Scenario<T>,
-  err?: any
-) => void;
+export type ResultFn<T> = (base: ForkSpec, scenario: Scenario<T>, err?: any) => void;
 
 export interface Config<T> {
   bases?: ForkSpec[];
@@ -56,10 +52,7 @@ export class Runner<T> {
     this.config = config;
   }
 
-  async run(
-    scenarios: Scenario<T>[],
-    resultFn: ResultFn<T>
-  ): Promise<Runner<T>> {
+  async run(scenarios: Scenario<T>[], resultFn: ResultFn<T>): Promise<Runner<T>> {
     const { config } = this;
     const { bases = [] } = config;
 
@@ -78,9 +71,7 @@ export class Runner<T> {
         // note: `solve` is expected not to modify context or world
         //  and constraints should be independent or conflicts will be detected
         const solutionChoices: Solution<T>[][] = await Promise.all(
-          constraints.map((c) =>
-            c.solve(scenario.requirements, context, world).then(mapSolution)
-          )
+          constraints.map((c) => c.solve(scenario.requirements, context, world).then(mapSolution))
         );
         const baseSolutions: Solution<T>[][] = [[identity]];
 

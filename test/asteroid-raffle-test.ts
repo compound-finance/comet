@@ -31,15 +31,10 @@ describe('AsteroidRaffle', function () {
     const RaffleFactory = (await ethers.getContractFactory(
       'AsteroidRaffle'
     )) as AsteroidRaffle__factory;
-    raffle = await RaffleFactory.connect(governor).deploy(
-      token.address,
-      oracle.address
-    );
+    raffle = await RaffleFactory.connect(governor).deploy(token.address, oracle.address);
     await raffle.deployed();
 
-    const tx = await raffle
-      .connect(governor)
-      .initialize(ticketPrice, 24 * 60 * 60);
+    const tx = await raffle.connect(governor).initialize(ticketPrice, 24 * 60 * 60);
     await tx.wait();
   });
 
@@ -63,9 +58,7 @@ describe('AsteroidRaffle', function () {
     await tx2.wait();
 
     const raffleEthBalance2 = await ethers.provider.getBalance(raffle.address);
-    expect(ethers.utils.formatEther(raffleEthBalance2)).to.equal(
-      ethers.utils.formatEther('0')
-    );
+    expect(ethers.utils.formatEther(raffleEthBalance2)).to.equal(ethers.utils.formatEther('0'));
 
     const winnerEthBalance = await user.getBalance();
     expect(winnerEthBalance.sub(userEthBalance)).to.equal(ticketPrice);
@@ -78,9 +71,7 @@ describe('AsteroidRaffle', function () {
     await tx.wait();
 
     const raffleBalance1 = await token.balanceOf(raffle.address);
-    expect(ethers.utils.formatEther(raffleBalance1)).to.equal(
-      ethers.utils.formatEther(0)
-    );
+    expect(ethers.utils.formatEther(raffleBalance1)).to.equal(ethers.utils.formatEther(0));
 
     const tx1 = await token.connect(user).approve(raffle.address, 400000000);
     await tx1.wait();
@@ -91,9 +82,7 @@ describe('AsteroidRaffle', function () {
     await tx2.wait();
 
     const raffleBalance2 = await token.balanceOf(raffle.address);
-    expect(ethers.utils.formatEther(raffleBalance2)).to.equal(
-      ethers.utils.formatEther(400000000)
-    );
+    expect(ethers.utils.formatEther(raffleBalance2)).to.equal(ethers.utils.formatEther(400000000));
 
     // Increase time to end the raffle
     await ethers.provider.send('evm_increaseTime', [raffleDuration + 1]);
@@ -102,9 +91,7 @@ describe('AsteroidRaffle', function () {
     await tx3.wait();
 
     const userBalance2 = await token.balanceOf(user.address);
-    expect(ethers.utils.formatEther(userBalance1)).to.equal(
-      ethers.utils.formatEther(userBalance2)
-    );
+    expect(ethers.utils.formatEther(userBalance1)).to.equal(ethers.utils.formatEther(userBalance2));
   });
 
   it('Should emit events', async function () {
@@ -114,9 +101,7 @@ describe('AsteroidRaffle', function () {
     // Token preparations
     const tx1 = await token.allocateTo(user.address, 1000000000);
     await tx1.wait();
-    const tx2 = await token
-      .connect(user)
-      .approve(raffle.address, ticketPriceInTokens);
+    const tx2 = await token.connect(user).approve(raffle.address, ticketPriceInTokens);
     await tx2.wait();
 
     // Enter the raffle with eth
@@ -157,9 +142,7 @@ describe('AsteroidRaffle', function () {
 
     // Restart raffle
     const newTicketPrice = ethers.utils.parseEther('0.2');
-    const tx6 = await raffle
-      .connect(governor)
-      .restartRaffle(newTicketPrice, 12 * 60 * 60);
+    const tx6 = await raffle.connect(governor).restartRaffle(newTicketPrice, 12 * 60 * 60);
     const receipt4 = await tx6.wait();
     const restartEvent = receipt4.events?.filter((x) => {
       return x.event == 'RaffleRestarted';
@@ -182,9 +165,7 @@ describe('AsteroidRaffle', function () {
     // Token preparations
     const tx1 = await token.allocateTo(user.address, 1000000000);
     await tx1.wait();
-    const tx2 = await token
-      .connect(user)
-      .approve(raffle.address, ticketPriceInTokens);
+    const tx2 = await token.connect(user).approve(raffle.address, ticketPriceInTokens);
     await tx2.wait();
 
     // Enter the raffle with eth
@@ -203,9 +184,7 @@ describe('AsteroidRaffle', function () {
 
     // Restart raffle
     const newTicketPrice = ethers.utils.parseEther('0.2');
-    const tx6 = await raffle
-      .connect(governor)
-      .restartRaffle(newTicketPrice, 24 * 60 * 60);
+    const tx6 = await raffle.connect(governor).restartRaffle(newTicketPrice, 24 * 60 * 60);
     await tx6.wait();
 
     // Raffle State is Active again

@@ -34,9 +34,7 @@ async function removeTokens(
   asset: string,
   address: string
 ) {
-  const erc20Abi = JSON.parse(
-    await fs.promises.readFile('./contracts/ERC20.abi', 'utf8')
-  );
+  const erc20Abi = JSON.parse(await fs.promises.readFile('./contracts/ERC20.abi', 'utf8'));
   const ethers = hre.ethers;
   await hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
@@ -46,10 +44,7 @@ async function removeTokens(
   const tokenContract = new ethers.Contract(asset, erc20Abi, signer);
   const currentBalance = await tokenContract.balanceOf(address);
   if (currentBalance.lt(amount)) throw 'Error: Insufficient address balance';
-  await tokenContract.transfer(
-    '0x0000000000000000000000000000000000000000',
-    amount
-  );
+  await tokenContract.transfer('0x0000000000000000000000000000000000000000', amount);
   await hre.network.provider.request({
     method: 'hardhat_stopImpersonatingAccount',
     params: [address],
@@ -64,9 +59,7 @@ async function addTokens(
   block?: number,
   offsetBlocks?: number
 ) {
-  const erc20Abi = JSON.parse(
-    fs.readFileSync('./contracts/ERC20.abi', 'utf-8')
-  );
+  const erc20Abi = JSON.parse(fs.readFileSync('./contracts/ERC20.abi', 'utf-8'));
   const ethers = hre.ethers;
   const signer = (await ethers.getSigners())[0];
   block = block ?? (await ethers.provider.getBlockNumber());
@@ -85,8 +78,7 @@ async function addTokens(
       params: [holder],
     });
     const impersonatedSigner = await ethers.getSigner(holder);
-    const impersonatedProviderTokenContract =
-      tokenContract.connect(impersonatedSigner);
+    const impersonatedProviderTokenContract = tokenContract.connect(impersonatedSigner);
     // Give impersonated address ETH for TX
     await signer.sendTransaction({
       to: impersonatedSigner.address,
@@ -98,16 +90,8 @@ async function addTokens(
       params: [holder],
     });
   } else {
-    if ((offsetBlocks ?? 0) > 40000)
-      throw "Error: Couldn't find sufficient tokens";
-    await addTokens(
-      hre,
-      amount,
-      asset,
-      address,
-      block,
-      (offsetBlocks ?? 0) + blocksDelta
-    );
+    if ((offsetBlocks ?? 0) > 40000) throw "Error: Couldn't find sufficient tokens";
+    await addTokens(hre, amount, asset, address, block, (offsetBlocks ?? 0) + blocksDelta);
   }
 }
 
@@ -163,12 +147,6 @@ async function searchLogs(
   if (max[1].gte(amount)) {
     return max[0];
   } else {
-    return searchLogs(
-      recentLogs,
-      amount,
-      tokenContract,
-      ethers,
-      (logOffset ?? 0) + 20
-    );
+    return searchLogs(recentLogs, amount, tokenContract, ethers, (logOffset ?? 0) + 20);
   }
 }
