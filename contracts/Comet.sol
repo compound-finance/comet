@@ -14,6 +14,7 @@ contract Comet {
     address public immutable baseToken;
 
     // Storage
+    uint256 public constant FACTOR = 1e18;
 
     // 512 bits total = 2 slots
     struct Totals {
@@ -29,24 +30,6 @@ contract Comet {
         uint8 pauseFlags;
     }
     Totals public totals;
-
-    // 232 bits total, 24 reserved
-    struct User {
-        int72 principal;
-        uint96 baseTrackingIndex;
-        uint48 baseTrackingAccrued;
-        uint16 assets;
-    }
-    mapping(address => User) public users;
-
-    // 256 bits total
-    struct Asset {
-        uint128 totalCollateral;
-        uint128 collateralTrackingIndex;
-    }
-    mapping(address => Asset) public assets;
-
-    uint256 public constant FACTOR = 1e18;
 
     constructor(Configuration memory config) {
         // Set configuration variables
