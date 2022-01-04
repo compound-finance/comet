@@ -1,6 +1,6 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types";
-import fs from "fs";
-import { BigNumber, Contract, Event, EventFilter } from "ethers";
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import fs from 'fs';
+import { BigNumber, Contract, Event, EventFilter } from 'ethers';
 
 const getMaxEntry = (args: [string, BigNumber][]) =>
   args.reduce(([a1, m], [a2, e]) => (m.gte(e) == true ? [a1, m] : [a2, e]));
@@ -35,23 +35,23 @@ async function removeTokens(
   address: string
 ) {
   const erc20Abi = JSON.parse(
-    await fs.promises.readFile("./contracts/ERC20.abi", "utf8")
+    await fs.promises.readFile('./contracts/ERC20.abi', 'utf8')
   );
   const ethers = hre.ethers;
   await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
+    method: 'hardhat_impersonateAccount',
     params: [address],
   });
   const signer = await ethers.getSigner(address);
   const tokenContract = new ethers.Contract(asset, erc20Abi, signer);
   const currentBalance = await tokenContract.balanceOf(address);
-  if (currentBalance.lt(amount)) throw "Error: Insufficient address balance";
+  if (currentBalance.lt(amount)) throw 'Error: Insufficient address balance';
   await tokenContract.transfer(
-    "0x0000000000000000000000000000000000000000",
+    '0x0000000000000000000000000000000000000000',
     amount
   );
   await hre.network.provider.request({
-    method: "hardhat_stopImpersonatingAccount",
+    method: 'hardhat_stopImpersonatingAccount',
     params: [address],
   });
 }
@@ -65,7 +65,7 @@ async function addTokens(
   offsetBlocks?: number
 ) {
   const erc20Abi = JSON.parse(
-    fs.readFileSync("./contracts/ERC20.abi", "utf-8")
+    fs.readFileSync('./contracts/ERC20.abi', 'utf-8')
   );
   const ethers = hre.ethers;
   const signer = (await ethers.getSigners())[0];
@@ -81,7 +81,7 @@ async function addTokens(
   const holder = await searchLogs(recentLogs, amount, tokenContract, ethers);
   if (holder) {
     await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
+      method: 'hardhat_impersonateAccount',
       params: [holder],
     });
     const impersonatedSigner = await ethers.getSigner(holder);
@@ -90,11 +90,11 @@ async function addTokens(
     // Give impersonated address ETH for TX
     await signer.sendTransaction({
       to: impersonatedSigner.address,
-      value: ethers.utils.parseEther("1.0"),
+      value: ethers.utils.parseEther('1.0'),
     });
     await impersonatedProviderTokenContract.transfer(address, amount);
     await hre.network.provider.request({
-      method: "hardhat_stopImpersonatingAccount",
+      method: 'hardhat_stopImpersonatingAccount',
       params: [holder],
     });
   } else {
@@ -134,7 +134,7 @@ async function searchLogs(
   recentLogs: Event[],
   amount: BigNumber,
   tokenContract: Contract,
-  ethers: HardhatRuntimeEnvironment["ethers"],
+  ethers: HardhatRuntimeEnvironment['ethers'],
   logOffset?: number
 ): Promise<string | null> {
   const toAddresses = new Set<string>();
@@ -150,7 +150,7 @@ async function searchLogs(
     }),
     ...Array.from(toAddresses).map(async (address) => {
       const code = await ethers.provider.getCode(address);
-      addressContracts.set(address, code !== "0x");
+      addressContracts.set(address, code !== '0x');
     }),
   ]);
   for (const address of Array.from(addressContracts.keys())) {

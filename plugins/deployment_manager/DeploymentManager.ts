@@ -11,6 +11,7 @@ import {
   BuildMap,
   AliasesMap,
   PointersMap,
+  ProxiesMap,
 } from './Types';
 import { loadContract } from '../import/import';
 import {
@@ -93,6 +94,11 @@ export class DeploymentManager {
     return path.join(this.deploymentDir(), 'pointers.json');
   }
 
+  // File to store proxies in, e.g. `$pwd/deployments/$network/proxies.json`
+  private proxiesFile(): string {
+    return path.join(this.deploymentDir(), 'proxies.json');
+  }
+
   // File to store relation config in, e.g. `$pwd/deployments/$network/relations.json`
   private relationsFile(): string {
     return path.join(this.deploymentDir(), 'relations.json');
@@ -114,27 +120,16 @@ export class DeploymentManager {
     return JSON.parse(await fs.readFile(cacheBuildFile, 'utf8')) as BuildFile;
   }
 
-  // Write a contract metadata to file cache
-  private async writeBuildFileToCache(
-    address: Address,
-    buildFile: BuildFile
+  // Write an object to file cache
+  private async writeObjectToCache(
+    object: Object,
+    filePath: string
   ): Promise<void> {
     if (!(await fileExists(this.cacheDir()))) {
       await fs.mkdir(this.cacheDir());
     }
 
-    let cacheBuildFile = this.cacheBuildFile(address);
-    await fs.writeFile(cacheBuildFile, JSON.stringify(buildFile, null, 4));
-  }
-
-  // Write a pointers map to file cache
-  private async writePointersFileToCache(pointers: PointersMap): Promise<void> {
-    if (!(await fileExists(this.cacheDir()))) {
-      await fs.mkdir(this.cacheDir());
-    }
-
-    let pointersFile = this.pointersFile();
-    await fs.writeFile(pointersFile, JSON.stringify(pointers, null, 4));
+    await fs.writeFile(filePath, JSON.stringify(object, null, 4));
   }
 
   // Read root information for given deployment
@@ -169,12 +164,19 @@ export class DeploymentManager {
     return new Map();
   }
 
+  // Reads the cached proxy map for a given deployment into a map
+  private async getCachedProxies(): Promise<ProxiesMap> {
+    return JSON.parse(
+      await fs.readFile(this.proxiesFile(), 'utf8')
+    ) as ProxiesMap;
+  }
+
   // Builds a pointer map from aliases to addresses
   private async getPointersFromBuildMap(
     buildMap: BuildMap,
     aliasesMap: AliasesMap
   ): Promise<PointersMap> {
-    let pointers: PointersMap = {};
+    let pointers: PointersMap = new Map();
 
     for (let [address, buildFile] of buildMap) {
       const metadata = getPrimaryContract(buildFile);
@@ -279,10 +281,11 @@ export class DeploymentManager {
     relationConfigMap: RelationConfigMap,
     discovered: Address[],
     visited: BuildMap,
-    aliases: AliasesMap
-  ): Promise<[BuildMap, AliasesMap]> {
+    aliases: AliasesMap,
+    proxies: ProxiesMap
+  ): Promise<[BuildMap, AliasesMap, ProxiesMap]> {
     if (discovered.length === 0) {
-      return [visited, aliases];
+      return [visited, aliases, proxies];
     }
 
     let address = discovered.shift();
@@ -309,6 +312,7 @@ export class DeploymentManager {
             baseContract,
             relationConfig.implementation
           );
+          proxies[address] = implAddress;
 
           let implBuildFile: BuildFile;
           if (visited[implAddress]) {
@@ -364,7 +368,8 @@ export class DeploymentManager {
       relationConfigMap,
       discovered,
       visited,
-      aliases
+      aliases,
+      proxies
     );
   }
 
@@ -392,7 +397,8 @@ export class DeploymentManager {
     }
 
     if (this.config.writeCacheToDisk) {
-      await this.writeBuildFileToCache(address, buildFile);
+      let cacheBuildFile = this.cacheBuildFile(address);
+      await this.writeObjectToCache(buildFile, cacheBuildFile);
     }
     return buildFile;
   }
@@ -420,16 +426,18 @@ export class DeploymentManager {
    */
   async spider(): Promise<ContractMap> {
     let nodes = Object.values(await this.getRoots());
-    let [buildMap, aliasesMap] = await this.runSpider(
+    let [buildMap, aliasesMap, proxiesMap] = await this.runSpider(
       await this.getRelationConfig(),
       nodes,
+      new Map(),
       new Map(),
       new Map()
     );
 
     if (this.config.writeCacheToDisk) {
       let pointers = await this.getPointersFromBuildMap(buildMap, aliasesMap);
-      await this.writePointersFileToCache(pointers);
+      await this.writeObjectToCache(pointers, this.pointersFile());
+      await this.writeObjectToCache(proxiesMap, this.proxiesFile());
     }
 
     return await this.loadContractsFromBuildMap(buildMap, aliasesMap);
@@ -467,11 +475,6 @@ export class DeploymentManager {
    * Write a roots file to file cache
    */
   async writeRootsFileToCache(roots: Roots): Promise<void> {
-    if (!(await fileExists(this.cacheDir()))) {
-      await fs.mkdir(this.cacheDir(), { recursive: true });
-    }
-
-    let rootsFile = this.rootsFile();
-    await fs.writeFile(rootsFile, JSON.stringify(roots, null, 4));
+    await this.writeObjectToCache(roots, this.rootsFile());
   }
 }

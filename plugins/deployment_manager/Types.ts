@@ -17,8 +17,10 @@ export interface BuildFile {
 
 export type ContractMap = { [name: string]: Contract };
 
-export type PointersMap = { [name: string]: Address };
+export type PointersMap = Map<string, Address>;
 
 export type BuildMap = Map<Address, BuildFile>;
 
 export type AliasesMap = Map<Address, string[]>;
+
+export type ProxiesMap = Map<Address, Address>;

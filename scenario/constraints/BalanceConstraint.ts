@@ -1,6 +1,6 @@
-import { Constraint, Scenario, Solution, World } from '../../plugins/scenario'
-import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer'
-import { CometContext } from '../CometContext'
+import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
+import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
+import { CometContext } from '../CometContext';
 
 import { expect } from 'chai';
 
@@ -83,7 +83,7 @@ export class BalanceConstraint<T extends CometContext>
               amount: toTransfer,
               asset: await asset.getAddress(),
               address: await actor.getAddress(),
-            })
+            });
           }
         }
         return context;

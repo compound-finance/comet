@@ -1,14 +1,26 @@
-import { BigNumberish, Contract, Signer } from 'ethers'
-import { AsteroidRaffle__factory, AsteroidRaffle, FaucetToken__factory, FaucetToken, MockedOracle__factory } from '../build/types'
-import { ForkSpec, World, buildScenarioFn } from '../plugins/scenario'
-import { ContractMap, DeploymentManager } from '../plugins/deployment_manager/DeploymentManager'
-import { BalanceConstraint } from './constraints/BalanceConstraint'
-import { RemoteTokenConstraint } from './constraints/RemoteTokenConstraint'
-import RaffleMinEntriesConstraint from "./constraints/RaffleMinEntriesConstraint"
-import RaffleStateConstraint from "./constraints/RaffleStateConstraint"
-import RaffleTimeConstraint from "./constraints/RaffleTimeConstraint"
+import { BigNumberish, Contract, Signer } from 'ethers';
+import {
+  AsteroidRaffle__factory,
+  AsteroidRaffle,
+  FaucetToken__factory,
+  FaucetToken,
+  MockedOracle__factory,
+} from '../build/types';
+import { ForkSpec, World, buildScenarioFn } from '../plugins/scenario';
+import {
+  ContractMap,
+  DeploymentManager,
+} from '../plugins/deployment_manager/DeploymentManager';
+import { BalanceConstraint } from './constraints/BalanceConstraint';
+import { RemoteTokenConstraint } from './constraints/RemoteTokenConstraint';
+import RaffleMinEntriesConstraint from './constraints/RaffleMinEntriesConstraint';
+import RaffleStateConstraint from './constraints/RaffleStateConstraint';
+import RaffleTimeConstraint from './constraints/RaffleTimeConstraint';
 
-async function getUntilEmpty<T>(emptyVal: T, fn: (index: number) => Promise<T>): Promise<T[]> {
+async function getUntilEmpty<T>(
+  emptyVal: T,
+  fn: (index: number) => Promise<T>
+): Promise<T[]> {
   // Inner for TCO
   let index = 0;
   async function getUntilEmptyInner<T>(
@@ -112,7 +124,7 @@ export class CometAsset {
   // XXX how are we hooking these up w/ names etc to deployment manager contracts?
   // XXX does this abstract over erc20 and eth?
   async getAddress(): Promise<string> {
-    return '0xxxx' // XXX
+    return '0xxxx'; // XXX
   }
 
   async balanceOf(address: string): Promise<bigint> {
@@ -272,11 +284,11 @@ async function forkContext(c: CometContext): Promise<CometContext> {
 }
 
 export const constraints = [
-  new BalanceConstraint,
-  new RemoteTokenConstraint,
-  new RaffleMinEntriesConstraint,
-  new RaffleStateConstraint,
-  new RaffleTimeConstraint,
+  new BalanceConstraint(),
+  new RemoteTokenConstraint(),
+  new RaffleMinEntriesConstraint(),
+  new RaffleStateConstraint(),
+  new RaffleTimeConstraint(),
 ];
 
 export const scenario = buildScenarioFn<CometContext>(
