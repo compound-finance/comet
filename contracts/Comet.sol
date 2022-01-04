@@ -1,4 +1,4 @@
-//SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: ADD VALID LICENSE
 pragma solidity ^0.8.0;
 
 contract Comet {
@@ -6,52 +6,12 @@ contract Comet {
         address governor;
         address priceOracle;
         address baseToken;
-        address[] collateralAssets;
-
-        // mapping(address => uint) borrowCollateralFactor;
-        // mapping(address => uint) liquidateCollateralFactor;
-        // mapping(address => uint) liquidationPenalty;
-        // mapping(address => uint) storeFrontDiscountFactor;
-        // mapping(address => uint) supplyCap;
-
-        uint256 targetReserves;
-        uint256 absorbTip;
-        uint256 absorbBaseGas;
-        uint256 borrowMin;
-        uint256 baseTrackingSupplySpeed;
-        uint256 baseTrackingBorrowSpeed;
-        uint256 kink;
-        uint256 interestRateSlopeLow;
-        uint256 interestRateSlopeHigh;
-        uint256 interestRateBase;
-        uint256 reserveRate;
     }
 
     // Configuration constants
     address public immutable governor;
     address public immutable priceOracle;
     address public immutable baseToken;
-
-    // Immutable ??
-    address[] public collateralAssets;
-    mapping(address => uint256) public borrowCollateralFactor;
-    mapping(address => uint256) public liquidateCollateralFactor;
-    mapping(address => uint256) public liquidationPenalty;
-    mapping(address => uint256) public storeFrontDiscountFactor;
-    mapping(address => uint256) public supplyCap;
-
-    uint256 public immutable targetReserves;
-    uint256 public immutable absorbTip;
-    uint256 public immutable absorbBaseGas;
-    uint256 public immutable borrowMin;
-
-    uint256 public immutable baseTrackingSupplySpeed;
-    uint256 public immutable baseTrackingBorrowSpeed;
-    uint256 public immutable kink;
-    uint256 public immutable interestRateSlopeLow;
-    uint256 public immutable interestRateSlopeHigh;
-    uint256 public immutable interestRateBase;
-    uint256 public immutable reserveRate;
 
     // Storage
 
@@ -70,8 +30,6 @@ contract Comet {
     }
     Totals public totals;
 
-    mapping(address => mapping(address => bool)) public isPermitted;
-
     // 232 bits total, 24 reserved
     struct User {
         int72 principal;
@@ -88,14 +46,6 @@ contract Comet {
     }
     mapping(address => Asset) public assets;
 
-    // 256 bits total
-    struct UserCollateral {
-        uint128 amount;
-        uint128 trackingIndex;
-    }
-    // asset => user => collateral data
-    mapping(address => mapping(address => UserCollateral)) public collateral;
-
     mapping(address => uint256) public userNonces;
 
     uint256 public constant FACTOR = 1e18;
@@ -105,18 +55,6 @@ contract Comet {
         governor = config.governor;
         priceOracle = config.priceOracle;
         baseToken = config.baseToken;
-        collateralAssets = config.collateralAssets;
-        targetReserves = config.targetReserves;
-        absorbTip = config.absorbTip;
-        absorbBaseGas = config.absorbBaseGas;
-        borrowMin = config.borrowMin;
-        baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
-        baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
-        kink = config.kink;
-        interestRateSlopeLow = config.interestRateSlopeLow;
-        interestRateSlopeHigh = config.interestRateSlopeHigh;
-        interestRateBase = config.interestRateBase;
-        reserveRate = config.reserveRate;
 
         totals = Totals({
             lastAccrualTime: uint40(block.timestamp),
