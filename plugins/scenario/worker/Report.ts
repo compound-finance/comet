@@ -33,15 +33,7 @@ function showReportConsole(results: Result[]) {
     diff?: { actual: any; expected: any };
   }[] = [];
 
-  for (let {
-    base,
-    scenario,
-    elapsed,
-    error,
-    trace,
-    diff,
-    skipped,
-  } of results) {
+  for (let { base, scenario, elapsed, error, trace, diff, skipped } of results) {
     if (skipped) {
       skipCount++;
     } else {
@@ -70,9 +62,7 @@ function showReportConsole(results: Result[]) {
   let skipText = pluralize(skipCount, 'skipped');
   let avgText = `[avg time: ${avgTime.toFixed(0)}ms]`;
 
-  console.log(
-    `\n\n${prefix} Results: ${succText}, ${errText}, ${skipText} ${avgText}\n`
-  );
+  console.log(`\n\n${prefix} Results: ${succText}, ${errText}, ${skipText} ${avgText}\n`);
 }
 
 export function showReport(results: Result[], formats: Format[]) {

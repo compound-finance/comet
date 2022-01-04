@@ -72,15 +72,7 @@ export class Scenario<T> {
   constraints: Constraint<T>[];
   flags: ScenarioFlags;
 
-  constructor(
-    name,
-    requirements,
-    property,
-    initializer,
-    forker,
-    constraints,
-    flags
-  ) {
+  constructor(name, requirements, property, initializer, forker, constraints, flags) {
     this.name = name;
     this.requirements = requirements;
     this.property = property;

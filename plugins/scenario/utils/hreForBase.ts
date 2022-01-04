@@ -56,10 +56,7 @@ function hreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
   // replicates https://github.com/nomiclabs/hardhat/blob/master/packages/hardhat-core/src/internal/lib/hardhat-lib.ts
   const ctx: HardhatContext = HardhatContext.getHardhatContext();
 
-  const hardhatArguments = getEnvHardhatArguments(
-    HARDHAT_PARAM_DEFINITIONS,
-    process.env
-  );
+  const hardhatArguments = getEnvHardhatArguments(HARDHAT_PARAM_DEFINITIONS, process.env);
 
   const config = loadConfigAndTasks(hardhatArguments);
 

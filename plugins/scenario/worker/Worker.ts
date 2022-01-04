@@ -36,9 +36,7 @@ export async function run<T>({
   config: [HardhatConfig, HardhatArguments];
 }) {
   createContext(...config);
-  let scenarios: { [name: string]: Scenario<T> } = await loadScenarios(
-    scenarioGlob
-  );
+  let scenarios: { [name: string]: Scenario<T> } = await loadScenarios(scenarioGlob);
   let baseMap = Object.fromEntries(bases.map((base) => [base.name, base]));
 
   parentPort.on('message', async (message: Message) => {
@@ -81,9 +79,7 @@ export async function run<T>({
       await new Runner({ bases: [base] }).run([scenario], resultFn);
       console.log('Ran', scenario);
     } else {
-      throw new Error(
-        `Unknown or invalid worker message: ${JSON.stringify(message)}`
-      );
+      throw new Error(`Unknown or invalid worker message: ${JSON.stringify(message)}`);
     }
   });
 }

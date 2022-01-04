@@ -1,26 +1,9 @@
-import {
-  Constraint,
-  Forker,
-  Initializer,
-  Property,
-  ScenarioFlags,
-} from './Scenario';
+import { Constraint, Forker, Initializer, Property, ScenarioFlags } from './Scenario';
 import { getLoader } from './Loader';
-export {
-  Constraint,
-  Initializer,
-  Property,
-  Scenario,
-  Solution,
-  World,
-} from './Scenario';
+export { Constraint, Initializer, Property, Scenario, Solution, World } from './Scenario';
 export { ForkSpec } from './Runner';
 
-type ScenarioFn<T> = (
-  name: string,
-  requirements: object,
-  property: Property<T>
-) => Promise<void>;
+type ScenarioFn<T> = (name: string, requirements: object, property: Property<T>) => Promise<void>;
 
 interface ScenarioBuilder<T> {
   (name: string, requirements: object, property: Property<T>): void;
@@ -37,15 +20,7 @@ export function addScenario<T>(
   constraints: Constraint<T>[],
   flags: ScenarioFlags = null
 ) {
-  getLoader().addScenario(
-    name,
-    requirements,
-    property,
-    initializer,
-    forker,
-    constraints,
-    flags
-  );
+  getLoader().addScenario(name, requirements, property, initializer, forker, constraints, flags);
 }
 
 export function buildScenarioFn<T>(
@@ -54,17 +29,8 @@ export function buildScenarioFn<T>(
   constraints: Constraint<T>[]
 ) {
   let addScenarioWithOpts =
-    (flags: ScenarioFlags) =>
-    (name: string, requirements: object, property: Property<T>) => {
-      addScenario<T>(
-        name,
-        requirements,
-        property,
-        initializer,
-        forker,
-        constraints,
-        flags
-      );
+    (flags: ScenarioFlags) => (name: string, requirements: object, property: Property<T>) => {
+      addScenario<T>(name, requirements, property, initializer, forker, constraints, flags);
     };
 
   let res: ScenarioBuilder<T> = Object.assign(addScenarioWithOpts(null), {

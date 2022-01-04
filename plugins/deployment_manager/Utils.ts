@@ -3,16 +3,11 @@ import * as fs from 'fs/promises';
 import { Contract } from 'ethers';
 import { Address, BuildFile, ContractMap, ContractMetadata } from './Types';
 
-async function asAddresses(
-  contract: Contract,
-  fnName: string
-): Promise<Address[]> {
+async function asAddresses(contract: Contract, fnName: string): Promise<Address[]> {
   let fn = contract.functions[fnName];
   if (!fn) {
     // TODO: `contract.name` is undefined. Find a better way to log this error.
-    throw new Error(
-      `Cannot find contract function ${contract.name}.${fnName}()`
-    );
+    throw new Error(`Cannot find contract function ${contract.name}.${fnName}()`);
   }
   let val = (await fn())[0]; // Return val is always stored as first item in array
 
@@ -76,10 +71,7 @@ export async function getAlias(
 }
 
 // TODO: Should this raise or do something more interesting if it fails?
-export async function getRelations(
-  contract: Contract,
-  relationFnName: string
-): Promise<Address[]> {
+export async function getRelations(contract: Contract, relationFnName: string): Promise<Address[]> {
   return await asAddresses(contract, relationFnName);
 }
 

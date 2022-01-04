@@ -41,10 +41,7 @@ function filterRunning<T>(
   }
 }
 
-function getBaseScenarios<T>(
-  bases: ForkSpec[],
-  scenarios: Scenario<T>[]
-): BaseScenario<T>[] {
+function getBaseScenarios<T>(bases: ForkSpec[], scenarios: Scenario<T>[]): BaseScenario<T>[] {
   let result: BaseScenario<T>[] = [];
 
   // Note: this could filter if scenarios had some such filtering (e.g. to state the scenario is only compatible with certain bases)
@@ -60,16 +57,11 @@ function key(baseName: string, scenarioName: string): string {
   return `${baseName}-${scenarioName}`;
 }
 
-export async function run<T>(
-  scenarioConfig: ScenarioConfig,
-  bases: ForkSpec[]
-) {
+export async function run<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[]) {
   let hardhatConfig = getConfig();
   let hardhatArguments = getHardhatArguments();
   let formats = defaultFormats.map(loadFormat);
-  let scenarios: Scenario<T>[] = Object.values(
-    await loadScenarios(scenarioGlob)
-  );
+  let scenarios: Scenario<T>[] = Object.values(await loadScenarios(scenarioGlob));
   let baseScenarios: BaseScenario<T>[] = getBaseScenarios(bases, scenarios);
   let [runningScenarios, skippedScenarios] = filterRunning(baseScenarios);
 
@@ -81,12 +73,9 @@ export async function run<T>(
     skipped: true,
   }));
   let pending: Set<string> = new Set(
-    runningScenarios.map((baseScenario) =>
-      key(baseScenario.base.name, baseScenario.scenario.name)
-    )
+    runningScenarios.map((baseScenario) => key(baseScenario.base.name, baseScenario.scenario.name))
   );
-  let assignable: Iterator<BaseScenario<T>> =
-    runningScenarios[Symbol.iterator]();
+  let assignable: Iterator<BaseScenario<T>> = runningScenarios[Symbol.iterator]();
   let done;
   let hasError = false;
   let isDone = new Promise((resolve, reject_) => {

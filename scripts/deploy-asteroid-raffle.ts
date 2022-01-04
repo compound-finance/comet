@@ -12,10 +12,7 @@ import {
   MockedOracle__factory,
   TransparentUpgradeableProxy__factory,
 } from '../build/types';
-import {
-  DeploymentManager,
-  Roots,
-} from '../plugins/deployment_manager/DeploymentManager';
+import { DeploymentManager, Roots } from '../plugins/deployment_manager/DeploymentManager';
 
 async function verifyContract(address: string, constructorArguments) {
   try {
@@ -27,9 +24,7 @@ async function verifyContract(address: string, constructorArguments) {
     const regex = /Already Verified/i;
     const result = e.message.match(regex);
     if (result) {
-      console.log(
-        'Contract at address ' + address + ' is already verified on Etherscan'
-      );
+      console.log('Contract at address ' + address + ' is already verified on Etherscan');
       return;
     }
     throw e;
@@ -46,23 +41,14 @@ async function main() {
 
   const [governor, user1] = await hre.ethers.getSigners();
 
-  const FaucetToken = (await hre.ethers.getContractFactory(
-    'FaucetToken'
-  )) as FaucetToken__factory;
-  const tokenArgs: [number, string, number, string] = [
-    100000,
-    'DAI',
-    18,
-    'DAI',
-  ];
+  const FaucetToken = (await hre.ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
+  const tokenArgs: [number, string, number, string] = [100000, 'DAI', 18, 'DAI'];
   const token = await FaucetToken.deploy(...tokenArgs);
   await token.deployed();
   await verifyContract(token.address, tokenArgs);
   console.log('FaucetToken deployed to:', token.address);
 
-  const Oracle = (await hre.ethers.getContractFactory(
-    'MockedOracle'
-  )) as MockedOracle__factory;
+  const Oracle = (await hre.ethers.getContractFactory('MockedOracle')) as MockedOracle__factory;
   const oracle = await Oracle.connect(governor).deploy();
   await oracle.deployed();
   await verifyContract(oracle.address, []);
@@ -83,11 +69,7 @@ async function main() {
   const Proxy = (await hre.ethers.getContractFactory(
     'TransparentUpgradeableProxy'
   )) as TransparentUpgradeableProxy__factory;
-  const proxyArgs: [string, string, []] = [
-    raffle.address,
-    governor.address,
-    [],
-  ];
+  const proxyArgs: [string, string, []] = [raffle.address, governor.address, []];
   const proxy = await Proxy.deploy(...proxyArgs);
   await proxy.deployed();
   await verifyContract(proxy.address, proxyArgs);

@@ -7,20 +7,14 @@ import {
   MockedOracle__factory,
 } from '../build/types';
 import { ForkSpec, World, buildScenarioFn } from '../plugins/scenario';
-import {
-  ContractMap,
-  DeploymentManager,
-} from '../plugins/deployment_manager/DeploymentManager';
+import { ContractMap, DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
 import { BalanceConstraint } from './constraints/BalanceConstraint';
 import { RemoteTokenConstraint } from './constraints/RemoteTokenConstraint';
 import RaffleMinEntriesConstraint from './constraints/RaffleMinEntriesConstraint';
 import RaffleStateConstraint from './constraints/RaffleStateConstraint';
 import RaffleTimeConstraint from './constraints/RaffleTimeConstraint';
 
-async function getUntilEmpty<T>(
-  emptyVal: T,
-  fn: (index: number) => Promise<T>
-): Promise<T[]> {
+async function getUntilEmpty<T>(emptyVal: T, fn: (index: number) => Promise<T>): Promise<T[]> {
   // Inner for TCO
   let index = 0;
   async function getUntilEmptyInner<T>(
@@ -65,20 +59,11 @@ export class CometActor {
   }
 
   async enterWithEth(ticketPrice: number) {
-    (
-      await this.raffleContract
-        .connect(this.signer)
-        .enterWithEth({ value: ticketPrice })
-    ).wait();
+    (await this.raffleContract.connect(this.signer).enterWithEth({ value: ticketPrice })).wait();
   }
 
   async enterWithToken(ticketPrice: number) {
-    (
-      await this.tokenContract.allocateTo(
-        await this.signer.getAddress(),
-        ticketPrice
-      )
-    ).wait();
+    (await this.tokenContract.allocateTo(await this.signer.getAddress(), ticketPrice)).wait();
     (
       await this.tokenContract
         .connect(this.signer)
@@ -88,9 +73,7 @@ export class CometActor {
   }
 
   async determineWinner(event: string = 'NewWinner') {
-    const receipt = await (
-      await this.raffleContract.connect(this.signer).determineWinner()
-    ).wait();
+    const receipt = await (await this.raffleContract.connect(this.signer).determineWinner()).wait();
     const filteredEvent = receipt.events?.filter((x) => {
       return x.event == event;
     })[0];
@@ -104,11 +87,7 @@ export class CometActor {
     ticketPrice: BigNumberish;
     duration: BigNumberish;
   }) {
-    (
-      await this.raffleContract
-        .connect(this.signer)
-        .restartRaffle(ticketPrice, duration)
-    ).wait();
+    (await this.raffleContract.connect(this.signer).restartRaffle(ticketPrice, duration)).wait();
   }
 
   async getEthBalance() {
@@ -138,10 +117,7 @@ export class CometContext {
   assets: { [name: string]: CometAsset }; // XXX
   remoteToken: Contract | undefined;
 
-  constructor(
-    deploymentManager: DeploymentManager,
-    actors: { [name: string]: CometActor }
-  ) {
+  constructor(deploymentManager: DeploymentManager, actors: { [name: string]: CometActor }) {
     this.deploymentManager = deploymentManager;
     this.actors = actors;
   }
@@ -151,23 +127,16 @@ export class CometContext {
   }
 
   async players(): Promise<string[]> {
-    return await getUntilEmpty(
-      '0x0000000000000000000000000000000000000000',
-      async (index) => {
-        return await this.contracts().raffle.players(index);
-      }
-    );
+    return await getUntilEmpty('0x0000000000000000000000000000000000000000', async (index) => {
+      return await this.contracts().raffle.players(index);
+    });
   }
 }
 
 let contractDeployers: {
   [name: string]: {
     contract: string;
-    deployer: (
-      world: World,
-      contracts: ContractMap,
-      signers: Signer[]
-    ) => Promise<Contract>;
+    deployer: (world: World, contracts: ContractMap, signers: Signer[]) => Promise<Contract>;
   };
 } = {
   token: {
@@ -210,10 +179,7 @@ let contractDeployers: {
   },
 };
 
-const getInitialContext = async (
-  world: World,
-  base: ForkSpec
-): Promise<CometContext> => {
+const getInitialContext = async (world: World, base: ForkSpec): Promise<CometContext> => {
   const isDevelopment = !base.url;
   let deploymentManager = new DeploymentManager(base.name, world.hre);
 
@@ -226,9 +192,7 @@ const getInitialContext = async (
   let signers = await world.hre.ethers.getSigners();
 
   // Deploy missing contracts
-  for (let [name, { contract, deployer }] of Object.entries(
-    contractDeployers
-  )) {
+  for (let [name, { contract, deployer }] of Object.entries(contractDeployers)) {
     let contractInst = deploymentManager.contracts[contract];
 
     if (contractInst) {
@@ -291,8 +255,4 @@ export const constraints = [
   new RaffleTimeConstraint(),
 ];
 
-export const scenario = buildScenarioFn<CometContext>(
-  getInitialContext,
-  forkContext,
-  constraints
-);
+export const scenario = buildScenarioFn<CometContext>(getInitialContext, forkContext, constraints);
