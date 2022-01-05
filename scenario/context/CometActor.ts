@@ -6,7 +6,7 @@ export default class CometActor {
   address: string;
   cometContract: Comet;
 
-  constructor(signer, address, cometContract) {
+  constructor(signer: Signer, address: string, cometContract: Comet) {
     this.signer = signer;
     this.address = address;
     this.cometContract = cometContract;

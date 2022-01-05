@@ -58,22 +58,22 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
     admin: new CometActor(
       adminSigner,
       await adminSigner.getAddress(),
-      deploymentManager.contracts.comet
+      deploymentManager.contracts.Comet
     ),
     albert: new CometActor(
       albertSigner,
       await albertSigner.getAddress(),
-      deploymentManager.contracts.comet
+      deploymentManager.contracts.Comet
     ),
     betty: new CometActor(
       bettySigner,
       await bettySigner.getAddress(),
-      deploymentManager.contracts.comet
+      deploymentManager.contracts.Comet
     ),
     charles: new CometActor(
       charlesSigner,
       await charlesSigner.getAddress(),
-      deploymentManager.contracts.comet
+      deploymentManager.contracts.Comet
     ),
   };
 

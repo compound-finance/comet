@@ -1,4 +1,5 @@
 import { Contract } from 'ethers';
+import { Comet } from '../../build/types';
 
 export type Address = string;
 
@@ -17,7 +18,10 @@ export interface BuildFile {
   version: string;
 }
 
-export type ContractMap = { [name: string]: Contract };
+export type ContractMap = {
+  Comet?: Comet,
+  [name: string]: Contract
+};
 
 export type PointersMap = Map<string, Address>;
 
