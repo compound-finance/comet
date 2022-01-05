@@ -1,13 +1,8 @@
 import { Constraint, Scenario, Solution } from './Scenario';
-import { World } from './World';
+import { ForkSpec, World } from './World';
 import hreForBase from './utils/hreForBase';
 
 export type Address = string;
-export type ForkSpec = {
-  name: string;
-  url?: string;
-  blockNumber?: number;
-};
 
 export type ResultFn<T> = (base: ForkSpec, scenario: Scenario<T>, err?: any) => void;
 
@@ -59,14 +54,14 @@ export class Runner<T> {
 
     for (const base of bases) {
       // construct a base world and context
-      const world = new World(hreForBase(base)); // XXX can cache/re-use HREs per base
+      const world = new World(hreForBase(base), base); // XXX can cache/re-use HREs per base
 
       // freeze the world as it was before we run any scenarios
       let snapshot = await world._snapshot();
 
       for (const scenario of scenarios) {
         const { constraints = [] } = scenario;
-        const context = await scenario.initializer(world, base);
+        const context = await scenario.initializer(world);
 
         // generate worlds which satisfy the constraints
         // note: `solve` is expected not to modify context or world

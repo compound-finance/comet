@@ -1,5 +1,6 @@
 import { parentPort } from 'worker_threads';
-import { ForkSpec, Runner } from '../Runner';
+import { Runner } from '../Runner';
+import { ForkSpec } from '../World';
 import { Scenario } from '../Scenario';
 import { loadScenarios } from '../Loader';
 import { HardhatContext } from 'hardhat/internal/context';

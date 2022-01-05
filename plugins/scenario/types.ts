@@ -1,4 +1,4 @@
-import { ForkSpec } from './Runner';
+import { ForkSpec } from './World';
 
 export interface ScenarioConfig {
   bases: ForkSpec[];

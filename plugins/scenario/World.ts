@@ -1,11 +1,24 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Signer } from 'ethers';
 
+export type ForkSpec = {
+  name: string;
+  url?: string;
+  blockNumber?: number;
+};
+
 export class World {
   hre: HardhatRuntimeEnvironment;
+  base: ForkSpec;
 
-  constructor(hre) {
+  constructor(hre, base: ForkSpec) {
     this.hre = hre;
+    this.base = base;
+  }
+
+  // TODO: Can we do this better?
+  isDevelopment(): boolean {
+    return !this.base.url;
   }
 
   async _snapshot() {

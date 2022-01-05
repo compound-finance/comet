@@ -1,7 +1,7 @@
 import { task } from 'hardhat/config';
 import { run } from '../../plugins/scenario/worker/Parent';
 import '../../plugins/scenario/type-extensions';
-import { ForkSpec } from '../../plugins/scenario/Runner';
+import { ForkSpec } from '../../plugins/scenario/World';
 
 task('scenario', 'Runs scenario tests')
   .addOptionalParam('bases', 'Bases to run on [defaults to all]')

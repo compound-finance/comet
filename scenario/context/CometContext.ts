@@ -28,11 +28,10 @@ export class CometContext {
   }
 }
 
-const getInitialContext = async (world: World, base: ForkSpec): Promise<CometContext> => {
-  const isDevelopment = !base.url; // TODO: Unify this concept?
-  let deploymentManager = new DeploymentManager(base.name, world.hre);
+const getInitialContext = async (world: World): Promise<CometContext> => {
+  let deploymentManager = new DeploymentManager(world.base.name, world.hre);
 
-  if (isDevelopment) {
+  if (world.isDevelopment()) {
     await deployComet(deploymentManager, false);
   }
 
@@ -40,7 +39,7 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
 
   let comet: Comet = (await deploymentManager.contracts['Comet']) as Comet;
   if (!comet) {
-    throw new Error(`No such contract Comet for base ${base.name}`);
+    throw new Error(`No such contract Comet for base ${world.base.name}`);
   }
 
   let signers = await world.hre.ethers.getSigners();
@@ -48,7 +47,7 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
   const [localAdminSigner, albertSigner, bettySigner, charlesSigner] = signers;
   let adminSigner;
 
-  if (isDevelopment) {
+  if (world.isDevelopment()) {
     adminSigner = localAdminSigner;
   } else {
     const governorAddress = await comet.governor();
