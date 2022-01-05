@@ -78,7 +78,12 @@ export async function run<T>({
 
       console.log('Running', message.scenario);
       let startTime = Date.now();
-      await new Runner({ bases: [base] }).run([scenario], resultFn);
+      try {
+        await new Runner({ bases: [base] }).run([scenario], resultFn);
+      } catch (e) {
+        console.error("Encountered worker error", e);
+        eventually(() => { throw e });
+      }
       console.log('Ran', scenario);
     } else {
       throw new Error(

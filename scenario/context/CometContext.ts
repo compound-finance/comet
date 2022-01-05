@@ -44,7 +44,7 @@ const getInitialContext = async (
 
   await deploymentManager.spider();
 
-  let comet: Comet = await deploymentManager.contracts['comet'] as Comet;
+  let comet: Comet = await deploymentManager.contracts['Comet'] as Comet;
   if (!comet) {
     throw new Error(`No such contract Comet for base ${base.name}`);
   }

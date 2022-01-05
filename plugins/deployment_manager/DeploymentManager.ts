@@ -127,7 +127,6 @@ export class DeploymentManager {
 
   async readCache<T>(file: string): Promise<T> {
     let cached = this.cache[file];
-    console.log({file, cached});
     if (cached) {
       return cached as T;
     } else {
@@ -137,7 +136,6 @@ export class DeploymentManager {
 
   // Checks to see if a file exists, either in in-memory cache or on disk.
   private async cacheFileExists(file: string): Promise<boolean> {
-    console.log("cacheFileExists", file, this.cache[file], Object.keys(this.cache));
     if (this.cache[file]) {
       return true;
     } else {
@@ -204,27 +202,6 @@ export class DeploymentManager {
     return this.readCache<ProxiesMap>(this.proxiesFile());
   }
 
-  // Builds a pointer map from aliases to addresses
-  private async getPointersFromBuildMap(
-    buildMap: BuildMap,
-    aliasesMap: AliasesMap
-  ): Promise<PointersMap> {
-    let pointers: PointersMap = new Map();
-
-    for (let [address, buildFile] of buildMap) {
-      const metadata = getPrimaryContract(buildFile);
-      if (aliasesMap.has(metadata.address)) {
-        aliasesMap
-          .get(metadata.address)
-          .forEach((alias) => (pointers[alias] = metadata.address));
-      } else {
-        pointers[metadata.name] = metadata.address;
-      }
-    }
-
-    return pointers;
-  }
-
   // Returns an ethers' wrapped contract from a given build file (based on its name and address)
   private getContractFromBuildFile(
     buildFile: BuildFile,
@@ -259,6 +236,27 @@ export class DeploymentManager {
     }
 
     return contracts;
+  }
+
+  // Builds a pointer map from aliases to addresses
+  private async getPointersFromBuildMap(
+    buildMap: BuildMap,
+    aliasesMap: AliasesMap
+  ): Promise<PointersMap> {
+    let pointers: PointersMap = new Map();
+
+    for (let [address, buildFile] of buildMap) {
+      const metadata = getPrimaryContract(buildFile);
+      if (aliasesMap.has(address)) {
+        aliasesMap
+          .get(address)
+          .forEach((alias) => (pointers[alias] = address));
+      } else {
+        pointers[metadata.name] = address;
+      }
+    }
+
+    return pointers;
   }
 
   // Deploys a contract given a build file (e.g. something imported or spidered)
@@ -319,7 +317,6 @@ export class DeploymentManager {
     aliases: AliasesMap,
     proxies: ProxiesMap
   ): Promise<[BuildMap, AliasesMap, ProxiesMap]> {
-    console.log({relationConfigMap, discovered, visited, aliases, proxies});
     if (discovered.length === 0) {
       return [visited, aliases, proxies];
     }
