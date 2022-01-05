@@ -135,7 +135,7 @@ export class DeploymentManager {
     }
   }
 
-  // Reads the cached proxy map for a given deployment into a map
+  // Checks to see if a file exists, either in in-memory cache or on disk.
   private async cacheFileExists(file: string): Promise<boolean> {
     console.log("cacheFileExists", file, this.cache[file], Object.keys(this.cache));
     if (this.cache[file]) {
@@ -432,10 +432,9 @@ export class DeploymentManager {
       return await this.importContract(address, retries - 1);
     }
 
-    if (this.config.writeCacheToDisk) {
-      let cacheBuildFile = this.cacheBuildFile(address);
-      await this.writeObjectToCache(buildFile, cacheBuildFile);
-    }
+    let cacheBuildFile = this.cacheBuildFile(address);
+    await this.writeObjectToCache(buildFile, cacheBuildFile);
+
     return buildFile;
   }
 

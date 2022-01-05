@@ -14,7 +14,6 @@ async function main() {
 
   let dm = new DeploymentManager(hre.network.name, hre, {
     writeCacheToDisk: true,
-    writeRootsToDisk: true,
   });
 
   let { comet } = await deploy(dm, !isDevelopment);

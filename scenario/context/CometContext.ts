@@ -42,7 +42,7 @@ const getInitialContext = async (
     await deploy(deploymentManager, false);
   }
 
-  await deploymentManager.spider(); // TODO: How does spider work locally? Can we let it just run normally?
+  await deploymentManager.spider();
 
   let comet: Comet = await deploymentManager.contracts['comet'] as Comet;
   if (!comet) {
