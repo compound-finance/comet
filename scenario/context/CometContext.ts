@@ -56,30 +56,10 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
   }
 
   const actors = {
-    admin: new CometActor(
-      adminSigner,
-      await adminSigner.getAddress(),
-      deploymentManager.contracts.raffle,
-      deploymentManager.contracts.token
-    ),
-    albert: new CometActor(
-      albertSigner,
-      await albertSigner.getAddress(),
-      deploymentManager.contracts.raffle,
-      deploymentManager.contracts.token
-    ),
-    betty: new CometActor(
-      bettySigner,
-      await bettySigner.getAddress(),
-      deploymentManager.contracts.raffle,
-      deploymentManager.contracts.token
-    ),
-    charles: new CometActor(
-      charlesSigner,
-      await charlesSigner.getAddress(),
-      deploymentManager.contracts.raffle,
-      deploymentManager.contracts.token
-    ),
+    admin: new CometActor(adminSigner, await adminSigner.getAddress()),
+    albert: new CometActor(albertSigner, await albertSigner.getAddress()),
+    betty: new CometActor(bettySigner, await bettySigner.getAddress()),
+    charles: new CometActor(charlesSigner, await charlesSigner.getAddress()),
   };
 
   return new CometContext(deploymentManager, comet, actors);
