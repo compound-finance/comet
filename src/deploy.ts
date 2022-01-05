@@ -37,7 +37,7 @@ async function verifyContract(
   }
 }
 
-export async function deploy(
+export async function deployComet(
   deploymentManager: DeploymentManager,
   verify: boolean = false
 ): Promise<{ comet: Comet; oracle: MockedOracle; proxy: TransparentUpgradeableProxy }> {

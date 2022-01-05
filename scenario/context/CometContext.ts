@@ -4,7 +4,7 @@ import { ContractMap, DeploymentManager } from '../../plugins/deployment_manager
 import { BalanceConstraint, RemoteTokenConstraint } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
-import { Comet, deploy } from '../../src/comet';
+import { Comet, deployComet } from '../../src/deploy';
 
 export class CometContext {
   deploymentManager: DeploymentManager;
@@ -33,7 +33,7 @@ const getInitialContext = async (world: World, base: ForkSpec): Promise<CometCon
   let deploymentManager = new DeploymentManager(base.name, world.hre);
 
   if (isDevelopment) {
-    await deploy(deploymentManager, false);
+    await deployComet(deploymentManager, false);
   }
 
   await deploymentManager.spider();

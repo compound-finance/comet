@@ -4,7 +4,7 @@
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
 import hre from 'hardhat';
-import { deploy } from '../src/comet';
+import { deployComet } from '../src/deploy';
 import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
 
 async function main() {
@@ -16,7 +16,7 @@ async function main() {
     writeCacheToDisk: true,
   });
 
-  let { comet } = await deploy(dm, !isDevelopment);
+  let { comet } = await deployComet(dm, !isDevelopment);
 
   // TODO: If we deployed fresh, we probably don't need to spider, per se. We should work on passing a deployment manager into deploy!
 
