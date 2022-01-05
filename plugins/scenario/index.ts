@@ -1,6 +1,7 @@
 import { Constraint, Forker, Initializer, Property, ScenarioFlags } from './Scenario';
 import { getLoader } from './Loader';
-export { Constraint, Initializer, Property, Scenario, Solution, World } from './Scenario';
+export { Constraint, Initializer, Property, Scenario, Solution } from './Scenario';
+export { World } from './World';
 export { ForkSpec } from './Runner';
 
 type ScenarioFn<T> = (name: string, requirements: object, property: Property<T>) => Promise<void>;

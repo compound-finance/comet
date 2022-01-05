@@ -23,6 +23,7 @@ Optional env variables:
 SNOWTRACE_KEY=<key>
 COINMARKETCAP_API_KEY=<key>
 REPORT_GAS=true
+ETH_PK=<eth-key>             # takes precedence over MNEMONIC
 MNEMONIC=<mnemonic>
 NETWORK=<network name>
 ```
