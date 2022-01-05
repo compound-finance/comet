@@ -549,7 +549,9 @@ export class DeploymentManager {
     let { buildInfo } = JSON.parse(await fs.readFile(debugFile, 'utf8')) as { buildInfo: string };
     let { output: buildFile } = JSON.parse(
       await fs.readFile(path.join(debugFile, '..', buildInfo), 'utf8')
-    ) as { output: BuildFile };
+    ) as {
+      output: BuildFile;
+    };
 
     if (!buildFile.contract) {
       buildFile.contract = contractName;
