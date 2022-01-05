@@ -159,7 +159,7 @@ const config: HardhatUserConfig = {
         url: 'https://api.avax-test.network/ext/bc/C/rpc',
       },
     ],
-  }
+  },
 };
 
 setupDefaultNetworkProviders(config);
