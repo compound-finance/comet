@@ -25,6 +25,10 @@ import {
 
 export { ContractMap } from './Types';
 
+abstract class Deployer<Contract, DeployArgs extends Array<any>> {
+  abstract deploy(...args: DeployArgs): Promise<Contract>;
+}
+
 export type Roots = { [contractName: string]: Address };
 
 export interface RelationConfig {
@@ -47,6 +51,7 @@ export class DeploymentManager {
   hre: HardhatRuntimeEnvironment;
   config: DeploymentConfig;
   contracts: ContractMap;
+  cache: object;
 
   constructor(
     deployment: string,
@@ -57,6 +62,7 @@ export class DeploymentManager {
     this.hre = hre;
     this.config = config;
     this.contracts = {};
+    this.cache = {};
   }
 
   // Configuration Parameter for retries after Etherscan import failures
@@ -99,6 +105,11 @@ export class DeploymentManager {
     return path.join(this.deploymentDir(), 'proxies.json');
   }
 
+  // File to store relation config in, e.g. `$pwd/deployments/relations.json`
+  private relationsBaseFile(): string {
+    return path.join(this.deploymentsBaseDir(), 'relations.json');
+  }
+
   // File to store relation config in, e.g. `$pwd/deployments/$network/relations.json`
   private relationsFile(): string {
     return path.join(this.deploymentDir(), 'relations.json');
@@ -114,10 +125,30 @@ export class DeploymentManager {
     return path.join(this.cacheDir(), `${address.toLowerCase()}.json`);
   }
 
+  async readCache<T>(file: string): Promise<T> {
+    let cached = this.cache[file];
+    console.log({file, cached});
+    if (cached) {
+      return cached as T;
+    } else {
+      return JSON.parse(await fs.readFile(file, 'utf8')) as T;
+    }
+  }
+
+  // Reads the cached proxy map for a given deployment into a map
+  private async cacheFileExists(file: string): Promise<boolean> {
+    console.log("cacheFileExists", file, this.cache[file], Object.keys(this.cache));
+    if (this.cache[file]) {
+      return true;
+    } else {
+      return await fileExists(file);
+    }
+  }
+
   // Write contract metadata from file cache
   private async readBuildFileFromCache(address: Address): Promise<BuildFile> {
     let cacheBuildFile = this.cacheBuildFile(address);
-    return JSON.parse(await fs.readFile(cacheBuildFile, 'utf8')) as BuildFile;
+    return this.readCache<BuildFile>(cacheBuildFile);
   }
 
   // Write an object to file cache
@@ -125,22 +156,27 @@ export class DeploymentManager {
     object: Object,
     filePath: string
   ): Promise<void> {
-    if (!(await fileExists(this.cacheDir()))) {
-      await fs.mkdir(this.cacheDir());
-    }
+    if (this.config.writeCacheToDisk) {
+      if (!(await fileExists(this.cacheDir()))) {
+        await fs.mkdir(this.cacheDir(), { recursive: true });
+      }
 
-    await fs.writeFile(filePath, JSON.stringify(object, null, 4));
+      await fs.writeFile(filePath, JSON.stringify(object, null, 4));
+    } else {
+      this.cache[filePath] = object;
+    }
   }
 
   // Read root information for given deployment
   private async getRoots(): Promise<Roots> {
-    return JSON.parse(await fs.readFile(this.rootsFile(), 'utf8')) as Roots;
+    return this.readCache<Roots>(this.rootsFile());
   }
 
   // Read relation configuration for given deployment
   private async getRelationConfig(): Promise<RelationConfigMap> {
+    let relationsFile = await fileExists(this.relationsFile()) ? this.relationsFile() : this.relationsBaseFile();
     return JSON.parse(
-      await fs.readFile(this.relationsFile(), 'utf8')
+      await fs.readFile(relationsFile, 'utf8')
     ) as RelationConfigMap;
   }
 
@@ -160,15 +196,12 @@ export class DeploymentManager {
 
   // Reads all cached aliases for given deployment into a map
   private async getCachedAliases(): Promise<AliasesMap> {
-    // TODO: Can read aliases from `pointers.json`.
-    return new Map();
+    return this.readCache<AliasesMap>(this.pointersFile());
   }
 
   // Reads the cached proxy map for a given deployment into a map
   private async getCachedProxies(): Promise<ProxiesMap> {
-    return JSON.parse(
-      await fs.readFile(this.proxiesFile(), 'utf8')
-    ) as ProxiesMap;
+    return this.readCache<ProxiesMap>(this.proxiesFile());
   }
 
   // Builds a pointer map from aliases to addresses
@@ -195,12 +228,14 @@ export class DeploymentManager {
   // Returns an ethers' wrapped contract from a given build file (based on its name and address)
   private getContractFromBuildFile(
     buildFile: BuildFile,
-    signer: Signer
+    signer: Signer,
+    address: string | undefined
   ): [string, Contract] {
     let metadata = getPrimaryContract(buildFile);
+
     return [
       metadata.name,
-      new this.hre.ethers.Contract(metadata.address, metadata.abi, signer),
+      new this.hre.ethers.Contract(address ?? metadata.address, metadata.abi, signer),
     ];
   }
 
@@ -213,7 +248,7 @@ export class DeploymentManager {
     const [signer] = await this.hre.ethers.getSigners(); // TODO: Hmm?
 
     for (let [address, buildFile] of buildMap) {
-      let [name, contract] = this.getContractFromBuildFile(buildFile, signer);
+      let [name, contract] = this.getContractFromBuildFile(buildFile, signer, address);
       if (aliasesMap.has(address)) {
         aliasesMap
           .get(address)
@@ -257,7 +292,7 @@ export class DeploymentManager {
 
   // Reads a contract if exists in cache, otherwise attempts to import contract by address
   private async readOrImportContract(address: Address): Promise<BuildFile> {
-    if (await fileExists(this.cacheBuildFile(address))) {
+    if (await this.cacheFileExists(this.cacheBuildFile(address))) {
       return await this.readBuildFileFromCache(address);
     } else {
       return await this.importContract(address, this.importRetries());
@@ -284,6 +319,7 @@ export class DeploymentManager {
     aliases: AliasesMap,
     proxies: ProxiesMap
   ): Promise<[BuildMap, AliasesMap, ProxiesMap]> {
+    console.log({relationConfigMap, discovered, visited, aliases, proxies});
     if (discovered.length === 0) {
       return [visited, aliases, proxies];
     }
@@ -426,19 +462,18 @@ export class DeploymentManager {
    */
   async spider(): Promise<ContractMap> {
     let nodes = Object.values(await this.getRoots());
+    let relationConfig = await this.getRelationConfig();
     let [buildMap, aliasesMap, proxiesMap] = await this.runSpider(
-      await this.getRelationConfig(),
+      relationConfig,
       nodes,
       new Map(),
       new Map(),
       new Map()
     );
 
-    if (this.config.writeCacheToDisk) {
-      let pointers = await this.getPointersFromBuildMap(buildMap, aliasesMap);
-      await this.writeObjectToCache(pointers, this.pointersFile());
-      await this.writeObjectToCache(proxiesMap, this.proxiesFile());
-    }
+    let pointers = await this.getPointersFromBuildMap(buildMap, aliasesMap);
+    await this.writeObjectToCache(pointers, this.pointersFile());
+    await this.writeObjectToCache(proxiesMap, this.proxiesFile());
 
     return await this.loadContractsFromBuildMap(buildMap, aliasesMap);
   }
@@ -472,9 +507,32 @@ export class DeploymentManager {
   }
 
   /**
-   * Write a roots file to file cache
+   * Write roots file to file cache or memory
    */
-  async writeRootsFileToCache(roots: Roots): Promise<void> {
+  async setRoots(roots: Roots): Promise<void> {
     await this.writeObjectToCache(roots, this.rootsFile());
+  }
+
+  /**
+   * Registers a contract as if it had been discovered via spider
+   */
+  async deploy<C extends Contract, Factory extends Deployer<C, DeployArgs>, DeployArgs extends Array<any>>(contractFile: string, deployArgs: DeployArgs): Promise<C> {
+    // TODO: Handle aliases, etc.
+    let contractFileName = contractFile.split('/').reverse()[0];
+    let contractName = contractFileName.replace('.sol', '');
+    let factory: Factory = await this.hre.ethers.getContractFactory(contractName) as unknown as Factory;
+    let contract = await factory.deploy(...deployArgs);
+    await contract.deployed();
+
+    // We should be able to get the artifact, even if it's going to be a little hacky
+    // TODO: Check sub-pathed files
+    let debugFile = path.join(process.cwd(), 'artifacts', 'contracts', contractFile, contractFileName.replace('.sol', '.dbg.json'));
+    let { buildInfo } = JSON.parse(await fs.readFile(debugFile, 'utf8')) as { buildInfo: string };
+    let { output: buildFile } = JSON.parse(await fs.readFile(path.join(debugFile, '..', buildInfo), 'utf8')) as { output: BuildFile };
+
+    let cacheBuildFile = this.cacheBuildFile(contract.address);
+    await this.writeObjectToCache(buildFile, cacheBuildFile);
+
+    return contract;
   }
 }

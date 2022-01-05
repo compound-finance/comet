@@ -39,14 +39,10 @@ const getInitialContext = async (
   let deploymentManager = new DeploymentManager(base.name, world.hre);
 
   if (isDevelopment) {
-    await world.hre.run('compile'); // TODO: I mean, should we compile anyway?
-    let { comet, proxy, oracle } = await deploy(world.hre, false);
-    deploymentManager.contracts.comet = comet;
-    deploymentManager.contracts.proxy = proxy;
-    deploymentManager.contracts.oracle = oracle;
-  } else {
-    await deploymentManager.spider(); // TODO: How does spider work locally? Can we let it just run normally?
+    await deploy(deploymentManager, false);
   }
+
+  await deploymentManager.spider(); // TODO: How does spider work locally? Can we let it just run normally?
 
   let comet: Comet = await deploymentManager.contracts['comet'] as Comet;
   if (!comet) {

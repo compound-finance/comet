@@ -51,7 +51,13 @@ export function readAddressFromFilename(fileName: string): Address {
 
 export function getPrimaryContract(buildFile: BuildFile): ContractMetadata {
   // TODO: Handle multiple files
-  return Object.values(buildFile.contracts)[0];
+  let res = Object.values(buildFile.contracts)[0];
+  if (res.hasOwnProperty('abi')) {
+    return res as ContractMetadata;
+  } else {
+    let [[name, metadata]] = Object.entries(res);
+    return {name, ...metadata} as ContractMetadata;
+  }
 }
 
 export async function getAlias(

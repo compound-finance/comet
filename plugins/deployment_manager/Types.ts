@@ -11,7 +11,7 @@ export interface ContractMetadata {
 }
 
 export interface BuildFile {
-  contracts: { [fileContractName: string]: ContractMetadata };
+  contracts: { [fileContractName: string]: ContractMetadata | { [contractName: string]: ContractMetadata } };
   version: string;
 }
 

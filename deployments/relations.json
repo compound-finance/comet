@@ -1,0 +1,5 @@
+{
+  "Comet": {
+    "relations": ["baseToken", "priceOracle"]
+  }
+}
