@@ -1,9 +1,4 @@
-import {
-  get,
-  getEtherscanApiKey,
-  getEtherscanApiUrl,
-  getEtherscanUrl,
-} from './etherscan';
+import { get, getEtherscanApiKey, getEtherscanApiUrl, getEtherscanUrl } from './etherscan';
 import { memoizeAsync } from '../../shared/memoize';
 
 /**
@@ -13,18 +8,12 @@ import { memoizeAsync } from '../../shared/memoize';
  * are temporarily moving it back into the protocol repo for easier development.
  */
 
-export async function loadContract(
-  source: string,
-  network: string,
-  address: string
-) {
+export async function loadContract(source: string, network: string, address: string) {
   switch (source) {
     case 'etherscan':
       return await loadEtherscanContractMemoized(network, address);
     default:
-      throw new Error(
-        `Unknown source \`${source}\`, expected one of [etherscan]`
-      );
+      throw new Error(`Unknown source \`${source}\`, expected one of [etherscan]`);
   }
 }
 
@@ -41,11 +30,7 @@ interface EtherscanSource {
   SwarmSource: string;
 }
 
-async function getEtherscanApiData(
-  network: string,
-  address: string,
-  apiKey: string
-) {
+async function getEtherscanApiData(network: string, address: string, apiKey: string) {
   let apiUrl = await getEtherscanApiUrl(network);
 
   let result = await get(apiUrl, {
@@ -79,16 +64,13 @@ async function getEtherscanApiData(
 async function getContractCreationCode(network: string, address: string) {
   let url = `${await getEtherscanUrl(network)}/address/${address}#code`;
   let result = <string>await get(url, {}, null);
-  let regex =
-    /<div id='verifiedbytecode2'>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
+  let regex = /<div id='verifiedbytecode2'>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
   let matches = [...result.matchAll(regex)];
   if (matches.length === 0) {
     if (result.match(/request throttled/i)) {
       throw new Error(`Request throttled by Etherscan: ${url}`);
     } else {
-      throw new Error(
-        `Failed to pull deployed contract code from Etherscan: ${url}`
-      );
+      throw new Error(`Failed to pull deployed contract code from Etherscan: ${url}`);
     }
   }
   return matches[0][1];
@@ -98,15 +80,8 @@ export async function loadEtherscanContract(network: string, address: string) {
   const apiKey = getEtherscanApiKey(network);
 
   const networkName = network;
-  let { source, abi, contract, compiler } = await getEtherscanApiData(
-    networkName,
-    address,
-    apiKey
-  );
-  let contractCreationCode = await getContractCreationCode(
-    networkName,
-    address
-  );
+  let { source, abi, contract, compiler } = await getEtherscanApiData(networkName, address, apiKey);
+  let contractCreationCode = await getContractCreationCode(networkName, address);
   let encodedABI = JSON.stringify(abi);
   let contractSource = `contracts/${contract}.sol:${contract}`;
   let contractBuild = {

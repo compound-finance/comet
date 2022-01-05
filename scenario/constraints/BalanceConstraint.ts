@@ -31,22 +31,17 @@ function parseAmount(amount) {
   }
 }
 
-export class BalanceConstraint<T extends CometContext>
-  implements Constraint<T>
-{
+export class BalanceConstraint<T extends CometContext> implements Constraint<T> {
   async solve(requirements: object, context: T, world: World) {
     const assetsByActor = requirements['balances'];
     if (assetsByActor) {
-      const actorsByAsset = Object.entries(assetsByActor).reduce(
-        (a, [actor, assets]) => {
-          return Object.entries(assets).reduce((a, [asset, rawAmount]) => {
-            const v = a[asset] || {};
-            a[asset] = { [actor]: parseAmount(rawAmount), ...v };
-            return a;
-          }, a);
-        },
-        {}
-      );
+      const actorsByAsset = Object.entries(assetsByActor).reduce((a, [actor, assets]) => {
+        return Object.entries(assets).reduce((a, [asset, rawAmount]) => {
+          const v = a[asset] || {};
+          a[asset] = { [actor]: parseAmount(rawAmount), ...v };
+          return a;
+        }, a);
+      }, {});
 
       // XXX ideally we do for each actor:
       //  if lt or lte: lt solution

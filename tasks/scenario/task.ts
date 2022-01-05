@@ -8,9 +8,7 @@ task('scenario', 'Runs scenario tests')
   .setAction(async (taskArgs, env) => {
     let bases: ForkSpec[] = env.config.scenario.bases;
     if (taskArgs.bases) {
-      let baseMap = Object.fromEntries(
-        env.config.scenario.bases.map((base) => [base.name, base])
-      );
+      let baseMap = Object.fromEntries(env.config.scenario.bases.map((base) => [base.name, base]));
       bases = taskArgs.bases.split(',').map((baseName) => {
         let base = baseMap[baseName];
         if (!base) {

@@ -16,8 +16,7 @@ import './tasks/spider/task.ts';
 import './tasks/scenario/task.ts';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
-  for (const account of await hre.ethers.getSigners())
-    console.log(account.address);
+  for (const account of await hre.ethers.getSigners()) console.log(account.address);
 });
 
 /* note: boolean environment variables are imported as strings */
@@ -38,14 +37,8 @@ function throwIfMissing(envVariable, msg: string) {
 }
 
 // required environment variables
-throwIfMissing(
-  ETHERSCAN_KEY,
-  'Missing required environment variable: ETHERSCAN_KEY'
-);
-throwIfMissing(
-  SNOWTRACE_KEY,
-  'Missing required environment variable: SNOWTRACE_KEY'
-);
+throwIfMissing(ETHERSCAN_KEY, 'Missing required environment variable: ETHERSCAN_KEY');
+throwIfMissing(SNOWTRACE_KEY, 'Missing required environment variable: SNOWTRACE_KEY');
 throwIfMissing(INFURA_KEY, 'Missing required environment variable: INFURA_KEY');
 
 // Networks
@@ -132,8 +125,7 @@ const config: HardhatUserConfig = {
       gasPrice: 'auto',
       blockGasLimit: 12000000,
       accounts: {
-        mnemonic:
-          'myth like bonus scare over problem client lizard pioneer submit female collect',
+        mnemonic: 'myth like bonus scare over problem client lizard pioneer submit female collect',
       },
     },
   },
