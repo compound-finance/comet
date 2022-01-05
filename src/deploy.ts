@@ -71,6 +71,9 @@ export async function deployComet(
         pauseGuardian: await pauseGuardian.getAddress(),
         priceOracle: oracle.address,
         baseToken: baseToken.address,
+        baseMinForRewards: 1, // XXX
+        baseTrackingSupplySpeed: 0, // XXX
+        baseTrackingBorrowSpeed: 0, // XXX
         assetInfo: [assetInfo0, assetInfo1],
       },
     ]

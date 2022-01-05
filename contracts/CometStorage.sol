@@ -20,5 +20,10 @@ contract CometStorage {
         uint40 lastAccrualTime;
         uint8 pauseFlags;
     }
+
+    /// @notice Aggregate variables tracked for the entire market
     Totals public totals;
+
+    /// @notice Mapping of users to accounts which may be permitted to manage the user account
+    mapping(address => mapping(address => bool)) public isAllowed;
 }

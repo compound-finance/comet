@@ -1,8 +1,13 @@
-// SPDX-License-Identifier: ADD VALID LICENSE
+// SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity ^0.8.0;
 
 import "./CometStorage.sol";
 
+/**
+ * @title Compound's Comet Contract
+ * @notice An efficient monolithic money market protocol
+ * @author Compound
+ */
 contract Comet is CometStorage {
     struct AssetInfo {
         address asset;
@@ -16,12 +21,18 @@ contract Comet is CometStorage {
         address priceOracle;
         address baseToken;
 
+        // XXX need to justify sizes on these better but compiler is happier if we can keep them <= uint96
+        uint64 baseMinForRewards;
+        uint96 baseTrackingSupplySpeed;
+        uint96 baseTrackingBorrowSpeed;
+
         AssetInfo[] assetInfo;
     }
 
     /// @notice The max number of assets this contract is hardcoded to support
     /// @dev Do not change this variable without updating all the fields throughout the contract.
     uint public constant maxAssets = 2;
+
     /// @notice The number of assets this contract actually supports
     uint public immutable numAssets;
     /// @notice Offsets for specific actions in the pause flag bit array
@@ -31,11 +42,22 @@ contract Comet is CometStorage {
     uint8 public constant pauseAbsorbOffset = 3;
     uint8 public constant pauseBuyOffset = 4;
 
-    // Configuration constants
+    /** General configuration constants **/
+
     address public immutable governor;
     address public immutable pauseGuardian;
     address public immutable priceOracle;
     address public immutable baseToken;
+
+    uint public immutable baseScale;
+    uint public immutable factorScale;
+    uint public immutable rewardScale;
+
+    uint64 public immutable baseMinForRewards;
+    uint96 public immutable baseTrackingSupplySpeed; // XXX TrackingIndex
+    uint96 public immutable baseTrackingBorrowSpeed; // XXX TrackingIndex
+
+    /**  Collateral asset configuration **/
 
     address internal immutable asset00;
     address internal immutable asset01;
@@ -46,17 +68,29 @@ contract Comet is CometStorage {
     uint internal immutable liquidateCollateralFactor00;
     uint internal immutable liquidateCollateralFactor01;
 
-    // Storage
-    mapping(address => mapping(address => bool)) public isAllowed;
-
+    /**
+     * @notice Construct a new protocol instance
+     * @param config The mapping of initial/constant parameters
+     **/
     constructor(Configuration memory config) {
+        // Sanity checks
+        require(config.baseMinForRewards > 0, "baseMinForRewards should be > 0");
         require(config.assetInfo.length <= maxAssets, "too many asset configs");
+        // XXX other sanity checks? for rewards?
 
-         // Set configuration variables
+        // Copy configuration
         governor = config.governor;
         pauseGuardian = config.pauseGuardian;
         priceOracle = config.priceOracle;
         baseToken = config.baseToken;
+
+        baseScale = 1e6; // XXX ERC20.decimals(config.baseToken)
+        factorScale = 1e18;
+        rewardScale = 1e15; // XXX config.rewardScale;
+
+        baseMinForRewards = config.baseMinForRewards;
+        baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
+        baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
 
         // Set asset info
         numAssets = config.assetInfo.length;
@@ -71,6 +105,9 @@ contract Comet is CometStorage {
         liquidateCollateralFactor01 = _getAsset(config.assetInfo, 1).liquidateCollateralFactor;
     }
 
+    /**
+     * @dev XXX (dev for internal)
+     */
     function _getAsset(AssetInfo[] memory assetInfo, uint i) internal pure returns (AssetInfo memory) {
         if (i < assetInfo.length)
             return assetInfo[i];
@@ -94,6 +131,9 @@ contract Comet is CometStorage {
         revert("absurd");
     }
 
+    /**
+     * @notice XXX
+     */
     function assets() public view returns (AssetInfo[] memory) {
         AssetInfo[] memory result = new AssetInfo[](numAssets);
 
@@ -104,6 +144,9 @@ contract Comet is CometStorage {
         return result;
     }
 
+    /**
+     * @notice XXX
+     */
     function assetAddresses() public view returns (address[] memory) {
         address[] memory result = new address[](numAssets);
 
@@ -114,10 +157,64 @@ contract Comet is CometStorage {
         return result;
     }
 
+    /**
+     * @return The current timestamp
+     **/
+    function getNow() public view returns (uint40) {
+        return uint40(block.timestamp);
+    }
+
+    /**
+     * @return The current supply rate
+     **/
+    function getSupplyRate() public view returns (uint32) {
+        return 0; // XXX
+    }
+
+    /**
+     * @return The current supply rate
+     **/
+    function getBorrowRate() public view returns (uint32) {
+        return 0; // XXX
+    }
+
+    /**
+     * @notice Accrue interest (and rewards) in base token supply and borrows
+     **/
+    function accrue() public {
+        totals = accrue(totals);
+    }
+
+    /**
+     * @notice Accrue interest (and rewards) in base token supply and borrows
+     **/
+    function accrue(Totals memory totals_) internal view returns (Totals memory) {
+        uint40 now_ = getNow();
+        uint40 timeElapsed = now_ - totals_.lastAccrualTime;
+        if (timeElapsed > 0) {
+            totals_.baseSupplyIndex += safeBaseIndex(mulFactor(totals_.baseSupplyIndex, getSupplyRate() * timeElapsed));
+            totals_.baseBorrowIndex += safeBaseIndex(mulFactor(totals_.baseBorrowIndex, getBorrowRate() * timeElapsed));
+            if (totals_.totalSupplyBase >= baseMinForRewards) {
+                totals_.trackingSupplyIndex += safeTrackingIndex(divBaseWei(baseTrackingSupplySpeed * timeElapsed, totals_.totalSupplyBase));
+            }
+            if (totals_.totalBorrowBase >= baseMinForRewards) {
+                totals_.trackingBorrowIndex += safeTrackingIndex(divBaseWei(baseTrackingBorrowSpeed * timeElapsed, totals_.totalBorrowBase));
+            }
+        }
+        totals_.lastAccrualTime = now_;
+        return totals_;
+    }
+
+    /**
+     * @notice XXX
+     */
     function allow(address manager, bool _isAllowed) external {
       allowInternal(msg.sender, manager, _isAllowed);
     }
 
+    /**
+     * @dev XXX
+     */
     function allowInternal(address owner, address manager, bool _isAllowed) internal {
       isAllowed[owner][manager] = _isAllowed;
     }
@@ -195,5 +292,35 @@ contract Comet is CometStorage {
      */
     function toBool(uint8 x) internal pure returns (bool) {
         return x != 0;
+    }
+
+    /**
+     * @dev Multiply a number by a factor
+     */
+    function mulFactor(uint n, uint factor) internal view returns (uint) {
+        return n * factor / factorScale;
+    }
+
+    /**
+     * @dev Divide a number by an amount of base
+     */
+    function divBaseWei(uint n, uint baseWei) internal view returns (uint) {
+        return n * baseScale / baseWei;
+    }
+
+    /**
+     * @dev Safely cast a number to a base index
+     */
+    function safeBaseIndex(uint n) internal pure returns (uint64) {
+        require(n < 2**64, "number exceeds base index size (64 bits)");
+        return uint64(n);
+    }
+
+    /**
+     * @dev Safely cast a number to a tracking index
+     */
+    function safeTrackingIndex(uint n) internal pure returns (uint96) {
+        require(n < 2**96, "number exceeds tracking index size (96 bits)");
+        return uint96(n);
     }
 }
