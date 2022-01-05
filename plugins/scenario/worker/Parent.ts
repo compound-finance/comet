@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { Worker } from 'worker_threads';
-import { ForkSpec } from '../Runner';
+import { ForkSpec } from '../World';
 import { Scenario } from '../Scenario';
 import { loadScenarios } from '../Loader';
 import { defaultFormats, scenarioGlob, workerCount } from './Config';

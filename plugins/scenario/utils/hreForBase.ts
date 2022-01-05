@@ -15,7 +15,7 @@ import { loadConfigAndTasks } from 'hardhat/internal/core/config/config-loading'
 import { getEnvHardhatArguments } from 'hardhat/internal/core/params/env-variables';
 import { HARDHAT_PARAM_DEFINITIONS } from 'hardhat/internal/core/params/hardhat-params';
 import { Environment } from 'hardhat/internal/core/runtime-environment';
-import { ForkSpec } from '../Runner';
+import { ForkSpec } from '../World';
 import { memoize } from '../../../src/memoize';
 
 /*

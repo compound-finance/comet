@@ -1,4 +1,3 @@
-import { ForkSpec } from './Runner';
 import { World } from './World';
 
 // A solution modifies a given context and world in a way that satisfies a constraint.
@@ -17,7 +16,7 @@ export interface Constraint<T> {
 }
 
 export type Property<T> = (context: T, world: World) => Promise<any>;
-export type Initializer<T> = (world: World, base: ForkSpec) => Promise<T>;
+export type Initializer<T> = (world: World) => Promise<T>;
 export type Forker<T> = (T) => Promise<T>;
 
 export type ScenarioFlags = null | 'only' | 'skip';
