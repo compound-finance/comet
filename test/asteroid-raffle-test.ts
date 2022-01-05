@@ -39,7 +39,7 @@ describe('AsteroidRaffle', function () {
 
     const tx = await raffle
       .connect(governor)
-      .initialize(ticketPrice, 24 * 60 * 60);
+      .initialize(ticketPrice, raffleDuration);
     await tx.wait();
   });
 
@@ -205,7 +205,7 @@ describe('AsteroidRaffle', function () {
     const newTicketPrice = ethers.utils.parseEther('0.2');
     const tx6 = await raffle
       .connect(governor)
-      .restartRaffle(newTicketPrice, 24 * 60 * 60);
+      .restartRaffle(newTicketPrice, raffleDuration);
     await tx6.wait();
 
     // Raffle State is Active again

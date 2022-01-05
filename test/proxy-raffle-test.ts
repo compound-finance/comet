@@ -53,7 +53,7 @@ describe('Proxy', function () {
 
     const tx = await proxied
       .connect(user)
-      .initialize(ticketPrice, 24 * 60 * 60);
+      .initialize(ticketPrice, raffleDuration);
     await tx.wait();
   });
 
