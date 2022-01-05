@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
 
-import { Contract, Signer } from 'ethers';
+import { Contract, ContractFactory, Signer } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import {
   Address,
@@ -26,6 +26,7 @@ import {
 export { ContractMap } from './Types';
 
 abstract class Deployer<Contract, DeployArgs extends Array<any>> {
+  abstract connect(signer: Signer): this
   abstract deploy(...args: DeployArgs): Promise<Contract>;
 }
 
@@ -512,11 +513,14 @@ export class DeploymentManager {
   /**
    * Registers a contract as if it had been discovered via spider
    */
-  async deploy<C extends Contract, Factory extends Deployer<C, DeployArgs>, DeployArgs extends Array<any>>(contractFile: string, deployArgs: DeployArgs): Promise<C> {
+  async deploy<C extends Contract, Factory extends Deployer<C, DeployArgs>, DeployArgs extends Array<any>>(contractFile: string, deployArgs: DeployArgs, connect?: Signer): Promise<C> {
     // TODO: Handle aliases, etc.
     let contractFileName = contractFile.split('/').reverse()[0];
     let contractName = contractFileName.replace('.sol', '');
     let factory: Factory = await this.hre.ethers.getContractFactory(contractName) as unknown as Factory;
+    if (connect) {
+      factory = factory.connect(connect)
+    }
     let contract = await factory.deploy(...deployArgs);
     await contract.deployed();
 

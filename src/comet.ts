@@ -13,20 +13,24 @@ import {
 import { ConfigurationStruct } from '../build/types/Comet';
 export { Comet } from '../build/types';
 
-async function verifyContract(hre: HardhatRuntimeEnvironment, address: string, constructorArguments) {
+async function verifyContract(hre: HardhatRuntimeEnvironment, address: string, constructorArguments, retries = 10) {
   try {
     return await hre.run('verify:verify', {
       address,
       constructorArguments,
     });
   } catch (e) {
-    const regex = /Already Verified/i;
-    const result = e.message.match(regex);
-    if (result) {
+    if (e.message.match(/Already Verified/i)) {
       console.log(
         'Contract at address ' + address + ' is already verified on Etherscan'
       );
       return;
+    } else if (e.message.match(/does not have bytecode/i) && retries > 0) {
+      console.log(
+        'Waiting for ' + address + ' to propagate to Etherscan'
+      );
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      return verifyContract(hre, address, constructorArguments, retries - 1);
     }
     throw e;
   }
@@ -50,20 +54,21 @@ export async function deploy(deploymentManager: DeploymentManager, verify: boole
     18,
     'DAI',
   ];
+  console.log("Deploying token...");
   const token = await deploymentManager.deploy<FaucetToken, FaucetToken__factory, [number, string, number, string]>('asteroid/FaucetToken.sol', tokenArgs);
   if (verify) {
     await verifyContract(hre, token.address, tokenArgs);
   }
   console.log('FaucetToken deployed to:', token.address);
 
-  const oracle = await deploymentManager.deploy<MockedOracle, MockedOracle__factory, []>('asteroid/MockedOracle.sol', []);
-  // const oracle = await Oracle.connect(governor).deploy(); // TODO: Connect
-  await oracle.deployed();
+  console.log("Deploying oracle...");
+  const oracle = await deploymentManager.deploy<MockedOracle, MockedOracle__factory, []>('asteroid/MockedOracle.sol', [], governor);
   if (verify) {
     await verifyContract(hre, oracle.address, []);
   }
   console.log('Oracle deployed to:', oracle.address);
 
+  console.log("Deploying comet...");
   const cometArg = { governor: await governor.getAddress(), priceOracle: oracle.address, baseToken: token.address };
   const comet = await deploymentManager.deploy<Comet, Comet__factory, [ConfigurationStruct]>('Comet.sol', [cometArg]);
   if (verify) {
@@ -71,11 +76,9 @@ export async function deploy(deploymentManager: DeploymentManager, verify: boole
   }
   console.log('Comet deployed to:', comet.address);
 
+  console.log("Deploying proxy...");
   let proxyArgs: [string, string, []] = [comet.address, governor.address, []];
   const proxy = await deploymentManager.deploy<TransparentUpgradeableProxy, TransparentUpgradeableProxy__factory, [string, string, []]>('asteroid/vendor/proxy/TransparentUpgradeableProxy.sol', proxyArgs);
-  const Proxy = (await hre.ethers.getContractFactory(
-    'TransparentUpgradeableProxy'
-  )) as TransparentUpgradeableProxy__factory;
   if (verify) {
     await verifyContract(hre, proxy.address, proxyArgs);
   }

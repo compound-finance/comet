@@ -22,6 +22,7 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
 /* note: boolean environment variables are imported as strings */
 const {
   COINMARKETCAP_API_KEY,
+  ETH_PK = '',
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
   INFURA_KEY,
@@ -85,7 +86,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
       url: netConfig.url || getDefaultProviderURL(netConfig.network),
       gas: netConfig.gasPrice || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
-      accounts: {
+      accounts: ETH_PK ? [ETH_PK] : {
         mnemonic: MNEMONIC,
       },
     };
