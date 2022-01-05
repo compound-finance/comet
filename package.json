@@ -6,7 +6,7 @@
   "scripts": {
     "build": "hardhat compile",
     "clean": "hardhat clean && rm -rf build/ cache/ coverage* dist/",
-    "deploy": "npx hardhat run ./scripts/deploy-asteroid-raffle.ts",
+    "deploy": "npx hardhat run ./scripts/deploy-comet.ts",
     "gas": "REPORT_GAS=true yarn test",
     "lint-contracts": "solhint 'contracts/**/*.sol'",
     "lint-contracts:fix": "solhint --fix 'contracts/**/*.sol'",

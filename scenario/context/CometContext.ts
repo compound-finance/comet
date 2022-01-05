@@ -7,7 +7,7 @@ import {
 import { BalanceConstraint, RemoteTokenConstraint } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
-import { Comet, deploy } from '../../scripts/comet';
+import { Comet, deploy } from '../../src/comet';
 
 export class CometContext {
   deploymentManager: DeploymentManager;

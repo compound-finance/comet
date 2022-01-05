@@ -4,7 +4,7 @@ import {
   getEtherscanApiUrl,
   getEtherscanUrl,
 } from './etherscan';
-import { memoizeAsync } from '../../shared/memoize';
+import { memoizeAsync } from '../../src/memoize';
 
 /**
  * Copied from Saddle import with some small modifications.
