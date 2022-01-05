@@ -12,8 +12,8 @@ export {
   Property,
   Scenario,
   Solution,
-  World,
 } from './Scenario';
+export { World } from './World';
 export { ForkSpec } from './Runner';
 
 type ScenarioFn<T> = (

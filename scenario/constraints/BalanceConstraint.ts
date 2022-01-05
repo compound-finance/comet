@@ -1,6 +1,6 @@
 import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
-import { CometContext } from '../CometContext';
+import { CometContext } from '../context/CometContext';
 
 import { expect } from 'chai';
 
@@ -63,7 +63,7 @@ export class BalanceConstraint<T extends CometContext>
           for (const actorName in actorsByAsset[assetName]) {
             const actor = context.actors[actorName];
             const amount = actorsByAsset[assetName][actorName];
-            const balance = await asset.balanceOf(await actor.getAddress());
+            const balance = await asset.balanceOf(actor.address);
             let toTransfer = 0n;
             if (amount.$eq) {
               toTransfer = amount.$eq - balance;
@@ -82,7 +82,7 @@ export class BalanceConstraint<T extends CometContext>
               hre: world.hre,
               amount: toTransfer,
               asset: await asset.getAddress(),
-              address: await actor.getAddress(),
+              address: actor.address,
             });
           }
         }
@@ -100,7 +100,7 @@ export class BalanceConstraint<T extends CometContext>
           const actor = context.actors[actorName];
           const asset = context.assets[assetName];
           const amount = parseAmount(rawAmount);
-          const balance = await asset.balanceOf(await actor.getAddress());
+          const balance = await asset.balanceOf(actor.address);
           if (amount.$eq) {
             expect(balance).to.equal(amount.$eq);
           } else if (amount.$gte) {
