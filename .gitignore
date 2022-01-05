@@ -10,6 +10,7 @@ artifacts/
 build/
 cache/
 dist/
+deployments/hardhat
 deployments/*/cache
 deployments/*/pointers.json
 deployments/*/proxies.json

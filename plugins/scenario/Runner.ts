@@ -1,4 +1,5 @@
-import { Constraint, World, Scenario, Solution } from './Scenario';
+import { Constraint, Scenario, Solution } from './Scenario';
+import { World } from './World';
 import hreForBase from './utils/hreForBase';
 
 export type Address = string;

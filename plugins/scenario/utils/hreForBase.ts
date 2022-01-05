@@ -16,7 +16,7 @@ import { getEnvHardhatArguments } from 'hardhat/internal/core/params/env-variabl
 import { HARDHAT_PARAM_DEFINITIONS } from 'hardhat/internal/core/params/hardhat-params';
 import { Environment } from 'hardhat/internal/core/runtime-environment';
 import { ForkSpec } from '../Runner';
-import { memoize } from '../../../shared/memoize';
+import { memoize } from '../../../src/memoize';
 
 /*
 Hardhat's Environment class implements the HardhatRuntimeEnvironment interface.
