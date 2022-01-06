@@ -12,7 +12,7 @@ import {
 let token: FaucetToken, asset1: FaucetToken, asset2: FaucetToken, comet: Comet, governor, oracle: MockedOracle;
 const FACTOR = ethers.utils.parseEther('1');
 
-describe('Commet', function () {
+describe('Comet', function () {
   beforeEach(async () => {
     [governor] = await ethers.getSigners();
 
