@@ -39,7 +39,7 @@ describe('Comet', function () {
   });
 
   it('Should pause supply', async function () {
-    await assertNoActionIsPaused(comet);
+    await assertNoActionsArePaused(comet);
 
     await comet.pause(true, false, false, false, false);
 
@@ -51,7 +51,7 @@ describe('Comet', function () {
   });
 
   it('Should pause transfer', async function () {
-    await assertNoActionIsPaused(comet);
+    await assertNoActionsArePaused(comet);
 
     await comet.pause(false, true, false, false, false);
 
@@ -63,7 +63,7 @@ describe('Comet', function () {
   });
 
   it('Should pause withdraw', async function () {
-    await assertNoActionIsPaused(comet);
+    await assertNoActionsArePaused(comet);
 
     await comet.pause(false, false, true, false, false);
 
@@ -75,7 +75,7 @@ describe('Comet', function () {
   });
 
   it('Should pause absorb', async function () {
-    await assertNoActionIsPaused(comet);
+    await assertNoActionsArePaused(comet);
 
     await comet.pause(false, false, false, true, false);
 
@@ -87,7 +87,7 @@ describe('Comet', function () {
   });
 
   it('Should pause buy', async function () {
-    await assertNoActionIsPaused(comet);
+    await assertNoActionsArePaused(comet);
 
     await comet.pause(false, false, false, false, true);
 
@@ -98,28 +98,32 @@ describe('Comet', function () {
     expect(await comet.isBuyPaused()).to.be.true;
   });
 
+  it('Should unpause', async function () {
+    await assertNoActionsArePaused(comet);
+
+    await comet.pause(true, true, true, true, true);
+
+    await assertAllActionsArePaused(comet);
+
+    await comet.pause(false, false, false, false, false);
+
+    await assertNoActionsArePaused(comet);
+  });
+
   it('Should pause when called by governor', async function () {
-    await assertNoActionIsPaused(comet);
+    await assertNoActionsArePaused(comet);
 
     await comet.connect(governor).pause(true, true, true, true, true);
 
-    expect(await comet.isBuyPaused()).to.be.true;
-    expect(await comet.isSupplyPaused()).to.be.true;
-    expect(await comet.isTransferPaused()).to.be.true;
-    expect(await comet.isWithdrawPaused()).to.be.true;
-    expect(await comet.isAbsorbPaused()).to.be.true;
+    await assertAllActionsArePaused(comet);
   });
 
   it('Should pause when called by pause guardian', async function () {
-    await assertNoActionIsPaused(comet);
+    await assertNoActionsArePaused(comet);
 
     await comet.connect(pauseGuardian).pause(true, true, true, true, true);
 
-    expect(await comet.isBuyPaused()).to.be.true;
-    expect(await comet.isSupplyPaused()).to.be.true;
-    expect(await comet.isTransferPaused()).to.be.true;
-    expect(await comet.isWithdrawPaused()).to.be.true;
-    expect(await comet.isAbsorbPaused()).to.be.true;
+    await assertAllActionsArePaused(comet);
   });
 
   it('Should revert if not called by governor or pause guardian', async function () {
@@ -129,11 +133,19 @@ describe('Comet', function () {
   });
 });
 
-async function assertNoActionIsPaused(comet: Comet) {
-    // All pause flags should be false by default.
-    expect(await comet.isSupplyPaused()).to.be.false;
-    expect(await comet.isTransferPaused()).to.be.false;
-    expect(await comet.isWithdrawPaused()).to.be.false;
-    expect(await comet.isAbsorbPaused()).to.be.false;
-    expect(await comet.isBuyPaused()).to.be.false;
+async function assertNoActionsArePaused(comet: Comet) {
+  // All pause flags should be false by default.
+  expect(await comet.isSupplyPaused()).to.be.false;
+  expect(await comet.isTransferPaused()).to.be.false;
+  expect(await comet.isWithdrawPaused()).to.be.false;
+  expect(await comet.isAbsorbPaused()).to.be.false;
+  expect(await comet.isBuyPaused()).to.be.false;
+}
+
+async function assertAllActionsArePaused(comet: Comet) {
+  expect(await comet.isSupplyPaused()).to.be.true;
+  expect(await comet.isTransferPaused()).to.be.true;
+  expect(await comet.isWithdrawPaused()).to.be.true;
+  expect(await comet.isAbsorbPaused()).to.be.true;
+  expect(await comet.isBuyPaused()).to.be.true;
 }

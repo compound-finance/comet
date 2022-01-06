@@ -20,13 +20,13 @@ export default class CometActor {
     await (await this.cometContract.connect(this.signer).allow(manager.address, isAllowed)).wait();
   }
   
-  async pause(
-    supplyPaused: boolean,
-    transferPaused: boolean,
-    withdrawPaused: boolean,
-    absorbPaused: boolean,
-    buyPaused: boolean
-  ) {
+  async pause({
+    supplyPaused = false,
+    transferPaused = false,
+    withdrawPaused = false,
+    absorbPaused = false,
+    buyPaused = false,
+  }) {
     await (
       await this.cometContract
         .connect(this.signer)

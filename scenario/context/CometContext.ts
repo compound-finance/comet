@@ -1,7 +1,7 @@
 import { Signer, Contract } from 'ethers';
 import { ForkSpec, World, buildScenarioFn } from '../../plugins/scenario';
 import { ContractMap, DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-import { BalanceConstraint, RemoteTokenConstraint } from '../constraints';
+import { BalanceConstraint, PauseConstraint, RemoteTokenConstraint } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { Comet, deployComet } from '../../src/deploy';
@@ -89,6 +89,10 @@ async function forkContext(c: CometContext): Promise<CometContext> {
   return c;
 }
 
-export const constraints = [new BalanceConstraint(), new RemoteTokenConstraint()];
+export const constraints = [
+  new BalanceConstraint(),
+  new PauseConstraint(),
+  new RemoteTokenConstraint(),
+];
 
 export const scenario = buildScenarioFn<CometContext>(getInitialContext, forkContext, constraints);
