@@ -18,9 +18,7 @@ contract Comet {
 
     /// @notice The max number of assets this contract is hardcoded to support
     /// @dev Do not change this variable without updating all the fields throughout the contract.
-    /// TODO pack it into smaller type vs full uint256
     uint public constant maxAssets = 2;
-
     /// @notice The number of assets this contract actually supports
     uint public immutable numAssets;
 
@@ -32,11 +30,9 @@ contract Comet {
     address internal immutable asset00;
     address internal immutable asset01;
 
-    // TODO Pack more compactly?
     uint internal immutable borrowCollateralFactor00;
     uint internal immutable borrowCollateralFactor01;
 
-    // TODO Pack more compactly?
     uint internal immutable liquidateCollateralFactor00;
     uint internal immutable liquidateCollateralFactor01;
 
