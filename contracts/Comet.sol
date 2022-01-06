@@ -40,7 +40,6 @@ contract Comet {
     uint internal immutable liquidateCollateralFactor00;
     uint internal immutable liquidateCollateralFactor01;
 
-
     constructor(Configuration memory config) {
         require(config.assetInfo.length <= maxAssets, "too many asset configs");
 

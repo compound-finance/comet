@@ -76,10 +76,12 @@ export async function deployComet(
   console.log('Oracle deployed to:', oracle.address);
 
   console.log('Deploying comet...');
+  const assets = ['0x73967c6a0904aa032c103b4104747e88c566b1a2', '0xe4e81fa6b16327d4b78cfeb83aade04ba7075165'];
   const cometArg = {
     governor: await governor.getAddress(),
     priceOracle: oracle.address,
     baseToken: token.address,
+    assetInfo: [{ asset: assets[0], borrowCollateralFactor: 1e18.toString(), liquidateCollateralFactor: 1e18.toString() }, { asset: assets[1], borrowCollateralFactor: 1e18.toString(), liquidateCollateralFactor: 1e18.toString() }]
   };
   const comet = await deploymentManager.deploy<Comet, Comet__factory, [ConfigurationStruct]>(
     'Comet.sol',
