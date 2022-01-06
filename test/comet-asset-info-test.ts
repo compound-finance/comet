@@ -45,7 +45,7 @@ describe('Comet', function () {
     await comet.deployed();
   });
 
-  it('Should initialize Comet protocol', async () => {
+  it('Should properly initialize Comet protocol', async () => {
     const cometGovernor = await comet.governor();
     expect(cometGovernor).to.be.equal(governor.address);
 
