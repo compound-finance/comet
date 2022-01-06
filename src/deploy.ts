@@ -70,7 +70,7 @@ export async function deployComet(
   // manually to make sure everything is compiled
   await hre.run('compile');
 
-  const [governor, user1] = await hre.ethers.getSigners();
+  const [governor, pauseGuardian] = await hre.ethers.getSigners();
 
   let baseToken = await makeToken(deploymentManager, verify, 100000, 'DAI', 18, 'DAI');
 
@@ -93,6 +93,7 @@ export async function deployComet(
   console.log('Deploying comet...');
   const cometArg = {
     governor: await governor.getAddress(),
+    pauseGuardian: await pauseGuardian.getAddress(),
     priceOracle: oracle.address,
     baseToken: baseToken.address,
     assetInfo: [assetInfo0, assetInfo1]

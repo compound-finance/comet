@@ -19,4 +19,38 @@ export default class CometActor {
   async allow(manager: CometActor, isAllowed: boolean) {
     await (await this.cometContract.connect(this.signer).allow(manager.address, isAllowed)).wait();
   }
+  
+  async pause(
+    supplyPaused: boolean,
+    transferPaused: boolean,
+    withdrawPaused: boolean,
+    absorbPaused: boolean,
+    buyPaused: boolean
+  ) {
+    await (
+      await this.cometContract
+        .connect(this.signer)
+        .pause(supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused)
+    ).wait();
+  }
+
+  async isSupplyPaused(): Promise<boolean> {
+    return await this.cometContract.connect(this.signer).isSupplyPaused();
+  }
+
+  async isTransferPaused(): Promise<boolean> {
+    return await this.cometContract.connect(this.signer).isTransferPaused();
+  }
+
+  async isWithdrawPaused(): Promise<boolean> {
+    return await this.cometContract.connect(this.signer).isWithdrawPaused();
+  }
+
+  async isAbsorbPaused(): Promise<boolean> {
+    return await this.cometContract.connect(this.signer).isAbsorbPaused();
+  }
+
+  async isBuyPaused(): Promise<boolean> {
+    return await this.cometContract.connect(this.signer).isBuyPaused();
+  }
 }
