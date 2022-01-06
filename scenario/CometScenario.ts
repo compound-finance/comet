@@ -8,30 +8,22 @@ scenario('initializes governor correctly', {}, async ({ comet, actors }, world) 
   expect(await comet.governor()).to.equal(actors['admin']!.address);
 });
 
-scenario(
-  'Comet#allow > allows a user to authorize a manager',
-  {},
-  async ({ comet, actors }) => {
-    const { albert, betty } = actors;
+scenario('Comet#allow > allows a user to authorize a manager', {}, async ({ comet, actors }) => {
+  const { albert, betty } = actors;
 
-    await albert.allow(betty, true);
+  await albert.allow(betty, true);
 
-    expect(await comet.isAllowed(albert.address, betty.address)).to.be.true;
-  }
-);
+  expect(await comet.isAllowed(albert.address, betty.address)).to.be.true;
+});
 
-scenario(
-  'Comet#allow > allows a user to rescind authoization',
-  {},
-  async ({ comet, actors }) => {
-    const { albert, betty } = actors;
+scenario('Comet#allow > allows a user to rescind authoization', {}, async ({ comet, actors }) => {
+  const { albert, betty } = actors;
 
-    await albert.allow(betty, true);
+  await albert.allow(betty, true);
 
-    expect(await comet.isAllowed(albert.address, betty.address)).to.be.true;
+  expect(await comet.isAllowed(albert.address, betty.address)).to.be.true;
 
-    await albert.allow(betty, false);
+  await albert.allow(betty, false);
 
-    expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
-  }
-);
+  expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
+});

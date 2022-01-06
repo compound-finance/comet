@@ -19,8 +19,8 @@ export interface BuildFile {
 }
 
 export type ContractMap = {
-  Comet?: Comet,
-  [name: string]: Contract
+  Comet?: Comet;
+  [name: string]: Contract;
 };
 
 export type PointersMap = Map<string, Address>;

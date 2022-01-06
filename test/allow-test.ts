@@ -10,9 +10,7 @@ const BASE_TOKEN_ADDRESS = '0x0000000000000000000000000000000000000000';
 describe('Comet', function () {
   describe('allow', function () {
     beforeEach(async () => {
-      const CometFactory = (await ethers.getContractFactory(
-        'Comet'
-      )) as Comet__factory;
+      const CometFactory = (await ethers.getContractFactory('Comet')) as Comet__factory;
       comet = await CometFactory.deploy({
         governor: GOVERNOR_ADDRESS,
         priceOracle: PRICE_ORACLE_ADDRESS,

@@ -29,11 +29,7 @@ export class CometContext {
 }
 
 async function buildActor(signer: Signer, cometContract: Comet) {
-  return new CometActor(
-    signer,
-    await signer.getAddress(),
-    cometContract
-  );
+  return new CometActor(signer, await signer.getAddress(), cometContract);
 }
 
 const getInitialContext = async (world: World): Promise<CometContext> => {
@@ -63,22 +59,10 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   }
 
   const actors = {
-    admin: await buildActor(
-      adminSigner,
-      deploymentManager.contracts.Comet
-    ),
-    albert: await buildActor(
-      albertSigner,
-      deploymentManager.contracts.Comet
-    ),
-    betty: await buildActor(
-      bettySigner,
-      deploymentManager.contracts.Comet
-    ),
-    charles: await buildActor(
-      charlesSigner,
-      deploymentManager.contracts.Comet
-    ),
+    admin: await buildActor(adminSigner, deploymentManager.contracts.Comet),
+    albert: await buildActor(albertSigner, deploymentManager.contracts.Comet),
+    betty: await buildActor(bettySigner, deploymentManager.contracts.Comet),
+    charles: await buildActor(charlesSigner, deploymentManager.contracts.Comet),
   };
 
   return new CometContext(deploymentManager, comet, actors);
