@@ -85,6 +85,7 @@ export async function loadEtherscanContract(network: string, address: string) {
   let encodedABI = JSON.stringify(abi);
   let contractSource = `contracts/${contract}.sol:${contract}`;
   let contractBuild = {
+    contract,
     contracts: {
       [contractSource]: {
         address,

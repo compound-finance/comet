@@ -76,7 +76,7 @@ export class BalanceConstraint<T extends CometContext> implements Constraint<T> 
             await sourceTokens({
               hre: world.hre,
               amount: toTransfer,
-              asset: await asset.getAddress(),
+              asset: asset.address,
               address: actor.address,
             });
           }

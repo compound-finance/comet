@@ -1,10 +1,13 @@
 import { BigNumberish, Contract, Signer } from 'ethers';
+import { Token } from '../../build/types';
 
 export default class CometAsset {
-  // XXX how are we hooking these up w/ names etc to deployment manager contracts?
-  // XXX does this abstract over erc20 and eth?
-  async getAddress(): Promise<string> {
-    return '0xxxx'; // XXX
+  token: Token;
+  address: string;
+
+  constructor(token: Token) {
+    this.token = token;
+    this.address = token.address;
   }
 
   async balanceOf(address: string): Promise<bigint> {

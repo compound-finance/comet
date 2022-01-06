@@ -1,15 +1,22 @@
 import * as fs from 'fs/promises';
 
-import { Contract } from 'ethers';
+import { Contract, utils } from 'ethers';
 import { Address, BuildFile, ContractMap, ContractMetadata } from './Types';
 
 async function asAddresses(contract: Contract, fnName: string): Promise<Address[]> {
-  let fn = contract.functions[fnName];
+  if (fnName.startsWith('%')) { // Read from slot
+    let slot = fnName.slice(1);
+    let addressRaw = await contract.provider.getStorageAt(contract.address, slot)
+    let address = utils.getAddress("0x" + addressRaw.substring(26))
+    return [address];
+  }
+
+  let fn = contract.callStatic[fnName];
   if (!fn) {
     // TODO: `contract.name` is undefined. Find a better way to log this error.
     throw new Error(`Cannot find contract function ${contract.name}.${fnName}()`);
   }
-  let val = (await fn())[0]; // Return val is always stored as first item in array
+  let val = (await fn());
 
   if (typeof val === 'string') {
     return [val];
@@ -44,15 +51,27 @@ export function readAddressFromFilename(fileName: string): Address {
   return address;
 }
 
-export function getPrimaryContract(buildFile: BuildFile): ContractMetadata {
-  // TODO: Handle multiple files
-  let res = Object.values(buildFile.contracts)[0];
-  if (res.hasOwnProperty('abi')) {
-    return res as ContractMetadata;
-  } else {
-    let [[name, metadata]] = Object.entries(res);
-    return { name, ...metadata } as ContractMetadata;
+export function getPrimaryContract(buildFile: BuildFile): [string, ContractMetadata] {
+  let targetContract = buildFile.contract;
+  if (!targetContract) {
+    throw new Error(`Missing target contract in build file. This is a new requirement.`);
   }
+
+  let contractEntries = Object.entries(buildFile.contracts);
+  let contracts = Object.fromEntries(contractEntries.map(([key, value]) => {
+    if (key.includes(':')) {
+      return [[key.split(':')[1], value as ContractMetadata]];
+    } else {
+      return Object.entries(value);
+    }
+  }).flat());
+
+  let contractMetadata = contracts[targetContract];
+  if (contractMetadata === undefined) {
+    throw new Error(`Could not find contract ${targetContract} in buildFile with contracts: ${JSON.stringify(Object.keys(contracts))}`);
+  }
+
+  return [targetContract, contractMetadata];
 }
 
 export async function getAlias(
@@ -86,4 +105,12 @@ export function mergeContracts(a: ContractMap, b: ContractMap): ContractMap {
     ...a,
     ...b,
   };
+}
+
+export function objectToMap<V>(obj: {string: V}): Map<string, V> {
+  return new Map(Object.entries(obj));
+}
+
+export function objectFromMap<V>(map: Map<string, V>): {[k: string]: V} {
+  return Object.fromEntries(map.entries());
 }
