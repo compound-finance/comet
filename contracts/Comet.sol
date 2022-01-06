@@ -121,17 +121,15 @@ contract Comet is CometStorage {
     function allowInternal(address owner, address manager, bool _isAllowed) internal {
       isAllowed[owner][manager] = _isAllowed;
     }
-}
-    function toUInt8(bool x) private pure returns (uint8 r) {
-        // Can optimize with `assembly { r := x }`
-        return x ? 1 : 0;
-    }
 
-    function toBool(uint8 x) private pure returns (bool r) {
-        // Can optimize with `assembly { r := x }`
-        return x != 0;
-    }
-
+    /**
+     * @notice Pauses different actions within Comet
+     * @param supplyPaused Boolean for pausing supply actions
+     * @param transferPaused Boolean for pausing transfer actions
+     * @param withdrawPaused Boolean for pausing withdraw actions
+     * @param absorbPaused Boolean for pausing absorb actions
+     * @param buyPaused Boolean for pausing buy actions
+     */
     function pause(
         bool supplyPaused,
         bool transferPaused,
@@ -150,23 +148,52 @@ contract Comet is CometStorage {
             (toUInt8(buyPaused) << pauseBuyOffset);
     }
 
+    /**
+     * @return Whether or not supply actions are paused
+     */
     function isSupplyPaused() public view returns (bool) {
         return toBool(totals.pauseFlags & (uint8(1) << pauseSupplyOffset));
     }
 
+    /**
+     * @return Whether or not transfer actions are paused
+     */
     function isTransferPaused() public view returns (bool) {
         return toBool(totals.pauseFlags & (uint8(1) << pauseTransferOffset));
     }
 
+    /**
+     * @return Whether or not withdraw actions are paused
+     */
     function isWithdrawPaused() public view returns (bool) {
         return toBool(totals.pauseFlags & (uint8(1) << pauseWithdrawOffset));
     }
 
+    /**
+     * @return Whether or not absorb actions are paused
+     */
     function isAbsorbPaused() public view returns (bool) {
         return toBool(totals.pauseFlags & (uint8(1) << pauseAbsorbOffset));
     }
 
+    /**
+     * @return Whether or not buy actions are paused
+     */
     function isBuyPaused() public view returns (bool) {
         return toBool(totals.pauseFlags & (uint8(1) << pauseBuyOffset));
+    }
+
+    /**
+     * @return uint8 representation of the boolean input
+     */
+    function toUInt8(bool x) private pure returns (uint8) {
+        return x ? 1 : 0;
+    }
+
+    /**
+     * @return Boolean representation of the uint8 input
+     */
+    function toBool(uint8 x) private pure returns (bool) {
+        return x != 0;
     }
 }
