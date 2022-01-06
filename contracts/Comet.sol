@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: ADD VALID LICENSE
 pragma solidity ^0.8.0;
 
-contract Comet {
-     struct AssetInfo {
+import "./CometStorage.sol";
+
+contract Comet is CometStorage {
+    struct AssetInfo {
         address asset;
         uint borrowCollateralFactor;
         uint liquidateCollateralFactor;
@@ -10,6 +12,7 @@ contract Comet {
 
     struct Configuration {
         address governor;
+        // address pauseGuardian;
         address priceOracle;
         address baseToken;
 
@@ -21,9 +24,16 @@ contract Comet {
     uint public constant maxAssets = 2;
     /// @notice The number of assets this contract actually supports
     uint public immutable numAssets;
+    /// @notice Offsets for specific actions in the pause flag bit array
+    uint8 public constant pauseSupplyOffset = 0;
+    uint8 public constant pauseTransferOffset = 1;
+    uint8 public constant pauseWithdrawOffset = 2;
+    uint8 public constant pauseAbsorbOffset = 3;
+    uint8 public constant pauseBuyOffset = 4;
 
     // Configuration constants
     address public immutable governor;
+    // address public immutable pauseGuardian;
     address public immutable priceOracle;
     address public immutable baseToken;
 
@@ -44,6 +54,7 @@ contract Comet {
 
          // Set configuration variables
         governor = config.governor;
+        // pauseGuardian = config.pauseGuardian;
         priceOracle = config.priceOracle;
         baseToken = config.baseToken;
 
@@ -109,5 +120,52 @@ contract Comet {
 
     function allowInternal(address owner, address manager, bool _isAllowed) internal {
       isAllowed[owner][manager] = _isAllowed;
+    }
+}
+    function toUInt8(bool x) private pure returns (uint8 r) {
+        return x ? 1 : 0;
+    }
+
+    function toBool(uint8 x) private pure returns (bool r) {
+        return x != 0;
+    }
+
+    function pause(
+        bool supplyPaused,
+        bool transferPaused,
+        bool withdrawPaused,
+        bool absorbPaused,
+        bool buyPaused
+    ) public {
+        require(msg.sender == governor, "Unauthorized");
+        // require(msg.sender == governor || msg.sender == pauseGuardian, "Unauthorized");
+
+        totals.pauseFlags =
+            uint8(0) |
+            (toUInt8(supplyPaused) << pauseSupplyOffset) |
+            (toUInt8(transferPaused) << pauseTransferOffset) |
+            (toUInt8(withdrawPaused) << pauseWithdrawOffset) |
+            (toUInt8(absorbPaused) << pauseAbsorbOffset) |
+            (toUInt8(buyPaused) << pauseBuyOffset);
+    }
+
+    function isSupplyPaused() public view returns (bool) {
+        return toBool(totals.pauseFlags & (uint8(1) << pauseSupplyOffset));
+    }
+
+    function isTransferPaused() public view returns (bool) {
+        return toBool(totals.pauseFlags & (uint8(1) << pauseTransferOffset));
+    }
+
+    function isWithdrawPaused() public view returns (bool) {
+        return toBool(totals.pauseFlags & (uint8(1) << pauseWithdrawOffset));
+    }
+
+    function isAbsorbPaused() public view returns (bool) {
+        return toBool(totals.pauseFlags & (uint8(1) << pauseAbsorbOffset));
+    }
+
+    function isBuyPaused() public view returns (bool) {
+        return toBool(totals.pauseFlags & (uint8(1) << pauseBuyOffset));
     }
 }
