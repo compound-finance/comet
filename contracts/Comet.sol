@@ -47,17 +47,17 @@ contract Comet {
         // Set asset info
         numAssets = config.assetInfo.length;
 
-        asset00 = getAssetFromArray(config.assetInfo, 0).asset;
-        asset01 = getAssetFromArray(config.assetInfo, 1).asset;
+        asset00 = _getAsset(config.assetInfo, 0).asset;
+        asset01 = _getAsset(config.assetInfo, 1).asset;
 
-        borrowCollateralFactor00 = getAssetFromArray(config.assetInfo, 0).borrowCollateralFactor;
-        borrowCollateralFactor01 = getAssetFromArray(config.assetInfo, 1).borrowCollateralFactor;
+        borrowCollateralFactor00 = _getAsset(config.assetInfo, 0).borrowCollateralFactor;
+        borrowCollateralFactor01 = _getAsset(config.assetInfo, 1).borrowCollateralFactor;
 
-        liquidateCollateralFactor00 = getAssetFromArray(config.assetInfo, 0).liquidateCollateralFactor;
-        liquidateCollateralFactor01 = getAssetFromArray(config.assetInfo, 1).liquidateCollateralFactor;
+        liquidateCollateralFactor00 = _getAsset(config.assetInfo, 0).liquidateCollateralFactor;
+        liquidateCollateralFactor01 = _getAsset(config.assetInfo, 1).liquidateCollateralFactor;
     }
 
-    function getAssetFromArray(AssetInfo[] memory assetInfo, uint i) internal pure returns (AssetInfo memory) {
+    function _getAsset(AssetInfo[] memory assetInfo, uint i) internal pure returns (AssetInfo memory) {
         if (i < assetInfo.length)
             return assetInfo[i];
         return AssetInfo({
