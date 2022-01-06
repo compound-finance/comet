@@ -36,6 +36,9 @@ contract Comet {
     uint internal immutable liquidateCollateralFactor00;
     uint internal immutable liquidateCollateralFactor01;
 
+    // Storage
+    mapping(address => mapping(address => bool)) public isAllowed;
+
     constructor(Configuration memory config) {
         require(config.assetInfo.length <= maxAssets, "too many asset configs");
 
@@ -77,5 +80,13 @@ contract Comet {
 
         if (i == 0) return AssetInfo({asset: asset00, borrowCollateralFactor: borrowCollateralFactor00, liquidateCollateralFactor: liquidateCollateralFactor00 });
         if (i == 1) return AssetInfo({asset: asset01, borrowCollateralFactor: borrowCollateralFactor01, liquidateCollateralFactor: liquidateCollateralFactor01 });
+    }
+
+    function allow(address manager, bool _isAllowed) external {
+      allowInternal(msg.sender, manager, _isAllowed);
+    }
+
+    function allowInternal(address owner, address manager, bool _isAllowed) internal {
+      isAllowed[owner][manager] = _isAllowed;
     }
 }
