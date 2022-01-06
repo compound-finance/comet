@@ -17,7 +17,7 @@ export default class CometActor {
   }
 
   async allow(manager: CometActor, isAllowed: boolean) {
-    (
+    await (
       await this.cometContract
         .connect(this.signer)
         .allow(manager.address, isAllowed)

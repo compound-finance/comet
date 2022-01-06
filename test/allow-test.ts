@@ -21,12 +21,12 @@ describe('Comet', function () {
       await comet.deployed();
     });
 
-    it('isPermitted defaults to false', async () => {
+    it('isAllowed defaults to false', async () => {
       const [_admin, user, manager] = await ethers.getSigners();
       const userAddress = await user.getAddress();
       const managerAddress = await manager.getAddress();
 
-      expect(await comet.isPermitted(userAddress, managerAddress)).to.be.false;
+      expect(await comet.isAllowed(userAddress, managerAddress)).to.be.false;
     });
 
     it('allows a user to authorize a manager', async () => {
@@ -37,7 +37,7 @@ describe('Comet', function () {
       const tx = await comet.connect(user).allow(managerAddress, true);
       await tx.wait();
 
-      expect(await comet.isPermitted(userAddress, managerAddress)).to.be.true;
+      expect(await comet.isAllowed(userAddress, managerAddress)).to.be.true;
     });
 
     it('allows a user to rescind authorization', async () => {
@@ -48,12 +48,12 @@ describe('Comet', function () {
       const authorizeTx = await comet.connect(user).allow(managerAddress, true);
       await authorizeTx.wait();
 
-      expect(await comet.isPermitted(userAddress, managerAddress)).to.be.true;
+      expect(await comet.isAllowed(userAddress, managerAddress)).to.be.true;
 
       const rescindTx = await comet.connect(user).allow(managerAddress, false);
       await rescindTx.wait();
 
-      expect(await comet.isPermitted(userAddress, managerAddress)).to.be.false;
+      expect(await comet.isAllowed(userAddress, managerAddress)).to.be.false;
     });
   });
 });

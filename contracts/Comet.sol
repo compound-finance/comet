@@ -14,7 +14,7 @@ contract Comet {
     address public immutable baseToken;
 
     // Storage
-    mapping(address => mapping(address => bool)) public isPermitted;
+    mapping(address => mapping(address => bool)) public isAllowed;
 
     constructor(Configuration memory config) {
         // Set configuration variables
@@ -23,12 +23,11 @@ contract Comet {
         baseToken = config.baseToken;
     }
 
-    function allow(address manager, bool isAllowed) external {
-      allow(msg.sender, manager, isAllowed);
+    function allow(address manager, bool _isAllowed) external {
+      allowInternal(msg.sender, manager, _isAllowed);
     }
 
-    function allow(address owner, address manager, bool isAllowed) internal {
-      require(owner == msg.sender, "Unauthorized");
-      isPermitted[owner][manager] = isAllowed;
+    function allowInternal(address owner, address manager, bool _isAllowed) internal {
+      isAllowed[owner][manager] = _isAllowed;
     }
 }

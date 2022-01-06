@@ -1,4 +1,4 @@
-import { Contract } from 'ethers';
+import { Signer, Contract } from 'ethers';
 import { ForkSpec, World, buildScenarioFn } from '../../plugins/scenario';
 import { ContractMap, DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import { BalanceConstraint, RemoteTokenConstraint } from '../constraints';
@@ -28,6 +28,14 @@ export class CometContext {
   }
 }
 
+async function buildActor(signer: Signer, cometContract: Comet) {
+  return new CometActor(
+    signer,
+    await signer.getAddress(),
+    cometContract
+  );
+}
+
 const getInitialContext = async (world: World): Promise<CometContext> => {
   let deploymentManager = new DeploymentManager(world.base.name, world.hre);
 
@@ -55,24 +63,20 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   }
 
   const actors = {
-    admin: new CometActor(
+    admin: await buildActor(
       adminSigner,
-      await adminSigner.getAddress(),
       deploymentManager.contracts.Comet
     ),
-    albert: new CometActor(
+    albert: await buildActor(
       albertSigner,
-      await albertSigner.getAddress(),
       deploymentManager.contracts.Comet
     ),
-    betty: new CometActor(
+    betty: await buildActor(
       bettySigner,
-      await bettySigner.getAddress(),
       deploymentManager.contracts.Comet
     ),
-    charles: new CometActor(
+    charles: await buildActor(
       charlesSigner,
-      await charlesSigner.getAddress(),
       deploymentManager.contracts.Comet
     ),
   };

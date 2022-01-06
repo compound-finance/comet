@@ -16,7 +16,7 @@ scenario(
 
     await albert.allow(betty, true);
 
-    expect(await comet.isPermitted(albert.address, betty.address)).to.be.true;
+    expect(await comet.isAllowed(albert.address, betty.address)).to.be.true;
   }
 );
 
@@ -28,10 +28,10 @@ scenario(
 
     await albert.allow(betty, true);
 
-    expect(await comet.isPermitted(albert.address, betty.address)).to.be.true;
+    expect(await comet.isAllowed(albert.address, betty.address)).to.be.true;
 
     await albert.allow(betty, false);
 
-    expect(await comet.isPermitted(albert.address, betty.address)).to.be.false;
+    expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
   }
 );
