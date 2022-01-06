@@ -27,3 +27,7 @@ scenario('Comet#allow > allows a user to rescind authoization', {}, async ({ com
 
   expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
 });
+
+scenario('has assets', {}, async ({ comet, actors, assets }, world) => {
+  expect(await comet.assetAddresses()).to.have.members(Object.values(assets).map((asset) => asset.address));
+});

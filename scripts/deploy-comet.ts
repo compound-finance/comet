@@ -9,23 +9,11 @@ import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManag
 
 async function main() {
   let isDevelopment = hre.network.name === 'hardhat';
-
-  // TODO: When to verify? Configuration-type params?
-
   let dm = new DeploymentManager(hre.network.name, hre, {
     writeCacheToDisk: true,
   });
-
   let { comet } = await deployComet(dm, !isDevelopment);
-
-  // TODO: If we deployed fresh, we probably don't need to spider, per se. We should work on passing a deployment manager into deploy!
-
-  // Create a `roots.json` pointing to a just deployed contract and run spider on it.
-
-  // TODO: Worth doing this for development?
-  if (!isDevelopment) {
-    await dm.spider();
-  }
+  await dm.spider();
 }
 
 // We recommend this pattern to be able to use async/await everywhere

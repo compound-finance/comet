@@ -5,22 +5,25 @@ import { BalanceConstraint, RemoteTokenConstraint } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { Comet, deployComet } from '../../src/deploy';
+import { Token } from '../../build/types';
 
 export class CometContext {
   deploymentManager: DeploymentManager;
   actors: { [name: string]: CometActor };
-  assets: { [name: string]: CometAsset }; // XXX
+  assets: { [name: string]: CometAsset };
   remoteToken: Contract | undefined;
   comet: Comet;
 
   constructor(
     deploymentManager: DeploymentManager,
     comet: Comet,
-    actors: { [name: string]: CometActor }
+    actors: { [name: string]: CometActor },
+    assets: { [name: string]: CometAsset },
   ) {
     this.deploymentManager = deploymentManager;
     this.comet = comet;
     this.actors = actors;
+    this.assets = assets;
   }
 
   contracts(): ContractMap {
@@ -35,17 +38,21 @@ async function buildActor(signer: Signer, cometContract: Comet) {
 const getInitialContext = async (world: World): Promise<CometContext> => {
   let deploymentManager = new DeploymentManager(world.base.name, world.hre);
 
+  function getContract<T extends Contract>(name: string): T {
+    let contract: T = deploymentManager.contracts[name] as T;
+    if (!contract) {
+      throw new Error(`No such contract ${name} for base ${world.base.name}`);
+    }
+    return contract;
+  }
+
   if (world.isDevelopment()) {
     await deployComet(deploymentManager, false);
   }
 
   await deploymentManager.spider();
 
-  let comet: Comet = (await deploymentManager.contracts['Comet']) as Comet;
-  if (!comet) {
-    throw new Error(`No such contract Comet for base ${world.base.name}`);
-  }
-
+  let comet = getContract<Comet>('comet');
   let signers = await world.hre.ethers.getSigners();
 
   const [localAdminSigner, albertSigner, bettySigner, charlesSigner] = signers;
@@ -59,13 +66,18 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   }
 
   const actors = {
-    admin: await buildActor(adminSigner, deploymentManager.contracts.Comet),
-    albert: await buildActor(albertSigner, deploymentManager.contracts.Comet),
-    betty: await buildActor(bettySigner, deploymentManager.contracts.Comet),
-    charles: await buildActor(charlesSigner, deploymentManager.contracts.Comet),
+    admin: await buildActor(adminSigner, comet),
+    albert: await buildActor(albertSigner, comet),
+    betty: await buildActor(bettySigner, comet),
+    charles: await buildActor(charlesSigner, comet),
   };
 
-  return new CometContext(deploymentManager, comet, actors);
+  const assets = {
+    GOLD: new CometAsset(getContract<Token>('GOLD')),
+    SILVER: new CometAsset(getContract<Token>('SILVER')),
+  };
+
+  return new CometContext(deploymentManager, comet, actors, assets);
 };
 
 async function forkContext(c: CometContext): Promise<CometContext> {

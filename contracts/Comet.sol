@@ -80,6 +80,27 @@ contract Comet {
 
         if (i == 0) return AssetInfo({asset: asset00, borrowCollateralFactor: borrowCollateralFactor00, liquidateCollateralFactor: liquidateCollateralFactor00 });
         if (i == 1) return AssetInfo({asset: asset01, borrowCollateralFactor: borrowCollateralFactor01, liquidateCollateralFactor: liquidateCollateralFactor01 });
+        revert("absurd");
+    }
+
+    function assets() public view returns (AssetInfo[] memory) {
+        AssetInfo[] memory result = new AssetInfo[](numAssets);
+
+        for (uint i = 0; i < numAssets; i++) {
+            result[i] = getAssetInfo(i);
+        }
+
+        return result;
+    }
+
+    function assetAddresses() public view returns (address[] memory) {
+        address[] memory result = new address[](numAssets);
+
+        for (uint i = 0; i < numAssets; i++) {
+            result[i] = getAssetInfo(i).asset;
+        }
+
+        return result;
     }
 
     function allow(address manager, bool _isAllowed) external {
