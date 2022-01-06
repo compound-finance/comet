@@ -9,13 +9,12 @@ import {
     Comet__factory,
 } from '../build/types';
 
-let token: FaucetToken, comet: Comet, governor, oracle: MockedOracle;
-
-const assets = [ethers.utils.getAddress('0x73967c6a0904aa032c103b4104747e88c566b1a2'), ethers.utils.getAddress('0xe4e81fa6b16327d4b78cfeb83aade04ba7075165')];
+let token: FaucetToken, comet: Comet, oracle: MockedOracle;
+let governor, pauseGuardian, regularUser;
 
 describe('Comet', function () {
     beforeEach(async () => {
-        [governor] = await ethers.getSigners();
+        [governor, pauseGuardian, regularUser] = await ethers.getSigners();
 
         const FaucetTokenFactory = (await ethers.getContractFactory(
             'FaucetToken'
@@ -34,6 +33,7 @@ describe('Comet', function () {
         )) as Comet__factory;
         comet = await CometFactory.deploy({
             governor: governor.address,
+            pauseGuardian: pauseGuardian.address,
             priceOracle: oracle.address,
             baseToken: token.address,
         });
@@ -97,13 +97,27 @@ describe('Comet', function () {
         expect(await comet.isBuyPaused()).to.be.true;
     });
 
-    it('Should pause all', async function () {
-        await comet.pause(true, true, true, true, true);
+    it('Should pause when called by governor', async function () {
+        await comet.connect(governor).pause(true, true, true, true, true);
 
         expect(await comet.isBuyPaused()).to.be.true;
         expect(await comet.isSupplyPaused()).to.be.true;
         expect(await comet.isTransferPaused()).to.be.true;
         expect(await comet.isWithdrawPaused()).to.be.true;
         expect(await comet.isAbsorbPaused()).to.be.true;
+    });
+
+    it('Should pause when called by pause guardian', async function () {
+        await comet.connect(pauseGuardian).pause(true, true, true, true, true);
+
+        expect(await comet.isBuyPaused()).to.be.true;
+        expect(await comet.isSupplyPaused()).to.be.true;
+        expect(await comet.isTransferPaused()).to.be.true;
+        expect(await comet.isWithdrawPaused()).to.be.true;
+        expect(await comet.isAbsorbPaused()).to.be.true;
+    });
+
+    it('Should revert if not called by governor or pause guardian', async function () {
+        await expect(comet.connect(regularUser).pause(true, true, true, true, true)).to.be.revertedWith('Unauthorized');
     });
 });

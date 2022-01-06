@@ -12,7 +12,7 @@ contract Comet is CometStorage {
 
     struct Configuration {
         address governor;
-        // address pauseGuardian;
+        address pauseGuardian;
         address priceOracle;
         address baseToken;
 
@@ -33,7 +33,7 @@ contract Comet is CometStorage {
 
     // Configuration constants
     address public immutable governor;
-    // address public immutable pauseGuardian;
+    address public immutable pauseGuardian;
     address public immutable priceOracle;
     address public immutable baseToken;
 
@@ -54,7 +54,7 @@ contract Comet is CometStorage {
 
          // Set configuration variables
         governor = config.governor;
-        // pauseGuardian = config.pauseGuardian;
+        pauseGuardian = config.pauseGuardian;
         priceOracle = config.priceOracle;
         baseToken = config.baseToken;
 
@@ -123,10 +123,12 @@ contract Comet is CometStorage {
     }
 }
     function toUInt8(bool x) private pure returns (uint8 r) {
+        // Can optimize with `assembly { r := x }`
         return x ? 1 : 0;
     }
 
     function toBool(uint8 x) private pure returns (bool r) {
+        // Can optimize with `assembly { r := x }`
         return x != 0;
     }
 
@@ -137,8 +139,7 @@ contract Comet is CometStorage {
         bool absorbPaused,
         bool buyPaused
     ) public {
-        require(msg.sender == governor, "Unauthorized");
-        // require(msg.sender == governor || msg.sender == pauseGuardian, "Unauthorized");
+        require(msg.sender == governor || msg.sender == pauseGuardian, "Unauthorized");
 
         totals.pauseFlags =
             uint8(0) |
