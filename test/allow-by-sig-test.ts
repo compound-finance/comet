@@ -41,6 +41,7 @@ describe.only('Comet#allow', function () {
       governor: admin.address,
       priceOracle: oracle.address,
       baseToken: token.address,
+      assetInfo: [],
     });
     await comet.deployed();
 
