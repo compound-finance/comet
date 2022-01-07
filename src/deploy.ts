@@ -32,11 +32,12 @@ async function makeToken(
 interface DeployedContracts {
   comet: Comet;
   oracle: MockedOracle;
-  proxy: TransparentUpgradeableProxy;
+  proxy: TransparentUpgradeableProxy | null;
 }
 
 export async function deployComet(
-  deploymentManager: DeploymentManager
+  deploymentManager: DeploymentManager,
+  deployProxy: boolean = true
 ): Promise<DeployedContracts> {
   const [governor, pauseGuardian] = await deploymentManager.hre.ethers.getSigners();
 
@@ -75,23 +76,26 @@ export async function deployComet(
     ]
   );
 
-  let proxyAdminArgs: [] = [];
-  const proxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
-    'asteroid/vendor/proxy/ProxyAdmin.sol',
-    proxyAdminArgs
-  );
+  let proxy = null;
+  if (deployProxy) {
+    let proxyAdminArgs: [] = [];
+    let proxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
+      'asteroid/vendor/proxy/ProxyAdmin.sol',
+      proxyAdminArgs
+    );
 
-  const proxy = await deploymentManager.deploy<
-    TransparentUpgradeableProxy,
-    TransparentUpgradeableProxy__factory,
-    [string, string, []]
-  >('asteroid/vendor/proxy/TransparentUpgradeableProxy.sol', [
-    comet.address,
-    proxyAdmin.address,
-    [],
-  ]);
+    proxy = await deploymentManager.deploy<
+      TransparentUpgradeableProxy,
+      TransparentUpgradeableProxy__factory,
+      [string, string, []]
+    >('asteroid/vendor/proxy/TransparentUpgradeableProxy.sol', [
+      comet.address,
+      proxyAdmin.address,
+      [],
+    ]);
 
-  await deploymentManager.setRoots({ TransparentUpgradeableProxy: proxy.address } as Roots);
+    await deploymentManager.setRoots({ TransparentUpgradeableProxy: proxy.address } as Roots);
+  }
 
   return {
     comet,

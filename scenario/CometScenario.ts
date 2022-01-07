@@ -31,3 +31,7 @@ scenario('Comet#allow > allows a user to rescind authoization', {}, async ({ com
 scenario('has assets', {}, async ({ comet, actors, assets }, world) => {
   expect(await comet.assetAddresses()).to.have.members(Object.values(assets).map((asset) => asset.address));
 });
+
+scenario('requires upgrade', { upgrade: true }, async ({ comet }, world) => {
+  // Nothing currently here
+});
