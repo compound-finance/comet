@@ -11,6 +11,7 @@ import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { Comet, deployComet } from '../../src/deploy';
 import { ProxyAdmin, Token } from '../../build/types';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 export class CometContext {
   deploymentManager: DeploymentManager;
@@ -44,7 +45,7 @@ export class CometContext {
   }
 }
 
-async function buildActor(signer: Signer, cometContract: Comet) {
+async function buildActor(signer: SignerWithAddress, cometContract: Comet) {
   return new CometActor(signer, await signer.getAddress(), cometContract);
 }
 

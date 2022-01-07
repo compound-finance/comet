@@ -160,6 +160,7 @@ contract Comet is CometStorage, EIP712 {
         )));
         address signatory = ECDSA.recover(digest, signature);
         require(signatory == address(signatory), "Invalid address");
+        require(signatory != address(0), "Invalid signature");
         require(nonce == userNonce[signatory], "Invalid nonce");
         require(block.timestamp < expiry, "Signed transaction expired");
         userNonce[signatory]++;
