@@ -160,21 +160,21 @@ contract Comet is CometStorage {
     /**
      * @return The current timestamp
      **/
-    function getNow() public view returns (uint40) {
+    function getNow() virtual public view returns (uint40) {
         return uint40(block.timestamp);
     }
 
     /**
      * @return The current supply rate
      **/
-    function getSupplyRate() public view returns (uint32) {
+    function getSupplyRate() virtual public view returns (uint32) {
         return 0; // XXX
     }
 
     /**
      * @return The current supply rate
      **/
-    function getBorrowRate() public view returns (uint32) {
+    function getBorrowRate() virtual public view returns (uint32) {
         return 0; // XXX
     }
 
