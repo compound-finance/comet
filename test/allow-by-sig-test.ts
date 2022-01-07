@@ -20,7 +20,7 @@ const types = {
   ],
 };
 
-describe.only('Comet#allow', function () {
+describe('Comet#allow', function () {
   beforeEach(async () => {
     [admin, signer, manager] = await ethers.getSigners();
 
