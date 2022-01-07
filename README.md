@@ -25,7 +25,6 @@ COINMARKETCAP_API_KEY=<key>
 REPORT_GAS=true
 ETH_PK=<eth-key>             # takes precedence over MNEMONIC
 MNEMONIC=<mnemonic>
-NETWORK=<network name>
 ```
 
 ## Git hooks
@@ -49,12 +48,9 @@ git commit -n -m "commit without running pre-commit hook"
 
 Currently, Avalanche mainnet and testnet (fuji) are supported. This means that deployment scripts, scenarios, and spider all work for Avalanche.
 
-To use this project with other chains, a few extra variables must be set in your environment:
+To use this project with other chains, the block explorer API key for your target chain must be set in .env (e.g. `SNOWTRACE_KEY` for Avalanche).
 
-- The block explorer API key for your chain (e.g. `SNOWTRACE_KEY` for Avalanche)
-- `NETWORK`. This is temporarily needed to fetch the appropriate API key for your target chain
-
-An example command looks like:
+An example deployment command looks like:
 
 `yarn deploy --network fuji`
 

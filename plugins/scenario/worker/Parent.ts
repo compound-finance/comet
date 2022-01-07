@@ -7,6 +7,7 @@ import { defaultFormats, scenarioGlob, workerCount } from './Config';
 import { loadFormat, showReport, Format } from './Report';
 import { getContext, getConfig, getHardhatArguments } from './HardhatContext';
 import { ScenarioConfig } from '../types';
+import { HardhatConfig } from 'hardhat/types';
 
 export interface Result {
   base: string;
@@ -57,8 +58,13 @@ function key(baseName: string, scenarioName: string): string {
   return `${baseName}-${scenarioName}`;
 }
 
+// Strips out unserializable fields such as functions.
+function convertToSerializableObject(object: object) {
+  return JSON.parse(JSON.stringify(object));
+}
+
 export async function run<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[]) {
-  let hardhatConfig = getConfig();
+  let hardhatConfig = convertToSerializableObject(getConfig()) as HardhatConfig;
   let hardhatArguments = getHardhatArguments();
   let formats = defaultFormats.map(loadFormat);
   let scenarios: Scenario<T>[] = Object.values(await loadScenarios(scenarioGlob));

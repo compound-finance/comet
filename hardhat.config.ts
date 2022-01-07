@@ -27,7 +27,6 @@ const {
   INFURA_KEY,
   MNEMONIC = '',
   REPORT_GAS = 'false',
-  NETWORK,
 } = process.env;
 
 function throwIfMissing(envVariable, msg: string) {
@@ -88,23 +87,6 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
   }
 }
 
-// TODO: Use the multi API key config feature when it is published to npm by hardhat-etherscan.
-// See https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#multiple-api-keys-and-alternative-block-explorers
-function getApiKey() {
-  switch (NETWORK) {
-    case 'mainnet':
-    case 'rinkeby':
-    case 'goerli':
-    case 'ropsten':
-      return ETHERSCAN_KEY;
-    case 'avalanche':
-    case 'fuji':
-      return SNOWTRACE_KEY;
-    default:
-      return ETHERSCAN_KEY;
-  }
-}
-
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -132,8 +114,19 @@ const config: HardhatUserConfig = {
     },
   },
 
+  // See https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#multiple-api-keys-and-alternative-block-explorers
   etherscan: {
-    apiKey: getApiKey(),
+    apiKey: {
+      // Ethereum
+      mainnet: ETHERSCAN_KEY,
+      ropsten: ETHERSCAN_KEY,
+      rinkeby: ETHERSCAN_KEY,
+      goerli: ETHERSCAN_KEY,
+      kovan: ETHERSCAN_KEY,
+      // Avalanche
+      avalanche: SNOWTRACE_KEY,
+      avalancheFujiTestnet: SNOWTRACE_KEY,
+    },
   },
 
   gasReporter: {
