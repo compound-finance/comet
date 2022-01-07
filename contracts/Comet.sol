@@ -2,8 +2,19 @@
 pragma solidity ^0.8.0;
 
 import "./CometStorage.sol";
+import "./vendor/@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
+import "./vendor/@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-contract Comet is CometStorage {
+contract Comet is CometStorage, EIP712 {
+    /// @notice The name of this contract
+    string public constant NAME = "Compound Comet";
+
+    /// @notice The major version of this contract
+    string public constant VERSION = "0";
+
+    /// @notice The EIP-712 typehash for allowBySig Authorization
+    bytes32 public constant AUTHORIZATION_TYPEHASH = keccak256("Authorization(address manager,bool _isAllowed,uint256 nonce,uint256 expiry)");
+
     struct AssetInfo {
         address asset;
         uint borrowCollateralFactor;
@@ -49,7 +60,10 @@ contract Comet is CometStorage {
     // Storage
     mapping(address => mapping(address => bool)) public isAllowed;
 
-    constructor(Configuration memory config) {
+    /// @notice The next expected nonce for an address, for validating authorizations via signature
+    mapping(address => uint) public userNonce;
+
+    constructor(Configuration memory config) EIP712(NAME, VERSION) {
         require(config.assetInfo.length <= maxAssets, "too many asset configs");
 
          // Set configuration variables
@@ -115,11 +129,41 @@ contract Comet is CometStorage {
     }
 
     function allow(address manager, bool _isAllowed) external {
-      allowInternal(msg.sender, manager, _isAllowed);
+        allowInternal(msg.sender, manager, _isAllowed);
     }
 
     function allowInternal(address owner, address manager, bool _isAllowed) internal {
-      isAllowed[owner][manager] = _isAllowed;
+        isAllowed[owner][manager] = _isAllowed;
+    }
+
+    /**
+     * @notice Sets authorization status for a manager via signature from signatory
+     * @param manager The address to authorize (or rescind authorization from)
+     * @param _isAllowed Value to set isAllowed[signatory][manager]
+     * @param nonce The next expected nonce value for the signatory
+     * @param expiry Expiration time for the signature
+     * @param signature EIP-712 signature from signatory authorizing manager
+     */
+    function allowBySig(
+        address manager,
+        bool _isAllowed,
+        uint256 nonce,
+        uint256 expiry,
+        bytes memory signature
+    ) external {
+        bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(
+            AUTHORIZATION_TYPEHASH,
+            manager,
+            _isAllowed,
+            nonce,
+            expiry
+        )));
+        address signatory = ECDSA.recover(digest, signature);
+        require(signatory == address(signatory), "Invalid address");
+        require(nonce == userNonce[signatory], "Invalid nonce");
+        require(block.timestamp < expiry, "Signed transaction expired");
+        userNonce[signatory]++;
+        allowInternal(signatory, manager, _isAllowed);
     }
 
     /**
