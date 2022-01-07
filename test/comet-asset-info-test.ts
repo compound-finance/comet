@@ -13,6 +13,7 @@ let token: FaucetToken, asset1: FaucetToken, asset2: FaucetToken, comet: Comet, 
 const FACTOR = ethers.utils.parseEther('1');
 
 describe('Comet', function () {
+
   beforeEach(async () => {
     [governor] = await ethers.getSigners();
 
@@ -73,5 +74,26 @@ describe('Comet', function () {
 
   it('Should revert if index is greater that numAssets', async () => {
     await expect(comet.getAssetInfo(2)).to.be.revertedWith('asset info not found');
+  });
+
+  it('Should get valid assets', async () => {
+    const assetInfo00 = await comet.getAssetInfo(0);
+    const assetInfo01 = await comet.getAssetInfo(1);
+    const assets = await comet.assets();
+    expect(assets[0].asset).to.be.equal(assetInfo00.asset);
+    expect(assets[0].borrowCollateralFactor).to.be.equal(assetInfo00.borrowCollateralFactor);
+    expect(assets[0].liquidateCollateralFactor).to.be.equal(assetInfo00.liquidateCollateralFactor);
+
+    expect(assets[1].asset).to.be.equal(assetInfo01.asset);
+    expect(assets[1].borrowCollateralFactor).to.be.equal(assetInfo01.borrowCollateralFactor);
+    expect(assets[1].liquidateCollateralFactor).to.be.equal(assetInfo01.liquidateCollateralFactor);
+  });
+
+  it('Should get valid asset addresses', async () => {
+    const assetInfo00 = await comet.getAssetInfo(0);
+    const assetInfo01 = await comet.getAssetInfo(1);
+    const assets = await comet.assetAddresses();
+    expect(assets[0]).to.be.equal(assetInfo00.asset);
+    expect(assets[1]).to.be.equal(assetInfo01.asset);
   });
 });
