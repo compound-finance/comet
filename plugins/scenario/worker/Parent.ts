@@ -117,7 +117,13 @@ export async function run<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[]) 
     checkDone();
   }
 
-  const worker = [...new Array(workerCount)].map((_, index) => {
+  const envWorkers = process.env['WORKERS'];
+  const trueWorkerCount = envWorkers ? Number(envWorkers) : workerCount;
+  if (Number.isNaN(trueWorkerCount) || trueWorkerCount <= 0) {
+    throw new Error(`Invalid worker count: ${envWorkers}`);
+  }
+
+  const worker = [...new Array(trueWorkerCount)].map((_, index) => {
     let worker = new Worker(path.resolve(__dirname, './BootstrapWorker.js'), {
       workerData: {
         scenarioConfig,
