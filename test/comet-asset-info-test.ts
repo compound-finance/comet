@@ -72,6 +72,19 @@ describe('Comet', function () {
     expect(assetInfo01.liquidateCollateralFactor).to.equal(FACTOR);
   });
 
+  it('Should fail if too many assets are passed', async () => {
+    const CometFactory = (await ethers.getContractFactory(
+      'Comet'
+    )) as Comet__factory;
+    await expect(CometFactory.deploy({
+      governor: governor.address,
+      pauseGuardian: pauseGuardian.address,
+      priceOracle: oracle.address,
+      baseToken: token.address,
+      assetInfo: [{ asset: asset1.address, borrowCollateralFactor: FACTOR, liquidateCollateralFactor: FACTOR }, { asset: asset2.address, borrowCollateralFactor: FACTOR, liquidateCollateralFactor: FACTOR }, { asset: asset2.address, borrowCollateralFactor: FACTOR, liquidateCollateralFactor: FACTOR }]
+    })).to.be.revertedWith('too many asset configs');
+  });
+
   it('Should revert if index is greater that numAssets', async () => {
     await expect(comet.getAssetInfo(2)).to.be.revertedWith('asset info not found');
   });
@@ -96,4 +109,5 @@ describe('Comet', function () {
     expect(assets[0]).to.be.equal(assetInfo00.asset);
     expect(assets[1]).to.be.equal(assetInfo01.asset);
   });
+
 });
