@@ -21,6 +21,8 @@ import {
   fileExists,
   mergeContracts,
   readAddressFromFilename,
+  objectToMap,
+  objectFromMap,
 } from './Utils';
 
 export { ContractMap } from './Types';
@@ -53,6 +55,7 @@ export class DeploymentManager {
   config: DeploymentConfig;
   contracts: ContractMap;
   cache: object;
+  signer: Signer | null;
 
   constructor(deployment: string, hre: HardhatRuntimeEnvironment, config: DeploymentConfig = {}) {
     this.deployment = deployment;
@@ -60,6 +63,7 @@ export class DeploymentManager {
     this.config = config;
     this.contracts = {};
     this.cache = {};
+    this.signer = null;
   }
 
   // Configuration Parameter for retries after Etherscan import failures
@@ -174,7 +178,7 @@ export class DeploymentManager {
 
   // Reads all cached contracts for given deployment into a map
   private async getCachedContracts(): Promise<BuildMap> {
-    return Object.fromEntries(
+    return objectToMap(Object.fromEntries(
       await Promise.all(
         (
           await fs.readdir(this.cacheDir())
@@ -183,42 +187,50 @@ export class DeploymentManager {
           return [address, await this.readBuildFileFromCache(address)];
         })
       )
-    );
+    ));
   }
 
   // Reads all cached aliases for given deployment into a map
   private async getCachedAliases(): Promise<AliasesMap> {
-    return this.readCache<AliasesMap>(this.pointersFile());
+    return objectToMap(await this.readCache<{string: string[]}>(this.pointersFile()));
   }
 
   // Reads the cached proxy map for a given deployment into a map
   private async getCachedProxies(): Promise<ProxiesMap> {
-    return this.readCache<ProxiesMap>(this.proxiesFile());
+    return objectToMap(await this.readCache<{string: string}>(this.proxiesFile()));
   }
 
   // Returns an ethers' wrapped contract from a given build file (based on its name and address)
   private getContractFromBuildFile(
     buildFile: BuildFile,
     signer: Signer,
-    address: string | undefined
+    address: string
   ): [string, Contract] {
-    let metadata = getPrimaryContract(buildFile);
+    let [contractName, metadata] = getPrimaryContract(buildFile);
 
     return [
-      metadata.name,
-      new this.hre.ethers.Contract(address ?? metadata.address, metadata.abi, signer),
+      contractName,
+      new this.hre.ethers.Contract(address, metadata.abi, signer),
     ];
   }
 
   // Builds ether contract wrappers around a map of contract metadata
   private async getContractsFromBuildMap(
     buildMap: BuildMap,
-    aliasesMap: AliasesMap
+    aliasesMap: AliasesMap,
+    proxiesMap: ProxiesMap
   ): Promise<ContractMap> {
     let contracts: ContractMap = {};
-    const [signer] = await this.hre.ethers.getSigners(); // TODO: Hmm?
+    let signer = this.signer ?? (await this.hre.ethers.getSigners())[0]; // TODO: Hmm? Hmm?
 
-    for (let [address, buildFile] of buildMap) {
+    for (let [address, buildFile] of buildMap[Symbol.iterator]()) {
+      let impl = proxiesMap.get(address);
+      if (impl) {
+        buildFile = buildMap.get(impl);
+        if (!buildFile) {
+          throw new Error(`Missing build file for pointed to impl=${impl} from proxy=${address}`);
+        }
+      }
       let [name, contract] = this.getContractFromBuildFile(buildFile, signer, address);
       if (aliasesMap.has(address)) {
         aliasesMap.get(address).forEach((alias) => (contracts[alias] = contract));
@@ -238,11 +250,11 @@ export class DeploymentManager {
     let pointers: PointersMap = new Map();
 
     for (let [address, buildFile] of buildMap) {
-      const metadata = getPrimaryContract(buildFile);
+      const [contractName, metadata] = getPrimaryContract(buildFile);
       if (aliasesMap.has(address)) {
-        aliasesMap.get(address).forEach((alias) => (pointers[alias] = address));
+        aliasesMap.get(address).forEach((alias) => (pointers.set(alias, address)));
       } else {
-        pointers[metadata.name] = address;
+        pointers.set(contractName, address);
       }
     }
 
@@ -251,7 +263,7 @@ export class DeploymentManager {
 
   // Deploys a contract given a build file (e.g. something imported or spidered)
   private async deployFromBuildFile(buildFile: BuildFile, deployArgs: any[]): Promise<Contract> {
-    let metadata = getPrimaryContract(buildFile);
+    let [contractName, metadata] = getPrimaryContract(buildFile);
     const [signer] = await this.hre.ethers.getSigners(); // TODO: Hmm?
     const contractFactory = new this.hre.ethers.ContractFactory(metadata.abi, metadata.bin, signer);
     const contract = await contractFactory.deploy(...deployArgs);
@@ -261,9 +273,10 @@ export class DeploymentManager {
   // Builds ether contract wrappers around a map of contract metadata and merges into `this.contracts` variable
   private async loadContractsFromBuildMap(
     buildMap: BuildMap,
-    aliasesMap: AliasesMap
+    aliasesMap: AliasesMap,
+    proxiesMap: ProxiesMap
   ): Promise<ContractMap> {
-    let newContracts = await this.getContractsFromBuildMap(buildMap, aliasesMap);
+    let newContracts = await this.getContractsFromBuildMap(buildMap, aliasesMap, proxiesMap);
     this.contracts = mergeContracts(this.contracts, newContracts);
     return newContracts;
   }
@@ -306,11 +319,11 @@ export class DeploymentManager {
     if (address !== '0x0000000000000000000000000000000000000000') {
       const buildFile = await this.readOrImportContract(address);
 
-      const contractMetadata = getPrimaryContract(buildFile);
+      const [contractName, contractMetadata] = getPrimaryContract(buildFile);
 
       visited.set(address, buildFile);
 
-      let relationConfig = relationConfigMap[contractMetadata.name];
+      let relationConfig = relationConfigMap[contractName];
       if (relationConfig) {
         let baseContract = new this.hre.ethers.Contract(
           address,
@@ -318,11 +331,11 @@ export class DeploymentManager {
           this.hre.ethers.provider
         );
 
-        // TODO: Consider using a Java-like Optional here?
+        let implContractName: string | null = null;
         let implContractMetadata: ContractMetadata | null = null;
         if (relationConfig.implementation) {
           let [implAddress] = await getRelations(baseContract, relationConfig.implementation);
-          proxies[address] = implAddress;
+          proxies.set(address, implAddress);
 
           let implBuildFile: BuildFile;
           if (visited[implAddress]) {
@@ -332,7 +345,7 @@ export class DeploymentManager {
             visited.set(implAddress, implBuildFile);
           }
 
-          implContractMetadata = getPrimaryContract(implBuildFile);
+          [implContractName, implContractMetadata] = getPrimaryContract(implBuildFile);
         }
 
         let contract = new this.hre.ethers.Contract(
@@ -345,11 +358,11 @@ export class DeploymentManager {
         this.addAlias(alias, address, aliases);
 
         // If there is an impl contract, add its alias as well.
-        if (implContractMetadata && relationConfigMap[implContractMetadata.name]) {
+        if (implContractMetadata && relationConfigMap[implContractName]) {
           let alias = await getAlias(
             contract,
             implContractMetadata,
-            relationConfigMap[implContractMetadata.name].alias
+            relationConfigMap[implContractName].alias
           );
           this.addAlias(alias, implContractMetadata.address, aliases);
         }
@@ -419,10 +432,10 @@ export class DeploymentManager {
     );
 
     let pointers = await this.getPointersFromBuildMap(buildMap, aliasesMap);
-    await this.writeObjectToCache(pointers, this.pointersFile());
-    await this.writeObjectToCache(proxiesMap, this.proxiesFile());
+    await this.writeObjectToCache(objectFromMap(pointers), this.pointersFile());
+    await this.writeObjectToCache(objectFromMap(proxiesMap), this.proxiesFile());
 
-    return await this.loadContractsFromBuildMap(buildMap, aliasesMap);
+    return await this.loadContractsFromBuildMap(buildMap, aliasesMap, proxiesMap);
   }
 
   /**
@@ -447,7 +460,8 @@ export class DeploymentManager {
   async getContracts(): Promise<ContractMap> {
     let buildMap = await this.getCachedContracts();
     let aliasesMap = await this.getCachedAliases();
-    return await this.loadContractsFromBuildMap(buildMap, aliasesMap);
+    let proxiesMap = await this.getCachedProxies();
+    return await this.loadContractsFromBuildMap(buildMap, aliasesMap, proxiesMap);
   }
 
   /**
@@ -455,6 +469,14 @@ export class DeploymentManager {
    */
   async setRoots(roots: Roots): Promise<void> {
     await this.writeObjectToCache(roots, this.rootsFile());
+  }
+
+  connect(signer: Signer) {
+    this.signer = signer;
+
+    Object.entries(this.contracts).forEach(([key, contract]) => {
+      this.contracts[key] = contract.connect(signer);
+    });
   }
 
   /**
@@ -491,6 +513,9 @@ export class DeploymentManager {
       await fs.readFile(path.join(debugFile, '..', buildInfo), 'utf8')
     ) as { output: BuildFile };
 
+    if (!buildFile.contract) {
+      buildFile.contract = contractName;
+    }
     let cacheBuildFile = this.cacheBuildFile(contract.address);
     await this.writeObjectToCache(buildFile, cacheBuildFile);
 

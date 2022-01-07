@@ -26,6 +26,7 @@ describe('Comet', function () {
         governor: admin.address,
         priceOracle: oracle.address,
         baseToken: token.address,
+        assetInfo: []
       });
       await comet.deployed();
     });

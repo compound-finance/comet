@@ -23,4 +23,4 @@ jobs:
         run: yarn install --non-interactive --frozen-lockfile && yarn build
 
       - name: Run scenarios
-        run: yarn scenario
+        run: WORKERS=1 yarn scenario

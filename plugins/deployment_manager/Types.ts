@@ -12,6 +12,7 @@ export interface ContractMetadata {
 }
 
 export interface BuildFile {
+  contract: string;
   contracts: {
     [fileContractName: string]: ContractMetadata | { [contractName: string]: ContractMetadata };
   };
