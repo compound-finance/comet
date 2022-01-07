@@ -13,7 +13,6 @@ let token: FaucetToken, asset1: FaucetToken, asset2: FaucetToken, comet: Comet, 
 const FACTOR = ethers.utils.parseEther('1');
 
 describe('Comet', function () {
-
   beforeEach(async () => {
     [governor] = await ethers.getSigners();
 
