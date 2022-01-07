@@ -3,13 +3,24 @@ pragma solidity ^0.8.0;
 
 import "./CometStorage.sol";
 import "./ERC20.sol";
+import "./vendor/@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
+import "./vendor/@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /**
  * @title Compound's Comet Contract
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-contract Comet is CometStorage {
+contract Comet is CometStorage, EIP712 {
+    /// @notice The name of this contract
+    string public constant NAME = "Compound Comet";
+
+    /// @notice The major version of this contract
+    string public constant VERSION = "0";
+
+    /// @notice The EIP-712 typehash for allowBySig Authorization
+    bytes32 public constant AUTHORIZATION_TYPEHASH = keccak256("Authorization(address owner,address manager,bool isAllowed,uint256 nonce,uint256 expiry)");
+
     struct AssetInfo {
         address asset;
         uint borrowCollateralFactor;
@@ -91,11 +102,14 @@ contract Comet is CometStorage {
     uint internal immutable liquidateCollateralFactor00;
     uint internal immutable liquidateCollateralFactor01;
 
+    /// @notice The next expected nonce for an address, for validating authorizations via signature
+    mapping(address => uint) public userNonce;
+
     /**
      * @notice Construct a new protocol instance
      * @param config The mapping of initial/constant parameters
      **/
-    constructor(Configuration memory config) {
+    constructor(Configuration memory config) EIP712(NAME, VERSION) {
         // Sanity checks
         uint decimals = ERC20(config.baseToken).decimals();
         require(decimals <= 18, "base token has too many decimals");
@@ -248,7 +262,41 @@ contract Comet is CometStorage {
      * @dev XXX
      */
     function allowInternal(address owner, address manager, bool _isAllowed) internal {
-      isAllowed[owner][manager] = _isAllowed;
+        isAllowed[owner][manager] = _isAllowed;
+    }
+
+    /**
+     * @notice Sets authorization status for a manager via signature from signatory
+     * @param owner The address that signed the signature
+     * @param manager The address to authorize (or rescind authorization from)
+     * @param isAllowed_ Whether to authorize or rescind authorization from manager
+     * @param nonce The next expected nonce value for the signatory
+     * @param expiry Expiration time for the signature
+     * @param signature EIP-712 signature from signatory authorizing manager
+     */
+    function allowBySig(
+        address owner,
+        address manager,
+        bool isAllowed_,
+        uint256 nonce,
+        uint256 expiry,
+        bytes memory signature
+    ) external {
+        bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(
+            AUTHORIZATION_TYPEHASH,
+            owner,
+            manager,
+            isAllowed_,
+            nonce,
+            expiry
+        )));
+        address signatory = ECDSA.recover(digest, signature);
+        require(owner == signatory, "Signature does not match arguments");
+        require(signatory != address(0), "Invalid signature");
+        require(nonce == userNonce[signatory], "Invalid nonce");
+        require(block.timestamp < expiry, "Signed transaction expired");
+        userNonce[signatory]++;
+        allowInternal(signatory, manager, isAllowed_);
     }
 
     /**
