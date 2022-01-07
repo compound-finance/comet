@@ -1,6 +1,5 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { sign } from 'crypto';
 
 scenario(
   'Comet#allowBySig > allows a user to authorize a manager by signature',
