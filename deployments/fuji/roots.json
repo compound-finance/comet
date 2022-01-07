@@ -1,13 +1,3 @@
 {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    "TransparentUpgradeableProxy": "0x985FbCd0190F6EfD6456c264B662D8a6Dd6efA01"
+    "TransparentUpgradeableProxy": "0xFDA1d2edD49b899c9504682bf90E5409Dd3d7116"
 }
-=======
-  "Comet": "0x7f47AefC993F63911C52a3C7D6f136A79d5c62d2"
-}
->>>>>>> df72b66 (Set up scenarios)
-=======
-    "Comet": "0xCee9c8223de089D26C4492fE52865437C6b26ce4"
-}
->>>>>>> 2973b5b (Update goerli and fuji deployments after rebase)

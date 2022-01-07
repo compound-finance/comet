@@ -34,6 +34,7 @@ describe('Comet', function () {
       pauseGuardian: pauseGuardian.address,
       priceOracle: oracle.address,
       baseToken: token.address,
+      assetInfo: []
     });
     await comet.deployed();
   });
