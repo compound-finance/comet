@@ -18,7 +18,7 @@ export class CometContext {
     deploymentManager: DeploymentManager,
     comet: Comet,
     actors: { [name: string]: CometActor },
-    assets: { [name: string]: CometAsset },
+    assets: { [name: string]: CometAsset }
   ) {
     this.deploymentManager = deploymentManager;
     this.comet = comet;
@@ -36,7 +36,7 @@ async function buildActor(signer: Signer, cometContract: Comet) {
 }
 
 const getInitialContext = async (world: World): Promise<CometContext> => {
-  let deploymentManager = new DeploymentManager(world.base.name, world.hre);
+  let deploymentManager = new DeploymentManager(world.base.name, world.hre, { debug: true });
 
   function getContract<T extends Contract>(name: string): T {
     let contract: T = deploymentManager.contracts[name] as T;
@@ -47,7 +47,7 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   }
 
   if (world.isDevelopment()) {
-    await deployComet(deploymentManager, false);
+    await deployComet(deploymentManager);
   }
 
   await deploymentManager.spider();

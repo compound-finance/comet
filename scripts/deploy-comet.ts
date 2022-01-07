@@ -8,11 +8,14 @@ import { deployComet } from '../src/deploy';
 import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
 
 async function main() {
+  await hre.run('compile');
   let isDevelopment = hre.network.name === 'hardhat';
   let dm = new DeploymentManager(hre.network.name, hre, {
     writeCacheToDisk: true,
+    verifyContracts: !isDevelopment,
+    debug: true,
   });
-  let { comet } = await deployComet(dm, !isDevelopment);
+  let { comet } = await deployComet(dm);
   await dm.spider();
 }
 

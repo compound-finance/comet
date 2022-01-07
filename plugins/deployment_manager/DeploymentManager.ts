@@ -47,6 +47,8 @@ interface DeploymentConfig {
   importRetries?: number;
   importRetryDelay?: number;
   writeCacheToDisk?: boolean;
+  verifyContracts?: boolean;
+  debug?: boolean;
 }
 
 export class DeploymentManager {
@@ -64,6 +66,16 @@ export class DeploymentManager {
     this.contracts = {};
     this.cache = {};
     this.signer = null;
+  }
+
+  private debug(...args: any[]) {
+    if (this.config.debug) {
+      if (typeof args[0] === 'function') {
+        console.log(...args[0]());
+      } else {
+        console.log(...args);
+      }
+    }
   }
 
   // Configuration Parameter for retries after Etherscan import failures
@@ -178,26 +190,28 @@ export class DeploymentManager {
 
   // Reads all cached contracts for given deployment into a map
   private async getCachedContracts(): Promise<BuildMap> {
-    return objectToMap(Object.fromEntries(
-      await Promise.all(
-        (
-          await fs.readdir(this.cacheDir())
-        ).map(async (file) => {
-          let address = readAddressFromFilename(file);
-          return [address, await this.readBuildFileFromCache(address)];
-        })
+    return objectToMap(
+      Object.fromEntries(
+        await Promise.all(
+          (
+            await fs.readdir(this.cacheDir())
+          ).map(async (file) => {
+            let address = readAddressFromFilename(file);
+            return [address, await this.readBuildFileFromCache(address)];
+          })
+        )
       )
-    ));
+    );
   }
 
   // Reads all cached aliases for given deployment into a map
   private async getCachedAliases(): Promise<AliasesMap> {
-    return objectToMap(await this.readCache<{string: string[]}>(this.pointersFile()));
+    return objectToMap(await this.readCache<{ string: string[] }>(this.pointersFile()));
   }
 
   // Reads the cached proxy map for a given deployment into a map
   private async getCachedProxies(): Promise<ProxiesMap> {
-    return objectToMap(await this.readCache<{string: string}>(this.proxiesFile()));
+    return objectToMap(await this.readCache<{ string: string }>(this.proxiesFile()));
   }
 
   // Returns an ethers' wrapped contract from a given build file (based on its name and address)
@@ -208,10 +222,7 @@ export class DeploymentManager {
   ): [string, Contract] {
     let [contractName, metadata] = getPrimaryContract(buildFile);
 
-    return [
-      contractName,
-      new this.hre.ethers.Contract(address, metadata.abi, signer),
-    ];
+    return [contractName, new this.hre.ethers.Contract(address, metadata.abi, signer)];
   }
 
   // Builds ether contract wrappers around a map of contract metadata
@@ -252,7 +263,7 @@ export class DeploymentManager {
     for (let [address, buildFile] of buildMap) {
       const [contractName, metadata] = getPrimaryContract(buildFile);
       if (aliasesMap.has(address)) {
-        aliasesMap.get(address).forEach((alias) => (pointers.set(alias, address)));
+        aliasesMap.get(address).forEach((alias) => pointers.set(alias, address));
       } else {
         pointers.set(contractName, address);
       }
@@ -480,6 +491,30 @@ export class DeploymentManager {
   }
 
   /**
+   * Verifies a contract on Etherscan/Snowtrace.
+   */
+  async verifyContract(address: string, constructorArguments, retries = 10) {
+    try {
+      return await this.hre.run('verify:verify', {
+        address,
+        constructorArguments,
+      });
+    } catch (e) {
+      if (e.message.match(/Already Verified/i)) {
+        console.log('Contract at address ' + address + ' is already verified on Etherscan');
+        return;
+      } else if (e.message.match(/does not have bytecode/i) && retries > 0) {
+        console.log('Waiting for ' + address + ' to propagate to Etherscan');
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        return this.verifyContract(address, constructorArguments, retries - 1);
+      } else {
+        console.error(`Unable to verify contract at ${address}: ${e}`);
+        console.error(`Continuing on anyway...`);
+      }
+    }
+  }
+
+  /**
    * Registers a contract as if it had been discovered via spider
    */
   async deploy<
@@ -496,6 +531,9 @@ export class DeploymentManager {
     if (connect) {
       factory = factory.connect(connect);
     }
+
+    this.debug(`Deploying ${contractName} with args ${JSON.stringify(deployArgs)}`);
+
     let contract = await factory.deploy(...deployArgs);
     await contract.deployed();
 
@@ -518,6 +556,12 @@ export class DeploymentManager {
     }
     let cacheBuildFile = this.cacheBuildFile(contract.address);
     await this.writeObjectToCache(buildFile, cacheBuildFile);
+
+    if (this.config.verifyContracts) {
+      await this.verifyContract(contract.address, deployArgs);
+    }
+
+    this.debug(`Deployed ${contractName}`); // TODO: tx
 
     return contract;
   }
