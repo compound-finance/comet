@@ -7,7 +7,7 @@ let comet: Comet;
 describe('Comet', function () {
   describe('allow', function () {
     beforeEach(async () => {
-      const [admin] = await ethers.getSigners();
+      const [admin, pauseGuardian] = await ethers.getSigners();
 
       const FaucetTokenFactory = (await ethers.getContractFactory(
         'FaucetToken'
@@ -24,6 +24,7 @@ describe('Comet', function () {
       const CometFactory = (await ethers.getContractFactory('Comet')) as Comet__factory;
       comet = await CometFactory.deploy({
         governor: admin.address,
+        pauseGuardian: pauseGuardian.address,
         priceOracle: oracle.address,
         baseToken: token.address,
         assetInfo: []
