@@ -1,0 +1,317 @@
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { expect } from 'chai';
+import { BigNumber } from 'ethers';
+import { ethers } from 'hardhat';
+import { FaucetToken__factory, MockedOracle__factory, Comet, Comet__factory } from '../build/types';
+
+let comet: Comet;
+let admin: SignerWithAddress;
+let pauseGuardian: SignerWithAddress;
+let signer: SignerWithAddress;
+let manager: SignerWithAddress;
+let domain;
+let signature: string;
+let signatureArgs: {
+  owner: string;
+  manager: string;
+  isAllowed: boolean;
+  nonce: BigNumber;
+  expiry: number;
+};
+
+const types = {
+  Authorization: [
+    { name: 'owner', type: 'address' },
+    { name: 'manager', type: 'address' },
+    { name: 'isAllowed', type: 'bool' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'expiry', type: 'uint256' },
+  ],
+};
+
+describe('Comet#allowBySig', function () {
+  beforeEach(async () => {
+    [admin, pauseGuardian, signer, manager] = await ethers.getSigners();
+
+    const FaucetTokenFactory = (await ethers.getContractFactory(
+      'FaucetToken'
+    )) as FaucetToken__factory;
+    const token = await FaucetTokenFactory.deploy(100000, 'DAI', 18, 'DAI');
+    await token.deployed();
+
+    const OracleFactory = (await ethers.getContractFactory(
+      'MockedOracle'
+    )) as MockedOracle__factory;
+    const oracle = await OracleFactory.deploy();
+    await oracle.deployed();
+
+    const CometFactory = (await ethers.getContractFactory('Comet')) as Comet__factory;
+    comet = await CometFactory.deploy({
+      governor: admin.address,
+      pauseGuardian: pauseGuardian.address,
+      priceOracle: oracle.address,
+      baseToken: token.address,
+      assetInfo: [],
+    });
+    await comet.deployed();
+
+    domain = {
+      name: await comet.NAME(),
+      version: await comet.VERSION(),
+      chainId: 1337,
+      verifyingContract: comet.address,
+    };
+    const blockNumber = await ethers.provider.getBlockNumber();
+    const timestamp = (await ethers.provider.getBlock(blockNumber)).timestamp;
+
+    signatureArgs = {
+      owner: signer.address,
+      manager: manager.address,
+      isAllowed: true,
+      nonce: await comet.userNonce(signer.address),
+      expiry: timestamp + 10,
+    };
+
+    signature = await signer._signTypedData(domain, types, signatureArgs);
+  });
+
+  it('authorizes with a valid signature', async () => {
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    await comet
+      .connect(manager)
+      .allowBySig(
+        signatureArgs.owner,
+        signatureArgs.manager,
+        signatureArgs.isAllowed,
+        signatureArgs.nonce,
+        signatureArgs.expiry,
+        signature
+      );
+
+    // authorizes manager
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.true;
+
+    // increments nonce
+    expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce.add(1));
+  });
+
+  it('fails if owner argument is altered', async () => {
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    const invalidOwnerAddress = pauseGuardian.address;
+
+    await expect(
+      comet.connect(manager).allowBySig(
+        invalidOwnerAddress, // altered owner
+        signatureArgs.manager,
+        signatureArgs.isAllowed,
+        signatureArgs.nonce,
+        signatureArgs.expiry,
+        signature
+      )
+    ).to.be.revertedWith('Signature does not match arguments');
+
+    // does not authorize
+    expect(await comet.isAllowed(invalidOwnerAddress, manager.address)).to.be.false;
+
+    // does not alter signer nonce
+    expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
+  });
+
+  it('fails if manager argument is altered', async () => {
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    const invalidManagerAddress = pauseGuardian.address;
+
+    await expect(
+      comet.connect(manager).allowBySig(
+        signatureArgs.owner,
+        invalidManagerAddress, // altered manager
+        signatureArgs.isAllowed,
+        signatureArgs.nonce,
+        signatureArgs.expiry,
+        signature
+      )
+    ).to.be.revertedWith('Signature does not match arguments');
+
+    // does not authorize
+    expect(await comet.isAllowed(signer.address, invalidManagerAddress)).to.be.false;
+
+    // does not alter signer nonce
+    expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
+  });
+
+  it('fails if isAllowed argument is altered', async () => {
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    await expect(
+      comet.connect(manager).allowBySig(
+        signatureArgs.owner,
+        signatureArgs.manager,
+        !signatureArgs.isAllowed, // altered isAllowed
+        signatureArgs.nonce,
+        signatureArgs.expiry,
+        signature
+      )
+    ).to.be.revertedWith('Signature does not match arguments');
+
+    // does not authorize
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    // does not alter signer nonce
+    expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
+  });
+
+  it('fails if nonce argument is altered', async () => {
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    await expect(
+      comet.connect(manager).allowBySig(
+        signatureArgs.owner,
+        signatureArgs.manager,
+        signatureArgs.isAllowed,
+        signatureArgs.nonce.add(1), // altered nonce
+        signatureArgs.expiry,
+        signature
+      )
+    ).to.be.revertedWith('Signature does not match arguments');
+
+    // does not authorize
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    // does not alter signer nonce
+    expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
+  });
+
+  it('fails if expiry argument is altered', async () => {
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    await expect(
+      comet.connect(manager).allowBySig(
+        signatureArgs.owner,
+        signatureArgs.manager,
+        signatureArgs.isAllowed,
+        signatureArgs.nonce,
+        signatureArgs.expiry + 100, // altered expiry
+        signature
+      )
+    ).to.be.revertedWith('Signature does not match arguments');
+
+    // does not authorize
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    // does not alter signer nonce
+    expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
+  });
+
+  it('fails for invalid signatures', async () => {
+    await expect(
+      comet.connect(manager).allowBySig(
+        signatureArgs.owner,
+        signatureArgs.manager,
+        signatureArgs.isAllowed,
+        signatureArgs.nonce,
+        signatureArgs.expiry,
+        '0xbadbad' // altered signature
+      )
+    ).to.be.revertedWith('ECDSA: invalid signature length');
+
+    // does not authorize
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    // does not alter signer nonce
+    expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
+  });
+
+  it('fails if signature contains invalid nonce', async () => {
+    const invalidNonce = signatureArgs.nonce.add(1);
+    const signatureWithInvalidNonce = await signer._signTypedData(domain, types, {
+      ...signatureArgs,
+      ...{ nonce: invalidNonce },
+    });
+
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    await expect(
+      comet
+        .connect(manager)
+        .allowBySig(
+          signatureArgs.owner,
+          signatureArgs.manager,
+          signatureArgs.isAllowed,
+          invalidNonce,
+          signatureArgs.expiry,
+          signatureWithInvalidNonce
+        )
+    ).to.be.revertedWith('Invalid nonce');
+
+    // does not authorize
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+    // does not update nonce
+    expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
+  });
+
+  it('rejects a repeated message', async () => {
+    // valid call
+    await comet
+      .connect(manager)
+      .allowBySig(
+        signatureArgs.owner,
+        signatureArgs.manager,
+        signatureArgs.isAllowed,
+        signatureArgs.nonce,
+        signatureArgs.expiry,
+        signature
+      );
+
+    // repeated call
+    await expect(
+      comet
+        .connect(manager)
+        .allowBySig(
+          signatureArgs.owner,
+          signatureArgs.manager,
+          signatureArgs.isAllowed,
+          signatureArgs.nonce,
+          signatureArgs.expiry,
+          signature
+        )
+    ).to.be.revertedWith('Invalid nonce');
+  });
+
+  it('fails if signature expiry has passed', async () => {
+    const blockNumber = await ethers.provider.getBlockNumber();
+    const timestamp = (await ethers.provider.getBlock(blockNumber)).timestamp;
+    const invalidExpiry = timestamp - 1;
+
+    const expiredSignatureArgs = {
+      ...signatureArgs,
+      ...{
+        expiry: invalidExpiry,
+      },
+    };
+    const expiredSignature = await signer._signTypedData(domain, types, expiredSignatureArgs);
+
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    await expect(
+      comet
+        .connect(manager)
+        .allowBySig(
+          expiredSignatureArgs.owner,
+          expiredSignatureArgs.manager,
+          expiredSignatureArgs.isAllowed,
+          expiredSignatureArgs.nonce,
+          expiredSignatureArgs.expiry,
+          expiredSignature
+        )
+    ).to.be.revertedWith('Signed transaction expired');
+
+    // does not authorize
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    // does not update nonce
+    expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
+  });
+});
