@@ -9,12 +9,12 @@ import {
   Comet__factory,
 } from '../build/types';
 
-let token: FaucetToken, asset1: FaucetToken, asset2: FaucetToken, comet: Comet, governor, oracle: MockedOracle;
+let token: FaucetToken, asset1: FaucetToken, asset2: FaucetToken, comet: Comet, governor, pauseGuardian, oracle: MockedOracle;
 const FACTOR = ethers.utils.parseEther('1');
 
 describe('Comet', function () {
   beforeEach(async () => {
-    [governor] = await ethers.getSigners();
+    [governor, pauseGuardian] = await ethers.getSigners();
 
     const FaucetTokenFactory = (await ethers.getContractFactory(
       'FaucetToken'
@@ -38,6 +38,7 @@ describe('Comet', function () {
     )) as Comet__factory;
     comet = await CometFactory.deploy({
       governor: governor.address,
+      pauseGuardian: pauseGuardian.address,
       priceOracle: oracle.address,
       baseToken: token.address,
       assetInfo: [{ asset: asset1.address, borrowCollateralFactor: FACTOR, liquidateCollateralFactor: FACTOR }, { asset: asset2.address, borrowCollateralFactor: FACTOR, liquidateCollateralFactor: FACTOR }]

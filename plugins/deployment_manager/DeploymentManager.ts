@@ -127,7 +127,7 @@ export class DeploymentManager {
   }
 
   async readCache<T>(file: string): Promise<T> {
-    let cached = this.cache[file];
+    let cached = this.cache[file.toLowerCase()];
     if (cached) {
       return cached as T;
     } else {
@@ -137,7 +137,7 @@ export class DeploymentManager {
 
   // Checks to see if a file exists, either in in-memory cache or on disk.
   private async cacheFileExists(file: string): Promise<boolean> {
-    if (this.cache[file]) {
+    if (this.cache[file.toLowerCase()]) {
       return true;
     } else {
       return await fileExists(file);
@@ -159,7 +159,7 @@ export class DeploymentManager {
 
       await fs.writeFile(filePath, JSON.stringify(object, null, 4));
     } else {
-      this.cache[filePath] = object;
+      this.cache[filePath.toLowerCase()] = object;
     }
   }
 

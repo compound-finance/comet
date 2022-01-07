@@ -7,6 +7,7 @@ import { defaultFormats, scenarioGlob, workerCount } from './Config';
 import { loadFormat, showReport, Format } from './Report';
 import { getContext, getConfig, getHardhatArguments } from './HardhatContext';
 import { ScenarioConfig } from '../types';
+import { HardhatConfig } from 'hardhat/types';
 
 export interface Result {
   base: string;
@@ -57,8 +58,13 @@ function key(baseName: string, scenarioName: string): string {
   return `${baseName}-${scenarioName}`;
 }
 
+// Strips out unserializable fields such as functions.
+function convertToSerializableObject(object: object) {
+  return JSON.parse(JSON.stringify(object));
+}
+
 export async function run<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[]) {
-  let hardhatConfig = getConfig();
+  let hardhatConfig = convertToSerializableObject(getConfig()) as HardhatConfig;
   let hardhatArguments = getHardhatArguments();
   let formats = defaultFormats.map(loadFormat);
   let scenarios: Scenario<T>[] = Object.values(await loadScenarios(scenarioGlob));
@@ -117,7 +123,13 @@ export async function run<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[]) 
     checkDone();
   }
 
-  const worker = [...new Array(workerCount)].map((_, index) => {
+  const envWorkers = process.env['WORKERS'];
+  const trueWorkerCount = envWorkers ? Number(envWorkers) : workerCount;
+  if (Number.isNaN(trueWorkerCount) || trueWorkerCount <= 0) {
+    throw new Error(`Invalid worker count: ${envWorkers}`);
+  }
+
+  const worker = [...new Array(trueWorkerCount)].map((_, index) => {
     let worker = new Worker(path.resolve(__dirname, './BootstrapWorker.js'), {
       workerData: {
         scenarioConfig,
