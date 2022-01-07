@@ -52,4 +52,8 @@ export class World {
     await this.hre.network.provider.send('evm_increaseTime', [amount]);
     await this.hre.network.provider.send('evm_mine'); // ensure block is mined
   }
+
+  async chainId() {
+    return (await this.hre.ethers.provider.getNetwork()).chainId;
+  }
 }
