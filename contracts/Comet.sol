@@ -136,7 +136,7 @@ contract Comet is CometStorage {
         bool withdrawPaused,
         bool absorbPaused,
         bool buyPaused
-    ) public {
+    ) external {
         require(msg.sender == governor || msg.sender == pauseGuardian, "Unauthorized");
 
         totals.pauseFlags =
@@ -186,14 +186,14 @@ contract Comet is CometStorage {
     /**
      * @return uint8 representation of the boolean input
      */
-    function toUInt8(bool x) private pure returns (uint8) {
+    function toUInt8(bool x) internal pure returns (uint8) {
         return x ? 1 : 0;
     }
 
     /**
      * @return Boolean representation of the uint8 input
      */
-    function toBool(uint8 x) private pure returns (bool) {
+    function toBool(uint8 x) internal pure returns (bool) {
         return x != 0;
     }
 }
