@@ -5,6 +5,7 @@ import { FaucetToken__factory, MockedOracle__factory, Comet, Comet__factory } fr
 
 let comet: Comet;
 let admin: SignerWithAddress;
+let pauseGuardian: SignerWithAddress;
 let signer: SignerWithAddress;
 let manager: SignerWithAddress;
 let domain;
@@ -22,7 +23,7 @@ const types = {
 
 describe('Comet#allow', function () {
   beforeEach(async () => {
-    [admin, signer, manager] = await ethers.getSigners();
+    [admin, pauseGuardian, signer, manager] = await ethers.getSigners();
 
     const FaucetTokenFactory = (await ethers.getContractFactory(
       'FaucetToken'
@@ -39,6 +40,7 @@ describe('Comet#allow', function () {
     const CometFactory = (await ethers.getContractFactory('Comet')) as Comet__factory;
     comet = await CometFactory.deploy({
       governor: admin.address,
+      pauseGuardian: pauseGuardian.address,
       priceOracle: oracle.address,
       baseToken: token.address,
       assetInfo: [],
