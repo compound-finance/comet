@@ -24,15 +24,11 @@ export class CometContext {
   constructor(
     deploymentManager: DeploymentManager,
     comet: Comet,
-    proxyAdmin: ProxyAdmin,
-    actors: { [name: string]: CometActor },
-    assets: { [name: string]: CometAsset }
+    proxyAdmin: ProxyAdmin
   ) {
     this.deploymentManager = deploymentManager;
     this.comet = comet;
     this.proxyAdmin = proxyAdmin;
-    this.actors = actors;
-    this.assets = assets;
   }
 
   contracts(): ContractMap {
@@ -45,8 +41,8 @@ export class CometContext {
   }
 }
 
-async function buildActor(signer: SignerWithAddress, cometContract: Comet) {
-  return new CometActor(signer, await signer.getAddress(), cometContract);
+async function buildActor(signer: SignerWithAddress, context: CometContext) {
+  return new CometActor(signer, await signer.getAddress(), context);
 }
 
 const getInitialContext = async (world: World): Promise<CometContext> => {
@@ -84,22 +80,24 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
     pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
   }
 
-  let actors = {
-    admin: await buildActor(adminSigner, comet),
-    pauseGuardian: await buildActor(pauseGuardianSigner, comet),
-    albert: await buildActor(albertSigner, comet),
-    betty: await buildActor(bettySigner, comet),
-    charles: await buildActor(charlesSigner, comet),
+  let proxyAdmin = getContract<ProxyAdmin>('ProxyAdmin').connect(adminSigner);
+
+  let context = new CometContext(deploymentManager, comet, proxyAdmin);
+
+  context.actors = {
+    admin: await buildActor(adminSigner, context),
+    pauseGuardian: await buildActor(pauseGuardianSigner, context),
+    albert: await buildActor(albertSigner, context),
+    betty: await buildActor(bettySigner, context),
+    charles: await buildActor(charlesSigner, context),
   };
 
-  let assets = {
+  context.assets = {
     GOLD: new CometAsset(getContract<Token>('GOLD')),
     SILVER: new CometAsset(getContract<Token>('SILVER')),
   };
 
-  let proxyAdmin = getContract<ProxyAdmin>('ProxyAdmin').connect(adminSigner);
-
-  return new CometContext(deploymentManager, comet, proxyAdmin, actors, assets);
+  return context;
 };
 
 async function forkContext(c: CometContext): Promise<CometContext> {

@@ -1,6 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumberish, Signer } from 'ethers';
 import { Comet } from '../../build/types';
+import { CometContext } from './CometContext';
 
 const types = {
   Authorization: [
@@ -14,12 +15,12 @@ const types = {
 export default class CometActor {
   signer: SignerWithAddress;
   address: string;
-  cometContract: Comet;
+  context: CometContext;
 
-  constructor(signer: SignerWithAddress, address: string, cometContract: Comet) {
+  constructor(signer: SignerWithAddress, address: string, context: CometContext) {
     this.signer = signer;
     this.address = address;
-    this.cometContract = cometContract;
+    this.context = context;
   }
 
   async getEthBalance() {
@@ -27,7 +28,7 @@ export default class CometActor {
   }
 
   async allow(manager: CometActor, isAllowed: boolean) {
-    await (await this.cometContract.connect(this.signer).allow(manager.address, isAllowed)).wait();
+    await (await this.context.comet.connect(this.signer).allow(manager.address, isAllowed)).wait();
   }
 
   async pause({
@@ -38,7 +39,7 @@ export default class CometActor {
     buyPaused = false,
   }) {
     await (
-      await this.cometContract
+      await this.context.comet
         .connect(this.signer)
         .pause(supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused)
     ).wait();
@@ -58,10 +59,10 @@ export default class CometActor {
     chainId: number;
   }) {
     const domain = {
-      name: await this.cometContract.NAME(),
-      version: await this.cometContract.VERSION(),
+      name: await this.context.comet.NAME(),
+      version: await this.context.comet.VERSION(),
       chainId: chainId,
-      verifyingContract: this.cometContract.address,
+      verifyingContract: this.context.comet.address,
     };
     const value = {
       manager: managerAddress,
@@ -83,7 +84,7 @@ export default class CometActor {
     expiry: number;
     signature: string;
   }) {
-    await this.cometContract
+    await this.context.comet
       .connect(this.signer)
       .allowBySig(this.address, isAllowed, nonce, expiry, signature);
   }
