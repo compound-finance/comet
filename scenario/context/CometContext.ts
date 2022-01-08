@@ -1,11 +1,16 @@
 import { Signer, Contract } from 'ethers';
 import { ForkSpec, World, buildScenarioFn } from '../../plugins/scenario';
 import { ContractMap, DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-import { BalanceConstraint, PauseConstraint, RemoteTokenConstraint } from '../constraints';
+import {
+  BalanceConstraint,
+  ModernConstraint,
+  PauseConstraint,
+  RemoteTokenConstraint,
+} from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { Comet, deployComet } from '../../src/deploy';
-import { Token } from '../../build/types';
+import { ProxyAdmin, Token } from '../../build/types';
 
 export class CometContext {
   deploymentManager: DeploymentManager;
@@ -13,21 +18,29 @@ export class CometContext {
   assets: { [name: string]: CometAsset };
   remoteToken: Contract | undefined;
   comet: Comet;
+  proxyAdmin: ProxyAdmin;
 
   constructor(
     deploymentManager: DeploymentManager,
     comet: Comet,
+    proxyAdmin: ProxyAdmin,
     actors: { [name: string]: CometActor },
     assets: { [name: string]: CometAsset }
   ) {
     this.deploymentManager = deploymentManager;
     this.comet = comet;
+    this.proxyAdmin = proxyAdmin;
     this.actors = actors;
     this.assets = assets;
   }
 
   contracts(): ContractMap {
     return this.deploymentManager.contracts;
+  }
+
+  async upgradeTo(newComet: Comet) {
+    await this.proxyAdmin.upgrade(this.comet.address, newComet.address);
+    this.comet = new this.deploymentManager.hre.ethers.Contract(this.comet.address, newComet.interface, this.comet.signer) as Comet;
   }
 }
 
@@ -55,7 +68,7 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   let comet = getContract<Comet>('comet');
   let signers = await world.hre.ethers.getSigners();
 
-  const [localAdminSigner, localPauseGuardianSigner, albertSigner, bettySigner, charlesSigner] =
+  let [localAdminSigner, localPauseGuardianSigner, albertSigner, bettySigner, charlesSigner] =
     signers;
   let adminSigner, pauseGuardianSigner;
 
@@ -63,13 +76,14 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
     adminSigner = localAdminSigner;
     pauseGuardianSigner = localPauseGuardianSigner;
   } else {
-    const governorAddress = await comet.governor();
-    const pauseGuardianAddress = await comet.pauseGuardian();
+    let governorAddress = await comet.governor();
+    let pauseGuardianAddress = await comet.pauseGuardian();
+
     adminSigner = await world.impersonateAddress(governorAddress);
     pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
   }
 
-  const actors = {
+  let actors = {
     admin: await buildActor(adminSigner, comet),
     pauseGuardian: await buildActor(pauseGuardianSigner, comet),
     albert: await buildActor(albertSigner, comet),
@@ -77,12 +91,14 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
     charles: await buildActor(charlesSigner, comet),
   };
 
-  const assets = {
+  let assets = {
     GOLD: new CometAsset(getContract<Token>('GOLD')),
     SILVER: new CometAsset(getContract<Token>('SILVER')),
   };
 
-  return new CometContext(deploymentManager, comet, actors, assets);
+  let proxyAdmin = getContract<ProxyAdmin>('ProxyAdmin').connect(adminSigner);
+
+  return new CometContext(deploymentManager, comet, proxyAdmin, actors, assets);
 };
 
 async function forkContext(c: CometContext): Promise<CometContext> {
@@ -90,8 +106,9 @@ async function forkContext(c: CometContext): Promise<CometContext> {
 }
 
 export const constraints = [
-  new BalanceConstraint(),
+  new ModernConstraint(),
   new PauseConstraint(),
+  new BalanceConstraint(),
   new RemoteTokenConstraint(),
 ];
 
