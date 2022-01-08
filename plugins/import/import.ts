@@ -67,8 +67,8 @@ async function getContractCreationCode(network: string, address: string) {
   let regex = /<div id='verifiedbytecode2'>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
   let matches = [...result.matchAll(regex)];
   if (matches.length === 0) {
-    if (result.match(/request throttled/i)) {
-      throw new Error(`Request throttled by Etherscan: ${url}`);
+    if (result.match(/request throttled/i) || result.match(/try again later/i)) {
+      throw new Error(`Request throttled: ${url}`);
     } else {
       throw new Error(`Failed to pull deployed contract code from Etherscan: ${url}`);
     }
