@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./CometStorage.sol";
+import "./ERC20.sol";
 
 /**
  * @title Compound's Comet Contract
@@ -21,8 +22,8 @@ contract Comet is CometStorage {
         address priceOracle;
         address baseToken;
 
-        // XXX need to justify sizes on these better but compiler is happier if we can keep them <= uint96
-        uint64 baseMinForRewards;
+        uint96 trackingIndexScale;
+        uint72 baseMinForRewards;
         uint96 baseTrackingSupplySpeed;
         uint96 baseTrackingBorrowSpeed;
 
@@ -44,18 +45,38 @@ contract Comet is CometStorage {
 
     /** General configuration constants **/
 
+    /// @notice The admin of the protocol
     address public immutable governor;
+
+    /// @notice The account which may trigger pauses
     address public immutable pauseGuardian;
+
+    /// @notice The address of the price oracle contract
     address public immutable priceOracle;
+
+    /// @notice The address of the base token contract
     address public immutable baseToken;
 
-    uint public immutable baseScale;
-    uint public immutable factorScale;
-    uint public immutable rewardScale;
+    /// @notice The scale for base token
+    uint64 public immutable baseScale; // XXX 104? requires more fns..
 
-    uint64 public immutable baseMinForRewards;
-    uint96 public immutable baseTrackingSupplySpeed; // XXX TrackingIndex
-    uint96 public immutable baseTrackingBorrowSpeed; // XXX TrackingIndex
+    /// @notice The scale for base index (depends on time/rate scales, not base token)
+    uint64 public constant baseIndexScale = 1e15;
+
+    /// @notice The scale for factors
+    uint256 public constant factorScale = 1e18;
+
+    /// @notice The scale for reward tracking
+    uint96 public immutable trackingIndexScale;
+
+    /// @notice The minimum amount of base wei for rewards to accrue
+    uint72 public immutable baseMinForRewards;
+
+    /// @notice The speed at which supply rewards are tracked (in trackingIndexScale)
+    uint96 public immutable baseTrackingSupplySpeed;
+
+    /// @notice The speed at which borrow rewards are tracked (in trackingIndexScale)
+    uint96 public immutable baseTrackingBorrowSpeed;
 
     /**  Collateral asset configuration **/
 
@@ -84,9 +105,8 @@ contract Comet is CometStorage {
         priceOracle = config.priceOracle;
         baseToken = config.baseToken;
 
-        baseScale = 1e6; // XXX ERC20.decimals(config.baseToken)
-        factorScale = 1e18;
-        rewardScale = 1e15; // XXX config.rewardScale;
+        baseScale = safe64(10 ** ERC20(config.baseToken).decimals()); // XXX
+        trackingIndexScale = config.trackingIndexScale;
 
         baseMinForRewards = config.baseMinForRewards;
         baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
@@ -103,6 +123,13 @@ contract Comet is CometStorage {
 
         liquidateCollateralFactor00 = _getAsset(config.assetInfo, 0).liquidateCollateralFactor;
         liquidateCollateralFactor01 = _getAsset(config.assetInfo, 1).liquidateCollateralFactor;
+
+        // Initialize aggregates
+        totals.lastAccrualTime = getNow();
+        totals.baseSupplyIndex = baseIndexScale;
+        totals.baseBorrowIndex = baseIndexScale;
+        totals.trackingSupplyIndex = 0;
+        totals.trackingBorrowIndex = 0;
     }
 
     /**
@@ -167,15 +194,15 @@ contract Comet is CometStorage {
     /**
      * @return The current supply rate
      **/
-    function getSupplyRate() virtual public view returns (uint32) {
-        return 0; // XXX
+    function getSupplyRate() virtual public view returns (uint64) {
+        return uint64(factorScale * 20 / 10000000); // XXX
     }
 
     /**
      * @return The current supply rate
      **/
-    function getBorrowRate() virtual public view returns (uint32) {
-        return 0; // XXX
+    function getBorrowRate() virtual public view returns (uint64) {
+        return uint64(factorScale * 20 / 10000000); // XXX
     }
 
     /**
@@ -190,15 +217,15 @@ contract Comet is CometStorage {
      **/
     function accrue(Totals memory totals_) internal view returns (Totals memory) {
         uint40 now_ = getNow();
-        uint40 timeElapsed = now_ - totals_.lastAccrualTime;
+        uint timeElapsed = now_ - totals_.lastAccrualTime;
         if (timeElapsed > 0) {
-            totals_.baseSupplyIndex += safeBaseIndex(mulFactor(totals_.baseSupplyIndex, getSupplyRate() * timeElapsed));
-            totals_.baseBorrowIndex += safeBaseIndex(mulFactor(totals_.baseBorrowIndex, getBorrowRate() * timeElapsed));
+            totals_.baseSupplyIndex += safe64(mulFactor(totals_.baseSupplyIndex, getSupplyRate() * timeElapsed));
+            totals_.baseBorrowIndex += safe64(mulFactor(totals_.baseBorrowIndex, getBorrowRate() * timeElapsed));
             if (totals_.totalSupplyBase >= baseMinForRewards) {
-                totals_.trackingSupplyIndex += safeTrackingIndex(divBaseWei(baseTrackingSupplySpeed * timeElapsed, totals_.totalSupplyBase));
+                totals_.trackingSupplyIndex += safe64(divBaseWei(baseTrackingSupplySpeed * timeElapsed, totals_.totalSupplyBase));
             }
             if (totals_.totalBorrowBase >= baseMinForRewards) {
-                totals_.trackingBorrowIndex += safeTrackingIndex(divBaseWei(baseTrackingBorrowSpeed * timeElapsed, totals_.totalBorrowBase));
+                totals_.trackingBorrowIndex += safe64(divBaseWei(baseTrackingBorrowSpeed * timeElapsed, totals_.totalBorrowBase));
             }
         }
         totals_.lastAccrualTime = now_;
@@ -297,7 +324,7 @@ contract Comet is CometStorage {
     /**
      * @dev Multiply a number by a factor
      */
-    function mulFactor(uint n, uint factor) internal view returns (uint) {
+    function mulFactor(uint n, uint factor) internal pure returns (uint) {
         return n * factor / factorScale;
     }
 
@@ -309,18 +336,10 @@ contract Comet is CometStorage {
     }
 
     /**
-     * @dev Safely cast a number to a base index
+     * @dev Safely cast a number to a 64 bit number
      */
-    function safeBaseIndex(uint n) internal pure returns (uint64) {
-        require(n < 2**64, "number exceeds base index size (64 bits)");
+    function safe64(uint n) internal pure returns (uint64) {
+        require(n < 2**64, "number exceeds size (64 bits)");
         return uint64(n);
-    }
-
-    /**
-     * @dev Safely cast a number to a tracking index
-     */
-    function safeTrackingIndex(uint n) internal pure returns (uint96) {
-        require(n < 2**96, "number exceeds tracking index size (96 bits)");
-        return uint96(n);
     }
 }

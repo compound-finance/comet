@@ -26,6 +26,7 @@ export type ProtocolOpts = {
   pauseGuardian?: Signer;
   base?: string;
   reward?: string;
+  trackingIndexScale?: Numeric;
   baseMinForRewards?: Numeric;
   baseTrackingSupplySpeed?: Numeric;
   baseTrackingBorrowSpeed?: Numeric;
@@ -61,15 +62,10 @@ export async function makeProtocol(opts: ProtocolOpts = {}) {
   const pauseGuardian = opts.pauseGuardian || signers[1];
   const base = opts.base || 'USDC';
   const reward = opts.reward || 'COMP';
+  const trackingIndexScale = opts.trackingIndexScale || exp(1, 15);
   const baseMinForRewards = dfn(opts.baseMinForRewards, exp(1, assets[base].decimals));
-  const baseTrackingSupplySpeed = dfn(
-    opts.baseTrackingSupplySpeed,
-    exp(1, assets[reward].decimals)
-  );
-  const baseTrackingBorrowSpeed = dfn(
-    opts.baseTrackingBorrowSpeed,
-    exp(1, assets[reward].decimals)
-  );
+  const baseTrackingSupplySpeed = dfn(opts.baseTrackingSupplySpeed, trackingIndexScale);
+  const baseTrackingBorrowSpeed = dfn(opts.baseTrackingBorrowSpeed, trackingIndexScale);
 
   const tokens = {};
   for (const symbol in assets) {
@@ -92,6 +88,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}) {
     pauseGuardian: await pauseGuardian.getAddress(),
     priceOracle: oracle.address,
     baseToken: tokens[base].address,
+    trackingIndexScale,
     baseMinForRewards,
     baseTrackingSupplySpeed,
     baseTrackingBorrowSpeed,
