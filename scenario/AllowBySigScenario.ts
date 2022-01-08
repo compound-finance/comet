@@ -3,7 +3,7 @@ import { expect } from 'chai';
 
 scenario(
   'Comet#allowBySig > allows a user to authorize a manager by signature',
-  {},
+  { upgrade: true },
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
@@ -32,7 +32,7 @@ scenario(
   }
 );
 
-scenario('Comet#allowBySig fails for invalid signatures', {}, async ({ comet, actors }, world) => {
+scenario('Comet#allowBySig fails for invalid signatures', { upgrade: true }, async ({ comet, actors }, world) => {
   const { albert, betty } = actors;
 
   expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
@@ -50,7 +50,7 @@ scenario('Comet#allowBySig fails for invalid signatures', {}, async ({ comet, ac
   ).to.be.revertedWith('ECDSA: invalid signature length');
 });
 
-scenario('Comet#allowBySig fails for invalid nonce', {}, async ({ comet, actors }, world) => {
+scenario('Comet#allowBySig fails for invalid nonce', { upgrade: true }, async ({ comet, actors }, world) => {
   const { albert, betty } = actors;
 
   expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
@@ -78,7 +78,7 @@ scenario('Comet#allowBySig fails for invalid nonce', {}, async ({ comet, actors 
   ).to.be.revertedWith('Invalid nonce');
 });
 
-scenario('Comet#allowBySig rejects a repeated message', {}, async ({ comet, actors }, world) => {
+scenario('Comet#allowBySig rejects a repeated message', { upgrade: true }, async ({ comet, actors }, world) => {
   const { albert, betty } = actors;
 
   expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
@@ -114,7 +114,7 @@ scenario('Comet#allowBySig rejects a repeated message', {}, async ({ comet, acto
   ).to.be.revertedWith('Invalid nonce');
 });
 
-scenario('Comet#allowBySig fails for invalid expiry', {}, async ({ comet, actors }, world) => {
+scenario('Comet#allowBySig fails for invalid expiry', { upgrade: true }, async ({ comet, actors }, world) => {
   const { albert, betty } = actors;
 
   expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
