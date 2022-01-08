@@ -19,14 +19,8 @@ jobs:
           cache: 'yarn'
           node-version: '16'
 
-      - name: Cache Deployments
-        uses: actions/cache@v2
-        with:
-          path: deployments
-          key: deployments
-
       - name: Install packages
-        run: yarn install --non-interactive --frozen-lockfile && yarn build
+        run: yarn install --non-interactive --frozen-lockfile
 
       - name: Compile
         run: npx hardhat compile
