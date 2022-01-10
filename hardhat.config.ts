@@ -156,6 +156,11 @@ const config: HardhatUserConfig = {
       },
     ],
   },
+
+  mocha: {
+    reporter: "mocha-multi-reporters",
+    reporterOptions: "configFile=reporterConfig.json"
+  },
 };
 
 setupDefaultNetworkProviders(config);

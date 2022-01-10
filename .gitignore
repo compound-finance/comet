@@ -19,3 +19,5 @@ deployments/*/proxies.json
 coverage/
 coverage.json
 typechain/
+
+xunit.xml
