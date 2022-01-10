@@ -72,7 +72,42 @@ describe('Comet', function () {
     expect(assetInfo01.liquidateCollateralFactor).to.equal(FACTOR);
   });
 
+  it('Should fail if too many assets are passed', async () => {
+    const CometFactory = (await ethers.getContractFactory(
+      'Comet'
+    )) as Comet__factory;
+    await expect(CometFactory.deploy({
+      governor: governor.address,
+      pauseGuardian: pauseGuardian.address,
+      priceOracle: oracle.address,
+      baseToken: token.address,
+      assetInfo: [{ asset: asset1.address, borrowCollateralFactor: FACTOR, liquidateCollateralFactor: FACTOR }, { asset: asset2.address, borrowCollateralFactor: FACTOR, liquidateCollateralFactor: FACTOR }, { asset: asset2.address, borrowCollateralFactor: FACTOR, liquidateCollateralFactor: FACTOR }]
+    })).to.be.revertedWith('too many asset configs');
+  });
+
   it('Should revert if index is greater that numAssets', async () => {
     await expect(comet.getAssetInfo(2)).to.be.revertedWith('asset info not found');
   });
+
+  it('Should get valid assets', async () => {
+    const assetInfo00 = await comet.getAssetInfo(0);
+    const assetInfo01 = await comet.getAssetInfo(1);
+    const assets = await comet.assets();
+    expect(assets[0].asset).to.be.equal(assetInfo00.asset);
+    expect(assets[0].borrowCollateralFactor).to.be.equal(assetInfo00.borrowCollateralFactor);
+    expect(assets[0].liquidateCollateralFactor).to.be.equal(assetInfo00.liquidateCollateralFactor);
+
+    expect(assets[1].asset).to.be.equal(assetInfo01.asset);
+    expect(assets[1].borrowCollateralFactor).to.be.equal(assetInfo01.borrowCollateralFactor);
+    expect(assets[1].liquidateCollateralFactor).to.be.equal(assetInfo01.liquidateCollateralFactor);
+  });
+
+  it('Should get valid asset addresses', async () => {
+    const assetInfo00 = await comet.getAssetInfo(0);
+    const assetInfo01 = await comet.getAssetInfo(1);
+    const assets = await comet.assetAddresses();
+    expect(assets[0]).to.be.equal(assetInfo00.asset);
+    expect(assets[1]).to.be.equal(assetInfo01.asset);
+  });
+
 });
