@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./CometStorage.sol";
+import "./Token.sol";
 
 contract Comet is CometStorage {
     struct AssetInfo {
@@ -195,5 +196,46 @@ contract Comet is CometStorage {
      */
     function toBool(uint8 x) internal pure returns (bool) {
         return x != 0;
+    }
+
+    /**
+     * @notice XXX
+     */
+    function withdrawReserves(address to, uint amount) external {
+        require(msg.sender == governor, "not governor");
+        require(Token(baseToken).transfer(to, amount), "invalid token transfer");
+    }
+
+    /**
+     * @notice XXX
+     */
+    function getReserves() external view returns (uint) {
+        uint thisBalance = Token(baseToken).balanceOf(address(this));
+        return thisBalance - presentValueSupply(totals.totalSupplyBase) + presentValueBorrow(totals.totalBorrowBase);
+    }
+
+    /**
+     * @dev XXX
+     */
+    function presentValue(int principalValue) internal view returns (int) {
+        if (principalValue >= 0) {
+            return int(presentValueSupply(uint(principalValue)));
+        } else {
+            return -1 * int(presentValueBorrow(uint(principalValue)));
+        }
+    }
+
+    /**
+     * @dev XXX
+     */
+    function presentValueSupply(uint principalValue) internal view returns (uint) {
+        return principalValue * totals.baseSupplyIndex;
+    }
+
+    /**
+     * @dev XXX
+     */
+    function presentValueBorrow(uint principalValue) internal view returns (uint) {
+        return principalValue * totals.baseBorrowIndex;
     }
 }
