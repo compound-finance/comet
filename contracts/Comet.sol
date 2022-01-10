@@ -28,6 +28,12 @@ contract Comet is CometStorage {
         uint64 baseTrackingBorrowSpeed;
 
         AssetInfo[] assetInfo;
+
+        uint kink;
+        uint interestRateSlopeLow;
+        uint interestRateSlopeHigh;
+        uint interestRateBase;
+        uint reserveRate;
     }
 
     /// @notice The max number of assets this contract is hardcoded to support
@@ -91,6 +97,12 @@ contract Comet is CometStorage {
     uint internal immutable liquidateCollateralFactor00;
     uint internal immutable liquidateCollateralFactor01;
 
+    uint internal immutable kink;
+    uint internal immutable interestRateSlopeLow;
+    uint internal immutable interestRateSlopeHigh;
+    uint internal immutable interestRateBase;
+    uint internal immutable reserveRate;
+
     /**
      * @notice Construct a new protocol instance
      * @param config The mapping of initial/constant parameters
@@ -127,6 +139,13 @@ contract Comet is CometStorage {
 
         liquidateCollateralFactor00 = _getAsset(config.assetInfo, 0).liquidateCollateralFactor;
         liquidateCollateralFactor01 = _getAsset(config.assetInfo, 1).liquidateCollateralFactor;
+
+        // Set interest rate model configs
+        kink = config.kink;
+        interestRateSlopeLow = config.interestRateSlopeLow;
+        interestRateSlopeHigh = config.interestRateSlopeHigh;
+        interestRateBase = config.interestRateBase;
+        reserveRate = config.reserveRate;
 
         // Initialize aggregates
         totals.lastAccrualTime = getNow();
@@ -197,20 +216,6 @@ contract Comet is CometStorage {
     }
 
     /**
-     * @return The current supply rate
-     **/
-    function getSupplyRate() virtual public view returns (uint64) {
-        return uint64(factorScale * 20 / 10000000); // XXX
-    }
-
-    /**
-     * @return The current supply rate
-     **/
-    function getBorrowRate() virtual public view returns (uint64) {
-        return uint64(factorScale * 20 / 10000000); // XXX
-    }
-
-    /**
      * @notice Accrue interest (and rewards) in base token supply and borrows
      **/
     function accrue() public {
@@ -249,6 +254,79 @@ contract Comet is CometStorage {
      */
     function allowInternal(address owner, address manager, bool _isAllowed) internal {
       isAllowed[owner][manager] = _isAllowed;
+    }
+
+    /**
+     * @return The current supply rate
+     */
+     // TODO: Determine what the return types should be (uint256 vs uint64).
+    function getSupplyRate() public view returns (uint256) {
+        // TODO: Optimize by passing totals to getUtilization?
+        uint utilization = getUtilization();
+        // TODO: Make sure decimal math works out.
+        if (utilization <= kink) {
+            uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
+            return (interestRateBase + interestRateSlopeLow * utilization / factorScale) * reserveScalingFactor / factorScale; 
+        } else {
+            uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
+            return (interestRateBase + interestRateSlopeLow * kink / factorScale + interestRateSlopeHigh * (utilization - kink) / factorScale) * reserveScalingFactor / factorScale;
+        }
+    }
+
+    /**
+     * @return The current supply rate
+     */
+    function getBorrowRate() public view returns (uint256) {
+        uint utilization = getUtilization();
+        // TODO: Make sure decimal math works out.
+        if (utilization <= kink) {
+            return interestRateBase + interestRateSlopeLow * utilization / factorScale; 
+        } else {
+            return interestRateBase + interestRateSlopeLow * kink / factorScale + interestRateSlopeHigh * (utilization - kink) / factorScale;
+        }
+    }
+
+    /**
+     * @return The utilization rate of the base asset
+     */
+    function getUtilization() public view returns (uint64) {
+        // TODO: Optimize by passing in totals instead of reading from storage?
+        Totals memory _totals = totals;
+        uint totalSupply = presentValueSupply(_totals.totalSupplyBase);
+        uint totalBorrow = presentValueBorrow(_totals.totalBorrowBase);
+        if (totalSupply == 0) {
+            return 0;
+        } else {
+            return uint64(totalBorrow * factorScale / totalSupply);
+        }
+    }
+
+    /**
+     * @return The positive present supply balance if positive or the negative borrow balance if negative
+     */
+    function presentValue(int principalValue) internal view returns (int) {
+        // TODO: Fix unsafe type conversions.
+        if (principalValue >= 0) {
+            return int(presentValueSupply(uint(principalValue)));
+        } else {
+            return int(presentValueBorrow(uint(principalValue)));
+        }
+    }
+
+    /**
+     * @return The principal amount projected forward by the supply index
+     */
+    function presentValueSupply(uint principalValue) internal view returns (uint) {
+        // TODO: Optimize by passing in index instead of reading from storage?
+        return principalValue * totals.baseSupplyIndex;
+    }
+
+    /**
+     * @return The principal amount projected forward by the borrow index
+     */
+    function presentValueBorrow(uint principalValue) internal view returns (uint) {
+        // TODO: Optimize by passing in index instead of reading from storage?
+        return principalValue * totals.baseBorrowIndex;
     }
 
     /**
