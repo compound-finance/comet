@@ -151,11 +151,66 @@ describe('accrue', function () {
     expect(t2.trackingBorrowIndex).to.be.equal(projectTrackingIndex(t1.trackingBorrowIndex, borrowSpeed, timeElapsed, t1.totalBorrowBase));
   });
 
+  it('overflows if baseMinRewards is set too low and accrues no interest', async () => {
+    const params = {
+      baseMinForRewards: 12000,
+      trackingIndexScale: exp(1, 15),
+    };
+    const { comet } = await makeProtocol(params);
+
+    const t0 = await comet.totals();
+    const t1 = Object.assign({}, t0, {
+      totalSupplyBase: 14000,
+      totalBorrowBase: 13000,
+    });
+    await ethers.provider.send('evm_increaseTime', [998]);
+    const s0 = await wait(comet.setTotals(t1));
+    await ethers.provider.send('evm_increaseTime', [2]);
+    await expect(wait(comet.accrue())).to.be.revertedWith('number exceeds size (64 bits)');
+    const t2 = await comet.totals();
+
+    const supplyRate = await comet.getSupplyRate();
+    const borrowRate = await comet.getBorrowRate();
+    const supplySpeed = await comet.baseTrackingSupplySpeed();
+    const borrowSpeed = await comet.baseTrackingBorrowSpeed();
+    const timeElapsed = t2.lastAccrualTime - t0.lastAccrualTime;
+    expect(timeElapsed).to.be.equal(0);
+
+    expect(t2.baseSupplyIndex).to.be.equal(projectBaseIndex(t1.baseSupplyIndex, supplyRate, timeElapsed));
+    expect(t2.baseBorrowIndex).to.be.equal(projectBaseIndex(t1.baseBorrowIndex, borrowRate, timeElapsed));
+    expect(t2.trackingSupplyIndex).to.be.equal(t1.trackingSupplyIndex);
+    expect(t2.trackingBorrowIndex).to.be.equal(t1.trackingBorrowIndex);
+  });
+
   it('reverts on overflows', async () => {
-    // XXX
+    const { comet } = await makeProtocol();
+
+    const t0 = await comet.totals();
+    const t1 = Object.assign({}, t0, {
+      baseSupplyIndex: 2n**64n - 1n,
+    });
+    await ethers.provider.send('evm_increaseTime', [998]);
+    const s0 = await wait(comet.setTotals(t1));
+    await ethers.provider.send('evm_increaseTime', [2]);
+    await expect(wait(comet.accrue())).to.be.revertedWith('reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
+
+    const t2 = Object.assign({}, t0, {
+      baseBorrowIndex: 2n**64n - 1n,
+    });
+    await ethers.provider.send('evm_increaseTime', [998]);
+    const s1 = await wait(comet.setTotals(t2));
+    await ethers.provider.send('evm_increaseTime', [2]);
+    await expect(wait(comet.accrue())).to.be.revertedWith('reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
   });
 
   it('supports up to the maximum timestamp then breaks', async () => {
-    // XXX
+    const { comet } = await makeProtocol();
+
+    await ethers.provider.send('evm_increaseTime', [100]);
+    const a0 = await wait(comet.accrue());
+
+    await ethers.provider.send('evm_increaseTime', [2**40]);
+    await expect(wait(comet.accrue())).to.be.revertedWith('timestamp exceeds size (40 bits)');
+    await ethers.provider.send('hardhat_reset', []); // dont break downstream tests...
   });
 });

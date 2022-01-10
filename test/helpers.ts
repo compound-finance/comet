@@ -20,9 +20,11 @@ export type ProtocolOpts = {
       name?: string;
       initial?: Numeric;
       decimals?: Numeric;
+      borrowCF?: Numeric;
+      liquidateCF?: Numeric;
     };
   };
-  admin?: Signer;
+  governor?: Signer;
   pauseGuardian?: Signer;
   base?: string;
   reward?: string;
@@ -34,7 +36,9 @@ export type ProtocolOpts = {
 
 export type Protocol = {
   opts: ProtocolOpts;
-  admin: Signer;
+  governor: Signer;
+  pauseGuardian: Signer;
+  regularUser: Signer;
   comet: Comet;
   oracle: MockedOracle;
   tokens: {
@@ -42,7 +46,7 @@ export type Protocol = {
   };
 };
 
-export function dfn(x, dflt) {
+export function dfn<T>(x: T | undefined | null, dflt: T): T {
   return x == undefined ? dflt : x;
 }
 
@@ -50,16 +54,21 @@ export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
   return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
 }
 
+const factorScale = exp(1, 18);
+const ONE = factorScale;
+
 export async function makeProtocol(opts: ProtocolOpts = {}) {
   const signers = await ethers.getSigners();
   const assets = opts.assets || {
     COMP: { initial: 1e7, decimals: 18 },
     USDC: { initial: 1e6, decimals: 6 },
-    WETH: { initial: 1e4, decimals: 18 },
-    WBTC: { initial: 1e3, decimals: 8 },
+    // XXX modify contract to support more assets!!
+    // WETH: { initial: 1e4, decimals: 18 },
+    // WBTC: { initial: 1e3, decimals: 8 },
   };
-  const admin = opts.admin || signers[0];
+  const governor = opts.governor || signers[0];
   const pauseGuardian = opts.pauseGuardian || signers[1];
+  const regularUser = signers[2]; // guaranteed to not be governor or pause guardian
   const base = opts.base || 'USDC';
   const reward = opts.reward || 'COMP';
   const trackingIndexScale = opts.trackingIndexScale || exp(1, 15);
@@ -84,7 +93,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}) {
 
   const CometFactory = (await ethers.getContractFactory('CometHarness')) as Comet__factory;
   const comet = await CometFactory.deploy({
-    governor: await admin.getAddress(),
+    governor: await governor.getAddress(),
     pauseGuardian: await pauseGuardian.getAddress(),
     priceOracle: oracle.address,
     baseToken: tokens[base].address,
@@ -92,14 +101,20 @@ export async function makeProtocol(opts: ProtocolOpts = {}) {
     baseMinForRewards,
     baseTrackingSupplySpeed,
     baseTrackingBorrowSpeed,
-    assetInfo: [ // XXX support more assets in Comet; allow setting collateral factors (easy)
-      { asset: tokens[base].address, borrowCollateralFactor: exp(1, 18), liquidateCollateralFactor: exp(1, 18) },
-      { asset: tokens[reward].address, borrowCollateralFactor: exp(1, 18), liquidateCollateralFactor: exp(1, 18) },
-    ]
+    assetInfo: Object.entries(assets).reduce((acc, [symbol, config], i) => {
+      if (symbol != base) {
+        acc.push({
+          asset: tokens[symbol].address,
+          borrowCollateralFactor: config.borrowCF || ONE,
+          liquidateCollateralFactor: config.liquidateCF || ONE,
+        });
+      }
+      return acc;
+    }, [])
   });
   await comet.deployed();
 
-  return { opts, admin, comet, oracle, tokens };
+  return { opts, governor, pauseGuardian, regularUser, comet, oracle, tokens };
 }
 
 export async function wait(tx) {

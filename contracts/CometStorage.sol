@@ -10,10 +10,10 @@ contract CometStorage {
     // 512 bits total = 2 slots
     struct Totals {
         // 1st slot
-        uint64 trackingSupplyIndex;
-        uint64 trackingBorrowIndex;
         uint64 baseSupplyIndex;
         uint64 baseBorrowIndex;
+        uint64 trackingSupplyIndex;
+        uint64 trackingBorrowIndex;
         // 2nd slot
         uint104 totalSupplyBase;
         uint104 totalBorrowBase;

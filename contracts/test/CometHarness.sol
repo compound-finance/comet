@@ -9,7 +9,7 @@ contract CometHarness is Comet {
     constructor(Configuration memory config) Comet(config) {}
 
     function getNow() override public view returns (uint40) {
-        return nowOverride > 0 ? uint40(nowOverride) : uint40(block.timestamp);
+        return nowOverride > 0 ? uint40(nowOverride) : super.getNow();
     }
 
     function setNow(uint now_) public {

@@ -22,10 +22,10 @@ contract Comet is CometStorage {
         address priceOracle;
         address baseToken;
 
-        uint96 trackingIndexScale;
+        uint64 trackingIndexScale;
         uint72 baseMinForRewards;
-        uint96 baseTrackingSupplySpeed;
-        uint96 baseTrackingBorrowSpeed;
+        uint64 baseTrackingSupplySpeed;
+        uint64 baseTrackingBorrowSpeed;
 
         AssetInfo[] assetInfo;
     }
@@ -36,6 +36,7 @@ contract Comet is CometStorage {
 
     /// @notice The number of assets this contract actually supports
     uint public immutable numAssets;
+
     /// @notice Offsets for specific actions in the pause flag bit array
     uint8 public constant pauseSupplyOffset = 0;
     uint8 public constant pauseTransferOffset = 1;
@@ -57,8 +58,8 @@ contract Comet is CometStorage {
     /// @notice The address of the base token contract
     address public immutable baseToken;
 
-    /// @notice The scale for base token
-    uint64 public immutable baseScale; // XXX 104? requires more fns..
+    /// @notice The scale for base token (must be less than 18 decimals)
+    uint64 public immutable baseScale;
 
     /// @notice The scale for base index (depends on time/rate scales, not base token)
     uint64 public constant baseIndexScale = 1e15;
@@ -67,16 +68,17 @@ contract Comet is CometStorage {
     uint256 public constant factorScale = 1e18;
 
     /// @notice The scale for reward tracking
-    uint96 public immutable trackingIndexScale;
+    uint64 public immutable trackingIndexScale;
 
     /// @notice The minimum amount of base wei for rewards to accrue
+    /// @dev This must be large enough so as to prevent division by base wei from overflowing the 64 bit indices.
     uint72 public immutable baseMinForRewards;
 
     /// @notice The speed at which supply rewards are tracked (in trackingIndexScale)
-    uint96 public immutable baseTrackingSupplySpeed;
+    uint64 public immutable baseTrackingSupplySpeed;
 
     /// @notice The speed at which borrow rewards are tracked (in trackingIndexScale)
-    uint96 public immutable baseTrackingBorrowSpeed;
+    uint64 public immutable baseTrackingBorrowSpeed;
 
     /**  Collateral asset configuration **/
 
@@ -95,6 +97,8 @@ contract Comet is CometStorage {
      **/
     constructor(Configuration memory config) {
         // Sanity checks
+        uint decimals = ERC20(config.baseToken).decimals();
+        require(decimals <= 18, "base token has too many decimals");
         require(config.baseMinForRewards > 0, "baseMinForRewards should be > 0");
         require(config.assetInfo.length <= maxAssets, "too many asset configs");
         // XXX other sanity checks? for rewards?
@@ -105,7 +109,7 @@ contract Comet is CometStorage {
         priceOracle = config.priceOracle;
         baseToken = config.baseToken;
 
-        baseScale = safe64(10 ** ERC20(config.baseToken).decimals()); // XXX
+        baseScale = uint64(10 ** decimals);
         trackingIndexScale = config.trackingIndexScale;
 
         baseMinForRewards = config.baseMinForRewards;
@@ -188,6 +192,7 @@ contract Comet is CometStorage {
      * @return The current timestamp
      **/
     function getNow() virtual public view returns (uint40) {
+        require(block.timestamp < 2**40, "timestamp exceeds size (40 bits)");
         return uint40(block.timestamp);
     }
 
