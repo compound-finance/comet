@@ -38,7 +38,6 @@ jobs:
 
       - uses: dorny/test-reporter@v1
         with:
-          artifact: test-results            # Artifact name
           name: Unit Tests                  # Name of the check run which will be created
           path: 'test-results.json'         # Path to test results (inside artifact .zip)
           reporter: mocha-json              # Format of test results

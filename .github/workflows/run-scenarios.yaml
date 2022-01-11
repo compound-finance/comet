@@ -55,7 +55,6 @@ jobs:
 
       - uses: dorny/test-reporter@v1
         with:
-          artifact: scenario-results        # Artifact name
           name: Scenario Tests              # Name of the check run which will be created
           path: 'scenario-results.json'     # Path to test results (inside artifact .zip)
           reporter: mocha-json              # Format of test results
