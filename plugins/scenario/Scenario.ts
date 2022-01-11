@@ -1,4 +1,5 @@
 import { World } from './World';
+import { getStack } from './Stack';
 
 // A solution modifies a given context and world in a way that satisfies a constraint.
 export type Solution<T> = (T, World) => Promise<T | void>;
@@ -23,6 +24,7 @@ export type ScenarioFlags = null | 'only' | 'skip';
 
 export class Scenario<T> {
   name: string;
+  file: string | null;
   requirements: object;
   property: Property<T>;
   initializer: Initializer<T>;
@@ -38,5 +40,7 @@ export class Scenario<T> {
     this.forker = forker;
     this.constraints = constraints;
     this.flags = flags;
+    let frame = getStack(3);
+    this.file = frame[0] ? frame[0].file : null;
   }
 }

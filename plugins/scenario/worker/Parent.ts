@@ -4,13 +4,14 @@ import { ForkSpec } from '../World';
 import { Scenario } from '../Scenario';
 import { loadScenarios } from '../Loader';
 import { defaultFormats, scenarioGlob, workerCount } from './Config';
-import { loadFormat, showReport, Format } from './Report';
+import { showReport } from './Report';
 import { getContext, getConfig, getHardhatArguments } from './HardhatContext';
 import { ScenarioConfig } from '../types';
 import { HardhatConfig } from 'hardhat/types';
 
 export interface Result {
   base: string;
+  file: string;
   scenario: string;
   elapsed?: number;
   error?: Error;
@@ -66,13 +67,16 @@ function convertToSerializableObject(object: object) {
 export async function run<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[]) {
   let hardhatConfig = convertToSerializableObject(getConfig()) as HardhatConfig;
   let hardhatArguments = getHardhatArguments();
-  let formats = defaultFormats.map(loadFormat);
+  let formats = defaultFormats;
   let scenarios: Scenario<T>[] = Object.values(await loadScenarios(scenarioGlob));
   let baseScenarios: BaseScenario<T>[] = getBaseScenarios(bases, scenarios);
   let [runningScenarios, skippedScenarios] = filterRunning(baseScenarios);
 
+  let startTime = Date.now();
+
   let results: Result[] = skippedScenarios.map(({ base, scenario }) => ({
     base: base.name,
+    file: scenario.file || scenario.name,
     scenario: scenario.name,
     elapsed: undefined,
     error: undefined,
@@ -150,7 +154,9 @@ export async function run<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[]) 
 
   await isDone;
 
-  showReport(results, formats);
+  let endTime = Date.now();
+
+  await showReport(results, formats, startTime, endTime);
 
   if (results.some((result) => result.error)) {
     process.exit(1); // Exit as failure

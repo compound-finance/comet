@@ -19,3 +19,6 @@ deployments/*/proxies.json
 coverage/
 coverage.json
 typechain/
+
+test-results.json
+scenario-results.json

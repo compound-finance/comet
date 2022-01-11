@@ -71,6 +71,10 @@ export async function deployComet(
         pauseGuardian: await pauseGuardian.getAddress(),
         priceOracle: oracle.address,
         baseToken: baseToken.address,
+        trackingIndexScale: (1e15).toString(), // XXX add 'exp' to scen framework?
+        baseMinForRewards: 1, // XXX
+        baseTrackingSupplySpeed: 0, // XXX
+        baseTrackingBorrowSpeed: 0, // XXX
         assetInfo: [assetInfo0, assetInfo1],
       },
     ]

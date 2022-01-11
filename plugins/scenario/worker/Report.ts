@@ -1,7 +1,16 @@
 import { Result } from './Parent';
 import { diff as showDiff } from 'jest-diff';
+import * as fs from 'fs/promises';
 
-export type Format = 'console';
+export interface ConsoleFormatOptions {};
+export interface JsonFormatOptions {
+  output?: string;
+};
+
+export type FormatConfig = {
+  console?: ConsoleFormatOptions,
+  json?: JsonFormatOptions
+}
 
 function pluralize(n, singular, plural = null) {
   if (n === 1) {
@@ -11,15 +20,7 @@ function pluralize(n, singular, plural = null) {
   }
 }
 
-export function loadFormat(str: string): Format {
-  if (str === 'console') {
-    return 'console';
-  } else {
-    throw new Error(`Unknown report format: ${str}`);
-  }
-}
-
-function showReportConsole(results: Result[]) {
+async function showReportConsole(results: Result[], consoleOptions: ConsoleFormatOptions, startTime: number, endTime: number) {
   let testCount = 0;
   let succCount = 0;
   let errCount = 0;
@@ -65,10 +66,75 @@ function showReportConsole(results: Result[]) {
   console.log(`\n\n${prefix} Results: ${succText}, ${errText}, ${skipText} ${avgText}\n`);
 }
 
-export function showReport(results: Result[], formats: Format[]) {
-  formats.forEach((format) => {
-    if (format === 'console') {
-      showReportConsole(results);
+interface JsonTestResult {
+  title: string,
+  fullTitle: string,
+  file: string,
+  duration: number,
+  currentRetry: number,
+  err: any
+};
+
+async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions, startTime: number, endTime: number) {
+  // TODO: Accept options, etc.
+  let suites = new Set();
+  let passes: JsonTestResult[] = [];
+  let pending: JsonTestResult[] = [];
+  let failures: JsonTestResult[] = [];
+  let tests: JsonTestResult[] = results.map((result) => {
+    let suite = result.file; // TODO: Is this how we should do suites?
+    suites.add(suite);
+
+    let test = {
+      title: result.scenario,
+      fullTitle: `${result.base} ${result.scenario}`,
+      file: result.file,
+      duration: result.elapsed || 0,
+      currentRetry: 0,
+      err: result.error ?? {}
+    };
+
+    if (result.error) {
+      failures.push(test);
+    } else if (result.skipped) {
+      pending.push(test);
+    } else {
+      passes.push(test);
     }
+
+    return test;
   });
+
+
+  let result = JSON.stringify({
+    stats: {
+      suites: suites.size,
+      tests: tests.length,
+      passes: passes.length,
+      pending: pending.length,
+      failures: failures.length,
+      start: new Date(startTime).toISOString(),
+      end: new Date(endTime).toISOString(),
+      duration: endTime - startTime,
+    },
+    tests,
+    pending,
+    failures,
+    passes,
+  }, null, 4);
+
+  if (jsonOptions.output) {
+    await fs.writeFile(jsonOptions.output, result);
+  } else {
+    console.log(result);
+  }
+}
+
+export async function showReport(results: Result[], format: FormatConfig, startTime: number, endTime: number) {
+  if (format.console) {
+    await showReportConsole(results, format.console, startTime, endTime);
+  }
+  if (format.json) {
+    await showJsonReport(results, format.json, startTime, endTime);
+  }
 }

@@ -39,6 +39,8 @@
     "hardhat": "^2.6.7",
     "hardhat-gas-reporter": "^1.0.4",
     "jest-diff": "^27.4.2",
+    "mocha-junit-reporter": "^2.0.2",
+    "mocha-multi-reporters": "hayesgm/mocha-multi-reporters#hayesgm/reporter-options-to-option",
     "prettier": "2.5.1",
     "solhint": "^3.3.6",
     "solidity-coverage": "^0.7.17",
@@ -46,5 +48,8 @@
     "typechain": "^6.0.2",
     "typescript": "^4.4.4"
   },
-  "repository": "git@github.com:compound-finance/comet.git"
+  "repository": "git@github.com:compound-finance/comet.git",
+  "resolutions": {
+    "mocha": "^9.1.3"
+  }
 }
