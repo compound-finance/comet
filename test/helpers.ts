@@ -32,6 +32,7 @@ export type ProtocolOpts = {
   baseMinForRewards?: Numeric;
   baseTrackingSupplySpeed?: Numeric;
   baseTrackingBorrowSpeed?: Numeric;
+  baseTokenBalance?: Numeric;
 };
 
 export type Protocol = {
@@ -75,6 +76,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}) {
   const baseMinForRewards = dfn(opts.baseMinForRewards, exp(1, assets[base].decimals));
   const baseTrackingSupplySpeed = dfn(opts.baseTrackingSupplySpeed, trackingIndexScale);
   const baseTrackingBorrowSpeed = dfn(opts.baseTrackingBorrowSpeed, trackingIndexScale);
+  const protocolBaseTokenBalance = dfn(opts.baseTokenBalance, 1000);
 
   const tokens = {};
   for (const symbol in assets) {
@@ -114,6 +116,9 @@ export async function makeProtocol(opts: ProtocolOpts = {}) {
   });
   await comet.deployed();
 
+  const baseToken = tokens[base];
+  await wait(baseToken.allocateTo(comet.address, protocolBaseTokenBalance));
+
   return { opts, governor, pauseGuardian, regularUser, comet, oracle, tokens };
 }
 
@@ -121,4 +126,8 @@ export async function wait(tx) {
   const tx_ = await tx;
   tx_.receipt = await (tx_).wait();
   return tx_;
+}
+
+export function filterEvent(data, eventName) {
+  return data.receipt.events?.filter((x) => {return x.event == eventName})[0];
 }
