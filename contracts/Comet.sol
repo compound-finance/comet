@@ -317,9 +317,9 @@ contract Comet is CometStorage {
      */
     function presentValue(int104 principalValue) internal view returns (int104) {
         if (principalValue >= 0) {
-            return safeInt(presentValueSupply(safeUint(principalValue)));
+            return safe104i(presentValueSupply(safe104u(principalValue)));
         } else {
-            return -safeInt(presentValueBorrow(safeUint(-principalValue)));
+            return -safe104i(presentValueBorrow(safe104u(-principalValue)));
         }
     }
 
@@ -439,15 +439,15 @@ contract Comet is CometStorage {
     /**
      * @dev Safely cast an uint104 to an int104
      */
-    function safeInt(uint104 n) internal pure returns (int104) {
-        require(int104(n) <= type(int104).max, "number exceeds max int size");
+    function safe104i(uint104 n) internal pure returns (int104) {
+        require(n <= uint104(type(int104).max), "number exceeds max int size");
         return int104(n);
     }
 
     /**
      * @dev Safely cast an int104 to an uint104
      */
-    function safeUint(int104 n) internal pure returns (uint104) {
+    function safe104u(int104 n) internal pure returns (uint104) {
         require(n >= 0, "number is negative");
         return uint104(n);
     }
