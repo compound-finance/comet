@@ -259,16 +259,13 @@ contract Comet is CometStorage {
     /**
      * @return The current supply rate
      */
-     // TODO: Determine what the return types should be (uint256 vs uint64).
-    function getSupplyRate() public view returns (uint256) {
-        // TODO: Optimize by passing totals to getUtilization?
+    // TODO: Optimize by passing totals from caller to getUtilization()
+    function getSupplyRate() public view returns (uint) {
         uint utilization = getUtilization();
-        // TODO: Make sure decimal math works out.
+        uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
         if (utilization <= kink) {
-            uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
             return (interestRateBase + interestRateSlopeLow * utilization / factorScale) * reserveScalingFactor / factorScale; 
         } else {
-            uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
             return (interestRateBase + interestRateSlopeLow * kink / factorScale + interestRateSlopeHigh * (utilization - kink) / factorScale) * reserveScalingFactor / factorScale;
         }
     }
@@ -276,9 +273,9 @@ contract Comet is CometStorage {
     /**
      * @return The current borrow rate
      */
-    function getBorrowRate() public view returns (uint256) {
+    // TODO: Optimize by passing totals from caller to getUtilization()
+    function getBorrowRate() public view returns (uint) {
         uint utilization = getUtilization();
-        // TODO: Make sure decimal math works out.
         if (utilization <= kink) {
             return interestRateBase + interestRateSlopeLow * utilization / factorScale; 
         } else {
