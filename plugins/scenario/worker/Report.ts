@@ -124,7 +124,6 @@ async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions,
   }, null, 4);
 
   if (jsonOptions.output) {
-    console.log([jsonOptions.output, result]);
     await fs.writeFile(jsonOptions.output, result);
   } else {
     console.log(result);
