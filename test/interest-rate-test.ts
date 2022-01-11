@@ -35,10 +35,10 @@ describe('interest rates', function () {
     // totalBorrowBase / totalSupplyBase
     // = 10 / 100 = 0.1
     expect(utilization).to.be.equal(exp(1, 17));
-    // (interestRateBase + interestRateSlowLow * utilization) * utilization * (1 - reserveRate)
+    // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
     // = (0.005 + 0.1 * 0.1) * 0.1 * 0.9 = 0.00135
     expect(supplyRate).to.be.equal(exp(135, 13));
-    // interestRateBase + interestRateSlowLow * utilization
+    // interestRateBase + interestRateSlopeLow * utilization
     // = 0.005 + 0.1 * 0.1 = 0.015
     expect(borrowRate).to.be.equal(exp(15, 15));
   });
@@ -74,10 +74,10 @@ describe('interest rates', function () {
     // totalBorrowBase / totalSupplyBase
     // = 90 / 100 = 0.9
     expect(utilization).to.be.equal(exp(9, 17));
-    // (interestRateBase + interestRateSlowLow * kink + interestRateHigh * (utilization - kink)) * utilization * (1 - reserveRate)
+    // (interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)) * utilization * (1 - reserveRate)
     // = (0.005 + 0.1 * 0.8 + 3 * 0.1) * 0.9 * 0.9 = 0.31185
     expect(supplyRate).to.be.equal(exp(31185, 13));
-    // interestRateBase + interestRateSlowLow * kink + interestRateHigh * (utilization - kink)
+    // interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)
     // = 0.005 + 0.1 * 0.8 + 3 * 0.1 = 0.385
     expect(borrowRate).to.be.equal(exp(385, 15));
   });
@@ -113,10 +113,10 @@ describe('interest rates', function () {
     // totalBorrowBase / totalSupplyBase
     // = 10 / 100 = 0.1
     expect(utilization).to.be.equal(exp(1, 17));
-    // (interestRateBase + interestRateSlowLow * utilization) * utilization * (1 - reserveRate)
+    // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
     // = (0.005 + 0.1 * 0.1) * 0.1 = 0.0015
     expect(supplyRate).to.be.equal(exp(15, 14));
-    // interestRateBase + interestRateSlowLow * utilization
+    // interestRateBase + interestRateSlopeLow * utilization
     // = 0.005 + 0.1 * 0.1 = 0.015
     expect(borrowRate).to.be.equal(exp(15, 15));
   });
@@ -152,10 +152,10 @@ describe('interest rates', function () {
     // totalBorrowBase / totalSupplyBase
     // = 0 / 100 = 0
     expect(utilization).to.be.equal(0);
-    // (interestRateBase + interestRateSlowLow * utilization) * utilization * (1 - reserveRate)
+    // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
     // = (0.005 + 0.1 * 0) * 0 * 0.9 = 0
     expect(supplyRate).to.be.equal(0);
-    // interestRateBase + interestRateSlowLow * utilization
+    // interestRateBase + interestRateSlopeLow * utilization
     // = 0.005 + 0.1 * 0 = 0.005
     expect(borrowRate).to.be.equal(exp(5, 15));
   });

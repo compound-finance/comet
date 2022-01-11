@@ -90,15 +90,15 @@ contract Comet is CometStorage {
     /// @dev Factor (scale of 1e18)
     uint public immutable kink;
 
-    /// @notice Interest rate slope applied when utilization is below kink
+    /// @notice Per second interest rate slope applied when utilization is below kink
     /// @dev Factor (scale of 1e18)
     uint public immutable interestRateSlopeLow;
 
-    /// @notice Interest rate slope applied when utilization is above kink
+    /// @notice Per second interest rate slope applied when utilization is above kink
     /// @dev Factor (scale of 1e18)
     uint public immutable interestRateSlopeHigh;
 
-    /// @notice The base interest rate
+    /// @notice Per second base interest rate
     /// @dev Factor (scale of 1e18)
     uint public immutable interestRateBase;
 
@@ -271,7 +271,7 @@ contract Comet is CometStorage {
     }
 
     /**
-     * @return The current supply rate
+     * @return The current per second supply rate
      */
     // TODO: Optimize by passing totals from caller to getUtilization()
     function getSupplyRate() public view returns (uint) {
@@ -285,7 +285,7 @@ contract Comet is CometStorage {
     }
 
     /**
-     * @return The current borrow rate
+     * @return The current per second borrow rate
      */
     // TODO: Optimize by passing totals from caller to getUtilization()
     function getBorrowRate() public view returns (uint) {
