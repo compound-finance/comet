@@ -9,6 +9,9 @@ import { memoizeAsync } from '../../src/memoize';
  */
 
 export async function loadContract(source: string, network: string, address: string) {
+  if (address === "0x0000000000000000000000000000000000000000") {
+    throw new Error(`Cannot load ${source} contract for address ${address} on network ${network}. Address invalid.`);
+  }
   switch (source) {
     case 'etherscan':
       return await loadEtherscanContractMemoized(network, address);
