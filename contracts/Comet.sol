@@ -315,7 +315,7 @@ contract Comet is CometStorage {
     /**
      * @return The positive present supply balance if positive or the negative borrow balance if negative
      */
-    function presentValue(int principalValue) internal view returns (int) {
+    function presentValue(int104 principalValue) internal view returns (int104) {
         if (principalValue >= 0) {
             return safeInt(presentValueSupply(safeUint(principalValue)));
         } else {
@@ -326,7 +326,7 @@ contract Comet is CometStorage {
     /**
      * @return The principal amount projected forward by the supply index
      */
-    function presentValueSupply(uint principalValue) internal view returns (uint) {
+    function presentValueSupply(uint104 principalValue) internal view returns (uint104) {
         // TODO: Optimize by passing in index instead of reading from storage?
         return principalValue * totals.baseSupplyIndex;
     }
@@ -334,7 +334,7 @@ contract Comet is CometStorage {
     /**
      * @return The principal amount projected forward by the borrow index
      */
-    function presentValueBorrow(uint principalValue) internal view returns (uint) {
+    function presentValueBorrow(uint104 principalValue) internal view returns (uint104) {
         // TODO: Optimize by passing in index instead of reading from storage?
         return principalValue * totals.baseBorrowIndex;
     }
@@ -437,18 +437,18 @@ contract Comet is CometStorage {
     }
 
     /**
-     * @dev Safely cast an uint to an int
+     * @dev Safely cast an uint104 to an int104
      */
-    function safeInt(uint n) internal pure returns (int) {
-        require(n <= uint(type(int).max), "number exceeds max int size");
-        return int(n);
+    function safeInt(uint104 n) internal pure returns (int104) {
+        require(int104(n) <= type(int104).max, "number exceeds max int size");
+        return int104(n);
     }
 
     /**
-     * @dev Safely cast an int to an uint
+     * @dev Safely cast an int104 to an uint104
      */
-    function safeUint(int n) internal pure returns (uint) {
+    function safeUint(int104 n) internal pure returns (uint104) {
         require(n >= 0, "number is negative");
-        return uint(n);
+        return uint104(n);
     }
 }
