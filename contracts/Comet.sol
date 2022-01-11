@@ -59,7 +59,7 @@ contract Comet is CometStorage {
 
     /// @notice The max number of assets this contract is hardcoded to support
     /// @dev Do not change this variable without updating all the fields throughout the contract.
-    uint public constant maxAssets = 2;
+    uint public constant maxAssets = 3;
 
     /// @notice The number of assets this contract actually supports
     uint public immutable numAssets;
@@ -131,12 +131,15 @@ contract Comet is CometStorage {
 
     address internal immutable asset00;
     address internal immutable asset01;
+    address internal immutable asset02;
 
     uint internal immutable borrowCollateralFactor00;
     uint internal immutable borrowCollateralFactor01;
+    uint internal immutable borrowCollateralFactor02;
 
     uint internal immutable liquidateCollateralFactor00;
     uint internal immutable liquidateCollateralFactor01;
+    uint internal immutable liquidateCollateralFactor02;
 
     /**
      * @notice Construct a new protocol instance
@@ -168,12 +171,15 @@ contract Comet is CometStorage {
 
         asset00 = _getAsset(config.assetInfo, 0).asset;
         asset01 = _getAsset(config.assetInfo, 1).asset;
+        asset02 = _getAsset(config.assetInfo, 2).asset;
 
         borrowCollateralFactor00 = _getAsset(config.assetInfo, 0).borrowCollateralFactor;
         borrowCollateralFactor01 = _getAsset(config.assetInfo, 1).borrowCollateralFactor;
+        borrowCollateralFactor02 = _getAsset(config.assetInfo, 2).borrowCollateralFactor;
 
         liquidateCollateralFactor00 = _getAsset(config.assetInfo, 0).liquidateCollateralFactor;
         liquidateCollateralFactor01 = _getAsset(config.assetInfo, 1).liquidateCollateralFactor;
+        liquidateCollateralFactor02 = _getAsset(config.assetInfo, 2).liquidateCollateralFactor;
 
         // Set interest rate model configs
         kink = config.kink;
@@ -213,6 +219,7 @@ contract Comet is CometStorage {
 
         if (i == 0) return AssetInfo({asset: asset00, borrowCollateralFactor: borrowCollateralFactor00, liquidateCollateralFactor: liquidateCollateralFactor00 });
         if (i == 1) return AssetInfo({asset: asset01, borrowCollateralFactor: borrowCollateralFactor01, liquidateCollateralFactor: liquidateCollateralFactor01 });
+        if (i == 2) return AssetInfo({asset: asset02, borrowCollateralFactor: borrowCollateralFactor02, liquidateCollateralFactor: liquidateCollateralFactor02 });
         revert("absurd");
     }
 
@@ -513,5 +520,36 @@ contract Comet is CometStorage {
     function unsigned104(int104 n) internal pure returns (uint104) {
         require(n >= 0, "number is negative");
         return uint104(n);
+    }
+
+    /**
+     * @dev Update assetsIn bit vector if user has entered or exited an asset
+     */
+    function _updateAssetsIn(
+        address account,
+        address asset,
+        uint initialUserBalance,
+        uint finalUserBalance
+    ) internal {
+        uint8 assetOffset = _getAssetOffset(asset);
+        if (initialUserBalance == 0 && finalUserBalance != 0) {
+            // set bit for asset
+            users[account].assetsIn |= (uint8(1) << assetOffset);
+        } else if (initialUserBalance != 0 && finalUserBalance == 0) {
+            // clear bit for asset
+            users[account].assetsIn &= ~(uint8(1) << assetOffset);
+        }
+    }
+
+    /**
+     * @dev Return index of asset that matches address
+     */
+    function _getAssetOffset(address asset) internal view returns (uint8 offset) {
+        AssetInfo[] memory _assets = assets();
+        for (uint8 i = 0; i < _assets.length; i++) {
+            if (asset == _assets[i].asset) {
+                return i;
+            }
+        }
     }
 }

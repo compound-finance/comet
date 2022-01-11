@@ -67,9 +67,8 @@ export async function makeProtocol(opts: ProtocolOpts = {}) {
   const assets = opts.assets || {
     COMP: { initial: 1e7, decimals: 18 },
     USDC: { initial: 1e6, decimals: 6 },
-    // XXX modify contract to support more assets!!
-    // WETH: { initial: 1e4, decimals: 18 },
-    // WBTC: { initial: 1e3, decimals: 8 },
+    WETH: { initial: 1e4, decimals: 18 },
+    WBTC: { initial: 1e3, decimals: 8 },
   };
   const governor = opts.governor || signers[0];
   const pauseGuardian = opts.pauseGuardian || signers[1];
@@ -125,7 +124,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}) {
         });
       }
       return acc;
-    }, [])
+    }, []),
   });
   await comet.deployed();
 
@@ -134,6 +133,6 @@ export async function makeProtocol(opts: ProtocolOpts = {}) {
 
 export async function wait(tx) {
   const tx_ = await tx;
-  tx_.receipt = await (tx_).wait();
+  tx_.receipt = await tx_.wait();
   return tx_;
 }
