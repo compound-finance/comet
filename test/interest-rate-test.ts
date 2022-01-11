@@ -88,7 +88,7 @@ describe('interest rates', function () {
       interestRateBase: exp(5, 15), // 0.005
       interestRateSlopeLow: exp(1, 17), // 0.1
       interestRateSlopeHigh: exp(3, 18), // 3.0
-      reserveRate: exp(1, 17) // 0.1
+      reserveRate: 0
     };
     const { comet } = await makeProtocol(params);
     const baseIndexScale = await comet.baseIndexScale();
@@ -114,8 +114,8 @@ describe('interest rates', function () {
     // = 10 / 100 = 0.1
     expect(utilization).to.be.equal(exp(1, 17));
     // (interestRateBase + interestRateSlowLow * utilization) * utilization * (1 - reservRate)
-    // = (0.005 + 0.1 * 0.1) * 0.1 * 0.9 = 0.00135
-    expect(supplyRate).to.be.equal(exp(135, 13));
+    // = (0.005 + 0.1 * 0.1) * 0.1 = 0.0015
+    expect(supplyRate).to.be.equal(exp(15, 14));
     // interestRateBase + interestRateSlowLow * utilization
     // = 0.005 + 0.1 * 0.1 = 0.015
     expect(borrowRate).to.be.equal(exp(15, 15));
