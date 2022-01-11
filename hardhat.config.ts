@@ -156,6 +156,16 @@ const config: HardhatUserConfig = {
       },
     ],
   },
+
+  mocha: {
+    reporter: "mocha-multi-reporters",
+    reporterOptions: {
+      reporterEnabled: ["spec", "json"],
+      jsonReporterOptions: {
+        output: "test-results.json"
+      }
+    }
+  },
 };
 
 setupDefaultNetworkProviders(config);
