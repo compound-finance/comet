@@ -1,7 +1,16 @@
 import { Result } from './Parent';
 import { diff as showDiff } from 'jest-diff';
+import * as fs from 'fs/promises';
 
-export type Format = 'console' | 'json';
+export interface ConsoleFormatOptions {};
+export interface JsonFormatOptions {
+  output?: string;
+};
+
+export type FormatConfig = {
+  console?: ConsoleFormatOptions,
+  json?: JsonFormatOptions
+}
 
 function pluralize(n, singular, plural = null) {
   if (n === 1) {
@@ -11,17 +20,7 @@ function pluralize(n, singular, plural = null) {
   }
 }
 
-export function loadFormat(str: string): Format {
-  if (str === 'console') {
-    return 'console';
-  } else if (str === 'json') {
-    return 'json';
-  } {
-    throw new Error(`Unknown report format: ${str}`);
-  }
-}
-
-function showReportConsole(results: Result[], startTime: number, endTime: number) {
+async function showReportConsole(results: Result[], consoleOptions: ConsoleFormatOptions, startTime: number, endTime: number) {
   let testCount = 0;
   let succCount = 0;
   let errCount = 0;
@@ -67,7 +66,7 @@ function showReportConsole(results: Result[], startTime: number, endTime: number
   console.log(`\n\n${prefix} Results: ${succText}, ${errText}, ${skipText} ${avgText}\n`);
 }
 
-interface Test {
+interface JsonTestResult {
   title: string,
   fullTitle: string,
   file: string,
@@ -76,13 +75,13 @@ interface Test {
   err: any
 };
 
-function showJsonReport(results: Result[], startTime: number, endTime: number) {
+async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions, startTime: number, endTime: number) {
   // TODO: Accept options, etc.
   let suites = new Set();
-  let passes: Test[] = [];
-  let pending: Test[] = [];
-  let failures: Test[] = [];
-  let tests: Test[] = results.map((result) => {
+  let passes: JsonTestResult[] = [];
+  let pending: JsonTestResult[] = [];
+  let failures: JsonTestResult[] = [];
+  let tests: JsonTestResult[] = results.map((result) => {
     let suite = result.file; // TODO: Is this how we should do suites?
     suites.add(suite);
 
@@ -106,7 +105,8 @@ function showJsonReport(results: Result[], startTime: number, endTime: number) {
     return test;
   });
 
-  console.log(JSON.stringify({
+
+  let result = JSON.stringify({
     stats: {
       suites: suites.size,
       tests: tests.length,
@@ -121,15 +121,21 @@ function showJsonReport(results: Result[], startTime: number, endTime: number) {
     pending,
     failures,
     passes,
-  }, null, 2));
+  }, null, 4);
+
+  if (jsonOptions.output) {
+    console.log([jsonOptions.output, result]);
+    await fs.writeFile(jsonOptions.output, result);
+  } else {
+    console.log(result);
+  }
 }
 
-export function showReport(results: Result[], formats: Format[], startTime: number, endTime: number) {
-  formats.forEach((format) => {
-    if (format === 'console') {
-      showReportConsole(results, startTime, endTime);
-    } else if (format === 'json') {
-      showJsonReport(results, startTime, endTime);
-    }
-  });
+export async function showReport(results: Result[], format: FormatConfig, startTime: number, endTime: number) {
+  if (format.console) {
+    await showReportConsole(results, format.console, startTime, endTime);
+  }
+  if (format.json) {
+    await showJsonReport(results, format.json, startTime, endTime);
+  }
 }

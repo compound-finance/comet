@@ -4,7 +4,7 @@ import { ForkSpec } from '../World';
 import { Scenario } from '../Scenario';
 import { loadScenarios } from '../Loader';
 import { defaultFormats, scenarioGlob, workerCount } from './Config';
-import { loadFormat, showReport, Format } from './Report';
+import { showReport } from './Report';
 import { getContext, getConfig, getHardhatArguments } from './HardhatContext';
 import { ScenarioConfig } from '../types';
 import { HardhatConfig } from 'hardhat/types';
@@ -67,7 +67,7 @@ function convertToSerializableObject(object: object) {
 export async function run<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[]) {
   let hardhatConfig = convertToSerializableObject(getConfig()) as HardhatConfig;
   let hardhatArguments = getHardhatArguments();
-  let formats = defaultFormats.map(loadFormat);
+  let formats = defaultFormats;
   let scenarios: Scenario<T>[] = Object.values(await loadScenarios(scenarioGlob));
   let baseScenarios: BaseScenario<T>[] = getBaseScenarios(bases, scenarios);
   let [runningScenarios, skippedScenarios] = filterRunning(baseScenarios);
@@ -156,7 +156,7 @@ export async function run<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[]) 
 
   let endTime = Date.now();
 
-  showReport(results, formats, startTime, endTime);
+  await showReport(results, formats, startTime, endTime);
 
   if (results.some((result) => result.error)) {
     process.exit(1); // Exit as failure

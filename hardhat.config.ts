@@ -160,7 +160,10 @@ const config: HardhatUserConfig = {
   mocha: {
     reporter: "mocha-multi-reporters",
     reporterOptions: {
-      reporterEnabled: ["spec", "json"]
+      reporterEnabled: ["spec", "json"],
+      jsonReporterOptions: {
+        output: "test-results.json"
+      }
     }
   },
 };

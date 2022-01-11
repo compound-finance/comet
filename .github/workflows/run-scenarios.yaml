@@ -1,4 +1,4 @@
-name: Run Scenarios
+name: 'Run Scenarios'
 on:
   workflow_dispatch:
   pull_request:
@@ -46,3 +46,9 @@ jobs:
 
       - name: Run scenarios
         run: yarn scenario
+
+      - uses: actions/upload-artifact@v2  # upload scenario results
+        if: success() || failure()        # run this step even if previous step failed
+        with:
+          name: scenario-results
+          path: scenario-results.json

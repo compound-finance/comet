@@ -20,4 +20,5 @@ coverage/
 coverage.json
 typechain/
 
-xunit.xml
+test-results.json
+scenario-results.json
