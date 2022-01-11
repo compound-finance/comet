@@ -86,6 +86,13 @@ contract Comet is CometStorage {
     /// @notice The speed at which borrow rewards are tracked (in trackingIndexScale)
     uint64 public immutable baseTrackingBorrowSpeed;
 
+    /// @notice XXX
+    uint public immutable kink;
+    uint public immutable interestRateSlopeLow;
+    uint public immutable interestRateSlopeHigh;
+    uint public immutable interestRateBase;
+    uint public immutable reserveRate;
+
     /**  Collateral asset configuration **/
 
     address internal immutable asset00;
@@ -96,12 +103,6 @@ contract Comet is CometStorage {
 
     uint internal immutable liquidateCollateralFactor00;
     uint internal immutable liquidateCollateralFactor01;
-
-    uint internal immutable kink;
-    uint internal immutable interestRateSlopeLow;
-    uint internal immutable interestRateSlopeHigh;
-    uint internal immutable interestRateBase;
-    uint internal immutable reserveRate;
 
     /**
      * @notice Construct a new protocol instance
