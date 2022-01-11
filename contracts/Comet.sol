@@ -29,11 +29,11 @@ contract Comet is CometStorage {
 
         AssetInfo[] assetInfo;
 
-        uint kink;
-        uint interestRateSlopeLow;
-        uint interestRateSlopeHigh;
-        uint interestRateBase;
-        uint reserveRate;
+        uint64 kink;
+        uint64 interestRateSlopeLow;
+        uint64 interestRateSlopeHigh;
+        uint64 interestRateBase;
+        uint64 reserveRate;
     }
 
     /// @notice The max number of assets this contract is hardcoded to support
@@ -86,11 +86,24 @@ contract Comet is CometStorage {
     /// @notice The speed at which borrow rewards are tracked (in trackingIndexScale)
     uint64 public immutable baseTrackingBorrowSpeed;
 
-    /// @notice XXX
+    /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope
+    /// @dev Factor (scale of 1e18)
     uint public immutable kink;
+
+    /// @notice Interest rate slope applied when utilization is below kink
+    /// @dev Factor (scale of 1e18)
     uint public immutable interestRateSlopeLow;
+
+    /// @notice Interest rate slope applied when utilization is above kink
+    /// @dev Factor (scale of 1e18)
     uint public immutable interestRateSlopeHigh;
+
+    /// @notice The base interest rate
+    /// @dev Factor (scale of 1e18)
     uint public immutable interestRateBase;
+
+    /// @notice The rate of total interest paid that goes into reserves
+    /// @dev Factor (scale of 1e18)
     uint public immutable reserveRate;
 
     /**  Collateral asset configuration **/
@@ -289,9 +302,9 @@ contract Comet is CometStorage {
      */
     function getUtilization() public view returns (uint64) {
         // TODO: Optimize by passing in totals instead of reading from storage?
-        Totals memory _totals = totals;
-        uint totalSupply = presentValueSupply(_totals.totalSupplyBase);
-        uint totalBorrow = presentValueBorrow(_totals.totalBorrowBase);
+        Totals memory totals_ = totals;
+        uint totalSupply = presentValueSupply(totals_.totalSupplyBase);
+        uint totalBorrow = presentValueBorrow(totals_.totalBorrowBase);
         if (totalSupply == 0) {
             return 0;
         } else {
