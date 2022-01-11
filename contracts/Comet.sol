@@ -305,11 +305,10 @@ contract Comet is CometStorage {
      * @return The positive present supply balance if positive or the negative borrow balance if negative
      */
     function presentValue(int principalValue) internal view returns (int) {
-        // TODO: Fix unsafe type conversions.
         if (principalValue >= 0) {
-            return int(presentValueSupply(uint(principalValue)));
+            return safeInt(presentValueSupply(safeUint(principalValue)));
         } else {
-            return int(presentValueBorrow(uint(principalValue)));
+            return -safeInt(presentValueBorrow(safeUint(-principalValue)));
         }
     }
 
@@ -422,7 +421,23 @@ contract Comet is CometStorage {
      * @dev Safely cast a number to a 64 bit number
      */
     function safe64(uint n) internal pure returns (uint64) {
-        require(n < 2**64, "number exceeds size (64 bits)");
+        require(n <= type(uint64).max, "number exceeds size (64 bits)");
         return uint64(n);
+    }
+
+    /**
+     * @dev Safely cast an uint to an int
+     */
+    function safeInt(uint n) internal pure returns (int) {
+        require(n <= uint(type(int).max), "number exceeds max int size");
+        return int(n);
+    }
+
+    /**
+     * @dev Safely cast an int to an uint
+     */
+    function safeUint(int n) internal pure returns (uint) {
+        require(n >= 0, "number is negative");
+        return uint(n);
     }
 }
