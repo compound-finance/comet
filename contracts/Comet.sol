@@ -274,7 +274,7 @@ contract Comet is CometStorage {
     }
 
     /**
-     * @return The current supply rate
+     * @return The current borrow rate
      */
     function getBorrowRate() public view returns (uint256) {
         uint utilization = getUtilization();

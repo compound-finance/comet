@@ -76,6 +76,11 @@ export async function deployComet(
         baseTrackingSupplySpeed: 0, // XXX
         baseTrackingBorrowSpeed: 0, // XXX
         assetInfo: [assetInfo0, assetInfo1],
+        kink: 0, // XXX
+        interestRateSlopeLow: 0, // XXX
+        interestRateSlopeHigh: 0, // XXX
+        interestRateBase: 0, // XXX
+        reserveRate: 0, // XXX
       },
     ]
   );
