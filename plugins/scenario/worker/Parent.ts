@@ -11,6 +11,7 @@ import { HardhatConfig } from 'hardhat/types';
 
 export interface Result {
   base: string;
+  file: string;
   scenario: string;
   elapsed?: number;
   error?: Error;
@@ -71,8 +72,11 @@ export async function run<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[]) 
   let baseScenarios: BaseScenario<T>[] = getBaseScenarios(bases, scenarios);
   let [runningScenarios, skippedScenarios] = filterRunning(baseScenarios);
 
+  let startTime = Date.now();
+
   let results: Result[] = skippedScenarios.map(({ base, scenario }) => ({
     base: base.name,
+    file: scenario.file || scenario.name,
     scenario: scenario.name,
     elapsed: undefined,
     error: undefined,
@@ -150,7 +154,9 @@ export async function run<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[]) 
 
   await isDone;
 
-  showReport(results, formats);
+  let endTime = Date.now();
+
+  showReport(results, formats, startTime, endTime);
 
   if (results.some((result) => result.error)) {
     process.exit(1); // Exit as failure

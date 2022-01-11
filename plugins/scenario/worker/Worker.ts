@@ -65,6 +65,7 @@ export async function run<T>({
           parentPort.postMessage({
             result: {
               base: base.name,
+              file: scenario.file || scenario.name,
               scenario: scenario.name,
               elapsed: Date.now() - startTime,
               error: err || null,

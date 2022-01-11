@@ -1,7 +1,7 @@
 import { Result } from './Parent';
 import { diff as showDiff } from 'jest-diff';
 
-export type Format = 'console';
+export type Format = 'console' | 'json';
 
 function pluralize(n, singular, plural = null) {
   if (n === 1) {
@@ -14,12 +14,14 @@ function pluralize(n, singular, plural = null) {
 export function loadFormat(str: string): Format {
   if (str === 'console') {
     return 'console';
-  } else {
+  } else if (str === 'json') {
+    return 'json';
+  } {
     throw new Error(`Unknown report format: ${str}`);
   }
 }
 
-function showReportConsole(results: Result[]) {
+function showReportConsole(results: Result[], startTime: number, endTime: number) {
   let testCount = 0;
   let succCount = 0;
   let errCount = 0;
@@ -65,10 +67,69 @@ function showReportConsole(results: Result[]) {
   console.log(`\n\n${prefix} Results: ${succText}, ${errText}, ${skipText} ${avgText}\n`);
 }
 
-export function showReport(results: Result[], formats: Format[]) {
+interface Test {
+  title: string,
+  fullTitle: string,
+  file: string,
+  duration: number,
+  currentRetry: number,
+  err: any
+};
+
+function showJsonReport(results: Result[], startTime: number, endTime: number) {
+  // TODO: Accept options, etc.
+  let suites = new Set();
+  let passes: Test[] = [];
+  let pending: Test[] = [];
+  let failures: Test[] = [];
+  let tests: Test[] = results.map((result) => {
+    let suite = result.file; // TODO: Is this how we should do suites?
+    suites.add(suite);
+
+    let test = {
+      title: result.scenario,
+      fullTitle: `${result.base} ${result.scenario}`,
+      file: result.file,
+      duration: result.elapsed || 0,
+      currentRetry: 0,
+      err: result.error ?? {}
+    };
+
+    if (result.error) {
+      failures.push(test);
+    } else if (result.skipped) {
+      pending.push(test);
+    } else {
+      passes.push(test);
+    }
+
+    return test;
+  });
+
+  console.log(JSON.stringify({
+    stats: {
+      suites: suites.size,
+      tests: tests.length,
+      passes: passes.length,
+      pending: pending.length,
+      failures: failures.length,
+      start: new Date(startTime).toISOString(),
+      end: new Date(endTime).toISOString(),
+      duration: endTime - startTime,
+    },
+    tests,
+    pending,
+    failures,
+    passes,
+  }, null, 2));
+}
+
+export function showReport(results: Result[], formats: Format[], startTime: number, endTime: number) {
   formats.forEach((format) => {
     if (format === 'console') {
-      showReportConsole(results);
+      showReportConsole(results, startTime, endTime);
+    } else if (format === 'json') {
+      showJsonReport(results, startTime, endTime);
     }
   });
 }

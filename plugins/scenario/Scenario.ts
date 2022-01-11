@@ -21,8 +21,37 @@ export type Forker<T> = (T) => Promise<T>;
 
 export type ScenarioFlags = null | 'only' | 'skip';
 
+interface StackCall {
+  function?: string,
+  file?: string,
+  line?: number,
+  char?: number,
+}
+
+function getStack(skipFrames: number = 1): StackCall[] {
+  let regex = /at (?<function>[^ ]+) [(](?<file>[^ ]+?)(:(?<line>\d+))?(:(?<char>\d+))?[)]/g;
+  let stack = new Error().stack;
+  let next;
+  let trace = [];
+  let index = 0;
+
+  while (null != (next=regex.exec(stack))) {
+    if (++index > skipFrames) {
+      trace.push({
+        function: next.groups['function'],
+        file: next.groups['file'],
+        line: next.groups['line'] ? Number(next.groups['line']) : undefined,
+        char: next.groups['char'] ? Number(next.groups['char']) : undefined,
+      });
+    }
+  }
+
+  return trace;
+}
+
 export class Scenario<T> {
   name: string;
+  file: string | null;
   requirements: object;
   property: Property<T>;
   initializer: Initializer<T>;
@@ -38,5 +67,7 @@ export class Scenario<T> {
     this.forker = forker;
     this.constraints = constraints;
     this.flags = flags;
+    let frame = getStack(3);
+    this.file = frame[0] ? frame[0].file : null;
   }
 }
