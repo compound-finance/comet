@@ -113,11 +113,50 @@ describe('interest rates', function () {
     // totalBorrowBase / totalSupplyBase
     // = 10 / 100 = 0.1
     expect(utilization).to.be.equal(exp(1, 17));
-    // (interestRateBase + interestRateSlowLow * utilization) * utilization * (1 - reservRate)
+    // (interestRateBase + interestRateSlowLow * utilization) * utilization * (1 - reserveRate)
     // = (0.005 + 0.1 * 0.1) * 0.1 = 0.0015
     expect(supplyRate).to.be.equal(exp(15, 14));
     // interestRateBase + interestRateSlowLow * utilization
     // = 0.005 + 0.1 * 0.1 = 0.015
     expect(borrowRate).to.be.equal(exp(15, 15));
+  });
+
+  it('when 0 utilization', async () => {
+    const params = {
+      kink: exp(8, 17), // 0.8
+      interestRateBase: exp(5, 15), // 0.005
+      interestRateSlopeLow: exp(1, 17), // 0.1
+      interestRateSlopeHigh: exp(3, 18), // 3.0
+      reserveRate: exp(1, 17) // 0.1
+    };
+    const { comet } = await makeProtocol(params);
+    const baseIndexScale = await comet.baseIndexScale();
+
+    // 0% utilization
+    const totals = {
+      trackingSupplyIndex: 0,
+      trackingBorrowIndex: 0,
+      baseSupplyIndex: baseIndexScale,
+      baseBorrowIndex: baseIndexScale,
+      totalSupplyBase: 100n,
+      totalBorrowBase: 0,
+      lastAccrualTime: 0,
+      pauseFlags: 0,
+    };
+    await wait(comet.setTotals(totals));
+
+    const utilization = await comet.getUtilization();
+    const supplyRate = await comet.getSupplyRate();
+    const borrowRate = await comet.getBorrowRate();
+
+    // totalBorrowBase / totalSupplyBase
+    // = 0 / 100 = 0
+    expect(utilization).to.be.equal(0);
+    // (interestRateBase + interestRateSlowLow * utilization) * utilization * (1 - reserveRate)
+    // = (0.005 + 0.1 * 0) * 0 * 0.9 = 0
+    expect(supplyRate).to.be.equal(0);
+    // interestRateBase + interestRateSlowLow * utilization
+    // = 0.005 + 0.1 * 0 = 0.005
+    expect(borrowRate).to.be.equal(exp(5, 15));
   });
 });
