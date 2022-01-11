@@ -1,4 +1,5 @@
 import { World } from './World';
+import { getStack } from './Stack';
 
 // A solution modifies a given context and world in a way that satisfies a constraint.
 export type Solution<T> = (T, World) => Promise<T | void>;
@@ -20,34 +21,6 @@ export type Initializer<T> = (world: World) => Promise<T>;
 export type Forker<T> = (T) => Promise<T>;
 
 export type ScenarioFlags = null | 'only' | 'skip';
-
-interface StackCall {
-  function?: string,
-  file?: string,
-  line?: number,
-  char?: number,
-}
-
-function getStack(skipFrames: number = 1): StackCall[] {
-  let regex = /at (?<function>[^ ]+) [(](?<file>[^ ]+?)(:(?<line>\d+))?(:(?<char>\d+))?[)]/g;
-  let stack = new Error().stack;
-  let next;
-  let trace = [];
-  let index = 0;
-
-  while (null != (next=regex.exec(stack))) {
-    if (++index > skipFrames) {
-      trace.push({
-        function: next.groups['function'],
-        file: next.groups['file'],
-        line: next.groups['line'] ? Number(next.groups['line']) : undefined,
-        char: next.groups['char'] ? Number(next.groups['char']) : undefined,
-      });
-    }
-  }
-
-  return trace;
-}
 
 export class Scenario<T> {
   name: string;
