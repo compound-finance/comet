@@ -357,7 +357,7 @@ contract Comet is CometStorage {
      * @param amount The amount of reserves to be withdrawn from the protocol
      */
     function withdrawReserves(address to, uint amount) external {
-        require(msg.sender == governor, "not governor");
+        require(msg.sender == governor, "Unauthorized");
         require(ERC20(baseToken).transfer(to, amount), "invalid token transfer");
 
         emit ReservesWithdrawn(governor, to, amount);

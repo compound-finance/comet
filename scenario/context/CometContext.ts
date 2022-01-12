@@ -6,11 +6,12 @@ import {
   ModernConstraint,
   PauseConstraint,
   RemoteTokenConstraint,
+  BaseTokenProtocolBalanceConstraint
 } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { Comet, deployComet } from '../../src/deploy';
-import { ProxyAdmin, Token } from '../../build/types';
+import { ProxyAdmin, Token, FaucetToken } from '../../build/types';
 
 export class CometContext {
   deploymentManager: DeploymentManager;
@@ -19,19 +20,22 @@ export class CometContext {
   remoteToken: Contract | undefined;
   comet: Comet;
   proxyAdmin: ProxyAdmin;
+  baseToken: FaucetToken;
 
   constructor(
     deploymentManager: DeploymentManager,
     comet: Comet,
     proxyAdmin: ProxyAdmin,
     actors: { [name: string]: CometActor },
-    assets: { [name: string]: CometAsset }
+    assets: { [name: string]: CometAsset },
+    baseToken: FaucetToken
   ) {
     this.deploymentManager = deploymentManager;
     this.comet = comet;
     this.proxyAdmin = proxyAdmin;
     this.actors = actors;
     this.assets = assets;
+    this.baseToken = baseToken;
   }
 
   contracts(): ContractMap {
@@ -96,9 +100,10 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
     SILVER: new CometAsset(getContract<Token>('SILVER')),
   };
 
+  let baseToken = getContract<FaucetToken>('DAI');
   let proxyAdmin = getContract<ProxyAdmin>('ProxyAdmin').connect(adminSigner);
 
-  return new CometContext(deploymentManager, comet, proxyAdmin, actors, assets);
+  return new CometContext(deploymentManager, comet, proxyAdmin, actors, assets, baseToken);
 };
 
 async function forkContext(c: CometContext): Promise<CometContext> {
@@ -110,6 +115,7 @@ export const constraints = [
   new PauseConstraint(),
   new BalanceConstraint(),
   new RemoteTokenConstraint(),
+  new BaseTokenProtocolBalanceConstraint(),
 ];
 
 export const scenario = buildScenarioFn<CometContext>(getInitialContext, forkContext, constraints);

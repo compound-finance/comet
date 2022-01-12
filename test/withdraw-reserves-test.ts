@@ -39,10 +39,10 @@ describe('withdrawReserves', function () {
   it('reverts if called not by governor', async () => {
     const [_governor, _pauseGuardian, user] = await ethers.getSigners();
     const { comet } = await makeProtocol();
-    await expect(comet.connect(user).withdrawReserves(user.address, 10)).to.be.revertedWith('not governor');
+    await expect(comet.connect(user).withdrawReserves(user.address, 10)).to.be.revertedWith('Unauthorized');
   });
 
-  it('reverts if not enough token reserves are owned by protocol', async () => {
+  it('reverts if not enough reserves are owned by protocol', async () => {
     const [governor, _pauseGuardian, user] = await ethers.getSigners();
     const tokenBalance = 1000;
     const { comet } = await makeProtocol({ baseTokenBalance: tokenBalance });
