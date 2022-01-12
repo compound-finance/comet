@@ -32,6 +32,11 @@ export type ProtocolOpts = {
   baseMinForRewards?: Numeric;
   baseTrackingSupplySpeed?: Numeric;
   baseTrackingBorrowSpeed?: Numeric;
+  kink?: Numeric;
+  interestRateBase?: Numeric;
+  interestRateSlopeLow?: Numeric;
+  interestRateSlopeHigh?: Numeric;
+  reserveRate?: Numeric;
 };
 
 export type Protocol = {
@@ -75,6 +80,11 @@ export async function makeProtocol(opts: ProtocolOpts = {}) {
   const baseMinForRewards = dfn(opts.baseMinForRewards, exp(1, assets[base].decimals));
   const baseTrackingSupplySpeed = dfn(opts.baseTrackingSupplySpeed, trackingIndexScale);
   const baseTrackingBorrowSpeed = dfn(opts.baseTrackingBorrowSpeed, trackingIndexScale);
+  const kink = dfn(opts.kink, exp(8, 17)); // 0.8
+  const perYearInterestRateBase = dfn(opts.interestRateBase, exp(5, 15)); // 0.005
+  const perYearInterestRateSlopeLow = dfn(opts.interestRateSlopeLow, exp(1, 17)); // 0.1
+  const perYearInterestRateSlopeHigh = dfn(opts.interestRateSlopeHigh, exp(3, 18)); // 3.0
+  const reserveRate = dfn(opts.reserveRate, exp(1, 17)); // 0.1
 
   const tokens = {};
   for (const symbol in assets) {
@@ -101,6 +111,11 @@ export async function makeProtocol(opts: ProtocolOpts = {}) {
     baseMinForRewards,
     baseTrackingSupplySpeed,
     baseTrackingBorrowSpeed,
+    kink,
+    perYearInterestRateBase,
+    perYearInterestRateSlopeLow,
+    perYearInterestRateSlopeHigh,
+    reserveRate,
     assetInfo: Object.entries(assets).reduce((acc, [symbol, config], i) => {
       if (symbol != base) {
         acc.push({

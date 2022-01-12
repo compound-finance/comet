@@ -28,7 +28,18 @@ contract Comet is CometStorage {
         uint64 baseTrackingBorrowSpeed;
 
         AssetInfo[] assetInfo;
+
+        uint64 kink;
+        uint64 perYearInterestRateSlopeLow;
+        /// @dev Do not set this value higher than 2^64=1.84e19
+        uint64 perYearInterestRateSlopeHigh;
+        uint64 perYearInterestRateBase;
+        uint64 reserveRate;
     }
+
+    /// @notice The number of seconds per year
+    /// @dev 365 days * 24 hours * 60 minutes * 60 seconds
+    uint64 public constant secondsPerYear = 31_536_000;
 
     /// @notice The max number of assets this contract is hardcoded to support
     /// @dev Do not change this variable without updating all the fields throughout the contract.
@@ -80,6 +91,26 @@ contract Comet is CometStorage {
     /// @notice The speed at which borrow rewards are tracked (in trackingIndexScale)
     uint64 public immutable baseTrackingBorrowSpeed;
 
+    /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope
+    /// @dev Factor (scale of 1e18)
+    uint64 public immutable kink;
+
+    /// @notice Per second interest rate slope applied when utilization is below kink
+    /// @dev Factor (scale of 1e18)
+    uint64 public immutable perSecondInterestRateSlopeLow;
+
+    /// @notice Per second interest rate slope applied when utilization is above kink
+    /// @dev Factor (scale of 1e18)
+    uint64 public immutable perSecondInterestRateSlopeHigh;
+
+    /// @notice Per second base interest rate
+    /// @dev Factor (scale of 1e18)
+    uint64 public immutable perSecondInterestRateBase;
+
+    /// @notice The rate of total interest paid that goes into reserves
+    /// @dev Factor (scale of 1e18)
+    uint64 public immutable reserveRate;
+
     /**  Collateral asset configuration **/
 
     address internal immutable asset00;
@@ -127,6 +158,13 @@ contract Comet is CometStorage {
 
         liquidateCollateralFactor00 = _getAsset(config.assetInfo, 0).liquidateCollateralFactor;
         liquidateCollateralFactor01 = _getAsset(config.assetInfo, 1).liquidateCollateralFactor;
+
+        // Set interest rate model configs
+        kink = config.kink;
+        perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / secondsPerYear;
+        perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / secondsPerYear;
+        perSecondInterestRateBase = config.perYearInterestRateBase / secondsPerYear;
+        reserveRate = config.reserveRate;
 
         // Initialize aggregates
         totals.lastAccrualTime = getNow();
@@ -197,20 +235,6 @@ contract Comet is CometStorage {
     }
 
     /**
-     * @return The current supply rate
-     **/
-    function getSupplyRate() virtual public view returns (uint64) {
-        return uint64(factorScale * 20 / 10000000); // XXX
-    }
-
-    /**
-     * @return The current supply rate
-     **/
-    function getBorrowRate() virtual public view returns (uint64) {
-        return uint64(factorScale * 20 / 10000000); // XXX
-    }
-
-    /**
      * @notice Accrue interest (and rewards) in base token supply and borrows
      **/
     function accrue() public {
@@ -249,6 +273,79 @@ contract Comet is CometStorage {
      */
     function allowInternal(address owner, address manager, bool _isAllowed) internal {
       isAllowed[owner][manager] = _isAllowed;
+    }
+
+    /**
+     * @return The current per second supply rate
+     */
+    // TODO: Optimize by passing totals from caller to getUtilization()
+    function getSupplyRate() public view returns (uint64) {
+        uint utilization = getUtilization();
+        uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
+        if (utilization <= kink) {
+            // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
+            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization)))); 
+        } else {
+            // (interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)) * utilization * (1 - reserveRate)
+            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)))));
+        }
+    }
+
+    /**
+     * @return The current per second borrow rate
+     */
+    // TODO: Optimize by passing totals from caller to getUtilization()
+    function getBorrowRate() public view returns (uint64) {
+        uint utilization = getUtilization();
+        if (utilization <= kink) {
+            // interestRateBase + interestRateSlopeLow * utilization
+            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization)); 
+        } else {
+            // interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)
+            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)));
+        }
+    }
+
+    /**
+     * @return The utilization rate of the base asset
+     */
+    function getUtilization() public view returns (uint) {
+        // TODO: Optimize by passing in totals instead of reading from storage.
+        Totals memory totals_ = totals;
+        uint totalSupply = presentValueSupply(totals_.totalSupplyBase);
+        uint totalBorrow = presentValueBorrow(totals_.totalBorrowBase);
+        if (totalSupply == 0) {
+            return 0;
+        } else {
+            return totalBorrow * factorScale / totalSupply;
+        }
+    }
+
+    /**
+     * @return The positive present supply balance if positive or the negative borrow balance if negative
+     */
+    function presentValue(int104 principalValue) internal view returns (int104) {
+        if (principalValue >= 0) {
+            return signed104(presentValueSupply(unsigned104(principalValue)));
+        } else {
+            return -signed104(presentValueBorrow(unsigned104(-principalValue)));
+        }
+    }
+
+    /**
+     * @return The principal amount projected forward by the supply index
+     */
+    function presentValueSupply(uint104 principalValue) internal view returns (uint104) {
+        // TODO: Optimize by passing in index instead of reading from storage.
+        return principalValue * totals.baseSupplyIndex;
+    }
+
+    /**
+     * @return The principal amount projected forward by the borrow index
+     */
+    function presentValueBorrow(uint104 principalValue) internal view returns (uint104) {
+        // TODO: Optimize by passing in index instead of reading from storage.
+        return principalValue * totals.baseBorrowIndex;
     }
 
     /**
@@ -344,7 +441,23 @@ contract Comet is CometStorage {
      * @dev Safely cast a number to a 64 bit number
      */
     function safe64(uint n) internal pure returns (uint64) {
-        require(n < 2**64, "number exceeds size (64 bits)");
+        require(n <= type(uint64).max, "number exceeds size (64 bits)");
         return uint64(n);
+    }
+
+    /**
+     * @dev Safely cast an uint104 to an int104
+     */
+    function signed104(uint104 n) internal pure returns (int104) {
+        require(n <= uint104(type(int104).max), "number exceeds max int size");
+        return int104(n);
+    }
+
+    /**
+     * @dev Safely cast an int104 to an uint104
+     */
+    function unsigned104(int104 n) internal pure returns (uint104) {
+        require(n >= 0, "number is negative");
+        return uint104(n);
     }
 }
