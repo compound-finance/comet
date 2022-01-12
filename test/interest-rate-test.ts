@@ -36,7 +36,7 @@ describe('interest rates', function () {
     };
     await wait(comet.setTotals(totals));
 
-    const secondsPerYear = await comet.SECONDS_PER_YEAR();
+    const secondsPerYear = await comet.secondsPerYear();
     const utilization = await comet.getUtilization();
     const supplyRate = await comet.getSupplyRate();
     const borrowRate = await comet.getBorrowRate();
@@ -76,7 +76,7 @@ describe('interest rates', function () {
     };
     await wait(comet.setTotals(totals));
 
-    const secondsPerYear = await comet.SECONDS_PER_YEAR();
+    const secondsPerYear = await comet.secondsPerYear();
     const utilization = await comet.getUtilization();
     const supplyRate = await comet.getSupplyRate();
     const borrowRate = await comet.getBorrowRate();
@@ -116,7 +116,7 @@ describe('interest rates', function () {
     };
     await wait(comet.setTotals(totals));
 
-    const secondsPerYear = await comet.SECONDS_PER_YEAR();
+    const secondsPerYear = await comet.secondsPerYear();
     const utilization = await comet.getUtilization();
     const supplyRate = await comet.getSupplyRate();
     const borrowRate = await comet.getBorrowRate();
@@ -156,7 +156,7 @@ describe('interest rates', function () {
     };
     await wait(comet.setTotals(totals));
 
-    const secondsPerYear = await comet.SECONDS_PER_YEAR();
+    const secondsPerYear = await comet.secondsPerYear();
     const utilization = await comet.getUtilization();
     const supplyRate = await comet.getSupplyRate();
     const borrowRate = await comet.getBorrowRate();

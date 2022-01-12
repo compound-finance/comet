@@ -39,7 +39,7 @@ contract Comet is CometStorage {
 
     /// @notice The number of seconds per year
     /// @dev 365 days * 24 hours * 60 minutes * 60 seconds
-    uint64 public constant SECONDS_PER_YEAR = 31_536_000;
+    uint64 public constant secondsPerYear = 31_536_000;
 
     /// @notice The max number of assets this contract is hardcoded to support
     /// @dev Do not change this variable without updating all the fields throughout the contract.
@@ -161,9 +161,9 @@ contract Comet is CometStorage {
 
         // Set interest rate model configs
         kink = config.kink;
-        perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
-        perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
-        perSecondInterestRateBase = config.perYearInterestRateBase / SECONDS_PER_YEAR;
+        perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / secondsPerYear;
+        perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / secondsPerYear;
+        perSecondInterestRateBase = config.perYearInterestRateBase / secondsPerYear;
         reserveRate = config.reserveRate;
 
         // Initialize aggregates
