@@ -1,28 +1,31 @@
 import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
-import { deployComet } from '../../src/deploy';
+import { CometConfigurationConstants, deployComet } from '../../src/deploy';
 
 interface ModernConfig {
   upgrade: boolean;
+  configConstants: CometConfigurationConstants;
 }
 
 function getModernConfig(requirements: object): ModernConfig | null {
   let upgrade = requirements['upgrade'];
+  let configConstants = requirements['configConstants'] as CometConfigurationConstants;
 
   return {
-    upgrade: !!upgrade
+    upgrade: !!upgrade,
+    configConstants: configConstants
   };
 }
 
 export class ModernConstraint<T extends CometContext> implements Constraint<T> {
   async solve(requirements: object, context: T, world: World) {
-    let { upgrade } = getModernConfig(requirements);
+    let { upgrade, configConstants } = getModernConfig(requirements);
 
-    if (!world.isDevelopment() && upgrade) {
+    if (upgrade) {
       return async (context: T): Promise<T> => {
         console.log("Upgrading to modern...");
         // TODO: Make this deployment script less ridiculous, e.g. since it redeploys tokens right now
-        let { comet: newComet } = await deployComet(context.deploymentManager, false);
+        let { comet: newComet } = await deployComet(context.deploymentManager, false, configConstants);
         await context.upgradeTo(newComet);
 
         console.log("Upgraded to modern...");

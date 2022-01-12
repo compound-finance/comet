@@ -96,6 +96,25 @@ scenario(
       )
     );
   }
-
-  // TODO: Scenario for testing custom configuration constants using a constraint.
 );
+
+// TODO: Add constraint to set total supply and borrow bases.
+scenario(
+  'Comet#interestRate > rates using hypothetical configuration constants',
+  {
+    upgrade: true, 
+    configConstants: {
+      perYearInterestRateBase: (5e16).toString() // 5% per year
+    }
+  },
+  async ({ comet, actors }) => {
+    expect(await comet.getUtilization()).to.equal(0);
+    expect(await comet.getSupplyRate()).to.equal(0);
+    expect(await comet.getBorrowRate()).to.equal(BigNumber.from(1585489599)); // 5% per year if annualized
+  }
+);
+
+// TODO: Scenario for testing custom configuration constants using a constraint.
+// ADD NEW CONSTRAINTS
+// 1. To set configuration constants. This seems similar to the modern constraint since it'll require a redeploy, so maybe i can merge the two constraints together.
+// 2. To set utilization. The constraint will increase/decrease the total supply/borrow to arrive at the target utilization. Maybe instead of taking utilization as an input, it can be more flexible by taking a struct of target total supplies/borrows for each asset (not just the base asset)
