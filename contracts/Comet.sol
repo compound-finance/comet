@@ -280,15 +280,15 @@ contract Comet is CometStorage, EIP712 {
      * @param manager The address to authorize (or rescind authorization from)
      * @param isAllowed_ Whether to authorize or rescind authorization from manager
      */
-    function allow(address manager, bool _isAllowed) external {
-      allowInternal(msg.sender, manager, _isAllowed);
+    function allow(address manager, bool isAllowed_) external {
+        allowInternal(msg.sender, manager, isAllowed_);
     }
 
     /**
      * @dev Update authorization status for manager on behalf of owner
      */
-    function allowInternal(address owner, address manager, bool _isAllowed) internal {
-        isAllowed[owner][manager] = _isAllowed;
+    function allowInternal(address owner, address manager, bool isAllowed_) internal {
+        isAllowed[owner][manager] = isAllowed_;
     }
 
     /**
