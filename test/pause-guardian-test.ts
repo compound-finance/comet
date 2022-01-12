@@ -1,6 +1,6 @@
 import { Comet, ethers, expect, exp, makeProtocol, wait } from './helpers';
 
-describe('Comet', function () {
+describe('Pause Guardian', function () {
   it('Should pause supply', async function () {
     const { comet } = await makeProtocol();
     await assertNoActionsArePaused(comet);

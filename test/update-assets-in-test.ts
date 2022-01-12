@@ -1,7 +1,7 @@
 import { ethers, expect, makeProtocol } from './helpers';
 
-describe('Comet#UpdateAssetsIn', function () {
-  it.only('sets isInAsset=true when initialBalance=0 and finalUserBalance>0', async () => {
+describe('updateAssetsIn', function () {
+  it('sets isInAsset=true when initialBalance=0 and finalUserBalance>0', async () => {
     const { comet, tokens } = await makeProtocol();
     const [_governor, _pauseGuardian, user] = await ethers.getSigners();
 
@@ -21,7 +21,7 @@ describe('Comet#UpdateAssetsIn', function () {
     expect(await comet.isInAsset(user.address, wbtcAddress)).to.be.true;
   });
 
-  it.only('does not change state when both initialUserBalance and finalUser are 0', async () => {
+  it('does not change state when both initialUserBalance and finalUser are 0', async () => {
     const { comet, tokens } = await makeProtocol();
     const [_governor, _pauseGuardian, user] = await ethers.getSigners();
 
@@ -31,7 +31,7 @@ describe('Comet#UpdateAssetsIn', function () {
     expect(await comet.isInAsset(user.address, compAddress)).to.be.false;
   });
 
-  it.only('does not change state when both initialUserBalance and finalUser > 0', async () => {
+  it('does not change state when both initialUserBalance and finalUser > 0', async () => {
     const { comet, tokens } = await makeProtocol();
     const [_governor, _pauseGuardian, user] = await ethers.getSigners();
 
@@ -46,7 +46,7 @@ describe('Comet#UpdateAssetsIn', function () {
     expect(await comet.isInAsset(user.address, wethAddress)).to.be.true;
   });
 
-  it.only('set isInAsset=false when initialBalance > 0 and finalUserBalance=0', async () => {
+  it('set isInAsset=false when initialBalance > 0 and finalUserBalance=0', async () => {
     const { comet, tokens } = await makeProtocol();
     const [_governor, _pauseGuardian, user] = await ethers.getSigners();
 
