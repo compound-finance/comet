@@ -8,3 +8,7 @@ describe('getNow', function () {
     await ethers.provider.send('hardhat_reset', []); // dont break downstream tests...
   });
 });
+
+describe('updateBaseBalance', function () {
+  // XXX
+});

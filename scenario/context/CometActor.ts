@@ -45,6 +45,23 @@ export default class CometActor {
     ).wait();
   }
 
+  async transfer({
+    dst,
+    asset,
+    amount,
+  }) {
+    await (await this.context.comet.connect(this.signer).transfer(dst, asset, amount)).wait()
+  }
+
+  async transferFrom({
+    src,
+    dst,
+    asset,
+    amount,
+  }) {
+    await (await this.context.comet.connect(this.signer).transferFrom(src, dst, asset, amount)).wait()
+  }
+
   async signAuthorization({
     manager,
     isAllowed,

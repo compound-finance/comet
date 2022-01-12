@@ -1,4 +1,4 @@
-import { Comet, ethers, expect, exp, makeProtocol, wait } from './helpers';
+import { Comet, ethers, expect, exp, getBlock, makeProtocol, wait } from './helpers';
 
 function projectBaseIndex(index, rate, time, factorScale = exp(1, 18)) {
   return index.add(index.mul(rate.mul(time)).div(factorScale));
@@ -25,7 +25,7 @@ describe('accrue', function () {
     };
     const { comet } = await makeProtocol(params);
 
-    const t0 = await comet.totals();
+    const t0 = await comet.totalsBasic();
     expect(await t0.trackingSupplyIndex).to.be.equal(0);
     expect(await t0.trackingBorrowIndex).to.be.equal(0);
     expect(await t0.baseSupplyIndex).to.be.equal(exp(1, 15));
@@ -57,13 +57,13 @@ describe('accrue', function () {
       lastAccrualTime: 0,
       pauseFlags: 0,
     };
-    const s0 = await wait(comet.setTotals(totals));
+    const s0 = await wait(comet.setTotalsBasic(totals));
 
-    const t0 = await comet.totals()
+    const t0 = await comet.totalsBasic()
     const a1 = await wait(comet.accrue());
-    const t1 = await comet.totals();
+    const t1 = await comet.totalsBasic();
     const a2 = await wait(comet.accrue());
-    const t2 = await comet.totals();
+    const t2 = await comet.totalsBasic();
 
     expect(t0.lastAccrualTime).to.be.equal(0);
     expect(t0.totalSupplyBase).to.be.equal(totals.totalSupplyBase);
@@ -80,19 +80,22 @@ describe('accrue', function () {
   });
 
   it('accrues correctly with time elapsed and less than min rewards', async () => {
+    const start = (await getBlock()).timestamp + 100;
     const params = {
       baseMinForRewards: 12000n,
       trackingIndexScale: exp(1, 15),
+      start,
     };
     const { comet } = await makeProtocol(params);
 
-    const t0 = await comet.totals();
+    const t0 = await comet.totalsBasic();
     const t1 = Object.assign({}, t0, {
       totalSupplyBase: 11000n,
       totalBorrowBase: 11000n,
+      lastAccrualTime: start,
+      // ^ note: ideally we wouldn't set this but hardhat tends to get flaky about seconds in CI
     });
-    await ethers.provider.send('evm_increaseTime', [998]);
-    const s0 = await wait(comet.setTotals(t1));
+    const s0 = await wait(comet.setTotalsBasic(t1));
 
     const supplyRate = await comet.getSupplyRate();
     expect(supplyRate).to.be.equal(19549086756);
@@ -100,13 +103,14 @@ describe('accrue', function () {
     const borrowRate = await comet.getBorrowRate();
     expect(borrowRate).to.be.equal(21721207507);
 
-    await ethers.provider.send('evm_increaseTime', [2]);
-    const a1 = await wait(comet.accrue());
-    const t2 = await comet.totals();
+    await ethers.provider.send('evm_setNextBlockTimestamp', [start + 1000]);
 
-    const timeElapsed = t2.lastAccrualTime - t0.lastAccrualTime;
+    const a1 = await wait(comet.accrue());
+    const t2 = await comet.totalsBasic();
+
+    const timeElapsed = t2.lastAccrualTime - t1.lastAccrualTime;
     expect(timeElapsed).to.be.equal(1000);
-    
+
     expect(t2.baseSupplyIndex).to.be.equal(projectBaseIndex(t1.baseSupplyIndex, supplyRate, timeElapsed));
     expect(t2.baseBorrowIndex).to.be.equal(projectBaseIndex(t1.baseBorrowIndex, borrowRate, timeElapsed));
     expect(t2.trackingSupplyIndex).to.be.equal(t1.trackingSupplyIndex);
@@ -120,23 +124,23 @@ describe('accrue', function () {
     };
     const { comet } = await makeProtocol(params);
 
-    const t0 = await comet.totals();
+    const t0 = await comet.totalsBasic();
     const t1 = Object.assign({}, t0, {
       totalSupplyBase: exp(14000, 6),
       totalBorrowBase: exp(13000, 6),
     });
     await ethers.provider.send('evm_increaseTime', [998]);
-    const s0 = await wait(comet.setTotals(t1));
+    const s0 = await wait(comet.setTotalsBasic(t1));
 
     const supplyRate = await comet.getSupplyRate();
     expect(supplyRate).to.be.equal(12474082097);
 
     const borrowRate = await comet.getBorrowRate();
     expect(borrowRate).to.be.equal(14926252082);
-    
+
     await ethers.provider.send('evm_increaseTime', [2]);
     const a1 = await wait(comet.accrue());
-    const t2 = await comet.totals();
+    const t2 = await comet.totalsBasic();
 
     const supplySpeed = await comet.baseTrackingSupplySpeed();
     expect(supplySpeed).to.be.equal(params.trackingIndexScale);
@@ -160,16 +164,16 @@ describe('accrue', function () {
     };
     const { comet } = await makeProtocol(params);
 
-    const t0 = await comet.totals();
+    const t0 = await comet.totalsBasic();
     const t1 = Object.assign({}, t0, {
       totalSupplyBase: 14000,
       totalBorrowBase: 13000,
     });
     await ethers.provider.send('evm_increaseTime', [998]);
-    const s0 = await wait(comet.setTotals(t1));
+    const s0 = await wait(comet.setTotalsBasic(t1));
     await ethers.provider.send('evm_increaseTime', [2]);
     await expect(wait(comet.accrue())).to.be.revertedWith('number exceeds size (64 bits)');
-    const t2 = await comet.totals();
+    const t2 = await comet.totalsBasic();
 
     const supplyRate = await comet.getSupplyRate();
     const borrowRate = await comet.getBorrowRate();
@@ -187,14 +191,14 @@ describe('accrue', function () {
   it('reverts on overflows', async () => {
     const { comet } = await makeProtocol();
 
-    const t0 = await comet.totals();
+    const t0 = await comet.totalsBasic();
     const t1 = Object.assign({}, t0, {
       baseSupplyIndex: 2n**64n - 1n,
       totalSupplyBase: 14000,
       totalBorrowBase: 13000, // needs to have positive utilization for supply rate to be > 0
     });
     await ethers.provider.send('evm_increaseTime', [998]);
-    const s0 = await wait(comet.setTotals(t1));
+    const s0 = await wait(comet.setTotalsBasic(t1));
     await ethers.provider.send('evm_increaseTime', [2]);
     await expect(wait(comet.accrue())).to.be.revertedWith('reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
 
@@ -202,7 +206,7 @@ describe('accrue', function () {
       baseBorrowIndex: 2n**64n - 1n,
     });
     await ethers.provider.send('evm_increaseTime', [998]);
-    const s1 = await wait(comet.setTotals(t2));
+    const s1 = await wait(comet.setTotalsBasic(t2));
     await ethers.provider.send('evm_increaseTime', [2]);
     await expect(wait(comet.accrue())).to.be.revertedWith('reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
   });

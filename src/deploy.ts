@@ -71,16 +71,17 @@ export async function deployComet(
         pauseGuardian: await pauseGuardian.getAddress(),
         priceOracle: oracle.address,
         baseToken: baseToken.address,
-        trackingIndexScale: (1e15).toString(), // XXX add 'exp' to scen framework?
-        baseMinForRewards: 1, // XXX
-        baseTrackingSupplySpeed: 0, // XXX
-        baseTrackingBorrowSpeed: 0, // XXX
-        assetInfo: [assetInfo0, assetInfo1],
         kink: (8e17).toString(), // 0.8
         perYearInterestRateBase: (5e15).toString(), // 0.005
         perYearInterestRateSlopeLow: (1e17).toString(), // 0.1
         perYearInterestRateSlopeHigh: (3e18).toString(), // 3.0
         reserveRate: (1e17).toString(), // 0.1
+        trackingIndexScale: (1e15).toString(), // XXX add 'exp' to scen framework?
+        baseTrackingSupplySpeed: 0, // XXX
+        baseTrackingBorrowSpeed: 0, // XXX
+        baseMinForRewards: 1, // XXX
+        baseBorrowMin: 1, // XXX
+        assetInfo: [assetInfo0, assetInfo1],
       },
     ]
   );

@@ -14,6 +14,7 @@ function matchGroup(str, patterns) {
 
 function parseAmount(amount) {
   switch (typeof amount) {
+    case 'bigint':
     case 'number':
       return { $gte: amount };
     case 'string':
