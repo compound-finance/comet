@@ -1,8 +1,6 @@
+import { Comet, ethers, expect, exp, makeProtocol, wait } from './helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { expect } from 'chai';
 import { BigNumber } from 'ethers';
-import { ethers } from 'hardhat';
-import { FaucetToken__factory, MockedOracle__factory, Comet, Comet__factory } from '../build/types';
 
 let comet: Comet;
 let admin: SignerWithAddress;
@@ -29,31 +27,10 @@ const types = {
   ],
 };
 
-describe('Comet#allowBySig', function () {
+describe('allowBySig', function () {
   beforeEach(async () => {
+    comet = (await makeProtocol()).comet;
     [admin, pauseGuardian, signer, manager] = await ethers.getSigners();
-
-    const FaucetTokenFactory = (await ethers.getContractFactory(
-      'FaucetToken'
-    )) as FaucetToken__factory;
-    const token = await FaucetTokenFactory.deploy(100000, 'DAI', 18, 'DAI');
-    await token.deployed();
-
-    const OracleFactory = (await ethers.getContractFactory(
-      'MockedOracle'
-    )) as MockedOracle__factory;
-    const oracle = await OracleFactory.deploy();
-    await oracle.deployed();
-
-    const CometFactory = (await ethers.getContractFactory('Comet')) as Comet__factory;
-    comet = await CometFactory.deploy({
-      governor: admin.address,
-      pauseGuardian: pauseGuardian.address,
-      priceOracle: oracle.address,
-      baseToken: token.address,
-      assetInfo: [],
-    });
-    await comet.deployed();
 
     domain = {
       name: await comet.NAME(),
