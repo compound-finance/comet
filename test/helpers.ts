@@ -81,9 +81,9 @@ export async function makeProtocol(opts: ProtocolOpts = {}) {
   const baseTrackingSupplySpeed = dfn(opts.baseTrackingSupplySpeed, trackingIndexScale);
   const baseTrackingBorrowSpeed = dfn(opts.baseTrackingBorrowSpeed, trackingIndexScale);
   const kink = dfn(opts.kink, exp(8, 17)); // 0.8
-  const interestRateBase = dfn(opts.interestRateBase, exp(5, 15)); // 0.005
-  const interestRateSlopeLow = dfn(opts.interestRateSlopeLow, exp(1, 17)); // 0.1
-  const interestRateSlopeHigh = dfn(opts.interestRateSlopeHigh, exp(3, 18)); // 3.0
+  const perYearInterestRateBase = dfn(opts.interestRateBase, exp(5, 15)); // 0.005
+  const perYearInterestRateSlopeLow = dfn(opts.interestRateSlopeLow, exp(1, 17)); // 0.1
+  const perYearInterestRateSlopeHigh = dfn(opts.interestRateSlopeHigh, exp(3, 18)); // 3.0
   const reserveRate = dfn(opts.reserveRate, exp(1, 17)); // 0.1
 
   const tokens = {};
@@ -112,9 +112,9 @@ export async function makeProtocol(opts: ProtocolOpts = {}) {
     baseTrackingSupplySpeed,
     baseTrackingBorrowSpeed,
     kink,
-    interestRateBase,
-    interestRateSlopeLow,
-    interestRateSlopeHigh,
+    perYearInterestRateBase,
+    perYearInterestRateSlopeLow,
+    perYearInterestRateSlopeHigh,
     reserveRate,
     assetInfo: Object.entries(assets).reduce((acc, [symbol, config], i) => {
       if (symbol != base) {

@@ -30,11 +30,16 @@ contract Comet is CometStorage {
         AssetInfo[] assetInfo;
 
         uint64 kink;
-        uint64 interestRateSlopeLow;
-        uint64 interestRateSlopeHigh;
-        uint64 interestRateBase;
+        uint64 perYearInterestRateSlopeLow;
+        /// @dev Do not set this value higher than 2^64=1.84e19
+        uint64 perYearInterestRateSlopeHigh;
+        uint64 perYearInterestRateBase;
         uint64 reserveRate;
     }
+
+    /// @notice The number of seconds per year
+    /// @dev 365 days * 24 hours * 60 minutes * 60 seconds
+    uint64 public constant SECONDS_PER_YEAR = 31_536_000;
 
     /// @notice The max number of assets this contract is hardcoded to support
     /// @dev Do not change this variable without updating all the fields throughout the contract.
@@ -88,23 +93,23 @@ contract Comet is CometStorage {
 
     /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope
     /// @dev Factor (scale of 1e18)
-    uint public immutable kink;
+    uint64 public immutable kink;
 
     /// @notice Per second interest rate slope applied when utilization is below kink
     /// @dev Factor (scale of 1e18)
-    uint public immutable interestRateSlopeLow;
+    uint64 public immutable perSecondInterestRateSlopeLow;
 
     /// @notice Per second interest rate slope applied when utilization is above kink
     /// @dev Factor (scale of 1e18)
-    uint public immutable interestRateSlopeHigh;
+    uint64 public immutable perSecondInterestRateSlopeHigh;
 
     /// @notice Per second base interest rate
     /// @dev Factor (scale of 1e18)
-    uint public immutable interestRateBase;
+    uint64 public immutable perSecondInterestRateBase;
 
     /// @notice The rate of total interest paid that goes into reserves
     /// @dev Factor (scale of 1e18)
-    uint public immutable reserveRate;
+    uint64 public immutable reserveRate;
 
     /**  Collateral asset configuration **/
 
@@ -156,9 +161,9 @@ contract Comet is CometStorage {
 
         // Set interest rate model configs
         kink = config.kink;
-        interestRateSlopeLow = config.interestRateSlopeLow;
-        interestRateSlopeHigh = config.interestRateSlopeHigh;
-        interestRateBase = config.interestRateBase;
+        perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
+        perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
+        perSecondInterestRateBase = config.perYearInterestRateBase / SECONDS_PER_YEAR;
         reserveRate = config.reserveRate;
 
         // Initialize aggregates
@@ -274,13 +279,15 @@ contract Comet is CometStorage {
      * @return The current per second supply rate
      */
     // TODO: Optimize by passing totals from caller to getUtilization()
-    function getSupplyRate() public view returns (uint) {
+    function getSupplyRate() public view returns (uint64) {
         uint utilization = getUtilization();
         uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
         if (utilization <= kink) {
-            return (interestRateBase + interestRateSlopeLow * utilization / factorScale) * reserveScalingFactor / factorScale; 
+            // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
+            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization)))); 
         } else {
-            return (interestRateBase + interestRateSlopeLow * kink / factorScale + interestRateSlopeHigh * (utilization - kink) / factorScale) * reserveScalingFactor / factorScale;
+            // (interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)) * utilization * (1 - reserveRate)
+            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)))));
         }
     }
 
@@ -288,19 +295,21 @@ contract Comet is CometStorage {
      * @return The current per second borrow rate
      */
     // TODO: Optimize by passing totals from caller to getUtilization()
-    function getBorrowRate() public view returns (uint) {
+    function getBorrowRate() public view returns (uint64) {
         uint utilization = getUtilization();
         if (utilization <= kink) {
-            return interestRateBase + interestRateSlopeLow * utilization / factorScale; 
+            // interestRateBase + interestRateSlopeLow * utilization
+            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization)); 
         } else {
-            return interestRateBase + interestRateSlopeLow * kink / factorScale + interestRateSlopeHigh * (utilization - kink) / factorScale;
+            // interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)
+            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)));
         }
     }
 
     /**
      * @return The utilization rate of the base asset
      */
-    function getUtilization() public view returns (uint64) {
+    function getUtilization() public view returns (uint) {
         // TODO: Optimize by passing in totals instead of reading from storage?
         Totals memory totals_ = totals;
         uint totalSupply = presentValueSupply(totals_.totalSupplyBase);
@@ -308,7 +317,7 @@ contract Comet is CometStorage {
         if (totalSupply == 0) {
             return 0;
         } else {
-            return uint64(totalBorrow * factorScale / totalSupply);
+            return totalBorrow * factorScale / totalSupply;
         }
     }
 

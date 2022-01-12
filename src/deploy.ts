@@ -77,9 +77,9 @@ export async function deployComet(
         baseTrackingBorrowSpeed: 0, // XXX
         assetInfo: [assetInfo0, assetInfo1],
         kink: (8e17).toString(), // 0.8
-        interestRateBase: (5e15).toString(), // 0.005
-        interestRateSlopeLow: (1e17).toString(), // 0.1
-        interestRateSlopeHigh: (3e18).toString(), // 3.0
+        perYearInterestRateBase: (5e15).toString(), // 0.005
+        perYearInterestRateSlopeLow: (1e17).toString(), // 0.1
+        perYearInterestRateSlopeHigh: (3e18).toString(), // 3.0
         reserveRate: (1e17).toString(), // 0.1
       },
     ]

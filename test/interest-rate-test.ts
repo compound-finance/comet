@@ -1,15 +1,23 @@
+import { BigNumber } from 'ethers';
 import { Comet, ethers, expect, exp, makeProtocol, wait } from './helpers';
 
 // Interest rate calculations can be checked with this Google Sheet: 
 // https://docs.google.com/spreadsheets/d/1G3BWcFPEQYnH-IrHHye5oA0oFIP0Jyj7pybdpMuDOuI
 
+// The minimum required precision between the actual and expected annual rate for tests to pass.
+const MINIMUM_PRECISION_WEI = 1e8; // 1e8 wei of precision
+
+function assertInterestRatesMatch(expectedRate, actualRate, precision = MINIMUM_PRECISION_WEI) {
+  expect((actualRate.sub(expectedRate)).abs()).lte(precision);
+}
+
 describe('interest rates', function () {
   it('when below kink utilization with 0.1 reserve rate', async () => {
     const params = {
       kink: exp(8, 17), // 0.8
-      interestRateBase: exp(5, 15), // 0.005
-      interestRateSlopeLow: exp(1, 17), // 0.1
-      interestRateSlopeHigh: exp(3, 18), // 3.0
+      perYearInterestRateBase: exp(5, 15), // 0.005
+      perYearInterestRateSlopeLow: exp(1, 17), // 0.1
+      perYearInterestRateSlopeHigh: exp(3, 18), // 3.0
       reserveRate: exp(1, 17) // 0.1
     };
     const { comet } = await makeProtocol(params);
@@ -28,6 +36,7 @@ describe('interest rates', function () {
     };
     await wait(comet.setTotals(totals));
 
+    const secondsPerYear = await comet.SECONDS_PER_YEAR();
     const utilization = await comet.getUtilization();
     const supplyRate = await comet.getSupplyRate();
     const borrowRate = await comet.getBorrowRate();
@@ -37,18 +46,18 @@ describe('interest rates', function () {
     expect(utilization).to.be.equal(exp(1, 17));
     // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
     // = (0.005 + 0.1 * 0.1) * 0.1 * 0.9 = 0.00135
-    expect(supplyRate).to.be.equal(exp(135, 13));
+    assertInterestRatesMatch(exp(135, 13), supplyRate.mul(secondsPerYear));
     // interestRateBase + interestRateSlopeLow * utilization
     // = 0.005 + 0.1 * 0.1 = 0.015
-    expect(borrowRate).to.be.equal(exp(15, 15));
+    assertInterestRatesMatch(exp(15, 15), borrowRate.mul(secondsPerYear));
   });
 
   it('when above kink utilization with 0.1 reserve rate', async () => {
     const params = {
       kink: exp(8, 17), // 0.8
-      interestRateBase: exp(5, 15), // 0.005
-      interestRateSlopeLow: exp(1, 17), // 0.1
-      interestRateSlopeHigh: exp(3, 18), // 3.0
+      perYearInterestRateBase: exp(5, 15), // 0.005
+      perYearInterestRateSlopeLow: exp(1, 17), // 0.1
+      perYearInterestRateSlopeHigh: exp(3, 18), // 3.0
       reserveRate: exp(1, 17) // 0.1
     };
     const { comet } = await makeProtocol(params);
@@ -67,6 +76,7 @@ describe('interest rates', function () {
     };
     await wait(comet.setTotals(totals));
 
+    const secondsPerYear = await comet.SECONDS_PER_YEAR();
     const utilization = await comet.getUtilization();
     const supplyRate = await comet.getSupplyRate();
     const borrowRate = await comet.getBorrowRate();
@@ -76,18 +86,18 @@ describe('interest rates', function () {
     expect(utilization).to.be.equal(exp(9, 17));
     // (interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)) * utilization * (1 - reserveRate)
     // = (0.005 + 0.1 * 0.8 + 3 * 0.1) * 0.9 * 0.9 = 0.31185
-    expect(supplyRate).to.be.equal(exp(31185, 13));
+    assertInterestRatesMatch(exp(31185, 13), supplyRate.mul(secondsPerYear));
     // interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)
     // = 0.005 + 0.1 * 0.8 + 3 * 0.1 = 0.385
-    expect(borrowRate).to.be.equal(exp(385, 15));
+    assertInterestRatesMatch(exp(385, 15), borrowRate.mul(secondsPerYear));
   });
 
   it('with no reserve rate', async () => {
     const params = {
       kink: exp(8, 17), // 0.8
-      interestRateBase: exp(5, 15), // 0.005
-      interestRateSlopeLow: exp(1, 17), // 0.1
-      interestRateSlopeHigh: exp(3, 18), // 3.0
+      perYearInterestRateBase: exp(5, 15), // 0.005
+      perYearInterestRateSlopeLow: exp(1, 17), // 0.1
+      perYearInterestRateSlopeHigh: exp(3, 18), // 3.0
       reserveRate: 0
     };
     const { comet } = await makeProtocol(params);
@@ -106,6 +116,7 @@ describe('interest rates', function () {
     };
     await wait(comet.setTotals(totals));
 
+    const secondsPerYear = await comet.SECONDS_PER_YEAR();
     const utilization = await comet.getUtilization();
     const supplyRate = await comet.getSupplyRate();
     const borrowRate = await comet.getBorrowRate();
@@ -115,18 +126,18 @@ describe('interest rates', function () {
     expect(utilization).to.be.equal(exp(1, 17));
     // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
     // = (0.005 + 0.1 * 0.1) * 0.1 = 0.0015
-    expect(supplyRate).to.be.equal(exp(15, 14));
+    assertInterestRatesMatch(exp(15, 14), supplyRate.mul(secondsPerYear));
     // interestRateBase + interestRateSlopeLow * utilization
     // = 0.005 + 0.1 * 0.1 = 0.015
-    expect(borrowRate).to.be.equal(exp(15, 15));
+    assertInterestRatesMatch(exp(15, 15), borrowRate.mul(secondsPerYear));
   });
 
   it('when 0 utilization', async () => {
     const params = {
       kink: exp(8, 17), // 0.8
-      interestRateBase: exp(5, 15), // 0.005
-      interestRateSlopeLow: exp(1, 17), // 0.1
-      interestRateSlopeHigh: exp(3, 18), // 3.0
+      perYearInterestRateBase: exp(5, 15), // 0.005
+      perYearInterestRateSlopeLow: exp(1, 17), // 0.1
+      perYearInterestRateSlopeHigh: exp(3, 18), // 3.0
       reserveRate: exp(1, 17) // 0.1
     };
     const { comet } = await makeProtocol(params);
@@ -145,6 +156,7 @@ describe('interest rates', function () {
     };
     await wait(comet.setTotals(totals));
 
+    const secondsPerYear = await comet.SECONDS_PER_YEAR();
     const utilization = await comet.getUtilization();
     const supplyRate = await comet.getSupplyRate();
     const borrowRate = await comet.getBorrowRate();
@@ -154,9 +166,9 @@ describe('interest rates', function () {
     expect(utilization).to.be.equal(0);
     // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
     // = (0.005 + 0.1 * 0) * 0 * 0.9 = 0
-    expect(supplyRate).to.be.equal(0);
+    assertInterestRatesMatch(0, supplyRate.mul(secondsPerYear));
     // interestRateBase + interestRateSlopeLow * utilization
     // = 0.005 + 0.1 * 0 = 0.005
-    expect(borrowRate).to.be.equal(exp(5, 15));
+    assertInterestRatesMatch(exp(5, 15), borrowRate.mul(secondsPerYear));
   });
 });

@@ -66,14 +66,10 @@ scenario(
   async ({ comet, actors }) => {
     let { totalSupplyBase, totalBorrowBase } = await comet.totals();
     const kink = await comet.kink();
-    const interestRateBase = await comet.interestRateBase();
-    const interestRateSlopeLow = await comet.interestRateSlopeLow();
-    const interestRateSlopeHigh = await comet.interestRateSlopeHigh();
+    const perSecondInterestRateBase = await comet.perSecondInterestRateBase();
+    const perSecondInterestRateSlopeLow = await comet.perSecondInterestRateSlopeLow();
+    const perSecondInterestRateSlopeHigh = await comet.perSecondInterestRateSlopeHigh();
     const reserveRate = await comet.reserveRate();
-
-    console.log('utilization: ', await comet.getUtilization());
-    console.log('supply rate: ', await comet.getSupplyRate());
-    console.log('borrow rate: ', await comet.getBorrowRate());
 
     expect(await comet.getUtilization()).to.equal(
       calculateUtilization(totalSupplyBase, totalBorrowBase)
@@ -83,9 +79,9 @@ scenario(
         totalSupplyBase,
         totalBorrowBase,
         kink,
-        interestRateBase,
-        interestRateSlopeLow,
-        interestRateSlopeHigh,
+        perSecondInterestRateBase,
+        perSecondInterestRateSlopeLow,
+        perSecondInterestRateSlopeHigh,
         reserveRate
       )
     );
@@ -94,9 +90,9 @@ scenario(
         totalSupplyBase,
         totalBorrowBase,
         kink,
-        interestRateBase,
-        interestRateSlopeLow,
-        interestRateSlopeHigh
+        perSecondInterestRateBase,
+        perSecondInterestRateSlopeLow,
+        perSecondInterestRateSlopeHigh
       )
     );
   }
