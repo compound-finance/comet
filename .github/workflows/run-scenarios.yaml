@@ -38,12 +38,6 @@ jobs:
       - name: Compile
         run: npx hardhat compile
 
-      - name: Spider Goerli
-        run: npx hardhat spider --network goerli
-
-      - name: Spider Fuji
-        run: npx hardhat spider --network fuji
-
       - name: Run scenarios
         run: yarn scenario
 

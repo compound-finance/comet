@@ -141,35 +141,4 @@ Scenarios are high-level property and ad-hoc tests for the Comet protocol. To ru
 
 `npx hardhat scenario`
 
-#### Scenario CLI
-
-You can run scenarios against a given base as:
-
-`npx hardhat scenario --base mainnet --base avax`
-
-#### New Scenarios
-
-To add a new scenario, add to `scenario/`, e.g.
-
-**scenario/NewToken.ts**
-
-```ts
-import { scenario, World } from '../plugins/scenario';
-import { CometContext } from './Context';
-import { expect } from 'chai';
-
-scenario(
-  'add eth token 0x...',
-  { remote_token: 'eth-mainnet@0x...' },
-  async ({ user, oracle, comet, remoteToken }: CometContext, world: World) => {
-    await oracle.setPrice(remoteToken, 100);
-    await comet.support(remoteToken);
-    await comet.supply(user, 100, remoteToken);
-    await comet.borrow(user, 1000);
-    expect(await comet.collateralBalance(user, remoteToken)).to.equal(100);
-    expect(await comet.borrowBalance(user)).to.equal(1000);
-  }
-);
-```
-
-For more information, see the Scenarios Hardhat plugin.
+For more information, see [SCENARIO.md](./SCENARIO.md).

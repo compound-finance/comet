@@ -64,7 +64,7 @@ function convertToSerializableObject(object: object) {
   return JSON.parse(JSON.stringify(object));
 }
 
-export async function run<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[]) {
+export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[]) {
   let hardhatConfig = convertToSerializableObject(getConfig()) as HardhatConfig;
   let hardhatArguments = getHardhatArguments();
   let formats = defaultFormats;
