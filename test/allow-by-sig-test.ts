@@ -206,10 +206,10 @@ describe('allowBySig', function () {
           signatureArgs.nonce,
           signatureArgs.expiry,
           0,
-          '0xbad',
-          '0xbad'
+          '0xbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadb',
+          '0xbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadb'
         )
-    ).to.be.revertedWith('ECDSA: invalid signature length');
+    ).to.be.revertedWith('Signature does not match arguments');
 
     // does not authorize
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
@@ -218,15 +218,13 @@ describe('allowBySig', function () {
     expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
   });
 
-  /*
   it('fails if signature contains invalid nonce', async () => {
     const invalidNonce = signatureArgs.nonce.add(1);
-    const signatureWithInvalidNonce = await signer._signTypedData(domain, types, {
+    const rawSignature = await signer._signTypedData(domain, types, {
       ...signatureArgs,
       ...{ nonce: invalidNonce },
     });
-
-    // convert raw signature to Signature
+    const signatureWithInvalidNonce = ethers.utils.splitSignature(rawSignature);
 
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
 
@@ -239,7 +237,9 @@ describe('allowBySig', function () {
           signatureArgs.isAllowed,
           invalidNonce,
           signatureArgs.expiry,
-          signatureWithInvalidNonce
+          signatureWithInvalidNonce.v,
+          signatureWithInvalidNonce.r,
+          signatureWithInvalidNonce.s
         )
     ).to.be.revertedWith('Invalid nonce');
 
@@ -248,8 +248,6 @@ describe('allowBySig', function () {
     // does not update nonce
     expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
   });
-
-  */
 
   it('rejects a repeated message', async () => {
     // valid call
@@ -283,7 +281,6 @@ describe('allowBySig', function () {
     ).to.be.revertedWith('Invalid nonce');
   });
 
-  /*
   it('fails if signature expiry has passed', async () => {
     const blockNumber = await ethers.provider.getBlockNumber();
     const timestamp = (await ethers.provider.getBlock(blockNumber)).timestamp;
@@ -295,7 +292,8 @@ describe('allowBySig', function () {
         expiry: invalidExpiry,
       },
     };
-    const expiredSignature = await signer._signTypedData(domain, types, expiredSignatureArgs);
+    const rawSignature = await signer._signTypedData(domain, types, expiredSignatureArgs);
+    const expiredSignature = ethers.utils.splitSignature(rawSignature);
 
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
 
@@ -308,7 +306,9 @@ describe('allowBySig', function () {
           expiredSignatureArgs.isAllowed,
           expiredSignatureArgs.nonce,
           expiredSignatureArgs.expiry,
-          expiredSignature
+          expiredSignature.v,
+          expiredSignature.r,
+          expiredSignature.s
         )
     ).to.be.revertedWith('Signed transaction expired');
 
@@ -318,5 +318,4 @@ describe('allowBySig', function () {
     // does not update nonce
     expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
   });
-  */
 });

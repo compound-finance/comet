@@ -318,9 +318,9 @@ contract Comet is CometStorage {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
         require(owner == signatory, "Signature does not match arguments");
-        // require(signatory != address(0), "Invalid signature");
-        // require(nonce == userNonce[signatory], "Invalid nonce");
-        // require(block.timestamp < expiry, "Signed transaction expired");
+        require(signatory != address(0), "Invalid signature");
+        require(nonce == userNonce[signatory], "Invalid nonce");
+        require(block.timestamp < expiry, "Signed transaction expired");
         userNonce[signatory]++;
         allowInternal(signatory, manager, isAllowed_);
     }
