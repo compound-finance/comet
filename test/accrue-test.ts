@@ -93,19 +93,17 @@ describe('accrue', function () {
     });
     await ethers.provider.send('evm_increaseTime', [998]);
     const s0 = await wait(comet.setTotals(t1));
+
+    const supplyRate = await comet.getSupplyRate();
+    const borrowRate = await comet.getBorrowRate();
+
     await ethers.provider.send('evm_increaseTime', [2]);
     const a1 = await wait(comet.accrue());
     const t2 = await comet.totals();
 
-    const supplyRate = await comet.getSupplyRate();
-    expect(supplyRate).to.be.equal(2000000000000); // XXX depends on IR
-
-    const borrowRate = await comet.getBorrowRate();
-    expect(borrowRate).to.be.equal(2000000000000); // XXX depends on IR
-
     const timeElapsed = t2.lastAccrualTime - t0.lastAccrualTime;
     expect(timeElapsed).to.be.equal(1000);
-
+    
     expect(t2.baseSupplyIndex).to.be.equal(projectBaseIndex(t1.baseSupplyIndex, supplyRate, timeElapsed));
     expect(t2.baseBorrowIndex).to.be.equal(projectBaseIndex(t1.baseBorrowIndex, borrowRate, timeElapsed));
     expect(t2.trackingSupplyIndex).to.be.equal(t1.trackingSupplyIndex);
@@ -126,15 +124,13 @@ describe('accrue', function () {
     });
     await ethers.provider.send('evm_increaseTime', [998]);
     const s0 = await wait(comet.setTotals(t1));
+
+    const supplyRate = await comet.getSupplyRate();
+    const borrowRate = await comet.getBorrowRate();
+    
     await ethers.provider.send('evm_increaseTime', [2]);
     const a1 = await wait(comet.accrue());
     const t2 = await comet.totals();
-
-    const supplyRate = await comet.getSupplyRate();
-    expect(supplyRate).to.be.equal(2000000000000); // XXX depends on IR
-
-    const borrowRate = await comet.getBorrowRate();
-    expect(borrowRate).to.be.equal(2000000000000); // XXX depends on IR
 
     const supplySpeed = await comet.baseTrackingSupplySpeed();
     expect(supplySpeed).to.be.equal(params.trackingIndexScale);
@@ -188,6 +184,8 @@ describe('accrue', function () {
     const t0 = await comet.totals();
     const t1 = Object.assign({}, t0, {
       baseSupplyIndex: 2n**64n - 1n,
+      totalSupplyBase: 14000,
+      totalBorrowBase: 13000, // needs to have positive utilization for supply rate to be > 0
     });
     await ethers.provider.send('evm_increaseTime', [998]);
     const s0 = await wait(comet.setTotals(t1));
