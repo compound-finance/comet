@@ -102,8 +102,8 @@ scenario(
 scenario(
   'Comet#interestRate > rates using hypothetical configuration constants',
   {
-    upgrade: true, 
-    configConstants: {
+    upgrade: true,
+    cometConfig: {
       perYearInterestRateBase: (5e16).toString() // 5% per year
     }
   },
@@ -115,6 +115,4 @@ scenario(
 );
 
 // TODO: Scenario for testing custom configuration constants using a constraint.
-// ADD NEW CONSTRAINTS
-// 1. To set configuration constants. This seems similar to the modern constraint since it'll require a redeploy, so maybe i can merge the two constraints together.
-// 2. To set utilization. The constraint will increase/decrease the total supply/borrow to arrive at the target utilization. Maybe instead of taking utilization as an input, it can be more flexible by taking a struct of target total supplies/borrows for each asset (not just the base asset)
+// To set utilization. The constraint will increase/decrease the total supply/borrow to arrive at the target utilization. Maybe instead of taking utilization as an input, it can be more flexible by taking a struct of target total supplies/borrows for each asset (not just the base asset)

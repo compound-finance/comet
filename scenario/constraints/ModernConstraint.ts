@@ -4,28 +4,28 @@ import { CometConfigurationConstants, deployComet } from '../../src/deploy';
 
 interface ModernConfig {
   upgrade: boolean;
-  configConstants: CometConfigurationConstants;
+  cometConfig: CometConfigurationConstants;
 }
 
 function getModernConfig(requirements: object): ModernConfig | null {
   let upgrade = requirements['upgrade'];
-  let configConstants = requirements['configConstants'] as CometConfigurationConstants;
+  let cometConfig = requirements['configConstants'] as CometConfigurationConstants;
 
   return {
     upgrade: !!upgrade,
-    configConstants: configConstants
+    cometConfig
   };
 }
 
 export class ModernConstraint<T extends CometContext> implements Constraint<T> {
   async solve(requirements: object, context: T, world: World) {
-    let { upgrade, configConstants } = getModernConfig(requirements);
+    let { upgrade, cometConfig } = getModernConfig(requirements);
 
     if (upgrade) {
       return async (context: T): Promise<T> => {
         console.log("Upgrading to modern...");
         // TODO: Make this deployment script less ridiculous, e.g. since it redeploys tokens right now
-        let { comet: newComet } = await deployComet(context.deploymentManager, false, configConstants);
+        let { comet: newComet } = await deployComet(context.deploymentManager, false, cometConfig);
         await context.upgradeTo(newComet);
 
         console.log("Upgraded to modern...");
