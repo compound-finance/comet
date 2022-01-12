@@ -551,5 +551,6 @@ contract Comet is CometStorage {
                 return i;
             }
         }
+        revert("Asset not found");
     }
 }

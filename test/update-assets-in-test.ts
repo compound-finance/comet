@@ -62,4 +62,15 @@ describe('updateAssetsIn', function () {
     await comet.updateAssetsIn(user.address, compAddress, 1, 0);
     expect(await comet.isInAsset(user.address, compAddress)).to.be.false;
   });
+
+  it('reverts for non-existent asset address', async () => {
+    const { comet } = await makeProtocol();
+    const [_governor, pauseGuardian, user] = await ethers.getSigners();
+
+    const erroneousAssetAddress = pauseGuardian.address;
+
+    await expect(
+      comet.updateAssetsIn(user.address, erroneousAssetAddress, 0, 100)
+    ).to.be.revertedWith('Asset not found');
+  });
 });
