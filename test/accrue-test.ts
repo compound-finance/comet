@@ -95,7 +95,10 @@ describe('accrue', function () {
     const s0 = await wait(comet.setTotals(t1));
 
     const supplyRate = await comet.getSupplyRate();
+    expect(supplyRate).to.be.equal(19549086756);
+
     const borrowRate = await comet.getBorrowRate();
+    expect(borrowRate).to.be.equal(21721207507);
 
     await ethers.provider.send('evm_increaseTime', [2]);
     const a1 = await wait(comet.accrue());
@@ -126,7 +129,10 @@ describe('accrue', function () {
     const s0 = await wait(comet.setTotals(t1));
 
     const supplyRate = await comet.getSupplyRate();
+    expect(supplyRate).to.be.equal(12474082097);
+
     const borrowRate = await comet.getBorrowRate();
+    expect(borrowRate).to.be.equal(14926252082);
     
     await ethers.provider.send('evm_increaseTime', [2]);
     const a1 = await wait(comet.accrue());

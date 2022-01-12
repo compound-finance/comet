@@ -310,7 +310,7 @@ contract Comet is CometStorage {
      * @return The utilization rate of the base asset
      */
     function getUtilization() public view returns (uint) {
-        // TODO: Optimize by passing in totals instead of reading from storage?
+        // TODO: Optimize by passing in totals instead of reading from storage.
         Totals memory totals_ = totals;
         uint totalSupply = presentValueSupply(totals_.totalSupplyBase);
         uint totalBorrow = presentValueBorrow(totals_.totalBorrowBase);
@@ -336,7 +336,7 @@ contract Comet is CometStorage {
      * @return The principal amount projected forward by the supply index
      */
     function presentValueSupply(uint104 principalValue) internal view returns (uint104) {
-        // TODO: Optimize by passing in index instead of reading from storage?
+        // TODO: Optimize by passing in index instead of reading from storage.
         return principalValue * totals.baseSupplyIndex;
     }
 
@@ -344,7 +344,7 @@ contract Comet is CometStorage {
      * @return The principal amount projected forward by the borrow index
      */
     function presentValueBorrow(uint104 principalValue) internal view returns (uint104) {
-        // TODO: Optimize by passing in index instead of reading from storage?
+        // TODO: Optimize by passing in index instead of reading from storage.
         return principalValue * totals.baseBorrowIndex;
     }
 
