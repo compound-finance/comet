@@ -122,6 +122,9 @@ contract Comet is CometStorage, EIP712 {
     /// @dev Factor (scale of 1e18)
     uint64 public immutable reserveRate;
 
+    /// @notice The next expected nonce for an address, for validating authorizations via signature
+    mapping(address => uint) public userNonce;
+
     /**  Collateral asset configuration **/
 
     address internal immutable asset00;
@@ -132,9 +135,6 @@ contract Comet is CometStorage, EIP712 {
 
     uint internal immutable liquidateCollateralFactor00;
     uint internal immutable liquidateCollateralFactor01;
-
-    /// @notice The next expected nonce for an address, for validating authorizations via signature
-    mapping(address => uint) public userNonce;
 
     /**
      * @notice Construct a new protocol instance
@@ -276,14 +276,16 @@ contract Comet is CometStorage, EIP712 {
     }
 
     /**
-     * @notice XXX
+     * @notice Authorize a manager to take actions on behalf of your address
+     * @param manager The address to authorize (or rescind authorization from)
+     * @param isAllowed_ Whether to authorize or rescind authorization from manager
      */
     function allow(address manager, bool _isAllowed) external {
       allowInternal(msg.sender, manager, _isAllowed);
     }
 
     /**
-     * @dev XXX
+     * @dev Update authorization status for manager on behalf of owner
      */
     function allowInternal(address owner, address manager, bool _isAllowed) internal {
         isAllowed[owner][manager] = _isAllowed;
@@ -332,7 +334,7 @@ contract Comet is CometStorage, EIP712 {
         uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
         if (utilization <= kink) {
             // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
-            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization)))); 
+            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization))));
         } else {
             // (interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)) * utilization * (1 - reserveRate)
             return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)))));
@@ -347,7 +349,7 @@ contract Comet is CometStorage, EIP712 {
         uint utilization = getUtilization();
         if (utilization <= kink) {
             // interestRateBase + interestRateSlopeLow * utilization
-            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization)); 
+            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization));
         } else {
             // interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)
             return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)));
