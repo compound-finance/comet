@@ -311,17 +311,17 @@ contract Comet is CometStorage {
         bytes32 s
     ) external {
         // 0 < s < secp256k1n ÷ 2 + 1 (source: https://ethereum.github.io/yellowpaper/paper.pdf #307)
-        require(uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0, "Invalid value: s");
+        require(uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0, "invalid value: s");
         // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
-        require(v == 27 || v == 28, "Invalid value: v");
+        require(v == 27 || v == 28, "invalid value: v");
         bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), keccak256(bytes(version)), block.chainid, address(this)));
         bytes32 structHash = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, owner, manager, isAllowed_, nonce, expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
-        require(owner == signatory, "Signature does not match arguments");
-        require(signatory != address(0), "Invalid signature");
-        require(nonce == userNonce[signatory], "Invalid nonce");
-        require(block.timestamp < expiry, "Signed transaction expired");
+        require(owner == signatory, "signature does not match arguments");
+        require(signatory != address(0), "invalid signature");
+        require(nonce == userNonce[signatory], "invalid nonce");
+        require(block.timestamp < expiry, "signed transaction expired");
         userNonce[signatory]++;
         allowInternal(signatory, manager, isAllowed_);
     }

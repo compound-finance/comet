@@ -92,7 +92,7 @@ describe('allowBySig', function () {
         signature.r,
         signature.s
       )
-    ).to.be.revertedWith('Signature does not match arguments');
+    ).to.be.revertedWith('signature does not match arguments');
 
     // does not authorize
     expect(await comet.isAllowed(invalidOwnerAddress, manager.address)).to.be.false;
@@ -117,7 +117,7 @@ describe('allowBySig', function () {
         signature.r,
         signature.s
       )
-    ).to.be.revertedWith('Signature does not match arguments');
+    ).to.be.revertedWith('signature does not match arguments');
 
     // does not authorize
     expect(await comet.isAllowed(signer.address, invalidManagerAddress)).to.be.false;
@@ -140,7 +140,7 @@ describe('allowBySig', function () {
         signature.r,
         signature.s
       )
-    ).to.be.revertedWith('Signature does not match arguments');
+    ).to.be.revertedWith('signature does not match arguments');
 
     // does not authorize
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
@@ -163,7 +163,7 @@ describe('allowBySig', function () {
         signature.r,
         signature.s
       )
-    ).to.be.revertedWith('Signature does not match arguments');
+    ).to.be.revertedWith('signature does not match arguments');
 
     // does not authorize
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
@@ -186,7 +186,7 @@ describe('allowBySig', function () {
         signature.r,
         signature.s
       )
-    ).to.be.revertedWith('Signature does not match arguments');
+    ).to.be.revertedWith('signature does not match arguments');
 
     // does not authorize
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
@@ -218,7 +218,7 @@ describe('allowBySig', function () {
           signatureWithInvalidNonce.r,
           signatureWithInvalidNonce.s
         )
-    ).to.be.revertedWith('Invalid nonce');
+    ).to.be.revertedWith('invalid nonce');
 
     // does not authorize
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
@@ -255,7 +255,7 @@ describe('allowBySig', function () {
           signature.r,
           signature.s
         )
-    ).to.be.revertedWith('Invalid nonce');
+    ).to.be.revertedWith('invalid nonce');
   });
 
   it('fails if signature expiry has passed', async () => {
@@ -285,7 +285,7 @@ describe('allowBySig', function () {
           expiredSignature.r,
           expiredSignature.s
         )
-    ).to.be.revertedWith('Signed transaction expired');
+    ).to.be.revertedWith('signed transaction expired');
 
     // does not authorize
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
@@ -310,7 +310,7 @@ describe('allowBySig', function () {
           signature.r,
           signature.s
         )
-    ).to.be.revertedWith('Invalid value: v');
+    ).to.be.revertedWith('invalid value: v');
 
     // does not authorize
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
@@ -338,7 +338,7 @@ describe('allowBySig', function () {
           signature.r,
           invalidS
         )
-    ).to.be.revertedWith('Invalid value: s');
+    ).to.be.revertedWith('invalid value: s');
 
     // does not authorize
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;

@@ -61,7 +61,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('Signature does not match arguments');
+    ).to.be.revertedWith('signature does not match arguments');
   }
 );
 
@@ -93,7 +93,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('Signature does not match arguments');
+    ).to.be.revertedWith('signature does not match arguments');
   }
 );
 
@@ -125,7 +125,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('Signature does not match arguments');
+    ).to.be.revertedWith('signature does not match arguments');
   }
 );
 
@@ -157,7 +157,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('Signature does not match arguments');
+    ).to.be.revertedWith('signature does not match arguments');
   }
 );
 
@@ -189,7 +189,7 @@ scenario(
         expiry: expiry + 100, // altered expiry
         signature,
       })
-    ).to.be.revertedWith('Signature does not match arguments');
+    ).to.be.revertedWith('signature does not match arguments');
   }
 );
 
@@ -222,7 +222,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('Invalid nonce');
+    ).to.be.revertedWith('invalid nonce');
   }
 );
 
@@ -265,7 +265,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('Invalid nonce');
+    ).to.be.revertedWith('invalid nonce');
   }
 );
 
@@ -297,7 +297,7 @@ scenario(
         expiry: invalidExpiry,
         signature,
       })
-    ).to.be.revertedWith('Signed transaction expired');
+    ).to.be.revertedWith('signed transaction expired');
   }
 );
 
@@ -331,7 +331,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('Invalid value: v');
+    ).to.be.revertedWith('invalid value: v');
   }
 );
 
@@ -366,6 +366,6 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('Invalid value: s');
+    ).to.be.revertedWith('invalid value: s');
   }
 );
