@@ -123,9 +123,6 @@ contract Comet is CometStorage {
     /// @dev Factor (scale of 1e18)
     uint64 public immutable reserveRate;
 
-    /// @notice The next expected nonce for an address, for validating authorizations via signature
-    mapping(address => uint) public userNonce;
-
     /**  Collateral asset configuration **/
 
     address internal immutable asset00;
