@@ -1,7 +1,7 @@
 import { ethers, expect, makeProtocol } from './helpers';
 
 describe('updateAssetsIn', function () {
-  it('sets isInAsset=true when initialUserBalance=0 and finalUserBalance>0', async () => {
+  it("adds asset to user's asset list when initialUserBalance=0 and finalUserBalance>0", async () => {
     const { comet, tokens } = await makeProtocol();
     const [_governor, _pauseGuardian, user] = await ethers.getSigners();
     const compAddress = tokens['COMP'].address;
@@ -50,7 +50,7 @@ describe('updateAssetsIn', function () {
     expect(await comet.getAssetList(user.address)).to.deep.equal([wethAddress]);
   });
 
-  it('set isInAsset=false when initialUserBalance > 0 and finalUserBalance=0', async () => {
+  it('removes asset from asset list when initialUserBalance > 0 and finalUserBalance=0', async () => {
     const { comet, tokens } = await makeProtocol();
     const [_governor, _pauseGuardian, user] = await ethers.getSigners();
     const compAddress = tokens['COMP'].address;
