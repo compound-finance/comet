@@ -205,7 +205,7 @@ describe('allowBySig', function () {
           signatureArgs.isAllowed,
           signatureArgs.nonce,
           signatureArgs.expiry,
-          0,
+          27,
           '0xbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadb',
           '0xbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadb'
         )
@@ -311,6 +311,31 @@ describe('allowBySig', function () {
           expiredSignature.s
         )
     ).to.be.revertedWith('Signed transaction expired');
+
+    // does not authorize
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    // does not update nonce
+    expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
+  });
+
+  it('reverts if v not in {27,28}', async () => {
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    await expect(
+      comet
+        .connect(manager)
+        .allowBySig(
+          signatureArgs.owner,
+          signatureArgs.manager,
+          signatureArgs.isAllowed,
+          signatureArgs.nonce,
+          signatureArgs.expiry,
+          26,
+          signature.r,
+          signature.s
+        )
+    ).to.be.revertedWith('Invalid value: v');
 
     // does not authorize
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
