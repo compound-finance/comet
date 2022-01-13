@@ -22,6 +22,10 @@ contract Comet is CometStorage {
     /// @notice The EIP-712 typehash for allowBySig Authorization
     bytes32 public constant AUTHORIZATION_TYPEHASH = keccak256("Authorization(address owner,address manager,bool isAllowed,uint256 nonce,uint256 expiry)");
 
+    /// @notice The highest valid value for s in an ECDSA signature pair (0 < s < secp256k1n ÷ 2 + 1)
+    // (source: https://ethereum.github.io/yellowpaper/paper.pdf #307)
+    uint public constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
+
     struct AssetInfo {
         address asset;
         uint borrowCollateralFactor;
@@ -310,8 +314,7 @@ contract Comet is CometStorage {
         bytes32 r,
         bytes32 s
     ) external {
-        // 0 < s < secp256k1n ÷ 2 + 1 (source: https://ethereum.github.io/yellowpaper/paper.pdf #307)
-        require(uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0, "invalid value: s");
+        require(uint256(s) <= MAX_VALID_ECDSA_S, "invalid value: s");
         // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
         require(v == 27 || v == 28, "invalid value: v");
         bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), keccak256(bytes(version)), block.chainid, address(this)));
