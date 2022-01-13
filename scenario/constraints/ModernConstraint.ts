@@ -1,15 +1,15 @@
 import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
-import { CometConfigurationConstants, deployComet } from '../../src/deploy';
+import { CometConfigurationOverrides, deployComet } from '../../src/deploy';
 
 interface ModernConfig {
   upgrade: boolean;
-  cometConfig: CometConfigurationConstants;
+  cometConfig: CometConfigurationOverrides;
 }
 
 function getModernConfig(requirements: object): ModernConfig | null {
   let upgrade = requirements['upgrade'];
-  let cometConfig = requirements['configConstants'] as CometConfigurationConstants;
+  let cometConfig = requirements['cometConfig'] as CometConfigurationOverrides;
 
   return {
     upgrade: !!upgrade,

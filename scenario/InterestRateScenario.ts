@@ -59,7 +59,7 @@ function calculateUtilization(
   }
 }
 
-// TODO: Add constraint to set total supply and borrow bases.
+// TODO: Add constraint to set utilization.
 scenario(
   'Comet#interestRate > rates using on-chain configuration constants',
   { upgrade: true },
@@ -98,7 +98,7 @@ scenario(
   }
 );
 
-// TODO: Add constraint to set total supply and borrow bases.
+// TODO: Add constraint to set utilization.
 scenario(
   'Comet#interestRate > rates using hypothetical configuration constants',
   {
@@ -114,5 +114,4 @@ scenario(
   }
 );
 
-// TODO: Scenario for testing custom configuration constants using a constraint.
-// To set utilization. The constraint will increase/decrease the total supply/borrow to arrive at the target utilization. Maybe instead of taking utilization as an input, it can be more flexible by taking a struct of target total supplies/borrows for each asset (not just the base asset)
+// TODO: Scenario for testing custom configuration constants using a utilization constraint.

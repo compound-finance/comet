@@ -16,7 +16,7 @@ import { AssetInfoStruct, ConfigurationStruct } from '../build/types/Comet';
 import { BigNumberish } from 'ethers';
 export { Comet } from '../build/types';
 
-export interface CometConfigurationConstants {
+export interface CometConfigurationOverrides {
   governor?: string,
   pauseGuardian?: string,
   priceOracle?: string,
@@ -57,7 +57,7 @@ interface DeployedContracts {
 export async function deployComet(
   deploymentManager: DeploymentManager,
   deployProxy: boolean = true,
-  configurationConstants: CometConfigurationConstants = {}
+  configurationOverrides: CometConfigurationOverrides = {}
 ): Promise<DeployedContracts> {
   const [governor, pauseGuardian] = await deploymentManager.hre.ethers.getSigners();
 
@@ -104,7 +104,7 @@ export async function deployComet(
           baseBorrowMin: 1, // XXX
           assetInfo: [assetInfo0, assetInfo1],
         },
-        ...configurationConstants,
+        ...configurationOverrides
       },
     ]
   );
