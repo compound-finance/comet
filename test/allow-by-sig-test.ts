@@ -195,29 +195,6 @@ describe('allowBySig', function () {
     expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
   });
 
-  it('fails for invalid signatures', async () => {
-    await expect(
-      comet
-        .connect(manager)
-        .allowBySig(
-          signatureArgs.owner,
-          signatureArgs.manager,
-          signatureArgs.isAllowed,
-          signatureArgs.nonce,
-          signatureArgs.expiry,
-          27,
-          '0xbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadb',
-          '0xbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadb'
-        )
-    ).to.be.revertedWith('Signature does not match arguments');
-
-    // does not authorize
-    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
-
-    // does not alter signer nonce
-    expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
-  });
-
   it('fails if signature contains invalid nonce', async () => {
     const invalidNonce = signatureArgs.nonce.add(1);
     const rawSignature = await signer._signTypedData(domain, types, {
@@ -319,7 +296,7 @@ describe('allowBySig', function () {
     expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
   });
 
-  it('reverts if v not in {27,28}', async () => {
+  it('fails if v not in {27,28}', async () => {
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
 
     await expect(
@@ -336,6 +313,31 @@ describe('allowBySig', function () {
           signature.s
         )
     ).to.be.revertedWith('Invalid value: v');
+
+    // does not authorize
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    // does not update nonce
+    expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
+  });
+
+  it('fails if s is too high', async () => {
+    expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
+
+    await expect(
+      comet
+        .connect(manager)
+        .allowBySig(
+          signatureArgs.owner,
+          signatureArgs.manager,
+          signatureArgs.isAllowed,
+          signatureArgs.nonce,
+          signatureArgs.expiry,
+          signature.v,
+          signature.r,
+          '0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1'
+        )
+    ).to.be.revertedWith('Invalid value: s');
 
     // does not authorize
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
