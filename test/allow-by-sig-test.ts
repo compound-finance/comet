@@ -199,7 +199,7 @@ describe('allowBySig', function () {
     const invalidNonce = signatureArgs.nonce.add(1);
     const rawSignature = await signer._signTypedData(domain, types, {
       ...signatureArgs,
-      ...{ nonce: invalidNonce },
+      nonce: invalidNonce,
     });
     const signatureWithInvalidNonce = ethers.utils.splitSignature(rawSignature);
 
@@ -265,9 +265,7 @@ describe('allowBySig', function () {
 
     const expiredSignatureArgs = {
       ...signatureArgs,
-      ...{
-        expiry: invalidExpiry,
-      },
+      expiry: invalidExpiry,
     };
     const rawSignature = await signer._signTypedData(domain, types, expiredSignatureArgs);
     const expiredSignature = ethers.utils.splitSignature(rawSignature);
@@ -324,6 +322,9 @@ describe('allowBySig', function () {
   it('fails if s is too high', async () => {
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
 
+    // 1 greater than the max value of s
+    const invalidS = '0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1';
+
     await expect(
       comet
         .connect(manager)
@@ -335,7 +336,7 @@ describe('allowBySig', function () {
           signatureArgs.expiry,
           signature.v,
           signature.r,
-          '0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1'
+          invalidS
         )
     ).to.be.revertedWith('Invalid value: s');
 

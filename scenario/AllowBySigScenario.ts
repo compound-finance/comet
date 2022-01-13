@@ -11,14 +11,13 @@ scenario(
 
     const nonce = await comet.userNonce(albert.address);
     const expiry = (await world.timestamp()) + 10;
-    const chainId = await world.chainId();
 
     const signature = await albert.signAuthorization({
       manager: betty.address,
       isAllowed: true,
       nonce,
       expiry,
-      chainId,
+      chainId: await world.chainId(),
     });
 
     await betty.allowBySig({
