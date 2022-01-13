@@ -525,13 +525,13 @@ contract Comet is CometStorage {
     /**
      * @dev Update assetsIn bit vector if user has entered or exited an asset
      */
-    function _updateAssetsIn(
+    function updateAssetsIn(
         address account,
         address asset,
-        uint initialUserBalance,
-        uint finalUserBalance
+        uint128 initialUserBalance,
+        uint128 finalUserBalance
     ) internal {
-        uint8 assetOffset = _getAssetOffset(asset);
+        uint8 assetOffset = getAssetOffset(asset);
         if (initialUserBalance == 0 && finalUserBalance != 0) {
             // set bit for asset
             users[account].assetsIn |= (uint8(1) << assetOffset);
@@ -544,13 +544,20 @@ contract Comet is CometStorage {
     /**
      * @dev Return index of asset that matches address
      */
-    function _getAssetOffset(address asset) internal view returns (uint8 offset) {
+    function getAssetOffset(address asset) internal view returns (uint8 offset) {
         AssetInfo[] memory _assets = assets();
         for (uint8 i = 0; i < _assets.length; i++) {
             if (asset == _assets[i].asset) {
                 return i;
             }
         }
-        revert("Asset not found");
+        revert("asset not found");
+    }
+
+    /**
+     * @dev given an account's assetsIn and the index of an asset, return whether user has non-zero balance in asset
+     */
+    function isInAsset(uint16 assetsIn, uint8 assetOffset) internal pure returns (bool) {
+        return (assetsIn & (uint8(1) << assetOffset) != 0);
     }
 }
