@@ -313,8 +313,10 @@ contract Comet is CometStorage {
         bytes32 r,
         bytes32 s
     ) external {
-        require(v == 27 || v == 28, "Invalid value: v");
+        // 0 < s < secp256k1n ÷ 2 + 1 (source: https://ethereum.github.io/yellowpaper/paper.pdf #307)
         require(uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0, "Invalid value: s");
+        // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
+        require(v == 27 || v == 28, "Invalid value: v");
         bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)), block.chainid, address(this)));
         bytes32 structHash = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, owner, manager, isAllowed_, nonce, expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));

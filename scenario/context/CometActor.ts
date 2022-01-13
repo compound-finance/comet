@@ -1,5 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumberish } from 'ethers';
+import { BigNumberish, Signature, ethers } from 'ethers';
 import { CometContext } from './CometContext';
 
 const types = {
@@ -71,7 +71,8 @@ export default class CometActor {
       nonce,
       expiry,
     };
-    return await this.signer._signTypedData(domain, types, value);
+    const rawSignature = await this.signer._signTypedData(domain, types, value);
+    return ethers.utils.splitSignature(rawSignature);
   }
 
   async allowBySig({
@@ -87,10 +88,10 @@ export default class CometActor {
     isAllowed: boolean;
     nonce: BigNumberish;
     expiry: number;
-    signature: string;
+    signature: Signature;
   }) {
     await this.context.comet
       .connect(this.signer)
-      .allowBySig(owner, manager, isAllowed, nonce, expiry, signature);
+      .allowBySig(owner, manager, isAllowed, nonce, expiry, signature.v, signature.r, signature.s);
   }
 }
