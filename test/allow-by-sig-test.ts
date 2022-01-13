@@ -33,8 +33,8 @@ describe('allowBySig', function () {
     [admin, pauseGuardian, signer, manager] = await ethers.getSigners();
 
     domain = {
-      name: await comet.NAME(),
-      version: await comet.VERSION(),
+      name: await comet.name(),
+      version: await comet.version(),
       chainId: 1337,
       verifyingContract: comet.address,
     };

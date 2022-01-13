@@ -11,10 +11,10 @@ import "./ERC20.sol";
  */
 contract Comet is CometStorage {
     /// @notice The name of this contract
-    string public constant NAME = "Compound Comet";
+    string public constant name = "Compound Comet";
 
     /// @notice The major version of this contract
-    string public constant VERSION = "0";
+    string public constant version = "0";
 
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -317,7 +317,7 @@ contract Comet is CometStorage {
         require(uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0, "Invalid value: s");
         // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
         require(v == 27 || v == 28, "Invalid value: v");
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)), block.chainid, address(this)));
+        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), keccak256(bytes(version)), block.chainid, address(this)));
         bytes32 structHash = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, owner, manager, isAllowed_, nonce, expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);

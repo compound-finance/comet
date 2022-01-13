@@ -59,8 +59,8 @@ export default class CometActor {
     chainId: number;
   }) {
     const domain = {
-      name: await this.context.comet.NAME(),
-      version: await this.context.comet.VERSION(),
+      name: await this.context.comet.name(),
+      version: await this.context.comet.version(),
       chainId: chainId,
       verifyingContract: this.context.comet.address,
     };
