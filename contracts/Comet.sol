@@ -10,6 +10,22 @@ import "./ERC20.sol";
  * @author Compound
  */
 contract Comet is CometStorage {
+    /// @notice The name of this contract
+    string public constant name = "Compound Comet";
+
+    /// @notice The major version of this contract
+    string public constant version = "0";
+
+    /// @notice The EIP-712 typehash for the contract's domain
+    bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+
+    /// @notice The EIP-712 typehash for allowBySig Authorization
+    bytes32 public constant AUTHORIZATION_TYPEHASH = keccak256("Authorization(address owner,address manager,bool isAllowed,uint256 nonce,uint256 expiry)");
+
+    /// @notice The highest valid value for s in an ECDSA signature pair (0 < s < secp256k1n ÷ 2 + 1)
+    // (source: https://ethereum.github.io/yellowpaper/paper.pdf #307)
+    uint public constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
+
     struct AssetInfo {
         address asset;
         uint borrowCollateralFactor;
@@ -262,17 +278,55 @@ contract Comet is CometStorage {
     }
 
     /**
-     * @notice XXX
+     * @notice Authorize a manager to take actions on behalf of your address
+     * @param manager The address to authorize (or rescind authorization from)
+     * @param isAllowed_ Whether to authorize or rescind authorization from manager
      */
-    function allow(address manager, bool _isAllowed) external {
-      allowInternal(msg.sender, manager, _isAllowed);
+    function allow(address manager, bool isAllowed_) external {
+        allowInternal(msg.sender, manager, isAllowed_);
     }
 
     /**
-     * @dev XXX
+     * @dev Update authorization status for manager on behalf of owner
      */
-    function allowInternal(address owner, address manager, bool _isAllowed) internal {
-      isAllowed[owner][manager] = _isAllowed;
+    function allowInternal(address owner, address manager, bool isAllowed_) internal {
+        isAllowed[owner][manager] = isAllowed_;
+    }
+
+    /**
+     * @notice Sets authorization status for a manager via signature from signatory
+     * @param owner The address that signed the signature
+     * @param manager The address to authorize (or rescind authorization from)
+     * @param isAllowed_ Whether to authorize or rescind authorization from manager
+     * @param nonce The next expected nonce value for the signatory
+     * @param expiry Expiration time for the signature
+     * @param v The recovery byte of the signature
+     * @param r Half of the ECDSA signature pair
+     * @param s Half of the ECDSA signature pair
+     */
+    function allowBySig(
+        address owner,
+        address manager,
+        bool isAllowed_,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        require(uint256(s) <= MAX_VALID_ECDSA_S, "invalid value: s");
+        // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
+        require(v == 27 || v == 28, "invalid value: v");
+        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), keccak256(bytes(version)), block.chainid, address(this)));
+        bytes32 structHash = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, owner, manager, isAllowed_, nonce, expiry));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+        address signatory = ecrecover(digest, v, r, s);
+        require(owner == signatory, "signature does not match arguments");
+        require(signatory != address(0), "invalid signature");
+        require(nonce == userNonce[signatory], "invalid nonce");
+        require(block.timestamp < expiry, "signed transaction expired");
+        userNonce[signatory]++;
+        allowInternal(signatory, manager, isAllowed_);
     }
 
     /**
@@ -284,7 +338,7 @@ contract Comet is CometStorage {
         uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
         if (utilization <= kink) {
             // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
-            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization)))); 
+            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization))));
         } else {
             // (interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)) * utilization * (1 - reserveRate)
             return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)))));
@@ -299,7 +353,7 @@ contract Comet is CometStorage {
         uint utilization = getUtilization();
         if (utilization <= kink) {
             // interestRateBase + interestRateSlopeLow * utilization
-            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization)); 
+            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization));
         } else {
             // interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)
             return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)));

@@ -26,4 +26,7 @@ contract CometStorage {
 
     /// @notice Mapping of users to accounts which may be permitted to manage the user account
     mapping(address => mapping(address => bool)) public isAllowed;
+
+    /// @notice The next expected nonce for an address, for validating authorizations via signature
+    mapping(address => uint) public userNonce;
 }

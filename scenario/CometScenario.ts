@@ -1,7 +1,5 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { BigNumber } from 'ethers';
-import { World } from '../plugins/scenario';
 
 scenario('initializes governor correctly', {}, async ({ comet, actors }, world) => {
   // TODO: Make this more interesting, plus the admin here isn't right for mainnet, etc.
@@ -16,7 +14,7 @@ scenario('Comet#allow > allows a user to authorize a manager', {}, async ({ come
   expect(await comet.isAllowed(albert.address, betty.address)).to.be.true;
 });
 
-scenario('Comet#allow > allows a user to rescind authoization', {}, async ({ comet, actors }) => {
+scenario('Comet#allow > allows a user to rescind authorization', {}, async ({ comet, actors }) => {
   const { albert, betty } = actors;
 
   await albert.allow(betty, true);
@@ -29,7 +27,9 @@ scenario('Comet#allow > allows a user to rescind authoization', {}, async ({ com
 });
 
 scenario('has assets', {}, async ({ comet, actors, assets }, world) => {
-  expect(await comet.assetAddresses()).to.have.members(Object.values(assets).map((asset) => asset.address));
+  expect(await comet.assetAddresses()).to.have.members(
+    Object.values(assets).map((asset) => asset.address)
+  );
 });
 
 scenario('requires upgrade', { upgrade: true }, async ({ comet }, world) => {
