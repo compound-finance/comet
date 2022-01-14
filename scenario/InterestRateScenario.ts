@@ -1,6 +1,6 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { exp } from '../test/helpers';
+import { defactor, exp, factor } from '../test/helpers';
 import { BigNumber } from 'ethers';
 
 function calculateSupplyRate(
@@ -115,3 +115,10 @@ scenario(
 );
 
 // TODO: Scenario for testing custom configuration constants using a utilization constraint.
+scenario(
+  'Comet#interestRate > when utilization is 50%',
+  { utilization: 0.50, upgrade: true },
+  async ({ comet, actors }) => {
+    expect(defactor(await comet.getUtilization())).to.approximately(0.5, 0.000001);
+  }
+);

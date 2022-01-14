@@ -75,6 +75,23 @@ interface JsonTestResult {
   err: any
 };
 
+interface JsonSuiteResult {
+  stats: {
+    suites: number,
+    tests: number,
+    passes: number,
+    pending: number,
+    failures: number,
+    start: string,
+    end: string,
+    duration: number
+  },
+  tests: JsonTestResult[],
+  pending: JsonTestResult[],
+  failures: JsonTestResult[],
+  passes: JsonTestResult[],
+};
+
 async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions, startTime: number, endTime: number) {
   // TODO: Accept options, etc.
   let suites = new Set();
@@ -91,7 +108,7 @@ async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions,
       file: result.file,
       duration: result.elapsed || 0,
       currentRetry: 0,
-      err: result.error ?? {}
+      err: result.error ? result.error.message : {} // Not sure
     };
 
     if (result.error) {
@@ -105,8 +122,7 @@ async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions,
     return test;
   });
 
-
-  let result = JSON.stringify({
+  let suiteResult: JsonSuiteResult = {
     stats: {
       suites: suites.size,
       tests: tests.length,
@@ -121,7 +137,9 @@ async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions,
     pending,
     failures,
     passes,
-  }, null, 4);
+  }
+
+  let result = JSON.stringify(suiteResult, null, 4);
 
   if (jsonOptions.output) {
     await fs.writeFile(jsonOptions.output, result);

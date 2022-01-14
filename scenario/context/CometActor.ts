@@ -1,6 +1,9 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumberish, Signature, ethers } from 'ethers';
 import { CometContext } from './CometContext';
+import { Comet } from '../../build/types';
+import CometAsset from './CometAsset';
+import { AddressLike, resolveAddress } from './Address';
 
 const types = {
   Authorization: [
@@ -12,20 +15,36 @@ const types = {
   ],
 };
 
+function floor(n: number): bigint {
+  return BigInt(Math.floor(n));
+}
+
 export default class CometActor {
+  name: string;
   signer: SignerWithAddress;
   address: string;
   context: CometContext;
+  info: object;
 
-  constructor(signer: SignerWithAddress, address: string, context: CometContext) {
+  constructor(name: string, signer: SignerWithAddress, address: string, context: CometContext, info: object = {}) {
+    this.name = name;
     this.signer = signer;
     this.address = address;
     this.context = context;
+    this.info = info;
   }
 
   async getEthBalance() {
     return this.signer.getBalance();
   }
+
+  async sendEth(recipient: AddressLike, amount: number) {
+    let tx = await this.signer.sendTransaction({
+      to: resolveAddress(recipient),
+      value: floor(amount * 1e18)
+    });
+    await tx.wait();
+  }  
 
   async allow(manager: CometActor, isAllowed: boolean) {
     await (await this.context.comet.connect(this.signer).allow(manager.address, isAllowed)).wait();
@@ -110,5 +129,9 @@ export default class CometActor {
     await this.context.comet
       .connect(this.signer)
       .allowBySig(owner, manager, isAllowed, nonce, expiry, signature.v, signature.r, signature.s);
+  }
+
+  async show() {
+    return console.log(`Actor#${this.name}{${JSON.stringify(this.info)}}`);
   }
 }

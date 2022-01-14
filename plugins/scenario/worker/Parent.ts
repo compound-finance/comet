@@ -8,6 +8,7 @@ import { showReport } from './Report';
 import { getContext, getConfig, getHardhatArguments } from './HardhatContext';
 import { ScenarioConfig } from '../types';
 import { HardhatConfig } from 'hardhat/types';
+import { SimpleWorker } from './SimpleWorker';
 
 export interface Result {
   base: string;
@@ -64,7 +65,7 @@ function convertToSerializableObject(object: object) {
   return JSON.parse(JSON.stringify(object));
 }
 
-export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[]) {
+export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[], workerCount: number, async: boolean) {
   let hardhatConfig = convertToSerializableObject(getConfig()) as HardhatConfig;
   let hardhatArguments = getHardhatArguments();
   let formats = defaultFormats;
@@ -127,20 +128,25 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
     checkDone();
   }
 
-  const envWorkers = process.env['WORKERS'];
-  const trueWorkerCount = envWorkers ? Number(envWorkers) : workerCount;
-  if (Number.isNaN(trueWorkerCount) || trueWorkerCount <= 0) {
-    throw new Error(`Invalid worker count: ${envWorkers}`);
-  }
-
-  const worker = [...new Array(trueWorkerCount)].map((_, index) => {
-    let worker = new Worker(path.resolve(__dirname, './BootstrapWorker.js'), {
-      workerData: {
+  [...new Array(workerCount)].map((_, index) => {
+    let worker;
+    if (async) {
+      worker = new Worker(path.resolve(__dirname, './BootstrapWorker.js'), {
+        workerData: {
+          scenarioConfig,
+          bases,
+          config: [hardhatConfig, hardhatArguments],
+        },
+      });
+    } else {
+      worker = new SimpleWorker({
         scenarioConfig,
         bases,
         config: [hardhatConfig, hardhatArguments],
-      },
-    });
+      });
+
+      worker.run();
+    }
 
     worker.on('message', (message) => {
       if (message.result) {
@@ -159,6 +165,8 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
   await showReport(results, formats, startTime, endTime);
 
   if (results.some((result) => result.error)) {
-    process.exit(1); // Exit as failure
+    setTimeout(() => { // Deferral to allow potential console flush
+      process.exit(1); // Exit as failure
+    }, 0);
   }
 }
