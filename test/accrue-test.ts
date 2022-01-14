@@ -103,9 +103,11 @@ describe('accrue', function () {
     const borrowRate = await comet.getBorrowRate();
     expect(borrowRate).to.be.equal(21721207507);
 
-    await ethers.provider.send('evm_setNextBlockTimestamp', [start + 1000]);
+    await ethers.provider.send("evm_setAutomine", [false]);
+    const a1 = await comet.accrue();
+    await ethers.provider.send('evm_mine', [start + 1000]);
+    await ethers.provider.send("evm_setAutomine", [true]);
 
-    const a1 = await wait(comet.accrue());
     const t2 = await comet.totalsBasic();
 
     const timeElapsed = t2.lastAccrualTime - t1.lastAccrualTime;
