@@ -5,4 +5,9 @@ const { workerData } = require('worker_threads');
 require('ts-node').register();
 let { run } = require(path.resolve(__dirname, './Worker.ts'));
 
-run(workerData);
+run(workerData).catch((e) => {
+  console.error(e);
+  setTimeout(() => { // Deferral to allow potential console flush
+    throw e;
+  }, 0);
+});

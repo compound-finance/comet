@@ -955,4 +955,16 @@ contract Comet is CometMath, CometStorage {
 
         doTransferOut(asset, to, amount);
     }
+
+    // TODO: Remove me. Function while waiting for initializer
+    // !! NOT FOR REUSE [YES FOR REFUSE] !!
+    function XXX_REMOVEME_XXX_initialize() public {
+        require(totalsBasic.lastAccrualTime == 0, "already initialized");
+        // Initialize aggregates
+        totalsBasic.lastAccrualTime = getNow();
+        totalsBasic.baseSupplyIndex = baseIndexScale;
+        totalsBasic.baseBorrowIndex = baseIndexScale;
+        totalsBasic.trackingSupplyIndex = 0;
+        totalsBasic.trackingBorrowIndex = 0;
+    }
 }

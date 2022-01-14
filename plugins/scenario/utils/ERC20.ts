@@ -1,4 +1,6 @@
-[
+import { ethers } from 'ethers';
+
+export const erc20 = new ethers.utils.Interface([
     {
         "constant": true,
         "inputs": [],
@@ -219,4 +221,4 @@
         "name": "Transfer",
         "type": "event"
     }
-]
+]);

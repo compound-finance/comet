@@ -1,3 +1,4 @@
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Signer } from 'ethers';
 
@@ -35,7 +36,7 @@ export class World {
     });
   }
 
-  async impersonateAddress(address: string): Promise<Signer> {
+  async impersonateAddress(address: string): Promise<SignerWithAddress> {
     await this.hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [address],

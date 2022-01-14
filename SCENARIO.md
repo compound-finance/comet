@@ -14,6 +14,14 @@ You can skip the spider step if you wish:
 
 `npx hardhat scenario --no-spider true`
 
+You can change the number of workers:
+
+`npx hardhat scenario --workers 1`
+
+And run synchronously, without worker threads:
+
+`npx hardhat scenario --workers 1 --sync true`
+
 ## Adding New Scenarios
 
 To add a new scenario, add to `scenario/`, e.g.

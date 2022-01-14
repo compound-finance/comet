@@ -1,13 +1,15 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import fs from 'fs';
 import { BigNumber, Contract, Event, EventFilter } from 'ethers';
+import { erc20 } from './ERC20';
+import { getStack } from '../Stack';
 
-const getMaxEntry = (args: [string, BigNumber][]) =>
+let getMaxEntry = (args: [string, BigNumber][]) =>
   args.reduce(([a1, m], [a2, e]) => (m.gte(e) == true ? [a1, m] : [a2, e]));
 
 interface SourceTokenParameters {
   hre: HardhatRuntimeEnvironment;
-  amount: BigInt;
+  amount: number | bigint;
   asset: string;
   address: string;
 }
@@ -19,7 +21,7 @@ export async function sourceTokens({
   asset,
   address,
 }: SourceTokenParameters) {
-  const amount = BigNumber.from(amount_);
+  let amount = BigNumber.from(amount_);
 
   if (amount.isNegative()) {
     await removeTokens(hre, amount.abs(), asset, address);
@@ -34,15 +36,14 @@ async function removeTokens(
   asset: string,
   address: string
 ) {
-  const erc20Abi = JSON.parse(await fs.promises.readFile('./contracts/ERC20.abi', 'utf8'));
-  const ethers = hre.ethers;
+  let ethers = hre.ethers;
   await hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
     params: [address],
   });
-  const signer = await ethers.getSigner(address);
-  const tokenContract = new ethers.Contract(asset, erc20Abi, signer);
-  const currentBalance = await tokenContract.balanceOf(address);
+  let signer = await ethers.getSigner(address);
+  let tokenContract = new ethers.Contract(asset, erc20, signer);
+  let currentBalance = await tokenContract.balanceOf(address);
   if (currentBalance.lt(amount)) throw 'Error: Insufficient address balance';
   await tokenContract.transfer('0x0000000000000000000000000000000000000000', amount);
   await hre.network.provider.request({
@@ -59,26 +60,28 @@ async function addTokens(
   block?: number,
   offsetBlocks?: number
 ) {
-  const erc20Abi = JSON.parse(fs.readFileSync('./contracts/ERC20.abi', 'utf-8'));
-  const ethers = hre.ethers;
-  const signer = (await ethers.getSigners())[0];
+  let ethers = hre.ethers;
+  let signer = (await ethers.getSigners())[0];
   block = block ?? (await ethers.provider.getBlockNumber());
-  const tokenContract = new ethers.Contract(asset, erc20Abi, ethers.provider);
-  const filter = tokenContract.filters.Transfer();
-  const [recentLogs, blocksDelta] = await fetchQuery(
+  let tokenContract = new ethers.Contract(asset, erc20, ethers.provider);
+  let filter = tokenContract.filters.Transfer();
+  let { recentLogs, blocksDelta, err } = await fetchQuery(
     tokenContract,
     filter,
     block - 1000 - (offsetBlocks ?? 0),
     block - (offsetBlocks ?? 0)
   );
-  const holder = await searchLogs(recentLogs, amount, tokenContract, ethers);
+  if (err) {
+    throw err;
+  }
+  let holder = await searchLogs(recentLogs, amount, tokenContract, ethers);
   if (holder) {
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [holder],
     });
-    const impersonatedSigner = await ethers.getSigner(holder);
-    const impersonatedProviderTokenContract = tokenContract.connect(impersonatedSigner);
+    let impersonatedSigner = await ethers.getSigner(holder);
+    let impersonatedProviderTokenContract = tokenContract.connect(impersonatedSigner);
     // Give impersonated address ETH for TX
     await signer.sendTransaction({
       to: impersonatedSigner.address,
@@ -100,17 +103,25 @@ async function fetchQuery(
   filter: EventFilter,
   fromBlock: number,
   toBlock: number
-): Promise<[Event[], number]> {
+): Promise<{ recentLogs?: Event[]; blocksDelta?: number; err?: Error }> {
   try {
-    const res = await contract.queryFilter(filter, fromBlock, toBlock);
+    let res = await contract.queryFilter(filter, fromBlock, toBlock);
     if (res.length > 0) {
-      return [res, toBlock - fromBlock];
+      return { recentLogs: res, blocksDelta: toBlock - fromBlock };
     } else {
-      return await fetchQuery(contract, filter, fromBlock - 1000, toBlock);
+      let nextFrom = fromBlock - 1000;
+      if (nextFrom < 0) {
+        return { err: new Error('No events found by chain genesis') };
+      }
+      return await fetchQuery(contract, filter, nextFrom, toBlock);
     }
-  } catch {
-    const midBlock = (fromBlock + toBlock) / 2;
-    return await fetchQuery(contract, filter, midBlock, toBlock);
+  } catch (err) {
+    if (err.message.includes("query returned more")) {
+      let midBlock = (fromBlock + toBlock) / 2;
+      return await fetchQuery(contract, filter, midBlock, toBlock);
+    } else {
+      return { err };
+    }
   }
 }
 
@@ -121,29 +132,29 @@ async function searchLogs(
   ethers: HardhatRuntimeEnvironment['ethers'],
   logOffset?: number
 ): Promise<string | null> {
-  const toAddresses = new Set<string>();
+  let toAddresses = new Set<string>();
   if ((logOffset ?? 0) >= recentLogs.length) return null;
   recentLogs.slice(logOffset ?? 0, (logOffset ?? 0) + 20).map((log) => {
     toAddresses.add(log.args![1]);
   });
-  const balancesDict = new Map<string, BigNumber>();
-  const addressContracts = new Map<string, boolean>();
+  let balancesDict = new Map<string, BigNumber>();
+  let addressContracts = new Map<string, boolean>();
   await Promise.all([
     ...Array.from(toAddresses).map(async (address) => {
       balancesDict.set(address, await tokenContract.balanceOf(address));
     }),
     ...Array.from(toAddresses).map(async (address) => {
-      const code = await ethers.provider.getCode(address);
+      let code = await ethers.provider.getCode(address);
       addressContracts.set(address, code !== '0x');
     }),
   ]);
-  for (const address of Array.from(addressContracts.keys())) {
+  for (let address of Array.from(addressContracts.keys())) {
     if (addressContracts.get(address)) {
       // Remove contracts from search
       balancesDict.delete(address);
     }
   }
-  const max = getMaxEntry(Array.from(balancesDict.entries()));
+  let max = getMaxEntry(Array.from(balancesDict.entries()));
   if (max[1].gte(amount)) {
     return max[0];
   } else {

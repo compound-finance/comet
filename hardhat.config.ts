@@ -76,7 +76,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
     hardhatConfig.networks[netConfig.network] = {
       chainId: netConfig.chainId,
       url: netConfig.url || getDefaultProviderURL(netConfig.network),
-      gas: netConfig.gasPrice || 'auto',
+      gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
       accounts: ETH_PK
         ? [ETH_PK]
@@ -104,7 +104,7 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       chainId: 1337,
-      loggingEnabled: false,
+      loggingEnabled: !!process.env['LOGGING'],
       gas: 12000000,
       gasPrice: 'auto',
       blockGasLimit: 12000000,

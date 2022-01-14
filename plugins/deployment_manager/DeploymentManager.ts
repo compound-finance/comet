@@ -521,7 +521,12 @@ export class DeploymentManager {
     C extends Contract,
     Factory extends Deployer<C, DeployArgs>,
     DeployArgs extends Array<any>
-  >(contractFile: string, deployArgs: DeployArgs, connect?: Signer): Promise<C> {
+  >(
+    contractFile: string,
+    deployArgs: DeployArgs,
+    connect?: Signer,
+    overwrite: boolean = false // should we overwrite existing contract link
+  ): Promise<C> {
     // TODO: Handle aliases, etc.
     let contractFileName = contractFile.split('/').reverse()[0];
     let contractName = contractFileName.replace('.sol', '');
@@ -553,7 +558,7 @@ export class DeploymentManager {
       output: BuildFile;
     };
 
-    if (!buildFile.contract) {
+    if (overwrite || !buildFile.contract) {
       buildFile.contract = contractName;
     }
     let cacheBuildFile = this.cacheBuildFile(contract.address);
