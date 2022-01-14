@@ -98,8 +98,8 @@ describe('Pause Guardian', function () {
   });
 
   it('Should revert if not called by governor or pause guardian', async function () {
-    const { comet, regularUser } = await makeProtocol();
-    await expect(comet.connect(regularUser).pause(true, true, true, true, true)).to.be.revertedWith(
+    const { comet, users } = await makeProtocol();
+    await expect(comet.connect(users[0]).pause(true, true, true, true, true)).to.be.revertedWith(
       'Unauthorized'
     );
   });

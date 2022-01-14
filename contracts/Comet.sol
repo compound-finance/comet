@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity ^0.8.0;
 
+import "./CometMath.sol";
 import "./CometStorage.sol";
 import "./ERC20.sol";
 
@@ -9,23 +10,7 @@ import "./ERC20.sol";
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-contract Comet is CometStorage {
-    /// @notice The name of this contract
-    string public constant name = "Compound Comet";
-
-    /// @notice The major version of this contract
-    string public constant version = "0";
-
-    /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-
-    /// @notice The EIP-712 typehash for allowBySig Authorization
-    bytes32 public constant AUTHORIZATION_TYPEHASH = keccak256("Authorization(address owner,address manager,bool isAllowed,uint256 nonce,uint256 expiry)");
-
-    /// @notice The highest valid value for s in an ECDSA signature pair (0 < s < secp256k1n ÷ 2 + 1)
-    // (source: https://ethereum.github.io/yellowpaper/paper.pdf #307)
-    uint public constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
-
+contract Comet is CometMath, CometStorage {
     struct AssetInfo {
         address asset;
         uint borrowCollateralFactor;
@@ -38,20 +23,36 @@ contract Comet is CometStorage {
         address priceOracle;
         address baseToken;
 
-        uint64 trackingIndexScale;
-        uint72 baseMinForRewards;
-        uint64 baseTrackingSupplySpeed;
-        uint64 baseTrackingBorrowSpeed;
-
-        AssetInfo[] assetInfo;
-
         uint64 kink;
         uint64 perYearInterestRateSlopeLow;
-        /// @dev Do not set this value higher than 2^64=1.84e19
         uint64 perYearInterestRateSlopeHigh;
         uint64 perYearInterestRateBase;
         uint64 reserveRate;
+        uint64 trackingIndexScale;
+        uint64 baseTrackingSupplySpeed;
+        uint64 baseTrackingBorrowSpeed;
+        uint104 baseMinForRewards;
+        uint104 baseBorrowMin;
+
+        AssetInfo[] assetInfo;
     }
+
+    /// @notice The name of this contract
+    string public constant name = "Compound Comet";
+
+    /// @notice The major version of this contract
+    string public constant version = "0";
+
+    // XXX we should prob camelCase all these?
+    /// @notice The EIP-712 typehash for the contract's domain
+    bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+
+    /// @notice The EIP-712 typehash for allowBySig Authorization
+    bytes32 public constant AUTHORIZATION_TYPEHASH = keccak256("Authorization(address owner,address manager,bool isAllowed,uint256 nonce,uint256 expiry)");
+
+    /// @notice The highest valid value for s in an ECDSA signature pair (0 < s < secp256k1n ÷ 2 + 1)
+    /// @dev See https://ethereum.github.io/yellowpaper/paper.pdf #307)
+    uint public constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
 
     /// @notice The number of seconds per year
     /// @dev 365 days * 24 hours * 60 minutes * 60 seconds
@@ -85,6 +86,21 @@ contract Comet is CometStorage {
     /// @notice The address of the base token contract
     address public immutable baseToken;
 
+    /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope (factor)
+    uint64 public immutable kink;
+
+    /// @notice Per second interest rate slope applied when utilization is below kink (factor)
+    uint64 public immutable perSecondInterestRateSlopeLow;
+
+    /// @notice Per second interest rate slope applied when utilization is above kink (factor)
+    uint64 public immutable perSecondInterestRateSlopeHigh;
+
+    /// @notice Per second base interest rate (factor)
+    uint64 public immutable perSecondInterestRateBase;
+
+    /// @notice The rate of total interest paid that goes into reserves (factor)
+    uint64 public immutable reserveRate;
+
     /// @notice The scale for base token (must be less than 18 decimals)
     uint64 public immutable baseScale;
 
@@ -92,14 +108,10 @@ contract Comet is CometStorage {
     uint64 public constant baseIndexScale = 1e15;
 
     /// @notice The scale for factors
-    uint256 public constant factorScale = 1e18;
+    uint64 public constant factorScale = 1e18;
 
     /// @notice The scale for reward tracking
     uint64 public immutable trackingIndexScale;
-
-    /// @notice The minimum amount of base wei for rewards to accrue
-    /// @dev This must be large enough so as to prevent division by base wei from overflowing the 64 bit indices.
-    uint72 public immutable baseMinForRewards;
 
     /// @notice The speed at which supply rewards are tracked (in trackingIndexScale)
     uint64 public immutable baseTrackingSupplySpeed;
@@ -107,25 +119,12 @@ contract Comet is CometStorage {
     /// @notice The speed at which borrow rewards are tracked (in trackingIndexScale)
     uint64 public immutable baseTrackingBorrowSpeed;
 
-    /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope
-    /// @dev Factor (scale of 1e18)
-    uint64 public immutable kink;
+    /// @notice The minimum amount of base wei for rewards to accrue
+    /// @dev This must be large enough so as to prevent division by base wei from overflowing the 64 bit indices.
+    uint104 public immutable baseMinForRewards;
 
-    /// @notice Per second interest rate slope applied when utilization is below kink
-    /// @dev Factor (scale of 1e18)
-    uint64 public immutable perSecondInterestRateSlopeLow;
-
-    /// @notice Per second interest rate slope applied when utilization is above kink
-    /// @dev Factor (scale of 1e18)
-    uint64 public immutable perSecondInterestRateSlopeHigh;
-
-    /// @notice Per second base interest rate
-    /// @dev Factor (scale of 1e18)
-    uint64 public immutable perSecondInterestRateBase;
-
-    /// @notice The rate of total interest paid that goes into reserves
-    /// @dev Factor (scale of 1e18)
-    uint64 public immutable reserveRate;
+    /// @notice The minimum base amount required to initiate a borrow
+    uint104 public immutable baseBorrowMin;
 
     /**  Collateral asset configuration **/
 
@@ -166,6 +165,8 @@ contract Comet is CometStorage {
         baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
         baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
 
+        baseBorrowMin = config.baseBorrowMin;
+
         // Set asset info
         numAssets = config.assetInfo.length;
 
@@ -189,11 +190,11 @@ contract Comet is CometStorage {
         reserveRate = config.reserveRate;
 
         // Initialize aggregates
-        totals.lastAccrualTime = getNow();
-        totals.baseSupplyIndex = baseIndexScale;
-        totals.baseBorrowIndex = baseIndexScale;
-        totals.trackingSupplyIndex = 0;
-        totals.trackingBorrowIndex = 0;
+        totalsBasic.lastAccrualTime = getNow();
+        totalsBasic.baseSupplyIndex = baseIndexScale;
+        totalsBasic.baseBorrowIndex = baseIndexScale;
+        totalsBasic.trackingSupplyIndex = 0;
+        totalsBasic.trackingBorrowIndex = 0;
     }
 
     /**
@@ -228,11 +229,9 @@ contract Comet is CometStorage {
      */
     function assets() public view returns (AssetInfo[] memory) {
         AssetInfo[] memory result = new AssetInfo[](numAssets);
-
         for (uint i = 0; i < numAssets; i++) {
             result[i] = getAssetInfo(i);
         }
-
         return result;
     }
 
@@ -241,11 +240,9 @@ contract Comet is CometStorage {
      */
     function assetAddresses() public view returns (address[] memory) {
         address[] memory result = new address[](numAssets);
-
         for (uint i = 0; i < numAssets; i++) {
             result[i] = getAssetInfo(i).asset;
         }
-
         return result;
     }
 
@@ -261,40 +258,40 @@ contract Comet is CometStorage {
      * @notice Accrue interest (and rewards) in base token supply and borrows
      **/
     function accrue() public {
-        totals = accrue(totals);
+        totalsBasic = accrue(totalsBasic);
     }
 
     /**
      * @notice Accrue interest (and rewards) in base token supply and borrows
      **/
-    function accrue(Totals memory totals_) internal view returns (Totals memory) {
+    function accrue(TotalsBasic memory totals) internal view returns (TotalsBasic memory) {
         uint40 now_ = getNow();
-        uint timeElapsed = now_ - totals_.lastAccrualTime;
+        uint timeElapsed = now_ - totals.lastAccrualTime;
         if (timeElapsed > 0) {
-            totals_.baseSupplyIndex += safe64(mulFactor(totals_.baseSupplyIndex, getSupplyRate() * timeElapsed));
-            totals_.baseBorrowIndex += safe64(mulFactor(totals_.baseBorrowIndex, getBorrowRate() * timeElapsed));
-            if (totals_.totalSupplyBase >= baseMinForRewards) {
-                totals_.trackingSupplyIndex += safe64(divBaseWei(baseTrackingSupplySpeed * timeElapsed, totals_.totalSupplyBase));
+            totals.baseSupplyIndex += safe64(mulFactor(totals.baseSupplyIndex, getSupplyRate() * timeElapsed));
+            totals.baseBorrowIndex += safe64(mulFactor(totals.baseBorrowIndex, getBorrowRate() * timeElapsed));
+            if (totals.totalSupplyBase >= baseMinForRewards) {
+                totals.trackingSupplyIndex += safe64(divBaseWei(baseTrackingSupplySpeed * timeElapsed, totals.totalSupplyBase));
             }
-            if (totals_.totalBorrowBase >= baseMinForRewards) {
-                totals_.trackingBorrowIndex += safe64(divBaseWei(baseTrackingBorrowSpeed * timeElapsed, totals_.totalBorrowBase));
+            if (totals.totalBorrowBase >= baseMinForRewards) {
+                totals.trackingBorrowIndex += safe64(divBaseWei(baseTrackingBorrowSpeed * timeElapsed, totals.totalBorrowBase));
             }
         }
-        totals_.lastAccrualTime = now_;
-        return totals_;
+        totals.lastAccrualTime = now_;
+        return totals;
     }
 
     /**
-     * @notice Authorize a manager to take actions on behalf of your address
-     * @param manager The address to authorize (or rescind authorization from)
-     * @param isAllowed_ Whether to authorize or rescind authorization from manager
+     * @notice Allow or disallow another address to withdraw, or transfer from the sender
+     * @param manager The account which will be allowed or disallowed
+     * @param isAllowed_ Whether to allow or disallow
      */
     function allow(address manager, bool isAllowed_) external {
         allowInternal(msg.sender, manager, isAllowed_);
     }
 
     /**
-     * @dev Update authorization status for manager on behalf of owner
+     * @dev Stores the flag marking whether the manager is allowed to act on behalf of owner
      */
     function allowInternal(address owner, address manager, bool isAllowed_) internal {
         isAllowed[owner][manager] = isAllowed_;
@@ -337,6 +334,17 @@ contract Comet is CometStorage {
     }
 
     /**
+     * @notice Determine if the manager has permission to act on behalf of the owner
+     * @param owner The owner account
+     * @param manager The manager account
+     * @return Whether or not the manager has permission
+     */
+    function hasPermission(address owner, address manager) public view returns (bool) {
+        return owner == manager || isAllowed[owner][manager];
+
+    }
+
+    /**
      * @return The current per second supply rate
      */
     // TODO: Optimize by passing totals from caller to getUtilization()
@@ -372,9 +380,9 @@ contract Comet is CometStorage {
      */
     function getUtilization() public view returns (uint) {
         // TODO: Optimize by passing in totals instead of reading from storage.
-        Totals memory totals_ = totals;
-        uint totalSupply = presentValueSupply(totals_.totalSupplyBase);
-        uint totalBorrow = presentValueBorrow(totals_.totalBorrowBase);
+        TotalsBasic memory totals = totalsBasic;
+        uint totalSupply = presentValueSupply(totals, totals.totalSupplyBase);
+        uint totalBorrow = presentValueBorrow(totals, totals.totalBorrowBase);
         if (totalSupply == 0) {
             return 0;
         } else {
@@ -383,30 +391,78 @@ contract Comet is CometStorage {
     }
 
     /**
-     * @return The positive present supply balance if positive or the negative borrow balance if negative
+     * @return Whether the account is minimally collateralized enough to borrow
      */
-    function presentValue(int104 principalValue) internal view returns (int104) {
-        if (principalValue >= 0) {
-            return signed104(presentValueSupply(unsigned104(principalValue)));
+    function isBorrowCollateralized(address account) public view returns (bool) {
+        return true; // XXX
+    }
+
+    /**
+     * @dev The positive present supply balance if positive or the negative borrow balance if negative
+     */
+    function presentValue(TotalsBasic memory totals, int104 principalValue_) internal pure returns (int104) {
+        if (principalValue_ >= 0) {
+            return signed104(presentValueSupply(totals, unsigned104(principalValue_)));
         } else {
-            return -signed104(presentValueBorrow(unsigned104(-principalValue)));
+            return -signed104(presentValueBorrow(totals, unsigned104(-principalValue_)));
         }
     }
 
     /**
-     * @return The principal amount projected forward by the supply index
+     * @dev The principal amount projected forward by the supply index
      */
-    function presentValueSupply(uint104 principalValue) internal view returns (uint104) {
-        // TODO: Optimize by passing in index instead of reading from storage.
-        return principalValue * totals.baseSupplyIndex;
+    function presentValueSupply(TotalsBasic memory totals, uint104 principalValue_) internal pure returns (uint104) {
+        return uint104(uint256(principalValue_ * totals.baseSupplyIndex) / baseIndexScale);
     }
 
     /**
-     * @return The principal amount projected forward by the borrow index
+     * @dev The principal amount projected forward by the borrow index
      */
-    function presentValueBorrow(uint104 principalValue) internal view returns (uint104) {
-        // TODO: Optimize by passing in index instead of reading from storage.
-        return principalValue * totals.baseBorrowIndex;
+    function presentValueBorrow(TotalsBasic memory totals, uint104 principalValue_) internal pure returns (uint104) {
+        return uint104(uint256(principalValue_ * totals.baseBorrowIndex) / baseIndexScale);
+    }
+
+    /**
+     * @dev The positive principal if positive or the negative principal if negative
+     */
+    function principalValue(TotalsBasic memory totals, int104 presentValue_) internal pure returns (int104) {
+        if (presentValue_ >= 0) {
+            return signed104(presentValueSupply(totals, unsigned104(presentValue_)));
+        } else {
+            return -signed104(presentValueBorrow(totals, unsigned104(-presentValue_)));
+        }
+    }
+
+    /**
+     * @dev The present value projected backward by the supply index
+     */
+    function principalValueSupply(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
+        return uint104(uint256(presentValue_ * baseIndexScale) / totals.baseSupplyIndex);
+    }
+
+    /**
+     * @dev The present value projected backwrd by the borrow index
+     */
+    function principalValueBorrow(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
+        return uint104(uint256(presentValue_ * baseIndexScale) / totals.baseBorrowIndex);
+    }
+
+    /**
+     * @dev The amounts broken into repay and supply amounts, given negative balance
+     */
+    function repayAndSupplyAmount(int104 balance, uint104 amount) internal pure returns (uint104, uint104) {
+        uint104 repayAmount = balance < 0 ? min(unsigned104(-balance), amount) : 0;
+        uint104 supplyAmount = amount - repayAmount;
+        return (repayAmount, supplyAmount);
+    }
+
+    /**
+     * @dev The amounts broken into withdraw and borrow amounts, given positive balance
+     */
+    function withdrawAndBorrowAmount(int104 balance, uint104 amount) internal pure returns (uint104, uint104) {
+        uint104 withdrawAmount = balance > 0 ? min(unsigned104(balance), amount) : 0;
+        uint104 borrowAmount = amount - withdrawAmount;
+        return (withdrawAmount, borrowAmount);
     }
 
     /**
@@ -426,7 +482,7 @@ contract Comet is CometStorage {
     ) external {
         require(msg.sender == governor || msg.sender == pauseGuardian, "Unauthorized");
 
-        totals.pauseFlags =
+        totalsBasic.pauseFlags =
             uint8(0) |
             (toUInt8(supplyPaused) << pauseSupplyOffset) |
             (toUInt8(transferPaused) << pauseTransferOffset) |
@@ -439,49 +495,35 @@ contract Comet is CometStorage {
      * @return Whether or not supply actions are paused
      */
     function isSupplyPaused() public view returns (bool) {
-        return toBool(totals.pauseFlags & (uint8(1) << pauseSupplyOffset));
+        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseSupplyOffset));
     }
 
     /**
      * @return Whether or not transfer actions are paused
      */
     function isTransferPaused() public view returns (bool) {
-        return toBool(totals.pauseFlags & (uint8(1) << pauseTransferOffset));
+        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseTransferOffset));
     }
 
     /**
      * @return Whether or not withdraw actions are paused
      */
     function isWithdrawPaused() public view returns (bool) {
-        return toBool(totals.pauseFlags & (uint8(1) << pauseWithdrawOffset));
+        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseWithdrawOffset));
     }
 
     /**
      * @return Whether or not absorb actions are paused
      */
     function isAbsorbPaused() public view returns (bool) {
-        return toBool(totals.pauseFlags & (uint8(1) << pauseAbsorbOffset));
+        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseAbsorbOffset));
     }
 
     /**
      * @return Whether or not buy actions are paused
      */
     function isBuyPaused() public view returns (bool) {
-        return toBool(totals.pauseFlags & (uint8(1) << pauseBuyOffset));
-    }
-
-    /**
-     * @return uint8 representation of the boolean input
-     */
-    function toUInt8(bool x) internal pure returns (uint8) {
-        return x ? 1 : 0;
-    }
-
-    /**
-     * @return Boolean representation of the uint8 input
-     */
-    function toBool(uint8 x) internal pure returns (bool) {
-        return x != 0;
+        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseBuyOffset));
     }
 
     /**
@@ -499,27 +541,23 @@ contract Comet is CometStorage {
     }
 
     /**
-     * @dev Safely cast a number to a 64 bit number
+     * @dev Determine index of asset that matches given address
      */
-    function safe64(uint n) internal pure returns (uint64) {
-        require(n <= type(uint64).max, "number exceeds size (64 bits)");
-        return uint64(n);
+    function getAssetOffset(address asset) internal view returns (uint8 offset) {
+        AssetInfo[] memory _assets = assets();
+        for (uint8 i = 0; i < _assets.length; i++) {
+            if (asset == _assets[i].asset) {
+                return i;
+            }
+        }
+        revert("asset not found");
     }
 
     /**
-     * @dev Safely cast an uint104 to an int104
+     * @dev Whether user has a non-zero balance of an asset, given assetsIn flags
      */
-    function signed104(uint104 n) internal pure returns (int104) {
-        require(n <= uint104(type(int104).max), "number exceeds max int size");
-        return int104(n);
-    }
-
-    /**
-     * @dev Safely cast an int104 to an uint104
-     */
-    function unsigned104(int104 n) internal pure returns (uint104) {
-        require(n >= 0, "number is negative");
-        return uint104(n);
+    function isInAsset(uint16 assetsIn, uint8 assetOffset) internal pure returns (bool) {
+        return (assetsIn & (uint8(1) << assetOffset) != 0);
     }
 
     /**
@@ -534,30 +572,142 @@ contract Comet is CometStorage {
         uint8 assetOffset = getAssetOffset(asset);
         if (initialUserBalance == 0 && finalUserBalance != 0) {
             // set bit for asset
-            users[account].assetsIn |= (uint8(1) << assetOffset);
+            userBasic[account].assetsIn |= (uint8(1) << assetOffset);
         } else if (initialUserBalance != 0 && finalUserBalance == 0) {
             // clear bit for asset
-            users[account].assetsIn &= ~(uint8(1) << assetOffset);
+            userBasic[account].assetsIn &= ~(uint8(1) << assetOffset);
         }
     }
 
     /**
-     * @dev Return index of asset that matches address
+     * @dev Write updated balance to store and tracking participation
      */
-    function getAssetOffset(address asset) internal view returns (uint8 offset) {
-        AssetInfo[] memory _assets = assets();
-        for (uint8 i = 0; i < _assets.length; i++) {
-            if (asset == _assets[i].asset) {
-                return i;
-            }
+    function updateBaseBalance(TotalsBasic memory totals, address account, UserBasic memory basic, int104 principalNew) internal {
+        int104 principal = basic.principal;
+        basic.principal = principalNew;
+
+        if (principal >= 0) {
+            uint64 indexDelta = totals.trackingSupplyIndex - basic.baseTrackingIndex;
+            basic.baseTrackingAccrued += safe64(uint104(principal) * indexDelta); // XXX decimals
+        } else {
+            uint64 indexDelta = totals.trackingBorrowIndex - basic.baseTrackingIndex;
+            basic.baseTrackingAccrued += safe64(uint104(-principal) * indexDelta); // XXX decimals
         }
-        revert("asset not found");
+
+        if (principalNew >= 0) {
+            basic.baseTrackingIndex = totals.trackingSupplyIndex;
+        } else {
+            basic.baseTrackingIndex = totals.trackingBorrowIndex;
+        }
+
+        userBasic[account] = basic;
     }
 
     /**
-     * @dev given an account's assetsIn and the index of an asset, return whether user has non-zero balance in asset
+     * @notice Query the current base balance of an account
+     * @param account The account whose balance to query
+     * @return The present day base balance of the account
      */
-    function isInAsset(uint16 assetsIn, uint8 assetOffset) internal pure returns (bool) {
-        return (assetsIn & (uint8(1) << assetOffset) != 0);
+    function baseBalanceOf(address account) external view returns (int104) {
+        return presentValue(totalsBasic, userBasic[account].principal);
+    }
+
+    /**
+     * @notice Query the current collateral balance of an account
+     * @param account The account whose balance to query
+     * @param asset The collateral asset whi
+     * @return The collateral balance of the account
+     */
+    function collateralBalanceOf(address account, address asset) external view returns (uint128) {
+        return userCollateral[account][asset].balance;
+    }
+
+    /**
+     * @notice Transfer an amount of asset to dst
+     * @param dst The recipient address
+     * @param asset The asset to transfer
+     * @param amount The quantity to transfer
+     */
+    function transfer(address dst, address asset, uint amount) external {
+        return transferInternal(msg.sender, msg.sender, dst, asset, amount);
+    }
+
+    /**
+     * @notice Transfer an amount of asset from src to dst, if allowed
+     * @param src The sender address
+     * @param dst The recipient address
+     * @param asset The asset to transfer
+     * @param amount The quantity to transfer
+     */
+    function transferFrom(address src, address dst, address asset, uint amount) public {
+        return transferInternal(msg.sender, src, dst, asset, amount);
+    }
+
+    /**
+     * @dev Transfer either collateral or base asset, depending on the asset, if operator is allowed
+     */
+    function transferInternal(address operator, address src, address dst, address asset, uint amount) internal {
+        require(hasPermission(src, operator), "operator not permitted");
+
+        if (asset == baseToken) {
+            return transferBase(src, dst, safe104(amount));
+        } else {
+            return transferCollateral(src, dst, asset, safe128(amount));
+        }
+    }
+
+    /**
+     * @dev Transfer an amount of base asset from src to dst
+     */
+    function transferBase(address src, address dst, uint104 amount) internal {
+        TotalsBasic memory totals = totalsBasic;
+        totals = accrue(totals);
+        uint104 totalSupplyBalance = presentValueSupply(totals, totals.totalSupplyBase);
+        uint104 totalBorrowBalance = presentValueBorrow(totals, totals.totalBorrowBase);
+
+        UserBasic memory srcUser = userBasic[src];
+        UserBasic memory dstUser = userBasic[dst];
+        int104 srcBalance = presentValue(totals, srcUser.principal);
+        int104 dstBalance = presentValue(totals, dstUser.principal);
+
+        (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcBalance, amount);
+        (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, amount);
+
+        totalSupplyBalance += supplyAmount - withdrawAmount;
+        totalBorrowBalance += borrowAmount - repayAmount;
+
+        srcBalance -= signed104(amount);
+        dstBalance += signed104(amount);
+
+        totals.totalSupplyBase = principalValueSupply(totals, totalSupplyBalance);
+        totals.totalBorrowBase = principalValueBorrow(totals, totalBorrowBalance);
+        totalsBasic = totals;
+
+        updateBaseBalance(totals, src, srcUser, principalValue(totals, srcBalance));
+        updateBaseBalance(totals, dst, dstUser, principalValue(totals, dstBalance));
+
+        if (srcBalance < 0) {
+            require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
+            require(isBorrowCollateralized(src), "borrow cannot be maintained");
+        }
+    }
+
+    /**
+     * @dev Transfer an amount of collateral asset from src to dst
+     */
+    function transferCollateral(address src, address dst, address asset, uint128 amount) internal {
+        uint128 srcCollateral = userCollateral[src][asset].balance;
+        uint128 dstCollateral = userCollateral[dst][asset].balance;
+        uint128 srcCollateralNew = srcCollateral - amount;
+        uint128 dstCollateralNew = dstCollateral + amount;
+
+        userCollateral[src][asset].balance = srcCollateralNew;
+        userCollateral[dst][asset].balance = dstCollateralNew;
+
+        updateAssetsIn(src, asset, srcCollateral, srcCollateralNew);
+        updateAssetsIn(dst, asset, dstCollateral, dstCollateralNew);
+
+        // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
+        require(isBorrowCollateralized(src), "borrow would not be maintained");
     }
 }

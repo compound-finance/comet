@@ -64,7 +64,7 @@ scenario(
   'Comet#interestRate > rates using on-chain configuration constants',
   { upgrade: true },
   async ({ comet, actors }) => {
-    let { totalSupplyBase, totalBorrowBase } = await comet.totals();
+    let { totalSupplyBase, totalBorrowBase } = await comet.totalsBasic();
     const kink = await comet.kink();
     const perSecondInterestRateBase = await comet.perSecondInterestRateBase();
     const perSecondInterestRateSlopeLow = await comet.perSecondInterestRateSlopeLow();

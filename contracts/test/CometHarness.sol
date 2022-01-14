@@ -16,13 +16,18 @@ contract CometHarness is Comet {
         nowOverride = now_;
     }
 
-    function setTotals(Totals memory totals_) public {
-        totals = totals_;
+    function setTotalsBasic(TotalsBasic memory totals) public {
+        totalsBasic = totals;
     }
 
-    /**
-     * @dev function wrapping updateAssetsIn for testing
-     */
+    function setBasePrincipal(address account, int104 principal) public {
+        userBasic[account].principal = principal;
+    }
+
+    function setCollateralBalance(address account, address asset, uint128 balance) public {
+        userCollateral[account][asset].balance = balance;
+    }
+
     function updateAssetsInExternal(
         address account,
         address asset,
@@ -32,11 +37,8 @@ contract CometHarness is Comet {
         updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
     }
 
-    /**
-     * @dev return list of assets that account has non-zero balance in
-     */
     function getAssetList(address account) public view returns (address[] memory result) {
-        uint16 assetsIn = users[account].assetsIn;
+        uint16 assetsIn = userBasic[account].assetsIn;
 
         uint8 count = 0;
         for (uint8 i = 0; i < numAssets; i++) {
@@ -57,5 +59,4 @@ contract CometHarness is Comet {
 
         return result;
     }
-
 }

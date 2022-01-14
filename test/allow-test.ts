@@ -38,4 +38,8 @@ describe('allow', function () {
 
     expect(await comet.isAllowed(userAddress, managerAddress)).to.be.false;
   });
+
+  it('has permission only if the user is allowed or self', async () => {
+    // XXX
+  });
 });

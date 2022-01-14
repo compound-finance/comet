@@ -34,7 +34,7 @@ describe('interest rates', function () {
       lastAccrualTime: 0,
       pauseFlags: 0,
     };
-    await wait(comet.setTotals(totals));
+    await wait(comet.setTotalsBasic(totals));
 
     const secondsPerYear = await comet.secondsPerYear();
     const utilization = await comet.getUtilization();
@@ -74,7 +74,7 @@ describe('interest rates', function () {
       lastAccrualTime: 0,
       pauseFlags: 0,
     };
-    await wait(comet.setTotals(totals));
+    await wait(comet.setTotalsBasic(totals));
 
     const secondsPerYear = await comet.secondsPerYear();
     const utilization = await comet.getUtilization();
@@ -114,7 +114,7 @@ describe('interest rates', function () {
       lastAccrualTime: 0,
       pauseFlags: 0,
     };
-    await wait(comet.setTotals(totals));
+    await wait(comet.setTotalsBasic(totals));
 
     const secondsPerYear = await comet.secondsPerYear();
     const utilization = await comet.getUtilization();
@@ -154,7 +154,7 @@ describe('interest rates', function () {
       lastAccrualTime: 0,
       pauseFlags: 0,
     };
-    await wait(comet.setTotals(totals));
+    await wait(comet.setTotalsBasic(totals));
 
     const secondsPerYear = await comet.secondsPerYear();
     const utilization = await comet.getUtilization();

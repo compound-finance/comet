@@ -8,7 +8,7 @@ pragma solidity ^0.8.0;
  */
 contract CometStorage {
     // 512 bits total = 2 slots
-    struct Totals {
+    struct TotalsBasic {
         // 1st slot
         uint64 baseSupplyIndex;
         uint64 baseBorrowIndex;
@@ -21,24 +21,39 @@ contract CometStorage {
         uint8 pauseFlags;
     }
 
+    struct TotalsCollateral {
+        uint128 totalSupplyAsset;
+        uint128 _reserved;
+    }
+
+    struct UserBasic {
+        int104 principal;
+        uint64 baseTrackingIndex;
+        uint64 baseTrackingAccrued;
+        uint16 assetsIn;
+        uint8 _reserved;
+    }
+
+    struct UserCollateral {
+        uint128 balance;
+        uint128 _reserved;
+    }
+
     /// @notice Aggregate variables tracked for the entire market
-    Totals public totals;
+    TotalsBasic public totalsBasic;
+
+    /// @notice Aggregate variables tracked for each collateral asset
+    mapping(address => TotalsCollateral) public totalsCollateral;
 
     /// @notice Mapping of users to accounts which may be permitted to manage the user account
     mapping(address => mapping(address => bool)) public isAllowed;
 
-    struct UserBasic {
-        // principal XXX
-        // baseTrackingIndex XXX
-        // baseTrackingAccrued XXX
-
-        /// @notice bit vector representing indices of assets the user has a non-zero balance in
-        uint16 assetsIn;
-    }
-
-    /// @notice user-specific information
-    mapping(address => UserBasic) public users;
-
     /// @notice The next expected nonce for an address, for validating authorizations via signature
     mapping(address => uint) public userNonce;
+
+    /// @notice Mapping of users to base principal and other basic data
+    mapping(address => UserBasic) public userBasic;
+
+    /// @notice Mapping of users to collateral data per collateral asset
+    mapping(address => mapping(address => UserCollateral)) public userCollateral;
 }
