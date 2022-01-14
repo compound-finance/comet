@@ -27,6 +27,18 @@ contract CometStorage {
     /// @notice Mapping of users to accounts which may be permitted to manage the user account
     mapping(address => mapping(address => bool)) public isAllowed;
 
+    struct UserBasic {
+        // principal XXX
+        // baseTrackingIndex XXX
+        // baseTrackingAccrued XXX
+
+        /// @notice bit vector representing indices of assets the user has a non-zero balance in
+        uint16 assetsIn;
+    }
+
+    /// @notice user-specific information
+    mapping(address => UserBasic) public users;
+
     /// @notice The next expected nonce for an address, for validating authorizations via signature
     mapping(address => uint) public userNonce;
 }
