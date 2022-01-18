@@ -59,7 +59,7 @@ function calculateUtilization(
   }
 }
 
-// TODO: Add constraint to set total supply and borrow bases.
+// TODO: Add constraint to set utilization.
 scenario(
   'Comet#interestRate > rates using on-chain configuration constants',
   { upgrade: true },
@@ -96,6 +96,22 @@ scenario(
       )
     );
   }
-
-  // TODO: Scenario for testing custom configuration constants using a constraint.
 );
+
+// TODO: Add constraint to set utilization.
+scenario(
+  'Comet#interestRate > rates using hypothetical configuration constants',
+  {
+    upgrade: true,
+    cometConfig: {
+      perYearInterestRateBase: (5e16).toString() // 5% per year
+    }
+  },
+  async ({ comet, actors }) => {
+    expect(await comet.getUtilization()).to.equal(0);
+    expect(await comet.getSupplyRate()).to.equal(0);
+    expect(await comet.getBorrowRate()).to.equal(BigNumber.from(1585489599)); // 5% per year if annualized
+  }
+);
+
+// TODO: Scenario for testing custom configuration constants using a utilization constraint.
