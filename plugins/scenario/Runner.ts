@@ -63,7 +63,7 @@ export class Runner<T> {
 
       for (const scenario of scenarios) {
         const { constraints = [] } = scenario;
-        const context = await scenario.initializer(world);
+        let context = await scenario.initializer(world);
 
         // generate worlds which satisfy the constraints
         // note: `solve` is expected not to modify context or world
@@ -72,8 +72,13 @@ export class Runner<T> {
           constraints.map((c) => c.solve(scenario.requirements, context, world).then(mapSolution))
         );
         const baseSolutions: Solution<T>[][] = [[identity]];
-
+        
+        let i = 0;
         for (const combo of combos(baseSolutions.concat(solutionChoices))) {
+          // TODO: This shouldn't be needed if development scenarios are run on a local hardhat node instead.
+          if (world.isDevelopment && i > 0) {
+            context = await scenario.initializer(world); // Need to deploy contracts to development every run
+          }
           // create a fresh copy of context that solutions can modify
           let ctx = await scenario.forker(context);
 
@@ -92,8 +97,8 @@ export class Runner<T> {
           // requirements met, run the property
           try {
             await scenario.property(ctx, world);
-            resultFn(base, scenario);
           } catch (e) {
+            // TODO: Include the specific solution (set of states) that failed in the result
             resultFn(base, scenario, e);
           }
 
@@ -102,7 +107,10 @@ export class Runner<T> {
 
           // snapshots can only be used once, so take another for next time
           snapshot = await world._snapshot();
+          i++;
         }
+        // Send success result only after all combinations of solutions have passed for this scenario.
+        resultFn(base, scenario);
       }
     }
 
