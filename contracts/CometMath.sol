@@ -31,6 +31,11 @@ contract CometMath {
         return int104(n);
     }
 
+    function signed256(uint256 n) internal pure returns (int256) {
+        require(n <= uint256(type(int256).max), "number exceeds max int size");
+        return int256(n);
+    }
+
     function unsigned104(int104 n) internal pure returns (uint104) {
         require(n >= 0, "number is negative");
         return uint104(n);
