@@ -9,7 +9,7 @@ interface ModernConfig {
 
 function getModernConfig(requirements: object): ModernConfig | null {
   let upgrade = requirements['upgrade'];
-  let cometConfig = requirements['cometConfig'] as CometConfigurationOverrides;
+  let cometConfig = requirements['cometConfig'] ?? {};
 
   return {
     upgrade: !!upgrade,
