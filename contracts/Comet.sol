@@ -15,6 +15,7 @@ contract Comet is CometMath, CometStorage {
         address asset;
         uint borrowCollateralFactor;
         uint liquidateCollateralFactor;
+        uint supplyCap;
     }
 
     struct Configuration {
@@ -140,6 +141,10 @@ contract Comet is CometMath, CometStorage {
     uint internal immutable liquidateCollateralFactor01;
     uint internal immutable liquidateCollateralFactor02;
 
+    uint internal immutable supplyCap00;
+    uint internal immutable supplyCap01;
+    uint internal immutable supplyCap02;
+
     /**
      * @notice Construct a new protocol instance
      * @param config The mapping of initial/constant parameters
@@ -182,6 +187,10 @@ contract Comet is CometMath, CometStorage {
         liquidateCollateralFactor01 = _getAsset(config.assetInfo, 1).liquidateCollateralFactor;
         liquidateCollateralFactor02 = _getAsset(config.assetInfo, 2).liquidateCollateralFactor;
 
+        supplyCap00 = _getAsset(config.assetInfo, 0).supplyCap;
+        supplyCap01 = _getAsset(config.assetInfo, 1).supplyCap;
+        supplyCap02 = _getAsset(config.assetInfo, 2).supplyCap;
+
         // Set interest rate model configs
         kink = config.kink;
         perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / secondsPerYear;
@@ -206,7 +215,8 @@ contract Comet is CometMath, CometStorage {
         return AssetInfo({
             asset: address(0),
             borrowCollateralFactor: uint256(0),
-            liquidateCollateralFactor: uint256(0)
+            liquidateCollateralFactor: uint256(0),
+            supplyCap: uint256(0)
         });
     }
 
@@ -218,9 +228,9 @@ contract Comet is CometMath, CometStorage {
     function getAssetInfo(uint i) public view returns (AssetInfo memory) {
         require(i < numAssets, "asset info not found");
 
-        if (i == 0) return AssetInfo({asset: asset00, borrowCollateralFactor: borrowCollateralFactor00, liquidateCollateralFactor: liquidateCollateralFactor00 });
-        if (i == 1) return AssetInfo({asset: asset01, borrowCollateralFactor: borrowCollateralFactor01, liquidateCollateralFactor: liquidateCollateralFactor01 });
-        if (i == 2) return AssetInfo({asset: asset02, borrowCollateralFactor: borrowCollateralFactor02, liquidateCollateralFactor: liquidateCollateralFactor02 });
+        if (i == 0) return AssetInfo({asset: asset00, borrowCollateralFactor: borrowCollateralFactor00, liquidateCollateralFactor: liquidateCollateralFactor00, supplyCap: supplyCap00 });
+        if (i == 1) return AssetInfo({asset: asset01, borrowCollateralFactor: borrowCollateralFactor01, liquidateCollateralFactor: liquidateCollateralFactor01, supplyCap: supplyCap01 });
+        if (i == 2) return AssetInfo({asset: asset02, borrowCollateralFactor: borrowCollateralFactor02, liquidateCollateralFactor: liquidateCollateralFactor02, supplyCap: supplyCap02 });
         revert("absurd");
     }
 
@@ -620,6 +630,119 @@ contract Comet is CometMath, CometStorage {
      */
     function collateralBalanceOf(address account, address asset) external view returns (uint128) {
         return userCollateral[account][asset].balance;
+    }
+
+    /**
+     * @dev Safe ERC20 transfer which returns the actual amount received,
+     *  which may be less than `amount` if there is a fee attached to the transfer.
+     */
+    function doTransferIn(address asset, address from, uint amount) internal returns (uint) {
+        ERC20 token = ERC20(asset);
+        uint balanceBefore = token.balanceOf(address(this));
+        token.transferFrom(from, address(this), amount);
+
+        bool success;
+        assembly {
+            switch returndatasize()
+                case 0 {                       // This is a non-standard ERC-20
+                    success := not(0)          // set success to true
+                }
+                case 32 {                      // This is a compliant ERC-20
+                    returndatacopy(0, 0, 32)
+                    success := mload(0)        // Set `success = returndata` of external call
+                }
+                default {                      // This is an excessively non-compliant ERC-20, revert.
+                    revert(0, 0)
+                }
+        }
+        require(success, "failed to transfer token in");
+
+        uint balanceAfter = token.balanceOf(address(this));
+        return balanceAfter - balanceBefore;
+    }
+
+    /**
+     * @notice Supply an amount of asset to the protocol
+     * @param dst The address which will hold the balance
+     * @param asset The asset to supply
+     * @param amount The quantity to supply
+     */
+    function supply(address dst, address asset, uint amount) external {
+        return supplyInternal(msg.sender, msg.sender, dst, asset, amount);
+    }
+
+    /**
+     * @notice Supply an amount of asset to the protocol
+     * @param src The supplier address
+     * @param dst The address which will hold the balance
+     * @param asset The asset to supply
+     * @param amount The quantity to supply
+     */
+    function supplyFrom(address src, address dst, address asset, uint amount) public {
+        return supplyInternal(msg.sender, src, dst, asset, amount);
+    }
+
+    /**
+     * @dev Supply either collateral or base asset, depending on the asset, if operator is allowed
+     */
+    function supplyInternal(address operator, address src, address dst, address asset, uint amount) internal {
+        require(hasPermission(src, operator), "operator not permitted");
+
+        if (asset == baseToken) {
+            return supplyBase(src, dst, safe104(amount));
+        } else {
+            return supplyCollateral(src, dst, asset, safe128(amount));
+        }
+    }
+
+    /**
+     * @dev Supply an amount of base asset from `from` to dst
+     */
+    function supplyBase(address from, address dst, uint104 amount) internal {
+        uint104 actualAmount = safe104(doTransferIn(baseToken, from, amount));
+
+        TotalsBasic memory totals = totalsBasic;
+        totals = accrue(totals);
+
+        uint104 totalSupplyBalance = presentValueSupply(totals, totals.totalSupplyBase);
+        uint104 totalBorrowBalance = presentValueBorrow(totals, totals.totalBorrowBase);
+
+        UserBasic memory dstUser = userBasic[dst];
+        int104 dstBalance = presentValue(totals, dstUser.principal);
+
+        (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, actualAmount);
+
+        totalSupplyBalance += supplyAmount;
+        totalBorrowBalance -= repayAmount;
+
+        dstBalance += signed104(actualAmount);
+
+        totals.totalSupplyBase = principalValueSupply(totals, totalSupplyBalance);
+        totals.totalBorrowBase = principalValueBorrow(totals, totalBorrowBalance);
+        totalsBasic = totals;
+
+        updateBaseBalance(totals, dst, dstUser, principalValue(totals, dstBalance));
+    }
+
+    /**
+     * @dev Supply an amount of collateral asset from `from` to dst
+     */
+    function supplyCollateral(address from, address dst, address asset, uint128 amount) internal {
+        uint128 actualAmount = safe128(doTransferIn(asset, from, amount));
+
+        // XXX reconsider how we do these asset infos / measure gas costs
+        AssetInfo memory assetInfo = getAssetInfo(getAssetOffset(asset));
+        TotalsCollateral memory totals = totalsCollateral[asset];
+        totals.totalSupplyAsset += actualAmount;
+        require(totals.totalSupplyAsset <= assetInfo.supplyCap, "supply cap exceeded");
+
+        uint128 dstCollateral = userCollateral[dst][asset].balance;
+        uint128 dstCollateralNew = dstCollateral + actualAmount;
+
+        totalsCollateral[asset] = totals;
+        userCollateral[dst][asset].balance = dstCollateralNew;
+
+        updateAssetsIn(dst, asset, dstCollateral, dstCollateralNew);
     }
 
     /**
