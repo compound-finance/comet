@@ -24,6 +24,7 @@ export type ProtocolOpts = {
       decimals?: Numeric;
       borrowCF?: Numeric;
       liquidateCF?: Numeric;
+      supplyCap?: Numeric;
     };
   };
   governor?: SignerWithAddress;
@@ -137,8 +138,9 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
       if (symbol != base) {
         acc.push({
           asset: tokens[symbol].address,
-          borrowCollateralFactor: config.borrowCF || ONE,
-          liquidateCollateralFactor: config.liquidateCF || ONE,
+          borrowCollateralFactor: dfn(config.borrowCF, ONE),
+          liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
+          supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
         });
       }
       return acc;
@@ -150,13 +152,15 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 }
 
 export async function portfolio({comet, base, tokens}, account) {
-  const balances = {[base]: BigInt(await comet.baseBalanceOf(account))};
+  const internal = {[base]: BigInt(await comet.baseBalanceOf(account))};
+  const external = {[base]: BigInt(await tokens[base].balanceOf(account))};
   for (const symbol in tokens) {
     if (symbol != base) {
-      balances[symbol] = BigInt(await comet.collateralBalanceOf(account, tokens[symbol].address));
+      internal[symbol] = BigInt(await comet.collateralBalanceOf(account, tokens[symbol].address));
+      external[symbol] = BigInt(await tokens[symbol].balanceOf(account));
     }
   }
-  return balances;
+  return { internal, external };
 }
 
 export async function wait(tx) {

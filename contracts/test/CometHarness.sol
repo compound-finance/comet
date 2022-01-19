@@ -20,6 +20,10 @@ contract CometHarness is Comet {
         totalsBasic = totals;
     }
 
+    function setTotalsCollateral(address asset, TotalsCollateral memory totals) public {
+        totalsCollateral[asset] = totals;
+    }
+
     function setBasePrincipal(address account, int104 principal) public {
         userBasic[account].principal = principal;
     }

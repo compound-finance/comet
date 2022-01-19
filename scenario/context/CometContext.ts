@@ -10,7 +10,7 @@ import {
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { Comet, deployComet } from '../../src/deploy';
-import { ProxyAdmin, Token } from '../../build/types';
+import { ProxyAdmin, ERC20 } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 export class CometContext {
@@ -93,8 +93,8 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   };
 
   context.assets = {
-    GOLD: new CometAsset(getContract<Token>('GOLD')),
-    SILVER: new CometAsset(getContract<Token>('SILVER')),
+    GOLD: new CometAsset(getContract<ERC20>('GOLD')),
+    SILVER: new CometAsset(getContract<ERC20>('SILVER')),
   };
 
   return context;
