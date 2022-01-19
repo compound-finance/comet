@@ -14,7 +14,7 @@ describe('supply', function () {
     const p0 = await portfolio(protocol, alice.address);
     const q0 = await portfolio(protocol, bob.address);
     const a0 = await wait(baseAsB.approve(comet.address, 100e6));
-    const s0 = await wait(cometAsB.supply(alice.address, USDC.address, 100e6));
+    const s0 = await wait(cometAsB.supplyTo(alice.address, USDC.address, 100e6));
     const t1 = await comet.totalsBasic();
     const p1 = await portfolio(protocol, alice.address)
     const q1 = await portfolio(protocol, bob.address)
@@ -46,7 +46,7 @@ describe('supply', function () {
     const p0 = await portfolio(protocol, alice.address);
     const q0 = await portfolio(protocol, bob.address);
     const a0 = await wait(baseAsB.approve(comet.address, 8e8));
-    const s0 = await wait(cometAsB.supply(alice.address, COMP.address, 8e8));
+    const s0 = await wait(cometAsB.supplyTo(alice.address, COMP.address, 8e8));
     const t1 = await comet.totalsCollateral(COMP.address);
     const p1 = await portfolio(protocol, alice.address)
     const q1 = await portfolio(protocol, bob.address)
@@ -62,6 +62,28 @@ describe('supply', function () {
     expect(t1.totalSupplyAsset).to.be.equal(t0.totalSupplyAsset.add(8e8));
     // XXX disable during coverage?
     //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(125000);
+  });
+
+  it('supplies to sender by default', async () => {
+    const protocol = await makeProtocol({base: 'USDC'});
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { USDC } = tokens;
+
+    const i0 = await USDC.allocateTo(bob.address, 100e6);
+    const baseAsB = USDC.connect(bob);
+    const cometAsB = comet.connect(bob);
+
+    const t0 = await comet.totalsBasic();
+    const q0 = await portfolio(protocol, bob.address);
+    const a0 = await wait(baseAsB.approve(comet.address, 100e6));
+    const s0 = await wait(cometAsB.supply(USDC.address, 100e6));
+    const t1 = await comet.totalsBasic();
+    const q1 = await portfolio(protocol, bob.address)
+
+    expect(q0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(q0.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(q1.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(q1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
   });
 
   it('reverts if supplying collateral exceeds the supply cap', async () => {
@@ -80,7 +102,7 @@ describe('supply', function () {
     const p0 = await portfolio(protocol, alice.address);
     const q0 = await portfolio(protocol, bob.address);
     const a0 = await wait(baseAsB.approve(comet.address, 8e8));
-    await expect(cometAsB.supply(alice.address, COMP.address, 8e8)).to.be.revertedWith('supply cap exceeded');
+    await expect(cometAsB.supplyTo(alice.address, COMP.address, 8e8)).to.be.revertedWith('supply cap exceeded');
   });
 
   it('reverts if the asset is neither collateral nor base', async () => {
@@ -92,7 +114,7 @@ describe('supply', function () {
     const cometAsB = comet.connect(bob);
 
     const a0 = await wait(baseAsB.approve(comet.address, 1));
-    await expect(cometAsB.supply(alice.address, USUP.address, 1)).to.be.reverted;
+    await expect(cometAsB.supplyTo(alice.address, USUP.address, 1)).to.be.reverted;
   });
 
   it('supplies from src if specified and sender has permission', async () => {

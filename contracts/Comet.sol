@@ -663,11 +663,20 @@ contract Comet is CometMath, CometStorage {
 
     /**
      * @notice Supply an amount of asset to the protocol
+     * @param asset The asset to supply
+     * @param amount The quantity to supply
+     */
+    function supply(address asset, uint amount) external {
+        return supplyInternal(msg.sender, msg.sender, msg.sender, asset, amount);
+    }
+
+    /**
+     * @notice Supply an amount of asset to the protocol
      * @param dst The address which will hold the balance
      * @param asset The asset to supply
      * @param amount The quantity to supply
      */
-    function supply(address dst, address asset, uint amount) external {
+    function supplyTo(address dst, address asset, uint amount) external {
         return supplyInternal(msg.sender, msg.sender, dst, asset, amount);
     }
 
