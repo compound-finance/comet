@@ -357,7 +357,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @return The current per second supply rate
      */
-    // TODO: Optimize by passing totals from caller to getUtilization()
+    // XXX: Optimize by passing totals from caller to getUtilization()
     function getSupplyRate() public view returns (uint64) {
         uint utilization = getUtilization();
         uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
@@ -373,7 +373,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @return The current per second borrow rate
      */
-    // TODO: Optimize by passing totals from caller to getUtilization()
+    // XXX: Optimize by passing totals from caller to getUtilization()
     function getBorrowRate() public view returns (uint64) {
         uint utilization = getUtilization();
         if (utilization <= kink) {
@@ -389,7 +389,7 @@ contract Comet is CometMath, CometStorage {
      * @return The utilization rate of the base asset
      */
     function getUtilization() public view returns (uint) {
-        // TODO: Optimize by passing in totals instead of reading from storage.
+        // XXX: Optimize by passing in totals instead of reading from storage.
         TotalsBasic memory totals = totalsBasic;
         uint totalSupply = presentValueSupply(totals, totals.totalSupplyBase);
         uint totalBorrow = presentValueBorrow(totals, totals.totalBorrowBase);
@@ -633,7 +633,7 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-     * @dev Safe ERC20 transfer which returns the actual amount received,
+     * @dev Safe ERC20 transfer in which returns the actual amount received,
      *  which may be less than `amount` if there is a fee attached to the transfer.
      */
     function doTransferIn(address asset, address from, uint amount) internal returns (uint) {
@@ -662,6 +662,30 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
+     * @dev Safe ERC20 transfer out
+     */
+    function doTransferOut(address asset, address to, uint amount) internal {
+        ERC20 token = ERC20(asset);
+        token.transfer(to, amount);
+
+        bool success;
+        assembly {
+            switch returndatasize()
+                case 0 {                      // This is a non-standard ERC-20
+                    success := not(0)          // set success to true
+                }
+                case 32 {                     // This is a compliant ERC-20
+                    returndatacopy(0, 0, 32)
+                    success := mload(0)        // Set `success = returndata` of external call
+                }
+                default {                     // This is an excessively non-compliant ERC-20, revert.
+                    revert(0, 0)
+                }
+        }
+        require(success, "failed to transfer token out");
+    }
+
+    /**
      * @notice Supply an amount of asset to the protocol
      * @param asset The asset to supply
      * @param amount The quantity to supply
@@ -682,25 +706,25 @@ contract Comet is CometMath, CometStorage {
 
     /**
      * @notice Supply an amount of asset to the protocol
-     * @param src The supplier address
+     * @param from The supplier address
      * @param dst The address which will hold the balance
      * @param asset The asset to supply
      * @param amount The quantity to supply
      */
-    function supplyFrom(address src, address dst, address asset, uint amount) public {
-        return supplyInternal(msg.sender, src, dst, asset, amount);
+    function supplyFrom(address from, address dst, address asset, uint amount) public {
+        return supplyInternal(msg.sender, from, dst, asset, amount);
     }
 
     /**
      * @dev Supply either collateral or base asset, depending on the asset, if operator is allowed
      */
-    function supplyInternal(address operator, address src, address dst, address asset, uint amount) internal {
-        require(hasPermission(src, operator), "operator not permitted");
+    function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal {
+        require(hasPermission(from, operator), "operator not permitted");
 
         if (asset == baseToken) {
-            return supplyBase(src, dst, safe104(amount));
+            return supplyBase(from, dst, safe104(amount));
         } else {
-            return supplyCollateral(src, dst, asset, safe128(amount));
+            return supplyCollateral(from, dst, asset, safe128(amount));
         }
     }
 
@@ -789,7 +813,7 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-     * @dev Transfer an amount of base asset from src to dst
+     * @dev Transfer an amount of base asset from src to dst, borrowing if possible/necessary
      */
     function transferBase(address src, address dst, uint104 amount) internal {
         TotalsBasic memory totals = totalsBasic;
@@ -841,5 +865,98 @@ contract Comet is CometMath, CometStorage {
 
         // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
         require(isBorrowCollateralized(src), "borrow would not be maintained");
+    }
+
+    /**
+     * @notice Withdraw an amount of asset from the protocol
+     * @param asset The asset to withdraw
+     * @param amount The quantity to withdraw
+     */
+    function withdraw(address asset, uint amount) external {
+        return withdrawInternal(msg.sender, msg.sender, msg.sender, asset, amount);
+    }
+
+    /**
+     * @notice Withdraw an amount of asset to `to`
+     * @param to The recipient address
+     * @param asset The asset to withdraw
+     * @param amount The quantity to withdraw
+     */
+    function withdrawTo(address to, address asset, uint amount) external {
+        return withdrawInternal(msg.sender, msg.sender, to, asset, amount);
+    }
+
+    /**
+     * @notice Withdraw an amount of asset from src to `to`, if allowed
+     * @param src The sender address
+     * @param to The recipient address
+     * @param asset The asset to withdraw
+     * @param amount The quantity to withdraw
+     */
+    function withdrawFrom(address src, address to, address asset, uint amount) public {
+        return withdrawInternal(msg.sender, src, to, asset, amount);
+    }
+
+    /**
+     * @dev Withdraw either collateral or base asset, depending on the asset, if operator is allowed
+     */
+    function withdrawInternal(address operator, address src, address to, address asset, uint amount) internal {
+        require(hasPermission(src, operator), "operator not permitted");
+
+        if (asset == baseToken) {
+            return withdrawBase(src, to, safe104(amount));
+        } else {
+            return withdrawCollateral(src, to, asset, safe128(amount));
+        }
+    }
+
+    /**
+     * @dev Withdraw an amount of base asset from src to `to`, borrowing if possible/necessary
+     */
+    function withdrawBase(address src, address to, uint104 amount) internal {
+        TotalsBasic memory totals = totalsBasic;
+        totals = accrue(totals);
+        uint104 totalSupplyBalance = presentValueSupply(totals, totals.totalSupplyBase);
+        uint104 totalBorrowBalance = presentValueBorrow(totals, totals.totalBorrowBase);
+
+        UserBasic memory srcUser = userBasic[src];
+        int104 srcBalance = presentValue(totals, srcUser.principal);
+
+        (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcBalance, amount);
+
+        totalSupplyBalance -= withdrawAmount;
+        totalBorrowBalance += borrowAmount;
+
+        srcBalance -= signed104(amount);
+
+        totals.totalSupplyBase = principalValueSupply(totals, totalSupplyBalance);
+        totals.totalBorrowBase = principalValueBorrow(totals, totalBorrowBalance);
+        totalsBasic = totals;
+
+        updateBaseBalance(totals, src, srcUser, principalValue(totals, srcBalance));
+
+        if (srcBalance < 0) {
+            require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
+            require(isBorrowCollateralized(src), "borrow cannot be maintained");
+        }
+
+        doTransferOut(baseToken, to, amount);
+    }
+
+    /**
+     * @dev Withdraw an amount of collateral asset from src to `to`
+     */
+    function withdrawCollateral(address src, address to, address asset, uint128 amount) internal {
+        uint128 srcCollateral = userCollateral[src][asset].balance;
+        uint128 srcCollateralNew = srcCollateral - amount;
+
+        userCollateral[src][asset].balance = srcCollateralNew;
+
+        updateAssetsIn(src, asset, srcCollateral, srcCollateralNew);
+
+        // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
+        require(isBorrowCollateralized(src), "borrow would not be maintained");
+
+        doTransferOut(asset, to, amount);
     }
 }
