@@ -98,9 +98,6 @@ describe('supply', function () {
     const baseAsB = COMP.connect(bob);
     const cometAsB = comet.connect(bob);
 
-    const t0 = await comet.totalsCollateral(COMP.address);
-    const p0 = await portfolio(protocol, alice.address);
-    const q0 = await portfolio(protocol, bob.address);
     const a0 = await wait(baseAsB.approve(comet.address, 8e8));
     await expect(cometAsB.supplyTo(alice.address, COMP.address, 8e8)).to.be.revertedWith('supply cap exceeded');
   });
@@ -117,7 +114,7 @@ describe('supply', function () {
     await expect(cometAsB.supplyTo(alice.address, USUP.address, 1)).to.be.reverted;
   });
 
-  it('supplies from src if specified and sender has permission', async () => {
+  it('supplies from `from` if specified and sender has permission', async () => {
     const protocol = await makeProtocol();
     const { comet, tokens, users: [alice, bob, charlie] } = protocol;
     const { COMP } = tokens;
@@ -145,7 +142,7 @@ describe('supply', function () {
     expect(q1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
   });
 
-  it('reverts if src is specified and sender does not have permission', async () => {
+  it('reverts if `from` is specified and sender does not have permission', async () => {
     const protocol = await makeProtocol();
     const { comet, tokens, users: [alice, bob, charlie] } = protocol;
     const { COMP } = tokens;

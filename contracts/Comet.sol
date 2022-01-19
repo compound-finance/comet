@@ -278,8 +278,10 @@ contract Comet is CometMath, CometStorage {
         uint40 now_ = getNow();
         uint timeElapsed = now_ - totals.lastAccrualTime;
         if (timeElapsed > 0) {
-            totals.baseSupplyIndex += safe64(mulFactor(totals.baseSupplyIndex, getSupplyRate() * timeElapsed));
-            totals.baseBorrowIndex += safe64(mulFactor(totals.baseBorrowIndex, getBorrowRate() * timeElapsed));
+            uint supplyRate = getSupplyRateInternal(totals);
+            uint borrowRate = getBorrowRateInternal(totals);
+            totals.baseSupplyIndex += safe64(mulFactor(totals.baseSupplyIndex, supplyRate * timeElapsed));
+            totals.baseBorrowIndex += safe64(mulFactor(totals.baseBorrowIndex, borrowRate * timeElapsed));
             if (totals.totalSupplyBase >= baseMinForRewards) {
                 totals.trackingSupplyIndex += safe64(divBaseWei(baseTrackingSupplySpeed * timeElapsed, totals.totalSupplyBase));
             }
@@ -357,9 +359,15 @@ contract Comet is CometMath, CometStorage {
     /**
      * @return The current per second supply rate
      */
-    // XXX: Optimize by passing totals from caller to getUtilization()
     function getSupplyRate() public view returns (uint64) {
-        uint utilization = getUtilization();
+        return getSupplyRateInternal(totalsBasic);
+    }
+
+    /**
+     * @dev Calculate current per second supply rate given totals
+     */
+    function getSupplyRateInternal(TotalsBasic memory totals) internal view returns (uint64) {
+        uint utilization = getUtilizationInternal(totals);
         uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
         if (utilization <= kink) {
             // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
@@ -373,9 +381,15 @@ contract Comet is CometMath, CometStorage {
     /**
      * @return The current per second borrow rate
      */
-    // XXX: Optimize by passing totals from caller to getUtilization()
     function getBorrowRate() public view returns (uint64) {
-        uint utilization = getUtilization();
+        return getBorrowRateInternal(totalsBasic);
+    }
+
+    /**
+     * @dev Calculate current per second borrow rate given totals
+     */
+    function getBorrowRateInternal(TotalsBasic memory totals) internal view returns (uint64) {
+        uint utilization = getUtilizationInternal(totals);
         if (utilization <= kink) {
             // interestRateBase + interestRateSlopeLow * utilization
             return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization));
@@ -389,8 +403,13 @@ contract Comet is CometMath, CometStorage {
      * @return The utilization rate of the base asset
      */
     function getUtilization() public view returns (uint) {
-        // XXX: Optimize by passing in totals instead of reading from storage.
-        TotalsBasic memory totals = totalsBasic;
+        return getUtilizationInternal(totalsBasic);
+    }
+
+    /**
+     * @dev Calculate utilization rate of the base asset given totals
+     */
+    function getUtilizationInternal(TotalsBasic memory totals) internal pure returns (uint) {
         uint totalSupply = presentValueSupply(totals, totals.totalSupplyBase);
         uint totalBorrow = presentValueBorrow(totals, totals.totalBorrowBase);
         if (totalSupply == 0) {
@@ -598,10 +617,10 @@ contract Comet is CometMath, CometStorage {
 
         if (principal >= 0) {
             uint64 indexDelta = totals.trackingSupplyIndex - basic.baseTrackingIndex;
-            basic.baseTrackingAccrued += safe64(uint104(principal) * indexDelta); // XXX decimals
+            basic.baseTrackingAccrued += safe64(uint104(principal) * uint256(indexDelta) / baseIndexScale); // XXX decimals
         } else {
             uint64 indexDelta = totals.trackingBorrowIndex - basic.baseTrackingIndex;
-            basic.baseTrackingAccrued += safe64(uint104(-principal) * indexDelta); // XXX decimals
+            basic.baseTrackingAccrued += safe64(uint104(-principal) * uint256(indexDelta) / baseIndexScale); // XXX decimals
         }
 
         if (principalNew >= 0) {
@@ -637,24 +656,11 @@ contract Comet is CometMath, CometStorage {
      *  which may be less than `amount` if there is a fee attached to the transfer.
      */
     function doTransferIn(address asset, address from, uint amount) internal returns (uint) {
+        // XXX reconsider whether we just reject fee tokens and trust amount
         ERC20 token = ERC20(asset);
         uint balanceBefore = token.balanceOf(address(this));
-        token.transferFrom(from, address(this), amount);
 
-        bool success;
-        assembly {
-            switch returndatasize()
-                case 0 {                       // This is a non-standard ERC-20
-                    success := not(0)          // set success to true
-                }
-                case 32 {                      // This is a compliant ERC-20
-                    returndatacopy(0, 0, 32)
-                    success := mload(0)        // Set `success = returndata` of external call
-                }
-                default {                      // This is an excessively non-compliant ERC-20, revert.
-                    revert(0, 0)
-                }
-        }
+        bool success = token.transferFrom(from, address(this), amount);
         require(success, "failed to transfer token in");
 
         uint balanceAfter = token.balanceOf(address(this));
@@ -665,23 +671,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Safe ERC20 transfer out
      */
     function doTransferOut(address asset, address to, uint amount) internal {
-        ERC20 token = ERC20(asset);
-        token.transfer(to, amount);
-
-        bool success;
-        assembly {
-            switch returndatasize()
-                case 0 {                      // This is a non-standard ERC-20
-                    success := not(0)          // set success to true
-                }
-                case 32 {                     // This is a compliant ERC-20
-                    returndatacopy(0, 0, 32)
-                    success := mload(0)        // Set `success = returndata` of external call
-                }
-                default {                     // This is an excessively non-compliant ERC-20, revert.
-                    revert(0, 0)
-                }
-        }
+        bool success = ERC20(asset).transfer(to, amount);
         require(success, "failed to transfer token out");
     }
 
@@ -695,7 +685,7 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-     * @notice Supply an amount of asset to the protocol
+     * @notice Supply an amount of asset to dst
      * @param dst The address which will hold the balance
      * @param asset The asset to supply
      * @param amount The quantity to supply
@@ -705,7 +695,7 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-     * @notice Supply an amount of asset to the protocol
+     * @notice Supply an amount of asset from `from` to dst, if allowed
      * @param from The supplier address
      * @param dst The address which will hold the balance
      * @param asset The asset to supply
@@ -947,9 +937,13 @@ contract Comet is CometMath, CometStorage {
      * @dev Withdraw an amount of collateral asset from src to `to`
      */
     function withdrawCollateral(address src, address to, address asset, uint128 amount) internal {
+        TotalsCollateral memory totals = totalsCollateral[asset];
+        totals.totalSupplyAsset -= amount;
+
         uint128 srcCollateral = userCollateral[src][asset].balance;
         uint128 srcCollateralNew = srcCollateral - amount;
 
+        totalsCollateral[asset] = totals;
         userCollateral[src][asset].balance = srcCollateralNew;
 
         updateAssetsIn(src, asset, srcCollateral, srcCollateralNew);

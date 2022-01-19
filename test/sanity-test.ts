@@ -11,4 +11,7 @@ describe('getNow', function () {
 
 describe('updateBaseBalance', function () {
   // XXX
+  it.skip('accrues the right amount of rewards', async () => {
+    // XXX
+  });
 });
