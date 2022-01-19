@@ -1038,13 +1038,14 @@ contract Comet is CometMath, CometStorage {
      */
     function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external {
         int reserves = getReserves();
-        if (reserves < 0 && uint(reserves) < targetReserves) {
-            uint collateralAmount = baseAmount / getPrice(asset); // TODO: decimal math
-            require(collateralAmount >= minAmount, "slippage too high");
-            // TODO: use the doTransferIn from Jared's PR, which handles fee tokens
-            ERC20(baseToken).transferFrom(msg.sender, address(this), baseAmount);
-            withdrawCollateral(address(this), recipient, asset, safe128(collateralAmount));
-        }
+        require(reserves >= 0 && uint(reserves) < targetReserves, "no ongoing sale");
+
+        uint collateralAmount = baseAmount / getPrice(asset); // TODO: decimal math
+        require(collateralAmount >= minAmount, "slippage too high");
+
+        // TODO: Should we use the doTransferIn from Jared's PR to handle fee tokens?
+        ERC20(baseToken).transferFrom(msg.sender, address(this), baseAmount);
+        withdrawCollateral(address(this), recipient, asset, safe128(collateralAmount));
     }
 
     /**
