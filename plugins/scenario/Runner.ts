@@ -1,13 +1,15 @@
 import { Constraint, Scenario, Solution } from './Scenario';
 import { ForkSpec, World } from './World';
 import hreForBase from './utils/hreForBase';
+import { CometContext } from '../../scenario/context/CometContext';
 
 export type Address = string;
 
 export type ResultFn<T> = (base: ForkSpec, scenario: Scenario<T>, err?: any) => void;
 
 export interface Config<T> {
-  bases?: ForkSpec[];
+  base: ForkSpec;
+  world: World;
 }
 
 function* combos(choices: object[][]) {
@@ -45,74 +47,67 @@ function mapSolution<T>(s: Solution<T> | Solution<T>[] | null): Solution<T>[] {
 
 export class Runner<T> {
   config: Config<T>;
+  worldSnapshot: string;
 
   constructor(config: Config<T>) {
     this.config = config;
   }
 
-  async run(scenarios: Scenario<T>[], resultFn: ResultFn<T>): Promise<Runner<T>> {
+  async run(scenario: Scenario<T>, resultFn: ResultFn<T>): Promise<Runner<T>> {
     const { config } = this;
-    const { bases = [] } = config;
+    const { base, world } = config;
+    const { constraints = [] } = scenario;
 
-    for (const base of bases) {
-      // construct a base world and context
-      const world = new World(hreForBase(base), base); // XXX can cache/re-use HREs per base
-
-      // freeze the world as it was before we run any scenarios
-      let snapshot = await world._snapshot();
-
-      for (const scenario of scenarios) {
-        const { constraints = [] } = scenario;
-        let context = await scenario.initializer(world);
-
-        // generate worlds which satisfy the constraints
-        // note: `solve` is expected not to modify context or world
-        //  and constraints should be independent or conflicts will be detected
-        const solutionChoices: Solution<T>[][] = await Promise.all(
-          constraints.map((c) => c.solve(scenario.requirements, context, world).then(mapSolution))
-        );
-        const baseSolutions: Solution<T>[][] = [[identity]];
-        
-        let i = 0;
-        for (const combo of combos(baseSolutions.concat(solutionChoices))) {
-          // TODO: This shouldn't be needed if development scenarios are run on a local hardhat node instead.
-          if (world.isDevelopment && i > 0) {
-            context = await scenario.initializer(world); // Need to deploy contracts to development every run
-          }
-          // create a fresh copy of context that solutions can modify
-          let ctx = await scenario.forker(context);
-
-          // apply each solution in the combo, then check they all still hold
-          for (const solution of combo) {
-            ctx = (await solution(ctx, world)) || ctx;
-          }
-
-          for (const constraint of constraints) {
-            await constraint.check(scenario.requirements, ctx, world);
-          }
-
-          // bind all functions on object
-          bindFunctions(ctx);
-
-          // requirements met, run the property
-          try {
-            await scenario.property(ctx, world);
-          } catch (e) {
-            // TODO: Include the specific solution (set of states) that failed in the result
-            resultFn(base, scenario, e);
-          }
-
-          // revert back to the frozen world for the next scenario
-          await world._revert(snapshot);
-
-          // snapshots can only be used once, so take another for next time
-          snapshot = await world._snapshot();
-          i++;
-        }
-        // Send success result only after all combinations of solutions have passed for this scenario.
-        resultFn(base, scenario);
-      }
+    // reset the world if a snapshot exists and take a snapshot of it
+    if (this.worldSnapshot) {
+      await world._revert(this.worldSnapshot);
     }
+    this.worldSnapshot = (await world._snapshot()) as string;
+
+    // initialize the context and take a snapshot of it
+    let context = await scenario.initializer(world);
+    let contextSnapshot = await world._snapshot();
+
+    // generate worlds which satisfy the constraints
+    // note: `solve` is expected not to modify context or world
+    //  and constraints should be independent or conflicts will be detected
+    const solutionChoices: Solution<T>[][] = await Promise.all(
+      constraints.map((c) => c.solve(scenario.requirements, context, world).then(mapSolution))
+    );
+    const baseSolutions: Solution<T>[][] = [[identity]];
+    
+    for (const combo of combos(baseSolutions.concat(solutionChoices))) {
+      // create a fresh copy of context that solutions can modify
+      let ctx = await scenario.forker(context);
+
+      // apply each solution in the combo, then check they all still hold
+      for (const solution of combo) {
+        ctx = (await solution(ctx, world)) || ctx;
+      }
+
+      for (const constraint of constraints) {
+        await constraint.check(scenario.requirements, ctx, world);
+      }
+
+      // bind all functions on object
+      bindFunctions(ctx);
+
+      // requirements met, run the property
+      try {
+        await scenario.property(ctx, world);
+      } catch (e) {
+        // TODO: Include the specific solution (set of states) that failed in the result
+        resultFn(base, scenario, e);
+      }
+
+      // revert back to the frozen world for the next scenario
+      await world._revert(contextSnapshot);
+
+      // snapshots can only be used once, so take another for next time
+      contextSnapshot = await world._snapshot();
+    }
+    // Send success result only after all combinations of solutions have passed for this scenario.
+    resultFn(base, scenario);
 
     return this;
   }

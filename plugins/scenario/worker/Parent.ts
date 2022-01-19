@@ -25,17 +25,12 @@ interface WorkerMessage {
   result?: Result;
 }
 
-type BaseScenario<T> = {
-  base: ForkSpec;
-  scenario: Scenario<T>;
-};
-
 function filterRunning<T>(
-  baseScenarios: BaseScenario<T>[]
-): [BaseScenario<T>[], BaseScenario<T>[]] {
-  let rest = baseScenarios.filter(({ scenario }) => scenario.flags === null);
-  let only = baseScenarios.filter(({ scenario }) => scenario.flags === 'only');
-  let skip = baseScenarios.filter(({ scenario }) => scenario.flags === 'skip');
+  scenarios: Scenario<T>[]
+): [Scenario<T>[], Scenario<T>[]] {
+  let rest = scenarios.filter(scenario => scenario.flags === null);
+  let only = scenarios.filter(scenario => scenario.flags === 'only');
+  let skip = scenarios.filter(scenario => scenario.flags === 'skip');
 
   if (only.length > 0) {
     return [only, skip.concat(rest)];
@@ -44,20 +39,8 @@ function filterRunning<T>(
   }
 }
 
-function getBaseScenarios<T>(bases: ForkSpec[], scenarios: Scenario<T>[]): BaseScenario<T>[] {
-  let result: BaseScenario<T>[] = [];
-
-  // Note: this could filter if scenarios had some such filtering (e.g. to state the scenario is only compatible with certain bases)
-  for (let base of bases) {
-    for (let scenario of scenarios) {
-      result.push({ base, scenario });
-    }
-  }
-  return result;
-}
-
-function key(baseName: string, scenarioName: string): string {
-  return `${baseName}-${scenarioName}`;
+function key(scenarioName: string): string {
+  return `${scenarioName}`;
 }
 
 // Strips out unserializable fields such as functions.
@@ -70,23 +53,24 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
   let hardhatArguments = getHardhatArguments();
   let formats = defaultFormats;
   let scenarios: Scenario<T>[] = Object.values(await loadScenarios(scenarioGlob));
-  let baseScenarios: BaseScenario<T>[] = getBaseScenarios(bases, scenarios);
-  let [runningScenarios, skippedScenarios] = filterRunning(baseScenarios);
+  let [runningScenarios, skippedScenarios] = filterRunning(scenarios);
 
   let startTime = Date.now();
 
-  let results: Result[] = skippedScenarios.map(({ base, scenario }) => ({
-    base: base.name,
-    file: scenario.file || scenario.name,
-    scenario: scenario.name,
-    elapsed: undefined,
-    error: undefined,
-    skipped: true,
-  }));
+  let results: Result[] = skippedScenarios.flatMap(scenario => {
+    return bases.map(base => ({
+      base: base.name,
+      file: scenario.file || scenario.name,
+      scenario: scenario.name,
+      elapsed: undefined,
+      error: undefined,
+      skipped: true,
+    }))
+  });
   let pending: Set<string> = new Set(
-    runningScenarios.map((baseScenario) => key(baseScenario.base.name, baseScenario.scenario.name))
+    runningScenarios.map(scenario => key(scenario.name))
   );
-  let assignable: Iterator<BaseScenario<T>> = runningScenarios[Symbol.iterator]();
+  let assignable: Iterator<Scenario<T>> = runningScenarios[Symbol.iterator]();
   let done;
   let hasError = false;
   let isDone = new Promise((resolve, reject_) => {
@@ -101,7 +85,7 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
 
   checkDone(); // Just in case we don't have any scens
 
-  function getNextScenario(): BaseScenario<T> | null {
+  function getNextScenario(): Scenario<T> | null {
     let next = assignable.next();
     if (!next.done && next.value) {
       return next.value;
@@ -110,12 +94,11 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
   }
 
   function assignWork(worker: Worker) {
-    let baseScenario = getNextScenario();
-    if (baseScenario) {
+    let scenario = getNextScenario();
+    if (scenario) {
       worker.postMessage({
         scenario: {
-          base: baseScenario.base.name,
-          scenario: baseScenario.scenario.name,
+          scenario: scenario.name,
         },
       });
     }
@@ -123,7 +106,7 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
 
   function mergeResult(index: number, result: Result) {
     results.push(result);
-    pending.delete(key(result.base, result.scenario));
+    pending.delete(key(result.scenario));
 
     checkDone();
   }

@@ -1,21 +1,18 @@
 import { parentPort } from 'worker_threads';
 import { Runner } from '../Runner';
-import { ForkSpec } from '../World';
+import { ForkSpec, World } from '../World';
 import { Scenario } from '../Scenario';
 import { getLoader, loadScenarios } from '../Loader';
-import { HardhatContext } from 'hardhat/internal/context';
 import { scenarioGlob } from './Config';
 import {
   HardhatConfig,
   HardhatArguments,
   createContext,
-  setConfig,
-  getContext,
 } from './HardhatContext';
-import * as util from 'util';
 import { ScenarioConfig } from '../types';
 import { AssertionError } from 'chai';
 import { SimpleWorker } from './SimpleWorker';
+import hreForBase from '../utils/hreForBase';
 
 
 interface Message {
@@ -57,6 +54,7 @@ function postMessage(worker: SimpleWorker | undefined, message: any) {
 
 export async function run<T>({ scenarioConfig, bases, config, worker }: WorkerData) {
   let scenarios: { [name: string]: Scenario<T> };
+  let runners = [];
 
   if (!worker) { // only create if we're not in a simple worker
     createContext(...config);
@@ -65,18 +63,18 @@ export async function run<T>({ scenarioConfig, bases, config, worker }: WorkerDa
     scenarios = getLoader<T>().getScenarios();
   }
 
-  let baseMap = Object.fromEntries(bases.map((base) => [base.name, base]));
-
+  for (let base of bases) {
+    let world = new World(hreForBase(base), base);
+    let runner = new Runner({ base, world });
+    runners.push(runner);
+  }
+  
   onMessage(worker, async (message: Message) => {
     if (message.scenario) {
-      let { scenario: scenarioName, base: baseName } = message.scenario;
+      let { scenario: scenarioName } = message.scenario;
       let scenario = scenarios[scenarioName];
       if (!scenario) {
         throw new Error(`Worker encountered unknown scenario: ${scenarioName}`);
-      }
-      let base = baseMap[baseName];
-      if (!base) {
-        throw new Error(`Worker encountered unknown base: ${baseName}`);
       }
 
       let resultFn = (base: ForkSpec, scenario: Scenario<T>, err: any) => {
@@ -106,7 +104,9 @@ export async function run<T>({ scenarioConfig, bases, config, worker }: WorkerDa
       console.log('Running', message.scenario);
       let startTime = Date.now();
       try {
-        await new Runner({ bases: [base] }).run([scenario], resultFn);
+        for (let runner of runners) {
+          await runner.run(scenario, resultFn);
+        }
       } catch (e) {
         console.error('Encountered worker error', e);
         eventually(() => {
