@@ -703,7 +703,7 @@ contract Comet is CometMath, CometStorage {
      * @param asset The asset to supply
      * @param amount The quantity to supply
      */
-    function supplyFrom(address from, address dst, address asset, uint amount) public {
+    function supplyFrom(address from, address dst, address asset, uint amount) external {
         return supplyInternal(msg.sender, from, dst, asset, amount);
     }
 
@@ -787,7 +787,7 @@ contract Comet is CometMath, CometStorage {
      * @param asset The asset to transfer
      * @param amount The quantity to transfer
      */
-    function transferFrom(address src, address dst, address asset, uint amount) public {
+    function transferFrom(address src, address dst, address asset, uint amount) external {
         return transferInternal(msg.sender, src, dst, asset, amount);
     }
 
@@ -885,7 +885,7 @@ contract Comet is CometMath, CometStorage {
      * @param asset The asset to withdraw
      * @param amount The quantity to withdraw
      */
-    function withdrawFrom(address src, address to, address asset, uint amount) public {
+    function withdrawFrom(address src, address to, address asset, uint amount) external {
         return withdrawInternal(msg.sender, src, to, asset, amount);
     }
 

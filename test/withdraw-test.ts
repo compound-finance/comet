@@ -1,6 +1,6 @@
 import { Comet, ethers, expect, exp, makeProtocol, portfolio, wait } from './helpers';
 
-describe('withdraw', function () {
+describe('withdrawTo', function () {
   it('withdraws base from sender if the asset is base', async () => {
     const protocol = await makeProtocol({base: 'USDC'});
     const { comet, tokens, users: [alice, bob] } = protocol;
@@ -70,31 +70,6 @@ describe('withdraw', function () {
     //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(60000);
   });
 
-  it('withdraws to sender by default', async () => {
-    const protocol = await makeProtocol({base: 'USDC'});
-    const { comet, tokens, users: [alice, bob] } = protocol;
-    const { USDC } = tokens;
-
-    const i0 = await USDC.allocateTo(comet.address, 100e6);
-    const t0 = Object.assign({}, await comet.totalsBasic(), {
-      totalSupplyBase: 100e6,
-    });
-    const b0 = await wait(comet.setTotalsBasic(t0));
-
-    const i1 = await comet.setBasePrincipal(bob.address, 100e6);
-    const cometAsB = comet.connect(bob);
-
-    const q0 = await portfolio(protocol, bob.address);
-    const s0 = await wait(cometAsB.withdraw(USDC.address, 100e6));
-    const t1 = await comet.totalsBasic();
-    const q1 = await portfolio(protocol, bob.address)
-
-    expect(q0.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q1.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
-  });
-
   it('reverts if withdrawing base exceeds the total supply', async () => {
     const protocol = await makeProtocol({base: 'USDC'});
     const { comet, tokens, users: [alice, bob] } = protocol;
@@ -129,6 +104,43 @@ describe('withdraw', function () {
     await expect(cometAsB.withdrawTo(alice.address, USUP.address, 1)).to.be.reverted;
   });
 
+  it.skip('borrows to withdraw if necessary/possible', async () => {
+    // XXX
+  });
+
+  it.skip('is not broken by malicious re-entrancy', async () => {
+    // XXX
+  });
+});
+
+describe('withdraw', function () {
+  it('withdraws to sender by default', async () => {
+    const protocol = await makeProtocol({base: 'USDC'});
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { USDC } = tokens;
+
+    const i0 = await USDC.allocateTo(comet.address, 100e6);
+    const t0 = Object.assign({}, await comet.totalsBasic(), {
+      totalSupplyBase: 100e6,
+    });
+    const b0 = await wait(comet.setTotalsBasic(t0));
+
+    const i1 = await comet.setBasePrincipal(bob.address, 100e6);
+    const cometAsB = comet.connect(bob);
+
+    const q0 = await portfolio(protocol, bob.address);
+    const s0 = await wait(cometAsB.withdraw(USDC.address, 100e6));
+    const t1 = await comet.totalsBasic();
+    const q1 = await portfolio(protocol, bob.address)
+
+    expect(q0.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(q0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(q1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(q1.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
+  });
+});
+
+describe('withdrawFrom', function () {
   it('withdraws from src if specified and sender has permission', async () => {
     const protocol = await makeProtocol();
     const { comet, tokens, users: [alice, bob, charlie] } = protocol;
@@ -171,13 +183,5 @@ describe('withdraw', function () {
 
     await expect(cometAsC.withdrawFrom(bob.address, alice.address, COMP.address, 7))
       .to.be.revertedWith('operator not permitted');
-  });
-
-  it.skip('borrows to withdraw if necessary/possible', async () => {
-    // XXX
-  });
-
-  it.skip('is not broken by malicious re-entrancy', async () => {
-    // XXX
   });
 });

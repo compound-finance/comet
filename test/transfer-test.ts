@@ -61,6 +61,32 @@ describe('transfer', function () {
     await expect(cometAsB.transfer(alice.address, USUP.address, 1)).to.be.reverted;
   });
 
+  it.skip('reverts if transferring base results in an under collateralized borrow', async () => {
+    // XXX
+  });
+
+  it.skip('borrows base if collateralized', async () => {
+    // XXX
+  });
+
+  it.skip('reverts if transferring collateral results in an under collateralized borrow', async () => {
+    // XXX
+  });
+
+  it('cant borrow less than the minimum', async () => {
+    const protocol = await makeProtocol();
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { USDC } = tokens;
+
+    const cometAsB = comet.connect(bob);
+
+    const amount = (await comet.baseBorrowMin()).sub(1);
+    await expect(cometAsB.transfer(alice.address, USDC.address, amount))
+      .to.be.revertedWith('borrow too small');
+  });
+});
+
+describe('transferFrom', function () {
   it('transfers from src if specified and sender has permission', async () => {
     const protocol = await makeProtocol();
     const { comet, tokens, users: [alice, bob, charlie] } = protocol;
@@ -93,29 +119,5 @@ describe('transfer', function () {
 
     await expect(cometAsC.transferFrom(bob.address, alice.address, COMP.address, 7))
       .to.be.revertedWith('operator not permitted');
-  });
-
-  it.skip('reverts if transferring base results in an under collateralized borrow', async () => {
-    // XXX
-  });
-
-  it.skip('borrows base if collateralized', async () => {
-    // XXX
-  });
-
-  it.skip('reverts if transferring collateral results in an under collateralized borrow', async () => {
-    // XXX
-  });
-
-  it('cant borrow less than the minimum', async () => {
-    const protocol = await makeProtocol();
-    const { comet, tokens, users: [alice, bob] } = protocol;
-    const { USDC } = tokens;
-
-    const cometAsB = comet.connect(bob);
-
-    const amount = (await comet.baseBorrowMin()).sub(1);
-    await expect(cometAsB.transfer(alice.address, USDC.address, amount))
-      .to.be.revertedWith('borrow too small');
   });
 });
