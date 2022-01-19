@@ -5,6 +5,7 @@ import "./CometMath.sol";
 import "./CometStorage.sol";
 import "./ERC20.sol";
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "./PriceOracle.sol";
 
 /**
  * @title Compound's Comet Contract
@@ -36,6 +37,7 @@ contract Comet is CometMath, CometStorage {
         uint64 baseTrackingBorrowSpeed;
         uint104 baseMinForRewards;
         uint104 baseBorrowMin;
+        uint104 targetReserves;
 
         AssetInfo[] assetInfo;
     }
@@ -132,6 +134,9 @@ contract Comet is CometMath, CometStorage {
     /// @notice The minimum base amount required to initiate a borrow
     uint104 public immutable baseBorrowMin;
 
+    /// @notice The minimum base token reserves which must be held before collateral is hodled
+    uint104 public immutable targetReserves;
+
     /**  Collateral asset configuration **/
 
     address internal immutable asset00;
@@ -181,6 +186,7 @@ contract Comet is CometMath, CometStorage {
         baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
 
         baseBorrowMin = config.baseBorrowMin;
+        targetReserves = config.targetReserves;
 
         // Set asset info
         numAssets = config.assetInfo.length;
@@ -1008,5 +1014,45 @@ contract Comet is CometMath, CometStorage {
             uint80 _answeredInRound
         ) = AggregatorV3Interface(priceFeed).latestRoundData();
         return unsigned256(price);
+    }
+
+    /**
+     * @notice Gets the total amount of protocol reserves, denominated in the number of base tokens
+     */
+    function getReserves() public view returns (int) {
+        TotalsBasic memory totals = totalsBasic;
+        uint balance = ERC20(baseToken).balanceOf(address(this));
+        uint104 totalSupply = presentValueSupply(totals, totals.totalSupplyBase);
+        uint104 totalBorrow = presentValueBorrow(totals, totals.totalBorrowBase);
+        return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
+    }
+
+    /**
+     * @notice Buy collateral from the protocol using base tokens, increasing protocol reserves. 
+       A minimum collateral amount should be specified to indicate the maximum slippage 
+       acceptable for the buyer.
+     * @param asset The asset to buy
+     * @param minAmount The minimum amount of collateral tokens that should be received by the buyer
+     * @param baseAmount The amount of base tokens used to buy the collateral
+     * @param recipient The recipient address
+     */
+    function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external {
+        int reserves = getReserves();
+        if (reserves < 0 && uint(reserves) < targetReserves) {
+            uint collateralAmount = baseAmount / getPrice(asset); // TODO: decimal math
+            require(collateralAmount >= minAmount, "slippage too high");
+            // TODO: use the doTransferIn from Jared's PR, which handles fee tokens
+            ERC20(baseToken).transferFrom(msg.sender, address(this), baseAmount);
+            withdrawCollateral(address(this), recipient, asset, safe128(collateralAmount));
+        }
+    }
+
+    /**
+     * @notice XXX
+     * @param asset address to get price of
+     * @return factor 0 indicates asset not found
+     */
+    function getPrice(address asset) public view returns (uint factor) {
+        return PriceOracle(priceOracle).getPrice(asset);
     }
 }
