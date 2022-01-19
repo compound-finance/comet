@@ -44,7 +44,7 @@ async function makeToken(
     FaucetToken,
     FaucetToken__factory,
     [number, string, number, string]
-  >('asteroid/FaucetToken.sol', [amount, name, decimals, symbol]);
+  >('test/FaucetToken.sol', [amount, name, decimals, symbol]);
 }
 
 interface DeployedContracts {
@@ -66,7 +66,7 @@ export async function deployComet(
   let asset1 = await makeToken(deploymentManager, 300000, 'SILVER', 10, 'SILVER');
 
   const oracle = await deploymentManager.deploy<MockedOracle, MockedOracle__factory, []>(
-    'asteroid/MockedOracle.sol',
+    'test/MockedOracle.sol',
     [],
     governor
   );
@@ -75,12 +75,14 @@ export async function deployComet(
     asset: asset0.address,
     borrowCollateralFactor: (1e18).toString(),
     liquidateCollateralFactor: (1e18).toString(),
+    supplyCap: (1000000e8).toString(),
   };
 
   let assetInfo1 = {
     asset: asset1.address,
     borrowCollateralFactor: (0.5e18).toString(),
     liquidateCollateralFactor: (0.5e18).toString(),
+    supplyCap: (500000e10).toString(),
   };
 
   const comet = await deploymentManager.deploy<Comet, Comet__factory, [ConfigurationStruct]>(
@@ -113,7 +115,7 @@ export async function deployComet(
   if (deployProxy) {
     let proxyAdminArgs: [] = [];
     let proxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
-      'asteroid/vendor/proxy/ProxyAdmin.sol',
+      'vendor/proxy/ProxyAdmin.sol',
       proxyAdminArgs
     );
 
@@ -121,7 +123,7 @@ export async function deployComet(
       TransparentUpgradeableProxy,
       TransparentUpgradeableProxy__factory,
       [string, string, []]
-    >('asteroid/vendor/proxy/TransparentUpgradeableProxy.sol', [
+    >('vendor/proxy/TransparentUpgradeableProxy.sol', [
       comet.address,
       proxyAdmin.address,
       [],

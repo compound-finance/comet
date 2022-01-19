@@ -447,14 +447,14 @@ contract Comet is CometMath, CometStorage {
      * @dev The present value projected backward by the supply index
      */
     function principalValueSupply(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint256(presentValue_ * baseIndexScale) / totals.baseSupplyIndex);
+        return uint104((uint256(presentValue_) * baseIndexScale) / totals.baseSupplyIndex);
     }
 
     /**
      * @dev The present value projected backwrd by the borrow index
      */
     function principalValueBorrow(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint256(presentValue_ * baseIndexScale) / totals.baseBorrowIndex);
+        return uint104((uint256(presentValue_) * baseIndexScale) / totals.baseBorrowIndex);
     }
 
     /**

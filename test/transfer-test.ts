@@ -17,10 +17,10 @@ describe('transfer', function () {
     const p1 = await portfolio(protocol, alice.address)
     const q1 = await portfolio(protocol, bob.address)
 
-    expect(p0).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q0).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p1).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q1).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(q0.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(p1.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(q1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(t1.totalSupplyBase).to.be.equal(t0.totalSupplyBase);
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
     // XXX disable during coverage?
@@ -43,10 +43,10 @@ describe('transfer', function () {
     const p1 = await portfolio(protocol, alice.address)
     const q1 = await portfolio(protocol, bob.address)
 
-    expect(p0).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q0).to.be.deep.equal({USDC: 0n, COMP: exp(8, 8), WETH: 0n, WBTC: 0n});
-    expect(p1).to.be.deep.equal({USDC: 0n, COMP: exp(8, 8), WETH: 0n, WBTC: 0n});
-    expect(q1).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(q0.internal).to.be.deep.equal({USDC: 0n, COMP: exp(8, 8), WETH: 0n, WBTC: 0n});
+    expect(p1.internal).to.be.deep.equal({USDC: 0n, COMP: exp(8, 8), WETH: 0n, WBTC: 0n});
+    expect(q1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(t1.totalSupplyAsset).to.be.equal(t0.totalSupplyAsset);
     // XXX disable during coverage?
     //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(50000);
@@ -77,10 +77,10 @@ describe('transfer', function () {
     const p1 = await portfolio(protocol, alice.address)
     const q1 = await portfolio(protocol, bob.address)
 
-    expect(p0).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q0).to.be.deep.equal({USDC: 0n, COMP: 7n, WETH: 0n, WBTC: 0n});
-    expect(p1).to.be.deep.equal({USDC: 0n, COMP: 7n, WETH: 0n, WBTC: 0n});
-    expect(q1).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(q0.internal).to.be.deep.equal({USDC: 0n, COMP: 7n, WETH: 0n, WBTC: 0n});
+    expect(p1.internal).to.be.deep.equal({USDC: 0n, COMP: 7n, WETH: 0n, WBTC: 0n});
+    expect(q1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
   });
 
   it('reverts if src is specified and sender does not have permission', async () => {

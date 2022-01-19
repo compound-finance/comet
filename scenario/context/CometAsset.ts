@@ -1,11 +1,11 @@
 import { BigNumberish, Contract, Signer } from 'ethers';
-import { Token } from '../../build/types';
+import { ERC20 } from '../../build/types';
 
 export default class CometAsset {
-  token: Token;
+  token: ERC20;
   address: string;
 
-  constructor(token: Token) {
+  constructor(token: ERC20) {
     this.token = token;
     this.address = token.address;
   }
