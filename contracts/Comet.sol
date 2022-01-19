@@ -283,10 +283,12 @@ contract Comet is CometMath, CometStorage {
             totals.baseSupplyIndex += safe64(mulFactor(totals.baseSupplyIndex, supplyRate * timeElapsed));
             totals.baseBorrowIndex += safe64(mulFactor(totals.baseBorrowIndex, borrowRate * timeElapsed));
             if (totals.totalSupplyBase >= baseMinForRewards) {
-                totals.trackingSupplyIndex += safe64(divBaseWei(baseTrackingSupplySpeed * timeElapsed, totals.totalSupplyBase));
+                uint supplySpeed = baseTrackingSupplySpeed;
+                totals.trackingSupplyIndex += safe64(divBaseWei(supplySpeed * timeElapsed, totals.totalSupplyBase));
             }
             if (totals.totalBorrowBase >= baseMinForRewards) {
-                totals.trackingBorrowIndex += safe64(divBaseWei(baseTrackingBorrowSpeed * timeElapsed, totals.totalBorrowBase));
+                uint borrowSpeed = baseTrackingBorrowSpeed;
+                totals.trackingBorrowIndex += safe64(divBaseWei(borrowSpeed * timeElapsed, totals.totalBorrowBase));
             }
         }
         totals.lastAccrualTime = now_;
@@ -441,14 +443,14 @@ contract Comet is CometMath, CometStorage {
      * @dev The principal amount projected forward by the supply index
      */
     function presentValueSupply(TotalsBasic memory totals, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint256(principalValue_ * totals.baseSupplyIndex) / baseIndexScale);
+        return uint104(uint(principalValue_) * totals.baseSupplyIndex / baseIndexScale);
     }
 
     /**
      * @dev The principal amount projected forward by the borrow index
      */
     function presentValueBorrow(TotalsBasic memory totals, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint256(principalValue_ * totals.baseBorrowIndex) / baseIndexScale);
+        return uint104(uint(principalValue_) * totals.baseBorrowIndex / baseIndexScale);
     }
 
     /**
@@ -466,14 +468,14 @@ contract Comet is CometMath, CometStorage {
      * @dev The present value projected backward by the supply index
      */
     function principalValueSupply(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104((uint256(presentValue_) * baseIndexScale) / totals.baseSupplyIndex);
+        return uint104(uint(presentValue_) * baseIndexScale / totals.baseSupplyIndex);
     }
 
     /**
      * @dev The present value projected backwrd by the borrow index
      */
     function principalValueBorrow(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104((uint256(presentValue_) * baseIndexScale) / totals.baseBorrowIndex);
+        return uint104(uint(presentValue_) * baseIndexScale / totals.baseBorrowIndex);
     }
 
     /**
@@ -616,11 +618,11 @@ contract Comet is CometMath, CometStorage {
         basic.principal = principalNew;
 
         if (principal >= 0) {
-            uint64 indexDelta = totals.trackingSupplyIndex - basic.baseTrackingIndex;
-            basic.baseTrackingAccrued += safe64(uint104(principal) * uint256(indexDelta) / baseIndexScale); // XXX decimals
+            uint indexDelta = totals.trackingSupplyIndex - basic.baseTrackingIndex;
+            basic.baseTrackingAccrued += safe64(uint104(principal) * indexDelta / baseIndexScale); // XXX decimals
         } else {
-            uint64 indexDelta = totals.trackingBorrowIndex - basic.baseTrackingIndex;
-            basic.baseTrackingAccrued += safe64(uint104(-principal) * uint256(indexDelta) / baseIndexScale); // XXX decimals
+            uint indexDelta = totals.trackingBorrowIndex - basic.baseTrackingIndex;
+            basic.baseTrackingAccrued += safe64(uint104(-principal) * indexDelta / baseIndexScale); // XXX decimals
         }
 
         if (principalNew >= 0) {
