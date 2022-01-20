@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.11;
 
 /**
  * @title Compound's Comet Storage Interface
@@ -39,6 +39,13 @@ contract CometStorage {
         uint128 _reserved;
     }
 
+    struct LiquidatorPoints {
+        uint32 numAbsorbs;
+        uint64 numAbsorbed;
+        uint128 approxSpend;
+        uint32 _reserved;
+    }
+
     /// @notice Aggregate variables tracked for the entire market
     TotalsBasic public totalsBasic;
 
@@ -56,4 +63,7 @@ contract CometStorage {
 
     /// @notice Mapping of users to collateral data per collateral asset
     mapping(address => mapping(address => UserCollateral)) public userCollateral;
+
+    /// @notice Mapping of magic liquidator points
+    mapping(address => LiquidatorPoints) public liquidatorPoints;
 }
