@@ -2,7 +2,7 @@ import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { annualize, defactor, exp, factor } from '../test/helpers';
 import { BigNumber } from 'ethers';
-import { FuzzType } from './constraints/ModernConstraint';
+import { FuzzType } from './constraints/Fuzzing';
 
 function calculateSupplyRate(
   totalSupplyBase: BigNumber,
@@ -123,6 +123,7 @@ scenario.only(
       // TODO: Read types directly from Solidity?
       perYearInterestRateBase: { type: FuzzType.UINT64 },
       reserveRate: { type: FuzzType.UINT64, max: (1e18).toString() /* 100% */ },
+      kink: (8e17).toString(), // 80%
     }
   },
   async ({ comet, actors }) => {
