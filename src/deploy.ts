@@ -65,10 +65,10 @@ export async function deployComet(
 ): Promise<DeployedContracts> {
   const [governor, pauseGuardian] = await deploymentManager.hre.ethers.getSigners();
 
-  let baseToken = await makeToken(deploymentManager, 100000, 'DAI', 18, 'DAI');
+  let baseToken = await makeToken(deploymentManager, 1000000, 'DAI', 18, 'DAI');
   let baseTokenPriceFeed = '0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9'; // Chainlink DAI/USD
-  let asset0 = await makeToken(deploymentManager, 200000, 'GOLD', 8, 'GOLD');
-  let asset1 = await makeToken(deploymentManager, 300000, 'SILVER', 10, 'SILVER');
+  let asset0 = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
+  let asset1 = await makeToken(deploymentManager, 3000000, 'SILVER', 10, 'SILVER');
 
   let assetInfo0 = {
     asset: asset0.address,
