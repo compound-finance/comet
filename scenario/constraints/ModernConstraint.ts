@@ -9,8 +9,10 @@ export enum FuzzType {
   UINT64
 }
 
-export interface Fuzz {
-  type: FuzzType
+export interface FuzzConfig {
+  type: FuzzType,
+  min?: any,
+  max?: any
 }
 
 export interface KV {
@@ -33,20 +35,20 @@ function* combos(choices: object[][]) {
 }
 
 // TODO: Move fuzzing logic to its own file.
-function getMinMax(bits: number, isSigned: boolean = false) : [bigint, bigint] {
+function getMinMaxForBits(bits: number, isSigned: boolean = false): [bigint, bigint] {
   let min;
   let max;
   if (isSigned) {
-    min = 2n**(BigInt(bits/2)) * -1n;
-    max = 2n**(BigInt(bits/2)) - 1n;
+    min = 2n ** (BigInt(bits / 2)) * -1n;
+    max = 2n ** (BigInt(bits / 2)) - 1n;
   } else {
     min = 0n;
-    max = 2n**(BigInt(bits))-1n
+    max = 2n ** (BigInt(bits)) - 1n
   }
   return [min, max];
 }
 
-function createConfig(keyValues: KV[]) : CometConfigurationOverrides {
+function createConfig(keyValues: KV[]): CometConfigurationOverrides {
   let config: CometConfigurationOverrides = {};
   for (let kv of keyValues) {
     config[kv.key] = kv.value;
@@ -54,10 +56,7 @@ function createConfig(keyValues: KV[]) : CometConfigurationOverrides {
   return config;
 }
 
-function getModernConfig(requirements: object): ModernConfig | null {
-  let upgrade = requirements['upgrade'];
-  let cometConfig = requirements['cometConfig'];
-
+function getFuzzedConfigs(cometConfig: CometConfigurationOverrides): CometConfigurationOverrides[] {
   let cometConfigs = [];
   let keyValues: KV[][] = [];
   for (let key in cometConfig) {
@@ -70,13 +69,19 @@ function getModernConfig(requirements: object): ModernConfig | null {
       // TODO: Check that this conforms Fuzz type
       if (desiredValue.type == FuzzType.UINT64) { // IS THIS A SAFE CHECK? NEED TO BE TYPESAFE
         console.log('IS A UINT64 FUZZTYPE');
-        let [ min, max ] = getMinMax(64)
-        // TODO: Fix the serialization issue in DeploymentManager line 535
-        keyValues.push([{key, value: min.toString()}, {key, value: max.toString()}]);
+        let [min, max] = getMinMaxForBits(64)
+        if (desiredValue.min) {
+          min = desiredValue.min;
+        }
+        if (desiredValue.max) {
+          max = desiredValue.max;
+        }
+        // TODO: Also generate a random bigint between min and max.
+        keyValues.push([{ key, value: min.toString() }, { key, value: max.toString() }]);
       }
     }
     else {
-      keyValues.push([{key, value: desiredValue}])
+      keyValues.push([{ key, value: desiredValue }])
     }
   }
 
@@ -87,20 +92,28 @@ function getModernConfig(requirements: object): ModernConfig | null {
     cometConfigs.push(configCombo);
   }
 
+  return cometConfigs;
+}
+
+function getModernConfig(requirements: object): ModernConfig | null {
+  let upgrade = requirements['upgrade'];
+  let cometConfig = requirements['cometConfig'];
+
+  let fuzzedCometConfigs = getFuzzedConfigs(cometConfig);
+
   return {
     upgrade: !!upgrade,
-    cometConfigs
+    cometConfigs: fuzzedCometConfigs,
   };
 }
 
-// NEED TO RETURN LIST OF SOLUTIONS, IDEALLY WITH MIN AND MAX VALUES
 export class ModernConstraint<T extends CometContext> implements Constraint<T> {
   async solve(requirements: object, context: T, world: World) {
     let { upgrade, cometConfigs } = getModernConfig(requirements);
 
     let solutions = [];
     if (upgrade) {
-      console.log('comet configs to upgrade with are: ', cometConfigs);
+      console.log('Comet configs to upgrade with are: ', cometConfigs);
       for (let config of cometConfigs) {
         solutions.push(async function solution(context: T): Promise<T> {
           console.log("Upgrading to modern...");
@@ -115,7 +128,7 @@ export class ModernConstraint<T extends CometContext> implements Constraint<T> {
           await context.setAssets();
   
           console.log("Upgraded to modern...");
-  
+
           return context; // It's been modified
         });
       };

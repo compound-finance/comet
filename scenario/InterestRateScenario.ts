@@ -120,12 +120,9 @@ scenario.only(
   {
     upgrade: true,
     cometConfig: {
-      // TODO: Read types from introspection. May be tough since JS code just returns BigNumber.
-      // TODO: Specify max value for fuzzing.
+      // TODO: Read types directly from Solidity?
       perYearInterestRateBase: { type: FuzzType.UINT64 },
-      reserveRate: (0n).toString(),
-      // reserveRate: (0).toString(),
-      // perYearInterestRateBase: { type: FuzzType.UINT64 } // SHOULD TEST MIN MAX VALUES OF UINT64
+      reserveRate: { type: FuzzType.UINT64, max: (1e18).toString() /* 100% */ },
     }
   },
   async ({ comet, actors }) => {
