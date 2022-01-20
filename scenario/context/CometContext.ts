@@ -11,7 +11,7 @@ import {
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { Comet, deployComet } from '../../src/deploy';
-import { ProxyAdmin, ERC20 } from '../../build/types';
+import { ProxyAdmin, ERC20, ERC20__factory } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
@@ -58,6 +58,10 @@ export class CometContext {
     this.comet = new this.deploymentManager.hre.ethers.Contract(this.comet.address, newComet.interface, this.comet.signer) as Comet;
   }
 
+  primaryActor(): CometActor {
+    return Object.values(this.actors)[0];
+  }
+
   async allocateActor(world: World, name: string, info: object = {}): Promise<CometActor> {
     let actorAddress = getAddressFromNumber(Object.keys(this.actors).length + 1);
     let signer = await world.impersonateAddress(actorAddress);
@@ -65,8 +69,12 @@ export class CometContext {
     this.actors[name] = actor;
 
     // For now, send some Eth from the first actor. Pay attention in the future
-    let [_name, admin] = Object.entries(this.actors)[0];
-    await admin.sendEth(actor, 0.1);
+    let admin = this.primaryActor();
+    let nativeTokenAmount = world.base.allocation ?? 1.0;
+    // When we allocate a new actor, how much eth should we warm the account with?
+    // This seems to really vary by which network we're looking at, esp. since EIP-1559,
+    // which makes the base fee for transactions variable by the network itself.
+    await admin.sendEth(actor, nativeTokenAmount);
 
     return actor;
   }
@@ -101,6 +109,19 @@ export class CometContext {
       // TODO: Note, this never gets called right now since all tokens are faucet tokens we've created.
       await sourceTokens({hre: this.deploymentManager.hre, amount, asset: cometAsset.address, address: recipientAddress});
     }
+  }
+
+  async setAssets() {
+    let signer = (await this.deploymentManager.hre.ethers.getSigners())[1]; // dunno?
+    let assetAddresses = [
+      await this.comet.baseToken(),
+      ...await this.comet.assetAddresses(),
+    ];
+
+    this.assets = Object.fromEntries(await Promise.all(assetAddresses.map(async (address) => {
+      let erc20 = ERC20__factory.connect(address, signer);
+      return [await erc20.symbol(), new CometAsset(erc20)];
+    })));
   }
 }
 
@@ -156,11 +177,7 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
     signer: await buildActor("signer", localAdminSigner, context),
   };
 
-  context.assets = {
-    DAI: new CometAsset(getContract<ERC20>('DAI')),
-    GOLD: new CometAsset(getContract<ERC20>('GOLD')),
-    SILVER: new CometAsset(getContract<ERC20>('SILVER')),
-  };
+  await context.setAssets();
 
   return context;
 };

@@ -44,7 +44,7 @@ export default class CometActor {
       value: floor(amount * 1e18)
     });
     await tx.wait();
-  }  
+  }
 
   async allow(manager: CometActor, isAllowed: boolean) {
     await (await this.context.comet.connect(this.signer).allow(manager.address, isAllowed)).wait();

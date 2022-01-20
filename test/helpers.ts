@@ -11,6 +11,7 @@ import {
   SimplePriceFeed__factory,
 } from '../build/types';
 import { BigNumber } from 'ethers';
+import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
 
 export { Comet, ethers, expect };
 
@@ -76,6 +77,10 @@ export function factor(f: number): bigint {
   return exp(f, factorDecimals);
 }
 
+export function defactor(f: bigint | BigNumber): number {
+  return Number(toBigInt(f)) / 1e18;
+}
+
 function toBigInt(f: bigint | BigNumber): bigint {
   if (typeof f === 'bigint') {
     return f;
@@ -84,8 +89,11 @@ function toBigInt(f: bigint | BigNumber): bigint {
   }
 }
 
-export function defactor(f: bigint | BigNumber): number {
-  return Number(toBigInt(f)) / 1e18;
+const secondsPerYearN = 31536000n;
+const factorN = 10n ** 18n;
+
+export function annualize(n: bigint | BigNumber): number {
+  return defactor(toBigInt(n) * secondsPerYearN);
 }
 
 export const factorDecimals = 18;
@@ -226,8 +234,17 @@ export async function portfolio({ comet, base, tokens }, account) {
   return { internal, external };
 }
 
-export async function wait(tx) {
+export interface TransactionResponseExt extends TransactionResponse {
+  receipt: TransactionReceipt;
+}
+
+export async function wait(
+  tx: TransactionResponse | Promise<TransactionResponse>
+): Promise<TransactionResponseExt> {
   const tx_ = await tx;
-  tx_.receipt = await tx_.wait();
-  return tx_;
+  let receipt = await tx_.wait();
+  return {
+    ...tx_,
+    receipt,
+  };
 }

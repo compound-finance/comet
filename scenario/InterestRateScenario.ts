@@ -1,6 +1,6 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { defactor, exp, factor } from '../test/helpers';
+import { annualize, defactor, exp, factor } from '../test/helpers';
 import { BigNumber } from 'ethers';
 
 function calculateSupplyRate(
@@ -104,21 +104,36 @@ scenario(
   {
     upgrade: true,
     cometConfig: {
-      perYearInterestRateBase: (5e16).toString() // 5% per year
-    }
+      perYearInterestRateBase: (5e16).toString(), // 5% per year
+    },
   },
   async ({ comet, actors }) => {
     expect(await comet.getUtilization()).to.equal(0);
-    expect(await comet.getSupplyRate()).to.equal(0);
-    expect(await comet.getBorrowRate()).to.equal(BigNumber.from(1585489599)); // 5% per year if annualized
+    expect(annualize(await comet.getSupplyRate())).to.equal(0.0);
+    expect(annualize(await comet.getBorrowRate())).to.be.approximately(0.05, 0.001);
   }
 );
 
 // TODO: Scenario for testing custom configuration constants using a utilization constraint.
 scenario(
   'Comet#interestRate > when utilization is 50%',
-  { utilization: 0.50, upgrade: true },
-  async ({ comet, actors }) => {
-    expect(defactor(await comet.getUtilization())).to.approximately(0.5, 0.000001);
+  { utilization: 0.5, upgrade: true },
+  async ({ comet, actors }, world) => {
+    expect(defactor(await comet.getUtilization())).to.be.approximately(0.5, 0.000001);
+
+    // Note: this is dependent on the `deployments/fuji/configuration.json` variables
+    // TODO: Consider if there's a better way to test the live curve.
+    if (world.base.name === 'fuji') {
+      // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
+      // utilzation = 50%
+      // ( 1% + 2% * 50% ) * 50% * (100% - 10%)
+      // ( 1% + 1% ) * 50% * 90% -> 1% * 90% = 0.9%
+      expect(annualize(await comet.getSupplyRate())).to.be.approximately(0.009, 0.001);
+
+      // interestRateBase + interestRateSlopeLow * utilization
+      // utilzation = 50%
+      // ( 1% + 2% * 50% )
+      expect(annualize(await comet.getBorrowRate())).to.be.approximately(0.02, 0.001);
+    }
   }
 );

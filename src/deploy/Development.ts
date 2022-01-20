@@ -1,4 +1,5 @@
-import { DeploymentManager, Roots } from '../plugins/deployment_manager/DeploymentManager';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { DeploymentManager, Roots } from '../../plugins/deployment_manager/DeploymentManager';
 import {
   Comet__factory,
   Comet,
@@ -7,31 +8,15 @@ import {
   ProxyAdmin,
   ProxyAdmin__factory,
   ERC20,
-  TransparentUpgradeableProxy__factory,
-  TransparentUpgradeableProxy,
   SimplePriceFeed,
   SimplePriceFeed__factory,
-} from '../build/types';
-import { AssetInfoStruct, ConfigurationStruct } from '../build/types/Comet';
+  TransparentUpgradeableProxy__factory,
+  TransparentUpgradeableProxy,
+} from '../../build/types';
+import { AssetInfoStruct, ConfigurationStruct } from '../../build/types/Comet';
 import { BigNumberish } from 'ethers';
-export { Comet } from '../build/types';
-
-export interface CometConfigurationOverrides {
-  governor?: string;
-  pauseGuardian?: string;
-  baseToken?: string;
-  baseTokenPriceFeed?: string;
-  trackingIndexScale?: string;
-  baseMinForRewards?: BigNumberish;
-  baseTrackingSupplySpeed?: BigNumberish;
-  baseTrackingBorrowSpeed?: BigNumberish;
-  assetInfo?: AssetInfoStruct[];
-  kink?: BigNumberish;
-  perYearInterestRateBase?: BigNumberish;
-  perYearInterestRateSlopeLow?: BigNumberish;
-  perYearInterestRateSlopeHigh?: BigNumberish;
-  reserveRate?: BigNumberish;
-}
+export { Comet } from '../../build/types';
+import { DeployedContracts, CometConfigurationOverrides } from './index';
 
 async function makeToken(
   deploymentManager: DeploymentManager,
@@ -64,14 +49,8 @@ async function makePriceFeed(
   >('test/SimplePriceFeed.sol', [initialPrice * 1e8, decimals]);
 }
 
-interface DeployedContracts {
-  comet: Comet;
-  proxy: TransparentUpgradeableProxy | null;
-  tokens: ERC20[];
-}
-
 // TODO: Support configurable assets as well?
-export async function deployComet(
+export async function deployDevelopmentComet(
   deploymentManager: DeploymentManager,
   deployProxy: boolean = true,
   configurationOverrides: CometConfigurationOverrides = {}

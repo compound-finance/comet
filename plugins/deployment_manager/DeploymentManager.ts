@@ -19,12 +19,13 @@ import {
   getAlias,
   getRelations,
   fileExists,
+  mapValues,
   mergeContracts,
   readAddressFromFilename,
   objectToMap,
   objectFromMap,
 } from './Utils';
-
+import { manualVerifyContract } from './Verify';
 export { ContractMap } from './Types';
 
 abstract class Deployer<Contract, DeployArgs extends Array<any>> {
@@ -49,6 +50,12 @@ interface DeploymentConfig {
   writeCacheToDisk?: boolean;
   verifyContracts?: boolean;
   debug?: boolean;
+}
+
+export interface DeployOpts {
+  name?: string; // name for aliasing
+  overwrite?: boolean; // should we overwrite existing contract link
+  connect?: Signer; // signer for the returned contract
 }
 
 export class DeploymentManager {
@@ -176,7 +183,7 @@ export class DeploymentManager {
   }
 
   // Read root information for given deployment
-  private async getRoots(): Promise<Roots> {
+  async getRoots(): Promise<Roots> {
     return this.readCache<Roots>(this.rootsFile());
   }
 
@@ -190,28 +197,51 @@ export class DeploymentManager {
 
   // Reads all cached contracts for given deployment into a map
   private async getCachedContracts(): Promise<BuildMap> {
-    return objectToMap(
-      Object.fromEntries(
-        await Promise.all(
-          (
-            await fs.readdir(this.cacheDir())
-          ).map(async (file) => {
-            let address = readAddressFromFilename(file);
-            return [address, await this.readBuildFileFromCache(address)];
-          })
+    let cacheDir = this.cacheDir();
+    if (await fileExists(cacheDir)) {
+      return objectToMap(
+        Object.fromEntries(
+          await Promise.all(
+            (
+              await fs.readdir(cacheDir)
+            ).map(async (file) => {
+              let address = readAddressFromFilename(file);
+              return [address, await this.readBuildFileFromCache(address)];
+            })
+          )
         )
-      )
-    );
+      );
+    } else {
+      return new Map();
+    }
   }
 
   // Reads all cached aliases for given deployment into a map
   private async getCachedAliases(): Promise<AliasesMap> {
-    return objectToMap(await this.readCache<{ string: string[] }>(this.pointersFile()));
+    let pointersFile = this.pointersFile();
+    if (!(await this.cacheFileExists(pointersFile))) {
+      return new Map();
+    }
+    let aliases = await this.readCache<{ string: string }>(pointersFile);
+    let inverted = Object.entries(aliases).reduce((acc, [alias, address]) => {
+      let addressLower = address.toLowerCase();
+      let previous = acc[addressLower] ? acc[addressLower] : [];
+      return {
+        ...acc,
+        [addressLower]: [...previous, alias]
+      };
+    }, {});
+    return objectToMap(inverted);
   }
 
   // Reads the cached proxy map for a given deployment into a map
   private async getCachedProxies(): Promise<ProxiesMap> {
-    return objectToMap(await this.readCache<{ string: string }>(this.proxiesFile()));
+    let proxiesFile = this.proxiesFile();
+    if (!(await this.cacheFileExists(proxiesFile))) {
+      return new Map();
+    } else {
+      return objectToMap(await this.readCache<{ string: string }>(proxiesFile));
+    }
   }
 
   // Returns an ethers' wrapped contract from a given build file (based on its name and address)
@@ -281,6 +311,14 @@ export class DeploymentManager {
     return await contract.deployed();
   }
 
+  // Returns a contract from a given build file and address
+  private async contractFromBuildFile(buildFile: BuildFile, address: string): Promise<Contract> {
+    let [contractName, metadata] = getPrimaryContract(buildFile);
+    const [signer] = await this.hre.ethers.getSigners(); // TODO: Hmm?
+    const contractFactory = new this.hre.ethers.ContractFactory(metadata.abi, metadata.bin, signer);
+    return contractFactory.attach(address).connect(signer);
+  }
+
   // Builds ether contract wrappers around a map of contract metadata and merges into `this.contracts` variable
   private async loadContractsFromBuildMap(
     buildMap: BuildMap,
@@ -288,8 +326,9 @@ export class DeploymentManager {
     proxiesMap: ProxiesMap
   ): Promise<ContractMap> {
     let newContracts = await this.getContractsFromBuildMap(buildMap, aliasesMap, proxiesMap);
-    this.contracts = mergeContracts(this.contracts, newContracts);
-    return newContracts;
+    let mergedContracts = mergeContracts(this.contracts, newContracts);
+    this.contracts = mergedContracts;
+    return mergedContracts;
   }
 
   // Reads a contract if exists in cache, otherwise attempts to import contract by address
@@ -396,7 +435,7 @@ export class DeploymentManager {
     try {
       buildFile = (await loadContract('etherscan', this.deployment, address)) as BuildFile;
     } catch (e) {
-      if (retries === 0) {
+      if (retries === 0 || (e.message && e.message.includes('Contract source code not verified'))) {
         throw e;
       }
 
@@ -461,8 +500,19 @@ export class DeploymentManager {
   /**
    * Deploy a new contract from a build file, e.g. something imported or crawled
    */
-  async deployBuild(buildFile: BuildFile, deployArgs: any[]): Promise<Contract> {
-    return this.deployFromBuildFile(buildFile, deployArgs);
+  async deployBuild(buildFile: BuildFile, deployArgs: any[], raiseOnFailure: boolean = false): Promise<Contract> {
+    let contract = await this.deployFromBuildFile(buildFile, deployArgs);
+
+    if (this.config.verifyContracts) {
+      // We need to do manual verification here, since this is coming
+      // from a build file, not from hardhat's own compilation.
+      await this.verifyContractInternal({ manual: true, contract, buildFile, deployArgs }, raiseOnFailure);
+    }
+
+    let cacheBuildFile = this.cacheBuildFile(contract.address);
+    await this.writeObjectToCache(buildFile, cacheBuildFile);
+
+    return contract;
   }
 
   /**
@@ -490,15 +540,20 @@ export class DeploymentManager {
     });
   }
 
-  /**
-   * Verifies a contract on Etherscan/Snowtrace.
-   */
-  async verifyContract(address: string, constructorArguments, retries = 10) {
+  private async verifyContractInternal(verifyArgs: { manual: false, address: string, constructorArguments: any } | { manual: true, contract: Contract, buildFile: BuildFile, deployArgs: any[] }, raiseOnFailure: boolean = false, retries = 10) {
+    let address;
     try {
-      return await this.hre.run('verify:verify', {
-        address,
-        constructorArguments,
-      });
+      if (verifyArgs.manual === false) {
+        address = verifyArgs.address;
+        await this.hre.run('verify:verify', {
+          address: verifyArgs.address,
+          constructorArguments: verifyArgs.constructorArguments,
+        });
+      } else {
+        address = verifyArgs.contract.address;
+        await manualVerifyContract(verifyArgs.contract, verifyArgs.buildFile, verifyArgs.deployArgs, this.hre);
+      }
+      console.log('Contract at address ' + address + ' verified on Etherscan.');
     } catch (e) {
       if (e.message.match(/Already Verified/i)) {
         console.log('Contract at address ' + address + ' is already verified on Etherscan');
@@ -506,12 +561,23 @@ export class DeploymentManager {
       } else if (e.message.match(/does not have bytecode/i) && retries > 0) {
         console.log('Waiting for ' + address + ' to propagate to Etherscan');
         await new Promise((resolve) => setTimeout(resolve, 5000));
-        return this.verifyContract(address, constructorArguments, retries - 1);
+        return await this.verifyContractInternal(verifyArgs, raiseOnFailure, retries - 1);
       } else {
-        console.error(`Unable to verify contract at ${address}: ${e}`);
-        console.error(`Continuing on anyway...`);
+        if (raiseOnFailure) {
+          throw e;
+        } else {
+          console.error(`Unable to verify contract at ${address}: ${e}`);
+          console.error(`Continuing on anyway...`);
+        }
       }
     }
+  }
+
+  /**
+   * Verifies a contract on Etherscan/Snowtrace.
+   */
+  async verifyContract(address: string, constructorArguments: any, raiseOnFailure: boolean = false) {
+    return await this.verifyContractInternal({ manual: false, address, constructorArguments }, raiseOnFailure);
   }
 
   /**
@@ -524,8 +590,7 @@ export class DeploymentManager {
   >(
     contractFile: string,
     deployArgs: DeployArgs,
-    connect?: Signer,
-    overwrite: boolean = false // should we overwrite existing contract link
+    deployOpts: DeployOpts = {}
   ): Promise<C> {
     // TODO: Handle aliases, etc.
     let contractFileName = contractFile.split('/').reverse()[0];
@@ -533,11 +598,11 @@ export class DeploymentManager {
     let factory: Factory = (await this.hre.ethers.getContractFactory(
       contractName
     )) as unknown as Factory;
-    if (connect) {
-      factory = factory.connect(connect);
+    if (deployOpts.connect) {
+      factory = factory.connect(deployOpts.connect);
     }
 
-    this.debug(`Deploying ${contractName} with args ${JSON.stringify(deployArgs)}`);
+    this.debug(`Deploying ${contractName} with args`, deployArgs);
 
     let contract = await factory.deploy(...deployArgs);
     await contract.deployed();
@@ -558,7 +623,9 @@ export class DeploymentManager {
       output: BuildFile;
     };
 
-    if (overwrite || !buildFile.contract) {
+    // TODO: Do we put this in this.contracts????
+
+    if (!buildFile.contract) {
       buildFile.contract = contractName;
     }
     let cacheBuildFile = this.cacheBuildFile(contract.address);
@@ -571,5 +638,18 @@ export class DeploymentManager {
     this.debug(`Deployed ${contractName}`); // TODO: tx
 
     return contract;
+  }
+
+  // TODO: Combine with getCachedAliases above. Also, why do we call this two names?
+  async setPointer(name: string, address: string) {
+    let pointersFile = this.pointersFile();
+    let pointers;
+    if (await this.cacheFileExists(pointersFile)) {
+      pointers = await this.readCache<object>(pointersFile);
+    } else {
+      pointers = {};
+    }
+    pointers[name] = address;
+    await this.writeObjectToCache(pointers, this.pointersFile());
   }
 }
