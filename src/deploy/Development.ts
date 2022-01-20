@@ -69,6 +69,7 @@ export async function deployDevelopmentComet(
     asset: asset0.address,
     borrowCollateralFactor: (1e18).toString(),
     liquidateCollateralFactor: (1e18).toString(),
+    liquidationFactor: (0.95e18).toString(),
     supplyCap: (1000000e8).toString(),
     priceFeed: asset0PriceFeed.address,
     scale: (1e8).toString(),
@@ -78,6 +79,7 @@ export async function deployDevelopmentComet(
     asset: asset1.address,
     borrowCollateralFactor: (0.5e18).toString(),
     liquidateCollateralFactor: (0.5e18).toString(),
+    liquidationFactor: (0.9e18).toString(),
     supplyCap: (500000e10).toString(),
     priceFeed: asset1PriceFeed.address,
     scale: (1e10).toString(),
@@ -100,6 +102,8 @@ export async function deployDevelopmentComet(
       baseMinForRewards: 1, // XXX
       baseBorrowMin: 1, // XXX
       targetReserves: 0, // XXX
+      absorbBaseGas: 30000, // XXX
+      absorbTip: 1, // XXX
       assetInfo: [assetInfo0, assetInfo1],
     },
     ...configurationOverrides,

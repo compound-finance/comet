@@ -26,6 +26,7 @@ export type ProtocolOpts = {
       decimals?: Numeric;
       borrowCF?: Numeric;
       liquidateCF?: Numeric;
+      liquidationFactor?: Numeric;
       supplyCap?: Numeric;
       initialPrice?: number;
       priceFeedDecimals?: number;
@@ -198,6 +199,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
           asset: tokens[symbol].address,
           borrowCollateralFactor: dfn(config.borrowCF, ONE),
           liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
+          liquidationFactor: dfn(config.liquidationFactor, ONE),
           supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
           priceFeed: priceFeeds[symbol].address,
           scale: exp(1, dfn(assets[symbol].decimals, 18)),

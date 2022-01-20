@@ -55,6 +55,7 @@ interface NetworkTrackingConfiguration {
 interface NetworkAssetConfiguration {
   borrowCF: number;
   liquidateCF: number;
+  liquidationFactor: number;
   supplyCap: number;
   priceFeed: string;
   scale: number;
@@ -138,6 +139,7 @@ function getAssetInfo(
       asset: assetAddress,
       borrowCollateralFactor: percentage(assetConfig.borrowCF),
       liquidateCollateralFactor: percentage(assetConfig.liquidateCF),
+      liquidationFactor: percentage(assetConfig.liquidationFactor),
       supplyCap: number(assetConfig.supplyCap), // TODO: Decimals
       priceFeed: address(assetConfig.priceFeed),
       scale: number(assetConfig.scale),
