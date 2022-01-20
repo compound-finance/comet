@@ -26,6 +26,7 @@ export type ProtocolOpts = {
       borrowCF?: Numeric;
       liquidateCF?: Numeric;
       supplyCap?: Numeric;
+      priceFeed?: string;
     };
   };
   governor?: SignerWithAddress;
@@ -48,9 +49,9 @@ export type Protocol = {
   opts: ProtocolOpts;
   governor: SignerWithAddress;
   pauseGuardian: SignerWithAddress;
-  users: SignerWithAddress[],
-  base: string,
-  reward: string,
+  users: SignerWithAddress[];
+  base: string;
+  reward: string;
   comet: Comet;
   oracle: MockedOracle;
   tokens: {
@@ -96,14 +97,30 @@ export async function getBlock(n?: number): Promise<Block> {
 export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const signers = await ethers.getSigners();
   const assets = opts.assets || {
-    COMP: { initial: 1e7, decimals: 18 },
-    USDC: { initial: 1e6, decimals: 6 },
-    WETH: { initial: 1e4, decimals: 18 },
-    WBTC: { initial: 1e3, decimals: 8 },
+    COMP: {
+      initial: 1e7,
+      decimals: 18,
+      priceFeed: '0xdbd020CAeF83eFd542f4De03e3cF0C28A4428bd5', // COMP/USD
+    },
+    USDC: {
+      initial: 1e6,
+      decimals: 6,
+      priceFeed: '0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6', // USDC/USD
+    },
+    WETH: {
+      initial: 1e4,
+      decimals: 18,
+      priceFeed: '0xaEA2808407B7319A31A383B6F8B60f04BCa23cE2', // ETH/USD
+    },
+    WBTC: {
+      initial: 1e3,
+      decimals: 8,
+      priceFeed: '0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c', // BTC/USD
+    },
   };
   const governor = opts.governor || signers[0];
   const pauseGuardian = opts.pauseGuardian || signers[1];
-  const users = signers.slice(2) // guaranteed to not be governor or pause guardian
+  const users = signers.slice(2); // guaranteed to not be governor or pause guardian
   const base = opts.base || 'USDC';
   const reward = opts.reward || 'COMP';
   const kink = dfn(opts.kink, exp(8, 17)); // 0.8
@@ -134,8 +151,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const oracle = await OracleFactory.deploy();
   await oracle.deployed();
 
-  if (opts.start)
-    await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
+  if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
 
   const CometFactory = (await ethers.getContractFactory('CometHarness')) as Comet__factory;
   const comet = await CometFactory.deploy({
@@ -160,6 +176,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
           borrowCollateralFactor: dfn(config.borrowCF, ONE),
           liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
           supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
+          priceFeed: config.priceFeed || ethers.constants.AddressZero,
         });
       }
       return acc;
@@ -167,7 +184,18 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   });
   await comet.deployed();
 
-  return { opts, governor, pauseGuardian, users, base, reward, comet, oracle, tokens, unsupportedToken };
+  return {
+    opts,
+    governor,
+    pauseGuardian,
+    users,
+    base,
+    reward,
+    comet,
+    oracle,
+    tokens,
+    unsupportedToken,
+  };
 }
 
 export async function portfolio({comet, base, tokens}, account) {

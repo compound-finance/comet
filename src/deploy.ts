@@ -83,6 +83,7 @@ export async function deployComet(
     borrowCollateralFactor: (1e18).toString(),
     liquidateCollateralFactor: (1e18).toString(),
     supplyCap: (1000000e8).toString(),
+    priceFeed: '0x0000000000000000000000000000000000000959', // not a legit price feed, just the ISO 4217 code for gold
   };
 
   let assetInfo1 = {
@@ -90,6 +91,7 @@ export async function deployComet(
     borrowCollateralFactor: (0.5e18).toString(),
     liquidateCollateralFactor: (0.5e18).toString(),
     supplyCap: (500000e10).toString(),
+    priceFeed: '0x0000000000000000000000000000000000000961', // not a legit price feed, just the ISO 4217 code for silver
   };
 
   let configuration = {

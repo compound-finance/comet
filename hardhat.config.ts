@@ -111,6 +111,9 @@ const config: HardhatUserConfig = {
       accounts: {
         mnemonic: 'myth like bonus scare over problem client lizard pioneer submit female collect',
       },
+      forking: {
+        url: getDefaultProviderURL('mainnet'),
+      },
     },
   },
 
@@ -158,13 +161,13 @@ const config: HardhatUserConfig = {
   },
 
   mocha: {
-    reporter: "mocha-multi-reporters",
+    reporter: 'mocha-multi-reporters',
     reporterOptions: {
-      reporterEnabled: ["spec", "json"],
+      reporterEnabled: ['spec', 'json'],
       jsonReporterOptions: {
-        output: "test-results.json"
-      }
-    }
+        output: 'test-results.json',
+      },
+    },
   },
 };
 
