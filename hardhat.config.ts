@@ -67,7 +67,7 @@ const networkConfigs: NetworkConfig[] = [
   },
 ];
 
-function getDefaultProviderURL(network: string) {
+export function getDefaultProviderURL(network: string) {
   return `https://${network}.infura.io/v3/${INFURA_KEY}`;
 }
 
@@ -110,9 +110,6 @@ const config: HardhatUserConfig = {
       blockGasLimit: 12000000,
       accounts: {
         mnemonic: 'myth like bonus scare over problem client lizard pioneer submit female collect',
-      },
-      forking: {
-        url: getDefaultProviderURL('mainnet'),
       },
     },
   },

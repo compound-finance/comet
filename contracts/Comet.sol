@@ -23,8 +23,8 @@ contract Comet is CometMath, CometStorage {
     struct Configuration {
         address governor;
         address pauseGuardian;
-        address priceOracle;
         address baseToken;
+        address baseTokenPriceFeed;
 
         uint64 kink;
         uint64 perYearInterestRateSlopeLow;
@@ -83,11 +83,11 @@ contract Comet is CometMath, CometStorage {
     /// @notice The account which may trigger pauses
     address public immutable pauseGuardian;
 
-    /// @notice The address of the price oracle contract
-    address public immutable priceOracle;
-
     /// @notice The address of the base token contract
     address public immutable baseToken;
+
+    /// @notice The address of the price feed for the base token
+    address public immutable baseTokenPriceFeed;
 
     /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope (factor)
     uint64 public immutable kink;
@@ -166,8 +166,8 @@ contract Comet is CometMath, CometStorage {
         // Copy configuration
         governor = config.governor;
         pauseGuardian = config.pauseGuardian;
-        priceOracle = config.priceOracle;
         baseToken = config.baseToken;
+        baseTokenPriceFeed = config.baseTokenPriceFeed;
 
         baseScale = uint64(10 ** decimals);
         trackingIndexScale = config.trackingIndexScale;

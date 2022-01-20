@@ -7,8 +7,6 @@ import {
   CometHarness__factory as Comet__factory,
   FaucetToken,
   FaucetToken__factory,
-  MockedOracle,
-  MockedOracle__factory,
 } from '../build/types';
 import { BigNumber } from 'ethers';
 
@@ -53,7 +51,6 @@ export type Protocol = {
   base: string;
   reward: string;
   comet: Comet;
-  oracle: MockedOracle;
   tokens: {
     [symbol: string]: FaucetToken;
   };
@@ -147,18 +144,14 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
   const unsupportedToken = await FaucetFactory.deploy(1e6, 'Unsupported Token', 6, 'USUP');
 
-  const OracleFactory = (await ethers.getContractFactory('MockedOracle')) as MockedOracle__factory;
-  const oracle = await OracleFactory.deploy();
-  await oracle.deployed();
-
   if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
 
   const CometFactory = (await ethers.getContractFactory('CometHarness')) as Comet__factory;
   const comet = await CometFactory.deploy({
     governor: governor.address,
     pauseGuardian: pauseGuardian.address,
-    priceOracle: oracle.address,
     baseToken: tokens[base].address,
+    baseTokenPriceFeed: assets[base].priceFeed || ethers.constants.AddressZero,
     kink,
     perYearInterestRateBase,
     perYearInterestRateSlopeLow,
@@ -192,7 +185,6 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     base,
     reward,
     comet,
-    oracle,
     tokens,
     unsupportedToken,
   };

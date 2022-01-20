@@ -1,6 +1,23 @@
-import { expect, makeProtocol } from './helpers';
+import { expect, ethers, makeProtocol } from './helpers';
+import { getDefaultProviderURL } from '../hardhat.config';
 
 describe('getPrice', function () {
+  beforeEach(async () => {
+    // test against a hardhat network forked from mainnet, so that ChainLink
+    // contracts exist
+    await ethers.provider.send('hardhat_reset', [
+      {
+        forking: {
+          jsonRpcUrl: getDefaultProviderURL('mainnet'),
+        },
+      },
+    ]);
+  });
+
+  afterEach(async () => {
+    await ethers.provider.send('hardhat_reset', []);
+  });
+
   it('returns price data for assets', async () => {
     const { comet } = await makeProtocol();
 
@@ -17,12 +34,8 @@ describe('getPrice', function () {
 
   it('reverts if given a bad priceFeed address', async () => {
     const { comet } = await makeProtocol({
-      base: 'USDC',
       assets: {
-        USDC: {
-          initial: 1e6,
-          decimals: 6,
-        },
+        USDC: {},
         COMP: {
           initial: 1e7,
           decimals: 18,
