@@ -7,6 +7,8 @@ import {
   CometHarness__factory as Comet__factory,
   FaucetToken,
   FaucetToken__factory,
+  SimplePriceFeed,
+  SimplePriceFeed__factory,
 } from '../build/types';
 import { BigNumber } from 'ethers';
 
@@ -24,7 +26,7 @@ export type ProtocolOpts = {
       borrowCF?: Numeric;
       liquidateCF?: Numeric;
       supplyCap?: Numeric;
-      priceFeed?: string;
+      initialPrice?: number;
     };
   };
   governor?: SignerWithAddress;
@@ -55,6 +57,9 @@ export type Protocol = {
     [symbol: string]: FaucetToken;
   };
   unsupportedToken: FaucetToken;
+  priceFeeds: {
+    [symbol: string]: SimplePriceFeed;
+  };
 };
 
 export function dfn<T>(x: T | undefined | null, dflt: T): T {
@@ -70,7 +75,7 @@ export function factor(f: number): bigint {
 }
 
 function toBigInt(f: bigint | BigNumber): bigint {
-  if (typeof(f) === 'bigint') {
+  if (typeof f === 'bigint') {
     return f;
   } else {
     return f.toBigInt();
@@ -93,28 +98,40 @@ export async function getBlock(n?: number): Promise<Block> {
 
 export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const signers = await ethers.getSigners();
+
   const assets = opts.assets || {
     COMP: {
       initial: 1e7,
       decimals: 18,
-      priceFeed: '0xdbd020CAeF83eFd542f4De03e3cF0C28A4428bd5', // COMP/USD
+      initialPrice: 175,
     },
     USDC: {
       initial: 1e6,
       decimals: 6,
-      priceFeed: '0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6', // USDC/USD
     },
     WETH: {
       initial: 1e4,
       decimals: 18,
-      priceFeed: '0xaEA2808407B7319A31A383B6F8B60f04BCa23cE2', // ETH/USD
+      initialPrice: 3000,
     },
     WBTC: {
       initial: 1e3,
       decimals: 8,
-      priceFeed: '0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c', // BTC/USD
+      initialPrice: 41000,
     },
   };
+
+  let priceFeeds = {};
+  for (const asset in assets) {
+    const PriceFeedFactory = (await ethers.getContractFactory(
+      'SimplePriceFeed'
+    )) as SimplePriceFeed__factory;
+    const initialPrice = exp(assets[asset].initialPrice || 1, 8);
+    const priceFeed = await PriceFeedFactory.deploy(initialPrice);
+    await priceFeed.deployed();
+    priceFeeds[asset] = priceFeed;
+  }
+
   const governor = opts.governor || signers[0];
   const pauseGuardian = opts.pauseGuardian || signers[1];
   const users = signers.slice(2); // guaranteed to not be governor or pause guardian
@@ -151,7 +168,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     governor: governor.address,
     pauseGuardian: pauseGuardian.address,
     baseToken: tokens[base].address,
-    baseTokenPriceFeed: assets[base].priceFeed || ethers.constants.AddressZero,
+    baseTokenPriceFeed: priceFeeds[base].address,
     kink,
     perYearInterestRateBase,
     perYearInterestRateSlopeLow,
@@ -169,7 +186,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
           borrowCollateralFactor: dfn(config.borrowCF, ONE),
           liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
           supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
-          priceFeed: config.priceFeed || ethers.constants.AddressZero,
+          priceFeed: priceFeeds[symbol].address,
         });
       }
       return acc;
@@ -187,12 +204,13 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     comet,
     tokens,
     unsupportedToken,
+    priceFeeds,
   };
 }
 
-export async function portfolio({comet, base, tokens}, account) {
-  const internal = {[base]: BigInt(await comet.baseBalanceOf(account))};
-  const external = {[base]: BigInt(await tokens[base].balanceOf(account))};
+export async function portfolio({ comet, base, tokens }, account) {
+  const internal = { [base]: BigInt(await comet.baseBalanceOf(account)) };
+  const external = { [base]: BigInt(await tokens[base].balanceOf(account)) };
   for (const symbol in tokens) {
     if (symbol != base) {
       internal[symbol] = BigInt(await comet.collateralBalanceOf(account, tokens[symbol].address));
