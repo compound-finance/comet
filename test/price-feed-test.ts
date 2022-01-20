@@ -21,7 +21,7 @@ describe('getPrice', function () {
   it('returns price data for assets', async () => {
     const { comet } = await makeProtocol();
 
-    const [_asset, _borrowCollateralFactor, _liquidateCollateralFactor, priceFeed] =
+    const [_asset, _borrowCollateralFactor, _liquidateCollateralFactor, _supplyCap, priceFeed] =
       await comet.getAssetInfo(0);
 
     const price = await comet.getPrice(priceFeed);
@@ -44,7 +44,7 @@ describe('getPrice', function () {
       },
     });
 
-    const [_asset, _borrowCollateralFactor, _liquidateCollateralFactor, priceFeed] =
+    const [_asset, _borrowCollateralFactor, _liquidateCollateralFactor, _supplyCap, priceFeed] =
       await comet.getAssetInfo(0);
 
     await expect(comet.getPrice(priceFeed)).to.be.reverted;
