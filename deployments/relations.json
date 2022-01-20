@@ -7,8 +7,5 @@
       "baseToken",
       "assetAddresses"
     ]
-  },
-  "FaucetToken": {
-    "alias": "@symbol"
   }
 }

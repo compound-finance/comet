@@ -60,9 +60,10 @@ export function getPrimaryContract(buildFile: BuildFile): [string, ContractMetad
   let contractEntries = Object.entries(buildFile.contracts);
   let contracts = Object.fromEntries(contractEntries.map(([key, value]) => {
     if (key.includes(':')) {
-      return [[key.split(':')[1], value as ContractMetadata]];
+      let [source, contractName] = key.split(':');
+      return [[contractName, { ...value, source } as ContractMetadata]];
     } else {
-      return Object.entries(value);
+      return Object.entries(value).map(([contractName, v]) => [contractName, { ...v, key }]);
     }
   }).flat());
 
@@ -107,10 +108,14 @@ export function mergeContracts(a: ContractMap, b: ContractMap): ContractMap {
   };
 }
 
-export function objectToMap<V>(obj: {string: V}): Map<string, V> {
+export function objectToMap<V>(obj: {[k: string]: V}): Map<string, V> {
   return new Map(Object.entries(obj));
 }
 
 export function objectFromMap<V>(map: Map<string, V>): {[k: string]: V} {
   return Object.fromEntries(map.entries());
+}
+
+export function mapValues<V, W>(o: {string: V}, f: (V) => W): {[k: string]: W} {
+  return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, f(v)]));
 }

@@ -1,4 +1,4 @@
-import { scenario } from './context/CometContext';
+import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
 
 scenario('initializes governor correctly', {}, async ({ comet, actors }, world) => {
@@ -26,10 +26,13 @@ scenario('Comet#allow > allows a user to rescind authorization', {}, async ({ co
   expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
 });
 
-scenario('has assets', {}, async ({ comet, actors, assets }, world) => {
-  expect(await comet.assetAddresses()).to.have.members(
-    Object.values(assets).map((asset) => asset.address)
-  );
+scenario('has assets', {}, async ({ comet, actors, assets }: CometContext, world) => {
+  let baseToken = await comet.baseToken();
+  let contextAssets =
+    Object.values(assets)
+      .map((asset) => asset.address) // grab asset address
+      .filter((address) => address.toLowerCase() !== baseToken.toLowerCase()); // filter out base token
+  expect(await comet.assetAddresses()).to.have.members(contextAssets);
 });
 
 scenario('requires upgrade', { upgrade: true }, async ({ comet }, world) => {

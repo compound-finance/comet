@@ -9,6 +9,8 @@ export interface ContractMetadata {
   abi: string;
   bin: string;
   metadata: string;
+  source: string;
+  constructorArgs: string;
 }
 
 export interface BuildFile {

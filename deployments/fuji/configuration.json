@@ -1,0 +1,37 @@
+{
+  "governor": "0xdd940fc821853799eaf27e9eb0a420ed3bcdc3ef",
+  "pauseGuardian": "0xdd940fc821853799eaf27e9eb0a420ed3bcdc3ef",
+  "baseToken": "USDC",
+  "baseTokenPriceFeed": "0x7898AcCC83587C3C55116c5230C17a6Cd9C71bad",
+  "reserveRate": 0.1,
+  "borrowMin": "1e6",
+  "targetReserves": 0,
+  "rates": {
+    "kink": 0.80,
+    "slopeLow": 0.02,
+    "slopeHigh": 0.10,
+    "base": 0.01
+  },
+  "tracking": {
+    "indexScale": "1e15",
+    "baseSupplySpeed": 0,
+    "baseBorrowSpeed": 0,
+    "baseMinForRewards": 1
+  },
+  "assets": {
+    "WBTC.e": {
+      "borrowCF": 0.6,
+      "liquidateCF": 0.5,
+      "supplyCap": "100e8",
+      "priceFeed": "0x31CF013A08c6Ac228C94551d535d5BAfE19c602a",
+      "scale": "1e8"
+    },
+    "WAVAX": {
+      "borrowCF": 0.7,
+      "liquidateCF": 0.8,
+      "supplyCap": "100e18",
+      "priceFeed": "0x5498BB86BC934c8D34FDA08E81D444153d0D06aD",
+      "scale": "1e18"
+    }
+  }
+}

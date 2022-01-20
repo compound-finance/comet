@@ -25,9 +25,9 @@ function getBasesFromTaskArgs(givenBases: string | undefined, env: HardhatRuntim
 
 task('scenario', 'Runs scenario tests')
   .addOptionalParam('bases', 'Bases to run on [defaults to all]')
-  .addOptionalParam('noSpider', 'skip spider', false, types.boolean)
+  .addFlag('noSpider', 'skip spider')
+  .addFlag('sync', 'run synchronously')
   .addOptionalParam('workers', 'count of workers', 6, types.int)
-  .addOptionalParam('sync', 'run synchronously', false, types.boolean)
   .setAction(async (taskArgs, env: HardhatRuntimeEnvironment) => {
     let bases: ForkSpec[] = getBasesFromTaskArgs(taskArgs.bases, env);
 

@@ -83,8 +83,11 @@ export async function loadEtherscanContract(network: string, address: string) {
   const apiKey = getEtherscanApiKey(network);
 
   const networkName = network;
-  let { source, abi, contract, compiler } = await getEtherscanApiData(networkName, address, apiKey);
+  let { source, abi, contract, compiler, optimized, optimizationRuns, constructorArgs } = await getEtherscanApiData(networkName, address, apiKey);
   let contractCreationCode = await getContractCreationCode(networkName, address);
+  if (constructorArgs.length > 0 && contractCreationCode.endsWith(constructorArgs)) {
+    contractCreationCode = contractCreationCode.slice(0, -constructorArgs.length);
+  }
   let encodedABI = JSON.stringify(abi);
   let contractSource = `contracts/${contract}.sol:${contract}`;
   let contractBuild = {
@@ -95,6 +98,7 @@ export async function loadEtherscanContract(network: string, address: string) {
         name: contract,
         abi: encodedABI,
         bin: contractCreationCode,
+        constructorArgs,
         metadata: JSON.stringify({
           compiler: {
             version: compiler,
@@ -109,6 +113,12 @@ export async function loadEtherscanContract(network: string, address: string) {
               content: source,
               keccak256: '',
             },
+          },
+          settings: {
+            optimizer: {
+              enabled: optimized,
+              runs: optimizationRuns
+            }
           },
           version: 1,
         }),

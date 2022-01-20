@@ -72,7 +72,7 @@ export class UtilizationConstraint<T extends CometContext> implements Constraint
 
         // TODO: Handle units for precision, etc
         if (totalSupplyBase == 0n) {
-          toSupplyBase = (await comet.baseScale()).toBigInt(); // Have at least one base unit
+          toSupplyBase = 10n * (await comet.baseScale()).toBigInt(); // Have at least 10 base units
         }
 
         let expectedSupplyBase = totalSupplyBase + toSupplyBase;

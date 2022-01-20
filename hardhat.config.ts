@@ -11,6 +11,7 @@ import 'solidity-coverage';
 import 'hardhat-gas-reporter';
 
 // Hardhat tasks
+import './tasks/migrate/task.ts';
 import './tasks/spider/task.ts';
 import './tasks/scenario/task.ts';
 
@@ -149,6 +150,7 @@ const config: HardhatUserConfig = {
       {
         name: 'goerli',
         url: getDefaultProviderURL('goerli'),
+        allocation: 0.1, // eth
       },
       {
         name: 'fuji',
