@@ -112,6 +112,9 @@ const config: HardhatUserConfig = {
       accounts: {
         mnemonic: 'myth like bonus scare over problem client lizard pioneer submit female collect',
       },
+      forking: {
+        url: getDefaultProviderURL('mainnet'),
+      },
     },
   },
 
