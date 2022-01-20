@@ -1,4 +1,5 @@
-import { expect, makeProtocol } from './helpers';
+import { expect, ethers, makeProtocol } from './helpers';
+import { getDefaultProviderURL } from '../hardhat.config';
 
 describe('getPrice', function () {
   it('returns price data for assets, with 8 decimals', async () => {
