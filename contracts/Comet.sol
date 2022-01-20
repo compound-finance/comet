@@ -5,7 +5,6 @@ import "./CometMath.sol";
 import "./CometStorage.sol";
 import "./ERC20.sol";
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
-import "./PriceOracle.sol";
 
 /**
  * @title Compound's Comet Contract
