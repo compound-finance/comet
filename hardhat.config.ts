@@ -1,13 +1,13 @@
 import 'dotenv/config';
 
-import { HardhatUserConfig } from 'hardhat/types';
-import { task } from 'hardhat/config';
+import { HardhatUserConfig, task } from 'hardhat/config';
 import '@compound-finance/hardhat-import';
 import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
 import '@typechain/hardhat';
 import 'solidity-coverage';
+import 'hardhat-contract-sizer';
 import 'hardhat-gas-reporter';
 
 // Hardhat tasks
@@ -93,11 +93,11 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
  */
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.4',
+    version: '0.8.11',
     settings: {
       optimizer: {
         enabled: true,
-        runs: 1000,
+        runs: 1,
       },
     },
   },
@@ -131,13 +131,6 @@ const config: HardhatUserConfig = {
     },
   },
 
-  gasReporter: {
-    enabled: REPORT_GAS === 'true' ? true : false,
-    currency: 'USD',
-    coinmarketcap: COINMARKETCAP_API_KEY,
-    gasPrice: 200, // gwei
-  },
-
   typechain: {
     outDir: 'build/types',
     target: 'ethers-v5',
@@ -168,6 +161,20 @@ const config: HardhatUserConfig = {
         output: 'test-results.json',
       },
     },
+  },
+
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: true,
+    strict: false, // allow tests to run anyway
+  },
+
+  gasReporter: {
+    enabled: REPORT_GAS === 'true' ? true : false,
+    currency: 'USD',
+    coinmarketcap: COINMARKETCAP_API_KEY,
+    gasPrice: 200, // gwei
   },
 };
 

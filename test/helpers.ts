@@ -26,6 +26,7 @@ export type ProtocolOpts = {
       decimals?: Numeric;
       borrowCF?: Numeric;
       liquidateCF?: Numeric;
+      liquidationFactor?: Numeric;
       supplyCap?: Numeric;
       initialPrice?: number;
       priceFeedDecimals?: number;
@@ -89,11 +90,32 @@ function toBigInt(f: bigint | BigNumber): bigint {
   }
 }
 
-const secondsPerYearN = 31536000n;
-const factorN = 10n ** 18n;
+export function annualize(n: bigint | BigNumber, secondsPerYear = 31536000n): number {
+  return defactor(toBigInt(n) * secondsPerYear);
+}
 
-export function annualize(n: bigint | BigNumber): number {
-  return defactor(toBigInt(n) * secondsPerYearN);
+export function defaultAssets(overrides = {}) {
+  return {
+    COMP: Object.assign({
+      initial: 1e7,
+      decimals: 18,
+      initialPrice: 175,
+    }, overrides),
+    USDC: Object.assign({
+      initial: 1e6,
+      decimals: 6,
+    }, overrides),
+    WETH: Object.assign({
+      initial: 1e4,
+      decimals: 18,
+      initialPrice: 3000,
+    }, overrides),
+    WBTC: Object.assign({
+      initial: 1e3,
+      decimals: 8,
+      initialPrice: 41000,
+    }, overrides),
+  };
 }
 
 export const factorDecimals = 18;
@@ -109,28 +131,7 @@ export async function getBlock(n?: number): Promise<Block> {
 export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const signers = await ethers.getSigners();
 
-  const assets = opts.assets || {
-    COMP: {
-      initial: 1e7,
-      decimals: 18,
-      initialPrice: 175,
-    },
-    USDC: {
-      initial: 1e6,
-      decimals: 6,
-    },
-    WETH: {
-      initial: 1e4,
-      decimals: 18,
-      initialPrice: 3000,
-    },
-    WBTC: {
-      initial: 1e3,
-      decimals: 8,
-      initialPrice: 41000,
-    },
-  };
-
+  const assets = opts.assets || defaultAssets();
   let priceFeeds = {};
   for (const asset in assets) {
     const PriceFeedFactory = (await ethers.getContractFactory(
@@ -198,6 +199,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
           asset: tokens[symbol].address,
           borrowCollateralFactor: dfn(config.borrowCF, ONE),
           liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
+          liquidationFactor: dfn(config.liquidationFactor, ONE),
           supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
           priceFeed: priceFeeds[symbol].address,
           scale: exp(1, dfn(assets[symbol].decimals, 18)),
