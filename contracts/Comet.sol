@@ -1043,17 +1043,16 @@ contract Comet is CometMath, CometStorage {
         uint collateralAmount = baseAmount / getPrice(asset); // TODO: decimal math
         require(collateralAmount >= minAmount, "slippage too high");
 
-        // TODO: Should we use the doTransferIn from Jared's PR to handle fee tokens?
-        ERC20(baseToken).transferFrom(msg.sender, address(this), baseAmount);
+        doTransferIn(baseToken, msg.sender, baseAmount);
         withdrawCollateral(address(this), recipient, asset, safe128(collateralAmount));
     }
 
     /**
-     * @notice XXX
-     * @param asset address to get price of
-     * @return factor 0 indicates asset not found
+     * @notice return price from asset's price feed
+     * @param priceFeed address of ChainLink aggregator
+     * @return lastest price of asset, scaled up by 1e8
      */
-    function getPrice(address asset) public view returns (uint factor) {
-        return PriceOracle(priceOracle).getPrice(asset);
+    function getPrice(address priceFeed) public pure returns (uint) {
+        return 1e8; // 1 USD
     }
 }
