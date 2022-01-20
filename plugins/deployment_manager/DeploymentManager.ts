@@ -216,4 +216,10 @@ export class DeploymentManager {
     let buildFile = await this.import(address, network);
     return await this.deployBuild(buildFile, args) as C;
   }
+
+  static fork(d: DeploymentManager): DeploymentManager {
+    let copy = new DeploymentManager(d.deployment, d.hre, d.config);
+    copy.cache.loadMemory(d.cache.cache);
+    return copy;
+  }
 }

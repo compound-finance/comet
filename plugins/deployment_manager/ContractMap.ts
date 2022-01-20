@@ -19,7 +19,6 @@ export async function getContractsFromAliases(
 ): Promise<ContractMap> {
   let contracts: ContractMap = new Map();
   let theSigner = signer ?? (await hre.ethers.getSigners())[0];
-
   for (let [alias, address] of aliases.entries()) {
     let implAddress = proxies.get(alias);
     let implBuildFile;

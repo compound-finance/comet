@@ -38,6 +38,10 @@ export default class CometActor {
     this.info = info;
   }
 
+  static fork(actor: CometActor, context: CometContext): CometActor {
+    return new CometActor(actor.name, actor.signer, actor.address, context, actor.info);
+  }
+
   async getEthBalance() {
     return this.signer.getBalance();
   }
@@ -51,7 +55,8 @@ export default class CometActor {
   }
 
   async allow(manager: CometActor, isAllowed: boolean) {
-    await (await this.context.comet.connect(this.signer).allow(manager.address, isAllowed)).wait();
+    let comet = await this.context.getComet();
+    await (await comet.connect(this.signer).allow(manager.address, isAllowed)).wait();
   }
 
   async pause({
@@ -61,20 +66,23 @@ export default class CometActor {
     absorbPaused = false,
     buyPaused = false,
   }) {
+    let comet = await this.context.getComet();
     await (
-      await this.context.comet
+      await comet
         .connect(this.signer)
         .pause(supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused)
     ).wait();
   }
 
   async transferAsset({ dst, asset, amount }) {
-    await (await this.context.comet.connect(this.signer).transferAsset(dst, asset, amount)).wait();
+    let comet = await this.context.getComet();
+    await (await comet.connect(this.signer).transferAsset(dst, asset, amount)).wait();
   }
 
   async transferAssetFrom({ src, dst, asset, amount }) {
+    let comet = await this.context.getComet();
     await (
-      await this.context.comet.connect(this.signer).transferAssetFrom(src, dst, asset, amount)
+      await comet.connect(this.signer).transferAssetFrom(src, dst, asset, amount)
     ).wait();
   }
 
@@ -91,11 +99,12 @@ export default class CometActor {
     expiry: number;
     chainId: number;
   }) {
+    let comet = await this.context.getComet();
     const domain = {
-      name: await this.context.comet.name(),
-      version: await this.context.comet.version(),
+      name: await comet.name(),
+      version: await comet.version(),
       chainId: chainId,
-      verifyingContract: this.context.comet.address,
+      verifyingContract: comet.address,
     };
     const value = {
       owner: this.address,
@@ -123,7 +132,8 @@ export default class CometActor {
     expiry: number;
     signature: Signature;
   }) {
-    await this.context.comet
+    let comet = await this.context.getComet();
+    await comet
       .connect(this.signer)
       .allowBySig(owner, manager, isAllowed, nonce, expiry, signature.v, signature.r, signature.s);
   }
@@ -133,8 +143,9 @@ export default class CometActor {
   }
 
   async withdrawReserves(to: CometActor, amount: number) {
+    let comet = await this.context.getComet();
     await (
-      await this.context.comet.connect(this.signer).withdrawReserves(to.address, amount)
+      await comet.connect(this.signer).withdrawReserves(to.address, amount)
     ).wait();
   }
 }

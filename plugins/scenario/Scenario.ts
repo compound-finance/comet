@@ -16,27 +16,30 @@ export interface Constraint<T> {
   check(requirements: object, context: T, world: World): Promise<void>;
 }
 
-export type Property<T> = (context: T, world: World) => Promise<any>;
+export type Property<T, U> = (properties: U, world: World, context: T) => Promise<any>;
 export type Initializer<T> = (world: World) => Promise<T>;
+export type Transformer<T, U> = (context: T) => Promise<U>;
 export type Forker<T> = (T) => Promise<T>;
 
 export type ScenarioFlags = null | 'only' | 'skip';
 
-export class Scenario<T> {
+export class Scenario<T, U> {
   name: string;
   file: string | null;
   requirements: object;
-  property: Property<T>;
+  property: Property<T, U>;
   initializer: Initializer<T>;
+  transformer: Transformer<T, U>;
   forker: Forker<T>;
   constraints: Constraint<T>[];
   flags: ScenarioFlags;
 
-  constructor(name, requirements, property, initializer, forker, constraints, flags) {
+  constructor(name, requirements, property, initializer, transformer, forker, constraints, flags) {
     this.name = name;
     this.requirements = requirements;
     this.property = property;
     this.initializer = initializer;
+    this.transformer = transformer;
     this.forker = forker;
     this.constraints = constraints;
     this.flags = flags;

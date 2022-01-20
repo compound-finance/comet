@@ -11,9 +11,9 @@ import { HardhatConfig } from 'hardhat/types';
 import { SimpleWorker } from './SimpleWorker';
 import { pluralize } from './Report';
 
-type BaseScenario<T> = {
+type BaseScenario<T, U> = {
   base: ForkSpec;
-  scenario: Scenario<T>;
+  scenario: Scenario<T, U>;
 };
 
 export interface Result {
@@ -32,9 +32,9 @@ interface WorkerMessage {
   result?: Result;
 }
 
-function filterRunning<T>(
-  baseScenarios: BaseScenario<T>[]
-): [BaseScenario<T>[], BaseScenario<T>[]] {
+function filterRunning<T, U>(
+  baseScenarios: BaseScenario<T, U>[]
+): [BaseScenario<T, U>[], BaseScenario<T, U>[]] {
   let rest = baseScenarios.filter(({ scenario }) => scenario.flags === null);
   let only = baseScenarios.filter(({ scenario }) => scenario.flags === 'only');
   let skip = baseScenarios.filter(({ scenario }) => scenario.flags === 'skip');
@@ -46,8 +46,8 @@ function filterRunning<T>(
   }
 }
 
-function getBaseScenarios<T>(bases: ForkSpec[], scenarios: Scenario<T>[]): BaseScenario<T>[] {
-  let result: BaseScenario<T>[] = [];
+function getBaseScenarios<T, U>(bases: ForkSpec[], scenarios: Scenario<T, U>[]): BaseScenario<T, U>[] {
+  let result: BaseScenario<T, U>[] = [];
 
   // Note: this could filter if scenarios had some such filtering (e.g. to state the scenario is only compatible with certain bases)
   for (let base of bases) {
@@ -67,7 +67,7 @@ function convertToSerializableObject(object: object) {
   return JSON.parse(JSON.stringify(object));
 }
 
-export async function runScenario<T>(
+export async function runScenario<T, U>(
   scenarioConfig: ScenarioConfig,
   bases: ForkSpec[],
   workerCount: number,
@@ -77,8 +77,8 @@ export async function runScenario<T>(
   let hardhatConfig = convertToSerializableObject(getConfig()) as HardhatConfig;
   let hardhatArguments = getHardhatArguments();
   let formats = defaultFormats;
-  let scenarios: Scenario<T>[] = Object.values(await loadScenarios(scenarioGlob));
-  let baseScenarios: BaseScenario<T>[] = getBaseScenarios(bases, scenarios);
+  let scenarios: Scenario<T, U>[] = Object.values(await loadScenarios(scenarioGlob));
+  let baseScenarios: BaseScenario<T, U>[] = getBaseScenarios(bases, scenarios);
   let [runningScenarios, skippedScenarios] = filterRunning(baseScenarios);
 
   let startTime = Date.now();
@@ -94,7 +94,7 @@ export async function runScenario<T>(
   let pending: Set<string> = new Set(
     runningScenarios.map((baseScenario) => key(baseScenario.base.name, baseScenario.scenario.name))
   );
-  let assignable: Iterator<BaseScenario<T>> = runningScenarios[Symbol.iterator]();
+  let assignable: Iterator<BaseScenario<T, U>> = runningScenarios[Symbol.iterator]();
   let done;
   let fail;
   let hasError = false;
@@ -126,7 +126,7 @@ export async function runScenario<T>(
   resetStallTimer();
   checkDone(); // Just in case we don't have any scens
 
-  function getNextScenario(): BaseScenario<T> | null {
+  function getNextScenario(): BaseScenario<T, U> | null {
     let next = assignable.next();
     if (!next.done && next.value) {
       return next.value;
