@@ -1,4 +1,3 @@
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeploymentManager, Roots } from '../plugins/deployment_manager/DeploymentManager';
 import {
   Comet__factory,
@@ -10,6 +9,8 @@ import {
   ERC20,
   TransparentUpgradeableProxy__factory,
   TransparentUpgradeableProxy,
+  SimplePriceFeed,
+  SimplePriceFeed__factory,
 } from '../build/types';
 import { AssetInfoStruct, ConfigurationStruct } from '../build/types/Comet';
 import { BigNumberish } from 'ethers';
@@ -51,6 +52,16 @@ async function makeToken(
   ]);
 }
 
+async function makePriceFeed(
+  deploymentManager: DeploymentManager,
+  initialPrice: number
+): Promise<SimplePriceFeed> {
+  return await deploymentManager.deploy<SimplePriceFeed, SimplePriceFeed__factory, [number]>(
+    'test/SimplePriceFeed.sol',
+    [initialPrice * 1e8]
+  );
+}
+
 interface DeployedContracts {
   comet: Comet;
   proxy: TransparentUpgradeableProxy | null;
@@ -66,16 +77,19 @@ export async function deployComet(
   const [governor, pauseGuardian] = await deploymentManager.hre.ethers.getSigners();
 
   let baseToken = await makeToken(deploymentManager, 1000000, 'DAI', 18, 'DAI');
-  let baseTokenPriceFeed = '0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9'; // Chainlink DAI/USD
   let asset0 = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
   let asset1 = await makeToken(deploymentManager, 3000000, 'SILVER', 10, 'SILVER');
+
+  let baseTokenPriceFeed = await makePriceFeed(deploymentManager, 1);
+  let asset0PriceFeed = await makePriceFeed(deploymentManager, 0.5);
+  let asset1PriceFeed = await makePriceFeed(deploymentManager, 0.05);
 
   let assetInfo0 = {
     asset: asset0.address,
     borrowCollateralFactor: (1e18).toString(),
     liquidateCollateralFactor: (1e18).toString(),
     supplyCap: (1000000e8).toString(),
-    priceFeed: '0x0000000000000000000000000000000000000959', // not a legit price feed, just the ISO 4217 code for gold
+    priceFeed: asset0PriceFeed.address,
   };
 
   let assetInfo1 = {
@@ -83,7 +97,7 @@ export async function deployComet(
     borrowCollateralFactor: (0.5e18).toString(),
     liquidateCollateralFactor: (0.5e18).toString(),
     supplyCap: (500000e10).toString(),
-    priceFeed: '0x0000000000000000000000000000000000000961', // not a legit price feed, just the ISO 4217 code for silver
+    priceFeed: asset1PriceFeed.address,
   };
 
   let configuration = {
@@ -91,7 +105,7 @@ export async function deployComet(
       governor: await governor.getAddress(),
       pauseGuardian: await pauseGuardian.getAddress(),
       baseToken: baseToken.address,
-      baseTokenPriceFeed,
+      baseTokenPriceFeed: baseTokenPriceFeed.address,
       kink: (8e17).toString(), // 0.8
       perYearInterestRateBase: (5e15).toString(), // 0.005
       perYearInterestRateSlopeLow: (1e17).toString(), // 0.1
