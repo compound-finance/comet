@@ -2,6 +2,7 @@ import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { annualize, defactor, exp, factor } from '../test/helpers';
 import { BigNumber } from 'ethers';
+import { FuzzType } from './constraints/ModernConstraint';
 
 function calculateSupplyRate(
   totalSupplyBase: BigNumber,
@@ -111,6 +112,54 @@ scenario(
     expect(await comet.getUtilization()).to.equal(0);
     expect(annualize(await comet.getSupplyRate())).to.equal(0.0);
     expect(annualize(await comet.getBorrowRate())).to.be.approximately(0.05, 0.001);
+  }
+);
+
+scenario.only(
+  'Comet#interestRate > rates using fuzzed configuration constants',
+  {
+    upgrade: true,
+    cometConfig: {
+      // TODO: Read types from introspection. May be tough since JS code just returns BigNumber.
+      // TODO: Specify max value for fuzzing.
+      perYearInterestRateBase: { type: FuzzType.UINT64 },
+      reserveRate: (0n).toString(),
+      // reserveRate: (0).toString(),
+      // perYearInterestRateBase: { type: FuzzType.UINT64 } // SHOULD TEST MIN MAX VALUES OF UINT64
+    }
+  },
+  async ({ comet, actors }) => {
+    let { totalSupplyBase, totalBorrowBase } = await comet.totalsBasic();
+    const kink = await comet.kink();
+    const perSecondInterestRateBase = await comet.perSecondInterestRateBase();
+    const perSecondInterestRateSlopeLow = await comet.perSecondInterestRateSlopeLow();
+    const perSecondInterestRateSlopeHigh = await comet.perSecondInterestRateSlopeHigh();
+    const reserveRate = await comet.reserveRate();
+
+    expect(await comet.getUtilization()).to.equal(
+      calculateUtilization(totalSupplyBase, totalBorrowBase)
+    );
+    expect(await comet.getSupplyRate()).to.equal(
+      calculateSupplyRate(
+        totalSupplyBase,
+        totalBorrowBase,
+        kink,
+        perSecondInterestRateBase,
+        perSecondInterestRateSlopeLow,
+        perSecondInterestRateSlopeHigh,
+        reserveRate
+      )
+    );
+    expect(await comet.getBorrowRate()).to.equal(
+      calculateBorrowRate(
+        totalSupplyBase,
+        totalBorrowBase,
+        kink,
+        perSecondInterestRateBase,
+        perSecondInterestRateSlopeLow,
+        perSecondInterestRateSlopeHigh
+      )
+    );
   }
 );
 
