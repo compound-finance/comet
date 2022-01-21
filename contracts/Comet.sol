@@ -161,6 +161,7 @@ contract Comet is CometMath, CometStorage {
         require(decimals <= 18, "base token has too many decimals");
         require(config.baseMinForRewards > 0, "baseMinForRewards should be > 0");
         require(config.assetInfo.length <= maxAssets, "too many asset configs");
+        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == 8, "baseTokenPriceFeed.decimals != 8");
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
@@ -197,9 +198,20 @@ contract Comet is CometMath, CometStorage {
         supplyCap01 = _getAsset(config.assetInfo, 1).supplyCap;
         supplyCap02 = _getAsset(config.assetInfo, 2).supplyCap;
 
-        priceFeed00 = _getAsset(config.assetInfo, 0).priceFeed;
-        priceFeed01 = _getAsset(config.assetInfo, 1).priceFeed;
-        priceFeed02 = _getAsset(config.assetInfo, 2).priceFeed;
+        address priceFeed00_ = _getAsset(config.assetInfo, 0).priceFeed;
+        address priceFeed01_ = _getAsset(config.assetInfo, 1).priceFeed;
+        address priceFeed02_ = _getAsset(config.assetInfo, 2).priceFeed;
+
+        if (priceFeed00_ != address(0))
+            require(AggregatorV3Interface(priceFeed00_).decimals() == 8, "priceFeed.decimals != 8");
+        if (priceFeed01_ != address(0))
+            require(AggregatorV3Interface(priceFeed01_).decimals() == 8, "priceFeed.decimals != 8");
+        if (priceFeed02_ != address(0))
+            require(AggregatorV3Interface(priceFeed02_).decimals() == 8, "priceFeed.decimals != 8");
+
+        priceFeed00 = priceFeed00_;
+        priceFeed01 = priceFeed01_;
+        priceFeed02 = priceFeed02_;
 
         // Set interest rate model configs
         kink = config.kink;

@@ -6,14 +6,15 @@ import "../vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface
 contract SimplePriceFeed is AggregatorV3Interface {
     int public price;
 
-    uint8 public constant override decimals = 8;
+    uint8 public immutable override decimals;
 
     string public constant override description = "Mock Chainlink price aggregator";
 
     uint public constant override version = 1;
 
-    constructor(int initialPrice) {
+    constructor(int initialPrice, uint8 decimals_) {
         price = initialPrice;
+        decimals = decimals_;
     }
 
     function setPrice(int price_) public {

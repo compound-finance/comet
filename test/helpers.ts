@@ -27,6 +27,7 @@ export type ProtocolOpts = {
       liquidateCF?: Numeric;
       supplyCap?: Numeric;
       initialPrice?: number;
+      priceFeedDecimals?: number;
     };
   };
   governor?: SignerWithAddress;
@@ -127,7 +128,8 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
       'SimplePriceFeed'
     )) as SimplePriceFeed__factory;
     const initialPrice = exp(assets[asset].initialPrice || 1, 8);
-    const priceFeed = await PriceFeedFactory.deploy(initialPrice);
+    const priceFeedDecimals = assets[asset].priceFeedDecimals || 8;
+    const priceFeed = await PriceFeedFactory.deploy(initialPrice, priceFeedDecimals);
     await priceFeed.deployed();
     priceFeeds[asset] = priceFeed;
   }

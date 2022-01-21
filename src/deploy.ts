@@ -54,12 +54,14 @@ async function makeToken(
 
 async function makePriceFeed(
   deploymentManager: DeploymentManager,
-  initialPrice: number
+  initialPrice: number,
+  decimals: number
 ): Promise<SimplePriceFeed> {
-  return await deploymentManager.deploy<SimplePriceFeed, SimplePriceFeed__factory, [number]>(
-    'test/SimplePriceFeed.sol',
-    [initialPrice * 1e8]
-  );
+  return await deploymentManager.deploy<
+    SimplePriceFeed,
+    SimplePriceFeed__factory,
+    [number, number]
+  >('test/SimplePriceFeed.sol', [initialPrice * 1e8, decimals]);
 }
 
 interface DeployedContracts {
@@ -80,9 +82,9 @@ export async function deployComet(
   let asset0 = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
   let asset1 = await makeToken(deploymentManager, 3000000, 'SILVER', 10, 'SILVER');
 
-  let baseTokenPriceFeed = await makePriceFeed(deploymentManager, 1);
-  let asset0PriceFeed = await makePriceFeed(deploymentManager, 0.5);
-  let asset1PriceFeed = await makePriceFeed(deploymentManager, 0.05);
+  let baseTokenPriceFeed = await makePriceFeed(deploymentManager, 1, 8);
+  let asset0PriceFeed = await makePriceFeed(deploymentManager, 0.5, 8);
+  let asset1PriceFeed = await makePriceFeed(deploymentManager, 0.05, 8);
 
   let assetInfo0 = {
     asset: asset0.address,
