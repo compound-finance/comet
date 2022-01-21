@@ -116,6 +116,9 @@ contract Comet is CometMath, CometStorage {
 
     /// @notice The decimals required for a price feed
     uint8 public constant priceFeedDecimals = 8;
+    
+    /// @notice The scale for prices (in USD)
+    uint64 public constant priceScale = 1e8;
 
     /// @notice The scale for reward tracking
     uint64 public immutable trackingIndexScale;
@@ -596,6 +599,20 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
+     * @dev Multiply a number by a price
+     */
+    function mulPrice(uint n, uint price) internal pure returns (uint) {
+        return n * price / priceScale;
+    }
+
+    /**
+     * @dev Divide a number by a price
+     */
+    function divPrice(uint n, uint price) internal pure returns (uint) {
+        return n * priceScale / price;
+    }
+
+    /**
      * @dev Divide a number by an amount of base
      */
     function divBaseWei(uint n, uint baseWei) internal view returns (uint) {
@@ -1037,9 +1054,9 @@ contract Comet is CometMath, CometStorage {
      */
     function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external {
         int reserves = getReserves();
-        require(reserves >= 0 && uint(reserves) < targetReserves, "no ongoing sale");
+        require(reserves < 0 || uint(reserves) < targetReserves, "no ongoing sale");
 
-        uint collateralAmount = baseAmount / getPrice(asset); // TODO: decimal math
+        uint collateralAmount = divPrice(baseAmount, askPrice(asset));
         require(collateralAmount >= minAmount, "slippage too high");
 
         doTransferIn(baseToken, msg.sender, baseAmount);
@@ -1047,11 +1064,12 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-     * @notice return price from asset's price feed
-     * @param priceFeed address of ChainLink aggregator
-     * @return lastest price of asset, scaled up by 1e8
+     * @notice Gets the ask price for a collateral asset.
+     * @param asset The asset to get the ask price for
+     * @return The price of the asset in USD, scaled up by 1e8
      */
-    function getPrice(address priceFeed) public pure returns (uint) {
+    function askPrice(address asset) public pure returns (uint) {
+        // TODO: Add StoreFrontDiscount.
         return 1e8; // 1 USD
     }
 }
