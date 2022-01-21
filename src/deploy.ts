@@ -118,6 +118,7 @@ export async function deployComet(
       baseTrackingBorrowSpeed: 0, // XXX
       baseMinForRewards: 1, // XXX
       baseBorrowMin: 1, // XXX
+      targetReserves: 0, // XXX
       assetInfo: [assetInfo0, assetInfo1],
     },
     ...configurationOverrides,
