@@ -191,7 +191,11 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
           borrowCollateralFactor: dfn(config.borrowCF, ONE),
           liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
           supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
+<<<<<<< HEAD
           priceFeed: priceFeeds[symbol].address,
+=======
+          scale: 0,  // XXX gets set in constructor
+>>>>>>> c9b7638 (Modify askPrice and buyCollateral logic; add scale to AssetInfo)
         });
       }
       return acc;
