@@ -1129,9 +1129,9 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-     * @notice XXX
-     * @param account XXX
-     * @return int borrow liquidity, in base token
+     * @notice amount of borrow liquidity for account
+     * @param account address to check liquidity for
+     * @return borrow liquidity, in base token
      */
     function getBorrowLiquidity(address account) public view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
@@ -1162,10 +1162,11 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-    * @notice XXX
-    * @param amount number of units of that asset (in that token's decimals )
-    * @param price price of the asset, USDC (1e8)
-    * @return int price, in USDC (1e8)
+    * @notice multiply an amount of an asset by that asset's price
+    * @param amount amount of the asset (in that asset's decimals)
+    * @param tokenScale the number of decimals for the asset
+    * @param price price of the asset, from priceFeed; value with 8 decimals
+    * @return value of the amount of the asset; 8 decimals
     */
     function mulPrice(int128 amount, uint64 tokenScale, uint price) internal pure returns (int) {
         return (amount * signed256(price)) / signed64(tokenScale);
