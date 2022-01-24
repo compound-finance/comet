@@ -36,6 +36,11 @@ contract CometMath {
         return uint104(n);
     }
 
+    function unsigned256(int256 n) internal pure returns (uint256) {
+        require(n >= 0, "number is negative");
+        return uint256(n);
+    }
+
     function toUInt8(bool x) internal pure returns (uint8) {
         return x ? 1 : 0;
     }

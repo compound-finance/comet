@@ -994,9 +994,9 @@ contract Comet is CometMath, CometStorage {
     /**
      * @notice return price from asset's price feed
      * @param priceFeed address of ChainLink aggregator
-     * @return lastest price of asset, scaled up by 1e8
+     * @return latest price of asset, scaled up by 1e8
      */
-    function getPrice(address priceFeed) public view returns (int) {
+    function getPrice(address priceFeed) public view returns (uint) {
         (
             uint80 _roundID,
             int price,
@@ -1004,6 +1004,6 @@ contract Comet is CometMath, CometStorage {
             uint _timeStamp,
             uint80 _answeredInRound
         ) = AggregatorV3Interface(priceFeed).latestRoundData();
-        return price;
+        return unsigned256(price);
     }
 }

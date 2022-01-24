@@ -26,4 +26,19 @@ describe('getPrice', function () {
 
     await expect(comet.getPrice(invalidPriceFeedAddress)).to.be.reverted;
   });
+
+  it('reverts if price feed returns negative value', async () => {
+    const { comet, priceFeeds } = await makeProtocol({
+      assets: {
+        USDC: {},
+        COMP: {
+          initial: 1e7,
+          decimals: 18,
+          initialPrice: -1,
+        },
+      },
+    });
+
+    await expect(comet.getPrice(priceFeeds.COMP.address)).to.be.revertedWith('number is negative');
+  });
 });
