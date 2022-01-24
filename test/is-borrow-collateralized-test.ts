@@ -112,42 +112,36 @@ describe.only('getBorrowLiquidity', function () {
     expect(await comet.getBorrowLiquidity(alice.address)).to.equal(1_980_000);
   });
 
-  /*
-  it.skip('changes when the underlying asset price changes', async () => {
-    const borrowCF = 1;
-    const protocol = await makeProtocol({
-      base: 'USDC',
-      assets: {
-        COMP: { initial: 1e7, decimals: 18, borrowCF },
-        USDC: { initial: 1e6, decimals: 6 },
-        WETH: { initial: 1e4, decimals: 18 },
-        WBTC: { initial: 1e3, decimals: 8 },
-      },
-    });
+  it('changes when the underlying asset price changes', async () => {
     const {
       comet,
       tokens,
       users: [alice],
-    } = protocol;
-    const { USDC, COMP } = tokens;
+      priceFeeds,
+    } = await makeProtocol({
+      assets: {
+        USDC: { decimals: 6 },
+        COMP: { initial: 1e7, decimals: 18, initialPrice: 1 },
+      },
+    });
+    const { COMP } = tokens;
 
-    // await oracle.setPrice(USDC.address, 1);
-    // await oracle.setPrice(COMP.address, 10);
+    await comet.setBasePrincipal(alice.address, 1_000_000);
+    await comet.setCollateralBalance(alice.address, COMP.address, exp(1, 18));
 
-    const collateralBalance = 10;
+    // 1 USDC = 1_000_000
+    // 1 COMP (at a price of 1) = 100_000
+    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(2_000_000);
 
-    await comet.setCollateralBalance(alice.address, COMP.address, collateralBalance);
+    await priceFeeds.COMP.setPrice(exp(0.5, 8));
 
-    // price (10) * collateral balance (10) = 100
-    expect(await comet.liquidityForAccount(alice.address)).to.equal(100);
-
-    // price (5) * collateral balance (10) = 50
-    // await oracle.setPrice(COMP.address, 5);
-
-    expect(await comet.liquidityForAccount(alice.address)).to.equal(50);
+    // 1 USDC = 1_000_000
+    // 1 COMP (at a price of .5) = 500_000
+    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(1_500_000);
   });
 });
 
+/*
 describe.only('isBorrowCollateralized', function () {
   it.skip('defaults to true', async () => {
     const protocol = await makeProtocol({ base: 'USDC' });
@@ -223,5 +217,5 @@ describe.only('isBorrowCollateralized', function () {
     // await oracle.setPrice(COMP.address, 9);
 
     expect(await comet.isBorrowCollateralized(alice.address)).to.be.false;
-  */
 });
+*/
