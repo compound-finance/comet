@@ -1,7 +1,6 @@
 import { expect, exp, makeProtocol } from './helpers';
-import { BigNumber } from 'ethers';
 
-describe.only('getBorrowLiquidity', function () {
+describe('getBorrowLiquidity', function () {
   it('defaults to 0', async () => {
     const {
       comet,
@@ -141,9 +140,8 @@ describe.only('getBorrowLiquidity', function () {
   });
 });
 
-/*
-describe.only('isBorrowCollateralized', function () {
-  it.skip('defaults to true', async () => {
+describe('isBorrowCollateralized', function () {
+  it('defaults to true', async () => {
     const protocol = await makeProtocol({ base: 'USDC' });
     const {
       comet,
@@ -153,69 +151,101 @@ describe.only('isBorrowCollateralized', function () {
     expect(await comet.isBorrowCollateralized(alice.address)).to.be.true;
   });
 
-  it.skip('is true when user is owed principal', async () => {
-    const protocol = await makeProtocol({ base: 'USDC' });
+  it('is true when user is owed principal', async () => {
     const {
       comet,
-      tokens,
       users: [alice],
-    } = protocol;
-    const { USDC } = tokens;
-
-    // await oracle.setPrice(USDC.address, 1);
-
-    await comet.setBasePrincipal(alice.address, 10);
+    } = await makeProtocol({ base: 'USDC' });
+    await comet.setBasePrincipal(alice.address, 1_000_000);
 
     expect(await comet.isBorrowCollateralized(alice.address)).to.be.true;
   });
 
-  it.skip('is false when user owes principal', async () => {
-    const protocol = await makeProtocol({ base: 'USDC' });
+  it('is false when user owes principal', async () => {
     const {
       comet,
-      tokens,
       users: [alice],
-    } = protocol;
-    const { USDC } = tokens;
+    } = await makeProtocol({ base: 'USDC' });
 
-    // await oracle.setPrice(USDC.address, 1);
-
-    await comet.setBasePrincipal(alice.address, -10);
+    await comet.setBasePrincipal(alice.address, -1_000_000);
 
     expect(await comet.isBorrowCollateralized(alice.address)).to.be.false;
   });
 
-  it.skip('changes when the underlying asset price changes', async () => {
-    const protocol = await makeProtocol({
-      base: 'USDC',
+  it('is true when value of collateral is greater than principal owed', async () => {
+    const {
+      comet,
+      tokens,
+      users: [alice],
+    } = await makeProtocol({
       assets: {
-        COMP: { initial: 1e7, decimals: 18, borrowCF: 1 },
-        USDC: { initial: 1e6, decimals: 6 },
-        WETH: { initial: 1e4, decimals: 18 },
-        WBTC: { initial: 1e3, decimals: 8 },
+        USDC: { decimals: 6 },
+        COMP: {
+          initial: 1e7,
+          decimals: 18,
+          initialPrice: 1, // 1 COMP = 1 USDC
+        },
       },
     });
+    const { COMP } = tokens;
+
+    // user owes 1 USDC, but has 1 COMP collateral
+    await comet.setBasePrincipal(alice.address, -1_000_000);
+    await comet.setCollateralBalance(alice.address, COMP.address, exp(1, 18));
+
+    expect(await comet.isBorrowCollateralized(alice.address)).to.be.true;
+  });
+
+  it('takes borrow collateral factor into account when valuing collateral', async () => {
     const {
       comet,
       tokens,
       users: [alice],
-    } = protocol;
-    const { USDC, COMP } = tokens;
+    } = await makeProtocol({
+      assets: {
+        USDC: { decimals: 6 },
+        COMP: {
+          initial: 1e7,
+          decimals: 18,
+          initialPrice: 1, // 1 COMP = 1 USDC
+          borrowCF: exp(9, 17), // .9
+        },
+      },
+    });
+    const { COMP } = tokens;
 
-    // USDC and COMP have same price; borrow collateral factor is 1
-    // await oracle.setPrice(USDC.address, 10);
-    // await oracle.setPrice(COMP.address, 10);
+    // user owes 1 USDC
+    await comet.setBasePrincipal(alice.address, -1_000_000);
+    // user has 1 COMP collateral, but the borrow collateral factor puts it
+    // below the required collateral amount
+    await comet.setCollateralBalance(alice.address, COMP.address, exp(1, 18));
 
-    // user has borrowed 100 USDC
-    await comet.setBasePrincipal(alice.address, -100);
+    expect(await comet.isBorrowCollateralized(alice.address)).to.be.false;
+  });
 
-    await comet.setCollateralBalance(alice.address, COMP.address, 100);
+  it('changes when the underlying asset price changes', async () => {
+    const {
+      comet,
+      tokens,
+      users: [alice],
+      priceFeeds,
+    } = await makeProtocol({
+      assets: {
+        USDC: { decimals: 6 },
+        COMP: { initial: 1e7, decimals: 18, initialPrice: 1 },
+      },
+    });
+    const { COMP } = tokens;
+
+    // user owes 1 USDC
+    await comet.setBasePrincipal(alice.address, -1_000_000);
+    // ...but has 1 COMP of equivalent value to cover their position
+    await comet.setCollateralBalance(alice.address, COMP.address, exp(1, 18));
 
     expect(await comet.isBorrowCollateralized(alice.address)).to.be.true;
 
-    // price drop puts user's collateral below the borrow collateral factor
-    // await oracle.setPrice(COMP.address, 9);
+    await priceFeeds.COMP.setPrice(exp(0.5, 8));
 
     expect(await comet.isBorrowCollateralized(alice.address)).to.be.false;
+  });
 });
-*/

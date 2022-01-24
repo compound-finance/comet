@@ -1096,7 +1096,36 @@ contract Comet is CometMath, CometStorage {
      * @param account address to check
      */
     function isBorrowCollateralized(address account) public view returns (bool) {
-        return true;
+        uint16 assetsIn = userBasic[account].assetsIn;
+        TotalsBasic memory totals = totalsBasic;
+
+        int liquidity = mulPrice(
+            presentValue(totals, userBasic[account].principal),
+            baseScale,
+            getPrice(baseTokenPriceFeed)
+        );
+
+        for (uint8 i = 0; i < numAssets; i++) {
+            if (isInAsset(assetsIn, i)) {
+
+                if (liquidity >= 0) {
+                    return true;
+                }
+
+                AssetInfo memory asset = getAssetInfo(i);
+                int newAmount = mulPrice(
+                    signed128(userCollateral[account][asset.asset].balance),
+                    safe64(asset.scale),
+                    getPrice(asset.priceFeed)
+                );
+                liquidity += signed256(mulFactor(
+                    unsigned256(newAmount),
+                    asset.borrowCollateralFactor
+                ));
+            }
+        }
+
+        return liquidity * signed64(baseScale) / signed64(priceScale) >= 0;
     }
 
     /**
