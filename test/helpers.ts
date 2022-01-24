@@ -199,6 +199,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
           borrowCollateralFactor: dfn(config.borrowCF, ONE),
           liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
           supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
+          scale: 0,
           priceFeed: priceFeeds[symbol].address,
           scale: exp(1, dfn(assets[symbol].decimals, 18)),
         });

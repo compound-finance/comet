@@ -158,6 +158,10 @@ contract Comet is CometMath, CometStorage {
     uint internal immutable supplyCap01;
     uint internal immutable supplyCap02;
 
+    uint internal immutable scale00;
+    uint internal immutable scale01;
+    uint internal immutable scale02;
+
     address internal immutable priceFeed00;
     address internal immutable priceFeed01;
     address internal immutable priceFeed02;
@@ -213,6 +217,10 @@ contract Comet is CometMath, CometStorage {
         supplyCap00 = _getAsset(config.assetInfo, 0).supplyCap;
         supplyCap01 = _getAsset(config.assetInfo, 1).supplyCap;
         supplyCap02 = _getAsset(config.assetInfo, 2).supplyCap;
+
+        scale00 = _getAssetScale(config.assetInfo, 0);
+        scale01 = _getAssetScale(config.assetInfo, 1);
+        scale02 = _getAssetScale(config.assetInfo, 2);
 
         address priceFeed00_ = _getAsset(config.assetInfo, 0).priceFeed;
         address priceFeed01_ = _getAsset(config.assetInfo, 1).priceFeed;
@@ -1088,27 +1096,45 @@ contract Comet is CometMath, CometStorage {
      * @param account address to check
      */
     function isBorrowCollateralized(address account) public view returns (bool) {
-        int liquidity = liquidityForAccount(account);
-        return liquidity >= 0;
+        return true;
     }
 
     /**
      * @notice XXX
      * @param account XXX
-     * @return int XXX
+     * @return int borrow liquidity, in base token
      */
-    function liquidityForAccount(address account) public view returns (int) {
+    function getBorrowLiquidity(address account) public view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
         TotalsBasic memory totals = totalsBasic;
 
-        int liquidity = presentValue(totals, userBasic[account].principal) * getPrice(baseTokenPriceFeed);
+        int liquidity = mulPrice(
+            presentValue(totals, userBasic[account].principal),
+            baseScale,
+            getPrice(baseTokenPriceFeed)
+        );
 
         for (uint8 i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory asset = getAssetInfo(i);
-                liquidity += signed256(userCollateral[account][asset.asset].balance) * getPrice(asset.asset) * signed256(asset.borrowCollateralFactor);
+                liquidity += mulPrice(
+                    signed128(userCollateral[account][asset.asset].balance),
+                    safe64(asset.scale),
+                    getPrice(asset.priceFeed)
+                );
             }
         }
-        return liquidity;
+
+        return liquidity * signed64(baseScale) / signed64(priceScale);
+    }
+
+    /**
+    * @notice XXX
+    * @param amount number of units of that asset (in that token's decimals )
+    * @param price price of the asset, USDC (1e8)
+    * @return int price, in USDC (1e8)
+    */
+    function mulPrice(int128 amount, uint64 tokenScale, uint price) internal pure returns (int) {
+        return (amount * signed256(price)) / signed64(tokenScale);
     }
 }
