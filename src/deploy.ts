@@ -91,11 +91,8 @@ export async function deployComet(
     borrowCollateralFactor: (1e18).toString(),
     liquidateCollateralFactor: (1e18).toString(),
     supplyCap: (1000000e8).toString(),
-<<<<<<< HEAD
     priceFeed: asset0PriceFeed.address,
-=======
-    scale: 0, // XXX gets set in constructor
->>>>>>> c9b7638 (Modify askPrice and buyCollateral logic; add scale to AssetInfo)
+    scale: (1e8).toString(),
   };
 
   let assetInfo1 = {
@@ -103,11 +100,8 @@ export async function deployComet(
     borrowCollateralFactor: (0.5e18).toString(),
     liquidateCollateralFactor: (0.5e18).toString(),
     supplyCap: (500000e10).toString(),
-<<<<<<< HEAD
     priceFeed: asset1PriceFeed.address,
-=======
-    scale: 0, // XXX gets set in constructor
->>>>>>> c9b7638 (Modify askPrice and buyCollateral logic; add scale to AssetInfo)
+    scale: (1e10).toString(),
   };
 
   let configuration = {

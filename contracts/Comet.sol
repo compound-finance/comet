@@ -268,11 +268,15 @@ contract Comet is CometMath, CometStorage {
      * @dev Gets the asset scale by reading the decimals from the asset contract
      */
     function _getAssetScale(AssetInfo[] memory assetInfo, uint i) internal view returns (uint) {
-        address asset = _getAsset(assetInfo, i).asset;
+        AssetInfo memory assetInfo_ = _getAsset(assetInfo, i);
+        address asset = assetInfo_.asset;
+        uint expectedScale = assetInfo_.scale;
         if (asset == address(0)) {
             return 0;
         } else {
-            return 10 ** ERC20(asset).decimals();
+            uint actualScale = 10 ** ERC20(asset).decimals();
+            require(expectedScale == actualScale, "asset scale mismatch");
+            return actualScale;
         }
     }
 
