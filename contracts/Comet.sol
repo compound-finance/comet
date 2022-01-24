@@ -1101,12 +1101,12 @@ contract Comet is CometMath, CometStorage {
         uint16 assetsIn = userBasic[account].assetsIn;
         TotalsBasic memory totals = totalsBasic;
 
-        int liquidity = presentValue(totals, userBasic[account].principal) * signed256(getPrice(baseToken));
+        int liquidity = presentValue(totals, userBasic[account].principal) * getPrice(baseTokenPriceFeed);
 
         for (uint8 i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory asset = getAssetInfo(i);
-                liquidity += signed256(userCollateral[account][asset.asset].balance) * signed256(getPrice(asset.asset)) * signed256(asset.borrowCollateralFactor);
+                liquidity += signed256(userCollateral[account][asset.asset].balance) * getPrice(asset.asset) * signed256(asset.borrowCollateralFactor);
             }
         }
         return liquidity;
