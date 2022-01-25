@@ -22,7 +22,7 @@ Owed interest accrues to open borrows of the base asset. Borrower interest accru
 
 This method returns the current supply rate APY as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the supply rate is:
 
-`SupplyRateBase + UtilizationSupplyRateSlope`
+`Utilization * SupplyRateSlope`
 
 #### Comet
 
