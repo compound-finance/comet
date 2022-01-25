@@ -26,10 +26,11 @@ scenario('Comet#allow > allows a user to rescind authorization', {}, async ({ co
   expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
 });
 
-scenario('has assets', {}, async ({ comet, actors, assets }, world) => {
-  expect(await comet.assetAddresses()).to.have.members(
-    Object.values(assets).map((asset) => asset.address)
-  );
+scenario('has assets', {}, async ({ comet, assets }) => {
+  expect(await comet.assetAddresses()).to.have.members([
+    assets.GOLD.address,
+    assets.SILVER.address,
+  ]);
 });
 
 scenario('requires upgrade', { upgrade: true }, async ({ comet }, world) => {
