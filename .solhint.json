@@ -2,6 +2,7 @@
   "extends": "solhint:recommended",
   "rules": {
     "compiler-version": ["error", "^0.8.0"],
+    "const-name-snakecase": "off",
     "func-visibility": ["warn", { "ignoreConstructors": true }]
   }
 }

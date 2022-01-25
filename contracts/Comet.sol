@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "./CometMath.sol";
 import "./CometStorage.sol";
 import "./ERC20.sol";
+import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 /**
  * @title Compound's Comet Contract
@@ -16,13 +17,14 @@ contract Comet is CometMath, CometStorage {
         uint borrowCollateralFactor;
         uint liquidateCollateralFactor;
         uint supplyCap;
+        address priceFeed;
     }
 
     struct Configuration {
         address governor;
         address pauseGuardian;
-        address priceOracle;
         address baseToken;
+        address baseTokenPriceFeed;
 
         uint64 kink;
         uint64 perYearInterestRateSlopeLow;
@@ -81,11 +83,11 @@ contract Comet is CometMath, CometStorage {
     /// @notice The account which may trigger pauses
     address public immutable pauseGuardian;
 
-    /// @notice The address of the price oracle contract
-    address public immutable priceOracle;
-
     /// @notice The address of the base token contract
     address public immutable baseToken;
+
+    /// @notice The address of the price feed for the base token
+    address public immutable baseTokenPriceFeed;
 
     /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope (factor)
     uint64 public immutable kink;
@@ -110,6 +112,9 @@ contract Comet is CometMath, CometStorage {
 
     /// @notice The scale for factors
     uint64 public constant factorScale = 1e18;
+
+    /// @notice The decimals required for a price feed
+    uint8 public constant priceFeedDecimals = 8;
 
     /// @notice The scale for reward tracking
     uint64 public immutable trackingIndexScale;
@@ -145,6 +150,10 @@ contract Comet is CometMath, CometStorage {
     uint internal immutable supplyCap01;
     uint internal immutable supplyCap02;
 
+    address internal immutable priceFeed00;
+    address internal immutable priceFeed01;
+    address internal immutable priceFeed02;
+
     /**
      * @notice Construct a new protocol instance
      * @param config The mapping of initial/constant parameters
@@ -155,13 +164,14 @@ contract Comet is CometMath, CometStorage {
         require(decimals <= 18, "base token has too many decimals");
         require(config.baseMinForRewards > 0, "baseMinForRewards should be > 0");
         require(config.assetInfo.length <= maxAssets, "too many asset configs");
+        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == priceFeedDecimals, "incorrect baseTokenPriceFeed decimals");
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
         governor = config.governor;
         pauseGuardian = config.pauseGuardian;
-        priceOracle = config.priceOracle;
         baseToken = config.baseToken;
+        baseTokenPriceFeed = config.baseTokenPriceFeed;
 
         baseScale = uint64(10 ** decimals);
         trackingIndexScale = config.trackingIndexScale;
@@ -191,6 +201,21 @@ contract Comet is CometMath, CometStorage {
         supplyCap01 = _getAsset(config.assetInfo, 1).supplyCap;
         supplyCap02 = _getAsset(config.assetInfo, 2).supplyCap;
 
+        address priceFeed00_ = _getAsset(config.assetInfo, 0).priceFeed;
+        address priceFeed01_ = _getAsset(config.assetInfo, 1).priceFeed;
+        address priceFeed02_ = _getAsset(config.assetInfo, 2).priceFeed;
+
+        if (priceFeed00_ != address(0))
+            require(AggregatorV3Interface(priceFeed00_).decimals() == priceFeedDecimals, "incorrect priceFeed decimals");
+        if (priceFeed01_ != address(0))
+            require(AggregatorV3Interface(priceFeed01_).decimals() == priceFeedDecimals, "incorrect priceFeed decimals");
+        if (priceFeed02_ != address(0))
+            require(AggregatorV3Interface(priceFeed02_).decimals() == priceFeedDecimals, "incorrect priceFeed decimals");
+
+        priceFeed00 = priceFeed00_;
+        priceFeed01 = priceFeed01_;
+        priceFeed02 = priceFeed02_;
+
         // Set interest rate model configs
         kink = config.kink;
         perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / secondsPerYear;
@@ -216,7 +241,8 @@ contract Comet is CometMath, CometStorage {
             asset: address(0),
             borrowCollateralFactor: uint256(0),
             liquidateCollateralFactor: uint256(0),
-            supplyCap: uint256(0)
+            supplyCap: uint256(0),
+            priceFeed: address(0)
         });
     }
 
@@ -228,9 +254,9 @@ contract Comet is CometMath, CometStorage {
     function getAssetInfo(uint i) public view returns (AssetInfo memory) {
         require(i < numAssets, "asset info not found");
 
-        if (i == 0) return AssetInfo({asset: asset00, borrowCollateralFactor: borrowCollateralFactor00, liquidateCollateralFactor: liquidateCollateralFactor00, supplyCap: supplyCap00 });
-        if (i == 1) return AssetInfo({asset: asset01, borrowCollateralFactor: borrowCollateralFactor01, liquidateCollateralFactor: liquidateCollateralFactor01, supplyCap: supplyCap01 });
-        if (i == 2) return AssetInfo({asset: asset02, borrowCollateralFactor: borrowCollateralFactor02, liquidateCollateralFactor: liquidateCollateralFactor02, supplyCap: supplyCap02 });
+        if (i == 0) return AssetInfo({asset: asset00, borrowCollateralFactor: borrowCollateralFactor00, liquidateCollateralFactor: liquidateCollateralFactor00, supplyCap: supplyCap00, priceFeed: priceFeed00 });
+        if (i == 1) return AssetInfo({asset: asset01, borrowCollateralFactor: borrowCollateralFactor01, liquidateCollateralFactor: liquidateCollateralFactor01, supplyCap: supplyCap01, priceFeed: priceFeed01 });
+        if (i == 2) return AssetInfo({asset: asset02, borrowCollateralFactor: borrowCollateralFactor02, liquidateCollateralFactor: liquidateCollateralFactor02, supplyCap: supplyCap02, priceFeed: priceFeed02 });
         revert("absurd");
     }
 
@@ -966,5 +992,21 @@ contract Comet is CometMath, CometStorage {
         totalsBasic.baseBorrowIndex = baseIndexScale;
         totalsBasic.trackingSupplyIndex = 0;
         totalsBasic.trackingBorrowIndex = 0;
+    }
+
+    /**
+     * @notice return price from asset's price feed
+     * @param priceFeed address of ChainLink aggregator
+     * @return latest price of asset, scaled up by 1e8
+     */
+    function getPrice(address priceFeed) public view returns (uint) {
+        (
+            uint80 _roundID,
+            int price,
+            uint _startedAt,
+            uint _timeStamp,
+            uint80 _answeredInRound
+        ) = AggregatorV3Interface(priceFeed).latestRoundData();
+        return unsigned256(price);
     }
 }

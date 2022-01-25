@@ -1,17 +1,16 @@
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeploymentManager, Roots } from '../plugins/deployment_manager/DeploymentManager';
 import {
   Comet__factory,
   Comet,
   FaucetToken__factory,
   FaucetToken,
-  MockedOracle,
-  MockedOracle__factory,
   ProxyAdmin,
   ProxyAdmin__factory,
   ERC20,
   TransparentUpgradeableProxy__factory,
   TransparentUpgradeableProxy,
+  SimplePriceFeed,
+  SimplePriceFeed__factory,
 } from '../build/types';
 import { AssetInfoStruct, ConfigurationStruct } from '../build/types/Comet';
 import { BigNumberish } from 'ethers';
@@ -20,8 +19,8 @@ export { Comet } from '../build/types';
 export interface CometConfigurationOverrides {
   governor?: string;
   pauseGuardian?: string;
-  priceOracle?: string;
   baseToken?: string;
+  baseTokenPriceFeed?: string;
   trackingIndexScale?: string;
   baseMinForRewards?: BigNumberish;
   baseTrackingSupplySpeed?: BigNumberish;
@@ -53,9 +52,20 @@ async function makeToken(
   ]);
 }
 
+async function makePriceFeed(
+  deploymentManager: DeploymentManager,
+  initialPrice: number,
+  decimals: number
+): Promise<SimplePriceFeed> {
+  return await deploymentManager.deploy<
+    SimplePriceFeed,
+    SimplePriceFeed__factory,
+    [number, number]
+  >('test/SimplePriceFeed.sol', [initialPrice * 1e8, decimals]);
+}
+
 interface DeployedContracts {
   comet: Comet;
-  oracle: MockedOracle;
   proxy: TransparentUpgradeableProxy | null;
   tokens: ERC20[];
 }
@@ -72,17 +82,16 @@ export async function deployComet(
   let asset0 = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
   let asset1 = await makeToken(deploymentManager, 3000000, 'SILVER', 10, 'SILVER');
 
-  const oracle = await deploymentManager.deploy<MockedOracle, MockedOracle__factory, []>(
-    'test/MockedOracle.sol',
-    [],
-    governor
-  );
+  let baseTokenPriceFeed = await makePriceFeed(deploymentManager, 1, 8);
+  let asset0PriceFeed = await makePriceFeed(deploymentManager, 0.5, 8);
+  let asset1PriceFeed = await makePriceFeed(deploymentManager, 0.05, 8);
 
   let assetInfo0 = {
     asset: asset0.address,
     borrowCollateralFactor: (1e18).toString(),
     liquidateCollateralFactor: (1e18).toString(),
     supplyCap: (1000000e8).toString(),
+    priceFeed: asset0PriceFeed.address,
   };
 
   let assetInfo1 = {
@@ -90,14 +99,15 @@ export async function deployComet(
     borrowCollateralFactor: (0.5e18).toString(),
     liquidateCollateralFactor: (0.5e18).toString(),
     supplyCap: (500000e10).toString(),
+    priceFeed: asset1PriceFeed.address,
   };
 
   let configuration = {
     ...{
       governor: await governor.getAddress(),
       pauseGuardian: await pauseGuardian.getAddress(),
-      priceOracle: oracle.address,
       baseToken: baseToken.address,
+      baseTokenPriceFeed: baseTokenPriceFeed.address,
       kink: (8e17).toString(), // 0.8
       perYearInterestRateBase: (5e15).toString(), // 0.005
       perYearInterestRateSlopeLow: (1e17).toString(), // 0.1
@@ -141,7 +151,6 @@ export async function deployComet(
 
   return {
     comet,
-    oracle,
     proxy,
     tokens: [baseToken, asset0, asset1],
   };
