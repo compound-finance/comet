@@ -10,7 +10,7 @@
     "gas": "REPORT_GAS=true yarn test",
     "lint-contracts": "solhint 'contracts/**/*.sol'",
     "lint-contracts:fix": "solhint --fix 'contracts/**/*.sol'",
-    "prettier": "prettier --ignore-unknown --write",
+    "format": "prettier --ignore-unknown --write",
     "scenario": "hardhat scenario",
     "spider": "hardhat spider",
     "test": "hardhat test",
