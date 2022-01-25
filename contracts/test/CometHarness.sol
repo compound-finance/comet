@@ -65,5 +65,4 @@ contract CometHarness is Comet {
 
         return result;
     }
-
 }
