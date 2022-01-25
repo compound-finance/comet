@@ -1069,8 +1069,8 @@ contract Comet is CometMath, CometStorage {
         require(reserves < 0 || uint(reserves) < targetReserves, "no ongoing sale");
 
         AssetInfo memory assetInfo = getAssetInfo(getAssetOffset(asset));
-        uint basePerAsset = askPrice(asset, assetInfo.scale);
-        uint collateralAmount = divBaseWei(baseAmount, basePerAsset);
+        uint baseWeiPerUnitAsset = askPrice(asset, assetInfo.scale);
+        uint collateralAmount = assetInfo.scale * baseAmount / baseWeiPerUnitAsset;
         require(collateralAmount >= minAmount, "slippage too high");
 
         doTransferIn(baseToken, msg.sender, baseAmount);

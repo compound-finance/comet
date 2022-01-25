@@ -11,26 +11,26 @@ describe('buyCollateral', function () {
     // Reserves are at 0 wei
 
     // Set up token balances and accounting
-    await USDC.allocateTo(alice.address, 100);
-    await COMP.allocateTo(comet.address, 100);
-    await wait(comet.setTotalsCollateral(COMP.address, { totalSupplyAsset: 100, _reserved: 0 }));
-    await wait(comet.setCollateralBalance(comet.address, COMP.address, 100));
+    await USDC.allocateTo(alice.address, 100e6);
+    await COMP.allocateTo(comet.address, exp(50, 18));
+    await wait(comet.setTotalsCollateral(COMP.address, { totalSupplyAsset: exp(50, 18), _reserved: 0 }));
+    await wait(comet.setCollateralBalance(comet.address, COMP.address, exp(50, 18)));
 
     const r0 = await comet.getReserves();
     const p0 = await portfolio(protocol, alice.address);
-    await wait(baseAsA.approve(comet.address, 50));
-    // Alice buys 50 wei COMP for 50 wei USDC
-    await wait(cometAsA.buyCollateral(COMP.address, 50, 50, alice.address));
+    await wait(baseAsA.approve(comet.address, exp(50, 6)));
+    // Alice buys 50e18 wei COMP for 50e6 wei USDC
+    await wait(cometAsA.buyCollateral(COMP.address, exp(50, 18), 50e6, alice.address));
     const p1 = await portfolio(protocol, alice.address)
     const r1 = await comet.getReserves();
 
     expect(r0).to.be.equal(0n);
     expect(r0).to.be.lt(await comet.targetReserves());
     expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p0.external).to.be.deep.equal({USDC: 100n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(p0.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(p1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p1.external).to.be.deep.equal({USDC: 50n, COMP: 50n, WETH: 0n, WBTC: 0n});
-    expect(r1).to.be.equal(50n);
+    expect(p1.external).to.be.deep.equal({USDC: exp(50, 6), COMP: exp(50, 18), WETH: 0n, WBTC: 0n});
+    expect(r1).to.be.equal(exp(50, 6));
   });
 
   it('allows buying collateral when reserves < 0 and target reserves is 0', async () => {
@@ -43,32 +43,32 @@ describe('buyCollateral', function () {
     // Set reserves to -100 wei
     let t0 = await comet.totalsBasic();
     t0 = Object.assign({}, t0, {
-        totalSupplyBase: 100n,
+        totalSupplyBase: 100e6,
         totalBorrowBase: 0n,
     });
     await wait(comet.setTotalsBasic(t0));
 
     // Set up token balances and accounting
-    await USDC.allocateTo(alice.address, 100);
-    await COMP.allocateTo(comet.address, 100);
-    await wait(comet.setTotalsCollateral(COMP.address, { totalSupplyAsset: 100, _reserved: 0 }));
-    await wait(comet.setCollateralBalance(comet.address, COMP.address, 100));
+    await USDC.allocateTo(alice.address, 100e6);
+    await COMP.allocateTo(comet.address, exp(50, 18));
+    await wait(comet.setTotalsCollateral(COMP.address, { totalSupplyAsset: exp(50, 18), _reserved: 0 }));
+    await wait(comet.setCollateralBalance(comet.address, COMP.address, exp(50, 18)));
 
     const r0 = await comet.getReserves();
     const p0 = await portfolio(protocol, alice.address);
-    await wait(baseAsA.approve(comet.address, 50));
-    // Alice buys 50 wei COMP for 50 wei USDC
-    await wait(cometAsA.buyCollateral(COMP.address, 50, 50, alice.address));
+    await wait(baseAsA.approve(comet.address, exp(50, 6)));
+    // Alice buys 50e18 wei COMP for 50e6 wei USDC
+    await wait(cometAsA.buyCollateral(COMP.address, exp(50, 18), 50e6, alice.address));
     const p1 = await portfolio(protocol, alice.address)
     const r1 = await comet.getReserves();
 
-    expect(r0).to.be.equal(-100n);
+    expect(r0).to.be.equal(-100e6);
     expect(r0).to.be.lt(await comet.targetReserves());
     expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p0.external).to.be.deep.equal({USDC: 100n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(p0.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(p1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p1.external).to.be.deep.equal({USDC: 50n, COMP: 50n, WETH: 0n, WBTC: 0n});
-    expect(r1).to.be.equal(-50n);
+    expect(p1.external).to.be.deep.equal({USDC: exp(50, 6), COMP: exp(50, 18), WETH: 0n, WBTC: 0n});
+    expect(r1).to.be.equal(-50e6);
   });
 
   it('reverts if reserves are above target reserves', async () => {
@@ -78,22 +78,22 @@ describe('buyCollateral', function () {
     const cometAsA = comet.connect(alice);
     const baseAsA = USDC.connect(alice);
 
-    // Set reserves to 100 wei
-    await USDC.allocateTo(comet.address, 100);
+    // Set reserves to 100e6 wei
+    await USDC.allocateTo(comet.address, 100e6);
 
     // Set up token balances and accounting
-    await USDC.allocateTo(alice.address, 100);
-    await COMP.allocateTo(comet.address, 100);
-    await wait(comet.setTotalsCollateral(COMP.address, { totalSupplyAsset: 100, _reserved: 0 }));
-    await wait(comet.setCollateralBalance(comet.address, COMP.address, 100));
+    await USDC.allocateTo(alice.address, 100e6);
+    await COMP.allocateTo(comet.address, exp(50, 18));
+    await wait(comet.setTotalsCollateral(COMP.address, { totalSupplyAsset: exp(50, 18), _reserved: 0 }));
+    await wait(comet.setCollateralBalance(comet.address, COMP.address, exp(50, 18)));
 
     const r0 = await comet.getReserves();
-    expect(r0).to.be.equal(100n); 
+    expect(r0).to.be.equal(100e6); 
     expect(r0).to.be.gt(await comet.targetReserves());
     
-    // Alice buys 50 wei COMP for 50 wei USDC    
-    await wait(baseAsA.approve(comet.address, 50));
-    await expect(cometAsA.buyCollateral(COMP.address, 50, 50, alice.address)).to.be.revertedWith('no ongoing sale');
+    // Alice buys 50e18 wei COMP for 50e6 wei USDC
+    await wait(baseAsA.approve(comet.address, exp(50, 6)));
+    await expect(cometAsA.buyCollateral(COMP.address, exp(50, 18), 50e6, alice.address)).to.be.revertedWith('no ongoing sale');
   });
 
   it('reverts if slippage is too high', async () => {
@@ -106,14 +106,14 @@ describe('buyCollateral', function () {
     // Reserves are at 0 wei
 
     // Set up token balances and accounting
-    await USDC.allocateTo(alice.address, 100);
-    await COMP.allocateTo(comet.address, 100);
-    await wait(comet.setTotalsCollateral(COMP.address, { totalSupplyAsset: 100, _reserved: 0 }));
-    await wait(comet.setCollateralBalance(comet.address, COMP.address, 100));
+    await USDC.allocateTo(alice.address, 100e6);
+    await COMP.allocateTo(comet.address, exp(50, 18));
+    await wait(comet.setTotalsCollateral(COMP.address, { totalSupplyAsset: exp(50, 18), _reserved: 0 }));
+    await wait(comet.setCollateralBalance(comet.address, COMP.address, exp(50, 18)));
 
-    // Alice tries to buy 100 wei COMP for 50 wei USDC
-    await wait(baseAsA.approve(comet.address, 50));
-    await expect(cometAsA.buyCollateral(COMP.address, 100, 50, alice.address)).to.be.revertedWith('slippage too high');
+    // Alice tries to buy 100e18 wei COMP for 50e6 wei USDC
+    await wait(baseAsA.approve(comet.address, exp(50, 6)));
+    await expect(cometAsA.buyCollateral(COMP.address, exp(100, 18), 50e6, alice.address)).to.be.revertedWith('slippage too high');
   });
 
   it('reverts if not enough collateral to buy', async () => {
@@ -126,14 +126,14 @@ describe('buyCollateral', function () {
     // Reserves are at 0 wei
 
     // Set up token balances and accounting
-    await USDC.allocateTo(alice.address, 200);
-    await COMP.allocateTo(comet.address, 100);
-    await wait(comet.setTotalsCollateral(COMP.address, { totalSupplyAsset: 100, _reserved: 0 }));
-    await wait(comet.setCollateralBalance(comet.address, COMP.address, 100));
+    await USDC.allocateTo(alice.address, 200e6);
+    await COMP.allocateTo(comet.address, exp(50, 18));
+    await wait(comet.setTotalsCollateral(COMP.address, { totalSupplyAsset: exp(50, 18), _reserved: 0 }));
+    await wait(comet.setCollateralBalance(comet.address, COMP.address, exp(50, 18)));
 
-    // Alice tries to buy 200 wei COMP for 200 wei USDC
-    await wait(baseAsA.approve(comet.address, 200));
-    await expect(cometAsA.buyCollateral(COMP.address, 200, 200, alice.address)).to.be.revertedWith('reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
+    // Alice tries to buy 200e18 wei COMP for 200e6 wei USDC
+    await wait(baseAsA.approve(comet.address, exp(50, 6)));
+    await expect(cometAsA.buyCollateral(COMP.address, exp(200, 18), 200e6, alice.address)).to.be.revertedWith('reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
   });
 
   it.skip('buys the correct amount in a fee-like situation', async () => {
