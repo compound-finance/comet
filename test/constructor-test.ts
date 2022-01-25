@@ -1,6 +1,6 @@
 import { Comet, ethers, expect, exp, makeProtocol, wait } from './helpers';
 
-describe('constructor', function () {
+describe.only('constructor', function () {
   it('sets the baseBorrowMin', async function () {
     // XXX
   });
@@ -14,7 +14,7 @@ describe('constructor', function () {
           },
         },
       })
-    ).to.be.revertedWith('baseTokenPriceFeed.decimals != 8');
+    ).to.be.revertedWith('incorrect baseTokenPriceFeed decimals');
   });
 
   it('reverts if asset has a price feed that does not have 8 decimals', async () => {
@@ -30,6 +30,6 @@ describe('constructor', function () {
           },
         },
       })
-    ).to.be.revertedWith('priceFeed.decimals != 8');
+    ).to.be.revertedWith('incorrect priceFeed decimals');
   });
 });

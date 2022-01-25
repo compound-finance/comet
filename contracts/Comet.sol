@@ -113,6 +113,9 @@ contract Comet is CometMath, CometStorage {
     /// @notice The scale for factors
     uint64 public constant factorScale = 1e18;
 
+    /// @notice The decimals required for a price feed
+    uint8 public constant priceFeedDecimals = 8;
+
     /// @notice The scale for reward tracking
     uint64 public immutable trackingIndexScale;
 
@@ -161,7 +164,7 @@ contract Comet is CometMath, CometStorage {
         require(decimals <= 18, "base token has too many decimals");
         require(config.baseMinForRewards > 0, "baseMinForRewards should be > 0");
         require(config.assetInfo.length <= maxAssets, "too many asset configs");
-        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == 8, "baseTokenPriceFeed.decimals != 8");
+        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == priceFeedDecimals, "incorrect baseTokenPriceFeed decimals");
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
@@ -203,11 +206,11 @@ contract Comet is CometMath, CometStorage {
         address priceFeed02_ = _getAsset(config.assetInfo, 2).priceFeed;
 
         if (priceFeed00_ != address(0))
-            require(AggregatorV3Interface(priceFeed00_).decimals() == 8, "priceFeed.decimals != 8");
+            require(AggregatorV3Interface(priceFeed00_).decimals() == priceFeedDecimals, "incorrect priceFeed decimals");
         if (priceFeed01_ != address(0))
-            require(AggregatorV3Interface(priceFeed01_).decimals() == 8, "priceFeed.decimals != 8");
+            require(AggregatorV3Interface(priceFeed01_).decimals() == priceFeedDecimals, "incorrect priceFeed decimals");
         if (priceFeed02_ != address(0))
-            require(AggregatorV3Interface(priceFeed02_).decimals() == 8, "priceFeed.decimals != 8");
+            require(AggregatorV3Interface(priceFeed02_).decimals() == priceFeedDecimals, "incorrect priceFeed decimals");
 
         priceFeed00 = priceFeed00_;
         priceFeed01 = priceFeed01_;
