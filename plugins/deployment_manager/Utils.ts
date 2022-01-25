@@ -4,10 +4,11 @@ import { Contract, utils } from 'ethers';
 import { Address, BuildFile, ContractMap, ContractMetadata } from './Types';
 
 async function asAddresses(contract: Contract, fnName: string): Promise<Address[]> {
-  if (fnName.startsWith('%')) { // Read from slot
+  if (fnName.startsWith('%')) {
+    // Read from slot
     let slot = fnName.slice(1);
-    let addressRaw = await contract.provider.getStorageAt(contract.address, slot)
-    let address = utils.getAddress("0x" + addressRaw.substring(26))
+    let addressRaw = await contract.provider.getStorageAt(contract.address, slot);
+    let address = utils.getAddress('0x' + addressRaw.substring(26));
     return [address];
   }
 
@@ -16,7 +17,7 @@ async function asAddresses(contract: Contract, fnName: string): Promise<Address[
     // TODO: `contract.name` is undefined. Find a better way to log this error.
     throw new Error(`Cannot find contract function ${contract.name}.${fnName}()`);
   }
-  let val = (await fn());
+  let val = await fn();
 
   if (typeof val === 'string') {
     return [val];
@@ -58,17 +59,25 @@ export function getPrimaryContract(buildFile: BuildFile): [string, ContractMetad
   }
 
   let contractEntries = Object.entries(buildFile.contracts);
-  let contracts = Object.fromEntries(contractEntries.map(([key, value]) => {
-    if (key.includes(':')) {
-      return [[key.split(':')[1], value as ContractMetadata]];
-    } else {
-      return Object.entries(value);
-    }
-  }).flat());
+  let contracts = Object.fromEntries(
+    contractEntries
+      .map(([key, value]) => {
+        if (key.includes(':')) {
+          return [[key.split(':')[1], value as ContractMetadata]];
+        } else {
+          return Object.entries(value);
+        }
+      })
+      .flat()
+  );
 
   let contractMetadata = contracts[targetContract];
   if (contractMetadata === undefined) {
-    throw new Error(`Could not find contract ${targetContract} in buildFile with contracts: ${JSON.stringify(Object.keys(contracts))}`);
+    throw new Error(
+      `Could not find contract ${targetContract} in buildFile with contracts: ${JSON.stringify(
+        Object.keys(contracts)
+      )}`
+    );
   }
 
   return [targetContract, contractMetadata];
@@ -107,10 +116,10 @@ export function mergeContracts(a: ContractMap, b: ContractMap): ContractMap {
   };
 }
 
-export function objectToMap<V>(obj: {string: V}): Map<string, V> {
+export function objectToMap<V>(obj: { string: V }): Map<string, V> {
   return new Map(Object.entries(obj));
 }
 
-export function objectFromMap<V>(map: Map<string, V>): {[k: string]: V} {
+export function objectFromMap<V>(map: Map<string, V>): { [k: string]: V } {
   return Object.fromEntries(map.entries());
 }

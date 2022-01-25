@@ -30,14 +30,14 @@ jobs:
       - name: Run tests
         run: yarn test
 
-      - uses: actions/upload-artifact@v2  # upload test results
-        if: success() || failure()        # run this step even if previous step failed
+      - uses: actions/upload-artifact@v2 # upload test results
+        if: success() || failure() # run this step even if previous step failed
         with:
           name: test-results
           path: test-results.json
 
       - uses: dorny/test-reporter@v1
         with:
-          name: Unit Tests                  # Name of the check run which will be created
-          path: 'test-results.json'         # Path to test results (inside artifact .zip)
-          reporter: mocha-json              # Format of test results
+          name: Unit Tests # Name of the check run which will be created
+          path: 'test-results.json' # Path to test results (inside artifact .zip)
+          reporter: mocha-json # Format of test results

@@ -116,7 +116,7 @@ async function fetchQuery(
       return await fetchQuery(contract, filter, nextFrom, toBlock);
     }
   } catch (err) {
-    if (err.message.includes("query returned more")) {
+    if (err.message.includes('query returned more')) {
       let midBlock = (fromBlock + toBlock) / 2;
       return await fetchQuery(contract, filter, midBlock, toBlock);
     } else {

@@ -16,7 +16,7 @@ export default class CometAsset {
 
   async balanceOf(actorOrAddress: string | CometActor): Promise<bigint> {
     let address: string;
-    if (typeof(actorOrAddress) === 'string') {
+    if (typeof actorOrAddress === 'string') {
       address = actorOrAddress;
     } else {
       address = actorOrAddress.address;
@@ -26,13 +26,13 @@ export default class CometAsset {
   }
 
   async transfer(from: CometActor, amount: number | bigint, recipient: CometAsset | string) {
-    let recipientAddress = typeof(recipient) === 'string' ? recipient : recipient.address;
+    let recipientAddress = typeof recipient === 'string' ? recipient : recipient.address;
 
     await wait(this.token.connect(from.signer).transfer(recipientAddress, amount));
   }
 
   async approve(from: CometActor, spender: AddressLike, amount?: number) {
-    let spenderAddress = resolveAddress(spender)
+    let spenderAddress = resolveAddress(spender);
     let finalAmount = amount ?? constants.MaxUint256;
     await wait(this.token.connect(from.signer).approve(spenderAddress, finalAmount));
   }

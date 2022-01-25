@@ -7,7 +7,10 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import * as types from 'hardhat/internal/core/params/argumentTypes'; // TODO harhdat argument types not from internal
 
-function getBasesFromTaskArgs(givenBases: string | undefined, env: HardhatRuntimeEnvironment): ForkSpec[] {
+function getBasesFromTaskArgs(
+  givenBases: string | undefined,
+  env: HardhatRuntimeEnvironment
+): ForkSpec[] {
   let bases: ForkSpec[] = env.config.scenario.bases;
   if (givenBases) {
     let baseMap = Object.fromEntries(env.config.scenario.bases.map((base) => [base.name, base]));
@@ -42,13 +45,15 @@ task('scenario:spider', 'Runs spider in preparation for scenarios')
   .setAction(async (taskArgs, env) => {
     let bases: ForkSpec[] = getBasesFromTaskArgs(taskArgs.bases, env);
 
-    await Promise.all(bases.map(async (base) => {
-      if (base.name !== 'development') {
-        let hre = hreForBase(base);
-        let dm = new DeploymentManager(base.name, hre, {
-          writeCacheToDisk: true,
-        });
-        await dm.spider();
-      }
-    }));
+    await Promise.all(
+      bases.map(async (base) => {
+        if (base.name !== 'development') {
+          let hre = hreForBase(base);
+          let dm = new DeploymentManager(base.name, hre, {
+            writeCacheToDisk: true,
+          });
+          await dm.spider();
+        }
+      })
+    );
   });

@@ -26,7 +26,13 @@ export default class CometActor {
   context: CometContext;
   info: object;
 
-  constructor(name: string, signer: SignerWithAddress, address: string, context: CometContext, info: object = {}) {
+  constructor(
+    name: string,
+    signer: SignerWithAddress,
+    address: string,
+    context: CometContext,
+    info: object = {}
+  ) {
     this.name = name;
     this.signer = signer;
     this.address = address;
@@ -41,10 +47,10 @@ export default class CometActor {
   async sendEth(recipient: AddressLike, amount: number) {
     let tx = await this.signer.sendTransaction({
       to: resolveAddress(recipient),
-      value: floor(amount * 1e18)
+      value: floor(amount * 1e18),
     });
     await tx.wait();
-  }  
+  }
 
   async allow(manager: CometActor, isAllowed: boolean) {
     await (await this.context.comet.connect(this.signer).allow(manager.address, isAllowed)).wait();
@@ -64,21 +70,14 @@ export default class CometActor {
     ).wait();
   }
 
-  async transfer({
-    dst,
-    asset,
-    amount,
-  }) {
-    await (await this.context.comet.connect(this.signer).transfer(dst, asset, amount)).wait()
+  async transfer({ dst, asset, amount }) {
+    await (await this.context.comet.connect(this.signer).transfer(dst, asset, amount)).wait();
   }
 
-  async transferFrom({
-    src,
-    dst,
-    asset,
-    amount,
-  }) {
-    await (await this.context.comet.connect(this.signer).transferFrom(src, dst, asset, amount)).wait()
+  async transferFrom({ src, dst, asset, amount }) {
+    await (
+      await this.context.comet.connect(this.signer).transferFrom(src, dst, asset, amount)
+    ).wait();
   }
 
   async signAuthorization({

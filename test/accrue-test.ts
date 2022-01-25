@@ -59,7 +59,7 @@ describe('accrue', function () {
     };
     const s0 = await wait(comet.setTotalsBasic(totals));
 
-    const t0 = await comet.totalsBasic()
+    const t0 = await comet.totalsBasic();
     const a1 = await wait(comet.accrue());
     const t1 = await comet.totalsBasic();
     const a2 = await wait(comet.accrue());
@@ -103,18 +103,22 @@ describe('accrue', function () {
     const borrowRate = await comet.getBorrowRate();
     expect(borrowRate).to.be.equal(21721207507);
 
-    await ethers.provider.send("evm_setAutomine", [false]);
+    await ethers.provider.send('evm_setAutomine', [false]);
     const a1 = await comet.accrue();
     await ethers.provider.send('evm_mine', [start + 1000]);
-    await ethers.provider.send("evm_setAutomine", [true]);
+    await ethers.provider.send('evm_setAutomine', [true]);
 
     const t2 = await comet.totalsBasic();
 
     const timeElapsed = t2.lastAccrualTime - t1.lastAccrualTime;
     expect(timeElapsed).to.be.equal(1000);
 
-    expect(t2.baseSupplyIndex).to.be.equal(projectBaseIndex(t1.baseSupplyIndex, supplyRate, timeElapsed));
-    expect(t2.baseBorrowIndex).to.be.equal(projectBaseIndex(t1.baseBorrowIndex, borrowRate, timeElapsed));
+    expect(t2.baseSupplyIndex).to.be.equal(
+      projectBaseIndex(t1.baseSupplyIndex, supplyRate, timeElapsed)
+    );
+    expect(t2.baseBorrowIndex).to.be.equal(
+      projectBaseIndex(t1.baseBorrowIndex, borrowRate, timeElapsed)
+    );
     expect(t2.trackingSupplyIndex).to.be.equal(t1.trackingSupplyIndex);
     expect(t2.trackingBorrowIndex).to.be.equal(t1.trackingBorrowIndex);
   });
@@ -153,10 +157,18 @@ describe('accrue', function () {
     const timeElapsed = t2.lastAccrualTime - t0.lastAccrualTime;
     expect(timeElapsed).to.be.equal(1000);
 
-    expect(t2.baseSupplyIndex).to.be.equal(projectBaseIndex(t1.baseSupplyIndex, supplyRate, timeElapsed));
-    expect(t2.baseBorrowIndex).to.be.equal(projectBaseIndex(t1.baseBorrowIndex, borrowRate, timeElapsed));
-    expect(t2.trackingSupplyIndex).to.be.equal(projectTrackingIndex(t1.trackingSupplyIndex, supplySpeed, timeElapsed, t1.totalSupplyBase));
-    expect(t2.trackingBorrowIndex).to.be.equal(projectTrackingIndex(t1.trackingBorrowIndex, borrowSpeed, timeElapsed, t1.totalBorrowBase));
+    expect(t2.baseSupplyIndex).to.be.equal(
+      projectBaseIndex(t1.baseSupplyIndex, supplyRate, timeElapsed)
+    );
+    expect(t2.baseBorrowIndex).to.be.equal(
+      projectBaseIndex(t1.baseBorrowIndex, borrowRate, timeElapsed)
+    );
+    expect(t2.trackingSupplyIndex).to.be.equal(
+      projectTrackingIndex(t1.trackingSupplyIndex, supplySpeed, timeElapsed, t1.totalSupplyBase)
+    );
+    expect(t2.trackingBorrowIndex).to.be.equal(
+      projectTrackingIndex(t1.trackingBorrowIndex, borrowSpeed, timeElapsed, t1.totalBorrowBase)
+    );
   });
 
   it('overflows if baseMinRewards is set too low and accrues no interest', async () => {
@@ -184,8 +196,12 @@ describe('accrue', function () {
     const timeElapsed = t2.lastAccrualTime - t0.lastAccrualTime;
     expect(timeElapsed).to.be.equal(0);
 
-    expect(t2.baseSupplyIndex).to.be.equal(projectBaseIndex(t1.baseSupplyIndex, supplyRate, timeElapsed));
-    expect(t2.baseBorrowIndex).to.be.equal(projectBaseIndex(t1.baseBorrowIndex, borrowRate, timeElapsed));
+    expect(t2.baseSupplyIndex).to.be.equal(
+      projectBaseIndex(t1.baseSupplyIndex, supplyRate, timeElapsed)
+    );
+    expect(t2.baseBorrowIndex).to.be.equal(
+      projectBaseIndex(t1.baseBorrowIndex, borrowRate, timeElapsed)
+    );
     expect(t2.trackingSupplyIndex).to.be.equal(t1.trackingSupplyIndex);
     expect(t2.trackingBorrowIndex).to.be.equal(t1.trackingBorrowIndex);
   });
@@ -195,22 +211,26 @@ describe('accrue', function () {
 
     const t0 = await comet.totalsBasic();
     const t1 = Object.assign({}, t0, {
-      baseSupplyIndex: 2n**64n - 1n,
+      baseSupplyIndex: 2n ** 64n - 1n,
       totalSupplyBase: 14000,
       totalBorrowBase: 13000, // needs to have positive utilization for supply rate to be > 0
     });
     await ethers.provider.send('evm_increaseTime', [998]);
     const s0 = await wait(comet.setTotalsBasic(t1));
     await ethers.provider.send('evm_increaseTime', [2]);
-    await expect(wait(comet.accrue())).to.be.revertedWith('reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
+    await expect(wait(comet.accrue())).to.be.revertedWith(
+      'reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)'
+    );
 
     const t2 = Object.assign({}, t0, {
-      baseBorrowIndex: 2n**64n - 1n,
+      baseBorrowIndex: 2n ** 64n - 1n,
     });
     await ethers.provider.send('evm_increaseTime', [998]);
     const s1 = await wait(comet.setTotalsBasic(t2));
     await ethers.provider.send('evm_increaseTime', [2]);
-    await expect(wait(comet.accrue())).to.be.revertedWith('reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
+    await expect(wait(comet.accrue())).to.be.revertedWith(
+      'reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)'
+    );
   });
 
   it('supports up to the maximum timestamp then breaks', async () => {
@@ -219,7 +239,7 @@ describe('accrue', function () {
     await ethers.provider.send('evm_increaseTime', [100]);
     const a0 = await wait(comet.accrue());
 
-    await ethers.provider.send('evm_increaseTime', [2**40]);
+    await ethers.provider.send('evm_increaseTime', [2 ** 40]);
     await expect(wait(comet.accrue())).to.be.revertedWith('timestamp exceeds size (40 bits)');
     await ethers.provider.send('hardhat_reset', []); // dont break downstream tests...
   });

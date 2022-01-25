@@ -1,9 +1,8 @@
-
 export interface StackCall {
-  function?: string,
-  file?: string,
-  line?: number,
-  char?: number,
+  function?: string;
+  file?: string;
+  line?: number;
+  char?: number;
 }
 
 export function getStack(skipFrames: number = 1): StackCall[] {
@@ -13,7 +12,7 @@ export function getStack(skipFrames: number = 1): StackCall[] {
   let trace = [];
   let index = 0;
 
-  while (null != (next=regex.exec(stack))) {
+  while (null != (next = regex.exec(stack))) {
     if (++index > skipFrames) {
       trace.push({
         function: next.groups['function'],

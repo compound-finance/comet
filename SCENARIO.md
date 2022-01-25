@@ -34,13 +34,17 @@ import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 import { World } from '../plugins/scenario';
 
-scenario('Comet#allow > allows a user to authorize a manager', { upgrade: true }, async ({ comet, actors }) => {
-  const { albert, betty } = actors;
+scenario(
+  'Comet#allow > allows a user to authorize a manager',
+  { upgrade: true },
+  async ({ comet, actors }) => {
+    const { albert, betty } = actors;
 
-  await albert.allow(betty, true);
+    await albert.allow(betty, true);
 
-  expect(await comet.isAllowed(albert.address, betty.address)).to.be.true;
-});
+    expect(await comet.isAllowed(albert.address, betty.address)).to.be.true;
+  }
+);
 ```
 
 For more information, see the Scenarios Hardhat plugin.

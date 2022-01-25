@@ -21,7 +21,7 @@ function* combos(choices: object[][]) {
 
 function bindFunctions(obj: any) {
   for (let property of Object.getOwnPropertyNames(Object.getPrototypeOf(obj))) {
-    if (typeof(obj[property]) === 'function') {
+    if (typeof obj[property] === 'function') {
       obj[property] = obj[property].bind(obj);
     }
   }

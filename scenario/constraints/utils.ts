@@ -1,4 +1,3 @@
-
 export function requireString(o: object, key: string, err: string): string {
   let value: unknown = o[key];
   if (value === undefined) {
@@ -29,7 +28,7 @@ export function requireNumber<T>(o: object, key: string, err: string): number {
   if (typeof value !== 'number') {
     throw new Error(`${err} [requirement ${key} required to be number type]`);
   }
-  return value;  
+  return value;
 }
 
 export function optionalNumber<T>(o: object, key: string): number {
@@ -40,5 +39,5 @@ export function optionalNumber<T>(o: object, key: string): number {
   if (typeof value !== 'number') {
     throw new Error(`[requirement ${key} required to be number type]`);
   }
-  return value;  
+  return value;
 }

@@ -1,14 +1,14 @@
 import { BigNumber } from 'ethers';
 import { Comet, ethers, expect, exp, makeProtocol, wait } from './helpers';
 
-// Interest rate calculations can be checked with this Google Sheet: 
+// Interest rate calculations can be checked with this Google Sheet:
 // https://docs.google.com/spreadsheets/d/1G3BWcFPEQYnH-IrHHye5oA0oFIP0Jyj7pybdpMuDOuI
 
 // The minimum required precision between the actual and expected annual rate for tests to pass.
 const MINIMUM_PRECISION_WEI = 1e8; // 1e8 wei of precision
 
 function assertInterestRatesMatch(expectedRate, actualRate, precision = MINIMUM_PRECISION_WEI) {
-  expect((actualRate.sub(expectedRate)).abs()).lte(precision);
+  expect(actualRate.sub(expectedRate).abs()).lte(precision);
 }
 
 describe('interest rates', function () {
@@ -18,7 +18,7 @@ describe('interest rates', function () {
       perYearInterestRateBase: exp(5, 15), // 0.005
       perYearInterestRateSlopeLow: exp(1, 17), // 0.1
       perYearInterestRateSlopeHigh: exp(3, 18), // 3.0
-      reserveRate: exp(1, 17) // 0.1
+      reserveRate: exp(1, 17), // 0.1
     };
     const { comet } = await makeProtocol(params);
     const baseIndexScale = await comet.baseIndexScale();
@@ -58,7 +58,7 @@ describe('interest rates', function () {
       perYearInterestRateBase: exp(5, 15), // 0.005
       perYearInterestRateSlopeLow: exp(1, 17), // 0.1
       perYearInterestRateSlopeHigh: exp(3, 18), // 3.0
-      reserveRate: exp(1, 17) // 0.1
+      reserveRate: exp(1, 17), // 0.1
     };
     const { comet } = await makeProtocol(params);
     const baseIndexScale = await comet.baseIndexScale();
@@ -98,7 +98,7 @@ describe('interest rates', function () {
       perYearInterestRateBase: exp(5, 15), // 0.005
       perYearInterestRateSlopeLow: exp(1, 17), // 0.1
       perYearInterestRateSlopeHigh: exp(3, 18), // 3.0
-      reserveRate: 0
+      reserveRate: 0,
     };
     const { comet } = await makeProtocol(params);
     const baseIndexScale = await comet.baseIndexScale();
@@ -138,7 +138,7 @@ describe('interest rates', function () {
       perYearInterestRateBase: exp(5, 15), // 0.005
       perYearInterestRateSlopeLow: exp(1, 17), // 0.1
       perYearInterestRateSlopeHigh: exp(3, 18), // 3.0
-      reserveRate: exp(1, 17) // 0.1
+      reserveRate: exp(1, 17), // 0.1
     };
     const { comet } = await makeProtocol(params);
     const baseIndexScale = await comet.baseIndexScale();

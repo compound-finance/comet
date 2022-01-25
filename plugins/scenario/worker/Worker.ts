@@ -17,7 +17,6 @@ import { ScenarioConfig } from '../types';
 import { AssertionError } from 'chai';
 import { SimpleWorker } from './SimpleWorker';
 
-
 interface Message {
   scenario?: {
     base: string;
@@ -41,7 +40,7 @@ function eventually(fn: () => void) {
 
 function onMessage(worker: SimpleWorker | undefined, f: (message: Message) => Promise<void>) {
   if (worker) {
-    worker.onParent('message', f)
+    worker.onParent('message', f);
   } else {
     parentPort.on('message', f);
   }
@@ -58,7 +57,8 @@ function postMessage(worker: SimpleWorker | undefined, message: any) {
 export async function run<T>({ scenarioConfig, bases, config, worker }: WorkerData) {
   let scenarios: { [name: string]: Scenario<T> };
 
-  if (!worker) { // only create if we're not in a simple worker
+  if (!worker) {
+    // only create if we're not in a simple worker
     createContext(...config);
     scenarios = await loadScenarios(scenarioGlob);
   } else {

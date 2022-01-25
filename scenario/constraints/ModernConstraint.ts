@@ -15,7 +15,7 @@ function getModernConfig(requirements: object): ModernConfig | null {
 
   return {
     upgrade: !!upgrade,
-    cometConfig
+    cometConfig,
   };
 }
 
@@ -25,12 +25,19 @@ export class ModernConstraint<T extends CometContext> implements Constraint<T> {
 
     if (upgrade) {
       return async (context: T): Promise<T> => {
-        console.log("Upgrading to modern...");
+        console.log('Upgrading to modern...');
         // TODO: Make this deployment script less ridiculous, e.g. since it redeploys tokens right now
-        let { comet: newComet, tokens } = await deployComet(context.deploymentManager, false, cometConfig);
+        let { comet: newComet, tokens } = await deployComet(
+          context.deploymentManager,
+          false,
+          cometConfig
+        );
         let initializer: string | undefined = undefined;
-        if (!context.comet.totalsBasic || (await context.comet.totalsBasic()).lastAccrualTime === 0) {
-          initializer = (await newComet.populateTransaction.XXX_REMOVEME_XXX_initialize()).data
+        if (
+          !context.comet.totalsBasic ||
+          (await context.comet.totalsBasic()).lastAccrualTime === 0
+        ) {
+          initializer = (await newComet.populateTransaction.XXX_REMOVEME_XXX_initialize()).data;
         }
 
         await context.upgradeTo(newComet, initializer);
@@ -41,7 +48,7 @@ export class ModernConstraint<T extends CometContext> implements Constraint<T> {
           SILVER: new CometAsset(tokens[2]),
         };
 
-        console.log("Upgraded to modern...");
+        console.log('Upgraded to modern...');
 
         return context; // It's been modified
       };

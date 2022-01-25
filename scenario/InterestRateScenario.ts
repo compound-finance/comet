@@ -104,8 +104,8 @@ scenario(
   {
     upgrade: true,
     cometConfig: {
-      perYearInterestRateBase: (5e16).toString() // 5% per year
-    }
+      perYearInterestRateBase: (5e16).toString(), // 5% per year
+    },
   },
   async ({ comet, actors }) => {
     expect(await comet.getUtilization()).to.equal(0);
@@ -117,7 +117,7 @@ scenario(
 // TODO: Scenario for testing custom configuration constants using a utilization constraint.
 scenario(
   'Comet#interestRate > when utilization is 50%',
-  { utilization: 0.50, upgrade: true },
+  { utilization: 0.5, upgrade: true },
   async ({ comet, actors }) => {
     expect(defactor(await comet.getUtilization())).to.approximately(0.5, 0.000001);
   }

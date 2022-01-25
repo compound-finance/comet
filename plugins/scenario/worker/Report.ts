@@ -2,15 +2,15 @@ import { Result } from './Parent';
 import { diff as showDiff } from 'jest-diff';
 import * as fs from 'fs/promises';
 
-export interface ConsoleFormatOptions {};
+export interface ConsoleFormatOptions {}
 export interface JsonFormatOptions {
   output?: string;
-};
+}
 
 export type FormatConfig = {
-  console?: ConsoleFormatOptions,
-  json?: JsonFormatOptions
-}
+  console?: ConsoleFormatOptions;
+  json?: JsonFormatOptions;
+};
 
 function pluralize(n, singular, plural = null) {
   if (n === 1) {
@@ -20,7 +20,12 @@ function pluralize(n, singular, plural = null) {
   }
 }
 
-async function showReportConsole(results: Result[], consoleOptions: ConsoleFormatOptions, startTime: number, endTime: number) {
+async function showReportConsole(
+  results: Result[],
+  consoleOptions: ConsoleFormatOptions,
+  startTime: number,
+  endTime: number
+) {
   let testCount = 0;
   let succCount = 0;
   let errCount = 0;
@@ -67,32 +72,37 @@ async function showReportConsole(results: Result[], consoleOptions: ConsoleForma
 }
 
 interface JsonTestResult {
-  title: string,
-  fullTitle: string,
-  file: string,
-  duration: number,
-  currentRetry: number,
-  err: any
-};
+  title: string;
+  fullTitle: string;
+  file: string;
+  duration: number;
+  currentRetry: number;
+  err: any;
+}
 
 interface JsonSuiteResult {
   stats: {
-    suites: number,
-    tests: number,
-    passes: number,
-    pending: number,
-    failures: number,
-    start: string,
-    end: string,
-    duration: number
-  },
-  tests: JsonTestResult[],
-  pending: JsonTestResult[],
-  failures: JsonTestResult[],
-  passes: JsonTestResult[],
-};
+    suites: number;
+    tests: number;
+    passes: number;
+    pending: number;
+    failures: number;
+    start: string;
+    end: string;
+    duration: number;
+  };
+  tests: JsonTestResult[];
+  pending: JsonTestResult[];
+  failures: JsonTestResult[];
+  passes: JsonTestResult[];
+}
 
-async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions, startTime: number, endTime: number) {
+async function showJsonReport(
+  results: Result[],
+  jsonOptions: JsonFormatOptions,
+  startTime: number,
+  endTime: number
+) {
   // TODO: Accept options, etc.
   let suites = new Set();
   let passes: JsonTestResult[] = [];
@@ -108,7 +118,7 @@ async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions,
       file: result.file,
       duration: result.elapsed || 0,
       currentRetry: 0,
-      err: result.error ? result.error.message : {} // Not sure
+      err: result.error ? result.error.message : {}, // Not sure
     };
 
     if (result.error) {
@@ -137,7 +147,7 @@ async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions,
     pending,
     failures,
     passes,
-  }
+  };
 
   let result = JSON.stringify(suiteResult, null, 4);
 
@@ -148,7 +158,12 @@ async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions,
   }
 }
 
-export async function showReport(results: Result[], format: FormatConfig, startTime: number, endTime: number) {
+export async function showReport(
+  results: Result[],
+  format: FormatConfig,
+  startTime: number,
+  endTime: number
+) {
   if (format.console) {
     await showReportConsole(results, format.console, startTime, endTime);
   }

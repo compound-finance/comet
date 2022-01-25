@@ -65,7 +65,12 @@ function convertToSerializableObject(object: object) {
   return JSON.parse(JSON.stringify(object));
 }
 
-export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[], workerCount: number, async: boolean) {
+export async function runScenario<T>(
+  scenarioConfig: ScenarioConfig,
+  bases: ForkSpec[],
+  workerCount: number,
+  async: boolean
+) {
   let hardhatConfig = convertToSerializableObject(getConfig()) as HardhatConfig;
   let hardhatArguments = getHardhatArguments();
   let formats = defaultFormats;
@@ -165,7 +170,8 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
   await showReport(results, formats, startTime, endTime);
 
   if (results.some((result) => result.error)) {
-    setTimeout(() => { // Deferral to allow potential console flush
+    setTimeout(() => {
+      // Deferral to allow potential console flush
       process.exit(1); // Exit as failure
     }, 0);
   }

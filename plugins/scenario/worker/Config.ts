@@ -4,6 +4,6 @@ export const workerCount = 3;
 export const defaultFormats = {
   console: {},
   json: {
-    output: 'scenario-results.json'
-  }
+    output: 'scenario-results.json',
+  },
 };

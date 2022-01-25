@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Compound Comet is a protocol on Ethereum which enables supplying of crypto assets as collateral in order to borrow the *base asset*, which is USDC. Accounts can also earn interest by supplying the base asset to the protocol. The codebase is [open-source](https://github.com/compound-finance/compound-comet), and maintained by the community.
+Compound Comet is a protocol on Ethereum which enables supplying of crypto assets as collateral in order to borrow the _base asset_, which is USDC. Accounts can also earn interest by supplying the base asset to the protocol. The codebase is [open-source](https://github.com/compound-finance/compound-comet), and maintained by the community.
 
 The [comet.compound.finance](https://comet.compound.finance) interface is [open-source](https://github.com/compound-finance/palisade), deployed to IPFS, and is maintained by the community.
 
@@ -30,7 +30,7 @@ This method returns the current supply rate APY as the decimal representation of
 function getSupplyRate() returns (uint)
 ```
 
-* `RETURNS`: The current APY as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 25% APY.
+- `RETURNS`: The current APY as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 25% APY.
 
 #### Solidity
 
@@ -65,7 +65,7 @@ This method returns the current borrow rate APR as the decimal representation of
 function getBorrowRate() returns (uint)
 ```
 
-* `RETURNS`:  The current APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `90000000000000000` indicates a 9% APR.
+- `RETURNS`: The current APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `90000000000000000` indicates a 9% APR.
 
 #### Solidity
 
@@ -92,9 +92,9 @@ const borrowRate = await comet.callStatic.getBorrowRate();
 
 Compound Comet accounts can supply crypto assets as collateral to borrow the base asset.
 
-Account *balances* for the base token are signed integers. An account balance greater than zero indicates the base asset is supplied and a balance less than zero indicates the base asset is borrowed.
+Account _balances_ for the base token are signed integers. An account balance greater than zero indicates the base asset is supplied and a balance less than zero indicates the base asset is borrowed.
 
-An account's *principal* is the amount of base the user was due at the time of the initial supply of base to the protocol. Global *indices* for supply and borrow are unsigned integers that increase over time. When an account interacts with the protocol, the indices are saved. An account's present balance can be calculated using the current index with the following formulae.
+An account's _principal_ is the amount of base the user was due at the time of the initial supply of base to the protocol. Global _indices_ for supply and borrow are unsigned integers that increase over time. When an account interacts with the protocol, the indices are saved. An account's present balance can be calculated using the current index with the following formulae.
 
 ```
 Balance=PrincipalBaseSupplyIndexNow [Principal0]
@@ -121,11 +121,11 @@ function supply(address dst, address asset, uint amount)
 function supply(address from, address dst, address asset, uint amount)
 ```
 
-* `asset`: The address of the asset's ERC-20 token contract.
-* `amount`: The amount of the asset to supply to Comet expressed as an integer.
-* `dst`: The address that is credited with the supplied asset within the protocol.
-* `from`: The address to supply from. This account must first use the Allow method in order to allow the sender to transfer its tokens prior to calling Supply.
-* `RETURN`: No return, reverts on error.
+- `asset`: The address of the asset's ERC-20 token contract.
+- `amount`: The amount of the asset to supply to Comet expressed as an integer.
+- `dst`: The address that is credited with the supplied asset within the protocol.
+- `from`: The address to supply from. This account must first use the Allow method in order to allow the sender to transfer its tokens prior to calling Supply.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -150,7 +150,7 @@ await comet.supply(usdcAddress, 1000000);
 
 #### Withdraw
 
-The withdraw method is used to **withdraw collateral** that is not currently supporting an open borrow. Withdraw is **also used to borrow the base asset** from the protocol if there is sufficient collateral for the account. It can also be called from an allowed manager address. To check an account's present ability to increase its borrow size, see the *Borrow Collateralization* function.
+The withdraw method is used to **withdraw collateral** that is not currently supporting an open borrow. Withdraw is **also used to borrow the base asset** from the protocol if there is sufficient collateral for the account. It can also be called from an allowed manager address. To check an account's present ability to increase its borrow size, see the _Borrow Collateralization_ function.
 
 The borrow collateral factors are percentages which represent the USD value of a supplied collateral that can be borrowed in the base asset. If the borrow collateral factor for WBTC is 85%, an account can borrow up to 85% of the USD value of its supplied WBTC in the base asset.
 
@@ -170,11 +170,11 @@ function withdraw(address to, address asset, uint amount)
 function withdraw(address src, address to, address asset, uint amount)
 ```
 
-* `asset`: The address of the asset that is being withdrawn or borrowed in the transaction.
-* `amount`: The amount of the asset to withdraw or borrow.
-* `to`: The address to send the withdrawn or borrowed asset.
-* `src`: The address of the account to withdraw or borrow on behalf of. The method overload with this parameter can only be called by an allowed manager.
-* `RETURN`: No return, reverts on error.
+- `asset`: The address of the asset that is being withdrawn or borrowed in the transaction.
+- `amount`: The amount of the asset to withdraw or borrow.
+- `to`: The address to send the withdrawn or borrowed asset.
+- `src`: The address of the account to withdraw or borrow on behalf of. The method overload with this parameter can only be called by an allowed manager.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -211,8 +211,8 @@ This function returns true if the account passed to it has non-negative liquidit
 function isBorrowCollateralized(address account) returns (bool)
 ```
 
-* `account`: The account to examine collateralization.
-* `RETURNS`:  Returns true if the account has enough liquidity for borrowing.
+- `account`: The account to examine collateralization.
+- `RETURNS`: Returns true if the account has enough liquidity for borrowing.
 
 #### Solidity
 
@@ -237,7 +237,7 @@ const isCollateralized = await comet.callStatic.isBorrowCollateralized(0xuser...
 
 ## Liquidation
 
-Compound Comet borrowers need to consider the *borrow collateral factors* and the *liquidation collateral factors* in order to keep their account healthy and avoid liquidation.
+Compound Comet borrowers need to consider the _borrow collateral factors_ and the _liquidation collateral factors_ in order to keep their account healthy and avoid liquidation.
 
 The liquidation collateral factors are strictly greater than the borrow collateral factors. If a borrower violates the liquidation collateral factor requirements, their account is subject to liquidation. Examples of instances where this occurs are described in the Liquidation section.
 
@@ -267,9 +267,9 @@ function absorb(address account)
 function absorb(address[] accounts)
 ```
 
-* `account`:  The underwater account that is to be liquidated.
-* `accounts`:  An array of underwater accounts that are to be liquidated.
-* `RETURN`: No return, reverts on error.
+- `account`: The underwater account that is to be liquidated.
+- `accounts`: An array of underwater accounts that are to be liquidated.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -282,14 +282,14 @@ comet.absorb(0xUnderwaterAddress...);
 
 ```js
 const comet = new web3.eth.Contract(abiJson, contractAddress);
-await comet.methods.absorb("0xUnderwaterAddress...").send();
+await comet.methods.absorb('0xUnderwaterAddress...').send();
 ```
 
 #### Ethers.js v5.x
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-await comet.absorb("0xUnderwaterAddress...");
+await comet.absorb('0xUnderwaterAddress...');
 ```
 
 ### Liquidatable Accounts
@@ -302,8 +302,8 @@ This function returns true if the account passed to it has negative liquidity ba
 function isLiquidatable(address account) returns (bool)
 ```
 
-* `account`: The account to examine liquidatability.
-* `RETURNS`:  Returns true if the account is presently able to be liquidated.
+- `account`: The account to examine liquidatability.
+- `RETURNS`: Returns true if the account is presently able to be liquidated.
 
 #### Solidity
 
@@ -340,7 +340,7 @@ This function returns the amount of protocol reserves for the base asset as an i
 function getReserves() returns (uint)
 ```
 
-* `RETURNS`:  The amount of base asset stored as reserves in the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
+- `RETURNS`: The amount of base asset stored as reserves in the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
 
 #### Solidity
 
@@ -365,7 +365,7 @@ const reserves = await comet.callStatic.getReserves();
 
 ### Ask Price
 
-In order to repay the borrows of absorbed accounts, the protocol needs to sell the seized collateral. The *Ask Price* is the price of the asset to be sold with a fixed discount (configured by governance). This function uses the price returned by the protocol's price feed.
+In order to repay the borrows of absorbed accounts, the protocol needs to sell the seized collateral. The _Ask Price_ is the price of the asset to be sold with a fixed discount (configured by governance). This function uses the price returned by the protocol's price feed.
 [Insert formula for the Ask Price]
 
 #### Comet
@@ -374,9 +374,9 @@ In order to repay the borrows of absorbed accounts, the protocol needs to sell t
 function askPrice(address asset, uint amount) returns (uint)
 ```
 
-* `address`:  The address of the asset which is being queried.
-* `amount`:  The amount of the asset to be sold.
-* `RETURN`: No return, reverts on error.
+- `address`: The address of the asset which is being queried.
+- `amount`: The amount of the asset to be sold.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -389,14 +389,14 @@ uint askPrice = comet.askPrice(0xERC20Address..., 10000000000);
 
 ```js
 const comet = new web3.eth.Contract(abiJson, contractAddress);
-const askPrice = await comet.methods.askPrice("0xERC20Address...", 1000000).call();
+const askPrice = await comet.methods.askPrice('0xERC20Address...', 1000000).call();
 ```
 
 #### Ethers.js v5.x
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const askPrice = await comet.callStatic.askPrice("0xERC20Address...", 1000000);
+const askPrice = await comet.callStatic.askPrice('0xERC20Address...', 1000000);
 ```
 
 ## Account Management
@@ -413,10 +413,10 @@ Allow or disallow another address to withdraw or transfer on behalf of the sende
 function allow(address manager, bool isAllowed)
 ```
 
-* `msg.sender`: The address of an account to allow or disallow a manager for.
-* `manager`: The address of an account that becomes or will no longer be the manager of the owner.
-* `isAllowed`: True to add the manager and false to remove the manager.
-* `RETURN`: No return, reverts on error.
+- `msg.sender`: The address of an account to allow or disallow a manager for.
+- `manager`: The address of an account that becomes or will no longer be the manager of the owner.
+- `isAllowed`: True to add the manager and false to remove the manager.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -450,11 +450,11 @@ function transfer(address dst, address asset, uint amount)
 function transfer(address src, address dst, address asset, uint amount)
 ```
 
-* `dst`: The address of an account that is the receiver in the transaction.
-* `src`: The address of an account that is the sender of the asset in the transaction. This overload of the function can only be called by an allowed manager.
-* `asset`: The ERC-20 address of the asset that is being sent in the transaction.
-* `amount`: The amount of the asset to transfer.
-* `RETURN`: No return, reverts on error.
+- `dst`: The address of an account that is the receiver in the transaction.
+- `src`: The address of an account that is the sender of the asset in the transaction. This overload of the function can only be called by an allowed manager.
+- `asset`: The ERC-20 address of the asset that is being sent in the transaction.
+- `amount`: The amount of the asset to transfer.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -491,7 +491,7 @@ This method returns the current protocol utilization of the base asset. The form
 function getUtilization() returns (uint)
 ```
 
-* `RETURNS`:  The current protocol utilization in USD as an unsigned integer, scaled up by `10 ^ 6`. E.g. `1000000000000000` is $1 billion USD.
+- `RETURNS`: The current protocol utilization in USD as an unsigned integer, scaled up by `10 ^ 6`. E.g. `1000000000000000` is $1 billion USD.
 
 #### Solidity
 
@@ -526,8 +526,8 @@ This function returns the price of an asset in USD.
 function getPrice(address asset) returns (uint)
 ```
 
-* `asset`: The ERC-20 address of the asset being queried.
-* `RETURNS`:  Returns the USD price with 6 decimal places as an unsigned integer scaled up by `10 ^ 6`. E.g. `5000000000` means that the asset's price is $5000 USD.
+- `asset`: The ERC-20 address of the asset being queried.
+- `RETURNS`: Returns the USD price with 6 decimal places as an unsigned integer scaled up by `10 ^ 6`. E.g. `5000000000` means that the asset's price is $5000 USD.
 
 #### Solidity
 

@@ -52,7 +52,8 @@ export class SimpleWorker {
       await run({ ...this.workerData, worker: this });
     } catch (e) {
       console.error(e);
-      setTimeout(() => { // Deferral to allow potential console flush
+      setTimeout(() => {
+        // Deferral to allow potential console flush
         throw e;
       }, 0);
     }
