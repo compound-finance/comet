@@ -68,7 +68,7 @@ const networkConfigs: NetworkConfig[] = [
   },
 ];
 
-export function getDefaultProviderURL(network: string) {
+function getDefaultProviderURL(network: string) {
   return `https://${network}.infura.io/v3/${INFURA_KEY}`;
 }
 
