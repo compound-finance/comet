@@ -1099,10 +1099,10 @@ contract Comet is CometMath, CometStorage {
         uint16 assetsIn = userBasic[account].assetsIn;
         TotalsBasic memory totals = totalsBasic;
 
-        int liquidity = mulPrice(
+        int liquidity = signedMulPrice(
             presentValue(totals, userBasic[account].principal),
-            baseScale,
-            getPrice(baseTokenPriceFeed)
+            getPrice(baseTokenPriceFeed),
+            baseScale
         );
 
         for (uint8 i = 0; i < numAssets; i++) {
@@ -1113,13 +1113,13 @@ contract Comet is CometMath, CometStorage {
                 }
 
                 AssetInfo memory asset = getAssetInfo(i);
-                int newAmount = mulPrice(
-                    signed128(userCollateral[account][asset.asset].balance),
-                    safe64(asset.scale),
-                    getPrice(asset.priceFeed)
+                uint newAmount = mulPrice(
+                    userCollateral[account][asset.asset].balance,
+                    getPrice(asset.priceFeed),
+                    safe64(asset.scale)
                 );
                 liquidity += signed256(mulFactor(
-                    unsigned256(newAmount),
+                    newAmount,
                     asset.borrowCollateralFactor
                 ));
             }
@@ -1137,22 +1137,22 @@ contract Comet is CometMath, CometStorage {
         uint16 assetsIn = userBasic[account].assetsIn;
         TotalsBasic memory totals = totalsBasic;
 
-        int liquidity = mulPrice(
+        int liquidity = signedMulPrice(
             presentValue(totals, userBasic[account].principal),
-            baseScale,
-            getPrice(baseTokenPriceFeed)
+            getPrice(baseTokenPriceFeed),
+            baseScale
         );
 
         for (uint8 i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory asset = getAssetInfo(i);
-                int newAmount = mulPrice(
-                    signed128(userCollateral[account][asset.asset].balance),
-                    safe64(asset.scale),
-                    getPrice(asset.priceFeed)
+                uint newAmount = mulPrice(
+                    userCollateral[account][asset.asset].balance,
+                    getPrice(asset.priceFeed),
+                    safe64(asset.scale)
                 );
                 liquidity += signed256(mulFactor(
-                    unsigned256(newAmount),
+                    newAmount,
                     asset.borrowCollateralFactor
                 ));
             }
@@ -1162,13 +1162,24 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-    * @notice multiply an amount of an asset by that asset's price
+    * @notice multiply an amount (positive or negative) of an asset by that asset's price
     * @param amount amount of the asset (in that asset's decimals)
-    * @param tokenScale the number of decimals for the asset
     * @param price price of the asset, from priceFeed; value with 8 decimals
+    * @param tokenScale the number of decimals for the asset
     * @return value of the amount of the asset; 8 decimals
     */
-    function mulPrice(int128 amount, uint64 tokenScale, uint price) internal pure returns (int) {
+    function signedMulPrice(int128 amount, uint price, uint64 tokenScale) internal pure returns (int) {
         return (amount * signed256(price)) / signed64(tokenScale);
+    }
+
+    /**
+    * @notice multiply a positive amount of an asset by that asset's price
+    * @param amount amount of the asset (in that asset's decimals)
+    * @param price price of the asset, from priceFeed; value with 8 decimals
+    * @param tokenScale the number of decimals for the asset
+    * @return value of the amount of the asset; 8 decimals
+    */
+    function mulPrice(uint128 amount, uint price, uint64 tokenScale) internal pure returns (uint) {
+        return (amount * price) / tokenScale;
     }
 }
