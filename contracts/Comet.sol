@@ -1068,27 +1068,26 @@ contract Comet is CometMath, CometStorage {
         int reserves = getReserves();
         require(reserves < 0 || uint(reserves) < targetReserves, "no ongoing sale");
 
-        AssetInfo memory assetInfo = getAssetInfo(getAssetOffset(asset));
-        uint baseWeiPerUnitAsset = askPrice(asset, assetInfo.scale);
-        uint collateralAmount = assetInfo.scale * baseAmount / baseWeiPerUnitAsset;
+        uint actualBaseAmount = doTransferIn(baseToken, msg.sender, baseAmount);
+
+        uint collateralAmount = quoteCollateral(asset, actualBaseAmount);
         require(collateralAmount >= minAmount, "slippage too high");
 
-        doTransferIn(baseToken, msg.sender, baseAmount);
         withdrawCollateral(address(this), recipient, asset, safe128(collateralAmount));
     }
 
     /**
-     * @notice Gets the ask price for an amount of collateral asset.
-     * @param asset The collateral asset to get the ask price for
-     * @param amount The amount of a collateral asset to get the price for
-     * @return The price of the asset in base asset units
+     * @notice Gets the quote for a collateral asset in exchange for an amount of base asset.
+     * @param asset The collateral asset to get the quote for
+     * @param baseAmount The amount of the base asset to get the quote for
+     * @return The quote in terms of the collateral asset
      */
-    function askPrice(address asset, uint amount) public view returns (uint) {
+    function quoteCollateral(address asset, uint baseAmount) public view returns (uint) {
         // TODO: Add StoreFrontDiscount.
         AssetInfo memory assetInfo = getAssetInfo(getAssetOffset(asset));
         uint assetPrice = getPrice(assetInfo.priceFeed);
         uint basePrice = getPrice(baseTokenPriceFeed);
-        uint basePerAsset = baseScale * basePrice / assetPrice;
-        return basePerAsset * amount / assetInfo.scale;
+        uint assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPrice;
+        return assetWeiPerUnitBase * baseAmount / baseScale;
     }
 }
