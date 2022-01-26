@@ -1085,11 +1085,10 @@ contract Comet is CometMath, CometStorage {
      */
     function askPrice(address asset, uint amount) public view returns (uint) {
         // TODO: Add StoreFrontDiscount.
-        // TODO: Hook up to getPrice()
-        uint assetPrice = priceScale;
-        uint basePrice = priceScale;
-        uint basePerAsset = baseScale * basePrice / assetPrice;
         AssetInfo memory assetInfo = getAssetInfo(getAssetOffset(asset));
+        uint assetPrice = getPrice(assetInfo.priceFeed);
+        uint basePrice = getPrice(baseTokenPriceFeed);
+        uint basePerAsset = baseScale * basePrice / assetPrice;
         return basePerAsset * amount / assetInfo.scale;
     }
 }

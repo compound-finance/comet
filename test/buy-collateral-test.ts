@@ -2,7 +2,20 @@ import { Comet, ethers, expect, exp, makeProtocol, portfolio, wait } from './hel
 
 describe('buyCollateral', function () {
   it('allows buying collateral when reserves < target reserves', async () => {
-    const protocol = await makeProtocol({base: 'USDC', targetReserves: 100});
+    const protocol = await makeProtocol({base: 'USDC', targetReserves: 100, 
+      assets: {
+        USDC: {
+          initial: 1e6,
+          decimals: 6,
+          initialPrice: 1,
+        },
+        COMP: {
+          initial: 1e7,
+          decimals: 18,
+          initialPrice: 1,
+        },
+      }
+    });  
     const { comet, tokens, users: [alice] } = protocol;
     const { USDC, COMP } = tokens;
     const cometAsA = comet.connect(alice);
@@ -26,15 +39,28 @@ describe('buyCollateral', function () {
 
     expect(r0).to.be.equal(0n);
     expect(r0).to.be.lt(await comet.targetReserves());
-    expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p0.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p1.external).to.be.deep.equal({USDC: exp(50, 6), COMP: exp(50, 18), WETH: 0n, WBTC: 0n});
+    expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n});
+    expect(p0.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n});
+    expect(p1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n});
+    expect(p1.external).to.be.deep.equal({USDC: exp(50, 6), COMP: exp(50, 18)});
     expect(r1).to.be.equal(exp(50, 6));
   });
 
   it('allows buying collateral when reserves < 0 and target reserves is 0', async () => {
-    const protocol = await makeProtocol({base: 'USDC', targetReserves: 0});
+    const protocol = await makeProtocol({base: 'USDC', targetReserves: 0,
+      assets: {
+        USDC: {
+          initial: 1e6,
+          decimals: 6,
+          initialPrice: 1,
+        },
+        COMP: {
+          initial: 1e7,
+          decimals: 18,
+          initialPrice: 1,
+        },
+      }
+    });
     const { comet, tokens, users: [alice] } = protocol;
     const { USDC, COMP } = tokens;
     const cometAsA = comet.connect(alice);
@@ -64,10 +90,10 @@ describe('buyCollateral', function () {
 
     expect(r0).to.be.equal(-100e6);
     expect(r0).to.be.lt(await comet.targetReserves());
-    expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p0.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p1.external).to.be.deep.equal({USDC: exp(50, 6), COMP: exp(50, 18), WETH: 0n, WBTC: 0n});
+    expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n});
+    expect(p0.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n});
+    expect(p1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n});
+    expect(p1.external).to.be.deep.equal({USDC: exp(50, 6), COMP: exp(50, 18)});
     expect(r1).to.be.equal(-50e6);
   });
 
@@ -97,7 +123,20 @@ describe('buyCollateral', function () {
   });
 
   it('reverts if slippage is too high', async () => {
-    const protocol = await makeProtocol({base: 'USDC', targetReserves: 100});
+    const protocol = await makeProtocol({base: 'USDC', targetReserves: 100,
+      assets: {
+        USDC: {
+          initial: 1e6,
+          decimals: 6,
+          initialPrice: 1,
+        },
+        COMP: {
+          initial: 1e7,
+          decimals: 18,
+          initialPrice: 1,
+        },
+      }
+    });
     const { comet, tokens, users: [alice] } = protocol;
     const { USDC, COMP } = tokens;
     const cometAsA = comet.connect(alice);
@@ -117,7 +156,20 @@ describe('buyCollateral', function () {
   });
 
   it('reverts if not enough collateral to buy', async () => {
-    const protocol = await makeProtocol({base: 'USDC', targetReserves: 100});
+    const protocol = await makeProtocol({base: 'USDC', targetReserves: 100,
+      assets: {
+        USDC: {
+          initial: 1e6,
+          decimals: 6,
+          initialPrice: 1,
+        },
+        COMP: {
+          initial: 1e7,
+          decimals: 18,
+          initialPrice: 1,
+        },
+      }
+    });
     const { comet, tokens, users: [alice] } = protocol;
     const { USDC, COMP } = tokens;
     const cometAsA = comet.connect(alice);
