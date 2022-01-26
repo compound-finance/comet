@@ -5,6 +5,10 @@ describe('constructor', function () {
     // XXX
   });
 
+  it('verifies asset scales', async function () {
+    // XXX
+  });
+
   it('reverts if baseTokenPriceFeed does not have 8 decimals', async () => {
     await expect(
       makeProtocol({

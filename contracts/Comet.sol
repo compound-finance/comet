@@ -18,6 +18,7 @@ contract Comet is CometMath, CometStorage {
         uint liquidateCollateralFactor;
         uint supplyCap;
         address priceFeed;
+        uint scale;
     }
 
     struct Configuration {
@@ -36,6 +37,7 @@ contract Comet is CometMath, CometStorage {
         uint64 baseTrackingBorrowSpeed;
         uint104 baseMinForRewards;
         uint104 baseBorrowMin;
+        uint104 targetReserves;
 
         AssetInfo[] assetInfo;
     }
@@ -115,6 +117,9 @@ contract Comet is CometMath, CometStorage {
 
     /// @notice The decimals required for a price feed
     uint8 public constant priceFeedDecimals = 8;
+    
+    /// @notice The scale for prices (in USD)
+    uint64 public constant priceScale = 1e8;
 
     /// @notice The scale for reward tracking
     uint64 public immutable trackingIndexScale;
@@ -131,6 +136,9 @@ contract Comet is CometMath, CometStorage {
 
     /// @notice The minimum base amount required to initiate a borrow
     uint104 public immutable baseBorrowMin;
+
+    /// @notice The minimum base token reserves which must be held before collateral is hodled
+    uint104 public immutable targetReserves;
 
     /**  Collateral asset configuration **/
 
@@ -153,6 +161,10 @@ contract Comet is CometMath, CometStorage {
     address internal immutable priceFeed00;
     address internal immutable priceFeed01;
     address internal immutable priceFeed02;
+    
+    uint internal immutable scale00;
+    uint internal immutable scale01;
+    uint internal immutable scale02;
 
     /**
      * @notice Construct a new protocol instance
@@ -181,6 +193,7 @@ contract Comet is CometMath, CometStorage {
         baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
 
         baseBorrowMin = config.baseBorrowMin;
+        targetReserves = config.targetReserves;
 
         // Set asset info
         numAssets = config.assetInfo.length;
@@ -215,6 +228,10 @@ contract Comet is CometMath, CometStorage {
         priceFeed00 = priceFeed00_;
         priceFeed01 = priceFeed01_;
         priceFeed02 = priceFeed02_;
+        
+        scale00 = _getAssetScale(config.assetInfo, 0);
+        scale01 = _getAssetScale(config.assetInfo, 1);
+        scale02 = _getAssetScale(config.assetInfo, 2);
 
         // Set interest rate model configs
         kink = config.kink;
@@ -242,8 +259,25 @@ contract Comet is CometMath, CometStorage {
             borrowCollateralFactor: uint256(0),
             liquidateCollateralFactor: uint256(0),
             supplyCap: uint256(0),
-            priceFeed: address(0)
+            priceFeed: address(0),
+            scale: uint256(0)
         });
+    }
+
+    /**
+     * @dev Gets the asset scale by reading the decimals from the asset contract
+     */
+    function _getAssetScale(AssetInfo[] memory assetInfo, uint i) internal view returns (uint) {
+        AssetInfo memory assetInfo_ = _getAsset(assetInfo, i);
+        address asset = assetInfo_.asset;
+        uint expectedScale = assetInfo_.scale;
+        if (asset == address(0)) {
+            return 0;
+        } else {
+            uint actualScale = 10 ** ERC20(asset).decimals();
+            require(expectedScale == actualScale, "asset scale mismatch");
+            return actualScale;
+        }
     }
 
     /**
@@ -254,9 +288,9 @@ contract Comet is CometMath, CometStorage {
     function getAssetInfo(uint i) public view returns (AssetInfo memory) {
         require(i < numAssets, "asset info not found");
 
-        if (i == 0) return AssetInfo({asset: asset00, borrowCollateralFactor: borrowCollateralFactor00, liquidateCollateralFactor: liquidateCollateralFactor00, supplyCap: supplyCap00, priceFeed: priceFeed00 });
-        if (i == 1) return AssetInfo({asset: asset01, borrowCollateralFactor: borrowCollateralFactor01, liquidateCollateralFactor: liquidateCollateralFactor01, supplyCap: supplyCap01, priceFeed: priceFeed01 });
-        if (i == 2) return AssetInfo({asset: asset02, borrowCollateralFactor: borrowCollateralFactor02, liquidateCollateralFactor: liquidateCollateralFactor02, supplyCap: supplyCap02, priceFeed: priceFeed02 });
+        if (i == 0) return AssetInfo({asset: asset00, borrowCollateralFactor: borrowCollateralFactor00, liquidateCollateralFactor: liquidateCollateralFactor00, supplyCap: supplyCap00, priceFeed: priceFeed00, scale: scale00 });
+        if (i == 1) return AssetInfo({asset: asset01, borrowCollateralFactor: borrowCollateralFactor01, liquidateCollateralFactor: liquidateCollateralFactor01, supplyCap: supplyCap01, priceFeed: priceFeed01, scale: scale01 });
+        if (i == 2) return AssetInfo({asset: asset02, borrowCollateralFactor: borrowCollateralFactor02, liquidateCollateralFactor: liquidateCollateralFactor02, supplyCap: supplyCap02, priceFeed: priceFeed02, scale: scale02 });
         revert("absurd");
     }
 
@@ -1008,5 +1042,52 @@ contract Comet is CometMath, CometStorage {
             uint80 _answeredInRound
         ) = AggregatorV3Interface(priceFeed).latestRoundData();
         return unsigned256(price);
+    }
+
+    /**
+     * @notice Gets the total amount of protocol reserves, denominated in the number of base tokens
+     */
+    function getReserves() public view returns (int) {
+        TotalsBasic memory totals = totalsBasic;
+        uint balance = ERC20(baseToken).balanceOf(address(this));
+        uint104 totalSupply = presentValueSupply(totals, totals.totalSupplyBase);
+        uint104 totalBorrow = presentValueBorrow(totals, totals.totalBorrowBase);
+        return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
+    }
+
+    /**
+     * @notice Buy collateral from the protocol using base tokens, increasing protocol reserves. 
+       A minimum collateral amount should be specified to indicate the maximum slippage 
+       acceptable for the buyer.
+     * @param asset The asset to buy
+     * @param minAmount The minimum amount of collateral tokens that should be received by the buyer
+     * @param baseAmount The amount of base tokens used to buy the collateral
+     * @param recipient The recipient address
+     */
+    function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external {
+        int reserves = getReserves();
+        require(reserves < 0 || uint(reserves) < targetReserves, "no ongoing sale");
+
+        uint actualBaseAmount = doTransferIn(baseToken, msg.sender, baseAmount);
+
+        uint collateralAmount = quoteCollateral(asset, actualBaseAmount);
+        require(collateralAmount >= minAmount, "slippage too high");
+
+        withdrawCollateral(address(this), recipient, asset, safe128(collateralAmount));
+    }
+
+    /**
+     * @notice Gets the quote for a collateral asset in exchange for an amount of base asset.
+     * @param asset The collateral asset to get the quote for
+     * @param baseAmount The amount of the base asset to get the quote for
+     * @return The quote in terms of the collateral asset
+     */
+    function quoteCollateral(address asset, uint baseAmount) public view returns (uint) {
+        // TODO: Add StoreFrontDiscount.
+        AssetInfo memory assetInfo = getAssetInfo(getAssetOffset(asset));
+        uint assetPrice = getPrice(assetInfo.priceFeed);
+        uint basePrice = getPrice(baseTokenPriceFeed);
+        uint assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPrice;
+        return assetWeiPerUnitBase * baseAmount / baseScale;
     }
 }

@@ -44,6 +44,7 @@ export type ProtocolOpts = {
   baseTrackingBorrowSpeed?: Numeric;
   baseMinForRewards?: Numeric;
   baseBorrowMin?: Numeric;
+  targetReserves?: Numeric;
 };
 
 export type Protocol = {
@@ -149,6 +150,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const baseTrackingBorrowSpeed = dfn(opts.baseTrackingBorrowSpeed, trackingIndexScale);
   const baseMinForRewards = dfn(opts.baseMinForRewards, exp(1, assets[base].decimals));
   const baseBorrowMin = dfn(opts.baseBorrowMin, exp(1, assets[base].decimals));
+  const targetReserves = dfn(opts.targetReserves, 0);
 
   const FaucetFactory = (await ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
   const tokens = {};
@@ -181,6 +183,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     baseTrackingBorrowSpeed,
     baseMinForRewards,
     baseBorrowMin,
+    targetReserves,
     assetInfo: Object.entries(assets).reduce((acc, [symbol, config], i) => {
       if (symbol != base) {
         acc.push({
@@ -189,6 +192,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
           liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
           supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
           priceFeed: priceFeeds[symbol].address,
+          scale: exp(1, dfn(assets[symbol].decimals, 18)),
         });
       }
       return acc;

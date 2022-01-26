@@ -92,6 +92,7 @@ export async function deployComet(
     liquidateCollateralFactor: (1e18).toString(),
     supplyCap: (1000000e8).toString(),
     priceFeed: asset0PriceFeed.address,
+    scale: (1e8).toString(),
   };
 
   let assetInfo1 = {
@@ -100,6 +101,7 @@ export async function deployComet(
     liquidateCollateralFactor: (0.5e18).toString(),
     supplyCap: (500000e10).toString(),
     priceFeed: asset1PriceFeed.address,
+    scale: (1e10).toString(),
   };
 
   let configuration = {
@@ -118,6 +120,7 @@ export async function deployComet(
       baseTrackingBorrowSpeed: 0, // XXX
       baseMinForRewards: 1, // XXX
       baseBorrowMin: 1, // XXX
+      targetReserves: 0, // XXX
       assetInfo: [assetInfo0, assetInfo1],
     },
     ...configurationOverrides,
