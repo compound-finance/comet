@@ -158,10 +158,6 @@ contract Comet is CometMath, CometStorage {
     uint internal immutable supplyCap01;
     uint internal immutable supplyCap02;
 
-    uint internal immutable scale00;
-    uint internal immutable scale01;
-    uint internal immutable scale02;
-
     address internal immutable priceFeed00;
     address internal immutable priceFeed01;
     address internal immutable priceFeed02;
@@ -217,10 +213,6 @@ contract Comet is CometMath, CometStorage {
         supplyCap00 = _getAsset(config.assetInfo, 0).supplyCap;
         supplyCap01 = _getAsset(config.assetInfo, 1).supplyCap;
         supplyCap02 = _getAsset(config.assetInfo, 2).supplyCap;
-
-        scale00 = _getAssetScale(config.assetInfo, 0);
-        scale01 = _getAssetScale(config.assetInfo, 1);
-        scale02 = _getAssetScale(config.assetInfo, 2);
 
         address priceFeed00_ = _getAsset(config.assetInfo, 0).priceFeed;
         address priceFeed01_ = _getAsset(config.assetInfo, 1).priceFeed;

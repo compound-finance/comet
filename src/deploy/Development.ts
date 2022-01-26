@@ -70,7 +70,6 @@ export async function deployDevelopmentComet(
     borrowCollateralFactor: (1e18).toString(),
     liquidateCollateralFactor: (1e18).toString(),
     supplyCap: (1000000e8).toString(),
-    scale: 0,
     priceFeed: asset0PriceFeed.address,
     scale: (1e8).toString(),
   };
@@ -80,7 +79,6 @@ export async function deployDevelopmentComet(
     borrowCollateralFactor: (0.5e18).toString(),
     liquidateCollateralFactor: (0.5e18).toString(),
     supplyCap: (500000e10).toString(),
-    scale: 0,
     priceFeed: asset1PriceFeed.address,
     scale: (1e10).toString(),
   };
