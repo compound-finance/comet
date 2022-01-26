@@ -1125,7 +1125,7 @@ contract Comet is CometMath, CometStorage {
             }
         }
 
-        return liquidity * signed64(baseScale) / signed64(priceScale) >= 0;
+        return liquidity >= 0;
     }
 
     /**
