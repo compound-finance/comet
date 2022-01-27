@@ -5,7 +5,7 @@ import { Scenario } from '../Scenario';
 import { loadScenarios } from '../Loader';
 import { defaultFormats, scenarioGlob, workerCount } from './Config';
 import { showReport } from './Report';
-import { getContext, getConfig, getHardhatArguments } from './HardhatContext';
+import { getConfig, getHardhatArguments } from './HardhatContext';
 import { ScenarioConfig } from '../types';
 import { HardhatConfig } from 'hardhat/types';
 import { SimpleWorker } from './SimpleWorker';
@@ -132,8 +132,10 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
     }
 
     worker.on('message', (message) => {
-      if (message.result) {
-        mergeResult(index, message.result);
+      if (message.results) {
+        for (let result of message.results) {
+          mergeResult(index, result);
+        }
         assignWork(worker);
       }
     });
