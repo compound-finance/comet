@@ -1156,6 +1156,7 @@ contract Comet is CometMath, CometStorage {
     /**
     * @notice amount of liquidity margin for account
     * @param account address to check liquidity for
+    * @return amount of liquidity margin (in price scale)
     */
     function getLiquidationMargin(address account) public view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;

@@ -1,5 +1,16 @@
 import { expect, exp, makeProtocol } from './helpers';
 
+/*
+Prices are set in terms of the base token (USDC with 6 decimals, by default):
+
+  await comet.setBasePrincipal(alice.address, 1_000_000);
+
+But the prices returned are denominated in terms of price scale (USD with 8
+decimals, by default):
+
+  expect(await comet.getLiquidationMargin(alice.address)).to.equal(100_000_000);
+*/
+
 describe('getLiquidationMargin', function () {
   it('defaults to 0', async () => {
     const {
