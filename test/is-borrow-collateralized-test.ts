@@ -1,5 +1,17 @@
 import { expect, exp, makeProtocol } from './helpers';
 
+/*
+Prices are set in terms of the base token (USDC with 6 decimals, by default):
+
+  await comet.setBasePrincipal(alice.address, 1_000_000);
+
+But the prices returned are denominated in terms of price scale (USD with 8
+decimals, by default):
+
+  expect(await comet.getBorrowLiquidity(alice.address)).to.equal(100_000_000);
+
+*/
+
 describe('getBorrowLiquidity', function () {
   it('defaults to 0', async () => {
     const {
@@ -18,7 +30,7 @@ describe('getBorrowLiquidity', function () {
     } = protocol;
 
     await comet.setBasePrincipal(alice.address, 1_000_000);
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(1_000_000);
+    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(100_000_000);
   });
 
   it('is negative when user owes principal', async () => {
@@ -30,7 +42,7 @@ describe('getBorrowLiquidity', function () {
 
     await comet.setBasePrincipal(alice.address, -1_000_000);
 
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(-1_000_000);
+    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(-100_000_000);
   });
 
   it('is increased when user has collateral balance', async () => {
@@ -49,7 +61,7 @@ describe('getBorrowLiquidity', function () {
     await comet.setBasePrincipal(alice.address, 1_000_000);
     await comet.setCollateralBalance(alice.address, COMP.address, exp(1, 18));
 
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(2_000_000);
+    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(200_000_000);
   });
 
   it("accounts for an asset's collateral factor", async () => {
@@ -73,7 +85,7 @@ describe('getBorrowLiquidity', function () {
     await comet.setBasePrincipal(alice.address, 1_000_000);
     await comet.setCollateralBalance(alice.address, COMP.address, exp(1, 18));
 
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(1_900_000);
+    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(190_000_000);
   });
 
   it('borrow collateral factor with multiple assets', async () => {
@@ -108,7 +120,7 @@ describe('getBorrowLiquidity', function () {
     // 1 USDC = 1_000_000
     // 1 COMP * .9 collateral factor = 900_000
     // .1 WETH * .8 collateral factor = 80_000
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(1_980_000);
+    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(198_000_000);
   });
 
   it('changes when the underlying asset price changes', async () => {
@@ -130,13 +142,13 @@ describe('getBorrowLiquidity', function () {
 
     // 1 USDC = 1_000_000
     // 1 COMP (at a price of 1) = 100_000
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(2_000_000);
+    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(200_000_000);
 
     await priceFeeds.COMP.setPrice(exp(0.5, 8));
 
     // 1 USDC = 1_000_000
     // 1 COMP (at a price of .5) = 500_000
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(1_500_000);
+    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(150_000_000);
   });
 });
 

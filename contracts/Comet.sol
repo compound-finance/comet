@@ -1123,7 +1123,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @notice amount of borrow liquidity for account
      * @param account address to check liquidity for
-     * @return borrow liquidity, in base token
+     * @return amount of borrow liquidity (in price scale)
      */
     function getBorrowLiquidity(address account) public view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
@@ -1150,7 +1150,7 @@ contract Comet is CometMath, CometStorage {
             }
         }
 
-        return liquidity * signed64(baseScale) / signed64(priceScale);
+        return liquidity;
     }
 
     /**
