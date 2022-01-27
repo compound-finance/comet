@@ -1,7 +1,7 @@
-import { Constraint, Scenario, Solution } from './Scenario';
+import { Scenario, Solution } from './Scenario';
 import { ForkSpec, World } from './World';
-import hreForBase from './utils/hreForBase';
-import { CometContext } from '../../scenario/context/CometContext';
+import { Result } from './worker/Parent';
+import { AssertionError } from 'chai';
 
 export type Address = string;
 
@@ -53,12 +53,13 @@ export class Runner<T> {
     this.config = config;
   }
 
-  async run(scenario: Scenario<T>, resultFn: ResultFn<T>): Promise<Runner<T>> {
+  async run(scenario: Scenario<T>): Promise<Result> {
     const { config } = this;
     const { base, world } = config;
     const { constraints = [] } = scenario;
+    let startTime = Date.now();
 
-    // reset the world if a snapshot exists and take a snapshot of it
+    // // reset the world if a snapshot exists and take a snapshot of it
     if (this.worldSnapshot) {
       await world._revert(this.worldSnapshot);
     }
@@ -97,7 +98,7 @@ export class Runner<T> {
         await scenario.property(ctx, world);
       } catch (e) {
         // TODO: Include the specific solution (set of states) that failed in the result
-        resultFn(base, scenario, e);
+        return this.generateResult(base, scenario, startTime, e);
       }
 
       // revert back to the frozen world for the next scenario
@@ -107,8 +108,26 @@ export class Runner<T> {
       contextSnapshot = await world._snapshot();
     }
     // Send success result only after all combinations of solutions have passed for this scenario.
-    resultFn(base, scenario);
+    return this.generateResult(base, scenario, startTime);
+  }
 
-    return this;
+  private generateResult(base: ForkSpec, scenario: Scenario<T>, startTime: number, err?: any): Result {
+    let diff = null;
+    if (err instanceof AssertionError) {
+      let { actual, expected } = <any>err; // Types unclear
+      if (actual !== expected) {
+        diff = { actual, expected };
+      }
+    }
+
+    return {
+      base: base.name,
+      file: scenario.file || scenario.name,
+      scenario: scenario.name,
+      elapsed: Date.now() - startTime,
+      error: err || null,
+      trace: err ? err.stack : null,
+      diff, // XXX can we move this into parent?
+    };
   }
 }

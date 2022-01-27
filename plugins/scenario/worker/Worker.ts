@@ -10,7 +10,6 @@ import {
   createContext,
 } from './HardhatContext';
 import { ScenarioConfig } from '../types';
-import { AssertionError } from 'chai';
 import { SimpleWorker } from './SimpleWorker';
 import hreForBase from '../utils/hreForBase';
 
@@ -77,36 +76,18 @@ export async function run<T>({ scenarioConfig, bases, config, worker }: WorkerDa
         throw new Error(`Worker encountered unknown scenario: ${scenarioName}`);
       }
 
-      let resultFn = (base: ForkSpec, scenario: Scenario<T>, err: any) => {
-        let diff = null;
-        if (err instanceof AssertionError) {
-          let { actual, expected } = <any>err; // Types unclear
-          if (actual !== expected) {
-            diff = { actual, expected };
-          }
+      console.log('Running', message.scenario);
+      try {
+        let runs = [];
+        for (let runner of runners) {
+          runs.push(runner.run(scenario));
         }
-        // Add timeout for flush
+        let results = await Promise.all(runs);
         eventually(() =>
           postMessage(worker, {
-            result: {
-              base: base.name,
-              file: scenario.file || scenario.name,
-              scenario: scenario.name,
-              elapsed: Date.now() - startTime,
-              error: err || null,
-              trace: err ? err.stack : null,
-              diff, // XXX can we move this into parent?
-            },
+            results
           })
         );
-      };
-
-      console.log('Running', message.scenario);
-      let startTime = Date.now();
-      try {
-        for (let runner of runners) {
-          await runner.run(scenario, resultFn);
-        }
       } catch (e) {
         console.error('Encountered worker error', e);
         eventually(() => {
