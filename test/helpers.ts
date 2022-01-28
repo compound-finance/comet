@@ -193,16 +193,16 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     baseMinForRewards,
     baseBorrowMin,
     targetReserves,
-    assetInfo: Object.entries(assets).reduce((acc, [symbol, config], i) => {
+    assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], i) => {
       if (symbol != base) {
         acc.push({
           asset: tokens[symbol].address,
+          priceFeed: priceFeeds[symbol].address,
+          decimals: dfn(assets[symbol].decimals, 18),
           borrowCollateralFactor: dfn(config.borrowCF, ONE),
           liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
           liquidationFactor: dfn(config.liquidationFactor, ONE),
           supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
-          priceFeed: priceFeeds[symbol].address,
-          scale: exp(1, dfn(assets[symbol].decimals, 18)),
         });
       }
       return acc;

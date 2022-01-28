@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { AssetInfoStruct, ConfigurationStruct } from '../../build/types/Comet';
+import { AssetConfigStruct, ConfigurationStruct } from '../../build/types/Comet';
 import { BigNumberish, Signature, ethers } from 'ethers';
 import { ContractMap, DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
@@ -53,12 +53,12 @@ interface NetworkTrackingConfiguration {
 }
 
 interface NetworkAssetConfiguration {
+  priceFeed: string;
+  decimals: number;
   borrowCF: number;
   liquidateCF: number;
   liquidationFactor: number;
   supplyCap: number;
-  priceFeed: string;
-  scale: number;
 }
 
 interface NetworkConfiguration {
@@ -128,21 +128,21 @@ function getTrackingInfo(tracking: NetworkTrackingConfiguration): TrackingInfo {
   };
 }
 
-function getAssetInfo(
+function getAssetConfigs(
   assets: { [name: string]: NetworkAssetConfiguration },
   contractMap: ContractMap
-): AssetInfoStruct[] {
+): AssetConfigStruct[] {
   return Object.entries(assets).map(([assetName, assetConfig]) => {
     let assetAddress = getContractAddress(assetName, contractMap);
 
     return {
       asset: assetAddress,
+      priceFeed: address(assetConfig.priceFeed),
+      decimals: number(assetConfig.decimals),
       borrowCollateralFactor: percentage(assetConfig.borrowCF),
       liquidateCollateralFactor: percentage(assetConfig.liquidateCF),
       liquidationFactor: percentage(assetConfig.liquidationFactor),
       supplyCap: number(assetConfig.supplyCap), // TODO: Decimals
-      priceFeed: address(assetConfig.priceFeed),
-      scale: number(assetConfig.scale),
     };
   });
 }
@@ -181,7 +181,7 @@ export async function getConfiguration(
   let interestRateInfo = getInterestRateInfo(networkConfiguration.rates);
   let trackingInfo = getTrackingInfo(networkConfiguration.tracking);
 
-  let assetInfo = getAssetInfo(networkConfiguration.assets, contractMap);
+  let assetConfigs = getAssetConfigs(networkConfiguration.assets, contractMap);
 
   return {
     governor,
@@ -193,6 +193,6 @@ export async function getConfiguration(
     ...trackingInfo,
     baseBorrowMin,
     targetReserves,
-    assetInfo,
+    assetConfigs,
   };
 }

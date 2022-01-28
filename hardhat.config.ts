@@ -109,10 +109,12 @@ const config: HardhatUserConfig = {
       gas: 12000000,
       gasPrice: 'auto',
       blockGasLimit: 12000000,
-      allowUnlimitedContractSize: true,
       accounts: {
         mnemonic: 'myth like bonus scare over problem client lizard pioneer submit female collect',
       },
+      // this should be default commented out and only enabled during dev to allow partial testing
+      // XXX comment out by default once we've made the full contract fit
+      allowUnlimitedContractSize: true,
     },
   },
 
