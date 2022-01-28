@@ -105,8 +105,7 @@ export class UtilizationConstraint<T extends CometContext> implements Constraint
           // could provide a solution for each token, but we don't know them in advance,
           // generally, so let's just pick the first one and source enough of it.
 
-          let [{ asset: collateralAsset, borrowCollateralFactor, priceFeed, scale }, ...assets] =
-            await comet.assets();
+          let { asset: collateralAsset, borrowCollateralFactor, priceFeed, scale } = await comet.getAssetInfo(0);
 
           let collateralToken = context.getAssetByAddress(collateralAsset);
 

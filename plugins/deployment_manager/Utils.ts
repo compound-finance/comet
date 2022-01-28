@@ -9,6 +9,12 @@ async function asAddresses(contract: Contract, fnName: string): Promise<Address[
     let addressRaw = await contract.provider.getStorageAt(contract.address, slot)
     let address = utils.getAddress("0x" + addressRaw.substring(26))
     return [address];
+  } else if (fnName == 'assetAddresses') {
+    // XXX temporary
+    let numAssets = await contract.callStatic['numAssets']();
+    return Promise.all(Array(numAssets).fill(0).map(async (_, i) => {
+      return (await contract.callStatic['getAssetInfo'](i)).asset;
+    }));
   }
 
   let fn = contract.callStatic[fnName];
