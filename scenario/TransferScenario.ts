@@ -80,12 +80,12 @@ scenario(
   async ({ comet, actors }) => {
     const { albert } = actors;
 
-    const [collateralAsset] = await comet.assetAddresses();
+    const collateralAsset = await comet.getAssetInfo(0);
 
     await expect(
       albert.transfer({
         dst: albert.address,
-        asset: collateralAsset,
+        asset: collateralAsset.asset,
         amount: 100,
       })
     ).to.be.revertedWith('self-transfer not allowed');
@@ -123,7 +123,7 @@ scenario(
   async ({ comet, actors }) => {
     const { albert, betty } = actors;
 
-    const [collateralAsset] = await comet.assetAddresses();
+    const collateralAsset = await comet.getAssetInfo(0);
 
     await betty.allow(albert, true);
 
@@ -131,7 +131,7 @@ scenario(
       albert.transferFrom({
         src: betty.address,
         dst: betty.address,
-        asset: collateralAsset,
+        asset: collateralAsset.asset,
         amount: 100,
       })
     ).to.be.revertedWith('self-transfer not allowed');
