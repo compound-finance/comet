@@ -1154,24 +1154,24 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-    * @notice multiply an amount (positive or negative) of an asset by that asset's price
+    * @dev multiply an amount (positive or negative) of an asset by that asset's price
     * @param amount amount of the asset (in that asset's decimals)
     * @param price price of the asset, from priceFeed; value with 8 decimals
     * @param tokenScale the number of decimals for the asset
     * @return value of the amount of the asset; 8 decimals
     */
-    function signedMulPrice(int128 amount, uint price, uint64 tokenScale) internal pure returns (int) {
-        return (amount * signed256(price)) / signed64(tokenScale);
+    function signedMulPrice(int amount, uint price, uint tokenScale) internal pure returns (int) {
+        return (amount * signed256(price)) / signed256(tokenScale);
     }
 
     /**
-    * @notice multiply a positive amount of an asset by that asset's price
+    * @dev multiply a positive amount of an asset by that asset's price
     * @param amount amount of the asset (in that asset's decimals)
     * @param price price of the asset, from priceFeed; value with 8 decimals
     * @param tokenScale the number of decimals for the asset
     * @return value of the amount of the asset; 8 decimals
     */
-    function mulPrice(uint128 amount, uint price, uint64 tokenScale) internal pure returns (uint) {
+    function mulPrice(uint amount, uint price, uint tokenScale) internal pure returns (uint) {
         return (amount * price) / tokenScale;
     }
 }
