@@ -117,7 +117,7 @@ contract Comet is CometMath, CometStorage {
 
     /// @notice The decimals required for a price feed
     uint8 public constant priceFeedDecimals = 8;
-    
+
     /// @notice The scale for prices (in USD)
     uint64 public constant priceScale = 1e8;
 
@@ -161,7 +161,7 @@ contract Comet is CometMath, CometStorage {
     address internal immutable priceFeed00;
     address internal immutable priceFeed01;
     address internal immutable priceFeed02;
-    
+
     uint internal immutable scale00;
     uint internal immutable scale01;
     uint internal immutable scale02;
@@ -228,7 +228,7 @@ contract Comet is CometMath, CometStorage {
         priceFeed00 = priceFeed00_;
         priceFeed01 = priceFeed01_;
         priceFeed02 = priceFeed02_;
-        
+
         scale00 = _getAssetScale(config.assetInfo, 0);
         scale01 = _getAssetScale(config.assetInfo, 1);
         scale02 = _getAssetScale(config.assetInfo, 2);
@@ -635,9 +635,8 @@ contract Comet is CometMath, CometStorage {
      * @dev Determine index of asset that matches given address
      */
     function getAssetOffset(address asset) internal view returns (uint8 offset) {
-        AssetInfo[] memory _assets = assets();
-        for (uint8 i = 0; i < _assets.length; i++) {
-            if (asset == _assets[i].asset) {
+        for (uint8 i = 0; i < numAssets; i++) {
+            if (asset == getAssetInfo(i).asset) {
                 return i;
             }
         }
@@ -1056,8 +1055,8 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-     * @notice Buy collateral from the protocol using base tokens, increasing protocol reserves. 
-       A minimum collateral amount should be specified to indicate the maximum slippage 
+     * @notice Buy collateral from the protocol using base tokens, increasing protocol reserves.
+       A minimum collateral amount should be specified to indicate the maximum slippage
        acceptable for the buyer.
      * @param asset The asset to buy
      * @param minAmount The minimum amount of collateral tokens that should be received by the buyer
