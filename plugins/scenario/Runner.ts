@@ -21,6 +21,13 @@ function* combos(choices: object[][]) {
   }
 }
 
+function* entriesOf(iter: Iterable<any>) {
+  let i = 0;
+  for (let value of iter) {
+      yield [i++, value];
+  }
+}
+
 function bindFunctions(obj: any) {
   for (let property of Object.getOwnPropertyNames(Object.getPrototypeOf(obj))) {
     if (typeof(obj[property]) === 'function') {
@@ -67,7 +74,7 @@ export class Runner<T> {
 
     // initialize the context and take a snapshot of it
     let context = await scenario.initializer(world);
-    let contextSnapshot = await world._snapshot();
+    // let contextSnapshot = await world._snapshot();
 
     // generate worlds which satisfy the constraints
     // note: `solve` is expected not to modify context or world
@@ -77,7 +84,16 @@ export class Runner<T> {
     );
     const baseSolutions: Solution<T>[][] = [[identity]];
     
-    for (const combo of combos(baseSolutions.concat(solutionChoices))) {
+    for (const [i, combo] of entriesOf(combos(baseSolutions.concat(solutionChoices)))) {
+      // XXX Get rid of this band-aid fix when deep clone in the forker works. 
+      // Currently, the context is not being properly cloned and is being shared across 
+      // solutions, so we have to create a new context from scratch for every solution.
+      // The `i > 0` condition is to avoid initializing the context twice during the first
+      // solution run.
+      if (i > 0) {
+        context = await scenario.initializer(world);
+      }
+
       // create a fresh copy of context that solutions can modify
       let ctx = await scenario.forker(context);
 
@@ -100,12 +116,14 @@ export class Runner<T> {
         // TODO: Include the specific solution (set of states) that failed in the result
         return this.generateResult(base, scenario, startTime, e);
       }
-
+      
       // revert back to the frozen world for the next scenario
-      await world._revert(contextSnapshot);
+      // XXX revert to contextSnapshot instead when deep cloning of contexts is implemented.
+      await world._revert(this.worldSnapshot);
 
       // snapshots can only be used once, so take another for next time
-      contextSnapshot = await world._snapshot();
+      this.worldSnapshot = (await world._snapshot()) as string;
+      // contextSnapshot = await world._snapshot();
     }
     // Send success result only after all combinations of solutions have passed for this scenario.
     return this.generateResult(base, scenario, startTime);
