@@ -1088,6 +1088,7 @@ contract Comet is CometMath, CometStorage {
      * @param account address to check
      */
     function isBorrowCollateralized(address account) public view returns (bool) {
+        // XXX take in UserBasic and UserCollateral as arguments to reduce SLOADs
         uint16 assetsIn = userBasic[account].assetsIn;
         TotalsBasic memory totals = totalsBasic;
 
