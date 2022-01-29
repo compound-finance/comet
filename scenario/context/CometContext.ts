@@ -1,6 +1,7 @@
 import { BytesLike, Signer, Contract } from 'ethers';
 import { ForkSpec, World, buildScenarioFn } from '../../plugins/scenario';
-import { ContractMap, DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
+import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
+import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import {
   BalanceConstraint,
   ModernConstraint,
@@ -11,8 +12,8 @@ import {
 } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
-import { Comet, deployComet } from '../../src/deploy';
-import { ProxyAdmin, ERC20, ERC20__factory } from '../../build/types';
+import { deployComet } from '../../src/deploy';
+import { Comet, ProxyAdmin, ERC20, ERC20__factory } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
@@ -42,8 +43,8 @@ export class CometContext {
     }
   }
 
-  contracts(): ContractMap {
-    return this.deploymentManager.contracts;
+  async contracts(): Promise<ContractMap> {
+    return await this.deploymentManager.contracts();
   }
 
   async upgradeTo(newComet: Comet, world: World, data?: string) {
@@ -153,10 +154,11 @@ async function buildActor(name: string, signer: SignerWithAddress, context: Come
 const getInitialContext = async (world: World): Promise<CometContext> => {
   let deploymentManager = new DeploymentManager(world.base.name, world.hre, { debug: true });
 
-  function getContract<T extends Contract>(name: string): T {
-    let contract: T = deploymentManager.contracts[name] as T;
+  async function getContract<T extends Contract>(name: string): Promise<T> {
+    let contracts = await deploymentManager.contracts();
+    let contract: T = contracts.get(name) as T;
     if (!contract) {
-      throw new Error(`No such contract ${name} for base ${world.base.name}`);
+      throw new Error(`No such contract ${name} for base ${world.base.name}, found: ${JSON.stringify([...contracts.keys()])}`);
     }
     return contract;
   }
@@ -167,7 +169,7 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
 
   await deploymentManager.spider();
 
-  let comet = getContract<Comet>('comet');
+  let comet = await getContract<Comet>('comet');
   let signers = await world.hre.ethers.getSigners();
 
   let [localAdminSigner, localPauseGuardianSigner, albertSigner, bettySigner, charlesSigner] =
@@ -179,7 +181,7 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   adminSigner = await world.impersonateAddress(governorAddress);
   pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
 
-  let proxyAdmin = getContract<ProxyAdmin>('ProxyAdmin').connect(adminSigner);
+  let proxyAdmin = (await getContract<ProxyAdmin>('cometAdmin')).connect(adminSigner);
 
   let context = new CometContext(deploymentManager, comet, proxyAdmin);
 

@@ -12,6 +12,8 @@ cache/
 dist/
 deployments/hardhat
 deployments/*/cache
+deployments/*/contracts
+deployments/*/aliases.json
 deployments/*/pointers.json
 deployments/*/proxies.json
 

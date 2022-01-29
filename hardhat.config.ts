@@ -11,9 +11,12 @@ import 'hardhat-contract-sizer';
 import 'hardhat-gas-reporter';
 
 // Hardhat tasks
-import './tasks/migrate/task.ts';
+import './tasks/deployment_manager/task.ts';
 import './tasks/spider/task.ts';
 import './tasks/scenario/task.ts';
+
+// Relation Config
+import relationConfigMap from './deployments/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -138,6 +141,10 @@ const config: HardhatUserConfig = {
     target: 'ethers-v5',
   },
 
+  deploymentManager: {
+    relationConfigMap,
+  },
+
   scenario: {
     bases: [
       {
@@ -163,6 +170,10 @@ const config: HardhatUserConfig = {
         output: 'test-results.json',
       },
     },
+  },
+
+  paths: {
+    tests: "./{test,plugins/deployment_manager/test}",
   },
 
   contractSizer: {

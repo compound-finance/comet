@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { DeploymentManager, Roots } from '../../plugins/deployment_manager/DeploymentManager';
+import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import {
   Comet__factory,
   Comet,
@@ -130,7 +130,7 @@ export async function deployDevelopmentComet(
       (await comet.populateTransaction.XXX_REMOVEME_XXX_initialize()).data,
     ]);
 
-    await deploymentManager.setRoots({ TransparentUpgradeableProxy: proxy.address } as Roots);
+    await deploymentManager.putRoots(new Map([['comet', proxy.address]]));
   }
 
   return {
