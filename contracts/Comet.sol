@@ -117,7 +117,7 @@ contract Comet is CometMath, CometStorage {
 
     /// @notice The decimals required for a price feed
     uint8 public constant priceFeedDecimals = 8;
-    
+
     /// @notice The scale for prices (in USD)
     uint64 public constant priceScale = 1e8;
 
@@ -161,7 +161,7 @@ contract Comet is CometMath, CometStorage {
     address internal immutable priceFeed00;
     address internal immutable priceFeed01;
     address internal immutable priceFeed02;
-    
+
     uint internal immutable scale00;
     uint internal immutable scale01;
     uint internal immutable scale02;
@@ -228,7 +228,7 @@ contract Comet is CometMath, CometStorage {
         priceFeed00 = priceFeed00_;
         priceFeed01 = priceFeed01_;
         priceFeed02 = priceFeed02_;
-        
+
         scale00 = _getAssetScale(config.assetInfo, 0);
         scale01 = _getAssetScale(config.assetInfo, 1);
         scale02 = _getAssetScale(config.assetInfo, 2);
@@ -415,7 +415,6 @@ contract Comet is CometMath, CometStorage {
      */
     function hasPermission(address owner, address manager) public view returns (bool) {
         return owner == manager || isAllowed[owner][manager];
-
     }
 
     /**
@@ -479,13 +478,6 @@ contract Comet is CometMath, CometStorage {
         } else {
             return totalBorrow * factorScale / totalSupply;
         }
-    }
-
-    /**
-     * @return Whether the account is minimally collateralized enough to borrow
-     */
-    function isBorrowCollateralized(address account) public view returns (bool) {
-        return true; // XXX
     }
 
     /**
@@ -1056,8 +1048,8 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-     * @notice Buy collateral from the protocol using base tokens, increasing protocol reserves. 
-       A minimum collateral amount should be specified to indicate the maximum slippage 
+     * @notice Buy collateral from the protocol using base tokens, increasing protocol reserves.
+       A minimum collateral amount should be specified to indicate the maximum slippage
        acceptable for the buyer.
      * @param asset The asset to buy
      * @param minAmount The minimum amount of collateral tokens that should be received by the buyer
@@ -1089,5 +1081,98 @@ contract Comet is CometMath, CometStorage {
         uint basePrice = getPrice(baseTokenPriceFeed);
         uint assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPrice;
         return assetWeiPerUnitBase * baseAmount / baseScale;
+    }
+
+    /**
+     * @return Whether the account is minimally collateralized enough to borrow
+     * @param account address to check
+     */
+    function isBorrowCollateralized(address account) public view returns (bool) {
+        // XXX take in UserBasic and UserCollateral as arguments to reduce SLOADs
+        uint16 assetsIn = userBasic[account].assetsIn;
+        TotalsBasic memory totals = totalsBasic;
+
+        int liquidity = signedMulPrice(
+            presentValue(totals, userBasic[account].principal),
+            getPrice(baseTokenPriceFeed),
+            baseScale
+        );
+
+        for (uint8 i = 0; i < numAssets; i++) {
+            if (isInAsset(assetsIn, i)) {
+
+                if (liquidity >= 0) {
+                    return true;
+                }
+
+                AssetInfo memory asset = getAssetInfo(i);
+                uint newAmount = mulPrice(
+                    userCollateral[account][asset.asset].balance,
+                    getPrice(asset.priceFeed),
+                    safe64(asset.scale)
+                );
+                liquidity += signed256(mulFactor(
+                    newAmount,
+                    asset.borrowCollateralFactor
+                ));
+            }
+        }
+
+        return liquidity >= 0;
+    }
+
+    /**
+     * @notice amount of borrow liquidity for account
+     * @param account address to check liquidity for
+     * @return amount of borrow liquidity (in price scale)
+     */
+    function getBorrowLiquidity(address account) public view returns (int) {
+        uint16 assetsIn = userBasic[account].assetsIn;
+        TotalsBasic memory totals = totalsBasic;
+
+        int liquidity = signedMulPrice(
+            presentValue(totals, userBasic[account].principal),
+            getPrice(baseTokenPriceFeed),
+            baseScale
+        );
+
+        for (uint8 i = 0; i < numAssets; i++) {
+            if (isInAsset(assetsIn, i)) {
+                AssetInfo memory asset = getAssetInfo(i);
+                uint newAmount = mulPrice(
+                    userCollateral[account][asset.asset].balance,
+                    getPrice(asset.priceFeed),
+                    safe64(asset.scale)
+                );
+                liquidity += signed256(mulFactor(
+                    newAmount,
+                    asset.borrowCollateralFactor
+                ));
+            }
+        }
+
+        return liquidity;
+    }
+
+    /**
+    * @dev multiply an amount (positive or negative) of an asset by that asset's price
+    * @param amount amount of the asset (in that asset's decimals)
+    * @param price price of the asset, from priceFeed; value with 8 decimals
+    * @param tokenScale the number of decimals for the asset
+    * @return value of the amount of the asset; 8 decimals
+    */
+    function signedMulPrice(int amount, uint price, uint tokenScale) internal pure returns (int) {
+        return (amount * signed256(price)) / signed256(tokenScale);
+    }
+
+    /**
+    * @dev multiply a positive amount of an asset by that asset's price
+    * @param amount amount of the asset (in that asset's decimals)
+    * @param price price of the asset, from priceFeed; value with 8 decimals
+    * @param tokenScale the number of decimals for the asset
+    * @return value of the amount of the asset; 8 decimals
+    */
+    function mulPrice(uint amount, uint price, uint tokenScale) internal pure returns (uint) {
+        return (amount * price) / tokenScale;
     }
 }

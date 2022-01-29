@@ -29,6 +29,8 @@ contract CometHarness is Comet {
     }
 
     function setCollateralBalance(address account, address asset, uint128 balance) public {
+        uint128 initialUserBalance = userCollateral[account][asset].balance;
+        updateAssetsIn(account, asset, initialUserBalance, balance);
         userCollateral[account][asset].balance = balance;
     }
 

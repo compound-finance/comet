@@ -7,18 +7,18 @@ import { expect } from 'chai';
 
 /**
   # Utilization Constraint
-  
+
   This constraint is used to constrain the utilization rate, by adjust the total
   supply and/or borrows of Comet.
-  
+
   ## Configuration
-  
+
   **requirements**: `{ utilization: number }`
-  
+
   If passed in, the constraint will ensure that the utilization of the protocol
   is exactly the given value. If this constraint cannot be fulfilled, we will
   throw an error, rather than return "no solutions."
-  
+
   * Example: `{ utilization: 0.5 }` to target 50% utilization (borrows / supply).
   * Note: if utilization is passed as 0, this will target either borrows=0 or supply=0
 **/
@@ -29,7 +29,7 @@ interface UtilizationConfig {
 
 function getUtilizationConfig(requirements: object): UtilizationConfig | null {
   return {
-    utilization: optionalNumber(requirements, 'utilization')
+    utilization: optionalNumber(requirements, 'utilization'),
   };
 }
 
@@ -63,7 +63,8 @@ export class UtilizationConstraint<T extends CometContext> implements Constraint
       return async ({ comet }: T): Promise<T> => {
         let baseToken = context.getAssetByAddress(await comet.baseToken());
         let utilizationFactor = factor(utilization);
-        let { totalSupplyBase: totalSupplyBaseBN, totalBorrowBase: totalBorrowBaseBN } = await comet.totalsBasic();
+        let { totalSupplyBase: totalSupplyBaseBN, totalBorrowBase: totalBorrowBaseBN } =
+          await comet.totalsBasic();
         let totalSupplyBase = totalSupplyBaseBN.toBigInt();
         let totalBorrowBase = totalBorrowBaseBN.toBigInt();
 
@@ -79,16 +80,20 @@ export class UtilizationConstraint<T extends CometContext> implements Constraint
         let currentUtilization = totalBorrowBase / expectedSupplyBase;
 
         if (currentUtilization < utilizationFactor) {
-          toBorrowBase = toBorrowBase + floor(utilization * Number(expectedSupplyBase)) - totalBorrowBase;
+          toBorrowBase =
+            toBorrowBase + floor(utilization * Number(expectedSupplyBase)) - totalBorrowBase;
         } else {
-          toSupplyBase = toSupplyBase + floor(Number(totalBorrowBase) / utilization) - expectedSupplyBase;
+          toSupplyBase =
+            toSupplyBase + floor(Number(totalBorrowBase) / utilization) - expectedSupplyBase;
         }
 
         // It's really hard to target a utilization if we don't have _any_ base token supply, since
         // everything will come out as zero.
         if (toSupplyBase > 0n) {
           // Add some supply, any amount will do
-          let supplyActor = await context.allocateActor(world, "UtilizationConstraint{Supplier}", { toSupplyBase });
+          let supplyActor = await context.allocateActor(world, 'UtilizationConstraint{Supplier}', {
+            toSupplyBase,
+          });
 
           await baseToken.approve(supplyActor, comet);
           await context.sourceTokens(world, toSupplyBase, baseToken, supplyActor);
@@ -100,18 +105,22 @@ export class UtilizationConstraint<T extends CometContext> implements Constraint
           // could provide a solution for each token, but we don't know them in advance,
           // generally, so let's just pick the first one and source enough of it.
 
-          let [ { asset: collateralAsset, borrowCollateralFactor }, ...assets] = await comet.assets();
+          let [{ asset: collateralAsset, borrowCollateralFactor, priceFeed, scale }, ...assets] =
+            await comet.assets();
 
-          // Lastly, we'll need price, which I'm going to punt until we've worked on the oracle for
-          // But this would be something like `Oracle(comet.priceOracle).getPrice(asset)`
           let collateralToken = context.getAssetByAddress(collateralAsset);
 
-          let baseDecimals = 18; // TODO
-          let borrowDecimals = 8; // TODO
-          let priceAsset = exp(4000, 6 + 18 - borrowDecimals); // from the mock oracle
-          let priceBase = exp(4000, 6 + 18 - baseDecimals); // from the mock oracle
+          let basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
+          let collateralPrice = (await comet.getPrice(priceFeed)).toBigInt();
 
-          let collateralNeeded = ( toBorrowBase * borrowCollateralFactor.toBigInt() * priceBase ) / ( priceAsset * factorScale );
+          let baseScale = (await comet.baseScale()).toBigInt();
+          let collateralScale = scale.toBigInt();
+
+          let collateralWeiPerUnitBase = (collateralScale * basePrice) / collateralPrice;
+          let collateralNeeded = (collateralWeiPerUnitBase * toBorrowBase) / baseScale;
+          collateralNeeded = (collateralNeeded * factorScale) / borrowCollateralFactor.toBigInt(); // adjust for borrowCollateralFactor
+          collateralNeeded = (collateralNeeded * 11n) / 10n; // add fudge factor
+
           let info = {
             utilization,
             totalSupplyBase: totalSupplyBase.toString(),
@@ -119,10 +128,14 @@ export class UtilizationConstraint<T extends CometContext> implements Constraint
             toBorrowBase: toBorrowBase.toString(),
             collateralAsset,
             borrowCollateralFactor: borrowCollateralFactor.toString(),
-            collateralNeeded: collateralNeeded.toString()
+            collateralNeeded: collateralNeeded.toString(),
           };
 
-          let borrowActor = await context.allocateActor(world, "UtilizationConstraint{Borrower}", info);
+          let borrowActor = await context.allocateActor(
+            world,
+            'UtilizationConstraint{Borrower}',
+            info
+          );
 
           await context.sourceTokens(world, collateralNeeded, collateralToken, borrowActor);
           await collateralToken.approve(borrowActor, comet);
