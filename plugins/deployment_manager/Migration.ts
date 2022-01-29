@@ -2,32 +2,29 @@ import fg from 'fast-glob';
 import * as path from 'path';
 
 interface Action<T> {
-  prepare?: (DeploymentManager) => Promise<T>,
-  enact?: (DeploymentManager, T) => Promise<void>,
+  prepare?: (DeploymentManager) => Promise<T>;
+  enact?: (DeploymentManager, T) => Promise<void>;
 }
 
 export interface Migration<T> {
-  name: string,
-  actions: Action<T>
+  name: string;
+  actions: Action<T>;
 }
 
-class Loader<T> {
+export class Loader<T> {
   migrations: { [name: string]: Migration<T> };
 
   constructor() {
     this.migrations = {};
   }
 
-  addMigration(
-    name: string,
-    actions: Action<T>
-  ) {
+  addMigration(name: string, actions: Action<T>) {
     if (this.migrations[name]) {
       throw new Error(`Duplicate migration by name: ${name}`);
     }
     this.migrations[name] = {
       name,
-      actions
+      actions,
     };
   }
 
@@ -36,9 +33,9 @@ class Loader<T> {
   }
 }
 
-let loader: any;
+export let loader: any;
 
-function setupLoader<T>() {
+export function setupLoader<T>() {
   if (loader) {
     throw new Error('Loader already initialized');
   }
@@ -70,9 +67,6 @@ export async function loadMigrations<T>(glob: string): Promise<{ [name: string]:
   return loader.getMigrations();
 }
 
-export function migration<T>(
-  name: string,
-  actions: Action<T>
-) {
+export function migration<T>(name: string, actions: Action<T>) {
   getLoader().addMigration(name, actions);
 }
