@@ -1,0 +1,677 @@
+{
+    "CometStorageHarness_00000000ce4604a0000000000000000000000002": {
+        "contracts": [
+            {
+                "address": "00000000ce4604a0000000000000000000000002",
+                "bytecode": "608060405234801561001057600080fd5b50600436106100625760003560e01c80632b92a07d146100675780632e04b8e71461009857806359e017bd146100c8578063a1654379146100f9578063b9f0baf714610129578063dc4abafd1461014e575b600080fd5b610081600480360381019061007c919061044d565b610182565b60405161008f9291906104b8565b60405180910390f35b6100b260048036038101906100ad91906104e1565b6101eb565b6040516100bf9190610527565b60405180910390f35b6100e260048036038101906100dd91906104e1565b610203565b6040516100f09291906104b8565b60405180910390f35b610113600480360381019061010e919061044d565b61025f565b604051610120919061055d565b60405180910390f35b61013161028e565b6040516101459897969594939291906105ff565b60405180910390f35b610168600480360381019061016391906104e1565b610364565b6040516101799594939291906106b6565b60405180910390f35b6006602052816000526040600020602052806000526040600020600091509150508060000160009054906101000a90046fffffffffffffffffffffffffffffffff16908060000160109054906101000a90046fffffffffffffffffffffffffffffffff16905082565b60046020528060005260406000206000915090505481565b60026020528060005260406000206000915090508060000160009054906101000a90046fffffffffffffffffffffffffffffffff16908060000160109054906101000a90046fffffffffffffffffffffffffffffffff16905082565b60036020528160005260406000206020528060005260406000206000915091509054906101000a900460ff1681565b60008060000160009054906101000a900467ffffffffffffffff16908060000160089054906101000a900467ffffffffffffffff16908060000160109054906101000a900467ffffffffffffffff16908060000160189054906101000a900467ffffffffffffffff16908060010160009054906101000a90046cffffffffffffffffffffffffff169080600101600d9054906101000a90046cffffffffffffffffffffffffff169080600101601a9054906101000a900464ffffffffff169080600101601f9054906101000a900460ff16905088565b60056020528060005260406000206000915090508060000160009054906101000a9004600c0b9080600001600d9054906101000a900467ffffffffffffffff16908060000160159054906101000a900467ffffffffffffffff169080600001601d9054906101000a900461ffff169080600001601f9054906101000a900460ff16905085565b600080fd5b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b600061041a826103ef565b9050919050565b61042a8161040f565b811461043557600080fd5b50565b60008135905061044781610421565b92915050565b60008060408385031215610464576104636103ea565b5b600061047285828601610438565b925050602061048385828601610438565b9150509250929050565b60006fffffffffffffffffffffffffffffffff82169050919050565b6104b28161048d565b82525050565b60006040820190506104cd60008301856104a9565b6104da60208301846104a9565b9392505050565b6000602082840312156104f7576104f66103ea565b5b600061050584828501610438565b91505092915050565b6000819050919050565b6105218161050e565b82525050565b600060208201905061053c6000830184610518565b92915050565b60008115159050919050565b61055781610542565b82525050565b6000602082019050610572600083018461054e565b92915050565b600067ffffffffffffffff82169050919050565b61059581610578565b82525050565b60006cffffffffffffffffffffffffff82169050919050565b6105bd8161059b565b82525050565b600064ffffffffff82169050919050565b6105dd816105c3565b82525050565b600060ff82169050919050565b6105f9816105e3565b82525050565b600061010082019050610615600083018b61058c565b610622602083018a61058c565b61062f604083018961058c565b61063c606083018861058c565b61064960808301876105b4565b61065660a08301866105b4565b61066360c08301856105d4565b61067060e08301846105f0565b9998505050505050505050565b600081600c0b9050919050565b6106938161067d565b82525050565b600061ffff82169050919050565b6106b081610699565b82525050565b600060a0820190506106cb600083018861068a565b6106d8602083018761058c565b6106e5604083018661058c565b6106f260608301856106a7565b6106ff60808301846105f0565b969550505050505056fea2646970667358221220f5a634f4908e5be90aa18ab1b37828f3cd321f7d0066fa76180cdb3199fa20c564736f6c634300080b0033",
+                "constructorBytecode": "608060405234801561001057600080fd5b5061073f806100206000396000f3fe608060405234801561001057600080fd5b50600436106100625760003560e01c80632b92a07d146100675780632e04b8e71461009857806359e017bd146100c8578063a1654379146100f9578063b9f0baf714610129578063dc4abafd1461014e575b600080fd5b610081600480360381019061007c919061044d565b610182565b60405161008f9291906104b8565b60405180910390f35b6100b260048036038101906100ad91906104e1565b6101eb565b6040516100bf9190610527565b60405180910390f35b6100e260048036038101906100dd91906104e1565b610203565b6040516100f09291906104b8565b60405180910390f35b610113600480360381019061010e919061044d565b61025f565b604051610120919061055d565b60405180910390f35b61013161028e565b6040516101459897969594939291906105ff565b60405180910390f35b610168600480360381019061016391906104e1565b610364565b6040516101799594939291906106b6565b60405180910390f35b6006602052816000526040600020602052806000526040600020600091509150508060000160009054906101000a90046fffffffffffffffffffffffffffffffff16908060000160109054906101000a90046fffffffffffffffffffffffffffffffff16905082565b60046020528060005260406000206000915090505481565b60026020528060005260406000206000915090508060000160009054906101000a90046fffffffffffffffffffffffffffffffff16908060000160109054906101000a90046fffffffffffffffffffffffffffffffff16905082565b60036020528160005260406000206020528060005260406000206000915091509054906101000a900460ff1681565b60008060000160009054906101000a900467ffffffffffffffff16908060000160089054906101000a900467ffffffffffffffff16908060000160109054906101000a900467ffffffffffffffff16908060000160189054906101000a900467ffffffffffffffff16908060010160009054906101000a90046cffffffffffffffffffffffffff169080600101600d9054906101000a90046cffffffffffffffffffffffffff169080600101601a9054906101000a900464ffffffffff169080600101601f9054906101000a900460ff16905088565b60056020528060005260406000206000915090508060000160009054906101000a9004600c0b9080600001600d9054906101000a900467ffffffffffffffff16908060000160159054906101000a900467ffffffffffffffff169080600001601d9054906101000a900461ffff169080600001601f9054906101000a900460ff16905085565b600080fd5b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b600061041a826103ef565b9050919050565b61042a8161040f565b811461043557600080fd5b50565b60008135905061044781610421565b92915050565b60008060408385031215610464576104636103ea565b5b600061047285828601610438565b925050602061048385828601610438565b9150509250929050565b60006fffffffffffffffffffffffffffffffff82169050919050565b6104b28161048d565b82525050565b60006040820190506104cd60008301856104a9565b6104da60208301846104a9565b9392505050565b6000602082840312156104f7576104f66103ea565b5b600061050584828501610438565b91505092915050565b6000819050919050565b6105218161050e565b82525050565b600060208201905061053c6000830184610518565b92915050565b60008115159050919050565b61055781610542565b82525050565b6000602082019050610572600083018461054e565b92915050565b600067ffffffffffffffff82169050919050565b61059581610578565b82525050565b60006cffffffffffffffffffffffffff82169050919050565b6105bd8161059b565b82525050565b600064ffffffffff82169050919050565b6105dd816105c3565b82525050565b600060ff82169050919050565b6105f9816105e3565b82525050565b600061010082019050610615600083018b61058c565b610622602083018a61058c565b61062f604083018961058c565b61063c606083018861058c565b61064960808301876105b4565b61065660a08301866105b4565b61066360c08301856105d4565b61067060e08301846105f0565b9998505050505050505050565b600081600c0b9050919050565b6106938161067d565b82525050565b600061ffff82169050919050565b6106b081610699565b82525050565b600060a0820190506106cb600083018861068a565b6106d8602083018761058c565b6106e5604083018661058c565b6106f260608301856106a7565b6106ff60808301846105f0565b969550505050505056fea2646970667358221220f5a634f4908e5be90aa18ab1b37828f3cd321f7d0066fa76180cdb3199fa20c564736f6c634300080b0033",
+                "constructorSrcmap": "119:53:0:-:0;;;;;;;;;;;;;;;;;;;",
+                "file": "autoFinder_CometStorageHarness.sol_0/1_CometStorage.sol",
+                "immutables": [],
+                "internalFunctions": {},
+                "methods": [
+                    {
+                        "fullArgs": [
+                            {
+                                "arrayDims": [],
+                                "baseType": "address",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            }
+                        ],
+                        "isABI": true,
+                        "name": "userNonce",
+                        "notpayable": true,
+                        "returns": [
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint256",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            }
+                        ],
+                        "sighash": "2e04b8e7",
+                        "sighashIsFromOtherName": false,
+                        "stateMutability": {
+                            "keyword": "view"
+                        },
+                        "visibility": "external"
+                    },
+                    {
+                        "fullArgs": [
+                            {
+                                "arrayDims": [],
+                                "baseType": "address",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            }
+                        ],
+                        "isABI": true,
+                        "name": "userBasic",
+                        "notpayable": true,
+                        "returns": [
+                            {
+                                "arrayDims": [],
+                                "baseType": "int104",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            },
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint64",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            },
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint64",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            },
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint16",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            },
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint8",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            }
+                        ],
+                        "sighash": "dc4abafd",
+                        "sighashIsFromOtherName": false,
+                        "stateMutability": {
+                            "keyword": "view"
+                        },
+                        "visibility": "external"
+                    },
+                    {
+                        "fullArgs": [
+                            {
+                                "arrayDims": [],
+                                "baseType": "address",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            }
+                        ],
+                        "isABI": true,
+                        "name": "totalsCollateral",
+                        "notpayable": true,
+                        "returns": [
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint128",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            },
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint128",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            }
+                        ],
+                        "sighash": "59e017bd",
+                        "sighashIsFromOtherName": false,
+                        "stateMutability": {
+                            "keyword": "view"
+                        },
+                        "visibility": "external"
+                    },
+                    {
+                        "fullArgs": [],
+                        "isABI": true,
+                        "name": "totalsBasic",
+                        "notpayable": true,
+                        "returns": [
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint64",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            },
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint64",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            },
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint64",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            },
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint64",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            },
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint104",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            },
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint104",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            },
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint40",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            },
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint8",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            }
+                        ],
+                        "sighash": "b9f0baf7",
+                        "sighashIsFromOtherName": false,
+                        "stateMutability": {
+                            "keyword": "view"
+                        },
+                        "visibility": "external"
+                    },
+                    {
+                        "fullArgs": [
+                            {
+                                "arrayDims": [],
+                                "baseType": "address",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            },
+                            {
+                                "arrayDims": [],
+                                "baseType": "address",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            }
+                        ],
+                        "isABI": true,
+                        "name": "isAllowed",
+                        "notpayable": true,
+                        "returns": [
+                            {
+                                "arrayDims": [],
+                                "baseType": "bool",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            }
+                        ],
+                        "sighash": "a1654379",
+                        "sighashIsFromOtherName": false,
+                        "stateMutability": {
+                            "keyword": "view"
+                        },
+                        "visibility": "external"
+                    },
+                    {
+                        "fullArgs": [
+                            {
+                                "arrayDims": [],
+                                "baseType": "address",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            },
+                            {
+                                "arrayDims": [],
+                                "baseType": "address",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            }
+                        ],
+                        "isABI": true,
+                        "name": "userCollateral",
+                        "notpayable": true,
+                        "returns": [
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint128",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            },
+                            {
+                                "arrayDims": [],
+                                "baseType": "uint128",
+                                "components": [],
+                                "isAddressAlias": false,
+                                "isStorage": false,
+                                "isTuple": false,
+                                "isUint8Alias": false
+                            }
+                        ],
+                        "sighash": "2b92a07d",
+                        "sighashIsFromOtherName": false,
+                        "stateMutability": {
+                            "keyword": "view"
+                        },
+                        "visibility": "external"
+                    }
+                ],
+                "name": "CometStorageHarness",
+                "original_file": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol",
+                "srcmap": "119:53:0:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;1722:76:1;;;;;;;;;;;;;:::i;:::-;;:::i;:::-;;;;;;;;:::i;:::-;;;;;;;;1476:41;;;;;;;;;;;;;:::i;:::-;;:::i;:::-;;;;;;;:::i;:::-;;;;;;;;1146:60;;;;;;;;;;;;;:::i;:::-;;:::i;:::-;;;;;;;;:::i;:::-;;;;;;;;1308:61;;;;;;;;;;;;;:::i;:::-;;:::i;:::-;;;;;;;:::i;:::-;;;;;;;;1039:30;;;:::i;:::-;;;;;;;;;;;;;;:::i;:::-;;;;;;;;1596:46;;;;;;;;;;;;;:::i;:::-;;:::i;:::-;;;;;;;;;;;:::i;:::-;;;;;;;;1722:76;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::o;1476:41::-;;;;;;;;;;;;;;;;;:::o;1146:60::-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::o;1308:61::-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::o;1039:30::-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::o;1596:46::-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::o;88:117:2:-;197:1;194;187:12;334:126;371:7;411:42;404:5;400:54;389:65;;334:126;;;:::o;466:96::-;503:7;532:24;550:5;532:24;:::i;:::-;521:35;;466:96;;;:::o;568:122::-;641:24;659:5;641:24;:::i;:::-;634:5;631:35;621:63;;680:1;677;670:12;621:63;568:122;:::o;696:139::-;742:5;780:6;767:20;758:29;;796:33;823:5;796:33;:::i;:::-;696:139;;;;:::o;841:474::-;909:6;917;966:2;954:9;945:7;941:23;937:32;934:119;;;972:79;;:::i;:::-;934:119;1092:1;1117:53;1162:7;1153:6;1142:9;1138:22;1117:53;:::i;:::-;1107:63;;1063:117;1219:2;1245:53;1290:7;1281:6;1270:9;1266:22;1245:53;:::i;:::-;1235:63;;1190:118;841:474;;;;;:::o;1321:118::-;1358:7;1398:34;1391:5;1387:46;1376:57;;1321:118;;;:::o;1445:::-;1532:24;1550:5;1532:24;:::i;:::-;1527:3;1520:37;1445:118;;:::o;1569:332::-;1690:4;1728:2;1717:9;1713:18;1705:26;;1741:71;1809:1;1798:9;1794:17;1785:6;1741:71;:::i;:::-;1822:72;1890:2;1879:9;1875:18;1866:6;1822:72;:::i;:::-;1569:332;;;;;:::o;1907:329::-;1966:6;2015:2;2003:9;1994:7;1990:23;1986:32;1983:119;;;2021:79;;:::i;:::-;1983:119;2141:1;2166:53;2211:7;2202:6;2191:9;2187:22;2166:53;:::i;:::-;2156:63;;2112:117;1907:329;;;;:::o;2242:77::-;2279:7;2308:5;2297:16;;2242:77;;;:::o;2325:118::-;2412:24;2430:5;2412:24;:::i;:::-;2407:3;2400:37;2325:118;;:::o;2449:222::-;2542:4;2580:2;2569:9;2565:18;2557:26;;2593:71;2661:1;2650:9;2646:17;2637:6;2593:71;:::i;:::-;2449:222;;;;:::o;2677:90::-;2711:7;2754:5;2747:13;2740:21;2729:32;;2677:90;;;:::o;2773:109::-;2854:21;2869:5;2854:21;:::i;:::-;2849:3;2842:34;2773:109;;:::o;2888:210::-;2975:4;3013:2;3002:9;2998:18;2990:26;;3026:65;3088:1;3077:9;3073:17;3064:6;3026:65;:::i;:::-;2888:210;;;;:::o;3104:101::-;3140:7;3180:18;3173:5;3169:30;3158:41;;3104:101;;;:::o;3211:115::-;3296:23;3313:5;3296:23;:::i;:::-;3291:3;3284:36;3211:115;;:::o;3332:112::-;3369:7;3409:28;3402:5;3398:40;3387:51;;3332:112;;;:::o;3450:118::-;3537:24;3555:5;3537:24;:::i;:::-;3532:3;3525:37;3450:118;;:::o;3574:95::-;3610:7;3650:12;3643:5;3639:24;3628:35;;3574:95;;;:::o;3675:115::-;3760:23;3777:5;3760:23;:::i;:::-;3755:3;3748:36;3675:115;;:::o;3796:86::-;3831:7;3871:4;3864:5;3860:16;3849:27;;3796:86;;;:::o;3888:112::-;3971:22;3987:5;3971:22;:::i;:::-;3966:3;3959:35;3888:112;;:::o;4006:969::-;4281:4;4319:3;4308:9;4304:19;4296:27;;4333:69;4399:1;4388:9;4384:17;4375:6;4333:69;:::i;:::-;4412:70;4478:2;4467:9;4463:18;4454:6;4412:70;:::i;:::-;4492;4558:2;4547:9;4543:18;4534:6;4492:70;:::i;:::-;4572;4638:2;4627:9;4623:18;4614:6;4572:70;:::i;:::-;4652:73;4720:3;4709:9;4705:19;4696:6;4652:73;:::i;:::-;4735;4803:3;4792:9;4788:19;4779:6;4735:73;:::i;:::-;4818:71;4884:3;4873:9;4869:19;4860:6;4818:71;:::i;:::-;4899:69;4963:3;4952:9;4948:19;4939:6;4899:69;:::i;:::-;4006:969;;;;;;;;;;;:::o;4981:92::-;5017:7;5061:5;5057:2;5046:21;5035:32;;4981:92;;;:::o;5079:115::-;5164:23;5181:5;5164:23;:::i;:::-;5159:3;5152:36;5079:115;;:::o;5200:89::-;5236:7;5276:6;5269:5;5265:18;5254:29;;5200:89;;;:::o;5295:115::-;5380:23;5397:5;5380:23;:::i;:::-;5375:3;5368:36;5295:115;;:::o;5416:640::-;5609:4;5647:3;5636:9;5632:19;5624:27;;5661:69;5727:1;5716:9;5712:17;5703:6;5661:69;:::i;:::-;5740:70;5806:2;5795:9;5791:18;5782:6;5740:70;:::i;:::-;5820;5886:2;5875:9;5871:18;5862:6;5820:70;:::i;:::-;5900;5966:2;5955:9;5951:18;5942:6;5900:70;:::i;:::-;5980:69;6044:3;6033:9;6029:19;6020:6;5980:69;:::i;:::-;5416:640;;;;;;;;:::o",
+                "storageLayout": {
+                    "storage": [
+                        {
+                            "astId": 50,
+                            "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                            "label": "totalsBasic",
+                            "offset": 0,
+                            "slot": "0",
+                            "type": "t_struct(TotalsBasic)25_storage"
+                        },
+                        {
+                            "astId": 56,
+                            "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                            "label": "totalsCollateral",
+                            "offset": 0,
+                            "slot": "2",
+                            "type": "t_mapping(t_address,t_struct(TotalsCollateral)30_storage)"
+                        },
+                        {
+                            "astId": 63,
+                            "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                            "label": "isAllowed",
+                            "offset": 0,
+                            "slot": "3",
+                            "type": "t_mapping(t_address,t_mapping(t_address,t_bool))"
+                        },
+                        {
+                            "astId": 68,
+                            "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                            "label": "userNonce",
+                            "offset": 0,
+                            "slot": "4",
+                            "type": "t_mapping(t_address,t_uint256)"
+                        },
+                        {
+                            "astId": 74,
+                            "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                            "label": "userBasic",
+                            "offset": 0,
+                            "slot": "5",
+                            "type": "t_mapping(t_address,t_struct(UserBasic)41_storage)"
+                        },
+                        {
+                            "astId": 82,
+                            "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                            "label": "userCollateral",
+                            "offset": 0,
+                            "slot": "6",
+                            "type": "t_mapping(t_address,t_mapping(t_address,t_struct(UserCollateral)46_storage))"
+                        }
+                    ],
+                    "types": {
+                        "t_address": {
+                            "encoding": "inplace",
+                            "label": "address",
+                            "numberOfBytes": "20"
+                        },
+                        "t_bool": {
+                            "encoding": "inplace",
+                            "label": "bool",
+                            "numberOfBytes": "1"
+                        },
+                        "t_int104": {
+                            "encoding": "inplace",
+                            "label": "int104",
+                            "numberOfBytes": "13"
+                        },
+                        "t_mapping(t_address,t_bool)": {
+                            "encoding": "mapping",
+                            "key": "t_address",
+                            "label": "mapping(address => bool)",
+                            "numberOfBytes": "32",
+                            "value": "t_bool"
+                        },
+                        "t_mapping(t_address,t_mapping(t_address,t_bool))": {
+                            "encoding": "mapping",
+                            "key": "t_address",
+                            "label": "mapping(address => mapping(address => bool))",
+                            "numberOfBytes": "32",
+                            "value": "t_mapping(t_address,t_bool)"
+                        },
+                        "t_mapping(t_address,t_mapping(t_address,t_struct(UserCollateral)46_storage))": {
+                            "encoding": "mapping",
+                            "key": "t_address",
+                            "label": "mapping(address => mapping(address => struct CometStorage.UserCollateral))",
+                            "numberOfBytes": "32",
+                            "value": "t_mapping(t_address,t_struct(UserCollateral)46_storage)"
+                        },
+                        "t_mapping(t_address,t_struct(TotalsCollateral)30_storage)": {
+                            "encoding": "mapping",
+                            "key": "t_address",
+                            "label": "mapping(address => struct CometStorage.TotalsCollateral)",
+                            "numberOfBytes": "32",
+                            "value": "t_struct(TotalsCollateral)30_storage"
+                        },
+                        "t_mapping(t_address,t_struct(UserBasic)41_storage)": {
+                            "encoding": "mapping",
+                            "key": "t_address",
+                            "label": "mapping(address => struct CometStorage.UserBasic)",
+                            "numberOfBytes": "32",
+                            "value": "t_struct(UserBasic)41_storage"
+                        },
+                        "t_mapping(t_address,t_struct(UserCollateral)46_storage)": {
+                            "encoding": "mapping",
+                            "key": "t_address",
+                            "label": "mapping(address => struct CometStorage.UserCollateral)",
+                            "numberOfBytes": "32",
+                            "value": "t_struct(UserCollateral)46_storage"
+                        },
+                        "t_mapping(t_address,t_uint256)": {
+                            "encoding": "mapping",
+                            "key": "t_address",
+                            "label": "mapping(address => uint256)",
+                            "numberOfBytes": "32",
+                            "value": "t_uint256"
+                        },
+                        "t_struct(TotalsBasic)25_storage": {
+                            "encoding": "inplace",
+                            "label": "struct CometStorage.TotalsBasic",
+                            "members": [
+                                {
+                                    "astId": 10,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "baseSupplyIndex",
+                                    "offset": 0,
+                                    "slot": "0",
+                                    "type": "t_uint64"
+                                },
+                                {
+                                    "astId": 12,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "baseBorrowIndex",
+                                    "offset": 8,
+                                    "slot": "0",
+                                    "type": "t_uint64"
+                                },
+                                {
+                                    "astId": 14,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "trackingSupplyIndex",
+                                    "offset": 16,
+                                    "slot": "0",
+                                    "type": "t_uint64"
+                                },
+                                {
+                                    "astId": 16,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "trackingBorrowIndex",
+                                    "offset": 24,
+                                    "slot": "0",
+                                    "type": "t_uint64"
+                                },
+                                {
+                                    "astId": 18,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "totalSupplyBase",
+                                    "offset": 0,
+                                    "slot": "1",
+                                    "type": "t_uint104"
+                                },
+                                {
+                                    "astId": 20,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "totalBorrowBase",
+                                    "offset": 13,
+                                    "slot": "1",
+                                    "type": "t_uint104"
+                                },
+                                {
+                                    "astId": 22,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "lastAccrualTime",
+                                    "offset": 26,
+                                    "slot": "1",
+                                    "type": "t_uint40"
+                                },
+                                {
+                                    "astId": 24,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "pauseFlags",
+                                    "offset": 31,
+                                    "slot": "1",
+                                    "type": "t_uint8"
+                                }
+                            ],
+                            "numberOfBytes": "64"
+                        },
+                        "t_struct(TotalsCollateral)30_storage": {
+                            "encoding": "inplace",
+                            "label": "struct CometStorage.TotalsCollateral",
+                            "members": [
+                                {
+                                    "astId": 27,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "totalSupplyAsset",
+                                    "offset": 0,
+                                    "slot": "0",
+                                    "type": "t_uint128"
+                                },
+                                {
+                                    "astId": 29,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "_reserved",
+                                    "offset": 16,
+                                    "slot": "0",
+                                    "type": "t_uint128"
+                                }
+                            ],
+                            "numberOfBytes": "32"
+                        },
+                        "t_struct(UserBasic)41_storage": {
+                            "encoding": "inplace",
+                            "label": "struct CometStorage.UserBasic",
+                            "members": [
+                                {
+                                    "astId": 32,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "principal",
+                                    "offset": 0,
+                                    "slot": "0",
+                                    "type": "t_int104"
+                                },
+                                {
+                                    "astId": 34,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "baseTrackingIndex",
+                                    "offset": 13,
+                                    "slot": "0",
+                                    "type": "t_uint64"
+                                },
+                                {
+                                    "astId": 36,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "baseTrackingAccrued",
+                                    "offset": 21,
+                                    "slot": "0",
+                                    "type": "t_uint64"
+                                },
+                                {
+                                    "astId": 38,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "assetsIn",
+                                    "offset": 29,
+                                    "slot": "0",
+                                    "type": "t_uint16"
+                                },
+                                {
+                                    "astId": 40,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "_reserved",
+                                    "offset": 31,
+                                    "slot": "0",
+                                    "type": "t_uint8"
+                                }
+                            ],
+                            "numberOfBytes": "32"
+                        },
+                        "t_struct(UserCollateral)46_storage": {
+                            "encoding": "inplace",
+                            "label": "struct CometStorage.UserCollateral",
+                            "members": [
+                                {
+                                    "astId": 43,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "balance",
+                                    "offset": 0,
+                                    "slot": "0",
+                                    "type": "t_uint128"
+                                },
+                                {
+                                    "astId": 45,
+                                    "contract": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol:CometStorageHarness",
+                                    "label": "_reserved",
+                                    "offset": 16,
+                                    "slot": "0",
+                                    "type": "t_uint128"
+                                }
+                            ],
+                            "numberOfBytes": "32"
+                        },
+                        "t_uint104": {
+                            "encoding": "inplace",
+                            "label": "uint104",
+                            "numberOfBytes": "13"
+                        },
+                        "t_uint128": {
+                            "encoding": "inplace",
+                            "label": "uint128",
+                            "numberOfBytes": "16"
+                        },
+                        "t_uint16": {
+                            "encoding": "inplace",
+                            "label": "uint16",
+                            "numberOfBytes": "2"
+                        },
+                        "t_uint256": {
+                            "encoding": "inplace",
+                            "label": "uint256",
+                            "numberOfBytes": "32"
+                        },
+                        "t_uint40": {
+                            "encoding": "inplace",
+                            "label": "uint40",
+                            "numberOfBytes": "5"
+                        },
+                        "t_uint64": {
+                            "encoding": "inplace",
+                            "label": "uint64",
+                            "numberOfBytes": "8"
+                        },
+                        "t_uint8": {
+                            "encoding": "inplace",
+                            "label": "uint8",
+                            "numberOfBytes": "1"
+                        }
+                    }
+                },
+                "varmap": ""
+            }
+        ],
+        "generated_with": "/Users/pitanjenny/Library/Python/3.8/bin/certoraRun certora/harness/CometStorageHarness.sol --verify CometStorageHarness:certora/specs/sanity.spec --solc solc8.11 --staging --msg checking sanity on CometStorageHarness",
+        "library_addresses": [],
+        "original_srclist": {
+            "0": "/Users/pitanjenny/Work/comet/certora/harness/autoFinder_CometStorageHarness.sol",
+            "1": "/Users/pitanjenny/Work/comet/contracts/CometStorage.sol"
+        },
+        "primary_contract": "CometStorageHarness",
+        "primary_contract_address": "00000000ce4604a0000000000000000000000002",
+        "sdc_name": "autoFinder_CometStorageHarness.sol_0",
+        "sdc_origin_file": "certora/harness/autoFinder_CometStorageHarness.sol",
+        "srclist": {
+            "0": "autoFinder_CometStorageHarness.sol_0/0_autoFinder_CometStorageHarness.sol",
+            "1": "autoFinder_CometStorageHarness.sol_0/1_CometStorage.sol"
+        },
+        "state": {},
+        "structLinkingInfo": {}
+    }
+}

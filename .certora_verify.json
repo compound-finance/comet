@@ -1,0 +1,10 @@
+[
+    {
+        "importFilesToOrigRelpaths": {},
+        "primary_contract": "CometStorageHarness",
+        "specfile": ".certora_config/0_sanity.spec",
+        "specfileOrigRelpath": "certora/specs/sanity.spec",
+        "specfilesToImportDecls": {},
+        "type": "spec"
+    }
+]
