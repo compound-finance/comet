@@ -22,3 +22,9 @@ typechain/
 
 test-results.json
 scenario-results.json
+
+# certora
+.certora*
+.certora*.json
+**.last_conf*
+certora-logs
