@@ -47,6 +47,7 @@ export type ProtocolOpts = {
   baseMinForRewards?: Numeric;
   baseBorrowMin?: Numeric;
   targetReserves?: Numeric;
+  baseTokenBalance?: Numeric;
 };
 
 export type Protocol = {
@@ -210,6 +211,12 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   });
   await comet.deployed();
 
+  const baseTokenBalance = opts.baseTokenBalance;
+  if (baseTokenBalance) {
+    const baseToken = tokens[base];
+    await wait(baseToken.allocateTo(comet.address, baseTokenBalance));
+  }
+
   return {
     opts,
     governor,
@@ -249,4 +256,10 @@ export async function wait(
     ...tx_,
     receipt,
   };
+}
+
+export function filterEvent(data, eventName) {
+  return data.receipt.events?.filter((x) => {
+    return x.event == eventName;
+  })[0];
 }

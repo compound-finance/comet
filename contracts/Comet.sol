@@ -185,6 +185,12 @@ contract Comet is CometMath, CometStorage {
     uint256 internal immutable asset14_a;
     uint256 internal immutable asset14_b;
 
+
+    /** Events **/
+
+    /// @notice Emitted when a governor withdraws base token reserves
+    event ReservesWithdrawn(address governor, address to, uint amount);
+
     /**
      * @notice Construct a new protocol instance
      * @param config The mapping of initial/constant parameters
@@ -1367,5 +1373,17 @@ contract Comet is CometMath, CometStorage {
         uint basePrice = getPrice(baseTokenPriceFeed);
         uint assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPrice;
         return assetWeiPerUnitBase * baseAmount / baseScale;
+    }
+
+    /**
+     * @notice Withdraws base token reserves if called by the governor
+     * @param to An address of the receiver of withdrawn reserves
+     * @param amount The amount of reserves to be withdrawn from the protocol
+     */
+    function withdrawReserves(address to, uint amount) external {
+        require(msg.sender == governor, "Unauthorized");
+        require(ERC20(baseToken).transfer(to, amount), "invalid token transfer");
+
+        emit ReservesWithdrawn(governor, to, amount);
     }
 }
