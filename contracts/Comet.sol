@@ -510,9 +510,9 @@ contract Comet is CometMath, CometStorage {
      */
     function principalValue(TotalsBasic memory totals, int104 presentValue_) internal pure returns (int104) {
         if (presentValue_ >= 0) {
-            return signed104(presentValueSupply(totals, unsigned104(presentValue_)));
+            return signed104(principalValueSupply(totals, unsigned104(presentValue_)));
         } else {
-            return -signed104(presentValueBorrow(totals, unsigned104(-presentValue_)));
+            return -signed104(principalValueBorrow(totals, unsigned104(-presentValue_)));
         }
     }
 

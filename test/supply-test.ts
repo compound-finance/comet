@@ -64,6 +64,44 @@ describe('supplyTo', function () {
     //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(125000);
   });
 
+  it('calculates base principal correctly', async () => {
+    const protocol = await makeProtocol({base: 'USDC'});
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { USDC } = tokens;
+
+    await USDC.allocateTo(bob.address, 100e6);
+    const baseAsB = USDC.connect(bob);
+    const cometAsB = comet.connect(bob);
+
+    let totals0 = await comet.totalsBasic();
+    totals0 = Object.assign({}, await comet.totalsBasic(), {
+      baseSupplyIndex: 2e15,
+    });
+    await wait(comet.setTotalsBasic(totals0));
+    const alice0 = await portfolio(protocol, alice.address);
+    const bob0 = await portfolio(protocol, bob.address);
+    const aliceBasic0 = await comet.userBasic(alice.address);
+
+    await wait(baseAsB.approve(comet.address, 100e6));
+    await wait(cometAsB.supplyTo(alice.address, USDC.address, 100e6));
+    const t1 = await comet.totalsBasic();
+    const alice1 = await portfolio(protocol, alice.address)
+    const bob1 = await portfolio(protocol, bob.address)
+    const aliceBasic1 = await comet.userBasic(alice.address);
+
+    expect(alice0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(alice0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(bob0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(bob0.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(alice1.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(alice1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(bob1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(bob1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(t1.totalSupplyBase).to.be.equal(totals0.totalSupplyBase.add(50e6)); // 100e6 in present value
+    expect(t1.totalBorrowBase).to.be.equal(totals0.totalBorrowBase);
+    expect(aliceBasic1.principal).to.be.equal(aliceBasic0.principal.add(50e6)); // 100e6 in present value
+  })
+
   it('reverts if supplying collateral exceeds the supply cap', async () => {
     const protocol = await makeProtocol({assets: {
       COMP: { initial: 1e7, decimals: 18, supplyCap: 0 },

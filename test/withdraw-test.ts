@@ -70,6 +70,41 @@ describe('withdrawTo', function () {
     //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(60000);
   });
 
+  it('calculates base principal correctly', async () => {
+    const protocol = await makeProtocol({base: 'USDC'});
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { USDC } = tokens;
+
+    await USDC.allocateTo(comet.address, 100e6);
+    const totals0 = Object.assign({}, await comet.totalsBasic(), {
+      baseSupplyIndex: 2e15,
+      totalSupplyBase: 50e6, // 100e6 in present value
+    });
+    await wait(comet.setTotalsBasic(totals0));
+
+    await comet.setBasePrincipal(bob.address, 50e6); // 100e6 in present value
+    const cometAsB = comet.connect(bob);
+
+    const alice0 = await portfolio(protocol, alice.address);
+    const bob0 = await portfolio(protocol, bob.address);
+
+    await wait(cometAsB.withdrawTo(alice.address, USDC.address, 100e6));
+    const totals1 = await comet.totalsBasic();
+    const alice1 = await portfolio(protocol, alice.address)
+    const bob1 = await portfolio(protocol, bob.address)
+
+    expect(alice0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(alice0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(bob0.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(bob0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(alice1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(alice1.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(bob1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(bob1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(totals1.totalSupplyBase).to.be.equal(0n);
+    expect(totals1.totalBorrowBase).to.be.equal(0n);
+  });
+
   it('reverts if withdrawing base exceeds the total supply', async () => {
     const protocol = await makeProtocol({base: 'USDC'});
     const { comet, tokens, users: [alice, bob] } = protocol;
