@@ -1202,6 +1202,10 @@ contract Comet is CometMath, CometStorage {
 
         for (uint8 i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
+                if (liquidity >= 0) {
+                    return false;
+                }
+
                 AssetInfo memory asset = getAssetInfo(i);
                 uint newAmount = mulPrice(
                     userCollateral[account][asset.asset].balance,
