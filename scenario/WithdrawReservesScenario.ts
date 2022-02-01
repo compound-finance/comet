@@ -1,5 +1,6 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
+import { World } from '../plugins/scenario';
 
 scenario(
   'Comet#withdrawReserves > governor withdraw reserves',
@@ -7,14 +8,22 @@ scenario(
     baseToken: {
       balance: 100,
     },
+    upgrade: true,
   },
-  async ({ comet, actors, getAssetByAddress }) => {
-    const { admin, albert } = actors;
+  async ({ comet, actors, getAssetByAddress }, world: World) => {
+    const { albert } = actors;
 
     const baseToken = getAssetByAddress(await comet.baseToken());
 
     expect(await baseToken.balanceOf(comet.address)).to.equal(100n);
-    await admin.withdrawReserves(albert, 10);
+
+    // XXX replace with:
+    //   await admin.withdrawReserves(albert, 10);
+    // once admin.address == comet.governor() on all deployments
+    const governorAddress = await comet.governor();
+    const governor = await world.impersonateAddress(governorAddress);
+    await comet.connect(governor).withdrawReserves(albert.address, 10);
+
     expect(await baseToken.balanceOf(comet.address)).to.equal(90n);
   }
 );
@@ -25,6 +34,7 @@ scenario(
     baseToken: {
       balance: 100,
     },
+    upgrade: true,
   },
   async ({ actors }) => {
     const { albert } = actors;
@@ -38,11 +48,12 @@ scenario(
     baseToken: {
       balance: 100,
     },
+    upgrade: true,
   },
   async ({ actors }) => {
     const { admin, albert } = actors;
-    await expect(admin.withdrawReserves(albert, 101)).to.be.revertedWith(
-      'VM Exception while processing transaction: reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)'
-    );
+
+    // XXX specify the desired revert message (differs across deployments, currently)
+    await expect(admin.withdrawReserves(albert, 101)).to.be.reverted;
   }
 );
