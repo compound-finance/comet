@@ -8,6 +8,8 @@ import { HardhatConfig, HardhatArguments, createContext } from './HardhatContext
 import { ScenarioConfig } from '../types';
 import { SimpleWorker } from './SimpleWorker';
 import hreForBase from '../utils/hreForBase';
+import { Result } from './Parent';
+import { pluralize } from './Report';
 
 interface Message {
   scenario?: {
@@ -73,8 +75,10 @@ export async function run<T>({ scenarioConfig, bases, config, worker }: WorkerDa
       }
 
       console.log('Running', scenarioName, base);
+      let numSolutions = 0;
       try {
         let result = await runners[base].run(scenario);
+        numSolutions += result.numSolutions ?? 0;
         eventually(() => {
           postMessage(worker, { result });
         });
@@ -84,7 +88,7 @@ export async function run<T>({ scenarioConfig, bases, config, worker }: WorkerDa
           throw e;
         });
       }
-      console.log('Ran', scenarioName);
+      console.log(`Ran ${pluralize(numSolutions, 'solution', 'solutions')} for`, scenarioName);
     } else {
       throw new Error(`Unknown or invalid worker message: ${JSON.stringify(message)}`);
     }

@@ -19,6 +19,7 @@ export interface Result {
   base: string;
   file: string;
   scenario: string;
+  numSolutions?: number;
   elapsed?: number;
   error?: Error;
   trace?: string;
