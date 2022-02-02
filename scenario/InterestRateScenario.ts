@@ -115,7 +115,7 @@ scenario(
   }
 );
 
-scenario.only(
+scenario(
   'Comet#interestRate > rates using fuzzed configuration constants',
   {
     upgrade: true,

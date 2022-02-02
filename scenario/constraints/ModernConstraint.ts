@@ -1,7 +1,7 @@
 import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import { CometConfigurationOverrides, deployComet } from '../../src/deploy';
-import { getFuzzedConfigs } from './Fuzzing';
+import { getFuzzedCometConfigs } from './Fuzzing';
 import CometAsset from '../context/CometAsset';
 import { Contract } from 'ethers';
 
@@ -14,7 +14,7 @@ function getModernConfig(requirements: object): ModernConfig | null {
   let upgrade = requirements['upgrade'];
   let cometConfig = requirements['cometConfig'];
 
-  let fuzzedCometConfigs = getFuzzedConfigs(cometConfig);
+  let fuzzedCometConfigs = getFuzzedCometConfigs(cometConfig);
 
   return {
     upgrade: !!upgrade,
