@@ -188,6 +188,18 @@ describe('buyCollateral', function () {
     await expect(cometAsA.buyCollateral(COMP.address, exp(200, 18), 200e6, alice.address)).to.be.revertedWith('reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
   });
 
+  it('reverts if buy is paused', async () => {
+    const protocol = await makeProtocol({base: 'USDC', targetReserves: 0});
+    const { comet, tokens, pauseGuardian, users: [alice] } = protocol;
+    const { COMP } = tokens;
+    const cometAsA = comet.connect(alice);
+
+    await wait(comet.connect(pauseGuardian).pause(false, false, false, false, true));
+    expect(await comet.isBuyPaused()).to.be.true;
+    
+    await expect(cometAsA.buyCollateral(COMP.address, exp(50, 18), 50e6, alice.address)).to.be.revertedWith('buy is paused');
+  });
+
   it.skip('buys the correct amount in a fee-like situation', async () => {
     // XXX
   });

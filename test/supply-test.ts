@@ -130,6 +130,22 @@ describe('supplyTo', function () {
     await expect(cometAsB.supplyTo(alice.address, USUP.address, 1)).to.be.reverted;
   });
 
+  it('reverts if supply is paused', async () => {
+    const protocol = await makeProtocol({base: 'USDC'});
+    const { comet, tokens, pauseGuardian, users: [alice, bob] } = protocol;
+    const { USDC } = tokens;
+
+    await USDC.allocateTo(bob.address, 1);
+    const baseAsB = USDC.connect(bob);
+    const cometAsB = comet.connect(bob);
+
+    await wait(comet.connect(pauseGuardian).pause(true, false, false, false, false));
+    expect(await comet.isSupplyPaused()).to.be.true;
+
+    await wait(baseAsB.approve(comet.address, 1));
+    await expect(cometAsB.supplyTo(alice.address, USDC.address, 1)).to.be.revertedWith('supply is paused');
+  });
+
   it.skip('supplies the correct amount in a fee-like situation', async () => {
     // XXX
   });

@@ -139,6 +139,20 @@ describe('withdrawTo', function () {
     await expect(cometAsB.withdrawTo(alice.address, USUP.address, 1)).to.be.reverted;
   });
 
+  it('reverts if withdraw is paused', async () => {
+    const protocol = await makeProtocol({base: 'USDC'});
+    const { comet, tokens, pauseGuardian, users: [alice, bob] } = protocol;
+    const { USDC } = tokens;
+
+    await USDC.allocateTo(comet.address, 1);
+    const cometAsB = comet.connect(bob);
+
+    await wait(comet.connect(pauseGuardian).pause(false, false, true, false, false));
+    expect(await comet.isWithdrawPaused()).to.be.true;
+    
+    await expect(cometAsB.withdrawTo(alice.address, USDC.address, 1)).to.be.revertedWith('withdraw is paused');
+  });
+
   it.skip('borrows to withdraw if necessary/possible', async () => {
     // XXX
   });
