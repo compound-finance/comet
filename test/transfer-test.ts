@@ -52,6 +52,36 @@ describe('transfer', function () {
     //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(50000);
   });
 
+  it('calculates base principal correctly', async () => {
+    const protocol = await makeProtocol({base: 'USDC'});
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { USDC } = tokens;
+
+    await comet.setBasePrincipal(bob.address, 50e6); // 100e6 in present value
+    const cometAsB = comet.connect(bob);
+
+    let totals0 = await comet.totalsBasic();
+    totals0 = Object.assign({}, await comet.totalsBasic(), {
+      baseSupplyIndex: 2e15,
+    });
+    await wait(comet.setTotalsBasic(totals0));
+
+    const alice0 = await portfolio(protocol, alice.address);
+    const bob0 = await portfolio(protocol, bob.address);
+    
+    await wait(cometAsB.transfer(alice.address, USDC.address, 100e6));
+    const totals1 = await comet.totalsBasic();
+    const alice1 = await portfolio(protocol, alice.address)
+    const bob1 = await portfolio(protocol, bob.address)
+
+    expect(alice0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(bob0.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(alice1.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(bob1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(totals1.totalSupplyBase).to.be.equal(totals0.totalSupplyBase);
+    expect(totals1.totalBorrowBase).to.be.equal(totals0.totalBorrowBase);
+  });
+
   it('reverts if the asset is neither collateral nor base', async () => {
     const protocol = await makeProtocol();
     const { comet, users: [alice, bob], unsupportedToken: USUP } = protocol;
