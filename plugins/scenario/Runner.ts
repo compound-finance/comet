@@ -74,7 +74,7 @@ export class Runner<T> {
 
     // initialize the context and take a snapshot of it
     let context = await scenario.initializer(world);
-    // let contextSnapshot = await world._snapshot();
+    let contextSnapshot = await world._snapshot();
 
     // generate worlds which satisfy the constraints
     // note: `solve` is expected not to modify context or world
@@ -116,14 +116,14 @@ export class Runner<T> {
         // TODO: Include the specific solution (set of states) that failed in the result
         return this.generateResult(base, scenario, startTime, e);
       }
-      
+
       // revert back to the frozen world for the next scenario
       // XXX revert to contextSnapshot instead when deep cloning of contexts is implemented.
       await world._revert(this.worldSnapshot);
 
       // snapshots can only be used once, so take another for next time
+      // XXX revert to storing the snapshot in contextSnapshot when deep cloning of contexts is implemented.
       this.worldSnapshot = (await world._snapshot()) as string;
-      // contextSnapshot = await world._snapshot();
     }
     // Send success result only after all combinations of solutions have passed for this scenario.
     return this.generateResult(base, scenario, startTime);
