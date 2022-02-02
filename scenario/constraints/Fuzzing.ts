@@ -29,17 +29,24 @@ function* combos(choices: object[][]) {
   }
 }
 
-function getMinMaxForBits(bits: number, isSigned: boolean = false): [bigint, bigint] {
+function getMinValForBits(bits: number, isSigned: boolean = false): bigint {
   let min;
-  let max;
   if (isSigned) {
     min = 2n ** (BigInt(bits / 2)) * -1n;
-    max = 2n ** (BigInt(bits / 2)) - 1n;
   } else {
     min = 0n;
+  }
+  return min;
+}
+
+function getMaxValForBits(bits: number, isSigned: boolean = false): bigint {
+  let max;
+  if (isSigned) {
+    max = 2n ** (BigInt(bits / 2)) - 1n;
+  } else {
     max = 2n ** (BigInt(bits)) - 1n
   }
-  return [min, max];
+  return max;
 }
 
 function createCometConfigOverrides(keyValues: KV[]): CometConfigurationOverrides {
@@ -50,46 +57,44 @@ function createCometConfigOverrides(keyValues: KV[]): CometConfigurationOverride
   return config;
 }
 
-export function getFuzzedConfigs(cometConfig: CometConfigurationOverrides): CometConfigurationOverrides[] {
+export function fuzzUint64(min = getMinValForBits(64), max = getMaxValForBits(64)): bigint[] {
+  // TODO: Also generate a random bigint between min and max.
+  return [min, max];
+}
+
+export function fuzzInt64(min = getMinValForBits(64, true), max = getMaxValForBits(64, true)): bigint[] {
+  // TODO: Also generate a random bigint between min and max.
+  return [min, max];
+}
+
+export function getFuzzedValues(fuzzConfig: FuzzConfig): any[] {
+  switch (fuzzConfig.type) {
+    case FuzzType.UINT64: {
+      return fuzzUint64(fuzzConfig.min, fuzzConfig.max);
+    }
+    case FuzzType.INT64: {
+      return fuzzInt64(fuzzConfig.min, fuzzConfig.max);
+    }
+    default:
+      throw new Error(`Not a valid FuzzType: ${fuzzConfig.type}`);
+  }
+}
+
+export function getFuzzedCometConfigs(cometConfig: CometConfigurationOverrides): CometConfigurationOverrides[] {
   let cometConfigs = [];
   let keyValues: KV[][] = [];
+  // Create a list of fuzzed values for each key that needs to be fuzzed.
   for (let key in cometConfig) {
     let desiredValue = cometConfig[key];
     if (isFuzzConfig(desiredValue)) {
-      switch (desiredValue.type) {
-        case FuzzType.UINT64: {
-          let [min, max] = getMinMaxForBits(64);
-          if (desiredValue.min) {
-            min = desiredValue.min;
-          }
-          if (desiredValue.max) {
-            max = desiredValue.max;
-          }
-          // TODO: Also generate a random bigint between min and max.
-          keyValues.push([{ key, value: min.toString() }, { key, value: max.toString() }]);
-          break;
-        }
-        case FuzzType.INT64: {
-          let [min, max] = getMinMaxForBits(64, true);
-          if (desiredValue.min) {
-            min = desiredValue.min;
-          }
-          if (desiredValue.max) {
-            max = desiredValue.max;
-          }
-          // TODO: Also generate a random bigint between min and max.
-          keyValues.push([{ key, value: min.toString() }, { key, value: max.toString() }]);
-          break;
-        }
-        default:
-          throw new Error(`Not a valid FuzzType: ${desiredValue.type}`);
-      }
-    }
-    else {
+      let fuzzedValues = getFuzzedValues(desiredValue);
+      keyValues.push(fuzzedValues.map(v => ({ key, value: v.toString() })));
+    } else {
       keyValues.push([{ key, value: desiredValue }])
     }
   }
 
+  // Create all combinations for the comet configuration.
   for (let combo of combos(keyValues)) {
     let config = createCometConfigOverrides(combo);
     cometConfigs.push(config);
