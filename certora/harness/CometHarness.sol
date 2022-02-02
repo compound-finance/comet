@@ -15,4 +15,14 @@ import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/Aggregat
 contract CometHarness is Comet, CometMathHarness, CometStorageHarness {
     constructor(Configuration memory config) Comet(config) {
     }
+
+    function accrue(TotalsBasic memory totals) internal override view returns (TotalsBasic memory) {
+        return totals;
+    }
+
+    // getters
+    function getUserCollateralBalance(address user, address asset) public returns (uint128) {
+        return userCollateral[user][asset].balance;
+    } 
+     
 }
