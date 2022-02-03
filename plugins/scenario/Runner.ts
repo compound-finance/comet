@@ -1,13 +1,15 @@
-import { Constraint, Scenario, Solution } from './Scenario';
+import { Scenario, Solution } from './Scenario';
 import { ForkSpec, World } from './World';
-import hreForBase from './utils/hreForBase';
+import { Result } from './worker/Parent';
+import { AssertionError } from 'chai';
 
 export type Address = string;
 
 export type ResultFn<T> = (base: ForkSpec, scenario: Scenario<T>, err?: any) => void;
 
 export interface Config<T> {
-  bases?: ForkSpec[];
+  base: ForkSpec;
+  world: World;
 }
 
 function* combos(choices: object[][]) {
@@ -45,67 +47,87 @@ function mapSolution<T>(s: Solution<T> | Solution<T>[] | null): Solution<T>[] {
 
 export class Runner<T> {
   config: Config<T>;
+  worldSnapshot: string;
 
   constructor(config: Config<T>) {
     this.config = config;
   }
 
-  async run(scenarios: Scenario<T>[], resultFn: ResultFn<T>): Promise<Runner<T>> {
+  async run(scenario: Scenario<T>): Promise<Result> {
     const { config } = this;
-    const { bases = [] } = config;
+    const { base, world } = config;
+    const { constraints = [] } = scenario;
+    let startTime = Date.now();
 
-    for (const base of bases) {
-      // construct a base world and context
-      const world = new World(hreForBase(base), base); // XXX can cache/re-use HREs per base
+    // reset the world if a snapshot exists and take a snapshot of it
+    if (this.worldSnapshot) {
+      await world._revert(this.worldSnapshot);
+    }
+    this.worldSnapshot = (await world._snapshot()) as string;
 
-      // freeze the world as it was before we run any scenarios
-      let snapshot = await world._snapshot();
+    // initialize the context and take a snapshot of it
+    let context = await scenario.initializer(world);
+    let contextSnapshot = await world._snapshot();
 
-      for (const scenario of scenarios) {
-        const { constraints = [] } = scenario;
-        const context = await scenario.initializer(world);
+    // generate worlds which satisfy the constraints
+    // note: `solve` is expected not to modify context or world
+    //  and constraints should be independent or conflicts will be detected
+    const solutionChoices: Solution<T>[][] = await Promise.all(
+      constraints.map((c) => c.solve(scenario.requirements, context, world).then(mapSolution))
+    );
+    const baseSolutions: Solution<T>[][] = [[identity]];
+    
+    for (const combo of combos(baseSolutions.concat(solutionChoices))) {
+      // create a fresh copy of context that solutions can modify
+      let ctx = await scenario.forker(context);
 
-        // generate worlds which satisfy the constraints
-        // note: `solve` is expected not to modify context or world
-        //  and constraints should be independent or conflicts will be detected
-        const solutionChoices: Solution<T>[][] = await Promise.all(
-          constraints.map((c) => c.solve(scenario.requirements, context, world).then(mapSolution))
-        );
-        const baseSolutions: Solution<T>[][] = [[identity]];
+      // apply each solution in the combo, then check they all still hold
+      for (const solution of combo) {
+        ctx = (await solution(ctx, world)) || ctx;
+      }
 
-        for (const combo of combos(baseSolutions.concat(solutionChoices))) {
-          // create a fresh copy of context that solutions can modify
-          let ctx = await scenario.forker(context);
+      for (const constraint of constraints) {
+        await constraint.check(scenario.requirements, ctx, world);
+      }
 
-          // apply each solution in the combo, then check they all still hold
-          for (const solution of combo) {
-            ctx = (await solution(ctx, world)) || ctx;
-          }
+      // bind all functions on object
+      bindFunctions(ctx);
 
-          for (const constraint of constraints) {
-            await constraint.check(scenario.requirements, ctx, world);
-          }
+      // requirements met, run the property
+      try {
+        await scenario.property(ctx, world);
+      } catch (e) {
+        // TODO: Include the specific solution (set of states) that failed in the result
+        return this.generateResult(base, scenario, startTime, e);
+      }
 
-          // bind all functions on object
-          bindFunctions(ctx);
+      // revert back to the frozen world for the next scenario
+      await world._revert(contextSnapshot);
 
-          // requirements met, run the property
-          try {
-            await scenario.property(ctx, world);
-            resultFn(base, scenario);
-          } catch (e) {
-            resultFn(base, scenario, e);
-          }
+      // snapshots can only be used once, so take another for next time
+      contextSnapshot = await world._snapshot();
+    }
+    // Send success result only after all combinations of solutions have passed for this scenario.
+    return this.generateResult(base, scenario, startTime);
+  }
 
-          // revert back to the frozen world for the next scenario
-          await world._revert(snapshot);
-
-          // snapshots can only be used once, so take another for next time
-          snapshot = await world._snapshot();
-        }
+  private generateResult(base: ForkSpec, scenario: Scenario<T>, startTime: number, err?: any): Result {
+    let diff = null;
+    if (err instanceof AssertionError) {
+      let { actual, expected } = <any>err; // Types unclear
+      if (actual !== expected) {
+        diff = { actual, expected };
       }
     }
 
-    return this;
+    return {
+      base: base.name,
+      file: scenario.file || scenario.name,
+      scenario: scenario.name,
+      elapsed: Date.now() - startTime,
+      error: err || null,
+      trace: err ? err.stack : null,
+      diff, // XXX can we move this into parent?
+    };
   }
 }

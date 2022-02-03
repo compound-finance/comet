@@ -510,9 +510,9 @@ contract Comet is CometMath, CometStorage {
      */
     function principalValue(TotalsBasic memory totals, int104 presentValue_) internal pure returns (int104) {
         if (presentValue_ >= 0) {
-            return signed104(presentValueSupply(totals, unsigned104(presentValue_)));
+            return signed104(principalValueSupply(totals, unsigned104(presentValue_)));
         } else {
-            return -signed104(presentValueBorrow(totals, unsigned104(-presentValue_)));
+            return -signed104(principalValueBorrow(totals, unsigned104(-presentValue_)));
         }
     }
 
@@ -860,6 +860,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Transfer an amount of base asset from src to dst, borrowing if possible/necessary
      */
     function transferBase(address src, address dst, uint104 amount) internal {
+        require(src != dst, "self-transfer not allowed");
         TotalsBasic memory totals = totalsBasic;
         totals = accrue(totals);
         uint104 totalSupplyBalance = presentValueSupply(totals, totals.totalSupplyBase);
@@ -896,6 +897,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Transfer an amount of collateral asset from src to dst
      */
     function transferCollateral(address src, address dst, address asset, uint128 amount) internal {
+        require(src != dst, "self-transfer not allowed");
         uint128 srcCollateral = userCollateral[src][asset].balance;
         uint128 dstCollateral = userCollateral[dst][asset].balance;
         uint128 srcCollateralNew = srcCollateral - amount;
@@ -1100,7 +1102,6 @@ contract Comet is CometMath, CometStorage {
 
         for (uint8 i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
-
                 if (liquidity >= 0) {
                     return true;
                 }
@@ -1155,7 +1156,76 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-    * @dev multiply an amount (positive or negative) of an asset by that asset's price
+    * @notice amount of liquidity margin for account
+    * @param account address to check liquidity for
+    * @return amount of liquidity margin (in price scale)
+    */
+    function getLiquidationMargin(address account) public view returns (int) {
+        uint16 assetsIn = userBasic[account].assetsIn;
+        TotalsBasic memory totals = totalsBasic;
+
+        int liquidity = signedMulPrice(
+            presentValue(totals, userBasic[account].principal),
+            getPrice(baseTokenPriceFeed),
+            baseScale
+        );
+
+        for (uint8 i = 0; i < numAssets; i++) {
+            if (isInAsset(assetsIn, i)) {
+                AssetInfo memory asset = getAssetInfo(i);
+                uint newAmount = mulPrice(
+                    userCollateral[account][asset.asset].balance,
+                    getPrice(asset.priceFeed),
+                    safe64(asset.scale)
+                );
+                liquidity += signed256(mulFactor(
+                    newAmount,
+                    asset.liquidateCollateralFactor
+                ));
+            }
+        }
+
+        return liquidity;
+    }
+
+    /**
+     * @return Whether an account is not able to cover its borrow position with collateral
+     * @param account address to check
+     */
+    function isLiquidatable(address account) public view returns (bool) {
+        uint16 assetsIn = userBasic[account].assetsIn;
+        TotalsBasic memory totals = totalsBasic;
+
+        int liquidity = signedMulPrice(
+            presentValue(totals, userBasic[account].principal),
+            getPrice(baseTokenPriceFeed),
+            baseScale
+        );
+
+        for (uint8 i = 0; i < numAssets; i++) {
+            if (isInAsset(assetsIn, i)) {
+                if (liquidity >= 0) {
+                    return false;
+                }
+
+                AssetInfo memory asset = getAssetInfo(i);
+                uint newAmount = mulPrice(
+                    userCollateral[account][asset.asset].balance,
+                    getPrice(asset.priceFeed),
+                    safe64(asset.scale)
+                );
+                liquidity += signed256(mulFactor(
+                    newAmount,
+                    asset.liquidateCollateralFactor
+                ));
+            }
+        }
+
+        return liquidity < 0;
+    }
+
+    /**
+    * @notice multiply an amount (positive or negative) of an asset by that asset's price
     * @param amount amount of the asset (in that asset's decimals)
     * @param price price of the asset, from priceFeed; value with 8 decimals
     * @param tokenScale the number of decimals for the asset
