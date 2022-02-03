@@ -16,13 +16,35 @@ contract CometHarness is Comet, CometMathHarness, CometStorageHarness {
     constructor(Configuration memory config) Comet(config) {
     }
 
+    /*********** Simplification ***********/
+    /* under approximation (not taking into account all possible cases) */
     function accrue(TotalsBasic memory totals) internal override view returns (TotalsBasic memory) {
         return totals;
     }
 
+    /* safe approximation? (taking into account all possible cases) */
+    
+    mapping( uint104 => mapping (uint104 => uint64 ))  symbolicSupplyRate;
+    mapping( uint104 => mapping (uint104 => uint64 ))  symbolicBorrowRate;
+    mapping( uint104 => mapping (uint104 => uint64 ))  symbolicUtilization;
+    
+    function getSupplyRateInternal(TotalsBasic memory totals) internal view virtual override returns (uint64) {
+        return symbolicSupplyRate[totals.totalSupplyBase][totals.totalBorrowBase];
+    }
+
+    function getBorrowRateInternal(TotalsBasic memory totals) internal  virtual override view returns (uint64) {
+        return symbolicBorrowRate[totals.totalSupplyBase][totals.totalBorrowBase];
+
+    }
+    
+    function getUtilizationInternal(TotalsBasic memory totals) internal view override returns  (uint) {
+        return symbolicUtilization[totals.totalSupplyBase][totals.totalBorrowBase];
+    }
+    
     // getters
     function getUserCollateralBalance(address user, address asset) public returns (uint128) {
         return userCollateral[user][asset].balance;
     } 
      
+ 
 }

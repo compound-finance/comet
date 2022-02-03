@@ -15,10 +15,10 @@ rule whoChangedUserCollateralBalance(address account, address asset, method f) {
     f(e,args);
     assert (getUserCollateralBalance(account,asset) == before);
 }
-/*
+
 rule sanity(method f) {
-	env e
+	env e;
 	calldataarg arg;
 	f(e, arg);
 	assert false, "this method should have a non reverting path";
-}*/
+}
