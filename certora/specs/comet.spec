@@ -18,13 +18,13 @@ methods {
         bool absorbPaused,
         bool buyPaused
     ) => updatePause(supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused) */
-    updateAssetsIn(
+    /*updateAssetsIn(
         address account,
         address asset,
         uint128 initialUserBalance,
         uint128 finalUserBalance
     ) => NONDET
-
+    */
     isInAsset(uint16 assetsIn, uint8 assetOffset) => NONDET
 
 }
