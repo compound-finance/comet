@@ -248,14 +248,14 @@ contract Comet is CometMath, CometStorage {
     // TODO: Remove me. Function while waiting for initializer
     // !! NOT FOR REUSE [YES FOR REFUSE] !!
     function XXX_REMOVEME_XXX_initialize() public {
-        require(totalsBasic.lastAccrualTime == 0, "already initialized");
+        require(lastAccrualTime == 0, "already initialized");
 
         // Initialize aggregates
-        totalsBasic.lastAccrualTime = getNow();
-        totalsBasic.baseSupplyIndex = baseIndexScale;
-        totalsBasic.baseBorrowIndex = baseIndexScale;
-        totalsBasic.trackingSupplyIndex = 0;
-        totalsBasic.trackingBorrowIndex = 0;
+        lastAccrualTime = getNow();
+        baseSupplyIndex = baseIndexScale;
+        baseBorrowIndex = baseIndexScale;
+        trackingSupplyIndex = 0;
+        trackingBorrowIndex = 0;
     }
 
 
@@ -416,27 +416,36 @@ contract Comet is CometMath, CometStorage {
      * @notice Accrue interest (and rewards) in base token supply and borrows
      **/
     function accrue() public {
-        totalsBasic = accrue(totalsBasic);
+        TotalsBasic memory totalsBasic_ = accrueInternal();
+        baseSupplyIndex = totalsBasic_.baseSupplyIndex;
+        baseBorrowIndex = totalsBasic_.baseBorrowIndex;
+        trackingSupplyIndex = totalsBasic_.trackingSupplyIndex;
+        trackingBorrowIndex = totalsBasic_.trackingBorrowIndex;
+        totalSupplyBase = totalsBasic_.totalSupplyBase;
+        totalBorrowBase = totalsBasic_.totalBorrowBase;
+        lastAccrualTime = totalsBasic_.lastAccrualTime;
+        pauseFlags = totalsBasic_.pauseFlags;
     }
 
     /**
      * @notice Accrue interest (and rewards) in base token supply and borrows
      **/
-    function accrue(TotalsBasic memory totals) internal view returns (TotalsBasic memory) {
+    function accrueInternal() internal view returns (TotalsBasic memory) {
         uint40 now_ = getNow();
-        uint timeElapsed = now_ - totals.lastAccrualTime;
+        uint timeElapsed = now_ - lastAccrualTime;
+        TotalsBasic memory totals;
         if (timeElapsed > 0) {
-            uint supplyRate = getSupplyRateInternal(totals);
-            uint borrowRate = getBorrowRateInternal(totals);
-            totals.baseSupplyIndex += safe64(mulFactor(totals.baseSupplyIndex, supplyRate * timeElapsed));
-            totals.baseBorrowIndex += safe64(mulFactor(totals.baseBorrowIndex, borrowRate * timeElapsed));
+            uint supplyRate = getSupplyRateInternal();
+            uint borrowRate = getBorrowRateInternal();
+            totals.baseSupplyIndex += safe64(mulFactor(baseSupplyIndex, supplyRate * timeElapsed));
+            totals.baseBorrowIndex += safe64(mulFactor(baseBorrowIndex, borrowRate * timeElapsed));
             if (totals.totalSupplyBase >= baseMinForRewards) {
                 uint supplySpeed = baseTrackingSupplySpeed;
-                totals.trackingSupplyIndex += safe64(divBaseWei(supplySpeed * timeElapsed, totals.totalSupplyBase));
+                totals.trackingSupplyIndex += safe64(divBaseWei(supplySpeed * timeElapsed, totalSupplyBase));
             }
             if (totals.totalBorrowBase >= baseMinForRewards) {
                 uint borrowSpeed = baseTrackingBorrowSpeed;
-                totals.trackingBorrowIndex += safe64(divBaseWei(borrowSpeed * timeElapsed, totals.totalBorrowBase));
+                totals.trackingBorrowIndex += safe64(divBaseWei(borrowSpeed * timeElapsed, totalBorrowBase));
             }
         }
         totals.lastAccrualTime = now_;
@@ -509,14 +518,14 @@ contract Comet is CometMath, CometStorage {
      * @return The current per second supply rate
      */
     function getSupplyRate() public view returns (uint64) {
-        return getSupplyRateInternal(totalsBasic);
+        return getSupplyRateInternal();
     }
 
     /**
      * @dev Calculate current per second supply rate given totals
      */
-    function getSupplyRateInternal(TotalsBasic memory totals) internal view returns (uint64) {
-        uint utilization = getUtilizationInternal(totals);
+    function getSupplyRateInternal() internal view returns (uint64) {
+        uint utilization = getUtilizationInternal();
         uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
         if (utilization <= kink) {
             // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
@@ -531,14 +540,14 @@ contract Comet is CometMath, CometStorage {
      * @return The current per second borrow rate
      */
     function getBorrowRate() public view returns (uint64) {
-        return getBorrowRateInternal(totalsBasic);
+        return getBorrowRateInternal();
     }
 
     /**
      * @dev Calculate current per second borrow rate given totals
      */
-    function getBorrowRateInternal(TotalsBasic memory totals) internal view returns (uint64) {
-        uint utilization = getUtilizationInternal(totals);
+    function getBorrowRateInternal() internal view returns (uint64) {
+        uint utilization = getUtilizationInternal();
         if (utilization <= kink) {
             // interestRateBase + interestRateSlopeLow * utilization
             return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization));
@@ -552,15 +561,15 @@ contract Comet is CometMath, CometStorage {
      * @return The utilization rate of the base asset
      */
     function getUtilization() public view returns (uint) {
-        return getUtilizationInternal(totalsBasic);
+        return getUtilizationInternal();
     }
 
     /**
      * @dev Calculate utilization rate of the base asset given totals
      */
-    function getUtilizationInternal(TotalsBasic memory totals) internal pure returns (uint) {
-        uint totalSupply = presentValueSupply(totals, totals.totalSupplyBase);
-        uint totalBorrow = presentValueBorrow(totals, totals.totalBorrowBase);
+    function getUtilizationInternal() internal view returns (uint) {
+        uint totalSupply = presentValueSupply(totalSupplyBase);
+        uint totalBorrow = presentValueBorrow(totalBorrowBase);
         if (totalSupply == 0) {
             return 0;
         } else {
@@ -582,10 +591,10 @@ contract Comet is CometMath, CometStorage {
      * @notice Gets the total amount of protocol reserves, denominated in the number of base tokens
      */
     function getReserves() public view returns (int) {
-        TotalsBasic memory totals = totalsBasic;
+        // TotalsBasic memory totals = totalsBasic;
         uint balance = ERC20(baseToken).balanceOf(address(this));
-        uint104 totalSupply = presentValueSupply(totals, totals.totalSupplyBase);
-        uint104 totalBorrow = presentValueBorrow(totals, totals.totalBorrowBase);
+        uint104 totalSupply = presentValueSupply(totalSupplyBase);
+        uint104 totalBorrow = presentValueBorrow(totalBorrowBase);
         return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
     }
 
@@ -597,10 +606,10 @@ contract Comet is CometMath, CometStorage {
     function isBorrowCollateralized(address account) public view returns (bool) {
         // XXX take in UserBasic and UserCollateral as arguments to reduce SLOADs
         uint16 assetsIn = userBasic[account].assetsIn;
-        TotalsBasic memory totals = totalsBasic;
+        // TotalsBasic memory totals = totalsBasic;
 
         int liquidity = signedMulPrice(
-            presentValue(totals, userBasic[account].principal),
+            presentValue(userBasic[account].principal),
             getPrice(baseTokenPriceFeed),
             baseScale
         );
@@ -634,10 +643,10 @@ contract Comet is CometMath, CometStorage {
      */
     function getBorrowLiquidity(address account) public view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
-        TotalsBasic memory totals = totalsBasic;
+        // TotalsBasic memory totals = totalsBasic;
 
         int liquidity = signedMulPrice(
-            presentValue(totals, userBasic[account].principal),
+            presentValue(userBasic[account].principal),
             getPrice(baseTokenPriceFeed),
             baseScale
         );
@@ -667,10 +676,10 @@ contract Comet is CometMath, CometStorage {
      */
     function isLiquidatable(address account) public view returns (bool) {
         uint16 assetsIn = userBasic[account].assetsIn;
-        TotalsBasic memory totals = totalsBasic;
+        // TotalsBasic memory totals = totalsBasic;
 
         int liquidity = signedMulPrice(
-            presentValue(totals, userBasic[account].principal),
+            presentValue(userBasic[account].principal),
             getPrice(baseTokenPriceFeed),
             baseScale
         );
@@ -704,10 +713,10 @@ contract Comet is CometMath, CometStorage {
      */
     function getLiquidationMargin(address account) public view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
-        TotalsBasic memory totals = totalsBasic;
+        // TotalsBasic memory totals = totalsBasic;
 
         int liquidity = signedMulPrice(
-            presentValue(totals, userBasic[account].principal),
+            presentValue(userBasic[account].principal),
             getPrice(baseTokenPriceFeed),
             baseScale
         );
@@ -733,51 +742,51 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev The positive present supply balance if positive or the negative borrow balance if negative
      */
-    function presentValue(TotalsBasic memory totals, int104 principalValue_) internal pure returns (int104) {
+    function presentValue(int104 principalValue_) internal view returns (int104) {
         if (principalValue_ >= 0) {
-            return signed104(presentValueSupply(totals, unsigned104(principalValue_)));
+            return signed104(presentValueSupply(unsigned104(principalValue_)));
         } else {
-            return -signed104(presentValueBorrow(totals, unsigned104(-principalValue_)));
+            return -signed104(presentValueBorrow(unsigned104(-principalValue_)));
         }
     }
 
     /**
      * @dev The principal amount projected forward by the supply index
      */
-    function presentValueSupply(TotalsBasic memory totals, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * totals.baseSupplyIndex / baseIndexScale);
+    function presentValueSupply(uint104 principalValue_) internal view returns (uint104) {
+        return uint104(uint(principalValue_) * baseSupplyIndex / baseIndexScale);
     }
 
     /**
      * @dev The principal amount projected forward by the borrow index
      */
-    function presentValueBorrow(TotalsBasic memory totals, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * totals.baseBorrowIndex / baseIndexScale);
+    function presentValueBorrow(uint104 principalValue_) internal view returns (uint104) {
+        return uint104(uint(principalValue_) * baseBorrowIndex / baseIndexScale);
     }
 
     /**
      * @dev The positive principal if positive or the negative principal if negative
      */
-    function principalValue(TotalsBasic memory totals, int104 presentValue_) internal pure returns (int104) {
+    function principalValue(int104 presentValue_) internal view returns (int104) {
         if (presentValue_ >= 0) {
-            return signed104(principalValueSupply(totals, unsigned104(presentValue_)));
+            return signed104(principalValueSupply(unsigned104(presentValue_)));
         } else {
-            return -signed104(principalValueBorrow(totals, unsigned104(-presentValue_)));
+            return -signed104(principalValueBorrow(unsigned104(-presentValue_)));
         }
     }
 
     /**
      * @dev The present value projected backward by the supply index
      */
-    function principalValueSupply(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * baseIndexScale / totals.baseSupplyIndex);
+    function principalValueSupply(uint104 presentValue_) internal view returns (uint104) {
+        return uint104(uint(presentValue_) * baseIndexScale / baseSupplyIndex);
     }
 
     /**
      * @dev The present value projected backwrd by the borrow index
      */
-    function principalValueBorrow(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * baseIndexScale / totals.baseBorrowIndex);
+    function principalValueBorrow(uint104 presentValue_) internal view returns (uint104) {
+        return uint104(uint(presentValue_) * baseIndexScale / baseBorrowIndex);
     }
 
     /**
@@ -815,7 +824,7 @@ contract Comet is CometMath, CometStorage {
     ) external {
         require(msg.sender == governor || msg.sender == pauseGuardian, "Unauthorized");
 
-        totalsBasic.pauseFlags =
+        pauseFlags =
             uint8(0) |
             (toUInt8(supplyPaused) << pauseSupplyOffset) |
             (toUInt8(transferPaused) << pauseTransferOffset) |
@@ -828,35 +837,35 @@ contract Comet is CometMath, CometStorage {
      * @return Whether or not supply actions are paused
      */
     function isSupplyPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseSupplyOffset));
+        return toBool(pauseFlags & (uint8(1) << pauseSupplyOffset));
     }
 
     /**
      * @return Whether or not transfer actions are paused
      */
     function isTransferPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseTransferOffset));
+        return toBool(pauseFlags & (uint8(1) << pauseTransferOffset));
     }
 
     /**
      * @return Whether or not withdraw actions are paused
      */
     function isWithdrawPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseWithdrawOffset));
+        return toBool(pauseFlags & (uint8(1) << pauseWithdrawOffset));
     }
 
     /**
      * @return Whether or not absorb actions are paused
      */
     function isAbsorbPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseAbsorbOffset));
+        return toBool(pauseFlags & (uint8(1) << pauseAbsorbOffset));
     }
 
     /**
      * @return Whether or not buy actions are paused
      */
     function isBuyPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseBuyOffset));
+        return toBool(pauseFlags & (uint8(1) << pauseBuyOffset));
     }
 
     /**
@@ -950,7 +959,7 @@ contract Comet is CometMath, CometStorage {
      * @return The present day base balance of the account
      */
     function baseBalanceOf(address account) external view returns (int104) {
-        return presentValue(totalsBasic, userBasic[account].principal);
+        return presentValue( userBasic[account].principal);
     }
 
     /**
@@ -1028,14 +1037,14 @@ contract Comet is CometMath, CometStorage {
     function supplyBase(address from, address dst, uint104 amount) internal {
         doTransferIn(baseToken, from, amount);
 
-        TotalsBasic memory totals = totalsBasic;
-        totals = accrue(totals);
+        TotalsBasic memory totals;
+        totals = accrueInternal();
 
-        uint104 totalSupplyBalance = presentValueSupply(totals, totals.totalSupplyBase);
-        uint104 totalBorrowBalance = presentValueBorrow(totals, totals.totalBorrowBase);
+        uint104 totalSupplyBalance = presentValueSupply(totalSupplyBase);
+        uint104 totalBorrowBalance = presentValueBorrow(totalBorrowBase);
 
         UserBasic memory dstUser = userBasic[dst];
-        int104 dstBalance = presentValue(totals, dstUser.principal);
+        int104 dstBalance = presentValue(dstUser.principal);
 
         (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, amount);
 
@@ -1044,11 +1053,12 @@ contract Comet is CometMath, CometStorage {
 
         dstBalance += signed104(amount);
 
-        totals.totalSupplyBase = principalValueSupply(totals, totalSupplyBalance);
-        totals.totalBorrowBase = principalValueBorrow(totals, totalBorrowBalance);
-        totalsBasic = totals;
+        totals.totalSupplyBase = principalValueSupply(totalSupplyBalance);
+        totals.totalBorrowBase = principalValueBorrow(totalBorrowBalance);
+        // XXX
+        // totalsBasic = totals;
 
-        updateBaseBalance(totals, dst, dstUser, principalValue(totals, dstBalance));
+        updateBaseBalance(totals, dst, dstUser, principalValue(dstBalance));
     }
 
     /**
@@ -1110,15 +1120,15 @@ contract Comet is CometMath, CometStorage {
      */
     function transferBase(address src, address dst, uint104 amount) internal {
         require(src != dst, "self-transfer not allowed");
-        TotalsBasic memory totals = totalsBasic;
-        totals = accrue(totals);
-        uint104 totalSupplyBalance = presentValueSupply(totals, totals.totalSupplyBase);
-        uint104 totalBorrowBalance = presentValueBorrow(totals, totals.totalBorrowBase);
+        TotalsBasic memory totals;
+        totals = accrueInternal();
+        uint104 totalSupplyBalance = presentValueSupply(totalSupplyBase);
+        uint104 totalBorrowBalance = presentValueBorrow(totalBorrowBase);
 
         UserBasic memory srcUser = userBasic[src];
         UserBasic memory dstUser = userBasic[dst];
-        int104 srcBalance = presentValue(totals, srcUser.principal);
-        int104 dstBalance = presentValue(totals, dstUser.principal);
+        int104 srcBalance = presentValue(srcUser.principal);
+        int104 dstBalance = presentValue(dstUser.principal);
 
         (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcBalance, amount);
         (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, amount);
@@ -1129,12 +1139,13 @@ contract Comet is CometMath, CometStorage {
         srcBalance -= signed104(amount);
         dstBalance += signed104(amount);
 
-        totals.totalSupplyBase = principalValueSupply(totals, totalSupplyBalance);
-        totals.totalBorrowBase = principalValueBorrow(totals, totalBorrowBalance);
-        totalsBasic = totals;
+        totals.totalSupplyBase = principalValueSupply(totalSupplyBalance);
+        totals.totalBorrowBase = principalValueBorrow(totalBorrowBalance);
+        // XXX
+        // totalsBasic = totals;
 
-        updateBaseBalance(totals, src, srcUser, principalValue(totals, srcBalance));
-        updateBaseBalance(totals, dst, dstUser, principalValue(totals, dstBalance));
+        updateBaseBalance(totals, src, srcUser, principalValue(srcBalance));
+        updateBaseBalance(totals, dst, dstUser, principalValue(dstBalance));
 
         if (srcBalance < 0) {
             require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
@@ -1209,13 +1220,13 @@ contract Comet is CometMath, CometStorage {
      * @dev Withdraw an amount of base asset from src to `to`, borrowing if possible/necessary
      */
     function withdrawBase(address src, address to, uint104 amount) internal {
-        TotalsBasic memory totals = totalsBasic;
-        totals = accrue(totals);
-        uint104 totalSupplyBalance = presentValueSupply(totals, totals.totalSupplyBase);
-        uint104 totalBorrowBalance = presentValueBorrow(totals, totals.totalBorrowBase);
+        TotalsBasic memory totals;
+        totals = accrueInternal();
+        uint104 totalSupplyBalance = presentValueSupply(totalSupplyBase);
+        uint104 totalBorrowBalance = presentValueBorrow(totalBorrowBase);
 
         UserBasic memory srcUser = userBasic[src];
-        int104 srcBalance = presentValue(totals, srcUser.principal);
+        int104 srcBalance = presentValue(srcUser.principal);
 
         (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcBalance, amount);
 
@@ -1224,11 +1235,12 @@ contract Comet is CometMath, CometStorage {
 
         srcBalance -= signed104(amount);
 
-        totals.totalSupplyBase = principalValueSupply(totals, totalSupplyBalance);
-        totals.totalBorrowBase = principalValueBorrow(totals, totalBorrowBalance);
-        totalsBasic = totals;
+        totals.totalSupplyBase = principalValueSupply(totalSupplyBalance);
+        totals.totalBorrowBase = principalValueBorrow(totalBorrowBalance);
+        // XXX
+        // totalsBasic = totals;
 
-        updateBaseBalance(totals, src, srcUser, principalValue(totals, srcBalance));
+        updateBaseBalance(totals, src, srcUser, principalValue(srcBalance));
 
         if (srcBalance < 0) {
             require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
@@ -1284,11 +1296,11 @@ contract Comet is CometMath, CometStorage {
     function absorbInternal(address account) internal {
         require(isLiquidatable(account), "account is not underwater");
 
-        TotalsBasic memory totals = totalsBasic;
-        totals = accrue(totals);
+        TotalsBasic memory totals;
+        totals = accrueInternal();
 
         UserBasic memory accountUser = userBasic[account];
-        int104 oldBalance = presentValue(totals, accountUser.principal);
+        int104 oldBalance = presentValue(accountUser.principal);
         uint16 assetsIn = accountUser.assetsIn;
 
         uint basePrice = getPrice(baseTokenPriceFeed);
@@ -1313,16 +1325,17 @@ contract Comet is CometMath, CometStorage {
         int104 newBalance = oldBalance + signed104(deltaBalance);
         // New balance will not be negative, all excess debt absorbed by reserves
         newBalance = newBalance < 0 ? int104(0) : newBalance;
-        updateBaseBalance(totals, account, accountUser, principalValue(totals, newBalance));
+        updateBaseBalance(totals, account, accountUser, principalValue(newBalance));
 
         // Reserves are decreased by increasing total supply and decreasing borrows
         //  the amount of debt repaid by reserves is `newBalance - oldBalance`
         // Note: new balance must be non-negative due to the above thresholding
-        totals.totalSupplyBase += principalValueSupply(totals, unsigned104(newBalance));
+        totals.totalSupplyBase += principalValueSupply(unsigned104(newBalance));
         // Note: old balance must be negative since the account is liquidatable
-        totals.totalBorrowBase -= principalValueBorrow(totals, unsigned104(-oldBalance));
+        totals.totalBorrowBase -= principalValueBorrow(unsigned104(-oldBalance));
 
-        totalsBasic = totals;
+        // XXX
+        // totalsBasic = totals;
     }
 
     /**

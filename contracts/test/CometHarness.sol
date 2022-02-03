@@ -16,8 +16,28 @@ contract CometHarness is Comet {
         nowOverride = now_;
     }
 
+    function totalsBasic() public view returns (TotalsBasic memory) {
+        return TotalsBasic({
+            baseSupplyIndex: baseSupplyIndex,
+            baseBorrowIndex: baseBorrowIndex,
+            trackingSupplyIndex: trackingSupplyIndex,
+            trackingBorrowIndex: trackingBorrowIndex,
+            totalSupplyBase: totalSupplyBase,
+            totalBorrowBase: totalBorrowBase,
+            lastAccrualTime: lastAccrualTime,
+            pauseFlags: pauseFlags
+        });
+    }
+
     function setTotalsBasic(TotalsBasic memory totals) public {
-        totalsBasic = totals;
+        baseSupplyIndex = totals.baseSupplyIndex;
+        baseBorrowIndex = totals.baseBorrowIndex;
+        trackingSupplyIndex = totals.trackingSupplyIndex;
+        trackingBorrowIndex = totals.trackingBorrowIndex;
+        totalSupplyBase = totals.totalSupplyBase;
+        totalBorrowBase = totals.totalBorrowBase;
+        lastAccrualTime = totals.lastAccrualTime;
+        pauseFlags = totals.pauseFlags;
     }
 
     function setTotalsCollateral(address asset, TotalsCollateral memory totals) public {

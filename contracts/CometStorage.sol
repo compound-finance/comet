@@ -8,6 +8,7 @@ pragma solidity ^0.8.11;
  */
 contract CometStorage {
     // 512 bits total = 2 slots
+
     struct TotalsBasic {
         // 1st slot
         uint64 baseSupplyIndex;
@@ -20,6 +21,17 @@ contract CometStorage {
         uint40 lastAccrualTime;
         uint8 pauseFlags;
     }
+
+    // 1st slot
+    uint64 baseSupplyIndex;
+    uint64 baseBorrowIndex;
+    uint64 trackingSupplyIndex;
+    uint64 trackingBorrowIndex;
+    // 2nd slot
+    uint104 totalSupplyBase;
+    uint104 totalBorrowBase;
+    uint40 lastAccrualTime;
+    uint8 pauseFlags;
 
     struct TotalsCollateral {
         uint128 totalSupplyAsset;
@@ -47,7 +59,7 @@ contract CometStorage {
     }
 
     /// @notice Aggregate variables tracked for the entire market
-    TotalsBasic public totalsBasic;
+    // TotalsBasic public totalsBasic;
 
     /// @notice Aggregate variables tracked for each collateral asset
     mapping(address => TotalsCollateral) public totalsCollateral;
