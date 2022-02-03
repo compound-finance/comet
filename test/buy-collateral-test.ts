@@ -194,6 +194,7 @@ describe('buyCollateral', function () {
     const { COMP } = tokens;
     const cometAsA = comet.connect(alice);
 
+    // Pause buy collateral
     await wait(comet.connect(pauseGuardian).pause(false, false, false, false, true));
     expect(await comet.isBuyPaused()).to.be.true;
     
