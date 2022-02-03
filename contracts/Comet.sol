@@ -1270,6 +1270,8 @@ contract Comet is CometMath, CometStorage {
      * @param accounts The list of underwater accounts to absorb
      */
     function absorb(address absorber, address[] calldata accounts) external {
+        require(!isAbsorbPaused(), "absorb is paused");
+
         uint startGas = gasleft();
         for (uint i = 0; i < accounts.length; i++) {
             absorbInternal(accounts[i]);

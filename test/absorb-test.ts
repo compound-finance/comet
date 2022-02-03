@@ -292,4 +292,18 @@ describe('absorb', function () {
   it.skip('reverts if collateral asset value overflows base balance', async () => {
     // XXX
   });
+
+  it('reverts if absorb is paused', async () => {
+    const protocol = await makeProtocol();
+    const { comet, tokens, pauseGuardian, users: [alice, bob] } = protocol;
+    const { COMP } = tokens;
+
+    const cometAsB = comet.connect(bob);
+
+    // Pause transfer
+    await wait(comet.connect(pauseGuardian).pause(false, false, false, true, false));
+    expect(await comet.isAbsorbPaused()).to.be.true;
+
+    await expect(cometAsB.absorb(bob.address, [alice.address])).to.be.revertedWith('absorb is paused');
+  });
 });
