@@ -48,7 +48,7 @@ export class CometContext {
     return this.deploymentManager.contracts;
   }
 
-  async upgradeTo(newComet: Comet, data?: string) {
+  async upgradeTo(newComet: Comet, world: World, data?: string) {
     if (data) {
       await this.proxyAdmin.upgradeAndCall(this.comet.address, newComet.address, data);
     } else {
@@ -56,6 +56,15 @@ export class CometContext {
     }
 
     this.comet = new this.deploymentManager.hre.ethers.Contract(this.comet.address, newComet.interface, this.comet.signer) as Comet;
+
+    // Set the admin and pause guardian addresses again since these may have changed.
+    let governorAddress = await this.comet.governor();
+    let pauseGuardianAddress = await this.comet.pauseGuardian();
+    let adminSigner = await world.impersonateAddress(governorAddress);
+    let pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
+
+    this.actors['admin'] = await buildActor('admin', adminSigner, this);
+    this.actors['pauseGuardian'] = await buildActor('pauseGuardian', pauseGuardianSigner, this);
   }
 
   primaryActor(): CometActor {
@@ -102,7 +111,7 @@ export class CometContext {
       }
     }
 
-    if (world.isDevelopment()) {
+    if (world.isForked()) {
       throw new Error('Tokens cannot be sourced from Etherscan for development. Actors did not have sufficient assets.');
     } else {
       this.debug("Source Tokens: sourcing from Etherscan...");
@@ -143,7 +152,7 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
     return contract;
   }
 
-  if (world.isDevelopment()) {
+  if (world.isForked()) {
     await deployComet(deploymentManager);
   }
 
@@ -156,16 +165,10 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
     signers;
   let adminSigner, pauseGuardianSigner;
 
-  if (world.isDevelopment()) {
-    adminSigner = localAdminSigner;
-    pauseGuardianSigner = localPauseGuardianSigner;
-  } else {
-    let governorAddress = await comet.governor();
-    let pauseGuardianAddress = await comet.pauseGuardian();
-
-    adminSigner = await world.impersonateAddress(governorAddress);
-    pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
-  }
+  let governorAddress = await comet.governor();
+  let pauseGuardianAddress = await comet.pauseGuardian();
+  adminSigner = await world.impersonateAddress(governorAddress);
+  pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
 
   let proxyAdmin = getContract<ProxyAdmin>('ProxyAdmin').connect(adminSigner);
 
