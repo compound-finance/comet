@@ -20,6 +20,7 @@ scenario(
     await admin.withdrawReserves(albert, 10);
 
     expect(await baseToken.balanceOf(comet.address)).to.equal(90n);
+    expect(await baseToken.balanceOf(albert.address)).to.equal(10n);
   }
 );
 
