@@ -10,7 +10,7 @@ scenario(
     },
     upgrade: true,
   },
-  async ({ comet, actors, getAssetByAddress }, world: World) => {
+  async ({ comet, actors, getAssetByAddress }) => {
     const { admin, albert } = actors;
 
     const baseToken = getAssetByAddress(await comet.baseToken());
@@ -34,7 +34,9 @@ scenario(
   },
   async ({ actors }) => {
     const { albert } = actors;
-    await expect(albert.withdrawReserves(albert, 10)).to.be.revertedWith('Unauthorized');
+    await expect(albert.withdrawReserves(albert, 10)).to.be.revertedWith(
+      'only governor may withdraw'
+    );
   }
 );
 
