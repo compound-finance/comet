@@ -75,10 +75,10 @@ export async function run<T>({ scenarioConfig, bases, config, worker }: WorkerDa
       }
 
       console.log('Running', scenarioName, base);
-      let numSolutions = 0;
+      let numSolutionSets = 0;
       try {
         let result = await runners[base].run(scenario);
-        numSolutions += result.numSolutions ?? 0;
+        numSolutionSets += result.numSolutionSets ?? 0;
         eventually(() => {
           postMessage(worker, { result });
         });
@@ -88,7 +88,7 @@ export async function run<T>({ scenarioConfig, bases, config, worker }: WorkerDa
           throw e;
         });
       }
-      console.log(`Ran ${pluralize(numSolutions, 'solution', 'solutions')} for`, scenarioName);
+      console.log(`Ran ${pluralize(numSolutionSets, 'solution', 'solutions')} for`, scenarioName);
     } else {
       throw new Error(`Unknown or invalid worker message: ${JSON.stringify(message)}`);
     }

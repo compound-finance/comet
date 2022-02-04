@@ -58,7 +58,7 @@ export class Runner<T> {
     const { base, world } = config;
     const { constraints = [] } = scenario;
     let startTime = Date.now();
-    let numSolved = 0;
+    let numSolutionSets = 0;
 
     // reset the world if a snapshot exists and take a snapshot of it
     if (this.worldSnapshot) {
@@ -96,9 +96,10 @@ export class Runner<T> {
       // requirements met, run the property
       try {
         await scenario.property(ctx, world);
+        numSolutionSets++;
       } catch (e) {
         // TODO: Include the specific solution (set of states) that failed in the result
-        return this.generateResult(base, scenario, startTime, numSolved, e);
+        return this.generateResult(base, scenario, startTime, numSolutionSets, e);
       }
 
       // revert back to the frozen world for the next scenario
@@ -106,14 +107,12 @@ export class Runner<T> {
 
       // snapshots can only be used once, so take another for next time
       contextSnapshot = await world._snapshot();
-
-      numSolved++;
     }
     // Send success result only after all combinations of solutions have passed for this scenario.
-    return this.generateResult(base, scenario, startTime, numSolved);
+    return this.generateResult(base, scenario, startTime, numSolutionSets);
   }
 
-  private generateResult(base: ForkSpec, scenario: Scenario<T>, startTime: number, numSolutions: number, err?: any): Result {
+  private generateResult(base: ForkSpec, scenario: Scenario<T>, startTime: number, numSolutionSets: number, err?: any): Result {
     let diff = null;
     if (err instanceof AssertionError) {
       let { actual, expected } = <any>err; // Types unclear
@@ -126,7 +125,7 @@ export class Runner<T> {
       base: base.name,
       file: scenario.file || scenario.name,
       scenario: scenario.name,
-      numSolutions,
+      numSolutionSets,
       elapsed: Date.now() - startTime,
       error: err || null,
       trace: err ? err.stack : null,

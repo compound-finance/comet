@@ -70,7 +70,7 @@ interface JsonTestResult {
   title: string,
   fullTitle: string,
   file: string,
-  numSolutions: number,
+  numSolutionSets: number,
   duration: number,
   currentRetry: number,
   err: any
@@ -107,7 +107,7 @@ async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions,
       title: result.scenario,
       fullTitle: `${result.base} ${result.scenario}`,
       file: result.file,
-      numSolutions: result.numSolutions ?? 0,
+      numSolutionSets: result.numSolutionSets ?? 0,
       duration: result.elapsed || 0,
       currentRetry: 0,
       err: result.error ? result.error.message : {} // Not sure

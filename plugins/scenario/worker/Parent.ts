@@ -9,6 +9,7 @@ import { getConfig, getHardhatArguments } from './HardhatContext';
 import { ScenarioConfig } from '../types';
 import { HardhatConfig } from 'hardhat/types';
 import { SimpleWorker } from './SimpleWorker';
+import { pluralize } from './Report';
 
 type BaseScenario<T> = {
   base: ForkSpec;
@@ -19,7 +20,7 @@ export interface Result {
   base: string;
   file: string;
   scenario: string;
-  numSolutions?: number;
+  numSolutionSets?: number;
   elapsed?: number;
   error?: Error;
   trace?: string;
@@ -146,8 +147,10 @@ export async function runScenario<T>(
   }
 
   function mergeResult(index: number, result: Result) {
-    results.push(result);
     pending.delete(key(result.base, result.scenario));
+    // Update the scenario name to include the number of solution sets run.
+    result.scenario += ` [${pluralize(result.numSolutionSets, 'run', 'runs')}]`;
+    results.push(result);
 
     resetStallTimer();
     checkDone();
