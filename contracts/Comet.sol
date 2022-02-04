@@ -1101,6 +1101,7 @@ contract Comet is CometMath, CometStorage {
     function transferInternal(address operator, address src, address dst, address asset, uint amount) internal {
         require(!isTransferPaused(), "transfer is paused");
         require(hasPermission(src, operator), "operator not permitted");
+        require(src != dst, "self-transfer not allowed");
 
         if (asset == baseToken) {
             return transferBase(src, dst, safe104(amount));
@@ -1113,7 +1114,6 @@ contract Comet is CometMath, CometStorage {
      * @dev Transfer an amount of base asset from src to dst, borrowing if possible/necessary
      */
     function transferBase(address src, address dst, uint104 amount) internal {
-        require(src != dst, "self-transfer not allowed");
         TotalsBasic memory totals = totalsBasic;
         totals = accrue(totals);
         uint104 totalSupplyBalance = presentValueSupply(totals, totals.totalSupplyBase);
@@ -1150,7 +1150,6 @@ contract Comet is CometMath, CometStorage {
      * @dev Transfer an amount of collateral asset from src to dst
      */
     function transferCollateral(address src, address dst, address asset, uint128 amount) internal {
-        require(src != dst, "self-transfer not allowed");
         uint128 srcCollateral = userCollateral[src][asset].balance;
         uint128 dstCollateral = userCollateral[dst][asset].balance;
         uint128 srcCollateralNew = srcCollateral - amount;
