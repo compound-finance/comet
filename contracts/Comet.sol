@@ -427,7 +427,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Calculate current per second supply rate given totals
      */
-    function getSupplyRateInternal(TotalsBasic memory totals) internal view returns (uint64) {
+    function getSupplyRateInternal(TotalsBasic memory totals) internal virtual view returns (uint64) {
         uint utilization = getUtilizationInternal(totals);
         uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
         if (utilization <= kink) {
@@ -449,7 +449,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Calculate current per second borrow rate given totals
      */
-    function getBorrowRateInternal(TotalsBasic memory totals) internal view returns (uint64) {
+    function getBorrowRateInternal(TotalsBasic memory totals) internal virtual view returns (uint64) {
         uint utilization = getUtilizationInternal(totals);
         if (utilization <= kink) {
             // interestRateBase + interestRateSlopeLow * utilization
@@ -470,7 +470,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Calculate utilization rate of the base asset given totals
      */
-    function getUtilizationInternal(TotalsBasic memory totals) internal pure returns (uint) {
+    function getUtilizationInternal(TotalsBasic memory totals) virtual internal view returns (uint) {
         uint totalSupply = presentValueSupply(totals, totals.totalSupplyBase);
         uint totalBorrow = presentValueBorrow(totals, totals.totalBorrowBase);
         if (totalSupply == 0) {
