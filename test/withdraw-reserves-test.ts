@@ -17,24 +17,6 @@ describe('withdrawReserves', function () {
     expect(await USDC.balanceOf(alice.address)).to.equal(tokenBalance);
   });
 
-  it('emits `ReservesWthdrawn` event when reserves are withdrawn from the protocol', async () => {
-    const tokenBalance = 1000;
-    const {
-      comet,
-      governor,
-      users: [alice],
-    } = await makeProtocol({
-      baseTokenBalance: tokenBalance,
-    });
-
-    const data = await wait(comet.connect(governor).withdrawReserves(alice.address, tokenBalance));
-    const reservesWithdrawnEvent = filterEvent(data, 'ReservesWithdrawn');
-    const [governorRes, to, amount] = reservesWithdrawnEvent.args;
-    expect(governorRes).to.equal(governor.address);
-    expect(to).to.equal(alice.address);
-    expect(amount).to.equal(tokenBalance);
-  });
-
   it('reverts if called not by governor', async () => {
     const {
       comet,
