@@ -113,9 +113,12 @@ export class CometContext {
 
   async setAssets() {
     let signer = (await this.deploymentManager.hre.ethers.getSigners())[1]; // dunno?
+    let numAssets = await this.comet.numAssets();
     let assetAddresses = [
       await this.comet.baseToken(),
-      ...await this.comet.assetAddresses(),
+      ...await Promise.all(Array(numAssets).fill(0).map(async (_, i) => {
+        return (await this.comet.getAssetInfo(i)).asset;
+      })),
     ];
 
     this.assets = Object.fromEntries(await Promise.all(assetAddresses.map(async (address) => {

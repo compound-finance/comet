@@ -20,18 +20,20 @@
   },
   "assets": {
     "WBTC.e": {
+      "priceFeed": "0x31CF013A08c6Ac228C94551d535d5BAfE19c602a",
+      "decimals": "8",
       "borrowCF": 0.6,
       "liquidateCF": 0.5,
-      "supplyCap": "100e8",
-      "priceFeed": "0x31CF013A08c6Ac228C94551d535d5BAfE19c602a",
-      "scale": "1e8"
+      "liquidationFactor": 0.9,
+      "supplyCap": "100e8"
     },
     "WAVAX": {
+      "priceFeed": "0x5498BB86BC934c8D34FDA08E81D444153d0D06aD",
+      "decimals": "18",
       "borrowCF": 0.7,
       "liquidateCF": 0.8,
-      "supplyCap": "100e18",
-      "priceFeed": "0x5498BB86BC934c8D34FDA08E81D444153d0D06aD",
-      "scale": "1e18"
+      "liquidationFactor": 0.9,
+      "supplyCap": "100e18"
     }
   }
 }

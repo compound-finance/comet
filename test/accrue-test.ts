@@ -18,6 +18,8 @@ describe('accrue', function () {
   });
 
   it('accrue initially succeeds and has the right parameters', async () => {
+    await ethers.provider.send('hardhat_reset', []); // ensure clean start...
+
     const params = {
       baseMinForRewards: 12331,
       baseTrackingSupplySpeed: 668,
@@ -80,6 +82,8 @@ describe('accrue', function () {
   });
 
   it('accrues correctly with time elapsed and less than min rewards', async () => {
+    await ethers.provider.send('hardhat_reset', []); // ensure clean start...
+
     const start = (await getBlock()).timestamp + 100;
     const params = {
       baseMinForRewards: 12000n,

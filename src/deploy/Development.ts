@@ -65,22 +65,24 @@ export async function deployDevelopmentComet(
   let asset0PriceFeed = await makePriceFeed(deploymentManager, 0.5, 8);
   let asset1PriceFeed = await makePriceFeed(deploymentManager, 0.05, 8);
 
-  let assetInfo0 = {
+  let assetConfig0 = {
     asset: asset0.address,
+    priceFeed: asset0PriceFeed.address,
+    decimals: (8).toString(),
     borrowCollateralFactor: (1e18).toString(),
     liquidateCollateralFactor: (1e18).toString(),
+    liquidationFactor: (0.95e18).toString(),
     supplyCap: (1000000e8).toString(),
-    priceFeed: asset0PriceFeed.address,
-    scale: (1e8).toString(),
   };
 
-  let assetInfo1 = {
+  let assetConfig1 = {
     asset: asset1.address,
+    priceFeed: asset1PriceFeed.address,
+    decimals: (10).toString(),
     borrowCollateralFactor: (0.5e18).toString(),
     liquidateCollateralFactor: (0.5e18).toString(),
+    liquidationFactor: (0.9e18).toString(),
     supplyCap: (500000e10).toString(),
-    priceFeed: asset1PriceFeed.address,
-    scale: (1e10).toString(),
   };
 
   let configuration = {
@@ -100,7 +102,7 @@ export async function deployDevelopmentComet(
       baseMinForRewards: 1, // XXX
       baseBorrowMin: 1, // XXX
       targetReserves: 0, // XXX
-      assetInfo: [assetInfo0, assetInfo1],
+      assetConfigs: [assetConfig0, assetConfig1],
     },
     ...configurationOverrides,
   };
