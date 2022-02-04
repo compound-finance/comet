@@ -141,12 +141,14 @@ describe('getBorrowLiquidity', function () {
     await comet.setCollateralBalance(alice.address, COMP.address, exp(1, 18));
 
     expect(await comet.getBorrowLiquidity(alice.address)).to.equal(
+      // base + collateral * borrow CF * price
       exp(1, 8) + exp(1, 8) * 9n / 10n
     );
 
     await priceFeeds.COMP.setPrice(exp(0.5, 8));
 
     expect(await comet.getBorrowLiquidity(alice.address)).to.equal(
+      // base + collateral * borrow CF * price
       exp(1, 8) + exp(1, 8) * 9n / 10n / 2n
     );
   });
