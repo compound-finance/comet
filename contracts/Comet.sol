@@ -1015,6 +1015,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Supply either collateral or base asset, depending on the asset, if operator is allowed
      */
     function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal {
+        require(!isSupplyPaused(), "supply is paused");
         require(hasPermission(from, operator), "operator not permitted");
 
         if (asset == baseToken) {
@@ -1098,6 +1099,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Transfer either collateral or base asset, depending on the asset, if operator is allowed
      */
     function transferInternal(address operator, address src, address dst, address asset, uint amount) internal {
+        require(!isTransferPaused(), "transfer is paused");
         require(hasPermission(src, operator), "operator not permitted");
 
         if (asset == baseToken) {
@@ -1198,6 +1200,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Withdraw either collateral or base asset, depending on the asset, if operator is allowed
      */
     function withdrawInternal(address operator, address src, address to, address asset, uint amount) internal {
+        require(!isWithdrawPaused(), "withdraw is paused");
         require(hasPermission(src, operator), "operator not permitted");
 
         if (asset == baseToken) {
@@ -1267,6 +1270,8 @@ contract Comet is CometMath, CometStorage {
      * @param accounts The list of underwater accounts to absorb
      */
     function absorb(address absorber, address[] calldata accounts) external {
+        require(!isAbsorbPaused(), "absorb is paused");
+
         uint startGas = gasleft();
         for (uint i = 0; i < accounts.length; i++) {
             absorbInternal(accounts[i]);
@@ -1336,10 +1341,12 @@ contract Comet is CometMath, CometStorage {
      * @param recipient The recipient address
      */
     function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external {
-        // XXX check re-entrancy
+        require(!isBuyPaused(), "buy is paused");
+
         int reserves = getReserves();
         require(reserves < 0 || uint(reserves) < targetReserves, "no ongoing sale");
 
+        // XXX check re-entrancy
         doTransferIn(baseToken, msg.sender, baseAmount);
 
         uint collateralAmount = quoteCollateral(asset, baseAmount);

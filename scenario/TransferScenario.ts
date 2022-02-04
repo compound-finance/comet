@@ -137,3 +137,54 @@ scenario(
     ).to.be.revertedWith('self-transfer not allowed');
   }
 );
+
+scenario(
+  'Comet#transfer reverts when transfer is paused',
+  {
+    upgrade: true,
+    pause: {
+      transferPaused: true,
+    },
+  },
+  async ({ comet, actors }) => {
+    const { albert, betty } = actors;
+
+    const baseToken = await comet.baseToken();
+    
+    await betty.allow(albert, true);
+
+    await expect(
+      albert.transfer({
+        dst: betty.address,
+        asset: baseToken,
+        amount: 100,
+      })
+    ).to.be.revertedWith('transfer is paused');
+  }
+);
+
+scenario(
+  'Comet#transferFrom reverts when transfer is paused',
+  {
+    upgrade: true,
+    pause: {
+      transferPaused: true,
+    },
+  },
+  async ({ comet, actors }) => {
+    const { albert, betty } = actors;
+
+    const baseToken = await comet.baseToken();
+
+    await betty.allow(albert, true);
+
+    await expect(
+      albert.transferFrom({
+        src: betty.address,
+        dst: albert.address,
+        asset: baseToken,
+        amount: 100,
+      })
+    ).to.be.revertedWith('transfer is paused');
+  }
+);

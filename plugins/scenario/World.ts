@@ -19,7 +19,7 @@ export class World {
   }
 
   // TODO: Can we do this better?
-  isDevelopment(): boolean {
+  isForked(): boolean {
     return !this.base.url;
   }
 
