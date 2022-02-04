@@ -15,6 +15,7 @@ describe('withdrawReserves', function () {
     expect(await USDC.balanceOf(alice.address)).to.be.equal(0);
     await comet.connect(governor).withdrawReserves(alice.address, tokenBalance);
     expect(await USDC.balanceOf(alice.address)).to.equal(tokenBalance);
+    expect(await USDC.balanceOf(comet.address)).to.equal(0);
   });
 
   it('reverts if called not by governor', async () => {
