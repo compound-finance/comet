@@ -20,6 +20,17 @@ contract CometStorage {
         uint40 lastAccrualTime;
     }
 
+    /// @notice Aggregate variables tracked for the entire market
+    uint64 internal baseSupplyIndex;
+    uint64 internal baseBorrowIndex;
+    uint64 internal trackingSupplyIndex;
+    uint64 internal trackingBorrowIndex;
+
+    uint104 internal totalSupplyBase;
+    uint104 internal totalBorrowBase;
+    uint40 internal lastAccrualTime;
+    uint8 internal pauseFlags;
+
     struct TotalsCollateral {
         uint128 totalSupplyAsset;
         uint128 _reserved;
@@ -45,8 +56,19 @@ contract CometStorage {
         uint32 _reserved;
     }
 
-    /// @notice Aggregate variables tracked for the entire market
-    TotalsBasic public totalsBasic;
+    // needed for ModernConstraint, UtilizationConstraint, tests
+    function totalsBasic() public view returns (TotalsBasic memory) {
+        return TotalsBasic({
+            baseSupplyIndex: baseSupplyIndex,
+            baseBorrowIndex: baseBorrowIndex,
+            trackingSupplyIndex: trackingSupplyIndex,
+            trackingBorrowIndex: trackingBorrowIndex,
+            totalSupplyBase: totalSupplyBase,
+            totalBorrowBase: totalBorrowBase,
+            lastAccrualTime: lastAccrualTime,
+            pauseFlags: pauseFlags
+        });
+    }
 
     /// @notice Aggregate variables tracked for each collateral asset
     mapping(address => TotalsCollateral) public totalsCollateral;
