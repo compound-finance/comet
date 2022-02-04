@@ -11,18 +11,13 @@ scenario(
     upgrade: true,
   },
   async ({ comet, actors, getAssetByAddress }, world: World) => {
-    const { albert } = actors;
+    const { admin, albert } = actors;
 
     const baseToken = getAssetByAddress(await comet.baseToken());
 
     expect(await baseToken.balanceOf(comet.address)).to.equal(100n);
 
-    // XXX replace with:
-    //   await admin.withdrawReserves(albert, 10);
-    // once admin.address == comet.governor() on all deployments
-    const governorAddress = await comet.governor();
-    const governor = await world.impersonateAddress(governorAddress);
-    await comet.connect(governor).withdrawReserves(albert.address, 10);
+    await admin.withdrawReserves(albert, 10);
 
     expect(await baseToken.balanceOf(comet.address)).to.equal(90n);
   }
