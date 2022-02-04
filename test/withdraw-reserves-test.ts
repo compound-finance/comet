@@ -1,4 +1,4 @@
-import { ethers, expect, makeProtocol, wait, filterEvent } from './helpers';
+import { expect, makeProtocol, wait, filterEvent } from './helpers';
 
 describe('withdrawReserves', function () {
   it('withdraws reserves from the protocol', async () => {
@@ -41,7 +41,7 @@ describe('withdrawReserves', function () {
       users: [alice],
     } = await makeProtocol();
     await expect(comet.connect(alice).withdrawReserves(alice.address, 10)).to.be.revertedWith(
-      'Unauthorized'
+      'only governor may withdraw'
     );
   });
 

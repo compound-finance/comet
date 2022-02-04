@@ -1,6 +1,5 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { World } from '../plugins/scenario';
 
 scenario(
   'Comet#withdrawReserves > governor withdraw reserves',

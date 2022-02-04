@@ -1382,7 +1382,7 @@ contract Comet is CometMath, CometStorage {
      */
     function withdrawReserves(address to, uint amount) external {
         require(msg.sender == governor, "only governor may withdraw");
-        require(ERC20(baseToken).transfer(to, amount), "invalid token transfer");
+        doTransferOut(baseToken, to, amount);
 
         emit ReservesWithdrawn(governor, to, amount);
     }
