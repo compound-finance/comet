@@ -1376,6 +1376,8 @@ contract Comet is CometMath, CometStorage {
      */
     function withdrawReserves(address to, uint amount) external {
         require(msg.sender == governor, "only governor may withdraw");
+        int reserves = getReserves();
+        require(amount <= unsigned256(reserves), "insufficient reserves");
         doTransferOut(baseToken, to, amount);
     }
 }

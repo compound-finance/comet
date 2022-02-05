@@ -50,7 +50,6 @@ scenario(
   async ({ actors }) => {
     const { admin, albert } = actors;
 
-    // XXX specify the desired revert message (differs across deployments, currently)
-    await expect(admin.withdrawReserves(albert, 101)).to.be.reverted;
+    await expect(admin.withdrawReserves(albert, 101)).to.be.revertedWith('insufficient reserves');
   }
 );
