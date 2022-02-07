@@ -12,7 +12,7 @@ export interface Config<T> {
   world: World;
 }
 
-function* combos(choices: object[][]) {
+function* combos<T>(choices: T[][]): Generator<T[]> {
   if (choices.length == 0) {
     yield [];
   } else {
@@ -21,7 +21,7 @@ function* combos(choices: object[][]) {
   }
 }
 
-function* entriesOf(iter: Iterable<any>) {
+function* enumerate<T>(iter: Iterable<T>): Generator<[number, T]> {
   let i = 0;
   for (let value of iter) {
       yield [i++, value];
@@ -84,7 +84,7 @@ export class Runner<T> {
     );
     const baseSolutions: Solution<T>[][] = [[identity]];
     
-    for (const [i, combo] of entriesOf(combos(baseSolutions.concat(solutionChoices)))) {
+    for (const [i, combo] of enumerate(combos(baseSolutions.concat(solutionChoices)))) {
       // XXX Get rid of this band-aid fix when deep clone in the forker works. 
       // Currently, the context is not being properly cloned and is being shared across 
       // solutions, so we have to create a new context from scratch for every solution.
