@@ -1,5 +1,3 @@
-import { CometConfigurationOverrides } from '../../src/deploy';
-
 export enum FuzzType {
   INT64,
   UINT64
@@ -13,7 +11,7 @@ export interface FuzzConfig {
 
 interface KV {
   key: string,
-  value: string
+  value: string | object
 }
 
 function isFuzzConfig(object: unknown): object is FuzzConfig {
@@ -49,8 +47,8 @@ function getMaxValForBits(bits: number, isSigned: boolean = false): bigint {
   return max;
 }
 
-function createCometConfigOverrides(keyValues: KV[]): CometConfigurationOverrides {
-  let config: CometConfigurationOverrides = {};
+function createObject(keyValues: KV[]): object {
+  let config = {};
   for (let kv of keyValues) {
     config[kv.key] = kv.value;
   }
@@ -80,25 +78,27 @@ export function getFuzzedValues(fuzzConfig: FuzzConfig): any[] {
   }
 }
 
-export function getFuzzedCometConfigs(cometConfig: CometConfigurationOverrides): CometConfigurationOverrides[] {
-  let cometConfigs = [];
+export function getFuzzedRequirements(requirements: object): object[] {
+  let fuzzedRequirements = [];
   let keyValues: KV[][] = [];
   // Create a list of fuzzed values for each key that needs to be fuzzed.
-  for (let key in cometConfig) {
-    let desiredValue = cometConfig[key];
-    if (isFuzzConfig(desiredValue)) {
-      let fuzzedValues = getFuzzedValues(desiredValue);
+  for (let key in requirements) {
+    let value = requirements[key];
+    if (isFuzzConfig(value)) {
+      let fuzzedValues = getFuzzedValues(value);
       keyValues.push(fuzzedValues.map(v => ({ key, value: v.toString() })));
+    } else if (typeof value === 'object' && typeof value !== null) {
+      // If value is a non-null object, recursively fuzz its properties
+      keyValues.push(getFuzzedRequirements(value).map(v => ({ key, value: v})));
     } else {
-      keyValues.push([{ key, value: desiredValue }])
+      keyValues.push([{ key, value }])
     }
   }
 
-  // Create all combinations for the comet configuration.
+  // Create all combinations for the requirement.
   for (let combo of combos(keyValues)) {
-    let config = createCometConfigOverrides(combo);
-    cometConfigs.push(config);
+    fuzzedRequirements.push(createObject(combo));
   }
 
-  return cometConfigs;
+  return fuzzedRequirements;
 }
