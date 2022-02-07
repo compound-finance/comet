@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../../contracts/Comet.sol";
 import "./CometMathHarness.sol";
-import "./CometStorageHarness.sol";
+//import "../../contracts/CometStorgae.sol";
 import "../../contracts/ERC20.sol";
 import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
@@ -12,7 +12,7 @@ import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/Aggregat
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-contract CometHarness is Comet, CometMathHarness, CometStorageHarness {
+contract CometHarness is Comet {
     constructor(Configuration memory config) Comet(config) {
     }
 
@@ -46,5 +46,13 @@ contract CometHarness is Comet, CometMathHarness, CometStorageHarness {
         return userCollateral[user][asset].balance;
     } 
      
- 
+
+    function getTotalBaseSupplyIndex() public returns (uint64) {
+        return totalsBasic.baseSupplyIndex;
+    }
+
+    function getTotalBaseBorrowIndex() public returns (uint64) {
+        return totalsBasic.baseBorrowIndex;
+    }
+
 }

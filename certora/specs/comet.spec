@@ -9,7 +9,7 @@ methods {
     getUserCollateralBalance(address user, address asset) returns (uint128) envfree; 
 
     //under approxiamtion simplifications 
-    decimals() returns uint8 => ALWAYS(1);
+    decimals() returns uint8 => ALWAYS(8);
     latestRoundData() returns uint256 => CONSTANT;
    /*  pause(
         bool supplyPaused,
@@ -25,9 +25,16 @@ methods {
         uint128 finalUserBalance
     ) => NONDET
     */
-    isInAsset(uint16 assetsIn, uint8 assetOffset) => NONDET
+    isInAsset(uint16 assetsIn, uint8 assetOffset) => CONSTANT
+    signedMulPrice(int amount, uint price, uint tokenScale) => ghostSignedMulPrice(amount,price,tokenScale)
+    mulPrice(uint amount, uint price, uint tokenScale) => ghostMulPrice(amount,price,tokenScale)
 
 }
+
+ghost ghostSignedMulPrice(int amount, uint price, uint tokenScale)  int256; 
+
+ghost ghostMulPrice(uint amount, uint price, uint tokenScale)  uint256; 
+
 
 /*
 ghost supplyPausedGhost bool;
