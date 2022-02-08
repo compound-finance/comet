@@ -516,6 +516,13 @@ contract Comet is CometMath, CometStorage {
         return uint64(((word_a >> 176) & type(uint16).max) * rescale);
     }
 
+    // uint liquidationFactor
+    function getAssetLiquidationFactor(uint i) internal view returns (uint) {
+        uint256 word_a = getWordA(i);
+        uint rescale = factorScale / 1e4;
+        return uint64(((word_a >> 192) & type(uint16).max) * rescale);
+    }
+
     // address priceFeed;
     function getAssetPriceFeed(uint i) public view returns (address) {
         uint256 word_b = getWordB(i);
@@ -1447,16 +1454,17 @@ contract Comet is CometMath, CometStorage {
 
         for (uint8 i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
-                AssetInfo memory assetInfo = getAssetInfo(i);
                 address assetAddress = getAssetAddress(i);
                 uint scale = getAssetScale(i);
+                address priceFeed = getAssetPriceFeed(i);
+                uint liquidationFactor = getAssetLiquidationFactor(i);
                 uint128 seizeAmount = userCollateral[account][assetAddress].balance;
                 if (seizeAmount > 0) {
                     userCollateral[account][assetAddress].balance = 0;
                     userCollateral[address(this)][assetAddress].balance += seizeAmount;
 
-                    uint value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), safe64(scale));
-                    deltaValue += mulFactor(value, assetInfo.liquidationFactor);
+                    uint value = mulPrice(seizeAmount, getPrice(priceFeed), safe64(scale));
+                    deltaValue += mulFactor(value, liquidationFactor);
                 }
             }
         }
