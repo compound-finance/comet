@@ -55,34 +55,13 @@ contract Comet is CometMath, CometStorage {
         AssetConfig[] assetConfigs;
     }
 
+    /** General configuration constants **/
+
     /// @notice The name of this contract
     string public constant name = "Compound Comet";
 
     /// @notice The major version of this contract
     string public constant version = "0";
-
-    // XXX we should prob camelCase all these?
-    /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-
-    /// @notice The EIP-712 typehash for allowBySig Authorization
-    bytes32 public constant AUTHORIZATION_TYPEHASH = keccak256("Authorization(address owner,address manager,bool isAllowed,uint256 nonce,uint256 expiry)");
-
-    /// @notice The highest valid value for s in an ECDSA signature pair (0 < s < secp256k1n ÷ 2 + 1)
-    /// @dev See https://ethereum.github.io/yellowpaper/paper.pdf #307)
-    uint public constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
-
-    /// @dev Offsets for specific actions in the pause flag bit array
-    uint8 internal constant pauseSupplyOffset = 0;
-    uint8 internal constant pauseTransferOffset = 1;
-    uint8 internal constant pauseWithdrawOffset = 2;
-    uint8 internal constant pauseAbsorbOffset = 3;
-    uint8 internal constant pauseBuyOffset = 4;
-
-    /// @dev 365 days * 24 hours * 60 minutes * 60 seconds
-    uint64 public constant secondsPerYear = 31_536_000;
-
-    /** General configuration constants **/
 
     /// @notice The admin of the protocol
     address public immutable governor;
@@ -188,6 +167,28 @@ contract Comet is CometMath, CometStorage {
     uint256 internal immutable asset14_a;
     uint256 internal immutable asset14_b;
 
+    /** Internal constants **/
+
+    /// @dev Offsets for specific actions in the pause flag bit array
+    uint8 internal constant PAUSE_SUPPLY_OFFSET = 0;
+    uint8 internal constant PAUSE_TRANSFER_OFFSET = 1;
+    uint8 internal constant PAUSE_WITHDRAW_OFFSET = 2;
+    uint8 internal constant PAUSE_ABSORB_OFFSET = 3;
+    uint8 internal constant PAUSE_BUY_OFFSET = 4;
+
+    /// @dev 365 days * 24 hours * 60 minutes * 60 seconds
+    uint64 internal constant SECONDS_PER_YEAR = 31_536_000;
+
+    /// @dev The EIP-712 typehash for the contract's domain
+    bytes32 internal constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+
+    /// @dev The EIP-712 typehash for allowBySig Authorization
+    bytes32 internal constant AUTHORIZATION_TYPEHASH = keccak256("Authorization(address owner,address manager,bool isAllowed,uint256 nonce,uint256 expiry)");
+
+    /// @dev The highest valid value for s in an ECDSA signature pair (0 < s < secp256k1n ÷ 2 + 1)
+    ///  See https://ethereum.github.io/yellowpaper/paper.pdf #307)
+    uint internal constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
+
     /**
      * @notice Construct a new protocol instance
      * @param config The mapping of initial/constant parameters
@@ -198,7 +199,7 @@ contract Comet is CometMath, CometStorage {
         require(decimals <= 18, "base token has too many decimals");
         require(config.assetConfigs.length <= maxAssets, "too many asset configs");
         require(config.baseMinForRewards > 0, "baseMinForRewards should be > 0");
-        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == priceFeedDecimals, "incorrect baseTokenPriceFeed decimals");
+        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
@@ -219,9 +220,9 @@ contract Comet is CometMath, CometStorage {
 
         // Set interest rate model configs
         kink = config.kink;
-        perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / secondsPerYear;
-        perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / secondsPerYear;
-        perSecondInterestRateBase = config.perYearInterestRateBase / secondsPerYear;
+        perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
+        perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
+        perSecondInterestRateBase = config.perYearInterestRateBase / SECONDS_PER_YEAR;
         reserveRate = config.reserveRate;
 
         // Set asset info
@@ -294,7 +295,7 @@ contract Comet is CometMath, CometStorage {
         }
 
         // Sanity check price feed and asset decimals
-        require(AggregatorV3Interface(priceFeed).decimals() == priceFeedDecimals, "incorrect priceFeed decimals");
+        require(AggregatorV3Interface(priceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
         require(ERC20(asset).decimals() == decimals, "asset decimals mismatch");
 
         // Ensure collateral factors are within range
@@ -503,7 +504,7 @@ contract Comet is CometMath, CometStorage {
         bytes32 structHash = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, owner, manager, isAllowed_, nonce, expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
-        require(owner == signatory, "signature does not match arguments");
+        require(owner == signatory, "owner is not signatory");
         require(signatory != address(0), "invalid signature");
         require(nonce == userNonce[signatory], "invalid nonce");
         require(block.timestamp < expiry, "signed transaction expired");
@@ -833,46 +834,46 @@ contract Comet is CometMath, CometStorage {
 
         totalsBasic.pauseFlags =
             uint8(0) |
-            (toUInt8(supplyPaused) << pauseSupplyOffset) |
-            (toUInt8(transferPaused) << pauseTransferOffset) |
-            (toUInt8(withdrawPaused) << pauseWithdrawOffset) |
-            (toUInt8(absorbPaused) << pauseAbsorbOffset) |
-            (toUInt8(buyPaused) << pauseBuyOffset);
+            (toUInt8(supplyPaused) << PAUSE_SUPPLY_OFFSET) |
+            (toUInt8(transferPaused) << PAUSE_TRANSFER_OFFSET) |
+            (toUInt8(withdrawPaused) << PAUSE_WITHDRAW_OFFSET) |
+            (toUInt8(absorbPaused) << PAUSE_ABSORB_OFFSET) |
+            (toUInt8(buyPaused) << PAUSE_BUY_OFFSET);
     }
 
     /**
      * @return Whether or not supply actions are paused
      */
     function isSupplyPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseSupplyOffset));
+        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_SUPPLY_OFFSET));
     }
 
     /**
      * @return Whether or not transfer actions are paused
      */
     function isTransferPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseTransferOffset));
+        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_TRANSFER_OFFSET));
     }
 
     /**
      * @return Whether or not withdraw actions are paused
      */
     function isWithdrawPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseWithdrawOffset));
+        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_WITHDRAW_OFFSET));
     }
 
     /**
      * @return Whether or not absorb actions are paused
      */
     function isAbsorbPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseAbsorbOffset));
+        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_ABSORB_OFFSET));
     }
 
     /**
      * @return Whether or not buy actions are paused
      */
     function isBuyPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseBuyOffset));
+        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_BUY_OFFSET));
     }
 
     /**
