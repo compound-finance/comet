@@ -31,9 +31,9 @@ methods {
 
 }
 
-ghost ghostSignedMulPrice(int amount, uint price, uint tokenScale)  int256; 
+ghost ghostSignedMulPrice(int, uint, uint) returns int256; 
 
-ghost ghostMulPrice(uint amount, uint price, uint tokenScale)  uint256; 
+ghost ghostMulPrice(uint, uint, uint) returns uint256; 
 
 
 /*
