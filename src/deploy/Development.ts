@@ -3,15 +3,16 @@ import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentMa
 import {
   Comet__factory,
   Comet,
+  CometFactory__factory,
+  CometFactory,
   FaucetToken__factory,
   FaucetToken,
-  ProxyAdmin,
-  ProxyAdmin__factory,
-  ERC20,
+  CometProxyAdmin,
+  CometProxyAdmin__factory,
   SimplePriceFeed,
   SimplePriceFeed__factory,
-  TransparentUpgradeableProxy__factory,
-  TransparentUpgradeableProxy,
+  TransparentUpgradeableFactoryProxy__factory,
+  TransparentUpgradeableFactoryProxy,
 } from '../../build/types';
 import { AssetInfoStruct, ConfigurationStruct } from '../../build/types/Comet';
 import { BigNumberish } from 'ethers';
@@ -114,21 +115,29 @@ export async function deployDevelopmentComet(
 
   let proxy = null;
   if (deployProxy) {
-    let proxyAdminArgs: [] = [];
-    let proxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
-      'vendor/proxy/ProxyAdmin.sol',
-      proxyAdminArgs
+    const cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
+      'CometFactory.sol',
+      []
     );
 
+    let proxyAdminArgs: [] = [];
+    let proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
+      'CometProxyAdmin.sol',
+      proxyAdminArgs
+    );
+    
     proxy = await deploymentManager.deploy<
-      TransparentUpgradeableProxy,
-      TransparentUpgradeableProxy__factory,
-      [string, string, string]
-    >('vendor/proxy/TransparentUpgradeableProxy.sol', [
+      TransparentUpgradeableFactoryProxy,
+      TransparentUpgradeableFactoryProxy__factory,
+      [string, string, string, string]
+    >('TransparentUpgradeableFactoryProxy.sol', [
+      cometFactory.address,
       comet.address,
       proxyAdmin.address,
       (await comet.populateTransaction.XXX_REMOVEME_XXX_initialize()).data,
     ]);
+
+    await proxyAdmin.connect(governor).setConfiguration(proxy.address, configuration);
 
     await deploymentManager.putRoots(new Map([['comet', proxy.address]]));
   }

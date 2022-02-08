@@ -13,16 +13,6 @@ import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.
  * @author Compound
  */
 contract Comet is CometMath, CometStorage {
-    struct AssetConfig {
-        address asset;
-        address priceFeed;
-        uint8 decimals;
-        uint64 borrowCollateralFactor;
-        uint64 liquidateCollateralFactor;
-        uint64 liquidationFactor;
-        uint128 supplyCap;
-    }
-
     struct AssetInfo {
         uint8 offset;
         address asset;
@@ -33,29 +23,6 @@ contract Comet is CometMath, CometStorage {
         uint64 liquidationFactor;
         uint128 supplyCap;
     }
-
-    struct Configuration {
-        address governor;
-        address pauseGuardian;
-        address baseToken;
-        address baseTokenPriceFeed;
-
-        uint64 kink;
-        uint64 perYearInterestRateSlopeLow;
-        uint64 perYearInterestRateSlopeHigh;
-        uint64 perYearInterestRateBase;
-        uint64 reserveRate;
-        uint64 trackingIndexScale;
-        uint64 baseTrackingSupplySpeed;
-        uint64 baseTrackingBorrowSpeed;
-        uint104 baseMinForRewards;
-        uint104 baseBorrowMin;
-        uint104 targetReserves;
-
-        AssetConfig[] assetConfigs;
-    }
-
-    /** General configuration constants **/
 
     /// @notice The admin of the protocol
     address public immutable governor;
