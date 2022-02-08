@@ -41,4 +41,29 @@ describe('withdrawReserves', function () {
       comet.connect(governor).withdrawReserves(alice.address, tokenBalance + 1)
     ).to.be.revertedWith('insufficient reserves');
   });
+
+  it('accounts for total supply base when calculating reseves', async () => {
+    const {
+      comet,
+      governor,
+      users: [alice],
+    } = await makeProtocol({
+      baseTokenBalance: 200,
+    });
+
+    const totalsBasic = await comet.totalsBasic();
+
+    await wait(
+      comet.setTotalsBasic({
+        ...totalsBasic,
+        totalSupplyBase: 100n,
+      })
+    );
+
+    expect(await comet.getReserves()).to.be.equal(100);
+
+    await expect(comet.connect(governor).withdrawReserves(alice.address, 101)).to.be.revertedWith(
+      'insufficient reserves'
+    );
+  });
 });

@@ -53,3 +53,6 @@ scenario(
     await expect(admin.withdrawReserves(albert, 101)).to.be.revertedWith('insufficient reserves');
   }
 );
+
+// XXX add scenario that tests for a revert when reserves are reduced by
+// totalSupplyBase
