@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity ^0.8.11;
 
+import "./CometConfiguration.sol";
 import "./CometMath.sol";
 import "./CometStorage.sol";
 
@@ -12,17 +13,7 @@ import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-contract Comet is CometMath, CometStorage, ERC20 {
-    struct AssetConfig {
-        address asset;
-        address priceFeed;
-        uint8 decimals;
-        uint64 borrowCollateralFactor;
-        uint64 liquidateCollateralFactor;
-        uint64 liquidationFactor;
-        uint128 supplyCap;
-    }
-
+contract Comet is CometMath, CometStorage, CometConfiguration, ERC20 {
     struct AssetInfo {
         uint8 offset;
         address asset;
@@ -33,31 +24,6 @@ contract Comet is CometMath, CometStorage, ERC20 {
         uint64 liquidationFactor;
         uint128 supplyCap;
     }
-
-    struct Configuration {
-        bytes32 symbol32;
-
-        address governor;
-        address pauseGuardian;
-        address baseToken;
-        address baseTokenPriceFeed;
-
-        uint64 kink;
-        uint64 perYearInterestRateSlopeLow;
-        uint64 perYearInterestRateSlopeHigh;
-        uint64 perYearInterestRateBase;
-        uint64 reserveRate;
-        uint64 trackingIndexScale;
-        uint64 baseTrackingSupplySpeed;
-        uint64 baseTrackingBorrowSpeed;
-        uint104 baseMinForRewards;
-        uint104 baseBorrowMin;
-        uint104 targetReserves;
-
-        AssetConfig[] assetConfigs;
-    }
-
-    /** General configuration constants **/
 
     /// @notice The name of this contract
     string public constant name = "Compound Comet";
