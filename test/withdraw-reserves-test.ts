@@ -42,7 +42,7 @@ describe('withdrawReserves', function () {
     ).to.be.revertedWith('insufficient reserves');
   });
 
-  it('accounts for total supply base when calculating reseves', async () => {
+  it('accounts for total supply base when calculating reserves', async () => {
     const {
       comet,
       governor,
