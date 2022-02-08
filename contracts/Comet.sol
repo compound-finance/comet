@@ -23,17 +23,6 @@ contract Comet is CometMath, CometStorage {
         uint128 supplyCap;
     }
 
-    struct AssetInfo {
-        uint8 offset;
-        address asset;
-        address priceFeed;
-        uint64 scale;
-        uint64 borrowCollateralFactor;
-        uint64 liquidateCollateralFactor;
-        uint64 liquidationFactor;
-        uint128 supplyCap;
-    }
-
     struct Configuration {
         address governor;
         address pauseGuardian;
@@ -324,48 +313,11 @@ contract Comet is CometMath, CometStorage {
         return (word_a, word_b);
     }
 
-    /**
-     * @notice Get the i-th asset info, according to the order they were passed in originally
-     * @param i The index of the asset info to get
-     * @return The asset info object
-     */
-    function getAssetInfo(uint8 i) public view returns (AssetInfo memory) {
-        require(i < numAssets, "asset info not found");
-
-        uint256 word_a = getWordA(i);
-        uint256 word_b = getWordB(i);
-
-        address asset = address(uint160(word_a & type(uint160).max));
-        uint rescale = factorScale / 1e4;
-        uint64 borrowCollateralFactor = uint64(((word_a >> 160) & type(uint16).max) * rescale);
-        uint64 liquidateCollateralFactor = uint64(((word_a >> 176) & type(uint16).max) * rescale);
-        uint64 liquidationFactor = uint64(((word_a >> 192) & type(uint16).max) * rescale);
-
-        address priceFeed = address(uint160(word_b & type(uint160).max));
-        uint8 decimals = uint8(((word_b >> 160) & type(uint8).max));
-        uint64 scale = uint64(10 ** decimals);
-        uint128 supplyCap = uint128(((word_b >> 168) & type(uint64).max) * scale);
-
-        return AssetInfo({
-            offset: i,
-            asset: asset,
-            priceFeed: priceFeed,
-            scale: scale,
-            borrowCollateralFactor: borrowCollateralFactor,
-            liquidateCollateralFactor: liquidateCollateralFactor,
-            liquidationFactor: liquidationFactor,
-            supplyCap: supplyCap
-        });
-    }
-
-    /**
-     * @dev Determine index of asset that matches given address
-     */
-    function getAssetInfoByAddress(address asset) internal view returns (AssetInfo memory) {
+    function getAssetOffsetByAddress(address asset) internal view returns (uint) {
         for (uint8 i = 0; i < numAssets; i++) {
             address assetAddress = getAssetAddress(i);
             if (assetAddress == asset) {
-                return getAssetInfo(i);
+                return i;
             }
         }
         revert("asset not found");
@@ -486,16 +438,13 @@ contract Comet is CometMath, CometStorage {
         uint8 decimals = uint8(((word_b >> 160) & type(uint8).max));
         return uint64(10 ** decimals);
     }
-
     // // uint supplyCap;
-    // function getAssetSupplyCap(uint i) public view returns (uint) {
-    //     require(i < numAssets, "asset info not found");
-
-    //     if (i == 0) return supplyCap00;
-    //     if (i == 1) return supplyCap01;
-    //     if (i == 2) return supplyCap02;
-    //     revert("absurd");
-    // }
+    function getAssetSupplyCap(uint i) public view returns (uint) {
+        uint256 word_b = getWordB(i);
+        uint8 decimals = uint8(((word_b >> 160) & type(uint8).max));
+        uint64 scale = uint64(10 ** decimals);
+        return uint128(((word_b >> 168) & type(uint64).max) * scale);
+    }
 
     /**
      * @return The current timestamp
@@ -1015,13 +964,13 @@ contract Comet is CometMath, CometStorage {
         uint128 initialUserBalance,
         uint128 finalUserBalance
     ) internal {
-        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
+        uint assetOffset = getAssetOffsetByAddress(asset);
         if (initialUserBalance == 0 && finalUserBalance != 0) {
             // set bit for asset
-            userBasic[account].assetsIn |= (uint8(1) << assetInfo.offset);
+            userBasic[account].assetsIn |= (uint8(1) << assetOffset);
         } else if (initialUserBalance != 0 && finalUserBalance == 0) {
             // clear bit for asset
-            userBasic[account].assetsIn &= ~(uint8(1) << assetInfo.offset);
+            userBasic[account].assetsIn &= ~(uint8(1) << assetOffset);
         }
     }
 
@@ -1163,10 +1112,11 @@ contract Comet is CometMath, CometStorage {
     function supplyCollateral(address from, address dst, address asset, uint128 amount) internal {
         doTransferIn(asset, from, amount);
 
-        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
+        uint assetOffset = getAssetOffsetByAddress(asset);
+        uint supplyCap = getAssetSupplyCap(assetOffset);
         TotalsCollateral memory totals = totalsCollateral[asset];
         totals.totalSupplyAsset += amount;
-        require(totals.totalSupplyAsset <= assetInfo.supplyCap, "supply cap exceeded");
+        require(totals.totalSupplyAsset <= supplyCap, "supply cap exceeded");
 
         uint128 dstCollateral = userCollateral[dst][asset].balance;
         uint128 dstCollateralNew = dstCollateral + amount;
@@ -1467,10 +1417,12 @@ contract Comet is CometMath, CometStorage {
      */
     function quoteCollateral(address asset, uint baseAmount) public view returns (uint) {
         // XXX: Add StoreFrontDiscount.
-        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
-        uint assetPrice = getPrice(assetInfo.priceFeed);
+        uint assetOffset = getAssetOffsetByAddress(asset);
+        address priceFeed = getAssetPriceFeed(assetOffset);
+        uint scale = getAssetScale(assetOffset);
+        uint assetPrice = getPrice(priceFeed);
         uint basePrice = getPrice(baseTokenPriceFeed);
-        uint assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPrice;
+        uint assetWeiPerUnitBase = scale * basePrice / assetPrice;
         return assetWeiPerUnitBase * baseAmount / baseScale;
     }
 }

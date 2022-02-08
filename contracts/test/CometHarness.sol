@@ -4,6 +4,17 @@ pragma solidity ^0.8.11;
 import "../Comet.sol";
 
 contract CometHarness is Comet {
+    struct AssetInfo {
+        uint8 offset;
+        address asset;
+        address priceFeed;
+        uint64 scale;
+        uint64 borrowCollateralFactor;
+        uint64 liquidateCollateralFactor;
+        uint64 liquidationFactor;
+        uint128 supplyCap;
+    }
+
     uint public nowOverride;
 
     constructor(Configuration memory config) Comet(config) {}
@@ -64,5 +75,39 @@ contract CometHarness is Comet {
         }
 
         return result;
+    }
+
+    /**
+     * @notice Get the i-th asset info, according to the order they were passed in originally
+     * @param i The index of the asset info to get
+     * @return The asset info object
+     */
+    function getAssetInfo(uint8 i) public view returns (AssetInfo memory) {
+        require(i < numAssets, "asset info not found");
+
+        uint256 word_a = getWordA(i);
+        uint256 word_b = getWordB(i);
+
+        address asset = address(uint160(word_a & type(uint160).max));
+        uint rescale = factorScale / 1e4;
+        uint64 borrowCollateralFactor = uint64(((word_a >> 160) & type(uint16).max) * rescale);
+        uint64 liquidateCollateralFactor = uint64(((word_a >> 176) & type(uint16).max) * rescale);
+        uint64 liquidationFactor = uint64(((word_a >> 192) & type(uint16).max) * rescale);
+
+        address priceFeed = address(uint160(word_b & type(uint160).max));
+        uint8 decimals = uint8(((word_b >> 160) & type(uint8).max));
+        uint64 scale = uint64(10 ** decimals);
+        uint128 supplyCap = uint128(((word_b >> 168) & type(uint64).max) * scale);
+
+        return AssetInfo({
+            offset: i,
+            asset: asset,
+            priceFeed: priceFeed,
+            scale: scale,
+            borrowCollateralFactor: borrowCollateralFactor,
+            liquidateCollateralFactor: liquidateCollateralFactor,
+            liquidationFactor: liquidationFactor,
+            supplyCap: supplyCap
+        });
     }
 }
