@@ -522,6 +522,13 @@ contract Comet is CometMath, CometStorage {
         return address(uint160(word_b & type(uint160).max));
     }
 
+    // uint scale;
+    function getAssetScale(uint i) public view returns (uint) {
+        uint256 word_b = getWordB(i);
+        uint8 decimals = uint8(((word_b >> 160) & type(uint8).max));
+        return uint64(10 ** decimals);
+    }
+
     // // uint supplyCap;
     // function getAssetSupplyCap(uint i) public view returns (uint) {
     //     require(i < numAssets, "asset info not found");
@@ -529,16 +536,6 @@ contract Comet is CometMath, CometStorage {
     //     if (i == 0) return supplyCap00;
     //     if (i == 1) return supplyCap01;
     //     if (i == 2) return supplyCap02;
-    //     revert("absurd");
-    // }
-
-    // // uint scale;
-    // function getAssetScale(uint i) public view returns (uint) {
-    //     require(i < numAssets, "asset info not found");
-
-    //     if (i == 0) return scale00;
-    //     if (i == 1) return scale01;
-    //     if (i == 2) return scale02;
     //     revert("absurd");
     // }
 
@@ -749,14 +746,14 @@ contract Comet is CometMath, CometStorage {
                     return true;
                 }
 
-                AssetInfo memory asset = getAssetInfo(i);
                 address assetAddress = getAssetAddress(i);
                 uint borrowCollateralFactor = getAssetBorrowCollateralFactor(i);
                 address priceFeed = getAssetPriceFeed(i);
+                uint scale = getAssetScale(i);
                 uint newAmount = mulPrice(
                     userCollateral[account][assetAddress].balance,
                     getPrice(priceFeed),
-                    safe64(asset.scale)
+                    safe64(scale)
                 );
                 liquidity += signed256(mulFactor(
                     newAmount,
@@ -785,14 +782,14 @@ contract Comet is CometMath, CometStorage {
 
         for (uint8 i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
-                AssetInfo memory asset = getAssetInfo(i);
                 address assetAddress = getAssetAddress(i);
                 uint borrowCollateralFactor = getAssetBorrowCollateralFactor(i);
                 address priceFeed = getAssetPriceFeed(i);
+                uint scale = getAssetScale(i);
                 uint newAmount = mulPrice(
                     userCollateral[account][assetAddress].balance,
                     getPrice(priceFeed),
-                    safe64(asset.scale)
+                    safe64(scale)
                 );
                 liquidity += signed256(mulFactor(
                     newAmount,
@@ -825,14 +822,14 @@ contract Comet is CometMath, CometStorage {
                     return false;
                 }
 
-                AssetInfo memory asset = getAssetInfo(i);
                 address assetAddress = getAssetAddress(i);
                 uint liquidateCollateralFactor = getAssetLiquidateCollateralFactor(i);
                 address priceFeed = getAssetPriceFeed(i);
+                uint scale = getAssetScale(i);
                 uint newAmount = mulPrice(
                     userCollateral[account][assetAddress].balance,
                     getPrice(priceFeed),
-                    asset.scale
+                    safe64(scale)
                 );
                 liquidity += signed256(mulFactor(
                     newAmount,
@@ -861,14 +858,14 @@ contract Comet is CometMath, CometStorage {
 
         for (uint8 i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
-                AssetInfo memory asset = getAssetInfo(i);
                 address assetAddress = getAssetAddress(i);
                 uint liquidateCollateralFactor = getAssetLiquidateCollateralFactor(i);
                 address priceFeed = getAssetPriceFeed(i);
+                uint scale = getAssetScale(i);
                 uint newAmount = mulPrice(
                     userCollateral[account][assetAddress].balance,
                     getPrice(priceFeed),
-                    asset.scale
+                    safe64(scale)
                 );
                 liquidity += signed256(mulFactor(
                     newAmount,
@@ -1452,12 +1449,13 @@ contract Comet is CometMath, CometStorage {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory assetInfo = getAssetInfo(i);
                 address assetAddress = getAssetAddress(i);
+                uint scale = getAssetScale(i);
                 uint128 seizeAmount = userCollateral[account][assetAddress].balance;
                 if (seizeAmount > 0) {
                     userCollateral[account][assetAddress].balance = 0;
                     userCollateral[address(this)][assetAddress].balance += seizeAmount;
 
-                    uint value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
+                    uint value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), safe64(scale));
                     deltaValue += mulFactor(value, assetInfo.liquidationFactor);
                 }
             }
