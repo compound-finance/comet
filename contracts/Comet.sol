@@ -471,15 +471,12 @@ contract Comet is CometMath, CometStorage {
         return uint64(((word_a >> 160) & type(uint16).max) * rescale);
     }
 
-    // // uint liquidateCollateralFactor;
-    // function getAssetLiquidateCollateralFactor(uint i) internal view returns (uint) {
-    //     require(i < numAssets, "asset info not found");
-
-    //     if (i == 0) return liquidateCollateralFactor00;
-    //     if (i == 1) return liquidateCollateralFactor01;
-    //     if (i == 2) return liquidateCollateralFactor02;
-    //     revert("absurd");
-    // }
+    // uint liquidateCollateralFactor;
+    function getAssetLiquidateCollateralFactor(uint i) internal view returns (uint) {
+        uint256 word_a = getWordA(i);
+        uint rescale = factorScale / 1e4;
+        return uint64(((word_a >> 176) & type(uint16).max) * rescale);
+    }
 
     // // uint supplyCap;
     // function getAssetSupplyCap(uint i) public view returns (uint) {
@@ -795,6 +792,7 @@ contract Comet is CometMath, CometStorage {
 
                 AssetInfo memory asset = getAssetInfo(i);
                 address assetAddress = getAssetAddress(i);
+                uint liquidateCollateralFactor = getAssetLiquidateCollateralFactor(i);
                 uint newAmount = mulPrice(
                     userCollateral[account][assetAddress].balance,
                     getPrice(asset.priceFeed),
@@ -802,7 +800,7 @@ contract Comet is CometMath, CometStorage {
                 );
                 liquidity += signed256(mulFactor(
                     newAmount,
-                    asset.liquidateCollateralFactor
+                    liquidateCollateralFactor
                 ));
             }
         }
@@ -829,6 +827,7 @@ contract Comet is CometMath, CometStorage {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory asset = getAssetInfo(i);
                 address assetAddress = getAssetAddress(i);
+                uint liquidateCollateralFactor = getAssetLiquidateCollateralFactor(i);
                 uint newAmount = mulPrice(
                     userCollateral[account][assetAddress].balance,
                     getPrice(asset.priceFeed),
@@ -836,7 +835,7 @@ contract Comet is CometMath, CometStorage {
                 );
                 liquidity += signed256(mulFactor(
                     newAmount,
-                    asset.liquidateCollateralFactor
+                    liquidateCollateralFactor
                 ));
             }
         }
