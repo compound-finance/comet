@@ -13,7 +13,7 @@ import {
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { deployComet } from '../../src/deploy';
-import { Comet, ProxyAdmin, ERC20, ERC20__factory } from '../../build/types';
+import { Comet, ProxyAdmin, CometProxyAdmin, ERC20, ERC20__factory, TransparentUpgradeableFactoryProxy } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
@@ -24,9 +24,9 @@ export class CometContext {
   assets: { [name: string]: CometAsset };
   remoteToken: Contract | undefined;
   comet: Comet;
-  proxyAdmin: ProxyAdmin;
+  proxyAdmin: CometProxyAdmin;
 
-  constructor(deploymentManager: DeploymentManager, comet: Comet, proxyAdmin: ProxyAdmin) {
+  constructor(deploymentManager: DeploymentManager, comet: Comet, proxyAdmin: CometProxyAdmin) {
     this.deploymentManager = deploymentManager;
     this.comet = comet;
     this.proxyAdmin = proxyAdmin;
@@ -181,7 +181,7 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   adminSigner = await world.impersonateAddress(governorAddress);
   pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
 
-  let proxyAdmin = (await getContract<ProxyAdmin>('cometAdmin')).connect(adminSigner);
+  let proxyAdmin = (await getContract<CometProxyAdmin>('cometAdmin')).connect(adminSigner);
 
   let context = new CometContext(deploymentManager, comet, proxyAdmin);
 
