@@ -605,18 +605,20 @@ contract Comet is CometMath, CometStorage {
         return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
     }
 
+    function isBorrowCollateralized(address account) public view returns (bool) {
+        return isBorrowCollateralized(account, userBasic[account], totalsBasic);
+    }
+
     /**
      * @notice Check whether an account has enough collateral to borrow
      * @param account The address to check
      * @return Whether the account is minimally collateralized enough to borrow
      */
-    function isBorrowCollateralized(address account) public view returns (bool) {
-        // XXX take in UserBasic and UserCollateral as arguments to reduce SLOADs
-        uint16 assetsIn = userBasic[account].assetsIn;
-        TotalsBasic memory totals = totalsBasic;
+    function isBorrowCollateralized(address account, UserBasic memory userBasic_, TotalsBasic memory totalsBasic_) internal view returns (bool) {
+        uint16 assetsIn = userBasic_.assetsIn;
 
         int liquidity = signedMulPrice(
-            presentValue(totals, userBasic[account].principal),
+            presentValue(totalsBasic_, userBasic_.principal),
             getPrice(baseTokenPriceFeed),
             baseScale
         );
@@ -1156,7 +1158,7 @@ contract Comet is CometMath, CometStorage {
 
         if (srcBalance < 0) {
             require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
-            require(isBorrowCollateralized(src), "borrow cannot be maintained");
+            require(isBorrowCollateralized(src, srcUser, totals), "borrow cannot be maintained");
         }
     }
 
@@ -1250,7 +1252,7 @@ contract Comet is CometMath, CometStorage {
 
         if (srcBalance < 0) {
             require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
-            require(isBorrowCollateralized(src), "borrow cannot be maintained");
+            require(isBorrowCollateralized(src, srcUser, totals), "borrow cannot be maintained");
         }
 
         doTransferOut(baseToken, to, amount);
