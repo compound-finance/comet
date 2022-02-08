@@ -404,7 +404,7 @@ contract Comet is CometMath, CometStorage {
             liquidateCollateralFactor: liquidateCollateralFactor,
             liquidationFactor: liquidationFactor,
             supplyCap: supplyCap
-         });
+        });
     }
 
     /**
@@ -412,13 +412,108 @@ contract Comet is CometMath, CometStorage {
      */
     function getAssetInfoByAddress(address asset) internal view returns (AssetInfo memory) {
         for (uint8 i = 0; i < numAssets; i++) {
-            AssetInfo memory assetInfo = getAssetInfo(i);
-            if (assetInfo.asset == asset) {
-                return assetInfo;
+            address assetAddress = getAssetAddress(i);
+            if (assetAddress == asset) {
+                return getAssetInfo(i);
             }
         }
         revert("asset not found");
     }
+
+    function getWordA(uint i) internal view returns (uint) {
+        require(i < numAssets, "asset info not found");
+
+        if (i == 0) {
+            return asset00_a;
+        } else if (i == 1) {
+            return asset01_a;
+        } else if (i == 2) {
+            return asset02_a;
+        } else if (i == 3) {
+            return asset03_a;
+        } else if (i == 4) {
+            return asset04_a;
+        } else if (i == 5) {
+            return asset05_a;
+        } else if (i == 6) {
+            return asset06_a;
+        } else if (i == 7) {
+            return asset07_a;
+        } else if (i == 8) {
+            return asset08_a;
+        } else if (i == 9) {
+            return asset09_a;
+        } else if (i == 10) {
+            return asset10_a;
+        } else if (i == 11) {
+            return asset11_a;
+        } else if (i == 12) {
+            return asset12_a;
+        } else if (i == 13) {
+            return asset13_a;
+        } else if (i == 14) {
+            return asset14_a;
+        } else {
+            revert("absurd");
+        }
+    }
+
+    // address asset;
+    function getAssetAddress(uint i) internal view returns (address) {
+        uint256 word_a = getWordA(i);
+        return address(uint160(word_a & type(uint160).max));
+    }
+
+    // uint borrowCollateralFactor;
+    // function getAssetBorrowCollateralFactor(uint i) internal view returns (uint) {
+    //     require(i < numAssets, "asset info not found");
+
+    //     if (i == 0) return borrowCollateralFactor00;
+    //     if (i == 1) return borrowCollateralFactor01;
+    //     if (i == 2) return borrowCollateralFactor02;
+    //     revert("absurd");
+    // }
+
+    // // uint liquidateCollateralFactor;
+    // function getAssetLiquidateCollateralFactor(uint i) internal view returns (uint) {
+    //     require(i < numAssets, "asset info not found");
+
+    //     if (i == 0) return liquidateCollateralFactor00;
+    //     if (i == 1) return liquidateCollateralFactor01;
+    //     if (i == 2) return liquidateCollateralFactor02;
+    //     revert("absurd");
+    // }
+
+    // // uint supplyCap;
+    // function getAssetSupplyCap(uint i) public view returns (uint) {
+    //     require(i < numAssets, "asset info not found");
+
+    //     if (i == 0) return supplyCap00;
+    //     if (i == 1) return supplyCap01;
+    //     if (i == 2) return supplyCap02;
+    //     revert("absurd");
+    // }
+
+
+    // // address priceFeed;
+    // function getAssetPriceFeed(uint i) public view returns (address) {
+    //     require(i < numAssets, "asset info not found");
+
+    //     if (i == 0) return priceFeed00;
+    //     if (i == 1) return priceFeed01;
+    //     if (i == 2) return priceFeed02;
+    //     revert("absurd");
+    // }
+
+    // // uint scale;
+    // function getAssetScale(uint i) public view returns (uint) {
+    //     require(i < numAssets, "asset info not found");
+
+    //     if (i == 0) return scale00;
+    //     if (i == 1) return scale01;
+    //     if (i == 2) return scale02;
+    //     revert("absurd");
+    // }
 
     /**
      * @return The current timestamp
@@ -628,8 +723,9 @@ contract Comet is CometMath, CometStorage {
                 }
 
                 AssetInfo memory asset = getAssetInfo(i);
+                address assetAddress = getAssetAddress(i);
                 uint newAmount = mulPrice(
-                    userCollateral[account][asset.asset].balance,
+                    userCollateral[account][assetAddress].balance,
                     getPrice(asset.priceFeed),
                     safe64(asset.scale)
                 );
@@ -661,8 +757,9 @@ contract Comet is CometMath, CometStorage {
         for (uint8 i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory asset = getAssetInfo(i);
+                address assetAddress = getAssetAddress(i);
                 uint newAmount = mulPrice(
-                    userCollateral[account][asset.asset].balance,
+                    userCollateral[account][assetAddress].balance,
                     getPrice(asset.priceFeed),
                     safe64(asset.scale)
                 );
@@ -698,8 +795,9 @@ contract Comet is CometMath, CometStorage {
                 }
 
                 AssetInfo memory asset = getAssetInfo(i);
+                address assetAddress = getAssetAddress(i);
                 uint newAmount = mulPrice(
-                    userCollateral[account][asset.asset].balance,
+                    userCollateral[account][assetAddress].balance,
                     getPrice(asset.priceFeed),
                     asset.scale
                 );
@@ -731,8 +829,9 @@ contract Comet is CometMath, CometStorage {
         for (uint8 i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory asset = getAssetInfo(i);
+                address assetAddress = getAssetAddress(i);
                 uint newAmount = mulPrice(
-                    userCollateral[account][asset.asset].balance,
+                    userCollateral[account][assetAddress].balance,
                     getPrice(asset.priceFeed),
                     asset.scale
                 );
@@ -1317,11 +1416,11 @@ contract Comet is CometMath, CometStorage {
         for (uint8 i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory assetInfo = getAssetInfo(i);
-                address asset = assetInfo.asset;
-                uint128 seizeAmount = userCollateral[account][asset].balance;
+                address assetAddress = getAssetAddress(i);
+                uint128 seizeAmount = userCollateral[account][assetAddress].balance;
                 if (seizeAmount > 0) {
-                    userCollateral[account][asset].balance = 0;
-                    userCollateral[address(this)][asset].balance += seizeAmount;
+                    userCollateral[account][assetAddress].balance = 0;
+                    userCollateral[address(this)][assetAddress].balance += seizeAmount;
 
                     uint value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
                     deltaValue += mulFactor(value, assetInfo.liquidationFactor);
