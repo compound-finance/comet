@@ -332,57 +332,8 @@ contract Comet is CometMath, CometStorage {
     function getAssetInfo(uint8 i) public view returns (AssetInfo memory) {
         require(i < numAssets, "asset info not found");
 
-        uint256 word_a;
-        uint256 word_b;
-
-        if (i == 0) {
-            word_a = asset00_a;
-            word_b = asset00_b;
-        } else if (i == 1) {
-            word_a = asset01_a;
-            word_b = asset01_b;
-        } else if (i == 2) {
-            word_a = asset02_a;
-            word_b = asset02_b;
-        } else if (i == 3) {
-            word_a = asset03_a;
-            word_b = asset03_b;
-        } else if (i == 4) {
-            word_a = asset04_a;
-            word_b = asset04_b;
-        } else if (i == 5) {
-            word_a = asset05_a;
-            word_b = asset05_b;
-        } else if (i == 6) {
-            word_a = asset06_a;
-            word_b = asset06_b;
-        } else if (i == 7) {
-            word_a = asset07_a;
-            word_b = asset07_b;
-        } else if (i == 8) {
-            word_a = asset08_a;
-            word_b = asset08_b;
-        } else if (i == 9) {
-            word_a = asset09_a;
-            word_b = asset09_b;
-        } else if (i == 10) {
-            word_a = asset10_a;
-            word_b = asset10_b;
-        } else if (i == 11) {
-            word_a = asset11_a;
-            word_b = asset11_b;
-        } else if (i == 12) {
-            word_a = asset12_a;
-            word_b = asset12_b;
-        } else if (i == 13) {
-            word_a = asset13_a;
-            word_b = asset13_b;
-        } else if (i == 14) {
-            word_a = asset14_a;
-            word_b = asset14_b;
-        } else {
-            revert("absurd");
-        }
+        uint256 word_a = getWordA(i);
+        uint256 word_b = getWordB(i);
 
         address asset = address(uint160(word_a & type(uint160).max));
         uint rescale = factorScale / 1e4;
