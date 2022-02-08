@@ -1382,4 +1382,15 @@ contract Comet is CometMath, CometStorage {
         uint assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPrice;
         return assetWeiPerUnitBase * baseAmount / baseScale;
     }
+
+    /**
+     * @notice Withdraws base token reserves if called by the governor
+     * @param to An address of the receiver of withdrawn reserves
+     * @param amount The amount of reserves to be withdrawn from the protocol
+     */
+    function withdrawReserves(address to, uint amount) external {
+        require(msg.sender == governor, "only governor may withdraw");
+        require(amount <= unsigned256(getReserves()), "insufficient reserves");
+        doTransferOut(baseToken, to, amount);
+    }
 }
