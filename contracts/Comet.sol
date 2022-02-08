@@ -199,7 +199,7 @@ contract Comet is CometMath, CometStorage {
         require(decimals <= 18, "base token has too many decimals");
         require(config.assetConfigs.length <= maxAssets, "too many asset configs");
         require(config.baseMinForRewards > 0, "baseMinForRewards should be > 0");
-        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == priceFeedDecimals, "incorrect baseTokenPriceFeed decimals");
+        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
@@ -295,7 +295,7 @@ contract Comet is CometMath, CometStorage {
         }
 
         // Sanity check price feed and asset decimals
-        require(AggregatorV3Interface(priceFeed).decimals() == priceFeedDecimals, "incorrect priceFeed decimals");
+        require(AggregatorV3Interface(priceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
         require(ERC20(asset).decimals() == decimals, "asset decimals mismatch");
 
         // Ensure collateral factors are within range
@@ -504,7 +504,7 @@ contract Comet is CometMath, CometStorage {
         bytes32 structHash = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, owner, manager, isAllowed_, nonce, expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
-        require(owner == signatory, "signature does not match arguments");
+        require(owner == signatory, "owner is not signatory");
         require(signatory != address(0), "invalid signature");
         require(nonce == userNonce[signatory], "invalid nonce");
         require(block.timestamp < expiry, "signed transaction expired");
