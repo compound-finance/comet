@@ -11,8 +11,7 @@ import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/Aggregat
  * @author Compound
  */
 contract CometHarnessGetters is Comet {
-    constructor(Configuration memory config) Comet(config) {
-    }
+    constructor(Configuration memory config) Comet(config) { }
 
     function getUserCollateralBalance(address user, address asset) public view returns (uint128) {
         return userCollateral[user][asset].balance;
