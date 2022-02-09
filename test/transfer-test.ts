@@ -16,7 +16,7 @@ describe('transfer', function () {
     const t0 = await comet.totalsBasic();
     const p0 = await portfolio(protocol, alice.address);
     const q0 = await portfolio(protocol, bob.address);
-    const s0 = await wait(cometAsB.transfer(alice.address, USDC.address, 100e6));
+    const s0 = await wait(cometAsB.transferAsset(alice.address, USDC.address, 100e6));
     const t1 = await comet.totalsBasic();
     const p1 = await portfolio(protocol, alice.address);
     const q1 = await portfolio(protocol, bob.address);
@@ -46,7 +46,7 @@ describe('transfer', function () {
     const t0 = await comet.totalsCollateral(COMP.address);
     const p0 = await portfolio(protocol, alice.address);
     const q0 = await portfolio(protocol, bob.address);
-    const s0 = await wait(cometAsB.transfer(alice.address, COMP.address, 8e8));
+    const s0 = await wait(cometAsB.transferAsset(alice.address, COMP.address, 8e8));
     const t1 = await comet.totalsCollateral(COMP.address);
     const p1 = await portfolio(protocol, alice.address);
     const q1 = await portfolio(protocol, bob.address);
@@ -77,7 +77,7 @@ describe('transfer', function () {
     const alice0 = await portfolio(protocol, alice.address);
     const bob0 = await portfolio(protocol, bob.address);
 
-    await wait(cometAsB.transfer(alice.address, USDC.address, 100e6));
+    await wait(cometAsB.transferAsset(alice.address, USDC.address, 100e6));
     const totals1 = await comet.totalsBasic();
     const alice1 = await portfolio(protocol, alice.address)
     const bob1 = await portfolio(protocol, bob.address)
@@ -100,7 +100,7 @@ describe('transfer', function () {
 
     const cometAsB = comet.connect(bob);
 
-    await expect(cometAsB.transfer(alice.address, USUP.address, 1)).to.be.reverted;
+    await expect(cometAsB.transferAsset(alice.address, USUP.address, 1)).to.be.reverted;
   });
 
   it('reverts if transfer is paused', async () => {
@@ -114,7 +114,7 @@ describe('transfer', function () {
     await wait(comet.connect(pauseGuardian).pause(false, true, false, false, false));
     expect(await comet.isTransferPaused()).to.be.true;
 
-    await expect(cometAsB.transfer(alice.address, USDC.address, 1)).to.be.revertedWith('paused');
+    await expect(cometAsB.transferAsset(alice.address, USDC.address, 1)).to.be.revertedWith('paused');
   });
 
   it.skip('reverts if transferring base results in an under collateralized borrow', async () => {
@@ -141,7 +141,7 @@ describe('transfer', function () {
     const cometAsB = comet.connect(bob);
 
     const amount = (await comet.baseBorrowMin()).sub(1);
-    await expect(cometAsB.transfer(alice.address, USDC.address, amount)).to.be.revertedWith(
+    await expect(cometAsB.transferAsset(alice.address, USDC.address, amount)).to.be.revertedWith(
       'borrow too small'
     );
   });
@@ -155,7 +155,7 @@ describe('transfer', function () {
     const { USDC } = tokens;
 
     await expect(
-      comet.connect(alice).transfer(alice.address, USDC.address, 100)
+      comet.connect(alice).transferAsset(alice.address, USDC.address, 100)
     ).to.be.revertedWith('no self-transfer');
   });
 
@@ -168,7 +168,7 @@ describe('transfer', function () {
     const { COMP } = tokens;
 
     await expect(
-      comet.connect(alice).transfer(alice.address, COMP.address, 100)
+      comet.connect(alice).transferAsset(alice.address, COMP.address, 100)
     ).to.be.revertedWith('no self-transfer');
   });
 });
@@ -191,7 +191,7 @@ describe('transferFrom', function () {
     const a1 = await wait(cometAsB.allow(charlie.address, true));
     const p0 = await portfolio(protocol, alice.address);
     const q0 = await portfolio(protocol, bob.address);
-    const s0 = await wait(cometAsC.transferFrom(bob.address, alice.address, COMP.address, 7));
+    const s0 = await wait(cometAsC.transferAssetFrom(bob.address, alice.address, COMP.address, 7));
     const p1 = await portfolio(protocol, alice.address);
     const q1 = await portfolio(protocol, bob.address);
 
@@ -214,7 +214,7 @@ describe('transferFrom', function () {
     const cometAsC = comet.connect(charlie);
 
     await expect(
-      cometAsC.transferFrom(bob.address, alice.address, COMP.address, 7)
+      cometAsC.transferAssetFrom(bob.address, alice.address, COMP.address, 7)
     ).to.be.revertedWith('bad auth');
   });
 
@@ -230,7 +230,7 @@ describe('transferFrom', function () {
     await cometExt.connect(bob).allow(alice.address, true);
 
     await expect(
-      comet.connect(alice).transferFrom(bob.address, bob.address, USDC.address, 100)
+      comet.connect(alice).transferAssetFrom(bob.address, bob.address, USDC.address, 100)
     ).to.be.revertedWith('no self-transfer');
   });
 
@@ -246,7 +246,7 @@ describe('transferFrom', function () {
     await cometExt.connect(bob).allow(alice.address, true);
 
     await expect(
-      comet.connect(alice).transferFrom(bob.address, bob.address, COMP.address, 100)
+      comet.connect(alice).transferAssetFrom(bob.address, bob.address, COMP.address, 100)
     ).to.be.revertedWith('no self-transfer');
   });
 
@@ -264,6 +264,6 @@ describe('transferFrom', function () {
     expect(await comet.isTransferPaused()).to.be.true;
 
     await wait(cometAsB.allow(charlie.address, true));
-    await expect(cometAsC.transferFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith('paused');
+    await expect(cometAsC.transferAssetFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith('paused');
   });
 });

@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity ^0.8.11;
 
-import "./CometMath.sol";
-import "./CometStorage.sol";
-
+import "./CometBase.sol";
 import "./ERC20.sol";
+
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 /**
@@ -12,7 +11,7 @@ import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-contract Comet is CometMath, CometStorage {
+contract Comet is CometBase {
     struct AssetInfo {
         uint8 offset;
         address asset;
@@ -23,6 +22,13 @@ contract Comet is CometMath, CometStorage {
         uint64 liquidationFactor;
         uint128 supplyCap;
     }
+    event Transfer(address indexed from, address indexed to, uint256 amount);
+
+    /// @dev The ERC20 symbol for wrapped base token
+    bytes32 internal immutable symbol32;
+
+    /// @notice The number of decimals for wrapped base token
+    uint8 public immutable decimals;
 
     /// @notice The admin of the protocol
     address public immutable governor;
@@ -121,53 +127,22 @@ contract Comet is CometMath, CometStorage {
     uint256 internal immutable asset14_a;
     uint256 internal immutable asset14_b;
 
-    /** Internal constants **/
-
-    /// @dev The max number of assets this contract is hardcoded to support
-    ///  Do not change this variable without updating all the fields throughout the contract,
-    //    including the size of UserBasic.assetsIn and corresponding integer conversions.
-    uint8 internal constant MAX_ASSETS = 15;
-
-    /// @dev The max number of decimals base token can have
-    ///  Note this cannot just be increased arbitrarily.
-    uint8 internal constant MAX_BASE_DECIMALS = 18;
-
-    /// @dev Offsets for specific actions in the pause flag bit array
-    uint8 internal constant PAUSE_SUPPLY_OFFSET = 0;
-    uint8 internal constant PAUSE_TRANSFER_OFFSET = 1;
-    uint8 internal constant PAUSE_WITHDRAW_OFFSET = 2;
-    uint8 internal constant PAUSE_ABSORB_OFFSET = 3;
-    uint8 internal constant PAUSE_BUY_OFFSET = 4;
-
-    /// @dev The decimals required for a price feed
-    uint8 internal constant PRICE_FEED_DECIMALS = 8;
-
-    /// @dev 365 days * 24 hours * 60 minutes * 60 seconds
-    uint64 internal constant SECONDS_PER_YEAR = 31_536_000;
-
-    /// @dev The scale for base index (depends on time/rate scales, not base token)
-    uint64 internal constant BASE_INDEX_SCALE = 1e15;
-
-    /// @dev The scale for factors
-    uint64 internal constant FACTOR_SCALE = 1e18;
-
-    /// @dev The scale for prices (in USD)
-    uint64 internal constant PRICE_SCALE = 1e8;
-
     /**
      * @notice Construct a new protocol instance
      * @param config The mapping of initial/constant parameters
      **/
     constructor(Configuration memory config) {
         // Sanity checks
-        uint decimals = ERC20(config.baseToken).decimals();
-        require(decimals <= MAX_BASE_DECIMALS, "too many decimals");
+        uint8 decimals_ = ERC20(config.baseToken).decimals();
+        require(decimals_ <= MAX_BASE_DECIMALS, "too many decimals");
         require(config.assetConfigs.length <= MAX_ASSETS, "too many assets");
         require(config.baseMinForRewards > 0, "bad rewards min");
         require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == PRICE_FEED_DECIMALS, "bad decimals");
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
+        symbol32 = config.symbol32;
+        decimals = decimals_;
         governor = config.governor;
         pauseGuardian = config.pauseGuardian;
         baseToken = config.baseToken;
@@ -227,6 +202,24 @@ contract Comet is CometMath, CometStorage {
         baseBorrowIndex = BASE_INDEX_SCALE;
         trackingSupplyIndex = 0;
         trackingBorrowIndex = 0;
+    }
+
+    /**
+     * @notice Get the ERC20 symbol for wrapped base token
+     * @return The symbol as a string
+     */
+    function symbol() external view returns (string memory) {
+        uint8 i;
+        for (i = 0; i < 32; i++) {
+            if (symbol32[i] == 0) {
+                break;
+            }
+        }
+        bytes memory symbol = new bytes(i);
+        for (uint8 j = 0; j < i; j++) {
+            symbol[j] = symbol32[j];
+        }
+        return string(symbol);
     }
 
     /**
@@ -320,8 +313,8 @@ contract Comet is CometMath, CometStorage {
         uint64 liquidationFactor = uint64(((word_a >> 192) & type(uint16).max) * rescale);
 
         address priceFeed = address(uint160(word_b & type(uint160).max));
-        uint8 decimals = uint8(((word_b >> 160) & type(uint8).max));
-        uint64 scale = uint64(10 ** decimals);
+        uint8 decimals_ = uint8(((word_b >> 160) & type(uint8).max));
+        uint64 scale = uint64(10 ** decimals_);
         uint128 supplyCap = uint128(((word_b >> 168) & type(uint64).max) * scale);
 
         return AssetInfo({
@@ -358,6 +351,13 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
+     * @dev Divide a number by an amount of base
+     */
+    function divBaseWei(uint n, uint baseWei) internal view returns (uint) {
+        return n * baseScale / baseWei;
+    }
+
+    /**
      * @notice Accrue interest (and rewards) in base token supply and borrows
      **/
     function accrueInternal() internal {
@@ -378,16 +378,6 @@ contract Comet is CometMath, CometStorage {
             }
         }
         lastAccrualTime = now_;
-    }
-
-    /**
-     * @notice Determine if the manager has permission to act on behalf of the owner
-     * @param owner The owner account
-     * @param manager The manager account
-     * @return Whether or not the manager has permission
-     */
-    function hasPermission(address owner, address manager) public view returns (bool) {
-        return owner == manager || isAllowed[owner][manager];
     }
 
     /**
@@ -430,17 +420,6 @@ contract Comet is CometMath, CometStorage {
         } else {
             return totalBorrow * FACTOR_SCALE / totalSupply;
         }
-    }
-
-    /**
-     * @notice Get the current price from a feed
-     * @param priceFeed The address of a price feed
-     * @return The price, scaled by `PRICE_SCALE`
-     */
-    function getPrice(address priceFeed) public view returns (uint128) {
-        (, int price, , , ) = AggregatorV3Interface(priceFeed).latestRoundData();
-        require(0 <= price && price <= type(int128).max, "bad price");
-        return uint128(int128(price));
     }
 
     /**
@@ -527,53 +506,45 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-     * @dev The positive present supply balance if positive or the negative borrow balance if negative
+     * @return Whether or not supply actions are paused
      */
-    function presentValue(int104 principalValue_) internal view returns (int104) {
-        if (principalValue_ >= 0) {
-            return signed104(presentValueSupply(baseSupplyIndex, unsigned104(principalValue_)));
-        } else {
-            return -signed104(presentValueBorrow(baseBorrowIndex, unsigned104(-principalValue_)));
-        }
+    function isSupplyPausedInternal() internal view returns (bool) {
+        return toBool(pauseFlags & (uint8(1) << PAUSE_SUPPLY_OFFSET));
     }
 
     /**
-     * @dev The principal amount projected forward by the supply index
+     * @return Whether or not transfer actions are paused
      */
-    function presentValueSupply(uint64 baseSupplyIndex_, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * baseSupplyIndex_ / BASE_INDEX_SCALE);
+    function isTransferPausedInternal() internal view returns (bool) {
+        return toBool(pauseFlags & (uint8(1) << PAUSE_TRANSFER_OFFSET));
     }
 
     /**
-     * @dev The principal amount projected forward by the borrow index
+     * @return Whether or not withdraw actions are paused
      */
-    function presentValueBorrow(uint64 baseBorrowIndex_, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * baseBorrowIndex_ / BASE_INDEX_SCALE);
+    function isWithdrawPausedInternal() internal view returns (bool) {
+        return toBool(pauseFlags & (uint8(1) << PAUSE_WITHDRAW_OFFSET));
     }
 
     /**
-     * @dev The positive principal if positive or the negative principal if negative
+     * @return Whether or not absorb actions are paused
      */
-    function principalValue(int104 presentValue_) internal view returns (int104) {
-        if (presentValue_ >= 0) {
-            return signed104(principalValueSupply(baseSupplyIndex, unsigned104(presentValue_)));
-        } else {
-            return -signed104(principalValueBorrow(baseBorrowIndex, unsigned104(-presentValue_)));
-        }
+    function isAbsorbPausedInternal() internal view returns (bool) {
+        return toBool(pauseFlags & (uint8(1) << PAUSE_ABSORB_OFFSET));
     }
 
     /**
-     * @dev The present value projected backward by the supply index
+     * @return Whether or not buy actions are paused
      */
-    function principalValueSupply(uint64 baseSupplyIndex_, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * BASE_INDEX_SCALE / baseSupplyIndex_);
+    function isBuyPausedInternal() internal view returns (bool) {
+        return toBool(pauseFlags & (uint8(1) << PAUSE_BUY_OFFSET));
     }
 
     /**
-     * @dev The present value projected backwrd by the borrow index
+     * @dev Whether user has a non-zero balance of an asset, given assetsIn flags
      */
-    function principalValueBorrow(uint64 baseBorrowIndex_, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * BASE_INDEX_SCALE / baseBorrowIndex_);
+    function isInAsset(uint16 assetsIn, uint8 assetOffset) internal pure returns (bool) {
+        return (assetsIn & (uint16(1) << assetOffset) != 0);
     }
 
     /**
@@ -621,87 +592,6 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-     * @return Whether or not supply actions are paused
-     */
-    function isSupplyPausedInternal() internal view returns (bool) {
-        return toBool(pauseFlags & (uint8(1) << PAUSE_SUPPLY_OFFSET));
-    }
-
-    /**
-     * @return Whether or not transfer actions are paused
-     */
-    function isTransferPausedInternal() internal view returns (bool) {
-        return toBool(pauseFlags & (uint8(1) << PAUSE_TRANSFER_OFFSET));
-    }
-
-    /**
-     * @return Whether or not withdraw actions are paused
-     */
-    function isWithdrawPausedInternal() internal view returns (bool) {
-        return toBool(pauseFlags & (uint8(1) << PAUSE_WITHDRAW_OFFSET));
-    }
-
-    /**
-     * @return Whether or not absorb actions are paused
-     */
-    function isAbsorbPausedInternal() internal view returns (bool) {
-        return toBool(pauseFlags & (uint8(1) << PAUSE_ABSORB_OFFSET));
-    }
-
-    /**
-     * @return Whether or not buy actions are paused
-     */
-    function isBuyPausedInternal() internal view returns (bool) {
-        return toBool(pauseFlags & (uint8(1) << PAUSE_BUY_OFFSET));
-    }
-
-    /**
-     * @dev Multiply a number by a factor
-     */
-    function mulFactor(uint n, uint factor) internal pure returns (uint) {
-        return n * factor / FACTOR_SCALE;
-    }
-
-    /**
-     * @dev Divide a number by an amount of base
-     */
-    function divBaseWei(uint n, uint baseWei) internal view returns (uint) {
-        return n * baseScale / baseWei;
-    }
-
-    /**
-     * @dev Multiply a `fromScale` quantity by a price, returning a common price quantity
-     */
-    function mulPrice(uint128 n, uint128 price, uint fromScale) internal pure returns (uint) {
-        unchecked {
-            return uint256(n) * price / fromScale;
-        }
-    }
-
-    /**
-     * @dev Multiply a signed `fromScale` quantity by a price, returning a common price quantity
-     */
-    function signedMulPrice(int128 n, uint128 price, uint fromScale) internal pure returns (int) {
-        unchecked {
-            return n * signed256(price) / signed256(fromScale);
-        }
-    }
-
-    /**
-     * @dev Divide a common price quantity by a price, returning a `toScale` quantity
-     */
-    function divPrice(uint n, uint price, uint toScale) internal pure returns (uint) {
-        return n * toScale / price;
-    }
-
-    /**
-     * @dev Whether user has a non-zero balance of an asset, given assetsIn flags
-     */
-    function isInAsset(uint16 assetsIn, uint8 assetOffset) internal pure returns (bool) {
-        return (assetsIn & (uint16(1) << assetOffset) != 0);
-    }
-
-    /**
      * @dev Update assetsIn bit vector if user has entered or exited an asset
      */
     function updateAssetsIn(
@@ -742,25 +632,6 @@ contract Comet is CometMath, CometStorage {
         }
 
         userBasic[account] = basic;
-    }
-
-    /**
-     * @notice Query the current base balance of an account
-     * @param account The account whose balance to query
-     * @return The present day base balance of the account
-     */
-    function baseBalanceOf(address account) external view returns (int104) {
-        return presentValue(userBasic[account].principal);
-    }
-
-    /**
-     * @notice Query the current collateral balance of an account
-     * @param account The account whose balance to query
-     * @param asset The collateral asset whi
-     * @return The collateral balance of the account
-     */
-    function collateralBalanceOf(address account, address asset) external view returns (uint128) {
-        return userCollateral[account][asset].balance;
     }
 
     /**
@@ -871,12 +742,35 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
+     * @notice ERC20 transfer an amount of base token to dst
+     * @param dst The recipient address
+     * @param amount The quantity to transfer
+     * @return true
+     */
+    function transfer(address dst, uint amount) external returns (bool) {
+        transferInternal(msg.sender, msg.sender, dst, baseToken, amount);
+        return true;
+    }
+
+    /**
+     * @notice ERC20 transfer an amount of base token from src to dst, if allowed
+     * @param src The sender address
+     * @param dst The recipient address
+     * @param amount The quantity to transfer
+     * @return true
+     */
+    function transferFrom(address src, address dst, uint amount) external returns (bool) {
+        transferInternal(msg.sender, src, dst, baseToken, amount);
+        return true;
+    }
+
+    /**
      * @notice Transfer an amount of asset to dst
      * @param dst The recipient address
      * @param asset The asset to transfer
      * @param amount The quantity to transfer
      */
-    function transfer(address dst, address asset, uint amount) external {
+    function transferAsset(address dst, address asset, uint amount) external {
         return transferInternal(msg.sender, msg.sender, dst, asset, amount);
     }
 
@@ -887,7 +781,7 @@ contract Comet is CometMath, CometStorage {
      * @param asset The asset to transfer
      * @param amount The quantity to transfer
      */
-    function transferFrom(address src, address dst, address asset, uint amount) external {
+    function transferAssetFrom(address src, address dst, address asset, uint amount) external {
         return transferInternal(msg.sender, src, dst, asset, amount);
     }
 
@@ -939,6 +833,8 @@ contract Comet is CometMath, CometStorage {
             require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
             require(isBorrowCollateralized(src), "bad borrow");
         }
+
+        emit Transfer(src, dst, amount);
     }
 
     /**

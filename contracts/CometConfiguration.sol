@@ -8,6 +8,7 @@ pragma solidity ^0.8.11;
  */
 contract CometConfiguration {
     struct Configuration {
+        bytes32 symbol32;
         address governor;
         address pauseGuardian;
         address baseToken;
