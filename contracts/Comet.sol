@@ -427,7 +427,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Calculate current per second supply rate given totals
      */
-    function getSupplyRateInternal(TotalsBasic memory totals) internal virtual view returns (uint64) {
+    function getSupplyRateInternal(TotalsBasic memory totals) virtual internal view returns (uint64) {
         uint utilization = getUtilizationInternal(totals);
         uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
         if (utilization <= kink) {
