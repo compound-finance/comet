@@ -58,6 +58,7 @@ export class Runner<T> {
     const { base, world } = config;
     const { constraints = [] } = scenario;
     let startTime = Date.now();
+    let numSolutionSets = 0;
 
     // reset the world if a snapshot exists and take a snapshot of it
     if (this.worldSnapshot) {
@@ -76,7 +77,6 @@ export class Runner<T> {
       constraints.map((c) => c.solve(scenario.requirements, context, world).then(mapSolution))
     );
     const baseSolutions: Solution<T>[][] = [[identity]];
-    
     for (const combo of combos(baseSolutions.concat(solutionChoices))) {
       // create a fresh copy of context that solutions can modify
       let ctx = await scenario.forker(context);
@@ -96,9 +96,10 @@ export class Runner<T> {
       // requirements met, run the property
       try {
         await scenario.property(ctx, world);
+        numSolutionSets++;
       } catch (e) {
         // TODO: Include the specific solution (set of states) that failed in the result
-        return this.generateResult(base, scenario, startTime, e);
+        return this.generateResult(base, scenario, startTime, numSolutionSets, e);
       }
 
       // revert back to the frozen world for the next scenario
@@ -108,10 +109,10 @@ export class Runner<T> {
       contextSnapshot = await world._snapshot();
     }
     // Send success result only after all combinations of solutions have passed for this scenario.
-    return this.generateResult(base, scenario, startTime);
+    return this.generateResult(base, scenario, startTime, numSolutionSets);
   }
 
-  private generateResult(base: ForkSpec, scenario: Scenario<T>, startTime: number, err?: any): Result {
+  private generateResult(base: ForkSpec, scenario: Scenario<T>, startTime: number, numSolutionSets: number, err?: any): Result {
     let diff = null;
     if (err instanceof AssertionError) {
       let { actual, expected } = <any>err; // Types unclear
@@ -124,6 +125,7 @@ export class Runner<T> {
       base: base.name,
       file: scenario.file || scenario.name,
       scenario: scenario.name,
+      numSolutionSets,
       elapsed: Date.now() - startTime,
       error: err || null,
       trace: err ? err.stack : null,
