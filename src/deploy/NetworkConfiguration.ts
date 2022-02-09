@@ -65,6 +65,7 @@ interface NetworkAssetConfiguration {
 }
 
 interface NetworkConfiguration {
+  symbol: string;
   governor: string;
   pauseGuardian: string;
   baseToken: string;
@@ -164,6 +165,7 @@ export async function getConfiguration(
   let deploymentManager = new DeploymentManager(network, hre);
   let contractMap = contractMapOverride ?? await deploymentManager.contracts();
 
+  let symbol32 = ethers.utils.formatBytes32String(networkConfiguration.symbol);
   let baseToken = getContractAddress(networkConfiguration.baseToken, contractMap);
   let baseTokenPriceFeed = address(networkConfiguration.baseTokenPriceFeed);
   let governor = address(networkConfiguration.governor);
@@ -178,6 +180,7 @@ export async function getConfiguration(
   let assetConfigs = getAssetConfigs(networkConfiguration.assets, contractMap);
 
   return {
+    symbol32,
     governor,
     pauseGuardian,
     baseToken,

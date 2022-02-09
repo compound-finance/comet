@@ -1,4 +1,5 @@
 {
+  "symbol": "📈USDC",
   "governor": "0xdd940fc821853799eaf27e9eb0a420ed3bcdc3ef",
   "pauseGuardian": "0xdd940fc821853799eaf27e9eb0a420ed3bcdc3ef",
   "baseToken": "USDC",

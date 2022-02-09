@@ -12,7 +12,7 @@ import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-contract Comet is CometMath, CometStorage {
+contract Comet is CometMath, CometStorage, ERC20 {
     struct AssetConfig {
         address asset;
         address priceFeed;
@@ -35,6 +35,8 @@ contract Comet is CometMath, CometStorage {
     }
 
     struct Configuration {
+        bytes32 symbol32;
+
         address governor;
         address pauseGuardian;
         address baseToken;
@@ -59,6 +61,12 @@ contract Comet is CometMath, CometStorage {
 
     /// @notice The name of this contract
     string public constant name = "Compound Comet";
+
+    /// @dev The ERC20 symbol for wrapped base token
+    bytes32 internal immutable symbol32;
+
+    /// @notice The number of decimals for wrapped base token
+    uint8 public immutable decimals;
 
     /// @notice The major version of this contract
     string public constant version = "0";
@@ -195,20 +203,22 @@ contract Comet is CometMath, CometStorage {
      **/
     constructor(Configuration memory config) {
         // Sanity checks
-        uint decimals = ERC20(config.baseToken).decimals();
-        require(decimals <= 18, "base token has too many decimals");
+        uint8 decimals_ = ERC20(config.baseToken).decimals();
+        require(decimals_ <= 18, "base token has too many decimals");
         require(config.assetConfigs.length <= maxAssets, "too many asset configs");
         require(config.baseMinForRewards > 0, "baseMinForRewards should be > 0");
         require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
+        symbol32 = config.symbol32;
+        decimals = decimals_;
         governor = config.governor;
         pauseGuardian = config.pauseGuardian;
         baseToken = config.baseToken;
         baseTokenPriceFeed = config.baseTokenPriceFeed;
 
-        baseScale = uint64(10 ** decimals);
+        baseScale = uint64(10 ** decimals_);
         trackingIndexScale = config.trackingIndexScale;
 
         baseMinForRewards = config.baseMinForRewards;
@@ -430,6 +440,33 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
+     * @notice Get the symbol for wrapped base token
+     * @return The symbol as a string
+     */
+    function symbol() external view returns (string memory) {
+        uint8 i;
+        for (i = 0; i < 32; i++) {
+            if (symbol32[i] == 0) {
+                break;
+            }
+        }
+        bytes memory symbol = new bytes(i);
+        for (uint8 j = 0; j < i; j++) {
+            symbol[j] = symbol32[j];
+        }
+        return string(symbol);
+    }
+
+    /**
+     * @notice Get the total number of tokens in circulation
+     * @return The supply of tokens
+     **/
+    function totalSupply() external view returns (uint256) {
+        TotalsBasic memory totals = totalsBasic;
+        return presentValueSupply(totals, totals.totalSupplyBase);
+    }
+
+    /**
      * @notice Accrue interest (and rewards) in base token supply and borrows
      **/
     function accrue() public {
@@ -510,6 +547,34 @@ contract Comet is CometMath, CometStorage {
         require(block.timestamp < expiry, "signed transaction expired");
         userNonce[signatory]++;
         allowInternal(signatory, manager, isAllowed_);
+    }
+
+    /**
+      * @notice Approve or disallow `spender` to transfer on sender's behalf
+      * @param spender The address of the account which may transfer tokens
+      * @param amount Either uint.max (to allow) or zero (to disallow)
+      * @return Whether or not the approval change succeeded
+      */
+    function approve(address spender, uint256 amount) external returns (bool) {
+        if (amount == type(uint256).max) {
+            allowInternal(msg.sender, spender, true);
+        } else if (amount == 0) {
+            allowInternal(msg.sender, spender, false);
+        } else {
+            revert("bad approval amount");
+        }
+        emit Approval(msg.sender, spender, amount);
+        return true;
+    }
+
+    /**
+      * @notice Get the current allowance from `owner` for `spender`
+      * @param owner The address of the account which owns the tokens to be spent
+      * @param spender The address of the account which may transfer tokens
+      * @return Either uint.max (spender is allowed) or zero (spender is disallowed)
+      */
+    function allowance(address owner, address spender) external view returns (uint256) {
+        return hasPermission(owner, spender) ? type(uint256).max : 0;
     }
 
     /**
@@ -962,10 +1027,30 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-     * @notice Query the current base balance of an account
+     * @notice Query the current positive base balance of an account or zero
      * @param account The account whose balance to query
-     * @return The present day base balance of the account
+     * @return The present day base balance magnitude of the account, if positive
      */
+    function balanceOf(address account) external view returns (uint256) {
+        int104 principal = userBasic[account].principal;
+        return principal > 0 ? presentValueSupply(totalsBasic, unsigned104(principal)) : 0;
+    }
+
+    /**
+     * @notice Query the current negative base balance of an account or zero
+     * @param account The account whose balance to query
+     * @return The present day base balance magnitude of the account, if negative
+     */
+    function borrowBalanceOf(address account) external view returns (uint256) {
+        int104 principal = userBasic[account].principal;
+        return principal < 0 ? presentValueBorrow(totalsBasic, unsigned104(-principal)) : 0;
+    }
+
+     /**
+      * @notice Query the current base balance of an account
+      * @param account The account whose balance to query
+      * @return The present day base balance of the account
+      */
     function baseBalanceOf(address account) external view returns (int104) {
         return presentValue(totalsBasic, userBasic[account].principal);
     }
@@ -1090,12 +1175,35 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
+     * @notice ERC20 transfer an amount of base token to dst
+     * @param dst The recipient address
+     * @param amount The quantity to transfer
+     * @return true
+     */
+    function transfer(address dst, uint amount) external returns (bool) {
+        transferInternal(msg.sender, msg.sender, dst, baseToken, amount);
+        return true;
+    }
+
+    /**
+     * @notice ERC20 transfer an amount of base token from src to dst, if allowed
+     * @param src The sender address
+     * @param dst The recipient address
+     * @param amount The quantity to transfer
+     * @return true
+     */
+    function transferFrom(address src, address dst, uint amount) external returns (bool) {
+        transferInternal(msg.sender, src, dst, baseToken, amount);
+        return true;
+    }
+
+    /**
      * @notice Transfer an amount of asset to dst
      * @param dst The recipient address
      * @param asset The asset to transfer
      * @param amount The quantity to transfer
      */
-    function transfer(address dst, address asset, uint amount) external {
+    function transferAsset(address dst, address asset, uint amount) external {
         return transferInternal(msg.sender, msg.sender, dst, asset, amount);
     }
 
@@ -1106,7 +1214,7 @@ contract Comet is CometMath, CometStorage {
      * @param asset The asset to transfer
      * @param amount The quantity to transfer
      */
-    function transferFrom(address src, address dst, address asset, uint amount) external {
+    function transferAssetFrom(address src, address dst, address asset, uint amount) external {
         return transferInternal(msg.sender, src, dst, asset, amount);
     }
 
@@ -1159,6 +1267,8 @@ contract Comet is CometMath, CometStorage {
             require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
             require(isBorrowCollateralized(src), "borrow cannot be maintained");
         }
+
+        emit Transfer(src, dst, amount);
     }
 
     /**
