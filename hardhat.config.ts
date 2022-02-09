@@ -1,19 +1,22 @@
 import 'dotenv/config';
 
-import { HardhatUserConfig } from 'hardhat/types';
-import { task } from 'hardhat/config';
+import { HardhatUserConfig, task } from 'hardhat/config';
 import '@compound-finance/hardhat-import';
 import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
 import '@typechain/hardhat';
 import 'solidity-coverage';
+import 'hardhat-contract-sizer';
 import 'hardhat-gas-reporter';
 
 // Hardhat tasks
-import './tasks/migrate/task.ts';
+import './tasks/deployment_manager/task.ts';
 import './tasks/spider/task.ts';
 import './tasks/scenario/task.ts';
+
+// Relation Config
+import relationConfigMap from './deployments/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -93,11 +96,11 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
  */
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.4',
+    version: '0.8.11',
     settings: {
       optimizer: {
         enabled: true,
-        runs: 1000,
+        runs: 1,
       },
     },
   },
@@ -109,10 +112,12 @@ const config: HardhatUserConfig = {
       gas: 12000000,
       gasPrice: 'auto',
       blockGasLimit: 12000000,
-      allowUnlimitedContractSize: true,
       accounts: {
         mnemonic: 'myth like bonus scare over problem client lizard pioneer submit female collect',
       },
+      // this should be default commented out and only enabled during dev to allow partial testing
+      // XXX comment out by default once we've made the full contract fit
+      allowUnlimitedContractSize: true,
     },
   },
 
@@ -131,16 +136,13 @@ const config: HardhatUserConfig = {
     },
   },
 
-  gasReporter: {
-    enabled: REPORT_GAS === 'true' ? true : false,
-    currency: 'USD',
-    coinmarketcap: COINMARKETCAP_API_KEY,
-    gasPrice: 200, // gwei
-  },
-
   typechain: {
     outDir: 'build/types',
     target: 'ethers-v5',
+  },
+
+  deploymentManager: {
+    relationConfigMap,
   },
 
   scenario: {
@@ -168,6 +170,24 @@ const config: HardhatUserConfig = {
         output: 'test-results.json',
       },
     },
+  },
+
+  paths: {
+    tests: "./{test,plugins/deployment_manager/test}",
+  },
+
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: true,
+    strict: false, // allow tests to run anyway
+  },
+
+  gasReporter: {
+    enabled: REPORT_GAS === 'true' ? true : false,
+    currency: 'USD',
+    coinmarketcap: COINMARKETCAP_API_KEY,
+    gasPrice: 200, // gwei
   },
 };
 

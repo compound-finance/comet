@@ -43,5 +43,5 @@ methods{
 function envNotZero(env e){
     require e.block.timestamp != 0;
     require e.msg.sender != 0;
-
+    require e.msg.value != 0;
 }

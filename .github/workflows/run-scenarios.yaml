@@ -23,14 +23,16 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            deployments/*/cache/*
-            deployments/*/pointers.json
+            deployments/*/contracts/*
+            deployments/*/aliases.json
             deployments/*/proxies.json
             !deployments/hardhat
-            !deployments/relations.json
+            !deployments/relations.ts
             !deployments/**/roots.json
-            !deployments/**/relations.json
-          key: deployments-v2
+            !deployments/**/relations.ts
+            !deployments/**/configuration.json
+            !deployments/**/migrations/*
+          key: deployments-v3
 
       - name: Install packages
         run: yarn install --non-interactive --frozen-lockfile && yarn build

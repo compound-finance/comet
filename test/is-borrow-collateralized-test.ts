@@ -61,7 +61,7 @@ describe('getBorrowLiquidity', function () {
     await comet.setBasePrincipal(alice.address, 1_000_000);
     await comet.setCollateralBalance(alice.address, COMP.address, exp(1, 18));
 
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(200_000_000);
+    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(199_990_000);
   });
 
   it("accounts for an asset's collateral factor", async () => {
@@ -76,7 +76,7 @@ describe('getBorrowLiquidity', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 1,
-          borrowCF: exp(9, 17), // .9
+          borrowCF: exp(0.9, 18),
         },
       },
     });
@@ -100,13 +100,13 @@ describe('getBorrowLiquidity', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 1,
-          borrowCF: exp(9, 17), // .9
+          borrowCF: exp(0.9, 18),
         },
         WETH: {
           initial: 1e4,
           decimals: 18,
           initialPrice: 1,
-          borrowCF: exp(8, 17), // .8
+          borrowCF: exp(0.8, 18),
         },
       },
     });
@@ -132,23 +132,25 @@ describe('getBorrowLiquidity', function () {
     } = await makeProtocol({
       assets: {
         USDC: { decimals: 6 },
-        COMP: { initial: 1e7, decimals: 18, initialPrice: 1 },
+        COMP: { initial: 1e7, decimals: 18, initialPrice: 1, borrowCF: exp(0.9, 18) },
       },
     });
     const { COMP } = tokens;
 
-    await comet.setBasePrincipal(alice.address, 1_000_000);
+    await comet.setBasePrincipal(alice.address, exp(1, 6));
     await comet.setCollateralBalance(alice.address, COMP.address, exp(1, 18));
 
-    // 1 USDC = 1_000_000
-    // 1 COMP (at a price of 1) = 100_000
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(200_000_000);
+    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(
+      // base + collateral * borrow CF * price
+      exp(1, 8) + exp(1, 8) * 9n / 10n
+    );
 
     await priceFeeds.COMP.setPrice(exp(0.5, 8));
 
-    // 1 USDC = 1_000_000
-    // 1 COMP (at a price of .5) = 500_000
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(150_000_000);
+    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(
+      // base + collateral * borrow CF * price
+      exp(1, 8) + exp(1, 8) * 9n / 10n / 2n
+    );
   });
 });
 
@@ -196,14 +198,15 @@ describe('isBorrowCollateralized', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 1, // 1 COMP = 1 USDC
+          borrowCF: exp(0.9, 18),
         },
       },
     });
     const { COMP } = tokens;
 
-    // user owes 1 USDC, but has 1 COMP collateral
-    await comet.setBasePrincipal(alice.address, -1_000_000);
-    await comet.setCollateralBalance(alice.address, COMP.address, exp(1, 18));
+    // user owes 1 USDC, but has 1.2 COMP collateral
+    await comet.setBasePrincipal(alice.address, -exp(1, 6));
+    await comet.setCollateralBalance(alice.address, COMP.address, exp(1.2, 18));
 
     expect(await comet.isBorrowCollateralized(alice.address)).to.be.true;
   });
@@ -220,7 +223,7 @@ describe('isBorrowCollateralized', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 1, // 1 COMP = 1 USDC
-          borrowCF: exp(9, 17), // .9
+          borrowCF: exp(0.9, 18),
         },
       },
     });
@@ -244,15 +247,15 @@ describe('isBorrowCollateralized', function () {
     } = await makeProtocol({
       assets: {
         USDC: { decimals: 6 },
-        COMP: { initial: 1e7, decimals: 18, initialPrice: 1 },
+        COMP: { initial: 1e7, decimals: 18, initialPrice: 1, borrowCF: exp(0.2, 18) },
       },
     });
     const { COMP } = tokens;
 
     // user owes 1 USDC
-    await comet.setBasePrincipal(alice.address, -1_000_000);
-    // ...but has 1 COMP of equivalent value to cover their position
-    await comet.setCollateralBalance(alice.address, COMP.address, exp(1, 18));
+    await comet.setBasePrincipal(alice.address, -exp(1, 6));
+    // ...but has 5 COMP to cover their position
+    await comet.setCollateralBalance(alice.address, COMP.address, exp(5, 18));
 
     expect(await comet.isBorrowCollateralized(alice.address)).to.be.true;
 
