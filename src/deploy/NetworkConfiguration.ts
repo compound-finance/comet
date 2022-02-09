@@ -96,7 +96,7 @@ function getContractAddress(contractName: string, contractMap: ContractMap): str
   if (!contract) {
     throw new Error(
       `Cannot find contract \`${contractName}\` in contract map with keys \`${JSON.stringify(
-        contractMap.keys()
+        [...contractMap.keys()]
       )}\``
     );
   }

@@ -1,0 +1,63 @@
+{
+  "governor": "0xdd940fc821853799eaf27e9eb0a420ed3bcdc3ef",
+  "pauseGuardian": "0xdd940fc821853799eaf27e9eb0a420ed3bcdc3ef",
+  "baseToken": "USDC",
+  "baseTokenPriceFeed": "0x9211c6b3BF41A10F78539810Cf5c64e1BB78Ec60",
+  "reserveRate": 0.1,
+  "borrowMin": "1e6",
+  "targetReserves": 0,
+  "rates": {
+    "kink": 0.80,
+    "slopeLow": 0.02,
+    "slopeHigh": 0.10,
+    "base": 0.01
+  },
+  "tracking": {
+    "indexScale": "1e15",
+    "baseSupplySpeed": 0,
+    "baseBorrowSpeed": 0,
+    "baseMinForRewards": 1
+  },
+  "assets": {
+    "COMP": {
+      "priceFeed": "0xECF93D14d25E02bA2C13698eeDca9aA98348EFb6",
+      "decimals": "18",
+      "borrowCF": 0.6,
+      "liquidateCF": 0.7,
+      "liquidationFactor": 0.9,
+      "supplyCap": "100e18"
+    },
+    "WBTC": {
+      "priceFeed": "0x6135b13325bfC4B00278B4abC5e20bbce2D6580e",
+      "decimals": "8",
+      "borrowCF": 0.4,
+      "liquidateCF": 0.5,
+      "liquidationFactor": 0.9,
+      "supplyCap": "100e8"
+    },
+    "WETH": {
+      "priceFeed": "0x9326BFA02ADD2366b30bacB125260Af641031331",
+      "decimals": "18",
+      "borrowCF": 0.7,
+      "liquidateCF": 0.8,
+      "liquidationFactor": 0.9,
+      "supplyCap": "100e18"
+    },
+    "UNI": {
+      "priceFeed": "0xDA5904BdBfB4EF12a3955aEcA103F51dc87c7C39",
+      "decimals": "18",
+      "borrowCF": 0.7,
+      "liquidateCF": 0.8,
+      "liquidationFactor": 0.9,
+      "supplyCap": "100e18"
+    },
+    "LINK": {
+      "priceFeed": "0x396c5E36DD0a0F5a5D33dae44368D4193f69a1F0",
+      "decimals": "18",
+      "borrowCF": 0.4,
+      "liquidateCF": 0.5,
+      "liquidationFactor": 0.9,
+      "supplyCap": "100e18"
+    }
+  }
+}

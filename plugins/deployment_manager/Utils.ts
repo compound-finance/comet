@@ -54,7 +54,7 @@ export function getPrimaryContract(buildFile: BuildFile): [string, ContractMetad
   return [targetContract, contractMetadata];
 }
 
-export function objectToMap<V>(obj: { [k: string]: V }): Map<string, V> {
+export function objectToMap<V>(obj: object | { [k: string]: V }): Map<string, V> {
   if (obj === undefined) {
     return new Map();
   } else {

@@ -1,7 +1,7 @@
 import { Contract, Signer } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { Cache } from './Cache';
+import { Cache, FileSpec } from './Cache';
 import { Address, Alias, BuildFile } from './Types';
 import { Aliases, getAliases } from './Aliases';
 import { Proxies, getProxies } from './Proxies';
@@ -64,12 +64,16 @@ async function getContractByAddress(
   return [contractName, new hre.ethers.Contract(address, abi, signer)];
 }
 
+function getFileSpec(address: Address): FileSpec {
+  return { rel: ['contracts', address + '.json'] };
+}
+
 export async function getBuildFile(cache: Cache, address: Address): Promise<BuildFile> {
-  return await cache.readCache<BuildFile>({ rel: ['contracts', address] });
+  return await cache.readCache<BuildFile>(getFileSpec(address));
 }
 
 export async function storeBuildFile(cache: Cache, address: Address, buildFile: BuildFile) {
-  await cache.storeCache({ rel: ['contracts', address] }, buildFile);
+  await cache.storeCache(getFileSpec(address), buildFile);
 }
 
 async function getRequiredBuildFile(

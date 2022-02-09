@@ -1,6 +1,8 @@
 import fg from 'fast-glob';
 import * as path from 'path';
 
+import { FileSpec } from './Cache';
+
 interface Action<T> {
   prepare?: (DeploymentManager) => Promise<T>;
   enact?: (DeploymentManager, T) => Promise<void>;
@@ -69,4 +71,8 @@ export async function loadMigrations<T>(glob: string): Promise<{ [name: string]:
 
 export function migration<T>(name: string, actions: Action<T>) {
   getLoader().addMigration(name, actions);
+}
+
+export function getArtifactSpec<T>(migration: Migration<T>): FileSpec {
+  return { rel: [ 'artifacts', `${migration.name}.json` ] };
 }
