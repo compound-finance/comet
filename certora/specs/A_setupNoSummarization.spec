@@ -10,12 +10,12 @@ methods{
     getSupplyRate() returns (uint64)
     getBorrowRate() returns (uint64)
     getUtilization() returns (uint)
-    pause(bool, bool, bool, bool, bool)
-    isSupplyPaused() returns (bool)
-    isTransferPaused() returns (bool)
-    isWithdrawPaused() returns (bool)
-    isAbsorbPaused() returns (bool)
-    isBuyPaused() returns (bool)
+    pause(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused)
+    isSupplyPaused() returns (bool) envfree
+    isTransferPaused() returns (bool) envfree
+    isWithdrawPaused() returns (bool) envfree
+    isAbsorbPaused() returns (bool) envfree
+    isBuyPaused() returns (bool) envfree
     baseBalanceOf(address)
     collateralBalanceOf(address, address)
     supply(address, uint)
@@ -34,9 +34,14 @@ methods{
     getBorrowLiquidity(address) returns (int)
     getLiquidationMargin(address) returns (int)
     isLiquidatable(address) returns (bool)
+
+    // self generated getters
+    governor() envfree
+    pauseGuardian() envfree
 }
 
 function envNotZero(env e){
     require e.block.timestamp != 0;
     require e.msg.sender != 0;
+
 }
