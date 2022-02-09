@@ -10,10 +10,9 @@ rule check_flag_updates_summarized(bool supplyPaused, bool transferPaused, bool 
     env e;
     pause@withrevert(e, supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused);
     bool isRevert = lastReverted;
-    
+    require e.msg.value !=0 ;
     assert isRevert <=> (e.msg.sender != governor() && e.msg.sender != pauseGuardian()), "reverted although governor/guardian or not reverted";
 }
-
 
 // checks the integrity of getters  - after an update the getters retrieve same values as 
 rule check_flag_getters(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused){

@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import 
 
 contract priceOracle{
-    function priceRatio(ERC20 collateralToken) external returns (uint256 ratio){
+    function priceRatio(address collateralToken) external returns (uint256 ratio){
 
     }   
 }
