@@ -34,7 +34,7 @@ describe('accrue', function () {
     expect(await t0.baseBorrowIndex).to.be.equal(exp(1, 15));
     expect(await t0.totalSupplyBase).to.be.equal(0);
     expect(await t0.totalBorrowBase).to.be.equal(0);
-    expect(await t0.lastAccrualTime).to.be.approximately(Date.now() / 1000, 20);
+    expect(await t0.lastAccrualTime).to.be.approximately(Date.now() / 1000, 30);
 
     const a0 = await wait(comet.accrue());
     expect(await comet.baseMinForRewards()).to.be.equal(params.baseMinForRewards);
