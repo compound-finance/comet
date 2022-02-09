@@ -2,11 +2,11 @@
 pragma solidity ^0.8.11;
 
 import "./CometFactory.sol";
+import "./CometStorage.sol";
 import "./CometConfiguration.sol";
 import "./vendor/proxy/TransparentUpgradeableProxy.sol";
 
-// XXX should have its own storage for pending params
-contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy, CometConfiguration {
+contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy, CometConfigurationStorage {
     address public factory;
 
     /**
@@ -23,14 +23,16 @@ contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy, Come
      *
      * NOTE: Only the admin can call this function. See {ProxyAdmin-upgrade}.
      */
-    function upgrade(Configuration memory config) external ifAdmin {
-
-        // XXX can read all these fields from existing storage?
-        address newComet = CometFactory(factory).clone(config);
+    function upgrade() external ifAdmin {
+        // XXX Can we read configuration directly from Comet contract?
+        // Will be difficult for governance because governance would have to
+        // specify all params, even if they are not being changed
+        address newComet = CometFactory(factory).clone(configuratorParams);
         _upgradeTo(newComet);
     }
 
-    // XXX Define other setters to set params
-    function setPriceOracle(address asset, address priceFeed) public {
+    // XXX Define other setters for setting params
+    function setGovernor(address governor) external {
+        configuratorParams.governor = governor;
     }
 }
