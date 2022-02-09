@@ -1,9 +1,13 @@
 import "A_setupNoSummarization.spec"
 
 methods{
-    getSupplyRateInternal() returns (uint64) ;
-    getBorrowRateInternal() returns (uint64) ;
-    getUtilizationInternal() returns (uint) ;
+    getSpecificSupplyRateInternal(uint64,uint64,uint64,uint64) returns (uint64) envfree;
+    getSpecificBorrowRateInternal(uint64,uint64,uint64,uint64) returns (uint64) envfree;
+    getSpecificUtilizationInternal(uint64,uint64,uint64,uint64) returns (uint)  envfree;
+
+    getTotalBaseSupplyIndex() returns (uint64) envfree;
+    getTotalBaseBorrowIndex() returns (uint64) envfree;
+    getlastAccrualTime() returns (uint40) envfree;
 }
 
 rule SupplyIndex_BorrowIndex_rise_with_time(method f){
@@ -45,15 +49,27 @@ assert  base_borrow_index_2 >= base_borrow_index_1;
 
 rule supplyRate_vs_Utilization(method f){
 env e;
-uint64 supplyRate_1 = getSupplyRateInternal();
-uint utilization_1 = getUtilizationInternal();
-    calldataarg args;
-    f(e,args);
-uint64 supplyRate_2 = getSupplyRateInternal();
-uint utilization_2 = getUtilizationInternal();
+uint64 baseSupplyIndex1;
+uint64 baseBorrowIndex1;
+uint64 trackingSupplyIndex1;
+uint64 trackingBorrowIndex1;
+uint64 supplyRate_1 = getSpecificSupplyRateInternal(baseSupplyIndex1,baseBorrowIndex1,trackingSupplyIndex1,trackingBorrowIndex1);
+uint   utilization_1 = getSpecificUtilizationInternal(baseSupplyIndex1,baseBorrowIndex1,trackingSupplyIndex1,trackingBorrowIndex1);
+
+uint64 baseSupplyIndex2;
+uint64 baseBorrowIndex2;
+uint64 trackingSupplyIndex2;
+uint64 trackingBorrowIndex2;
+    // calldataarg args;
+    // f(e,args);
+uint64 supplyRate_2 = getSpecificSupplyRateInternal(baseSupplyIndex2,baseBorrowIndex2,trackingSupplyIndex2,trackingBorrowIndex2);
+uint utilization_2 = getSpecificUtilizationInternal(baseSupplyIndex2,baseBorrowIndex2,trackingSupplyIndex2,trackingBorrowIndex2);
 
 assert utilization_2 > utilization_1 => supplyRate_2 > supplyRate_1;
 }
+
+invariant utilization_LE_factorScale(uint64 baseSupplyIndex,uint64 baseBorrowIndex,uint64 trackingSupplyIndex,uint64 trackingBorrowIndex)
+getSpecificUtilizationInternal(baseSupplyIndex,baseBorrowIndex,trackingSupplyIndex,trackingBorrowIndex) <= factorScale()
 
 // rule check_accrue_revert(method f){
 //     env e;
