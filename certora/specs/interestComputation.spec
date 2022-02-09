@@ -1,4 +1,10 @@
-import "comet.spec"
+import "A_setupNoSummarization.spec"
+
+methods{
+    getSupplyRateInternal() returns (uint64) ;
+    getBorrowRateInternal() returns (uint64) ;
+    getUtilizationInternal() returns (uint) ;
+}
 
 rule SupplyIndex_BorrowIndex_rise_with_time(method f){
     env e;

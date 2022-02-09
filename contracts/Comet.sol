@@ -566,7 +566,7 @@ contract Comet is CometMath, CometStorage {
         require(msg.sender == governor || msg.sender == pauseGuardian, "Unauthorized");
 
         totalsBasic.pauseFlags =
-            uint8(0) |
+            uint8(0) | 
             (toUInt8(supplyPaused) << pauseSupplyOffset) |
             (toUInt8(transferPaused) << pauseTransferOffset) |
             (toUInt8(withdrawPaused) << pauseWithdrawOffset) |
