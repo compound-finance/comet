@@ -1,5 +1,8 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { DeploymentManager, Roots } from '../../plugins/deployment_manager/DeploymentManager';
+import { BigNumberish } from 'ethers';
+
+import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
+import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import {
   Comet__factory,
   Comet,
@@ -12,19 +15,19 @@ import {
   TransparentUpgradeableProxy,
 } from '../../build/types';
 import { AssetInfoStruct, ConfigurationStruct } from '../../build/types/Comet';
-import { BigNumberish } from 'ethers';
-export { Comet } from '../../build/types';
+
 import { DeployedContracts, CometConfigurationOverrides } from './index';
 import { getConfiguration } from './NetworkConfiguration';
 
 export async function deployNetworkComet(
   deploymentManager: DeploymentManager,
   deployProxy: boolean = true,
-  configurationOverrides: CometConfigurationOverrides = {}
+  configurationOverrides: CometConfigurationOverrides = {},
+  contractMapOverride?: ContractMap,
 ): Promise<DeployedContracts> {
   const [governor, pauseGuardian] = await deploymentManager.hre.ethers.getSigners();
 
-  let networkConfiguration = await getConfiguration(deploymentManager.deployment, deploymentManager.hre);
+  let networkConfiguration = await getConfiguration(deploymentManager.deployment, deploymentManager.hre, contractMapOverride);
   let configuration = {
     ...networkConfiguration,
     ...configurationOverrides,

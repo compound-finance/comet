@@ -80,12 +80,12 @@ scenario(
   async ({ comet, actors }) => {
     const { albert } = actors;
 
-    const [collateralAsset] = await comet.assetAddresses();
+    const collateralAsset = await comet.getAssetInfo(0);
 
     await expect(
       albert.transfer({
         dst: albert.address,
-        asset: collateralAsset,
+        asset: collateralAsset.asset,
         amount: 100,
       })
     ).to.be.revertedWith('self-transfer not allowed');
@@ -123,7 +123,7 @@ scenario(
   async ({ comet, actors }) => {
     const { albert, betty } = actors;
 
-    const [collateralAsset] = await comet.assetAddresses();
+    const collateralAsset = await comet.getAssetInfo(0);
 
     await betty.allow(albert, true);
 
@@ -131,9 +131,60 @@ scenario(
       albert.transferFrom({
         src: betty.address,
         dst: betty.address,
-        asset: collateralAsset,
+        asset: collateralAsset.asset,
         amount: 100,
       })
     ).to.be.revertedWith('self-transfer not allowed');
+  }
+);
+
+scenario(
+  'Comet#transfer reverts when transfer is paused',
+  {
+    upgrade: true,
+    pause: {
+      transferPaused: true,
+    },
+  },
+  async ({ comet, actors }) => {
+    const { albert, betty } = actors;
+
+    const baseToken = await comet.baseToken();
+    
+    await betty.allow(albert, true);
+
+    await expect(
+      albert.transfer({
+        dst: betty.address,
+        asset: baseToken,
+        amount: 100,
+      })
+    ).to.be.revertedWith('transfer is paused');
+  }
+);
+
+scenario(
+  'Comet#transferFrom reverts when transfer is paused',
+  {
+    upgrade: true,
+    pause: {
+      transferPaused: true,
+    },
+  },
+  async ({ comet, actors }) => {
+    const { albert, betty } = actors;
+
+    const baseToken = await comet.baseToken();
+
+    await betty.allow(albert, true);
+
+    await expect(
+      albert.transferFrom({
+        src: betty.address,
+        dst: albert.address,
+        asset: baseToken,
+        amount: 100,
+      })
+    ).to.be.revertedWith('transfer is paused');
   }
 );

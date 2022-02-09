@@ -8,12 +8,11 @@ import "A_setupNoSummarization.spec"
 // pause revert only if the sender is not governor or pause guardian
 rule check_flag_updates_summarized(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused){
     env e;
+    require e.msg.value !=0;
     pause@withrevert(e, supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused);
     bool isRevert = lastReverted;
-    
     assert isRevert <=> (e.msg.sender != governor() && e.msg.sender != pauseGuardian()), "reverted although governor/guardian or not reverted";
 }
-
 
 // checks the integrity of getters  - after an update the getters retrieve same values as 
 rule check_flag_getters(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused){

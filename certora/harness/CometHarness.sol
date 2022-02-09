@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.11;
 
 import "../../contracts/Comet.sol";
 import "./CometHarnessGetters.sol";
@@ -18,9 +18,9 @@ contract CometHarness is CometHarnessGetters {
 
     /*********** Simplification ***********/
     /* under approximation (not taking into account all possible cases) */
-    // function accrue(TotalsBasic memory totals) internal override view returns (TotalsBasic memory) {
-    //     return totals;
-    // }
+    function accrue(TotalsBasic memory totals) internal override view returns (TotalsBasic memory) {
+        return totals;
+    }
 
     /* safe approximation? (taking into account all possible cases) */
     
@@ -28,22 +28,17 @@ contract CometHarness is CometHarnessGetters {
     mapping( uint104 => mapping (uint104 => uint64 ))  symbolicBorrowRate;
     mapping( uint104 => mapping (uint104 => uint64 ))  symbolicUtilization;
     
-    // function getSupplyRateInternal(TotalsBasic memory totals) internal view virtual override returns (uint64) {
-    //     return symbolicSupplyRate[totals.totalSupplyBase][totals.totalBorrowBase];
-    // }
-    function getSupplyRateInternal(TotalsBasic memory totals) internal view override returns (uint64) {
-        return symbolicSupplyRate[totalsBasic.totalSupplyBase][totalsBasic.totalBorrowBase];
+
+    function getSupplyRateInternal(TotalsBasic memory totals) internal view virtual override returns (uint64) {
+        return symbolicSupplyRate[totals.totalSupplyBase][totals.totalBorrowBase];
     }
 
-    // function getBorrowRateInternal(TotalsBasic memory totals) internal  virtual override view returns (uint64) {
-    //     return symbolicBorrowRate[totals.totalSupplyBase][totals.totalBorrowBase];
-    // }
+    function getBorrowRateInternal(TotalsBasic memory totals) internal  virtual override view returns (uint64) {
+        return symbolicBorrowRate[totals.totalSupplyBase][totals.totalBorrowBase];
+
+    }
     
-    function getBorrowRateInternal(TotalsBasic memory totals) internal view override returns (uint64) {
-        return symbolicBorrowRate[totalsBasic.totalSupplyBase][totalsBasic.totalBorrowBase];
-    }
     function getUtilizationInternal(TotalsBasic memory totals) internal view override returns  (uint) {
-        return symbolicUtilization[totalsBasic.totalSupplyBase][totalsBasic.totalBorrowBase];
+        return symbolicUtilization[totals.totalSupplyBase][totals.totalBorrowBase];
     }
-
 }

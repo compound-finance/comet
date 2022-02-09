@@ -130,6 +130,23 @@ describe('supplyTo', function () {
     await expect(cometAsB.supplyTo(alice.address, USUP.address, 1)).to.be.reverted;
   });
 
+  it('reverts if supply is paused', async () => {
+    const protocol = await makeProtocol({base: 'USDC'});
+    const { comet, tokens, pauseGuardian, users: [alice, bob] } = protocol;
+    const { USDC } = tokens;
+
+    await USDC.allocateTo(bob.address, 1);
+    const baseAsB = USDC.connect(bob);
+    const cometAsB = comet.connect(bob);
+
+    // Pause supply
+    await wait(comet.connect(pauseGuardian).pause(true, false, false, false, false));
+    expect(await comet.isSupplyPaused()).to.be.true;
+
+    await wait(baseAsB.approve(comet.address, 1));
+    await expect(cometAsB.supplyTo(alice.address, USDC.address, 1)).to.be.revertedWith('supply is paused');
+  });
+
   it.skip('supplies the correct amount in a fee-like situation', async () => {
     // XXX
   });
@@ -160,6 +177,23 @@ describe('supply', function () {
     expect(q0.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(q1.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(q1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+  });
+
+  it('reverts if supply is paused', async () => {
+    const protocol = await makeProtocol({base: 'USDC'});
+    const { comet, tokens, pauseGuardian, users: [alice, bob] } = protocol;
+    const { USDC } = tokens;
+
+    await USDC.allocateTo(bob.address, 100e6);
+    const baseAsB = USDC.connect(bob);
+    const cometAsB = comet.connect(bob);
+
+    // Pause supply
+    await wait(comet.connect(pauseGuardian).pause(true, false, false, false, false));
+    expect(await comet.isSupplyPaused()).to.be.true;
+
+    await wait(baseAsB.approve(comet.address, 100e6));
+    await expect(cometAsB.supply(USDC.address, 100e6)).to.be.revertedWith('supply is paused');
   });
 });
 
@@ -202,5 +236,24 @@ describe('supplyFrom', function () {
 
     await expect(cometAsC.supplyFrom(bob.address, alice.address, COMP.address, 7))
       .to.be.revertedWith('operator not permitted');
+  });
+
+  it('reverts if supply is paused', async () => {
+    const protocol = await makeProtocol();
+    const { comet, tokens, pauseGuardian, users: [alice, bob, charlie] } = protocol;
+    const { COMP } = tokens;
+
+    await COMP.allocateTo(bob.address, 7);
+    const baseAsB = COMP.connect(bob);
+    const cometAsB = comet.connect(bob);
+    const cometAsC = comet.connect(charlie);
+
+    // Pause supply
+    await wait(comet.connect(pauseGuardian).pause(true, false, false, false, false));
+    expect(await comet.isSupplyPaused()).to.be.true;
+
+    await wait(baseAsB.approve(comet.address, 7));
+    await wait(cometAsB.allow(charlie.address, true));
+    await expect(cometAsC.supplyFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith('supply is paused');
   });
 });

@@ -10,6 +10,11 @@ import { ScenarioConfig } from '../types';
 import { HardhatConfig } from 'hardhat/types';
 import { SimpleWorker } from './SimpleWorker';
 
+type BaseScenario<T> = {
+  base: ForkSpec;
+  scenario: Scenario<T>;
+};
+
 export interface Result {
   base: string;
   file: string;
@@ -26,11 +31,11 @@ interface WorkerMessage {
 }
 
 function filterRunning<T>(
-  scenarios: Scenario<T>[]
-): [Scenario<T>[], Scenario<T>[]] {
-  let rest = scenarios.filter(scenario => scenario.flags === null);
-  let only = scenarios.filter(scenario => scenario.flags === 'only');
-  let skip = scenarios.filter(scenario => scenario.flags === 'skip');
+  baseScenarios: BaseScenario<T>[]
+): [BaseScenario<T>[], BaseScenario<T>[]] {
+  let rest = baseScenarios.filter(({ scenario }) => scenario.flags === null);
+  let only = baseScenarios.filter(({ scenario }) => scenario.flags === 'only');
+  let skip = baseScenarios.filter(({ scenario }) => scenario.flags === 'skip');
 
   if (only.length > 0) {
     return [only, skip.concat(rest)];
@@ -39,8 +44,20 @@ function filterRunning<T>(
   }
 }
 
-function key(scenarioName: string): string {
-  return `${scenarioName}`;
+function getBaseScenarios<T>(bases: ForkSpec[], scenarios: Scenario<T>[]): BaseScenario<T>[] {
+  let result: BaseScenario<T>[] = [];
+
+  // Note: this could filter if scenarios had some such filtering (e.g. to state the scenario is only compatible with certain bases)
+  for (let base of bases) {
+    for (let scenario of scenarios) {
+      result.push({ base, scenario });
+    }
+  }
+  return result;
+}
+
+function key(baseName: string, scenarioName: string): string {
+  return `${baseName}-${scenarioName}`;
 }
 
 // Strips out unserializable fields such as functions.
@@ -48,34 +65,55 @@ function convertToSerializableObject(object: object) {
   return JSON.parse(JSON.stringify(object));
 }
 
-export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[], workerCount: number, async: boolean) {
+export async function runScenario<T>(
+  scenarioConfig: ScenarioConfig,
+  bases: ForkSpec[],
+  workerCount: number,
+  async: boolean,
+  stallMs: number
+) {
   let hardhatConfig = convertToSerializableObject(getConfig()) as HardhatConfig;
   let hardhatArguments = getHardhatArguments();
   let formats = defaultFormats;
   let scenarios: Scenario<T>[] = Object.values(await loadScenarios(scenarioGlob));
-  let [runningScenarios, skippedScenarios] = filterRunning(scenarios);
+  let baseScenarios: BaseScenario<T>[] = getBaseScenarios(bases, scenarios);
+  let [runningScenarios, skippedScenarios] = filterRunning(baseScenarios);
 
   let startTime = Date.now();
 
-  let results: Result[] = skippedScenarios.flatMap(scenario => {
-    return bases.map(base => ({
-      base: base.name,
-      file: scenario.file || scenario.name,
-      scenario: scenario.name,
-      elapsed: undefined,
-      error: undefined,
-      skipped: true,
-    }))
-  });
+  let results: Result[] = skippedScenarios.map(({ base, scenario }) => ({
+    base: base.name,
+    file: scenario.file || scenario.name,
+    scenario: scenario.name,
+    elapsed: undefined,
+    error: undefined,
+    skipped: true,
+  }));
   let pending: Set<string> = new Set(
-    runningScenarios.map(scenario => key(scenario.name))
+    runningScenarios.map((baseScenario) => key(baseScenario.base.name, baseScenario.scenario.name))
   );
-  let assignable: Iterator<Scenario<T>> = runningScenarios[Symbol.iterator]();
+  let assignable: Iterator<BaseScenario<T>> = runningScenarios[Symbol.iterator]();
   let done;
+  let fail;
   let hasError = false;
-  let isDone = new Promise((resolve, reject_) => {
+  let isDone = new Promise((resolve, reject) => {
     done = resolve;
+    fail = reject;
   });
+
+  let stallTimer;
+  function resetStallTimer() {
+    if (stallTimer !== undefined) {
+      clearTimeout(stallTimer);
+    }
+    stallTimer = setTimeout(() => {
+      fail(
+        `Scenario stalled after ${stallMs} ms. Waiting scenario results for ${JSON.stringify(
+          Array.from(pending)
+        )}`
+      );
+    }, stallMs);
+  }
 
   function checkDone() {
     if (pending.size === 0) {
@@ -83,9 +121,10 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
     }
   }
 
+  resetStallTimer();
   checkDone(); // Just in case we don't have any scens
 
-  function getNextScenario(): Scenario<T> | null {
+  function getNextScenario(): BaseScenario<T> | null {
     let next = assignable.next();
     if (!next.done && next.value) {
       return next.value;
@@ -94,11 +133,12 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
   }
 
   function assignWork(worker: Worker) {
-    let scenario = getNextScenario();
-    if (scenario) {
+    let baseScenario = getNextScenario();
+    if (baseScenario) {
       worker.postMessage({
         scenario: {
-          scenario: scenario.name,
+          base: baseScenario.base.name,
+          scenario: baseScenario.scenario.name,
         },
       });
     }
@@ -106,12 +146,13 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
 
   function mergeResult(index: number, result: Result) {
     results.push(result);
-    pending.delete(key(result.scenario));
+    pending.delete(key(result.base, result.scenario));
 
+    resetStallTimer();
     checkDone();
   }
 
-  [...new Array(workerCount)].map((_, index) => {
+  [...new Array(workerCount)].forEach((_, index) => {
     let worker;
     if (async) {
       worker = new Worker(path.resolve(__dirname, './BootstrapWorker.js'), {
@@ -132,10 +173,8 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
     }
 
     worker.on('message', (message) => {
-      if (message.results) {
-        for (let result of message.results) {
-          mergeResult(index, result);
-        }
+      if (message.result) {
+        mergeResult(index, message.result);
         assignWork(worker);
       }
     });
@@ -150,7 +189,8 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
   await showReport(results, formats, startTime, endTime);
 
   if (results.some((result) => result.error)) {
-    setTimeout(() => { // Deferral to allow potential console flush
+    setTimeout(() => {
+      // Deferral to allow potential console flush
       process.exit(1); // Exit as failure
     }, 0);
   }

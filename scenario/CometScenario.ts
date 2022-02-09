@@ -28,11 +28,13 @@ scenario('Comet#allow > allows a user to rescind authorization', {}, async ({ co
 
 scenario('has assets', {}, async ({ comet, actors, assets }: CometContext, world) => {
   let baseToken = await comet.baseToken();
+  let numAssets = await comet.numAssets();
+  let collateralAssets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
   let contextAssets =
     Object.values(assets)
       .map((asset) => asset.address) // grab asset address
       .filter((address) => address.toLowerCase() !== baseToken.toLowerCase()); // filter out base token
-  expect(await comet.assetAddresses()).to.have.members(contextAssets);
+  expect(collateralAssets.map(a => a.asset)).to.have.members(contextAssets);
 });
 
 scenario('requires upgrade', { upgrade: true }, async ({ comet }, world) => {

@@ -103,6 +103,20 @@ describe('transfer', function () {
     await expect(cometAsB.transfer(alice.address, USUP.address, 1)).to.be.reverted;
   });
 
+  it('reverts if transfer is paused', async () => {
+    const protocol = await makeProtocol({base: 'USDC'});
+    const { comet, tokens, pauseGuardian, users: [alice, bob] } = protocol;
+    const { USDC } = tokens;
+
+    const cometAsB = comet.connect(bob);
+
+    // Pause transfer
+    await wait(comet.connect(pauseGuardian).pause(false, true, false, false, false));
+    expect(await comet.isTransferPaused()).to.be.true;
+
+    await expect(cometAsB.transfer(alice.address, USDC.address, 1)).to.be.revertedWith('transfer is paused');
+  });
+
   it.skip('reverts if transferring base results in an under collateralized borrow', async () => {
     // XXX
   });
@@ -231,5 +245,22 @@ describe('transferFrom', function () {
     await expect(
       comet.connect(alice).transferFrom(bob.address, bob.address, COMP.address, 100)
     ).to.be.revertedWith('self-transfer not allowed');
+  });
+
+  it('reverts if transfer is paused', async () => {
+    const protocol = await makeProtocol();
+    const { comet, tokens, pauseGuardian, users: [alice, bob, charlie] } = protocol;
+    const { COMP } = tokens;
+
+    await comet.setCollateralBalance(bob.address, COMP.address, 7);
+    const cometAsB = comet.connect(bob);
+    const cometAsC = comet.connect(charlie);
+
+    // Pause transfer
+    await wait(comet.connect(pauseGuardian).pause(false, true, false, false, false));
+    expect(await comet.isTransferPaused()).to.be.true;
+
+    await wait(cometAsB.allow(charlie.address, true));
+    await expect(cometAsC.transferFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith('transfer is paused');
   });
 });

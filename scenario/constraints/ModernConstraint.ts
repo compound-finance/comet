@@ -33,7 +33,7 @@ export class ModernConstraint<T extends CometContext> implements Constraint<T> {
           initializer = (await newComet.populateTransaction.XXX_REMOVEME_XXX_initialize()).data
         }
 
-        await context.upgradeTo(newComet, initializer);
+        await context.upgradeTo(newComet, world, initializer);
         await context.setAssets();
 
         console.log("Upgraded to modern...");
