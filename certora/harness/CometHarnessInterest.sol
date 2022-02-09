@@ -15,7 +15,7 @@ contract CometHarnessIntrest is CometHarnessGetters {
 
     function getSpecificSupplyRateInternal(uint64 _baseSupplyIndex, uint64 _baseBorrowIndex, uint64 _trackingSupplyIndex, uint64 _trackingBorrowIndex) public view returns (uint64){
         TotalsBasic memory totalsBasic1 = 
-        TotalsBasic {
+        TotalsBasic ({
             baseSupplyIndex: _baseSupplyIndex,
             baseBorrowIndex: _baseBorrowIndex,
             trackingSupplyIndex: _trackingSupplyIndex,
@@ -24,13 +24,13 @@ contract CometHarnessIntrest is CometHarnessGetters {
             totalBorrowBase: totalsBasic.totalBorrowBase,
             lastAccrualTime: totalsBasic.lastAccrualTime,
             pauseFlags: totalsBasic.pauseFlags
-        };
+        });
         return getSupplyRateInternal(totalsBasic1);
     }
 
     function getSpecificBorrowRateInternal(uint64 _baseSupplyIndex, uint64 _baseBorrowIndex, uint64 _trackingSupplyIndex, uint64 _trackingBorrowIndex) public view returns (uint64){
         TotalsBasic memory totalsBasic1 = 
-        TotalsBasic {
+        TotalsBasic ({
             baseSupplyIndex: _baseSupplyIndex,
             baseBorrowIndex: _baseBorrowIndex,
             trackingSupplyIndex: _trackingSupplyIndex,
@@ -39,13 +39,13 @@ contract CometHarnessIntrest is CometHarnessGetters {
             totalBorrowBase: totalsBasic.totalBorrowBase,
             lastAccrualTime: totalsBasic.lastAccrualTime,
             pauseFlags: totalsBasic.pauseFlags
-        };
+        });
         return getBorrowRateInternal(totalsBasic1);
     }
 
-    function getSpecificUtilizationInternal(uint64 _baseSupplyIndex, uint64 _baseBorrowIndex, uint64 _trackingSupplyIndex, uint64 _trackingBorrowIndex) public view returns (uint64){
+    function getSpecificUtilizationInternal(uint64 _baseSupplyIndex, uint64 _baseBorrowIndex, uint64 _trackingSupplyIndex, uint64 _trackingBorrowIndex) public view returns (uint){
         TotalsBasic memory totalsBasic1 = 
-        TotalsBasic {
+        TotalsBasic ({
             baseSupplyIndex: _baseSupplyIndex,
             baseBorrowIndex: _baseBorrowIndex,
             trackingSupplyIndex: _trackingSupplyIndex,
@@ -54,7 +54,7 @@ contract CometHarnessIntrest is CometHarnessGetters {
             totalBorrowBase: totalsBasic.totalBorrowBase,
             lastAccrualTime: totalsBasic.lastAccrualTime,
             pauseFlags: totalsBasic.pauseFlags
-        };
+        });
         return getUtilizationInternal(totalsBasic1);
     }
 }
