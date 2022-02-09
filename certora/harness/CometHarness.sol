@@ -31,7 +31,7 @@ contract CometHarness is CometHarnessGetters {
     // function getSupplyRateInternal(TotalsBasic memory totals) internal view virtual override returns (uint64) {
     //     return symbolicSupplyRate[totals.totalSupplyBase][totals.totalBorrowBase];
     // }
-    function getSupplyRateInternal() internal view returns (uint64) {
+    function getSupplyRateInternal(TotalsBasic memory totals) internal view override returns (uint64) {
         return symbolicSupplyRate[totalsBasic.totalSupplyBase][totalsBasic.totalBorrowBase];
     }
 
@@ -39,10 +39,10 @@ contract CometHarness is CometHarnessGetters {
     //     return symbolicBorrowRate[totals.totalSupplyBase][totals.totalBorrowBase];
     // }
     
-    function getBorrowRateInternal() internal  view returns (uint64) {
+    function getBorrowRateInternal(TotalsBasic memory totals) internal view override returns (uint64) {
         return symbolicBorrowRate[totalsBasic.totalSupplyBase][totalsBasic.totalBorrowBase];
     }
-    function getUtilizationInternal() internal view returns  (uint) {
+    function getUtilizationInternal(TotalsBasic memory totals) internal view override returns  (uint) {
         return symbolicUtilization[totalsBasic.totalSupplyBase][totalsBasic.totalBorrowBase];
     }
 
