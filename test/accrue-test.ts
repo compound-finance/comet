@@ -18,6 +18,8 @@ describe('accrue', function () {
   });
 
   it('accrue initially succeeds and has the right parameters', async () => {
+    await ethers.provider.send('hardhat_reset', []); // ensure clean start...
+
     const params = {
       baseMinForRewards: 12331,
       baseTrackingSupplySpeed: 668,
@@ -80,6 +82,8 @@ describe('accrue', function () {
   });
 
   it('accrues correctly with time elapsed and less than min rewards', async () => {
+    await ethers.provider.send('hardhat_reset', []); // ensure clean start...
+
     const start = (await getBlock()).timestamp + 100;
     const params = {
       baseMinForRewards: 12000n,
@@ -92,8 +96,6 @@ describe('accrue', function () {
     const t1 = Object.assign({}, t0, {
       totalSupplyBase: 11000n,
       totalBorrowBase: 11000n,
-      lastAccrualTime: start,
-      // ^ note: ideally we wouldn't set this but hardhat tends to get flaky about seconds in CI
     });
     const s0 = await wait(comet.setTotalsBasic(t1));
 
@@ -120,9 +122,13 @@ describe('accrue', function () {
   });
 
   it('accrues correctly with time elapsed and more than min rewards', async () => {
+    await ethers.provider.send('hardhat_reset', []); // ensure clean start...
+
+    const start = (await getBlock()).timestamp + 100;
     const params = {
       baseMinForRewards: exp(12000, 6),
       trackingIndexScale: exp(1, 15),
+      start,
     };
     const { comet } = await makeProtocol(params);
 
@@ -131,7 +137,6 @@ describe('accrue', function () {
       totalSupplyBase: exp(14000, 6),
       totalBorrowBase: exp(13000, 6),
     });
-    await ethers.provider.send('evm_increaseTime', [998]);
     const s0 = await wait(comet.setTotalsBasic(t1));
 
     const supplyRate = await comet.getSupplyRate();
@@ -140,8 +145,11 @@ describe('accrue', function () {
     const borrowRate = await comet.getBorrowRate();
     expect(borrowRate).to.be.equal(14926252082);
 
-    await ethers.provider.send('evm_increaseTime', [2]);
-    const a1 = await wait(comet.accrue());
+    await ethers.provider.send("evm_setAutomine", [false]);
+    const a1 = await comet.accrue();
+    await ethers.provider.send('evm_mine', [start + 1000]);
+    await ethers.provider.send("evm_setAutomine", [true]);
+
     const t2 = await comet.totalsBasic();
 
     const supplySpeed = await comet.baseTrackingSupplySpeed();

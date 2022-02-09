@@ -1,8 +1,11 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { AssetInfoStruct, ConfigurationStruct } from '../../build/types/Comet';
+import { Contract } from 'ethers';
+
+import { AssetConfigStruct, ConfigurationStruct } from '../../build/types/Comet';
 import { BigNumberish, Signature, ethers } from 'ethers';
-import { ContractMap, DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
+import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
+import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { fileExists } from '../../plugins/deployment_manager/Utils';
 
@@ -53,11 +56,12 @@ interface NetworkTrackingConfiguration {
 }
 
 interface NetworkAssetConfiguration {
+  priceFeed: string;
+  decimals: number;
   borrowCF: number;
   liquidateCF: number;
+  liquidationFactor: number;
   supplyCap: number;
-  priceFeed: string;
-  scale: number;
 }
 
 interface NetworkConfiguration {
@@ -88,24 +92,14 @@ interface TrackingInfo {
 }
 
 function getContractAddress(contractName: string, contractMap: ContractMap): string {
-  let remap = {
-    USDC: 'FiatTokenProxy',
-    'WBTC.e': 'BridgeToken',
-  };
-  let contract = contractMap[contractName];
-
+  let contract = contractMap.get(contractName);
   if (!contract) {
-    if (remap[contractName]) {
-      return getContractAddress(remap[contractName], contractMap); // this is a hack, since pointers has weird names right now
-    } else {
-      throw new Error(
-        `Cannot find contract \`${contractName}\` in contract map with keys \`${Object.keys(
-          contractMap
-        ).join(', ')}\``
-      );
-    }
+    throw new Error(
+      `Cannot find contract \`${contractName}\` in contract map with keys \`${JSON.stringify(
+        contractMap.keys()
+      )}\``
+    );
   }
-
   return contract.address;
 }
 
@@ -127,20 +121,21 @@ function getTrackingInfo(tracking: NetworkTrackingConfiguration): TrackingInfo {
   };
 }
 
-function getAssetInfo(
+function getAssetConfigs(
   assets: { [name: string]: NetworkAssetConfiguration },
   contractMap: ContractMap
-): AssetInfoStruct[] {
+): AssetConfigStruct[] {
   return Object.entries(assets).map(([assetName, assetConfig]) => {
     let assetAddress = getContractAddress(assetName, contractMap);
 
     return {
       asset: assetAddress,
+      priceFeed: address(assetConfig.priceFeed),
+      decimals: number(assetConfig.decimals),
       borrowCollateralFactor: percentage(assetConfig.borrowCF),
       liquidateCollateralFactor: percentage(assetConfig.liquidateCF),
+      liquidationFactor: percentage(assetConfig.liquidationFactor),
       supplyCap: number(assetConfig.supplyCap), // TODO: Decimals
-      priceFeed: address(assetConfig.priceFeed),
-      scale: number(assetConfig.scale),
     };
   });
 }
@@ -162,11 +157,12 @@ async function loadNetworkConfiguration(network: string): Promise<NetworkConfigu
 
 export async function getConfiguration(
   network: string,
-  hre: HardhatRuntimeEnvironment
+  hre: HardhatRuntimeEnvironment,
+  contractMapOverride?: ContractMap
 ): Promise<ConfigurationStruct> {
   let networkConfiguration = await loadNetworkConfiguration(network);
   let deploymentManager = new DeploymentManager(network, hre);
-  let contractMap: ContractMap = await deploymentManager.getContracts(); // TODO: Handle root aliases?
+  let contractMap = contractMapOverride ?? await deploymentManager.contracts();
 
   let baseToken = getContractAddress(networkConfiguration.baseToken, contractMap);
   let baseTokenPriceFeed = address(networkConfiguration.baseTokenPriceFeed);
@@ -179,7 +175,7 @@ export async function getConfiguration(
   let interestRateInfo = getInterestRateInfo(networkConfiguration.rates);
   let trackingInfo = getTrackingInfo(networkConfiguration.tracking);
 
-  let assetInfo = getAssetInfo(networkConfiguration.assets, contractMap);
+  let assetConfigs = getAssetConfigs(networkConfiguration.assets, contractMap);
 
   return {
     governor,
@@ -191,6 +187,6 @@ export async function getConfiguration(
     ...trackingInfo,
     baseBorrowMin,
     targetReserves,
-    assetInfo,
+    assetConfigs,
   };
 }

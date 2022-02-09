@@ -1,4 +1,6 @@
-import { DeploymentManager, Roots } from '../../../plugins/deployment_manager/DeploymentManager';
+import { ContractMap } from '../../../plugins/deployment_manager/ContractMap';
+import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
+import { Roots } from '../../../plugins/deployment_manager/Roots';
 import { migration } from '../../../plugins/deployment_manager/Migration';
 import { deployNetworkComet } from '../../../src/deploy/Network';
 import { DeployedContracts } from '../../../src/deploy/index';
@@ -11,7 +13,7 @@ interface TargetConfig {
   address: string;
   network: string;
   args: any[];
-  pointer?: string;
+  alias?: string;
 }
 
 async function clone<C extends Contract>(
@@ -19,24 +21,22 @@ async function clone<C extends Contract>(
   target: TargetConfig,
   initializer: (C) => Promise<void> = () => null
 ): Promise<C> {
-  if (
-    !process.env['REDEPLOY'] &&
-    target.pointer &&
-    deploymentManager.contracts.hasOwnProperty(target.pointer)
-  ) {
-    console.log(`Skipping already existing contract: ${target.pointer}`);
-    return deploymentManager.contracts[target.pointer] as C;
+  let contracts = await deploymentManager.contracts();
+
+  if (!process.env['REDEPLOY'] && target.alias && contracts.has(target.alias)) {
+    console.log(`Skipping already existing contract: ${target.alias}`);
+    return contracts.get(target.alias) as C;
   }
 
   console.log(`Importing ${target.name}`);
   let buildFile = await deploymentManager.import(target.address, target.network);
   console.log(`Deploying ${target.name} ${JSON.stringify(target.args)}`);
-  let contract = await deploymentManager.deployBuild(buildFile, target.args, true);
+  let contract = await deploymentManager.deployBuild(buildFile, target.args);
   console.log(`Deployed ${target.name} to ${contract.address}`);
 
-  if (target.pointer) {
-    console.log(`Setting pointer from ${contract.address} to ${target.pointer}`);
-    await deploymentManager.setPointer(target.pointer, contract.address);
+  if (target.alias) {
+    console.log(`Setting alias from ${contract.address} to ${target.alias}`);
+    await deploymentManager.putAlias(target.alias, contract.address);
   }
 
   let deployed = (await contract.deployed()) as C;
@@ -52,12 +52,12 @@ async function sleep(timeout) {
 
 migration<DeployedContracts>('001_DeployFuji', {
   prepare: async (deploymentManager: DeploymentManager) => {
-    await deploymentManager.getContracts();
+    deploymentManager.shouldWriteCacheToDisk(false);
+
     let [signer] = await deploymentManager.hre.ethers.getSigners();
     let signerAddress = await signer.getAddress();
 
     let usdcProxyAdminArgs: [] = [];
-    // TODO: Should we make sure this doesn't get aliased?
     let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
       'vendor/proxy/ProxyAdmin.sol',
       usdcProxyAdminArgs
@@ -68,7 +68,7 @@ migration<DeployedContracts>('001_DeployFuji', {
       address: '0xa3fa3d254bf6af295b5b22cc6730b04144314890',
       network: 'avalanche',
       args: [],
-      pointer: 'USDCImplementation',
+      alias: 'USDCImplementation',
     });
 
     let usdc;
@@ -79,7 +79,7 @@ migration<DeployedContracts>('001_DeployFuji', {
         address: '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e',
         network: 'avalanche',
         args: [usdcImplementation.address],
-        pointer: 'USDC',
+        alias: 'USDC',
       },
       async (usdcProxy) => {
         await wait(await usdcProxy.changeAdmin(usdcProxyAdmin.address));
@@ -109,7 +109,7 @@ migration<DeployedContracts>('001_DeployFuji', {
         address: '0x50b7545627a5162f82a992c33b87adc75187b218',
         network: 'avalanche',
         args: [],
-        pointer: 'WBTC.e',
+        alias: 'WBTC.e',
       },
       async (wbtc) => {
         // Give signer 1000 WBTC
@@ -132,7 +132,7 @@ migration<DeployedContracts>('001_DeployFuji', {
         address: '0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7',
         network: 'avalanche',
         args: [],
-        pointer: 'WAVAX',
+        alias: 'WAVAX',
       },
       async (wavax) => {
         // Give admin 0.01 WAVAX tokens [this is a precious resource here!]
@@ -140,13 +140,24 @@ migration<DeployedContracts>('001_DeployFuji', {
       }
     );
 
-    return await deployNetworkComet(deploymentManager, true);
+    // Contracts referenced in `configuration.json`.
+    let contracts: ContractMap = new Map([
+      ['USDC', usdc],
+      ['WBTC.e', wbtc],
+      ['WAVAX', wavax],
+    ]);
+
+    return await deployNetworkComet(deploymentManager, true, {}, contracts);
   },
-  enact: async (deploymentManager: DeploymentManager, { proxy }) => {
+  enact: async (deploymentManager: DeploymentManager, contracts) => {
+    deploymentManager.shouldWriteCacheToDisk(true);
+
     console.log(
       'Enacting by changing root... This only makes sense for the initial migration or a "reset".'
     );
-    await deploymentManager.setRoots({ TransparentUpgradeableProxy: proxy.address } as Roots);
+    let roots: Roots = new Map();
+    roots.set('comet', contracts['proxy'].address);
+    await deploymentManager.putRoots(roots);
     console.log('Enacted...');
   },
 });

@@ -9,6 +9,7 @@ But the prices returned are denominated in terms of price scale (USD with 8
 decimals, by default):
 
   expect(await comet.getLiquidationMargin(alice.address)).to.equal(100_000_000);
+
 */
 
 describe('getLiquidationMargin', function () {
@@ -102,7 +103,8 @@ describe('getLiquidationMargin', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 1, // 1 COMP = 1 USDC
-          liquidateCF: exp(8, 17), // .8
+          borrowCF: exp(0.75, 18),
+          liquidateCF: exp(0.8, 18),
         },
       },
     });
@@ -240,7 +242,8 @@ describe('isLiquidatable', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 1, // 1 COMP = 1 USDC
-          liquidateCF: exp(8, 17), // .8
+          borrowCF: exp(0.75, 18),
+          liquidateCF: exp(0.8, 18),
         },
       },
     });

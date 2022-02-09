@@ -1,6 +1,6 @@
 import { task } from 'hardhat/config';
 import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
-import '../../plugins/scenario/type-extensions';
+import '../../plugins/deployment_manager/type-extensions';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import * as types from 'hardhat/internal/core/params/argumentTypes'; // TODO harhdat argument types not from internal
