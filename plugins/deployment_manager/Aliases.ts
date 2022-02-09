@@ -6,7 +6,7 @@ export type Aliases = Map<Alias, Address>;
 export type InvertedAliases = Map<Address, Alias[]>;
 
 // File to store aliases in, e.g. `$pwd/deployments/deployment/aliases.json`
-let aliasesSpec = { rel: 'aliases' };
+let aliasesSpec = { rel: 'aliases.json' };
 
 // Read aliases
 export async function getAliases(cache: Cache): Promise<Aliases> {

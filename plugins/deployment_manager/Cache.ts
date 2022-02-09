@@ -7,6 +7,22 @@ import { fileExists, objectFromMap, objectToMap } from './Utils';
 
 export type FileSpec = string | string[] | { rel: string | string[] };
 
+function curry<A, B, C>(f: (A) => B, g: (B) => C): (A) => C {
+  return (x) => g(f(x));
+}
+
+function parseJson<K>(x: string | undefined): K {
+  if (x === undefined) {
+    return undefined;
+  } else {
+    return JSON.parse(x);
+  }
+}
+
+function stringifyJson<K>(k: K): string {
+  return JSON.stringify(k, null, 4);
+}
+
 export class Cache {
   cache: object;
   deployment: string;
@@ -30,9 +46,9 @@ export class Cache {
     }
   }
 
-  private getFilePath(spec: FileSpec): string {
+  getFilePath(spec: FileSpec): string {
     let path = this.getPath(spec);
-    path[path.length - 1] = path[path.length - 1] + '.json'; // Attach JSON file extension, always.
+    path[path.length - 1] = path[path.length - 1];
     return nodepath.join(this.deploymentDir, ...path);
   }
 
@@ -67,7 +83,7 @@ export class Cache {
     }
   }
 
-  private async putDisk<T>(spec: FileSpec, data: T, transformer: (T) => object) {
+  private async putDisk<T>(spec: FileSpec, data: T, transformer: (T) => string) {
     let path = this.getFilePath(spec);
     let dir = nodepath.dirname(path);
     // TODO: Fix this logic
@@ -75,13 +91,13 @@ export class Cache {
       await fs.mkdir(dir, { recursive: true });
     }
 
-    await fs.writeFile(path, JSON.stringify(transformer(data), null, 4));
+    await fs.writeFile(path, transformer(data));
   }
 
-  private async getDisk<T>(spec: FileSpec, transformer: (x: object | undefined) => T): Promise<T> {
+  private async getDisk<T>(spec: FileSpec, transformer: (x: string | undefined) => T): Promise<T> {
     let filePath = this.getFilePath(spec);
     if (await fileExists(filePath)) {
-      return transformer(JSON.parse(await fs.readFile(filePath, 'utf8')));
+      return transformer(await fs.readFile(filePath, 'utf8'));
     } else {
       return transformer(undefined);
     }
@@ -89,7 +105,7 @@ export class Cache {
 
   async readCache<T>(
     spec: FileSpec,
-    diskTransformer: (x: object | undefined) => T = (x) => x as unknown as T
+    diskTransformer: (x: string | undefined) => T = parseJson
   ): Promise<T | undefined> {
     let cached = this.getMemory<T>(spec);
     if (cached) {
@@ -99,7 +115,7 @@ export class Cache {
     }
   }
 
-  async storeCache<T>(spec: FileSpec, data: T, diskTransformer: (T) => object = (x) => x) {
+  async storeCache<T>(spec: FileSpec, data: T, diskTransformer: (T) => string = stringifyJson) {
     this.putMemory<T>(spec, data);
     if (this.writeCacheToDisk) {
       return await this.putDisk<T>(spec, data, diskTransformer);
@@ -107,11 +123,11 @@ export class Cache {
   }
 
   async readMap<K, V>(spec: FileSpec): Promise<Map<string, V>> {
-    return await this.readCache(spec, (x) => objectToMap<V>(x as { [k: string]: V }));
+    return await this.readCache(spec, curry<K, string, Map<string, V>>(parseJson, objectToMap));
   }
 
   async storeMap<K, V>(spec: FileSpec, map: Map<K, V>) {
-    await this.storeCache(spec, map, objectFromMap);
+    await this.storeCache(spec, map, curry(objectFromMap, stringifyJson));
   }
 
   clearMemory() {

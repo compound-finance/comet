@@ -4,7 +4,7 @@ import { Cache } from './Cache';
 export type Proxies = Map<Alias, Address>;
 
 // File to store proxies information in, e.g. `$pwd/deployments/$network/proxies.json`
-let proxiesSpec = { rel: 'proxies' };
+let proxiesSpec = { rel: 'proxies.json' };
 
 // Reads root information for given deployment
 export async function getProxies(cache: Cache): Promise<Proxies> {

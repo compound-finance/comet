@@ -151,11 +151,6 @@ const config: HardhatUserConfig = {
         name: 'development',
       },
       {
-        name: 'goerli',
-        url: getDefaultProviderURL('goerli'),
-        allocation: 0.1, // eth
-      },
-      {
         name: 'fuji',
         url: 'https://api.avax-test.network/ext/bc/C/rpc',
       },
