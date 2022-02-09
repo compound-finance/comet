@@ -10,7 +10,7 @@ import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/Aggregat
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-contract CometHarnessIntrest is CometHarnessGetters {
+contract CometHarnessInterest is CometHarnessGetters {
     constructor(Configuration memory config) CometHarnessGetters(config) { }
 
     function getSpecificSupplyRateInternal(uint64 _baseSupplyIndex, uint64 _baseBorrowIndex, uint64 _trackingSupplyIndex, uint64 _trackingBorrowIndex) public view returns (uint64){
