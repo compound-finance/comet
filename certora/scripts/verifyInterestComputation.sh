@@ -1,6 +1,6 @@
 certoraRun certora/harness/CometHarnessInterest.sol \
     --verify CometHarnessInterest:certora/specs/interestComputation.spec  \
-    --solc solc8.10 \
+    --solc solc8.11 \
     --staging \
     --optimistic_loop \
     --rule=$1 \

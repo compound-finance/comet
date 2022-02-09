@@ -8,9 +8,9 @@ import "A_setupNoSummarization.spec"
 // pause revert only if the sender is not governor or pause guardian
 rule check_flag_updates_summarized(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused){
     env e;
+    require e.msg.value !=0;
     pause@withrevert(e, supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused);
     bool isRevert = lastReverted;
-    require e.msg.value !=0 ;
     assert isRevert <=> (e.msg.sender != governor() && e.msg.sender != pauseGuardian()), "reverted although governor/guardian or not reverted";
 }
 
