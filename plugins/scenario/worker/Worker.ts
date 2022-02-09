@@ -4,15 +4,10 @@ import { ForkSpec, World } from '../World';
 import { Scenario } from '../Scenario';
 import { getLoader, loadScenarios } from '../Loader';
 import { scenarioGlob } from './Config';
-import {
-  HardhatConfig,
-  HardhatArguments,
-  createContext,
-} from './HardhatContext';
+import { HardhatConfig, HardhatArguments, createContext } from './HardhatContext';
 import { ScenarioConfig } from '../types';
 import { SimpleWorker } from './SimpleWorker';
 import hreForBase from '../utils/hreForBase';
-
 
 interface Message {
   scenario?: {
@@ -37,7 +32,7 @@ function eventually(fn: () => void) {
 
 function onMessage(worker: SimpleWorker | undefined, f: (message: Message) => Promise<void>) {
   if (worker) {
-    worker.onParent('message', f)
+    worker.onParent('message', f);
   } else {
     parentPort.on('message', f);
   }
@@ -53,9 +48,10 @@ function postMessage(worker: SimpleWorker | undefined, message: any) {
 
 export async function run<T>({ scenarioConfig, bases, config, worker }: WorkerData) {
   let scenarios: { [name: string]: Scenario<T> };
-  let runners = [];
+  let runners = {};
 
-  if (!worker) { // only create if we're not in a simple worker
+  if (!worker) {
+    // only create if we're not in a simple worker
     createContext(...config);
     scenarios = await loadScenarios(scenarioGlob);
   } else {
@@ -65,36 +61,30 @@ export async function run<T>({ scenarioConfig, bases, config, worker }: WorkerDa
   for (let base of bases) {
     let world = new World(hreForBase(base), base);
     let runner = new Runner({ base, world });
-    runners.push(runner);
+    runners[base.name] = runner;
   }
-  
+
   onMessage(worker, async (message: Message) => {
     if (message.scenario) {
-      let { scenario: scenarioName } = message.scenario;
+      let { scenario: scenarioName, base } = message.scenario;
       let scenario = scenarios[scenarioName];
       if (!scenario) {
         throw new Error(`Worker encountered unknown scenario: ${scenarioName}`);
       }
 
-      console.log('Running', message.scenario);
+      console.log('Running', scenarioName, base);
       try {
-        let runs = [];
-        for (let runner of runners) {
-          runs.push(runner.run(scenario));
-        }
-        let results = await Promise.all(runs);
-        eventually(() =>
-          postMessage(worker, {
-            results
-          })
-        );
+        let result = await runners[base].run(scenario);
+        eventually(() => {
+          postMessage(worker, { result });
+        });
       } catch (e) {
         console.error('Encountered worker error', e);
         eventually(() => {
           throw e;
         });
       }
-      console.log('Ran', scenario);
+      console.log('Ran', scenarioName);
     } else {
       throw new Error(`Unknown or invalid worker message: ${JSON.stringify(message)}`);
     }
