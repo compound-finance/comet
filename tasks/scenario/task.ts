@@ -27,6 +27,7 @@ task('scenario', 'Runs scenario tests')
   .addOptionalParam('bases', 'Bases to run on [defaults to all]')
   .addFlag('noSpider', 'skip spider')
   .addFlag('sync', 'run synchronously')
+  .addOptionalParam('stall', 'milliseconds to wait until we fail for stalling', 60000, types.int)
   .addOptionalParam('workers', 'count of workers', 6, types.int)
   .setAction(async (taskArgs, env: HardhatRuntimeEnvironment) => {
     let bases: ForkSpec[] = getBasesFromTaskArgs(taskArgs.bases, env);
@@ -34,7 +35,7 @@ task('scenario', 'Runs scenario tests')
     if (!taskArgs.noSpider) {
       await env.run('scenario:spider', taskArgs);
     }
-    await runScenario(env.config.scenario, bases, taskArgs.workers, !taskArgs.sync);
+    await runScenario(env.config.scenario, bases, taskArgs.workers, !taskArgs.sync, taskArgs.stall);
   });
 
 task('scenario:spider', 'Runs spider in preparation for scenarios')

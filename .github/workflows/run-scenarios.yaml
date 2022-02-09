@@ -32,7 +32,7 @@ jobs:
             !deployments/**/relations.ts
             !deployments/**/configuration.json
             !deployments/**/migrations/*
-          key: deployments-v2
+          key: deployments-v3
 
       - name: Install packages
         run: yarn install --non-interactive --frozen-lockfile && yarn build
