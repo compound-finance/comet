@@ -39,4 +39,15 @@ contract CometProxyAdmin is ProxyAdmin, CometConfiguration {
     function setGovernor(TransparentUpgradeableFactoryProxy proxy, address governor) public virtual onlyOwner {
         proxy.setGovernor(governor);
     }
+
+    /**
+     * @dev Adds an asset config param to the configurator.
+     *
+     * Requirements:
+     *
+     * - This contract must be the admin of `proxy`.
+     */
+    function addAsset(TransparentUpgradeableFactoryProxy proxy, AssetConfig calldata asset) public virtual onlyOwner {
+        proxy.addAsset(asset);
+    }
 }
