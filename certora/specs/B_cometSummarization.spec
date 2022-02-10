@@ -11,6 +11,8 @@ methods{
     isAbsorbPaused() returns (bool) envfree => get_Absorb_Paused()
     isBuyPaused() returns (bool) envfree => get_Buy_Paused()
     getPauseFlags() returns (uint8) envfree
+    signedMulPrice(int amount, uint price, uint tokenScale) => ghostSignedMulPrice(amount,price,tokenScale);
+    mulPrice(uint amount, uint price, uint tokenScale) => ghostMulPrice(amount,price,tokenScale);
 }
 
 ghost bool supply_Paused_Ghost; // ghost variable tracking supplyPaused value
@@ -54,3 +56,8 @@ function get_Absorb_Paused() returns bool{
 function get_Buy_Paused() returns bool{
     return buy_Paused_Ghost;
 }
+
+
+ghost ghostSignedMulPrice(int, uint, uint) returns int256; 
+
+ghost ghostMulPrice(uint, uint, uint) returns uint256; 

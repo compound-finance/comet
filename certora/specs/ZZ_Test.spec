@@ -1,4 +1,21 @@
-import "comet.spec"
+import "B_cometSummarization.spec"
+methods {
+    isInAsset(uint16 assetsIn, uint8 assetOffset) => CONSTANT;
+    latestRoundData() returns uint256 => CONSTANT;
+    isBorrowCollateralized(address) returns bool envfree
+    getUserCollateralBalance(address,address) returns uint128 envfree
+
+    baseToken() returns address envfree
+}
+
+rule integrityOfSupply(address from, address dst, address asset, uint amount) {
+    env e;
+    simplifiedAssumptions();
+    require asset != baseToken();
+    mathint before = getUserCollateralBalance(dst, asset);
+    supplyFrom(e, from, dst, asset, amount);
+    assert getUserCollateralBalance(dst, asset) == before + amount;
+}
 
 rule whoChangedIsBorrowCollateralized(address account, method f) {
     bool before = isBorrowCollateralized(account);

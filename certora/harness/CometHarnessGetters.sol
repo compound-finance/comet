@@ -31,4 +31,12 @@ contract CometHarnessGetters is Comet {
     function getlastAccrualTime() public view returns (uint40) {
         return totalsBasic.lastAccrualTime;
     }
+
+    function getTotalSupplyBase() public view returns (uint104) {
+        return totalsBasic.totalSupplyBase;
+    }
+
+    function getTotalBorrowBase() public view returns (uint104) {
+        return totalsBasic.totalBorrowBase;
+    }
 }
