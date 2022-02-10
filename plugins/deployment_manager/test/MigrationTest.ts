@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { Cache } from '../Cache';
-import { Loader, loader, migration, setupLoader } from '../Migration';
+import { Loader, Migration, getArtifactSpec, loader, migration, setupLoader } from '../Migration';
 
 describe('Migration', () => {
   it('test a simple migration', async () => {
@@ -23,5 +23,14 @@ describe('Migration', () => {
     expect(x).to.eql(['step 1']);
     await m.actions.enact(<unknown>null, v);
     expect(x).to.eql(['step 1', 'step 2']);
+  });
+
+  it('returns proper artifact file spec', async () => {
+    let migration: Migration<null> = {
+      name: 'test',
+      actions: {},
+    };
+
+    expect(getArtifactSpec(migration)).to.eql({ rel: ['artifacts', 'test.json'] });
   });
 });

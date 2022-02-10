@@ -13,6 +13,8 @@ import { getRelationConfig } from './RelationConfig';
 import { Roots, getRoots, putRoots } from './Roots';
 import { spider } from './Spider';
 import { verifyContract } from './Verify';
+import { Migration, getArtifactSpec } from './Migration';
+import { generateMigration } from './MigrationTemplate';
 
 interface DeploymentManagerConfig {
   baseDir?: string;
@@ -188,5 +190,30 @@ export class DeploymentManager {
   shouldWriteCacheToDisk(writeCacheToDisk: boolean) {
     this.config.writeCacheToDisk = writeCacheToDisk;
     this.cache.writeCacheToDisk = writeCacheToDisk;
+  }
+
+  /* Generates a new migration file, e.g. `deployments/test/migrations/1644385406_my_new_migration.ts`
+   **/
+  async generateMigration(name: string, timestamp?: number): Promise<string> {
+    return await generateMigration(this.cache, name, timestamp);
+  }
+
+  /* Stores artifact from a migration, e.g. `deployments/test/artifacts/1644385406_my_new_migration.json`
+   **/
+  async storeArtifact<A>(migration: Migration<A>, artifact: A): Promise<string> {
+    let artifactSpec = getArtifactSpec(migration);
+    await this.cache.storeCache(artifactSpec, artifact);
+    return this.cache.getFilePath(artifactSpec);
+  }
+
+  /* Reads artifact from a migration, e.g. `deployments/test/artifacts/1644385406_my_new_migration.json`
+   **/
+  async readArtifact<A>(migration: Migration<A>): Promise<A> {
+    return await this.cache.readCache(getArtifactSpec(migration));
+  }
+
+  async clone<C extends Contract>(address: string, args: any[], network?: string): Promise<C> {
+    let buildFile = await this.import(address, network);
+    return await this.deployBuild(buildFile, args) as C;
   }
 }

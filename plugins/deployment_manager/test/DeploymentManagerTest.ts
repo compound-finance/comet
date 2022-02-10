@@ -18,6 +18,8 @@ import { Cache } from '../Cache';
 import { getBuildFile, getContractsFromAliases } from '../ContractMap';
 import { DeploymentManager } from '../DeploymentManager';
 import { fiatTokenBuildFile, mockImportSuccess } from './ImportTest';
+import { Migration } from '../Migration';
+import { expectedTemplate } from './MigrationTemplateTest';
 import { getProxies } from '../Proxies';
 import { RelationConfigMap } from '../RelationConfig';
 import { getRoots } from '../Roots';
@@ -290,6 +292,50 @@ describe('DeploymentManager', () => {
       await deploymentManager.putProxy('mydog', finnImpl.address);
       let contract = await deploymentManager.contract('mydog');
       expect(await contract.name()).to.eql('finn');
+    });
+  });
+
+  describe('generateMigration', () => {
+    it('should generate expected migration', async () => {
+      let deploymentManager = new DeploymentManager('test', hre, {
+        importRetries: 0,
+        writeCacheToDisk: true,
+        baseDir: tempDir(),
+      });
+
+      expect(await deploymentManager.generateMigration('cool', 1)).to.equal('1_cool.ts');
+
+      expect(
+        await deploymentManager.cache.readCache({ rel: ['migrations', '1_cool.ts'] })
+      ).to.equal(expectedTemplate);
+    });
+  });
+
+  describe('storeArtifact & readArtifact', () => {
+    it('should store and retrieve a given artifact', async () => {
+      let baseDir = tempDir();
+      let deploymentManager = new DeploymentManager('test', hre, {
+        importRetries: 0,
+        writeCacheToDisk: true,
+        baseDir,
+      });
+
+      let migration: Migration<null> = {
+        name: '1_cool',
+        actions: {},
+      };
+
+      expect(await deploymentManager.readArtifact(migration)).to.eql(undefined);
+
+      expect(await deploymentManager.storeArtifact(migration, { dog: 'cool' })).to.eql(
+        `${baseDir}/test/artifacts/1_cool.json`
+      );
+
+      expect(await deploymentManager.readArtifact(migration)).to.eql({ dog: 'cool' });
+
+      deploymentManager.cache.clearMemory();
+
+      expect(await deploymentManager.readArtifact(migration)).to.eql({ dog: 'cool' });
     });
   });
 });
