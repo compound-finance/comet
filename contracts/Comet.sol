@@ -1131,6 +1131,7 @@ contract Comet is CometMath, CometStorage {
     function transferBase(address src, address dst, uint104 amount) internal {
         TotalsBasic memory totals = totalsBasic;
         totals = accrue(totals);
+
         uint104 totalSupplyBalance = presentValueSupply(totals, totals.totalSupplyBase);
         uint104 totalBorrowBalance = presentValueBorrow(totals, totals.totalBorrowBase);
 
@@ -1230,6 +1231,7 @@ contract Comet is CometMath, CometStorage {
     function withdrawBase(address src, address to, uint104 amount) internal {
         TotalsBasic memory totals = totalsBasic;
         totals = accrue(totals);
+
         uint104 totalSupplyBalance = presentValueSupply(totals, totals.totalSupplyBase);
         uint104 totalBorrowBalance = presentValueBorrow(totals, totals.totalBorrowBase);
 
@@ -1303,10 +1305,10 @@ contract Comet is CometMath, CometStorage {
      * @dev Transfer user's collateral and debt to the protocol itself.
      */
     function absorbInternal(address account) internal {
-        require(isLiquidatable(account), "account is not underwater");
-
         TotalsBasic memory totals = totalsBasic;
         totals = accrue(totals);
+
+        require(isLiquidatable(account), "account is not underwater");
 
         UserBasic memory accountUser = userBasic[account];
         int104 oldBalance = presentValue(totals, accountUser.principal);
