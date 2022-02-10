@@ -8,6 +8,8 @@ methods{
     getTotalBaseSupplyIndex() returns (uint64) envfree;
     getTotalBaseBorrowIndex() returns (uint64) envfree;
     getlastAccrualTime() returns (uint40) envfree;
+    factorScale() returns (uint64) envfree;
+    perSecondInterestRateBase() returns (uint64) envfree;
 }
 
 rule SupplyIndex_BorrowIndex_rise_with_time(method f){
@@ -68,14 +70,45 @@ uint utilization_2 = getSpecificUtilizationInternal(baseSupplyIndex2,baseBorrowI
     assert utilization_2 > utilization_1 => supplyRate_2 > supplyRate_1;
 }
 
-invariant utilization_LE_factorScale(uint64 baseSupplyIndex,uint64 baseBorrowIndex,uint64 trackingSupplyIndex,uint64 trackingBorrowIndex)
-getSpecificUtilizationInternal(baseSupplyIndex,baseBorrowIndex,trackingSupplyIndex,trackingBorrowIndex) <= factorScale()
+rule utilization_LE_factorScale(){
+env e;
+uint utilization = getUtilization(e);
+    assert utilization <= factorScale();
+}
+    
+rule utilization_zero(){
+env e;
+    uint64 borrowRate = getBorrowRate(e);
+    assert getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase();
+}
+    
 
-// rule check_accrue_revert(method f){
-//     env e;
-//     invoke accrue(totals());
-// assert !lastReverted;
-// }
+rule accrue_not_reverted(){
+env e1;
+env e2;
+    require e2.msg.value == 0 && e1.msg.value == 0; // reverts if msg.value != 0
+    require e2.block.timestamp == e1.block.timestamp + 1;
+    require e2.block.timestamp < 2^40; // reverts if block.timestamp > 2^40
+    accrue(e1);
+    invoke accrue(e2);
+
+    assert !lastReverted;
+}
+
+invariant borrowBase_vs_utilization(env e)
+    getTotalBorrowBase(e) > 0 <=> getUtilization(e) > 0
+
+rule isLiquidatable_false_should_not_change(address account){
+env e1;
+env e2;
+    require e2.block.timestamp > e1.block.timestamp;
+
+    require isLiquidatable(e1,account) == false;
+    uint price1 = getPrice(e1,baseTokenPriceFeed(e1));
+    uint price2 = getPrice(e2,baseTokenPriceFeed(e2));
+
+    assert isLiquidatable(e2,account) => price1 != price2;
+}
 
 
 // run on comet.sol 
