@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.11;
 
 import "../../contracts/Comet.sol";
 import "./CometHarnessGetters.sol";
@@ -28,6 +28,7 @@ contract CometHarness is CometHarnessGetters {
     mapping( uint104 => mapping (uint104 => uint64 ))  symbolicBorrowRate;
     mapping( uint104 => mapping (uint104 => uint64 ))  symbolicUtilization;
     
+
     function getSupplyRateInternal(TotalsBasic memory totals) internal view virtual override returns (uint64) {
         return symbolicSupplyRate[totals.totalSupplyBase][totals.totalBorrowBase];
     }
