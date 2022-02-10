@@ -12,7 +12,7 @@ methods{
     perSecondInterestRateBase() returns (uint64) envfree;
 }
 
-rule SupplyIndex_BorrowIndex_rise_with_time(method f){
+rule SupplyIndex_BorrowIndex_rise_with_time(){
     env e;
     uint64 base_supply_index_1 = getTotalBaseSupplyIndex();
     uint64 base_borrow_index_1 = getTotalBaseBorrowIndex();
@@ -25,12 +25,11 @@ rule SupplyIndex_BorrowIndex_rise_with_time(method f){
                     base_borrow_index_2 > base_borrow_index_1);
 }
 
-rule SupplyIndex_BorrowIndex_monotonic(method f){
+rule SupplyIndex_BorrowIndex_monotonic(){
     env e;
     uint64 base_supply_index_1 = getTotalBaseSupplyIndex();
     uint64 base_borrow_index_1 = getTotalBaseBorrowIndex();
-    calldataarg args;
-    f(e,args);
+    accrue(e);
     uint64 base_supply_index_2 = getTotalBaseSupplyIndex();
     uint64 base_borrow_index_2 = getTotalBaseBorrowIndex();
 
@@ -49,7 +48,7 @@ rule SupplyIndex_BorrowIndex_monotonic(method f){
 //         uint8 pauseFlags;
 // baseSupplyIndex, baseBorrowIndex, trackingSupplyIndex, trackingBorrowIndex,totalSupplyBase, totalBorrowBase,lastAccrualTime, pauseFlags   =  totalsBasic(e);
 
-rule supplyRate_vs_Utilization(method f){
+rule supplyRate_vs_Utilization(){
 env e;
 uint64 baseSupplyIndex1;
 uint64 baseBorrowIndex1;
@@ -67,7 +66,7 @@ uint64 trackingBorrowIndex2;
 uint64 supplyRate_2 = getSpecificSupplyRateInternal(baseSupplyIndex2,baseBorrowIndex2,trackingSupplyIndex2,trackingBorrowIndex2);
 uint utilization_2 = getSpecificUtilizationInternal(baseSupplyIndex2,baseBorrowIndex2,trackingSupplyIndex2,trackingBorrowIndex2);
 
-    assert utilization_2 > utilization_1 => supplyRate_2 > supplyRate_1;
+    assert utilization_2 > utilization_1 => supplyRate_2 == supplyRate_1;
 }
 
 rule utilization_LE_factorScale(){
