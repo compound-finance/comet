@@ -3,6 +3,7 @@ import { ethers } from 'hardhat';
 import { Block } from '@ethersproject/abstract-provider';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
+  CometAbsorber__factory,
   CometHarness as Comet,
   CometHarness__factory as Comet__factory,
   FaucetToken,
@@ -177,12 +178,12 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
   if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
 
-  const CometFactory = (await ethers.getContractFactory('CometHarness')) as Comet__factory;
-  const comet = await CometFactory.deploy({
+  const configurationStruct = {
     governor: governor.address,
     pauseGuardian: pauseGuardian.address,
     baseToken: tokens[base].address,
     baseTokenPriceFeed: priceFeeds[base].address,
+    absorberContract: ethers.constants.AddressZero, // XXX don't actually do this
     kink,
     perYearInterestRateBase,
     perYearInterestRateSlopeLow,
@@ -208,6 +209,16 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
       }
       return acc;
     }, []),
+  };
+
+  const CometAbsorberFactory = (await ethers.getContractFactory('CometAbsorber')) as CometAbsorber__factory;
+  const cometAbsorber = await CometAbsorberFactory.deploy(configurationStruct);
+  await cometAbsorber.deployed();
+
+  const CometFactory = (await ethers.getContractFactory('CometHarness')) as Comet__factory;
+  const comet = await CometFactory.deploy({
+    ...configurationStruct,
+    absorberContract: cometAbsorber.address,
   });
   await comet.deployed();
 
