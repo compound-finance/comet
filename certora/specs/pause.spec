@@ -30,3 +30,8 @@ rule check_flag_getters(bool supplyPaused, bool transferPaused, bool withdrawPau
     assert !isRevert => flagAbsorb_ == absorbPaused, "absorb flag update done wrongfully";
     assert !isRevert => flagBuy_ == buyPaused, "buy flag update done wrongfully";
 }
+
+// checks relevant functions are reverting as a if pause is true
+rule check_pause_functionallity(){
+    
+}
