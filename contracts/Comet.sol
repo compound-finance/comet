@@ -17,21 +17,21 @@ contract Comet is CometMath, CometStorage {
         address asset;
         address priceFeed;
         uint8 decimals;
-        uint64 borrowCollateralFactor;
-        uint64 liquidateCollateralFactor;
-        uint64 liquidationFactor;
-        uint128 supplyCap;
+        uint borrowCollateralFactor;
+        uint liquidateCollateralFactor;
+        uint liquidationFactor;
+        uint supplyCap;
     }
 
     struct AssetInfo {
-        uint8 offset;
+        uint offset;
         address asset;
         address priceFeed;
         uint64 scale;
-        uint64 borrowCollateralFactor;
-        uint64 liquidateCollateralFactor;
-        uint64 liquidationFactor;
-        uint128 supplyCap;
+        uint borrowCollateralFactor;
+        uint liquidateCollateralFactor;
+        uint liquidationFactor;
+        uint supplyCap;
     }
 
     struct Configuration {
@@ -40,17 +40,17 @@ contract Comet is CometMath, CometStorage {
         address baseToken;
         address baseTokenPriceFeed;
 
-        uint64 kink;
-        uint64 perYearInterestRateSlopeLow;
-        uint64 perYearInterestRateSlopeHigh;
-        uint64 perYearInterestRateBase;
-        uint64 reserveRate;
-        uint64 trackingIndexScale;
-        uint64 baseTrackingSupplySpeed;
-        uint64 baseTrackingBorrowSpeed;
-        uint104 baseMinForRewards;
-        uint104 baseBorrowMin;
-        uint104 targetReserves;
+        uint kink;
+        uint perYearInterestRateSlopeLow;
+        uint perYearInterestRateSlopeHigh;
+        uint perYearInterestRateBase;
+        uint reserveRate;
+        uint trackingIndexScale;
+        uint baseTrackingSupplySpeed;
+        uint baseTrackingBorrowSpeed;
+        uint baseMinForRewards;
+        uint baseBorrowMin;
+        uint targetReserves;
 
         AssetConfig[] assetConfigs;
     }
@@ -76,19 +76,19 @@ contract Comet is CometMath, CometStorage {
     address public immutable baseTokenPriceFeed;
 
     /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope (factor)
-    uint64 public immutable kink;
+    uint public immutable kink;
 
     /// @notice Per second interest rate slope applied when utilization is below kink (factor)
-    uint64 public immutable perSecondInterestRateSlopeLow;
+    uint public immutable perSecondInterestRateSlopeLow;
 
     /// @notice Per second interest rate slope applied when utilization is above kink (factor)
-    uint64 public immutable perSecondInterestRateSlopeHigh;
+    uint public immutable perSecondInterestRateSlopeHigh;
 
     /// @notice Per second base interest rate (factor)
-    uint64 public immutable perSecondInterestRateBase;
+    uint public immutable perSecondInterestRateBase;
 
     /// @notice The rate of total interest paid that goes into reserves (factor)
-    uint64 public immutable reserveRate;
+    uint public immutable reserveRate;
 
     /// @notice The scale for base token (must be less than 18 decimals)
     uint64 public immutable baseScale;
@@ -106,23 +106,23 @@ contract Comet is CometMath, CometStorage {
     uint64 public constant priceScale = 1e8;
 
     /// @notice The scale for reward tracking
-    uint64 public immutable trackingIndexScale;
+    uint public immutable trackingIndexScale;
 
     /// @notice The speed at which supply rewards are tracked (in trackingIndexScale)
-    uint64 public immutable baseTrackingSupplySpeed;
+    uint public immutable baseTrackingSupplySpeed;
 
     /// @notice The speed at which borrow rewards are tracked (in trackingIndexScale)
-    uint64 public immutable baseTrackingBorrowSpeed;
+    uint public immutable baseTrackingBorrowSpeed;
 
     /// @notice The minimum amount of base wei for rewards to accrue
     /// @dev This must be large enough so as to prevent division by base wei from overflowing the 64 bit indices.
-    uint104 public immutable baseMinForRewards;
+    uint public immutable baseMinForRewards;
 
     /// @notice The minimum base amount required to initiate a borrow
-    uint104 public immutable baseBorrowMin;
+    uint public immutable baseBorrowMin;
 
     /// @notice The minimum base token reserves which must be held before collateral is hodled
-    uint104 public immutable targetReserves;
+    uint public immutable targetReserves;
 
     /// @notice The max number of assets this contract is hardcoded to support
     /// @dev Do not change this variable without updating all the fields
@@ -131,7 +131,7 @@ contract Comet is CometMath, CometStorage {
     uint8 public constant maxAssets = 15;
 
     /// @notice The number of assets this contract actually supports
-    uint8 public immutable numAssets;
+    uint public immutable numAssets;
 
     /// @notice The max value for a collateral factor (1)
     uint64 public constant maxCollateralFactor = factorScale;
@@ -179,7 +179,7 @@ contract Comet is CometMath, CometStorage {
     uint8 internal constant PAUSE_BUY_OFFSET = 4;
 
     /// @dev 365 days * 24 hours * 60 minutes * 60 seconds
-    uint64 internal constant SECONDS_PER_YEAR = 31_536_000;
+    uint internal constant SECONDS_PER_YEAR = 31_536_000;
 
     /// @dev The EIP-712 typehash for the contract's domain
     bytes32 internal constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -228,7 +228,7 @@ contract Comet is CometMath, CometStorage {
         reserveRate = config.reserveRate;
 
         // Set asset info
-        numAssets = uint8(config.assetConfigs.length);
+        numAssets = config.assetConfigs.length;
 
         (asset00_a, asset00_b) = _getPackedAsset(config.assetConfigs, 0);
         (asset01_a, asset01_b) = _getPackedAsset(config.assetConfigs, 1);
@@ -332,7 +332,7 @@ contract Comet is CometMath, CometStorage {
      * @param i The index of the asset info to get
      * @return The asset info object
      */
-    function getAssetInfo(uint8 i) public view returns (AssetInfo memory) {
+    function getAssetInfo(uint i) public view returns (AssetInfo memory) {
         require(i < numAssets, "asset info not found");
 
         uint256 word_a;
@@ -414,7 +414,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Determine index of asset that matches given address
      */
     function getAssetInfoByAddress(address asset) internal view returns (AssetInfo memory) {
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint i = 0; i < numAssets; i++) {
             AssetInfo memory assetInfo = getAssetInfo(i);
             if (assetInfo.asset == asset) {
                 return assetInfo;
@@ -624,7 +624,7 @@ contract Comet is CometMath, CometStorage {
             baseScale
         );
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
                 if (liquidity >= 0) {
                     return true;
@@ -651,7 +651,7 @@ contract Comet is CometMath, CometStorage {
      * @param account The address to check liquidity for
      * @return The common price quantity of borrow liquidity
      */
-    function getBorrowLiquidity(address account) public view returns (int) {
+    function getBorrowLiquidity(address account) external view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
         TotalsBasic memory totals = totalsBasic;
 
@@ -661,7 +661,7 @@ contract Comet is CometMath, CometStorage {
             baseScale
         );
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory asset = getAssetInfo(i);
                 uint newAmount = mulPrice(
@@ -694,7 +694,7 @@ contract Comet is CometMath, CometStorage {
             baseScale
         );
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
                 if (liquidity >= 0) {
                     return false;
@@ -721,7 +721,7 @@ contract Comet is CometMath, CometStorage {
      * @param account The address to check margin for
      * @return The common price quantity of liquidation margin
      */
-    function getLiquidationMargin(address account) public view returns (int) {
+    function getLiquidationMargin(address account) external view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
         TotalsBasic memory totals = totalsBasic;
 
@@ -916,7 +916,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Whether user has a non-zero balance of an asset, given assetsIn flags
      */
-    function isInAsset(uint16 assetsIn, uint8 assetOffset) internal pure returns (bool) {
+    function isInAsset(uint16 assetsIn, uint assetOffset) internal pure returns (bool) {
         return (assetsIn & (uint16(1) << assetOffset) != 0);
     }
 
