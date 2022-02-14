@@ -16,7 +16,7 @@ contract Comet is CometMath, CometStorage {
     struct AssetConfig {
         address asset;
         address priceFeed;
-        uint8 decimals;
+        uint decimals;
         uint borrowCollateralFactor;
         uint liquidateCollateralFactor;
         uint liquidationFactor;
@@ -27,7 +27,7 @@ contract Comet is CometMath, CometStorage {
         uint offset;
         address asset;
         address priceFeed;
-        uint64 scale;
+        uint scale;
         uint borrowCollateralFactor;
         uint liquidateCollateralFactor;
         uint liquidationFactor;
@@ -91,19 +91,19 @@ contract Comet is CometMath, CometStorage {
     uint public immutable reserveRate;
 
     /// @notice The scale for base token (must be less than 18 decimals)
-    uint64 public immutable baseScale;
+    uint public immutable baseScale;
 
     /// @notice The scale for base index (depends on time/rate scales, not base token)
     uint64 public constant baseIndexScale = 1e15;
 
     /// @notice The scale for factors
-    uint64 public constant factorScale = 1e18;
+    uint public constant factorScale = 1e18;
 
     /// @notice The decimals required for a price feed
-    uint8 public constant priceFeedDecimals = 8;
+    uint public constant priceFeedDecimals = 8;
 
     /// @notice The scale for prices (in USD)
-    uint64 public constant priceScale = 1e8;
+    uint public constant priceScale = 1e8;
 
     /// @notice The scale for reward tracking
     uint public immutable trackingIndexScale;
@@ -128,13 +128,13 @@ contract Comet is CometMath, CometStorage {
     /// @dev Do not change this variable without updating all the fields
     /// throughout the contract (including the size of UserBasic.assetsIn and
     /// the integer conversion in isInAsset and updateAssetsIn)
-    uint8 public constant maxAssets = 15;
+    uint public constant maxAssets = 15;
 
     /// @notice The number of assets this contract actually supports
     uint public immutable numAssets;
 
     /// @notice The max value for a collateral factor (1)
-    uint64 public constant maxCollateralFactor = factorScale;
+    uint public constant maxCollateralFactor = factorScale;
 
     /**  Collateral asset configuration (packed) **/
 
@@ -172,11 +172,11 @@ contract Comet is CometMath, CometStorage {
     /** Internal constants **/
 
     /// @dev Offsets for specific actions in the pause flag bit array
-    uint8 internal constant PAUSE_SUPPLY_OFFSET = 0;
-    uint8 internal constant PAUSE_TRANSFER_OFFSET = 1;
-    uint8 internal constant PAUSE_WITHDRAW_OFFSET = 2;
-    uint8 internal constant PAUSE_ABSORB_OFFSET = 3;
-    uint8 internal constant PAUSE_BUY_OFFSET = 4;
+    uint internal constant PAUSE_SUPPLY_OFFSET = 0;
+    uint internal constant PAUSE_TRANSFER_OFFSET = 1;
+    uint internal constant PAUSE_WITHDRAW_OFFSET = 2;
+    uint internal constant PAUSE_ABSORB_OFFSET = 3;
+    uint internal constant PAUSE_BUY_OFFSET = 4;
 
     /// @dev 365 days * 24 hours * 60 minutes * 60 seconds
     uint internal constant SECONDS_PER_YEAR = 31_536_000;
@@ -210,7 +210,7 @@ contract Comet is CometMath, CometStorage {
         baseToken = config.baseToken;
         baseTokenPriceFeed = config.baseTokenPriceFeed;
 
-        baseScale = uint64(10 ** decimals);
+        baseScale = 10 ** decimals;
         trackingIndexScale = config.trackingIndexScale;
 
         baseMinForRewards = config.baseMinForRewards;
@@ -274,11 +274,11 @@ contract Comet is CometMath, CometStorage {
         return AssetConfig({
             asset: address(0),
             priceFeed: address(0),
-            decimals: uint8(0),
-            borrowCollateralFactor: uint64(0),
-            liquidateCollateralFactor: uint64(0),
-            liquidationFactor: uint64(0),
-            supplyCap: uint128(0)
+            decimals: 0,
+            borrowCollateralFactor: 0,
+            liquidateCollateralFactor: 0,
+            liquidationFactor: 0,
+            supplyCap: 0
         });
     }
 
@@ -289,7 +289,7 @@ contract Comet is CometMath, CometStorage {
         AssetConfig memory assetConfig = _getAssetConfig(assetConfigs, i);
         address asset = assetConfig.asset;
         address priceFeed = assetConfig.priceFeed;
-        uint8 decimals = assetConfig.decimals;
+        uint decimals = assetConfig.decimals;
 
         // Short-circuit if asset is nil
         if (asset == address(0)) {
@@ -895,21 +895,21 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Multiply a `fromScale` quantity by a price, returning a common price quantity
      */
-    function mulPrice(uint n, uint price, uint64 fromScale) internal pure returns (uint) {
+    function mulPrice(uint n, uint price, uint fromScale) internal pure returns (uint) {
         return n * price / fromScale;
     }
 
     /**
      * @dev Multiply a signed `fromScale` quantity by a price, returning a common price quantity
      */
-    function signedMulPrice(int n, uint price, uint64 fromScale) internal pure returns (int) {
+    function signedMulPrice(int n, uint price, uint fromScale) internal pure returns (int) {
         return n * signed256(price) / signed256(fromScale);
     }
 
     /**
      * @dev Divide a common price quantity by a price, returning a `toScale` quantity
      */
-    function divPrice(uint n, uint price, uint64 toScale) internal pure returns (uint) {
+    function divPrice(uint n, uint price, uint toScale) internal pure returns (uint) {
         return n * toScale / price;
     }
 
@@ -1317,7 +1317,7 @@ contract Comet is CometMath, CometStorage {
         uint basePrice = getPrice(baseTokenPriceFeed);
         uint deltaValue = 0;
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory assetInfo = getAssetInfo(i);
                 address asset = assetInfo.asset;
