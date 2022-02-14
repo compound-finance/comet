@@ -6,9 +6,9 @@ import "../../contracts/ERC20.sol";
 import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 /**
- * @title Compound's Comet Contract
- * @notice An efficient monolithic money market protocol
- * @author Compound
+ * @title Certora's comet harness getters contract
+ * @notice Getters only NO SIMPLIFICATIONS
+ * @author Certora
  */
 contract CometHarnessGetters is Comet {
     constructor(Configuration memory config) Comet(config) { }
@@ -38,5 +38,9 @@ contract CometHarnessGetters is Comet {
 
     function getTotalBorrowBase() public view returns (uint104) {
         return totalsBasic.totalBorrowBase;
+    }
+
+    function getAssetinOfUser(address user) public view returns (uint16) {
+        return userBasic[user].assetsIn;
     }
 }

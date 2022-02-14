@@ -14,35 +14,47 @@ methods {
 }
 
 
-ghost sumUserBasicPrinciple() returns mathint {
-	init_state axiom sumUserBasicPrinciple()==0; // for the constructor
-	// axiom sumAllFunds() == 0; bad example use this for 
+ghost mathint sumUserBasicPrinciple  {
+	init_state axiom sumUserBasicPrinciple==0; 
 }
+
+ghost mapping( address => mathint) sumBalancePerAssert; 
 
 
 hook Sstore userBasic[KEY address a].principal int104 balance
     (int104 old_balance) STORAGE {
-  havoc sumUserBasicPrinciple assuming sumUserBasicPrinciple@new() == sumUserBasicPrinciple@old() +
-      balance - old_balance;
+  sumUserBasicPrinciple  = sumUserBasicPrinciple +
+      to_mathint(balance) - to_mathint(old_balance);
+}
+
+hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 balance (uint128 old_balance) STORAGE {
+    sumBalancePerAssert[t] = sumBalancePerAssert[t] - old_balance + balance;
 }
 
 rule whoChangedMyGhost(method f) {
-	mathint before = sumUserBasicPrinciple();
+	mathint before = sumUserBasicPrinciple;
 	env e;
 	calldataarg args;
 	f(e,args);
-	mathint after = sumUserBasicPrinciple();
+	mathint after = sumUserBasicPrinciple;
 	assert( before == after);
 }
 
 
+rule whoChangedSumBalancePerAssert(method f, address t) {
+	mathint before = sumBalancePerAssert[t];
+	env e;
+	calldataarg args;
+	f(e,args);
+	mathint after = sumBalancePerAssert[t];
+	assert( before == after);
+}
+
 invariant totalBaseToken() 
-	sumUserBasicPrinciple() == getTotalSupplyBase()
+	sumUserBasicPrinciple == getTotalSupplyBase()
 {
     preserved {
-         env e;
-        require getTotalBaseSupplyIndex(e) == baseIndexScale(e);
-        require getTotalBaseBorrowIndex(e) == baseIndexScale(e);
+        simplifiedAssumptions();
     }
 }
 

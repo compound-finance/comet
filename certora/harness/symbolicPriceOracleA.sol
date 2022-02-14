@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity ^0.8.0;
 
+/**
+ * @title Certora's price oracle A contract for comet
+ * @notice wrappers for internal function checks
+ * @author Certora
+ */
+
 contract priceOracleA {
     uint80 public roundId;
     mapping ( uint256 => int256) public answer;

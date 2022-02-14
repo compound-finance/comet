@@ -6,9 +6,9 @@ import "../../contracts/ERC20.sol";
 import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 /**
- * @title Compound's Comet Contract
- * @notice An efficient monolithic money market protocol
- * @author Compound
+ * @title Certora's comet harness interest contract
+ * @notice harness for interest computations
+ * @author Certora
  */
 contract CometHarnessInterest is CometHarnessGetters {
     constructor(Configuration memory config) CometHarnessGetters(config) { }
