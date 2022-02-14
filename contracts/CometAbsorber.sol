@@ -68,4 +68,20 @@ contract CometAbsorber is CometBase {
 
         totalsBasic = totals;
     }
+
+    function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external {
+        require(!isBuyPaused(), "buy is paused");
+
+        int reserves = getReserves();
+        require(reserves < 0 || uint(reserves) < targetReserves, "no ongoing sale");
+
+        // XXX check re-entrancy
+        doTransferIn(baseToken, msg.sender, baseAmount);
+
+        uint collateralAmount = quoteCollateral(asset, baseAmount);
+        require(collateralAmount >= minAmount, "slippage too high");
+
+        withdrawCollateral(address(this), recipient, asset, safe128(collateralAmount));
+    }
+
 }

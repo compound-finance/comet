@@ -23,9 +23,6 @@ contract Comet is CometBase {
     /// @notice The account which may trigger pauses
     address public immutable pauseGuardian;
 
-    /// @notice The address of the base token contract
-    address public immutable baseToken;
-
     /// @notice XXX
     address public immutable absorberContract;
 
@@ -38,9 +35,6 @@ contract Comet is CometBase {
     /// @notice The minimum base amount required to initiate a borrow
     uint104 public immutable baseBorrowMin;
 
-    /// @notice The minimum base token reserves which must be held before collateral is hodled
-    uint104 public immutable targetReserves;
-
     /// @notice The max number of assets this contract is hardcoded to support
     /// @dev Do not change this variable without updating all the fields throughout the contract.
     uint8 public constant maxAssets = 15;
@@ -52,7 +46,6 @@ contract Comet is CometBase {
     uint8 internal constant PAUSE_TRANSFER_OFFSET = 1;
     uint8 internal constant PAUSE_WITHDRAW_OFFSET = 2;
     uint8 internal constant PAUSE_ABSORB_OFFSET = 3;
-    uint8 internal constant PAUSE_BUY_OFFSET = 4;
 
     /// @dev The EIP-712 typehash for the contract's domain
     bytes32 internal constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -76,13 +69,11 @@ contract Comet is CometBase {
         // Copy configuration
         governor = config.governor;
         pauseGuardian = config.pauseGuardian;
-        baseToken = config.baseToken;
         absorberContract = config.absorberContract;
 
         trackingIndexScale = config.trackingIndexScale;
 
         baseBorrowMin = config.baseBorrowMin;
-        targetReserves = config.targetReserves;
 
         // Initialize
         // XXX considerations?
@@ -102,19 +93,6 @@ contract Comet is CometBase {
         totalsBasic.trackingBorrowIndex = 0;
     }
 
-
-    /**
-     * @dev Determine index of asset that matches given address
-     */
-    function getAssetInfoByAddress(address asset) internal view returns (AssetInfo memory) {
-        for (uint8 i = 0; i < numAssets; i++) {
-            AssetInfo memory assetInfo = getAssetInfo(i);
-            if (assetInfo.asset == asset) {
-                return assetInfo;
-            }
-        }
-        revert("asset not found");
-    }
 
     /**
      * @notice Allow or disallow another address to withdraw, or transfer from the sender
@@ -178,54 +156,6 @@ contract Comet is CometBase {
         return owner == manager || isAllowed[owner][manager];
     }
 
-    /**
-     * @notice Gets the total amount of protocol reserves, denominated in the number of base tokens
-     */
-    function getReserves() public view returns (int) {
-        TotalsBasic memory totals = totalsBasic;
-        uint balance = ERC20(baseToken).balanceOf(address(this));
-        uint104 totalSupply = presentValueSupply(totals, totals.totalSupplyBase);
-        uint104 totalBorrow = presentValueBorrow(totals, totals.totalBorrowBase);
-        return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
-    }
-
-    /**
-     * @notice Check whether an account has enough collateral to borrow
-     * @param account The address to check
-     * @return Whether the account is minimally collateralized enough to borrow
-     */
-    function isBorrowCollateralized(address account) public view returns (bool) {
-        // XXX take in UserBasic and UserCollateral as arguments to reduce SLOADs
-        uint16 assetsIn = userBasic[account].assetsIn;
-        TotalsBasic memory totals = totalsBasic;
-
-        int liquidity = signedMulPrice(
-            presentValue(totals, userBasic[account].principal),
-            getPrice(baseTokenPriceFeed),
-            baseScale
-        );
-
-        for (uint8 i = 0; i < numAssets; i++) {
-            if (isInAsset(assetsIn, i)) {
-                if (liquidity >= 0) {
-                    return true;
-                }
-
-                AssetInfo memory asset = getAssetInfo(i);
-                uint newAmount = mulPrice(
-                    userCollateral[account][asset.asset].balance,
-                    getPrice(asset.priceFeed),
-                    safe64(asset.scale)
-                );
-                liquidity += signed256(mulFactor(
-                    newAmount,
-                    asset.borrowCollateralFactor
-                ));
-            }
-        }
-
-        return liquidity >= 0;
-    }
 
     /**
      * @notice Calculate the amount of borrow liquidity for account
@@ -366,32 +296,6 @@ contract Comet is CometBase {
     }
 
     /**
-     * @return Whether or not buy actions are paused
-     */
-    function isBuyPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_BUY_OFFSET));
-    }
-
-    /**
-     * @dev Update assetsIn bit vector if user has entered or exited an asset
-     */
-    function updateAssetsIn(
-        address account,
-        address asset,
-        uint128 initialUserBalance,
-        uint128 finalUserBalance
-    ) internal {
-        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
-        if (initialUserBalance == 0 && finalUserBalance != 0) {
-            // set bit for asset
-            userBasic[account].assetsIn |= (uint8(1) << assetInfo.offset);
-        } else if (initialUserBalance != 0 && finalUserBalance == 0) {
-            // clear bit for asset
-            userBasic[account].assetsIn &= ~(uint8(1) << assetInfo.offset);
-        }
-    }
-
-    /**
      * @notice Query the current base balance of an account
      * @param account The account whose balance to query
      * @return The present day base balance of the account
@@ -408,22 +312,6 @@ contract Comet is CometBase {
      */
     function collateralBalanceOf(address account, address asset) external view returns (uint128) {
         return userCollateral[account][asset].balance;
-    }
-
-    /**
-     * @dev Safe ERC20 transfer in, assumes no fee is charged and amount is transferred
-     */
-    function doTransferIn(address asset, address from, uint amount) internal {
-        bool success = ERC20(asset).transferFrom(from, address(this), amount);
-        require(success, "failed to transfer token in");
-    }
-
-    /**
-     * @dev Safe ERC20 transfer out
-     */
-    function doTransferOut(address asset, address to, uint amount) internal {
-        bool success = ERC20(asset).transfer(to, amount);
-        require(success, "failed to transfer token out");
     }
 
     /**
@@ -688,27 +576,6 @@ contract Comet is CometBase {
     }
 
     /**
-     * @dev Withdraw an amount of collateral asset from src to `to`
-     */
-    function withdrawCollateral(address src, address to, address asset, uint128 amount) internal {
-        TotalsCollateral memory totals = totalsCollateral[asset];
-        totals.totalSupplyAsset -= amount;
-
-        uint128 srcCollateral = userCollateral[src][asset].balance;
-        uint128 srcCollateralNew = srcCollateral - amount;
-
-        totalsCollateral[asset] = totals;
-        userCollateral[src][asset].balance = srcCollateralNew;
-
-        updateAssetsIn(src, asset, srcCollateral, srcCollateralNew);
-
-        // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
-        require(isBorrowCollateralized(src), "borrow would not be maintained");
-
-        doTransferOut(asset, to, amount);
-    }
-
-    /**
      * @notice Absorb a list of underwater accounts onto the protocol balance sheet
      * @param absorber The recipient of the incentive paid to the caller of absorb
      * @param accounts The list of underwater accounts to absorb
@@ -732,44 +599,6 @@ contract Comet is CometBase {
     }
 
     /**
-     * @notice Buy collateral from the protocol using base tokens, increasing protocol reserves
-       A minimum collateral amount should be specified to indicate the maximum slippage acceptable for the buyer.
-     * @param asset The asset to buy
-     * @param minAmount The minimum amount of collateral tokens that should be received by the buyer
-     * @param baseAmount The amount of base tokens used to buy the collateral
-     * @param recipient The recipient address
-     */
-    function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external {
-        require(!isBuyPaused(), "buy is paused");
-
-        int reserves = getReserves();
-        require(reserves < 0 || uint(reserves) < targetReserves, "no ongoing sale");
-
-        // XXX check re-entrancy
-        doTransferIn(baseToken, msg.sender, baseAmount);
-
-        uint collateralAmount = quoteCollateral(asset, baseAmount);
-        require(collateralAmount >= minAmount, "slippage too high");
-
-        withdrawCollateral(address(this), recipient, asset, safe128(collateralAmount));
-    }
-
-    /**
-     * @notice Gets the quote for a collateral asset in exchange for an amount of base asset
-     * @param asset The collateral asset to get the quote for
-     * @param baseAmount The amount of the base asset to get the quote for
-     * @return The quote in terms of the collateral asset
-     */
-    function quoteCollateral(address asset, uint baseAmount) public view returns (uint) {
-        // XXX: Add StoreFrontDiscount.
-        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
-        uint assetPrice = getPrice(assetInfo.priceFeed);
-        uint basePrice = getPrice(baseTokenPriceFeed);
-        uint assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPrice;
-        return assetWeiPerUnitBase * baseAmount / baseScale;
-    }
-
-    /**
      * @notice Withdraws base token reserves if called by the governor
      * @param to An address of the receiver of withdrawn reserves
      * @param amount The amount of reserves to be withdrawn from the protocol
@@ -778,5 +607,28 @@ contract Comet is CometBase {
         require(msg.sender == governor, "only governor may withdraw");
         require(amount <= unsigned256(getReserves()), "insufficient reserves");
         doTransferOut(baseToken, to, amount);
+    }
+
+    function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external {
+        (bool success, bytes memory returndata) = absorberContract.delegatecall(
+            abi.encodeWithSignature(
+                "buyCollateral(address,uint256,uint256,address)",
+                asset,
+                minAmount,
+                baseAmount,
+                recipient
+            )
+        );
+
+        if (success == false) {
+            if (returndata.length > 0) {
+                assembly {
+                    let returndata_size := mload(returndata)
+                    revert(add(32, returndata), returndata_size)
+                }
+            } else {
+                revert("function call reverted");
+            }
+        }
     }
 }

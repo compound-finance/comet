@@ -50,6 +50,14 @@ abstract contract CometBase is CometStorage, CometMath {
         AssetConfig[] assetConfigs;
     }
 
+    uint8 internal constant PAUSE_BUY_OFFSET = 4;
+
+    /// @notice The address of the base token contract
+    address public immutable baseToken;
+
+    /// @notice The minimum base token reserves which must be held before collateral is hodled
+    uint104 public immutable targetReserves;
+
     /// @notice The scale for factors
     uint64 public constant factorScale = 1e18;
 
@@ -176,6 +184,8 @@ abstract contract CometBase is CometStorage, CometMath {
         (asset13_a, asset13_b) = _getPackedAsset(config.assetConfigs, 13);
         (asset14_a, asset14_b) = _getPackedAsset(config.assetConfigs, 14);
 
+        baseToken = config.baseToken;
+        targetReserves = config.targetReserves;
     }
 
     /**
@@ -587,4 +597,148 @@ abstract contract CometBase is CometStorage, CometMath {
 
         return liquidity < 0;
     }
+
+    /**
+     * @return Whether or not buy actions are paused
+     */
+    function isBuyPaused() public view returns (bool) {
+        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_BUY_OFFSET));
+    }
+
+    /**
+     * @notice Gets the total amount of protocol reserves, denominated in the number of base tokens
+     */
+    function getReserves() public view returns (int) {
+        TotalsBasic memory totals = totalsBasic;
+        uint balance = ERC20(baseToken).balanceOf(address(this));
+        uint104 totalSupply = presentValueSupply(totals, totals.totalSupplyBase);
+        uint104 totalBorrow = presentValueBorrow(totals, totals.totalBorrowBase);
+        return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
+    }
+
+    /**
+     * @dev Safe ERC20 transfer in, assumes no fee is charged and amount is transferred
+     */
+    function doTransferIn(address asset, address from, uint amount) internal {
+        bool success = ERC20(asset).transferFrom(from, address(this), amount);
+        require(success, "failed to transfer token in");
+    }
+
+    /**
+     * @notice Gets the quote for a collateral asset in exchange for an amount of base asset
+     * @param asset The collateral asset to get the quote for
+     * @param baseAmount The amount of the base asset to get the quote for
+     * @return The quote in terms of the collateral asset
+     */
+    function quoteCollateral(address asset, uint baseAmount) public view returns (uint) {
+        // XXX: Add StoreFrontDiscount.
+        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
+        uint assetPrice = getPrice(assetInfo.priceFeed);
+        uint basePrice = getPrice(baseTokenPriceFeed);
+        uint assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPrice;
+        return assetWeiPerUnitBase * baseAmount / baseScale;
+    }
+
+    /**
+     * @dev Determine index of asset that matches given address
+     */
+    function getAssetInfoByAddress(address asset) internal view returns (AssetInfo memory) {
+        for (uint8 i = 0; i < numAssets; i++) {
+            AssetInfo memory assetInfo = getAssetInfo(i);
+            if (assetInfo.asset == asset) {
+                return assetInfo;
+            }
+        }
+        revert("asset not found");
+    }
+
+    /**
+     * @dev Withdraw an amount of collateral asset from src to `to`
+     */
+    function withdrawCollateral(address src, address to, address asset, uint128 amount) internal {
+        TotalsCollateral memory totals = totalsCollateral[asset];
+        totals.totalSupplyAsset -= amount;
+
+        uint128 srcCollateral = userCollateral[src][asset].balance;
+        uint128 srcCollateralNew = srcCollateral - amount;
+
+        totalsCollateral[asset] = totals;
+        userCollateral[src][asset].balance = srcCollateralNew;
+
+        updateAssetsIn(src, asset, srcCollateral, srcCollateralNew);
+
+        // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
+        require(isBorrowCollateralized(src), "borrow would not be maintained");
+
+        doTransferOut(asset, to, amount);
+    }
+
+    /**
+     * @dev Update assetsIn bit vector if user has entered or exited an asset
+     */
+    function updateAssetsIn(
+        address account,
+        address asset,
+        uint128 initialUserBalance,
+        uint128 finalUserBalance
+    ) internal {
+        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
+        if (initialUserBalance == 0 && finalUserBalance != 0) {
+            // set bit for asset
+            userBasic[account].assetsIn |= (uint8(1) << assetInfo.offset);
+        } else if (initialUserBalance != 0 && finalUserBalance == 0) {
+            // clear bit for asset
+            userBasic[account].assetsIn &= ~(uint8(1) << assetInfo.offset);
+        }
+    }
+
+    /**
+     * @notice Check whether an account has enough collateral to borrow
+     * @param account The address to check
+     * @return Whether the account is minimally collateralized enough to borrow
+     */
+    function isBorrowCollateralized(address account) public view returns (bool) {
+        // XXX take in UserBasic and UserCollateral as arguments to reduce SLOADs
+        uint16 assetsIn = userBasic[account].assetsIn;
+        TotalsBasic memory totals = totalsBasic;
+
+        int liquidity = signedMulPrice(
+            presentValue(totals, userBasic[account].principal),
+            getPrice(baseTokenPriceFeed),
+            baseScale
+        );
+
+        for (uint8 i = 0; i < numAssets; i++) {
+            if (isInAsset(assetsIn, i)) {
+                if (liquidity >= 0) {
+                    return true;
+                }
+
+                AssetInfo memory asset = getAssetInfo(i);
+                uint newAmount = mulPrice(
+                    userCollateral[account][asset.asset].balance,
+                    getPrice(asset.priceFeed),
+                    safe64(asset.scale)
+                );
+                liquidity += signed256(mulFactor(
+                    newAmount,
+                    asset.borrowCollateralFactor
+                ));
+            }
+        }
+
+        return liquidity >= 0;
+    }
+
+    /**
+     * @dev Safe ERC20 transfer out
+     */
+    function doTransferOut(address asset, address to, uint amount) internal {
+        bool success = ERC20(asset).transfer(to, amount);
+        require(success, "failed to transfer token out");
+    }
+
+
+
+
 }
