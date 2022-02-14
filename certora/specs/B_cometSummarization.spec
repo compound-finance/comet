@@ -1,7 +1,7 @@
 
 methods{
     /*
-     * // These summarization are safe since we proved the correctness of getters and update in governance.spec
+     * These summarization are safe since we proved the correctness of getters and update in pause.spec
      */
     // notice that calling these methods the summarization doesn't apply.
     pause(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused) => set_Paused_Summarization(supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused)
@@ -15,6 +15,12 @@ methods{
     mulPrice(uint amount, uint price, uint tokenScale) => ghostMulPrice(amount,price,tokenScale);
 }
 
+/*
+ * summarization for the pause functionality.
+ * These summarization are safe since we proved the correctness of getters and update in governance.spec 
+ */
+
+// pasue ghosts
 ghost bool supply_Paused_Ghost; // ghost variable tracking supplyPaused value
 ghost bool transfer_Paused_Ghost; // ghost variable tracking transferPaused value
 ghost bool withdraw_Paused_Ghost; // ghost variable tracking withdrawPaused value

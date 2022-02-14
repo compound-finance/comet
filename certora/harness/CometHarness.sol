@@ -16,6 +16,22 @@ contract CometHarness is CometHarnessGetters {
     constructor(Configuration memory config) CometHarnessGetters(config) {
     }
 
+    mapping (address => uint8) asset_index;
+
+    function get_Index_Of_Collateral_Asset(address asset) public view returns (uint8){
+        
+    }
+
+
+
+
+
+
+
+
+
+
+
     /*********** Simplification ***********/
     /* under approximation (not taking into account all possible cases) */
     function accrue(TotalsBasic memory totals) internal override view returns (TotalsBasic memory) {
@@ -38,7 +54,7 @@ contract CometHarness is CometHarnessGetters {
 
     }
     
-    function getUtilizationInternal(TotalsBasic memory totals) internal view override returns  (uint) {
+    function getUtilizationInternal(TotalsBasic memory totals) internal pure override returns  (uint) {
         return symbolicUtilization[totals.totalSupplyBase][totals.totalBorrowBase];
     }
 }
