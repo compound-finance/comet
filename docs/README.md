@@ -105,7 +105,7 @@ Balance=PrincipalBaseBorrowIndexNow [Principal<0]
 
 The supply function transfers an asset to the protocol and adds it to the account's balance. This method can be used to **supply collateral, supply the base asset, or repay an open borrow** of the base asset. If the base asset is supplied resulting in the account having a balance greater than zero, the base asset earns interest based on the current supply rate.
 
-There are three method overloads to supply an asset to Comet. The first is on behalf of the caller, the second is to a separate account, and the third is for a manager on behalf of an account.
+There are three separate methods to supply an asset to Comet. The first is on behalf of the caller, the second is to a separate account, and the third is for a manager on behalf of an account.
 
 #### Comet
 
@@ -114,11 +114,11 @@ function supply(address asset, uint amount)
 ```
 
 ```solidity
-function supply(address dst, address asset, uint amount)
+function supplyTo(address dst, address asset, uint amount)
 ```
 
 ```solidity
-function supply(address from, address dst, address asset, uint amount)
+function supplyFrom(address from, address dst, address asset, uint amount)
 ```
 
 * `asset`: The address of the asset's ERC-20 token contract.
@@ -163,17 +163,17 @@ function withdraw(address asset, uint amount)
 ```
 
 ```solidity
-function withdraw(address to, address asset, uint amount)
+function withdrawTo(address to, address asset, uint amount)
 ```
 
 ```solidity
-function withdraw(address src, address to, address asset, uint amount)
+function withdrawFrom(address src, address to, address asset, uint amount)
 ```
 
 * `asset`: The address of the asset that is being withdrawn or borrowed in the transaction.
 * `amount`: The amount of the asset to withdraw or borrow.
 * `to`: The address to send the withdrawn or borrowed asset.
-* `src`: The address of the account to withdraw or borrow on behalf of. The method overload with this parameter can only be called by an allowed manager.
+* `src`: The address of the account to withdraw or borrow on behalf of. The `withdrawFrom` method can only be called by an allowed manager.
 * `RETURN`: No return, reverts on error.
 
 #### Solidity
@@ -198,6 +198,8 @@ await comet.withdraw(usdcAddress, 100000000);
 ```
 
 ## TODO: Getter functions for collateral factors
+
+[This can be found by using `getAssetInfo`. Include infomation about it in the subsequent section once the collateral check / amount borrowable functions are ready. ]
 
 ## TODO: Getter function for how much an account can presently borrow
 
@@ -241,7 +243,7 @@ Compound Comet borrowers need to consider the *borrow collateral factors* and th
 
 The liquidation collateral factors are strictly greater than the borrow collateral factors. If a borrower violates the liquidation collateral factor requirements, their account is subject to liquidation. Examples of instances where this occurs are described in the Liquidation section.
 
-Collateral factors are stored as decimal values scaled up by `10 ^ 18` in the Comet smart contract. For example, a value of `950000000000000000` represents a 95% collateral factor.
+Collateral factors are stored as integers that represent decimal values scaled up by `10 ^ 18` in the Comet smart contract. For example, a value of `950000000000000000` represents a 95% collateral factor.
 
 An account is subject to liquidation if its borrowed amount exceeds the limits set by the liquidation collateral factors. The three instances where this can occur are when borrower interest owed accrues beyond the limit, when the USD value of the collateral drops below supporting the open borrow, or when the USD value of the borrowed asset increases too much. If an underwater account violates the borrow collateral factors, but does not violate the liquidation collateral factors, it is not yet subject to liquidation.
 
@@ -260,13 +262,14 @@ This function can be called by any address to liquidate an underwater account. I
 #### Comet
 
 ```solidity
-function absorb(address account)
+function absorb(address absorber, address account)
 ```
 
 ```solidity
-function absorb(address[] accounts)
+function absorb(address absorber, address[] accounts)
 ```
 
+* `absorber`:  The account that is issued the absorb tip and gas reimbursement.
 * `account`:  The underwater account that is to be liquidated.
 * `accounts`:  An array of underwater accounts that are to be liquidated.
 * `RETURN`: No return, reverts on error.
@@ -371,7 +374,7 @@ In order to repay the borrows of absorbed accounts, the protocol needs to sell t
 #### Comet
 
 ```solidity
-function askPrice(address asset, uint amount) returns (uint)
+function quoteCollateral(address asset, uint amount) returns (uint)
 ```
 
 * `address`:  The address of the asset which is being queried.
@@ -382,21 +385,21 @@ function askPrice(address asset, uint amount) returns (uint)
 
 ```solidity
 Comet comet = Comet(0xCometAddress...);
-uint askPrice = comet.askPrice(0xERC20Address..., 10000000000);
+uint askPrice = comet.quoteCollateral(0xERC20Address..., 10000000000);
 ```
 
 #### Web3.js v1.5.x
 
 ```js
 const comet = new web3.eth.Contract(abiJson, contractAddress);
-const askPrice = await comet.methods.askPrice("0xERC20Address...", 1000000).call();
+const askPrice = await comet.methods.quoteCollateral("0xERC20Address...", 1000000).call();
 ```
 
 #### Ethers.js v5.x
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const askPrice = await comet.callStatic.askPrice("0xERC20Address...", 1000000);
+const askPrice = await comet.callStatic.quoteCollateral("0xERC20Address...", 1000000);
 ```
 
 ## Account Management
@@ -439,6 +442,41 @@ const comet = new ethers.Contract(contractAddress, abiJson, provider);
 await comet.allow(managerAddress, true);
 ```
 
+### Account Permissions
+
+This method returns a boolean that indicates the status of an account's management address.
+
+#### Comet
+
+```solidity
+function hasPermission(address owner, address manager) public view returns (bool)
+```
+
+* `owner`: The address of an account that can be managed by another.
+* `manager`: The address of the account that can have manager permissions over another.
+* `RETURNS`: Returns true if the `manager` address is presently a manager of the `owner` address.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress...);
+bool isManager = comet.hasPermission(0xOwner, 0xManager);
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const isManager = await comet.methods.hasPermission('0xOwner', '0xManager').call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const isManager = await comet.callStatic.hasPermission('0xOwner', '0xManager');
+```
+
 ### Transfer
 
 This method is used to transfer an asset within the protocol to another address. A manager of an account is also able to perform a transfer on behalf of the account. Account balances change but the asset does not leave the protocol contract. The transfer will fail if it would make the account liquidatable.
@@ -446,12 +484,12 @@ This method is used to transfer an asset within the protocol to another address.
 #### Comet
 
 ```solidity
-function transfer(address dst, address asset, uint amount)
-function transfer(address src, address dst, address asset, uint amount)
+function transferCollateral(address dst, address asset, uint amount)
+function transferCollateralFrom(address src, address dst, address asset, uint amount)
 ```
 
 * `dst`: The address of an account that is the receiver in the transaction.
-* `src`: The address of an account that is the sender of the asset in the transaction. This overload of the function can only be called by an allowed manager.
+* `src`: The address of an account that is the sender of the asset in the transaction. This transfer method can only be called by an allowed manager.
 * `asset`: The ERC-20 address of the asset that is being sent in the transaction.
 * `amount`: The amount of the asset to transfer.
 * `RETURN`: No return, reverts on error.
@@ -512,6 +550,195 @@ const utilization = await comet.methods.getUtilization().call();
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
 const utilization = await comet.callStatic.getUtilization();
+```
+
+### Collateral Balance
+
+This method returns the current balance of a collateral asset for a specified account in the protocol.
+
+#### Comet
+
+```solidity
+function collateralBalanceOf(address account, address asset) returns (uint128)
+```
+
+* `account`: The address of the account in which to retrieve a collateral balance.
+* `asset`: The address of the collateral asset smart contract.
+* `RETURNS`: The balance of the collateral asset in the protocol for the specified account as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress...);
+uint balance = comet.collateralBalanceOf(0xAccount, 0xUsdcAddress);
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const balance = await comet.methods.collateralBalanceOf('0xAccount', '0xUsdcAddress').call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const balance = await comet.callStatic.collateralBalanceOf('0xAccount', '0xUsdcAddress');
+```
+
+### Base Balance
+
+This method returns the current balance of base asset for a specified account in the protocol, including interest. If the account is presently borrowing or not supplying, it will return `0`.
+
+#### Comet
+
+```solidity
+function balanceOf(address account) returns (uint104)
+```
+
+* `account`: The address of the account in which to retrieve the base asset balance.
+* `RETURNS`: The balance of the base asset, including interest, in the protocol for the specified account as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress...);
+uint balance = comet.balanceOf(0xAccount);
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const balance = await comet.methods.balanceOf('0xAccount').call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const balance = await comet.callStatic.balanceOf('0xAccount');
+```
+
+### Borrow Balance
+
+This method returns the current balance of borrowed base asset for a specified account in the protocol, including interest. If the account has a non-negative base asset balance, it will return `0`.
+
+#### Comet
+
+```solidity
+function borrowBalanceOf(address account) returns (uint104)
+```
+
+* `account`: The address of the account in which to retrieve the borrowed base asset balance.
+* `RETURNS`: The balance of the base asset, including interest, borrowed by the specified account as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress...);
+uint owed = comet.borrowBalanceOf(0xAccount);
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const owed = await comet.methods.borrowBalanceOf('0xAccount').call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const owed = await comet.callStatic.borrowBalanceOf('0xAccount');
+```
+
+### Current Timestamp
+
+This method returns the current timestamp from the protocol.
+
+#### Comet
+
+```solidity
+function getNow() virtual public view returns (uint40)
+```
+
+* `RETURNS`: An integer of the current timestamp which is the EVM block timestamp.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress...);
+uint40 timestamp = comet.getNow();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const timestamp = await comet.methods.getNow().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const timestamp = await comet.callStatic.getNow();
+```
+
+### Get Asset Info
+
+This method returns information about the specified asset.
+
+#### Comet
+
+```solidity
+struct AssetInfo {
+    uint8 offset;
+    address asset;
+    address priceFeed;
+    uint64 scale;
+    uint64 borrowCollateralFactor;
+    uint64 liquidateCollateralFactor;
+    uint64 liquidationFactor;
+    uint128 supplyCap;
+}
+
+function getAssetInfo(uint8 i) returns (AssetInfo memory)
+```
+
+* `i`: The index of the asset based on the order it was added to the protocol. The index begins at `0`.
+* `RETURNS`: The asset information as a struct called `AssetInfo`.
+* `offset`: The index of the asset based on the order it was added to the protocol.
+* `asset`: The address of the asset's smart contract.
+* `priceFeed`: The address of the price feed contract for this asset.
+* `scale`: An integer that equals `10 ^ x` where `x` is the amount of decimal places in the asset's smart contract.
+* `borrowCollateralFactor`: The collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
+* `liquidateCollateralFactor`: The liquidate collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
+* `liquidationFactor`: The liquidation factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
+* `supplyCap`: The supply cap of the asset as an integer scaled up by `10 ^ x` where `x` is the amount of decimal places in the asset's smart contract.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress...);
+AssetInfo info = comet.getAssetInfo(0);
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const infoObject = await comet.methods.getAssetInfo(0).call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const infoObject = await comet.callStatic.getAssetInfo(0);
 ```
 
 ### Get Price
