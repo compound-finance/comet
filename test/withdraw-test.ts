@@ -186,7 +186,11 @@ describe('withdrawTo', function () {
     await wait(comet.connect(pauseGuardian).pause(false, false, true, false, false));
     expect(await comet.isWithdrawPaused()).to.be.true;
 
+<<<<<<< HEAD
     await expect(cometAsB.withdrawTo(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
+=======
+    await expect(cometAsB.withdrawTo(alice.address, USDC.address, 1)).to.be.revertedWith('paused');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 
   it('borrows to withdraw if necessary/possible', async () => {
@@ -245,6 +249,7 @@ describe('withdraw', function () {
     await wait(comet.connect(pauseGuardian).pause(false, false, true, false, false));
     expect(await comet.isWithdrawPaused()).to.be.true;
 
+<<<<<<< HEAD
     await expect(cometAsB.withdraw(USDC.address, 100e6)).to.be.revertedWith("custom error 'Paused()'");
   });
 
@@ -266,6 +271,9 @@ describe('withdraw', function () {
     await expect(
       comet.connect(alice).withdraw(USDC.address, exp(1, 6))
     ).to.be.revertedWith("custom error 'NotCollateralized()'");
+=======
+    await expect(cometAsB.withdraw(USDC.address, 100e6)).to.be.revertedWith('paused');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 
   it('reverts if collateral withdraw amount is not collateralized', async () => {
@@ -426,7 +434,11 @@ describe('withdrawFrom', function () {
     const cometAsC = comet.connect(charlie);
 
     await expect(cometAsC.withdrawFrom(bob.address, alice.address, COMP.address, 7))
+<<<<<<< HEAD
       .to.be.revertedWith("custom error 'Unauthorized()'");
+=======
+      .to.be.revertedWith('bad auth');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 
   it('reverts if withdraw is paused', async () => {
@@ -443,6 +455,10 @@ describe('withdrawFrom', function () {
     expect(await comet.isWithdrawPaused()).to.be.true;
 
     await wait(cometAsB.allow(charlie.address, true));
+<<<<<<< HEAD
     await expect(cometAsC.withdrawFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith("custom error 'Paused()'");
+=======
+    await expect(cometAsC.withdrawFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith('paused');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 });

@@ -39,6 +39,10 @@ describe('getPrice', function () {
       },
     });
 
+<<<<<<< HEAD
     await expect(comet.getPrice(priceFeeds.COMP.address)).to.be.revertedWith("custom error 'BadPrice()'");
+=======
+    await expect(comet.getPrice(priceFeeds.COMP.address)).to.be.revertedWith('bad price');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 });

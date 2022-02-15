@@ -24,7 +24,11 @@ describe('withdrawReserves', function () {
       users: [alice],
     } = await makeProtocol();
     await expect(comet.connect(alice).withdrawReserves(alice.address, 10)).to.be.revertedWith(
+<<<<<<< HEAD
       "custom error 'Unauthorized()'"
+=======
+      'bad auth'
+>>>>>>> 4db1033 (Trim revert strings)
     );
   });
 
@@ -39,7 +43,11 @@ describe('withdrawReserves', function () {
     });
     await expect(
       comet.connect(governor).withdrawReserves(alice.address, tokenBalance + 1)
+<<<<<<< HEAD
     ).to.be.revertedWith("custom error 'InsufficientReserves()'");
+=======
+    ).to.be.revertedWith('bad amount');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 
   it('accounts for total supply base when calculating reserves', async () => {
@@ -59,6 +67,7 @@ describe('withdrawReserves', function () {
     expect(await comet.getReserves()).to.be.equal(100);
 
     await expect(comet.connect(governor).withdrawReserves(alice.address, 101)).to.be.revertedWith(
+<<<<<<< HEAD
       "custom error 'InsufficientReserves()'"
     );
   });
@@ -81,6 +90,9 @@ describe('withdrawReserves', function () {
 
     await expect(comet.connect(governor).withdrawReserves(alice.address, 100)).to.be.revertedWith(
       "custom error 'InsufficientReserves()'"
+=======
+      'bad amount'
+>>>>>>> 4db1033 (Trim revert strings)
     );
   });
 });

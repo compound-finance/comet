@@ -90,7 +90,11 @@ describe('transfer', function () {
     const alice0 = await portfolio(protocol, alice.address);
     const bob0 = await portfolio(protocol, bob.address);
 
+<<<<<<< HEAD
     await wait(cometAsB.transferAsset(alice.address, USDC.address, 100e6));
+=======
+    await wait(cometAsB.transfer(alice.address, USDC.address, 100e6));
+>>>>>>> 4db1033 (Trim revert strings)
     const totals1 = await comet.totalsBasic();
     const alice1 = await portfolio(protocol, alice.address);
     const bob1 = await portfolio(protocol, bob.address);
@@ -127,7 +131,11 @@ describe('transfer', function () {
     await wait(comet.connect(pauseGuardian).pause(false, true, false, false, false));
     expect(await comet.isTransferPaused()).to.be.true;
 
+<<<<<<< HEAD
     await expect(cometAsB.transferAsset(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
+=======
+    await expect(cometAsB.transfer(alice.address, USDC.address, 1)).to.be.revertedWith('paused');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 
   it('borrows base if collateralized', async () => {
@@ -172,8 +180,13 @@ describe('transfer', function () {
     const { USDC } = tokens;
 
     await expect(
+<<<<<<< HEAD
       comet.connect(alice).transferAsset(alice.address, USDC.address, 100)
     ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
+=======
+      comet.connect(alice).transfer(alice.address, USDC.address, 100)
+    ).to.be.revertedWith('no self-transfer');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 
   it('reverts on self-transfer of collateral', async () => {
@@ -185,6 +198,7 @@ describe('transfer', function () {
     const { COMP } = tokens;
 
     await expect(
+<<<<<<< HEAD
       comet.connect(alice).transferAsset(alice.address, COMP.address, 100)
     ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
   });
@@ -210,6 +224,10 @@ describe('transfer', function () {
     await expect(
       comet.connect(alice).transferAsset(bob.address, WETH.address, exp(1,18))
     ).to.be.revertedWith("custom error 'NotCollateralized()'");
+=======
+      comet.connect(alice).transfer(alice.address, COMP.address, 100)
+    ).to.be.revertedWith('no self-transfer');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 });
 
@@ -253,8 +271,13 @@ describe('transferFrom', function () {
     const cometAsC = comet.connect(charlie);
 
     await expect(
+<<<<<<< HEAD
       cometAsC.transferAssetFrom(bob.address, alice.address, COMP.address, 7)
     ).to.be.revertedWith("custom error 'Unauthorized()'");
+=======
+      cometAsC.transferFrom(bob.address, alice.address, COMP.address, 7)
+    ).to.be.revertedWith('bad auth');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 
   it('reverts on transfer of base token from address to itself', async () => {
@@ -268,8 +291,13 @@ describe('transferFrom', function () {
     await comet.connect(bob).allow(alice.address, true);
 
     await expect(
+<<<<<<< HEAD
       comet.connect(alice).transferAssetFrom(bob.address, bob.address, USDC.address, 100)
     ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
+=======
+      comet.connect(alice).transferFrom(bob.address, bob.address, USDC.address, 100)
+    ).to.be.revertedWith('no self-transfer');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 
   it('reverts on transfer of collateral from address to itself', async () => {
@@ -283,8 +311,13 @@ describe('transferFrom', function () {
     await comet.connect(bob).allow(alice.address, true);
 
     await expect(
+<<<<<<< HEAD
       comet.connect(alice).transferAssetFrom(bob.address, bob.address, COMP.address, 100)
     ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
+=======
+      comet.connect(alice).transferFrom(bob.address, bob.address, COMP.address, 100)
+    ).to.be.revertedWith('no self-transfer');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 
   it('reverts if transfer is paused', async () => {
@@ -301,6 +334,10 @@ describe('transferFrom', function () {
     expect(await comet.isTransferPaused()).to.be.true;
 
     await wait(cometAsB.allow(charlie.address, true));
+<<<<<<< HEAD
     await expect(cometAsC.transferAssetFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith("custom error 'Paused()'");
+=======
+    await expect(cometAsC.transferFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith('paused');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 });

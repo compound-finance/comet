@@ -180,8 +180,13 @@ describe('supplyTo', function () {
     const baseAsB = COMP.connect(bob);
     const cometAsB = comet.connect(bob);
 
+<<<<<<< HEAD
     const _a0 = await wait(baseAsB.approve(comet.address, 8e8));
     await expect(cometAsB.supplyTo(alice.address, COMP.address, 8e8)).to.be.revertedWith("custom error 'SupplyCapExceeded()'");
+=======
+    const a0 = await wait(baseAsB.approve(comet.address, 8e8));
+    await expect(cometAsB.supplyTo(alice.address, COMP.address, 8e8)).to.be.revertedWith('supply too big');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 
   it('reverts if the asset is neither collateral nor base', async () => {
@@ -210,7 +215,11 @@ describe('supplyTo', function () {
     expect(await comet.isSupplyPaused()).to.be.true;
 
     await wait(baseAsB.approve(comet.address, 1));
+<<<<<<< HEAD
     await expect(cometAsB.supplyTo(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
+=======
+    await expect(cometAsB.supplyTo(alice.address, USDC.address, 1)).to.be.revertedWith('paused');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 
   it.skip('supplies the correct amount in a fee-like situation', async () => {
@@ -288,7 +297,11 @@ describe('supply', function () {
     expect(await comet.isSupplyPaused()).to.be.true;
 
     await wait(baseAsB.approve(comet.address, 100e6));
+<<<<<<< HEAD
     await expect(cometAsB.supply(USDC.address, 100e6)).to.be.revertedWith("custom error 'Paused()'");
+=======
+    await expect(cometAsB.supply(USDC.address, 100e6)).to.be.revertedWith('paused');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 });
 
@@ -330,7 +343,11 @@ describe('supplyFrom', function () {
     const cometAsC = comet.connect(charlie);
 
     await expect(cometAsC.supplyFrom(bob.address, alice.address, COMP.address, 7))
+<<<<<<< HEAD
       .to.be.revertedWith("custom error 'Unauthorized()'");
+=======
+      .to.be.revertedWith('bad auth');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 
   it('reverts if supply is paused', async () => {
@@ -349,6 +366,10 @@ describe('supplyFrom', function () {
 
     await wait(baseAsB.approve(comet.address, 7));
     await wait(cometAsB.allow(charlie.address, true));
+<<<<<<< HEAD
     await expect(cometAsC.supplyFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith("custom error 'Paused()'");
+=======
+    await expect(cometAsC.supplyFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith('paused');
+>>>>>>> 4db1033 (Trim revert strings)
   });
 });
