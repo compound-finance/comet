@@ -199,12 +199,14 @@ contract Comet is CometMath, CometStorage {
         // Sanity checks
         uint decimals = ERC20(config.baseToken).decimals();
         require(decimals <= 18, "base token has too many decimals");
-        // require(decimals <= 18, "b0");
         require(config.assetConfigs.length <= maxAssets, "too many asset configs");
-        // require(config.assetConfigs.length <= maxAssets, "b1");
-        // require(config.baseMinForRewards > 0, "b2");
         require(config.baseMinForRewards > 0, "baseMinForRewards should be > 0");
         require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
+        // require(decimals <= 18, "b0");
+        // require(config.assetConfigs.length <= maxAssets, "b1");
+        // require(config.baseMinForRewards > 0, "b2");
+        // require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == priceFeedDecimals, "b4");
+        
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
@@ -509,17 +511,24 @@ contract Comet is CometMath, CometStorage {
         bytes32 r,
         bytes32 s
     ) external {
-        require(uint256(s) <= MAX_VALID_ECDSA_S, "invalid value: s");
+        // XXX savings from shorter reasons
+        // require(uint256(s) <= MAX_VALID_ECDSA_S, "invalid value: s");
+        require(uint256(s) <= MAX_VALID_ECDSA_S, "a1");
         // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
-        require(v == 27 || v == 28, "invalid value: v");
+        // require(v == 27 || v == 28, "invalid value: v");
+        require(v == 27 || v == 28, "a2");
         bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), keccak256(bytes(version)), block.chainid, address(this)));
         bytes32 structHash = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, owner, manager, isAllowed_, nonce, expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
-        require(owner == signatory, "owner is not signatory");
-        require(signatory != address(0), "invalid signature");
-        require(nonce == userNonce[signatory], "invalid nonce");
-        require(block.timestamp < expiry, "signed transaction expired");
+        // require(owner == signatory, "owner is not signatory");
+        // require(signatory != address(0), "invalid signature");
+        // require(nonce == userNonce[signatory], "invalid nonce");
+        // require(block.timestamp < expiry, "signed transaction expired");
+        require(owner == signatory, "a3");
+        require(signatory != address(0), "a4");
+        require(nonce == userNonce[signatory], "a5");
+        require(block.timestamp < expiry, "a6");        
         userNonce[signatory]++;
         allowInternal(signatory, manager, isAllowed_);
     }
