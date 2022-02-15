@@ -527,43 +527,43 @@ contract Comet is CometMath, CometStorage {
     /**
      * @return The current per second supply rate
      */
-    function getSupplyRate() public view returns (uint64) {
+    function getSupplyRate() public view returns (uint) {
         return getSupplyRateInternal(totalsBasic);
     }
 
     /**
      * @dev Calculate current per second supply rate given totals
      */
-    function getSupplyRateInternal(TotalsBasic memory totals) internal view returns (uint64) {
+    function getSupplyRateInternal(TotalsBasic memory totals) internal view returns (uint) {
         uint utilization = getUtilizationInternal(totals);
         uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
         if (utilization <= kink) {
             // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
-            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization))));
+            return mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization)));
         } else {
             // (interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)) * utilization * (1 - reserveRate)
-            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)))));
+            return mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink))));
         }
     }
 
     /**
      * @return The current per second borrow rate
      */
-    function getBorrowRate() public view returns (uint64) {
+    function getBorrowRate() public view returns (uint) {
         return getBorrowRateInternal(totalsBasic);
     }
 
     /**
      * @dev Calculate current per second borrow rate given totals
      */
-    function getBorrowRateInternal(TotalsBasic memory totals) internal view returns (uint64) {
+    function getBorrowRateInternal(TotalsBasic memory totals) internal view returns (uint) {
         uint utilization = getUtilizationInternal(totals);
         if (utilization <= kink) {
             // interestRateBase + interestRateSlopeLow * utilization
-            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization));
+            return perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization);
         } else {
             // interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)
-            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)));
+            return perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink));
         }
     }
 
