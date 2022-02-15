@@ -222,13 +222,8 @@ contract Comet is CometMath, CometStorage {
         if (i < assetConfigs.length)
             return assetConfigs[i];
         return AssetConfig({
-            asset: address(0),
-            priceFeed: address(0),
-            decimals: uint8(0),
-            borrowCollateralFactor: uint64(0),
-            liquidateCollateralFactor: uint64(0),
-            liquidationFactor: uint64(0),
-            supplyCap: uint128(0)
+            word_a: uint256(0),
+            word_b: uint256(0)
         });
     }
 
@@ -237,44 +232,7 @@ contract Comet is CometMath, CometStorage {
      */
     function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
         AssetConfig memory assetConfig = _getAssetConfig(assetConfigs, i);
-        address asset = assetConfig.asset;
-        address priceFeed = assetConfig.priceFeed;
-        uint8 decimals = assetConfig.decimals;
-
-        // Short-circuit if asset is nil
-        if (asset == address(0)) {
-            return (0, 0);
-        }
-
-        // Sanity check price feed and asset decimals
-        require(AggregatorV3Interface(priceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
-        require(ERC20(asset).decimals() == decimals, "asset decimals mismatch");
-
-        // Ensure collateral factors are within range
-        require(assetConfig.borrowCollateralFactor < assetConfig.liquidateCollateralFactor, "borrow CF must be < liquidate CF");
-        require(assetConfig.liquidateCollateralFactor <= maxCollateralFactor, "liquidate CF too high");
-
-        // Keep 4 decimals for each factor
-        uint descale = factorScale / 1e4;
-        uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
-        uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
-        uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
-
-        // Be nice and check descaled values are still within range
-        require(borrowCollateralFactor < liquidateCollateralFactor, "borrow CF must be < liquidate CF");
-
-        // Keep whole units of asset for supply cap
-        uint64 supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals));
-
-        uint256 word_a = (uint160(asset) << 0 |
-                          uint256(borrowCollateralFactor) << 160 |
-                          uint256(liquidateCollateralFactor) << 176 |
-                          uint256(liquidationFactor) << 192);
-        uint256 word_b = (uint160(priceFeed) << 0 |
-                          uint256(decimals) << 160 |
-                          uint256(supplyCap) << 168);
-
-        return (word_a, word_b);
+        return (assetConfig.word_a, assetConfig.word_b);
     }
 
     /**
