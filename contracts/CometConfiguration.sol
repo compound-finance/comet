@@ -34,12 +34,7 @@ contract CometConfiguration {
     }
 
     struct AssetConfig {
-        address asset;
-        address priceFeed;
-        uint8 decimals;
-        uint64 borrowCollateralFactor;
-        uint64 liquidateCollateralFactor;
-        uint64 liquidationFactor;
-        uint128 supplyCap;
+        uint256 word_a;
+        uint256 word_b;
     }
 }

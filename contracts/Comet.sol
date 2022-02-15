@@ -236,57 +236,23 @@ contract Comet is CometMainInterface {
     }
 
     /**
+     * @dev Gets the info for an asset or empty, for initialization
+     */
+    function _getAssetConfig(AssetConfig[] memory assetConfigs, uint i) internal pure returns (AssetConfig memory) {
+        if (i < assetConfigs.length)
+            return assetConfigs[i];
+        return AssetConfig({
+            word_a: uint256(0),
+            word_b: uint256(0)
+        });
+    }
+
+    /**
      * @dev Checks and gets the packed asset info for storage
      */
     function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
-        AssetConfig memory assetConfig;
-        if (i < assetConfigs.length) {
-            assembly {
-                assetConfig := mload(add(add(assetConfigs, 0x20), mul(i, 0x20)))
-            }
-        } else {
-            return (0, 0);
-        }
-        address asset = assetConfig.asset;
-        address priceFeed = assetConfig.priceFeed;
-        uint8 decimals_ = assetConfig.decimals;
-
-        // Short-circuit if asset is nil
-        if (asset == address(0)) {
-            return (0, 0);
-        }
-
-        // Sanity check price feed and asset decimals
-        if (AggregatorV3Interface(priceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
-        if (ERC20(asset).decimals() != decimals_) revert BadDecimals();
-
-        // Ensure collateral factors are within range
-        if (assetConfig.borrowCollateralFactor >= assetConfig.liquidateCollateralFactor) revert BorrowCFTooLarge();
-        if (assetConfig.liquidateCollateralFactor > MAX_COLLATERAL_FACTOR) revert LiquidateCFTooLarge();
-
-        unchecked {
-            // Keep 4 decimals for each factor
-            uint descale = FACTOR_SCALE / 1e4;
-            uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
-            uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
-            uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
-
-            // Be nice and check descaled values are still within range
-            if (borrowCollateralFactor >= liquidateCollateralFactor) revert BorrowCFTooLarge();
-
-            // Keep whole units of asset for supply cap
-            uint64 supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals_));
-
-            uint256 word_a = (uint160(asset) << 0 |
-                              uint256(borrowCollateralFactor) << 160 |
-                              uint256(liquidateCollateralFactor) << 176 |
-                              uint256(liquidationFactor) << 192);
-            uint256 word_b = (uint160(priceFeed) << 0 |
-                              uint256(decimals_) << 160 |
-                              uint256(supplyCap) << 168);
-
-            return (word_a, word_b);
-        }
+        AssetConfig memory assetConfig = _getAssetConfig(assetConfigs, i);
+        return (assetConfig.word_a, assetConfig.word_b);
     }
 
     /**
