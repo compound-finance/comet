@@ -1006,7 +1006,8 @@ contract Comet is CometMath, CometStorage {
      */
     function doTransferIn(address asset, address from, uint amount) internal {
         bool success = ERC20(asset).transferFrom(from, address(this), amount);
-        require(success, "failed to transfer token in");
+        // require(success, "failed to transfer token in");
+        require(success, "t1");
     }
 
     /**
@@ -1014,7 +1015,8 @@ contract Comet is CometMath, CometStorage {
      */
     function doTransferOut(address asset, address to, uint amount) internal {
         bool success = ERC20(asset).transfer(to, amount);
-        require(success, "failed to transfer token out");
+        // require(success, "failed to transfer token out");
+        require(success, "t2");
     }
 
     /**
