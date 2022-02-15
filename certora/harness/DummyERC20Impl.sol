@@ -24,11 +24,11 @@ contract DummyERC20Impl  {
         return true;
     }
 
-    function allowance(address owner, address spender) external view override returns (uint256) {
+    function allowance(address owner, address spender) external view returns (uint256) {
         return allowances[owner][spender];
     }
 
-    function approve(address spender, uint256 amount) external override returns (bool) {
+    function approve(address spender, uint256 amount) external returns (bool) {
         allowances[msg.sender][spender] = amount;
         return true;
     }
@@ -37,7 +37,7 @@ contract DummyERC20Impl  {
         address sender,
         address recipient,
         uint256 amount
-    ) external override returns (bool) {
+    ) external returns (bool) {
         balances[sender] = balances[sender]- amount;
         balances[recipient] = balances[recipient] + amount;
         allowances[sender][msg.sender] = allowances[sender][msg.sender] - amount;
