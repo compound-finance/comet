@@ -52,7 +52,14 @@ contract Comet is CometMath, CometStorage {
         uint104 baseBorrowMin;
         uint104 targetReserves;
 
-        AssetConfig[] assetConfigs;
+        // Flattened AssetConfig[]
+        address[] assets;
+        address[] priceFeeds;
+        uint8[] decimals;
+        uint64[] borrowCollateralFactors;
+        uint64[] liquidateCollateralFactors;
+        uint64[] liquidationFactors;
+        uint128[] supplyCaps;
     }
 
     /** General configuration constants **/
@@ -199,7 +206,7 @@ contract Comet is CometMath, CometStorage {
         // Sanity checks
         uint decimals = ERC20(config.baseToken).decimals();
         require(decimals <= 18, "base token has too many decimals");
-        require(config.assetConfigs.length <= maxAssets, "too many asset configs");
+        require(config.assets.length <= maxAssets, "too many asset configs");
         require(config.baseMinForRewards > 0, "baseMinForRewards should be > 0");
         require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
         // XXX other sanity checks? for rewards?
@@ -228,23 +235,23 @@ contract Comet is CometMath, CometStorage {
         reserveRate = config.reserveRate;
 
         // Set asset info
-        numAssets = uint8(config.assetConfigs.length);
+        numAssets = uint8(config.assets.length);
 
-        (asset00_a, asset00_b) = _getPackedAsset(config.assetConfigs, 0);
-        (asset01_a, asset01_b) = _getPackedAsset(config.assetConfigs, 1);
-        (asset02_a, asset02_b) = _getPackedAsset(config.assetConfigs, 2);
-        (asset03_a, asset03_b) = _getPackedAsset(config.assetConfigs, 3);
-        (asset04_a, asset04_b) = _getPackedAsset(config.assetConfigs, 4);
-        (asset05_a, asset05_b) = _getPackedAsset(config.assetConfigs, 5);
-        (asset06_a, asset06_b) = _getPackedAsset(config.assetConfigs, 6);
-        (asset07_a, asset07_b) = _getPackedAsset(config.assetConfigs, 7);
-        (asset08_a, asset08_b) = _getPackedAsset(config.assetConfigs, 8);
-        (asset09_a, asset09_b) = _getPackedAsset(config.assetConfigs, 9);
-        (asset10_a, asset10_b) = _getPackedAsset(config.assetConfigs, 10);
-        (asset11_a, asset11_b) = _getPackedAsset(config.assetConfigs, 11);
-        (asset12_a, asset12_b) = _getPackedAsset(config.assetConfigs, 12);
-        (asset13_a, asset13_b) = _getPackedAsset(config.assetConfigs, 13);
-        (asset14_a, asset14_b) = _getPackedAsset(config.assetConfigs, 14);
+        (asset00_a, asset00_b) = _getPackedAsset(config.assets, config.priceFeeds, config.decimals, config.borrowCollateralFactors, config.liquidateCollateralFactors, config.liquidationFactors, config.supplyCaps, 0);
+        (asset01_a, asset01_b) = _getPackedAsset(config.assets, config.priceFeeds, config.decimals, config.borrowCollateralFactors, config.liquidateCollateralFactors, config.liquidationFactors, config.supplyCaps, 1);
+        (asset02_a, asset02_b) = _getPackedAsset(config.assets, config.priceFeeds, config.decimals, config.borrowCollateralFactors, config.liquidateCollateralFactors, config.liquidationFactors, config.supplyCaps, 2);
+        (asset03_a, asset03_b) = _getPackedAsset(config.assets, config.priceFeeds, config.decimals, config.borrowCollateralFactors, config.liquidateCollateralFactors, config.liquidationFactors, config.supplyCaps, 3);
+        (asset04_a, asset04_b) = _getPackedAsset(config.assets, config.priceFeeds, config.decimals, config.borrowCollateralFactors, config.liquidateCollateralFactors, config.liquidationFactors, config.supplyCaps, 4);
+        (asset05_a, asset05_b) = _getPackedAsset(config.assets, config.priceFeeds, config.decimals, config.borrowCollateralFactors, config.liquidateCollateralFactors, config.liquidationFactors, config.supplyCaps, 5);
+        (asset06_a, asset06_b) = _getPackedAsset(config.assets, config.priceFeeds, config.decimals, config.borrowCollateralFactors, config.liquidateCollateralFactors, config.liquidationFactors, config.supplyCaps, 6);
+        (asset07_a, asset07_b) = _getPackedAsset(config.assets, config.priceFeeds, config.decimals, config.borrowCollateralFactors, config.liquidateCollateralFactors, config.liquidationFactors, config.supplyCaps, 7);
+        (asset08_a, asset08_b) = _getPackedAsset(config.assets, config.priceFeeds, config.decimals, config.borrowCollateralFactors, config.liquidateCollateralFactors, config.liquidationFactors, config.supplyCaps, 8);
+        (asset09_a, asset09_b) = _getPackedAsset(config.assets, config.priceFeeds, config.decimals, config.borrowCollateralFactors, config.liquidateCollateralFactors, config.liquidationFactors, config.supplyCaps, 9);
+        (asset10_a, asset10_b) = _getPackedAsset(config.assets, config.priceFeeds, config.decimals, config.borrowCollateralFactors, config.liquidateCollateralFactors, config.liquidationFactors, config.supplyCaps, 10);
+        (asset11_a, asset11_b) = _getPackedAsset(config.assets, config.priceFeeds, config.decimals, config.borrowCollateralFactors, config.liquidateCollateralFactors, config.liquidationFactors, config.supplyCaps, 11);
+        (asset12_a, asset12_b) = _getPackedAsset(config.assets, config.priceFeeds, config.decimals, config.borrowCollateralFactors, config.liquidateCollateralFactors, config.liquidationFactors, config.supplyCaps, 12);
+        (asset13_a, asset13_b) = _getPackedAsset(config.assets, config.priceFeeds, config.decimals, config.borrowCollateralFactors, config.liquidateCollateralFactors, config.liquidationFactors, config.supplyCaps, 13);
+        (asset14_a, asset14_b) = _getPackedAsset(config.assets, config.priceFeeds, config.decimals, config.borrowCollateralFactors, config.liquidateCollateralFactors, config.liquidationFactors, config.supplyCaps, 14);
 
         // Initialize
         // XXX considerations?
@@ -268,28 +275,63 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Gets the info for an asset or empty, for initialization
      */
-    function _getAssetConfig(AssetConfig[] memory assetConfigs, uint i) internal pure returns (AssetConfig memory) {
-        if (i < assetConfigs.length)
-            return assetConfigs[i];
-        return AssetConfig({
-            asset: address(0),
-            priceFeed: address(0),
-            decimals: uint8(0),
-            borrowCollateralFactor: uint64(0),
-            liquidateCollateralFactor: uint64(0),
-            liquidationFactor: uint64(0),
-            supplyCap: uint128(0)
-        });
+    function _getAssetConfig(
+        address[] memory assets,
+        address[] memory priceFeeds,
+        uint8[] memory decimals,
+        uint64[] memory borrowCollateralFactors,
+        uint64[] memory liquidateCollateralFactors,
+        uint64[] memory liquidationFactors,
+        uint128[] memory supplyCaps,
+        uint256 i
+    ) internal pure returns (AssetConfig memory) {
+        // XXX NEED TO CHECK LENGTHS OF ALL?
+        if (i < assets.length) return
+            AssetConfig({
+                asset: assets[i],
+                priceFeed: priceFeeds[i],
+                decimals: decimals[i],
+                borrowCollateralFactor: borrowCollateralFactors[i],
+                liquidateCollateralFactor: liquidateCollateralFactors[i],
+                liquidationFactor: liquidationFactors[i],
+                supplyCap: supplyCaps[i]
+            });
+        return
+            AssetConfig({
+                asset: address(0),
+                priceFeed: address(0),
+                decimals: uint8(0),
+                borrowCollateralFactor: uint64(0),
+                liquidateCollateralFactor: uint64(0),
+                liquidationFactor: uint64(0),
+                supplyCap: uint128(0)
+            });
     }
 
     /**
      * @dev Checks and gets the packed asset info for storage
      */
-    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
-        AssetConfig memory assetConfig = _getAssetConfig(assetConfigs, i);
+    function _getPackedAsset(
+        address[] memory assets,
+        address[] memory priceFeeds,
+        uint8[] memory decimals,
+        uint64[] memory borrowCollateralFactors,
+        uint64[] memory liquidateCollateralFactors,
+        uint64[] memory liquidationFactors,
+        uint128[] memory supplyCaps,
+        uint256 i
+    ) internal view returns (uint256, uint256) {
+        AssetConfig memory assetConfig = _getAssetConfig(assets,
+            priceFeeds,
+            decimals,
+            borrowCollateralFactors,
+            liquidateCollateralFactors,
+            liquidationFactors,
+            supplyCaps, 
+            i);
         address asset = assetConfig.asset;
-        address priceFeed = assetConfig.priceFeed;
-        uint8 decimals = assetConfig.decimals;
+        address assetPriceFeed = assetConfig.priceFeed;
+        uint8 assetDecimals = assetConfig.decimals;
 
         // Short-circuit if asset is nil
         if (asset == address(0)) {
@@ -297,32 +339,44 @@ contract Comet is CometMath, CometStorage {
         }
 
         // Sanity check price feed and asset decimals
-        require(AggregatorV3Interface(priceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
-        require(ERC20(asset).decimals() == decimals, "asset decimals mismatch");
+        require(
+            AggregatorV3Interface(assetPriceFeed).decimals() == priceFeedDecimals,
+            "bad price feed decimals"
+        );
+        require(ERC20(asset).decimals() == assetDecimals, "asset decimals mismatch");
 
         // Ensure collateral factors are within range
-        require(assetConfig.borrowCollateralFactor < assetConfig.liquidateCollateralFactor, "borrow CF must be < liquidate CF");
-        require(assetConfig.liquidateCollateralFactor <= maxCollateralFactor, "liquidate CF too high");
+        require(
+            assetConfig.borrowCollateralFactor < assetConfig.liquidateCollateralFactor,
+            "borrow CF must be < liquidate CF"
+        );
+        require(
+            assetConfig.liquidateCollateralFactor <= maxCollateralFactor,
+            "liquidate CF too high"
+        );
 
         // Keep 4 decimals for each factor
-        uint descale = factorScale / 1e4;
+        uint256 descale = factorScale / 1e4;
         uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
         uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
         uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
 
         // Be nice and check descaled values are still within range
-        require(borrowCollateralFactor < liquidateCollateralFactor, "borrow CF must be < liquidate CF");
+        require(
+            borrowCollateralFactor < liquidateCollateralFactor,
+            "borrow CF must be < liquidate CF"
+        );
 
         // Keep whole units of asset for supply cap
-        uint64 supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals));
+        uint64 supplyCap = uint64(assetConfig.supplyCap / (10**assetDecimals));
 
-        uint256 word_a = (uint160(asset) << 0 |
-                          uint256(borrowCollateralFactor) << 160 |
-                          uint256(liquidateCollateralFactor) << 176 |
-                          uint256(liquidationFactor) << 192);
-        uint256 word_b = (uint160(priceFeed) << 0 |
-                          uint256(decimals) << 160 |
-                          uint256(supplyCap) << 168);
+        uint256 word_a = ((uint160(asset) << 0) |
+            (uint256(borrowCollateralFactor) << 160) |
+            (uint256(liquidateCollateralFactor) << 176) |
+            (uint256(liquidationFactor) << 192));
+        uint256 word_b = ((uint160(assetPriceFeed) << 0) |
+            (uint256(assetDecimals) << 160) |
+            (uint256(supplyCap) << 168));
 
         return (word_a, word_b);
     }
