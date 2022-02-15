@@ -14,7 +14,7 @@ describe('accrue', function () {
       makeProtocol({
         baseMinForRewards: 0,
       })
-    ).to.be.revertedWith('baseMinForRewards should be > 0');
+    ).to.be.revertedWith('bad rewards min');
   });
 
   it('accrue initially succeeds and has the right parameters', async () => {
@@ -182,7 +182,7 @@ describe('accrue', function () {
     await ethers.provider.send('evm_increaseTime', [998]);
     const s0 = await wait(comet.setTotalsBasic(t1));
     await ethers.provider.send('evm_increaseTime', [2]);
-    await expect(wait(comet.accrue())).to.be.revertedWith('number exceeds size (64 bits)');
+    await expect(wait(comet.accrue())).to.be.revertedWith('overflow');
     const t2 = await comet.totalsBasic();
 
     const supplyRate = await comet.getSupplyRate();
@@ -228,7 +228,7 @@ describe('accrue', function () {
     const a0 = await wait(comet.accrue());
 
     await ethers.provider.send('evm_increaseTime', [2**40]);
-    await expect(wait(comet.accrue())).to.be.revertedWith('timestamp exceeds size (40 bits)');
+    await expect(wait(comet.accrue())).to.be.revertedWith('timestamp too big');
     await ethers.provider.send('hardhat_reset', []); // dont break downstream tests...
   });
 });

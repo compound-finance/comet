@@ -149,10 +149,10 @@ contract Comet is CometMath, CometStorage {
     constructor(Configuration memory config) {
         // Sanity checks
         uint decimals = ERC20(config.baseToken).decimals();
-        require(decimals <= 18, "base token has too many decimals");
-        require(config.assetConfigs.length <= maxAssets, "too many asset configs");
-        require(config.baseMinForRewards > 0, "baseMinForRewards should be > 0");
-        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
+        require(decimals <= 18, "too many decimals");
+        require(config.assetConfigs.length <= maxAssets, "too many assets");
+        require(config.baseMinForRewards > 0, "bad rewards min");
+        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == priceFeedDecimals, "bad decimals");
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
@@ -205,7 +205,7 @@ contract Comet is CometMath, CometStorage {
     // TODO: Remove me. Function while waiting for initializer
     // !! NOT FOR REUSE [YES FOR REFUSE] !!
     function XXX_REMOVEME_XXX_initialize() public {
-        require(totalsBasic.lastAccrualTime == 0, "already initialized");
+        require(totalsBasic.lastAccrualTime == 0, "re-init");
 
         // Initialize aggregates
         totalsBasic.lastAccrualTime = getNow();
@@ -245,7 +245,7 @@ contract Comet is CometMath, CometStorage {
      * @return The asset info object
      */
     function getAssetInfo(uint8 i) public view returns (AssetInfo memory) {
-        require(i < numAssets, "asset info not found");
+        require(i < numAssets, "bad asset");
 
         uint256 word_a;
         uint256 word_b;
@@ -332,14 +332,14 @@ contract Comet is CometMath, CometStorage {
                 return assetInfo;
             }
         }
-        revert("asset not found");
+        revert("bad asset");
     }
 
     /**
      * @return The current timestamp
      **/
     function getNow() virtual public view returns (uint40) {
-        require(block.timestamp < 2**40, "timestamp exceeds size (40 bits)");
+        require(block.timestamp < 2**40, "timestamp too big");
         return uint40(block.timestamp);
     }
 
@@ -598,7 +598,7 @@ contract Comet is CometMath, CometStorage {
         bool absorbPaused,
         bool buyPaused
     ) external {
-        require(msg.sender == governor || msg.sender == pauseGuardian, "Unauthorized");
+        require(msg.sender == governor || msg.sender == pauseGuardian, "bad auth");
 
         totalsBasic.pauseFlags =
             uint8(0) |
@@ -753,7 +753,7 @@ contract Comet is CometMath, CometStorage {
      */
     function doTransferIn(address asset, address from, uint amount) internal {
         bool success = ERC20(asset).transferFrom(from, address(this), amount);
-        require(success, "failed to transfer token in");
+        require(success, "bad transfer in");
     }
 
     /**
@@ -761,7 +761,7 @@ contract Comet is CometMath, CometStorage {
      */
     function doTransferOut(address asset, address to, uint amount) internal {
         bool success = ERC20(asset).transfer(to, amount);
-        require(success, "failed to transfer token out");
+        require(success, "bad transfer out");
     }
 
     /**
@@ -798,8 +798,8 @@ contract Comet is CometMath, CometStorage {
      * @dev Supply either collateral or base asset, depending on the asset, if operator is allowed
      */
     function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal {
-        require(!isSupplyPaused(), "supply is paused");
-        require(hasPermission(from, operator), "operator not permitted");
+        require(!isSupplyPaused(), "paused");
+        require(hasPermission(from, operator), "bad auth");
 
         if (asset == baseToken) {
             return supplyBase(from, dst, safe104(amount));
@@ -846,7 +846,7 @@ contract Comet is CometMath, CometStorage {
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         TotalsCollateral memory totals = totalsCollateral[asset];
         totals.totalSupplyAsset += amount;
-        require(totals.totalSupplyAsset <= assetInfo.supplyCap, "supply cap exceeded");
+        require(totals.totalSupplyAsset <= assetInfo.supplyCap, "supply too big");
 
         uint128 dstCollateral = userCollateral[dst][asset].balance;
         uint128 dstCollateralNew = dstCollateral + amount;
@@ -882,9 +882,9 @@ contract Comet is CometMath, CometStorage {
      * @dev Transfer either collateral or base asset, depending on the asset, if operator is allowed
      */
     function transferInternal(address operator, address src, address dst, address asset, uint amount) internal {
-        require(!isTransferPaused(), "transfer is paused");
-        require(hasPermission(src, operator), "operator not permitted");
-        require(src != dst, "self-transfer not allowed");
+        require(!isTransferPaused(), "paused");
+        require(hasPermission(src, operator), "bad auth");
+        require(src != dst, "no self-transfer");
 
         if (asset == baseToken) {
             return transferBase(src, dst, safe104(amount));
@@ -926,7 +926,7 @@ contract Comet is CometMath, CometStorage {
 
         if (srcBalance < 0) {
             require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
-            require(isBorrowCollateralized(src), "borrow cannot be maintained");
+            require(isBorrowCollateralized(src), "bad borrow");
         }
     }
 
@@ -946,7 +946,7 @@ contract Comet is CometMath, CometStorage {
         updateAssetsIn(dst, asset, dstCollateral, dstCollateralNew);
 
         // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
-        require(isBorrowCollateralized(src), "borrow would not be maintained");
+        require(isBorrowCollateralized(src), "bad borrow");
     }
 
     /**
@@ -983,8 +983,8 @@ contract Comet is CometMath, CometStorage {
      * @dev Withdraw either collateral or base asset, depending on the asset, if operator is allowed
      */
     function withdrawInternal(address operator, address src, address to, address asset, uint amount) internal {
-        require(!isWithdrawPaused(), "withdraw is paused");
-        require(hasPermission(src, operator), "operator not permitted");
+        require(!isWithdrawPaused(), "paused");
+        require(hasPermission(src, operator), "bad auth");
 
         if (asset == baseToken) {
             return withdrawBase(src, to, safe104(amount));
@@ -1021,7 +1021,7 @@ contract Comet is CometMath, CometStorage {
 
         if (srcBalance < 0) {
             require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
-            require(isBorrowCollateralized(src), "borrow cannot be maintained");
+            require(isBorrowCollateralized(src), "bad borrow");
         }
 
         doTransferOut(baseToken, to, amount);
@@ -1043,7 +1043,7 @@ contract Comet is CometMath, CometStorage {
         updateAssetsIn(src, asset, srcCollateral, srcCollateralNew);
 
         // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
-        require(isBorrowCollateralized(src), "borrow would not be maintained");
+        require(isBorrowCollateralized(src), "bad borrow");
 
         doTransferOut(asset, to, amount);
     }
@@ -1054,7 +1054,7 @@ contract Comet is CometMath, CometStorage {
      * @param accounts The list of underwater accounts to absorb
      */
     function absorb(address absorber, address[] calldata accounts) external {
-        require(!isAbsorbPaused(), "absorb is paused");
+        require(!isAbsorbPaused(), "paused");
 
         uint startGas = gasleft();
         for (uint i = 0; i < accounts.length; i++) {
@@ -1076,7 +1076,7 @@ contract Comet is CometMath, CometStorage {
         TotalsBasic memory totals = totalsBasic;
         totals = accrueInternal(totals);
 
-        require(isLiquidatable(account), "account is not underwater");
+        require(isLiquidatable(account), "not underwater");
 
         UserBasic memory accountUser = userBasic[account];
         int104 oldBalance = presentValue(totals, accountUser.principal);
@@ -1125,16 +1125,16 @@ contract Comet is CometMath, CometStorage {
      * @param recipient The recipient address
      */
     function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external {
-        require(!isBuyPaused(), "buy is paused");
+        require(!isBuyPaused(), "paused");
 
         int reserves = getReserves();
-        require(reserves < 0 || uint(reserves) < targetReserves, "no ongoing sale");
+        require(reserves < 0 || uint(reserves) < targetReserves, "not for sale");
 
         // XXX check re-entrancy
         doTransferIn(baseToken, msg.sender, baseAmount);
 
         uint collateralAmount = quoteCollateral(asset, baseAmount);
-        require(collateralAmount >= minAmount, "slippage too high");
+        require(collateralAmount >= minAmount, "too much slippage");
 
         withdrawCollateral(address(this), recipient, asset, safe128(collateralAmount));
     }
@@ -1160,8 +1160,8 @@ contract Comet is CometMath, CometStorage {
      * @param amount The amount of reserves to be withdrawn from the protocol
      */
     function withdrawReserves(address to, uint amount) external {
-        require(msg.sender == governor, "only governor may withdraw");
-        require(amount <= unsigned256(getReserves()), "insufficient reserves");
+        require(msg.sender == governor, "bad auth");
+        require(amount <= unsigned256(getReserves()), "bad amount");
         doTransferOut(baseToken, to, amount);
     }
 }

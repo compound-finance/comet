@@ -57,12 +57,12 @@ describe('asset info', function () {
         },
         reward: 'ASSET1',
       })
-    ).to.be.revertedWith('too many asset configs');
+    ).to.be.revertedWith('too many assets');
   });
 
   it('reverts if index is greater that numAssets', async () => {
     const { comet } = await makeProtocol();
-    await expect(comet.getAssetInfo(3)).to.be.revertedWith('asset info not found');
+    await expect(comet.getAssetInfo(3)).to.be.revertedWith('bad asset');
   });
 
   it('reverts if collateral factors are out of range', async () => {
