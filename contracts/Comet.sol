@@ -541,24 +541,24 @@ contract Comet is CometMath, CometStorage {
      */
     function principalValue(TotalsBasic memory totals, int104 presentValue_) internal pure returns (int104) {
         if (presentValue_ >= 0) {
-            return signed104(principalValueSupply(totals, unsigned104(presentValue_)));
+            return signed104(principalValueSupply(totals.baseSupplyIndex, unsigned104(presentValue_)));
         } else {
-            return -signed104(principalValueBorrow(totals, unsigned104(-presentValue_)));
+            return -signed104(principalValueBorrow(totals.baseBorrowIndex, unsigned104(-presentValue_)));
         }
     }
 
     /**
      * @dev The present value projected backward by the supply index
      */
-    function principalValueSupply(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * baseIndexScale / totals.baseSupplyIndex);
+    function principalValueSupply(uint64 baseSupplyIndex, uint104 presentValue_) internal pure returns (uint104) {
+        return uint104(uint(presentValue_) * baseIndexScale / baseSupplyIndex);
     }
 
     /**
      * @dev The present value projected backwrd by the borrow index
      */
-    function principalValueBorrow(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * baseIndexScale / totals.baseBorrowIndex);
+    function principalValueBorrow(uint64 baseBorrowIndex, uint104 presentValue_) internal pure returns (uint104) {
+        return uint104(uint(presentValue_) * baseIndexScale / baseBorrowIndex);
     }
 
     /**
@@ -826,8 +826,8 @@ contract Comet is CometMath, CometStorage {
 
         dstBalance += signed104(amount);
 
-        totals.totalSupplyBase = principalValueSupply(totals, totalSupplyBalance);
-        totals.totalBorrowBase = principalValueBorrow(totals, totalBorrowBalance);
+        totals.totalSupplyBase = principalValueSupply(totals.baseSupplyIndex, totalSupplyBalance);
+        totals.totalBorrowBase = principalValueBorrow(totals.baseBorrowIndex, totalBorrowBalance);
         totalsBasic = totals;
 
         updateBaseBalance(totals, dst, dstUser, principalValue(totals, dstBalance));
@@ -913,8 +913,8 @@ contract Comet is CometMath, CometStorage {
         srcBalance -= signed104(amount);
         dstBalance += signed104(amount);
 
-        totals.totalSupplyBase = principalValueSupply(totals, totalSupplyBalance);
-        totals.totalBorrowBase = principalValueBorrow(totals, totalBorrowBalance);
+        totals.totalSupplyBase = principalValueSupply(totals.baseSupplyIndex, totalSupplyBalance);
+        totals.totalBorrowBase = principalValueBorrow(totals.baseBorrowIndex, totalBorrowBalance);
         totalsBasic = totals;
 
         updateBaseBalance(totals, src, srcUser, principalValue(totals, srcBalance));
@@ -1009,8 +1009,8 @@ contract Comet is CometMath, CometStorage {
 
         srcBalance -= signed104(amount);
 
-        totals.totalSupplyBase = principalValueSupply(totals, totalSupplyBalance);
-        totals.totalBorrowBase = principalValueBorrow(totals, totalBorrowBalance);
+        totals.totalSupplyBase = principalValueSupply(totals.baseSupplyIndex, totalSupplyBalance);
+        totals.totalBorrowBase = principalValueBorrow(totals.baseBorrowIndex, totalBorrowBalance);
         totalsBasic = totals;
 
         updateBaseBalance(totals, src, srcUser, principalValue(totals, srcBalance));
@@ -1105,9 +1105,9 @@ contract Comet is CometMath, CometStorage {
         // Reserves are decreased by increasing total supply and decreasing borrows
         //  the amount of debt repaid by reserves is `newBalance - oldBalance`
         // Note: new balance must be non-negative due to the above thresholding
-        totals.totalSupplyBase += principalValueSupply(totals, unsigned104(newBalance));
+        totals.totalSupplyBase += principalValueSupply(totals.baseSupplyIndex, unsigned104(newBalance));
         // Note: old balance must be negative since the account is liquidatable
-        totals.totalBorrowBase -= principalValueBorrow(totals, unsigned104(-oldBalance));
+        totals.totalBorrowBase -= principalValueBorrow(totals.baseBorrowIndex, unsigned104(-oldBalance));
 
         totalsBasic = totals;
     }
