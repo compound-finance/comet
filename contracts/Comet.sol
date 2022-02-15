@@ -210,7 +210,9 @@ contract Comet is CometMath, CometStorage {
         baseToken = config.baseToken;
         baseTokenPriceFeed = config.baseTokenPriceFeed;
 
-        baseScale = uint64(10 ** decimals);
+        unchecked {
+            baseScale = uint64(10 ** decimals);
+        }
         trackingIndexScale = config.trackingIndexScale;
 
         baseMinForRewards = config.baseMinForRewards;
@@ -222,9 +224,11 @@ contract Comet is CometMath, CometStorage {
 
         // Set interest rate model configs
         kink = config.kink;
-        perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
-        perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
-        perSecondInterestRateBase = config.perYearInterestRateBase / SECONDS_PER_YEAR;
+        unchecked {
+            perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
+            perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
+            perSecondInterestRateBase = config.perYearInterestRateBase / SECONDS_PER_YEAR;
+        }
         reserveRate = config.reserveRate;
 
         // Set asset info
@@ -305,16 +309,26 @@ contract Comet is CometMath, CometStorage {
         require(assetConfig.liquidateCollateralFactor <= maxCollateralFactor, "liquidate CF too high");
 
         // Keep 4 decimals for each factor
-        uint descale = factorScale / 1e4;
-        uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
-        uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
-        uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
+        uint descale;
+        uint16 borrowCollateralFactor;
+        uint16 liquidateCollateralFactor;
+        uint16 liquidationFactor;
+
+        unchecked {
+            descale = factorScale / 1e4;
+            borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
+            liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
+            liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
+        }
 
         // Be nice and check descaled values are still within range
         require(borrowCollateralFactor < liquidateCollateralFactor, "borrow CF must be < liquidate CF");
 
         // Keep whole units of asset for supply cap
-        uint64 supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals));
+        uint64 supplyCap;
+        unchecked {
+            supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals));
+        }
 
         uint256 word_a = (uint160(asset) << 0 |
                           uint256(borrowCollateralFactor) << 160 |
@@ -388,7 +402,10 @@ contract Comet is CometMath, CometStorage {
         }
 
         address asset = address(uint160(word_a & type(uint160).max));
-        uint rescale = factorScale / 1e4;
+        uint rescale;
+        unchecked {
+            rescale = factorScale / 1e4;
+        }
         uint64 borrowCollateralFactor = uint64(((word_a >> 160) & type(uint16).max) * rescale);
         uint64 liquidateCollateralFactor = uint64(((word_a >> 176) & type(uint16).max) * rescale);
         uint64 liquidationFactor = uint64(((word_a >> 192) & type(uint16).max) * rescale);
@@ -414,10 +431,13 @@ contract Comet is CometMath, CometStorage {
      * @dev Determine index of asset that matches given address
      */
     function getAssetInfoByAddress(address asset) internal view returns (AssetInfo memory) {
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets;) {
             AssetInfo memory assetInfo = getAssetInfo(i);
             if (assetInfo.asset == asset) {
                 return assetInfo;
+            }
+            unchecked {
+                i++;
             }
         }
         revert("asset not found");
@@ -443,19 +463,28 @@ contract Comet is CometMath, CometStorage {
      **/
     function accrue(TotalsBasic memory totals) internal view returns (TotalsBasic memory) {
         uint40 now_ = getNow();
-        uint timeElapsed = now_ - totals.lastAccrualTime;
+        uint timeElapsed;
+        unchecked {
+            timeElapsed = now_ - totals.lastAccrualTime;
+        }
         if (timeElapsed > 0) {
             uint supplyRate = getSupplyRateInternal(totals);
             uint borrowRate = getBorrowRateInternal(totals);
-            totals.baseSupplyIndex += safe64(mulFactor(totals.baseSupplyIndex, supplyRate * timeElapsed));
-            totals.baseBorrowIndex += safe64(mulFactor(totals.baseBorrowIndex, borrowRate * timeElapsed));
+            unchecked {
+                totals.baseSupplyIndex += safe64(mulFactor(totals.baseSupplyIndex, supplyRate * timeElapsed));
+                totals.baseBorrowIndex += safe64(mulFactor(totals.baseBorrowIndex, borrowRate * timeElapsed));
+            }
             if (totals.totalSupplyBase >= baseMinForRewards) {
                 uint supplySpeed = baseTrackingSupplySpeed;
-                totals.trackingSupplyIndex += safe64(divBaseWei(supplySpeed * timeElapsed, totals.totalSupplyBase));
+                unchecked {
+                    totals.trackingSupplyIndex += safe64(divBaseWei(supplySpeed * timeElapsed, totals.totalSupplyBase));
+                }
             }
             if (totals.totalBorrowBase >= baseMinForRewards) {
                 uint borrowSpeed = baseTrackingBorrowSpeed;
-                totals.trackingBorrowIndex += safe64(divBaseWei(borrowSpeed * timeElapsed, totals.totalBorrowBase));
+                unchecked {
+                    totals.trackingBorrowIndex += safe64(divBaseWei(borrowSpeed * timeElapsed, totals.totalBorrowBase));
+                }
             }
         }
         totals.lastAccrualTime = now_;
@@ -510,7 +539,9 @@ contract Comet is CometMath, CometStorage {
         require(signatory != address(0), "invalid signature");
         require(nonce == userNonce[signatory], "invalid nonce");
         require(block.timestamp < expiry, "signed transaction expired");
-        userNonce[signatory]++;
+        unchecked {
+            userNonce[signatory]++;
+        }
         allowInternal(signatory, manager, isAllowed_);
     }
 
@@ -536,13 +567,20 @@ contract Comet is CometMath, CometStorage {
      */
     function getSupplyRateInternal(TotalsBasic memory totals) internal view returns (uint64) {
         uint utilization = getUtilizationInternal(totals);
-        uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
+        uint reserveScalingFactor;
+        unchecked {
+            reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
+        }
         if (utilization <= kink) {
             // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
-            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization))));
+            unchecked {
+                return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization))));
+            }
         } else {
             // (interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)) * utilization * (1 - reserveRate)
-            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)))));
+            unchecked {
+                return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)))));
+            }
         }
     }
 
@@ -560,10 +598,14 @@ contract Comet is CometMath, CometStorage {
         uint utilization = getUtilizationInternal(totals);
         if (utilization <= kink) {
             // interestRateBase + interestRateSlopeLow * utilization
-            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization));
+            unchecked {
+                return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization));
+            }
         } else {
             // interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)
-            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)));
+            unchecked {
+                return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)));
+            }
         }
     }
 
@@ -583,7 +625,9 @@ contract Comet is CometMath, CometStorage {
         if (totalSupply == 0) {
             return 0;
         } else {
-            return totalBorrow * factorScale / totalSupply;
+            unchecked {
+                return totalBorrow * factorScale / totalSupply;
+            }
         }
     }
 
@@ -605,7 +649,9 @@ contract Comet is CometMath, CometStorage {
         uint balance = ERC20(baseToken).balanceOf(address(this));
         uint104 totalSupply = presentValueSupply(totals, totals.totalSupplyBase);
         uint104 totalBorrow = presentValueBorrow(totals, totals.totalBorrowBase);
-        return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
+        unchecked {
+            return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
+        }
     }
 
     /**
@@ -624,7 +670,7 @@ contract Comet is CometMath, CometStorage {
             baseScale
         );
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets;) {
             if (isInAsset(assetsIn, i)) {
                 if (liquidity >= 0) {
                     return true;
@@ -636,10 +682,15 @@ contract Comet is CometMath, CometStorage {
                     getPrice(asset.priceFeed),
                     safe64(asset.scale)
                 );
-                liquidity += signed256(mulFactor(
-                    newAmount,
-                    asset.borrowCollateralFactor
-                ));
+                unchecked {
+                    liquidity += signed256(mulFactor(
+                        newAmount,
+                        asset.borrowCollateralFactor
+                    ));
+                }
+            }
+            unchecked {
+                i++;
             }
         }
 
@@ -661,7 +712,7 @@ contract Comet is CometMath, CometStorage {
             baseScale
         );
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets;) {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory asset = getAssetInfo(i);
                 uint newAmount = mulPrice(
@@ -669,10 +720,15 @@ contract Comet is CometMath, CometStorage {
                     getPrice(asset.priceFeed),
                     safe64(asset.scale)
                 );
-                liquidity += signed256(mulFactor(
-                    newAmount,
-                    asset.borrowCollateralFactor
-                ));
+                unchecked {
+                    liquidity += signed256(mulFactor(
+                        newAmount,
+                        asset.borrowCollateralFactor
+                    ));
+                }
+            }
+            unchecked {
+                i++;
             }
         }
 
@@ -694,7 +750,7 @@ contract Comet is CometMath, CometStorage {
             baseScale
         );
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets;) {
             if (isInAsset(assetsIn, i)) {
                 if (liquidity >= 0) {
                     return false;
@@ -706,10 +762,15 @@ contract Comet is CometMath, CometStorage {
                     getPrice(asset.priceFeed),
                     asset.scale
                 );
-                liquidity += signed256(mulFactor(
-                    newAmount,
-                    asset.liquidateCollateralFactor
-                ));
+                unchecked {
+                    liquidity += signed256(mulFactor(
+                        newAmount,
+                        asset.liquidateCollateralFactor
+                    ));
+                }
+            }
+            unchecked {
+                i++;
             }
         }
 
@@ -731,7 +792,7 @@ contract Comet is CometMath, CometStorage {
             baseScale
         );
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets;) {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory asset = getAssetInfo(i);
                 uint newAmount = mulPrice(
@@ -739,10 +800,15 @@ contract Comet is CometMath, CometStorage {
                     getPrice(asset.priceFeed),
                     asset.scale
                 );
-                liquidity += signed256(mulFactor(
-                    newAmount,
-                    asset.liquidateCollateralFactor
-                ));
+                unchecked {
+                    liquidity += signed256(mulFactor(
+                        newAmount,
+                        asset.liquidateCollateralFactor
+                    ));
+                }
+            }
+            unchecked {
+                i++;
             }
         }
 
@@ -764,14 +830,18 @@ contract Comet is CometMath, CometStorage {
      * @dev The principal amount projected forward by the supply index
      */
     function presentValueSupply(TotalsBasic memory totals, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * totals.baseSupplyIndex / baseIndexScale);
+        unchecked {
+            return uint104(uint(principalValue_) * totals.baseSupplyIndex / baseIndexScale);
+        }
     }
 
     /**
      * @dev The principal amount projected forward by the borrow index
      */
     function presentValueBorrow(TotalsBasic memory totals, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * totals.baseBorrowIndex / baseIndexScale);
+        unchecked {
+            return uint104(uint(principalValue_) * totals.baseBorrowIndex / baseIndexScale);
+        }
     }
 
     /**
@@ -789,14 +859,18 @@ contract Comet is CometMath, CometStorage {
      * @dev The present value projected backward by the supply index
      */
     function principalValueSupply(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * baseIndexScale / totals.baseSupplyIndex);
+        unchecked {
+            return uint104(uint(presentValue_) * baseIndexScale / totals.baseSupplyIndex);
+        }
     }
 
     /**
      * @dev The present value projected backwrd by the borrow index
      */
     function principalValueBorrow(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * baseIndexScale / totals.baseBorrowIndex);
+        unchecked {
+            return uint104(uint(presentValue_) * baseIndexScale / totals.baseBorrowIndex);
+        }
     }
 
     /**
@@ -804,7 +878,10 @@ contract Comet is CometMath, CometStorage {
      */
     function repayAndSupplyAmount(int104 balance, uint104 amount) internal pure returns (uint104, uint104) {
         uint104 repayAmount = balance < 0 ? min(unsigned104(-balance), amount) : 0;
-        uint104 supplyAmount = amount - repayAmount;
+        uint104 supplyAmount;
+        unchecked {
+            supplyAmount = amount - repayAmount;
+        }
         return (repayAmount, supplyAmount);
     }
 
@@ -813,7 +890,10 @@ contract Comet is CometMath, CometStorage {
      */
     function withdrawAndBorrowAmount(int104 balance, uint104 amount) internal pure returns (uint104, uint104) {
         uint104 withdrawAmount = balance > 0 ? min(unsigned104(balance), amount) : 0;
-        uint104 borrowAmount = amount - withdrawAmount;
+        uint104 borrowAmount;
+        unchecked {
+            borrowAmount = amount - withdrawAmount;
+        }
         return (withdrawAmount, borrowAmount);
     }
 
@@ -882,35 +962,45 @@ contract Comet is CometMath, CometStorage {
      * @dev Multiply a number by a factor
      */
     function mulFactor(uint n, uint factor) internal pure returns (uint) {
-        return n * factor / factorScale;
+        unchecked {
+            return n * factor / factorScale;
+        }
     }
 
     /**
      * @dev Divide a number by an amount of base
      */
     function divBaseWei(uint n, uint baseWei) internal view returns (uint) {
-        return n * baseScale / baseWei;
+        unchecked {
+            return n * baseScale / baseWei;
+        }
     }
 
     /**
      * @dev Multiply a `fromScale` quantity by a price, returning a common price quantity
      */
     function mulPrice(uint n, uint price, uint64 fromScale) internal pure returns (uint) {
-        return n * price / fromScale;
+        unchecked {
+            return n * price / fromScale;
+        }
     }
 
     /**
      * @dev Multiply a signed `fromScale` quantity by a price, returning a common price quantity
      */
     function signedMulPrice(int n, uint price, uint64 fromScale) internal pure returns (int) {
-        return n * signed256(price) / signed256(fromScale);
+        unchecked {
+            return n * signed256(price) / signed256(fromScale);
+        }
     }
 
     /**
      * @dev Divide a common price quantity by a price, returning a `toScale` quantity
      */
     function divPrice(uint n, uint price, uint64 toScale) internal pure returns (uint) {
-        return n * toScale / price;
+        unchecked {
+            return n * toScale / price;
+        }
     }
 
     /**
@@ -948,10 +1038,14 @@ contract Comet is CometMath, CometStorage {
 
         if (principal >= 0) {
             uint indexDelta = totals.trackingSupplyIndex - basic.baseTrackingIndex;
-            basic.baseTrackingAccrued += safe64(uint104(principal) * indexDelta / baseIndexScale); // XXX decimals
+            unchecked {
+                basic.baseTrackingAccrued += safe64(uint104(principal) * indexDelta / baseIndexScale); // XXX decimals
+            }
         } else {
             uint indexDelta = totals.trackingBorrowIndex - basic.baseTrackingIndex;
-            basic.baseTrackingAccrued += safe64(uint104(-principal) * indexDelta / baseIndexScale); // XXX decimals
+            unchecked {
+                basic.baseTrackingAccrued += safe64(uint104(-principal) * indexDelta / baseIndexScale); // XXX decimals
+            }
         }
 
         if (principalNew >= 0) {
@@ -1059,10 +1153,12 @@ contract Comet is CometMath, CometStorage {
 
         (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, amount);
 
-        totalSupplyBalance += supplyAmount;
-        totalBorrowBalance -= repayAmount;
+        unchecked {
+            totalSupplyBalance += supplyAmount;
+            totalBorrowBalance -= repayAmount;
 
-        dstBalance += signed104(amount);
+            dstBalance += signed104(amount);
+        }
 
         totals.totalSupplyBase = principalValueSupply(totals, totalSupplyBalance);
         totals.totalBorrowBase = principalValueBorrow(totals, totalBorrowBalance);
@@ -1079,11 +1175,16 @@ contract Comet is CometMath, CometStorage {
 
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         TotalsCollateral memory totals = totalsCollateral[asset];
-        totals.totalSupplyAsset += amount;
+        unchecked {
+            totals.totalSupplyAsset += amount;
+        }
         require(totals.totalSupplyAsset <= assetInfo.supplyCap, "supply cap exceeded");
 
         uint128 dstCollateral = userCollateral[dst][asset].balance;
-        uint128 dstCollateralNew = dstCollateral + amount;
+        uint128 dstCollateralNew;
+        unchecked {
+            dstCollateralNew = dstCollateral + amount;
+        }
 
         totalsCollateral[asset] = totals;
         userCollateral[dst][asset].balance = dstCollateralNew;
@@ -1145,11 +1246,13 @@ contract Comet is CometMath, CometStorage {
         (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcBalance, amount);
         (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, amount);
 
-        totalSupplyBalance += supplyAmount - withdrawAmount;
-        totalBorrowBalance += borrowAmount - repayAmount;
+        unchecked {
+            totalSupplyBalance += supplyAmount - withdrawAmount;
+            totalBorrowBalance += borrowAmount - repayAmount;
 
-        srcBalance -= signed104(amount);
-        dstBalance += signed104(amount);
+            srcBalance -= signed104(amount);
+            dstBalance += signed104(amount);
+        }
 
         totals.totalSupplyBase = principalValueSupply(totals, totalSupplyBalance);
         totals.totalBorrowBase = principalValueBorrow(totals, totalBorrowBalance);
@@ -1170,8 +1273,12 @@ contract Comet is CometMath, CometStorage {
     function transferCollateral(address src, address dst, address asset, uint128 amount) internal {
         uint128 srcCollateral = userCollateral[src][asset].balance;
         uint128 dstCollateral = userCollateral[dst][asset].balance;
-        uint128 srcCollateralNew = srcCollateral - amount;
-        uint128 dstCollateralNew = dstCollateral + amount;
+        uint128 srcCollateralNew;
+        uint128 dstCollateralNew;
+        unchecked {
+            srcCollateralNew = srcCollateral - amount;
+            dstCollateralNew = dstCollateral + amount;
+        }
 
         userCollateral[src][asset].balance = srcCollateralNew;
         userCollateral[dst][asset].balance = dstCollateralNew;
@@ -1242,10 +1349,12 @@ contract Comet is CometMath, CometStorage {
 
         (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcBalance, amount);
 
-        totalSupplyBalance -= withdrawAmount;
-        totalBorrowBalance += borrowAmount;
+        unchecked {
+            totalSupplyBalance -= withdrawAmount;
+            totalBorrowBalance += borrowAmount;
 
-        srcBalance -= signed104(amount);
+            srcBalance -= signed104(amount);
+        }
 
         totals.totalSupplyBase = principalValueSupply(totals, totalSupplyBalance);
         totals.totalBorrowBase = principalValueBorrow(totals, totalBorrowBalance);
@@ -1269,7 +1378,10 @@ contract Comet is CometMath, CometStorage {
         totals.totalSupplyAsset -= amount;
 
         uint128 srcCollateral = userCollateral[src][asset].balance;
-        uint128 srcCollateralNew = srcCollateral - amount;
+        uint128 srcCollateralNew;
+        unchecked {
+            srcCollateralNew = srcCollateral - amount;
+        }
 
         totalsCollateral[asset] = totals;
         userCollateral[src][asset].balance = srcCollateralNew;
@@ -1291,15 +1403,23 @@ contract Comet is CometMath, CometStorage {
         require(!isAbsorbPaused(), "absorb is paused");
 
         uint startGas = gasleft();
-        for (uint i = 0; i < accounts.length; i++) {
+        for (uint i = 0; i < accounts.length;) {
             absorbInternal(accounts[i]);
+            unchecked {
+                i++;
+            }
         }
-        uint gasUsed = startGas - gasleft();
+        uint gasUsed;
+        unchecked {
+            gasUsed = startGas - gasleft();
+        }
 
         LiquidatorPoints memory points = liquidatorPoints[absorber];
-        points.numAbsorbs++;
-        points.numAbsorbed += safe64(accounts.length);
-        points.approxSpend += safe128(gasUsed * block.basefee);
+        unchecked {
+            points.numAbsorbs++;
+            points.numAbsorbed += safe64(accounts.length);
+            points.approxSpend += safe128(gasUsed * block.basefee);
+        }
         liquidatorPoints[absorber] = points;
     }
 
@@ -1319,23 +1439,33 @@ contract Comet is CometMath, CometStorage {
         uint basePrice = getPrice(baseTokenPriceFeed);
         uint deltaValue = 0;
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets;) {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory assetInfo = getAssetInfo(i);
                 address asset = assetInfo.asset;
                 uint128 seizeAmount = userCollateral[account][asset].balance;
                 if (seizeAmount > 0) {
                     userCollateral[account][asset].balance = 0;
-                    userCollateral[address(this)][asset].balance += seizeAmount;
+                    unchecked {
+                        userCollateral[address(this)][asset].balance += seizeAmount;
+                    }
 
                     uint value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
-                    deltaValue += mulFactor(value, assetInfo.liquidationFactor);
+                    unchecked {
+                        deltaValue += mulFactor(value, assetInfo.liquidationFactor);
+                    }
                 }
+            }
+            unchecked {
+                i++;
             }
         }
 
         uint104 deltaBalance = safe104(divPrice(deltaValue, basePrice, baseScale));
-        int104 newBalance = oldBalance + signed104(deltaBalance);
+        int104 newBalance;
+        unchecked {
+            newBalance = oldBalance + signed104(deltaBalance);
+        }
         // New balance will not be negative, all excess debt absorbed by reserves
         newBalance = newBalance < 0 ? int104(0) : newBalance;
         updateBaseBalance(totals, account, accountUser, principalValue(totals, newBalance));
@@ -1343,9 +1473,11 @@ contract Comet is CometMath, CometStorage {
         // Reserves are decreased by increasing total supply and decreasing borrows
         //  the amount of debt repaid by reserves is `newBalance - oldBalance`
         // Note: new balance must be non-negative due to the above thresholding
-        totals.totalSupplyBase += principalValueSupply(totals, unsigned104(newBalance));
-        // Note: old balance must be negative since the account is liquidatable
-        totals.totalBorrowBase -= principalValueBorrow(totals, unsigned104(-oldBalance));
+        unchecked {
+            totals.totalSupplyBase += principalValueSupply(totals, unsigned104(newBalance));
+            // Note: old balance must be negative since the account is liquidatable
+            totals.totalBorrowBase -= principalValueBorrow(totals, unsigned104(-oldBalance));
+        }
 
         totalsBasic = totals;
     }
@@ -1384,8 +1516,11 @@ contract Comet is CometMath, CometStorage {
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         uint assetPrice = getPrice(assetInfo.priceFeed);
         uint basePrice = getPrice(baseTokenPriceFeed);
-        uint assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPrice;
-        return assetWeiPerUnitBase * baseAmount / baseScale;
+        uint assetWeiPerUnitBase;
+        unchecked {
+            assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPrice;
+            return assetWeiPerUnitBase * baseAmount / baseScale;
+        }
     }
 
     /**
