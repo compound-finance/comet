@@ -55,12 +55,4 @@ contract CometMath {
         require(n >= 0, "number is negative");
         return uint256(n);
     }
-
-    function toUInt8(bool x) internal pure returns (uint8) {
-        return x ? 1 : 0;
-    }
-
-    function toBool(uint8 x) internal pure returns (bool) {
-        return x != 0;
-    }
 }

@@ -171,13 +171,6 @@ contract Comet is CometMath, CometStorage {
 
     /** Internal constants **/
 
-    /// @dev Offsets for specific actions in the pause flag bit array
-    uint8 internal constant PAUSE_SUPPLY_OFFSET = 0;
-    uint8 internal constant PAUSE_TRANSFER_OFFSET = 1;
-    uint8 internal constant PAUSE_WITHDRAW_OFFSET = 2;
-    uint8 internal constant PAUSE_ABSORB_OFFSET = 3;
-    uint8 internal constant PAUSE_BUY_OFFSET = 4;
-
     /// @dev 365 days * 24 hours * 60 minutes * 60 seconds
     uint64 internal constant SECONDS_PER_YEAR = 31_536_000;
 
@@ -834,48 +827,11 @@ contract Comet is CometMath, CometStorage {
     ) external {
         require(msg.sender == governor || msg.sender == pauseGuardian, "Unauthorized");
 
-        totalsBasic.pauseFlags =
-            uint8(0) |
-            (toUInt8(supplyPaused) << PAUSE_SUPPLY_OFFSET) |
-            (toUInt8(transferPaused) << PAUSE_TRANSFER_OFFSET) |
-            (toUInt8(withdrawPaused) << PAUSE_WITHDRAW_OFFSET) |
-            (toUInt8(absorbPaused) << PAUSE_ABSORB_OFFSET) |
-            (toUInt8(buyPaused) << PAUSE_BUY_OFFSET);
-    }
-
-    /**
-     * @return Whether or not supply actions are paused
-     */
-    function isSupplyPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_SUPPLY_OFFSET));
-    }
-
-    /**
-     * @return Whether or not transfer actions are paused
-     */
-    function isTransferPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_TRANSFER_OFFSET));
-    }
-
-    /**
-     * @return Whether or not withdraw actions are paused
-     */
-    function isWithdrawPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_WITHDRAW_OFFSET));
-    }
-
-    /**
-     * @return Whether or not absorb actions are paused
-     */
-    function isAbsorbPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_ABSORB_OFFSET));
-    }
-
-    /**
-     * @return Whether or not buy actions are paused
-     */
-    function isBuyPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_BUY_OFFSET));
+        isSupplyPaused = supplyPaused;
+        isTransferPaused = transferPaused;
+        isWithdrawPaused = withdrawPaused;
+        isAbsorbPaused = absorbPaused;
+        isBuyPaused = buyPaused;
     }
 
     /**
@@ -1032,7 +988,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Supply either collateral or base asset, depending on the asset, if operator is allowed
      */
     function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal {
-        require(!isSupplyPaused(), "supply is paused");
+        require(!isSupplyPaused, "supply is paused");
         require(hasPermission(from, operator), "operator not permitted");
 
         if (asset == baseToken) {
@@ -1116,7 +1072,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Transfer either collateral or base asset, depending on the asset, if operator is allowed
      */
     function transferInternal(address operator, address src, address dst, address asset, uint amount) internal {
-        require(!isTransferPaused(), "transfer is paused");
+        require(!isTransferPaused, "transfer is paused");
         require(hasPermission(src, operator), "operator not permitted");
         require(src != dst, "self-transfer not allowed");
 
@@ -1217,7 +1173,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Withdraw either collateral or base asset, depending on the asset, if operator is allowed
      */
     function withdrawInternal(address operator, address src, address to, address asset, uint amount) internal {
-        require(!isWithdrawPaused(), "withdraw is paused");
+        require(!isWithdrawPaused, "withdraw is paused");
         require(hasPermission(src, operator), "operator not permitted");
 
         if (asset == baseToken) {
@@ -1288,7 +1244,7 @@ contract Comet is CometMath, CometStorage {
      * @param accounts The list of underwater accounts to absorb
      */
     function absorb(address absorber, address[] calldata accounts) external {
-        require(!isAbsorbPaused(), "absorb is paused");
+        require(!isAbsorbPaused, "absorb is paused");
 
         uint startGas = gasleft();
         for (uint i = 0; i < accounts.length; i++) {
@@ -1359,7 +1315,7 @@ contract Comet is CometMath, CometStorage {
      * @param recipient The recipient address
      */
     function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external {
-        require(!isBuyPaused(), "buy is paused");
+        require(!isBuyPaused, "buy is paused");
 
         int reserves = getReserves();
         require(reserves < 0 || uint(reserves) < targetReserves, "no ongoing sale");
