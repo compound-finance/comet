@@ -19,17 +19,8 @@ contract CometHarness is CometHarnessGetters {
     mapping (address => uint8) asset_index;
 
     function get_Index_Of_Collateral_Asset(address asset) public view returns (uint8){
-        
+        return asset_index[asset];
     }
-
-
-
-
-
-
-
-
-
 
 
     /*********** Simplification ***********/
@@ -54,7 +45,7 @@ contract CometHarness is CometHarnessGetters {
 
     }
     
-    function getUtilizationInternal(TotalsBasic memory totals) internal pure override returns  (uint) {
+    function getUtilizationInternal(TotalsBasic memory totals) internal view override returns  (uint) {
         return symbolicUtilization[totals.totalSupplyBase][totals.totalBorrowBase];
     }
 }

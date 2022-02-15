@@ -11,6 +11,7 @@ methods {
     baseToken() returns address envfree
     getTotalSupplyBase() returns (uint104) envfree
     getTotalBorrowBase() returns (uint104) envfree 
+    getTotalsSupplyAsset(address asset) returns (uint128) envfree  
 }
 
 
@@ -58,6 +59,13 @@ invariant totalBaseToken()
     }
 }
 
+invariant totalCollateralPerAsset(address asset) 
+    sumBalancePerAssert[asset] == getTotalsSupplyAsset(asset)     
+    {
+        preserved {
+            simplifiedAssumptions();
+        }
+    }
 
 function simplifiedAssumptions() {
     env e;
@@ -65,7 +73,7 @@ function simplifiedAssumptions() {
     require getTotalBaseBorrowIndex(e) == baseIndexScale(e);
 }
 
-rule withraw_all_balance(){
+rule withdraw_all_balance(){
     env e;
     uint balance = baseToken.balanceOf(currentContract);
     withdraw(e.msg.sender,balance);
