@@ -1055,6 +1055,8 @@ contract Comet is CometMath, CometStorage {
     function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal {
         require(!isSupplyPaused(), "supply is paused");
         require(hasPermission(from, operator), "operator not permitted");
+        // require(!isSupplyPaused(), "s1");
+        // require(hasPermission(from, operator), "s2");        
 
         if (asset == baseToken) {
             return supplyBase(from, dst, safe104(amount));
@@ -1137,9 +1139,12 @@ contract Comet is CometMath, CometStorage {
      * @dev Transfer either collateral or base asset, depending on the asset, if operator is allowed
      */
     function transferInternal(address operator, address src, address dst, address asset, uint amount) internal {
-        require(!isTransferPaused(), "transfer is paused");
-        require(hasPermission(src, operator), "operator not permitted");
-        require(src != dst, "self-transfer not allowed");
+        // require(!isTransferPaused(), "transfer is paused");
+        // require(hasPermission(src, operator), "operator not permitted");
+        // require(src != dst, "self-transfer not allowed");
+        require(!isTransferPaused(), "t3");
+        require(hasPermission(src, operator), "t4");
+        require(src != dst, "t5");
 
         if (asset == baseToken) {
             return transferBase(src, dst, safe104(amount));
