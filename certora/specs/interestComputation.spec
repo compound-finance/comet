@@ -89,11 +89,12 @@ env e;
     setup(e);
 
     uint64 borrowRate = getBorrowRate(e);
+   
     // assert getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase();
     // // uint64 perSecondInterestRateBase1 = perSecondInterestRateBase();
-    // // uint64 perSecondInterestRateSlopeLow1 = perSecondInterestRateSlopeLow(e);
-    // // uint64 perSecondInterestRateSlopeHigh1 = perSecondInterestRateSlopeHigh(e);
-    // uint64 kink1 = kink(e);
+    // // uint64 perSecondInterestRateSlopeLow1 = perSecondInterestRateSlopeLow();
+    // // uint64 perSecondInterestRateSlopeHigh1 = perSecondInterestRateSlopeHigh();
+    // uint64 kink1 = kink();
 
 
     assert borrowRate == perSecondInterestRateBase() => getUtilization(e) == 0;
@@ -152,18 +153,8 @@ env e;
         getTotalBaseBorrowIndex() >= baseIndexScale();
 }
 
-//The minimum base token reserves which must be held before collateral is hodled
-rule no_reserves_no_borrow(){
-    env e;
-    setup(e);
-    uint104 temp1 = targetReserves();
-    mathint target_Reserves = temp1;
-    int temp2 = getReserves(e);
-    mathint reserves = to_mathint(temp2);
 
-    assert reserves < target_Reserves => getTotalBorrowBase(e) == 0;
-}
-
+//status link description
 rule SupplyIndex_vs_BorrowIndex(){
 env e;
     setup(e);

@@ -127,3 +127,14 @@ rule withdraw_all_balance(){
     withdraw(e,e.msg.sender,balance);
     assert false;
 }
+
+rule no_reserves_zero_balance(){
+    env e;
+    simplifiedAssumptions();
+    
+    int reserves = getReserves(e);
+    uint balance = _baseToken.balanceOf(currentContract);
+    // mathint reserves = to_mathint(temp2);
+
+    assert reserves == 0 <=> balance == 0;
+}
