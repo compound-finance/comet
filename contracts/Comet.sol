@@ -743,7 +743,7 @@ contract Comet is CometMainInterface {
     /**
      * @dev Divide a common price quantity by a price, returning a `toScale` quantity
      */
-    function divPrice(uint n, uint price, uint64 toScale) internal pure returns (uint) {
+    function divPrice(uint n, uint price, uint toScale) internal pure returns (uint) {
         return n * toScale / price;
     }
 
