@@ -18,7 +18,6 @@ contract CometStorage {
         uint104 totalSupplyBase;
         uint104 totalBorrowBase;
         uint40 lastAccrualTime;
-        uint8 pauseFlags;
     }
 
     struct TotalsCollateral {
@@ -66,4 +65,10 @@ contract CometStorage {
 
     /// @notice Mapping of magic liquidator points
     mapping(address => LiquidatorPoints) public liquidatorPoints;
+
+    bool public isSupplyPaused = false;
+    bool public isTransferPaused = false;
+    bool public isWithdrawPaused = false;
+    bool public isAbsorbPaused = false;
+    bool public isBuyPaused = false;
 }
