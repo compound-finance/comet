@@ -507,10 +507,8 @@ contract Comet is CometMath, CometStorage {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
         require(owner == signatory, "owner is not signatory");
-        require(signatory != address(0), "invalid signature");
-        require(nonce == userNonce[signatory], "invalid nonce");
+        require(nonce == userNonce[signatory]++, "invalid nonce");
         require(block.timestamp < expiry, "signed transaction expired");
-        userNonce[signatory]++;
         allowInternal(signatory, manager, isAllowed_);
     }
 
