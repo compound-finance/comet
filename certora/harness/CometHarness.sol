@@ -22,6 +22,11 @@ contract CometHarness is CometHarnessGetters {
         return asset_index[asset];
     }
 
+    uint256 nonDet1;
+    uint256 nonDet2;
+    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal override view returns (uint256, uint256) {
+        return (nonDet1,nonDet2);
+    }
 
     /*********** Simplification ***********/
     /* under approximation (not taking into account all possible cases) */
