@@ -81,4 +81,70 @@ contract CometHarness is Comet {
     function accrue() external {
         accrueInternal();
     }
+
+    /**
+     * @notice Calculate the amount of borrow liquidity for account
+     * @param account The address to check liquidity for
+     * @return The common price quantity of borrow liquidity
+     */
+    function getBorrowLiquidity(address account) external view returns (int) {
+        uint16 assetsIn = userBasic[account].assetsIn;
+        TotalsBasic memory totals = totalsBasic;
+
+        int liquidity = signedMulPrice(
+            presentValue(totals, userBasic[account].principal),
+            getPrice(baseTokenPriceFeed),
+            baseScale
+        );
+
+        for (uint8 i = 0; i < numAssets; i++) {
+            if (isInAsset(assetsIn, i)) {
+                AssetInfo memory asset = getAssetInfo(i);
+                uint newAmount = mulPrice(
+                    userCollateral[account][asset.asset].balance,
+                    getPrice(asset.priceFeed),
+                    safe64(asset.scale)
+                );
+                liquidity += signed256(mulFactor(
+                    newAmount,
+                    asset.borrowCollateralFactor
+                ));
+            }
+        }
+
+        return liquidity;
+    }
+
+    /**
+     * @notice Calculate the amount of liquidation margin for account
+     * @param account The address to check margin for
+     * @return The common price quantity of liquidation margin
+     */
+    function getLiquidationMargin(address account) external view returns (int) {
+        uint16 assetsIn = userBasic[account].assetsIn;
+        TotalsBasic memory totals = totalsBasic;
+
+        int liquidity = signedMulPrice(
+            presentValue(totals, userBasic[account].principal),
+            getPrice(baseTokenPriceFeed),
+            baseScale
+        );
+
+        for (uint8 i = 0; i < numAssets; i++) {
+            if (isInAsset(assetsIn, i)) {
+                AssetInfo memory asset = getAssetInfo(i);
+                uint newAmount = mulPrice(
+                    userCollateral[account][asset.asset].balance,
+                    getPrice(asset.priceFeed),
+                    asset.scale
+                );
+                liquidity += signed256(mulFactor(
+                    newAmount,
+                    asset.liquidateCollateralFactor
+                ));
+            }
+        }
+
+        return liquidity;
+    }
 }
