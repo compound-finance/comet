@@ -1103,7 +1103,8 @@ contract Comet is CometMath, CometStorage {
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         TotalsCollateral memory totals = totalsCollateral[asset];
         totals.totalSupplyAsset += amount;
-        require(totals.totalSupplyAsset <= assetInfo.supplyCap, "supply cap exceeded");
+        // require(totals.totalSupplyAsset <= assetInfo.supplyCap, "supply cap exceeded");
+        require(totals.totalSupplyAsset <= assetInfo.supplyCap, "s3");
 
         uint128 dstCollateral = userCollateral[dst][asset].balance;
         uint128 dstCollateralNew = dstCollateral + amount;
