@@ -195,15 +195,25 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     baseBorrowMin,
     targetReserves,
     assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], i) => {
+      const descale = factorScale / (10n**4n);
+      const decimals = BigInt(dfn(config.decimals, 18));
+      const borrowCF = BigInt(dfn(config.borrowCF, ONE - 1n));
+      const liquidateCF = BigInt(dfn(config.liquidateCF, ONE))
+      const liquidationFactor = BigInt(dfn(config.liquidationFactor, ONE));
+      const supplyCap = BigInt(dfn(config.supplyCap, exp(100, decimals)));
       if (symbol != base) {
         acc.push({
-          asset: tokens[symbol].address,
-          priceFeed: priceFeeds[symbol].address,
-          decimals: dfn(assets[symbol].decimals, 18),
-          borrowCollateralFactor: dfn(config.borrowCF, ONE - 1n),
-          liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
-          liquidationFactor: dfn(config.liquidationFactor, ONE),
-          supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
+          word_a: (
+            (BigInt(tokens[symbol].address)) |
+              ((borrowCF / descale) << 160n) |
+              ((liquidateCF / descale) << 176n) |
+              ((liquidationFactor / descale) << 192n)
+          ),
+          word_b: (
+            (BigInt(priceFeeds[symbol].address)) |
+              (decimals << 160n) |
+              ((supplyCap / exp(1, decimals)) << 168n)
+          ),
         });
       }
       return acc;
