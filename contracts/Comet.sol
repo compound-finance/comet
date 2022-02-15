@@ -218,13 +218,17 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Gets the info for an asset or empty, for initialization
      */
-    function _getAssetConfig(AssetConfig[] memory assetConfigs, uint i) internal pure returns (AssetConfig memory) {
-        if (i < assetConfigs.length)
-            return assetConfigs[i];
-        return AssetConfig({
-            word_a: uint256(0),
-            word_b: uint256(0)
-        });
+    function _getAssetConfig(AssetConfig[] memory assetConfigs, uint i) internal pure returns (AssetConfig memory c) {
+        if (i < assetConfigs.length) {
+            assembly {
+                c := mload(add(add(assetConfigs, 0x20), mul(i, 0x20)))
+            }
+        } else {
+            c = AssetConfig({
+                word_a: uint256(0),
+                word_b: uint256(0)
+            });
+        }
     }
 
     /**
