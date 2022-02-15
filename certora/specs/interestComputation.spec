@@ -10,6 +10,11 @@ methods{
     getlastAccrualTime() returns (uint40) envfree;
     factorScale() returns (uint64) envfree;
     perSecondInterestRateBase() returns (uint64) envfree;
+    perSecondInterestRateSlopeLow() returns (uint64) envfree;
+    perSecondInterestRateSlopeHigh() returns (uint64) envfree;
+    kink() returns (uint64) envfree;
+    baseIndexScale() returns (uint64) envfree;
+    targetReserves() returns (uint104) envfree;
 }
 
 rule SupplyIndex_BorrowIndex_rise_with_time(){
@@ -85,6 +90,12 @@ env e;
 
     uint64 borrowRate = getBorrowRate(e);
     // assert getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase();
+    // // uint64 perSecondInterestRateBase1 = perSecondInterestRateBase();
+    // // uint64 perSecondInterestRateSlopeLow1 = perSecondInterestRateSlopeLow(e);
+    // // uint64 perSecondInterestRateSlopeHigh1 = perSecondInterestRateSlopeHigh(e);
+    // uint64 kink1 = kink(e);
+
+
     assert borrowRate == perSecondInterestRateBase() => getUtilization(e) == 0;
 }
     
@@ -92,6 +103,7 @@ env e;
 rule accrue_not_reverted(){
 env e1;
 env e2;
+    setup(e1);
     require e2.msg.value == 0 && e1.msg.value == 0; // reverts if msg.value != 0
     require e2.block.timestamp == e1.block.timestamp + 1;
     require e2.block.timestamp < 2^40; // reverts if block.timestamp > 2^40
@@ -131,17 +143,54 @@ env e2;
 
 //Verifies that TotalBaseSupplyIndex and getTotalBaseBorrowIndex always greater than baseIndexScale
 rule SupplyIndex_BorrowIndex_GE_baseIndexScale(){
-    env e;
-    require getTotalBaseSupplyIndex() >= baseIndexScale(e) &&
-        getTotalBaseBorrowIndex() >= baseIndexScale(e);
+env e;
+    setup(e);
+    require getTotalBaseSupplyIndex() >= baseIndexScale() &&
+        getTotalBaseBorrowIndex() >= baseIndexScale();
     accrue(e);
-    assert getTotalBaseSupplyIndex() >= baseIndexScale(e) &&
-        getTotalBaseBorrowIndex() >= baseIndexScale(e);
+    assert getTotalBaseSupplyIndex() >= baseIndexScale() &&
+        getTotalBaseBorrowIndex() >= baseIndexScale();
+}
+
+//The minimum base token reserves which must be held before collateral is hodled
+rule no_reserves_no_borrow(){
+    env e;
+    setup(e);
+    uint104 temp1 = targetReserves();
+    mathint target_Reserves = temp1;
+    int temp2 = getReserves(e);
+    mathint reserves = to_mathint(temp2);
+
+    assert reserves < target_Reserves => getTotalBorrowBase(e) == 0;
+}
+
+rule SupplyIndex_vs_BorrowIndex(){
+env e;
+    setup(e);
+    require getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
+
+    accrue(e);
+
+    assert getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
+}
+
+rule SupplyRate_vs_BorrowRate(){
+env e;
+    setup(e);
+    require getBorrowRate(e) > getSupplyRate(e);
+
+    accrue(e);
+
+    assert  getBorrowRate(e) > getSupplyRate(e);
 }
 
 function setup(env e){
-    require getTotalBaseSupplyIndex() >= baseIndexScale(e) &&
-        getTotalBaseBorrowIndex() >= baseIndexScale(e);
+    require getTotalBaseSupplyIndex() >= baseIndexScale() &&
+        getTotalBaseBorrowIndex() >= baseIndexScale();
+    require getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
+    // require getBorrowRate(e) > getSupplyRate(e);
+    require perSecondInterestRateSlopeLow() > 0 &&
+            perSecondInterestRateSlopeLow() < perSecondInterestRateSlopeHigh();
 }
 // run on comet.sol 
 
