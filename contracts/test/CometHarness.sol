@@ -82,6 +82,21 @@ contract CometHarness is Comet {
         accrueInternal();
     }
 
+    function getSupplyRate() external view returns (uint64) {
+        TotalsBasic memory totals = totalsBasic;
+        return getSupplyRateInternal(totals.baseSupplyIndex, totals.baseBorrowIndex, totals.totalSupplyBase, totals.totalBorrowBase);
+    }
+
+    function getBorrowRate() external view returns (uint64) {
+        TotalsBasic memory totals = totalsBasic;
+        return getBorrowRateInternal(totals.baseSupplyIndex, totals.baseBorrowIndex, totals.totalSupplyBase, totals.totalBorrowBase);
+    }
+
+    function getUtilization() external view returns (uint) {
+        TotalsBasic memory totals = totalsBasic;
+        return getUtilizationInternal(totals.baseSupplyIndex, totals.baseBorrowIndex, totals.totalSupplyBase, totals.totalBorrowBase);
+    }
+
     /**
      * @notice Calculate the amount of borrow liquidity for account
      * @param account The address to check liquidity for
