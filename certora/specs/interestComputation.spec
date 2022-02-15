@@ -48,8 +48,11 @@ rule SupplyIndex_BorrowIndex_monotonic(){
 //         uint8 pauseFlags;
 // baseSupplyIndex, baseBorrowIndex, trackingSupplyIndex, trackingBorrowIndex,totalSupplyBase, totalBorrowBase,lastAccrualTime, pauseFlags   =  totalsBasic(e);
 
+// utilization increase implies supplyRate increase
 rule supplyRate_vs_Utilization(){
 env e;
+    setup(e);
+
 uint64 baseSupplyIndex1;
 uint64 baseBorrowIndex1;
 uint64 trackingSupplyIndex1;
@@ -61,24 +64,28 @@ uint64 baseSupplyIndex2;
 uint64 baseBorrowIndex2;
 uint64 trackingSupplyIndex2;
 uint64 trackingBorrowIndex2;
-    // calldataarg args;
-    // f(e,args);
+
 uint64 supplyRate_2 = getSpecificSupplyRateInternal(baseSupplyIndex2,baseBorrowIndex2,trackingSupplyIndex2,trackingBorrowIndex2);
 uint utilization_2 = getSpecificUtilizationInternal(baseSupplyIndex2,baseBorrowIndex2,trackingSupplyIndex2,trackingBorrowIndex2);
 
-    assert utilization_2 > utilization_1 => supplyRate_2 == supplyRate_1;
+    assert utilization_2 > utilization_1 => supplyRate_2 > supplyRate_1;
 }
 
 rule utilization_LE_factorScale(){
 env e;
+    setup(e);
+
 uint utilization = getUtilization(e);
     assert utilization <= factorScale();
 }
     
 rule utilization_zero(){
 env e;
+    setup(e);
+
     uint64 borrowRate = getBorrowRate(e);
-    assert getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase();
+    // assert getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase();
+    assert borrowRate == perSecondInterestRateBase() => getUtilization(e) == 0;
 }
     
 
@@ -94,13 +101,26 @@ env e2;
     assert !lastReverted;
 }
 
-invariant borrowBase_vs_utilization(env e)
-    getTotalBorrowBase(e) > 0 <=> getUtilization(e) > 0
 
+
+// invariant borrowBase_vs_utilization(env e)
+//     getTotalBorrowBase(e) == 0 <=> getUtilization(e) == 0
+// {
+//     preserved with (env e2){
+//     simplify(e2);
+//     }
+// }
+rule borrowBase_vs_utilization(){
+env e;
+    setup(e);
+    assert getTotalBorrowBase(e) == 0 <=> getUtilization(e) == 0;
+}
+// Verifies that isLiquidatable == false can change to true only if getPrice() has changed
 rule isLiquidatable_false_should_not_change(address account){
 env e1;
 env e2;
     require e2.block.timestamp > e1.block.timestamp;
+    setup(e1);
 
     require isLiquidatable(e1,account) == false;
     uint price1 = getPrice(e1,baseTokenPriceFeed(e1));
@@ -109,7 +129,20 @@ env e2;
     assert isLiquidatable(e2,account) => price1 != price2;
 }
 
+//Verifies that TotalBaseSupplyIndex and getTotalBaseBorrowIndex always greater than baseIndexScale
+rule SupplyIndex_BorrowIndex_GE_baseIndexScale(){
+    env e;
+    require getTotalBaseSupplyIndex() >= baseIndexScale(e) &&
+        getTotalBaseBorrowIndex() >= baseIndexScale(e);
+    accrue(e);
+    assert getTotalBaseSupplyIndex() >= baseIndexScale(e) &&
+        getTotalBaseBorrowIndex() >= baseIndexScale(e);
+}
 
+function setup(env e){
+    require getTotalBaseSupplyIndex() >= baseIndexScale(e) &&
+        getTotalBaseBorrowIndex() >= baseIndexScale(e);
+}
 // run on comet.sol 
 
 // prove and assume:

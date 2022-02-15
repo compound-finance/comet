@@ -72,3 +72,10 @@ function simplifiedAssumptions() {
     require getTotalBaseSupplyIndex(e) == baseIndexScale(e);
     require getTotalBaseBorrowIndex(e) == baseIndexScale(e);
 }
+
+rule withdraw_all_balance(){
+    env e;
+    uint balance = baseToken.balanceOf(currentContract);
+    withdraw(e.msg.sender,balance);
+    assert false;
+}
