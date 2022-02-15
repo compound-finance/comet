@@ -76,65 +76,65 @@ contract Comet is CometMath, CometStorage {
     address public immutable baseTokenPriceFeed;
 
     /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope (factor)
-    uint64 public immutable kink;
+    uint public immutable kink;
 
     /// @notice Per second interest rate slope applied when utilization is below kink (factor)
-    uint64 public immutable perSecondInterestRateSlopeLow;
+    uint public immutable perSecondInterestRateSlopeLow;
 
     /// @notice Per second interest rate slope applied when utilization is above kink (factor)
-    uint64 public immutable perSecondInterestRateSlopeHigh;
+    uint public immutable perSecondInterestRateSlopeHigh;
 
     /// @notice Per second base interest rate (factor)
-    uint64 public immutable perSecondInterestRateBase;
+    uint public immutable perSecondInterestRateBase;
 
     /// @notice The rate of total interest paid that goes into reserves (factor)
-    uint64 public immutable reserveRate;
+    uint public immutable reserveRate;
 
     /// @notice The scale for base token (must be less than 18 decimals)
-    uint64 public immutable baseScale;
+    uint public immutable baseScale;
 
     /// @notice The scale for base index (depends on time/rate scales, not base token)
-    uint64 public constant baseIndexScale = 1e15;
+    uint public constant baseIndexScale = 1e15;
 
     /// @notice The scale for factors
-    uint64 public constant factorScale = 1e18;
+    uint public constant factorScale = 1e18;
 
     /// @notice The decimals required for a price feed
-    uint8 public constant priceFeedDecimals = 8;
+    uint public constant priceFeedDecimals = 8;
 
     /// @notice The scale for prices (in USD)
-    uint64 public constant priceScale = 1e8;
+    uint public constant priceScale = 1e8;
 
     /// @notice The scale for reward tracking
-    uint64 public immutable trackingIndexScale;
+    uint public immutable trackingIndexScale;
 
     /// @notice The speed at which supply rewards are tracked (in trackingIndexScale)
-    uint64 public immutable baseTrackingSupplySpeed;
+    uint public immutable baseTrackingSupplySpeed;
 
     /// @notice The speed at which borrow rewards are tracked (in trackingIndexScale)
-    uint64 public immutable baseTrackingBorrowSpeed;
+    uint public immutable baseTrackingBorrowSpeed;
 
     /// @notice The minimum amount of base wei for rewards to accrue
     /// @dev This must be large enough so as to prevent division by base wei from overflowing the 64 bit indices.
-    uint104 public immutable baseMinForRewards;
+    uint public immutable baseMinForRewards;
 
     /// @notice The minimum base amount required to initiate a borrow
-    uint104 public immutable baseBorrowMin;
+    uint public immutable baseBorrowMin;
 
     /// @notice The minimum base token reserves which must be held before collateral is hodled
-    uint104 public immutable targetReserves;
+    uint public immutable targetReserves;
 
     /// @notice The max number of assets this contract is hardcoded to support
     /// @dev Do not change this variable without updating all the fields
     /// throughout the contract (including the size of UserBasic.assetsIn and
     /// the integer conversion in isInAsset and updateAssetsIn)
-    uint8 public constant maxAssets = 15;
+    uint public constant maxAssets = 15;
 
     /// @notice The number of assets this contract actually supports
-    uint8 public immutable numAssets;
+    uint public immutable numAssets;
 
     /// @notice The max value for a collateral factor (1)
-    uint64 public constant maxCollateralFactor = factorScale;
+    uint public constant maxCollateralFactor = factorScale;
 
     /**  Collateral asset configuration (packed) **/
 
@@ -251,8 +251,8 @@ contract Comet is CometMath, CometStorage {
 
         // Initialize aggregates
         lastAccrualTime = getNow();
-        baseSupplyIndex = baseIndexScale;
-        baseBorrowIndex = baseIndexScale;
+        baseSupplyIndex = uint64(baseIndexScale);
+        baseBorrowIndex = uint64(baseIndexScale);
         trackingSupplyIndex = 0;
         trackingBorrowIndex = 0;
     }
@@ -628,7 +628,7 @@ contract Comet is CometMath, CometStorage {
                 uint newAmount = mulPrice(
                     userCollateral[account][asset.asset].balance,
                     getPrice(asset.priceFeed),
-                    safe64(asset.scale)
+                    asset.scale
                 );
                 liquidity += signed256(mulFactor(
                     newAmount,
@@ -849,21 +849,21 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Multiply a `fromScale` quantity by a price, returning a common price quantity
      */
-    function mulPrice(uint n, uint price, uint64 fromScale) internal pure returns (uint) {
+    function mulPrice(uint n, uint price, uint fromScale) internal pure returns (uint) {
         return n * price / fromScale;
     }
 
     /**
      * @dev Multiply a signed `fromScale` quantity by a price, returning a common price quantity
      */
-    function signedMulPrice(int n, uint price, uint64 fromScale) internal pure returns (int) {
+    function signedMulPrice(int n, uint price, uint fromScale) internal pure returns (int) {
         return n * signed256(price) / signed256(fromScale);
     }
 
     /**
      * @dev Divide a common price quantity by a price, returning a `toScale` quantity
      */
-    function divPrice(uint n, uint price, uint64 toScale) internal pure returns (uint) {
+    function divPrice(uint n, uint price, uint toScale) internal pure returns (uint) {
         return n * toScale / price;
     }
 
