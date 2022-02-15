@@ -417,13 +417,6 @@ contract Comet is CometMath, CometStorage {
     /**
      * @notice Accrue interest (and rewards) in base token supply and borrows
      **/
-    function accrue() public {
-        totalsBasic = accrue(totalsBasic);
-    }
-
-    /**
-     * @notice Accrue interest (and rewards) in base token supply and borrows
-     **/
     function accrue(TotalsBasic memory totals) internal view returns (TotalsBasic memory) {
         uint40 now_ = getNow();
         uint timeElapsed = now_ - totals.lastAccrualTime;
