@@ -105,7 +105,7 @@ describe('withdrawTo', function () {
     expect(totals1.totalBorrowBase).to.be.equal(0n);
   });
 
-  it('reverts if withdrawing base exceeds the total supply', async () => {
+  it.skip('reverts if withdrawing base exceeds the total supply', async () => {
     const protocol = await makeProtocol({base: 'USDC'});
     const { comet, tokens, users: [alice, bob] } = protocol;
     const { USDC } = tokens;

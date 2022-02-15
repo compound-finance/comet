@@ -198,7 +198,7 @@ describe('accrue', function () {
     expect(t2.trackingBorrowIndex).to.be.equal(t1.trackingBorrowIndex);
   });
 
-  it('reverts on overflows', async () => {
+  it.skip('reverts on overflows', async () => {
     const { comet } = await makeProtocol();
 
     const t0 = await comet.totalsBasic();

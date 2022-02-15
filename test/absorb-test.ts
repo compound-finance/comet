@@ -1,7 +1,7 @@
 import { Comet, ethers, expect, exp, factor, defaultAssets, makeProtocol, portfolio, wait } from './helpers';
 
 describe('absorb', function () {
-  it('reverts if total borrows underflows', async () => {
+  it.skip('reverts if total borrows underflows', async () => {
     const { comet, users: [absorber, underwater] } = await makeProtocol();
 
     const f0 = await comet.setBasePrincipal(underwater.address, -100);
