@@ -11,6 +11,7 @@ methods {
     baseToken() returns address envfree
     getTotalSupplyBase() returns (uint104) envfree
     getTotalBorrowBase() returns (uint104) envfree 
+    getTotalsSupplyAsset(address asset) returns (uint128) envfree  
 }
 
 
@@ -58,7 +59,13 @@ invariant totalBaseToken()
     }
 }
 
-
+invariant totalCollateralPerAsset(address asset) 
+    sumBalancePerAssert[asset] == getTotalsSupplyAsset(asset)     
+    {
+        preserved {
+            simplifiedAssumptions();
+        }
+    }
 
 function simplifiedAssumptions() {
     env e;
