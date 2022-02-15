@@ -1186,8 +1186,10 @@ contract Comet is CometMath, CometStorage {
         updateBaseBalance(totals, dst, dstUser, principalValue(totals, dstBalance));
 
         if (srcBalance < 0) {
-            require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
-            require(isBorrowCollateralized(src), "borrow cannot be maintained");
+            // require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
+            // require(isBorrowCollateralized(src), "borrow cannot be maintained");
+            require(uint104(-srcBalance) >= baseBorrowMin, "tb1");
+            require(isBorrowCollateralized(src), "tb2");
         }
     }
 
@@ -1207,7 +1209,7 @@ contract Comet is CometMath, CometStorage {
         updateAssetsIn(dst, asset, dstCollateral, dstCollateralNew);
 
         // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
-        require(isBorrowCollateralized(src), "borrow would not be maintained");
+        require(isBorrowCollateralized(src), "tb2");
     }
 
     /**
@@ -1281,8 +1283,10 @@ contract Comet is CometMath, CometStorage {
         updateBaseBalance(totals, src, srcUser, principalValue(totals, srcBalance));
 
         if (srcBalance < 0) {
-            require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
-            require(isBorrowCollateralized(src), "borrow cannot be maintained");
+            // require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
+            // require(isBorrowCollateralized(src), "borrow cannot be maintained");
+            require(uint104(-srcBalance) >= baseBorrowMin, "tb1");
+            require(isBorrowCollateralized(src), "tb2");
         }
 
         doTransferOut(baseToken, to, amount);
@@ -1304,7 +1308,7 @@ contract Comet is CometMath, CometStorage {
         updateAssetsIn(src, asset, srcCollateral, srcCollateralNew);
 
         // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
-        require(isBorrowCollateralized(src), "borrow would not be maintained");
+        require(isBorrowCollateralized(src), "tb2");
 
         doTransferOut(asset, to, amount);
     }
