@@ -1,6 +1,12 @@
 import "B_cometSummarization.spec"
+import "erc20.spec"
+
+
+using SymbolicBaseToken as _baseToken 
+
+
 methods {
-    //temporary under approxiamtions
+    //temporary under approximations
     isInAsset(uint16 assetsIn, uint8 assetOffset) => CONSTANT;
     latestRoundData() returns uint256 => CONSTANT;
 
@@ -12,6 +18,7 @@ methods {
     getTotalSupplyBase() returns (uint104) envfree
     getTotalBorrowBase() returns (uint104) envfree 
     getTotalsSupplyAsset(address asset) returns (uint128) envfree  
+    _baseToken.balanceOf(address account) returns (uint256) envfree
 }
 
 
@@ -75,8 +82,9 @@ function simplifiedAssumptions() {
 
 rule withdraw_all_balance(){
     env e;
-    uint balance = baseToken.balanceOf(currentContract);
-    withdraw(e.msg.sender,balance);
+    simplifiedAssumptions();
+    uint256 balance = _baseToken.balanceOf(currentContract);
+    withdraw(e,e.msg.sender,balance);
     assert false;
 }
 
