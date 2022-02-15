@@ -65,4 +65,8 @@ contract CometHarness is Comet {
 
         return result;
     }
+
+    function accrue() external {
+        totalsBasic = accrueInternal(totalsBasic);
+    }
 }

@@ -417,14 +417,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @notice Accrue interest (and rewards) in base token supply and borrows
      **/
-    function accrue() public {
-        totalsBasic = accrue(totalsBasic);
-    }
-
-    /**
-     * @notice Accrue interest (and rewards) in base token supply and borrows
-     **/
-    function accrue(TotalsBasic memory totals) internal view returns (TotalsBasic memory) {
+    function accrueInternal(TotalsBasic memory totals) internal view returns (TotalsBasic memory) {
         uint40 now_ = getNow();
         uint timeElapsed = now_ - totals.lastAccrualTime;
         if (timeElapsed > 0) {
@@ -980,7 +973,7 @@ contract Comet is CometMath, CometStorage {
         doTransferIn(baseToken, from, amount);
 
         TotalsBasic memory totals = totalsBasic;
-        totals = accrue(totals);
+        totals = accrueInternal(totals);
 
         uint104 totalSupplyBalance = presentValueSupply(totals, totals.totalSupplyBase);
         uint104 totalBorrowBalance = presentValueBorrow(totals, totals.totalBorrowBase);
@@ -1063,7 +1056,7 @@ contract Comet is CometMath, CometStorage {
      */
     function transferBase(address src, address dst, uint104 amount) internal {
         TotalsBasic memory totals = totalsBasic;
-        totals = accrue(totals);
+        totals = accrueInternal(totals);
 
         uint104 totalSupplyBalance = presentValueSupply(totals, totals.totalSupplyBase);
         uint104 totalBorrowBalance = presentValueBorrow(totals, totals.totalBorrowBase);
@@ -1163,7 +1156,7 @@ contract Comet is CometMath, CometStorage {
      */
     function withdrawBase(address src, address to, uint104 amount) internal {
         TotalsBasic memory totals = totalsBasic;
-        totals = accrue(totals);
+        totals = accrueInternal(totals);
 
         uint104 totalSupplyBalance = presentValueSupply(totals, totals.totalSupplyBase);
         uint104 totalBorrowBalance = presentValueBorrow(totals, totals.totalBorrowBase);
@@ -1239,7 +1232,7 @@ contract Comet is CometMath, CometStorage {
      */
     function absorbInternal(address account) internal {
         TotalsBasic memory totals = totalsBasic;
-        totals = accrue(totals);
+        totals = accrueInternal(totals);
 
         require(isLiquidatable(account), "account is not underwater");
 
