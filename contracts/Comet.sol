@@ -199,7 +199,10 @@ contract Comet is CometMath, CometStorage {
         // Sanity checks
         uint decimals = ERC20(config.baseToken).decimals();
         require(decimals <= 18, "base token has too many decimals");
+        // require(decimals <= 18, "b0");
         require(config.assetConfigs.length <= maxAssets, "too many asset configs");
+        // require(config.assetConfigs.length <= maxAssets, "b1");
+        // require(config.baseMinForRewards > 0, "b2");
         require(config.baseMinForRewards > 0, "baseMinForRewards should be > 0");
         require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
         // XXX other sanity checks? for rewards?
@@ -299,10 +302,14 @@ contract Comet is CometMath, CometStorage {
         // Sanity check price feed and asset decimals
         require(AggregatorV3Interface(priceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
         require(ERC20(asset).decimals() == decimals, "asset decimals mismatch");
+        // require(AggregatorV3Interface(priceFeed).decimals() == priceFeedDecimals, "b3");
+        // require(ERC20(asset).decimals() == decimals, "b4");
 
         // Ensure collateral factors are within range
         require(assetConfig.borrowCollateralFactor < assetConfig.liquidateCollateralFactor, "borrow CF must be < liquidate CF");
         require(assetConfig.liquidateCollateralFactor <= maxCollateralFactor, "liquidate CF too high");
+        // require(assetConfig.borrowCollateralFactor < assetConfig.liquidateCollateralFactor, "b5");
+        // require(assetConfig.liquidateCollateralFactor <= maxCollateralFactor, "b6");
 
         // Keep 4 decimals for each factor
         uint descale = factorScale / 1e4;
@@ -312,6 +319,7 @@ contract Comet is CometMath, CometStorage {
 
         // Be nice and check descaled values are still within range
         require(borrowCollateralFactor < liquidateCollateralFactor, "borrow CF must be < liquidate CF");
+        // require(borrowCollateralFactor < liquidateCollateralFactor, "b7");
 
         // Keep whole units of asset for supply cap
         uint64 supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals));
@@ -333,7 +341,8 @@ contract Comet is CometMath, CometStorage {
      * @return The asset info object
      */
     function getAssetInfo(uint8 i) public view returns (AssetInfo memory) {
-        require(i < numAssets, "asset info not found");
+        // require(i < numAssets, "asset info not found");
+        require(i < numAssets, "b8"); // XXX
 
         uint256 word_a;
         uint256 word_b;
@@ -427,7 +436,8 @@ contract Comet is CometMath, CometStorage {
      * @return The current timestamp
      **/
     function getNow() virtual public view returns (uint40) {
-        require(block.timestamp < 2**40, "timestamp exceeds size (40 bits)");
+        // require(block.timestamp < 2**40, "timestamp exceeds size (40 bits)");
+        require(block.timestamp < 2**40, "b9"); // XXX
         return uint40(block.timestamp);
     }
 
