@@ -4,5 +4,5 @@ certoraRun certora/harness/CometHarness.sol \
     --solc solc8.11 \
     --staging \
     --optimistic_loop \
-    --rule integrityOfSupply \
-    --msg "CometHarness integrityOfSupply"
+    --rule $1 \
+    --msg "CometHarness:comet.spec $1"
