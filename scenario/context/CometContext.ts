@@ -1,4 +1,4 @@
-import { BytesLike, Signer, Contract } from 'ethers';
+import { BytesLike, Signer, Contract, BigNumber } from 'ethers';
 import { ForkSpec, World, buildScenarioFn } from '../../plugins/scenario';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
@@ -135,7 +135,7 @@ export class CometContext {
     let numAssets = await this.comet.numAssets();
     let assetAddresses = [
       await this.comet.baseToken(),
-      ...await Promise.all(Array(numAssets).fill(0).map(async (_, i) => {
+      ...await Promise.all(Array(numAssets).fill(BigNumber.from(0)).map(async (_, i) => {
         return (await this.comet.getAssetInfo(i)).asset;
       })),
     ];
