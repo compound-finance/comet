@@ -29,7 +29,6 @@ contract CometStorage {
     uint104 internal totalSupplyBase;
     uint104 internal totalBorrowBase;
     uint40 internal lastAccrualTime;
-    uint8 internal pauseFlags;
 
     struct TotalsCollateral {
         uint128 totalSupplyAsset;
@@ -65,8 +64,7 @@ contract CometStorage {
             trackingBorrowIndex: trackingBorrowIndex,
             totalSupplyBase: totalSupplyBase,
             totalBorrowBase: totalBorrowBase,
-            lastAccrualTime: lastAccrualTime,
-            pauseFlags: pauseFlags
+            lastAccrualTime: lastAccrualTime
         });
     }
 
