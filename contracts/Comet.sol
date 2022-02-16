@@ -254,7 +254,7 @@ contract Comet is CometMainInterface {
     /**
      * @dev Checks and gets the packed asset info for storage
      */
-    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
+    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal pure returns (uint256, uint256) {
         AssetConfig memory assetConfig = _getAssetConfig(assetConfigs, i);
         return (assetConfig.word_a, assetConfig.word_b);
     }
@@ -1138,7 +1138,7 @@ contract Comet is CometMainInterface {
     }
 
     /**
-     * @dev Transfer user's collateral and debt to the protocol itself.
+     * @dev Transfer user's collateral and debt to the protocol itself
      */
     function absorbInternal(address absorber, address account) internal {
         if (!isLiquidatable(account)) revert NotLiquidatable();
