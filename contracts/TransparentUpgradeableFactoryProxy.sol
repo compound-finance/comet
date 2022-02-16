@@ -53,11 +53,13 @@ contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy, Come
         _configuratorParams.governor = config.governor;
 
         // Need to copy using this loop because directly copying of an array of structs is not supported
-        for (uint256 i = 0; i < config.assetConfigs.length; i++) {
-            if (i < _configuratorParams.assetConfigs.length) {
-                _configuratorParams.assetConfigs[i] = config.assetConfigs[i];
+        for (uint256 i = 0; i < config.words_a.length; i++) {
+            if (i < _configuratorParams.words_a.length) {
+                _configuratorParams.words_a[i] = config.words_a[i];
+                _configuratorParams.words_b[i] = config.words_b[i];
             } else {
-                _configuratorParams.assetConfigs.push(config.assetConfigs[i]);
+                _configuratorParams.words_a.push(config.words_a[i]);
+                _configuratorParams.words_b.push(config.words_b[i]);
             }
         }
     }
@@ -67,8 +69,8 @@ contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy, Come
         configuratorParams.governor = governor;
     }
 
-    // XXX What about removing an asset?
-    function addAsset(AssetConfig calldata asset) external ifAdmin {
-        configuratorParams.assetConfigs.push(asset);
-    }
+    // // XXX What about removing an asset?
+    // function addAsset(AssetConfig calldata asset) external ifAdmin {
+    //     configuratorParams.assetConfigs.push(asset);
+    // }
 }

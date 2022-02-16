@@ -26,11 +26,13 @@ contract CometConfiguration {
         uint104 baseBorrowMin;
         uint104 targetReserves;
 
-        AssetConfig[] assetConfigs;
+        // AssetConfig[] assetConfigs;
+        uint256[] words_a;
+        uint256[] words_b;
     }
 
-    struct AssetConfig {
-        uint256 word_a;
-        uint256 word_b;
-    }
+    // struct AssetConfig {
+    //     uint256 word_a;
+    //     uint256 word_b;
+    // }
 }

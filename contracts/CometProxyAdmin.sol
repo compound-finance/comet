@@ -47,7 +47,7 @@ contract CometProxyAdmin is ProxyAdmin, CometConfiguration {
      *
      * - This contract must be the admin of `proxy`.
      */
-    function addAsset(TransparentUpgradeableFactoryProxy proxy, AssetConfig calldata asset) public virtual onlyOwner {
-        proxy.addAsset(asset);
-    }
+    // function addAsset(TransparentUpgradeableFactoryProxy proxy, AssetConfig calldata asset) public virtual onlyOwner {
+    //     proxy.addAsset(asset);
+    // }
 }

@@ -162,7 +162,7 @@ contract Comet is CometMath, CometStorage {
         // Sanity checks
         uint decimals = ERC20(config.baseToken).decimals();
         require(decimals <= MAX_BASE_DECIMALS, "too many decimals");
-        require(config.assetConfigs.length <= MAX_ASSETS, "too many assets");
+        require(config.words_a.length <= MAX_ASSETS, "too many assets");
         require(config.baseMinForRewards > 0, "bad rewards min");
         require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == PRICE_FEED_DECIMALS, "bad decimals");
         // XXX other sanity checks? for rewards?
@@ -192,23 +192,23 @@ contract Comet is CometMath, CometStorage {
         reserveRate = config.reserveRate;
 
         // Set asset info
-        numAssets = uint8(config.assetConfigs.length);
+        numAssets = uint8(config.words_a.length);
 
-        (asset00_a, asset00_b) = _getPackedAsset(config.assetConfigs, 0);
-        (asset01_a, asset01_b) = _getPackedAsset(config.assetConfigs, 1);
-        (asset02_a, asset02_b) = _getPackedAsset(config.assetConfigs, 2);
-        (asset03_a, asset03_b) = _getPackedAsset(config.assetConfigs, 3);
-        (asset04_a, asset04_b) = _getPackedAsset(config.assetConfigs, 4);
-        (asset05_a, asset05_b) = _getPackedAsset(config.assetConfigs, 5);
-        (asset06_a, asset06_b) = _getPackedAsset(config.assetConfigs, 6);
-        (asset07_a, asset07_b) = _getPackedAsset(config.assetConfigs, 7);
-        (asset08_a, asset08_b) = _getPackedAsset(config.assetConfigs, 8);
-        (asset09_a, asset09_b) = _getPackedAsset(config.assetConfigs, 9);
-        (asset10_a, asset10_b) = _getPackedAsset(config.assetConfigs, 10);
-        (asset11_a, asset11_b) = _getPackedAsset(config.assetConfigs, 11);
-        (asset12_a, asset12_b) = _getPackedAsset(config.assetConfigs, 12);
-        (asset13_a, asset13_b) = _getPackedAsset(config.assetConfigs, 13);
-        (asset14_a, asset14_b) = _getPackedAsset(config.assetConfigs, 14);
+        (asset00_a, asset00_b) = _getPackedAsset(config.words_a, config.words_b, 0);
+        (asset01_a, asset01_b) = _getPackedAsset(config.words_a, config.words_b, 1);
+        (asset02_a, asset02_b) = _getPackedAsset(config.words_a, config.words_b, 2);
+        (asset03_a, asset03_b) = _getPackedAsset(config.words_a, config.words_b, 3);
+        (asset04_a, asset04_b) = _getPackedAsset(config.words_a, config.words_b, 4);
+        (asset05_a, asset05_b) = _getPackedAsset(config.words_a, config.words_b, 5);
+        (asset06_a, asset06_b) = _getPackedAsset(config.words_a, config.words_b, 6);
+        (asset07_a, asset07_b) = _getPackedAsset(config.words_a, config.words_b, 7);
+        (asset08_a, asset08_b) = _getPackedAsset(config.words_a, config.words_b, 8);
+        (asset09_a, asset09_b) = _getPackedAsset(config.words_a, config.words_b, 9);
+        (asset10_a, asset10_b) = _getPackedAsset(config.words_a, config.words_b, 10);
+        (asset11_a, asset11_b) = _getPackedAsset(config.words_a, config.words_b, 11);
+        (asset12_a, asset12_b) = _getPackedAsset(config.words_a, config.words_b, 12);
+        (asset13_a, asset13_b) = _getPackedAsset(config.words_a, config.words_b, 13);
+        (asset14_a, asset14_b) = _getPackedAsset(config.words_a, config.words_b, 14);
 
         // Initialize storage
         initialize_storage();
@@ -232,24 +232,22 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Gets the info for an asset or empty, for initialization
      */
-    function _getAssetConfig(AssetConfig[] memory assetConfigs, uint i) internal pure returns (AssetConfig memory c) {
-        if (i < assetConfigs.length)
+    function _getPackedAsset(uint256[] memory words_a, uint256[] memory words_b, uint i) internal pure returns (uint256 word_a, uint256 word_b) {
+        if (i < words_a.length)
             assembly {
-                c := mload(add(add(assetConfigs, 0x20), mul(i, 0x20)))
+                word_a := mload(add(add(words_a, 0x20), mul(i, 0x20)))
+                word_b := mload(add(add(words_b, 0x20), mul(i, 0x20)))
             }
-        return AssetConfig({
-            word_a: uint256(0),
-            word_b: uint256(0)
-        });
+        return (uint256(0), uint256(0)); // XXX IS THIS CORRECT?
     }
 
     /**
      * @dev Checks and gets the packed asset info for storage
      */
-    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal pure returns (uint256, uint256) {
-        AssetConfig memory assetConfig = _getAssetConfig(assetConfigs, i);
-        return (assetConfig.word_a, assetConfig.word_b);
-    }
+    // function _getPackedAsset(uint256[] memory words_a, uint256[] memory words_b, uint i) internal pure returns (uint256, uint256) {
+    //     return _getAssetConfig(words_a, words_b, i);
+    //     // return (assetConfig.word_a, assetConfig.word_b);
+    // }
 
     /**
      * @notice Get the i-th asset info, according to the order they were passed in originally
