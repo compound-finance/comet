@@ -40,43 +40,52 @@ contract Comet is CometMath, CometStorage {
     address public immutable extensionDelegate;
 
     /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope (factor)
+    /// @dev uint64
     uint public immutable kink;
 
     /// @notice Per second interest rate slope applied when utilization is below kink (factor)
+    /// @dev uint64
     uint public immutable perSecondInterestRateSlopeLow;
 
     /// @notice Per second interest rate slope applied when utilization is above kink (factor)
+    /// @dev uint64
     uint public immutable perSecondInterestRateSlopeHigh;
 
     /// @notice Per second base interest rate (factor)
+    /// @dev uint64
     uint public immutable perSecondInterestRateBase;
 
     /// @notice The rate of total interest paid that goes into reserves (factor)
+    /// @dev uint64
     uint public immutable reserveRate;
 
     /// @notice The scale for base token (must be less than 18 decimals)
+    /// @dev uint64
     uint public immutable baseScale;
 
     /// @notice The scale for reward tracking
-    uint public immutable trackingIndexScale;
+    uint64 public immutable trackingIndexScale;
 
     /// @notice The speed at which supply rewards are tracked (in trackingIndexScale)
-    uint public immutable baseTrackingSupplySpeed;
+    uint64 public immutable baseTrackingSupplySpeed;
 
     /// @notice The speed at which borrow rewards are tracked (in trackingIndexScale)
-    uint public immutable baseTrackingBorrowSpeed;
+    uint64 public immutable baseTrackingBorrowSpeed;
 
     /// @notice The minimum amount of base wei for rewards to accrue
     /// @dev This must be large enough so as to prevent division by base wei from overflowing the 64 bit indices
+    /// @dev uint104
     uint public immutable baseMinForRewards;
 
     /// @notice The minimum base amount required to initiate a borrow
+    /// @dev uint104
     uint public immutable baseBorrowMin;
 
     /// @notice The minimum base token reserves which must be held before collateral is hodled
-    uint public immutable targetReserves;
+    uint104 public immutable targetReserves;
 
     /// @notice The number of assets this contract actually supports
+    /// @dev uint8
     uint public immutable numAssets;
 
     /**  Collateral asset configuration (packed) **/
