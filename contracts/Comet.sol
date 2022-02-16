@@ -343,7 +343,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @return The current timestamp
      **/
-    function getNow() virtual public view returns (uint40) {
+    function getNow() virtual internal view returns (uint40) {
         require(block.timestamp < 2**40, "timestamp too big");
         return uint40(block.timestamp);
     }
@@ -617,35 +617,35 @@ contract Comet is CometMath, CometStorage {
     /**
      * @return Whether or not supply actions are paused
      */
-    function isSupplyPaused() public view returns (bool) {
+    function isSupplyPausedInternal() internal view returns (bool) {
         return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_SUPPLY_OFFSET));
     }
 
     /**
      * @return Whether or not transfer actions are paused
      */
-    function isTransferPaused() public view returns (bool) {
+    function isTransferPausedInternal() internal view returns (bool) {
         return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_TRANSFER_OFFSET));
     }
 
     /**
      * @return Whether or not withdraw actions are paused
      */
-    function isWithdrawPaused() public view returns (bool) {
+    function isWithdrawPausedInternal() internal view returns (bool) {
         return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_WITHDRAW_OFFSET));
     }
 
     /**
      * @return Whether or not absorb actions are paused
      */
-    function isAbsorbPaused() public view returns (bool) {
+    function isAbsorbPausedInternal() internal view returns (bool) {
         return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_ABSORB_OFFSET));
     }
 
     /**
      * @return Whether or not buy actions are paused
      */
-    function isBuyPaused() public view returns (bool) {
+    function isBuyPausedInternal() internal view returns (bool) {
         return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_BUY_OFFSET));
     }
 
@@ -803,7 +803,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Supply either collateral or base asset, depending on the asset, if operator is allowed
      */
     function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal {
-        require(!isSupplyPaused(), "paused");
+        require(!isSupplyPausedInternal(), "paused");
         require(hasPermission(from, operator), "bad auth");
 
         if (asset == baseToken) {
@@ -887,7 +887,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Transfer either collateral or base asset, depending on the asset, if operator is allowed
      */
     function transferInternal(address operator, address src, address dst, address asset, uint amount) internal {
-        require(!isTransferPaused(), "paused");
+        require(!isTransferPausedInternal(), "paused");
         require(hasPermission(src, operator), "bad auth");
         require(src != dst, "no self-transfer");
 
@@ -988,7 +988,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Withdraw either collateral or base asset, depending on the asset, if operator is allowed
      */
     function withdrawInternal(address operator, address src, address to, address asset, uint amount) internal {
-        require(!isWithdrawPaused(), "paused");
+        require(!isWithdrawPausedInternal(), "paused");
         require(hasPermission(src, operator), "bad auth");
 
         if (asset == baseToken) {
@@ -1059,7 +1059,7 @@ contract Comet is CometMath, CometStorage {
      * @param accounts The list of underwater accounts to absorb
      */
     function absorb(address absorber, address[] calldata accounts) external {
-        require(!isAbsorbPaused(), "paused");
+        require(!isAbsorbPausedInternal(), "paused");
 
         uint startGas = gasleft();
         for (uint i = 0; i < accounts.length; i++) {
@@ -1130,7 +1130,7 @@ contract Comet is CometMath, CometStorage {
      * @param recipient The recipient address
      */
     function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external {
-        require(!isBuyPaused(), "paused");
+        require(!isBuyPausedInternal(), "paused");
 
         int reserves = getReserves();
         require(reserves < 0 || uint(reserves) < targetReserves, "not for sale");

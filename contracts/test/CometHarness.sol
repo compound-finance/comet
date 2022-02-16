@@ -16,8 +16,12 @@ contract CometHarness is Comet {
         return MAX_ASSETS;
     }
 
-    function getNow() override public view returns (uint40) {
+    function getNow() override internal view returns (uint40) {
         return nowOverride > 0 ? uint40(nowOverride) : super.getNow();
+    }
+
+    function getNowHarness() public view returns (uint40) {
+        return getNow();
     }
 
     function setNow(uint now_) external {
@@ -91,6 +95,26 @@ contract CometHarness is Comet {
     function getUtilization() external view returns (uint) {
         TotalsBasic memory totals = totalsBasic;
         return getUtilizationInternal(totals.baseSupplyIndex, totals.baseBorrowIndex, totals.totalSupplyBase, totals.totalBorrowBase);
+    }
+
+    function isSupplyPaused() external view returns (bool) {
+        return isSupplyPausedInternal();
+    }
+
+    function isTransferPaused() external view returns (bool) {
+        return isTransferPausedInternal();
+    }
+
+    function isWithdrawPaused() external view returns (bool) {
+        return isWithdrawPausedInternal();
+    }
+
+    function isAbsorbPaused() external view returns (bool) {
+        return isAbsorbPausedInternal();
+    }
+
+    function isBuyPaused() external view returns (bool) {
+        return isBuyPausedInternal();
     }
 
     /**
