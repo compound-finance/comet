@@ -308,12 +308,12 @@ describe('supply', function () {
 describe('supplyFrom', function () {
   it('supplies from `from` if specified and sender has permission', async () => {
     const protocol = await makeProtocol();
-    const { comet, tokens, users: [alice, bob, charlie] } = protocol;
+    const { comet, cometExt, tokens, users: [alice, bob, charlie] } = protocol;
     const { COMP } = tokens;
 
     const _i0 = await COMP.allocateTo(bob.address, 7);
     const baseAsB = COMP.connect(bob);
-    const cometAsB = comet.connect(bob);
+    const cometAsB = cometExt.connect(bob);
     const cometAsC = comet.connect(charlie);
 
     const _a0 = await wait(baseAsB.approve(comet.address, 7));
@@ -352,12 +352,12 @@ describe('supplyFrom', function () {
 
   it('reverts if supply is paused', async () => {
     const protocol = await makeProtocol();
-    const { comet, tokens, pauseGuardian, users: [alice, bob, charlie] } = protocol;
+    const { comet, cometExt, tokens, pauseGuardian, users: [alice, bob, charlie] } = protocol;
     const { COMP } = tokens;
 
     await COMP.allocateTo(bob.address, 7);
     const baseAsB = COMP.connect(bob);
-    const cometAsB = comet.connect(bob);
+    const cometAsB = cometExt.connect(bob);
     const cometAsC = comet.connect(charlie);
 
     // Pause supply

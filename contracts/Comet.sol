@@ -56,6 +56,9 @@ contract Comet is CometMainInterface {
     /// @notice The address of the extension contract delegate
     address public override immutable extensionDelegate;
 
+    /// @notice The address of the extension contract delegate
+    address public immutable extensionDelegate;
+
     /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope (factor)
     /// @dev uint64
     uint public override immutable kink;

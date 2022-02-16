@@ -236,13 +236,19 @@ describe('transferFrom', function () {
     const protocol = await makeProtocol();
     const {
       comet,
+      cometExt,
       tokens,
       users: [alice, bob, charlie],
     } = protocol;
     const { COMP } = tokens;
 
+<<<<<<< HEAD
     const _i0 = await comet.setCollateralBalance(bob.address, COMP.address, 7);
     const cometAsB = comet.connect(bob);
+=======
+    const i0 = await comet.setCollateralBalance(bob.address, COMP.address, 7);
+    const cometAsB = cometExt.connect(bob);
+>>>>>>> 5b6a66a (Actually add extension delegate)
     const cometAsC = comet.connect(charlie);
 
     const _a1 = await wait(cometAsB.allow(charlie.address, true));
@@ -283,12 +289,13 @@ describe('transferFrom', function () {
   it('reverts on transfer of base token from address to itself', async () => {
     const {
       comet,
+      cometExt,
       tokens,
       users: [alice, bob],
     } = await makeProtocol({ base: 'USDC' });
     const { USDC } = tokens;
 
-    await comet.connect(bob).allow(alice.address, true);
+    await cometExt.connect(bob).allow(alice.address, true);
 
     await expect(
 <<<<<<< HEAD
@@ -303,12 +310,13 @@ describe('transferFrom', function () {
   it('reverts on transfer of collateral from address to itself', async () => {
     const {
       comet,
+      cometExt,
       tokens,
       users: [alice, bob],
     } = await makeProtocol();
     const { COMP } = tokens;
 
-    await comet.connect(bob).allow(alice.address, true);
+    await cometExt.connect(bob).allow(alice.address, true);
 
     await expect(
 <<<<<<< HEAD
@@ -322,11 +330,11 @@ describe('transferFrom', function () {
 
   it('reverts if transfer is paused', async () => {
     const protocol = await makeProtocol();
-    const { comet, tokens, pauseGuardian, users: [alice, bob, charlie] } = protocol;
+    const { comet, cometExt, tokens, pauseGuardian, users: [alice, bob, charlie] } = protocol;
     const { COMP } = tokens;
 
     await comet.setCollateralBalance(bob.address, COMP.address, 7);
-    const cometAsB = comet.connect(bob);
+    const cometAsB = cometExt.connect(bob);
     const cometAsC = comet.connect(charlie);
 
     // Pause transfer
