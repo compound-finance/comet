@@ -1234,7 +1234,11 @@ contract Comet is CometMath, CometStorage {
 
         uint startGas = gasleft();
         for (uint i = 0; i < accounts.length; i++) {
-            absorbInternal(accounts[i]);
+            address account;
+            assembly {
+                account := calldataload(add(accounts.offset, mul(i, 0x20)))
+            }
+            absorbInternal(account);
         }
         uint gasUsed = startGas - gasleft();
 
