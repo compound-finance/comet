@@ -341,7 +341,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @return The current timestamp
      **/
-    function getNow() virtual public view returns (uint40) {
+    function getNow() virtual internal view returns (uint40) {
         require(block.timestamp < 2**40, "timestamp too big");
         return uint40(block.timestamp);
     }
@@ -615,35 +615,35 @@ contract Comet is CometMath, CometStorage {
     /**
      * @return Whether or not supply actions are paused
      */
-    function isSupplyPaused() public view returns (bool) {
+    function isSupplyPaused() internal view returns (bool) {
         return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_SUPPLY_OFFSET));
     }
 
     /**
      * @return Whether or not transfer actions are paused
      */
-    function isTransferPaused() public view returns (bool) {
+    function isTransferPaused() internal view returns (bool) {
         return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_TRANSFER_OFFSET));
     }
 
     /**
      * @return Whether or not withdraw actions are paused
      */
-    function isWithdrawPaused() public view returns (bool) {
+    function isWithdrawPaused() internal view returns (bool) {
         return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_WITHDRAW_OFFSET));
     }
 
     /**
      * @return Whether or not absorb actions are paused
      */
-    function isAbsorbPaused() public view returns (bool) {
+    function isAbsorbPaused() internal view returns (bool) {
         return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_ABSORB_OFFSET));
     }
 
     /**
      * @return Whether or not buy actions are paused
      */
-    function isBuyPaused() public view returns (bool) {
+    function isBuyPaused() internal view returns (bool) {
         return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_BUY_OFFSET));
     }
 
