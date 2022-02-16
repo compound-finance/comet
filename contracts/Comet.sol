@@ -36,6 +36,9 @@ contract Comet is CometMath, CometStorage {
     /// @notice The address of the price feed for the base token
     address public immutable baseTokenPriceFeed;
 
+    /// @notice The address of the extension contract delegate
+    address public immutable extensionDelegate;
+
     /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope (factor)
     uint public immutable kink;
 
@@ -160,6 +163,7 @@ contract Comet is CometMath, CometStorage {
         pauseGuardian = config.pauseGuardian;
         baseToken = config.baseToken;
         baseTokenPriceFeed = config.baseTokenPriceFeed;
+        extensionDelegate = config.extensionDelegate;
 
         baseScale = uint64(10 ** decimals);
         trackingIndexScale = config.trackingIndexScale;
@@ -1164,5 +1168,20 @@ contract Comet is CometMath, CometStorage {
         require(msg.sender == governor, "bad auth");
         require(amount <= unsigned256(getReserves()), "bad amount");
         doTransferOut(baseToken, to, amount);
+    }
+
+    /**
+     * @notice Fallback to calling the extension delegate for everything else
+     */
+    fallback() external payable {
+        address delegate = extensionDelegate;
+        assembly {
+            calldatacopy(0, 0, calldatasize())
+            let result := delegatecall(gas(), delegate, 0, calldatasize(), 0, 0)
+            returndatacopy(0, 0, returndatasize())
+            switch result
+            case 0 { revert(0, returndatasize()) }
+            default { return(0, returndatasize()) }
+        }
     }
 }

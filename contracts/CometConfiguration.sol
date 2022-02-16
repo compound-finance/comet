@@ -12,6 +12,7 @@ contract CometConfiguration {
         address pauseGuardian;
         address baseToken;
         address baseTokenPriceFeed;
+        address extensionDelegate;
 
         uint64 kink;
         uint64 perYearInterestRateSlopeLow;

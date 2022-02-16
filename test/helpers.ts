@@ -3,6 +3,8 @@ import { ethers } from 'hardhat';
 import { Block } from '@ethersproject/abstract-provider';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
+  CometExt,
+  CometExt__factory as CometExt__factory,
   CometHarness as Comet,
   CometHarness__factory as Comet__factory,
   FaucetToken,
@@ -13,7 +15,7 @@ import {
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
 
-export { Comet, ethers, expect };
+export { Comet, CometExt, ethers, expect };
 
 export type Numeric = number | bigint;
 
@@ -34,6 +36,7 @@ export type ProtocolOpts = {
   };
   governor?: SignerWithAddress;
   pauseGuardian?: SignerWithAddress;
+  extensionDelegate?: CometExt;
   base?: string;
   reward?: string;
   kink?: Numeric;
@@ -54,10 +57,12 @@ export type Protocol = {
   opts: ProtocolOpts;
   governor: SignerWithAddress;
   pauseGuardian: SignerWithAddress;
+  extensionDelegate: CometExt;
   users: SignerWithAddress[];
   base: string;
   reward: string;
   comet: Comet;
+  cometExt: CometExt;
   tokens: {
     [symbol: string]: FaucetToken;
   };
@@ -177,10 +182,18 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
   if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
 
+  const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
+  let extensionDelegate = opts.extensionDelegate;
+  if (extensionDelegate === undefined) {
+    extensionDelegate = await CometExtFactory.deploy();
+    await extensionDelegate.deployed();
+  }
+
   const CometFactory = (await ethers.getContractFactory('CometHarness')) as Comet__factory;
   const comet = await CometFactory.deploy({
     governor: governor.address,
     pauseGuardian: pauseGuardian.address,
+    extensionDelegate: extensionDelegate.address,
     baseToken: tokens[base].address,
     baseTokenPriceFeed: priceFeeds[base].address,
     kink,
@@ -231,10 +244,12 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     opts,
     governor,
     pauseGuardian,
+    extensionDelegate,
     users,
     base,
     reward,
     comet,
+    cometExt: CometExtFactory.attach(comet.address),
     tokens,
     unsupportedToken,
     priceFeeds,
