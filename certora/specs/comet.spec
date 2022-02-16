@@ -18,6 +18,7 @@ methods {
     getTotalSupplyBase() returns (uint104) envfree
     getTotalBorrowBase() returns (uint104) envfree 
     getTotalsSupplyAsset(address asset) returns (uint128) envfree  
+    getReserves() returns (int) envfree
     _baseToken.balanceOf(address account) returns (uint256) envfree
 }
 
@@ -88,13 +89,10 @@ rule withdraw_all_balance(){
     assert false;
 }
 
-rule no_reserves_zero_balance(){
-    env e;
-    simplifiedAssumptions();
-    
-    int reserves = getReserves(e);
-    uint balance = _baseToken.balanceOf(currentContract);
-    // mathint reserves = to_mathint(temp2);
-
-    assert reserves == 0 <=> balance == 0;
-}
+invariant no_reserves_zero_balance()
+getReserves() == 0 <=> _baseToken.balanceOf(currentContract) == 0
+    {
+        preserved {
+            simplifiedAssumptions();
+        }
+    }

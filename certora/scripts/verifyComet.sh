@@ -3,8 +3,8 @@ certoraRun certora/harness/CometHarness.sol certora/harness/SymbolicBaseToken.so
     --verify CometHarness:certora/specs/comet.spec  \
     --link CometHarness:baseToken=SymbolicBaseToken \
     --solc solc8.11 \
-    --staging \
+    --staging jtoman/solc8-overflow \
     --optimistic_loop \
-    --settings -enableEqualitySaturation=false \
+    --settings -enableEqualitySaturation=false,-multiAssertCheck \
     --rule $1 \
     --msg "CometHarness:comet.spec $1 with magic flag"

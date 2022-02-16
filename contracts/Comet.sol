@@ -439,7 +439,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @notice Accrue interest (and rewards) in base token supply and borrows
      **/
-    function accrue(TotalsBasic memory totals) internal view returns (TotalsBasic memory) {
+    function accrue(TotalsBasic memory totals) internal virtual view returns (TotalsBasic memory) {
         uint40 now_ = getNow();
         uint timeElapsed = now_ - totals.lastAccrualTime;
         if (timeElapsed > 0) {
@@ -532,7 +532,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Calculate current per second supply rate given totals
      */
-    function getSupplyRateInternal(TotalsBasic memory totals) internal view returns (uint64) {
+    function getSupplyRateInternal(TotalsBasic memory totals) internal virtual view returns (uint64) {
         uint utilization = getUtilizationInternal(totals);
         uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
         if (utilization <= kink) {
@@ -554,7 +554,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Calculate current per second borrow rate given totals
      */
-    function getBorrowRateInternal(TotalsBasic memory totals) internal view returns (uint64) {
+    function getBorrowRateInternal(TotalsBasic memory totals) internal virtual view returns (uint64) {
         uint utilization = getUtilizationInternal(totals);
         if (utilization <= kink) {
             // interestRateBase + interestRateSlopeLow * utilization
@@ -575,7 +575,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Calculate utilization rate of the base asset given totals
      */
-    function getUtilizationInternal(TotalsBasic memory totals) internal pure returns (uint) {
+    function getUtilizationInternal(TotalsBasic memory totals) internal virtual view returns (uint) {
         uint totalSupply = presentValueSupply(totals, totals.totalSupplyBase);
         uint totalBorrow = presentValueBorrow(totals, totals.totalBorrowBase);
         if (totalSupply == 0) {
@@ -1358,7 +1358,7 @@ contract Comet is CometMath, CometStorage {
         require(!isBuyPaused(), "buy is paused");
 
         int reserves = getReserves();
-        require(reserves < 0 || uint(reserves) < targetReserves, "no ongoing sale");
+        require(reserves < 0 || uint(reserves) < targetReserves, "no ongoing sale"); //Gadi reserves < int(targetReserves)
 
         // XXX check re-entrancy
         doTransferIn(baseToken, msg.sender, baseAmount);
