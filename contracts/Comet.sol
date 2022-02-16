@@ -427,9 +427,10 @@ contract Comet is CometMath, CometStorage {
      * @param priceFeed The address of a price feed
      * @return The price, scaled by `PRICE_SCALE`
      */
-    function getPrice(address priceFeed) public view returns (uint) {
+    function getPrice(address priceFeed) public view returns (uint128) {
         (, int price, , , ) = AggregatorV3Interface(priceFeed).latestRoundData();
-        return unsigned256(price);
+        require(0 <= price && price <= type(int128).max, "bad price");
+        return uint128(int128(price));
     }
 
     /**
@@ -664,15 +665,19 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Multiply a `fromScale` quantity by a price, returning a common price quantity
      */
-    function mulPrice(uint n, uint price, uint fromScale) internal pure returns (uint) {
-        return n * price / fromScale;
+    function mulPrice(uint128 n, uint128 price, uint fromScale) internal pure returns (uint) {
+        unchecked {
+            return uint256(n) * price / fromScale;
+        }
     }
 
     /**
      * @dev Multiply a signed `fromScale` quantity by a price, returning a common price quantity
      */
-    function signedMulPrice(int n, uint price, uint fromScale) internal pure returns (int) {
-        return n * signed256(price) / signed256(fromScale);
+    function signedMulPrice(int128 n, uint128 price, uint fromScale) internal pure returns (int) {
+        unchecked {
+            return n * signed256(price) / signed256(fromScale);
+        }
     }
 
     /**
@@ -1085,7 +1090,7 @@ contract Comet is CometMath, CometStorage {
         int104 oldBalance = presentValue(totals, accountUser.principal);
         uint16 assetsIn = accountUser.assetsIn;
 
-        uint basePrice = getPrice(baseTokenPriceFeed);
+        uint128 basePrice = getPrice(baseTokenPriceFeed);
         uint deltaValue = 0;
 
         for (uint8 i = 0; i < numAssets; i++) {
@@ -1151,8 +1156,8 @@ contract Comet is CometMath, CometStorage {
     function quoteCollateral(address asset, uint baseAmount) public view returns (uint) {
         // XXX: Add StoreFrontDiscount.
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
-        uint assetPrice = getPrice(assetInfo.priceFeed);
-        uint basePrice = getPrice(baseTokenPriceFeed);
+        uint128 assetPrice = getPrice(assetInfo.priceFeed);
+        uint128 basePrice = getPrice(baseTokenPriceFeed);
         uint assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPrice;
         return assetWeiPerUnitBase * baseAmount / baseScale;
     }
