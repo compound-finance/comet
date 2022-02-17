@@ -247,7 +247,7 @@ describe('buyCollateral', function () {
 
     // Pause buy collateral
     await wait(comet.connect(pauseGuardian).pause(false, false, false, false, true));
-    expect(await comet.isBuyPaused()).to.be.true;
+    expect(await comet.isBuyPausedHarness()).to.be.true;
 
     await expect(
       cometAsA.buyCollateral(COMP.address, exp(50, 18), 50e6, alice.address)

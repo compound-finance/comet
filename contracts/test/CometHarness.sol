@@ -8,12 +8,36 @@ contract CometHarness is Comet {
 
     constructor(Configuration memory config) Comet(config) {}
 
-    function getNow() override public view returns (uint40) {
+    function getNow() override internal view returns (uint40) {
         return nowOverride > 0 ? uint40(nowOverride) : super.getNow();
+    }
+
+    function getNowHarness() public view returns (uint40) {
+        return getNow();
     }
 
     function setNow(uint now_) public {
         nowOverride = now_;
+    }
+
+    function isAbsorbPausedHarness() public view returns (bool) {
+        return isAbsorbPaused;
+    }
+
+    function isSupplyPausedHarness() public view returns (bool) {
+        return isSupplyPaused;
+    }
+
+    function isTransferPausedHarness() public view returns (bool) {
+        return isTransferPaused;
+    }
+
+    function isWithdrawPausedHarness() public view returns (bool) {
+        return isWithdrawPaused;
+    }
+
+    function isBuyPausedHarness() public view returns (bool) {
+        return isBuyPaused;
     }
 
     function setTotalsBasic(TotalsBasic memory totals) public {

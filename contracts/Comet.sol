@@ -423,7 +423,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @return The current timestamp
      **/
-    function getNow() virtual public view returns (uint40) {
+    function getNow() virtual internal view returns (uint40) {
         require(block.timestamp < 2**40, "timestamp too big");
         return uint40(block.timestamp);
     }

@@ -121,7 +121,7 @@ describe('transfer', function () {
 
     // Pause transfer
     await wait(comet.connect(pauseGuardian).pause(false, true, false, false, false));
-    expect(await comet.isTransferPaused()).to.be.true;
+    expect(await comet.isTransferPausedHarness()).to.be.true;
 
     await expect(cometAsB.transfer(alice.address, USDC.address, 1)).to.be.revertedWith('paused');
   });
@@ -272,7 +272,7 @@ describe('transferFrom', function () {
 
     // Pause transfer
     await wait(comet.connect(pauseGuardian).pause(false, true, false, false, false));
-    expect(await comet.isTransferPaused()).to.be.true;
+    expect(await comet.isTransferPausedHarness()).to.be.true;
 
     await wait(cometAsB.allow(charlie.address, true));
     await expect(

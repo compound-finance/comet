@@ -7,11 +7,11 @@ describe('Pause Guardian', function () {
 
     await comet.pause(true, false, false, false, false);
 
-    expect(await comet.isSupplyPaused()).to.be.true;
-    expect(await comet.isTransferPaused()).to.be.false;
-    expect(await comet.isWithdrawPaused()).to.be.false;
-    expect(await comet.isAbsorbPaused()).to.be.false;
-    expect(await comet.isBuyPaused()).to.be.false;
+    expect(await comet.isSupplyPausedHarness()).to.be.true;
+    expect(await comet.isTransferPausedHarness()).to.be.false;
+    expect(await comet.isWithdrawPausedHarness()).to.be.false;
+    expect(await comet.isAbsorbPausedHarness()).to.be.false;
+    expect(await comet.isBuyPausedHarness()).to.be.false;
   });
 
   it('Should pause transfer', async function () {
@@ -20,11 +20,11 @@ describe('Pause Guardian', function () {
 
     await comet.pause(false, true, false, false, false);
 
-    expect(await comet.isSupplyPaused()).to.be.false;
-    expect(await comet.isTransferPaused()).to.be.true;
-    expect(await comet.isWithdrawPaused()).to.be.false;
-    expect(await comet.isAbsorbPaused()).to.be.false;
-    expect(await comet.isBuyPaused()).to.be.false;
+    expect(await comet.isSupplyPausedHarness()).to.be.false;
+    expect(await comet.isTransferPausedHarness()).to.be.true;
+    expect(await comet.isWithdrawPausedHarness()).to.be.false;
+    expect(await comet.isAbsorbPausedHarness()).to.be.false;
+    expect(await comet.isBuyPausedHarness()).to.be.false;
   });
 
   it('Should pause withdraw', async function () {
@@ -33,11 +33,11 @@ describe('Pause Guardian', function () {
 
     await comet.pause(false, false, true, false, false);
 
-    expect(await comet.isSupplyPaused()).to.be.false;
-    expect(await comet.isTransferPaused()).to.be.false;
-    expect(await comet.isWithdrawPaused()).to.be.true;
-    expect(await comet.isAbsorbPaused()).to.be.false;
-    expect(await comet.isBuyPaused()).to.be.false;
+    expect(await comet.isSupplyPausedHarness()).to.be.false;
+    expect(await comet.isTransferPausedHarness()).to.be.false;
+    expect(await comet.isWithdrawPausedHarness()).to.be.true;
+    expect(await comet.isAbsorbPausedHarness()).to.be.false;
+    expect(await comet.isBuyPausedHarness()).to.be.false;
   });
 
   it('Should pause absorb', async function () {
@@ -46,11 +46,11 @@ describe('Pause Guardian', function () {
 
     await comet.pause(false, false, false, true, false);
 
-    expect(await comet.isSupplyPaused()).to.be.false;
-    expect(await comet.isTransferPaused()).to.be.false;
-    expect(await comet.isWithdrawPaused()).to.be.false;
-    expect(await comet.isAbsorbPaused()).to.be.true;
-    expect(await comet.isBuyPaused()).to.be.false;
+    expect(await comet.isSupplyPausedHarness()).to.be.false;
+    expect(await comet.isTransferPausedHarness()).to.be.false;
+    expect(await comet.isWithdrawPausedHarness()).to.be.false;
+    expect(await comet.isAbsorbPausedHarness()).to.be.true;
+    expect(await comet.isBuyPausedHarness()).to.be.false;
   });
 
   it('Should pause buy', async function () {
@@ -59,11 +59,11 @@ describe('Pause Guardian', function () {
 
     await comet.pause(false, false, false, false, true);
 
-    expect(await comet.isSupplyPaused()).to.be.false;
-    expect(await comet.isTransferPaused()).to.be.false;
-    expect(await comet.isWithdrawPaused()).to.be.false;
-    expect(await comet.isAbsorbPaused()).to.be.false;
-    expect(await comet.isBuyPaused()).to.be.true;
+    expect(await comet.isSupplyPausedHarness()).to.be.false;
+    expect(await comet.isTransferPausedHarness()).to.be.false;
+    expect(await comet.isWithdrawPausedHarness()).to.be.false;
+    expect(await comet.isAbsorbPausedHarness()).to.be.false;
+    expect(await comet.isBuyPausedHarness()).to.be.true;
   });
 
   it('Should unpause', async function () {
@@ -107,17 +107,17 @@ describe('Pause Guardian', function () {
 
 async function assertNoActionsArePaused(comet: Comet) {
   // All pause flags should be false by default.
-  expect(await comet.isSupplyPaused()).to.be.false;
-  expect(await comet.isTransferPaused()).to.be.false;
-  expect(await comet.isWithdrawPaused()).to.be.false;
-  expect(await comet.isAbsorbPaused()).to.be.false;
-  expect(await comet.isBuyPaused()).to.be.false;
+  expect(await comet.isSupplyPausedHarness()).to.be.false;
+  expect(await comet.isTransferPausedHarness()).to.be.false;
+  expect(await comet.isWithdrawPausedHarness()).to.be.false;
+  expect(await comet.isAbsorbPausedHarness()).to.be.false;
+  expect(await comet.isBuyPausedHarness()).to.be.false;
 }
 
 async function assertAllActionsArePaused(comet: Comet) {
-  expect(await comet.isSupplyPaused()).to.be.true;
-  expect(await comet.isTransferPaused()).to.be.true;
-  expect(await comet.isWithdrawPaused()).to.be.true;
-  expect(await comet.isAbsorbPaused()).to.be.true;
-  expect(await comet.isBuyPaused()).to.be.true;
+  expect(await comet.isSupplyPausedHarness()).to.be.true;
+  expect(await comet.isTransferPausedHarness()).to.be.true;
+  expect(await comet.isWithdrawPausedHarness()).to.be.true;
+  expect(await comet.isAbsorbPausedHarness()).to.be.true;
+  expect(await comet.isBuyPausedHarness()).to.be.true;
 }

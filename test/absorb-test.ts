@@ -372,7 +372,7 @@ describe('absorb', function () {
 
     // Pause transfer
     await wait(comet.connect(pauseGuardian).pause(false, false, false, true, false));
-    expect(await comet.isAbsorbPaused()).to.be.true;
+    expect(await comet.isAbsorbPausedHarness()).to.be.true;
 
     await expect(cometAsB.absorb(bob.address, [alice.address])).to.be.revertedWith('paused');
   });

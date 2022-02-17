@@ -178,7 +178,7 @@ describe('withdrawTo', function () {
 
     // Pause withdraw
     await wait(comet.connect(pauseGuardian).pause(false, false, true, false, false));
-    expect(await comet.isWithdrawPaused()).to.be.true;
+    expect(await comet.isWithdrawPausedHarness()).to.be.true;
 
     await expect(cometAsB.withdrawTo(alice.address, USDC.address, 1)).to.be.revertedWith('paused');
   });
@@ -237,7 +237,7 @@ describe('withdraw', function () {
 
     // Pause withdraw
     await wait(comet.connect(pauseGuardian).pause(false, false, true, false, false));
-    expect(await comet.isWithdrawPaused()).to.be.true;
+    expect(await comet.isWithdrawPausedHarness()).to.be.true;
 
     await expect(cometAsB.withdraw(USDC.address, 100e6)).to.be.revertedWith('paused');
   });
@@ -313,7 +313,7 @@ describe('withdrawFrom', function () {
 
     // Pause withdraw
     await wait(comet.connect(pauseGuardian).pause(false, false, true, false, false));
-    expect(await comet.isWithdrawPaused()).to.be.true;
+    expect(await comet.isWithdrawPausedHarness()).to.be.true;
 
     await wait(cometAsB.allow(charlie.address, true));
     await expect(

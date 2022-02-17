@@ -170,7 +170,7 @@ describe('supplyTo', function () {
 
     // Pause supply
     await wait(comet.connect(pauseGuardian).pause(true, false, false, false, false));
-    expect(await comet.isSupplyPaused()).to.be.true;
+    expect(await comet.isSupplyPausedHarness()).to.be.true;
 
     await wait(baseAsB.approve(comet.address, 1));
     await expect(cometAsB.supplyTo(alice.address, USDC.address, 1)).to.be.revertedWith('paused');
@@ -228,7 +228,7 @@ describe('supply', function () {
 
     // Pause supply
     await wait(comet.connect(pauseGuardian).pause(true, false, false, false, false));
-    expect(await comet.isSupplyPaused()).to.be.true;
+    expect(await comet.isSupplyPausedHarness()).to.be.true;
 
     await wait(baseAsB.approve(comet.address, 100e6));
     await expect(cometAsB.supply(USDC.address, 100e6)).to.be.revertedWith('paused');
@@ -302,7 +302,7 @@ describe('supplyFrom', function () {
 
     // Pause supply
     await wait(comet.connect(pauseGuardian).pause(true, false, false, false, false));
-    expect(await comet.isSupplyPaused()).to.be.true;
+    expect(await comet.isSupplyPausedHarness()).to.be.true;
 
     await wait(baseAsB.approve(comet.address, 7));
     await wait(cometAsB.allow(charlie.address, true));

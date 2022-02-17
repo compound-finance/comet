@@ -86,9 +86,9 @@ contract CometStorage {
     /// @notice Mapping of magic liquidator points
     mapping(address => LiquidatorPoints) public liquidatorPoints;
 
-    bool public isSupplyPaused = false;
-    bool public isTransferPaused = false;
-    bool public isWithdrawPaused = false;
-    bool public isAbsorbPaused = false;
-    bool public isBuyPaused = false;
+    bool internal isSupplyPaused = false;
+    bool internal isTransferPaused = false;
+    bool internal isWithdrawPaused = false;
+    bool internal isAbsorbPaused = false;
+    bool internal isBuyPaused = false;
 }
