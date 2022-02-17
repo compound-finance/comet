@@ -25,7 +25,7 @@ contract CometProxyAdmin is ProxyAdmin, CometConfiguration {
      *
      * - This contract must be the admin of `proxy`.
      */
-    function setConfiguration(TransparentUpgradeableFactoryProxy proxy, Configuration memory config) public virtual onlyOwner {
+    function setConfiguration(TransparentUpgradeableFactoryProxy proxy, ConfiguratorConfiguration memory config) public virtual onlyOwner {
         proxy.setConfiguration(config);
     }
 

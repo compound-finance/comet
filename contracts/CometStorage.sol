@@ -8,13 +8,36 @@ import "./CometConfiguration.sol";
  * @dev Versions can enforce append-only storage slots via inheritance.
  * @author Compound
  */
-contract CometStorage is CometConfiguration{
+contract CometStorage is CometConfiguration {
+
+    /// ====== START OF PARAM STORAGE ======
+
     /// @notice Configuration settings used to deploy new Comet instances
     /// by the configurator
     /// @dev This needs to be internal to avoid a `CompilerError: Stack too deep
     /// when compiling inline assembly` error that is caused by the default
     /// getters created for public variables.
-    Configuration internal configuratorParams;
+    address public governorParam;
+    address public pauseGuardianParam;
+    address public baseTokenParam;
+    address public baseTokenPriceFeedParam;
+    address public extensionDelegateParam;
+
+    uint64 public kinkParam;
+    uint64 public perYearInterestRateSlopeLowParam;
+    uint64 public perYearInterestRateSlopeHighParam;
+    uint64 public perYearInterestRateBaseParam;
+    uint64 public reserveRateParam;
+    uint64 public trackingIndexScaleParam;
+    uint64 public baseTrackingSupplySpeedParam;
+    uint64 public baseTrackingBorrowSpeedParam;
+    uint104 public baseMinForRewardsParam;
+    uint104 public baseBorrowMinParam;
+    uint104 public targetReservesParam;
+
+    AssetConfig[] public assetConfigsParam;
+
+    /// ====== END OF PARAM STORAGE ======
 
     // 512 bits total = 2 slots
     struct TotalsBasic {
