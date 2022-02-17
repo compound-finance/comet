@@ -16,6 +16,17 @@ contract CometStorage is CometConfiguration{
     /// getters created for public variables.
     Configuration internal configuratorParams;
 
+    struct AssetInfo {
+        uint8 offset;
+        address asset;
+        address priceFeed;
+        uint64 scale;
+        uint64 borrowCollateralFactor;
+        uint64 liquidateCollateralFactor;
+        uint64 liquidationFactor;
+        uint128 supplyCap;
+    }
+
     // 512 bits total = 2 slots
     struct TotalsBasic {
         // 1st slot

@@ -182,18 +182,10 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
   if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
 
-  const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
-  let extensionDelegate = opts.extensionDelegate;
-  if (extensionDelegate === undefined) {
-    extensionDelegate = await CometExtFactory.deploy();
-    await extensionDelegate.deployed();
-  }
-
-  const CometFactory = (await ethers.getContractFactory('CometHarness')) as Comet__factory;
-  const comet = await CometFactory.deploy({
+  const configurationStruct = {
     governor: governor.address,
     pauseGuardian: pauseGuardian.address,
-    extensionDelegate: extensionDelegate.address,
+    extensionDelegate: ethers.constants.AddressZero, // XXX
     baseToken: tokens[base].address,
     baseTokenPriceFeed: priceFeeds[base].address,
     kink,
@@ -231,6 +223,19 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
       }
       return acc;
     }, []),
+  };
+
+  const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
+  let extensionDelegate = opts.extensionDelegate;
+  if (extensionDelegate === undefined) {
+    extensionDelegate = await CometExtFactory.deploy(configurationStruct);
+    await extensionDelegate.deployed();
+  }
+
+  const CometFactory = (await ethers.getContractFactory('CometHarness')) as Comet__factory;
+  const comet = await CometFactory.deploy({
+    ...configurationStruct,
+    extensionDelegate: extensionDelegate.address,
   });
   await comet.deployed();
 

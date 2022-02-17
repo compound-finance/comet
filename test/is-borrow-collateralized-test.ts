@@ -15,39 +15,42 @@ decimals, by default):
 describe('getBorrowLiquidity', function () {
   it('defaults to 0', async () => {
     const {
-      comet,
+      cometExt,
       users: [alice],
     } = await makeProtocol();
 
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(0);
+    expect(await cometExt.getBorrowLiquidity(alice.address)).to.equal(0);
   });
 
   it('is positive when user is owed principal', async () => {
     const protocol = await makeProtocol({ base: 'USDC' });
     const {
       comet,
+      cometExt,
       users: [alice],
     } = protocol;
 
     await comet.setBasePrincipal(alice.address, 1_000_000);
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(100_000_000);
+    expect(await cometExt.getBorrowLiquidity(alice.address)).to.equal(100_000_000);
   });
 
   it('is negative when user owes principal', async () => {
     const protocol = await makeProtocol({ base: 'USDC' });
     const {
       comet,
+      cometExt,
       users: [alice],
     } = protocol;
 
     await comet.setBasePrincipal(alice.address, -1_000_000);
 
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(-100_000_000);
+    expect(await cometExt.getBorrowLiquidity(alice.address)).to.equal(-100_000_000);
   });
 
   it('is increased when user has collateral balance', async () => {
     const {
       comet,
+      cometExt,
       tokens,
       users: [alice],
     } = await makeProtocol({
@@ -61,12 +64,13 @@ describe('getBorrowLiquidity', function () {
     await comet.setBasePrincipal(alice.address, 1_000_000);
     await comet.setCollateralBalance(alice.address, COMP.address, exp(1, 18));
 
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(199_990_000);
+    expect(await cometExt.getBorrowLiquidity(alice.address)).to.equal(199_990_000);
   });
 
   it("accounts for an asset's collateral factor", async () => {
     const {
       comet,
+      cometExt,
       tokens,
       users: [alice],
     } = await makeProtocol({
@@ -85,12 +89,13 @@ describe('getBorrowLiquidity', function () {
     await comet.setBasePrincipal(alice.address, 1_000_000);
     await comet.setCollateralBalance(alice.address, COMP.address, exp(1, 18));
 
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(190_000_000);
+    expect(await cometExt.getBorrowLiquidity(alice.address)).to.equal(190_000_000);
   });
 
   it('borrow collateral factor with multiple assets', async () => {
     const {
       comet,
+      cometExt,
       tokens,
       users: [alice],
     } = await makeProtocol({
@@ -120,12 +125,13 @@ describe('getBorrowLiquidity', function () {
     // 1 USDC = 1_000_000
     // 1 COMP * .9 collateral factor = 900_000
     // .1 WETH * .8 collateral factor = 80_000
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(198_000_000);
+    expect(await cometExt.getBorrowLiquidity(alice.address)).to.equal(198_000_000);
   });
 
   it('changes when the underlying asset price changes', async () => {
     const {
       comet,
+      cometExt,
       tokens,
       users: [alice],
       priceFeeds,
@@ -140,14 +146,14 @@ describe('getBorrowLiquidity', function () {
     await comet.setBasePrincipal(alice.address, exp(1, 6));
     await comet.setCollateralBalance(alice.address, COMP.address, exp(1, 18));
 
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(
+    expect(await cometExt.getBorrowLiquidity(alice.address)).to.equal(
       // base + collateral * borrow CF * price
       exp(1, 8) + exp(1, 8) * 9n / 10n
     );
 
     await priceFeeds.COMP.setPrice(exp(0.5, 8));
 
-    expect(await comet.getBorrowLiquidity(alice.address)).to.equal(
+    expect(await cometExt.getBorrowLiquidity(alice.address)).to.equal(
       // base + collateral * borrow CF * price
       exp(1, 8) + exp(1, 8) * 9n / 10n / 2n
     );

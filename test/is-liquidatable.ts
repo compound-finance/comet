@@ -15,38 +15,41 @@ decimals, by default):
 describe('getLiquidationMargin', function () {
   it('defaults to 0', async () => {
     const {
-      comet,
+      cometExt,
       users: [alice],
     } = await makeProtocol();
 
-    expect(await comet.getLiquidationMargin(alice.address)).to.equal(0);
+    expect(await cometExt.getLiquidationMargin(alice.address)).to.equal(0);
   });
 
   it('reflects a positive principal for account', async () => {
     const {
       comet,
+      cometExt,
       users: [alice],
     } = await makeProtocol();
 
     // $1,000 in USDC
     await comet.setBasePrincipal(alice.address, 1_000_000_000);
-    expect(await comet.getLiquidationMargin(alice.address)).to.equal(100_000_000_000);
+    expect(await cometExt.getLiquidationMargin(alice.address)).to.equal(100_000_000_000);
   });
 
   it('reflects a negative principal for account', async () => {
     const {
       comet,
+      cometExt,
       users: [alice],
     } = await makeProtocol();
 
     // -$1,000 in USDC
     await comet.setBasePrincipal(alice.address, -1_000_000_000);
-    expect(await comet.getLiquidationMargin(alice.address)).to.equal(-100_000_000_000);
+    expect(await cometExt.getLiquidationMargin(alice.address)).to.equal(-100_000_000_000);
   });
 
   it('can cover a negative principal with collateral', async () => {
     const {
       comet,
+      cometExt,
       tokens,
       users: [alice],
     } = await makeProtocol({
@@ -63,12 +66,13 @@ describe('getLiquidationMargin', function () {
     await comet.setCollateralBalance(alice.address, COMP.address, exp(105_000, 18));
 
     // margin is $5,000 USDC (5_000 * 1e8)
-    expect(await comet.getLiquidationMargin(alice.address)).to.equal(500_000_000_000);
+    expect(await cometExt.getLiquidationMargin(alice.address)).to.equal(500_000_000_000);
   });
 
   it('can cover a borrow with multiple sources of collateral', async () => {
     const {
       comet,
+      cometExt,
       tokens,
       users: [alice],
     } = await makeProtocol({
@@ -88,12 +92,13 @@ describe('getLiquidationMargin', function () {
     await comet.setCollateralBalance(alice.address, BAT.address, exp(251_000, 18));
 
     // margin is $1,000 USDC (1_000 * 1e8)
-    expect(await comet.getLiquidationMargin(alice.address)).to.equal(100_000_000_000);
+    expect(await cometExt.getLiquidationMargin(alice.address)).to.equal(100_000_000_000);
   });
 
   it('adjusts collateral by the liquidateCollateralFactor', async () => {
     const {
       comet,
+      cometExt,
       tokens,
       users: [alice],
     } = await makeProtocol({
@@ -116,12 +121,13 @@ describe('getLiquidationMargin', function () {
     await comet.setCollateralBalance(alice.address, COMP.address, exp(100_000, 18));
 
     // but their position is liquidatable, since the liquidate collateral factor is .8
-    expect(await comet.getLiquidationMargin(alice.address)).to.equal(-2_000_000_000_000);
+    expect(await cometExt.getLiquidationMargin(alice.address)).to.equal(-2_000_000_000_000);
   });
 
   it('changes when the underlying asset price changes', async () => {
     const {
       comet,
+      cometExt,
       tokens,
       users: [alice],
       priceFeeds,
@@ -139,13 +145,13 @@ describe('getLiquidationMargin', function () {
 
     // $100 worth of COMP
     await comet.setCollateralBalance(alice.address, COMP.address, exp(100, 18));
-    expect(await comet.getLiquidationMargin(alice.address)).to.equal(10_000_000_000);
+    expect(await cometExt.getLiquidationMargin(alice.address)).to.equal(10_000_000_000);
 
     // price of COMP now equal to 5 USDC
     await priceFeeds.COMP.setPrice(exp(5, 8));
 
     // Liquidation margin now reflect $500 worth of COMP
-    expect(await comet.getLiquidationMargin(alice.address)).to.equal(50_000_000_000);
+    expect(await cometExt.getLiquidationMargin(alice.address)).to.equal(50_000_000_000);
   });
 });
 
