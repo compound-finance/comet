@@ -246,10 +246,12 @@ contract Comet is CometMainInterface {
             assembly {
                 c := mload(add(add(packedAssetConfigs, 0x20), mul(i, 0x20)))
             }
-        return PackedAssetConfig({
-            word_a: uint256(0),
-            word_b: uint256(0)
-        });
+        else {
+            c = PackedAssetConfig({
+                word_a: uint256(0),
+                word_b: uint256(0)
+            });
+        }
     }
 
     /**
