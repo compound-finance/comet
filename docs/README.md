@@ -249,6 +249,40 @@ Any address can call the Absorb function. In exchange, the caller is compensated
 
 **TODO: [Equation for calculating the amount sent to the absorb caller?]**
 
+### Liquidatable Accounts
+
+This function returns true if the account passed to it has negative liquidity based on the liquidation collateral factor. A return value of true indicates that the account is presently liquidatable.
+
+#### Comet
+
+```solidity
+function isLiquidatable(address account) returns (bool)
+```
+
+* `account`: The account to examine liquidatability.
+* `RETURNS`:  Returns true if the account is presently able to be liquidated.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+bool isLiquidatable = comet.isLiquidatable(0xAccount);
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const isLiquidatable = await comet.methods.isLiquidatable(0xAccount).call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const isLiquidatable = await comet.callStatic.isLiquidatable(0xAccount);
+```
+
 ### Absorb
 
 This function can be called by any address to liquidate an underwater account. It transfers the account's debt to the protocol account, decreases cash reserves to repay the account's borrows, and adds the collateral to the protocol's own balance. In exchange, the caller of Absorb is compensated for the gas used in the transaction plus the fixed-amount absorb tip.
@@ -291,38 +325,43 @@ const comet = new ethers.Contract(contractAddress, abiJson, provider);
 await comet.absorb("0xUnderwaterAddress");
 ```
 
-### Liquidatable Accounts
+### Buy Collateral
 
-This function returns true if the account passed to it has negative liquidity based on the liquidation collateral factor. A return value of true indicates that the account is presently liquidatable.
+This function allows any account to buy collateral from the protocol, at a discount from the Price Feed's price, using base tokens. A minimum collateral amount should be specified to indicate the maximum slippage acceptable for the buyer.
+
+This function can be used after an account has been liquidated and there is collateral available to be purchased. Doing so increases protocol reserves. The amount of collateral available can be found by calling `comet.collateralBalanceOf(cometAddress, assetAddress)`. The price of the collateral can be determined by using the [quoteCollateral](#ask-price) function.
 
 #### Comet
 
 ```solidity
-function isLiquidatable(address account) returns (bool)
+function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external
 ```
 
-* `account`: The account to examine liquidatability.
-* `RETURNS`:  Returns true if the account is presently able to be liquidated.
+* `asset`: The address of the collateral asset.
+* `minAmount`: The minimum amount of collateral tokens that are to be received by the buyer, scaled up by 10 to the "decimals" integer in the collateral asset's contract.
+* `baseAmount`: The amount of base tokens used to buy collateral scaled up by 10 to the "decimals" integer in the base asset's contract.
+* `recipient`: The address that receives the purchased collateral.
+* `RETURN`: No return, reverts on error.
 
 #### Solidity
 
 ```solidity
 Comet comet = Comet(0xCometAddress);
-bool isLiquidatable = comet.isLiquidatable(0xAccount);
+comet.buyCollateral(0xAssetAddress, 5e18, 5e18, 0xRecipient);
 ```
 
 #### Web3.js v1.5.x
 
 ```js
 const comet = new web3.eth.Contract(abiJson, contractAddress);
-const isLiquidatable = await comet.methods.isLiquidatable(0xAccount).call();
+await comet.methods.buyCollateral('0xAssetAddress', 5e18, 5e18, '0xRecipient').send();
 ```
 
 #### Ethers.js v5.x
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const isLiquidatable = await comet.callStatic.isLiquidatable(0xAccount);
+await comet.buyCollateral('0xAssetAddress', 5e18, 5e18, '0xRecipient');
 ```
 
 ## Reserves
@@ -477,7 +516,7 @@ await comet.allow(managerAddress, true);
 
 ### Allow By Signature
 
-This is a sparate version of the allow function that enables submission using an EIP-712 offline signature. For more details on how to create an offline signature, review [EIP-712](https://eips.ethereum.org/EIPS/eip-712).
+This is a separate version of the allow function that enables submission using an EIP-712 offline signature. For more details on how to create an offline signature, review [EIP-712](https://eips.ethereum.org/EIPS/eip-712).
 
 #### Comet
 
@@ -936,3 +975,17 @@ const price = await comet.callStatic.getPrice(usdcAddress);
 ## Governance
 
 Compound Comet is a decentralized protocol that is governed by holders of COMP. Governance allows the community to propose, vote, and implement changes through the administrative functions of the Comet protocol contract. For more information on the [governance](https://compound.finance/docs/governance) system see the governance section.
+
+### Withdraw Reserves
+
+This function allows governance to withdraw base token reserves from the protocol and send them to a specified address. Only the governor address may call this function.
+
+#### Comet
+
+```solidity
+function withdrawReserves(address to, uint amount) external
+```
+
+* `to`: The address of the recipient of the base asset tokens.
+* `amount`: The amount of the base asset to send scaled up by 10 to the "decimals" integer in the base asset's contract.
+* `RETURN`: No return, reverts on error.
