@@ -55,8 +55,15 @@ contract CometStorage is CometConfiguration{
         uint32 _reserved;
     }
 
-    /// @notice Aggregate variables tracked for the entire market
-    TotalsBasic public totalsBasic;
+    /// @dev Aggregate variables tracked for the entire market
+    uint64 internal baseSupplyIndex;
+    uint64 internal baseBorrowIndex;
+    uint64 internal trackingSupplyIndex;
+    uint64 internal trackingBorrowIndex;
+    uint104 internal totalSupplyBase;
+    uint104 internal totalBorrowBase;
+    uint40 internal lastAccrualTime;
+    uint8 internal pauseFlags;
 
     /// @notice Aggregate variables tracked for each collateral asset
     mapping(address => TotalsCollateral) public totalsCollateral;
