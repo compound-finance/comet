@@ -75,6 +75,6 @@ describe('updateAssetsIn', function () {
 
     await expect(
       comet.updateAssetsInExternal(user.address, erroneousAssetAddress, 0, 100)
-    ).to.be.revertedWith('asset not found');
+    ).to.be.revertedWith('bad asset');
   });
 });

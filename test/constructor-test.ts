@@ -18,7 +18,7 @@ describe('constructor', function () {
           },
         },
       })
-    ).to.be.revertedWith('bad price feed decimals');
+    ).to.be.revertedWith('bad decimals');
   });
 
   it('reverts if asset has a price feed that does not have 8 decimals', async () => {
