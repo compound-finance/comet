@@ -8,11 +8,11 @@ contract CometHarness is Comet {
 
     constructor(Configuration memory config) Comet(config) {}
 
-    function baseIndexScale() external view returns (uint64) {
+    function baseIndexScale() external pure returns (uint64) {
         return BASE_INDEX_SCALE;
     }
 
-    function maxAssets() external view returns (uint8) {
+    function maxAssets() external pure returns (uint8) {
         return MAX_ASSETS;
     }
 
@@ -28,8 +28,27 @@ contract CometHarness is Comet {
         nowOverride = now_;
     }
 
+    function totalsBasic() public view returns (TotalsBasic memory) {
+        return TotalsBasic({
+            baseSupplyIndex: baseSupplyIndex,
+            baseBorrowIndex: baseBorrowIndex,
+            trackingSupplyIndex: trackingSupplyIndex,
+            trackingBorrowIndex: trackingBorrowIndex,
+            totalSupplyBase: totalSupplyBase,
+            totalBorrowBase: totalBorrowBase,
+            lastAccrualTime: lastAccrualTime,
+            pauseFlags: pauseFlags
+        });
+    }
+
     function setTotalsBasic(TotalsBasic memory totals) external {
-        totalsBasic = totals;
+        baseSupplyIndex = totals.baseSupplyIndex;
+        baseBorrowIndex = totals.baseBorrowIndex;
+        trackingSupplyIndex = totals.trackingSupplyIndex;
+        trackingBorrowIndex = totals.trackingBorrowIndex;
+        totalSupplyBase = totals.totalSupplyBase;
+        totalBorrowBase = totals.totalBorrowBase;
+        lastAccrualTime = totals.lastAccrualTime;
     }
 
     function setTotalsCollateral(address asset, TotalsCollateral memory totals) external {
@@ -79,22 +98,19 @@ contract CometHarness is Comet {
     }
 
     function accrue() external {
-        totalsBasic = accrueInternal(totalsBasic);
+        accrueInternal();
     }
 
     function getSupplyRate() external view returns (uint64) {
-        TotalsBasic memory totals = totalsBasic;
-        return getSupplyRateInternal(totals.baseSupplyIndex, totals.baseBorrowIndex, totals.totalSupplyBase, totals.totalBorrowBase);
+        return getSupplyRateInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
     }
 
     function getBorrowRate() external view returns (uint64) {
-        TotalsBasic memory totals = totalsBasic;
-        return getBorrowRateInternal(totals.baseSupplyIndex, totals.baseBorrowIndex, totals.totalSupplyBase, totals.totalBorrowBase);
+        return getBorrowRateInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
     }
 
     function getUtilization() external view returns (uint) {
-        TotalsBasic memory totals = totalsBasic;
-        return getUtilizationInternal(totals.baseSupplyIndex, totals.baseBorrowIndex, totals.totalSupplyBase, totals.totalBorrowBase);
+        return getUtilizationInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
     }
 
     function isSupplyPaused() external view returns (bool) {
@@ -124,10 +140,9 @@ contract CometHarness is Comet {
      */
     function getBorrowLiquidity(address account) external view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
-        TotalsBasic memory totals = totalsBasic;
 
         int liquidity = signedMulPrice(
-            presentValue(totals, userBasic[account].principal),
+            presentValue(userBasic[account].principal),
             getPrice(baseTokenPriceFeed),
             baseScale
         );
@@ -157,10 +172,9 @@ contract CometHarness is Comet {
      */
     function getLiquidationMargin(address account) external view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
-        TotalsBasic memory totals = totalsBasic;
 
         int liquidity = signedMulPrice(
-            presentValue(totals, userBasic[account].principal),
+            presentValue(userBasic[account].principal),
             getPrice(baseTokenPriceFeed),
             baseScale
         );
