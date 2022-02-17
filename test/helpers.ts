@@ -207,7 +207,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     baseMinForRewards,
     baseBorrowMin,
     targetReserves,
-    assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], i) => {
+    packedAssetConfigs: Object.entries(assets).reduce((acc, [symbol, config], i) => {
       const descale = factorScale / (10n**4n);
       const decimals = BigInt(dfn(config.decimals, 18));
       const borrowCF = BigInt(dfn(config.borrowCF, ONE - 1n));
