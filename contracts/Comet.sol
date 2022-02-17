@@ -411,10 +411,13 @@ contract Comet is CometMath, CometStorage {
      * @dev Determine index of asset that matches given address
      */
     function getAssetInfoByAddress(address asset) internal view returns (AssetInfo memory) {
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets;) {
             AssetInfo memory assetInfo = getAssetInfo(i);
             if (assetInfo.asset == asset) {
                 return assetInfo;
+            }
+            unchecked {
+                i++;
             }
         }
         revert("bad asset");
@@ -618,7 +621,7 @@ contract Comet is CometMath, CometStorage {
             baseScale
         );
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets;) {
             if (isInAsset(assetsIn, i)) {
                 if (liquidity >= 0) {
                     return true;
@@ -634,6 +637,9 @@ contract Comet is CometMath, CometStorage {
                     newAmount,
                     asset.borrowCollateralFactor
                 ));
+            }
+            unchecked {
+                i++;
             }
         }
 
@@ -654,7 +660,7 @@ contract Comet is CometMath, CometStorage {
             baseScale
         );
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets;) {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory asset = getAssetInfo(i);
                 uint newAmount = mulPrice(
@@ -666,6 +672,9 @@ contract Comet is CometMath, CometStorage {
                     newAmount,
                     asset.borrowCollateralFactor
                 ));
+            }
+            unchecked {
+                i++;
             }
         }
 
@@ -686,7 +695,7 @@ contract Comet is CometMath, CometStorage {
             baseScale
         );
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets;) {
             if (isInAsset(assetsIn, i)) {
                 if (liquidity >= 0) {
                     return false;
@@ -702,6 +711,9 @@ contract Comet is CometMath, CometStorage {
                     newAmount,
                     asset.liquidateCollateralFactor
                 ));
+            }
+            unchecked {
+                i++;
             }
         }
 
@@ -722,7 +734,7 @@ contract Comet is CometMath, CometStorage {
             baseScale
         );
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets;) {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory asset = getAssetInfo(i);
                 uint newAmount = mulPrice(
@@ -734,6 +746,9 @@ contract Comet is CometMath, CometStorage {
                     newAmount,
                     asset.liquidateCollateralFactor
                 ));
+            }
+            unchecked {
+                i++;
             }
         }
 
@@ -1238,12 +1253,15 @@ contract Comet is CometMath, CometStorage {
         require(!isAbsorbPaused, "paused");
 
         uint startGas = gasleft();
-        for (uint i = 0; i < accounts.length; i++) {
+        for (uint i = 0; i < accounts.length;) {
             address account;
             assembly {
                 account := calldataload(add(accounts.offset, mul(i, 0x20)))
             }
             absorbInternal(account);
+            unchecked {
+                i++;
+            }
         }
         uint gasUsed = startGas - gasleft();
 
@@ -1269,7 +1287,7 @@ contract Comet is CometMath, CometStorage {
         uint basePrice = getPrice(baseTokenPriceFeed);
         uint deltaValue = 0;
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets;) {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory assetInfo = getAssetInfo(i);
                 address asset = assetInfo.asset;
@@ -1281,6 +1299,9 @@ contract Comet is CometMath, CometStorage {
                     uint value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
                     deltaValue += mulFactor(value, assetInfo.liquidationFactor);
                 }
+            }
+            unchecked {
+                i++;
             }
         }
 
