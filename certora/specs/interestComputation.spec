@@ -53,7 +53,18 @@ rule SupplyIndex_BorrowIndex_monotonic(){
 //         uint8 pauseFlags;
 // baseSupplyIndex, baseBorrowIndex, trackingSupplyIndex, trackingBorrowIndex,totalSupplyBase, totalBorrowBase,lastAccrualTime, pauseFlags   =  totalsBasic(e);
 
-// utilization increase implies supplyRate increase
+ 
+/* 
+ Description :  
+        utilization increase implies supplyRate increase
+
+ formula : 
+        utilization_2 > utilization_1 => supplyRate_2 > supplyRate_1
+
+ status : failed
+ reason :
+ link https://vaas-stg.certora.com/output/23658/497f4791d345a3dce667/?anonymousKey=43aadbf11d704a33e7143188189ea806a9d39d03#supplyRate_vs_UtilizationResults
+*/
 rule supplyRate_vs_Utilization(){
 env e;
     setup(e);
@@ -76,6 +87,16 @@ uint utilization_2 = getSpecificUtilizationInternal(baseSupplyIndex2,baseBorrowI
     assert utilization_2 > utilization_1 => supplyRate_2 > supplyRate_1;
 }
 
+/* 
+ Description :  
+        if totalBorrow equals totalSupply then utilization == factorScale
+formula : 
+        utilization <= factorScale()
+
+ status : failed
+ reason : total borrow (presentValue) can be greater then totalSupply (presentValue) hence utilization not bounded
+ link https://vaas-stg.certora.com/output/23658/497f4791d345a3dce667/?anonymousKey=43aadbf11d704a33e7143188189ea806a9d39d03#utilization_LE_factorScaleResults
+*/
 rule utilization_LE_factorScale(){
 env e;
     setup(e);
@@ -83,24 +104,69 @@ env e;
 uint utilization = getUtilization(e);
     assert utilization <= factorScale();
 }
-    
+
+/* 
+ Description :  
+     if borrowRate == base interest rate then utilization == 0    
+formula : 
+        borrowRate == perSecondInterestRateBase() => getUtilization(e) == 0;
+
+ status : failed
+ reason : failed due to rounding down in mulFactor
+ link https://vaas-stg.certora.com/output/65782/b3fe39e314b1d0a592f5/?anonymousKey=877a0bbb8eea456fcacf3b5ed85d5c947d4cf890#utilization_zeroResults
+*/
+
 rule utilization_zero(){
 env e;
     setup(e);
 
     uint64 borrowRate = getBorrowRate(e);
-   
-    // assert getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase();
-    // // uint64 perSecondInterestRateBase1 = perSecondInterestRateBase();
-    // // uint64 perSecondInterestRateSlopeLow1 = perSecondInterestRateSlopeLow();
-    // // uint64 perSecondInterestRateSlopeHigh1 = perSecondInterestRateSlopeHigh();
-    // uint64 kink1 = kink();
+
+    // for debug
+    uint64 perSecondInterestRateBase1 = perSecondInterestRateBase();
+    uint64 perSecondInterestRateSlopeLow1 = perSecondInterestRateSlopeLow();
+    uint64 perSecondInterestRateSlopeHigh1 = perSecondInterestRateSlopeHigh();
+    uint64 kink1 = kink();
 
 
     assert borrowRate == perSecondInterestRateBase() => getUtilization(e) == 0;
 }
     
+/* 
+ Description :  
+     if utilization == 0 then borrowRate == base interest rate
+formula : 
+        getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase() ;
 
+ status : proved
+ reason 
+ link https://vaas-stg.certora.com/output/65782/6018316af8badf9f4784/?anonymousKey=a398c2ee2252a5bccff160ace3d9c135cba691d1
+*/
+rule utilization_zero2(){
+env e;
+    setup(e);
+
+    uint64 borrowRate = getBorrowRate(e);
+   
+    // for debug
+    uint64 perSecondInterestRateBase1 = perSecondInterestRateBase();
+    uint64 perSecondInterestRateSlopeLow1 = perSecondInterestRateSlopeLow();
+    uint64 perSecondInterestRateSlopeHigh1 = perSecondInterestRateSlopeHigh();
+    uint64 kink1 = kink();
+
+    assert getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase() ;
+}
+/* 
+ Description :  
+     if accrue() with lower timestamp sacceeds then acrue with higher timestamp should sacced as well
+
+formula : 
+        !lastReverted;
+
+ status : failed
+ reason : 
+ link https://vaas-stg.certora.com/output/65782/5240447a217a62b1d892/?anonymousKey=cddebb60c69464b5d715c547ab600e08ea032c0c#accrue_not_revertedResults
+*/
 rule accrue_not_reverted(){
 env e1;
 env e2;
@@ -115,20 +181,34 @@ env e2;
 }
 
 
+/* 
+ Description :  
+     if Borrow Base == 0 utilization should equal zero
 
-// invariant borrowBase_vs_utilization(env e)
-//     getTotalBorrowBase(e) == 0 <=> getUtilization(e) == 0
-// {
-//     preserved with (env e2){
-//     simplify(e2);
-//     }
-// }
+formula : 
+        getTotalBorrowBase(e) == 0 => getUtilization(e) == 0;
+
+ status : proved
+ reason : 
+ link https://vaas-stg.certora.com/output/65782/6774efcf16e35405da9f/?anonymousKey=686dea1234bd5329ad336ca3f69b59f2ee02cea7
+*/
 rule borrowBase_vs_utilization(){
 env e;
     setup(e);
-    assert getTotalBorrowBase(e) == 0 <=> getUtilization(e) == 0;
+    assert getTotalBorrowBase(e) == 0 => getUtilization(e) == 0;
 }
-// Verifies that isLiquidatable == false can change to true only if getPrice() has changed
+
+/* 
+ Description :  
+     Verifies that isLiquidatable == false can change to true only if getPrice() has changed
+
+formula : 
+        isLiquidatable(e2,account) => price1 != price2;
+
+ status : failed
+ reason : 
+ link https://vaas-stg.certora.com/output/65782/5240447a217a62b1d892/?anonymousKey=cddebb60c69464b5d715c547ab600e08ea032c0c#isLiquidatable_false_should_not_changeResults
+*/
 rule isLiquidatable_false_should_not_change(address account){
 env e1;
 env e2;
@@ -142,7 +222,18 @@ env e2;
     assert isLiquidatable(e2,account) => price1 != price2;
 }
 
-//Verifies that TotalBaseSupplyIndex and getTotalBaseBorrowIndex always greater than baseIndexScale
+/* 
+ Description :  
+     Verifies that TotalBaseSupplyIndex and getTotalBaseBorrowIndex always greater than baseIndexScale
+
+formula : 
+        getTotalBaseSupplyIndex() >= baseIndexScale() &&
+        getTotalBaseBorrowIndex() >= baseIndexScale();
+
+ status : proved
+ reason : 
+ link   : 
+*/
 rule SupplyIndex_BorrowIndex_GE_baseIndexScale(){
 env e;
     setup(e);
@@ -154,7 +245,17 @@ env e;
 }
 
 
-//status link description
+/* 
+ Description :  
+     TotalBaseBorrowIndex always greater then  getTotalBaseSupplyIndex
+
+formula : 
+        getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
+
+ status : timeout
+ reason : 
+ link   : 
+*/
 rule SupplyIndex_vs_BorrowIndex(){
 env e;
     setup(e);
@@ -165,6 +266,17 @@ env e;
     assert getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
 }
 
+/* 
+ Description :  
+     BorrowRate always greater then SupplyRate
+
+formula : 
+        getBorrowRate(e) > getSupplyRate(e);
+
+ status : timeout
+ reason : 
+ link   : 
+*/
 rule SupplyRate_vs_BorrowRate(){
 env e;
     setup(e);
