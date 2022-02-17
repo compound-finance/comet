@@ -17,6 +17,21 @@ methods{
     targetReserves() returns (uint104) envfree;
 }
 
+ 
+/* 
+ Description :  
+        baseSupplyIndex increase with time
+        baseBorrowIndex increase with time
+
+ formula : 
+        getNow(e) > getlastAccrualTime() => 
+                   (base_supply_index_2 > base_supply_index_1 &&
+                    base_borrow_index_2 > base_borrow_index_1);
+
+ status : proved
+ reason :
+ link https://vaas-stg.certora.com/output/23658/497f4791d345a3dce667/?anonymousKey=43aadbf11d704a33e7143188189ea806a9d39d03#supplyRate_vs_UtilizationResults
+*/
 rule SupplyIndex_BorrowIndex_rise_with_time(){
     env e;
     uint64 base_supply_index_1 = getTotalBaseSupplyIndex();
@@ -30,6 +45,20 @@ rule SupplyIndex_BorrowIndex_rise_with_time(){
                     base_borrow_index_2 > base_borrow_index_1);
 }
 
+ 
+/* 
+ Description :  
+        baseSupplyIndex monotonic
+        baseBorrowIndex monotonic
+
+ formula : 
+        base_supply_index_2 >= base_supply_index_1 &&
+        base_borrow_index_2 >= base_borrow_index_1
+
+ status : proved
+ reason :
+ link https://vaas-stg.certora.com/output/65782/5240447a217a62b1d892/?anonymousKey=cddebb60c69464b5d715c547ab600e08ea032c0c#isLiquidatable_false_should_not_changeResults
+*/
 rule SupplyIndex_BorrowIndex_monotonic(){
     env e;
     uint64 base_supply_index_1 = getTotalBaseSupplyIndex();
@@ -41,18 +70,6 @@ rule SupplyIndex_BorrowIndex_monotonic(){
     assert  base_supply_index_2 >= base_supply_index_1;
     assert  base_borrow_index_2 >= base_borrow_index_1;
 }
-
-//         uint64 baseSupplyIndex;
-//         uint64 baseBorrowIndex;
-//         uint64 trackingSupplyIndex;
-//         uint64 trackingBorrowIndex;
-//         // 2nd slot
-//         uint104 totalSupplyBase;
-//         uint104 totalBorrowBase;
-//         uint40 lastAccrualTime;
-//         uint8 pauseFlags;
-// baseSupplyIndex, baseBorrowIndex, trackingSupplyIndex, trackingBorrowIndex,totalSupplyBase, totalBorrowBase,lastAccrualTime, pauseFlags   =  totalsBasic(e);
-
  
 /* 
  Description :  
@@ -63,7 +80,7 @@ rule SupplyIndex_BorrowIndex_monotonic(){
 
  status : failed
  reason :
- link https://vaas-stg.certora.com/output/23658/497f4791d345a3dce667/?anonymousKey=43aadbf11d704a33e7143188189ea806a9d39d03#supplyRate_vs_UtilizationResults
+ link https://vaas-stg.certora.com/output/65782/5240447a217a62b1d892/?anonymousKey=cddebb60c69464b5d715c547ab600e08ea032c0c#isLiquidatable_false_should_not_changeResults
 */
 rule supplyRate_vs_Utilization(){
 env e;
@@ -73,6 +90,7 @@ uint64 baseSupplyIndex1;
 uint64 baseBorrowIndex1;
 uint64 trackingSupplyIndex1;
 uint64 trackingBorrowIndex1;
+
 uint64 supplyRate_1 = getSpecificSupplyRateInternal(baseSupplyIndex1,baseBorrowIndex1,trackingSupplyIndex1,trackingBorrowIndex1);
 uint   utilization_1 = getSpecificUtilizationInternal(baseSupplyIndex1,baseBorrowIndex1,trackingSupplyIndex1,trackingBorrowIndex1);
 
@@ -295,47 +313,3 @@ function setup(env e){
     require perSecondInterestRateSlopeLow() > 0 &&
             perSecondInterestRateSlopeLow() < perSecondInterestRateSlopeHigh();
 }
-// run on comet.sol 
-
-// prove and assume:
-// baseSupplyIndex >= initial value
-// also baseBorrowIndex 
-
-/* check accrue:
-a. monotonicity of baseSupplyIndex, baseBorrowIndex
-b. rewards
-c. more time greater increase in index
-
-low priority: 
-d. revert, e1 passes e2 is later in time when does it revert 
-
-
-e2 < f() => !lastReverted
-*/
-
-
-/* check getSupplyRateInternal
-a.
-b.
-
-*/
-
-
-/* signedMulPrice 
-
-mulPrice
-*/ 
-
-
-/* check getBorrowRateInternal
-
-
-
-
-*/
-
-/* check getUtilizationInternal
-
-
-
-*/
