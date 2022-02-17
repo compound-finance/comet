@@ -120,8 +120,6 @@ contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy, Come
         // require(assetConfig.liquidateCollateralFactor <= maxCollateralFactor, "liquidate CF too high");
 
         // Keep 4 decimals for each factor
-        // XXX Where to define FACTOR_SCALE and make sure it matches that of Comet?
-        uint FACTOR_SCALE = 1e18;
         uint descale = FACTOR_SCALE / 1e4;
         uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
         uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
@@ -145,7 +143,6 @@ contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy, Come
     }
 
     function _getPackedAssets(AssetConfig[] memory assetConfigs) internal view returns (PackedAssetConfig[] memory) {
-        uint MAX_ASSETS = 16; // XXX WHERE TO DEFINE THIS?
         PackedAssetConfig[] memory packedAssetConfigs;
         for (uint256 i = 0; i < MAX_ASSETS; i++) {
             (uint word_a, uint word_b) = _getPackedAssetHelper(assetConfigs, i);

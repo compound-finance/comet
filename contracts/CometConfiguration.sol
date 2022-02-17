@@ -7,6 +7,8 @@ pragma solidity ^0.8.11;
  * @author Compound
  */
 contract CometConfiguration {
+    // XXX Find a way to share common configuration parameters
+    // between Configurator and Comet constructor
     struct Configuration {
         address governor;
         address pauseGuardian;
