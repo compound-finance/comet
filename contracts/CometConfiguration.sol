@@ -35,7 +35,7 @@ contract CometConfiguration {
 
     // Configuration params passed to the Configurator.
     // The only distinction between the Comet configuration is
-    // that the assets are not packed when passed into the 
+    // that the assets are not packed when passed into the
     // Configurator.
     struct ConfiguratorConfiguration {
         address governor;
