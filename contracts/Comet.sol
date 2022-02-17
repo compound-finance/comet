@@ -241,25 +241,23 @@ contract Comet is CometMainInterface {
     /**
      * @dev Gets the info for an asset or empty, for initialization
      */
-    function _getAssetConfig(AssetConfig[] memory assetConfigs, uint i) internal pure returns (AssetConfig memory c) {
-        if (i < assetConfigs.length) {
+    function _getAssetConfig(PackedAssetConfig[] memory packedAssetConfigs, uint i) internal pure returns (PackedAssetConfig memory c) {
+        if (i < packedAssetConfigs.length)
             assembly {
-                c := mload(add(add(assetConfigs, 0x20), mul(i, 0x20)))
+                c := mload(add(add(packedAssetConfigs, 0x20), mul(i, 0x20)))
             }
-        } else {
-            c = AssetConfig({
-                word_a: uint256(0),
-                word_b: uint256(0)
-            });
-        }
+        return PackedAssetConfig({
+            word_a: uint256(0),
+            word_b: uint256(0)
+        });
     }
 
     /**
      * @dev Checks and gets the packed asset info for storage
      */
-    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal pure returns (uint256, uint256) {
-        AssetConfig memory assetConfig = _getAssetConfig(assetConfigs, i);
-        return (assetConfig.word_a, assetConfig.word_b);
+    function _getPackedAsset(PackedAssetConfig[] memory packedAssetConfigs, uint i) internal pure returns (uint256, uint256) {
+        PackedAssetConfig memory packedAssetConfig = _getAssetConfig(packedAssetConfigs, i);
+        return (packedAssetConfig.word_a, packedAssetConfig.word_b);
     }
 
     /**

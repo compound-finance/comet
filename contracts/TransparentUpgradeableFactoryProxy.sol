@@ -24,51 +24,145 @@ contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy, Come
      * NOTE: Only the admin can call this function. See {ProxyAdmin-deployAndUpgrade}.
      */
     function deployAndUpgrade() external ifAdmin {
-        // XXX Can we read configuration directly from Comet contract?
-        // Will be difficult for governance because governance would have to
-        // specify all params, even if they are not being changed
+        PackedAssetConfig[] memory _packedAssetConfigs = _getPackedAssets(assetConfigsParam);
+        Configuration memory configuratorParams = Configuration({
+            governor: governorParam,
+            pauseGuardian: pauseGuardianParam,
+            baseToken: baseTokenParam,
+            baseTokenPriceFeed: baseTokenPriceFeedParam,
+            extensionDelegate: extensionDelegateParam,
+            kink: kinkParam,
+            perYearInterestRateSlopeLow: perYearInterestRateSlopeLowParam,
+            perYearInterestRateSlopeHigh: perYearInterestRateSlopeHighParam,
+            perYearInterestRateBase: perYearInterestRateBaseParam,
+            reserveRate: reserveRateParam,
+            trackingIndexScale: trackingIndexScaleParam,
+            baseTrackingSupplySpeed: baseTrackingSupplySpeedParam,
+            baseTrackingBorrowSpeed: baseTrackingBorrowSpeedParam,
+            baseMinForRewards: baseMinForRewardsParam,
+            baseBorrowMin: baseBorrowMinParam,
+            targetReserves: targetReservesParam,
+            packedAssetConfigs: _packedAssetConfigs
+        });
+        
+        // Deploy Comet
         address newComet = CometFactory(factory).clone(configuratorParams);
         _upgradeTo(newComet);
     }
 
     // XXX see if there is a cleaner way to do this
-    function setConfiguration(Configuration memory config) external ifAdmin {
-        Configuration storage _configuratorParams = configuratorParams;
-        _configuratorParams.governor = config.governor;
-        _configuratorParams.pauseGuardian = config.pauseGuardian;
-        _configuratorParams.baseToken = config.baseToken;
-        _configuratorParams.baseTokenPriceFeed = config.baseTokenPriceFeed;
-        _configuratorParams.kink = config.kink;
-        _configuratorParams.perYearInterestRateSlopeLow = config.perYearInterestRateSlopeLow;
-        _configuratorParams.perYearInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh;
-        _configuratorParams.perYearInterestRateBase = config.perYearInterestRateBase;
-        _configuratorParams.reserveRate = config.reserveRate;
-        _configuratorParams.trackingIndexScale = config.trackingIndexScale;
-        _configuratorParams.baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
-        _configuratorParams.baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
-        _configuratorParams.baseMinForRewards = config.baseMinForRewards;
-        _configuratorParams.baseBorrowMin = config.baseBorrowMin;
-        _configuratorParams.targetReserves = config.targetReserves;
-        _configuratorParams.governor = config.governor;
-        _configuratorParams.governor = config.governor;
+    function setConfiguration(ConfiguratorConfiguration memory config) external ifAdmin {
+        governorParam = config.governor;
+        pauseGuardianParam = config.pauseGuardian;
+        baseTokenParam = config.baseToken;
+        baseTokenPriceFeedParam = config.baseTokenPriceFeed;
+        extensionDelegateParam = config.extensionDelegate;
+        kinkParam = config.kink;
+        perYearInterestRateSlopeLowParam = config.perYearInterestRateSlopeLow;
+        perYearInterestRateSlopeHighParam = config.perYearInterestRateSlopeHigh;
+        perYearInterestRateBaseParam = config.perYearInterestRateBase;
+        reserveRateParam = config.reserveRate;
+        trackingIndexScaleParam = config.trackingIndexScale;
+        baseTrackingSupplySpeedParam = config.baseTrackingSupplySpeed;
+        baseTrackingBorrowSpeedParam = config.baseTrackingBorrowSpeed;
+        baseMinForRewardsParam = config.baseMinForRewards;
+        baseBorrowMinParam = config.baseBorrowMin;
+        targetReservesParam = config.targetReserves;
 
         // Need to copy using this loop because directly copying of an array of structs is not supported
         for (uint256 i = 0; i < config.assetConfigs.length; i++) {
-            if (i < _configuratorParams.assetConfigs.length) {
-                _configuratorParams.assetConfigs[i] = config.assetConfigs[i];
+            if (i < assetConfigsParam.length) {
+                assetConfigsParam[i] = config.assetConfigs[i];
             } else {
-                _configuratorParams.assetConfigs.push(config.assetConfigs[i]);
+                assetConfigsParam.push(config.assetConfigs[i]);
             }
         }
     }
 
+    /**
+     * @dev Gets the info for an asset or empty, for initialization
+     */
+    function _getAssetConfig(AssetConfig[] memory assetConfigs, uint i) internal pure returns (AssetConfig memory) {
+        if (i < assetConfigs.length)
+            return assetConfigs[i];
+        return AssetConfig({
+            asset: address(0),
+            priceFeed: address(0),
+            decimals: uint8(0),
+            borrowCollateralFactor: uint64(0),
+            liquidateCollateralFactor: uint64(0),
+            liquidationFactor: uint64(0),
+            supplyCap: uint128(0)
+        });
+    }
+
+    /**
+     * @dev Checks and gets the packed asset info for storage
+     */
+    function _getPackedAssetHelper(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint, uint) {
+        AssetConfig memory assetConfig = _getAssetConfig(assetConfigs, i);
+        address asset = assetConfig.asset;
+        address priceFeed = assetConfig.priceFeed;
+        uint8 decimals = assetConfig.decimals;
+
+        // Short-circuit if asset is nil
+        if (asset == address(0)) {
+            return (0, 0);
+        }
+
+        // XXX Should we add back these checks?
+        // Sanity check price feed and asset decimals
+        // require(AggregatorV3Interface(priceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
+        // require(ERC20(asset).decimals() == decimals, "asset decimals mismatch");
+
+        // // Ensure collateral factors are within range
+        // require(assetConfig.borrowCollateralFactor < assetConfig.liquidateCollateralFactor, "borrow CF must be < liquidate CF");
+        // require(assetConfig.liquidateCollateralFactor <= maxCollateralFactor, "liquidate CF too high");
+
+        // Keep 4 decimals for each factor
+        // XXX Where to define FACTOR_SCALE and make sure it matches that of Comet?
+        uint FACTOR_SCALE = 1e18;
+        uint descale = FACTOR_SCALE / 1e4;
+        uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
+        uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
+        uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
+
+        // Be nice and check descaled values are still within range
+        require(borrowCollateralFactor < liquidateCollateralFactor, "borrow CF must be < liquidate CF");
+
+        // Keep whole units of asset for supply cap
+        uint64 supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals));
+
+        uint256 word_a = (uint160(asset) << 0 |
+                          uint256(borrowCollateralFactor) << 160 |
+                          uint256(liquidateCollateralFactor) << 176 |
+                          uint256(liquidationFactor) << 192);
+        uint256 word_b = (uint160(priceFeed) << 0 |
+                          uint256(decimals) << 160 |
+                          uint256(supplyCap) << 168);
+
+        return (word_a, word_b);
+    }
+
+    function _getPackedAssets(AssetConfig[] memory assetConfigs) internal view returns (PackedAssetConfig[] memory) {
+        uint MAX_ASSETS = 16; // XXX WHERE TO DEFINE THIS?
+        PackedAssetConfig[] memory packedAssetConfigs;
+        for (uint256 i = 0; i < MAX_ASSETS; i++) {
+            (uint word_a, uint word_b) = _getPackedAssetHelper(assetConfigs, i);
+            PackedAssetConfig memory packedAssetConfig = PackedAssetConfig({ word_a: word_a, word_b: word_b });
+            packedAssetConfigs[i] = packedAssetConfig;
+        }
+        return packedAssetConfigs;
+    }
+
+
     // XXX Define other setters for setting params
     function setGovernor(address governor) external ifAdmin {
-        configuratorParams.governor = governor;
+        governorParam = governor;
     }
 
     // XXX What about removing an asset?
     function addAsset(AssetConfig calldata asset) external ifAdmin {
-        configuratorParams.assetConfigs.push(asset);
+        assetConfigsParam.push(asset);
     }
 }
