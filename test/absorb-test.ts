@@ -1,11 +1,26 @@
-import { Comet, ethers, expect, exp, factor, defaultAssets, makeProtocol, portfolio, wait } from './helpers';
+import {
+  Comet,
+  ethers,
+  expect,
+  exp,
+  factor,
+  defaultAssets,
+  makeProtocol,
+  portfolio,
+  wait,
+} from './helpers';
 
 describe('absorb', function () {
   it('reverts if total borrows underflows', async () => {
-    const { comet, users: [absorber, underwater] } = await makeProtocol();
+    const {
+      comet,
+      users: [absorber, underwater],
+    } = await makeProtocol();
 
     const f0 = await comet.setBasePrincipal(underwater.address, -100);
-    await expect(comet.absorb(absorber.address, [underwater.address])).to.be.revertedWith('code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
+    await expect(comet.absorb(absorber.address, [underwater.address])).to.be.revertedWith(
+      'code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)'
+    );
   });
 
   it('absorbs 1 account and pays out the absorber', async () => {
@@ -15,7 +30,10 @@ describe('absorb', function () {
       interestRateSlopeHigh: 0,
     };
     const protocol = await makeProtocol(params);
-    const { comet, users: [absorber, underwater] } = protocol;
+    const {
+      comet,
+      users: [absorber, underwater],
+    } = protocol;
 
     const t0 = Object.assign({}, await comet.totalsBasic(), {
       totalBorrowBase: 100n,
@@ -45,15 +63,15 @@ describe('absorb', function () {
     expect(t1.totalBorrowBase).to.be.equal(0);
     expect(r1).to.be.equal(0);
 
-    expect(pA0.internal).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pA0.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU0.internal).to.be.deep.equal({COMP: 0n, USDC: -100n, WBTC: 0n, WETH: 0n});
-    expect(pU0.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
+    expect(pA0.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pA0.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU0.internal).to.be.deep.equal({ COMP: 0n, USDC: -100n, WBTC: 0n, WETH: 0n });
+    expect(pU0.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
 
-    expect(pA1.internal).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pA1.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU1.internal).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU1.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
+    expect(pA1.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pA1.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU1.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU1.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
 
     expect(lA1.numAbsorbs).to.be.equal(1);
     expect(lA1.numAbsorbed).to.be.equal(1);
@@ -72,7 +90,10 @@ describe('absorb', function () {
       interestRateSlopeHigh: 0,
     };
     const protocol = await makeProtocol(params);
-    const { comet, users: [absorber, underwater1, underwater2] } = protocol;
+    const {
+      comet,
+      users: [absorber, underwater1, underwater2],
+    } = protocol;
 
     const t0 = Object.assign({}, await comet.totalsBasic(), {
       totalBorrowBase: 2000n,
@@ -88,7 +109,9 @@ describe('absorb', function () {
     const pU1_0 = await portfolio(protocol, underwater1.address);
     const pU2_0 = await portfolio(protocol, underwater2.address);
 
-    const a0 = await wait(comet.absorb(absorber.address, [underwater1.address, underwater2.address]));
+    const a0 = await wait(
+      comet.absorb(absorber.address, [underwater1.address, underwater2.address])
+    );
 
     const t1 = await comet.totalsBasic();
     const r1 = await comet.getReserves();
@@ -106,19 +129,19 @@ describe('absorb', function () {
     expect(t1.totalBorrowBase).to.be.equal(1200n);
     expect(r1).to.be.equal(1200);
 
-    expect(pA0.internal).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pA0.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU1_0.internal).to.be.deep.equal({COMP: 0n, USDC: -100n, WBTC: 0n, WETH: 0n});
-    expect(pU1_0.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU2_0.internal).to.be.deep.equal({COMP: 0n, USDC: -700n, WBTC: 0n, WETH: 0n});
-    expect(pU2_0.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
+    expect(pA0.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pA0.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU1_0.internal).to.be.deep.equal({ COMP: 0n, USDC: -100n, WBTC: 0n, WETH: 0n });
+    expect(pU1_0.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU2_0.internal).to.be.deep.equal({ COMP: 0n, USDC: -700n, WBTC: 0n, WETH: 0n });
+    expect(pU2_0.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
 
-    expect(pA1.internal).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pA1.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU1_1.internal).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU1_1.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU2_1.internal).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU2_1.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
+    expect(pA1.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pA1.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU1_1.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU1_1.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU2_1.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU2_1.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
 
     expect(lA1.numAbsorbs).to.be.equal(1);
     expect(lA1.numAbsorbed).to.be.equal(2);
@@ -133,7 +156,11 @@ describe('absorb', function () {
       interestRateSlopeHigh: 0,
     };
     const protocol = await makeProtocol(params);
-    const { comet, tokens, users: [absorber, underwater1, underwater2, underwater3] } = protocol;
+    const {
+      comet,
+      tokens,
+      users: [absorber, underwater1, underwater2, underwater3],
+    } = protocol;
     const { COMP, USDC, WBTC, WETH } = tokens;
 
     const t0 = Object.assign({}, await comet.totalsBasic(), {
@@ -162,7 +189,13 @@ describe('absorb', function () {
     const pU2_0 = await portfolio(protocol, underwater2.address);
     const pU3_0 = await portfolio(protocol, underwater3.address);
 
-    const a0 = await wait(comet.absorb(absorber.address, [underwater1.address, underwater2.address, underwater3.address]));
+    const a0 = await wait(
+      comet.absorb(absorber.address, [
+        underwater1.address,
+        underwater2.address,
+        underwater3.address,
+      ])
+    );
 
     const t1 = await comet.totalsBasic();
     const r1 = await comet.getReserves();
@@ -183,32 +216,47 @@ describe('absorb', function () {
     expect(t1.totalBorrowBase).to.be.equal(exp(3e15, 6) - exp(1, 18) - exp(1, 12) - exp(1, 6));
     expect(r1).to.be.equal(-exp(1e15, 6) - exp(1, 6) - exp(1, 12) - exp(1, 18));
 
-    expect(pP0.internal).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pP0.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pA0.internal).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pA0.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU1_0.internal).to.be.deep.equal({COMP: exp(1, 12), USDC: -exp(1, 6), WBTC: 0n, WETH: 0n});
-    expect(pU1_0.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU2_0.internal).to.be.deep.equal({COMP: exp(10, 18), USDC: -exp(1, 12), WBTC: 0n, WETH: exp(1, 18)});
-    expect(pU2_0.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU3_0.internal).to.be.deep.equal({COMP: exp(10000, 18), USDC: -exp(1, 18), WBTC: exp(50, 8), WETH: exp(50, 18)});
-    expect(pU3_0.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
+    expect(pP0.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pP0.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pA0.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pA0.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU1_0.internal).to.be.deep.equal({
+      COMP: exp(1, 12),
+      USDC: -exp(1, 6),
+      WBTC: 0n,
+      WETH: 0n,
+    });
+    expect(pU1_0.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU2_0.internal).to.be.deep.equal({
+      COMP: exp(10, 18),
+      USDC: -exp(1, 12),
+      WBTC: 0n,
+      WETH: exp(1, 18),
+    });
+    expect(pU2_0.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU3_0.internal).to.be.deep.equal({
+      COMP: exp(10000, 18),
+      USDC: -exp(1, 18),
+      WBTC: exp(50, 8),
+      WETH: exp(50, 18),
+    });
+    expect(pU3_0.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
 
     expect(pP1.internal).to.be.deep.equal({
       COMP: exp(1, 12) + exp(10, 18) + exp(10000, 18),
       USDC: 0n,
       WBTC: exp(50, 8),
-      WETH: exp(1, 18) + exp(50, 18)
+      WETH: exp(1, 18) + exp(50, 18),
     });
-    expect(pP1.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pA1.internal).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pA1.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU1_1.internal).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU1_1.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU2_1.internal).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU2_1.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU3_1.internal).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU3_1.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
+    expect(pP1.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pA1.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pA1.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU1_1.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU1_1.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU2_1.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU2_1.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU3_1.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU3_1.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
 
     expect(lA1.numAbsorbs).to.be.equal(1);
     expect(lA1.numAbsorbed).to.be.equal(3);
@@ -222,12 +270,16 @@ describe('absorb', function () {
       interestRateSlopeLow: 0,
       interestRateSlopeHigh: 0,
       assets: defaultAssets({
-        borrowCF: factor(1/2),
-        liquidateCF: factor(2/3),
-      })
+        borrowCF: factor(1 / 2),
+        liquidateCF: factor(2 / 3),
+      }),
     };
     const protocol = await makeProtocol(params);
-    const { comet, tokens, users: [absorber, underwater] } = protocol;
+    const {
+      comet,
+      tokens,
+      users: [absorber, underwater],
+    } = protocol;
     const { COMP, USDC, WBTC, WETH } = tokens;
 
     const debt = 1n - (exp(41000, 6) + exp(3000, 6) + exp(175, 6));
@@ -263,19 +315,29 @@ describe('absorb', function () {
     expect(t1.totalBorrowBase).to.be.equal(0);
     expect(r1).to.be.equal(-1);
 
-    expect(pP0.internal).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pP0.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pA0.internal).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pA0.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU0.internal).to.be.deep.equal({COMP: exp(1, 18), USDC: debt, WBTC: exp(1, 8), WETH: exp(1, 18)});
-    expect(pU0.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
+    expect(pP0.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pP0.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pA0.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pA0.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU0.internal).to.be.deep.equal({
+      COMP: exp(1, 18),
+      USDC: debt,
+      WBTC: exp(1, 8),
+      WETH: exp(1, 18),
+    });
+    expect(pU0.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
 
-    expect(pP1.internal).to.be.deep.equal({COMP: exp(1, 18), USDC: 0n, WBTC: exp(1, 8), WETH: exp(1, 18)});
-    expect(pP1.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pA1.internal).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pA1.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
-    expect(pU1.internal).to.be.deep.equal({COMP: 0n, USDC: 1n, WBTC: 0n, WETH: 0n});
-    expect(pU1.external).to.be.deep.equal({COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n});
+    expect(pP1.internal).to.be.deep.equal({
+      COMP: exp(1, 18),
+      USDC: 0n,
+      WBTC: exp(1, 8),
+      WETH: exp(1, 18),
+    });
+    expect(pP1.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pA1.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pA1.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
+    expect(pU1.internal).to.be.deep.equal({ COMP: 0n, USDC: 1n, WBTC: 0n, WETH: 0n });
+    expect(pU1.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
 
     expect(lA1.numAbsorbs).to.be.equal(1);
     expect(lA1.numAbsorbed).to.be.equal(1);
@@ -284,9 +346,12 @@ describe('absorb', function () {
   });
 
   it('reverts if an account is not underwater', async () => {
-    const { comet, users: [alice, bob] } = await makeProtocol();
+    const {
+      comet,
+      users: [alice, bob],
+    } = await makeProtocol();
 
-    await expect(comet.absorb(alice.address, [bob.address])).to.be.revertedWith("account is not underwater");
+    await expect(comet.absorb(alice.address, [bob.address])).to.be.revertedWith('not underwater');
   });
 
   it.skip('reverts if collateral asset value overflows base balance', async () => {
@@ -295,7 +360,12 @@ describe('absorb', function () {
 
   it('reverts if absorb is paused', async () => {
     const protocol = await makeProtocol();
-    const { comet, tokens, pauseGuardian, users: [alice, bob] } = protocol;
+    const {
+      comet,
+      tokens,
+      pauseGuardian,
+      users: [alice, bob],
+    } = protocol;
     const { COMP } = tokens;
 
     const cometAsB = comet.connect(bob);
@@ -304,6 +374,6 @@ describe('absorb', function () {
     await wait(comet.connect(pauseGuardian).pause(false, false, false, true, false));
     expect(await comet.isAbsorbPaused()).to.be.true;
 
-    await expect(cometAsB.absorb(bob.address, [alice.address])).to.be.revertedWith('absorb is paused');
+    await expect(cometAsB.absorb(bob.address, [alice.address])).to.be.revertedWith('paused');
   });
 });

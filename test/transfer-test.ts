@@ -61,8 +61,12 @@ describe('transfer', function () {
   });
 
   it('calculates base principal correctly', async () => {
-    const protocol = await makeProtocol({base: 'USDC'});
-    const { comet, tokens, users: [alice, bob] } = protocol;
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const {
+      comet,
+      tokens,
+      users: [alice, bob],
+    } = protocol;
     const { USDC } = tokens;
 
     await comet.setBasePrincipal(bob.address, 50e6); // 100e6 in present value
@@ -76,16 +80,16 @@ describe('transfer', function () {
 
     const alice0 = await portfolio(protocol, alice.address);
     const bob0 = await portfolio(protocol, bob.address);
-    
+
     await wait(cometAsB.transfer(alice.address, USDC.address, 100e6));
     const totals1 = await comet.totalsBasic();
-    const alice1 = await portfolio(protocol, alice.address)
-    const bob1 = await portfolio(protocol, bob.address)
+    const alice1 = await portfolio(protocol, alice.address);
+    const bob1 = await portfolio(protocol, bob.address);
 
-    expect(alice0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(bob0.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(alice1.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(bob1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(alice0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(bob0.internal).to.be.deep.equal({ USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(alice1.internal).to.be.deep.equal({ USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(bob1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(totals1.totalSupplyBase).to.be.equal(totals0.totalSupplyBase);
     expect(totals1.totalBorrowBase).to.be.equal(totals0.totalBorrowBase);
   });
@@ -104,8 +108,13 @@ describe('transfer', function () {
   });
 
   it('reverts if transfer is paused', async () => {
-    const protocol = await makeProtocol({base: 'USDC'});
-    const { comet, tokens, pauseGuardian, users: [alice, bob] } = protocol;
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const {
+      comet,
+      tokens,
+      pauseGuardian,
+      users: [alice, bob],
+    } = protocol;
     const { USDC } = tokens;
 
     const cometAsB = comet.connect(bob);
@@ -114,7 +123,7 @@ describe('transfer', function () {
     await wait(comet.connect(pauseGuardian).pause(false, true, false, false, false));
     expect(await comet.isTransferPaused()).to.be.true;
 
-    await expect(cometAsB.transfer(alice.address, USDC.address, 1)).to.be.revertedWith('transfer is paused');
+    await expect(cometAsB.transfer(alice.address, USDC.address, 1)).to.be.revertedWith('paused');
   });
 
   it.skip('reverts if transferring base results in an under collateralized borrow', async () => {
@@ -156,7 +165,7 @@ describe('transfer', function () {
 
     await expect(
       comet.connect(alice).transfer(alice.address, USDC.address, 100)
-    ).to.be.revertedWith('self-transfer not allowed');
+    ).to.be.revertedWith('no self-transfer');
   });
 
   it('reverts on self-transfer of collateral', async () => {
@@ -169,7 +178,7 @@ describe('transfer', function () {
 
     await expect(
       comet.connect(alice).transfer(alice.address, COMP.address, 100)
-    ).to.be.revertedWith('self-transfer not allowed');
+    ).to.be.revertedWith('no self-transfer');
   });
 });
 
@@ -214,7 +223,7 @@ describe('transferFrom', function () {
 
     await expect(
       cometAsC.transferFrom(bob.address, alice.address, COMP.address, 7)
-    ).to.be.revertedWith('operator not permitted');
+    ).to.be.revertedWith('bad auth');
   });
 
   it('reverts on transfer of base token from address to itself', async () => {
@@ -229,7 +238,7 @@ describe('transferFrom', function () {
 
     await expect(
       comet.connect(alice).transferFrom(bob.address, bob.address, USDC.address, 100)
-    ).to.be.revertedWith('self-transfer not allowed');
+    ).to.be.revertedWith('no self-transfer');
   });
 
   it('reverts on transfer of collateral from address to itself', async () => {
@@ -244,12 +253,17 @@ describe('transferFrom', function () {
 
     await expect(
       comet.connect(alice).transferFrom(bob.address, bob.address, COMP.address, 100)
-    ).to.be.revertedWith('self-transfer not allowed');
+    ).to.be.revertedWith('no self-transfer');
   });
 
   it('reverts if transfer is paused', async () => {
     const protocol = await makeProtocol();
-    const { comet, tokens, pauseGuardian, users: [alice, bob, charlie] } = protocol;
+    const {
+      comet,
+      tokens,
+      pauseGuardian,
+      users: [alice, bob, charlie],
+    } = protocol;
     const { COMP } = tokens;
 
     await comet.setCollateralBalance(bob.address, COMP.address, 7);
@@ -261,6 +275,8 @@ describe('transferFrom', function () {
     expect(await comet.isTransferPaused()).to.be.true;
 
     await wait(cometAsB.allow(charlie.address, true));
-    await expect(cometAsC.transferFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith('transfer is paused');
+    await expect(
+      cometAsC.transferFrom(bob.address, alice.address, COMP.address, 7)
+    ).to.be.revertedWith('paused');
   });
 });

@@ -24,7 +24,7 @@ describe('withdrawReserves', function () {
       users: [alice],
     } = await makeProtocol();
     await expect(comet.connect(alice).withdrawReserves(alice.address, 10)).to.be.revertedWith(
-      'only governor may withdraw'
+      'bad auth'
     );
   });
 
@@ -39,7 +39,7 @@ describe('withdrawReserves', function () {
     });
     await expect(
       comet.connect(governor).withdrawReserves(alice.address, tokenBalance + 1)
-    ).to.be.revertedWith('insufficient reserves');
+    ).to.be.revertedWith('bad amount');
   });
 
   it('accounts for total supply base when calculating reserves', async () => {
@@ -63,7 +63,7 @@ describe('withdrawReserves', function () {
     expect(await comet.getReserves()).to.be.equal(100);
 
     await expect(comet.connect(governor).withdrawReserves(alice.address, 101)).to.be.revertedWith(
-      'insufficient reserves'
+      'bad amount'
     );
   });
 });
