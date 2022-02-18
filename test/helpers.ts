@@ -83,7 +83,11 @@ export type Configurator = {
   configurator: TransparentUpgradeableFactoryProxy,
   proxyAdmin: CometProxyAdmin,
   cometFactory: CometFactory,
-  comet: Comet
+  comet: Comet,
+  tokens: {
+    [symbol: string]: FaucetToken;
+  },
+  users: SignerWithAddress[]
 }
 
 export function dfn<T>(x: T | undefined | null, dflt: T): T {
@@ -244,7 +248,9 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     configurator,
     proxyAdmin,
     cometFactory,
-    comet
+    comet,
+    tokens,
+    users
   };
 }
 
