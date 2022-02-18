@@ -11,29 +11,29 @@ describe('allow', function () {
   });
 
   it('allows a user to authorize a manager', async () => {
-    const { comet, cometExt } = await makeProtocol();
+    const { comet } = await makeProtocol();
     const [_admin, user, manager] = await ethers.getSigners();
     const userAddress = user.address;
     const managerAddress = manager.address;
 
-    const tx = await cometExt.connect(user).allow(managerAddress, true);
+    const tx = await comet.connect(user).allow(managerAddress, true);
     await tx.wait();
 
     expect(await comet.isAllowed(userAddress, managerAddress)).to.be.true;
   });
 
   it('allows a user to rescind authorization', async () => {
-    const { comet, cometExt } = await makeProtocol();
+    const { comet } = await makeProtocol();
     const [_admin, user, manager] = await ethers.getSigners();
     const userAddress = user.address;
     const managerAddress = manager.address;
 
-    const authorizeTx = await cometExt.connect(user).allow(managerAddress, true);
+    const authorizeTx = await comet.connect(user).allow(managerAddress, true);
     await authorizeTx.wait();
 
     expect(await comet.isAllowed(userAddress, managerAddress)).to.be.true;
 
-    const rescindTx = await cometExt.connect(user).allow(managerAddress, false);
+    const rescindTx = await comet.connect(user).allow(managerAddress, false);
     await rescindTx.wait();
 
     expect(await comet.isAllowed(userAddress, managerAddress)).to.be.false;

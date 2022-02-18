@@ -1,144 +1,409 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity ^0.8.11;
 
-import "./CometStorage.sol";
-import "./CometMath.sol";
-import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "./CometCore.sol";
 
-contract CometBase is CometStorage, CometMath {
-    /** Internal constants **/
+/**
+ * @title Compound's Comet Base Delegate Contract
+ * @notice Part of an efficient monolithic money market protocol
+ * @author Compound
+ */
+contract CometBase is CometCore {
+    // XXX check effect of explicit sizing again and order of immutables
 
-    /// @dev The max number of assets this contract is hardcoded to support
-    ///  Do not change this variable without updating all the fields throughout the contract,
-    //    including the size of UserBasic.assetsIn and corresponding integer conversions.
-    uint8 internal constant MAX_ASSETS = 15;
+    /// @notice The number of decimals for wrapped base token
+    uint8 public immutable decimals;
 
-    /// @dev The max number of decimals base token can have
-    ///  Note this cannot just be increased arbitrarily.
-    uint8 internal constant MAX_BASE_DECIMALS = 18;
+    /// @notice The scale for base token (must be less than 18 decimals)
+    uint64 public immutable baseScale;
 
-    /// @dev Offsets for specific actions in the pause flag bit array
-    uint8 internal constant PAUSE_SUPPLY_OFFSET = 0;
-    uint8 internal constant PAUSE_TRANSFER_OFFSET = 1;
-    uint8 internal constant PAUSE_WITHDRAW_OFFSET = 2;
-    uint8 internal constant PAUSE_ABSORB_OFFSET = 3;
-    uint8 internal constant PAUSE_BUY_OFFSET = 4;
+    /// @notice The address of the base token contract
+    address public immutable baseToken;
 
-    /// @dev The decimals required for a price feed
-    uint8 internal constant PRICE_FEED_DECIMALS = 8;
+    /// @notice The address of the price feed for the base token
+    address public immutable baseTokenPriceFeed;
 
-    /// @dev 365 days * 24 hours * 60 minutes * 60 seconds
-    uint64 internal constant SECONDS_PER_YEAR = 31_536_000;
+    /// @notice The scale for reward tracking
+    uint64 public immutable trackingIndexScale;
 
-    /// @dev The scale for base index (depends on time/rate scales, not base token)
-    uint64 internal constant BASE_INDEX_SCALE = 1e15;
+    /// @notice The speed at which supply rewards are tracked (in trackingIndexScale)
+    uint64 public immutable baseTrackingSupplySpeed;
 
-    /// @dev The scale for prices (in USD)
-    uint64 internal constant PRICE_SCALE = 1e8;
+    /// @notice The speed at which borrow rewards are tracked (in trackingIndexScale)
+    uint64 public immutable baseTrackingBorrowSpeed;
 
-    /// @dev The scale for factors
-    uint64 internal constant FACTOR_SCALE = 1e18;
+    /// @notice The minimum amount of base wei for rewards to accrue
+    /// @dev This must be large enough so as to prevent division by base wei from overflowing the 64 bit indices
+    /// @dev uint104
+    uint public immutable baseMinForRewards;
+
+    /// @notice The minimum base amount required to initiate a borrow
+    /// @dev uint104
+    uint public immutable baseBorrowMin;
+
+    /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope (factor)
+    /// @dev uint64
+    uint public immutable kink;
+
+    /// @notice Per second interest rate slope applied when utilization is below kink (factor)
+    /// @dev uint64
+    uint public immutable perSecondInterestRateSlopeLow;
+
+    /// @notice Per second interest rate slope applied when utilization is above kink (factor)
+    /// @dev uint64
+    uint public immutable perSecondInterestRateSlopeHigh;
+
+    /// @notice Per second base interest rate (factor)
+    /// @dev uint64
+    uint public immutable perSecondInterestRateBase;
+
+    /// @notice The rate of total interest paid that goes into reserves (factor)
+    /// @dev uint64
+    uint public immutable reserveRate;
 
     /**
-     * @notice Determine if the manager has permission to act on behalf of the owner
-     * @param owner The owner account
-     * @param manager The manager account
-     * @return Whether or not the manager has permission
-     */
-    function hasPermission(address owner, address manager) public view returns (bool) {
-        return owner == manager || isAllowed[owner][manager];
+     * @notice Construct a new base delegate
+     * @param config The mapping of initial/constant parameters
+     **/
+    constructor(BaseConfiguration memory config) {
+        // Sanity checks
+        uint8 decimals_ = ERC20(config.baseToken).decimals();
+        require(decimals_ <= MAX_BASE_DECIMALS, "too many decimals");
+        require(config.baseMinForRewards > 0, "bad rewards min");
+        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == PRICE_FEED_DECIMALS, "bad decimals");
+        // XXX other sanity checks? for rewards?
+
+        // Copy configuration
+        decimals = decimals_;
+        baseToken = config.baseToken;
+        baseTokenPriceFeed = config.baseTokenPriceFeed;
+        baseScale = uint64(10 ** decimals_);
+
+        // XXX baseTrackingIndexScale? or remove base prefix for others?
+        trackingIndexScale = config.trackingIndexScale;
+
+        baseMinForRewards = config.baseMinForRewards;
+        baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
+        baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
+
+        baseBorrowMin = config.baseBorrowMin;
+
+        // Set interest rate model configs
+        kink = config.kink;
+        perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
+        perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
+        perSecondInterestRateBase = config.perYearInterestRateBase / SECONDS_PER_YEAR;
+        reserveRate = config.reserveRate;
     }
 
     /**
-     * @notice Get the current price from a feed
-     * @param priceFeed The address of a price feed
-     * @return The price, scaled by `PRICE_SCALE`
+     * @notice Get the config info copied by the protocol
+     * @return The base token address, price feed address, and scale
      */
-    function getPrice(address priceFeed) public view returns (uint128) {
-        (, int price, , , ) = AggregatorV3Interface(priceFeed).latestRoundData();
-        require(0 <= price && price <= type(int128).max, "bad price");
-        return uint128(int128(price));
+    function getInfo() external view returns (address, address, uint64) {
+        return (baseToken, baseTokenPriceFeed, baseScale);
     }
 
     /**
-     * @dev Multiply a `fromScale` quantity by a price, returning a common price quantity
+     * @notice Get the total number of tokens in circulation
+     * @return The supply of tokens
+     **/
+    function totalSupply() external view returns (uint256) {
+        return presentValueSupply(baseSupplyIndex, totalSupplyBase);
+    }
+
+    /**
+     * @notice Query the current positive base balance of an account or zero
+     * @param account The account whose balance to query
+     * @return The present day base balance magnitude of the account, if positive
      */
-    function mulPrice(uint128 n, uint128 price, uint fromScale) internal pure returns (uint) {
-        unchecked {
-            return uint256(n) * price / fromScale;
+    function balanceOf(address account) external view returns (uint256) {
+        int104 principal = userBasic[account].principal;
+        return principal > 0 ? presentValueSupply(baseSupplyIndex, unsigned104(principal)) : 0;
+    }
+
+    /**
+     * @notice Query the current negative base balance of an account or zero
+     * @param account The account whose balance to query
+     * @return The present day base balance magnitude of the account, if negative
+     */
+    function borrowBalanceOf(address account) external view returns (uint256) {
+        int104 principal = userBasic[account].principal;
+        return principal < 0 ? presentValueBorrow(baseBorrowIndex, unsigned104(-principal)) : 0;
+    }
+
+     /**
+      * @notice Query the current base balance of an account
+      * @param account The account whose balance to query
+      * @return The present day base balance of the account
+      */
+    function baseBalanceOf(address account) external view returns (int104) {
+        return presentValue(userBasic[account].principal);
+    }
+
+    /**
+     * @notice Query the current collateral balance of an account
+     * @param account The account whose balance to query
+     * @param asset The collateral asset whi
+     * @return The collateral balance of the account
+     */
+    function collateralBalanceOf(address account, address asset) external view returns (uint128) {
+        return userCollateral[account][asset].balance;
+    }
+
+    /**
+     * @dev Divide a number by an amount of base
+     */
+    function divBaseWei(uint n, uint baseWei) internal view returns (uint) {
+        return n * baseScale / baseWei;
+    }
+
+    /**
+     * @dev The amounts broken into repay and supply amounts, given negative balance
+     */
+    function repayAndSupplyAmount(int104 balance, uint104 amount) internal pure returns (uint104, uint104) {
+        uint104 repayAmount = balance < 0 ? min(unsigned104(-balance), amount) : 0;
+        uint104 supplyAmount = amount - repayAmount;
+        return (repayAmount, supplyAmount);
+    }
+
+    /**
+     * @dev The amounts broken into withdraw and borrow amounts, given positive balance
+     */
+    function withdrawAndBorrowAmount(int104 balance, uint104 amount) internal pure returns (uint104, uint104) {
+        uint104 withdrawAmount = balance > 0 ? min(unsigned104(balance), amount) : 0;
+        uint104 borrowAmount = amount - withdrawAmount;
+        return (withdrawAmount, borrowAmount);
+    }
+
+    /**
+     * @notice Accrue interest (and rewards) in base token supply and borrows
+     **/
+    function accrue() public {
+        uint40 now_ = getNow();
+        uint timeElapsed = now_ - lastAccrualTime;
+        if (timeElapsed > 0) {
+            uint supplyRate = getSupplyRateInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
+            uint borrowRate = getBorrowRateInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
+            baseSupplyIndex += safe64(mulFactor(baseSupplyIndex, supplyRate * timeElapsed));
+            baseBorrowIndex += safe64(mulFactor(baseBorrowIndex, borrowRate * timeElapsed));
+            if (totalSupplyBase >= baseMinForRewards) {
+                uint supplySpeed = baseTrackingSupplySpeed;
+                trackingSupplyIndex += safe64(divBaseWei(supplySpeed * timeElapsed, totalSupplyBase));
+            }
+            if (totalBorrowBase >= baseMinForRewards) {
+                uint borrowSpeed = baseTrackingBorrowSpeed;
+                trackingBorrowIndex += safe64(divBaseWei(borrowSpeed * timeElapsed, totalBorrowBase));
+            }
         }
+        lastAccrualTime = now_;
+    }
+
+    // XXX any external fn which modifies state should allow caller to mark as untrusted
+    function requireCallerAllowsStateModification() internal view {
+        // XXX how do we protect this fn?
+        //  if we only call w/ msg.sender != this when its a 'real' call?
+        //   so anyone can call it directly to modify their own storage
+        //    but if you callcode it we will reject
+        //    and comet only callcodes in fallback
+        //     so that these sensitive functions will reject
+        require(msg.sender != address(this), "disallowed");
+    }
+
+    // XXX external
+    function repayDebtAndCreditBalance(address account, int104 debt, int104 credit) external {
+        // This is a sensitive function which the caller should only call explicitly
+        requireCallerAllowsStateModification(); // XXX
+
+        // Forgive user of debt and set their balance to amount credited
+        updateBaseBalance(account, userBasic[account], principalValue(credit));
+
+        // Reserves are decreased by increasing total supply and decreasing borrows
+        //  the change to reserves is `credit - debt`
+        // Note: credit is required be non-negative
+        totalSupplyBase += principalValueSupply(baseSupplyIndex, unsigned104(credit));
+        // Note: debt is required to be negative
+        totalBorrowBase -= principalValueBorrow(baseBorrowIndex, unsigned104(-debt));
     }
 
     /**
-     * @dev Multiply a signed `fromScale` quantity by a price, returning a common price quantity
+     * @dev Write updated balance to store and tracking participation
      */
-    function signedMulPrice(int128 n, uint128 price, uint fromScale) internal pure returns (int) {
-        unchecked {
-            return n * signed256(price) / signed256(fromScale);
-        }
-    }
+    function updateBaseBalance(address account, UserBasic memory basic, int104 principalNew) internal {
+        int104 principal = basic.principal;
+        basic.principal = principalNew;
 
-    /**
-     * @dev Divide a common price quantity by a price, returning a `toScale` quantity
-     */
-    function divPrice(uint n, uint price, uint toScale) internal pure returns (uint) {
-        return n * toScale / price;
-    }
-
-    /**
-     * @dev Multiply a number by a factor
-     */
-    function mulFactor(uint n, uint factor) internal pure returns (uint) {
-        return n * factor / FACTOR_SCALE;
-    }
-
-    /**
-     * @dev The positive present supply balance if positive or the negative borrow balance if negative
-     */
-    function presentValue(int104 principalValue_) internal view returns (int104) {
-        if (principalValue_ >= 0) {
-            return signed104(presentValueSupply(baseSupplyIndex, unsigned104(principalValue_)));
+        if (principal >= 0) {
+            uint indexDelta = trackingSupplyIndex - basic.baseTrackingIndex;
+            basic.baseTrackingAccrued += safe64(uint104(principal) * indexDelta / BASE_INDEX_SCALE); // XXX decimals
         } else {
-            return -signed104(presentValueBorrow(baseBorrowIndex, unsigned104(-principalValue_)));
+            uint indexDelta = trackingBorrowIndex - basic.baseTrackingIndex;
+            basic.baseTrackingAccrued += safe64(uint104(-principal) * indexDelta / BASE_INDEX_SCALE); // XXX decimals
         }
-    }
 
-    /**
-     * @dev The principal amount projected forward by the supply index
-     */
-    function presentValueSupply(uint64 baseSupplyIndex_, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * baseSupplyIndex_ / BASE_INDEX_SCALE);
-    }
-
-    /**
-     * @dev The principal amount projected forward by the borrow index
-     */
-    function presentValueBorrow(uint64 baseBorrowIndex_, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * baseBorrowIndex_ / BASE_INDEX_SCALE);
-    }
-
-    /**
-     * @dev The positive principal if positive or the negative principal if negative
-     */
-    function principalValue(int104 presentValue_) internal view returns (int104) {
-        if (presentValue_ >= 0) {
-            return signed104(principalValueSupply(baseSupplyIndex, unsigned104(presentValue_)));
+        if (principalNew >= 0) {
+            basic.baseTrackingIndex = trackingSupplyIndex;
         } else {
-            return -signed104(principalValueBorrow(baseBorrowIndex, unsigned104(-presentValue_)));
+            basic.baseTrackingIndex = trackingBorrowIndex;
+        }
+
+        userBasic[account] = basic;
+    }
+
+    // XXX add these back properly
+    function getSupplyRate() external view returns (uint64) {
+        return getSupplyRateInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
+    }
+
+    function getBorrowRate() external view returns (uint64) {
+        return getBorrowRateInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
+    }
+
+    function getUtilization() external view returns (uint) {
+        return getUtilizationInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
+    }
+
+    /**
+     * @dev Calculate current per second supply rate given totals
+     */
+    function getSupplyRateInternal(uint64 baseSupplyIndex_, uint64 baseBorrowIndex_, uint104 totalSupplyBase_, uint104 totalBorrowBase_) internal view returns (uint64) {
+        uint utilization = getUtilizationInternal(baseSupplyIndex_, baseBorrowIndex_, totalSupplyBase_, totalBorrowBase_);
+        uint reserveScalingFactor = utilization * (FACTOR_SCALE - reserveRate) / FACTOR_SCALE;
+        if (utilization <= kink) {
+            // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
+            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization))));
+        } else {
+            // (interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)) * utilization * (1 - reserveRate)
+            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)))));
         }
     }
 
     /**
-     * @dev The present value projected backward by the supply index
+     * @dev Calculate current per second borrow rate given totals
      */
-    function principalValueSupply(uint64 baseSupplyIndex_, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * BASE_INDEX_SCALE / baseSupplyIndex_);
+    function getBorrowRateInternal(uint64 baseSupplyIndex_, uint64 baseBorrowIndex_, uint104 totalSupplyBase_, uint104 totalBorrowBase_) internal view returns (uint64) {
+        uint utilization = getUtilizationInternal(baseSupplyIndex_, baseBorrowIndex_, totalSupplyBase_, totalBorrowBase_);
+        if (utilization <= kink) {
+            // interestRateBase + interestRateSlopeLow * utilization
+            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization));
+        } else {
+            // interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)
+            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)));
+        }
     }
 
     /**
-     * @dev The present value projected backwrd by the borrow index
+     * @dev Calculate utilization rate of the base asset given totals
      */
-    function principalValueBorrow(uint64 baseBorrowIndex_, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * BASE_INDEX_SCALE / baseBorrowIndex_);
+    function getUtilizationInternal(uint64 baseSupplyIndex, uint64 baseBorrowIndex, uint104 totalSupplyBase, uint104 totalBorrowBase) internal pure returns (uint) {
+        uint totalSupply_ = presentValueSupply(baseSupplyIndex, totalSupplyBase);
+        uint totalBorrow_ = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+        if (totalSupply_ == 0) {
+            return 0;
+        } else {
+            return totalBorrow_ * FACTOR_SCALE / totalSupply_;
+        }
+    }
+
+    /**
+     * @dev Supply an amount of base asset from `from` to dst
+     */
+    function supplyBase(address from, address dst, uint104 amount) external { // XXX
+        // This is a sensitive function which the caller should only call explicitly
+        requireCallerAllowsStateModification(); // XXX
+        doTransferIn(baseToken, from, amount);
+
+        accrue();
+
+        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
+        uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+
+        UserBasic memory dstUser = userBasic[dst];
+        int104 dstBalance = presentValue(dstUser.principal);
+
+        (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, amount);
+
+        totalSupplyBalance += supplyAmount;
+        totalBorrowBalance -= repayAmount;
+
+        dstBalance += signed104(amount);
+
+        totalSupplyBase = principalValueSupply(baseSupplyIndex, totalSupplyBalance);
+        totalBorrowBase = principalValueBorrow(baseBorrowIndex, totalBorrowBalance);
+
+        updateBaseBalance(dst, dstUser, principalValue(dstBalance));
+    }
+
+    /**
+     * @dev Transfer an amount of base asset from src to dst, borrowing if possible/necessary
+     */
+    function transferBase(address src, address dst, uint104 amount) external { // XXX
+        // This is a sensitive function which the caller should only call explicitly
+        requireCallerAllowsStateModification(); // XXX
+
+        accrue();
+
+        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
+        uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+
+        UserBasic memory srcUser = userBasic[src];
+        UserBasic memory dstUser = userBasic[dst];
+        int104 srcBalance = presentValue(srcUser.principal);
+        int104 dstBalance = presentValue(dstUser.principal);
+
+        (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcBalance, amount);
+        (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, amount);
+
+        totalSupplyBalance += supplyAmount - withdrawAmount;
+        totalBorrowBalance += borrowAmount - repayAmount;
+
+        srcBalance -= signed104(amount);
+        dstBalance += signed104(amount);
+
+        totalSupplyBase = principalValueSupply(baseSupplyIndex, totalSupplyBalance);
+        totalBorrowBase = principalValueBorrow(baseBorrowIndex, totalBorrowBalance);
+
+        updateBaseBalance(src, srcUser, principalValue(srcBalance));
+        updateBaseBalance(dst, dstUser, principalValue(dstBalance));
+
+        if (srcBalance < 0) {
+            require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
+        }
+
+        emit Transfer(src, dst, amount);
+    }
+
+    /**
+     * @dev Withdraw an amount of base asset from src to `to`, borrowing if possible/necessary
+     */
+    function withdrawBase(address src, address to, uint104 amount) external { // XXX
+        // This is a sensitive function which the caller should only call explicitly
+        requireCallerAllowsStateModification(); // XXX
+
+        accrue();
+
+        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
+        uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+
+        UserBasic memory srcUser = userBasic[src];
+        int104 srcBalance = presentValue(srcUser.principal);
+
+        (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcBalance, amount);
+
+        totalSupplyBalance -= withdrawAmount;
+        totalBorrowBalance += borrowAmount;
+
+        srcBalance -= signed104(amount);
+
+        totalSupplyBase = principalValueSupply(baseSupplyIndex, totalSupplyBalance);
+        totalBorrowBase = principalValueBorrow(baseBorrowIndex, totalBorrowBalance);
+
+        updateBaseBalance(src, srcUser, principalValue(srcBalance));
+
+        if (srcBalance < 0) {
+            require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
+        }
+
+        doTransferOut(baseToken, to, amount);
     }
 }

@@ -8,6 +8,7 @@ contract CometHarness is Comet {
 
     constructor(Configuration memory config) Comet(config) {}
 
+    // XXX move the rest of these out?
     function baseIndexScale() external pure returns (uint64) {
         return BASE_INDEX_SCALE;
     }
@@ -16,6 +17,10 @@ contract CometHarness is Comet {
         return MAX_ASSETS;
     }
 
+    // XXX the getNow in base isn't being overridden by this...
+    //  need a separate harness with same override probably
+    //   in which case it should prob move out of core into base
+    //    and initialize_storage should be a baseDo?
     function getNow() override internal view returns (uint40) {
         return nowOverride > 0 ? uint40(nowOverride) : super.getNow();
     }
@@ -28,6 +33,7 @@ contract CometHarness is Comet {
         nowOverride = now_;
     }
 
+    // XXX back to Comet.sol?
     function totalsBasic() public view returns (TotalsBasic memory) {
         return TotalsBasic({
             baseSupplyIndex: baseSupplyIndex,
@@ -95,22 +101,6 @@ contract CometHarness is Comet {
         }
 
         return result;
-    }
-
-    function accrue() external {
-        accrueInternal();
-    }
-
-    function getSupplyRate() external view returns (uint64) {
-        return getSupplyRateInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
-    }
-
-    function getBorrowRate() external view returns (uint64) {
-        return getBorrowRateInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
-    }
-
-    function getUtilization() external view returns (uint) {
-        return getUtilizationInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
     }
 
     function isSupplyPaused() external view returns (bool) {

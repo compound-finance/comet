@@ -3,8 +3,8 @@ import { ethers } from 'hardhat';
 import { Block } from '@ethersproject/abstract-provider';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
-  CometExt,
-  CometExt__factory as CometExt__factory,
+  CometBase,
+  CometBase__factory as CometBase__factory,
   CometHarness as Comet,
   CometHarness__factory as Comet__factory,
   FaucetToken,
@@ -15,7 +15,7 @@ import {
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
 
-export { Comet, CometExt, ethers, expect };
+export { Comet, CometBase, ethers, expect };
 
 export type Numeric = number | bigint;
 
@@ -36,7 +36,7 @@ export type ProtocolOpts = {
   };
   governor?: SignerWithAddress;
   pauseGuardian?: SignerWithAddress;
-  extensionDelegate?: CometExt;
+  baseDelegate?: CometBase;
   base?: string;
   reward?: string;
   kink?: Numeric;
@@ -57,12 +57,12 @@ export type Protocol = {
   opts: ProtocolOpts;
   governor: SignerWithAddress;
   pauseGuardian: SignerWithAddress;
-  extensionDelegate: CometExt;
+  baseDelegate: CometBase;
   users: SignerWithAddress[];
   base: string;
   reward: string;
   comet: Comet;
-  cometExt: CometExt;
+  cometBase: CometBase;
   tokens: {
     [symbol: string]: FaucetToken;
   };
@@ -182,30 +182,31 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
   if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
 
-  const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
-  let extensionDelegate = opts.extensionDelegate;
-  if (extensionDelegate === undefined) {
-    extensionDelegate = await CometExtFactory.deploy();
-    await extensionDelegate.deployed();
+  const CometBaseFactory = (await ethers.getContractFactory('CometBase')) as CometBase__factory;
+  let baseDelegate = opts.baseDelegate;
+  if (baseDelegate === undefined) {
+    baseDelegate = await CometBaseFactory.deploy({
+      baseToken: tokens[base].address,
+      baseTokenPriceFeed: priceFeeds[base].address,
+      kink,
+      perYearInterestRateBase,
+      perYearInterestRateSlopeLow,
+      perYearInterestRateSlopeHigh,
+      reserveRate,
+      trackingIndexScale,
+      baseTrackingSupplySpeed,
+      baseTrackingBorrowSpeed,
+      baseMinForRewards,
+      baseBorrowMin,
+    });
+    await baseDelegate.deployed();
   }
 
   const CometFactory = (await ethers.getContractFactory('CometHarness')) as Comet__factory;
   const comet = await CometFactory.deploy({
     governor: governor.address,
     pauseGuardian: pauseGuardian.address,
-    extensionDelegate: extensionDelegate.address,
-    baseToken: tokens[base].address,
-    baseTokenPriceFeed: priceFeeds[base].address,
-    kink,
-    perYearInterestRateBase,
-    perYearInterestRateSlopeLow,
-    perYearInterestRateSlopeHigh,
-    reserveRate,
-    trackingIndexScale,
-    baseTrackingSupplySpeed,
-    baseTrackingBorrowSpeed,
-    baseMinForRewards,
-    baseBorrowMin,
+    baseDelegate: baseDelegate.address,
     targetReserves,
     assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], i) => {
       const descale = factorScale / (10n**4n);
@@ -244,24 +245,24 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     opts,
     governor,
     pauseGuardian,
-    extensionDelegate,
+    baseDelegate,
     users,
     base,
     reward,
     comet,
-    cometExt: CometExtFactory.attach(comet.address),
+    cometBase: CometBaseFactory.attach(comet.address),
     tokens,
     unsupportedToken,
     priceFeeds,
   };
 }
 
-export async function portfolio({ comet, cometExt, base, tokens }, account) {
-  const internal = { [base]: BigInt(await cometExt.baseBalanceOf(account)) };
+export async function portfolio({ comet, cometBase, base, tokens }, account) {
+  const internal = { [base]: BigInt(await cometBase.baseBalanceOf(account)) };
   const external = { [base]: BigInt(await tokens[base].balanceOf(account)) };
   for (const symbol in tokens) {
     if (symbol != base) {
-      internal[symbol] = BigInt(await cometExt.collateralBalanceOf(account, tokens[symbol].address));
+      internal[symbol] = BigInt(await cometBase.collateralBalanceOf(account, tokens[symbol].address));
       external[symbol] = BigInt(await tokens[symbol].balanceOf(account));
     }
   }

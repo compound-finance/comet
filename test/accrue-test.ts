@@ -25,7 +25,7 @@ describe('accrue', function () {
       baseTrackingSupplySpeed: 668,
       baseTrackingBorrowSpeed: 777,
     };
-    const { comet } = await makeProtocol(params);
+    const { comet, cometBase } = await makeProtocol(params);
 
     const t0 = await comet.totalsBasic();
     expect(await t0.trackingSupplyIndex).to.be.equal(0);
@@ -36,14 +36,14 @@ describe('accrue', function () {
     expect(await t0.totalBorrowBase).to.be.equal(0);
     expect(await t0.lastAccrualTime).to.be.approximately(Date.now() / 1000, 50);
 
-    const a0 = await wait(comet.accrue());
-    expect(await comet.baseMinForRewards()).to.be.equal(params.baseMinForRewards);
-    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(params.baseTrackingSupplySpeed);
-    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(params.baseTrackingBorrowSpeed);
+    const a0 = await wait(cometBase.accrue());
+    expect(await cometBase.baseMinForRewards()).to.be.equal(params.baseMinForRewards);
+    expect(await cometBase.baseTrackingSupplySpeed()).to.be.equal(params.baseTrackingSupplySpeed);
+    expect(await cometBase.baseTrackingBorrowSpeed()).to.be.equal(params.baseTrackingBorrowSpeed);
   });
 
   it('accrues correctly with no time elapsed', async () => {
-    const { comet } = await makeProtocol();
+    const { comet, cometBase } = await makeProtocol();
     const baseIndexScale = await comet.baseIndexScale();
 
     const now = Math.floor(Date.now() / 1000);
@@ -62,9 +62,9 @@ describe('accrue', function () {
     const s0 = await wait(comet.setTotalsBasic(totals));
 
     const t0 = await comet.totalsBasic()
-    const a1 = await wait(comet.accrue());
+    const a1 = await wait(cometBase.accrue());
     const t1 = await comet.totalsBasic();
-    const a2 = await wait(comet.accrue());
+    const a2 = await wait(cometBase.accrue());
     const t2 = await comet.totalsBasic();
 
     expect(t0.lastAccrualTime).to.be.equal(0);
@@ -90,7 +90,7 @@ describe('accrue', function () {
       trackingIndexScale: exp(1, 15),
       start,
     };
-    const { comet } = await makeProtocol(params);
+    const { comet, cometBase } = await makeProtocol(params);
 
     const t0 = await comet.totalsBasic();
     const t1 = Object.assign({}, t0, {
@@ -99,14 +99,14 @@ describe('accrue', function () {
     });
     const s0 = await wait(comet.setTotalsBasic(t1));
 
-    const supplyRate = await comet.getSupplyRate();
+    const supplyRate = await cometBase.getSupplyRate();
     expect(supplyRate).to.be.equal(19549086756);
 
-    const borrowRate = await comet.getBorrowRate();
+    const borrowRate = await cometBase.getBorrowRate();
     expect(borrowRate).to.be.equal(21721207507);
 
     await ethers.provider.send("evm_setAutomine", [false]);
-    const a1 = await comet.accrue();
+    const a1 = await cometBase.accrue();
     await ethers.provider.send('evm_mine', [start + 1000]);
     await ethers.provider.send("evm_setAutomine", [true]);
 
@@ -130,7 +130,7 @@ describe('accrue', function () {
       trackingIndexScale: exp(1, 15),
       start,
     };
-    const { comet } = await makeProtocol(params);
+    const { comet, cometBase } = await makeProtocol(params);
 
     const t0 = await comet.totalsBasic();
     const t1 = Object.assign({}, t0, {
@@ -139,23 +139,23 @@ describe('accrue', function () {
     });
     const s0 = await wait(comet.setTotalsBasic(t1));
 
-    const supplyRate = await comet.getSupplyRate();
+    const supplyRate = await cometBase.getSupplyRate();
     expect(supplyRate).to.be.equal(12474082097);
 
-    const borrowRate = await comet.getBorrowRate();
+    const borrowRate = await cometBase.getBorrowRate();
     expect(borrowRate).to.be.equal(14926252082);
 
     await ethers.provider.send("evm_setAutomine", [false]);
-    const a1 = await comet.accrue();
+    const a1 = await cometBase.accrue();
     await ethers.provider.send('evm_mine', [start + 1000]);
     await ethers.provider.send("evm_setAutomine", [true]);
 
     const t2 = await comet.totalsBasic();
 
-    const supplySpeed = await comet.baseTrackingSupplySpeed();
+    const supplySpeed = await cometBase.baseTrackingSupplySpeed();
     expect(supplySpeed).to.be.equal(params.trackingIndexScale);
 
-    const borrowSpeed = await comet.baseTrackingBorrowSpeed();
+    const borrowSpeed = await cometBase.baseTrackingBorrowSpeed();
     expect(borrowSpeed).to.be.equal(params.trackingIndexScale);
 
     const timeElapsed = t2.lastAccrualTime - t0.lastAccrualTime;
@@ -172,7 +172,7 @@ describe('accrue', function () {
       baseMinForRewards: 12000,
       trackingIndexScale: exp(1, 15),
     };
-    const { comet } = await makeProtocol(params);
+    const { comet, cometBase } = await makeProtocol(params);
 
     const t0 = await comet.totalsBasic();
     const t1 = Object.assign({}, t0, {
@@ -182,13 +182,13 @@ describe('accrue', function () {
     await ethers.provider.send('evm_increaseTime', [998]);
     const s0 = await wait(comet.setTotalsBasic(t1));
     await ethers.provider.send('evm_increaseTime', [2]);
-    await expect(wait(comet.accrue())).to.be.revertedWith('overflow');
+    await expect(wait(cometBase.accrue())).to.be.revertedWith('overflow');
     const t2 = await comet.totalsBasic();
 
-    const supplyRate = await comet.getSupplyRate();
-    const borrowRate = await comet.getBorrowRate();
-    const supplySpeed = await comet.baseTrackingSupplySpeed();
-    const borrowSpeed = await comet.baseTrackingBorrowSpeed();
+    const supplyRate = await cometBase.getSupplyRate();
+    const borrowRate = await cometBase.getBorrowRate();
+    const supplySpeed = await cometBase.baseTrackingSupplySpeed();
+    const borrowSpeed = await cometBase.baseTrackingBorrowSpeed();
     const timeElapsed = t2.lastAccrualTime - t0.lastAccrualTime;
     expect(timeElapsed).to.be.equal(0);
 
@@ -199,7 +199,7 @@ describe('accrue', function () {
   });
 
   it('reverts on overflows', async () => {
-    const { comet } = await makeProtocol();
+    const { comet, cometBase } = await makeProtocol();
 
     const t0 = await comet.totalsBasic();
     const t1 = Object.assign({}, t0, {
@@ -210,7 +210,7 @@ describe('accrue', function () {
     await ethers.provider.send('evm_increaseTime', [998]);
     const s0 = await wait(comet.setTotalsBasic(t1));
     await ethers.provider.send('evm_increaseTime', [2]);
-    await expect(wait(comet.accrue())).to.be.revertedWith('reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
+    await expect(wait(cometBase.accrue())).to.be.revertedWith('reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
 
     const t2 = Object.assign({}, t0, {
       baseBorrowIndex: 2n**64n - 1n,
@@ -218,17 +218,17 @@ describe('accrue', function () {
     await ethers.provider.send('evm_increaseTime', [998]);
     const s1 = await wait(comet.setTotalsBasic(t2));
     await ethers.provider.send('evm_increaseTime', [2]);
-    await expect(wait(comet.accrue())).to.be.revertedWith('reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
+    await expect(wait(cometBase.accrue())).to.be.revertedWith('reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
   });
 
   it('supports up to the maximum timestamp then breaks', async () => {
-    const { comet } = await makeProtocol();
+    const { cometBase } = await makeProtocol();
 
     await ethers.provider.send('evm_increaseTime', [100]);
-    const a0 = await wait(comet.accrue());
+    const a0 = await wait(cometBase.accrue());
 
     await ethers.provider.send('evm_increaseTime', [2**40]);
-    await expect(wait(comet.accrue())).to.be.revertedWith('timestamp too big');
+    await expect(wait(cometBase.accrue())).to.be.revertedWith('timestamp too big');
     await ethers.provider.send('hardhat_reset', []); // dont break downstream tests...
   });
 });

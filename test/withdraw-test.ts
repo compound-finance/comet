@@ -208,7 +208,7 @@ describe('withdraw', function () {
 describe('withdrawFrom', function () {
   it('withdraws from src if specified and sender has permission', async () => {
     const protocol = await makeProtocol();
-    const { comet, cometExt, tokens, users: [alice, bob, charlie] } = protocol;
+    const { comet, tokens, users: [alice, bob, charlie] } = protocol;
     const { COMP } = tokens;
 
     const i0 = await COMP.allocateTo(comet.address, 7);
@@ -219,7 +219,7 @@ describe('withdrawFrom', function () {
 
     const i1 = await comet.setCollateralBalance(bob.address, COMP.address, 7);
 
-    const cometAsB = cometExt.connect(bob);
+    const cometAsB = comet.connect(bob);
     const cometAsC = comet.connect(charlie);
 
     const a1 = await wait(cometAsB.allow(charlie.address, true));
@@ -252,11 +252,11 @@ describe('withdrawFrom', function () {
 
   it('reverts if withdraw is paused', async () => {
     const protocol = await makeProtocol();
-    const { comet, cometExt, tokens, pauseGuardian, users: [alice, bob, charlie] } = protocol;
+    const { comet, tokens, pauseGuardian, users: [alice, bob, charlie] } = protocol;
     const { COMP } = tokens;
 
     await COMP.allocateTo(comet.address, 7);
-    const cometAsB = cometExt.connect(bob);
+    const cometAsB = comet.connect(bob);
     const cometAsC = comet.connect(charlie);
 
     // Pause withdraw

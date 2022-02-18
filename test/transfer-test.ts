@@ -133,6 +133,7 @@ describe('transfer', function () {
     const protocol = await makeProtocol();
     const {
       comet,
+      cometBase,
       tokens,
       users: [alice, bob],
     } = protocol;
@@ -140,7 +141,7 @@ describe('transfer', function () {
 
     const cometAsB = comet.connect(bob);
 
-    const amount = (await comet.baseBorrowMin()).sub(1);
+    const amount = (await cometBase.baseBorrowMin()).sub(1);
     await expect(cometAsB.transferAsset(alice.address, USDC.address, amount)).to.be.revertedWith(
       'borrow too small'
     );
@@ -178,14 +179,13 @@ describe('transferFrom', function () {
     const protocol = await makeProtocol();
     const {
       comet,
-      cometExt,
       tokens,
       users: [alice, bob, charlie],
     } = protocol;
     const { COMP } = tokens;
 
     const i0 = await comet.setCollateralBalance(bob.address, COMP.address, 7);
-    const cometAsB = cometExt.connect(bob);
+    const cometAsB = comet.connect(bob);
     const cometAsC = comet.connect(charlie);
 
     const a1 = await wait(cometAsB.allow(charlie.address, true));
@@ -221,13 +221,12 @@ describe('transferFrom', function () {
   it('reverts on transfer of base token from address to itself', async () => {
     const {
       comet,
-      cometExt,
       tokens,
       users: [alice, bob],
     } = await makeProtocol({ base: 'USDC' });
     const { USDC } = tokens;
 
-    await cometExt.connect(bob).allow(alice.address, true);
+    await comet.connect(bob).allow(alice.address, true);
 
     await expect(
       comet.connect(alice).transferAssetFrom(bob.address, bob.address, USDC.address, 100)
@@ -237,13 +236,12 @@ describe('transferFrom', function () {
   it('reverts on transfer of collateral from address to itself', async () => {
     const {
       comet,
-      cometExt,
       tokens,
       users: [alice, bob],
     } = await makeProtocol();
     const { COMP } = tokens;
 
-    await cometExt.connect(bob).allow(alice.address, true);
+    await comet.connect(bob).allow(alice.address, true);
 
     await expect(
       comet.connect(alice).transferAssetFrom(bob.address, bob.address, COMP.address, 100)
@@ -252,11 +250,11 @@ describe('transferFrom', function () {
 
   it('reverts if transfer is paused', async () => {
     const protocol = await makeProtocol();
-    const { comet, cometExt, tokens, pauseGuardian, users: [alice, bob, charlie] } = protocol;
+    const { comet, tokens, pauseGuardian, users: [alice, bob, charlie] } = protocol;
     const { COMP } = tokens;
 
     await comet.setCollateralBalance(bob.address, COMP.address, 7);
-    const cometAsB = cometExt.connect(bob);
+    const cometAsB = comet.connect(bob);
     const cometAsC = comet.connect(charlie);
 
     // Pause transfer

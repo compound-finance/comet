@@ -1,9 +1,8 @@
-import { Comet, CometExt, ethers, expect, exp, makeProtocol, wait } from './helpers';
+import { Comet, CometBase, ethers, expect, exp, makeProtocol, wait } from './helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, Signature } from 'ethers';
 
 let comet: Comet;
-let cometExt: CometExt;
 let admin: SignerWithAddress;
 let pauseGuardian: SignerWithAddress;
 let signer: SignerWithAddress;
@@ -30,14 +29,14 @@ const types = {
 
 describe('allowBySig', function () {
   beforeEach(async () => {
-    ({ comet, cometExt } = await makeProtocol());
+    ({ comet } = await makeProtocol());
     [admin, pauseGuardian, signer, manager] = await ethers.getSigners();
 
     domain = {
-      name: await cometExt.name(),
-      version: await cometExt.version(),
+      name: await comet.name(),
+      version: await comet.version(),
       chainId: 1337,
-      verifyingContract: cometExt.address,
+      verifyingContract: comet.address,
     };
     const blockNumber = await ethers.provider.getBlockNumber();
     const timestamp = (await ethers.provider.getBlock(blockNumber)).timestamp;
@@ -57,7 +56,7 @@ describe('allowBySig', function () {
   it('authorizes with a valid signature', async () => {
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
 
-    await cometExt.connect(manager).allowBySig(
+    await comet.connect(manager).allowBySig(
         signatureArgs.owner,
         signatureArgs.manager,
         signatureArgs.isAllowed,
@@ -81,7 +80,7 @@ describe('allowBySig', function () {
     const invalidOwnerAddress = pauseGuardian.address;
 
     await expect(
-      cometExt.connect(manager).allowBySig(
+      comet.connect(manager).allowBySig(
         invalidOwnerAddress, // altered owner
         signatureArgs.manager,
         signatureArgs.isAllowed,
@@ -106,7 +105,7 @@ describe('allowBySig', function () {
     const invalidManagerAddress = pauseGuardian.address;
 
     await expect(
-      cometExt.connect(manager).allowBySig(
+      comet.connect(manager).allowBySig(
         signatureArgs.owner,
         invalidManagerAddress, // altered manager
         signatureArgs.isAllowed,
@@ -129,7 +128,7 @@ describe('allowBySig', function () {
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
 
     await expect(
-      cometExt.connect(manager).allowBySig(
+      comet.connect(manager).allowBySig(
         signatureArgs.owner,
         signatureArgs.manager,
         !signatureArgs.isAllowed, // altered isAllowed
@@ -152,7 +151,7 @@ describe('allowBySig', function () {
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
 
     await expect(
-      cometExt.connect(manager).allowBySig(
+      comet.connect(manager).allowBySig(
         signatureArgs.owner,
         signatureArgs.manager,
         signatureArgs.isAllowed,
@@ -175,7 +174,7 @@ describe('allowBySig', function () {
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
 
     await expect(
-      cometExt.connect(manager).allowBySig(
+      comet.connect(manager).allowBySig(
         signatureArgs.owner,
         signatureArgs.manager,
         signatureArgs.isAllowed,
@@ -205,7 +204,7 @@ describe('allowBySig', function () {
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
 
     await expect(
-      cometExt.connect(manager).allowBySig(
+      comet.connect(manager).allowBySig(
           signatureArgs.owner,
           signatureArgs.manager,
           signatureArgs.isAllowed,
@@ -225,7 +224,7 @@ describe('allowBySig', function () {
 
   it('rejects a repeated message', async () => {
     // valid call
-    await cometExt.connect(manager).allowBySig(
+    await comet.connect(manager).allowBySig(
         signatureArgs.owner,
         signatureArgs.manager,
         signatureArgs.isAllowed,
@@ -238,7 +237,7 @@ describe('allowBySig', function () {
 
     // repeated call
     await expect(
-      cometExt.connect(manager).allowBySig(
+      comet.connect(manager).allowBySig(
           signatureArgs.owner,
           signatureArgs.manager,
           signatureArgs.isAllowed,
@@ -266,7 +265,7 @@ describe('allowBySig', function () {
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
 
     await expect(
-      cometExt.connect(manager).allowBySig(
+      comet.connect(manager).allowBySig(
           expiredSignatureArgs.owner,
           expiredSignatureArgs.manager,
           expiredSignatureArgs.isAllowed,
@@ -289,7 +288,7 @@ describe('allowBySig', function () {
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
 
     await expect(
-      cometExt.connect(manager).allowBySig(
+      comet.connect(manager).allowBySig(
           signatureArgs.owner,
           signatureArgs.manager,
           signatureArgs.isAllowed,
@@ -315,7 +314,7 @@ describe('allowBySig', function () {
     const invalidS = '0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1';
 
     await expect(
-      cometExt.connect(manager).allowBySig(
+      comet.connect(manager).allowBySig(
           signatureArgs.owner,
           signatureArgs.manager,
           signatureArgs.isAllowed,

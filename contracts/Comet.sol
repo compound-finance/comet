@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity ^0.8.11;
 
-import "./CometBase.sol";
-import "./ERC20.sol";
+import "./CometCore.sol";
 
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
@@ -11,7 +10,7 @@ import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-contract Comet is CometBase {
+contract Comet is CometCore {
     struct AssetInfo {
         uint8 offset;
         address asset;
@@ -22,10 +21,6 @@ contract Comet is CometBase {
         uint64 liquidationFactor;
         uint128 supplyCap;
     }
-    event Transfer(address indexed from, address indexed to, uint256 amount);
-
-    /// @notice The number of decimals for wrapped base token
-    uint8 public immutable decimals;
 
     /// @notice The admin of the protocol
     address public immutable governor;
@@ -33,56 +28,17 @@ contract Comet is CometBase {
     /// @notice The account which may trigger pauses
     address public immutable pauseGuardian;
 
+    /// @notice The address of the base contract delegate
+    address public immutable baseDelegate;
+
+    /// @notice The scale for base token (must be less than 18 decimals)
+    uint64 public immutable baseScale;
+
     /// @notice The address of the base token contract
     address public immutable baseToken;
 
     /// @notice The address of the price feed for the base token
     address public immutable baseTokenPriceFeed;
-
-    /// @notice The address of the extension contract delegate
-    address public immutable extensionDelegate;
-
-    /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope (factor)
-    /// @dev uint64
-    uint public immutable kink;
-
-    /// @notice Per second interest rate slope applied when utilization is below kink (factor)
-    /// @dev uint64
-    uint public immutable perSecondInterestRateSlopeLow;
-
-    /// @notice Per second interest rate slope applied when utilization is above kink (factor)
-    /// @dev uint64
-    uint public immutable perSecondInterestRateSlopeHigh;
-
-    /// @notice Per second base interest rate (factor)
-    /// @dev uint64
-    uint public immutable perSecondInterestRateBase;
-
-    /// @notice The rate of total interest paid that goes into reserves (factor)
-    /// @dev uint64
-    uint public immutable reserveRate;
-
-    /// @notice The scale for base token (must be less than 18 decimals)
-    /// @dev uint64
-    uint public immutable baseScale;
-
-    /// @notice The scale for reward tracking
-    uint64 public immutable trackingIndexScale;
-
-    /// @notice The speed at which supply rewards are tracked (in trackingIndexScale)
-    uint64 public immutable baseTrackingSupplySpeed;
-
-    /// @notice The speed at which borrow rewards are tracked (in trackingIndexScale)
-    uint64 public immutable baseTrackingBorrowSpeed;
-
-    /// @notice The minimum amount of base wei for rewards to accrue
-    /// @dev This must be large enough so as to prevent division by base wei from overflowing the 64 bit indices
-    /// @dev uint104
-    uint public immutable baseMinForRewards;
-
-    /// @notice The minimum base amount required to initiate a borrow
-    /// @dev uint104
-    uint public immutable baseBorrowMin;
 
     /// @notice The minimum base token reserves which must be held before collateral is hodled
     uint104 public immutable targetReserves;
@@ -124,45 +80,41 @@ contract Comet is CometBase {
     uint256 internal immutable asset14_a;
     uint256 internal immutable asset14_b;
 
+    /** Internal constants **/
+
+    /// @dev The EIP-712 typehash for the contract's domain
+    bytes32 internal constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+
+    /// @dev The EIP-712 typehash for allowBySig Authorization
+    bytes32 internal constant AUTHORIZATION_TYPEHASH = keccak256("Authorization(address owner,address manager,bool isAllowed,uint256 nonce,uint256 expiry)");
+
+    /// @dev The highest valid value for s in an ECDSA signature pair (0 < s < secp256k1n ÷ 2 + 1)
+    ///  See https://ethereum.github.io/yellowpaper/paper.pdf #307)
+    uint internal constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
+
     /**
      * @notice Construct a new protocol instance
      * @param config The mapping of initial/constant parameters
      **/
     constructor(Configuration memory config) {
-        // Sanity checks
-        uint8 decimals_ = ERC20(config.baseToken).decimals();
-        require(decimals_ <= MAX_BASE_DECIMALS, "too many decimals");
-        require(config.assetConfigs.length <= MAX_ASSETS, "too many assets");
-        require(config.baseMinForRewards > 0, "bad rewards min");
-        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == PRICE_FEED_DECIMALS, "bad decimals");
-        // XXX other sanity checks? for rewards?
-
-        // Copy configuration
-        decimals = decimals_;
+        // Set governor and pause guardian
         governor = config.governor;
         pauseGuardian = config.pauseGuardian;
-        baseToken = config.baseToken;
-        baseTokenPriceFeed = config.baseTokenPriceFeed;
-        extensionDelegate = config.extensionDelegate;
 
-        baseScale = uint64(10 ** decimals_);
-        trackingIndexScale = config.trackingIndexScale;
+        // Set the base delegate and copy key immutables
+        baseDelegate = config.baseDelegate;
+        (
+         baseToken,
+         baseTokenPriceFeed,
+         baseScale
+        ) = abi.decode(baseDo(abi.encodeWithSignature("getInfo()")), (address, address, uint64));
 
-        baseMinForRewards = config.baseMinForRewards;
-        baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
-        baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
-
-        baseBorrowMin = config.baseBorrowMin;
+        // Set target reserves
         targetReserves = config.targetReserves;
 
-        // Set interest rate model configs
-        kink = config.kink;
-        perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
-        perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
-        perSecondInterestRateBase = config.perYearInterestRateBase / SECONDS_PER_YEAR;
-        reserveRate = config.reserveRate;
-
         // Set asset info
+        // XXX check asset configs now again? unpack?
+        require(config.assetConfigs.length <= MAX_ASSETS, "too many assets");
         numAssets = uint8(config.assetConfigs.length);
 
         (asset00_a, asset00_b) = _getPackedAsset(config.assetConfigs, 0);
@@ -198,6 +150,16 @@ contract Comet is CometBase {
         baseBorrowIndex = BASE_INDEX_SCALE;
         trackingSupplyIndex = 0;
         trackingBorrowIndex = 0;
+    }
+
+    // XXX quadruple check this scheme
+    function baseDo(bytes memory calldata_) internal returns (bytes memory returndata) {
+        bool success;
+        (success, returndata) = baseDelegate.delegatecall(calldata_);
+        if (!success) {
+            if (returndata.length == 0) revert();
+            assembly { revert(add(32, returndata), mload(returndata)) }
+        }
     }
 
     /**
@@ -321,96 +283,6 @@ contract Comet is CometBase {
     }
 
     /**
-     * @return The current timestamp
-     **/
-    function getNow() virtual internal view returns (uint40) {
-        require(block.timestamp < 2**40, "timestamp too big");
-        return uint40(block.timestamp);
-    }
-
-    /**
-     * @dev Divide a number by an amount of base
-     */
-    function divBaseWei(uint n, uint baseWei) internal view returns (uint) {
-        return n * baseScale / baseWei;
-    }
-
-    /**
-     * @notice Accrue interest (and rewards) in base token supply and borrows
-     **/
-    function accrueInternal() internal {
-        uint40 now_ = getNow();
-        uint timeElapsed = now_ - lastAccrualTime;
-        if (timeElapsed > 0) {
-            uint supplyRate = getSupplyRateInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
-            uint borrowRate = getBorrowRateInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
-            baseSupplyIndex += safe64(mulFactor(baseSupplyIndex, supplyRate * timeElapsed));
-            baseBorrowIndex += safe64(mulFactor(baseBorrowIndex, borrowRate * timeElapsed));
-            if (totalSupplyBase >= baseMinForRewards) {
-                uint supplySpeed = baseTrackingSupplySpeed;
-                trackingSupplyIndex += safe64(divBaseWei(supplySpeed * timeElapsed, totalSupplyBase));
-            }
-            if (totalBorrowBase >= baseMinForRewards) {
-                uint borrowSpeed = baseTrackingBorrowSpeed;
-                trackingBorrowIndex += safe64(divBaseWei(borrowSpeed * timeElapsed, totalBorrowBase));
-            }
-        }
-        lastAccrualTime = now_;
-    }
-
-    /**
-     * @dev Calculate current per second supply rate given totals
-     */
-    function getSupplyRateInternal(uint64 baseSupplyIndex_, uint64 baseBorrowIndex_, uint104 totalSupplyBase_, uint104 totalBorrowBase_) internal view returns (uint64) {
-        uint utilization = getUtilizationInternal(baseSupplyIndex_, baseBorrowIndex_, totalSupplyBase_, totalBorrowBase_);
-        uint reserveScalingFactor = utilization * (FACTOR_SCALE - reserveRate) / FACTOR_SCALE;
-        if (utilization <= kink) {
-            // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
-            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization))));
-        } else {
-            // (interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)) * utilization * (1 - reserveRate)
-            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)))));
-        }
-    }
-
-    /**
-     * @dev Calculate current per second borrow rate given totals
-     */
-    function getBorrowRateInternal(uint64 baseSupplyIndex_, uint64 baseBorrowIndex_, uint104 totalSupplyBase_, uint104 totalBorrowBase_) internal view returns (uint64) {
-        uint utilization = getUtilizationInternal(baseSupplyIndex_, baseBorrowIndex_, totalSupplyBase_, totalBorrowBase_);
-        if (utilization <= kink) {
-            // interestRateBase + interestRateSlopeLow * utilization
-            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization));
-        } else {
-            // interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)
-            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)));
-        }
-    }
-
-    /**
-     * @dev Calculate utilization rate of the base asset given totals
-     */
-    function getUtilizationInternal(uint64 baseSupplyIndex, uint64 baseBorrowIndex, uint104 totalSupplyBase, uint104 totalBorrowBase) internal pure returns (uint) {
-        uint totalSupply = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint totalBorrow = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
-        if (totalSupply == 0) {
-            return 0;
-        } else {
-            return totalBorrow * FACTOR_SCALE / totalSupply;
-        }
-    }
-
-    /**
-     * @notice Gets the total amount of protocol reserves, denominated in the number of base tokens
-     */
-    function getReserves() public view returns (int) {
-        uint balance = ERC20(baseToken).balanceOf(address(this));
-        uint104 totalSupply = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrow = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
-        return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
-    }
-
-    /**
      * @notice Check whether an account has enough collateral to borrow
      * @param account The address to check
      * @return Whether the account is minimally collateralized enough to borrow
@@ -526,21 +398,81 @@ contract Comet is CometBase {
     }
 
     /**
-     * @dev The amounts broken into repay and supply amounts, given negative balance
-     */
-    function repayAndSupplyAmount(int104 balance, uint104 amount) internal pure returns (uint104, uint104) {
-        uint104 repayAmount = balance < 0 ? min(unsigned104(-balance), amount) : 0;
-        uint104 supplyAmount = amount - repayAmount;
-        return (repayAmount, supplyAmount);
+      * @notice Approve or disallow `spender` to transfer on sender's behalf
+      * @param spender The address of the account which may transfer tokens
+      * @param amount Either uint.max (to allow) or zero (to disallow)
+      * @return Whether or not the approval change succeeded
+      */
+    function approve(address spender, uint256 amount) external returns (bool) {
+        if (amount == type(uint256).max) {
+            allowInternal(msg.sender, spender, true);
+        } else if (amount == 0) {
+            allowInternal(msg.sender, spender, false);
+        } else {
+            revert("bad approval amount");
+        }
+        emit Approval(msg.sender, spender, amount);
+        return true;
     }
 
     /**
-     * @dev The amounts broken into withdraw and borrow amounts, given positive balance
+      * @notice Get the current allowance from `owner` for `spender`
+      * @param owner The address of the account which owns the tokens to be spent
+      * @param spender The address of the account which may transfer tokens
+      * @return Either uint.max (spender is allowed) or zero (spender is disallowed)
+      */
+    function allowance(address owner, address spender) external view returns (uint256) {
+        return hasPermission(owner, spender) ? type(uint256).max : 0;
+    }
+
+    /**
+     * @notice Allow or disallow another address to withdraw, or transfer from the sender
+     * @param manager The account which will be allowed or disallowed
+     * @param isAllowed_ Whether to allow or disallow
      */
-    function withdrawAndBorrowAmount(int104 balance, uint104 amount) internal pure returns (uint104, uint104) {
-        uint104 withdrawAmount = balance > 0 ? min(unsigned104(balance), amount) : 0;
-        uint104 borrowAmount = amount - withdrawAmount;
-        return (withdrawAmount, borrowAmount);
+    function allow(address manager, bool isAllowed_) external {
+        allowInternal(msg.sender, manager, isAllowed_);
+    }
+
+    /**
+     * @dev Stores the flag marking whether the manager is allowed to act on behalf of owner
+     */
+    function allowInternal(address owner, address manager, bool isAllowed_) internal {
+        isAllowed[owner][manager] = isAllowed_;
+    }
+
+    /**
+     * @notice Sets authorization status for a manager via signature from signatory
+     * @param owner The address that signed the signature
+     * @param manager The address to authorize (or rescind authorization from)
+     * @param isAllowed_ Whether to authorize or rescind authorization from manager
+     * @param nonce The next expected nonce value for the signatory
+     * @param expiry Expiration time for the signature
+     * @param v The recovery byte of the signature
+     * @param r Half of the ECDSA signature pair
+     * @param s Half of the ECDSA signature pair
+     */
+    function allowBySig(
+        address owner,
+        address manager,
+        bool isAllowed_,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        require(uint256(s) <= MAX_VALID_ECDSA_S, "invalid value: s");
+        // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
+        require(v == 27 || v == 28, "invalid value: v");
+        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), keccak256(bytes(version)), block.chainid, address(this)));
+        bytes32 structHash = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, owner, manager, isAllowed_, nonce, expiry));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+        address signatory = ecrecover(digest, v, r, s);
+        require(owner == signatory, "owner is not signatory");
+        require(nonce == userNonce[signatory]++, "invalid nonce");
+        require(block.timestamp < expiry, "signed transaction expired");
+        allowInternal(signatory, manager, isAllowed_);
     }
 
     /**
@@ -589,46 +521,6 @@ contract Comet is CometBase {
     }
 
     /**
-     * @dev Write updated balance to store and tracking participation
-     */
-    function updateBaseBalance(address account, UserBasic memory basic, int104 principalNew) internal {
-        int104 principal = basic.principal;
-        basic.principal = principalNew;
-
-        if (principal >= 0) {
-            uint indexDelta = trackingSupplyIndex - basic.baseTrackingIndex;
-            basic.baseTrackingAccrued += safe64(uint104(principal) * indexDelta / BASE_INDEX_SCALE); // XXX decimals
-        } else {
-            uint indexDelta = trackingBorrowIndex - basic.baseTrackingIndex;
-            basic.baseTrackingAccrued += safe64(uint104(-principal) * indexDelta / BASE_INDEX_SCALE); // XXX decimals
-        }
-
-        if (principalNew >= 0) {
-            basic.baseTrackingIndex = trackingSupplyIndex;
-        } else {
-            basic.baseTrackingIndex = trackingBorrowIndex;
-        }
-
-        userBasic[account] = basic;
-    }
-
-    /**
-     * @dev Safe ERC20 transfer in, assumes no fee is charged and amount is transferred
-     */
-    function doTransferIn(address asset, address from, uint amount) internal {
-        bool success = ERC20(asset).transferFrom(from, address(this), amount);
-        require(success, "bad transfer in");
-    }
-
-    /**
-     * @dev Safe ERC20 transfer out
-     */
-    function doTransferOut(address asset, address to, uint amount) internal {
-        bool success = ERC20(asset).transfer(to, amount);
-        require(success, "bad transfer out");
-    }
-
-    /**
      * @notice Supply an amount of asset to the protocol
      * @param asset The asset to supply
      * @param amount The quantity to supply
@@ -666,37 +558,10 @@ contract Comet is CometBase {
         require(hasPermission(from, operator), "bad auth");
 
         if (asset == baseToken) {
-            return supplyBase(from, dst, safe104(amount));
+            baseDo(abi.encodeWithSignature("supplyBase(address,address,uint104)", from , dst, safe104(amount)));
         } else {
-            return supplyCollateral(from, dst, asset, safe128(amount));
+            supplyCollateral(from, dst, asset, safe128(amount));
         }
-    }
-
-    /**
-     * @dev Supply an amount of base asset from `from` to dst
-     */
-    function supplyBase(address from, address dst, uint104 amount) internal {
-        doTransferIn(baseToken, from, amount);
-
-        accrueInternal();
-
-        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
-
-        UserBasic memory dstUser = userBasic[dst];
-        int104 dstBalance = presentValue(dstUser.principal);
-
-        (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, amount);
-
-        totalSupplyBalance += supplyAmount;
-        totalBorrowBalance -= repayAmount;
-
-        dstBalance += signed104(amount);
-
-        totalSupplyBase = principalValueSupply(baseSupplyIndex, totalSupplyBalance);
-        totalBorrowBase = principalValueBorrow(baseBorrowIndex, totalBorrowBalance);
-
-        updateBaseBalance(dst, dstUser, principalValue(dstBalance));
     }
 
     /**
@@ -772,47 +637,11 @@ contract Comet is CometBase {
         require(src != dst, "no self-transfer");
 
         if (asset == baseToken) {
-            return transferBase(src, dst, safe104(amount));
-        } else {
-            return transferCollateral(src, dst, asset, safe128(amount));
-        }
-    }
-
-    /**
-     * @dev Transfer an amount of base asset from src to dst, borrowing if possible/necessary
-     */
-    function transferBase(address src, address dst, uint104 amount) internal {
-        accrueInternal();
-
-        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
-
-        UserBasic memory srcUser = userBasic[src];
-        UserBasic memory dstUser = userBasic[dst];
-        int104 srcBalance = presentValue(srcUser.principal);
-        int104 dstBalance = presentValue(dstUser.principal);
-
-        (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcBalance, amount);
-        (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, amount);
-
-        totalSupplyBalance += supplyAmount - withdrawAmount;
-        totalBorrowBalance += borrowAmount - repayAmount;
-
-        srcBalance -= signed104(amount);
-        dstBalance += signed104(amount);
-
-        totalSupplyBase = principalValueSupply(baseSupplyIndex, totalSupplyBalance);
-        totalBorrowBase = principalValueBorrow(baseBorrowIndex, totalBorrowBalance);
-
-        updateBaseBalance(src, srcUser, principalValue(srcBalance));
-        updateBaseBalance(dst, dstUser, principalValue(dstBalance));
-
-        if (srcBalance < 0) {
-            require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
+            baseDo(abi.encodeWithSignature("transferBase(address,address,uint104)", src , dst, safe104(amount)));
             require(isBorrowCollateralized(src), "bad borrow");
+        } else {
+            transferCollateral(src, dst, asset, safe128(amount));
         }
-
-        emit Transfer(src, dst, amount);
     }
 
     /**
@@ -872,42 +701,11 @@ contract Comet is CometBase {
         require(hasPermission(src, operator), "bad auth");
 
         if (asset == baseToken) {
-            return withdrawBase(src, to, safe104(amount));
-        } else {
-            return withdrawCollateral(src, to, asset, safe128(amount));
-        }
-    }
-
-    /**
-     * @dev Withdraw an amount of base asset from src to `to`, borrowing if possible/necessary
-     */
-    function withdrawBase(address src, address to, uint104 amount) internal {
-        accrueInternal();
-
-        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
-
-        UserBasic memory srcUser = userBasic[src];
-        int104 srcBalance = presentValue(srcUser.principal);
-
-        (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcBalance, amount);
-
-        totalSupplyBalance -= withdrawAmount;
-        totalBorrowBalance += borrowAmount;
-
-        srcBalance -= signed104(amount);
-
-        totalSupplyBase = principalValueSupply(baseSupplyIndex, totalSupplyBalance);
-        totalBorrowBase = principalValueBorrow(baseBorrowIndex, totalBorrowBalance);
-
-        updateBaseBalance(src, srcUser, principalValue(srcBalance));
-
-        if (srcBalance < 0) {
-            require(uint104(-srcBalance) >= baseBorrowMin, "borrow too small");
+            baseDo(abi.encodeWithSignature("withdrawBase(address,address,uint104)", src, to, safe104(amount)));
             require(isBorrowCollateralized(src), "bad borrow");
+        } else {
+            withdrawCollateral(src, to, asset, safe128(amount));
         }
-
-        doTransferOut(baseToken, to, amount);
     }
 
     /**
@@ -956,15 +754,13 @@ contract Comet is CometBase {
      * @dev Transfer user's collateral and debt to the protocol itself
      */
     function absorbInternal(address account) internal {
-        accrueInternal();
+        baseDo(abi.encodeWithSignature("accrue()"));
 
         require(isLiquidatable(account), "not underwater");
 
         UserBasic memory accountUser = userBasic[account];
-        int104 oldBalance = presentValue(accountUser.principal);
         uint16 assetsIn = accountUser.assetsIn;
 
-        uint128 basePrice = getPrice(baseTokenPriceFeed);
         uint deltaValue = 0;
 
         for (uint8 i = 0; i < numAssets; i++) {
@@ -982,18 +778,18 @@ contract Comet is CometBase {
             }
         }
 
+        uint128 basePrice = getPrice(baseTokenPriceFeed);
         uint104 deltaBalance = safe104(divPrice(deltaValue, basePrice, baseScale));
+        int104 oldBalance = presentValue(accountUser.principal);
         int104 newBalance = oldBalance + signed104(deltaBalance);
         // New balance will not be negative, all excess debt absorbed by reserves
         newBalance = newBalance < 0 ? int104(0) : newBalance;
-        updateBaseBalance(account, accountUser, principalValue(newBalance));
 
         // Reserves are decreased by increasing total supply and decreasing borrows
-        //  the amount of debt repaid by reserves is `newBalance - oldBalance`
+        //  the change to reserves is `newBalance - oldBalance`
         // Note: new balance must be non-negative due to the above thresholding
-        totalSupplyBase += principalValueSupply(baseSupplyIndex, unsigned104(newBalance));
         // Note: old balance must be negative since the account is liquidatable
-        totalBorrowBase -= principalValueBorrow(baseBorrowIndex, unsigned104(-oldBalance));
+        baseDo(abi.encodeWithSignature("repayDebtAndCreditBalance(address,int104,int104)", account, oldBalance, newBalance));
     }
 
     /**
@@ -1007,6 +803,7 @@ contract Comet is CometBase {
     function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external {
         require(!isBuyPausedInternal(), "paused");
 
+        // Calculate base reserves and compare to the governance set target amount
         int reserves = getReserves();
         require(reserves < 0 || uint(reserves) < targetReserves, "not for sale");
 
@@ -1035,6 +832,16 @@ contract Comet is CometBase {
     }
 
     /**
+     * @notice Gets the total amount of protocol reserves, denominated in the number of base tokens
+     */
+    function getReserves() public view returns (int) {
+        uint balance = ERC20(baseToken).balanceOf(address(this));
+        uint104 totalSupply_ = presentValueSupply(baseSupplyIndex, totalSupplyBase);
+        uint104 totalBorrow_ = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+        return signed256(balance) - signed104(totalSupply_) + signed104(totalBorrow_);
+    }
+
+    /**
      * @notice Withdraws base token reserves if called by the governor
      * @param to An address of the receiver of withdrawn reserves
      * @param amount The amount of reserves to be withdrawn from the protocol
@@ -1046,13 +853,20 @@ contract Comet is CometBase {
     }
 
     /**
-     * @notice Fallback to calling the extension delegate for everything else
+     * @notice Fallback to calling the base delegate for everything else
      */
     fallback() external payable {
-        address delegate = extensionDelegate;
+        // XXX we cant just fallback if the base delegate contains sensitive functions
+        //  in particular, it needs external repayDebtAndCreditBalance
+        //   which is safe since only we can call it to modify our own storage
+        //    as long as only we can call it to modify our own storage
+        //    so maybe we can callcode here instead
+        //     and the delegate only executes sensitive code if sender is *not* this?
+        // XXX also better way to write this?
+        address delegate = baseDelegate;
         assembly {
             calldatacopy(0, 0, calldatasize())
-            let result := delegatecall(gas(), delegate, 0, calldatasize(), 0, 0)
+            let result := callcode(gas(), delegate, 0, 0, calldatasize(), 0, 0)
             returndatacopy(0, 0, returndatasize())
             switch result
             case 0 { revert(0, returndatasize()) }

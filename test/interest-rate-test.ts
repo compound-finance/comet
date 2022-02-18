@@ -22,7 +22,7 @@ describe('interest rates', function () {
       perYearInterestRateSlopeHigh: exp(3, 18), // 3.0
       reserveRate: exp(1, 17) // 0.1
     };
-    const { comet } = await makeProtocol(params);
+    const { comet, cometBase } = await makeProtocol(params);
     const baseIndexScale = await comet.baseIndexScale();
 
     // 10% utilization
@@ -38,9 +38,9 @@ describe('interest rates', function () {
     };
     await wait(comet.setTotalsBasic(totals));
 
-    const utilization = await comet.getUtilization();
-    const supplyRate = await comet.getSupplyRate();
-    const borrowRate = await comet.getBorrowRate();
+    const utilization = await cometBase.getUtilization();
+    const supplyRate = await cometBase.getSupplyRate();
+    const borrowRate = await cometBase.getBorrowRate();
 
     // totalBorrowBase / totalSupplyBase
     // = 10 / 100 = 0.1
@@ -61,7 +61,7 @@ describe('interest rates', function () {
       perYearInterestRateSlopeHigh: exp(3, 18), // 3.0
       reserveRate: exp(1, 17) // 0.1
     };
-    const { comet } = await makeProtocol(params);
+    const { comet, cometBase } = await makeProtocol(params);
     const baseIndexScale = await comet.baseIndexScale();
 
     // 90% utilization
@@ -77,9 +77,9 @@ describe('interest rates', function () {
     };
     await wait(comet.setTotalsBasic(totals));
 
-    const utilization = await comet.getUtilization();
-    const supplyRate = await comet.getSupplyRate();
-    const borrowRate = await comet.getBorrowRate();
+    const utilization = await cometBase.getUtilization();
+    const supplyRate = await cometBase.getSupplyRate();
+    const borrowRate = await cometBase.getBorrowRate();
 
     // totalBorrowBase / totalSupplyBase
     // = 90 / 100 = 0.9
@@ -100,7 +100,7 @@ describe('interest rates', function () {
       perYearInterestRateSlopeHigh: exp(3, 18), // 3.0
       reserveRate: 0
     };
-    const { comet } = await makeProtocol(params);
+    const { comet, cometBase } = await makeProtocol(params);
     const baseIndexScale = await comet.baseIndexScale();
 
     // 10% utilization
@@ -116,9 +116,9 @@ describe('interest rates', function () {
     };
     await wait(comet.setTotalsBasic(totals));
 
-    const utilization = await comet.getUtilization();
-    const supplyRate = await comet.getSupplyRate();
-    const borrowRate = await comet.getBorrowRate();
+    const utilization = await cometBase.getUtilization();
+    const supplyRate = await cometBase.getSupplyRate();
+    const borrowRate = await cometBase.getBorrowRate();
 
     // totalBorrowBase / totalSupplyBase
     // = 10 / 100 = 0.1
@@ -139,7 +139,7 @@ describe('interest rates', function () {
       perYearInterestRateSlopeHigh: exp(3, 18), // 3.0
       reserveRate: exp(1, 17) // 0.1
     };
-    const { comet } = await makeProtocol(params);
+    const { comet, cometBase } = await makeProtocol(params);
     const baseIndexScale = await comet.baseIndexScale();
 
     // 0% utilization
@@ -155,9 +155,9 @@ describe('interest rates', function () {
     };
     await wait(comet.setTotalsBasic(totals));
 
-    const utilization = await comet.getUtilization();
-    const supplyRate = await comet.getSupplyRate();
-    const borrowRate = await comet.getBorrowRate();
+    const utilization = await cometBase.getUtilization();
+    const supplyRate = await cometBase.getSupplyRate();
+    const borrowRate = await cometBase.getBorrowRate();
 
     // totalBorrowBase / totalSupplyBase
     // = 0 / 100 = 0

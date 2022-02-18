@@ -3,23 +3,23 @@ import { expect, exp, makeProtocol, portfolio, wait } from './helpers';
 describe('erc20', function () {
   it('has correct name', async () => {
     const protocol = await makeProtocol({  });
-    const { cometExt } = protocol;
+    const { cometBase } = protocol;
 
-    expect(await cometExt.name()).to.be.equal("Compound Comet");
+    expect(await cometBase.name()).to.be.equal("Compound Comet");
   });
 
   it('has correct symbol', async () => {
     const protocol = await makeProtocol({  });
-    const { cometExt } = protocol;
+    const { cometBase } = protocol;
 
-    expect(await cometExt.symbol()).to.be.equal("📈BASE");
+    expect(await cometBase.symbol()).to.be.equal("📈BASE");
   });
 
   it('has correct decimals', async () => {
     const protocol = await makeProtocol({  });
-    const { comet } = protocol;
+    const { cometBase } = protocol;
 
-    expect(await comet.decimals()).to.be.equal(6);
+    expect(await cometBase.decimals()).to.be.equal(6);
   });
 
   it.skip('has correct totalSupply', async () => {

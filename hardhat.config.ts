@@ -100,7 +100,7 @@ const config: HardhatUserConfig = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200,
+        runs: 200, // XXX now we can try bumping this to 1000 or whatever again (doesn't help much)
       },
       viaIR: true,
     },
