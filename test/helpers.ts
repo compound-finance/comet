@@ -4,7 +4,6 @@ import { expect } from 'chai';
 import { Block } from '@ethersproject/abstract-provider';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
-<<<<<<< HEAD
   Bulker,
   Bulker__factory,
   CometExt,
@@ -14,12 +13,6 @@ import {
   CometRewards,
   CometRewards__factory,
   EvilToken__factory,
-=======
-  CometExt,
-  CometExt__factory as CometExt__factory,
-  CometHarness as Comet,
-  CometHarness__factory as Comet__factory,
->>>>>>> 5b6a66a (Actually add extension delegate)
   FaucetToken,
   FaucetToken__factory,
   FaucetWETH__factory,
@@ -42,11 +35,7 @@ import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
 import { TotalsBasicStructOutput } from '../build/types/CometHarness';
 
-<<<<<<< HEAD
 export { Comet, ethers, expect, hre };
-=======
-export { Comet, CometExt, ethers, expect };
->>>>>>> 5b6a66a (Actually add extension delegate)
 
 export type Numeric = number | bigint;
 

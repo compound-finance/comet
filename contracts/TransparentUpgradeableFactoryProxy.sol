@@ -143,7 +143,7 @@ contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy, Come
     }
 
     function _getPackedAssets(AssetConfig[] memory assetConfigs) internal view returns (PackedAssetConfig[] memory) {
-        PackedAssetConfig[] memory packedAssetConfigs;
+        PackedAssetConfig[] memory packedAssetConfigs = new PackedAssetConfig[](MAX_ASSETS);
         for (uint256 i = 0; i < MAX_ASSETS; i++) {
             (uint word_a, uint word_b) = _getPackedAssetHelper(assetConfigs, i);
             PackedAssetConfig memory packedAssetConfig = PackedAssetConfig({ word_a: word_a, word_b: word_b });
