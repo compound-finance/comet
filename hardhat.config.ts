@@ -102,6 +102,7 @@ const config: HardhatUserConfig = {
         enabled: true,
         runs: 1,
       },
+      viaIR: true,
     },
   },
 
@@ -173,7 +174,7 @@ const config: HardhatUserConfig = {
   },
 
   paths: {
-    tests: "./{test,plugins/deployment_manager/test}",
+    tests: './{test,plugins/deployment_manager/test}',
   },
 
   contractSizer: {
