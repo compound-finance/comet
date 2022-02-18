@@ -5,12 +5,18 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
   CometExt,
   CometExt__factory as CometExt__factory,
+  CometFactory,
+  CometFactory__factory,
   CometHarness as Comet,
   CometHarness__factory as Comet__factory,
+  CometProxyAdmin,
+  CometProxyAdmin__factory,
   FaucetToken,
   FaucetToken__factory,
   SimplePriceFeed,
   SimplePriceFeed__factory,
+  TransparentUpgradeableFactoryProxy,
+  TransparentUpgradeableFactoryProxy__factory,
 } from '../build/types';
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
@@ -72,6 +78,14 @@ export type Protocol = {
   };
 };
 
+export type Configurator = {
+  governor: SignerWithAddress,
+  configurator: TransparentUpgradeableFactoryProxy,
+  proxyAdmin: CometProxyAdmin,
+  cometFactory: CometFactory,
+  comet: Comet
+}
+
 export function dfn<T>(x: T | undefined | null, dflt: T): T {
   return x == undefined ? dflt : x;
 }
@@ -132,6 +146,106 @@ export const ZERO = factor(0);
 export async function getBlock(n?: number): Promise<Block> {
   const blockNumber = n === undefined ? await ethers.provider.getBlockNumber() : n;
   return ethers.provider.getBlock(blockNumber);
+}
+
+// Only for testing configurator. Non-configurator tests need to deploy the CometHarness instead.
+export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configurator> {
+  const signers = await ethers.getSigners();
+
+  const assets = opts.assets || defaultAssets();
+  let priceFeeds = {};
+  for (const asset in assets) {
+    const PriceFeedFactory = (await ethers.getContractFactory(
+      'SimplePriceFeed'
+    )) as SimplePriceFeed__factory;
+    const initialPrice = exp(assets[asset].initialPrice || 1, 8);
+    const priceFeedDecimals = assets[asset].priceFeedDecimals || 8;
+    const priceFeed = await PriceFeedFactory.deploy(initialPrice, priceFeedDecimals);
+    await priceFeed.deployed();
+    priceFeeds[asset] = priceFeed;
+  }
+
+  const governor = opts.governor || signers[0];
+  const pauseGuardian = opts.pauseGuardian || signers[1];
+  const users = signers.slice(2); // guaranteed to not be governor or pause guardian
+  const base = opts.base || 'USDC';
+  const reward = opts.reward || 'COMP';
+  const kink = dfn(opts.kink, exp(8, 17)); // 0.8
+  const perYearInterestRateBase = dfn(opts.interestRateBase, exp(5, 15)); // 0.005
+  const perYearInterestRateSlopeLow = dfn(opts.interestRateSlopeLow, exp(1, 17)); // 0.1
+  const perYearInterestRateSlopeHigh = dfn(opts.interestRateSlopeHigh, exp(3, 18)); // 3.0
+  const reserveRate = dfn(opts.reserveRate, exp(1, 17)); // 0.1
+  const trackingIndexScale = opts.trackingIndexScale || exp(1, 15);
+  const baseTrackingSupplySpeed = dfn(opts.baseTrackingSupplySpeed, trackingIndexScale);
+  const baseTrackingBorrowSpeed = dfn(opts.baseTrackingBorrowSpeed, trackingIndexScale);
+  const baseMinForRewards = dfn(opts.baseMinForRewards, exp(1, assets[base].decimals));
+  const baseBorrowMin = dfn(opts.baseBorrowMin, exp(1, assets[base].decimals));
+  const targetReserves = dfn(opts.targetReserves, 0);
+
+  const {tokens, comet, extensionDelegate } = await makeProtocol(opts);
+
+  if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
+
+  // Deploy CometFactory
+  const CometFactoryFactory = (await ethers.getContractFactory('CometFactory')) as CometFactory__factory;
+  const cometFactory = await CometFactoryFactory.deploy();
+  await cometFactory.deployed();
+
+  // Deploy CometProxyAdmin
+  const CometProxyAdminFactory = (await ethers.getContractFactory('CometProxyAdmin')) as CometProxyAdmin__factory;
+  const proxyAdmin = await CometProxyAdminFactory.connect(governor).deploy();
+  await proxyAdmin.deployed();
+
+  // Deploy Configurator
+  const ConfiguratorFactory = (await ethers.getContractFactory('TransparentUpgradeableFactoryProxy')) as TransparentUpgradeableFactoryProxy__factory;
+  const configurator = await ConfiguratorFactory.deploy(
+    cometFactory.address,
+    comet.address,
+    proxyAdmin.address,
+    []
+  );
+  await configurator.deployed();
+
+  await wait(proxyAdmin.setConfiguration(configurator.address, {
+    governor: governor.address,
+    pauseGuardian: pauseGuardian.address,
+    extensionDelegate: extensionDelegate.address,
+    baseToken: tokens[base].address,
+    baseTokenPriceFeed: priceFeeds[base].address,
+    kink,
+    perYearInterestRateBase,
+    perYearInterestRateSlopeLow,
+    perYearInterestRateSlopeHigh,
+    reserveRate,
+    trackingIndexScale,
+    baseTrackingSupplySpeed,
+    baseTrackingBorrowSpeed,
+    baseMinForRewards,
+    baseBorrowMin,
+    targetReserves,
+    assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], i) => {
+      if (symbol != base) {
+        acc.push({
+          asset: tokens[symbol].address,
+          priceFeed: priceFeeds[symbol].address,
+          decimals: dfn(assets[symbol].decimals, 18),
+          borrowCollateralFactor: dfn(config.borrowCF, ONE - 1n),
+          liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
+          liquidationFactor: dfn(config.liquidationFactor, ONE),
+          supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
+        });
+      }
+      return acc;
+    }, []),
+  }));
+
+  return {
+    governor,
+    configurator,
+    proxyAdmin,
+    cometFactory,
+    comet
+  };
 }
 
 export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
