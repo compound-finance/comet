@@ -81,10 +81,9 @@ contract CometExt is CometBase {
      */
     function getBorrowLiquidity(address account) external view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
-        TotalsBasic memory totals = totalsBasic;
 
         int liquidity = signedMulPrice(
-            presentValue(totals, userBasic[account].principal),
+            presentValue(userBasic[account].principal),
             getPrice(baseTokenPriceFeed),
             baseScale
         );
@@ -114,10 +113,9 @@ contract CometExt is CometBase {
      */
     function getLiquidationMargin(address account) external view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
-        TotalsBasic memory totals = totalsBasic;
 
         int liquidity = signedMulPrice(
-            presentValue(totals, userBasic[account].principal),
+            presentValue(userBasic[account].principal),
             getPrice(baseTokenPriceFeed),
             baseScale
         );
