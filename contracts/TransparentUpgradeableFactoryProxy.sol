@@ -99,7 +99,7 @@ contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy, Come
     /**
      * @dev Checks and gets the packed asset info for storage
      */
-    function _getPackedAssetHelper(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint, uint) {
+    function _getPackedAssetHelper(AssetConfig[] memory assetConfigs, uint i) internal pure returns (uint, uint) {
         AssetConfig memory assetConfig = _getAssetConfig(assetConfigs, i);
         address asset = assetConfig.asset;
         address priceFeed = assetConfig.priceFeed;
@@ -143,15 +143,14 @@ contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy, Come
     }
 
     function _getPackedAssets(AssetConfig[] memory assetConfigs) internal view returns (PackedAssetConfig[] memory) {
-        PackedAssetConfig[] memory packedAssetConfigs = new PackedAssetConfig[](MAX_ASSETS);
-        for (uint256 i = 0; i < MAX_ASSETS; i++) {
+        PackedAssetConfig[] memory packedAssetConfigs = new PackedAssetConfig[](assetConfigs.length);
+        for (uint256 i = 0; i < assetConfigs.length; i++) {
             (uint word_a, uint word_b) = _getPackedAssetHelper(assetConfigs, i);
             PackedAssetConfig memory packedAssetConfig = PackedAssetConfig({ word_a: word_a, word_b: word_b });
             packedAssetConfigs[i] = packedAssetConfig;
         }
         return packedAssetConfigs;
     }
-
 
     // XXX Define other setters for setting params
     function setGovernor(address governor) external ifAdmin {
