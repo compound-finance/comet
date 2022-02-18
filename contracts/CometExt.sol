@@ -9,6 +9,9 @@ contract CometExt is CometBase {
     /// @notice The name of this contract
     string public constant name = "Compound Comet";
 
+    /// @notice The name of this contract
+    string public constant symbol = unicode"📈BASE";
+
     /// @notice The major version of this contract
     string public constant version = "0";
 

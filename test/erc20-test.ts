@@ -10,9 +10,9 @@ describe('erc20', function () {
 
   it('has correct symbol', async () => {
     const protocol = await makeProtocol({  });
-    const { comet } = protocol;
+    const { cometExt } = protocol;
 
-    expect(await comet.symbol()).to.be.equal("📈BASE");
+    expect(await cometExt.symbol()).to.be.equal("📈BASE");
   });
 
   it('has correct decimals', async () => {

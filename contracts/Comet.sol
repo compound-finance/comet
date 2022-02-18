@@ -24,9 +24,6 @@ contract Comet is CometBase {
     }
     event Transfer(address indexed from, address indexed to, uint256 amount);
 
-    /// @dev The ERC20 symbol for wrapped base token
-    bytes32 internal immutable symbol32;
-
     /// @notice The number of decimals for wrapped base token
     uint8 public immutable decimals;
 
@@ -141,7 +138,6 @@ contract Comet is CometBase {
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
-        symbol32 = config.symbol32;
         decimals = decimals_;
         governor = config.governor;
         pauseGuardian = config.pauseGuardian;
@@ -149,7 +145,7 @@ contract Comet is CometBase {
         baseTokenPriceFeed = config.baseTokenPriceFeed;
         extensionDelegate = config.extensionDelegate;
 
-        baseScale = uint64(10 ** decimals);
+        baseScale = uint64(10 ** decimals_);
         trackingIndexScale = config.trackingIndexScale;
 
         baseMinForRewards = config.baseMinForRewards;
@@ -202,24 +198,6 @@ contract Comet is CometBase {
         baseBorrowIndex = BASE_INDEX_SCALE;
         trackingSupplyIndex = 0;
         trackingBorrowIndex = 0;
-    }
-
-    /**
-     * @notice Get the ERC20 symbol for wrapped base token
-     * @return The symbol as a string
-     */
-    function symbol() external view returns (string memory) {
-        uint8 i;
-        for (i = 0; i < 32; i++) {
-            if (symbol32[i] == 0) {
-                break;
-            }
-        }
-        bytes memory symbol = new bytes(i);
-        for (uint8 j = 0; j < i; j++) {
-            symbol[j] = symbol32[j];
-        }
-        return string(symbol);
     }
 
     /**
