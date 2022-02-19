@@ -49,3 +49,6 @@ scenario.only('add assets', {}, async ({ comet, proxyAdmin, actors, assets }: Co
 // XXX need to have an instance of the proxy contract
 scenario('reverts if not called by ProxyAdmin', {}, async ({ comet, proxyAdmin, actors }, world) => {
 });
+
+scenario('fallbacks to implementation if called by non-admin', {}, async ({ comet, proxyAdmin, actors }, world) => {
+});

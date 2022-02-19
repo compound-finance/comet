@@ -2,73 +2,82 @@
 pragma solidity ^0.8.11;
 
 import "./CometFactory.sol";
-import "./CometStorage.sol";
 import "./CometConfiguration.sol";
 import "./vendor/proxy/TransparentUpgradeableProxy.sol";
 
-contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy, CometStorage {
-    address public factory;
+contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy {
 
     /**
      * @dev Initializes an upgradeable proxy managed by `_admin`, backed by the implementation at `_logic`, and
      * optionally initialized with `_data` as explained in {UpgradeableProxy-constructor}.
      */
-    constructor(address factory_, address _logic, address _admin, bytes memory _data) payable TransparentUpgradeableProxy(_logic, _admin, _data) {
-        factory = factory_;
+    constructor(address configurator_, address _logic, address _admin, bytes memory _data) payable TransparentUpgradeableProxy(_logic, _admin, _data) {
+        // XXX configurator is technically not part of eip1967, so kind of incorrect to use this prefix
+        assert(_CONFIGURATOR_SLOT == bytes32(uint256(keccak256("eip1967.proxy.configurator")) - 1));
+        _setConfigurator(configurator_);
     }
 
-    // XXX Test that this is only callable by an admin
     /**
-     * @dev Deploy and upgrade the implementation of the proxy.
-     *
-     * NOTE: Only the admin can call this function. See {ProxyAdmin-deployAndUpgrade}.
+     * @dev Emitted when the admin account has changed.
      */
-    function deployAndUpgrade() external ifAdmin {
-        // XXX Can we read configuration directly from Comet contract?
-        // Will be difficult for governance because governance would have to
-        // specify all params, even if they are not being changed
-        address newComet = CometFactory(factory).clone(configuratorParams);
-        _upgradeTo(newComet);
+    event ConfiguratorChanged(address previousConfigurator, address newConfigurator);
+
+    /**
+     * @dev Storage slot with the configurator of the contract.
+     * This is the keccak-256 hash of "eip1967.proxy.configurator" subtracted by 1, and is
+     * validated in the constructor.
+     */
+    bytes32 private constant _CONFIGURATOR_SLOT = 0xea1bb48f16803c1a0494abc6cb57276d50f52e3e0d29d70df658a66547886b0a;
+
+    // XXX Get rid of virtual?
+    /**
+     * @dev Changes the configurator of the proxy.
+     *
+     * Emits an {ConfiguratorChanged} event.
+     *
+     * NOTE: Only the admin can call this function. See {ProxyAdmin-changeProxyAdmin}.
+     */
+    function changeConfigurator(address newConfigurator) external virtual ifAdmin {
+        require(newConfigurator != address(0), "cannot be zero address");
+        emit ConfiguratorChanged(_configurator(), newConfigurator);
+        _setConfigurator(newConfigurator);
     }
 
-    // XXX see if there is a cleaner way to do this
-    function setConfiguration(Configuration memory config) external ifAdmin {
-        Configuration storage _configuratorParams = configuratorParams;
-        _configuratorParams.governor = config.governor;
-        _configuratorParams.pauseGuardian = config.pauseGuardian;
-        _configuratorParams.baseToken = config.baseToken;
-        _configuratorParams.baseTokenPriceFeed = config.baseTokenPriceFeed;
-        _configuratorParams.kink = config.kink;
-        _configuratorParams.perYearInterestRateSlopeLow = config.perYearInterestRateSlopeLow;
-        _configuratorParams.perYearInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh;
-        _configuratorParams.perYearInterestRateBase = config.perYearInterestRateBase;
-        _configuratorParams.reserveRate = config.reserveRate;
-        _configuratorParams.trackingIndexScale = config.trackingIndexScale;
-        _configuratorParams.baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
-        _configuratorParams.baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
-        _configuratorParams.baseMinForRewards = config.baseMinForRewards;
-        _configuratorParams.baseBorrowMin = config.baseBorrowMin;
-        _configuratorParams.targetReserves = config.targetReserves;
-        _configuratorParams.governor = config.governor;
-        _configuratorParams.governor = config.governor;
-
-        // Need to copy using this loop because directly copying of an array of structs is not supported
-        for (uint256 i = 0; i < config.assetConfigs.length; i++) {
-            if (i < _configuratorParams.assetConfigs.length) {
-                _configuratorParams.assetConfigs[i] = config.assetConfigs[i];
-            } else {
-                _configuratorParams.assetConfigs.push(config.assetConfigs[i]);
-            }
+    /**
+     * @dev Returns the current configurator.
+     */
+    function _configurator() internal view virtual returns (address c) {
+        bytes32 slot = _CONFIGURATOR_SLOT;
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            c := sload(slot)
         }
     }
 
-    // XXX Define other setters for setting params
-    function setGovernor(address governor) external ifAdmin {
-        configuratorParams.governor = governor;
+    /**
+     * @dev Stores a new address in the configurator slot.
+     */
+    function _setConfigurator(address newConfigurator) private {
+        bytes32 slot = _CONFIGURATOR_SLOT;
+
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            sstore(slot, newConfigurator)
+        }
     }
 
-    // XXX What about removing an asset?
-    function addAsset(AssetConfig calldata asset) external ifAdmin {
-        configuratorParams.assetConfigs.push(asset);
+    /**
+     * @dev Delegates the current call to the address returned by `_implementation()`.
+     *
+     * This function does not return to its internall call site, it will return directly to the external caller.
+     */
+    function _fallback() internal virtual override {
+        // _beforeFallback(); // Not calling _beforeFallback() since it is only used to filter out calls by admin
+
+        if (msg.sender == _admin()) {
+            _delegate(_configurator());
+        } else {
+            _delegate(_implementation());
+        }
     }
 }
