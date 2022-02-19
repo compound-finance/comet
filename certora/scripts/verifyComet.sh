@@ -5,6 +5,6 @@ certoraRun certora/harness/CometHarness.sol certora/harness/SymbolicBaseToken.so
     --solc solc8.11 \
     --staging jtoman/solc8-overflow \
     --optimistic_loop \
-    --settings -enableEqualitySaturation=false,-multiAssertCheck \
-    --rule $1 \
-    --msg "CometHarness:comet.spec $1 with magic flag"
+    --settings -enableEqualitySaturation=false \
+    --rule test
+    --msg "CometHarness:comet.spec test"

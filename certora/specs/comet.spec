@@ -50,7 +50,7 @@ hook Sstore userBasic[KEY address a].principal int104 balance
 hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 balance (uint128 old_balance) STORAGE {
     sumBalancePerAssert[t] = sumBalancePerAssert[t] - old_balance + balance;
 }
-
+/*
 rule whoChangedMyGhost(method f) {
 	mathint before = sumUserBasicPrinciple;
 	env e;
@@ -69,6 +69,7 @@ rule whoChangedSumBalancePerAssert(method f, address t) {
 	mathint after = sumBalancePerAssert[t];
 	assert( before == after);
 }
+*/
 /*
 
 Description: 
@@ -92,6 +93,7 @@ rule test(mathint before, mathint after)
         require ( before == to_mathint(getTotalSupplyBase()) - to_mathint(getTotalBorrowBase())) ;
         env e;
         calldataarg args;
+        simplifiedAssumptions();
         withdrawTo(e,args);
         require after == sumUserBasicPrinciple; 
         assert ( after == to_mathint(getTotalSupplyBase()) - to_mathint (getTotalBorrowBase())) ;
