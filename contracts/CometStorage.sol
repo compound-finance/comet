@@ -16,6 +16,9 @@ contract CometStorage is CometConfiguration{
     /// getters created for public variables.
     Configuration internal configuratorParams;
 
+    /// @notice Address for Comet factory contract
+    address public factory;
+
     // 512 bits total = 2 slots
     struct TotalsBasic {
         // 1st slot
