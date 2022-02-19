@@ -8,7 +8,7 @@ import "./CometConfiguration.sol";
  * @dev Versions can enforce append-only storage slots via inheritance.
  * @author Compound
  */
-contract CometStorage is CometConfiguration{
+contract CometStorage is CometConfiguration {
     /// @notice Configuration settings used to deploy new Comet instances
     /// by the configurator
     /// @dev This needs to be internal to avoid a `CompilerError: Stack too deep
