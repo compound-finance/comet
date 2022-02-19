@@ -283,7 +283,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Checks and gets the packed asset info for storage
      */
-    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
+    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal view virtual returns (uint256, uint256) {
         AssetConfig memory assetConfig = _getAssetConfig(assetConfigs, i);
         address asset = assetConfig.asset;
         address priceFeed = assetConfig.priceFeed;
