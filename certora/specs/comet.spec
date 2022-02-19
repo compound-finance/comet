@@ -121,7 +121,20 @@ function simplifiedAssumptions() {
     env e;
     require getTotalBaseSupplyIndex(e) == baseIndexScale(e);
     require getTotalBaseBorrowIndex(e) == baseIndexScale(e);
+    require _baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase();
 }
+
+/* 
+ Description :  
+        Can withdraw all contract's balance without revert
+
+ formula : 
+        withdraw(msg.sender, baseToken.balanceOf(currentContract)) -> no revert
+
+ status : proved
+ reason :
+ link   : 
+*/
 
 rule withdraw_all_balance(){
     env e;
@@ -131,10 +144,48 @@ rule withdraw_all_balance(){
     assert false;
 }
 
-invariant no_reserves_zero_balance()
-getReserves() == 0 <=> _baseToken.balanceOf(currentContract) == 0
+/* 
+ Description :  
+        when contract balance == 0 , reserves should be LE zero
+
+ formula : 
+        _baseToken.balanceOf(currentContract) == 0 => getReserves() <= 0
+
+ status : proved
+ reason :
+ link   :
+*/
+invariant no_reserves_zero_balance2()
+_baseToken.balanceOf(currentContract) == 0 => getReserves() <= 0
+filtered { f-> !similarFunctions(f) && !f.isView }
     {
         preserved {
             simplifiedAssumptions();
         }
     }
+/* 
+ Description :  
+        Due to summarization the following should hold
+
+ formula : 
+        baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase()
+
+ status : failed
+ reason :
+ link   : 
+*/
+invariant balance_vs_base()
+_baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase()
+filtered { f-> !similarFunctions(f) && !f.isView }
+    {
+        preserved {
+            simplifiedAssumptions();
+        }
+    }
+
+
+
+// rule withdraw_min(){
+//     env e;
+//     withdraw(e,e.msg.sender,)
+// }

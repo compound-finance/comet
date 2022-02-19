@@ -291,9 +291,9 @@ env e;
 formula : 
         getBorrowRate(e) > getSupplyRate(e);
 
- status : timeout
- reason : 
- link   : 
+ status : fail
+ reason : Due to rounding down the BorrowRate can become equal to SupplyRate
+ link   : https://vaas-stg.certora.com/output/65782/f2f32f50a2bbf14deb79/?anonymousKey=494980dfd3ebcced1ee0d1088acf1a795f9f2a08#SupplyIndex_vs_BorrowIndexResults
 */
 rule SupplyRate_vs_BorrowRate(){
 env e;
@@ -312,4 +312,5 @@ function setup(env e){
     // require getBorrowRate(e) > getSupplyRate(e);
     require perSecondInterestRateSlopeLow() > 0 &&
             perSecondInterestRateSlopeLow() < perSecondInterestRateSlopeHigh();
+    require reserveRate(e) > 0;
 }
