@@ -19,18 +19,14 @@ contract CometHarness is CometHarnessGetters {
     mapping (address => uint8) asset_index;
 
     function get_Index_Of_Collateral_Asset(address asset) public view returns (uint8){
-        
+        return asset_index[asset];
     }
 
-
-
-
-
-
-
-
-
-
+    uint256 nonDet1;
+    uint256 nonDet2;
+    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal override view returns (uint256, uint256) {
+        return (nonDet1,nonDet2);
+    }
 
     /*********** Simplification ***********/
     /* under approximation (not taking into account all possible cases) */
@@ -54,7 +50,15 @@ contract CometHarness is CometHarnessGetters {
 
     }
     
-    function getUtilizationInternal(TotalsBasic memory totals) internal pure override returns  (uint) {
+    function getUtilizationInternal(TotalsBasic memory totals) internal view override returns  (uint) {
         return symbolicUtilization[totals.totalSupplyBase][totals.totalBorrowBase];
+    }
+
+
+    function testTotalSupply() public view returns (uint104) {
+        TotalsBasic memory totals = totalsBasic;
+        totals = accrue(totals);
+        uint104 totalSupplyBalance = presentValueSupply(totals, totals.totalSupplyBase);
+        return totalSupplyBalance;
     }
 }

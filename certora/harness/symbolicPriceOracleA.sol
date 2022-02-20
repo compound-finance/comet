@@ -7,7 +7,7 @@ pragma solidity ^0.8.0;
  * @author Certora
  */
 
-contract priceOracleA {
+contract symbolicPriceOracleA {
     uint80 public roundId;
     mapping ( uint256 => int256) public answer;
     uint256 public startedAt;

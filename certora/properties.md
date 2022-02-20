@@ -1,5 +1,54 @@
 # Properties for Comet protocol
 
+solidity flag `viaIR: true` ()
+
+## Properties regarding accrue computation:
+
+1. Min value of baseSupplyIndex and baseBorrowIndex( ✔️ )
+
+2. Monotonicity of baseSupplyIndex and baseBorrowIndex on accrue ( ✔️ )
+
+3. Increase of baseSupplyIndex and baseBorrowIndex over time ( ✔️ )
+
+
+
+## Properties regarding interest computation: 
+3. When no base is borrowed utilization should equal zero ( ✔️ )
+
+4. Zero utilization is only on initial baseIntresetRate  (✔️ )
+
+5. computation of isLiquidatable on the same state changes from false to true only due to price change  ( ✔️ )
+
+## work in progress/ questions 
+ 1. utilization <= factorScale() 
+
+ fails on total borrow (presentValue) can be greater then totalSupply (presentValue) hence utilization not bounded
+
+
+  2. assumptions that are used but not checked in constructor:
+ 
+     getTotalBaseSupplyIndex() >= baseIndexScale()       
+     getTotalBaseBorrowIndex() >= baseIndexScale()
+     getTotalBaseBorrowIndex() >= getTotalBaseSupplyIndex() -- not safe --
+    getBorrowRate() > getSupplyRate()
+    perSecondInterestRateSlopeLow() > 0 &&  perSecondInterestRateSlopeLow() < perSecondInterestRateSlopeHigh() -- check when needed --
+    reserveRate() > 0
+
+ 
+ 
+## Properties regarding comet*: 
+starting to prove with some simplifications:
+
+- baseSupplyIndex and baseBorrowIndex at baseIndexScale
+
+
+1. The sum of collateral per asset over all users is equal to total collateral of asset ( ✔️ )
+```CVL 
+sum(userCollateral[u][asset].balance) == totalsCollateral[asset].totalSupplyAsset
+```
+
+## work in progress 
+
 1. Can always withdraw all collateral (assuming no debt) - low priority:
 ```CVL
 withdrawCollateral(userCollateral[user][asset].balance) will work
