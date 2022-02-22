@@ -410,11 +410,12 @@ contract Comet is CometMath, CometStorage, ERC20 {
      * @dev Determine index of asset that matches given address
      */
     function getAssetInfoByAddress(address asset) internal view returns (AssetInfo memory) {
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets; ) {
             AssetInfo memory assetInfo = getAssetInfo(i);
             if (assetInfo.asset == asset) {
                 return assetInfo;
             }
+            unchecked { i++; }
         }
         revert("bad asset");
     }
@@ -433,10 +434,11 @@ contract Comet is CometMath, CometStorage, ERC20 {
      */
     function symbol() external view returns (string memory) {
         uint8 i;
-        for (i = 0; i < 32; i++) {
+        for (i = 0; i < 32; ) {
             if (symbol32[i] == 0) {
                 break;
             }
+            unchecked { i++; }
         }
         bytes memory symbol = new bytes(i);
         for (uint8 j = 0; j < i; j++) {
@@ -643,7 +645,7 @@ contract Comet is CometMath, CometStorage, ERC20 {
             baseScale
         );
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets; ) {
             if (isInAsset(assetsIn, i)) {
                 if (liquidity >= 0) {
                     return true;
@@ -660,6 +662,7 @@ contract Comet is CometMath, CometStorage, ERC20 {
                     asset.borrowCollateralFactor
                 ));
             }
+            unchecked { i++; }
         }
 
         return liquidity >= 0;
@@ -679,7 +682,7 @@ contract Comet is CometMath, CometStorage, ERC20 {
             baseScale
         );
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets; ) {
             if (isInAsset(assetsIn, i)) {
                 if (liquidity >= 0) {
                     return false;
@@ -696,6 +699,7 @@ contract Comet is CometMath, CometStorage, ERC20 {
                     asset.liquidateCollateralFactor
                 ));
             }
+            unchecked { i++; }
         }
 
         return liquidity < 0;
@@ -1282,8 +1286,9 @@ contract Comet is CometMath, CometStorage, ERC20 {
         require(!isAbsorbPausedInternal(), "paused");
 
         uint startGas = gasleft();
-        for (uint i = 0; i < accounts.length; i++) {
+        for (uint i = 0; i < accounts.length; ) {
             absorbInternal(accounts[i]);
+            unchecked { i++; }
         }
         uint gasUsed = startGas - gasleft();
 
@@ -1309,7 +1314,7 @@ contract Comet is CometMath, CometStorage, ERC20 {
         uint basePrice = getPrice(baseTokenPriceFeed);
         uint deltaValue = 0;
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets; ) {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory assetInfo = getAssetInfo(i);
                 address asset = assetInfo.asset;
@@ -1322,6 +1327,7 @@ contract Comet is CometMath, CometStorage, ERC20 {
                     deltaValue += mulFactor(value, assetInfo.liquidationFactor);
                 }
             }
+            unchecked { i++; }
         }
 
         uint104 deltaBalance = safe104(divPrice(deltaValue, basePrice, baseScale));
