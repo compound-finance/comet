@@ -60,4 +60,8 @@ contract CometHarnessGetters is Comet {
     function getUserCollateralBalanceByAsset(address user, address asset) public view returns (uint128) {
         return userCollateral[user][asset].balance;
     }
+
+    function calc_power_of_two(uint8 power) external returns (uint256){
+        return 2**power;
+    }
 }

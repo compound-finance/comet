@@ -35,6 +35,7 @@ ghost bool withdraw_Paused_Ghost; // ghost variable tracking withdrawPaused valu
 ghost bool absorb_Paused_Ghost; // ghost variable tracking absorbPaused value
 ghost bool buy_Paused_Ghost; // ghost variable tracking buyPaused value
 
+
 // A spec setter to replace the pause() method in the contract
 function set_Paused_Summarization(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused) returns bool{
     supply_Paused_Ghost = supplyPaused;
@@ -210,3 +211,10 @@ function buy_functions_with_revert(method f, env e) returns bool{
 //
 // functions and definitions for pause guardian integrity
 //
+
+ghost isInAsset(address, address) returns bool
+
+
+function (address user, address asset){
+    
+}
