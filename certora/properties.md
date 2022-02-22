@@ -197,3 +197,8 @@ BorrowRate > SupplyRate
 1. `getBorrowLiquidity`  - probably can have a few rules
 
 2. re-entrancy checks, especially in `absorb()` & `buyCollateral()`
+
+| Rule | getTotalBaseSupplyIndex() >= baseIndexScale() && getTotalBaseBorrowIndex() >= baseIndexScale() | getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex() | perSecondInterestRateSlopeLow() > 0 && perSecondInterestRateSlopeLow() < perSecondInterestRateSlopeHigh() | reserveRate(e) > 0 |
+|----- | --- | -- | -- | -- |
+| presentValue_GE_principal | X | V | X | X |
+| presentValue_EQ_principal | X | X | V | X |

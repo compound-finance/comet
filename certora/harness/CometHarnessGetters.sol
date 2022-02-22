@@ -52,6 +52,10 @@ contract CometHarnessGetters is Comet {
         AssetInfo memory assetInfo = super.getAssetInfoByAddress(asset);
         return assetInfo.offset;
     }
+    function getAssetScaleByAsset(address asset) external view returns (uint64 offset) {
+        AssetInfo memory assetInfo = super.getAssetInfoByAddress(asset);
+        return assetInfo.scale;
+    }
 
     function getTotalsSupplyAsset(address asset) public view returns (uint128)  {
         return totalsCollateral[asset].totalSupplyAsset;

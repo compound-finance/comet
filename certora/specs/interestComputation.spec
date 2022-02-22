@@ -7,6 +7,7 @@ methods{
 
     call_presentValue(int104) returns (int104) envfree;
     call_principalValue(int104) returns (int104) envfree;
+    getAssetScaleByAsset(address) returns (uint64) envfree;
 
     getTotalBaseSupplyIndex() returns (uint64) envfree;
     getTotalBaseBorrowIndex() returns (uint64) envfree;
@@ -328,6 +329,36 @@ require presentValue != 0;
 // require _principalValue > 0;
 
 assert presentValue == principalValue => getTotalBaseSupplyIndex() == baseIndexScale();
+}
+
+rule quote_Collateral(address asset, uint baseAmount ){
+    env e;
+    uint64 scale = getAssetScaleByAsset(asset);
+    require scale == baseScale(e);
+    require baseAmount > 0 && baseAmount < 2^255;
+    uint quote = quoteCollateral(e,asset, baseAmount);
+
+    require quote == 0;
+    // require e.msg.value == 0;
+    // assert !lastReverted;
+    assert quoteCollateral(e,asset, baseAmount + 1) == 0;
+    // assert quote != 0;
+}
+
+rule withdrawBaseTwice( uint x, uint y){
+    env e;
+    storage init = lastStorage;
+    
+    require x + y < 2^255;
+
+    withdraw(e,baseToken(e), x);
+    int104 baseX = baseBalanceOf(e,e.msg.sender);
+    withdraw(e,baseToken(e), y);
+    int104 baseY = baseBalanceOf(e,e.msg.sender);
+    withdraw(e,baseToken(e), x + y);
+    int104 baseXY = baseBalanceOf(e,e.msg.sender) at init;
+
+    assert baseXY == baseY;
 }
 
 // rule baseBalance(address account){
