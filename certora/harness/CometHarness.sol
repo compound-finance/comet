@@ -53,4 +53,12 @@ contract CometHarness is CometHarnessGetters {
     function getUtilizationInternal(TotalsBasic memory totals) internal view override returns  (uint) {
         return symbolicUtilization[totals.totalSupplyBase][totals.totalBorrowBase];
     }
+
+
+    function testTotalSupply() public view returns (uint104) {
+        TotalsBasic memory totals = totalsBasic;
+        totals = accrue(totals);
+        uint104 totalSupplyBalance = presentValueSupply(totals, totals.totalSupplyBase);
+        return totalSupplyBalance;
+    }
 }

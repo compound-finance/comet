@@ -43,11 +43,21 @@ contract CometHarnessGetters is Comet {
     function getAssetinOfUser(address user) public view returns (uint16) {
         return userBasic[user].assetsIn;
     }
+
     function getPrincipal(address user) public view returns (int104) {
         return userBasic[user].principal;
     }
 
+    function getAssetOffsetByAsset(address asset) external view returns (uint8 offset) {
+        AssetInfo memory assetInfo = super.getAssetInfoByAddress(asset);
+        return assetInfo.offset;
+    }
+
     function getTotalsSupplyAsset(address asset) public view returns (uint128)  {
         return totalsCollateral[asset].totalSupplyAsset;
+    }
+
+    function getUserCollateralBalanceByAsset(address user, address asset) public view returns (uint128) {
+        return userCollateral[user][asset].balance;
     }
 }

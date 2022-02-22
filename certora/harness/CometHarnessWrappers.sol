@@ -12,7 +12,7 @@ import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/Aggregat
  */
 contract CometHarnessWrappers is CometHarnessGetters {
     constructor(Configuration memory config) CometHarnessGetters(config) { }
-    
+
     // external wrapper for isInAsset()
     function call_IsInAsset(uint16 assetsIn, uint8 assetOffset) external pure returns (bool) {
         return super.isInAsset(assetsIn, assetOffset);
