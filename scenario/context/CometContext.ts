@@ -115,7 +115,7 @@ export class CometContext {
       }
     }
 
-    if (world.isForked()) {
+    if (!world.isRemoteFork()) {
       throw new Error('Tokens cannot be sourced from Etherscan for development. Actors did not have sufficient assets.');
     } else {
       this.debug('Source Tokens: sourcing from Etherscan...');
@@ -129,7 +129,6 @@ export class CometContext {
     }
   }
 
-  // <!--
   async setAssets() {
     let signer = (await this.deploymentManager.hre.ethers.getSigners())[1]; // dunno?
     let numAssets = await this.comet.numAssets();
@@ -163,7 +162,7 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
     return contract;
   }
 
-  if (world.isForked()) {
+  if (!world.isRemoteFork()) {
     await deployComet(deploymentManager);
   }
 
@@ -200,6 +199,8 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
 };
 
 async function forkContext(c: CometContext): Promise<CometContext> {
+  // Deep clone the cache's cache
+  c.deploymentManager.cache.cloneMemory();
   return c;
 }
 
