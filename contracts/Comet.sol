@@ -167,62 +167,82 @@ contract Comet is CometMath, CometStorage, ERC20 {
     /// @dev The scale for prices (in USD)
     uint64 internal constant PRICE_SCALE = 1e8;
 
-    /**
-     * @notice Construct a new protocol instance
-     * @param config The mapping of initial/constant parameters
-     **/
-    constructor(Configuration memory config) {
+    // /**
+    //  * @notice Construct a new protocol instance
+    //  * @param config The mapping of initial/constant parameters
+    //  **/
+    constructor(
+        bytes32 _symbol32,
+        address[] memory _addresses,
+        // address _governor,
+        // address _pauseGuardian,
+        // address _baseToken,
+        // address _baseTokenPriceFeed,
+        uint _kink,
+        uint _perYearInterestRateSlopeLow,
+        uint _perYearInterestRateSlopeHigh,
+        uint _perYearInterestRateBase,
+        uint _reserveRate,
+        uint _trackingIndexScale,
+        uint _baseTrackingSupplySpeed,
+        uint _baseTrackingBorrowSpeed,
+        uint _baseMinForRewards,
+        uint _baseBorrowMin,
+        uint _targetReserves,
+        AssetConfig[] memory _assetConfigs) {
         // Sanity checks
-        uint8 decimals_ = ERC20(config.baseToken).decimals();
+        address _baseToken = _addresses[2];
+        address _baseTokenPriceFeed = _addresses[3];
+        uint8 decimals_ = ERC20(_baseToken).decimals();
         require(decimals_ <= MAX_BASE_DECIMALS, "too many decimals");
-        require(config.assetConfigs.length <= MAX_ASSETS, "too many assets");
-        require(config.baseMinForRewards > 0, "bad rewards min");
-        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == PRICE_FEED_DECIMALS, "bad decimals");
+        require(_assetConfigs.length <= MAX_ASSETS, "too many assets");
+        require(_baseMinForRewards > 0, "bad rewards min");
+        require(AggregatorV3Interface(_baseTokenPriceFeed).decimals() == PRICE_FEED_DECIMALS, "bad decimals");
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
-        symbol32 = config.symbol32;
+        symbol32 = _symbol32;
         decimals = decimals_;
-        governor = config.governor;
-        pauseGuardian = config.pauseGuardian;
-        baseToken = config.baseToken;
-        baseTokenPriceFeed = config.baseTokenPriceFeed;
+        governor = _addresses[0];
+        pauseGuardian = _addresses[1];
+        baseToken = _baseToken;
+        baseTokenPriceFeed = _baseTokenPriceFeed;
 
         baseScale = uint64(10 ** decimals_);
-        trackingIndexScale = config.trackingIndexScale;
+        trackingIndexScale = _trackingIndexScale;
 
-        baseMinForRewards = config.baseMinForRewards;
-        baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
-        baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
+        baseMinForRewards = _baseMinForRewards;
+        baseTrackingSupplySpeed = _baseTrackingSupplySpeed;
+        baseTrackingBorrowSpeed = _baseTrackingBorrowSpeed;
 
-        baseBorrowMin = config.baseBorrowMin;
-        targetReserves = config.targetReserves;
+        baseBorrowMin = _baseBorrowMin;
+        targetReserves = _targetReserves;
 
         // Set interest rate model configs
-        kink = config.kink;
-        perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
-        perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
-        perSecondInterestRateBase = config.perYearInterestRateBase / SECONDS_PER_YEAR;
-        reserveRate = config.reserveRate;
+        kink = _kink;
+        perSecondInterestRateSlopeLow = _perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
+        perSecondInterestRateSlopeHigh = _perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
+        perSecondInterestRateBase = _perYearInterestRateBase / SECONDS_PER_YEAR;
+        reserveRate = _reserveRate;
 
         // Set asset info
-        numAssets = uint8(config.assetConfigs.length);
+        numAssets = uint8(_assetConfigs.length);
 
-        (asset00_a, asset00_b) = _getPackedAsset(config.assetConfigs, 0);
-        (asset01_a, asset01_b) = _getPackedAsset(config.assetConfigs, 1);
-        (asset02_a, asset02_b) = _getPackedAsset(config.assetConfigs, 2);
-        (asset03_a, asset03_b) = _getPackedAsset(config.assetConfigs, 3);
-        (asset04_a, asset04_b) = _getPackedAsset(config.assetConfigs, 4);
-        (asset05_a, asset05_b) = _getPackedAsset(config.assetConfigs, 5);
-        (asset06_a, asset06_b) = _getPackedAsset(config.assetConfigs, 6);
-        (asset07_a, asset07_b) = _getPackedAsset(config.assetConfigs, 7);
-        (asset08_a, asset08_b) = _getPackedAsset(config.assetConfigs, 8);
-        (asset09_a, asset09_b) = _getPackedAsset(config.assetConfigs, 9);
-        (asset10_a, asset10_b) = _getPackedAsset(config.assetConfigs, 10);
-        (asset11_a, asset11_b) = _getPackedAsset(config.assetConfigs, 11);
-        (asset12_a, asset12_b) = _getPackedAsset(config.assetConfigs, 12);
-        (asset13_a, asset13_b) = _getPackedAsset(config.assetConfigs, 13);
-        (asset14_a, asset14_b) = _getPackedAsset(config.assetConfigs, 14);
+        (asset00_a, asset00_b) = _getPackedAsset(_assetConfigs, 0);
+        (asset01_a, asset01_b) = _getPackedAsset(_assetConfigs, 1);
+        (asset02_a, asset02_b) = _getPackedAsset(_assetConfigs, 2);
+        (asset03_a, asset03_b) = _getPackedAsset(_assetConfigs, 3);
+        (asset04_a, asset04_b) = _getPackedAsset(_assetConfigs, 4);
+        (asset05_a, asset05_b) = _getPackedAsset(_assetConfigs, 5);
+        (asset06_a, asset06_b) = _getPackedAsset(_assetConfigs, 6);
+        (asset07_a, asset07_b) = _getPackedAsset(_assetConfigs, 7);
+        (asset08_a, asset08_b) = _getPackedAsset(_assetConfigs, 8);
+        (asset09_a, asset09_b) = _getPackedAsset(_assetConfigs, 9);
+        (asset10_a, asset10_b) = _getPackedAsset(_assetConfigs, 10);
+        (asset11_a, asset11_b) = _getPackedAsset(_assetConfigs, 11);
+        (asset12_a, asset12_b) = _getPackedAsset(_assetConfigs, 12);
+        (asset13_a, asset13_b) = _getPackedAsset(_assetConfigs, 13);
+        (asset14_a, asset14_b) = _getPackedAsset(_assetConfigs, 14);
 
         // Initialize storage
         initialize_storage();

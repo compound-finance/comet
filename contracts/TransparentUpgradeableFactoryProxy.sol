@@ -27,8 +27,8 @@ contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy, Come
         // XXX Can we read configuration directly from Comet contract?
         // Will be difficult for governance because governance would have to
         // specify all params, even if they are not being changed
-        address newComet = CometFactory(factory).clone(configuratorParams);
-        _upgradeTo(newComet);
+        // address newComet = CometFactory(factory).clone(configuratorParams);
+        // _upgradeTo(newComet);
     }
 
     // XXX see if there is a cleaner way to do this

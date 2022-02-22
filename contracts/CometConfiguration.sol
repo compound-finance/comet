@@ -15,17 +15,17 @@ contract CometConfiguration {
         address baseToken;
         address baseTokenPriceFeed;
 
-        uint64 kink;
-        uint64 perYearInterestRateSlopeLow;
-        uint64 perYearInterestRateSlopeHigh;
-        uint64 perYearInterestRateBase;
-        uint64 reserveRate;
-        uint64 trackingIndexScale;
-        uint64 baseTrackingSupplySpeed;
-        uint64 baseTrackingBorrowSpeed;
-        uint104 baseMinForRewards;
-        uint104 baseBorrowMin;
-        uint104 targetReserves;
+        uint kink;
+        uint perYearInterestRateSlopeLow;
+        uint perYearInterestRateSlopeHigh;
+        uint perYearInterestRateBase;
+        uint reserveRate;
+        uint trackingIndexScale;
+        uint baseTrackingSupplySpeed;
+        uint baseTrackingBorrowSpeed;
+        uint baseMinForRewards;
+        uint baseBorrowMin;
+        uint targetReserves;
 
         AssetConfig[] assetConfigs;
     }
