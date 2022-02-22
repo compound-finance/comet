@@ -15,7 +15,7 @@ import { Address, Alias, BuildFile, ContractMetadata } from './Types';
 import { Aliases } from './Aliases';
 import { Proxies } from './Proxies';
 import { Roots } from './Roots';
-import { asArray, cross, getPrimaryContract, objectFromMap } from './Utils';
+import { asArray, cross, debug, getPrimaryContract, objectFromMap } from './Utils';
 import { fetchAndCacheContract } from './Import';
 
 function isValidAddress(address: Address): boolean {
@@ -60,6 +60,7 @@ async function runSpider(
 
   // Let's spider over the next unvisited node in our list
   let [address, aliasTemplate] = discovered.shift();
+  debug(`Spidering ${address}...`, aliasTemplate);
 
   // Skip visited nodes (and invalid addresses)
   if (isValidAddress(address)) {

@@ -151,6 +151,11 @@ const config: HardhatUserConfig = {
         name: 'development',
       },
       {
+        name: 'kovan',
+        url: getDefaultProviderURL('kovan'),
+        allocation: 0.1, // eth
+      },
+      {
         name: 'fuji',
         url: 'https://api.avax-test.network/ext/bc/C/rpc',
       },
