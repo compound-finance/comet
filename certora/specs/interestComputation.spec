@@ -5,6 +5,9 @@ methods{
     getSpecificBorrowRateInternal(uint64,uint64,uint64,uint64) returns (uint64) envfree;
     getSpecificUtilizationInternal(uint64,uint64,uint64,uint64) returns (uint)  envfree;
 
+    call_presentValue(int104) returns (int104) envfree;
+    call_principalValue(int104) returns (int104) envfree;
+
     getTotalBaseSupplyIndex() returns (uint64) envfree;
     getTotalBaseBorrowIndex() returns (uint64) envfree;
     getlastAccrualTime() returns (uint40) envfree;
@@ -84,7 +87,7 @@ rule SupplyIndex_BorrowIndex_monotonic(){
 */
 rule supplyRate_vs_Utilization(){
 env e;
-    setup(e);
+   setup(e);
 
 uint64 baseSupplyIndex1;
 uint64 baseBorrowIndex1;
@@ -117,7 +120,7 @@ formula :
 */
 rule utilization_LE_factorScale(){
 env e;
-    setup(e);
+   setup(e);
 
 uint utilization = getUtilization(e);
     assert utilization <= factorScale();
@@ -129,43 +132,17 @@ uint utilization = getUtilization(e);
 formula : 
         borrowRate == perSecondInterestRateBase() => getUtilization(e) == 0;
 
- status : failed
+ status : first assert proved , second failed
  reason : failed due to rounding down in mulFactor
  link https://vaas-stg.certora.com/output/65782/b3fe39e314b1d0a592f5/?anonymousKey=877a0bbb8eea456fcacf3b5ed85d5c947d4cf890#utilization_zeroResults
 */
 
 rule utilization_zero(){
 env e;
-    setup(e);
+   setup(e);
 
     uint64 borrowRate = getBorrowRate(e);
 
-    // for debug
-    uint64 perSecondInterestRateBase1 = perSecondInterestRateBase();
-    uint64 perSecondInterestRateSlopeLow1 = perSecondInterestRateSlopeLow();
-    uint64 perSecondInterestRateSlopeHigh1 = perSecondInterestRateSlopeHigh();
-    uint64 kink1 = kink();
-
-
-    assert borrowRate == perSecondInterestRateBase() => getUtilization(e) == 0;
-}
-    
-/* 
- Description :  
-     if utilization == 0 then borrowRate == base interest rate
-formula : 
-        getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase() ;
-
- status : proved
- reason 
- link https://vaas-stg.certora.com/output/65782/6018316af8badf9f4784/?anonymousKey=a398c2ee2252a5bccff160ace3d9c135cba691d1
-*/
-rule utilization_zero2(){
-env e;
-    setup(e);
-
-    uint64 borrowRate = getBorrowRate(e);
-   
     // for debug
     uint64 perSecondInterestRateBase1 = perSecondInterestRateBase();
     uint64 perSecondInterestRateSlopeLow1 = perSecondInterestRateSlopeLow();
@@ -173,7 +150,9 @@ env e;
     uint64 kink1 = kink();
 
     assert getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase() ;
+    assert borrowRate == perSecondInterestRateBase() => getUtilization(e) == 0;
 }
+    
 /* 
  Description :  
      if accrue() with lower timestamp sacceeds then acrue with higher timestamp should sacced as well
@@ -212,7 +191,7 @@ formula :
 */
 rule borrowBase_vs_utilization(){
 env e;
-    setup(e);
+   setup(e);
     assert getTotalBorrowBase(e) == 0 => getUtilization(e) == 0;
 }
 
@@ -254,7 +233,7 @@ formula :
 */
 rule SupplyIndex_BorrowIndex_GE_baseIndexScale(){
 env e;
-    setup(e);
+   setup(e);
     require getTotalBaseSupplyIndex() >= baseIndexScale() &&
         getTotalBaseBorrowIndex() >= baseIndexScale();
     accrue(e);
@@ -276,7 +255,7 @@ formula :
 */
 rule SupplyIndex_vs_BorrowIndex(){
 env e;
-    setup(e);
+   setup(e);
     require getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
 
     accrue(e);
@@ -295,15 +274,74 @@ formula :
  reason : Due to rounding down the BorrowRate can become equal to SupplyRate
  link   : https://vaas-stg.certora.com/output/65782/f2f32f50a2bbf14deb79/?anonymousKey=494980dfd3ebcced1ee0d1088acf1a795f9f2a08#SupplyIndex_vs_BorrowIndexResults
 */
-rule SupplyRate_vs_BorrowRate(){
-env e;
-    setup(e);
-    require getBorrowRate(e) > getSupplyRate(e);
+// rule SupplyRate_vs_BorrowRate(){
+// env e;
+//    setup(e)
+//     require getBorrowRate(e) > getSupplyRate(e);
 
-    accrue(e);
+//     accrue(e);
 
-    assert  getBorrowRate(e) > getSupplyRate(e);
+//     assert  getBorrowRate(e) > getSupplyRate(e);
+// }
+
+/* 
+ Description :  
+     presentValue always greater than principalValue
+
+formula : 
+        _presentValue >= _principalValue;
+
+ status : proved
+ reason : 
+ link   : https://vaas-stg.certora.com/output/65782/f2f32f50a2bbf14deb79/?anonymousKey=494980dfd3ebcced1ee0d1088acf1a795f9f2a08#SupplyIndex_vs_BorrowIndexResults
+*/
+rule presentValue_GE_principal( int104 presentValue){
+    env e;
+   setup(e);
+
+    int104 principalValue = call_principalValue(presentValue);
+    require presentValue == call_presentValue(principalValue);
+
+    require presentValue > 0;
+    // require principalValue > 0;
+
+    assert presentValue >= principalValue;
 }
+rule presentValue_G_zero( int104 presentValue){
+    env e;
+   setup(e);
+
+    int104 principalValue = call_principalValue(presentValue);
+    require presentValue == call_presentValue(principalValue);
+
+assert presentValue > 0 <=> principalValue > 0;
+}
+
+rule presentValue_EQ_principal( int104 presentValue){
+    env e;
+   setup(e);
+
+    int104 principalValue = call_principalValue(presentValue);
+    require presentValue == call_presentValue(principalValue);
+
+require presentValue != 0;
+// require _principalValue > 0;
+
+assert presentValue == principalValue => getTotalBaseSupplyIndex() == baseIndexScale();
+}
+
+// rule baseBalance(address account){
+//     env e;
+
+//     int104 baseB = baseBalanceOf(e,account);
+//     accrue(e);
+//     int104 baseB_ = baseBalanceOf(e,account);
+
+//     assert baseB == baseB_;
+// }
+// rule presentValue_zero(){
+
+// }
 
 function setup(env e){
     require getTotalBaseSupplyIndex() >= baseIndexScale() &&

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity ^0.8.0;
 
-import "./CometHarnessGetters.sol";
+// import "./CometHarnessGetters.sol";
+import "./CometHarnessWrappers.sol";
 import "../../contracts/ERC20.sol";
 import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
@@ -10,8 +11,8 @@ import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/Aggregat
  * @notice harness for interest computations
  * @author Certora
  */
-contract CometHarnessInterest is CometHarnessGetters {
-    constructor(Configuration memory config) CometHarnessGetters(config) { }
+contract CometHarnessInterest is CometHarnessWrappers {
+    constructor(Configuration memory config) CometHarnessWrappers(config) { }
 
     function getSpecificSupplyRateInternal(uint64 _baseSupplyIndex, uint64 _baseBorrowIndex, uint64 _trackingSupplyIndex, uint64 _trackingBorrowIndex) public view returns (uint64){
         TotalsBasic memory totalsBasic1 = 
@@ -57,4 +58,5 @@ contract CometHarnessInterest is CometHarnessGetters {
         });
         return getUtilizationInternal(totalsBasic1);
     }
+
 }
