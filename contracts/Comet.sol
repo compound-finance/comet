@@ -167,6 +167,11 @@ contract Comet is CometMath, CometStorage, ERC20 {
     /// @dev The scale for prices (in USD)
     uint64 internal constant PRICE_SCALE = 1e8;
 
+    /// @dev Custom errors
+    error Absurd();
+    error BadAsset();
+    error BadApprovalAmount();
+
     // /**
     //  * @notice Construct a new protocol instance
     //  * @param config The mapping of initial/constant parameters
@@ -380,7 +385,7 @@ contract Comet is CometMath, CometStorage, ERC20 {
             word_a = asset14_a;
             word_b = asset14_b;
         } else {
-            revert("absurd");
+            revert Absurd();
         }
 
         address asset = address(uint160(word_a & type(uint160).max));
@@ -417,7 +422,7 @@ contract Comet is CometMath, CometStorage, ERC20 {
             }
             unchecked { i++; }
         }
-        revert("bad asset");
+        revert BadAsset();
     }
 
     /**
@@ -542,7 +547,7 @@ contract Comet is CometMath, CometStorage, ERC20 {
         } else if (amount == 0) {
             allowInternal(msg.sender, spender, false);
         } else {
-            revert("bad approval amount");
+            revert BadApprovalAmount();
         }
         emit Approval(msg.sender, spender, amount);
         return true;
