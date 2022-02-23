@@ -27,8 +27,8 @@ contract Comet is CometMath, CometStorage, ERC20 {
     /// @notice The name of this contract
     string public constant name = "Compound Comet";
 
-    /// @dev The ERC20 symbol for wrapped base token
-    bytes32 internal immutable symbol32;
+    /// @notice The ERC20 symbol for wrapped base token
+    string public constant symbol = unicode"📈BASE";
 
     /// @notice The number of decimals for wrapped base token
     uint8 public immutable decimals;
@@ -199,7 +199,6 @@ contract Comet is CometMath, CometStorage, ERC20 {
     //  * @param config The mapping of initial/constant parameters
     //  **/
     constructor(
-        bytes32 _symbol32,
         address[] memory _addresses,
         // address _governor,
         // address _pauseGuardian,
@@ -229,7 +228,6 @@ contract Comet is CometMath, CometStorage, ERC20 {
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
-        symbol32 = _symbol32;
         decimals = decimals_;
         governor = _addresses[0];
         pauseGuardian = _addresses[1];
@@ -454,25 +452,6 @@ contract Comet is CometMath, CometStorage, ERC20 {
     function getNow() virtual public view returns (uint40) {
         if (block.timestamp >= 2**40) revert TimestampTooLarge();
         return uint40(block.timestamp);
-    }
-
-    /**
-     * @notice Get the symbol for wrapped base token
-     * @return The symbol as a string
-     */
-    function symbol() external view returns (string memory) {
-        uint8 i;
-        for (i = 0; i < 32; ) {
-            if (symbol32[i] == 0) {
-                break;
-            }
-            unchecked { i++; }
-        }
-        bytes memory symbol = new bytes(i);
-        for (uint8 j = 0; j < i; j++) {
-            symbol[j] = symbol32[j];
-        }
-        return string(symbol);
     }
 
     /**

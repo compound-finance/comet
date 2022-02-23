@@ -6,7 +6,6 @@ import "./CometConfiguration.sol";
 
 contract CometFactory is CometConfiguration {
     function clone(
-        bytes32 _symbol32,
         address[] calldata _addresses,
         // address _governor,
         // address _pauseGuardian,
@@ -28,7 +27,6 @@ contract CometFactory is CometConfiguration {
         return
             address(
                 new Comet(
-                    _symbol32,
                     _addresses,
                     // _governor,
                     // _pauseGuardian,
