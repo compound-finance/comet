@@ -3,8 +3,11 @@ import { ethers } from 'hardhat';
 import { Block } from '@ethersproject/abstract-provider';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
-  CometHarness as Comet,
-  CometHarness__factory as Comet__factory,
+  CometExt,
+  CometExt__factory,
+  CometHarness,
+  CometHarness__factory,
+  CometHarnessInterface as Comet,
   FaucetToken,
   FaucetToken__factory,
   SimplePriceFeed,
@@ -34,6 +37,7 @@ export type ProtocolOpts = {
   };
   governor?: SignerWithAddress;
   pauseGuardian?: SignerWithAddress;
+  extensionDelegate?: CometExt;
   base?: string;
   reward?: string;
   kink?: Numeric;
@@ -54,6 +58,7 @@ export type Protocol = {
   opts: ProtocolOpts;
   governor: SignerWithAddress;
   pauseGuardian: SignerWithAddress;
+  extensionDelegate: CometExt;
   users: SignerWithAddress[];
   base: string;
   reward: string;
@@ -175,12 +180,20 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
   const unsupportedToken = await FaucetFactory.deploy(1e6, 'Unsupported Token', 6, 'USUP');
 
+  let extensionDelegate = opts.extensionDelegate;
+  if (extensionDelegate === undefined) {
+    const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
+    extensionDelegate = await CometExtFactory.deploy();
+    await extensionDelegate.deployed();
+  }
+
   if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
 
-  const CometFactory = (await ethers.getContractFactory('CometHarness')) as Comet__factory;
+  const CometFactory = (await ethers.getContractFactory('CometHarness')) as CometHarness__factory;
   const comet = await CometFactory.deploy({
     governor: governor.address,
     pauseGuardian: pauseGuardian.address,
+    extensionDelegate: extensionDelegate.address,
     baseToken: tokens[base].address,
     baseTokenPriceFeed: priceFeeds[base].address,
     kink,
@@ -221,10 +234,11 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     opts,
     governor,
     pauseGuardian,
+    extensionDelegate,
     users,
     base,
     reward,
-    comet,
+    comet: await ethers.getContractAt('CometHarnessInterface', comet.address) as Comet,
     tokens,
     unsupportedToken,
     priceFeeds,

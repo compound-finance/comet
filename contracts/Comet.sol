@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity ^0.8.11;
 
-import "./CometMath.sol";
-import "./CometStorage.sol";
-
+import "./CometCore.sol";
 import "./ERC20.sol";
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
@@ -12,56 +10,8 @@ import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-contract Comet is CometMath, CometStorage {
-    struct AssetConfig {
-        address asset;
-        address priceFeed;
-        uint8 decimals;
-        uint64 borrowCollateralFactor;
-        uint64 liquidateCollateralFactor;
-        uint64 liquidationFactor;
-        uint128 supplyCap;
-    }
-
-    struct AssetInfo {
-        uint8 offset;
-        address asset;
-        address priceFeed;
-        uint64 scale;
-        uint64 borrowCollateralFactor;
-        uint64 liquidateCollateralFactor;
-        uint64 liquidationFactor;
-        uint128 supplyCap;
-    }
-
-    struct Configuration {
-        address governor;
-        address pauseGuardian;
-        address baseToken;
-        address baseTokenPriceFeed;
-
-        uint64 kink;
-        uint64 perYearInterestRateSlopeLow;
-        uint64 perYearInterestRateSlopeHigh;
-        uint64 perYearInterestRateBase;
-        uint64 reserveRate;
-        uint64 trackingIndexScale;
-        uint64 baseTrackingSupplySpeed;
-        uint64 baseTrackingBorrowSpeed;
-        uint104 baseMinForRewards;
-        uint104 baseBorrowMin;
-        uint104 targetReserves;
-
-        AssetConfig[] assetConfigs;
-    }
-
+contract Comet is CometCore {
     /** General configuration constants **/
-
-    /// @notice The name of this contract
-    string public constant name = "Compound Comet";
-
-    /// @notice The major version of this contract
-    string public constant version = "0";
 
     /// @notice The admin of the protocol
     address public immutable governor;
@@ -74,6 +24,9 @@ contract Comet is CometMath, CometStorage {
 
     /// @notice The address of the price feed for the base token
     address public immutable baseTokenPriceFeed;
+
+    /// @notice The address of the extension contract delegate
+    address public immutable extensionDelegate;
 
     /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope (factor)
     uint64 public immutable kink;
@@ -92,18 +45,6 @@ contract Comet is CometMath, CometStorage {
 
     /// @notice The scale for base token (must be less than 18 decimals)
     uint64 public immutable baseScale;
-
-    /// @notice The scale for base index (depends on time/rate scales, not base token)
-    uint64 public constant baseIndexScale = 1e15;
-
-    /// @notice The scale for factors
-    uint64 public constant factorScale = 1e18;
-
-    /// @notice The decimals required for a price feed
-    uint8 public constant priceFeedDecimals = 8;
-
-    /// @notice The scale for prices (in USD)
-    uint64 public constant priceScale = 1e8;
 
     /// @notice The scale for reward tracking
     uint64 public immutable trackingIndexScale;
@@ -124,17 +65,8 @@ contract Comet is CometMath, CometStorage {
     /// @notice The minimum base token reserves which must be held before collateral is hodled
     uint104 public immutable targetReserves;
 
-    /// @notice The max number of assets this contract is hardcoded to support
-    /// @dev Do not change this variable without updating all the fields
-    /// throughout the contract (including the size of UserBasic.assetsIn and
-    /// the integer conversion in isInAsset and updateAssetsIn)
-    uint8 public constant maxAssets = 15;
-
     /// @notice The number of assets this contract actually supports
     uint8 public immutable numAssets;
-
-    /// @notice The max value for a collateral factor (1)
-    uint64 public constant maxCollateralFactor = factorScale;
 
     /**  Collateral asset configuration (packed) **/
 
@@ -169,28 +101,6 @@ contract Comet is CometMath, CometStorage {
     uint256 internal immutable asset14_a;
     uint256 internal immutable asset14_b;
 
-    /** Internal constants **/
-
-    /// @dev Offsets for specific actions in the pause flag bit array
-    uint8 internal constant PAUSE_SUPPLY_OFFSET = 0;
-    uint8 internal constant PAUSE_TRANSFER_OFFSET = 1;
-    uint8 internal constant PAUSE_WITHDRAW_OFFSET = 2;
-    uint8 internal constant PAUSE_ABSORB_OFFSET = 3;
-    uint8 internal constant PAUSE_BUY_OFFSET = 4;
-
-    /// @dev 365 days * 24 hours * 60 minutes * 60 seconds
-    uint64 internal constant SECONDS_PER_YEAR = 31_536_000;
-
-    /// @dev The EIP-712 typehash for the contract's domain
-    bytes32 internal constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-
-    /// @dev The EIP-712 typehash for allowBySig Authorization
-    bytes32 internal constant AUTHORIZATION_TYPEHASH = keccak256("Authorization(address owner,address manager,bool isAllowed,uint256 nonce,uint256 expiry)");
-
-    /// @dev The highest valid value for s in an ECDSA signature pair (0 < s < secp256k1n ÷ 2 + 1)
-    ///  See https://ethereum.github.io/yellowpaper/paper.pdf #307)
-    uint internal constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
-
     /**
      * @notice Construct a new protocol instance
      * @param config The mapping of initial/constant parameters
@@ -198,10 +108,10 @@ contract Comet is CometMath, CometStorage {
     constructor(Configuration memory config) {
         // Sanity checks
         uint decimals = ERC20(config.baseToken).decimals();
-        require(decimals <= 18, "base token has too many decimals");
-        require(config.assetConfigs.length <= maxAssets, "too many asset configs");
+        require(decimals <= MAX_BASE_DECIMALS, "base token has too many decimals");
+        require(config.assetConfigs.length <= MAX_ASSETS, "too many asset configs");
         require(config.baseMinForRewards > 0, "baseMinForRewards should be > 0");
-        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
+        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == PRICE_FEED_DECIMALS, "bad price feed decimals");
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
@@ -209,6 +119,7 @@ contract Comet is CometMath, CometStorage {
         pauseGuardian = config.pauseGuardian;
         baseToken = config.baseToken;
         baseTokenPriceFeed = config.baseTokenPriceFeed;
+        extensionDelegate = config.extensionDelegate;
 
         baseScale = uint64(10 ** decimals);
         trackingIndexScale = config.trackingIndexScale;
@@ -258,12 +169,11 @@ contract Comet is CometMath, CometStorage {
 
         // Initialize aggregates
         totalsBasic.lastAccrualTime = getNow();
-        totalsBasic.baseSupplyIndex = baseIndexScale;
-        totalsBasic.baseBorrowIndex = baseIndexScale;
+        totalsBasic.baseSupplyIndex = BASE_INDEX_SCALE;
+        totalsBasic.baseBorrowIndex = BASE_INDEX_SCALE;
         totalsBasic.trackingSupplyIndex = 0;
         totalsBasic.trackingBorrowIndex = 0;
     }
-
 
     /**
      * @dev Gets the info for an asset or empty, for initialization
@@ -297,15 +207,15 @@ contract Comet is CometMath, CometStorage {
         }
 
         // Sanity check price feed and asset decimals
-        require(AggregatorV3Interface(priceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
+        require(AggregatorV3Interface(priceFeed).decimals() == PRICE_FEED_DECIMALS, "bad price feed decimals");
         require(ERC20(asset).decimals() == decimals, "asset decimals mismatch");
 
         // Ensure collateral factors are within range
         require(assetConfig.borrowCollateralFactor < assetConfig.liquidateCollateralFactor, "borrow CF must be < liquidate CF");
-        require(assetConfig.liquidateCollateralFactor <= maxCollateralFactor, "liquidate CF too high");
+        require(assetConfig.liquidateCollateralFactor <= MAX_COLLATERAL_FACTOR, "liquidate CF too high");
 
         // Keep 4 decimals for each factor
-        uint descale = factorScale / 1e4;
+        uint descale = FACTOR_SCALE / 1e4;
         uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
         uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
         uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
@@ -388,7 +298,7 @@ contract Comet is CometMath, CometStorage {
         }
 
         address asset = address(uint160(word_a & type(uint160).max));
-        uint rescale = factorScale / 1e4;
+        uint rescale = FACTOR_SCALE / 1e4;
         uint64 borrowCollateralFactor = uint64(((word_a >> 160) & type(uint16).max) * rescale);
         uint64 liquidateCollateralFactor = uint64(((word_a >> 176) & type(uint16).max) * rescale);
         uint64 liquidationFactor = uint64(((word_a >> 192) & type(uint16).max) * rescale);
@@ -463,71 +373,9 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-     * @notice Allow or disallow another address to withdraw, or transfer from the sender
-     * @param manager The account which will be allowed or disallowed
-     * @param isAllowed_ Whether to allow or disallow
-     */
-    function allow(address manager, bool isAllowed_) external {
-        allowInternal(msg.sender, manager, isAllowed_);
-    }
-
-    /**
-     * @dev Stores the flag marking whether the manager is allowed to act on behalf of owner
-     */
-    function allowInternal(address owner, address manager, bool isAllowed_) internal {
-        isAllowed[owner][manager] = isAllowed_;
-    }
-
-    /**
-     * @notice Sets authorization status for a manager via signature from signatory
-     * @param owner The address that signed the signature
-     * @param manager The address to authorize (or rescind authorization from)
-     * @param isAllowed_ Whether to authorize or rescind authorization from manager
-     * @param nonce The next expected nonce value for the signatory
-     * @param expiry Expiration time for the signature
-     * @param v The recovery byte of the signature
-     * @param r Half of the ECDSA signature pair
-     * @param s Half of the ECDSA signature pair
-     */
-    function allowBySig(
-        address owner,
-        address manager,
-        bool isAllowed_,
-        uint256 nonce,
-        uint256 expiry,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
-        require(uint256(s) <= MAX_VALID_ECDSA_S, "invalid value: s");
-        // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
-        require(v == 27 || v == 28, "invalid value: v");
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), keccak256(bytes(version)), block.chainid, address(this)));
-        bytes32 structHash = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, owner, manager, isAllowed_, nonce, expiry));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
-        address signatory = ecrecover(digest, v, r, s);
-        require(owner == signatory, "owner is not signatory");
-        require(signatory != address(0), "invalid signature");
-        require(nonce == userNonce[signatory], "invalid nonce");
-        require(block.timestamp < expiry, "signed transaction expired");
-        userNonce[signatory]++;
-        allowInternal(signatory, manager, isAllowed_);
-    }
-
-    /**
-     * @notice Determine if the manager has permission to act on behalf of the owner
-     * @param owner The owner account
-     * @param manager The manager account
-     * @return Whether or not the manager has permission
-     */
-    function hasPermission(address owner, address manager) public view returns (bool) {
-        return owner == manager || isAllowed[owner][manager];
-    }
-
-    /**
      * @return The current per second supply rate
      */
-    function getSupplyRate() public view returns (uint64) {
+    function getSupplyRate() external view returns (uint64) {
         return getSupplyRateInternal(totalsBasic);
     }
 
@@ -536,7 +384,7 @@ contract Comet is CometMath, CometStorage {
      */
     function getSupplyRateInternal(TotalsBasic memory totals) internal view returns (uint64) {
         uint utilization = getUtilizationInternal(totals);
-        uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
+        uint reserveScalingFactor = utilization * (FACTOR_SCALE - reserveRate) / FACTOR_SCALE;
         if (utilization <= kink) {
             // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
             return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization))));
@@ -549,7 +397,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @return The current per second borrow rate
      */
-    function getBorrowRate() public view returns (uint64) {
+    function getBorrowRate() external view returns (uint64) {
         return getBorrowRateInternal(totalsBasic);
     }
 
@@ -583,14 +431,14 @@ contract Comet is CometMath, CometStorage {
         if (totalSupply == 0) {
             return 0;
         } else {
-            return totalBorrow * factorScale / totalSupply;
+            return totalBorrow * FACTOR_SCALE / totalSupply;
         }
     }
 
     /**
      * @notice Get the current price from a feed
      * @param priceFeed The address of a price feed
-     * @return The price, scaled by `priceScale`
+     * @return The price, scaled by `PRICE_SCALE`
      */
     function getPrice(address priceFeed) public view returns (uint) {
         (, int price, , , ) = AggregatorV3Interface(priceFeed).latestRoundData();
@@ -764,14 +612,14 @@ contract Comet is CometMath, CometStorage {
      * @dev The principal amount projected forward by the supply index
      */
     function presentValueSupply(TotalsBasic memory totals, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * totals.baseSupplyIndex / baseIndexScale);
+        return uint104(uint(principalValue_) * totals.baseSupplyIndex / BASE_INDEX_SCALE);
     }
 
     /**
      * @dev The principal amount projected forward by the borrow index
      */
     function presentValueBorrow(TotalsBasic memory totals, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * totals.baseBorrowIndex / baseIndexScale);
+        return uint104(uint(principalValue_) * totals.baseBorrowIndex / BASE_INDEX_SCALE);
     }
 
     /**
@@ -789,14 +637,14 @@ contract Comet is CometMath, CometStorage {
      * @dev The present value projected backward by the supply index
      */
     function principalValueSupply(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * baseIndexScale / totals.baseSupplyIndex);
+        return uint104(uint(presentValue_) * BASE_INDEX_SCALE / totals.baseSupplyIndex);
     }
 
     /**
      * @dev The present value projected backwrd by the borrow index
      */
     function principalValueBorrow(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * baseIndexScale / totals.baseBorrowIndex);
+        return uint104(uint(presentValue_) * BASE_INDEX_SCALE / totals.baseBorrowIndex);
     }
 
     /**
@@ -882,7 +730,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Multiply a number by a factor
      */
     function mulFactor(uint n, uint factor) internal pure returns (uint) {
-        return n * factor / factorScale;
+        return n * factor / FACTOR_SCALE;
     }
 
     /**
@@ -948,10 +796,10 @@ contract Comet is CometMath, CometStorage {
 
         if (principal >= 0) {
             uint indexDelta = totals.trackingSupplyIndex - basic.baseTrackingIndex;
-            basic.baseTrackingAccrued += safe64(uint104(principal) * indexDelta / baseIndexScale); // XXX decimals
+            basic.baseTrackingAccrued += safe64(uint104(principal) * indexDelta / BASE_INDEX_SCALE); // XXX decimals
         } else {
             uint indexDelta = totals.trackingBorrowIndex - basic.baseTrackingIndex;
-            basic.baseTrackingAccrued += safe64(uint104(-principal) * indexDelta / baseIndexScale); // XXX decimals
+            basic.baseTrackingAccrued += safe64(uint104(-principal) * indexDelta / BASE_INDEX_SCALE); // XXX decimals
         }
 
         if (principalNew >= 0) {
@@ -1397,5 +1245,20 @@ contract Comet is CometMath, CometStorage {
         require(msg.sender == governor, "only governor may withdraw");
         require(amount <= unsigned256(getReserves()), "insufficient reserves");
         doTransferOut(baseToken, to, amount);
+    }
+
+    /**
+     * @notice Fallback to calling the extension delegate for everything else
+     */
+    fallback() external payable {
+        address delegate = extensionDelegate;
+        assembly {
+            calldatacopy(0, 0, calldatasize())
+            let result := delegatecall(gas(), delegate, 0, calldatasize(), 0, 0)
+            returndatacopy(0, 0, returndatasize())
+            switch result
+            case 0 { revert(0, returndatasize()) }
+            default { return(0, returndatasize()) }
+        }
     }
 }
