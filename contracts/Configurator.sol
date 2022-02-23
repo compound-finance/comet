@@ -12,15 +12,9 @@ contract Configurator is CometStorage {
     }
 
     // XXX Test that this is only callable by an admin. Should be safe because proxy checks `isAdmin`.
-    /**
-     * @dev Deploy and upgrade the implementation of the proxy.
-     *
-     * NOTE: Only the admin can call this function. See {ProxyAdmin-deployAndUpgrade}.
-     */
-    function deployAndUpgrade(address proxy) external {
-        address newComet = CometFactory(factory).clone(configuratorParams);
-        (bool success, ) = proxy.delegatecall(abi.encodeWithSignature("upgradeTo(address)", newComet));
-        require(success, "delegate call failed");
+    // @dev Deploy a new version of the Comet implementation.
+    function deploy() external returns (address) {
+        return CometFactory(factory).clone(configuratorParams);
     }
 
     // XXX see if there is a cleaner way to do this

@@ -9,7 +9,7 @@ scenario.only('upgrade governor', {}, async ({ comet, proxyAdmin, actors }, worl
   expect(await comet.governor()).to.equal(admin.address);
 
   await proxyAdmin.setGovernor(comet.address, albert.address);
-  await proxyAdmin.deployAndUpgrade(comet.address);
+  await proxyAdmin.deployAndUpgradeTo(comet.address);
 
   expect(await comet.governor()).to.equal(albert.address);
 });
@@ -34,7 +34,7 @@ scenario.only('add assets', {}, async ({ comet, proxyAdmin, actors, assets }: Co
     supplyCap: (1000000e8).toString(),
   };
   await proxyAdmin.addAsset(comet.address, newAssetConfig);
-  await proxyAdmin.deployAndUpgrade(comet.address);
+  await proxyAdmin.deployAndUpgradeTo(comet.address);
 
   // Verify new asset is added
   numAssets = await comet.numAssets();
