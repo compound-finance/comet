@@ -66,14 +66,6 @@ contract CometCore is CometStorage, CometMath {
     }
 
     /**
-     * @return The current timestamp
-     **/
-    function getNow() virtual internal view returns (uint40) {
-        require(block.timestamp < 2**40, "timestamp too big");
-        return uint40(block.timestamp);
-    }
-
-    /**
      * @notice Get the current price from a feed
      * @param priceFeed The address of a price feed
      * @return The price, scaled by `PRICE_SCALE`

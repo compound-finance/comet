@@ -37,17 +37,20 @@ contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy, Come
         Configuration storage _configuratorParams = configuratorParams;
         _configuratorParams.governor = config.governor;
         _configuratorParams.pauseGuardian = config.pauseGuardian;
-        _configuratorParams.baseDelegate = config.baseDelegate;
+        _configuratorParams.collateralDelegate = config.collateralDelegate;
+        _configuratorParams.baseToken = config.baseToken;
+        _configuratorParams.baseTokenPriceFeed = config.baseTokenPriceFeed;
+        _configuratorParams.kink = config.kink;
+        _configuratorParams.perYearInterestRateSlopeLow = config.perYearInterestRateSlopeLow;
+        _configuratorParams.perYearInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh;
+        _configuratorParams.perYearInterestRateBase = config.perYearInterestRateBase;
+        _configuratorParams.reserveRate = config.reserveRate;
+        _configuratorParams.trackingIndexScale = config.trackingIndexScale;
+        _configuratorParams.baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
+        _configuratorParams.baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
+        _configuratorParams.baseMinForRewards = config.baseMinForRewards;
+        _configuratorParams.baseBorrowMin = config.baseBorrowMin;
         _configuratorParams.targetReserves = config.targetReserves;
-
-        // Need to copy using this loop because directly copying of an array of structs is not supported
-        for (uint256 i = 0; i < config.assetConfigs.length; i++) {
-            if (i < _configuratorParams.assetConfigs.length) {
-                _configuratorParams.assetConfigs[i] = config.assetConfigs[i];
-            } else {
-                _configuratorParams.assetConfigs.push(config.assetConfigs[i]);
-            }
-        }
     }
 
     // XXX Define other setters for setting params
@@ -55,8 +58,5 @@ contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy, Come
         configuratorParams.governor = governor;
     }
 
-    // XXX What about removing an asset?
-    function addAsset(AssetConfig calldata asset) external ifAdmin {
-        configuratorParams.assetConfigs.push(asset);
-    }
+    // XXX adding/removing an asset to delegate?
 }

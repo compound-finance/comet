@@ -65,43 +65,44 @@ contract CometHarness is Comet {
         userBasic[account].principal = principal;
     }
 
-    function setCollateralBalance(address account, address asset, uint128 balance) external {
-        uint128 oldBalance = userCollateral[account][asset].balance;
-        userCollateral[account][asset].balance = balance;
-        updateAssetsIn(account, asset, oldBalance, balance);
-    }
+    // XXX
+    /* function setCollateralBalance(address account, address asset, uint128 balance) external { */
+    /*     uint128 oldBalance = userCollateral[account][asset].balance; */
+    /*     userCollateral[account][asset].balance = balance; */
+    /*     updateAssetsIn(account, asset, oldBalance, balance); */
+    /* } */
 
-    function updateAssetsInExternal(
-        address account,
-        address asset,
-        uint128 initialUserBalance,
-        uint128 finalUserBalance
-    ) external {
-        updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
-    }
+    /* function updateAssetsInExternal( */
+    /*     address account, */
+    /*     address asset, */
+    /*     uint128 initialUserBalance, */
+    /*     uint128 finalUserBalance */
+    /* ) external { */
+    /*     updateAssetsIn(account, asset, initialUserBalance, finalUserBalance); */
+    /* } */
 
-    function getAssetList(address account) external view returns (address[] memory result) {
-        uint16 assetsIn = userBasic[account].assetsIn;
+    /* function getAssetList(address account) external view returns (address[] memory result) { */
+    /*     uint16 assetsIn = userBasic[account].assetsIn; */
 
-        uint8 count = 0;
-        for (uint8 i = 0; i < numAssets; i++) {
-            if (isInAsset(assetsIn, i)) {
-                count++;
-            }
-        }
+    /*     uint8 count = 0; */
+    /*     for (uint8 i = 0; i < numAssets; i++) { */
+    /*         if (isInAsset(assetsIn, i)) { */
+    /*             count++; */
+    /*         } */
+    /*     } */
 
-        result = new address[](count);
+    /*     result = new address[](count); */
 
-        uint j = 0;
-        for (uint8 i = 0; i < numAssets; i++) {
-            if (isInAsset(assetsIn, i)) {
-                result[j] = getAssetInfo(i).asset;
-                j++;
-            }
-        }
+    /*     uint j = 0; */
+    /*     for (uint8 i = 0; i < numAssets; i++) { */
+    /*         if (isInAsset(assetsIn, i)) { */
+    /*             result[j] = getAssetInfo(i).asset; */
+    /*             j++; */
+    /*         } */
+    /*     } */
 
-        return result;
-    }
+    /*     return result; */
+    /* } */
 
     function isSupplyPaused() external view returns (bool) {
         return isSupplyPausedInternal();
@@ -123,67 +124,67 @@ contract CometHarness is Comet {
         return isBuyPausedInternal();
     }
 
-    /**
-     * @notice Calculate the amount of borrow liquidity for account
-     * @param account The address to check liquidity for
-     * @return The common price quantity of borrow liquidity
-     */
-    function getBorrowLiquidity(address account) external view returns (int) {
-        uint16 assetsIn = userBasic[account].assetsIn;
+    /* /\** */
+    /*  * @notice Calculate the amount of borrow liquidity for account */
+    /*  * @param account The address to check liquidity for */
+    /*  * @return The common price quantity of borrow liquidity */
+    /*  *\/ */
+    /* function getBorrowLiquidity(address account) external view returns (int) { */
+    /*     uint16 assetsIn = userBasic[account].assetsIn; */
 
-        int liquidity = signedMulPrice(
-            presentValue(userBasic[account].principal),
-            getPrice(baseTokenPriceFeed),
-            baseScale
-        );
+    /*     int liquidity = signedMulPrice( */
+    /*         presentValue(userBasic[account].principal), */
+    /*         getPrice(baseTokenPriceFeed), */
+    /*         baseScale */
+    /*     ); */
 
-        for (uint8 i = 0; i < numAssets; i++) {
-            if (isInAsset(assetsIn, i)) {
-                AssetInfo memory asset = getAssetInfo(i);
-                uint newAmount = mulPrice(
-                    userCollateral[account][asset.asset].balance,
-                    getPrice(asset.priceFeed),
-                    safe64(asset.scale)
-                );
-                liquidity += signed256(mulFactor(
-                    newAmount,
-                    asset.borrowCollateralFactor
-                ));
-            }
-        }
+    /*     for (uint8 i = 0; i < numAssets; i++) { */
+    /*         if (isInAsset(assetsIn, i)) { */
+    /*             AssetInfo memory asset = getAssetInfo(i); */
+    /*             uint newAmount = mulPrice( */
+    /*                 userCollateral[account][asset.asset].balance, */
+    /*                 getPrice(asset.priceFeed), */
+    /*                 safe64(asset.scale) */
+    /*             ); */
+    /*             liquidity += signed256(mulFactor( */
+    /*                 newAmount, */
+    /*                 asset.borrowCollateralFactor */
+    /*             )); */
+    /*         } */
+    /*     } */
 
-        return liquidity;
-    }
+    /*     return liquidity; */
+    /* } */
 
-    /**
-     * @notice Calculate the amount of liquidation margin for account
-     * @param account The address to check margin for
-     * @return The common price quantity of liquidation margin
-     */
-    function getLiquidationMargin(address account) external view returns (int) {
-        uint16 assetsIn = userBasic[account].assetsIn;
+    /* /\** */
+    /*  * @notice Calculate the amount of liquidation margin for account */
+    /*  * @param account The address to check margin for */
+    /*  * @return The common price quantity of liquidation margin */
+    /*  *\/ */
+    /* function getLiquidationMargin(address account) external view returns (int) { */
+    /*     uint16 assetsIn = userBasic[account].assetsIn; */
 
-        int liquidity = signedMulPrice(
-            presentValue(userBasic[account].principal),
-            getPrice(baseTokenPriceFeed),
-            baseScale
-        );
+    /*     int liquidity = signedMulPrice( */
+    /*         presentValue(userBasic[account].principal), */
+    /*         getPrice(baseTokenPriceFeed), */
+    /*         baseScale */
+    /*     ); */
 
-        for (uint8 i = 0; i < numAssets; i++) {
-            if (isInAsset(assetsIn, i)) {
-                AssetInfo memory asset = getAssetInfo(i);
-                uint newAmount = mulPrice(
-                    userCollateral[account][asset.asset].balance,
-                    getPrice(asset.priceFeed),
-                    asset.scale
-                );
-                liquidity += signed256(mulFactor(
-                    newAmount,
-                    asset.liquidateCollateralFactor
-                ));
-            }
-        }
+    /*     for (uint8 i = 0; i < numAssets; i++) { */
+    /*         if (isInAsset(assetsIn, i)) { */
+    /*             AssetInfo memory asset = getAssetInfo(i); */
+    /*             uint newAmount = mulPrice( */
+    /*                 userCollateral[account][asset.asset].balance, */
+    /*                 getPrice(asset.priceFeed), */
+    /*                 asset.scale */
+    /*             ); */
+    /*             liquidity += signed256(mulFactor( */
+    /*                 newAmount, */
+    /*                 asset.liquidateCollateralFactor */
+    /*             )); */
+    /*         } */
+    /*     } */
 
-        return liquidity;
-    }
+    /*     return liquidity; */
+    /* } */
 }

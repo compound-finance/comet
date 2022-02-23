@@ -7,7 +7,15 @@ pragma solidity ^0.8.11;
  * @author Compound
  */
 contract CometConfiguration {
-    struct BaseConfiguration {
+    struct CollateralConfiguration {
+        AssetConfig[] assetConfigs;
+    }
+
+    struct Configuration {
+        address governor;
+        address pauseGuardian;
+        address collateralDelegate;
+
         address baseToken;
         address baseTokenPriceFeed;
 
@@ -21,17 +29,7 @@ contract CometConfiguration {
         uint64 baseTrackingBorrowSpeed;
         uint104 baseMinForRewards;
         uint104 baseBorrowMin;
-
-    }
-
-    struct Configuration {
-        address governor;
-        address pauseGuardian;
-        address baseDelegate;
-
         uint104 targetReserves;
-
-        AssetConfig[] assetConfigs;
     }
 
     struct AssetConfig {

@@ -40,14 +40,15 @@ contract CometProxyAdmin is ProxyAdmin, CometConfiguration {
         proxy.setGovernor(governor);
     }
 
-    /**
-     * @dev Adds an asset config param to the configurator.
-     *
-     * Requirements:
-     *
-     * - This contract must be the admin of `proxy`.
-     */
-    function addAsset(TransparentUpgradeableFactoryProxy proxy, AssetConfig calldata asset) public virtual onlyOwner {
-        proxy.addAsset(asset);
-    }
+    // XXX this would be on a new delegate now...
+    /* /\** */
+    /*  * @dev Adds an asset config param to the configurator. */
+    /*  * */
+    /*  * Requirements: */
+    /*  * */
+    /*  * - This contract must be the admin of `proxy`. */
+    /*  *\/ */
+    /* function addAsset(TransparentUpgradeableFactoryProxy proxy, AssetConfig calldata asset) public virtual onlyOwner { */
+    /*     proxy.addAsset(asset); */
+    /* } */
 }
