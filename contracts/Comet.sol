@@ -161,8 +161,8 @@ contract Comet is CometMath, CometStorage, ERC20 {
     /// @dev The scale for factors
     uint64 internal constant FACTOR_SCALE = 1e18;
 
-    /// @dev XXX ?
-    uint public constant MAX_COLLATERAL_FACTOR = FACTOR_SCALE;
+    /// @dev The maximum collateral factor for an asset
+    uint64 internal constant MAX_COLLATERAL_FACTOR = FACTOR_SCALE;
 
     /// @dev The scale for prices (in USD)
     uint64 internal constant PRICE_SCALE = 1e8;
