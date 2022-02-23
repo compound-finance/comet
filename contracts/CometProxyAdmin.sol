@@ -5,6 +5,7 @@ import "./CometConfiguration.sol";
 import "./CometStorage.sol";
 import "./vendor/proxy/ProxyAdmin.sol";
 import "./interfaces/IConfigurator.sol";
+import "./interfaces/ITransparentUpgradeableProxy.sol";
 
 contract CometProxyAdmin is ProxyAdmin, CometConfiguration {
 
@@ -26,8 +27,9 @@ contract CometProxyAdmin is ProxyAdmin, CometConfiguration {
      *
      * - This contract must be the admin of `proxy`.
      */
-    function deployAndUpgrade(address proxy) public virtual onlyOwner {
-        IConfigurator(proxy).deployAndUpgrade(proxy);
+    function deployAndUpgradeTo(address proxy) public virtual onlyOwner {
+        address newComet = IConfigurator(proxy).deploy();
+        ITransparentUpgradeableProxy(proxy).upgradeTo(newComet);
     }
 
     /**

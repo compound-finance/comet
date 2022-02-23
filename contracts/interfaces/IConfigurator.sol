@@ -7,7 +7,7 @@ import "../CometConfiguration.sol";
 interface IConfigurator is CometConfiguration {
     function setFactory(address _factory) external;
 
-    function deployAndUpgrade(address proxy) external;
+    function deploy() external returns (address);
 
     function setConfiguration(Configuration memory config) external;
 
