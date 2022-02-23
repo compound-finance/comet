@@ -12,8 +12,7 @@ contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy {
      * optionally initialized with `_data` as explained in {UpgradeableProxy-constructor}.
      */
     constructor(address configurator_, address _logic, address _admin, bytes memory _data) payable TransparentUpgradeableProxy(_logic, _admin, _data) {
-        // XXX configurator is technically not part of eip1967, so kind of incorrect to use this prefix
-        assert(_CONFIGURATOR_SLOT == bytes32(uint256(keccak256("eip1967.proxy.configurator")) - 1));
+        assert(_CONFIGURATOR_SLOT == bytes32(uint256(keccak256("comet.proxy.configurator")) - 1));
         _setConfigurator(configurator_);
     }
 
@@ -27,7 +26,7 @@ contract TransparentUpgradeableFactoryProxy is TransparentUpgradeableProxy {
      * This is the keccak-256 hash of "eip1967.proxy.configurator" subtracted by 1, and is
      * validated in the constructor.
      */
-    bytes32 private constant _CONFIGURATOR_SLOT = 0xea1bb48f16803c1a0494abc6cb57276d50f52e3e0d29d70df658a66547886b0a;
+    bytes32 private constant _CONFIGURATOR_SLOT = 0xe95db45f46f3791feb4f7d996d8581f99d5e5632646ab8f06e76ea4548157f61;
 
     // XXX Get rid of virtual?
     /**
