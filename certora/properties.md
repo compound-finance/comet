@@ -4,23 +4,75 @@ solidity flag `viaIR: true` ()
 
 ## Properties regarding accrue computation:
 
-1. Min value of baseSupplyIndex and baseBorrowIndex( ✔️ )
+1. `SupplyIndex_BorrowIndex_GE_baseIndexScale` - Min value of baseSupplyIndex and baseBorrowIndex( ✅ ) - Gadi
 
-2. Monotonicity of baseSupplyIndex and baseBorrowIndex on accrue ( ✔️ )
+2. `SupplyIndex_BorrowIndex_monotonic` - Monotonicity of baseSupplyIndex and baseBorrowIndex on accrue ( ✅ ) - Gadi
 
-3. Increase of baseSupplyIndex and baseBorrowIndex over time ( ✔️ )
+3. `SupplyIndex_BorrowIndex_rise_with_time` - Increase of baseSupplyIndex and baseBorrowIndex over time ( ✅ ) - Gadi
 
 
 
 ## Properties regarding interest computation: 
-3. When no base is borrowed utilization should equal zero ( ✔️ )
 
-4. Zero utilization is only on initial baseIntresetRate  (✔️ )
+1. `borrowBase_vs_utilization` When no base is borrowed utilization should equal zero ( ✅ ) - Gadi
 
-5. computation of isLiquidatable on the same state changes from false to true only due to price change  ( ✔️ )
+2. `utilization_zero` - Zero utilization is only on initial baseIntresetRate  ( ✅/❌ ) - Gadi * one implication out of iff
+
+3. `isLiquiditable_false_should_not_change` - computation of isLiquidatable on the same state changes from false to true only due to price change  ( 👷 ) - Gadi 
+
+## Properties regarding variable evolution
+
+1. `presentValue_greater_principle` - presentValue should always be greater or equal to principle. ( ✅ ) - Gadi
+
+2. `presentValue_G_zero` - presentValue and principle value are initialized/not initialized together. ( ✅ ) - Gadi
+    ```CVL
+        presentValue > 0 <=> principleValue > 0
+    ```
+
+3. `presentValue_EQ_principle` - If presentValue and principle are equal, the totalBaseSupplyIndex is equal to baseIndexScale. ( ✅ ) - Gadi
+    ```CVL
+        present == principle => totalBaseSupplyIndex == baseIndexScale
+    ``
+
+## High level properties
+
+1. `additivity_of_withdraw` - withdrawing x and then y in 2 distinct calls is equivalent to withdrawing x+y in a single call ( 🕝 ) - Gadi
+
+
+
+## integrity of `pause()`:
+
+1. `check_flag_updates` - pause revert only due to sender not being manager or guardian ( ✅ ) - Michael
+
+2. `check_flag_getters` - getters return correct values according to pause input. ( ✅ ) - Michael
+
+3. `check_pauseSupply_functionallity`, `check_pauseTransfer_functionallity`, `check_pauseWithdraw_functionallity`, `check_pauseAbsorb_functionallity`, `check_pauseBuy_functionallity` - relevant functions revert if pause guardian is on ( ✅ ) - Michael
+
+## integrity of user collateral asset:
+
+1. invariant `assetIn_Initialized_With_Balance` - iff user's balance of collateral asset is non-zero, the respective bit in assetIn is non-zero (👷) - Michael
+    ```CVL
+        User_Collateral_Balance_of_specific_asset == 0 <=> IsInAsset(Assetin_Of_User, Asset_Offset)
+    ```
+
+2. `check_update_UserCollater` - When `updateAssetIn` is being called with `initial_balance > 0 && final_balance == 0` the respective bit in assetIn should be 0 regardless of previous value, and when `initial_balance == 0 && final_balance > 0` the respective bit in assetIn should be 1 regardless of previous value. (👷) - Michael
+    ```CVL
+        initial_balance > 0 && final_balance == 0 => !IsInAsset(assetIn, assetOffset);
+        initial_balance == 0 && final_balance > 0 => IsInAsset(assetIn, assetOffset);
+    ```
+
+3. `update_changes_single_bit` - update assetIn changes a single bit - it's impossible that 2 distinct asset bits will be change at the same call to update (🕝) - Michael
+
+4. `update_changes_single_user_assetIn` - update assetIn changes the assetIn of a single user - no other users are affected by update. ( ✅ ) - Michael 
+
+
+
+
+
+
 
 ## work in progress/ questions 
- 1. utilization <= factorScale() 
+ 1. utilization <= factorScale()
 
  fails on total borrow (presentValue) can be greater then totalSupply (presentValue) hence utilization not bounded
 
@@ -44,14 +96,14 @@ starting to prove with some simplifications:
 
 1. The sum of collateral per asset over all users is equal to total collateral of asset ( ✔️ )
 ```CVL 
-sum(userCollateral[u][asset].balance) == totalsCollateral[asset].totalSupplyAsset
+    sum(userCollateral[u][asset].balance) == totalsCollateral[asset].totalSupplyAsset
 ```
 
 ## work in progress 
 
 1. Can always withdraw all collateral (assuming no debt) - low priority:
 ```CVL
-withdrawCollateral(userCollateral[user][asset].balance) will work
+    withdrawCollateral(userCollateral[user][asset].balance) will work
 ```
 
 2. Each collateral asset should be unique (and probably distinct from the base asset).
@@ -139,21 +191,15 @@ user.borrow != 0 => user.borrow >= min_borrow_amount
 ```
 
 19. Anti-Monotonicty of liquidation (absorb):
-```CVL
-totalSupply increases <=> totalBorrow decreases
-```
+    1. ```CVL
+        totalSupply increases <=> totalBorrow decreases
+        ```
+    2. After buyCollateral() base increase, collateral decrease.
 
 20. Additivity of multi liquidation:
 ```CVL
 absorb(user A);absorb(user B) ~ absorb([A,B])
 ```
-
-21. integrity of `pause()`:
-    1. ~~pause revert only due to sender not being manager or guardian~~ - Michael
-
-    2. ~~getters return correct values according to pause input.~~ - Michael
-
-    3. ~~relevant functions revert if pause guardian is on~~ - Michael
 
 22. Preserved total assets of users: </br>
 assuming 1:1 price between all tokens on the same timestamp*:
@@ -189,20 +235,6 @@ SupplyRate rise <=> getUtilizationInternal rise
 ```CVL
 BorrowRate > SupplyRate
 ```
-
-27. integrity of user collateral asset:
-    1. ~~invariant - iff user's balance of collateral asset is non-zero, the respective bit in assetIn is non-zero~~ - Michael
-    ```CVL
-        User_Collateral_Balance_of_specific_asset == 0 <=> IsInAsset(Assetin_Of_User, Asset_Offset)
-    ```
-
-    2. ~~When `updateAssetIn` is being called with `initial_balance > 0 && final_balance == 0` the respective bit in assetIn should be 0 regardless of previous value, and when `initial_balance == 0 && final_balance > 0` the respective bit in assetIn should be 1 regardless of previous value.~~ - Michael
-    ```CVL
-        initial_balance > 0 && final_balance == 0 => !IsInAsset(assetIn, assetOffset);
-        initial_balance == 0 && final_balance > 0 => IsInAsset(assetIn, assetOffset);
-    ```
-
-    3. when updating assetIn, only a single bit is being updated. (will be checked by comparing the change in numerical value of assetIn to be an expected value - the correct power of 2). - Michael
 
 </br>
 
