@@ -171,21 +171,24 @@ contract Comet is CometMath, CometStorage, ERC20 {
     error Absurd();
     error BadAsset();
     error BadApprovalAmount();
-    error Paused();
     error BadAmount();
+    error BadBaseMinForRewards();
+    error BadPriceFeedDecimals();
     error BadTransferIn();
     error BadTransferOut();
+    error TooManyDecimals();
+    error TooManyAssets();
     error NotForSale();
     error SlippageTooHigh();
     error ReInitialized();
-    error BadPriceFeedDecimals();
+    error BadBorrow();
     error AssetDecimalsMismatch();
     error BorrowCFMustBeLessThanLiquidateCF();
     error LiquidateCFTooHigh();
     error NotUnderwater();
     error TimestampTooLarge();
     error NoSelfTransfer();
-    error BadBorrow();
+    error Paused();
     /// @dev allowBySig errors
     error InvalidValueS();
     error InvalidValueV();
@@ -221,11 +224,8 @@ contract Comet is CometMath, CometStorage, ERC20 {
         address _baseToken = _addresses[2];
         address _baseTokenPriceFeed = _addresses[3];
         uint8 decimals_ = ERC20(_baseToken).decimals();
-        // we get stack too deep errors if trying to use custom errors here
-        require(decimals_ <= MAX_BASE_DECIMALS, "too many decimals");
-        require(_assetConfigs.length <= MAX_ASSETS, "too many assets");
-        require(_baseMinForRewards > 0, "bad rewards min");
-        require(AggregatorV3Interface(_baseTokenPriceFeed).decimals() == PRICE_FEED_DECIMALS, "bad decimals");
+        // Validating params in a helper function to avoid stack too deep errors.
+        validateParams(decimals_, _assetConfigs.length, _baseMinForRewards, _baseTokenPriceFeed);
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
@@ -274,6 +274,17 @@ contract Comet is CometMath, CometStorage, ERC20 {
 
         // Initialize storage
         initialize_storage();
+    }
+
+    /**
+     * @notice Validate some invariants hold for the constructor parameters
+     * @dev Validation is done here to avoid stack too deep errors in the constructor
+     */
+    function validateParams(uint8 _decimals, uint _assetConfigsLength, uint _baseMinForRewards, address _baseTokenPriceFeed) internal view {
+        if (_decimals > MAX_BASE_DECIMALS) revert TooManyDecimals();
+        if (_assetConfigsLength > MAX_ASSETS) revert TooManyAssets();
+        if (_baseMinForRewards <= 0) revert BadBaseMinForRewards(); // XXX should this check allow for 0 values?
+        if (AggregatorV3Interface(_baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadPriceFeedDecimals();
     }
 
     /**
