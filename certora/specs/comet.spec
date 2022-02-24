@@ -8,7 +8,7 @@ using SymbolicBaseToken as _baseToken
 methods {
     //temporary under approximations
     isInAsset(uint16 assetsIn, uint8 assetOffset) => CONSTANT;
-    latestRoundData() returns uint256 => CONSTANT;
+    latestRoundData() returns uint256 => DISPATCHER(true);
 
     //todo - move to setup?
     isBorrowCollateralized(address) returns bool envfree
@@ -183,18 +183,19 @@ filtered { f-> !similarFunctions(f) && !f.isView }
         }
     }
 
-rule withdrawBaseTwice( uint x, uint y){
+rule additivity_of_withdraw( uint x, uint y){
     env e;
     storage init = lastStorage;
     
+    simplifiedAssumptions();
     require x + y < 2^255;
 
     withdraw(e,_baseToken, x);
     int104 baseX = baseBalanceOf(e,e.msg.sender);
     withdraw(e,_baseToken, y);
     int104 baseY = baseBalanceOf(e,e.msg.sender);
-    withdraw(e,_baseToken, x + y);
-    int104 baseXY = baseBalanceOf(e,e.msg.sender) at init;
+    withdraw(e,_baseToken, x + y) at init;
+    int104 baseXY = baseBalanceOf(e,e.msg.sender);
 
     assert baseXY == baseY;
 }
@@ -203,3 +204,24 @@ rule withdrawBaseTwice( uint x, uint y){
 //     env e;
 //     withdraw(e,e.msg.sender,)
 // }
+
+
+rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
+    env e;
+    //todo - is this a safe requirement ?
+    // violated otherwise - user can gain baseToken 
+    // https://vaas-stg.certora.com/output/23658/591b98129cc8a5aa3daf/?anonymousKey=3eddbea2ce8324647b60de82f57e939fab8ab53d
+    require asset != _baseToken; 
+    // if minAmount is not given, one can get zero https://vaas-stg.certora.com/output/23658/12feded77f88509f3604/?anonymousKey=20b21b4817aeab18024bd014fc3b659593c41671
+    require minAmount > 0 ; 
+    
+
+    uint256 balanceAssetBefore = tokenBalanceOf(e, asset, currentContract);
+    uint256 balanceBaseBefore = tokenBalanceOf(e, _baseToken, currentContract);
+    buyCollateral(e, asset, minAmount, baseAmount, recipient);
+    uint256 balanceAssetAfter = tokenBalanceOf(e, asset, currentContract);
+    uint256 balanceBaseAfter = tokenBalanceOf(e, _baseToken, currentContract);
+    assert (balanceAssetAfter >= balanceAssetBefore);
+    assert (balanceBaseBefore >= balanceBaseAfter);
+    assert (balanceBaseBefore > balanceBaseAfter <=> balanceAssetAfter > balanceAssetBefore);
+}
