@@ -149,11 +149,11 @@ absorb(user A);absorb(user B) ~ absorb([A,B])
 ```
 
 21. integrity of `pause()`:
-    1. Updating one flag does not change the others.
+    1. ~~pause revert only due to sender not being manager or guardian~~ - Michael
 
-    2. Correct usage of pause.
+    2. ~~getters return correct values according to pause input.~~ - Michael
 
-    3. Inverse of pause().
+    3. ~~relevant functions revert if pause guardian is on~~ - Michael
 
 22. Preserved total assets of users: </br>
 assuming 1:1 price between all tokens on the same timestamp*:
@@ -189,6 +189,20 @@ SupplyRate rise <=> getUtilizationInternal rise
 ```CVL
 BorrowRate > SupplyRate
 ```
+
+27. integrity of user collateral asset:
+    1. ~~invariant - iff user's balance of collateral asset is non-zero, the respective bit in assetIn is non-zero~~ - Michael
+    ```CVL
+        User_Collateral_Balance_of_specific_asset == 0 <=> IsInAsset(Assetin_Of_User, Asset_Offset)
+    ```
+
+    2. ~~When `updateAssetIn` is being called with `initial_balance > 0 && final_balance == 0` the respective bit in assetIn should be 0 regardless of previous value, and when `initial_balance == 0 && final_balance > 0` the respective bit in assetIn should be 1 regardless of previous value.~~ - Michael
+    ```CVL
+        initial_balance > 0 && final_balance == 0 => !IsInAsset(assetIn, assetOffset);
+        initial_balance == 0 && final_balance > 0 => IsInAsset(assetIn, assetOffset);
+    ```
+
+    3. when updating assetIn, only a single bit is being updated. (will be checked by comparing the change in numerical value of assetIn to be an expected value - the correct power of 2). - Michael
 
 </br>
 
