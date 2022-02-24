@@ -2,6 +2,33 @@
 
 solidity flag `viaIR: true` ()
 
+## Table
+
+| # | Rule Name | Progress | Verdict | Comment |
+|-- | --------- | -------- | ------- | ------- |
+| 1 | `SupplyIndex_BorrowIndex_GE_baseIndexScale` | DONE | ✅ | - |
+| 2 | `SupplyIndex_BorrowIndex_monotonic` | DONE | ✅ | - |
+| 3 | `SupplyIndex_BorrowIndex_rise_with_time` | DONE | ✅ | - |
+| 4 | `borrowBase_vs_utilization` | DONE | ✅ | - |
+| 5 | `utilization_zero` | DONE | ✅ | - |
+| 6 | `isLiquiditable_false_should_not_change` | IN PROGRESS | 👷 | - |
+| 7 | `isLiquiditable_true_should_not_change` | IN PROGRESS | 👷 | - |
+| 8 | `presentValue_greater_principle` | DONE | ✅ | - |
+| 9 | `presentValue_G_zero` | DONE | ✅ | - |
+| 10 | `presentValue_EQ_principle` | DONE | ✅ | - |
+| 11 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - |
+| 12 | `check_flag_updates` | DONE | ✅ | update is coherent with getters |
+| 13 | `check_flag_getters` | DONE | ✅ | getters are coherent with update |
+| 14 | `check_pauseSupply_functionallity` | DONE | ✅ | - |
+| 15 | `check_pauseTransfer_functionallity` | DONE | ✅ | - |
+| 16 | `check_pauseWithdraw_functionallity` | DONE | ✅ | - |
+| 17 | `check_pauseAbsorb_functionallity` | DONE | ✅ | - |
+| 18 | `check_pauseBuy_functionallity` | DONE | ✅ | - |
+| 19 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | - |
+| 20 | `check_update_UserCollater` | IN PROGRESS | 👷 | expected to fail due to `offset > 8` (or 16 on fixed code) |
+| 21 | `update_changes_single_bit` | IN PROGRESS | 🕝 | expected to fail due to `offset > 8` (or 16 on fixed code) |
+| 22 | `update_changes_single_user_assetIn` | DONE | ✅ | - |
+
 ## Properties regarding accrue computation:
 
 1. `SupplyIndex_BorrowIndex_GE_baseIndexScale` - Min value of baseSupplyIndex and baseBorrowIndex( ✅ ) - Gadi
@@ -16,7 +43,7 @@ solidity flag `viaIR: true` ()
 
 1. `borrowBase_vs_utilization` When no base is borrowed utilization should equal zero ( ✅ ) - Gadi
 
-2. `utilization_zero` - Zero utilization is only on initial baseIntresetRate  ( ✅/❌ ) - Gadi * one implication out of iff
+2. `utilization_zero` - Zero utilization is only on initial baseIntresetRate  ( ✅ ) - Gadi
 
 3. `isLiquiditable_false_should_not_change` - computation of isLiquidatable on the same state changes from false to true only due to price change or accrue ( 👷 ) - Gadi 
 
@@ -51,18 +78,18 @@ solidity flag `viaIR: true` ()
 
 ## integrity of user collateral asset:
 
-1. invariant `assetIn_Initialized_With_Balance` - iff user's balance of collateral asset is non-zero, the respective bit in assetIn is non-zero (👷) - Michael
+1. invariant `assetIn_Initialized_With_Balance` - iff user's balance of collateral asset is non-zero, the respective bit in assetIn is non-zero ( 👷 ) - Michael
     ```CVL
         User_Collateral_Balance_of_specific_asset == 0 <=> IsInAsset(Assetin_Of_User, Asset_Offset)
     ```
 
-2. `check_update_UserCollater` - When `updateAssetIn` is being called with `initial_balance > 0 && final_balance == 0` the respective bit in assetIn should be 0 regardless of previous value, and when `initial_balance == 0 && final_balance > 0` the respective bit in assetIn should be 1 regardless of previous value. (👷) - Michael
+2. `check_update_UserCollater` - When `updateAssetIn` is being called with `initial_balance > 0 && final_balance == 0` the respective bit in assetIn should be 0 regardless of previous value, and when `initial_balance == 0 && final_balance > 0` the respective bit in assetIn should be 1 regardless of previous value. ( 👷 ) - Michael
     ```CVL
         initial_balance > 0 && final_balance == 0 => !IsInAsset(assetIn, assetOffset);
         initial_balance == 0 && final_balance > 0 => IsInAsset(assetIn, assetOffset);
     ```
 
-3. `update_changes_single_bit` - update assetIn changes a single bit - it's impossible that 2 distinct asset bits will be change at the same call to update (🕝) - Michael
+3. `update_changes_single_bit` - update assetIn changes a single bit - it's impossible that 2 distinct asset bits will be change at the same call to update ( 🕝 ) - Michael
 
 4. `update_changes_single_user_assetIn` - update assetIn changes the assetIn of a single user - no other users are affected by update. ( ✅ ) - Michael 
 
