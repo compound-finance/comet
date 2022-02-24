@@ -4,5 +4,5 @@ certoraRun certora/harness/CometHarnessWrappers.sol \
     --staging \
     --optimistic_loop \
     --rule check_update_UserCollater \
-    --settings -useBitVectorTheory \
+    --settings -useBitVectorTheory,-smt_hashingScheme=plainInjectivity,-deleteSMTFile=false,-postProcessCounterExamples=false \
     --msg "$1"
