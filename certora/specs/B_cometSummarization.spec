@@ -213,8 +213,3 @@ function buy_functions_with_revert(method f, env e) returns bool{
 //
 
 ghost isInAsset(address, address) returns bool
-
-
-function (address user, address asset){
-    
-}
