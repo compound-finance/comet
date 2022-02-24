@@ -5,7 +5,7 @@ solidity flag `viaIR: true` ()
 ## Table
 
 | # | Rule Name | Progress | Verdict | Comment |
-|-- | --------- | -------- | ------- | ------- |
+|:--: | :--------- | :--------: | :------- | :-------: |
 | 1 | `SupplyIndex_BorrowIndex_GE_baseIndexScale` | DONE | ✅ | - |
 | 2 | `SupplyIndex_BorrowIndex_monotonic` | DONE | ✅ | - |
 | 3 | `SupplyIndex_BorrowIndex_rise_with_time` | DONE | ✅ | - |
