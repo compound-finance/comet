@@ -271,3 +271,4 @@ BorrowRate > SupplyRate
 |----- | --- | -- | -- | -- |
 | presentValue_GE_principal | X | V | X | X |
 | presentValue_EQ_principal | X | X | V | X |
+| SupplyIndex_vs_BorrowIndex| X | V | X | X |
