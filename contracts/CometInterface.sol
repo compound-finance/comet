@@ -2,13 +2,14 @@
 pragma solidity ^0.8.11;
 
 import "./CometCore.sol";
+import "./ERC20.sol";
 
 /**
  * @title Compound's Comet Interface
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-abstract contract CometInterface is CometCore {
+abstract contract CometInterface is CometCore, ERC20 {
     function allow(address manager, bool isAllowed) virtual external;
     function allowBySig(address owner, address manager, bool isAllowed, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s) virtual external;
 
@@ -16,8 +17,8 @@ abstract contract CometInterface is CometCore {
     function supplyTo(address dst, address asset, uint amount) virtual external;
     function supplyFrom(address from, address dst, address asset, uint amount) virtual external;
 
-    function transfer(address dst, address asset, uint amount) virtual external;
-    function transferFrom(address src, address dst, address asset, uint amount) virtual external;
+    function transferAsset(address dst, address asset, uint amount) virtual external;
+    function transferAssetFrom(address src, address dst, address asset, uint amount) virtual external;
 
     function withdraw(address asset, uint amount) virtual external;
     function withdrawTo(address to, address asset, uint amount) virtual external;
@@ -68,6 +69,5 @@ abstract contract CometInterface is CometCore {
     function maxAssets() virtual external view returns (uint8);
     function numAssets() virtual external view returns (uint8);
 
-    function name() virtual external view returns (string memory);
     function version() virtual external view returns (string memory);
 }

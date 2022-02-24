@@ -87,6 +87,7 @@ export async function deployDevelopmentComet(
 
   let configuration = {
     ...{
+      symbol32: deploymentManager.hre.ethers.utils.formatBytes32String('📈BASE'),
       governor: await governor.getAddress(),
       pauseGuardian: await pauseGuardian.getAddress(),
       baseToken: baseToken.address,

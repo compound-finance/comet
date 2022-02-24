@@ -6,6 +6,10 @@ pragma solidity ^0.8.11;
  * @author Compound
  */
 contract CometConfiguration {
+    struct ExtConfiguration {
+        bytes32 symbol32;
+    }
+
     struct Configuration {
         address governor;
         address pauseGuardian;

@@ -35,6 +35,7 @@ export type ProtocolOpts = {
       priceFeedDecimals?: number;
     };
   };
+  symbol?: string,
   governor?: SignerWithAddress;
   pauseGuardian?: SignerWithAddress;
   extensionDelegate?: CometExt;
@@ -150,6 +151,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     priceFeeds[asset] = priceFeed;
   }
 
+  const symbol32 = ethers.utils.formatBytes32String((opts.symbol || '📈BASE'));
   const governor = opts.governor || signers[0];
   const pauseGuardian = opts.pauseGuardian || signers[1];
   const users = signers.slice(2); // guaranteed to not be governor or pause guardian
@@ -183,7 +185,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   let extensionDelegate = opts.extensionDelegate;
   if (extensionDelegate === undefined) {
     const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
-    extensionDelegate = await CometExtFactory.deploy();
+    extensionDelegate = await CometExtFactory.deploy({ symbol32 });
     await extensionDelegate.deployed();
   }
 

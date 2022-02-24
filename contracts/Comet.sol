@@ -11,6 +11,8 @@ import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.
  * @author Compound
  */
 contract Comet is CometCore {
+    event Transfer(address indexed from, address indexed to, uint256 amount);
+
     /** General configuration constants **/
 
     /// @notice The admin of the protocol
@@ -65,6 +67,9 @@ contract Comet is CometCore {
     /// @notice The minimum base token reserves which must be held before collateral is hodled
     uint104 public immutable targetReserves;
 
+    /// @notice The number of decimals for wrapped base token
+    uint8 public immutable decimals;
+
     /// @notice The number of assets this contract actually supports
     uint8 public immutable numAssets;
 
@@ -107,8 +112,8 @@ contract Comet is CometCore {
      **/
     constructor(Configuration memory config) {
         // Sanity checks
-        uint decimals = ERC20(config.baseToken).decimals();
-        require(decimals <= MAX_BASE_DECIMALS, "base token has too many decimals");
+        uint8 decimals_ = ERC20(config.baseToken).decimals();
+        require(decimals_ <= MAX_BASE_DECIMALS, "base token has too many decimals");
         require(config.assetConfigs.length <= MAX_ASSETS, "too many asset configs");
         require(config.baseMinForRewards > 0, "baseMinForRewards should be > 0");
         require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == PRICE_FEED_DECIMALS, "bad price feed decimals");
@@ -121,7 +126,8 @@ contract Comet is CometCore {
         baseTokenPriceFeed = config.baseTokenPriceFeed;
         extensionDelegate = config.extensionDelegate;
 
-        baseScale = uint64(10 ** decimals);
+        decimals = decimals_;
+        baseScale = uint64(10 ** decimals_);
         trackingIndexScale = config.trackingIndexScale;
 
         baseMinForRewards = config.baseMinForRewards;
@@ -199,7 +205,7 @@ contract Comet is CometCore {
         AssetConfig memory assetConfig = _getAssetConfig(assetConfigs, i);
         address asset = assetConfig.asset;
         address priceFeed = assetConfig.priceFeed;
-        uint8 decimals = assetConfig.decimals;
+        uint8 decimals_ = assetConfig.decimals;
 
         // Short-circuit if asset is nil
         if (asset == address(0)) {
@@ -208,7 +214,7 @@ contract Comet is CometCore {
 
         // Sanity check price feed and asset decimals
         require(AggregatorV3Interface(priceFeed).decimals() == PRICE_FEED_DECIMALS, "bad price feed decimals");
-        require(ERC20(asset).decimals() == decimals, "asset decimals mismatch");
+        require(ERC20(asset).decimals() == decimals_, "asset decimals mismatch");
 
         // Ensure collateral factors are within range
         require(assetConfig.borrowCollateralFactor < assetConfig.liquidateCollateralFactor, "borrow CF must be < liquidate CF");
@@ -224,14 +230,14 @@ contract Comet is CometCore {
         require(borrowCollateralFactor < liquidateCollateralFactor, "borrow CF must be < liquidate CF");
 
         // Keep whole units of asset for supply cap
-        uint64 supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals));
+        uint64 supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals_));
 
         uint256 word_a = (uint160(asset) << 0 |
                           uint256(borrowCollateralFactor) << 160 |
                           uint256(liquidateCollateralFactor) << 176 |
                           uint256(liquidationFactor) << 192);
         uint256 word_b = (uint160(priceFeed) << 0 |
-                          uint256(decimals) << 160 |
+                          uint256(decimals_) << 160 |
                           uint256(supplyCap) << 168);
 
         return (word_a, word_b);
@@ -304,8 +310,8 @@ contract Comet is CometCore {
         uint64 liquidationFactor = uint64(((word_a >> 192) & type(uint16).max) * rescale);
 
         address priceFeed = address(uint160(word_b & type(uint160).max));
-        uint8 decimals = uint8(((word_b >> 160) & type(uint8).max));
-        uint64 scale = uint64(10 ** decimals);
+        uint8 decimals_ = uint8(((word_b >> 160) & type(uint8).max));
+        uint64 scale = uint64(10 ** decimals_);
         uint128 supplyCap = uint128(((word_b >> 168) & type(uint64).max) * scale);
 
         return AssetInfo({
@@ -595,56 +601,6 @@ contract Comet is CometCore {
         }
 
         return liquidity;
-    }
-
-    /**
-     * @dev The positive present supply balance if positive or the negative borrow balance if negative
-     */
-    function presentValue(TotalsBasic memory totals, int104 principalValue_) internal pure returns (int104) {
-        if (principalValue_ >= 0) {
-            return signed104(presentValueSupply(totals, unsigned104(principalValue_)));
-        } else {
-            return -signed104(presentValueBorrow(totals, unsigned104(-principalValue_)));
-        }
-    }
-
-    /**
-     * @dev The principal amount projected forward by the supply index
-     */
-    function presentValueSupply(TotalsBasic memory totals, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * totals.baseSupplyIndex / BASE_INDEX_SCALE);
-    }
-
-    /**
-     * @dev The principal amount projected forward by the borrow index
-     */
-    function presentValueBorrow(TotalsBasic memory totals, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * totals.baseBorrowIndex / BASE_INDEX_SCALE);
-    }
-
-    /**
-     * @dev The positive principal if positive or the negative principal if negative
-     */
-    function principalValue(TotalsBasic memory totals, int104 presentValue_) internal pure returns (int104) {
-        if (presentValue_ >= 0) {
-            return signed104(principalValueSupply(totals, unsigned104(presentValue_)));
-        } else {
-            return -signed104(principalValueBorrow(totals, unsigned104(-presentValue_)));
-        }
-    }
-
-    /**
-     * @dev The present value projected backward by the supply index
-     */
-    function principalValueSupply(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * BASE_INDEX_SCALE / totals.baseSupplyIndex);
-    }
-
-    /**
-     * @dev The present value projected backwrd by the borrow index
-     */
-    function principalValueBorrow(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * BASE_INDEX_SCALE / totals.baseBorrowIndex);
     }
 
     /**
@@ -945,7 +901,7 @@ contract Comet is CometCore {
      * @param asset The asset to transfer
      * @param amount The quantity to transfer
      */
-    function transfer(address dst, address asset, uint amount) external {
+    function transferAsset(address dst, address asset, uint amount) external {
         return transferInternal(msg.sender, msg.sender, dst, asset, amount);
     }
 
@@ -956,7 +912,7 @@ contract Comet is CometCore {
      * @param asset The asset to transfer
      * @param amount The quantity to transfer
      */
-    function transferFrom(address src, address dst, address asset, uint amount) external {
+    function transferAssetFrom(address src, address dst, address asset, uint amount) external {
         return transferInternal(msg.sender, src, dst, asset, amount);
     }
 

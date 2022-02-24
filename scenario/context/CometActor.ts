@@ -70,13 +70,13 @@ export default class CometActor {
     ).wait();
   }
 
-  async transfer({ dst, asset, amount }) {
-    await (await this.context.comet.connect(this.signer).transfer(dst, asset, amount)).wait();
+  async transferAsset({ dst, asset, amount }) {
+    await (await this.context.comet.connect(this.signer).transferAsset(dst, asset, amount)).wait();
   }
 
-  async transferFrom({ src, dst, asset, amount }) {
+  async transferAssetFrom({ src, dst, asset, amount }) {
     await (
-      await this.context.comet.connect(this.signer).transferFrom(src, dst, asset, amount)
+      await this.context.comet.connect(this.signer).transferAssetFrom(src, dst, asset, amount)
     ).wait();
   }
 
