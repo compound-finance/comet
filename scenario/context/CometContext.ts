@@ -14,7 +14,7 @@ import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { deployComet } from '../../src/deploy';
 import { wait } from '../../test/helpers';
-import { Comet, CometInterface, CometProxyAdmin, ERC20, ERC20__factory } from '../../build/types';
+import { Comet, CometInterface, ProxyAdmin, ERC20, ERC20__factory, Configurator } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
@@ -29,7 +29,7 @@ export interface CometProperties {
   assets: AssetMap;
   remoteToken?: Contract;
   comet: CometInterface;
-  proxyAdmin: CometProxyAdmin;
+  proxyAdmin: ProxyAdmin;
 }
 
 export class CometContext {
@@ -68,8 +68,12 @@ export class CometContext {
     return await this.deploymentManager.contract('comet:implementation') as Comet;
   }
 
-  async getCometAdmin(): Promise<CometProxyAdmin> {
-    return await this.deploymentManager.contract('cometAdmin') as CometProxyAdmin;
+  async getCometAdmin(): Promise<ProxyAdmin> {
+    return await this.deploymentManager.contract('cometAdmin') as ProxyAdmin;
+  }
+
+  async getConfigurator(): Promise<Configurator> {
+    return await this.deploymentManager.contract('configurator') as Configurator;
   }
 
   async upgradeTo(newComet: Comet, world: World, data?: string) {
