@@ -7,6 +7,8 @@ methods{
 
     call_presentValue(int104) returns (int104) envfree;
     call_principalValue(int104) returns (int104) envfree;
+    // call_absorb(address)
+
     getAssetScaleByAsset(address) returns (uint64) envfree;
 
     getTotalBaseSupplyIndex() returns (uint64) envfree;
@@ -134,7 +136,7 @@ formula :
         borrowRate == perSecondInterestRateBase() => getUtilization(e) == 0;
 
  status : first assert proved , second failed
- reason : failed due to rounding down in mulFactor
+ reason : failed due to rounding down in utilization -> mulFactor
  link https://vaas-stg.certora.com/output/65782/b3fe39e314b1d0a592f5/?anonymousKey=877a0bbb8eea456fcacf3b5ed85d5c947d4cf890#utilization_zeroResults
 */
 
@@ -151,7 +153,7 @@ env e;
     uint64 kink1 = kink();
 
     assert getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase() ;
-    assert borrowRate == perSecondInterestRateBase() => getUtilization(e) == 0;
+    assert borrowRate == perSecondInterestRateBase() => getUtilization(e) == 0;//
 }
     
 /* 
@@ -339,13 +341,11 @@ rule quote_Collateral(address asset, uint baseAmount ){
     uint quote = quoteCollateral(e,asset, baseAmount);
 
     require quote == 0;
-    // require e.msg.value == 0;
-    // assert !lastReverted;
+
     assert quoteCollateral(e,asset, baseAmount + 1) == 0;
-    // assert quote != 0;
 }
 
-rule withdrawBaseTwice( uint x, uint y){
+rule additivity_of_withdraw( uint x, uint y){
     env e;
     storage init = lastStorage;
     
@@ -355,12 +355,29 @@ rule withdrawBaseTwice( uint x, uint y){
     int104 baseX = baseBalanceOf(e,e.msg.sender);
     withdraw(e,baseToken(e), y);
     int104 baseY = baseBalanceOf(e,e.msg.sender);
-    withdraw(e,baseToken(e), x + y);
-    int104 baseXY = baseBalanceOf(e,e.msg.sender) at init;
+    withdraw(e,baseToken(e), x + y) at init;
+    int104 baseXY = baseBalanceOf(e,e.msg.sender);
 
     assert baseXY == baseY;
 }
 
+// rule denialOfService(){
+//     env e1;
+//     env e2;
+//     require e2.block.timestamp > e1.block.timestamp;
+//     require e2.msg.value == 0 && e1.msg.value == 0; // reverts if msg.value != 0
+
+//     require gasUsed(e2) > gasUsed(e1);
+//     address account;
+
+//     address absorber;
+//     invoke absorb(e1,absorber,account);
+//         bool reverted1 = lastReverted;
+//     invoke absorb(e2,absorber,account);
+//         bool reverted2 = lastReverted;
+
+//     assert reverted1 => reverted2;
+// }
 // rule baseBalance(address account){
 //     env e;
 
@@ -369,9 +386,6 @@ rule withdrawBaseTwice( uint x, uint y){
 //     int104 baseB_ = baseBalanceOf(e,account);
 
 //     assert baseB == baseB_;
-// }
-// rule presentValue_zero(){
-
 // }
 
 function setup(env e){

@@ -63,18 +63,18 @@ contract CometHarness is CometHarnessGetters {
     }
 
 
-    function transferFrom(address src, address dst, address asset, uint amount) public override {
+    // function transferFrom(address src, address dst, address asset, uint amount) public override {
        
-    }
+    // }
 
     function transferFromBase(address src, address dst, address asset, uint amount) external {
         require (asset == baseToken);
-        return super.transferFrom(src,dst, asset, amount);
+        return this.transferFrom(src, dst, asset, amount);
     }
 
     function transferFromAsset(address src, address dst, address asset, uint amount) external {
         require (asset != baseToken);
-        return super.transferFrom(src,dst, asset, amount);
+        return this.transferFrom(src, dst, asset, amount);
     }
 
 
