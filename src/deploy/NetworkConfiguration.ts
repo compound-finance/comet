@@ -2,7 +2,8 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { Contract } from 'ethers';
 
-import { AssetConfigStruct, ConfigurationStruct } from '../../build/types/Comet';
+import { AssetConfigStruct } from '../../build/types/Comet';
+import { ProtocolConfiguration } from './index';
 import { BigNumberish, Signature, ethers } from 'ethers';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
@@ -160,12 +161,12 @@ export async function getConfiguration(
   network: string,
   hre: HardhatRuntimeEnvironment,
   contractMapOverride?: ContractMap
-): Promise<ConfigurationStruct> {
+): Promise<ProtocolConfiguration> {
   let networkConfiguration = await loadNetworkConfiguration(network);
   let deploymentManager = new DeploymentManager(network, hre);
   let contractMap = contractMapOverride ?? await deploymentManager.contracts();
 
-  let symbol32 = ethers.utils.formatBytes32String(networkConfiguration.symbol);
+  let symbol = networkConfiguration.symbol;
   let baseToken = getContractAddress(networkConfiguration.baseToken, contractMap);
   let baseTokenPriceFeed = address(networkConfiguration.baseTokenPriceFeed);
   let governor = address(networkConfiguration.governor);
@@ -180,7 +181,7 @@ export async function getConfiguration(
   let assetConfigs = getAssetConfigs(networkConfiguration.assets, contractMap);
 
   return {
-    symbol32,
+    symbol,
     governor,
     pauseGuardian,
     baseToken,

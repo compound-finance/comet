@@ -1,8 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumberish, Signature, ethers } from 'ethers';
 import { CometContext } from './CometContext';
-import { Comet } from '../../build/types';
-import CometAsset from './CometAsset';
 import { AddressLike, resolveAddress } from './Address';
 
 const types = {

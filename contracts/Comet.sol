@@ -163,14 +163,15 @@ contract Comet is CometCore {
         (asset13_a, asset13_b) = _getPackedAsset(config.assetConfigs, 13);
         (asset14_a, asset14_b) = _getPackedAsset(config.assetConfigs, 14);
 
-        // Initialize
-        // XXX considerations?
-        XXX_REMOVEME_XXX_initialize();
+        // Initialize storage
+        initializeStorage();
     }
 
-    // TODO: Remove me. Function while waiting for initializer
-    // !! NOT FOR REUSE [YES FOR REFUSE] !!
-    function XXX_REMOVEME_XXX_initialize() public {
+    /**
+     * @notice Initialize storage for the contract
+     * @dev Can be used from constructor or proxy
+     */
+    function initializeStorage() public {
         require(totalsBasic.lastAccrualTime == 0, "already initialized");
 
         // Initialize aggregates

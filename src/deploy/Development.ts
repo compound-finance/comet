@@ -3,6 +3,9 @@ import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentMa
 import {
   Comet__factory,
   Comet,
+  CometExt__factory,
+  CometExt,
+  CometInterface,
   FaucetToken__factory,
   FaucetToken,
   ProxyAdmin,
@@ -13,10 +16,11 @@ import {
   TransparentUpgradeableProxy__factory,
   TransparentUpgradeableProxy,
 } from '../../build/types';
-import { AssetInfoStruct, ConfigurationStruct } from '../../build/types/Comet';
+import { ConfigurationStruct } from '../../build/types/Comet';
+import { ExtConfigurationStruct } from '../../build/types/CometExt';
 import { BigNumberish } from 'ethers';
 export { Comet } from '../../build/types';
-import { DeployedContracts, CometConfigurationOverrides } from './index';
+import { DeployedContracts, ProtocolConfiguration } from './index';
 
 async function makeToken(
   deploymentManager: DeploymentManager,
@@ -53,21 +57,21 @@ async function makePriceFeed(
 export async function deployDevelopmentComet(
   deploymentManager: DeploymentManager,
   deployProxy: boolean = true,
-  configurationOverrides: CometConfigurationOverrides = {}
+  configurationOverrides: ProtocolConfiguration = {}
 ): Promise<DeployedContracts> {
-  const [governor, pauseGuardian] = await deploymentManager.hre.ethers.getSigners();
+  const signers = await deploymentManager.hre.ethers.getSigners();
 
-  let baseToken = await makeToken(deploymentManager, 1000000, 'DAI', 18, 'DAI');
-  let asset0 = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
-  let asset1 = await makeToken(deploymentManager, 3000000, 'SILVER', 10, 'SILVER');
+  let dai = await makeToken(deploymentManager, 1000000, 'DAI', 18, 'DAI');
+  let gold = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
+  let silver = await makeToken(deploymentManager, 3000000, 'SILVER', 10, 'SILVER');
 
-  let baseTokenPriceFeed = await makePriceFeed(deploymentManager, 1, 8);
-  let asset0PriceFeed = await makePriceFeed(deploymentManager, 0.5, 8);
-  let asset1PriceFeed = await makePriceFeed(deploymentManager, 0.05, 8);
+  let daiPriceFeed = await makePriceFeed(deploymentManager, 1, 8);
+  let goldPriceFeed = await makePriceFeed(deploymentManager, 0.5, 8);
+  let silverPriceFeed = await makePriceFeed(deploymentManager, 0.05, 8);
 
   let assetConfig0 = {
-    asset: asset0.address,
-    priceFeed: asset0PriceFeed.address,
+    asset: gold.address,
+    priceFeed: goldPriceFeed.address,
     decimals: (8).toString(),
     borrowCollateralFactor: (0.9e18).toString(),
     liquidateCollateralFactor: (1e18).toString(),
@@ -76,8 +80,8 @@ export async function deployDevelopmentComet(
   };
 
   let assetConfig1 = {
-    asset: asset1.address,
-    priceFeed: asset1PriceFeed.address,
+    asset: silver.address,
+    priceFeed: silverPriceFeed.address,
     decimals: (10).toString(),
     borrowCollateralFactor: (0.4e18).toString(),
     liquidateCollateralFactor: (0.5e18).toString(),
@@ -85,13 +89,31 @@ export async function deployDevelopmentComet(
     supplyCap: (500000e10).toString(),
   };
 
-  let configuration = {
+  const {
+    symbol,
+    governor,
+    pauseGuardian,
+    baseToken,
+    baseTokenPriceFeed,
+    kink,
+    perYearInterestRateSlopeLow,
+    perYearInterestRateSlopeHigh,
+    perYearInterestRateBase,
+    reserveRate,
+    trackingIndexScale,
+    baseTrackingSupplySpeed,
+    baseTrackingBorrowSpeed,
+    baseMinForRewards,
+    baseBorrowMin,
+    targetReserves,
+    assetConfigs,
+  } = {
     ...{
-      symbol32: deploymentManager.hre.ethers.utils.formatBytes32String('📈BASE'),
-      governor: await governor.getAddress(),
-      pauseGuardian: await pauseGuardian.getAddress(),
-      baseToken: baseToken.address,
-      baseTokenPriceFeed: baseTokenPriceFeed.address,
+      symbol: '📈BASE',
+      governor: await signers[0].getAddress(),
+      pauseGuardian: await signers[1].getAddress(),
+      baseToken: dai.address,
+      baseTokenPriceFeed: daiPriceFeed.address,
       kink: (8e17).toString(), // 0.8
       perYearInterestRateBase: (5e15).toString(), // 0.005
       perYearInterestRateSlopeLow: (1e17).toString(), // 0.1
@@ -108,6 +130,33 @@ export async function deployDevelopmentComet(
     ...configurationOverrides,
   };
 
+  const extConfiguration = {
+    symbol32: deploymentManager.hre.ethers.utils.formatBytes32String(symbol),
+  };
+  const cometExt = await deploymentManager.deploy<CometExt, CometExt__factory, [ExtConfigurationStruct]>(
+    'CometExt.sol',
+    [extConfiguration]
+  );
+
+  const configuration = {
+    governor,
+    pauseGuardian,
+    baseToken,
+    baseTokenPriceFeed,
+    extensionDelegate: cometExt.address,
+    kink,
+    perYearInterestRateSlopeLow,
+    perYearInterestRateSlopeHigh,
+    perYearInterestRateBase,
+    reserveRate,
+    trackingIndexScale,
+    baseTrackingSupplySpeed,
+    baseTrackingBorrowSpeed,
+    baseMinForRewards,
+    baseBorrowMin,
+    targetReserves,
+    assetConfigs,
+  };
   const comet = await deploymentManager.deploy<Comet, Comet__factory, [ConfigurationStruct]>(
     'Comet.sol',
     [configuration]
@@ -128,15 +177,15 @@ export async function deployDevelopmentComet(
     >('vendor/proxy/TransparentUpgradeableProxy.sol', [
       comet.address,
       proxyAdmin.address,
-      (await comet.populateTransaction.XXX_REMOVEME_XXX_initialize()).data,
+      (await comet.populateTransaction.initializeStorage()).data,
     ]);
 
     await deploymentManager.putRoots(new Map([['comet', proxy.address]]));
   }
 
   return {
-    comet,
+    comet: await deploymentManager.hre.ethers.getContractAt('CometInterface', comet.address) as CometInterface,
     proxy,
-    tokens: [baseToken, asset0, asset1],
+    tokens: [dai, gold, silver],
   };
 }

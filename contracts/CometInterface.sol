@@ -54,6 +54,18 @@ abstract contract CometInterface is CometCore, ERC20 {
     function baseBalanceOf(address account) virtual external view returns (int104);
     function collateralBalanceOf(address account, address asset) virtual external view returns (uint128);
 
+    function governor() virtual external view returns (address);
+    function pauseGuardian() virtual external view returns (address);
+    function baseToken() virtual external view returns (address);
+    function baseTokenPriceFeed() virtual external view returns (address);
+    function extensionDelegate() virtual external view returns (address);
+
+    function kink() virtual external view returns (uint64);
+    function perSecondInterestRateSlopeLow() virtual external view returns (uint64);
+    function perSecondInterestRateSlopeHigh() virtual external view returns (uint64);
+    function perSecondInterestRateBase() virtual external view returns (uint64);
+    function reserveRate() virtual external view returns (uint64);
+
     function baseScale() virtual external view returns (uint64);
     function baseIndexScale() virtual external view returns (uint64);
     function factorScale() virtual external view returns (uint64);
@@ -70,4 +82,6 @@ abstract contract CometInterface is CometCore, ERC20 {
     function numAssets() virtual external view returns (uint8);
 
     function version() virtual external view returns (string memory);
+
+    function initializeStorage() virtual external;
 }

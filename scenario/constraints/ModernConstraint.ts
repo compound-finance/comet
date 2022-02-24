@@ -1,12 +1,12 @@
 import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
-import { CometConfigurationOverrides, deployComet } from '../../src/deploy';
+import { ProtocolConfiguration, deployComet } from '../../src/deploy';
 import CometAsset from '../context/CometAsset';
 import { Contract } from 'ethers';
 
 interface ModernConfig {
   upgrade: boolean;
-  cometConfig: CometConfigurationOverrides;
+  cometConfig: ProtocolConfiguration;
 }
 
 function getModernConfig(requirements: object): ModernConfig | null {
@@ -30,7 +30,7 @@ export class ModernConstraint<T extends CometContext> implements Constraint<T> {
         let { comet: newComet } = await deployComet(context.deploymentManager, false, cometConfig);
         let initializer: string | undefined = undefined;
         if (!context.comet.totalsBasic || (await context.comet.totalsBasic()).lastAccrualTime === 0) {
-          initializer = (await newComet.populateTransaction.XXX_REMOVEME_XXX_initialize()).data
+          initializer = (await newComet.populateTransaction.initializeStorage()).data
         }
 
         await context.upgradeTo(newComet, world, initializer);
