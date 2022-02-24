@@ -18,7 +18,9 @@ solidity flag `viaIR: true` ()
 
 2. `utilization_zero` - Zero utilization is only on initial baseIntresetRate  ( ✅/❌ ) - Gadi * one implication out of iff
 
-3. `isLiquiditable_false_should_not_change` - computation of isLiquidatable on the same state changes from false to true only due to price change  ( 👷 ) - Gadi 
+3. `isLiquiditable_false_should_not_change` - computation of isLiquidatable on the same state changes from false to true only due to price change or accrue ( 👷 ) - Gadi 
+
+4. `isLiquiditable_true_should_not_change` - computation of isLiquidatable on the same state changes from true to false only due to price change, supplying more collateral, or supply more base ( 👷 ) - Gadi 
 
 ## Properties regarding variable evolution
 
@@ -37,7 +39,6 @@ solidity flag `viaIR: true` ()
 ## High level properties
 
 1. `additivity_of_withdraw` - withdrawing x and then y in 2 distinct calls is equivalent to withdrawing x+y in a single call ( 🕝 ) - Gadi
-
 
 
 ## integrity of `pause()`:
@@ -177,11 +178,6 @@ withdrawBase(getBorrowLiquidity()/priceFeed) will work always
 15. If a liquidity provider and a borrower are entering and exiting the system at the same time the LP should be eligible for the whole asset(no amount stays locked in the system)* - Gadi. </br> 
 *This is a special case of summary of balances (base). It should be checked if the wholesome property is too heavy on the tool. </br>
 **It also happen only when the percentage goes to reserve is 0.
-
-16. Change of liquidation state: - Gadi
-    1. `isLiquidatable == false` should not change if getPrice do not change.
-    
-    2. `isLiquidatable == true` can change by supplying more collateral
 
 17. A user cannot borrow amount smaller than minimum borrow.
 
