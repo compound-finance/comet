@@ -1,4 +1,4 @@
-certoraRun certora/harness/CometHarnessGetters.sol --verify CometHarnessGetters:certora/specs/pauseGuardians.spec  \
+certoraRun certora/harness/CometHarnessGetters.sol --verify CometHarnessGetters:certora/specs/V_pauseGuardians.spec  \
     --solc solc8.11 \
     --staging jtoman/solc8-overflow \
     --optimistic_loop \
