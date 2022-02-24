@@ -2,23 +2,44 @@
 pragma solidity ^0.8.11;
 
 import "./CometFactory.sol";
-import "./CometStorage.sol";
 import "./CometConfiguration.sol";
+import "./ConfiguratorStorage.sol";
 
-contract Configurator is CometStorage {
+contract Configurator is ConfiguratorStorage {
 
+    /// @notice An event emitted when a new version Comet is deployed.
+    event CometDeployed(address newCometAddress); // XXX Get rid of uses of the `Comet` name
+
+    /// @notice An error given unauthorized method calls
+    error Unauthorized();
+
+    // XXX should only be able to call this once
+    function initialize(address _governor, address _factory, Configuration calldata _config) public {
+        governor = _governor;
+        factory = _factory;
+        configuratorParams = _config;
+    }
+
+    /// @notice only callable by governor
     function setFactory(address _factory) external {
+        if (msg.sender != governor) revert Unauthorized();
         factory = _factory;
     }
 
-    // XXX Test that this is only callable by an admin. Should be safe because proxy checks `isAdmin`.
-    // @dev Deploy a new version of the Comet implementation.
+    /// @notice Deploy a new version of the Comet implementation.
+    /// @dev callable by anyone
     function deploy() external returns (address) {
-        return CometFactory(factory).clone(configuratorParams);
+        address newComet = CometFactory(factory).clone(configuratorParams);
+        // cometImpl = newComet;
+        emit CometDeployed(newComet);
+        return newComet;
     }
 
-    // XXX see if there is a cleaner way to do this
+    // XXX Test this is only callable by an admin
+    // XXX See if there is a cleaner way to do this
+    /// @dev only callable by governor
     function setConfiguration(Configuration memory config) external {
+        if (msg.sender != governor) revert Unauthorized();
         Configuration storage _configuratorParams = configuratorParams;
         _configuratorParams.governor = config.governor;
         _configuratorParams.pauseGuardian = config.pauseGuardian;
@@ -49,12 +70,16 @@ contract Configurator is CometStorage {
     }
 
     // XXX Define other setters for setting params
-    function setGovernor(address governor) external {
-        configuratorParams.governor = governor;
+    /// @dev only callable by governor
+    function setGovernor(address _governor) external {
+        if (msg.sender != governor) revert Unauthorized();
+        configuratorParams.governor = _governor;
     }
 
     // XXX What about removing an asset?
+    /// @dev only callable by governor
     function addAsset(AssetConfig calldata asset) external {
+        if (msg.sender != governor) revert Unauthorized();
         configuratorParams.assetConfigs.push(asset);
     }
 }

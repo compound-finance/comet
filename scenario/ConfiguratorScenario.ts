@@ -1,20 +1,29 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { AssetInfoStruct } from '../build/types/CometHarness';
-import { AssetConfigStruct } from '../build/types/CometFactory';
+import { filterEvent, wait } from '../test/helpers';
 
-scenario.only('upgrade governor', {}, async ({ comet, proxyAdmin, actors }, world) => {
+function getNewCometAddress(tx): string {
+  let event = filterEvent(tx, 'CometDeployed');
+  let [ newCometAddr ] = event.args;
+  return newCometAddr;
+}
+
+scenario.only('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, actors }, world) => {
   const { admin, albert } = actors;
 
   expect(await comet.governor()).to.equal(admin.address);
 
-  await proxyAdmin.setGovernor(comet.address, albert.address);
-  await proxyAdmin.deployAndUpgradeTo(comet.address);
+  await configurator.connect(admin.signer).setGovernor(albert.address);
+
+  let tx = await wait(await configurator.deploy());
+  let newCometAddr = getNewCometAddress(tx);
+
+  await proxyAdmin.upgrade(comet.address, newCometAddr)
 
   expect(await comet.governor()).to.equal(albert.address);
 });
 
-scenario.only('add assets', {}, async ({ comet, proxyAdmin, actors, assets }: CometContext, world) => {
+scenario.only('add assets', {}, async ({ comet, configurator, proxyAdmin, actors, assets }: CometContext, world) => {
   let numAssets = await comet.numAssets();
   let collateralAssets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
   let contextAssets =
@@ -33,8 +42,10 @@ scenario.only('add assets', {}, async ({ comet, proxyAdmin, actors, assets }: Co
     liquidationFactor: (0.95e18).toString(),
     supplyCap: (1000000e8).toString(),
   };
-  await proxyAdmin.addAsset(comet.address, newAssetConfig);
-  await proxyAdmin.deployAndUpgradeTo(comet.address);
+  await configurator.addAsset(newAssetConfig);
+  let tx = await wait(await configurator.deploy());
+  let newCometAddr = getNewCometAddress(tx);
+  await proxyAdmin.upgrade(comet.address, newCometAddr)
 
   // Verify new asset is added
   numAssets = await comet.numAssets();
@@ -46,9 +57,17 @@ scenario.only('add assets', {}, async ({ comet, proxyAdmin, actors, assets }: Co
   expect(updatedCollateralAssets.map(a => a.asset)).to.have.members(updatedContextAssets);
 });
 
-// XXX need to have an instance of the proxy contract
-scenario('reverts if not called by ProxyAdmin', {}, async ({ comet, proxyAdmin, actors }, world) => {
+scenario.only('reverts if configurator is not called by governor', {}, async ({ comet, configurator, proxyAdmin, actors }, world) => {
+  const { albert } = actors;
+
+  await expect(configurator.connect(albert.signer).setGovernor(albert.address)).to.be.revertedWith(
+    'Unauthorized'
+  );
 });
+
+scenario('reverts if proxy is not upgraded by ProxyAdmin', {}, async ({ comet, proxyAdmin, actors }, world) => {
+});
+
 
 scenario('fallbacks to implementation if called by non-admin', {}, async ({ comet, proxyAdmin, actors }, world) => {
 });

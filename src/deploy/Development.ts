@@ -10,12 +10,12 @@ import {
   CometFactory,
   FaucetToken__factory,
   FaucetToken,
-  CometProxyAdmin,
-  CometProxyAdmin__factory,
+  ProxyAdmin,
+  ProxyAdmin__factory,
   SimplePriceFeed,
   SimplePriceFeed__factory,
-  TransparentUpgradeableFactoryProxy__factory,
-  TransparentUpgradeableFactoryProxy,
+  TransparentUpgradeableProxy,
+  TransparentUpgradeableProxy__factory,
   Configurator,
   Configurator__factory,
 } from '../../build/types';
@@ -166,6 +166,8 @@ export async function deployDevelopmentComet(
   );
 
   let proxy = null;
+  // XXX should we return configuratorProxy as well?
+  let configuratorProxy = null;
   if (deployProxy) {
     const cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
       'CometFactory.sol',
@@ -178,26 +180,34 @@ export async function deployDevelopmentComet(
     );
 
     let proxyAdminArgs: [] = [];
-    let proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
-      'CometProxyAdmin.sol',
+    let proxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
+      'vendor/proxy/ProxyAdmin.sol',
       proxyAdminArgs
     );
     
-    proxy = await deploymentManager.deploy<
-      TransparentUpgradeableFactoryProxy,
-      TransparentUpgradeableFactoryProxy__factory,
-      [string, string, string, string]
-    >('TransparentUpgradeableFactoryProxy.sol', [
+    // Configuration proxy
+    configuratorProxy = await deploymentManager.deploy<
+      TransparentUpgradeableProxy,
+      TransparentUpgradeableProxy__factory,
+      [string, string, string]
+    >('vendor/proxy/TransparentUpgradeableProxy.sol', [
       configurator.address,
+      proxyAdmin.address,
+      (await configurator.populateTransaction.initialize(await governor.getAddress(), cometFactory.address, configuration)).data,
+    ]);
+    
+    // Comet proxy
+    proxy = await deploymentManager.deploy<
+      TransparentUpgradeableProxy,
+      TransparentUpgradeableProxy__factory,
+      [string, string, string]
+    >('vendor/proxy/TransparentUpgradeableProxy.sol', [
       comet.address,
       proxyAdmin.address,
       (await comet.populateTransaction.initializeStorage()).data,
     ]);
 
-    await proxyAdmin.connect(governor).setFactory(proxy.address, cometFactory.address);
-    await proxyAdmin.connect(governor).setConfiguration(proxy.address, configuration);
-
-    await deploymentManager.putRoots(new Map([['comet', proxy.address]]));
+    await deploymentManager.putRoots(new Map([['comet', proxy.address], ['configurator', configuratorProxy.address]]));
   }
 
   return {

@@ -9,16 +9,6 @@ import "./CometConfiguration.sol";
  * @author Compound
  */
 contract CometStorage is CometConfiguration {
-    /// @notice Configuration settings used to deploy new Comet instances
-    /// by the configurator
-    /// @dev This needs to be internal to avoid a `CompilerError: Stack too deep
-    /// when compiling inline assembly` error that is caused by the default
-    /// getters created for public variables.
-    Configuration internal configuratorParams;
-
-    /// @notice Address for Comet factory contract
-    address public factory;
-
     // 512 bits total = 2 slots
     struct TotalsBasic {
         // 1st slot
