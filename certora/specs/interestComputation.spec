@@ -396,7 +396,7 @@ rule reserveRate(){
 
     getSupplyRate(e);
 
-    assert lastReverted;
+    assert false;
 }
 
 rule utilization_zero_SupplyRate_zero(){
