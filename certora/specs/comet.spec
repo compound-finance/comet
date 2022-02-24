@@ -174,7 +174,7 @@ filtered { f-> !similarFunctions(f) && !f.isView }
  reason :
  link   : 
 */
-invariant balance_vs_base()
+invariant base_balance_vs_totals()
 _baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase()
 filtered { f-> !similarFunctions(f) && !f.isView }
     {
@@ -211,9 +211,9 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
     //todo - is this a safe requirement ?
     // violated otherwise - user can gain baseToken 
     // https://vaas-stg.certora.com/output/23658/591b98129cc8a5aa3daf/?anonymousKey=3eddbea2ce8324647b60de82f57e939fab8ab53d
-    require asset != _baseToken; 
+    // require asset != _baseToken; 
     // if minAmount is not given, one can get zero https://vaas-stg.certora.com/output/23658/12feded77f88509f3604/?anonymousKey=20b21b4817aeab18024bd014fc3b659593c41671
-    require minAmount > 0 ; 
+    // require minAmount > 0 ; 
     
 
     uint256 balanceAssetBefore = tokenBalanceOf(e, asset, currentContract);
@@ -221,7 +221,7 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
     buyCollateral(e, asset, minAmount, baseAmount, recipient);
     uint256 balanceAssetAfter = tokenBalanceOf(e, asset, currentContract);
     uint256 balanceBaseAfter = tokenBalanceOf(e, _baseToken, currentContract);
-    assert (balanceAssetAfter >= balanceAssetBefore);
-    assert (balanceBaseBefore >= balanceBaseAfter);
+    assert (balanceAssetAfter <= balanceAssetBefore);
+    assert (balanceBaseBefore <= balanceBaseAfter);
     assert (balanceBaseBefore > balanceBaseAfter <=> balanceAssetAfter > balanceAssetBefore);
 }
