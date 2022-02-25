@@ -604,56 +604,6 @@ contract Comet is CometCore {
     }
 
     /**
-     * @dev The positive present supply balance if positive or the negative borrow balance if negative
-     */
-    function presentValue(TotalsBasic memory totals, int104 principalValue_) internal pure returns (int104) {
-        if (principalValue_ >= 0) {
-            return signed104(presentValueSupply(totals, unsigned104(principalValue_)));
-        } else {
-            return -signed104(presentValueBorrow(totals, unsigned104(-principalValue_)));
-        }
-    }
-
-    /**
-     * @dev The principal amount projected forward by the supply index
-     */
-    function presentValueSupply(TotalsBasic memory totals, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * totals.baseSupplyIndex / baseIndexScale);
-    }
-
-    /**
-     * @dev The principal amount projected forward by the borrow index
-     */
-    function presentValueBorrow(TotalsBasic memory totals, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * totals.baseBorrowIndex / baseIndexScale);
-    }
-
-    /**
-     * @dev The positive principal if positive or the negative principal if negative
-     */
-    function principalValue(TotalsBasic memory totals, int104 presentValue_) internal pure returns (int104) {
-        if (presentValue_ >= 0) {
-            return signed104(principalValueSupply(totals, unsigned104(presentValue_)));
-        } else {
-            return -signed104(principalValueBorrow(totals, unsigned104(-presentValue_)));
-        }
-    }
-
-    /**
-     * @dev The present value projected backward by the supply index
-     */
-    function principalValueSupply(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * baseIndexScale / totals.baseSupplyIndex);
-    }
-
-    /**
-     * @dev The present value projected backward by the borrow index
-     */
-    function principalValueBorrow(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * baseIndexScale / totals.baseBorrowIndex);
-    }
-
-    /**
      * @dev The amounts broken into repay and supply amounts, given negative balance
      */
     function repayAndSupplyAmount(int104 balance, uint104 amount) internal pure returns (uint104, uint104) {
