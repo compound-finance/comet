@@ -40,6 +40,10 @@ export default class CometActor {
     this.info = info;
   }
 
+  static fork(actor: CometActor, context: CometContext): CometActor {
+    return new CometActor(actor.name, actor.signer, actor.address, context, actor.info);
+  }
+
   async getEthBalance() {
     return this.signer.getBalance();
   }

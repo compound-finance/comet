@@ -21,16 +21,9 @@ function* combos<T>(choices: T[][]): Generator<T[]> {
   }
 }
 
-function* enumerate<T>(iter: Iterable<T>): Generator<[number, T]> {
-  let i = 0;
-  for (let value of iter) {
-      yield [i++, value];
-  }
-}
-
 function bindFunctions(obj: any) {
   for (let property of Object.getOwnPropertyNames(Object.getPrototypeOf(obj))) {
-    if (typeof(obj[property]) === 'function') {
+    if (typeof obj[property] === 'function') {
       obj[property] = obj[property].bind(obj);
     }
   }
@@ -69,9 +62,10 @@ export class Runner<T> {
 
     // reset the world if a snapshot exists and take a snapshot of it
     if (this.worldSnapshot) {
-      await world._revert(this.worldSnapshot);
+      this.worldSnapshot = await world._revertAndSnapshot(this.worldSnapshot);
+    } else {
+      this.worldSnapshot = await world._snapshot();
     }
-    this.worldSnapshot = (await world._snapshot()) as string;
 
     // initialize the context and take a snapshot of it
     let context = await scenario.initializer(world);
@@ -84,19 +78,10 @@ export class Runner<T> {
       constraints.map((c) => c.solve(scenario.requirements, context, world).then(mapSolution))
     );
     const baseSolutions: Solution<T>[][] = [[identity]];
-    
-    for (const [i, combo] of enumerate(combos(baseSolutions.concat(solutionChoices)))) {
-      // XXX Get rid of this band-aid fix when deep clone in the forker works. 
-      // Currently, the context is not being properly cloned and is being shared across 
-      // solutions, so we have to create a new context from scratch for every solution.
-      // The `i > 0` condition is to avoid initializing the context twice during the first
-      // solution run.
-      if (i > 0) {
-        context = await scenario.initializer(world);
-      }
 
+    for (const combo of combos(baseSolutions.concat(solutionChoices))) {
       // create a fresh copy of context that solutions can modify
-      let ctx = await scenario.forker(context);
+      let ctx: T = await scenario.forker(context);
 
       // apply each solution in the combo, then check they all still hold
       for (const solution of combo) {
@@ -117,21 +102,25 @@ export class Runner<T> {
       } catch (e) {
         // TODO: Include the specific solution (set of states) that failed in the result
         return this.generateResult(base, scenario, startTime, numSolutionSets, e);
+      } finally {
+        // revert back to the frozen world for the next scenario
+        // XXX revert to contextSnapshot instead when deep cloning of contexts is implemented.
+        // snapshots can only be used once, so take another for next time
+        // XXX revert to storing the snapshot in contextSnapshot when deep cloning of contexts is implemented.
+        contextSnapshot = await world._revertAndSnapshot(contextSnapshot);
       }
-
-      // revert back to the frozen world for the next scenario
-      // XXX revert to contextSnapshot instead when deep cloning of contexts is implemented.
-      await world._revert(this.worldSnapshot);
-
-      // snapshots can only be used once, so take another for next time
-      // XXX revert to storing the snapshot in contextSnapshot when deep cloning of contexts is implemented.
-      this.worldSnapshot = (await world._snapshot()) as string;
     }
     // Send success result only after all combinations of solutions have passed for this scenario.
     return this.generateResult(base, scenario, startTime, numSolutionSets);
   }
 
-  private generateResult(base: ForkSpec, scenario: Scenario<T>, startTime: number, numSolutionSets: number, err?: any): Result {
+  private generateResult(
+    base: ForkSpec,
+    scenario: Scenario<T>,
+    startTime: number,
+    numSolutionSets: number,
+    err?: any
+  ): Result {
     let diff = null;
     if (err instanceof AssertionError) {
       let { actual, expected } = <any>err; // Types unclear

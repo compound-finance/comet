@@ -18,16 +18,22 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 
+type ActorMap = { [name: string]: CometActor };
+type AssetMap = { [name: string]: CometAsset };
+
 export class CometContext {
   deploymentManager: DeploymentManager;
-  actors: { [name: string]: CometActor };
-  assets: { [name: string]: CometAsset };
-  remoteToken: Contract | undefined;
+  actors: ActorMap;
+  assets: AssetMap;
+  remoteToken?: Contract;
   comet: Comet;
   proxyAdmin: ProxyAdmin;
 
-  constructor(deploymentManager: DeploymentManager, comet: Comet, proxyAdmin: ProxyAdmin) {
+  constructor(deploymentManager: DeploymentManager, remoteToken: Contract | undefined, comet: Comet, proxyAdmin: ProxyAdmin) {
     this.deploymentManager = deploymentManager;
+    this.actors = {};
+    this.assets = {};
+    this.remoteToken = remoteToken;
     this.comet = comet;
     this.proxyAdmin = proxyAdmin;
   }
@@ -182,7 +188,7 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
 
   let proxyAdmin = (await getContract<ProxyAdmin>('cometAdmin')).connect(adminSigner);
 
-  let context = new CometContext(deploymentManager, comet, proxyAdmin);
+  let context = new CometContext(deploymentManager, undefined, comet, proxyAdmin);
 
   context.actors = {
     admin: await buildActor('admin', adminSigner, context),
@@ -199,9 +205,11 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
 };
 
 async function forkContext(c: CometContext): Promise<CometContext> {
-  // Deep clone the cache's cache
-  c.deploymentManager.cache.cloneMemory();
-  return c;
+  let context = new CometContext(DeploymentManager.fork(c.deploymentManager), c.remoteToken, c.comet, c.proxyAdmin);
+  context.actors = Object.fromEntries(Object.entries(c.actors).map(([name, actor]) => [name, CometActor.fork(actor, context)]));
+  context.assets = Object.fromEntries(Object.entries(c.assets).map(([name, asset]) => [name, CometAsset.fork(asset)]));
+
+  return context;
 }
 
 export const constraints = [

@@ -60,7 +60,9 @@ export class UtilizationConstraint<T extends CometContext> implements Constraint
       return null;
     } else {
       // utilization is target number
-      return async ({ comet }: T): Promise<T> => {
+      return async (context: T): Promise<T> => {
+        let comet = context.comet;
+
         let baseToken = context.getAssetByAddress(await comet.baseToken());
         let utilizationFactor = factor(utilization);
         let { totalSupplyBase: totalSupplyBaseBN, totalBorrowBase: totalBorrowBaseBN } =
