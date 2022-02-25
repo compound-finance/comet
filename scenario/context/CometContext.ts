@@ -68,21 +68,17 @@ export class CometContext {
 
   async upgradeTo(newComet: Comet, world: World, data?: string) {
     let comet = await this.getComet();
-
-    if (data) {
-      await (await this.getCometAdmin()).upgradeAndCall(comet.address, newComet.address, data);
-    } else {
-      await (await this.getCometAdmin()).upgrade(comet.address, newComet.address);
-    }
-
-    // TODO: Do we need to clear something in contracts cache?
-    // this.comet = new this.deploymentManager.hre.ethers.Contract(this.comet.address, newComet.interface, this.comet.signer) as Comet;
-
     // Set the admin and pause guardian addresses again since these may have changed.
     let governorAddress = await comet.governor(); // TODO: is this newComet?
     let pauseGuardianAddress = await comet.pauseGuardian();
     let adminSigner = await world.impersonateAddress(governorAddress);
     let pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
+
+    if (data) {
+      await (await this.getCometAdmin()).connect(adminSigner).upgradeAndCall(comet.address, newComet.address, data);
+    } else {
+      await (await this.getCometAdmin()).connect(adminSigner).upgrade(comet.address, newComet.address);
+    }
 
     this.actors['admin'] = await buildActor('admin', adminSigner, this);
     this.actors['pauseGuardian'] = await buildActor('pauseGuardian', pauseGuardianSigner, this);
