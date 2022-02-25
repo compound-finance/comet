@@ -28,9 +28,10 @@ export class ModernConstraint<T extends CometContext> implements Constraint<T> {
         solutions.push(async function solution(context: T): Promise<T> {
           console.log("Upgrading to modern...");
           // TODO: Make this deployment script less ridiculous, e.g. since it redeploys tokens right now
+          let comet = await context.getComet();
           let { comet: newComet, tokens } = await deployComet(context.deploymentManager, false, config.cometConfig);
           let initializer: string | undefined = undefined;
-          if (!context.comet.totalsBasic || (await context.comet.totalsBasic()).lastAccrualTime === 0) {
+          if (!comet.totalsBasic || (await comet.totalsBasic()).lastAccrualTime === 0) {
             initializer = (await newComet.populateTransaction.XXX_REMOVEME_XXX_initialize()).data
           }
 

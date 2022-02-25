@@ -219,7 +219,7 @@ export class DeploymentManager {
 
   static fork(d: DeploymentManager): DeploymentManager {
     let copy = new DeploymentManager(d.deployment, d.hre, d.config);
-    copy.cache.loadMemory(d.cache);
+    copy.cache.loadMemory(d.cache.cache);
     return copy;
   }
 }

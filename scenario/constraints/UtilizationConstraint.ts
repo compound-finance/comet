@@ -61,7 +61,7 @@ export class UtilizationConstraint<T extends CometContext> implements Constraint
     } else {
       // utilization is target number
       return async (context: T): Promise<T> => {
-        let comet = context.comet;
+        let comet = await context.getComet();
 
         let baseToken = context.getAssetByAddress(await comet.baseToken());
         let utilizationFactor = factor(utilization);
@@ -149,10 +149,11 @@ export class UtilizationConstraint<T extends CometContext> implements Constraint
     }
   }
 
-  async check(requirements: object, { comet }: T, world: World) {
+  async check(requirements: object, context: T, world: World) {
     let { utilization } = getUtilizationConfig(requirements);
 
     if (utilization) {
+      let comet = await context.getComet();
       expect(defactor(await comet.getUtilization())).to.approximately(0.5, 0.000001);
     }
   }

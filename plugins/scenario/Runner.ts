@@ -5,7 +5,7 @@ import { AssertionError } from 'chai';
 
 export type Address = string;
 
-export type ResultFn<T> = (base: ForkSpec, scenario: Scenario<T>, err?: any) => void;
+export type ResultFn<T, U> = (base: ForkSpec, scenario: Scenario<T, U>, err?: any) => void;
 
 export interface Config<T> {
   base: ForkSpec;
@@ -45,7 +45,7 @@ function mapSolution<T>(s: Solution<T> | Solution<T>[] | null): Solution<T>[] {
   }
 }
 
-export class Runner<T> {
+export class Runner<T, U> {
   config: Config<T>;
   worldSnapshot: string;
 
@@ -53,7 +53,7 @@ export class Runner<T> {
     this.config = config;
   }
 
-  async run(scenario: Scenario<T>): Promise<Result> {
+  async run(scenario: Scenario<T, U>): Promise<Result> {
     const { config } = this;
     const { base, world } = config;
     const { constraints = [] } = scenario;
@@ -93,11 +93,11 @@ export class Runner<T> {
       }
 
       // bind all functions on object
-      bindFunctions(ctx);
+      // bindFunctions(ctx);
 
       // requirements met, run the property
       try {
-        await scenario.property(ctx, world);
+        await scenario.property(await scenario.transformer(ctx), world, ctx);
         numSolutionSets++;
       } catch (e) {
         // TODO: Include the specific solution (set of states) that failed in the result
@@ -116,7 +116,7 @@ export class Runner<T> {
 
   private generateResult(
     base: ForkSpec,
-    scenario: Scenario<T>,
+    scenario: Scenario<T, U>,
     startTime: number,
     numSolutionSets: number,
     err?: any
