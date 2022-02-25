@@ -1,20 +1,13 @@
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { hasNetworkConfiguration } from './NetworkConfiguration';
-import { DeploymentManager, Roots } from '../../plugins/deployment_manager/DeploymentManager';
+import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
+import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import {
-  Comet__factory,
   Comet,
-  FaucetToken__factory,
-  FaucetToken,
-  ProxyAdmin,
-  ProxyAdmin__factory,
   ERC20,
-  TransparentUpgradeableProxy__factory,
   TransparentUpgradeableProxy,
 } from '../../build/types';
-import { AssetInfoStruct, ConfigurationStruct } from '../../build/types/Comet';
+import { AssetInfoStruct } from '../../build/types/Comet';
 import { BigNumberish } from 'ethers';
-export { Comet } from '../../build/types';
 import { deployNetworkComet } from './Network';
 import { deployDevelopmentComet } from './Development';
 
@@ -44,13 +37,14 @@ export interface DeployedContracts {
 export async function deployComet(
   deploymentManager: DeploymentManager,
   deployProxy: boolean = true,
-  configurationOverrides: CometConfigurationOverrides = {}
+  configurationOverrides: CometConfigurationOverrides = {},
+  contractMapOverride?: ContractMap,
 ): Promise<DeployedContracts> {
   // If we have a `configuration.json` for the network, use it.
   // Otherwise, we do a "development"-style deploy, which deploys fake tokens, etc, and generally
   // provides less value than a full-fledged test-net or mainnet fork.
   if (await hasNetworkConfiguration(deploymentManager.deployment)) {
-    return await deployNetworkComet(deploymentManager, deployProxy, configurationOverrides);
+    return await deployNetworkComet(deploymentManager, deployProxy, configurationOverrides, contractMapOverride);
   } else {
     return await deployDevelopmentComet(deploymentManager, deployProxy, configurationOverrides);
   }

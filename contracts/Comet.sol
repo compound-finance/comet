@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.11;
 
 import "./CometMath.sol";
 import "./CometStorage.sol";
+
 import "./ERC20.sol";
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
@@ -12,13 +13,25 @@ import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.
  * @author Compound
  */
 contract Comet is CometMath, CometStorage {
-    struct AssetInfo {
+    struct AssetConfig {
         address asset;
-        uint borrowCollateralFactor;
-        uint liquidateCollateralFactor;
-        uint supplyCap;
         address priceFeed;
-        uint scale;
+        uint8 decimals;
+        uint64 borrowCollateralFactor;
+        uint64 liquidateCollateralFactor;
+        uint64 liquidationFactor;
+        uint128 supplyCap;
+    }
+
+    struct AssetInfo {
+        uint8 offset;
+        address asset;
+        address priceFeed;
+        uint64 scale;
+        uint64 borrowCollateralFactor;
+        uint64 liquidateCollateralFactor;
+        uint64 liquidationFactor;
+        uint128 supplyCap;
     }
 
     struct Configuration {
@@ -39,45 +52,16 @@ contract Comet is CometMath, CometStorage {
         uint104 baseBorrowMin;
         uint104 targetReserves;
 
-        AssetInfo[] assetInfo;
+        AssetConfig[] assetConfigs;
     }
+
+    /** General configuration constants **/
 
     /// @notice The name of this contract
     string public constant name = "Compound Comet";
 
     /// @notice The major version of this contract
     string public constant version = "0";
-
-    // XXX we should prob camelCase all these?
-    /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-
-    /// @notice The EIP-712 typehash for allowBySig Authorization
-    bytes32 public constant AUTHORIZATION_TYPEHASH = keccak256("Authorization(address owner,address manager,bool isAllowed,uint256 nonce,uint256 expiry)");
-
-    /// @notice The highest valid value for s in an ECDSA signature pair (0 < s < secp256k1n ÷ 2 + 1)
-    /// @dev See https://ethereum.github.io/yellowpaper/paper.pdf #307)
-    uint public constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
-
-    /// @notice The number of seconds per year
-    /// @dev 365 days * 24 hours * 60 minutes * 60 seconds
-    uint64 public constant secondsPerYear = 31_536_000;
-
-    /// @notice The max number of assets this contract is hardcoded to support
-    /// @dev Do not change this variable without updating all the fields throughout the contract.
-    uint public constant maxAssets = 3;
-
-    /// @notice The number of assets this contract actually supports
-    uint public immutable numAssets;
-
-    /// @notice Offsets for specific actions in the pause flag bit array
-    uint8 public constant pauseSupplyOffset = 0;
-    uint8 public constant pauseTransferOffset = 1;
-    uint8 public constant pauseWithdrawOffset = 2;
-    uint8 public constant pauseAbsorbOffset = 3;
-    uint8 public constant pauseBuyOffset = 4;
-
-    /** General configuration constants **/
 
     /// @notice The admin of the protocol
     address public immutable governor;
@@ -140,31 +124,70 @@ contract Comet is CometMath, CometStorage {
     /// @notice The minimum base token reserves which must be held before collateral is hodled
     uint104 public immutable targetReserves;
 
-    /**  Collateral asset configuration **/
+    /// @notice The max number of assets this contract is hardcoded to support
+    /// @dev Do not change this variable without updating all the fields throughout the contract.
+    uint8 public constant maxAssets = 15;
 
-    address internal immutable asset00;
-    address internal immutable asset01;
-    address internal immutable asset02;
+    /// @notice The number of assets this contract actually supports
+    uint8 public immutable numAssets;
 
-    uint internal immutable borrowCollateralFactor00;
-    uint internal immutable borrowCollateralFactor01;
-    uint internal immutable borrowCollateralFactor02;
+    /// @notice The max value for a collateral factor (1)
+    uint64 public constant maxCollateralFactor = factorScale;
 
-    uint internal immutable liquidateCollateralFactor00;
-    uint internal immutable liquidateCollateralFactor01;
-    uint internal immutable liquidateCollateralFactor02;
+    /**  Collateral asset configuration (packed) **/
 
-    uint internal immutable supplyCap00;
-    uint internal immutable supplyCap01;
-    uint internal immutable supplyCap02;
+    uint256 internal immutable asset00_a;
+    uint256 internal immutable asset00_b;
+    uint256 internal immutable asset01_a;
+    uint256 internal immutable asset01_b;
+    uint256 internal immutable asset02_a;
+    uint256 internal immutable asset02_b;
+    uint256 internal immutable asset03_a;
+    uint256 internal immutable asset03_b;
+    uint256 internal immutable asset04_a;
+    uint256 internal immutable asset04_b;
+    uint256 internal immutable asset05_a;
+    uint256 internal immutable asset05_b;
+    uint256 internal immutable asset06_a;
+    uint256 internal immutable asset06_b;
+    uint256 internal immutable asset07_a;
+    uint256 internal immutable asset07_b;
+    uint256 internal immutable asset08_a;
+    uint256 internal immutable asset08_b;
+    uint256 internal immutable asset09_a;
+    uint256 internal immutable asset09_b;
+    uint256 internal immutable asset10_a;
+    uint256 internal immutable asset10_b;
+    uint256 internal immutable asset11_a;
+    uint256 internal immutable asset11_b;
+    uint256 internal immutable asset12_a;
+    uint256 internal immutable asset12_b;
+    uint256 internal immutable asset13_a;
+    uint256 internal immutable asset13_b;
+    uint256 internal immutable asset14_a;
+    uint256 internal immutable asset14_b;
 
-    address internal immutable priceFeed00;
-    address internal immutable priceFeed01;
-    address internal immutable priceFeed02;
+    /** Internal constants **/
 
-    uint internal immutable scale00;
-    uint internal immutable scale01;
-    uint internal immutable scale02;
+    /// @dev Offsets for specific actions in the pause flag bit array
+    uint8 internal constant PAUSE_SUPPLY_OFFSET = 0;
+    uint8 internal constant PAUSE_TRANSFER_OFFSET = 1;
+    uint8 internal constant PAUSE_WITHDRAW_OFFSET = 2;
+    uint8 internal constant PAUSE_ABSORB_OFFSET = 3;
+    uint8 internal constant PAUSE_BUY_OFFSET = 4;
+
+    /// @dev 365 days * 24 hours * 60 minutes * 60 seconds
+    uint64 internal constant SECONDS_PER_YEAR = 31_536_000;
+
+    /// @dev The EIP-712 typehash for the contract's domain
+    bytes32 internal constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+
+    /// @dev The EIP-712 typehash for allowBySig Authorization
+    bytes32 internal constant AUTHORIZATION_TYPEHASH = keccak256("Authorization(address owner,address manager,bool isAllowed,uint256 nonce,uint256 expiry)");
+
+    /// @dev The highest valid value for s in an ECDSA signature pair (0 < s < secp256k1n ÷ 2 + 1)
+    ///  See https://ethereum.github.io/yellowpaper/paper.pdf #307)
+    uint internal constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
 
     /**
      * @notice Construct a new protocol instance
@@ -174,9 +197,9 @@ contract Comet is CometMath, CometStorage {
         // Sanity checks
         uint decimals = ERC20(config.baseToken).decimals();
         require(decimals <= 18, "base token has too many decimals");
+        require(config.assetConfigs.length <= maxAssets, "too many asset configs");
         require(config.baseMinForRewards > 0, "baseMinForRewards should be > 0");
-        require(config.assetInfo.length <= maxAssets, "too many asset configs");
-        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == priceFeedDecimals, "incorrect baseTokenPriceFeed decimals");
+        require(AggregatorV3Interface(config.baseTokenPriceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
@@ -195,50 +218,41 @@ contract Comet is CometMath, CometStorage {
         baseBorrowMin = config.baseBorrowMin;
         targetReserves = config.targetReserves;
 
-        // Set asset info
-        numAssets = config.assetInfo.length;
-
-        asset00 = _getAsset(config.assetInfo, 0).asset;
-        asset01 = _getAsset(config.assetInfo, 1).asset;
-        asset02 = _getAsset(config.assetInfo, 2).asset;
-
-        borrowCollateralFactor00 = _getAsset(config.assetInfo, 0).borrowCollateralFactor;
-        borrowCollateralFactor01 = _getAsset(config.assetInfo, 1).borrowCollateralFactor;
-        borrowCollateralFactor02 = _getAsset(config.assetInfo, 2).borrowCollateralFactor;
-
-        liquidateCollateralFactor00 = _getAsset(config.assetInfo, 0).liquidateCollateralFactor;
-        liquidateCollateralFactor01 = _getAsset(config.assetInfo, 1).liquidateCollateralFactor;
-        liquidateCollateralFactor02 = _getAsset(config.assetInfo, 2).liquidateCollateralFactor;
-
-        supplyCap00 = _getAsset(config.assetInfo, 0).supplyCap;
-        supplyCap01 = _getAsset(config.assetInfo, 1).supplyCap;
-        supplyCap02 = _getAsset(config.assetInfo, 2).supplyCap;
-
-        address priceFeed00_ = _getAsset(config.assetInfo, 0).priceFeed;
-        address priceFeed01_ = _getAsset(config.assetInfo, 1).priceFeed;
-        address priceFeed02_ = _getAsset(config.assetInfo, 2).priceFeed;
-
-        if (priceFeed00_ != address(0))
-            require(AggregatorV3Interface(priceFeed00_).decimals() == priceFeedDecimals, "incorrect priceFeed decimals");
-        if (priceFeed01_ != address(0))
-            require(AggregatorV3Interface(priceFeed01_).decimals() == priceFeedDecimals, "incorrect priceFeed decimals");
-        if (priceFeed02_ != address(0))
-            require(AggregatorV3Interface(priceFeed02_).decimals() == priceFeedDecimals, "incorrect priceFeed decimals");
-
-        priceFeed00 = priceFeed00_;
-        priceFeed01 = priceFeed01_;
-        priceFeed02 = priceFeed02_;
-
-        scale00 = _getAssetScale(config.assetInfo, 0);
-        scale01 = _getAssetScale(config.assetInfo, 1);
-        scale02 = _getAssetScale(config.assetInfo, 2);
-
         // Set interest rate model configs
         kink = config.kink;
-        perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / secondsPerYear;
-        perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / secondsPerYear;
-        perSecondInterestRateBase = config.perYearInterestRateBase / secondsPerYear;
+        perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
+        perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
+        perSecondInterestRateBase = config.perYearInterestRateBase / SECONDS_PER_YEAR;
         reserveRate = config.reserveRate;
+
+        // Set asset info
+        numAssets = uint8(config.assetConfigs.length);
+
+        (asset00_a, asset00_b) = _getPackedAsset(config.assetConfigs, 0);
+        (asset01_a, asset01_b) = _getPackedAsset(config.assetConfigs, 1);
+        (asset02_a, asset02_b) = _getPackedAsset(config.assetConfigs, 2);
+        (asset03_a, asset03_b) = _getPackedAsset(config.assetConfigs, 3);
+        (asset04_a, asset04_b) = _getPackedAsset(config.assetConfigs, 4);
+        (asset05_a, asset05_b) = _getPackedAsset(config.assetConfigs, 5);
+        (asset06_a, asset06_b) = _getPackedAsset(config.assetConfigs, 6);
+        (asset07_a, asset07_b) = _getPackedAsset(config.assetConfigs, 7);
+        (asset08_a, asset08_b) = _getPackedAsset(config.assetConfigs, 8);
+        (asset09_a, asset09_b) = _getPackedAsset(config.assetConfigs, 9);
+        (asset10_a, asset10_b) = _getPackedAsset(config.assetConfigs, 10);
+        (asset11_a, asset11_b) = _getPackedAsset(config.assetConfigs, 11);
+        (asset12_a, asset12_b) = _getPackedAsset(config.assetConfigs, 12);
+        (asset13_a, asset13_b) = _getPackedAsset(config.assetConfigs, 13);
+        (asset14_a, asset14_b) = _getPackedAsset(config.assetConfigs, 14);
+
+        // Initialize
+        // XXX considerations?
+        XXX_REMOVEME_XXX_initialize();
+    }
+
+    // TODO: Remove me. Function while waiting for initializer
+    // !! NOT FOR REUSE [YES FOR REFUSE] !!
+    function XXX_REMOVEME_XXX_initialize() public {
+        require(totalsBasic.lastAccrualTime == 0, "already initialized");
 
         // Initialize aggregates
         totalsBasic.lastAccrualTime = getNow();
@@ -248,36 +262,67 @@ contract Comet is CometMath, CometStorage {
         totalsBasic.trackingBorrowIndex = 0;
     }
 
+
     /**
-     * @dev XXX (dev for internal)
+     * @dev Gets the info for an asset or empty, for initialization
      */
-    function _getAsset(AssetInfo[] memory assetInfo, uint i) internal pure returns (AssetInfo memory) {
-        if (i < assetInfo.length)
-            return assetInfo[i];
-        return AssetInfo({
+    function _getAssetConfig(AssetConfig[] memory assetConfigs, uint i) internal pure returns (AssetConfig memory) {
+        if (i < assetConfigs.length)
+            return assetConfigs[i];
+        return AssetConfig({
             asset: address(0),
-            borrowCollateralFactor: uint256(0),
-            liquidateCollateralFactor: uint256(0),
-            supplyCap: uint256(0),
             priceFeed: address(0),
-            scale: uint256(0)
+            decimals: uint8(0),
+            borrowCollateralFactor: uint64(0),
+            liquidateCollateralFactor: uint64(0),
+            liquidationFactor: uint64(0),
+            supplyCap: uint128(0)
         });
     }
 
     /**
-     * @dev Gets the asset scale by reading the decimals from the asset contract
+     * @dev Checks and gets the packed asset info for storage
      */
-    function _getAssetScale(AssetInfo[] memory assetInfo, uint i) internal view returns (uint) {
-        AssetInfo memory assetInfo_ = _getAsset(assetInfo, i);
-        address asset = assetInfo_.asset;
-        uint expectedScale = assetInfo_.scale;
+    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal view virtual returns (uint256, uint256) {
+        AssetConfig memory assetConfig = _getAssetConfig(assetConfigs, i);
+        address asset = assetConfig.asset;
+        address priceFeed = assetConfig.priceFeed;
+        uint8 decimals = assetConfig.decimals;
+
+        // Short-circuit if asset is nil
         if (asset == address(0)) {
-            return 0;
-        } else {
-            uint actualScale = 10 ** ERC20(asset).decimals();
-            require(expectedScale == actualScale, "asset scale mismatch");
-            return actualScale;
+            return (0, 0);
         }
+
+        // Sanity check price feed and asset decimals
+        require(AggregatorV3Interface(priceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
+        require(ERC20(asset).decimals() == decimals, "asset decimals mismatch");
+
+        // Ensure collateral factors are within range
+        require(assetConfig.borrowCollateralFactor < assetConfig.liquidateCollateralFactor, "borrow CF must be < liquidate CF");
+        require(assetConfig.liquidateCollateralFactor <= maxCollateralFactor, "liquidate CF too high");
+
+        // Keep 4 decimals for each factor
+        uint descale = factorScale / 1e4;
+        uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
+        uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
+        uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
+
+        // Be nice and check descaled values are still within range
+        require(borrowCollateralFactor < liquidateCollateralFactor, "borrow CF must be < liquidate CF");
+
+        // Keep whole units of asset for supply cap
+        uint64 supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals));
+
+        uint256 word_a = (uint160(asset) << 0 |
+                          uint256(borrowCollateralFactor) << 160 |
+                          uint256(liquidateCollateralFactor) << 176 |
+                          uint256(liquidationFactor) << 192);
+        uint256 word_b = (uint160(priceFeed) << 0 |
+                          uint256(decimals) << 160 |
+                          uint256(supplyCap) << 168);
+
+        return (word_a, word_b);
     }
 
     /**
@@ -285,35 +330,95 @@ contract Comet is CometMath, CometStorage {
      * @param i The index of the asset info to get
      * @return The asset info object
      */
-    function getAssetInfo(uint i) public view returns (AssetInfo memory) {
+    function getAssetInfo(uint8 i) public view returns (AssetInfo memory) {
         require(i < numAssets, "asset info not found");
 
-        if (i == 0) return AssetInfo({asset: asset00, borrowCollateralFactor: borrowCollateralFactor00, liquidateCollateralFactor: liquidateCollateralFactor00, supplyCap: supplyCap00, priceFeed: priceFeed00, scale: scale00 });
-        if (i == 1) return AssetInfo({asset: asset01, borrowCollateralFactor: borrowCollateralFactor01, liquidateCollateralFactor: liquidateCollateralFactor01, supplyCap: supplyCap01, priceFeed: priceFeed01, scale: scale01 });
-        if (i == 2) return AssetInfo({asset: asset02, borrowCollateralFactor: borrowCollateralFactor02, liquidateCollateralFactor: liquidateCollateralFactor02, supplyCap: supplyCap02, priceFeed: priceFeed02, scale: scale02 });
-        revert("absurd");
+        uint256 word_a;
+        uint256 word_b;
+
+        if (i == 0) {
+            word_a = asset00_a;
+            word_b = asset00_b;
+        } else if (i == 1) {
+            word_a = asset01_a;
+            word_b = asset01_b;
+        } else if (i == 2) {
+            word_a = asset02_a;
+            word_b = asset02_b;
+        } else if (i == 3) {
+            word_a = asset03_a;
+            word_b = asset03_b;
+        } else if (i == 4) {
+            word_a = asset04_a;
+            word_b = asset04_b;
+        } else if (i == 5) {
+            word_a = asset05_a;
+            word_b = asset05_b;
+        } else if (i == 6) {
+            word_a = asset06_a;
+            word_b = asset06_b;
+        } else if (i == 7) {
+            word_a = asset07_a;
+            word_b = asset07_b;
+        } else if (i == 8) {
+            word_a = asset08_a;
+            word_b = asset08_b;
+        } else if (i == 9) {
+            word_a = asset09_a;
+            word_b = asset09_b;
+        } else if (i == 10) {
+            word_a = asset10_a;
+            word_b = asset10_b;
+        } else if (i == 11) {
+            word_a = asset11_a;
+            word_b = asset11_b;
+        } else if (i == 12) {
+            word_a = asset12_a;
+            word_b = asset12_b;
+        } else if (i == 13) {
+            word_a = asset13_a;
+            word_b = asset13_b;
+        } else if (i == 14) {
+            word_a = asset14_a;
+            word_b = asset14_b;
+        } else {
+            revert("absurd");
+        }
+
+        address asset = address(uint160(word_a & type(uint160).max));
+        uint rescale = factorScale / 1e4;
+        uint64 borrowCollateralFactor = uint64(((word_a >> 160) & type(uint16).max) * rescale);
+        uint64 liquidateCollateralFactor = uint64(((word_a >> 176) & type(uint16).max) * rescale);
+        uint64 liquidationFactor = uint64(((word_a >> 192) & type(uint16).max) * rescale);
+
+        address priceFeed = address(uint160(word_b & type(uint160).max));
+        uint8 decimals = uint8(((word_b >> 160) & type(uint8).max));
+        uint64 scale = uint64(10 ** decimals);
+        uint128 supplyCap = uint128(((word_b >> 168) & type(uint64).max) * scale);
+
+        return AssetInfo({
+            offset: i,
+            asset: asset,
+            priceFeed: priceFeed,
+            scale: scale,
+            borrowCollateralFactor: borrowCollateralFactor,
+            liquidateCollateralFactor: liquidateCollateralFactor,
+            liquidationFactor: liquidationFactor,
+            supplyCap: supplyCap
+         });
     }
 
     /**
-     * @notice XXX
+     * @dev Determine index of asset that matches given address
      */
-    function assets() public view returns (AssetInfo[] memory) {
-        AssetInfo[] memory result = new AssetInfo[](numAssets);
-        for (uint i = 0; i < numAssets; i++) {
-            result[i] = getAssetInfo(i);
+    function getAssetInfoByAddress(address asset) internal view returns (AssetInfo memory) {
+        for (uint8 i = 0; i < numAssets; i++) {
+            AssetInfo memory assetInfo = getAssetInfo(i);
+            if (assetInfo.asset == asset) {
+                return assetInfo;
+            }
         }
-        return result;
-    }
-
-    /**
-     * @notice XXX
-     */
-    function assetAddresses() public view returns (address[] memory) {
-        address[] memory result = new address[](numAssets);
-        for (uint i = 0; i < numAssets; i++) {
-            result[i] = getAssetInfo(i).asset;
-        }
-        return result;
+        revert("asset not found");
     }
 
     /**
@@ -334,7 +439,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @notice Accrue interest (and rewards) in base token supply and borrows
      **/
-    function accrue(TotalsBasic memory totals) internal view returns (TotalsBasic memory) {
+    function accrue(TotalsBasic memory totals) internal virtual view returns (TotalsBasic memory) {
         uint40 now_ = getNow();
         uint timeElapsed = now_ - totals.lastAccrualTime;
         if (timeElapsed > 0) {
@@ -399,7 +504,7 @@ contract Comet is CometMath, CometStorage {
         bytes32 structHash = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, owner, manager, isAllowed_, nonce, expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
-        require(owner == signatory, "signature does not match arguments");
+        require(owner == signatory, "owner is not signatory");
         require(signatory != address(0), "invalid signature");
         require(nonce == userNonce[signatory], "invalid nonce");
         require(block.timestamp < expiry, "signed transaction expired");
@@ -427,7 +532,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Calculate current per second supply rate given totals
      */
-    function getSupplyRateInternal(TotalsBasic memory totals) internal view returns (uint64) {
+    function getSupplyRateInternal(TotalsBasic memory totals) internal virtual view returns (uint64) {
         uint utilization = getUtilizationInternal(totals);
         uint reserveScalingFactor = utilization * (factorScale - reserveRate) / factorScale;
         if (utilization <= kink) {
@@ -449,7 +554,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Calculate current per second borrow rate given totals
      */
-    function getBorrowRateInternal(TotalsBasic memory totals) internal view returns (uint64) {
+    function getBorrowRateInternal(TotalsBasic memory totals) internal virtual view returns (uint64) {
         uint utilization = getUtilizationInternal(totals);
         if (utilization <= kink) {
             // interestRateBase + interestRateSlopeLow * utilization
@@ -470,7 +575,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Calculate utilization rate of the base asset given totals
      */
-    function getUtilizationInternal(TotalsBasic memory totals) internal pure returns (uint) {
+    function getUtilizationInternal(TotalsBasic memory totals) internal virtual view returns (uint) {
         uint totalSupply = presentValueSupply(totals, totals.totalSupplyBase);
         uint totalBorrow = presentValueBorrow(totals, totals.totalBorrowBase);
         if (totalSupply == 0) {
@@ -478,6 +583,168 @@ contract Comet is CometMath, CometStorage {
         } else {
             return totalBorrow * factorScale / totalSupply;
         }
+    }
+
+    /**
+     * @notice Get the current price from a feed
+     * @param priceFeed The address of a price feed
+     * @return The price, scaled by `priceScale`
+     */
+    function getPrice(address priceFeed) public view returns (uint) {
+        (, int price, , , ) = AggregatorV3Interface(priceFeed).latestRoundData();
+        return unsigned256(price);
+    }
+
+    /**
+     * @notice Gets the total amount of protocol reserves, denominated in the number of base tokens
+     */
+    function getReserves() public view returns (int) {
+        TotalsBasic memory totals = totalsBasic;
+        uint balance = ERC20(baseToken).balanceOf(address(this));
+        uint104 totalSupply = presentValueSupply(totals, totals.totalSupplyBase);
+        uint104 totalBorrow = presentValueBorrow(totals, totals.totalBorrowBase);
+        return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
+    }
+
+    /**
+     * @notice Check whether an account has enough collateral to borrow
+     * @param account The address to check
+     * @return Whether the account is minimally collateralized enough to borrow
+     */
+    function isBorrowCollateralized(address account) public view returns (bool) {
+        // XXX take in UserBasic and UserCollateral as arguments to reduce SLOADs
+        uint16 assetsIn = userBasic[account].assetsIn;
+        TotalsBasic memory totals = totalsBasic;
+
+        int liquidity = signedMulPrice(
+            presentValue(totals, userBasic[account].principal),
+            getPrice(baseTokenPriceFeed),
+            baseScale
+        );
+
+        for (uint8 i = 0; i < numAssets; i++) {
+            if (isInAsset(assetsIn, i)) {
+                if (liquidity >= 0) {
+                    return true;
+                }
+
+                AssetInfo memory asset = getAssetInfo(i);
+                uint newAmount = mulPrice(
+                    userCollateral[account][asset.asset].balance,
+                    getPrice(asset.priceFeed),
+                    safe64(asset.scale)
+                );
+                liquidity += signed256(mulFactor(
+                    newAmount,
+                    asset.borrowCollateralFactor
+                ));
+            }
+        }
+
+        return liquidity >= 0;
+    }
+
+    /**
+     * @notice Calculate the amount of borrow liquidity for account
+     * @param account The address to check liquidity for
+     * @return The common price quantity of borrow liquidity
+     */
+    function getBorrowLiquidity(address account) public view returns (int) {
+        uint16 assetsIn = userBasic[account].assetsIn;
+        TotalsBasic memory totals = totalsBasic;
+
+        int liquidity = signedMulPrice(
+            presentValue(totals, userBasic[account].principal),
+            getPrice(baseTokenPriceFeed),
+            baseScale
+        );
+
+        for (uint8 i = 0; i < numAssets; i++) {
+            if (isInAsset(assetsIn, i)) {
+                AssetInfo memory asset = getAssetInfo(i);
+                uint newAmount = mulPrice(
+                    userCollateral[account][asset.asset].balance,
+                    getPrice(asset.priceFeed),
+                    safe64(asset.scale)
+                );
+                liquidity += signed256(mulFactor(
+                    newAmount,
+                    asset.borrowCollateralFactor
+                ));
+            }
+        }
+
+        return liquidity;
+    }
+
+    /**
+     * @notice Check whether an account has enough collateral to not be liquidated
+     * @param account The address to check
+     * @return Whether the account is minimally collateralized enough to not be liquidated
+     */
+    function isLiquidatable(address account) public view returns (bool) {
+        uint16 assetsIn = userBasic[account].assetsIn;
+        TotalsBasic memory totals = totalsBasic;
+
+        int liquidity = signedMulPrice(
+            presentValue(totals, userBasic[account].principal),
+            getPrice(baseTokenPriceFeed),
+            baseScale
+        );
+
+        for (uint8 i = 0; i < numAssets; i++) {
+            if (isInAsset(assetsIn, i)) {
+                if (liquidity >= 0) {
+                    return false;
+                }
+
+                AssetInfo memory asset = getAssetInfo(i);
+                uint newAmount = mulPrice(
+                    userCollateral[account][asset.asset].balance,
+                    getPrice(asset.priceFeed),
+                    asset.scale
+                );
+                liquidity += signed256(mulFactor(
+                    newAmount,
+                    asset.liquidateCollateralFactor
+                ));
+            }
+        }
+
+        return liquidity < 0;
+    }
+
+    /**
+     * @notice Calculate the amount of liquidation margin for account
+     * @param account The address to check margin for
+     * @return The common price quantity of liquidation margin
+     */
+    function getLiquidationMargin(address account) public view returns (int) {
+        uint16 assetsIn = userBasic[account].assetsIn;
+        TotalsBasic memory totals = totalsBasic;
+
+        int liquidity = signedMulPrice(
+            presentValue(totals, userBasic[account].principal),
+            getPrice(baseTokenPriceFeed),
+            baseScale
+        );
+
+        for (uint8 i = 0; i < numAssets; i++) {
+            if (isInAsset(assetsIn, i)) {
+                AssetInfo memory asset = getAssetInfo(i);
+                uint newAmount = mulPrice(
+                    userCollateral[account][asset.asset].balance,
+                    getPrice(asset.priceFeed),
+                    asset.scale
+                );
+                liquidity += signed256(mulFactor(
+                    newAmount,
+                    asset.liquidateCollateralFactor
+                ));
+            }
+        }
+
+        return liquidity;
     }
 
     /**
@@ -510,9 +777,9 @@ contract Comet is CometMath, CometStorage {
      */
     function principalValue(TotalsBasic memory totals, int104 presentValue_) internal pure returns (int104) {
         if (presentValue_ >= 0) {
-            return signed104(presentValueSupply(totals, unsigned104(presentValue_)));
+            return signed104(principalValueSupply(totals, unsigned104(presentValue_)));
         } else {
-            return -signed104(presentValueBorrow(totals, unsigned104(-presentValue_)));
+            return -signed104(principalValueBorrow(totals, unsigned104(-presentValue_)));
         }
     }
 
@@ -567,46 +834,46 @@ contract Comet is CometMath, CometStorage {
 
         totalsBasic.pauseFlags =
             uint8(0) |
-            (toUInt8(supplyPaused) << pauseSupplyOffset) |
-            (toUInt8(transferPaused) << pauseTransferOffset) |
-            (toUInt8(withdrawPaused) << pauseWithdrawOffset) |
-            (toUInt8(absorbPaused) << pauseAbsorbOffset) |
-            (toUInt8(buyPaused) << pauseBuyOffset);
+            (toUInt8(supplyPaused) << PAUSE_SUPPLY_OFFSET) |
+            (toUInt8(transferPaused) << PAUSE_TRANSFER_OFFSET) |
+            (toUInt8(withdrawPaused) << PAUSE_WITHDRAW_OFFSET) |
+            (toUInt8(absorbPaused) << PAUSE_ABSORB_OFFSET) |
+            (toUInt8(buyPaused) << PAUSE_BUY_OFFSET);
     }
 
     /**
      * @return Whether or not supply actions are paused
      */
     function isSupplyPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseSupplyOffset));
+        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_SUPPLY_OFFSET));
     }
 
     /**
      * @return Whether or not transfer actions are paused
      */
     function isTransferPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseTransferOffset));
+        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_TRANSFER_OFFSET));
     }
 
     /**
      * @return Whether or not withdraw actions are paused
      */
     function isWithdrawPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseWithdrawOffset));
+        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_WITHDRAW_OFFSET));
     }
 
     /**
      * @return Whether or not absorb actions are paused
      */
     function isAbsorbPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseAbsorbOffset));
+        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_ABSORB_OFFSET));
     }
 
     /**
      * @return Whether or not buy actions are paused
      */
     function isBuyPaused() public view returns (bool) {
-        return toBool(totalsBasic.pauseFlags & (uint8(1) << pauseBuyOffset));
+        return toBool(totalsBasic.pauseFlags & (uint8(1) << PAUSE_BUY_OFFSET));
     }
 
     /**
@@ -624,16 +891,24 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-     * @dev Determine index of asset that matches given address
+     * @dev Multiply a `fromScale` quantity by a price, returning a common price quantity
      */
-    function getAssetOffset(address asset) internal view returns (uint8 offset) {
-        AssetInfo[] memory _assets = assets();
-        for (uint8 i = 0; i < _assets.length; i++) {
-            if (asset == _assets[i].asset) {
-                return i;
-            }
-        }
-        revert("asset not found");
+    function mulPrice(uint n, uint price, uint64 fromScale) internal pure returns (uint) {
+        return n * price / fromScale;
+    }
+
+    /**
+     * @dev Multiply a signed `fromScale` quantity by a price, returning a common price quantity
+     */
+    function signedMulPrice(int n, uint price, uint64 fromScale) internal pure returns (int) {
+        return n * signed256(price) / signed256(fromScale);
+    }
+
+    /**
+     * @dev Divide a common price quantity by a price, returning a `toScale` quantity
+     */
+    function divPrice(uint n, uint price, uint64 toScale) internal pure returns (uint) {
+        return n * toScale / price;
     }
 
     /**
@@ -652,13 +927,13 @@ contract Comet is CometMath, CometStorage {
         uint128 initialUserBalance,
         uint128 finalUserBalance
     ) internal {
-        uint8 assetOffset = getAssetOffset(asset);
+        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         if (initialUserBalance == 0 && finalUserBalance != 0) {
             // set bit for asset
-            userBasic[account].assetsIn |= (uint8(1) << assetOffset);
+            userBasic[account].assetsIn |= (uint8(1) << assetInfo.offset);
         } else if (initialUserBalance != 0 && finalUserBalance == 0) {
             // clear bit for asset
-            userBasic[account].assetsIn &= ~(uint8(1) << assetOffset);
+            userBasic[account].assetsIn &= ~(uint8(1) << assetInfo.offset);
         }
     }
 
@@ -706,19 +981,11 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-     * @dev Safe ERC20 transfer in which returns the actual amount received,
-     *  which may be less than `amount` if there is a fee attached to the transfer.
+     * @dev Safe ERC20 transfer in, assumes no fee is charged and amount is transferred
      */
-    function doTransferIn(address asset, address from, uint amount) internal returns (uint) {
-        // XXX reconsider whether we just reject fee tokens and trust amount
-        ERC20 token = ERC20(asset);
-        uint balanceBefore = token.balanceOf(address(this));
-
-        bool success = token.transferFrom(from, address(this), amount);
+    function doTransferIn(address asset, address from, uint amount) internal {
+        bool success = ERC20(asset).transferFrom(from, address(this), amount);
         require(success, "failed to transfer token in");
-
-        uint balanceAfter = token.balanceOf(address(this));
-        return balanceAfter - balanceBefore;
     }
 
     /**
@@ -763,6 +1030,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Supply either collateral or base asset, depending on the asset, if operator is allowed
      */
     function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal {
+        require(!isSupplyPaused(), "supply is paused");
         require(hasPermission(from, operator), "operator not permitted");
 
         if (asset == baseToken) {
@@ -776,7 +1044,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Supply an amount of base asset from `from` to dst
      */
     function supplyBase(address from, address dst, uint104 amount) internal {
-        uint104 actualAmount = safe104(doTransferIn(baseToken, from, amount));
+        doTransferIn(baseToken, from, amount);
 
         TotalsBasic memory totals = totalsBasic;
         totals = accrue(totals);
@@ -787,12 +1055,12 @@ contract Comet is CometMath, CometStorage {
         UserBasic memory dstUser = userBasic[dst];
         int104 dstBalance = presentValue(totals, dstUser.principal);
 
-        (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, actualAmount);
+        (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, amount);
 
         totalSupplyBalance += supplyAmount;
         totalBorrowBalance -= repayAmount;
 
-        dstBalance += signed104(actualAmount);
+        dstBalance += signed104(amount);
 
         totals.totalSupplyBase = principalValueSupply(totals, totalSupplyBalance);
         totals.totalBorrowBase = principalValueBorrow(totals, totalBorrowBalance);
@@ -805,16 +1073,15 @@ contract Comet is CometMath, CometStorage {
      * @dev Supply an amount of collateral asset from `from` to dst
      */
     function supplyCollateral(address from, address dst, address asset, uint128 amount) internal {
-        uint128 actualAmount = safe128(doTransferIn(asset, from, amount));
+        doTransferIn(asset, from, amount);
 
-        // XXX reconsider how we do these asset infos / measure gas costs
-        AssetInfo memory assetInfo = getAssetInfo(getAssetOffset(asset));
+        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         TotalsCollateral memory totals = totalsCollateral[asset];
-        totals.totalSupplyAsset += actualAmount;
+        totals.totalSupplyAsset += amount;
         require(totals.totalSupplyAsset <= assetInfo.supplyCap, "supply cap exceeded");
 
         uint128 dstCollateral = userCollateral[dst][asset].balance;
-        uint128 dstCollateralNew = dstCollateral + actualAmount;
+        uint128 dstCollateralNew = dstCollateral + amount;
 
         totalsCollateral[asset] = totals;
         userCollateral[dst][asset].balance = dstCollateralNew;
@@ -847,7 +1114,9 @@ contract Comet is CometMath, CometStorage {
      * @dev Transfer either collateral or base asset, depending on the asset, if operator is allowed
      */
     function transferInternal(address operator, address src, address dst, address asset, uint amount) internal {
+        require(!isTransferPaused(), "transfer is paused");
         require(hasPermission(src, operator), "operator not permitted");
+        require(src != dst, "self-transfer not allowed");
 
         if (asset == baseToken) {
             return transferBase(src, dst, safe104(amount));
@@ -945,6 +1214,7 @@ contract Comet is CometMath, CometStorage {
      * @dev Withdraw either collateral or base asset, depending on the asset, if operator is allowed
      */
     function withdrawInternal(address operator, address src, address to, address asset, uint amount) internal {
+        require(!isWithdrawPaused(), "withdraw is paused");
         require(hasPermission(src, operator), "operator not permitted");
 
         if (asset == baseToken) {
@@ -1008,75 +1278,106 @@ contract Comet is CometMath, CometStorage {
         doTransferOut(asset, to, amount);
     }
 
-    // TODO: Remove me. Function while waiting for initializer
-    // !! NOT FOR REUSE [YES FOR REFUSE] !!
-    function XXX_REMOVEME_XXX_initialize() public {
-        require(totalsBasic.lastAccrualTime == 0, "already initialized");
-        // Initialize aggregates
-        totalsBasic.lastAccrualTime = getNow();
-        totalsBasic.baseSupplyIndex = baseIndexScale;
-        totalsBasic.baseBorrowIndex = baseIndexScale;
-        totalsBasic.trackingSupplyIndex = 0;
-        totalsBasic.trackingBorrowIndex = 0;
+    /**
+     * @notice Absorb a list of underwater accounts onto the protocol balance sheet
+     * @param absorber The recipient of the incentive paid to the caller of absorb
+     * @param accounts The list of underwater accounts to absorb
+     */
+    function absorb(address absorber, address[] calldata accounts) external {
+        require(!isAbsorbPaused(), "absorb is paused");
+
+        uint startGas = gasleft();
+        for (uint i = 0; i < accounts.length; i++) {
+            absorbInternal(accounts[i]);
+        }
+        uint gasUsed = startGas - gasleft();
+
+        LiquidatorPoints memory points = liquidatorPoints[absorber];
+        points.numAbsorbs++;
+        points.numAbsorbed += safe64(accounts.length);
+        points.approxSpend += safe128(gasUsed * block.basefee);
+        liquidatorPoints[absorber] = points;
     }
 
     /**
-     * @notice return price from asset's price feed
-     * @param priceFeed address of ChainLink aggregator
-     * @return latest price of asset, scaled up by 1e8
+     * @dev Transfer user's collateral and debt to the protocol itself.
      */
-    function getPrice(address priceFeed) public view returns (uint) {
-        (
-            uint80 _roundID,
-            int price,
-            uint _startedAt,
-            uint _timeStamp,
-            uint80 _answeredInRound
-        ) = AggregatorV3Interface(priceFeed).latestRoundData();
-        return unsigned256(price);
-    }
+    function absorbInternal(address account) internal {
+        require(isLiquidatable(account), "account is not underwater");
 
-    /**
-     * @notice Gets the total amount of protocol reserves, denominated in the number of base tokens
-     */
-    function getReserves() public view returns (int) {
         TotalsBasic memory totals = totalsBasic;
-        uint balance = ERC20(baseToken).balanceOf(address(this));
-        uint104 totalSupply = presentValueSupply(totals, totals.totalSupplyBase);
-        uint104 totalBorrow = presentValueBorrow(totals, totals.totalBorrowBase);
-        return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
+        totals = accrue(totals);
+
+        UserBasic memory accountUser = userBasic[account];
+        int104 oldBalance = presentValue(totals, accountUser.principal);
+        uint16 assetsIn = accountUser.assetsIn;
+
+        uint basePrice = getPrice(baseTokenPriceFeed);
+        uint deltaValue = 0;
+
+        for (uint8 i = 0; i < numAssets; i++) {
+            if (isInAsset(assetsIn, i)) {
+                AssetInfo memory assetInfo = getAssetInfo(i);
+                address asset = assetInfo.asset;
+                uint128 seizeAmount = userCollateral[account][asset].balance;
+                if (seizeAmount > 0) {
+                    userCollateral[account][asset].balance = 0;
+                    userCollateral[address(this)][asset].balance += seizeAmount;
+
+                    uint value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
+                    deltaValue += mulFactor(value, assetInfo.liquidationFactor);
+                }
+            }
+        }
+
+        uint104 deltaBalance = safe104(divPrice(deltaValue, basePrice, baseScale));
+        int104 newBalance = oldBalance + signed104(deltaBalance);
+        // New balance will not be negative, all excess debt absorbed by reserves
+        newBalance = newBalance < 0 ? int104(0) : newBalance;
+        updateBaseBalance(totals, account, accountUser, principalValue(totals, newBalance));
+
+        // Reserves are decreased by increasing total supply and decreasing borrows
+        //  the amount of debt repaid by reserves is `newBalance - oldBalance`
+        // Note: new balance must be non-negative due to the above thresholding
+        totals.totalSupplyBase += principalValueSupply(totals, unsigned104(newBalance));
+        // Note: old balance must be negative since the account is liquidatable
+        totals.totalBorrowBase -= principalValueBorrow(totals, unsigned104(-oldBalance));
+
+        totalsBasic = totals;
     }
 
     /**
-     * @notice Buy collateral from the protocol using base tokens, increasing protocol reserves.
-       A minimum collateral amount should be specified to indicate the maximum slippage
-       acceptable for the buyer.
+     * @notice Buy collateral from the protocol using base tokens, increasing protocol reserves
+       A minimum collateral amount should be specified to indicate the maximum slippage acceptable for the buyer.
      * @param asset The asset to buy
      * @param minAmount The minimum amount of collateral tokens that should be received by the buyer
      * @param baseAmount The amount of base tokens used to buy the collateral
      * @param recipient The recipient address
      */
     function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external {
+        require(!isBuyPaused(), "buy is paused");
+
         int reserves = getReserves();
-        require(reserves < 0 || uint(reserves) < targetReserves, "no ongoing sale");
+        require(reserves < 0 || uint(reserves) < targetReserves, "no ongoing sale"); //Gadi reserves < int(targetReserves)
 
-        uint actualBaseAmount = doTransferIn(baseToken, msg.sender, baseAmount);
+        // XXX check re-entrancy
+        doTransferIn(baseToken, msg.sender, baseAmount);
 
-        uint collateralAmount = quoteCollateral(asset, actualBaseAmount);
+        uint collateralAmount = quoteCollateral(asset, baseAmount);
         require(collateralAmount >= minAmount, "slippage too high");
 
         withdrawCollateral(address(this), recipient, asset, safe128(collateralAmount));
     }
 
     /**
-     * @notice Gets the quote for a collateral asset in exchange for an amount of base asset.
+     * @notice Gets the quote for a collateral asset in exchange for an amount of base asset
      * @param asset The collateral asset to get the quote for
      * @param baseAmount The amount of the base asset to get the quote for
      * @return The quote in terms of the collateral asset
      */
     function quoteCollateral(address asset, uint baseAmount) public view returns (uint) {
-        // TODO: Add StoreFrontDiscount.
-        AssetInfo memory assetInfo = getAssetInfo(getAssetOffset(asset));
+        // XXX: Add StoreFrontDiscount.
+        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         uint assetPrice = getPrice(assetInfo.priceFeed);
         uint basePrice = getPrice(baseTokenPriceFeed);
         uint assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPrice;
@@ -1084,95 +1385,13 @@ contract Comet is CometMath, CometStorage {
     }
 
     /**
-     * @return Whether the account is minimally collateralized enough to borrow
-     * @param account address to check
+     * @notice Withdraws base token reserves if called by the governor
+     * @param to An address of the receiver of withdrawn reserves
+     * @param amount The amount of reserves to be withdrawn from the protocol
      */
-    function isBorrowCollateralized(address account) public view returns (bool) {
-        // XXX take in UserBasic and UserCollateral as arguments to reduce SLOADs
-        uint16 assetsIn = userBasic[account].assetsIn;
-        TotalsBasic memory totals = totalsBasic;
-
-        int liquidity = signedMulPrice(
-            presentValue(totals, userBasic[account].principal),
-            getPrice(baseTokenPriceFeed),
-            baseScale
-        );
-
-        for (uint8 i = 0; i < numAssets; i++) {
-            if (isInAsset(assetsIn, i)) {
-
-                if (liquidity >= 0) {
-                    return true;
-                }
-
-                AssetInfo memory asset = getAssetInfo(i);
-                uint newAmount = mulPrice(
-                    userCollateral[account][asset.asset].balance,
-                    getPrice(asset.priceFeed),
-                    safe64(asset.scale)
-                );
-                liquidity += signed256(mulFactor(
-                    newAmount,
-                    asset.borrowCollateralFactor
-                ));
-            }
-        }
-
-        return liquidity >= 0;
-    }
-
-    /**
-     * @notice amount of borrow liquidity for account
-     * @param account address to check liquidity for
-     * @return amount of borrow liquidity (in price scale)
-     */
-    function getBorrowLiquidity(address account) public view returns (int) {
-        uint16 assetsIn = userBasic[account].assetsIn;
-        TotalsBasic memory totals = totalsBasic;
-
-        int liquidity = signedMulPrice(
-            presentValue(totals, userBasic[account].principal),
-            getPrice(baseTokenPriceFeed),
-            baseScale
-        );
-
-        for (uint8 i = 0; i < numAssets; i++) {
-            if (isInAsset(assetsIn, i)) {
-                AssetInfo memory asset = getAssetInfo(i);
-                uint newAmount = mulPrice(
-                    userCollateral[account][asset.asset].balance,
-                    getPrice(asset.priceFeed),
-                    safe64(asset.scale)
-                );
-                liquidity += signed256(mulFactor(
-                    newAmount,
-                    asset.borrowCollateralFactor
-                ));
-            }
-        }
-
-        return liquidity;
-    }
-
-    /**
-    * @dev multiply an amount (positive or negative) of an asset by that asset's price
-    * @param amount amount of the asset (in that asset's decimals)
-    * @param price price of the asset, from priceFeed; value with 8 decimals
-    * @param tokenScale the number of decimals for the asset
-    * @return value of the amount of the asset; 8 decimals
-    */
-    function signedMulPrice(int amount, uint price, uint tokenScale) internal pure returns (int) {
-        return (amount * signed256(price)) / signed256(tokenScale);
-    }
-
-    /**
-    * @dev multiply a positive amount of an asset by that asset's price
-    * @param amount amount of the asset (in that asset's decimals)
-    * @param price price of the asset, from priceFeed; value with 8 decimals
-    * @param tokenScale the number of decimals for the asset
-    * @return value of the amount of the asset; 8 decimals
-    */
-    function mulPrice(uint amount, uint price, uint tokenScale) internal pure returns (uint) {
-        return (amount * price) / tokenScale;
+    function withdrawReserves(address to, uint amount) external {
+        require(msg.sender == governor, "only governor may withdraw");
+        require(amount <= unsigned256(getReserves()), "insufficient reserves");
+        doTransferOut(baseToken, to, amount);
     }
 }

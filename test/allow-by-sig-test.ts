@@ -92,7 +92,7 @@ describe('allowBySig', function () {
         signature.r,
         signature.s
       )
-    ).to.be.revertedWith('signature does not match arguments');
+    ).to.be.revertedWith('owner is not signatory');
 
     // does not authorize
     expect(await comet.isAllowed(invalidOwnerAddress, manager.address)).to.be.false;
@@ -117,7 +117,7 @@ describe('allowBySig', function () {
         signature.r,
         signature.s
       )
-    ).to.be.revertedWith('signature does not match arguments');
+    ).to.be.revertedWith('owner is not signatory');
 
     // does not authorize
     expect(await comet.isAllowed(signer.address, invalidManagerAddress)).to.be.false;
@@ -140,7 +140,7 @@ describe('allowBySig', function () {
         signature.r,
         signature.s
       )
-    ).to.be.revertedWith('signature does not match arguments');
+    ).to.be.revertedWith('owner is not signatory');
 
     // does not authorize
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
@@ -163,7 +163,7 @@ describe('allowBySig', function () {
         signature.r,
         signature.s
       )
-    ).to.be.revertedWith('signature does not match arguments');
+    ).to.be.revertedWith('owner is not signatory');
 
     // does not authorize
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;
@@ -186,7 +186,7 @@ describe('allowBySig', function () {
         signature.r,
         signature.s
       )
-    ).to.be.revertedWith('signature does not match arguments');
+    ).to.be.revertedWith('owner is not signatory');
 
     // does not authorize
     expect(await comet.isAllowed(signer.address, manager.address)).to.be.false;

@@ -5,15 +5,22 @@ import { Scenario } from '../Scenario';
 import { loadScenarios } from '../Loader';
 import { defaultFormats, scenarioGlob, workerCount } from './Config';
 import { showReport } from './Report';
-import { getContext, getConfig, getHardhatArguments } from './HardhatContext';
+import { getConfig, getHardhatArguments } from './HardhatContext';
 import { ScenarioConfig } from '../types';
 import { HardhatConfig } from 'hardhat/types';
 import { SimpleWorker } from './SimpleWorker';
+import { pluralize } from './Report';
+
+type BaseScenario<T> = {
+  base: ForkSpec;
+  scenario: Scenario<T>;
+};
 
 export interface Result {
   base: string;
   file: string;
   scenario: string;
+  numSolutionSets?: number;
   elapsed?: number;
   error?: Error;
   trace?: string;
@@ -24,11 +31,6 @@ export interface Result {
 interface WorkerMessage {
   result?: Result;
 }
-
-type BaseScenario<T> = {
-  base: ForkSpec;
-  scenario: Scenario<T>;
-};
 
 function filterRunning<T>(
   baseScenarios: BaseScenario<T>[]
@@ -65,7 +67,13 @@ function convertToSerializableObject(object: object) {
   return JSON.parse(JSON.stringify(object));
 }
 
-export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: ForkSpec[], workerCount: number, async: boolean) {
+export async function runScenario<T>(
+  scenarioConfig: ScenarioConfig,
+  bases: ForkSpec[],
+  workerCount: number,
+  async: boolean,
+  stallMs: number
+) {
   let hardhatConfig = convertToSerializableObject(getConfig()) as HardhatConfig;
   let hardhatArguments = getHardhatArguments();
   let formats = defaultFormats;
@@ -88,10 +96,26 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
   );
   let assignable: Iterator<BaseScenario<T>> = runningScenarios[Symbol.iterator]();
   let done;
+  let fail;
   let hasError = false;
-  let isDone = new Promise((resolve, reject_) => {
+  let isDone = new Promise((resolve, reject) => {
     done = resolve;
+    fail = reject;
   });
+
+  let stallTimer;
+  function resetStallTimer() {
+    if (stallTimer !== undefined) {
+      clearTimeout(stallTimer);
+    }
+    stallTimer = setTimeout(() => {
+      fail(
+        `Scenario stalled after ${stallMs} ms. Waiting scenario results for ${JSON.stringify(
+          Array.from(pending)
+        )}`
+      );
+    }, stallMs);
+  }
 
   function checkDone() {
     if (pending.size === 0) {
@@ -99,6 +123,7 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
     }
   }
 
+  resetStallTimer();
   checkDone(); // Just in case we don't have any scens
 
   function getNextScenario(): BaseScenario<T> | null {
@@ -122,13 +147,16 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
   }
 
   function mergeResult(index: number, result: Result) {
-    results.push(result);
     pending.delete(key(result.base, result.scenario));
+    // Update the scenario name to include the number of solution sets run.
+    result.scenario += ` [${pluralize(result.numSolutionSets, 'run', 'runs')}]`;
+    results.push(result);
 
+    resetStallTimer();
     checkDone();
   }
 
-  [...new Array(workerCount)].map((_, index) => {
+  [...new Array(workerCount)].forEach((_, index) => {
     let worker;
     if (async) {
       worker = new Worker(path.resolve(__dirname, './BootstrapWorker.js'), {
@@ -165,7 +193,8 @@ export async function runScenario<T>(scenarioConfig: ScenarioConfig, bases: Fork
   await showReport(results, formats, startTime, endTime);
 
   if (results.some((result) => result.error)) {
-    setTimeout(() => { // Deferral to allow potential console flush
+    setTimeout(() => {
+      // Deferral to allow potential console flush
       process.exit(1); // Exit as failure
     }, 0);
   }

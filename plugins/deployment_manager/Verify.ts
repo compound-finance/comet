@@ -1,113 +1,55 @@
-import * as fs from 'fs/promises';
-import { Contract, ContractFactory, Signer } from 'ethers';
-import {
-  ContractMetadata,
-  BuildFile,
-} from './Types';
-import { getPrimaryContract } from './Utils';
-import { NomicLabsHardhatPluginError } from "hardhat/plugins";
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import {
-  toCheckStatusRequest,
-  toVerifyRequest
-} from '@nomiclabs/hardhat-etherscan/dist/src/etherscan/EtherscanVerifyContractRequest';
-import {
-  delay,
-  getVerificationStatus,
-  verifyContract
-} from '@nomiclabs/hardhat-etherscan/dist/src/etherscan/EtherscanService';
-import { resolveEtherscanApiKey } from '@nomiclabs/hardhat-etherscan/dist/src/resolveEtherscanApiKey';
+import { Contract } from 'ethers';
 
-// Note: We copied as much of this as possible from `hardhat-etherscan`
-// Hence why it doesn't match our styles.
-// Original source code: https://github.com/nomiclabs/hardhat/blob/d07e145222d6e2e465daa841d6355632ad6bc2cd/packages/hardhat-etherscan/src/index.ts#L423
-export async function manualVerifyContract(contract: Contract, buildFile: BuildFile, deployArgs: any[], hre: HardhatRuntimeEnvironment) {
-  let [contractName, contractMetadata] = getPrimaryContract(buildFile);
+import { manualVerifyContract } from './ManualVerify';
+import { BuildFile } from './Types';
+import { debug } from './Utils';
 
-  const {
-    network: verificationNetwork,
-    urls: etherscanAPIEndpoints,
-  } = await hre.run("verify:get-etherscan-endpoint");
+type VerifyArgs =
+  | { via: 'artifacts'; address: string; constructorArguments: any }
+  | { via: 'buildfile'; contract: Contract; buildFile: BuildFile; deployArgs: any[] };
 
-  const etherscanAPIKey = resolveEtherscanApiKey(
-    hre.config.etherscan,
-    verificationNetwork
-  );
-  let contractAddress = contract.address.toLowerCase();
-  let sourceName = contractMetadata.source;
-  let metadata = JSON.parse(contractMetadata.metadata);
-  let compilerVersion = metadata.compiler.version.replace(/\+commit\.([0-9a-fA-F]+)\..*/gi, '+commit.$1');
-  let language = metadata.language;
-  let sources = metadata.sources;
-  let settings = metadata.settings;
-
-  // Fix up some settings issues
-
-  // First, remove 'compilationTarget' if it exists
-  if (metadata.settings.hasOwnProperty('compilationTarget')) {
-    delete metadata.settings['compilationTarget'];
-  }
-
-  // Second, cap optimizer runs to 1MM
-  if (settings.optimizer && settings.optimizer.runs && settings.optimizer.runs > 1000000) {
-    settings.optimizer.runs = 1000000;
-  }
-
-  let request = toVerifyRequest({
-    apiKey: etherscanAPIKey,
-    contractAddress,
-    sourceCode: JSON.stringify({language, settings, sources}),
-    sourceName,
-    contractName,
-    compilerVersion,
-    constructorArguments: contractMetadata.constructorArgs,
-  });
-
-  // Since verification can fail for so many reasons; a simple logging approach for debugging
-  if (process.env['DEBUG_VERIFY']) {
-    console.log({request});
-    await fs.writeFile(`sources-${contractAddress}.json`, request.sourceCode);
-  }
-  const response = await verifyContract(etherscanAPIEndpoints.apiURL, request);
-
-  console.log(
-    `Successfully submitted source code for contract
-${sourceName}:${contractName} at ${contractAddress}
-for verification on the block explorer. Waiting for verification result...
-`
-  );
-
-  const pollRequest = toCheckStatusRequest({
-    apiKey: etherscanAPIKey,
-    guid: response.message,
-  });
-
-  // Compilation is bound to take some time so there's no sense in requesting status immediately.
-  await delay(700);
-  const verificationStatus = await getVerificationStatus(
-    etherscanAPIEndpoints.apiURL,
-    pollRequest
-  );
-
-  if (verificationStatus.isVerificationFailure()) {
-    throw new NomicLabsHardhatPluginError(
-      "DeploymentManager",
-      `The API responded with a failure message.
-  Message: ${verificationStatus.message}`,
-      undefined,
-      true
-    );
-  }
-
-  if (!verificationStatus.isVerificationSuccess()) {
-    // Reaching this point shouldn't be possible unless the API is behaving in a new way.
-    throw new NomicLabsHardhatPluginError(
-      "DeploymentManager",
-      `The API responded with an unexpected message.
-  Contract verification may have succeeded and should be checked manually.
-  Message: ${verificationStatus.message}`,
-      undefined,
-      true
-    );
+export async function verifyContract(
+  verifyArgs: VerifyArgs,
+  hre: HardhatRuntimeEnvironment,
+  raise = false,
+  retries = 10
+) {
+  let address;
+  try {
+    if (verifyArgs.via === 'artifacts') {
+      address = verifyArgs.address;
+      await hre.run('verify:verify', {
+        address: verifyArgs.address,
+        constructorArguments: verifyArgs.constructorArguments,
+      });
+    } else if (verifyArgs.via === 'buildfile') {
+      address = verifyArgs.contract.address;
+      await manualVerifyContract(
+        verifyArgs.contract,
+        verifyArgs.buildFile,
+        verifyArgs.deployArgs,
+        hre
+      );
+    } else {
+      throw new Error(`Unknown verfication via`);
+    }
+    debug('Contract at address ' + address + ' verified on Etherscan.');
+  } catch (e) {
+    if (e.message.match(/Already Verified/i)) {
+      debug('Contract at address ' + address + ' is already verified on Etherscan');
+      return;
+    } else if (e.message.match(/does not have bytecode/i) && retries > 0) {
+      debug('Waiting for ' + address + ' to propagate to Etherscan');
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      return await verifyContract(verifyArgs, hre, raise, retries - 1);
+    } else {
+      if (raise) {
+        throw e;
+      } else {
+        console.error(`Unable to verify contract at ${address}: ${e}`);
+        console.error(`Continuing on anyway...`);
+      }
+    }
   }
 }

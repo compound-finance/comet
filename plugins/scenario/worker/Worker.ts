@@ -1,22 +1,15 @@
 import { parentPort } from 'worker_threads';
 import { Runner } from '../Runner';
-import { ForkSpec } from '../World';
+import { ForkSpec, World } from '../World';
 import { Scenario } from '../Scenario';
 import { getLoader, loadScenarios } from '../Loader';
-import { HardhatContext } from 'hardhat/internal/context';
 import { scenarioGlob } from './Config';
-import {
-  HardhatConfig,
-  HardhatArguments,
-  createContext,
-  setConfig,
-  getContext,
-} from './HardhatContext';
-import * as util from 'util';
+import { HardhatConfig, HardhatArguments, createContext } from './HardhatContext';
 import { ScenarioConfig } from '../types';
-import { AssertionError } from 'chai';
 import { SimpleWorker } from './SimpleWorker';
-
+import hreForBase from '../utils/hreForBase';
+import { Result } from './Parent';
+import { pluralize } from './Report';
 
 interface Message {
   scenario?: {
@@ -41,7 +34,7 @@ function eventually(fn: () => void) {
 
 function onMessage(worker: SimpleWorker | undefined, f: (message: Message) => Promise<void>) {
   if (worker) {
-    worker.onParent('message', f)
+    worker.onParent('message', f);
   } else {
     parentPort.on('message', f);
   }
@@ -57,63 +50,44 @@ function postMessage(worker: SimpleWorker | undefined, message: any) {
 
 export async function run<T>({ scenarioConfig, bases, config, worker }: WorkerData) {
   let scenarios: { [name: string]: Scenario<T> };
+  let runners = {};
 
-  if (!worker) { // only create if we're not in a simple worker
+  if (!worker) {
+    // only create if we're not in a simple worker
     createContext(...config);
     scenarios = await loadScenarios(scenarioGlob);
   } else {
     scenarios = getLoader<T>().getScenarios();
   }
 
-  let baseMap = Object.fromEntries(bases.map((base) => [base.name, base]));
+  for (let base of bases) {
+    let world = new World(hreForBase(base), base);
+    let runner = new Runner({ base, world });
+    runners[base.name] = runner;
+  }
 
   onMessage(worker, async (message: Message) => {
     if (message.scenario) {
-      let { scenario: scenarioName, base: baseName } = message.scenario;
+      let { scenario: scenarioName, base } = message.scenario;
       let scenario = scenarios[scenarioName];
       if (!scenario) {
         throw new Error(`Worker encountered unknown scenario: ${scenarioName}`);
       }
-      let base = baseMap[baseName];
-      if (!base) {
-        throw new Error(`Worker encountered unknown base: ${baseName}`);
-      }
 
-      let resultFn = (base: ForkSpec, scenario: Scenario<T>, err: any) => {
-        let diff = null;
-        if (err instanceof AssertionError) {
-          let { actual, expected } = <any>err; // Types unclear
-          if (actual !== expected) {
-            diff = { actual, expected };
-          }
-        }
-        // Add timeout for flush
-        eventually(() =>
-          postMessage(worker, {
-            result: {
-              base: base.name,
-              file: scenario.file || scenario.name,
-              scenario: scenario.name,
-              elapsed: Date.now() - startTime,
-              error: err || null,
-              trace: err ? err.stack : null,
-              diff, // XXX can we move this into parent?
-            },
-          })
-        );
-      };
-
-      console.log('Running', message.scenario);
-      let startTime = Date.now();
+      console.log('Running', scenarioName, base);
       try {
-        await new Runner({ bases: [base] }).run([scenario], resultFn);
+        let result = await runners[base].run(scenario);
+        eventually(() => {
+          postMessage(worker, { result });
+        });
+        let numSolutionSets = result.numSolutionSets ?? 0;
+        console.log(`Ran ${pluralize(numSolutionSets, 'solution', 'solutions')} for ${base}:${scenarioName}`);
       } catch (e) {
         console.error('Encountered worker error', e);
         eventually(() => {
           throw e;
         });
       }
-      console.log('Ran', scenario);
     } else {
       throw new Error(`Unknown or invalid worker message: ${JSON.stringify(message)}`);
     }

@@ -61,7 +61,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('signature does not match arguments');
+    ).to.be.revertedWith('owner is not signatory');
   }
 );
 
@@ -93,7 +93,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('signature does not match arguments');
+    ).to.be.revertedWith('owner is not signatory');
   }
 );
 
@@ -125,7 +125,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('signature does not match arguments');
+    ).to.be.revertedWith('owner is not signatory');
   }
 );
 
@@ -157,7 +157,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('signature does not match arguments');
+    ).to.be.revertedWith('owner is not signatory');
   }
 );
 
@@ -189,7 +189,7 @@ scenario(
         expiry: expiry + 100, // altered expiry
         signature,
       })
-    ).to.be.revertedWith('signature does not match arguments');
+    ).to.be.revertedWith('owner is not signatory');
   }
 );
 
