@@ -17,7 +17,6 @@ import { Comet, ProxyAdmin, ERC20, ERC20__factory } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
-import { Transformer } from '../../plugins/scenario/Scenario';
 
 type ActorMap = { [name: string]: CometActor };
 type AssetMap = { [name: string]: CometAsset };
@@ -247,6 +246,4 @@ export const constraints = [
   new BaseTokenProtocolBalanceConstraint(),
 ];
 
-let x: Transformer<CometContext, CometProperties> = getContextProperties; // TODO: Figure out why this is type mismatching
-
-export const scenario = buildScenarioFn<CometContext, CometProperties>(getInitialContext, x, forkContext, constraints);
+export const scenario = buildScenarioFn<CometContext, CometProperties>(getInitialContext, getContextProperties, forkContext, constraints);

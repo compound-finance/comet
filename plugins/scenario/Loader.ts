@@ -1,6 +1,6 @@
 import fg from 'fast-glob';
 import * as path from 'path';
-import { Scenario, ScenarioFlags, Property, Initializer, Forker, Constraint } from './Scenario';
+import { Scenario, ScenarioFlags, Property, Initializer, Forker, Constraint, Transformer } from './Scenario';
 
 class Loader<T, U> {
   scenarios: { [name: string]: Scenario<T, U> };
