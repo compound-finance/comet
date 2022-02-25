@@ -1,5 +1,6 @@
-import { expect } from 'chai';
+import hre from 'hardhat';
 import { ethers } from 'hardhat';
+import { expect } from 'chai';
 import { Block } from '@ethersproject/abstract-provider';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
@@ -278,4 +279,8 @@ export function filterEvent(data, eventName) {
   return data.receipt.events?.filter((x) => {
     return x.event == eventName;
   })[0];
+}
+
+export function inCoverage() {
+  return hre['__SOLIDITY_COVERAGE_RUNNING'];
 }
