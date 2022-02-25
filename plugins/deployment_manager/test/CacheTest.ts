@@ -9,9 +9,7 @@ describe('Cache', () => {
 
     await cache.storeCache(['abc'], 5);
 
-    expect(cache.cache).to.eql({
-      abc: 5,
-    });
+    expect(cache.cache).to.eql(new Map([['abc', 5]]));
 
     expect(await cache.readCache('abc')).to.eql(5);
   });
@@ -21,11 +19,7 @@ describe('Cache', () => {
 
     await cache.storeCache({ rel: 'abc' }, 5);
 
-    expect(cache.cache).to.eql({
-      test: {
-        abc: 5,
-      },
-    });
+    expect(cache.cache).to.eql(new Map([['test', new Map([['abc', 5]])]]));
 
     expect(await cache.readCache({ rel: 'abc' })).to.eql(5);
   });
@@ -35,13 +29,11 @@ describe('Cache', () => {
 
     await cache.storeCache(['abc'], 5);
 
-    expect(cache.cache).to.eql({
-      abc: 5,
-    });
+    expect(cache.cache).to.eql(new Map([['abc', 5]]));
 
     expect(await cache.readCache('abc')).to.eql(5);
 
-    cache.cache = {}; // Kill in-memory key
+    cache.cache = new Map(); // Kill in-memory key
 
     expect(await cache.readCache('abc')).to.eql(5);
   });
@@ -51,15 +43,11 @@ describe('Cache', () => {
 
     await cache.storeCache({ rel: 'abc' }, 5);
 
-    expect(cache.cache).to.eql({
-      test: {
-        abc: 5,
-      },
-    });
+    expect(cache.cache).to.eql(new Map([['test', new Map([['abc', 5]])]]));
 
     expect(await cache.readCache({ rel: 'abc' })).to.eql(5);
 
-    cache.cache = {}; // Kill in-memory key
+    cache.cache = new Map(); // Kill in-memory key
 
     expect(await cache.readCache({ rel: 'abc' })).to.eql(5);
   });
