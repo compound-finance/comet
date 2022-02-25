@@ -1,6 +1,6 @@
 import { expect, exp, makeProtocol } from './helpers';
 
-describe.only('baseTrackingAccrued', function() {
+describe('baseTrackingAccrued', function() {
   it('supply updates baseTrackingAccrued to 6 decimal value', async () => {
     const {
       comet, tokens, users: [alice]
