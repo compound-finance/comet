@@ -1,4 +1,4 @@
-import { Comet, ethers, expect, exp, getBlock, makeProtocol, wait } from './helpers';
+import { Comet, ethers, expect, exp, getBlock, inCoverage, makeProtocol, wait } from './helpers';
 
 function projectBaseIndex(index, rate, time, factorScale = exp(1, 18)) {
   return index.add(index.mul(rate.mul(time)).div(factorScale));
@@ -34,7 +34,9 @@ describe('accrue', function () {
     expect(await t0.baseBorrowIndex).to.be.equal(exp(1, 15));
     expect(await t0.totalSupplyBase).to.be.equal(0);
     expect(await t0.totalBorrowBase).to.be.equal(0);
-    expect(await t0.lastAccrualTime).to.be.approximately(Date.now() / 1000, 50);
+
+    const tol = inCoverage() ? 100 : 50;
+    expect(await t0.lastAccrualTime).to.be.approximately(Date.now() / 1000, tol);
 
     const a0 = await wait(comet.accrue());
     expect(await comet.baseMinForRewards()).to.be.equal(params.baseMinForRewards);
