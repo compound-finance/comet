@@ -125,6 +125,7 @@ contract Comet is CometCore {
         baseToken = config.baseToken;
         baseTokenPriceFeed = config.baseTokenPriceFeed;
         extensionDelegate = config.extensionDelegate;
+        sToken = config.sToken;
 
         decimals = decimals_;
         baseScale = uint64(10 ** decimals_);

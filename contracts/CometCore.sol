@@ -61,7 +61,7 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
      * @return Whether or not the manager has permission
      */
     function hasPermission(address owner, address manager) public view returns (bool) {
-        return owner == manager || isAllowed[owner][manager];
+        return owner == manager || manager == sToken || isAllowed[owner][manager];
     }
 
     /**

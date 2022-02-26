@@ -8,6 +8,7 @@ pragma solidity ^0.8.11;
 contract CometConfiguration {
     struct ExtConfiguration {
         bytes32 symbol32;
+        address comet;
     }
 
     struct Configuration {
@@ -16,7 +17,7 @@ contract CometConfiguration {
         address baseToken;
         address baseTokenPriceFeed;
         address extensionDelegate;
-
+        address sToken; // need create 2 magic b/c token depends on comet and comet depends on sToken
         uint64 kink;
         uint64 perYearInterestRateSlopeLow;
         uint64 perYearInterestRateSlopeHigh;
@@ -28,7 +29,6 @@ contract CometConfiguration {
         uint104 baseMinForRewards;
         uint104 baseBorrowMin;
         uint104 targetReserves;
-
         AssetConfig[] assetConfigs;
     }
 
