@@ -3,6 +3,6 @@ certoraRun certora/harness/CometHarnessWrappers.sol \
     --solc solc8.11 \
     --staging \
     --optimistic_loop \
-    --rule check_update_UserCollater \
+    --rule update_changes_single_bit \
     --settings -useBitVectorTheory,-smt_hashingScheme=plainInjectivity,-deleteSMTFile=false,-postProcessCounterExamples=false \
     --msg "$1"
