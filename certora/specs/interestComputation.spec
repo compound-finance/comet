@@ -153,7 +153,6 @@ env e;
     uint64 kink1 = kink();
 
     assert getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase() ;
-    assert borrowRate == perSecondInterestRateBase() => getUtilization(e) == 0;//
 }
     
 /* 
@@ -345,21 +344,21 @@ rule quote_Collateral(address asset, uint baseAmount ){
     assert quoteCollateral(e,asset, baseAmount + 1) == 0;
 }
 
-rule additivity_of_withdraw( uint x, uint y){
-    env e;
-    storage init = lastStorage;
+// rule additivity_of_withdraw( uint x, uint y){
+//     env e;
+//     storage init = lastStorage;
     
-    require x + y < 2^255;
+//     require x + y < 2^255;
 
-    withdraw(e,baseToken(e), x);
-    int104 baseX = baseBalanceOf(e,e.msg.sender);
-    withdraw(e,baseToken(e), y);
-    int104 baseY = baseBalanceOf(e,e.msg.sender);
-    withdraw(e,baseToken(e), x + y) at init;
-    int104 baseXY = baseBalanceOf(e,e.msg.sender);
+//     withdraw(e,baseToken(e), x);
+//     int104 baseX = baseBalanceOf(e,e.msg.sender);
+//     withdraw(e,baseToken(e), y);
+//     int104 baseY = baseBalanceOf(e,e.msg.sender);
+//     withdraw(e,baseToken(e), x + y) at init;
+//     int104 baseXY = baseBalanceOf(e,e.msg.sender);
 
-    assert baseXY == baseY;
-}
+//     assert baseXY == baseY;
+// }
 
 // rule denialOfService(){
 //     env e1;
@@ -387,6 +386,22 @@ rule additivity_of_withdraw( uint x, uint y){
 
 //     assert baseB == baseB_;
 // }
+
+rule reserveRate(){
+    env e;
+
+        require reserveRate(e) > factorScale();
+
+    getSupplyRate(e);
+
+    assert false;
+}
+
+rule utilization_zero_SupplyRate_zero(){
+    env e;
+    assert getUtilization(e) == 0 => getSupplyRate(e) == 0;
+}
+
 
 function setup(env e){
     require getTotalBaseSupplyIndex() >= baseIndexScale() &&
