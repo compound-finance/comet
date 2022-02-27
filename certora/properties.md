@@ -150,6 +150,8 @@ On buyCollateral system's balanace in base should increase iff system's balance 
 3. max values
 
 - reentrancy - callbacks from erc20
+ also from priceoracle
+ 
 - solidity flag `viaIR: true` 
 
 -  review rules and study coverage by injecting bugs  
@@ -159,6 +161,7 @@ On buyCollateral system's balanace in base should increase iff system's balance 
 ## simplified Assumptions regarding comet*: 
 
 - baseSupplyIndex and baseBorrowIndex at baseIndexScale
+- latestRoundData returns answer > 0
 
 
 
