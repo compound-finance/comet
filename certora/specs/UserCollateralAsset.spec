@@ -31,8 +31,9 @@ rule check_update_UserCollateral(address account, address asset, uint128 initial
     uint8 assetOffset_ = getAssetOffsetByAsset(asset);
     bool flagUserAsset_ = call_IsInAsset(assetIn_, assetOffset_);
 
-    assert finalUserBalance > 0 && initialUserBalance == 0 => flagUserAsset_, "Balance changed from 0 to non zero, yet the getter retrieve false";
-    assert finalUserBalance == 0 && initialUserBalance > 0 => !flagUserAsset_, "Balance changed from non zero to 0, yet the getter retrieve true";
+    assert finalUserBalance > 0 => flagUserAsset_, "Balance changed from 0 to non zero, yet the getter retrieve false";
+    assert finalUserBalance == 0 => !flagUserAsset_, "Balance changed from non zero to 0, yet the getter retrieve true";
+    // assert (finalUserBalance > 0 => flagUserAsset_) && (finalUserBalance == 0 => !flagUserAsset_), "try";
 }
 
 // T@T update assetIn changes a single bit - it's impossible that 2 distinct asset bits will be change at the same call to update

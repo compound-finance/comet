@@ -75,7 +75,7 @@ p4 := reserveRate(e) > 0
 
 1. `borrowBase_vs_utilization` When no base is borrowed utilization should equal zero ( ✅ ) - Gadi
 
-2. `utilization_zero` - Zero utilization is only on initial baseIntresetRate  ( ✅ ) - Gadi
+2. `utilization_zero` - Zero utilization is only on initial baseIntersetRate  ( ✅ ) - Gadi
 
 3. `isLiquiditable_false_should_not_change` - computation of isLiquidatable on the same state changes from false to true only due to price change or accrue ( 👷 ) - Gadi 
 
