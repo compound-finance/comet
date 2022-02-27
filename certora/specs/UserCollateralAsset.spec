@@ -23,7 +23,7 @@ invariant assetIn_Initialized_With_Balance(address user, address asset)
 
 // balance change => update asset
 
-// B@B - if a specific asset balance is being updated from 0 to non-0 or vice versa, isInAsset should return the appropriate value
+// B@B - if a specific asset balance is being updated to 0 or non-0, isInAsset should return the appropriate value
 rule check_update_UserCollater(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance){
     uint16 _assetIn = getAssetinOfUser(account);
     call_updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
@@ -31,8 +31,9 @@ rule check_update_UserCollater(address account, address asset, uint128 initialUs
     uint8 assetOffset_ = getAssetOffsetByAsset(asset);
     bool flagUserAsset_ = call_IsInAsset(assetIn_, assetOffset_);
 
-    assert (finalUserBalance > 0 && initialUserBalance == 0) => flagUserAsset_, "Balance changed from 0 to non zero, yet the getter retrieve false";
-    assert (finalUserBalance == 0 && initialUserBalance > 0) => !flagUserAsset_, "Balance changed from non zero to 0, yet the getter retrieve true";
+    assert finalUserBalance > 0 => flagUserAsset_, "Balance changed from 0 to non zero, yet the getter retrieve false";
+    assert finalUserBalance == 0 => !flagUserAsset_, "Balance changed from non zero to 0, yet the getter retrieve true";
+    // assert (finalUserBalance > 0 => flagUserAsset_) && (finalUserBalance == 0 => !flagUserAsset_), "try";
 }
 
 // T@T update assetIn changes a single bit - it's impossible that 2 distinct asset bits will be change at the same call to update
