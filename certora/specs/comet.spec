@@ -20,6 +20,11 @@ methods {
     getTotalsSupplyAsset(address asset) returns (uint128) envfree  
     getReserves() returns (int) envfree
     _baseToken.balanceOf(address account) returns (uint256) envfree
+
+    getUserCollateralBalanceByAsset(address, address) returns uint128 envfree
+    call_Summarized_IsInAsset(uint16, uint8) returns (bool) envfree
+    getAssetinOfUser(address) returns (uint16) envfree
+    asset_index(address) returns (uint8) envfree
 }
 
 definition similarFunctions(method f) returns bool =    
@@ -50,6 +55,26 @@ hook Sstore userBasic[KEY address a].principal int104 balance
 hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 balance (uint128 old_balance) STORAGE {
     sumBalancePerAssert[t] = sumBalancePerAssert[t] - old_balance + balance;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////   Michael   /////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+
+/* move to comet an use summarization */
+
+// B@B - assetIn of a specific asset is initialized (!0) or uninitialized (0) along with the collateral balance
+rule assetIn_Initialized_With_Balance(method f, address user, address asset) filtered { f -> f.selector != call_updateAssetsIn(address, address, uint128, uint128).selector } {
+    env e; calldataarg args;
+    require getUserCollateralBalanceByAsset(user, asset) == 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset));
+    f(e, args);
+    assert getUserCollateralBalanceByAsset(user, asset) == 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset));
+}
+// balance change => update asset
+
+
+
+
 /*
 rule whoChangedMyGhost(method f) {
 	mathint before = sumUserBasicPrinciple;

@@ -6,5 +6,5 @@ certoraRun certora/harness/CometHarness.sol certora/harness/SymbolicBaseToken.so
     --staging shelly/integrateJohnsBranches \
     --optimistic_loop \
     --settings -enableEqualitySaturation=false,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2,-solver=z3 \
-        --rule $1 \
-    --msg "CometHarness:comet.spec $1 : $2"
+    --rule assetIn_Initialized_With_Balance \
+    --msg "CometHarness:comet.spec $1"
