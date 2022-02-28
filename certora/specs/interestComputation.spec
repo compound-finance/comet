@@ -113,17 +113,6 @@ uint64 supplyRate_2 = getSpecificSupplyRateInternal(baseSupplyIndex2,baseBorrowI
     assert utilization_2 > utilization_1 => supplyRate_2 >= supplyRate_1;
 }
 
-// rule supplyRate_vs_Utilization(){
-// env e;
-//    setup(e);
-
-// uint64 supplyRate_1 = getSupplyRate(e);
-// uint   utilization_1 = getUtilization(e);
-// accrue();
-
-//     assert utilization_2 > utilization_1 => supplyRate_2 > supplyRate_1;
-// }
-
 
 
 /* 
@@ -239,48 +228,6 @@ rule SupplyIndex_BorrowIndex_GE_baseIndexScale(){
         getTotalBaseBorrowIndex() >= baseIndexScale();
 }
 
-
-/* 
- Description :  
-     TotalBaseBorrowIndex always greater then  getTotalBaseSupplyIndex
-
-formula : 
-        getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
-
- status : failed
- reason : rule is not correct
- link   : 
-*/
-// rule SupplyIndex_vs_BorrowIndex(){
-// env e;
-//    setup(e);
-//     require getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
-
-//     accrue(e);
-
-//     assert getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
-// }
-
-/* 
- Description :  
-     BorrowRate always greater then SupplyRate
-
-formula : 
-        getBorrowRate(e) > getSupplyRate(e);
-
- status : fail
- reason : Due to rounding down the BorrowRate can become equal to SupplyRate
- link   : https://vaas-stg.certora.com/output/65782/f2f32f50a2bbf14deb79/?anonymousKey=494980dfd3ebcced1ee0d1088acf1a795f9f2a08#SupplyIndex_vs_BorrowIndexResults
-*/
-// rule SupplyRate_vs_BorrowRate(){
-// env e;
-//    setup(e)
-//     require getBorrowRate(e) > getSupplyRate(e);
-
-//     accrue(e);
-
-//     assert  getBorrowRate(e) > getSupplyRate(e);
-// }
 
 /* 
  Description :  
