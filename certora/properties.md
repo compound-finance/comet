@@ -26,7 +26,7 @@ solidity flag `viaIR: true` ()
 | 18 | `check_pauseBuy_functionallity` | DONE | ✅ | - |
 | 19 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | - |
 | 20 | `check_update_UserCollater` | IN PROGRESS | 👷 | expected to fail due to `offset > 8` (or 16 on fixed code) |
-| 21 | `update_changes_single_bit` | IN PROGRESS | 🕝 | expected to fail due to `offset > 8` (or 16 on fixed code) |
+| 21 | `update_changes_single_bit` | IN PROGRESS | ✅ | - |
 | 22 | `update_changes_single_user_assetIn` | DONE | ✅ | - |
 
 ## Properties regarding accrue computation:
