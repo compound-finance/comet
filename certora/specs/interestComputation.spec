@@ -150,12 +150,11 @@ env e;
     uint64 kink1 = kink();
 
     assert getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase() ;
-    // assert borrowRate == perSecondInterestRateBase() => getUtilization(e) == 0;//
 }
     
 /* 
  Description :  
-     if accrue() with lower timestamp sacceeds then acrue with higher timestamp should sacced as well
+     if accrue() with lower timestamp succeeds then accrue with higher timestamp should succeed as well
 
 formula : 
         !lastReverted;
@@ -190,8 +189,7 @@ formula :
  link https://vaas-stg.certora.com/output/65782/6774efcf16e35405da9f/?anonymousKey=686dea1234bd5329ad336ca3f69b59f2ee02cea7
 */
 rule borrowBase_vs_utilization(){
-env e;
-   setup(e);
+    env e;
     assert getTotalBorrowBase(e) == 0 => getUtilization(e) == 0;
 }
 
@@ -232,8 +230,8 @@ formula :
  link   : 
 */
 rule SupplyIndex_BorrowIndex_GE_baseIndexScale(){
-env e;
-   setup(e);
+    env e;
+    setup(e);
     require getTotalBaseSupplyIndex() >= baseIndexScale() &&
         getTotalBaseBorrowIndex() >= baseIndexScale();
     accrue(e);
@@ -309,12 +307,10 @@ rule presentValue_GE_principal( int104 presentValue){
 }
 rule presentValue_G_zero( int104 presentValue){
     env e;
-   setup(e);
 
     int104 principalValue = call_principalValue(presentValue);
     require presentValue == call_presentValue(principalValue);
-
-assert presentValue > 0 <=> principalValue > 0;
+    assert presentValue > 0 <=> principalValue > 0;
 }
 
 rule presentValue_EQ_principal( int104 presentValue){
@@ -378,6 +374,7 @@ rule reserveRate(){
 
         require reserveRate(e) > factorScale();
         //https://vaas-stg.certora.com/output/65782/cbe17cbd3ad5d102aa82/?anonymousKey=7e7fac8ec3cd530f2329ae8c4af394e874918af2
+
     getSupplyRate(e);
 
     assert false;
