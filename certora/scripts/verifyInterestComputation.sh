@@ -1,4 +1,4 @@
-certoraRun certora/harness/CometHarnessInterest.sol certora/harness/symbolicPriceOracleA.sol \
+certoraRun certora/harness/CometHarnessInterest.sol certora/harness/SymbolicPriceOracleA.sol certora/harness/SymbolicPriceOracleB.sol \
     --verify CometHarnessInterest:certora/specs/interestComputation.spec  \
     --solc solc8.11 \
     --staging shelly/integrateJohnsBranches \
