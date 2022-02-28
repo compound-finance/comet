@@ -7,7 +7,6 @@ methods{
 
     call_presentValue(int104) returns (int104) envfree;
     call_principalValue(int104) returns (int104) envfree;
-    // call_absorb(address)
 
     getAssetScaleByAsset(address) returns (uint64) envfree;
 
@@ -21,6 +20,9 @@ methods{
     kink() returns (uint64) envfree;
     baseIndexScale() returns (uint64) envfree;
     targetReserves() returns (uint104) envfree;
+
+    latestRoundData() returns uint256 => DISPATCHER(true);
+
 }
 
  
@@ -97,37 +99,32 @@ uint64 baseBorrowIndex1;
 uint64 trackingSupplyIndex1;
 uint64 trackingBorrowIndex1;
 
-uint64 supplyRate_1 = getSpecificSupplyRateInternal(baseSupplyIndex1,baseBorrowIndex1,trackingSupplyIndex1,trackingBorrowIndex1);
 uint   utilization_1 = getSpecificUtilizationInternal(baseSupplyIndex1,baseBorrowIndex1,trackingSupplyIndex1,trackingBorrowIndex1);
+uint64 supplyRate_1 = getSpecificSupplyRateInternal(baseSupplyIndex1,baseBorrowIndex1,trackingSupplyIndex1,trackingBorrowIndex1);
 
 uint64 baseSupplyIndex2;
 uint64 baseBorrowIndex2;
 uint64 trackingSupplyIndex2;
 uint64 trackingBorrowIndex2;
 
-uint64 supplyRate_2 = getSpecificSupplyRateInternal(baseSupplyIndex2,baseBorrowIndex2,trackingSupplyIndex2,trackingBorrowIndex2);
 uint utilization_2 = getSpecificUtilizationInternal(baseSupplyIndex2,baseBorrowIndex2,trackingSupplyIndex2,trackingBorrowIndex2);
+uint64 supplyRate_2 = getSpecificSupplyRateInternal(baseSupplyIndex2,baseBorrowIndex2,trackingSupplyIndex2,trackingBorrowIndex2);
 
-    assert utilization_2 > utilization_1 => supplyRate_2 > supplyRate_1;
+    assert utilization_2 > utilization_1 => supplyRate_2 >= supplyRate_1;
 }
 
-/* 
- Description :  
-        if totalBorrow equals totalSupply then utilization == factorScale
-formula : 
-        utilization <= factorScale()
+// rule supplyRate_vs_Utilization(){
+// env e;
+//    setup(e);
 
- status : failed
- reason : total borrow (presentValue) can be greater then totalSupply (presentValue) hence utilization not bounded
- link https://vaas-stg.certora.com/output/23658/497f4791d345a3dce667/?anonymousKey=43aadbf11d704a33e7143188189ea806a9d39d03#utilization_LE_factorScaleResults
-*/
-rule utilization_LE_factorScale(){
-env e;
-   setup(e);
+// uint64 supplyRate_1 = getSupplyRate(e);
+// uint   utilization_1 = getUtilization(e);
+// accrue();
 
-uint utilization = getUtilization(e);
-    assert utilization <= factorScale();
-}
+//     assert utilization_2 > utilization_1 => supplyRate_2 > supplyRate_1;
+// }
+
+
 
 /* 
  Description :  
@@ -252,19 +249,19 @@ env e;
 formula : 
         getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
 
- status : timeout
- reason : 
+ status : failed
+ reason : rule is not correct
  link   : 
 */
-rule SupplyIndex_vs_BorrowIndex(){
-env e;
-   setup(e);
-    require getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
+// rule SupplyIndex_vs_BorrowIndex(){
+// env e;
+//    setup(e);
+//     require getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
 
-    accrue(e);
+//     accrue(e);
 
-    assert getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
-}
+//     assert getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
+// }
 
 /* 
  Description :  
@@ -292,7 +289,7 @@ formula :
      presentValue always greater than principalValue
 
 formula : 
-        _presentValue >= _principalValue;
+     presentValue >= _principalValue;
 
  status : proved
  reason : 
@@ -306,7 +303,7 @@ rule presentValue_GE_principal( int104 presentValue){
     require presentValue == call_presentValue(principalValue);
 
     require presentValue > 0;
-    // require principalValue > 0;
+    // https://vaas-stg.certora.com/output/65782/3bdac29a51e516bd3aec/?anonymousKey=0644f550abc407e9846eb7aed3b2eb501d557677
 
     assert presentValue >= principalValue;
 }
@@ -323,12 +320,15 @@ assert presentValue > 0 <=> principalValue > 0;
 rule presentValue_EQ_principal( int104 presentValue){
     env e;
    setup(e);
-
+    
+    require getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
+    // https://vaas-stg.certora.com/output/65782/683fbc8491afe9dab5e0/?anonymousKey=4f9fb2a878f00e7301e64c53ff9e3d55c804aa6b#presentValue_EQ_principalResults
+    
     int104 principalValue = call_principalValue(presentValue);
     require presentValue == call_presentValue(principalValue);
 
-require presentValue != 0;
-// require _principalValue > 0;
+    require presentValue != 0;
+    // https://vaas-stg.certora.com/output/65782/a9dfef3acdd36876a26f/?anonymousKey=4649138f310d0a7a36b20d7d146e0f9e23d6215e
 
 assert presentValue == principalValue => getTotalBaseSupplyIndex() == baseIndexScale();
 }
@@ -338,11 +338,12 @@ rule quote_Collateral(address asset, uint baseAmount ){
     uint64 scale = getAssetScaleByAsset(asset);
     require scale == baseScale(e);
     require baseAmount > 0 && baseAmount < 2^255;
-    uint quote = quoteCollateral(e,asset, baseAmount);
+    uint quote1 = quoteCollateral(e,asset, baseAmount);
+    uint quote2 = quoteCollateral(e,asset, baseAmount + 1);
 
-    require quote == 0;
+    uint price = getPrice(e,asset);
 
-    assert quoteCollateral(e,asset, baseAmount + 1) == 0;
+    assert quote2 - quote1 <= scale * price;
 }
 
 // rule additivity_of_withdraw( uint x, uint y){
@@ -361,23 +362,6 @@ rule quote_Collateral(address asset, uint baseAmount ){
 //     assert baseXY == baseY;
 // }
 
-// rule denialOfService(){
-//     env e1;
-//     env e2;
-//     require e2.block.timestamp > e1.block.timestamp;
-//     require e2.msg.value == 0 && e1.msg.value == 0; // reverts if msg.value != 0
-
-//     require gasUsed(e2) > gasUsed(e1);
-//     address account;
-
-//     address absorber;
-//     invoke absorb(e1,absorber,account);
-//         bool reverted1 = lastReverted;
-//     invoke absorb(e2,absorber,account);
-//         bool reverted2 = lastReverted;
-
-//     assert reverted1 => reverted2;
-// }
 // rule baseBalance(address account){
 //     env e;
 
@@ -393,7 +377,7 @@ rule reserveRate(){
     env e;
 
         require reserveRate(e) > factorScale();
-
+        //https://vaas-stg.certora.com/output/65782/cbe17cbd3ad5d102aa82/?anonymousKey=7e7fac8ec3cd530f2329ae8c4af394e874918af2
     getSupplyRate(e);
 
     assert false;
@@ -408,9 +392,9 @@ rule utilization_zero_SupplyRate_zero(){
 function setup(env e){
     require getTotalBaseSupplyIndex() >= baseIndexScale() &&
         getTotalBaseBorrowIndex() >= baseIndexScale();
-    require getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
+    // require getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
     // require getBorrowRate(e) > getSupplyRate(e);
-    require perSecondInterestRateSlopeLow() > 0 &&
-            perSecondInterestRateSlopeLow() < perSecondInterestRateSlopeHigh();
-    require reserveRate(e) > 0;
+    // require perSecondInterestRateSlopeLow() > 0 &&
+    //         perSecondInterestRateSlopeLow() < perSecondInterestRateSlopeHigh();
+    //     require reserveRate(e) > 0;
 }
