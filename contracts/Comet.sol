@@ -330,7 +330,7 @@ contract Comet is CometMath, CometStorage {
      * @param i The index of the asset info to get
      * @return The asset info object
      */
-    function getAssetInfo(uint8 i) public view returns (AssetInfo memory) {
+    function getAssetInfo(uint8 i) virtual public view returns (AssetInfo memory) {
         require(i < numAssets, "asset info not found");
 
         uint256 word_a;
@@ -411,7 +411,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Determine index of asset that matches given address
      */
-    function getAssetInfoByAddress(address asset) internal view returns (AssetInfo memory) {
+    function getAssetInfoByAddress(address asset) virtual internal view returns (AssetInfo memory) {
         for (uint8 i = 0; i < numAssets; i++) {
             AssetInfo memory assetInfo = getAssetInfo(i);
             if (assetInfo.asset == asset) {
@@ -914,7 +914,7 @@ contract Comet is CometMath, CometStorage {
     /**
      * @dev Whether user has a non-zero balance of an asset, given assetsIn flags
      */
-    function isInAsset(uint16 assetsIn, uint8 assetOffset) internal pure returns (bool) {
+    function isInAsset(uint16 assetsIn, uint8 assetOffset) virtual internal view returns (bool) {
         return (assetsIn & (uint8(1) << assetOffset) != 0);
     }
 
@@ -926,7 +926,7 @@ contract Comet is CometMath, CometStorage {
         address asset,
         uint128 initialUserBalance,
         uint128 finalUserBalance
-    ) internal {
+    ) virtual internal {
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         if (initialUserBalance == 0 && finalUserBalance != 0) {
             // set bit for asset
