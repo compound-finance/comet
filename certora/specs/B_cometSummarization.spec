@@ -211,5 +211,3 @@ function buy_functions_with_revert(method f, env e) returns bool{
 //
 // functions and definitions for pause guardian integrity
 //
-
-ghost isInAsset(address, address) returns bool
