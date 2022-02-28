@@ -1,8 +1,8 @@
 certoraRun certora/harness/CometHarnessWrappers.sol \
-    --verify CometHarnessWrappers:certora/specs/UserCollateralAsset.spec  \
+    --verify CometHarnessWrappers:certora/specs/GlobalCollateralAsset.spec  \
     --solc solc8.11 \
     --staging \
     --optimistic_loop \
-    --rule update_changes_single_bit \
+    --rule check_update_UserCollater \
     --settings -useBitVectorTheory,-smt_hashingScheme=plainInjectivity,-deleteSMTFile=false,-postProcessCounterExamples=false \
     --msg "$1"

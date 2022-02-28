@@ -3,10 +3,6 @@ import "A_setupNoSummarization.spec"
 methods{
     call_IsInAsset(uint16, uint8) returns (bool) envfree
     call_updateAssetsIn(address, address, uint128, uint128) envfree
-    getUserCollateralBalanceByAsset(address, address) returns (uint128) envfree
-    calc_power_of_two(uint8) returns (uint256) envfree
-
-    // call__getPackedAsset(AssetConfig[], uint) returns (uint256, uint256)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -14,14 +10,7 @@ methods{
 ////////////////////////////////////////////////////////////////////////////////
 //
 
-/* move to comet an use summarization */
-
-// B@B - assetIn of a specific asset is initialized (!0) or uninitialized (0) along with the collateral balance
-invariant assetIn_Initialized_With_Balance(address user, address asset)
-    getUserCollateralBalanceByAsset(user, asset) == 0 <=> call_IsInAsset(getAssetinOfUser(user), getAssetOffsetByAsset(asset))
-    filtered { f -> f.selector != call_updateAssetsIn(address, address, uint128, uint128).selector }
-
-// balance change => update asset
+// simplify - remove mapping, assume global assetIn
 
 // B@B - if a specific asset balance is being updated to 0 or non-0, isInAsset should return the appropriate value
 rule check_update_UserCollater(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance){
@@ -31,12 +20,12 @@ rule check_update_UserCollater(address account, address asset, uint128 initialUs
     uint8 assetOffset_ = getAssetOffsetByAsset(asset);
     bool flagUserAsset_ = call_IsInAsset(assetIn_, assetOffset_);
 
-    assert finalUserBalance > 0 => flagUserAsset_, "Balance changed from 0 to non zero, yet the getter retrieve false";
-    assert finalUserBalance == 0 => !flagUserAsset_, "Balance changed from non zero to 0, yet the getter retrieve true";
-    // assert (finalUserBalance > 0 => flagUserAsset_) && (finalUserBalance == 0 => !flagUserAsset_), "try";
+    assert (initialUserBalance == 0 && finalUserBalance > 0) => flagUserAsset_, "Balance changed from 0 to non zero, yet the getter retrieve false";
+    assert (initialUserBalance > 0 && finalUserBalance == 0) => !flagUserAsset_, "Balance changed from non zero to 0, yet the getter retrieve true";
+    // assert ((initialUserBalance == 0 && finalUserBalance > 0) => flagUserAsset_) && ((initialUserBalance > 0 && finalUserBalance == 0) => !flagUserAsset_), "try";
 }
 
-// T@T update assetIn changes a single bit - it's impossible that 2 distinct asset bits will be change at the same call to update
+// V@V update assetIn changes a single bit - it's impossible that 2 distinct asset bits will be change at the same call to update
 rule update_changes_single_bit(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance){
     uint16 _assetIn = getAssetinOfUser(account);
     uint8 assetOffset1;
