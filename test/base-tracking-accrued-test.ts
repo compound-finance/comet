@@ -1,4 +1,4 @@
-import { expect, exp, makeProtocol } from './helpers';
+import { ethers, expect, exp, makeProtocol } from './helpers';
 
 describe('baseTrackingAccrued', function() {
   it('supply updates baseTrackingAccrued to 6 decimal value', async () => {
@@ -91,6 +91,39 @@ describe('baseTrackingAccrued', function() {
     expect(userBasic2.principal).to.eq(2_000_000);
     expect(userBasic2.baseTrackingAccrued).to.eq(0); // 1 second elapsed = .0000001 unit of rewards accrued; rounds down to 0
   });
+
+  it('acrrues at a greater number of decimals, but preserves 6', async () => {
+    const {
+      comet, tokens, users: [alice]
+    } = await makeProtocol({
+      base: 'USDC',
+      trackingIndexScale: 1e15,
+      baseTrackingSupplySpeed: 1e8, // supplySpeed=0.0000001 (1e-7) Comp/s
+    });
+    const { USDC } = tokens;
+
+    // allocate and approve transfers
+    await USDC.allocateTo(alice.address, 2e6);
+    await USDC.connect(alice).approve(comet.address, 2e6);
+
+    // supply once
+    await comet.connect(alice).supply(USDC.address, 1e6);
+
+    const userBasic1 = await comet.userBasic(alice.address);
+    expect(userBasic1.principal).to.eq(1_000_000);
+    expect(userBasic1.baseTrackingAccrued).to.eq(0);
+
+    // allow 10 seconds to pass
+    await ethers.provider.send('evm_increaseTime', [10]);
+
+    // supply again
+    await comet.connect(alice).supply(USDC.address, 1e6);
+
+    const userBasic2 = await comet.userBasic(alice.address);
+    expect(userBasic2.principal).to.eq(2_000_000);
+    expect(userBasic2.baseTrackingAccrued).to.eq(1); // 10 seconds elapsed = .000001 unit of rewards accrued
+  });
+
 
   it('accrues correctly when base token has more than 6 decimals', async () => {
     const {
