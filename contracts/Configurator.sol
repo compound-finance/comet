@@ -82,4 +82,8 @@ contract Configurator is ConfiguratorStorage {
         if (msg.sender != governor) revert Unauthorized();
         configuratorParams.assetConfigs.push(asset);
     }
+
+    function getConfiguration() external view returns (Configuration memory) {
+        return configuratorParams;
+    }
 }
