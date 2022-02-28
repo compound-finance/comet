@@ -12,8 +12,8 @@ methods{
 
 // simplify - remove mapping, assume global assetIn
 
-// B@B - if a specific asset balance is being updated to 0 or non-0, isInAsset should return the appropriate value
-rule check_update_UserCollater(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance){
+// B@B - if a specific asset balance is being updated from 0 to non-0 or vice versa, isInAsset should return the appropriate value
+rule check_update_UserCollateral(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance){
     uint16 _assetIn = getAssetinOfUser(account);
     call_updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
     uint16 assetIn_ = getAssetinOfUser(account);

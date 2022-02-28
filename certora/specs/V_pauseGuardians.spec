@@ -6,7 +6,7 @@ import "B_cometSummarization.spec"
 //
 
 // V@V - checks supply functions are reverting if pauseSupply is true
-rule check_pauseSupply_functionallity(method f, env e) filtered {f -> all_public_supply_methods(f)} {
+rule check_pauseSupply_functionality(method f, env e) filtered {f -> all_public_supply_methods(f)} {
     bool flagSupply = get_Supply_Paused(); // summarization
 
     calldataarg args;
@@ -30,7 +30,7 @@ rule check_pauseSupply_functionallity(method f, env e) filtered {f -> all_public
 }
 
 // V@V - checks transfer functions are reverting if pauseTransfer is true
-rule check_pauseTransfer_functionallity(method f, env e) filtered {f -> all_public_transfer_methods(f)} {
+rule check_pauseTransfer_functionality(method f, env e) filtered {f -> all_public_transfer_methods(f)} {
     bool flagTransfer = get_Transfer_Paused(); // summarization
     
     calldataarg args;
@@ -51,7 +51,7 @@ rule check_pauseTransfer_functionallity(method f, env e) filtered {f -> all_publ
 }
 
 // V@V - checks withdraw functions are reverting if pauseWithdraw is true
-rule check_pauseWithdraw_functionallity(method f, env e) filtered {f -> all_public_withdraw_methods(f)} {
+rule check_pauseWithdraw_functionality(method f, env e) filtered {f -> all_public_withdraw_methods(f)} {
     bool flagWithdraw = get_Withdraw_Paused(); // summarization
 
     calldataarg args;
@@ -76,7 +76,7 @@ rule check_pauseWithdraw_functionallity(method f, env e) filtered {f -> all_publ
 }
 
 // V@V - checks absorb functions are reverting if pauseAbsorb is true
-rule check_pauseAbsorb_functionallity(method f, env e) filtered {f -> all_public_absorb_methods(f)} {
+rule check_pauseAbsorb_functionality(method f, env e) filtered {f -> all_public_absorb_methods(f)} {
     bool flagAbsorb = get_Absorb_Paused(); // summarization
 
     calldataarg args;
@@ -95,7 +95,7 @@ rule check_pauseAbsorb_functionallity(method f, env e) filtered {f -> all_public
 }
 
 // V@V - checks buy functions are reverting if pauseBuy is true
-rule check_pauseBuy_functionallity(method f, env e) filtered {f -> all_public_buy_methods(f)} {
+rule check_pauseBuy_functionality(method f, env e) filtered {f -> all_public_buy_methods(f)} {
     bool flagBuy = get_Buy_Paused(); // summarization
 
     calldataarg args;

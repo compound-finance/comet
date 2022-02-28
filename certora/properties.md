@@ -1,33 +1,65 @@
 # Properties for Comet protocol
 
-solidity flag `viaIR: true` ()
 
 ## Table
 
 | # | Rule Name | Progress | Verdict | Comment |
-|:--: | :--------- | :--------: | :------- | :-------: |
-| 1 | `SupplyIndex_BorrowIndex_GE_baseIndexScale` | DONE | ✅ | - |
+|-- | --------- | -------- | ------- | ------- |
+|   |                      **Interest computation**                    |
+| 1 | `SupplyIndex_BorrowIndex_GE_baseIndexScale` | DONE | ✅ | under assumptions |
 | 2 | `SupplyIndex_BorrowIndex_monotonic` | DONE | ✅ | - |
 | 3 | `SupplyIndex_BorrowIndex_rise_with_time` | DONE | ✅ | - |
 | 4 | `borrowBase_vs_utilization` | DONE | ✅ | - |
-| 5 | `utilization_zero` | DONE | ✅ | - |
+| 5 | `utilization_zero` | DONE | X | is the property correct? |
 | 6 | `isLiquiditable_false_should_not_change` | IN PROGRESS | 👷 | - |
 | 7 | `isLiquiditable_true_should_not_change` | IN PROGRESS | 👷 | - |
-| 8 | `presentValue_greater_principle` | DONE | ✅ | - |
-| 9 | `presentValue_G_zero` | DONE | ✅ | - |
-| 10 | `presentValue_EQ_principle` | DONE | ✅ | - |
-| 11 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - |
+| 8 | `presentValue_greater_principle` | DONE | ✅ | under assumption |
+| 9 | `presentValue_G_zero` | DONE | ✅ |  |
+| 10 | `presentValue_EQ_principle` | DONE | ✅ | under assumption |
+|   |                       **Flags**                      |
 | 12 | `check_flag_updates` | DONE | ✅ | update is coherent with getters |
 | 13 | `check_flag_getters` | DONE | ✅ | getters are coherent with update |
-| 14 | `check_pauseSupply_functionallity` | DONE | ✅ | - |
-| 15 | `check_pauseTransfer_functionallity` | DONE | ✅ | - |
-| 16 | `check_pauseWithdraw_functionallity` | DONE | ✅ | - |
-| 17 | `check_pauseAbsorb_functionallity` | DONE | ✅ | - |
-| 18 | `check_pauseBuy_functionallity` | DONE | ✅ | - |
-| 19 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | - |
-| 20 | `check_update_UserCollater` | IN PROGRESS | 👷 | expected to fail due to `offset > 8` (or 16 on fixed code) |
-| 21 | `update_changes_single_bit` | IN PROGRESS | ✅ | - |
-| 22 | `update_changes_single_user_assetIn` | DONE | ✅ | - |
+| 14 | `check_pauseSupply_functionality` | DONE | ✅ | on safe summarization |
+| 15 | `check_pauseTransfer_functionality` | DONE | ✅ | " |
+| 16 | `check_pauseWithdraw_functionality` | DONE | ✅ | " |
+| 17 | `check_pauseAbsorb_functionality` | DONE | ✅ | " |
+| 18 | `check_pauseBuy_functionality` | DONE | ✅ | " |
+| 19 | `check_update_UserCollateral` | IN PROGRESS | 👷 | expected to fail due to `offset > 8` (or 16 on fixed code) |
+| 20 | `update_changes_single_bit` | IN PROGRESS | ✅ | - |
+| 21 | `update_changes_single_user_assetIn` | DONE | ✅ | - |
+| | **High level** |
+| 22 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions  |
+| 23 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | found issue with absorb |
+| 24 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions |
+| 25 | `antiMonotonicityOfBuyCollateral` | IN PROGRESS | 🕝 | with assumptions asset!=base, minAmount > 0|
+| 26 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - |
+
+
+
+## Assumptions on Interest computation 
+
+
+P1 := getTotalBaseSupplyIndex() >= baseIndexScale() && getTotalBaseBorrowIndex() >= baseIndexScale()
+
+P2 := getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex()
+
+P3 := perSecondInterestRateSlopeLow() > 0 && perSecondInterestRateSlopeLow() < perSecondInterestRateSlopeHigh()
+
+p4 := reserveRate(e) > 0
+
+
+- V - require needed to pass
+
+- X - not needed 
+
+| Rule | P1 | P2 | P3 | P4 |
+|----- | --- | -- | -- | -- |
+| presentValue_GE_principal | X | V | X | X |
+| presentValue_EQ_principal | X | X | V | X |
+| SupplyIndex_BorrowIndex_GE_baseIndexScale| X | V | X | X |
+
+
+
 
 ## Properties regarding accrue computation:
 
@@ -61,12 +93,7 @@ solidity flag `viaIR: true` ()
 3. `presentValue_EQ_principle` - If presentValue and principle are equal, the totalBaseSupplyIndex is equal to baseIndexScale. ( ✅ ) - Gadi
     ```CVL
         present == principle => totalBaseSupplyIndex == baseIndexScale
-    ``
-
-## High level properties
-
-1. `additivity_of_withdraw` - withdrawing x and then y in 2 distinct calls is equivalent to withdrawing x+y in a single call ( 🕝 ) - Gadi
-
+    ```
 
 ## integrity of `pause()`:
 
@@ -74,58 +101,70 @@ solidity flag `viaIR: true` ()
 
 2. `check_flag_getters` - getters return correct values according to pause input. ( ✅ ) - Michael
 
-3. `check_pauseSupply_functionallity`, `check_pauseTransfer_functionallity`, `check_pauseWithdraw_functionallity`, `check_pauseAbsorb_functionallity`, `check_pauseBuy_functionallity` - relevant functions revert if pause guardian is on ( ✅ ) - Michael
+3. `check_pauseSupply_functionality`, `check_pauseTransfer_functionality`, `check_pauseWithdraw_functionality`, `check_pauseAbsorb_functionality`, `check_pauseBuy_functionality` - relevant functions revert if pause guardian is on ( ✅ ) - Michael
 
 ## integrity of user collateral asset:
+
+
+1. `check_update_UserCollateral` - When `updateAssetIn` is being called with `initial_balance > 0 && final_balance == 0` the respective bit in assetIn should be 0 regardless of previous value, and when `initial_balance == 0 && final_balance > 0` the respective bit in assetIn should be 1 regardless of previous value. ( 👷 ) - Michael
+    ```CVL
+        initial_balance > 0 && final_balance == 0 => !IsInAsset(assetIn, assetOffset);
+        initial_balance == 0 && final_balance > 0 => IsInAsset(assetIn, assetOffset);
+    ```
+
+2. `update_changes_single_bit` - update assetIn changes a single bit - it's impossible that 2 distinct asset bits will be change at the same call to update ( 🕝 ) - Michael
+
+3. `update_changes_single_user_assetIn` - update assetIn changes the assetIn of a single user - no other users are affected by update. ( ✅ ) - Michael 
+
+
+
+
+
+## High level properties
 
 1. invariant `assetIn_Initialized_With_Balance` - iff user's balance of collateral asset is non-zero, the respective bit in assetIn is non-zero ( 👷 ) - Michael
     ```CVL
         User_Collateral_Balance_of_specific_asset == 0 <=> IsInAsset(Assetin_Of_User, Asset_Offset)
     ```
 
-2. `check_update_UserCollater` - When `updateAssetIn` is being called with `initial_balance > 0 && final_balance == 0` the respective bit in assetIn should be 0 regardless of previous value, and when `initial_balance == 0 && final_balance > 0` the respective bit in assetIn should be 1 regardless of previous value. ( 👷 ) - Michael
-    ```CVL
-        initial_balance > 0 && final_balance == 0 => !IsInAsset(assetIn, assetOffset);
-        initial_balance == 0 && final_balance > 0 => IsInAsset(assetIn, assetOffset);
-    ```
+2. `additivity_of_withdraw` - withdrawing x and then y in 2 distinct calls is equivalent to withdrawing x+y in a single call ( 🕝 ) - Gadi
 
-3. `update_changes_single_bit` - update assetIn changes a single bit - it's impossible that 2 distinct asset bits will be change at the same call to update ( 🕝 ) - Michael
-
-4. `update_changes_single_user_assetIn` - update assetIn changes the assetIn of a single user - no other users are affected by update. ( ✅ ) - Michael 
-
-
-
-
-
-
-
-## work in progress/ questions 
- 1. utilization <= factorScale()
-
- fails on total borrow (presentValue) can be greater then totalSupply (presentValue) hence utilization not bounded
-
-
-  2. assumptions that are used but not checked in constructor:
- 
-     getTotalBaseSupplyIndex() >= baseIndexScale()       
-     getTotalBaseBorrowIndex() >= baseIndexScale()
-     getTotalBaseBorrowIndex() >= getTotalBaseSupplyIndex() -- not safe --
-    getBorrowRate() > getSupplyRate()
-    perSecondInterestRateSlopeLow() > 0 &&  perSecondInterestRateSlopeLow() < perSecondInterestRateSlopeHigh() -- check when needed --
-    reserveRate() > 0
-
- 
- 
-## Properties regarding comet*: 
-starting to prove with some simplifications:
-
-- baseSupplyIndex and baseBorrowIndex at baseIndexScale
-
-
-1. The sum of collateral per asset over all users is equal to total collateral of asset ( ✔️ )
+3. totalCollateralPerAsset ( ✅ ) - Nurit
+The sum of collateral per asset over all users is equal to total collateral of asset
 ```CVL 
     sum(userCollateral[u][asset].balance) == totalsCollateral[asset].totalSupplyAsset
 ```
+4. antiMonotonicityOfBuyCollateral ( 👷 ) - Nurit
+On buyCollateral system's balanace in base should increase iff system's balance in asset decreased 
+
+5. Basebalance_vs_totals( 👷 ) - Gadi
+
+6. no_reserves_zero_balance
+## plan for upcoming weeks
+
+- more high level properties from the list
+
+- revert characteristic
+1.  accrue 
+2. dependency on reserveRate
+3. max values
+
+- reentrancy - callbacks from erc20
+ also from priceoracle
+ 
+- solidity flag `viaIR: true` 
+
+-  review rules and study coverage by injecting bugs  
+
+ 
+ 
+## simplified Assumptions regarding comet*: 
+
+- baseSupplyIndex and baseBorrowIndex at baseIndexScale
+- latestRoundData returns answer > 0
+
+
+
 
 ## work in progress 
 
@@ -266,9 +305,3 @@ BorrowRate > SupplyRate
 1. `getBorrowLiquidity`  - probably can have a few rules
 
 2. re-entrancy checks, especially in `absorb()` & `buyCollateral()`
-
-| Rule | getTotalBaseSupplyIndex() >= baseIndexScale() && getTotalBaseBorrowIndex() >= baseIndexScale() | getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex() | perSecondInterestRateSlopeLow() > 0 && perSecondInterestRateSlopeLow() < perSecondInterestRateSlopeHigh() | reserveRate(e) > 0 |
-|----- | --- | -- | -- | -- |
-| presentValue_GE_principal | X | V | X | X |
-| presentValue_EQ_principal | X | X | V | X |
-| SupplyIndex_vs_BorrowIndex| X | V | X | X |
