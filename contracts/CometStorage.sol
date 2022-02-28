@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity ^0.8.11;
 
-import "./CometConfiguration.sol";
-
 /**
  * @title Compound's Comet Storage Interface
  * @dev Versions can enforce append-only storage slots via inheritance.
  * @author Compound
  */
-contract CometStorage is CometConfiguration {
+contract CometStorage {
     // 512 bits total = 2 slots
     struct TotalsBasic {
         // 1st slot
