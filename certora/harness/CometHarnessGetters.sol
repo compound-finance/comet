@@ -65,10 +65,6 @@ contract CometHarnessGetters is Comet {
         return userCollateral[user][asset].balance;
     }
 
-    function calc_power_of_two(uint8 power) external returns (uint256){
-        return 2**power;
-    }
-
     function tokenBalanceOf(address token, address user) external view returns(uint256) {
         return ERC20(token).balanceOf(user);
     }
