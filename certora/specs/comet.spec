@@ -32,7 +32,7 @@ methods {
 definition similarFunctions(method f) returns bool =    
             f.selector == withdraw(address,uint256).selector ||
             f.selector == withdrawTo(address,address,uint).selector ||
-            f.selector == transfer(address,address,uint).selector ||
+            f.selector == transferAsset(address,address,uint).selector ||
             f.selector == supplyTo(address,address,uint).selector ||
             f.selector == supply(address,uint).selector ;
 
@@ -232,16 +232,19 @@ rule additivity_of_withdraw( uint x, uint y){
 //     withdraw(e,e.msg.sender,)
 // }
 
+rule usage_registered_assets_only(address asset) {
+    assert false, "todo";
+}
 
 rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
     env e;
-    //todo - is this a safe requirement ?
-    // violated otherwise - user can gain baseToken 
-    // https://vaas-stg.certora.com/output/23658/591b98129cc8a5aa3daf/?anonymousKey=3eddbea2ce8324647b60de82f57e939fab8ab53d
-    // require asset != _baseToken; 
-    // if minAmount is not given, one can get zero https://vaas-stg.certora.com/output/23658/12feded77f88509f3604/?anonymousKey=20b21b4817aeab18024bd014fc3b659593c41671
-    // require minAmount > 0 ; 
+    // https://vaas-stg.certora.com/output/23658/b7cc8ac5bd1d3f414f2f/?anonymousKey=d47ea2a5120f88658704e5ece8bfb45d59b2eb85
+    require asset != _baseToken; 
+    // if minAmount is not given, one can get zero ?
+    //https://vaas-stg.certora.com/output/23658/dfa775ba4793df498a7c/?anonymousKey=69209d915245b6e0c583550af5c6c27fc5382559
+    //require minAmount > 0 ; 
     
+    require e.msg.sender != currentContract;
 
     uint256 balanceAssetBefore = tokenBalanceOf(e, asset, currentContract);
     uint256 balanceBaseBefore = tokenBalanceOf(e, _baseToken, currentContract);
@@ -271,8 +274,19 @@ rule withdraw_reserves(address to){
 }
 
 
+rule withdraw_reserves_decreases(address to, uint amount){
+    env e;
+
+    int256 before = getReserves();
+    withdrawReserves(e,to,amount);
+    int256 after = getReserves();
+
+    assert amount >0 && to != currentContract => before > after;
+}
+
+
     
-    invariant reserves_vs_targetReserves()
+invariant reserves_vs_targetReserves()
         to_mathint(getReserves()) <= to_mathint(targetReserves())
 
 
