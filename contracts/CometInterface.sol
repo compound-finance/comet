@@ -32,7 +32,7 @@ abstract contract CometInterface is CometCore, ERC20 {
 
     function getAssetInfo(uint8 i) virtual external view returns (AssetInfo memory);
     function getReserves() virtual external view returns (int);
-    function getPrice(address priceFeed) virtual external view returns (uint);
+    function getPrice(address priceFeed) virtual external view returns (uint128);
 
     function isBorrowCollateralized(address account) virtual external view returns (bool);
     function isLiquidatable(address account) virtual external view returns (bool);

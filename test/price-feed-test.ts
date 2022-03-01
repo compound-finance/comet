@@ -39,6 +39,6 @@ describe('getPrice', function () {
       },
     });
 
-    await expect(comet.getPrice(priceFeeds.COMP.address)).to.be.revertedWith('number is negative');
+    await expect(comet.getPrice(priceFeeds.COMP.address)).to.be.revertedWith('bad price');
   });
 });
