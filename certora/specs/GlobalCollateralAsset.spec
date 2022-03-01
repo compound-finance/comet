@@ -4,6 +4,5 @@ methods{
     getUserCollateralBalanceByAsset(address, address) returns (uint128) envfree
 }
 
-rule reversability_of_packing(uint8 i){
-    assert getAssetInfo(i)
-}
+// rule reversability_of_packing(uint8 i){
+// }

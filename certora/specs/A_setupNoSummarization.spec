@@ -8,7 +8,7 @@ methods{
     getSupplyRate() returns (uint64)
     getBorrowRate() returns (uint64)
     getUtilization() returns (uint)
-    getPrice(address) returns (uint)
+    getPrice(address) returns (uint128)
     getReserves() returns (int)
     isBorrowCollateralized(address) returns (bool)
     getBorrowLiquidity(address) returns (int)

@@ -127,14 +127,14 @@ contract CometHarness is CometHarnessWrappers {
        
     // }
 
-    function transferFromBase(address src, address dst, address asset, uint amount) external {
+    function transferAssetFromBase(address src, address dst, address asset, uint amount) external {
         require (asset == baseToken);
-        return this.transferFrom(src, dst, asset, amount);
+        return this.transferAssetFrom(src, dst, asset, amount);
     }
 
     function transferFromAsset(address src, address dst, address asset, uint amount) external {
         require (asset != baseToken);
-        return this.transferFrom(src, dst, asset, amount);
+        return this.transferAssetFrom(src, dst, asset, amount);
     }
 
 
