@@ -14,7 +14,7 @@ contract CometHarnessWrappers is CometHarnessGetters {
     constructor(Configuration memory config) CometHarnessGetters(config) { }
 
     // external wrapper for isInAsset()
-    function call_IsInAsset(uint16 assetsIn, uint8 assetOffset) external pure returns (bool) {
+    function call_IsInAsset(uint16 assetsIn, uint8 assetOffset) external view returns (bool) {
         return super.isInAsset(assetsIn, assetOffset);
     }
 
@@ -27,11 +27,12 @@ contract CometHarnessWrappers is CometHarnessGetters {
     function call__getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
         return super._getPackedAsset(assetConfigs, i);
     }
-    function call_principalValue(int104 presentValue_) external returns (int104) {
+
+    function call_principalValue(int104 presentValue_) external view returns (int104) {
         TotalsBasic memory totals = totalsBasic;
         return super.principalValue(totals, presentValue_);
     }
-    function call_presentValue(int104 principalValue_) external returns (int104) {
+    function call_presentValue(int104 principalValue_) external view returns (int104) {
         TotalsBasic memory totals = totalsBasic;
         return super.presentValue(totals, principalValue_);
     }

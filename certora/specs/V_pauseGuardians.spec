@@ -35,11 +35,11 @@ rule check_pauseTransfer_functionality(method f, env e) filtered {f -> all_publi
     
     calldataarg args;
     bool reverted_transfer;
-    if (f.selector == transfer(address, address, uint).selector) {
-        transfer@withrevert(e, args);
+    if (f.selector == transferAsset(address, address, uint).selector) {
+        transferAsset@withrevert(e, args);
         reverted_transfer = lastReverted;
-    } else if (f.selector == transferFrom(address, address, address, uint).selector) {
-        transferFrom@withrevert(e, args);
+    } else if (f.selector == transferAssetFrom(address, address, address, uint).selector) {
+        transferAssetFrom@withrevert(e, args);
         reverted_transfer = lastReverted;
     } else{
         f@withrevert(e, args);

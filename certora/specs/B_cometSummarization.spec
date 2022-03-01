@@ -110,8 +110,8 @@ function supply_functions_with_revert(method f, env e) returns bool{
 
 // a definition of all supply functions in the contract
 definition all_public_transfer_methods(method f) returns bool =
-    f.selector == transfer(address, address, uint).selector || 
-    f.selector == transferFrom(address, address, address, uint).selector;
+    f.selector == transferAsset(address, address, uint).selector || 
+    f.selector == transferAssetFrom(address, address, address, uint).selector;
 
 
 // calling all different transfer functions with revert
@@ -120,11 +120,11 @@ function transfer_functions_with_revert(method f, env e) returns bool{
     calldataarg args;
     bool reverted;
     
-    if (f.selector == transfer(address, address, uint).selector) {
-        transfer@withrevert(e, args);
+    if (f.selector == transferAsset(address, address, uint).selector) {
+        transferAsset@withrevert(e, args);
         reverted = lastReverted;
-    } else if (f.selector == transferFrom(address, address, address, uint).selector) {
-        transferFrom@withrevert(e, args);
+    } else if (f.selector == transferAssetFrom(address, address, address, uint).selector) {
+        transferAssetFrom@withrevert(e, args);
         reverted = lastReverted;
     } else{
         // assert false, "this is an assert false";
@@ -211,5 +211,3 @@ function buy_functions_with_revert(method f, env e) returns bool{
 //
 // functions and definitions for pause guardian integrity
 //
-
-ghost isInAsset(address, address) returns bool;

@@ -27,7 +27,7 @@
 | 17 | `check_pauseAbsorb_functionality` | DONE | ✅ | " |
 | 18 | `check_pauseBuy_functionality` | DONE | ✅ | " |
 | 19 | `check_update_UserCollateral` | IN PROGRESS | 👷 | expected to fail due to `offset > 8` (or 16 on fixed code) |
-| 20 | `update_changes_single_bit` | IN PROGRESS | 🕝 | expected to fail due to `offset > 8` (or 16 on fixed code) |
+| 20 | `update_changes_single_bit` | IN PROGRESS | ✅ | - |
 | 21 | `update_changes_single_user_assetIn` | DONE | ✅ | - |
 | | **High level** |
 | 22 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions  |

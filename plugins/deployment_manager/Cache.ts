@@ -11,6 +11,10 @@ function curry<A, B, C>(f: (A) => B, g: (B) => C): (A) => C {
   return (x) => g(f(x));
 }
 
+function deepClone(o: object): object {
+  return JSON.parse(JSON.stringify(o));
+}
+
 function parseJson<K>(x: string | undefined): K {
   if (x === undefined) {
     return undefined;
@@ -132,6 +136,18 @@ export class Cache {
 
   clearMemory() {
     this.cache = {};
+  }
+
+  storeMemory(): object {
+    return deepClone(this.cache);
+  }
+
+  loadMemory(cache: object) {
+    this.cache = deepClone(cache);
+  }
+
+  cloneMemory() {
+    this.cache = deepClone(this.cache);
   }
 
   show() {

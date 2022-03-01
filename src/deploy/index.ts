@@ -2,30 +2,33 @@ import { hasNetworkConfiguration } from './NetworkConfiguration';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import {
-  Comet,
+  CometInterface as Comet,
   ERC20,
   TransparentUpgradeableProxy,
 } from '../../build/types';
-import { AssetInfoStruct } from '../../build/types/Comet';
+import { AssetConfigStruct } from '../../build/types/Comet';
 import { BigNumberish } from 'ethers';
 import { deployNetworkComet } from './Network';
 import { deployDevelopmentComet } from './Development';
 
-export interface CometConfigurationOverrides {
+export interface ProtocolConfiguration {
+  symbol?: string;
   governor?: string;
   pauseGuardian?: string;
-  priceOracle?: string;
   baseToken?: string;
-  trackingIndexScale?: string;
-  baseMinForRewards?: BigNumberish;
-  baseTrackingSupplySpeed?: BigNumberish;
-  baseTrackingBorrowSpeed?: BigNumberish;
-  assetInfo?: AssetInfoStruct[];
+  baseTokenPriceFeed?: string;
   kink?: BigNumberish;
   perYearInterestRateBase?: BigNumberish;
   perYearInterestRateSlopeLow?: BigNumberish;
   perYearInterestRateSlopeHigh?: BigNumberish;
   reserveRate?: BigNumberish;
+  trackingIndexScale?: BigNumberish;
+  baseTrackingSupplySpeed?: BigNumberish;
+  baseTrackingBorrowSpeed?: BigNumberish;
+  baseMinForRewards?: BigNumberish;
+  baseBorrowMin?: BigNumberish;
+  targetReserves?: BigNumberish;
+  assetConfigs?: AssetConfigStruct[];
 }
 
 export interface DeployedContracts {
@@ -37,7 +40,7 @@ export interface DeployedContracts {
 export async function deployComet(
   deploymentManager: DeploymentManager,
   deployProxy: boolean = true,
-  configurationOverrides: CometConfigurationOverrides = {},
+  configurationOverrides: ProtocolConfiguration = {},
   contractMapOverride?: ContractMap,
 ): Promise<DeployedContracts> {
   // If we have a `configuration.json` for the network, use it.

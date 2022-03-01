@@ -19,7 +19,14 @@ methods {
     getTotalBorrowBase() returns (uint104) envfree 
     getTotalsSupplyAsset(address asset) returns (uint128) envfree  
     getReserves() returns (int) envfree
+    targetReserves() returns (uint104) envfree
+
     _baseToken.balanceOf(address account) returns (uint256) envfree
+
+    getUserCollateralBalanceByAsset(address, address) returns uint128 envfree
+    call_Summarized_IsInAsset(uint16, uint8) returns (bool) envfree
+    getAssetinOfUser(address) returns (uint16) envfree
+    asset_index(address) returns (uint8) envfree
 }
 
 definition similarFunctions(method f) returns bool =    
@@ -50,6 +57,26 @@ hook Sstore userBasic[KEY address a].principal int104 balance
 hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 balance (uint128 old_balance) STORAGE {
     sumBalancePerAssert[t] = sumBalancePerAssert[t] - old_balance + balance;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////   Michael   /////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+
+/* move to comet an use summarization */
+
+// B@B - assetIn of a specific asset is initialized (!0) or uninitialized (0) along with the collateral balance
+rule assetIn_Initialized_With_Balance(method f, address user, address asset) filtered { f -> f.selector != call_updateAssetsIn(address, address, uint128, uint128).selector } {
+    env e; calldataarg args;
+    require getUserCollateralBalanceByAsset(user, asset) == 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset));
+    f(e, args);
+    assert getUserCollateralBalanceByAsset(user, asset) == 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset));
+}
+// balance change => update asset
+
+
+
+
 /*
 rule whoChangedMyGhost(method f) {
 	mathint before = sumUserBasicPrinciple;
@@ -224,4 +251,60 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
     assert (balanceAssetAfter <= balanceAssetBefore);
     assert (balanceBaseBefore <= balanceBaseAfter);
     assert (balanceBaseBefore > balanceBaseAfter <=> balanceAssetAfter > balanceAssetBefore);
+}
+
+rule withdraw_reserves(address to){
+    env e;
+
+    uint amount1;
+    uint amount2;
+    require amount2 > amount1;    
+    
+    storage init = lastStorage;
+    
+    withdrawReserves(e,to,amount1);
+        int reserves1 = getReserves();
+    withdrawReserves(e,to,amount2) at init;
+        int reserves2 = getReserves();
+
+    assert reserves1 >= reserves2;
+}
+
+
+    
+    invariant reserves_vs_targetReserves()
+        to_mathint(getReserves()) <= to_mathint(targetReserves())
+
+
+
+rule verify_isBorrowCollateralized(address account){
+    env e;
+
+    storage init = lastStorage;
+    
+    bool collateralized1 = isBorrowCollateralized(account);
+        accrue(e) at init;
+    bool collateralized2 = isBorrowCollateralized(account);
+
+    assert collateralized1 == collateralized1;
+}
+
+rule supply_decrease_utilization(uint amount){
+    env e;
+
+    uint utilization_1 = getUtilization(e);
+    supply(e,_baseToken,amount);
+    uint utilization_2 = getUtilization(e);
+    
+    assert utilization_1 >= utilization_2;
+}
+
+rule withdraw_increase_utilization(uint amount){
+    env e;
+
+    uint utilization_1 = getUtilization(e);
+    withdraw(e,_baseToken,amount);
+    uint utilization_2 = getUtilization(e);
+    
+    assert utilization_1 <= utilization_2;
 }

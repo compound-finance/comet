@@ -24,6 +24,34 @@ describe('updateAssetsIn', function () {
     ]);
   });
 
+  it('works for up to 15 assets', async () => {
+    const { comet, tokens, users } = await makeProtocol({
+      assets: {
+        USDC: {},
+        ASSET1: {},
+        ASSET2: {},
+        ASSET3: {},
+        ASSET4: {},
+        ASSET5: {},
+        ASSET6: {},
+        ASSET7: {},
+        ASSET8: {},
+        ASSET9: {},
+        ASSET10: {},
+        ASSET11: {},
+        ASSET12: {},
+        ASSET13: {},
+        ASSET14: {},
+        ASSET15: {},
+      },
+    });
+    const [user] = users;
+    const asset15address = tokens['ASSET15'].address;
+
+    await comet.updateAssetsInExternal(user.address, asset15address, 0, 1);
+    expect(await comet.getAssetList(user.address)).to.deep.equal([asset15address]);
+  });
+
   it('does not change state when both initialUserBalance and finalUserBalance are 0', async () => {
     const { comet, tokens } = await makeProtocol();
     const [_governor, _pauseGuardian, user] = await ethers.getSigners();

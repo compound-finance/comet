@@ -1,4 +1,4 @@
-import { CometContext, scenario } from './context/CometContext';
+import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 
 scenario('initializes governor correctly', {}, async ({ comet, actors }, world) => {
@@ -26,7 +26,7 @@ scenario('Comet#allow > allows a user to rescind authorization', {}, async ({ co
   expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
 });
 
-scenario('has assets', {}, async ({ comet, actors, assets }: CometContext, world) => {
+scenario('has assets', {}, async ({ comet, actors, assets }, world) => {
   let baseToken = await comet.baseToken();
   let numAssets = await comet.numAssets();
   let collateralAssets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));

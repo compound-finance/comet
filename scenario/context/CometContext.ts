@@ -13,7 +13,7 @@ import {
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { deployComet } from '../../src/deploy';
-import { Comet, ProxyAdmin, ERC20, ERC20__factory } from '../../build/types';
+import { CometInterface as Comet, ProxyAdmin, ERC20, ERC20__factory } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
@@ -115,7 +115,7 @@ export class CometContext {
       }
     }
 
-    if (world.isForked()) {
+    if (!world.isRemoteFork()) {
       throw new Error('Tokens cannot be sourced from Etherscan for development. Actors did not have sufficient assets.');
     } else {
       this.debug('Source Tokens: sourcing from Etherscan...');
@@ -129,7 +129,6 @@ export class CometContext {
     }
   }
 
-  // <!--
   async setAssets() {
     let signer = (await this.deploymentManager.hre.ethers.getSigners())[1]; // dunno?
     let numAssets = await this.comet.numAssets();
@@ -154,22 +153,30 @@ async function buildActor(name: string, signer: SignerWithAddress, context: Come
 const getInitialContext = async (world: World): Promise<CometContext> => {
   let deploymentManager = new DeploymentManager(world.base.name, world.hre, { debug: true });
 
-  async function getContract<T extends Contract>(name: string): Promise<T> {
+  // TODO: `thing` allows loading the named contract using a particular ABI
+  //  we use it for now to supply a full interface across delegates
+  //  we can replace with an automatic union proxy interface that can recover the full interface through spider
+  async function getContract<T extends Contract>(name: string, thing?: string): Promise<T> {
     let contracts = await deploymentManager.contracts();
     let contract: T = contracts.get(name) as T;
     if (!contract) {
       throw new Error(`No such contract ${name} for base ${world.base.name}, found: ${JSON.stringify([...contracts.keys()])}`);
     }
+    if (thing) {
+      return await deploymentManager.hre.ethers.getContractAt(thing, contract.address) as T;
+    } else {
+      return contract;
+    }
     return contract;
   }
 
-  if (world.isForked()) {
+  if (!world.isRemoteFork()) {
     await deployComet(deploymentManager);
   }
 
   await deploymentManager.spider();
 
-  let comet = await getContract<Comet>('comet');
+  let comet = await getContract<Comet>('comet', 'CometInterface');
   let signers = await world.hre.ethers.getSigners();
 
   let [localAdminSigner, localPauseGuardianSigner, albertSigner, bettySigner, charlesSigner] =
@@ -200,6 +207,8 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
 };
 
 async function forkContext(c: CometContext): Promise<CometContext> {
+  // Deep clone the cache's cache
+  c.deploymentManager.cache.cloneMemory();
   return c;
 }
 

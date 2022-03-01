@@ -19,8 +19,8 @@ export class World {
   }
 
   // TODO: Can we do this better?
-  isForked(): boolean {
-    return !this.base.url;
+  isRemoteFork(): boolean {
+    return !!this.base.url;
   }
 
   async _snapshot() {
