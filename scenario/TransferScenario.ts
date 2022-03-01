@@ -15,7 +15,7 @@ scenario(
   async ({ comet, actors }) => {
     const { albert, betty } = actors;
     // XXX
-    //await albert.transfer(betty, COMP, exp(100, 18));
+    //await albert.transferAsset(betty, COMP, exp(100, 18));
   }
 );
 
@@ -31,7 +31,7 @@ scenario(
   async ({ comet, actors }) => {
     const { albert, betty } = actors;
     // XXX
-    //await albert.transfer(betty, USDC, exp(100, 6));
+    //await albert.transferAsset(betty, USDC, exp(100, 6));
   }
 );
 
@@ -48,7 +48,7 @@ scenario(
     const { albert, betty, charles } = actors;
     // XXX
     //await albert.allow(charles, true);
-    //await charles.transferFrom(albert, better, USDC, exp(100, 6));
+    //await charles.transferAssetFrom(albert, better, USDC, exp(100, 6));
   }
 );
 
@@ -63,7 +63,7 @@ scenario(
     const baseToken = await comet.baseToken();
 
     await expect(
-      albert.transfer({
+      albert.transferAsset({
         dst: albert.address,
         asset: baseToken,
         amount: 100,
@@ -83,7 +83,7 @@ scenario(
     const collateralAsset = await comet.getAssetInfo(0);
 
     await expect(
-      albert.transfer({
+      albert.transferAsset({
         dst: albert.address,
         asset: collateralAsset.asset,
         amount: 100,
@@ -105,7 +105,7 @@ scenario(
     await betty.allow(albert, true);
 
     await expect(
-      albert.transferFrom({
+      albert.transferAssetFrom({
         src: betty.address,
         dst: betty.address,
         asset: baseToken,
@@ -128,7 +128,7 @@ scenario(
     await betty.allow(albert, true);
 
     await expect(
-      albert.transferFrom({
+      albert.transferAssetFrom({
         src: betty.address,
         dst: betty.address,
         asset: collateralAsset.asset,
@@ -150,11 +150,11 @@ scenario(
     const { albert, betty } = actors;
 
     const baseToken = await comet.baseToken();
-    
+
     await betty.allow(albert, true);
 
     await expect(
-      albert.transfer({
+      albert.transferAsset({
         dst: betty.address,
         asset: baseToken,
         amount: 100,
@@ -179,7 +179,7 @@ scenario(
     await betty.allow(albert, true);
 
     await expect(
-      albert.transferFrom({
+      albert.transferAssetFrom({
         src: betty.address,
         dst: albert.address,
         asset: baseToken,
