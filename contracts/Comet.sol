@@ -1150,6 +1150,9 @@ contract Comet is CometCore {
         newBalance = newBalance < 0 ? int104(0) : newBalance;
         updateBaseBalance(totals, account, accountUser, principalValue(totals, newBalance));
 
+        // reset assetsIn
+        userBasic[account].assetsIn = 0;
+
         // Reserves are decreased by increasing total supply and decreasing borrows
         //  the amount of debt repaid by reserves is `newBalance - oldBalance`
         // Note: new balance must be non-negative due to the above thresholding
