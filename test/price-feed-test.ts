@@ -39,6 +39,6 @@ describe('getPrice', function () {
       },
     });
 
-    await expect(comet.getPrice(priceFeeds.COMP.address)).to.be.revertedWith('bad price');
+    await expect(comet.getPrice(priceFeeds.COMP.address)).to.be.revertedWith("custom error 'BadPrice()'");
   });
 });

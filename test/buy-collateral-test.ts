@@ -2,7 +2,7 @@ import { Comet, ethers, expect, exp, makeProtocol, portfolio, wait } from './hel
 
 describe('buyCollateral', function () {
   it('allows buying collateral when reserves < target reserves', async () => {
-    const protocol = await makeProtocol({base: 'USDC', targetReserves: 100, 
+    const protocol = await makeProtocol({base: 'USDC', targetReserves: 100,
       assets: {
         USDC: {
           initial: 1e6,
@@ -15,7 +15,7 @@ describe('buyCollateral', function () {
           initialPrice: 1,
         },
       }
-    });  
+    });
     const { comet, tokens, users: [alice] } = protocol;
     const { USDC, COMP } = tokens;
     const cometAsA = comet.connect(alice);
@@ -114,12 +114,12 @@ describe('buyCollateral', function () {
     await wait(comet.setCollateralBalance(comet.address, COMP.address, exp(50, 18)));
 
     const r0 = await comet.getReserves();
-    expect(r0).to.be.equal(100e6); 
+    expect(r0).to.be.equal(100e6);
     expect(r0).to.be.gt(await comet.targetReserves());
-    
+
     // Alice buys 50e18 wei COMP for 50e6 wei USDC
     await wait(baseAsA.approve(comet.address, exp(50, 6)));
-    await expect(cometAsA.buyCollateral(COMP.address, exp(50, 18), 50e6, alice.address)).to.be.revertedWith('no ongoing sale');
+    await expect(cometAsA.buyCollateral(COMP.address, exp(50, 18), 50e6, alice.address)).to.be.revertedWith("custom error 'NotForSale()'");
   });
 
   it('reverts if slippage is too high', async () => {
@@ -152,7 +152,7 @@ describe('buyCollateral', function () {
 
     // Alice tries to buy 100e18 wei COMP for 50e6 wei USDC
     await wait(baseAsA.approve(comet.address, exp(50, 6)));
-    await expect(cometAsA.buyCollateral(COMP.address, exp(100, 18), 50e6, alice.address)).to.be.revertedWith('slippage too high');
+    await expect(cometAsA.buyCollateral(COMP.address, exp(100, 18), 50e6, alice.address)).to.be.revertedWith("custom error 'TooMuchSlippage()'");
   });
 
   it('reverts if not enough collateral to buy', async () => {
@@ -197,8 +197,8 @@ describe('buyCollateral', function () {
     // Pause buy collateral
     await wait(comet.connect(pauseGuardian).pause(false, false, false, false, true));
     expect(await comet.isBuyPaused()).to.be.true;
-    
-    await expect(cometAsA.buyCollateral(COMP.address, exp(50, 18), 50e6, alice.address)).to.be.revertedWith('buy is paused');
+
+    await expect(cometAsA.buyCollateral(COMP.address, exp(50, 18), 50e6, alice.address)).to.be.revertedWith("custom error 'Paused()'");
   });
 
   it.skip('buys the correct amount in a fee-like situation', async () => {

@@ -286,7 +286,7 @@ describe('absorb', function () {
   it('reverts if an account is not underwater', async () => {
     const { comet, users: [alice, bob] } = await makeProtocol();
 
-    await expect(comet.absorb(alice.address, [bob.address])).to.be.revertedWith("account is not underwater");
+    await expect(comet.absorb(alice.address, [bob.address])).to.be.revertedWith("custom error 'NotLiquidatable()'");
   });
 
   it.skip('reverts if collateral asset value overflows base balance', async () => {
@@ -304,6 +304,6 @@ describe('absorb', function () {
     await wait(comet.connect(pauseGuardian).pause(false, false, false, true, false));
     expect(await comet.isAbsorbPaused()).to.be.true;
 
-    await expect(cometAsB.absorb(bob.address, [alice.address])).to.be.revertedWith('absorb is paused');
+    await expect(cometAsB.absorb(bob.address, [alice.address])).to.be.revertedWith("custom error 'Paused()'");
   });
 });
