@@ -57,12 +57,12 @@ describe('asset info', function () {
         },
         reward: 'ASSET1',
       })
-    ).to.be.revertedWith('too many asset configs');
+    ).to.be.revertedWith("custom error 'TooManyAssets()'");
   });
 
   it('reverts if index is greater that numAssets', async () => {
     const { comet } = await makeProtocol();
-    await expect(comet.getAssetInfo(3)).to.be.revertedWith('asset info not found');
+    await expect(comet.getAssetInfo(3)).to.be.revertedWith("custom error 'BadAsset()'");
   });
 
   it('reverts if collateral factors are out of range', async () => {
@@ -72,7 +72,7 @@ describe('asset info', function () {
         ASSET1: {borrowCF: exp(0.9, 18), liquidateCF: exp(0.9, 18)},
         ASSET2: {},
       },
-    })).to.be.revertedWith("borrow CF must be < liquidate CF");
+    })).to.be.revertedWith("custom error 'BorrowCFTooLarge()'");
 
     // check descaled factors
     await expect(makeProtocol({
@@ -81,7 +81,7 @@ describe('asset info', function () {
         ASSET1: {borrowCF: exp(0.9, 18), liquidateCF: exp(0.9, 18) + 1n},
         ASSET2: {},
       },
-    })).to.be.revertedWith("borrow CF must be < liquidate CF");
+    })).to.be.revertedWith("custom error 'BorrowCFTooLarge()'");
 
     await expect(makeProtocol({
       assets: {
@@ -89,6 +89,6 @@ describe('asset info', function () {
         ASSET1: {borrowCF: exp(0.99, 18), liquidateCF: exp(1.1, 18)},
         ASSET2: {},
       },
-    })).to.be.revertedWith("liquidate CF too high");
+    })).to.be.revertedWith("custom error 'LiquidateCFTooLarge()'");
   });
 });

@@ -61,7 +61,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('owner is not signatory');
+    ).to.be.revertedWith("custom error 'BadSignatory()'");
   }
 );
 
@@ -93,7 +93,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('owner is not signatory');
+    ).to.be.revertedWith("custom error 'BadSignatory()'");
   }
 );
 
@@ -125,7 +125,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('owner is not signatory');
+    ).to.be.revertedWith("custom error 'BadSignatory()'");
   }
 );
 
@@ -157,7 +157,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('owner is not signatory');
+    ).to.be.revertedWith("custom error 'BadSignatory()'");
   }
 );
 
@@ -189,7 +189,7 @@ scenario(
         expiry: expiry + 100, // altered expiry
         signature,
       })
-    ).to.be.revertedWith('owner is not signatory');
+    ).to.be.revertedWith("custom error 'BadSignatory()'");
   }
 );
 
@@ -222,7 +222,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('invalid nonce');
+    ).to.be.revertedWith("custom error 'BadNonce()'");
   }
 );
 
@@ -265,7 +265,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('invalid nonce');
+    ).to.be.revertedWith("custom error 'BadNonce()'");
   }
 );
 
@@ -297,7 +297,7 @@ scenario(
         expiry: invalidExpiry,
         signature,
       })
-    ).to.be.revertedWith('signed transaction expired');
+    ).to.be.revertedWith("custom error 'SignatureExpired()'");
   }
 );
 
@@ -331,7 +331,7 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('invalid value: v');
+    ).to.be.revertedWith("custom error 'InvalidValueV()'");
   }
 );
 
@@ -366,6 +366,6 @@ scenario(
         expiry,
         signature,
       })
-    ).to.be.revertedWith('invalid value: s');
+    ).to.be.revertedWith("custom error 'InvalidValueS()'");
   }
 );

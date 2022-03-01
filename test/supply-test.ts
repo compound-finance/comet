@@ -115,7 +115,7 @@ describe('supplyTo', function () {
     const cometAsB = comet.connect(bob);
 
     const a0 = await wait(baseAsB.approve(comet.address, 8e8));
-    await expect(cometAsB.supplyTo(alice.address, COMP.address, 8e8)).to.be.revertedWith('supply cap exceeded');
+    await expect(cometAsB.supplyTo(alice.address, COMP.address, 8e8)).to.be.revertedWith("custom error 'SupplyCapExceeded()'");
   });
 
   it('reverts if the asset is neither collateral nor base', async () => {
@@ -144,7 +144,7 @@ describe('supplyTo', function () {
     expect(await comet.isSupplyPaused()).to.be.true;
 
     await wait(baseAsB.approve(comet.address, 1));
-    await expect(cometAsB.supplyTo(alice.address, USDC.address, 1)).to.be.revertedWith('supply is paused');
+    await expect(cometAsB.supplyTo(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
   });
 
   it.skip('supplies the correct amount in a fee-like situation', async () => {
@@ -193,7 +193,7 @@ describe('supply', function () {
     expect(await comet.isSupplyPaused()).to.be.true;
 
     await wait(baseAsB.approve(comet.address, 100e6));
-    await expect(cometAsB.supply(USDC.address, 100e6)).to.be.revertedWith('supply is paused');
+    await expect(cometAsB.supply(USDC.address, 100e6)).to.be.revertedWith("custom error 'Paused()'");
   });
 });
 
@@ -235,7 +235,7 @@ describe('supplyFrom', function () {
     const cometAsC = comet.connect(charlie);
 
     await expect(cometAsC.supplyFrom(bob.address, alice.address, COMP.address, 7))
-      .to.be.revertedWith('operator not permitted');
+      .to.be.revertedWith("custom error 'Unauthorized()'");
   });
 
   it('reverts if supply is paused', async () => {
@@ -254,6 +254,6 @@ describe('supplyFrom', function () {
 
     await wait(baseAsB.approve(comet.address, 7));
     await wait(cometAsB.allow(charlie.address, true));
-    await expect(cometAsC.supplyFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith('supply is paused');
+    await expect(cometAsC.supplyFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith("custom error 'Paused()'");
   });
 });

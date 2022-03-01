@@ -151,7 +151,7 @@ describe('withdrawTo', function () {
     await wait(comet.connect(pauseGuardian).pause(false, false, true, false, false));
     expect(await comet.isWithdrawPaused()).to.be.true;
 
-    await expect(cometAsB.withdrawTo(alice.address, USDC.address, 1)).to.be.revertedWith('withdraw is paused');
+    await expect(cometAsB.withdrawTo(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
   });
 
   it.skip('borrows to withdraw if necessary/possible', async () => {
@@ -201,7 +201,7 @@ describe('withdraw', function () {
     await wait(comet.connect(pauseGuardian).pause(false, false, true, false, false));
     expect(await comet.isWithdrawPaused()).to.be.true;
 
-    await expect(cometAsB.withdraw(USDC.address, 100e6)).to.be.revertedWith('withdraw is paused');
+    await expect(cometAsB.withdraw(USDC.address, 100e6)).to.be.revertedWith("custom error 'Paused()'");
   });
 });
 
@@ -247,7 +247,7 @@ describe('withdrawFrom', function () {
     const cometAsC = comet.connect(charlie);
 
     await expect(cometAsC.withdrawFrom(bob.address, alice.address, COMP.address, 7))
-      .to.be.revertedWith('operator not permitted');
+      .to.be.revertedWith("custom error 'Unauthorized()'");
   });
 
   it('reverts if withdraw is paused', async () => {
@@ -264,6 +264,6 @@ describe('withdrawFrom', function () {
     expect(await comet.isWithdrawPaused()).to.be.true;
 
     await wait(cometAsB.allow(charlie.address, true));
-    await expect(cometAsC.withdrawFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith('withdraw is paused');
+    await expect(cometAsC.withdrawFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith("custom error 'Paused()'");
   });
 });

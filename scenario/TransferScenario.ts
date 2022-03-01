@@ -68,7 +68,7 @@ scenario(
         asset: baseToken,
         amount: 100,
       })
-    ).to.be.revertedWith('self-transfer not allowed');
+    ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
   }
 );
 
@@ -88,7 +88,7 @@ scenario(
         asset: collateralAsset.asset,
         amount: 100,
       })
-    ).to.be.revertedWith('self-transfer not allowed');
+    ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
   }
 );
 
@@ -111,7 +111,7 @@ scenario(
         asset: baseToken,
         amount: 100,
       })
-    ).to.be.revertedWith('self-transfer not allowed');
+    ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
   }
 );
 
@@ -134,7 +134,7 @@ scenario(
         asset: collateralAsset.asset,
         amount: 100,
       })
-    ).to.be.revertedWith('self-transfer not allowed');
+    ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
   }
 );
 
@@ -159,7 +159,7 @@ scenario(
         asset: baseToken,
         amount: 100,
       })
-    ).to.be.revertedWith('transfer is paused');
+    ).to.be.revertedWith("custom error 'Paused()'");
   }
 );
 
@@ -185,6 +185,6 @@ scenario(
         asset: baseToken,
         amount: 100,
       })
-    ).to.be.revertedWith('transfer is paused');
+    ).to.be.revertedWith("custom error 'Paused()'");
   }
 );

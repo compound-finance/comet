@@ -34,7 +34,7 @@ scenario(
   async ({ actors }) => {
     const { albert } = actors;
     await expect(albert.withdrawReserves(albert, 10)).to.be.revertedWith(
-      'only governor may withdraw'
+      "custom error 'Unauthorized()'"
     );
   }
 );
@@ -50,7 +50,7 @@ scenario(
   async ({ actors }) => {
     const { admin, albert } = actors;
 
-    await expect(admin.withdrawReserves(albert, 101)).to.be.revertedWith('insufficient reserves');
+    await expect(admin.withdrawReserves(albert, 101)).to.be.revertedWith("custom error 'InsufficientReserves()'");
   }
 );
 
