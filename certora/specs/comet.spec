@@ -19,6 +19,8 @@ methods {
     getTotalBorrowBase() returns (uint104) envfree 
     getTotalsSupplyAsset(address asset) returns (uint128) envfree  
     getReserves() returns (int) envfree
+    targetReserves() returns (uint104) envfree
+
     _baseToken.balanceOf(address account) returns (uint256) envfree
 
     getUserCollateralBalanceByAsset(address, address) returns uint128 envfree
@@ -249,4 +251,60 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
     assert (balanceAssetAfter <= balanceAssetBefore);
     assert (balanceBaseBefore <= balanceBaseAfter);
     assert (balanceBaseBefore > balanceBaseAfter <=> balanceAssetAfter > balanceAssetBefore);
+}
+
+rule withdraw_reserves(address to){
+    env e;
+
+    uint amount1;
+    uint amount2;
+    require amount2 > amount1;    
+    
+    storage init = lastStorage;
+    
+    withdrawReserves(e,to,amount1);
+        int reserves1 = getReserves();
+    withdrawReserves(e,to,amount2) at init;
+        int reserves2 = getReserves();
+
+    assert reserves1 >= reserves2;
+}
+
+
+    
+    invariant reserves_vs_targetReserves()
+        to_mathint(getReserves()) <= to_mathint(targetReserves())
+
+
+
+rule verify_isBorrowCollateralized(address account){
+    env e;
+
+    storage init = lastStorage;
+    
+    bool collateralized1 = isBorrowCollateralized(account);
+        accrue(e) at init;
+    bool collateralized2 = isBorrowCollateralized(account);
+
+    assert collateralized1 == collateralized1;
+}
+
+rule supply_decrease_utilization(uint amount){
+    env e;
+
+    uint utilization_1 = getUtilization(e);
+    supply(e,_baseToken,amount);
+    uint utilization_2 = getUtilization(e);
+    
+    assert utilization_1 >= utilization_2;
+}
+
+rule withdraw_increase_utilization(uint amount){
+    env e;
+
+    uint utilization_1 = getUtilization(e);
+    withdraw(e,_baseToken,amount);
+    uint utilization_2 = getUtilization(e);
+    
+    assert utilization_1 <= utilization_2;
 }
