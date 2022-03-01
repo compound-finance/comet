@@ -59,41 +59,53 @@ contract Comet is CometCore {
     address public immutable extensionDelegate;
 
     /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope (factor)
-    uint64 public immutable kink;
+    /// @dev uint64
+    uint public immutable kink;
 
     /// @notice Per second interest rate slope applied when utilization is below kink (factor)
-    uint64 public immutable perSecondInterestRateSlopeLow;
+    /// @dev uint64
+    uint public immutable perSecondInterestRateSlopeLow;
 
     /// @notice Per second interest rate slope applied when utilization is above kink (factor)
-    uint64 public immutable perSecondInterestRateSlopeHigh;
+    /// @dev uint64
+    uint public immutable perSecondInterestRateSlopeHigh;
 
     /// @notice Per second base interest rate (factor)
-    uint64 public immutable perSecondInterestRateBase;
+    /// @dev uint64
+    uint public immutable perSecondInterestRateBase;
 
     /// @notice The rate of total interest paid that goes into reserves (factor)
-    uint64 public immutable reserveRate;
+    /// @dev uint64
+    uint public immutable reserveRate;
 
     /// @notice The scale for base token (must be less than 18 decimals)
-    uint64 public immutable baseScale;
+    /// @dev uint64
+    uint public immutable baseScale;
 
     /// @notice The scale for reward tracking
-    uint64 public immutable trackingIndexScale;
+    /// @dev uint64
+    uint public immutable trackingIndexScale;
 
     /// @notice The speed at which supply rewards are tracked (in trackingIndexScale)
-    uint64 public immutable baseTrackingSupplySpeed;
+    /// @dev uint64
+    uint public immutable baseTrackingSupplySpeed;
 
     /// @notice The speed at which borrow rewards are tracked (in trackingIndexScale)
-    uint64 public immutable baseTrackingBorrowSpeed;
+    /// @dev uint64
+    uint public immutable baseTrackingBorrowSpeed;
 
     /// @notice The minimum amount of base wei for rewards to accrue
     /// @dev This must be large enough so as to prevent division by base wei from overflowing the 64 bit indices.
-    uint104 public immutable baseMinForRewards;
+    /// @dev uint104
+    uint public immutable baseMinForRewards;
 
     /// @notice The minimum base amount required to initiate a borrow
-    uint104 public immutable baseBorrowMin;
+    /// @dev uint104
+    uint public immutable baseBorrowMin;
 
     /// @notice The minimum base token reserves which must be held before collateral is hodled
-    uint104 public immutable targetReserves;
+    /// @dev uint104
+    uint public immutable targetReserves;
 
     /// @notice The number of decimals for wrapped base token
     uint8 public immutable decimals;
@@ -505,7 +517,7 @@ contract Comet is CometCore {
         int liquidity = signedMulPrice(
             presentValue(totals, userBasic[account].principal),
             getPrice(baseTokenPriceFeed),
-            baseScale
+            uint64(baseScale)
         );
 
         for (uint8 i = 0; i < numAssets; i++) {
@@ -542,7 +554,7 @@ contract Comet is CometCore {
         int liquidity = signedMulPrice(
             presentValue(totals, userBasic[account].principal),
             getPrice(baseTokenPriceFeed),
-            baseScale
+            uint64(baseScale)
         );
 
         for (uint8 i = 0; i < numAssets; i++) {
@@ -575,7 +587,7 @@ contract Comet is CometCore {
         int liquidity = signedMulPrice(
             presentValue(totals, userBasic[account].principal),
             getPrice(baseTokenPriceFeed),
-            baseScale
+            uint64(baseScale)
         );
 
         for (uint8 i = 0; i < numAssets; i++) {
@@ -612,7 +624,7 @@ contract Comet is CometCore {
         int liquidity = signedMulPrice(
             presentValue(totals, userBasic[account].principal),
             getPrice(baseTokenPriceFeed),
-            baseScale
+            uint64(baseScale)
         );
 
         for (uint8 i = 0; i < numAssets; i++) {
@@ -1172,7 +1184,7 @@ contract Comet is CometCore {
             }
         }
 
-        uint104 deltaBalance = safe104(divPrice(deltaValue, basePrice, baseScale));
+        uint104 deltaBalance = safe104(divPrice(deltaValue, basePrice, uint64(baseScale)));
         int104 newBalance = oldBalance + signed104(deltaBalance);
         // New balance will not be negative, all excess debt absorbed by reserves
         newBalance = newBalance < 0 ? int104(0) : newBalance;
