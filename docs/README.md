@@ -536,7 +536,7 @@ function allowBySig(
 * `owner`: The address of an account to allow or disallow a manager for. The signatory must be the owner address.
 * `manager`: The address of an account that becomes or will no longer be the manager of the owner.
 * `isAllowed`: True to add the manager and false to remove the manager.
-* `nonce`: The contract state required to match the signature. This can be retrieved from the contract's public nonces mapping.
+* `nonce`: The contract state required to match the signature. This can be retrieved from the contract's public `userNonce` mapping.
 * `expiry`: The time at which to expire the signature. A block timestamp as seconds since the unix epoch (uint).
 * `v`: The recovery byte of the signature.
 * `r`: Half of the ECDSA signature pair.
