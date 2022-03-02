@@ -72,8 +72,7 @@ contract CometHarness is Comet {
         return result;
     }
 
-    // XXX
-    /* function accrue() external { */
-    /*     accrueInternal(); */
-    /* } */
+    function accrue() external {
+        accrueInternal();
+    }
 }
