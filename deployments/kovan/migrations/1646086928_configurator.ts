@@ -16,7 +16,7 @@ let cloneAddr = {
   link: '0x514910771af9ca656af840dff83e8264ecf986ca',
 };
 
-migration('1644388553_deploy_kovan', {
+migration('1646086928_configurator', {
   prepare: async (deploymentManager: DeploymentManager) => {
     let [signer] = await deploymentManager.hre.ethers.getSigners();
     let signerAddress = await signer.getAddress();
@@ -102,10 +102,11 @@ migration('1644388553_deploy_kovan', {
       ['LINK', link],
     ]);
 
-    let { comet, cometProxy } = await deployNetworkComet(deploymentManager, true, {}, contracts);
+    let { comet, cometProxy, configuratorProxy } = await deployNetworkComet(deploymentManager, true, {}, contracts);
 
     return {
       comet: cometProxy.address,
+      configurator: configuratorProxy.address,
       usdc: usdc.address,
       wbtc: wbtc.address,
       weth: weth.address,

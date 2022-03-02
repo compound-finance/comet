@@ -33,7 +33,8 @@ export interface ProtocolConfiguration {
 
 export interface DeployedContracts {
   comet: Comet;
-  proxy: TransparentUpgradeableProxy | null;
+  cometProxy: TransparentUpgradeableProxy | null;
+  configuratorProxy: TransparentUpgradeableProxy | null;
   tokens?: ERC20[];
 }
 

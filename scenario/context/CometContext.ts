@@ -13,7 +13,7 @@ import {
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { deployComet } from '../../src/deploy';
-import { CometInterface as Comet, ProxyAdmin, ERC20__factory, Configurator } from '../../build/types';
+import { CometInterface as Comet, ProxyAdmin, ERC20__factory, Configurator, ProxyAdminAdmin, Timelock } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
@@ -26,12 +26,16 @@ export class CometContext {
   comet: Comet;
   configurator: Configurator;
   proxyAdmin: ProxyAdmin;
+  proxyAdminAdmin: ProxyAdminAdmin;
+  timelock: Timelock;
 
-  constructor(deploymentManager: DeploymentManager, comet: Comet, configurator: Configurator, proxyAdmin: ProxyAdmin) {
+  constructor(deploymentManager: DeploymentManager, comet: Comet, configurator: Configurator, proxyAdmin: ProxyAdmin, proxyAdminAdmin: ProxyAdminAdmin, timelock: Timelock) {
     this.deploymentManager = deploymentManager;
     this.comet = comet;
     this.configurator = configurator;
     this.proxyAdmin = proxyAdmin;
+    this.proxyAdminAdmin = proxyAdminAdmin;
+    this.timelock = timelock;
   }
 
   private debug(...args: any[]) {
@@ -192,8 +196,10 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
 
   let proxyAdmin = (await getContract<ProxyAdmin>('cometAdmin')).connect(adminSigner);
+  let proxyAdminAdmin = (await getContract<ProxyAdminAdmin>('proxyAdminAdmin')).connect(adminSigner);
+  let timelock = (await getContract<Timelock>('timelock')).connect(adminSigner);
 
-  let context = new CometContext(deploymentManager, comet, configurator, proxyAdmin);
+  let context = new CometContext(deploymentManager, comet, configurator, proxyAdmin, proxyAdminAdmin, timelock);
 
   context.actors = {
     admin: await buildActor('admin', adminSigner, context),
