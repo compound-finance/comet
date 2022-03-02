@@ -4,13 +4,13 @@ describe('CometExt', function () {
   it('returns factor scale', async () => {
     const { comet } = await makeProtocol();
     const factorScale = await comet.factorScale();
-    await expect(factorScale).to.eq(exp(1, 18));
+    expect(factorScale).to.eq(exp(1, 18));
   });
 
   it('returns price scale', async () => {
     const { comet } = await makeProtocol();
     const priceScale = await comet.priceScale();
-    await expect(priceScale).to.eq(exp(1, 8));
+    expect(priceScale).to.eq(exp(1, 8));
   });
 
   it('returns totalSupply', async () => {
@@ -24,6 +24,32 @@ describe('CometExt', function () {
 
     const totalSupply = await comet.totalSupply();
 
-    await expect(totalSupply).to.eq(100e6);
+    expect(totalSupply).to.eq(100e6);
+  });
+
+  describe('balanceOf', function () {
+    it('returns principal amount (when value is positive)', async () => {
+      const {
+        comet,
+        users: [user],
+      } = await makeProtocol();
+
+      await comet.setBasePrincipal(user.address, 100e6);
+
+      const balanceOf = await comet.balanceOf(user.address);
+      expect(balanceOf).to.eq(100e6);
+    });
+
+    it.only('returns 0 (when principal amount is negative)', async () => {
+      const {
+        comet,
+        users: [user],
+      } = await makeProtocol();
+
+      await comet.setBasePrincipal(user.address, -100e6);
+
+      const balanceOf = await comet.balanceOf(user.address);
+      expect(balanceOf).to.eq(0);
+    });
   });
 });
