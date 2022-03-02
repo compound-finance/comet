@@ -389,9 +389,9 @@ contract Comet is CometCore {
     }
 
     /**
-     * @notice Accrue interest (and rewards) in base token supply and borrows
+     * @dev Accrue interest (and rewards) in base token supply and borrows
      **/
-    function accrue() public {
+    function accrueInternal() internal {
         uint40 now_ = getNow();
         uint timeElapsed = now_ - lastAccrualTime;
         if (timeElapsed > 0) {
@@ -845,7 +845,7 @@ contract Comet is CometCore {
     function supplyBase(address from, address dst, uint104 amount) internal {
         doTransferIn(baseToken, from, amount);
 
-        accrue();
+        accrueInternal();
 
         uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
         uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
@@ -926,7 +926,7 @@ contract Comet is CometCore {
      * @dev Transfer an amount of base asset from src to dst, borrowing if possible/necessary
      */
     function transferBase(address src, address dst, uint104 amount) internal {
-        accrue();
+        accrueInternal();
 
         uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
         uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
@@ -1024,7 +1024,7 @@ contract Comet is CometCore {
      * @dev Withdraw an amount of base asset from src to `to`, borrowing if possible/necessary
      */
     function withdrawBase(address src, address to, uint104 amount) internal {
-        accrue();
+        accrueInternal();
 
         uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
         uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
@@ -1098,7 +1098,7 @@ contract Comet is CometCore {
      * @dev Transfer user's collateral and debt to the protocol itself.
      */
     function absorbInternal(address account) internal {
-        accrue();
+        accrueInternal();
 
         if (!isLiquidatable(account)) revert NotLiquidatable();
 
