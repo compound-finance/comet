@@ -395,8 +395,8 @@ contract Comet is CometCore {
         uint40 now_ = getNow();
         uint timeElapsed = now_ - lastAccrualTime;
         if (timeElapsed > 0) {
-            uint supplyRate = getSupplyRateInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
-            uint borrowRate = getBorrowRateInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
+            uint supplyRate = getSupplyRate();
+            uint borrowRate = getBorrowRate();
             baseSupplyIndex += safe64(mulFactor(baseSupplyIndex, supplyRate * timeElapsed));
             baseBorrowIndex += safe64(mulFactor(baseBorrowIndex, borrowRate * timeElapsed));
             if (totalSupplyBase >= baseMinForRewards) {
@@ -414,15 +414,8 @@ contract Comet is CometCore {
     /**
      * @return The current per second supply rate
      */
-    function getSupplyRate() external view returns (uint64) {
-        return getSupplyRateInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
-    }
-
-    /**
-     * @dev Calculate current per second supply rate given totals
-     */
-    function getSupplyRateInternal(uint64 baseSupplyIndex_, uint64 baseBorrowIndex_, uint104 totalSupplyBase_, uint104 totalBorrowBase_) internal view returns (uint64) {
-        uint utilization = getUtilizationInternal(baseSupplyIndex_, baseBorrowIndex_, totalSupplyBase_, totalBorrowBase_);
+    function getSupplyRate() public view returns (uint64) {
+        uint utilization = getUtilization();
         uint reserveScalingFactor = utilization * (FACTOR_SCALE - reserveRate) / FACTOR_SCALE;
         if (utilization <= kink) {
             // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
@@ -436,15 +429,8 @@ contract Comet is CometCore {
     /**
      * @return The current per second borrow rate
      */
-    function getBorrowRate() external view returns (uint64) {
-        return getBorrowRateInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
-    }
-
-    /**
-     * @dev Calculate current per second borrow rate given totals
-     */
-    function getBorrowRateInternal(uint64 baseSupplyIndex_, uint64 baseBorrowIndex_, uint104 totalSupplyBase_, uint104 totalBorrowBase_) internal view returns (uint64) {
-        uint utilization = getUtilizationInternal(baseSupplyIndex_, baseBorrowIndex_, totalSupplyBase_, totalBorrowBase_);
+    function getBorrowRate() public view returns (uint64) {
+        uint utilization = getUtilization();
         if (utilization <= kink) {
             // interestRateBase + interestRateSlopeLow * utilization
             return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization));
@@ -458,15 +444,8 @@ contract Comet is CometCore {
      * @return The utilization rate of the base asset
      */
     function getUtilization() public view returns (uint) {
-        return getUtilizationInternal(baseSupplyIndex, baseBorrowIndex, totalSupplyBase, totalBorrowBase);
-    }
-
-    /**
-     * @dev Calculate utilization rate of the base asset given totals
-     */
-    function getUtilizationInternal(uint64 baseSupplyIndex_, uint64 baseBorrowIndex_, uint104 totalSupplyBase_, uint104 totalBorrowBase_) internal pure returns (uint) {
-        uint totalSupply = presentValueSupply(baseSupplyIndex_, totalSupplyBase_);
-        uint totalBorrow = presentValueBorrow(baseBorrowIndex_, totalBorrowBase_);
+        uint totalSupply = presentValueSupply(baseSupplyIndex, totalSupplyBase);
+        uint totalBorrow = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
         if (totalSupply == 0) {
             return 0;
         } else {
