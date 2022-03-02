@@ -81,6 +81,8 @@ abstract contract CometInterface is CometCore, ERC20 {
     function maxAssets() virtual external view returns (uint8);
     function numAssets() virtual external view returns (uint8);
 
+    function totalsBasic() virtual external view returns (TotalsBasic memory);
+
     function version() virtual external view returns (string memory);
 
     function initializeStorage() virtual external;
