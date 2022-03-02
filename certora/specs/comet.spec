@@ -7,7 +7,7 @@ using SymbolicBaseToken as _baseToken
 
 methods {
     //temporary under approximations
-    isInAsset(uint16 assetsIn, uint8 assetOffset) => CONSTANT;
+    // isInAsset(uint16 assetsIn, uint8 assetOffset) => CONSTANT;
     latestRoundData() returns uint256 => DISPATCHER(true);
 
     //todo - move to setup?
