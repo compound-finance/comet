@@ -271,12 +271,14 @@ rule withdraw_reserves(address to){
     
     storage init = lastStorage;
     
+    require to != currentContract && amount1 > 0;
+
     withdrawReserves(e,to,amount1);
         int reserves1 = getReserves();
     withdrawReserves(e,to,amount2) at init;
         int reserves2 = getReserves();
 
-    assert reserves1 >= reserves2;
+    assert reserves1 > reserves2;
 }
 
 
@@ -289,12 +291,6 @@ rule withdraw_reserves_decreases(address to, uint amount){
 
     assert amount >0 && to != currentContract => before > after;
 }
-
-
-    
-invariant reserves_vs_targetReserves()
-        to_mathint(getReserves()) <= to_mathint(targetReserves())
-
 
 
 rule verify_isBorrowCollateralized(address account){
@@ -311,6 +307,8 @@ rule verify_isBorrowCollateralized(address account){
 
 rule supply_decrease_utilization(uint amount){
     env e;
+
+    simplifiedAssumptions();
 
     uint utilization_1 = getUtilization(e);
     supply(e,_baseToken,amount);

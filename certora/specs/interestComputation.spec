@@ -13,7 +13,7 @@ methods{
     getTotalBaseSupplyIndex() returns (uint64) envfree;
     getTotalBaseBorrowIndex() returns (uint64) envfree;
     getlastAccrualTime() returns (uint40) envfree;
-    factorScale() returns (uint64) envfree;
+    FACTOR_SCALE() returns (uint64) envfree;
     perSecondInterestRateBase() returns (uint64) envfree;
     perSecondInterestRateSlopeLow() returns (uint64) envfree;
     perSecondInterestRateSlopeHigh() returns (uint64) envfree;
@@ -316,10 +316,20 @@ rule quote_Collateral(address asset, uint baseAmount ){
 // }
 
 
+// Description :  
+//      reserveRate > factorScale => getSupplyRate will always revert
+
+// formula : 
+//      presentValue >= _principalValue;
+
+//  status : proved
+//  reason : 
+//  link   : https://vaas-stg.certora.com/output/65782/f2f32f50a2bbf14deb79/?anonymousKey=494980dfd3ebcced1ee0d1088acf1a795f9f2a08#SupplyIndex_vs_BorrowIndexResults
+
 rule reserveRate(){
     env e;
 
-        require reserveRate(e) > factorScale();
+        require reserveRate(e) > factorScale(e);
         //https://vaas-stg.certora.com/output/65782/cbe17cbd3ad5d102aa82/?anonymousKey=7e7fac8ec3cd530f2329ae8c4af394e874918af2
 
     getSupplyRate(e);
@@ -341,19 +351,4 @@ function setup(env e){
     // require perSecondInterestRateSlopeLow() > 0 &&
     //         perSecondInterestRateSlopeLow() < perSecondInterestRateSlopeHigh();
     //     require reserveRate(e) > 0;
-}
-
-rule test_signedMulPrice(){
-    env e;
-
-    int n;
-    uint price;
-    uint64 fromScale;
-
-    int result_orig =  signedMulPrice(e, n, price, fromScale);
-    int price_ = to_int256(price);
-    int fromScale_ = to_int256(fromScale);
-    int256 result_cvl  = n * price_ / fromScale_;
-
-    assert result_orig == result_cvl;
 }
