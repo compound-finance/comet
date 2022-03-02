@@ -328,3 +328,22 @@ rule withdraw_increase_utilization(uint amount){
     
     assert utilization_1 <= utilization_2;
 }
+
+rule call_absorb(address absorber, address account) {
+    address[] accounts;
+    env e;
+    require accounts[0] == account;
+    absorb(e, absorber, accounts);
+    assert false; 
+}
+
+
+// note - need loop_iter=2 for this rule
+rule call_absorb_2(address absorber, address account1, address account2) {
+    address[] accounts;
+    env e;
+    require accounts[0] == account1;
+    require accounts[1] == account2;
+    absorb(e, absorber, accounts);
+    assert false; 
+}
