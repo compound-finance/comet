@@ -62,7 +62,7 @@ describe('CometExt', function () {
 
       await comet.setBasePrincipal(user.address, -100e6); // borrow of $100 USDC
 
-      const borrowBalanceOf = await comet.borrowBalanceOfHarness(user.address);
+      const borrowBalanceOf = await comet.borrowBalanceOf(user.address);
       expect(borrowBalanceOf).to.eq(100e6)
     });
 
@@ -74,7 +74,7 @@ describe('CometExt', function () {
 
       await comet.setBasePrincipal(user.address, 100e6);
 
-      const borrowBalanceOf = await comet.borrowBalanceOfHarness(user.address);
+      const borrowBalanceOf = await comet.borrowBalanceOf(user.address);
       expect(borrowBalanceOf).to.eq(0);
     });
   });
