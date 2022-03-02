@@ -241,8 +241,8 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
     // https://vaas-stg.certora.com/output/23658/b7cc8ac5bd1d3f414f2f/?anonymousKey=d47ea2a5120f88658704e5ece8bfb45d59b2eb85
     require asset != _baseToken; 
     // if minAmount is not given, one can get zero ?
-    //https://vaas-stg.certora.com/output/23658/dfa775ba4793df498a7c/?anonymousKey=69209d915245b6e0c583550af5c6c27fc5382559
-    //require minAmount > 0 ; 
+    //https://vaas-stg.certora.com/output/23658/d48bc0a10849dc638048/?anonymousKey=4162738a94af8200c99d01c633d0eb025fedeaf4
+    require minAmount > 0 ; 
     
     require e.msg.sender != currentContract;
     require recipient != currentContract;
