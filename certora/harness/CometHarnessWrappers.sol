@@ -29,7 +29,7 @@ contract CometHarnessWrappers is CometHarnessGetters {
     }
 
     // external wrapper for _getPackedAsset()
-    function call__getPackedAsset(uint8 i, address assetArg, address priceFeedArg, uint8 decimalsArg, uint64 borrowCollateralFactorArg, uint64 liquidateCollateralFactorArg, uint64 liquidationFactorArg, uint128 supplyCapArg) internal view returns (uint256, uint256) {
+    function call__getPackedAsset(uint8 i, address assetArg, address priceFeedArg, uint8 decimalsArg, uint64 borrowCollateralFactorArg, uint64 liquidateCollateralFactorArg, uint64 liquidationFactorArg, uint128 supplyCapArg) public view returns (uint256, uint256) {
         AssetConfig memory assetConfigInst = AssetConfig({        
         asset: assetArg,
         priceFeed: priceFeedArg,
@@ -53,4 +53,15 @@ contract CometHarnessWrappers is CometHarnessGetters {
         return super.presentValue(totals, principalValue_);
     }
 
+    function get_asset00_a() public view returns (uint256){
+        return asset00_a;
+    }
+
+    function get_asset00_b() public view returns (uint256){
+        return asset00_b;
+    }
+
+    function exponent_of_ten(uint8 n) public pure returns (uint64){
+        return uint64(uint64(10) ** n);
+    }
 }
