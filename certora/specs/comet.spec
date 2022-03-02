@@ -245,6 +245,7 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
     //require minAmount > 0 ; 
     
     require e.msg.sender != currentContract;
+    require recipient != currentContract;
 
     uint256 balanceAssetBefore = tokenBalanceOf(e, asset, currentContract);
     uint256 balanceBaseBefore = tokenBalanceOf(e, _baseToken, currentContract);
@@ -253,7 +254,12 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
     uint256 balanceBaseAfter = tokenBalanceOf(e, _baseToken, currentContract);
     assert (balanceAssetAfter <= balanceAssetBefore);
     assert (balanceBaseBefore <= balanceBaseAfter);
-    assert (balanceBaseBefore > balanceBaseAfter <=> balanceAssetAfter > balanceAssetBefore);
+    assert (balanceBaseBefore < balanceBaseAfter <=> balanceAssetAfter < balanceAssetBefore);
+}
+
+rule checkQuoteCollateral(address asset, uint baseAmount) {
+    env e;
+    assert quoteCollateral(e, asset, baseAmount) > 0;
 }
 
 rule withdraw_reserves(address to){
