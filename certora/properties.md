@@ -6,16 +6,18 @@
 | # | Rule Name | Progress | Verdict | Comment | Update |
 |-- | --------- | -------- | ------- | ------- | ------ |
 |   |                      **Interest computation**                    |
-| 1 | `SupplyIndex_BorrowIndex_GE_baseIndexScale` | DONE | ✅ | under assumptions | - |
-| 2 | `SupplyIndex_BorrowIndex_monotonic` | DONE | ✅ | - | - |
-| 3 | `SupplyIndex_BorrowIndex_rise_with_time` | DONE | ✅ | - | - |
+| 1 | `supplyIndex_borrowIndex_GE_baseIndexScale` | DONE | ✅ | - | - |
+| 2 | `supplyIndex_borrowIndex_monotonic` | DONE | ✅ | - | - |
+| 3 | `supplyIndex_borrowIndex_rise_with_time` | DONE | ✅ | - | - |
 | 4 | `borrowBase_vs_utilization` | DONE | ✅ | - | - |
-| 5 | `utilization_zero` | DONE | X | is the property correct? | - |
+| 5 | `utilization_zero` | DONE | ✅ | -| - |
 | 6 | `isLiquiditable_false_should_not_change` | IN PROGRESS | 👷 | - | - |
 | 7 | `isLiquiditable_true_should_not_change` | IN PROGRESS | 👷 | - | - |
 | 8 | `presentValue_greater_principle` | DONE | ✅ | under assumption | - |
-| 9 | `presentValue_G_zero` | DONE | ✅ |  | - |
-| 10 | `presentValue_EQ_principle` | DONE | ✅ | under assumption | - |
+| 9 | `presentValue_G_zero` | DONE | ✅ | - | - |
+| 10 | `presentValue_EQ_principal` | DONE | ✅ | under assumption | - |
+| NEW | `supplyRate_vs_utilization` | DONE | ✅ | - | - |
+| NEW | `utilization_zero_supplyRate_zero` | DONE | ✅ | - | - |
 |   |                       **Flags**                      |
 | 12 | `check_flag_updates` | DONE | ✅ | update is coherent with getters | - |
 | 13 | `check_flag_getters` | DONE | ✅ | getters are coherent with update | - |
@@ -54,9 +56,9 @@ p4 := reserveRate(e) > 0
 
 | Rule | P1 | P2 | P3 | P4 |
 |----- | --- | -- | -- | -- |
-| presentValue_GE_principal | X | V | X | X |
-| presentValue_EQ_principal | X | X | V | X |
-| SupplyIndex_BorrowIndex_GE_baseIndexScale| X | V | X | X |
+| presentValue_GE_principal | ? | ? | ? | ?|
+| presentValue_EQ_principal | ?| ? | ? | ? |
+
 
 
 

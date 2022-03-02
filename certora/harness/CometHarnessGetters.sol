@@ -16,7 +16,7 @@ contract CometHarnessGetters is Comet {
     function getUserCollateralBalance(address user, address asset) public view returns (uint128) {
         return userCollateral[user][asset].balance;
     } 
-     
+
     function getPauseFlags() public view returns (uint8) {
         return totalsBasic.pauseFlags;
     }
@@ -68,4 +68,10 @@ contract CometHarnessGetters is Comet {
     function tokenBalanceOf(address token, address user) external view returns(uint256) {
         return ERC20(token).balanceOf(user);
     }
+
+    function baseIndexScale() public returns (uint64) {
+        return BASE_INDEX_SCALE;
+    }
+     
+    
 }

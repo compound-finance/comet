@@ -40,7 +40,7 @@ methods{
  reason :
  link https://vaas-stg.certora.com/output/23658/497f4791d345a3dce667/?anonymousKey=43aadbf11d704a33e7143188189ea806a9d39d03#supplyRate_vs_UtilizationResults
 */
-rule SupplyIndex_BorrowIndex_rise_with_time(){
+rule supplyIndex_borrowIndex_rise_with_time(){
     env e;
     uint64 base_supply_index_1 = getTotalBaseSupplyIndex();
     uint64 base_borrow_index_1 = getTotalBaseBorrowIndex();
@@ -67,7 +67,7 @@ rule SupplyIndex_BorrowIndex_rise_with_time(){
  reason :
  link https://vaas-stg.certora.com/output/65782/5240447a217a62b1d892/?anonymousKey=cddebb60c69464b5d715c547ab600e08ea032c0c#isLiquidatable_false_should_not_changeResults
 */
-rule SupplyIndex_BorrowIndex_monotonic(){
+rule supplyIndex_borrowIndex_monotonic(){
     env e;
     uint64 base_supply_index_1 = getTotalBaseSupplyIndex();
     uint64 base_borrow_index_1 = getTotalBaseBorrowIndex();
@@ -90,25 +90,25 @@ rule SupplyIndex_BorrowIndex_monotonic(){
  reason :
  link https://vaas-stg.certora.com/output/65782/5240447a217a62b1d892/?anonymousKey=cddebb60c69464b5d715c547ab600e08ea032c0c#isLiquidatable_false_should_not_changeResults
 */
-rule supplyRate_vs_Utilization(){
-env e;
+rule supplyRate_vs_utilization(){
+    env e;
    setup(e);
 
-uint64 baseSupplyIndex1;
-uint64 baseBorrowIndex1;
-uint64 trackingSupplyIndex1;
-uint64 trackingBorrowIndex1;
+    uint64 baseSupplyIndex1;
+    uint64 baseBorrowIndex1;
+    uint64 trackingSupplyIndex1;
+    uint64 trackingBorrowIndex1;
 
-uint   utilization_1 = getSpecificUtilizationInternal(baseSupplyIndex1,baseBorrowIndex1,trackingSupplyIndex1,trackingBorrowIndex1);
-uint64 supplyRate_1 = getSpecificSupplyRateInternal(baseSupplyIndex1,baseBorrowIndex1,trackingSupplyIndex1,trackingBorrowIndex1);
+    uint   utilization_1 = getSpecificUtilizationInternal(baseSupplyIndex1,baseBorrowIndex1,trackingSupplyIndex1,trackingBorrowIndex1);
+    uint64 supplyRate_1 = getSpecificSupplyRateInternal(baseSupplyIndex1,baseBorrowIndex1,trackingSupplyIndex1,trackingBorrowIndex1);
 
-uint64 baseSupplyIndex2;
-uint64 baseBorrowIndex2;
-uint64 trackingSupplyIndex2;
-uint64 trackingBorrowIndex2;
+    uint64 baseSupplyIndex2;
+    uint64 baseBorrowIndex2;
+    uint64 trackingSupplyIndex2;
+    uint64 trackingBorrowIndex2;
 
-uint utilization_2 = getSpecificUtilizationInternal(baseSupplyIndex2,baseBorrowIndex2,trackingSupplyIndex2,trackingBorrowIndex2);
-uint64 supplyRate_2 = getSpecificSupplyRateInternal(baseSupplyIndex2,baseBorrowIndex2,trackingSupplyIndex2,trackingBorrowIndex2);
+    uint utilization_2 = getSpecificUtilizationInternal(baseSupplyIndex2,baseBorrowIndex2,trackingSupplyIndex2,trackingBorrowIndex2);
+    uint64 supplyRate_2 = getSpecificSupplyRateInternal(baseSupplyIndex2,baseBorrowIndex2,trackingSupplyIndex2,trackingBorrowIndex2);
 
     assert utilization_2 > utilization_1 => supplyRate_2 >= supplyRate_1;
 }
@@ -218,7 +218,7 @@ formula :
  reason : 
  link   : 
 */
-rule SupplyIndex_BorrowIndex_GE_baseIndexScale(){
+rule supplyIndex_borrowIndex_GE_baseIndexScale(){
     env e;
     setup(e);
     require getTotalBaseSupplyIndex() >= baseIndexScale() &&
@@ -327,7 +327,7 @@ rule reserveRate(){
     assert false;
 }
 
-rule utilization_zero_SupplyRate_zero(){
+rule utilization_zero_supplyRate_zero(){
     env e;
     assert getUtilization(e) == 0 => getSupplyRate(e) == 0;
 }
