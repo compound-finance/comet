@@ -3,38 +3,38 @@
 
 ## Table
 
-| # | Rule Name | Progress | Verdict | Comment |
-|-- | --------- | -------- | ------- | ------- |
+| # | Rule Name | Progress | Verdict | Comment | Update |
+|-- | --------- | -------- | ------- | ------- | ------ |
 |   |                      **Interest computation**                    |
-| 1 | `supplyIndex_borrowIndex_GE_baseIndexScale` | DONE | ✅ | - |
-| 2 | `supplyIndex_borrowIndex_monotonic` | DONE | ✅ | - |
-| 3 | `supplyIndex_borrowIndex_rise_with_time` | DONE | ✅ | - |
-| 4 | `borrowBase_vs_utilization` | DONE | ✅ | - |
-| 5 | `utilization_zero` | DONE | ✅ | -|
-| 6 | `isLiquiditable_false_should_not_change` | IN PROGRESS | 👷 | - |
-| 7 | `isLiquiditable_true_should_not_change` | IN PROGRESS | 👷 | - |
-| 8 | `presentValue_greater_principle` | DONE | ✅ | under assumption |
-| 9 | `presentValue_G_zero` | DONE | ✅ |  |
-| 10 | `presentValue_EQ_principal` | DONE | ✅ | under assumption |
-| NEW | `supplyRate_vs_utilization` | DONE | ✅ | - |
-| NEW | `utilization_zero_supplyRate_zero` | DONE | ✅ | - |
+| 1 | `supplyIndex_borrowIndex_GE_baseIndexScale` | DONE | ✅ | - | - |
+| 2 | `supplyIndex_borrowIndex_monotonic` | DONE | ✅ | - | - |
+| 3 | `supplyIndex_borrowIndex_rise_with_time` | DONE | ✅ | - | - |
+| 4 | `borrowBase_vs_utilization` | DONE | ✅ | - | - |
+| 5 | `utilization_zero` | DONE | ✅ | -| - |
+| 6 | `isLiquiditable_false_should_not_change` | IN PROGRESS | 👷 | - | - |
+| 7 | `isLiquiditable_true_should_not_change` | IN PROGRESS | 👷 | - | - |
+| 8 | `presentValue_greater_principle` | DONE | ✅ | under assumption | - |
+| 9 | `presentValue_G_zero` | DONE | ✅ | - | - |
+| 10 | `presentValue_EQ_principal` | DONE | ✅ | under assumption | - |
+| NEW | `supplyRate_vs_utilization` | DONE | ✅ | - | - |
+| NEW | `utilization_zero_supplyRate_zero` | DONE | ✅ | - | - |
 |   |                       **Flags**                      |
-| 12 | `check_flag_updates` | DONE | ✅ | update is coherent with getters |
-| 13 | `check_flag_getters` | DONE | ✅ | getters are coherent with update |
-| 14 | `check_pauseSupply_functionality` | DONE | ✅ | on safe summarization |
-| 15 | `check_pauseTransfer_functionality` | DONE | ✅ | " |
-| 16 | `check_pauseWithdraw_functionality` | DONE | ✅ | " |
-| 17 | `check_pauseAbsorb_functionality` | DONE | ✅ | " |
-| 18 | `check_pauseBuy_functionality` | DONE | ✅ | " |
-| 19 | `check_update_UserCollateral` | IN PROGRESS | 👷 | expected to fail due to `offset > 8` (or 16 on fixed code) |
-| 20 | `update_changes_single_bit` | IN PROGRESS | ✅ | - |
-| 21 | `update_changes_single_user_assetIn` | DONE | ✅ | - |
+| 12 | `check_flag_updates` | DONE | ✅ | update is coherent with getters | - |
+| 13 | `check_flag_getters` | DONE | ✅ | getters are coherent with update | - |
+| 14 | `check_pauseSupply_functionality` | DONE | ✅ | on safe summarization | - |
+| 15 | `check_pauseTransfer_functionality` | DONE | ✅ | " | - |
+| 16 | `check_pauseWithdraw_functionality` | DONE | ✅ | " | - |
+| 17 | `check_pauseAbsorb_functionality` | DONE | ✅ | " | - |
+| 18 | `check_pauseBuy_functionality` | DONE | ✅ | " | - |
+| 19 | `check_update_UserCollateral` | IN PROGRESS | 👷 | expected to fail due to `offset > 8` (or 16 on fixed code) | - |
+| 20 | `update_changes_single_bit` | IN PROGRESS | ✅ | - | - |
+| 21 | `update_changes_single_user_assetIn` | DONE | ✅ | - | - |
 | | **High level** |
-| 22 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions  |
-| 23 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | found issue with absorb |
-| 24 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions |
-| 25 | `antiMonotonicityOfBuyCollateral` | IN PROGRESS | 🕝 | with assumptions asset!=base, minAmount > 0|
-| 26 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - |
+| 22 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions  | - |
+| 23 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | found issue with absorb | - |
+| 24 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions | - |
+| 25 | `antiMonotonicityOfBuyCollateral` | IN PROGRESS | 🕝 | with assumptions asset!=base, minAmount > 0| - |
+| 26 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - | - |
 
 
 

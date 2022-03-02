@@ -3,8 +3,9 @@ certoraRun certora/harness/CometHarness.sol certora/harness/SymbolicBaseToken.so
     --verify CometHarness:certora/specs/comet.spec  \
     --link CometHarness:baseToken=SymbolicBaseToken \
     --solc solc8.11 \
-    --staging shelly/integrateJohnsBranches \
+    --staging shelly/divideConstantsOverJohnsBranch \
     --optimistic_loop \
-    --settings -enableEqualitySaturation=false,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2,-solver=z3 \
+    --settings -divideByConstants=1,-enableEqualitySaturation=false,-solver=z3,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \
     --rule $1 \
-    --msg "CometHarness:comet.spec $1 z3 only"
+    --loop_iter 2 \
+    --msg "CometHarness:comet.spec $1 integratedJohnsBranches"
