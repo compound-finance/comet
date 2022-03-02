@@ -5,5 +5,7 @@ methods{
 }
 
 rule reversability_of_packing(uint8 i){
-    assert getAssetInfo(i)
 }
+
+//assume asset0_a
+//assume asset0_b

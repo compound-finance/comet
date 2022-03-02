@@ -16,7 +16,11 @@ contract CometHarness is CometHarnessWrappers {
     constructor(Configuration memory config) CometHarnessWrappers(config) {
     }
 
-    // summarization/harness for global collateral asset    
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////   global collateral asset     /////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+//   
     mapping (address => uint8) public asset_index;
     mapping (uint8 => address) public index_asset;
     mapping (uint8 => AssetInfo) public asset_info;
@@ -45,11 +49,6 @@ contract CometHarness is CometHarnessWrappers {
     mapping (uint16 => mapping (address => bool)) asset_in_state; 
     mapping (uint16 => mapping (address => mapping (bool => uint16))) asset_in_state_changes; 
 
-    // [ , , , , , , , ] => index => T/F  -------  asset_in_state
-    // [ , , , , , , T, ] => index => F/T => [ , , , , , , F, ] -------  asset_in_state_changes
-    // uint16   before = user.assetIn
-    // after = asset_in_state_chages[before][T1][true]
-    // forall T!=T1 asset_in_state[before,T] == asset_in_state[after,T]
     function isInAsset(uint16 assetsIn, uint8 assetOffset) override internal view returns (bool) {
         return asset_in_state[assetsIn][index_asset[assetOffset]];
     }
@@ -127,14 +126,14 @@ contract CometHarness is CometHarnessWrappers {
        
     // }
 
-    function transferFromBase(address src, address dst, address asset, uint amount) external {
+    function transferAssetFromBase(address src, address dst, address asset, uint amount) external {
         require (asset == baseToken);
-        return this.transferFrom(src, dst, asset, amount);
+        return this.transferAssetFrom(src, dst, asset, amount);
     }
 
     function transferFromAsset(address src, address dst, address asset, uint amount) external {
         require (asset != baseToken);
-        return this.transferFrom(src, dst, asset, amount);
+        return this.transferAssetFrom(src, dst, asset, amount);
     }
 
 

@@ -1,5 +1,5 @@
 methods{
-    0xc8c7fe6b envfree // getAssetInfo(uint8) returns (AssetInfo)
+    // 0xc8c7fe6b envfree // getAssetInfo(uint8) returns (AssetInfo)
     getNow() returns (uint40)
     accrue()
     allow(address, bool)
@@ -8,7 +8,7 @@ methods{
     getSupplyRate() returns (uint64)
     getBorrowRate() returns (uint64)
     getUtilization() returns (uint)
-    getPrice(address) returns (uint)
+    getPrice(address) returns (uint128)
     getReserves() returns (int)
     isBorrowCollateralized(address) returns (bool)
     getBorrowLiquidity(address) returns (int)

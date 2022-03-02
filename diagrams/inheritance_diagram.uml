@@ -1,0 +1,22 @@
+@startuml
+rectangle Comet
+rectangle CometConfiguration
+rectangle CometCore
+rectangle CometExt
+rectangle CometFactory
+rectangle CometInterface
+rectangle CometMath
+rectangle CometStorage
+rectangle ERC20
+
+Comet --> CometCore
+CometCore --> CometConfiguration
+CometCore --> CometStorage
+CometCore --> CometMath
+CometExt --> CometCore
+CometFactory --> CometConfiguration
+CometInterface --> CometCore
+CometInterface --> ERC20
+
+Comet ~~> CometExt : delegatecall
+@enduml
