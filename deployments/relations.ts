@@ -28,6 +28,12 @@ let relationConfigMap: RelationConfigMap = {
       },
     },
   },
+  "comet:implementation": {
+    proxy: {
+      field: (comet) => comet.extensionDelegate()
+    },
+    relations: {}
+  },
   FiatTokenProxy: {
     proxy: {
       field: {

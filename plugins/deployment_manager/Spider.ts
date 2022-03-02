@@ -15,7 +15,7 @@ import { Address, Alias, BuildFile, ContractMetadata } from './Types';
 import { Aliases } from './Aliases';
 import { Proxies } from './Proxies';
 import { Roots } from './Roots';
-import { asArray, cross, debug, getPrimaryContract, objectFromMap } from './Utils';
+import { asArray, cross, debug, getPrimaryContract, objectFromMap, mergeABI } from './Utils';
 import { fetchAndCacheContract } from './Import';
 
 function isValidAddress(address: Address): boolean {
@@ -127,12 +127,13 @@ async function runSpider(
           importRetryDelay
         );
 
-        let { contract: proxyContract } = visited.get(implAddress);
-        if (!proxyContract) {
+        let { buildFile: proxyBuildFile } = visited.get(implAddress);
+        if (!proxyBuildFile) {
           throw new Error(`Failed to spider implementation for ${defaultAlias} at ${implAddress}`);
         }
+        const [proxyContractName, proxyContractMetadata] = getPrimaryContract(proxyBuildFile);
 
-        contract = proxyContract.attach(address);
+        contract = new hre.ethers.Contract(address, mergeABI(contractMetadata.abi, proxyContractMetadata.abi), hre.ethers.provider);
       }
 
       // Store the build file. This is the primary result of spidering: a huge list
