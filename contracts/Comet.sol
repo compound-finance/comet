@@ -113,6 +113,9 @@ contract Comet is CometCore {
     /// @notice The number of assets this contract actually supports
     uint8 public immutable numAssets;
 
+    /// @notice Factor to divide by when accruing rewards in order to preserve 6 decimals (i.e. baseScale / 1e6)
+    uint internal immutable accrualDescaleFactor;
+
     /**  Collateral asset configuration (packed) **/
 
     uint256 internal immutable asset00_a;
@@ -169,6 +172,7 @@ contract Comet is CometCore {
         decimals = decimals_;
         baseScale = uint64(10 ** decimals_);
         trackingIndexScale = config.trackingIndexScale;
+        accrualDescaleFactor = baseScale / 1e6;
 
         baseMinForRewards = config.baseMinForRewards;
         baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
@@ -510,7 +514,6 @@ contract Comet is CometCore {
      * @return Whether the account is minimally collateralized enough to borrow
      */
     function isBorrowCollateralized(address account) public view returns (bool) {
-        // XXX take in UserBasic and UserCollateral as arguments to reduce SLOADs
         uint16 assetsIn = userBasic[account].assetsIn;
         TotalsBasic memory totals = totalsBasic;
 
@@ -798,10 +801,10 @@ contract Comet is CometCore {
 
         if (principal >= 0) {
             uint indexDelta = totals.trackingSupplyIndex - basic.baseTrackingIndex;
-            basic.baseTrackingAccrued += safe64(uint104(principal) * indexDelta / BASE_INDEX_SCALE); // XXX decimals
+            basic.baseTrackingAccrued += safe64(uint104(principal) * indexDelta / trackingIndexScale / accrualDescaleFactor);
         } else {
             uint indexDelta = totals.trackingBorrowIndex - basic.baseTrackingIndex;
-            basic.baseTrackingAccrued += safe64(uint104(-principal) * indexDelta / BASE_INDEX_SCALE); // XXX decimals
+            basic.baseTrackingAccrued += safe64(uint104(-principal) * indexDelta / trackingIndexScale / accrualDescaleFactor);
         }
 
         if (principalNew >= 0) {
