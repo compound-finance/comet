@@ -50,6 +50,24 @@ let relationConfigMap: RelationConfigMap = {
       }
     }
   },
+  cometAdmin: {
+    relations: {
+      proxyAdminAdmin: {
+        field: async (cometAdmin) => {
+          return await cometAdmin.owner();
+        }
+      }
+    }
+  },
+  proxyAdminAdmin: {
+    relations: {
+      timelock: {
+        field: async (admin) => {
+          return await admin.owner();
+        }
+      }
+    }
+  },
   FiatTokenProxy: {
     proxy: {
       field: {

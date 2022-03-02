@@ -12,8 +12,12 @@ import {
   FaucetToken,
   ProxyAdmin,
   ProxyAdmin__factory,
+  ProxyAdminAdmin,
+  ProxyAdminAdmin__factory,
   SimplePriceFeed,
   SimplePriceFeed__factory,
+  Timelock,
+  Timelock__factory,
   TransparentUpgradeableProxy,
   TransparentUpgradeableProxy__factory,
   Configurator,
@@ -63,6 +67,11 @@ export async function deployDevelopmentComet(
   configurationOverrides: ProtocolConfiguration = {}
 ): Promise<DeployedContracts> {
   const signers = await deploymentManager.hre.ethers.getSigners();
+
+  const timelock = await deploymentManager.deploy<Timelock, Timelock__factory, []>(
+    'Timelock.sol',
+    []
+  );
 
   let dai = await makeToken(deploymentManager, 1000000, 'DAI', 18, 'DAI');
   let gold = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
@@ -168,7 +177,7 @@ export async function deployDevelopmentComet(
     [configuration]
   );
 
-  let proxy = null;
+  let cometProxy = null;
   // XXX should we return configuratorProxy as well?
   let configuratorProxy = null;
   if (deployProxy) {
@@ -182,11 +191,19 @@ export async function deployDevelopmentComet(
       []
     );
 
+    let proxyAdminAdminArgs: [] = [];
+    let proxyAdminAdmin = await deploymentManager.deploy<ProxyAdminAdmin, ProxyAdminAdmin__factory, []>(
+      'ProxyAdminAdmin.sol',
+      proxyAdminAdminArgs
+    );
+    await proxyAdminAdmin.transferOwnership(timelock.address);
+
     let proxyAdminArgs: [] = [];
     let proxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
       'vendor/proxy/ProxyAdmin.sol',
       proxyAdminArgs
     );
+    await proxyAdmin.transferOwnership(proxyAdminAdmin.address);
     
     // Configuration proxy
     configuratorProxy = await deploymentManager.deploy<
@@ -196,11 +213,11 @@ export async function deployDevelopmentComet(
     >('vendor/proxy/TransparentUpgradeableProxy.sol', [
       configurator.address,
       proxyAdmin.address,
-      (await configurator.populateTransaction.initialize(await governor.getAddress(), cometFactory.address, configuration)).data,
+      (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data,
     ]);
     
     // Comet proxy
-    proxy = await deploymentManager.deploy<
+    cometProxy = await deploymentManager.deploy<
       TransparentUpgradeableProxy,
       TransparentUpgradeableProxy__factory,
       [string, string, string]
@@ -210,12 +227,13 @@ export async function deployDevelopmentComet(
       (await comet.populateTransaction.initializeStorage()).data,
     ]);
 
-    await deploymentManager.putRoots(new Map([['comet', proxy.address], ['configurator', configuratorProxy.address]]));
+    await deploymentManager.putRoots(new Map([['comet', cometProxy.address], ['configurator', configuratorProxy.address]]));
   }
 
   return {
     comet,
-    proxy,
+    cometProxy,
+    configuratorProxy,
     tokens: [dai, gold, silver],
   };
 }

@@ -9,13 +9,22 @@ import {
   CometExt__factory,
   CometExt,
   CometInterface,
+  CometFactory__factory,
+  CometFactory,
   FaucetToken__factory,
   FaucetToken,
   ProxyAdmin,
   ProxyAdmin__factory,
-  ERC20,
-  TransparentUpgradeableProxy__factory,
+  ProxyAdminAdmin,
+  ProxyAdminAdmin__factory,
+  SimplePriceFeed,
+  SimplePriceFeed__factory,
   TransparentUpgradeableProxy,
+  TransparentUpgradeableProxy__factory,
+  Configurator,
+  Configurator__factory,
+  Timelock,
+  Timelock__factory,
 } from '../../build/types';
 import { ConfigurationStruct } from '../../build/types/Comet';
 import { ExtConfigurationStruct } from '../../build/types/CometExt';
@@ -29,6 +38,12 @@ export async function deployNetworkComet(
   configurationOverrides: ProtocolConfiguration = {},
   contractMapOverride?: ContractMap,
 ): Promise<DeployedContracts> {
+  
+  const timelock = await deploymentManager.deploy<Timelock, Timelock__factory, []>(
+    'Timelock.sol',
+    []
+  );
+
   const {
     symbol,
     governor,
@@ -86,15 +101,46 @@ export async function deployNetworkComet(
     [configuration]
   );
 
-  let proxy = null;
+  let cometProxy = null;
+  let configuratorProxy = null;
   if (deployProxy) {
+    const cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
+      'CometFactory.sol',
+      []
+    );
+
+    const configurator = await deploymentManager.deploy<Configurator, Configurator__factory, []>(
+      'Configurator.sol',
+      []
+    );
+
+    let proxyAdminAdminArgs: [] = [];
+    let proxyAdminAdmin = await deploymentManager.deploy<ProxyAdminAdmin, ProxyAdminAdmin__factory, []>(
+      'ProxyAdminAdmin.sol',
+      proxyAdminAdminArgs
+    );
+    await proxyAdminAdmin.transferOwnership(timelock.address);
+
     let proxyAdminArgs: [] = [];
     let proxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
       'vendor/proxy/transparent/ProxyAdmin.sol',
       proxyAdminArgs
     );
-
-    proxy = await deploymentManager.deploy<
+    await proxyAdmin.transferOwnership(proxyAdminAdmin.address);
+    
+    // Configuration proxy
+    configuratorProxy = await deploymentManager.deploy<
+      TransparentUpgradeableProxy,
+      TransparentUpgradeableProxy__factory,
+      [string, string, string]
+    >('vendor/proxy/TransparentUpgradeableProxy.sol', [
+      configurator.address,
+      proxyAdmin.address,
+      (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data,
+    ]);
+    
+    // Comet proxy
+    cometProxy = await deploymentManager.deploy<
       TransparentUpgradeableProxy,
       TransparentUpgradeableProxy__factory,
       [string, string, string]
@@ -107,6 +153,7 @@ export async function deployNetworkComet(
 
   return {
     comet,
-    proxy,
+    cometProxy,
+    configuratorProxy,
   };
 }

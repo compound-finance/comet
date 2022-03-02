@@ -14,7 +14,7 @@ import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { deployComet } from '../../src/deploy';
 import { wait } from '../../test/helpers';
-import { Comet, CometInterface, ProxyAdmin, ERC20, ERC20__factory, Configurator } from '../../build/types';
+import { Comet, CometInterface, ProxyAdmin, ERC20, ERC20__factory, Configurator, ProxyAdminAdmin, Timelock } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
