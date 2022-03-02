@@ -20,7 +20,7 @@ methods{
     kink() returns (uint64) envfree;
     baseIndexScale() returns (uint64) envfree;
     targetReserves() returns (uint104) envfree;
-
+    
     latestRoundData() returns uint256 => DISPATCHER(true);
 
 }
@@ -341,4 +341,19 @@ function setup(env e){
     // require perSecondInterestRateSlopeLow() > 0 &&
     //         perSecondInterestRateSlopeLow() < perSecondInterestRateSlopeHigh();
     //     require reserveRate(e) > 0;
+}
+
+rule test_signedMulPrice(){
+    env e;
+
+    int n;
+    uint price;
+    uint64 fromScale;
+
+    int result_orig =  signedMulPrice(e, n, price, fromScale);
+    int price_ = to_int256(price);
+    int fromScale_ = to_int256(fromScale);
+    int256 result_cvl  = n * price_ / fromScale_;
+
+    assert result_orig == result_cvl;
 }
