@@ -16,7 +16,7 @@ methods{
 // B@B - if a specific asset balance is being updated from 0 to non-0 or vice versa, isInAsset should return the appropriate value
 rule check_update_UserCollateral(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance){
     uint16 _assetIn = getAssetinOfUser(account);
-    call_updateAssetsIn(account, asset, initialUserBalance, finalUserBalanceenvfree
+    call_updateAssetsIn(account, asset, initialUserBalance, finalUserBalanceenvfree);
     uint16 assetIn_ = getAssetinOfUser(account);
     uint8 assetOffset_ = getAssetOffsetByAsset(asset);
     bool flagUserAsset_ = call_IsInAsset(assetIn_, assetOffset_);
