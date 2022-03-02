@@ -78,4 +78,16 @@ describe('CometExt', function () {
       expect(borrowBalanceOf).to.eq(0);
     });
   });
+
+  it('returns principal baseBalanceOf', async () => {
+    const {
+      comet,
+      users: [user],
+    } = await makeProtocol();
+
+    await comet.setBasePrincipal(user.address, 100e6);
+
+    const baseBalanceOf = await comet.baseBalanceOf(user.address);
+    expect(baseBalanceOf).to.eq(100e6);
+  });
 });
