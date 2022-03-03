@@ -46,7 +46,7 @@
     "nock": "^13.2.2",
     "prettier": "2.5.1",
     "solhint": "^3.3.6",
-    "solidity-coverage": "^0.7.17",
+    "solidity-coverage": "^0.7.20",
     "ts-node": "^10.4.0",
     "typechain": "^6.0.2",
     "typescript": "^4.4.4"
