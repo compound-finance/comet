@@ -1,4 +1,4 @@
-import { expect, exp, makeProtocol } from './helpers';
+import { ethers, expect, exp, makeProtocol } from './helpers';
 
 describe('CometExt', function () {
   it('returns factor scale', async () => {
@@ -113,6 +113,46 @@ describe('CometExt', function () {
     expect(collateralBalanceOf).to.eq(exp(5,18));
   });
 
+  describe('approve', function() {
+    it('sets isAllowed=true when user approves address for uint256 max', async () => {
+      const {
+        comet,
+        users: [user, spender]
+      } = await makeProtocol();
 
+      await comet.connect(user).approve(
+        spender.address,
+        ethers.constants.MaxUint256
+      );
 
+      const isAllowed = await comet.isAllowed(user.address, spender.address);
+      expect(isAllowed).to.be.true;
+    });
+
+    it('sets isAllowed=false when user passes 0', async () => {
+      const {
+        comet,
+        users: [user, spender]
+      } = await makeProtocol();
+
+      await comet.connect(user).approve(
+        spender.address,
+        0
+      );
+
+      const isAllowed = await comet.isAllowed(user.address, spender.address);
+      expect(isAllowed).to.be.false;
+    });
+
+    it('reverts when user approves for value that is not 0 or uint256.max', async () => {
+      const {
+        comet,
+        users: [user, spender]
+      } = await makeProtocol();
+
+      await expect(
+        comet.connect(user).approve(spender.address, 300)
+      ).to.be.revertedWith('BadAmount()');
+    });
+  });
 });
