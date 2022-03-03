@@ -291,7 +291,7 @@ rule verify_isBorrowCollateralized(address account){
         accrue(e) at init;
     bool collateralized2 = isBorrowCollateralized(account);
 
-    assert collateralized1 == collateralized1;
+    assert collateralized1 == collateralized2;
 }
 
 rule supply_increase_balance(address asset, uint amount){
@@ -301,9 +301,9 @@ rule supply_increase_balance(address asset, uint amount){
     simplifiedAssumptions();
 
 
-    uint balance1 = tokenBalanceOf(e, asset, currentContract);
+    uint balance1 = tokenBalanceOf(asset, currentContract);
     supply(e, asset, amount);
-    uint balance2 = tokenBalanceOf(e, asset, currentContract);
+    uint balance2 = tokenBalanceOf(asset, currentContract);
     
     assert balance2 - balance1 == amount;
 }
@@ -314,9 +314,9 @@ rule withdraw_decrease_balance(address asset, uint amount){
 
     simplifiedAssumptions();
 
-    uint balance1 = tokenBalanceOf(e, asset, currentContract);
+    uint balance1 = tokenBalanceOf(asset, currentContract);
     withdraw(e, asset, amount);
-    uint balance2 = tokenBalanceOf(e, asset, currentContract);
+    uint balance2 = tokenBalanceOf(asset, currentContract);
     
     assert balance1 - balance2 == amount;
 }
@@ -367,4 +367,21 @@ rule absorb_reserves_increase(address absorber, address account) {
     int post = getReserves();
 
     assert pre >= post; 
+}
+
+rule buyCol_then_withdraw(address account, uint amount){
+    env e;
+    require e.msg.sender != currentContract;
+    
+    storage init = lastStorage;
+
+    address asset; address recipient;
+    uint minAmount; uint baseAmount;
+    require asset != currentContract && recipient != currentContract;
+
+    withdraw(e, account, amount);
+    buyCollateral(e, asset, minAmount, baseAmount, recipient) at init;
+    invoke withdraw(e, account, amount);
+
+    assert !lastReverted;
 }
