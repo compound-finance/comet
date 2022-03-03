@@ -4,5 +4,5 @@ certoraRun certora/harness/UserCollateralAssetTry.sol \
     --staging shelly/integrateJohnsBranches \
     --optimistic_loop \
     --rule check_update_UserCollateral_red \
-    --settings -useBitVectorTheory,-smt_hashingScheme=plainInjectivity,-deleteSMTFile=false,-postProcessCounterExamples=false \
+    --settings -smt_liaBeforeBv=false,-deleteSMTFile=false,-smt_bitVectorTheory=true,-smt_hashingScheme=plainInjectivity \
     --msg "$1"
