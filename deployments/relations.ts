@@ -44,18 +44,9 @@ let relationConfigMap: RelationConfigMap = {
   },
   cometAdmin: {
     relations: {
-      proxyAdminAdmin: {
+      timelock: {
         field: async (cometAdmin) => {
           return await cometAdmin.owner();
-        }
-      }
-    }
-  },
-  proxyAdminAdmin: {
-    relations: {
-      timelock: {
-        field: async (admin) => {
-          return await admin.owner();
         }
       }
     }

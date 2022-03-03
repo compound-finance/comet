@@ -13,7 +13,7 @@ import {
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { deployComet } from '../../src/deploy';
-import { CometInterface as Comet, ProxyAdmin, ERC20__factory, Configurator, ProxyAdminAdmin, Timelock } from '../../build/types';
+import { CometInterface as Comet, ERC20__factory, Configurator, Timelock, CometProxyAdmin } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
@@ -25,16 +25,14 @@ export class CometContext {
   remoteToken: Contract | undefined;
   comet: Comet;
   configurator: Configurator;
-  proxyAdmin: ProxyAdmin;
-  proxyAdminAdmin: ProxyAdminAdmin;
+  proxyAdmin: CometProxyAdmin;
   timelock: Timelock;
 
-  constructor(deploymentManager: DeploymentManager, comet: Comet, configurator: Configurator, proxyAdmin: ProxyAdmin, proxyAdminAdmin: ProxyAdminAdmin, timelock: Timelock) {
+  constructor(deploymentManager: DeploymentManager, comet: Comet, configurator: Configurator, proxyAdmin: CometProxyAdmin, timelock: Timelock) {
     this.deploymentManager = deploymentManager;
     this.comet = comet;
     this.configurator = configurator;
     this.proxyAdmin = proxyAdmin;
-    this.proxyAdminAdmin = proxyAdminAdmin;
     this.timelock = timelock;
   }
 
@@ -54,6 +52,7 @@ export class CometContext {
   }
 
   async upgradeTo(newComet: Comet, world: World, data?: string) {
+    // XXX need to upgrade via timelock
     if (data) {
       await this.proxyAdmin.upgradeAndCall(this.comet.address, newComet.address, data);
     } else {
@@ -195,11 +194,10 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   adminSigner = await world.impersonateAddress(governorAddress);
   pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
 
-  let proxyAdmin = (await getContract<ProxyAdmin>('cometAdmin')).connect(adminSigner);
-  let proxyAdminAdmin = (await getContract<ProxyAdminAdmin>('proxyAdminAdmin')).connect(adminSigner);
+  let proxyAdmin = (await getContract<CometProxyAdmin>('cometAdmin')).connect(adminSigner);
   let timelock = (await getContract<Timelock>('timelock')).connect(adminSigner);
 
-  let context = new CometContext(deploymentManager, comet, configurator, proxyAdmin, proxyAdminAdmin, timelock);
+  let context = new CometContext(deploymentManager, comet, configurator, proxyAdmin, timelock);
 
   context.actors = {
     admin: await buildActor('admin', adminSigner, context),
