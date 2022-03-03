@@ -172,12 +172,26 @@ describe('transfer', function () {
     ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
   });
 
-  it('reverts if borrow is not collateralized', async () => {
+  it('reverts if base transfer is not collateralized', async () => {
     const { comet, tokens, users: [alice, bob]} = await makeProtocol();
     const { USDC } = tokens;
 
     await expect(
       comet.connect(alice).transferAsset(bob.address, USDC.address, 100e6)
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+  });
+
+  it('reverts if collateral transfer is not collateralized', async () => {
+    const { comet, tokens, users: [alice, bob]} = await makeProtocol();
+    const { WETH } = tokens;
+
+    // user has a borrow, but with collateral to cover
+    await comet.setBasePrincipal(alice.address, -100e6);
+    await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
+
+    // reverts if transfer would leave the borrow uncollateralized
+    await expect(
+      comet.connect(alice).transferAsset(bob.address, WETH.address, exp(1,18))
     ).to.be.revertedWith("custom error 'NotCollateralized()'");
   });
 });
