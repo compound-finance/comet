@@ -40,7 +40,7 @@ describe('CometExt', function () {
       expect(balanceOf).to.eq(100e6);
     });
 
-    it.only('returns 0 (when principal amount is negative)', async () => {
+    it('returns 0 (when principal amount is negative)', async () => {
       const {
         comet,
         users: [user],
