@@ -204,7 +204,7 @@ describe('withdraw', function () {
     await expect(cometAsB.withdraw(USDC.address, 100e6)).to.be.revertedWith("custom error 'Paused()'");
   });
 
-  it('reverts if borrow amount is less than baseBorrowMin', async () => {
+  it('reverts if withdraw amount is less than baseBorrowMin', async () => {
     const { comet, tokens, users: [alice, bob] } = await makeProtocol({
       baseBorrowMin: exp(1,6)
     });
@@ -213,6 +213,15 @@ describe('withdraw', function () {
     await expect(
       comet.connect(alice).withdraw(USDC.address, exp(.5, 6))
     ).to.be.revertedWith("custom error 'BorrowTooSmall()'");
+  });
+
+  it('reverts if withdraw amount is not collateralzed', async () => {
+    const { comet, tokens, users: [alice, bob] } = await makeProtocol();
+    const { USDC } = tokens;
+
+    await expect(
+      comet.connect(alice).withdraw(USDC.address, exp(1, 6))
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
   });
 });
 
