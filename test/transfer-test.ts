@@ -171,6 +171,15 @@ describe('transfer', function () {
       comet.connect(alice).transferAsset(alice.address, COMP.address, 100)
     ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
   });
+
+  it('reverts if borrow is not collateralized', async () => {
+    const { comet, tokens, users: [alice, bob]} = await makeProtocol();
+    const { USDC } = tokens;
+
+    await expect(
+      comet.connect(alice).transferAsset(bob.address, USDC.address, 100e6)
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+  });
 });
 
 describe('transferFrom', function () {
