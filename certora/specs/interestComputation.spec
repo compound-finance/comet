@@ -14,14 +14,14 @@ methods{
     getTotalBaseSupplyIndex() returns (uint64) envfree;
     getTotalBaseBorrowIndex() returns (uint64) envfree;
     getlastAccrualTime() returns (uint40) envfree;
-    factorScale() returns (uint64) envfree;
+    FACTOR_SCALE() returns (uint64) envfree;
     perSecondInterestRateBase() returns (uint64) envfree;
     perSecondInterestRateSlopeLow() returns (uint64) envfree;
     perSecondInterestRateSlopeHigh() returns (uint64) envfree;
     kink() returns (uint64) envfree;
     baseIndexScale() returns (uint64) envfree;
     targetReserves() returns (uint104) envfree;
-
+    
     latestRoundData() returns uint256 => DISPATCHER(true);
 
 }
@@ -205,6 +205,14 @@ rule isLiquidatable_false_should_not_change(address account){
                 priceAsset1 != priceAsset2 || priceBase1 != priceBase2 ;
 }
 
+// isBorrowCollateralized => account can borrow, hence he's not Liquidatable
+// FAILS
+rule isCol_implies_not_isLiq(address account){
+    env e;
+
+    assert isBorrowCollateralized(e,account) => !isLiquidatable(e,account);
+}
+
 /* 
  Description :  
      Verifies that TotalBaseSupplyIndex and getTotalBaseBorrowIndex always greater than baseIndexScale
@@ -318,9 +326,4 @@ rule utilization_zero_supplyRate_zero(){
 function setup(env e){
     require getTotalBaseSupplyIndex() >= baseIndexScale() &&
         getTotalBaseBorrowIndex() >= baseIndexScale();
-    // require getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
-    // require getBorrowRate(e) > getSupplyRate(e);
-    // require perSecondInterestRateSlopeLow() > 0 &&
-    //         perSecondInterestRateSlopeLow() < perSecondInterestRateSlopeHigh();
-    //     require reserveRate(e) > 0;
 }

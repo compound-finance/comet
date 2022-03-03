@@ -59,8 +59,7 @@ contract CometHarnessInterest is CometHarnessWrappers {
         return getUtilizationInternal(totalsBasic1);
     }
 
-    // function call_absorb(address absorber) public view {
-    //     address[] calldata accounts;
-    //     absorb(absorber, accounts);
-    // }
+    function factorScale() public view returns (uint64){
+        return FACTOR_SCALE;
+    }
 }

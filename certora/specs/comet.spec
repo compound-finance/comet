@@ -27,6 +27,7 @@ methods {
     call_Summarized_IsInAsset(uint16, uint8) returns (bool) envfree
     getAssetinOfUser(address) returns (uint16) envfree
     asset_index(address) returns (uint8) envfree
+    tokenBalanceOf(address, address) returns uint256 envfree 
 }
 
 definition similarFunctions(method f) returns bool =    
@@ -75,28 +76,6 @@ rule assetIn_Initialized_With_Balance(method f, address user, address asset) fil
 // balance change => update asset
 
 
-
-
-/*
-rule whoChangedMyGhost(method f) {
-	mathint before = sumUserBasicPrinciple;
-	env e;
-	calldataarg args;
-	f(e,args);
-	mathint after = sumUserBasicPrinciple;
-	assert( before == after);
-}
-
-
-rule whoChangedSumBalancePerAssert(method f, address t) {
-	mathint before = sumBalancePerAssert[t];
-	env e;
-	calldataarg args;
-	f(e,args);
-	mathint after = sumBalancePerAssert[t];
-	assert( before == after);
-}
-*/
 /*
 
 Description: 
@@ -114,17 +93,7 @@ invariant totalBaseToken()
     }
 }
 
-rule test(mathint before, mathint after) 
-    {
-        require before == sumUserBasicPrinciple; 
-        require ( before == to_mathint(getTotalSupplyBase()) - to_mathint(getTotalBorrowBase())) ;
-        env e;
-        calldataarg args;
-        simplifiedAssumptions();
-        withdrawTo(e,args);
-        require after == sumUserBasicPrinciple; 
-        assert ( after == to_mathint(getTotalSupplyBase()) - to_mathint (getTotalBorrowBase())) ;
-    }
+
 
 /* 
  Description :  
@@ -138,11 +107,23 @@ formula :
 */
 invariant totalCollateralPerAsset(address asset) 
     sumBalancePerAssert[asset] == getTotalsSupplyAsset(asset)     
+    filtered { f-> !similarFunctions(f) && !f.isView }
     {
         preserved {
             simplifiedAssumptions();
         }
     }
+
+/* 
+ Description :  
+        for each asset, the contract's balance is at least as the total supply 
+formula : 
+        totalsCollateral[asset].totalSupplyAsset == asset.balanceOf(this)
+*/
+invariant totalCollateralPerAssetVsAssetBalance(address asset) 
+        getTotalsSupplyAsset(asset)  <= tokenBalanceOf(asset, currentContract) 
+        filtered { f-> !similarFunctions(f) && !f.isView }
+
 
 function simplifiedAssumptions() {
     env e;
@@ -182,7 +163,7 @@ rule withdraw_all_balance(){
  reason :
  link   :
 */
-invariant no_reserves_zero_balance2()
+invariant no_reserves_zero_balance()
 _baseToken.balanceOf(currentContract) == 0 => getReserves() <= 0
 filtered { f-> !similarFunctions(f) && !f.isView }
     {
@@ -247,20 +228,28 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
     require e.msg.sender != currentContract;
     require recipient != currentContract;
 
-    uint256 balanceAssetBefore = tokenBalanceOf(e, asset, currentContract);
-    uint256 balanceBaseBefore = tokenBalanceOf(e, _baseToken, currentContract);
+    uint256 balanceAssetBefore = tokenBalanceOf(asset, currentContract);
+    uint256 balanceBaseBefore = tokenBalanceOf(_baseToken, currentContract);
     buyCollateral(e, asset, minAmount, baseAmount, recipient);
-    uint256 balanceAssetAfter = tokenBalanceOf(e, asset, currentContract);
-    uint256 balanceBaseAfter = tokenBalanceOf(e, _baseToken, currentContract);
+    uint256 balanceAssetAfter = tokenBalanceOf(asset, currentContract);
+    uint256 balanceBaseAfter = tokenBalanceOf(_baseToken, currentContract);
     assert (balanceAssetAfter <= balanceAssetBefore);
     assert (balanceBaseBefore <= balanceBaseAfter);
     assert (balanceBaseBefore < balanceBaseAfter <=> balanceAssetAfter < balanceAssetBefore);
 }
 
-rule checkQuoteCollateral(address asset, uint baseAmount) {
+rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address recipient) {
     env e;
-    assert quoteCollateral(e, asset, baseAmount) > 0;
+    require asset != _baseToken; 
+    require e.msg.sender != currentContract;
+    require recipient != currentContract;
+
+    uint256 balanceAssetBefore = tokenBalanceOf(asset, currentContract);
+    buyCollateral(e, asset, minAmount, baseAmount, recipient);
+    uint256 balanceAssetAfter = tokenBalanceOf(asset, currentContract);
+    assert (balanceAssetBefore > 0 => balanceAssetAfter > 0);
 }
+
 
 rule withdraw_reserves(address to){
     env e;
@@ -271,12 +260,14 @@ rule withdraw_reserves(address to){
     
     storage init = lastStorage;
     
+    require to != currentContract && amount1 > 0;
+
     withdrawReserves(e,to,amount1);
         int reserves1 = getReserves();
     withdrawReserves(e,to,amount2) at init;
         int reserves2 = getReserves();
 
-    assert reserves1 >= reserves2;
+    assert reserves1 > reserves2;
 }
 
 
@@ -291,12 +282,6 @@ rule withdraw_reserves_decreases(address to, uint amount){
 }
 
 
-    
-invariant reserves_vs_targetReserves()
-        to_mathint(getReserves()) <= to_mathint(targetReserves())
-
-
-
 rule verify_isBorrowCollateralized(address account){
     env e;
 
@@ -309,31 +294,41 @@ rule verify_isBorrowCollateralized(address account){
     assert collateralized1 == collateralized1;
 }
 
-rule supply_decrease_utilization(uint amount){
+rule supply_increase_balance(uint amount){
     env e;
 
-    uint utilization_1 = getUtilization(e);
+    simplifiedAssumptions();
+
+    uint balance1 = _baseToken.balanceOf(currentContract);
     supply(e,_baseToken,amount);
-    uint utilization_2 = getUtilization(e);
+    uint balance2 = _baseToken.balanceOf(currentContract);
     
-    assert utilization_1 >= utilization_2;
+    assert balance2 - balance1 == amount;
 }
 
-rule withdraw_increase_utilization(uint amount){
+rule withdraw_decrease_balance(address asset, uint amount){
     env e;
 
-    uint utilization_1 = getUtilization(e);
+    simplifiedAssumptions();
+
+    uint balance1 = _baseToken.balanceOf(currentContract);
     withdraw(e,_baseToken,amount);
-    uint utilization_2 = getUtilization(e);
+    uint balance2 = _baseToken.balanceOf(currentContract);
     
-    assert utilization_1 <= utilization_2;
+    assert balance1 - balance2 == amount;
 }
 
 rule call_absorb(address absorber, address account) {
     address[] accounts;
     env e;
+
     require accounts[0] == account;
+    require absorber != account;
+    require accounts.length == 1;
+
     absorb(e, absorber, accounts);
+    absorb(e, absorber, accounts);
+
     assert false; 
 }
 
@@ -342,8 +337,31 @@ rule call_absorb(address absorber, address account) {
 rule call_absorb_2(address absorber, address account1, address account2) {
     address[] accounts;
     env e;
+
+    require absorber != account1 && absorber != account2;
+    require accounts.length == 2;
+
+    require account1 == account2;
+
     require accounts[0] == account1;
     require accounts[1] == account2;
+
     absorb(e, absorber, accounts);
+
     assert false; 
+}
+
+rule absorb_reserves_increas(address absorber, address account) {
+    address[] accounts;
+    env e;
+
+    require accounts[0] == account;
+    require absorber != account;
+    require accounts.length == 1;
+
+    int pre = getReserves();
+    absorb(e, absorber, accounts);
+    int post = getReserves();
+
+    assert pre >= post; 
 }
