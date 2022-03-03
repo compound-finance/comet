@@ -227,27 +227,25 @@ contract Comet is CometCore {
     }
 
     /**
-     * @dev Gets the info for an asset or empty, for initialization
-     */
-    function _getAssetConfig(AssetConfig[] memory assetConfigs, uint i) internal pure returns (AssetConfig memory) {
-        if (i < assetConfigs.length)
-            return assetConfigs[i];
-        return AssetConfig({
-            asset: address(0),
-            priceFeed: address(0),
-            decimals: uint8(0),
-            borrowCollateralFactor: uint64(0),
-            liquidateCollateralFactor: uint64(0),
-            liquidationFactor: uint64(0),
-            supplyCap: uint128(0)
-        });
-    }
-
-    /**
      * @dev Checks and gets the packed asset info for storage
      */
     function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
-        AssetConfig memory assetConfig = _getAssetConfig(assetConfigs, i);
+        AssetConfig memory assetConfig;
+        if (i < assetConfigs.length) {
+            assembly {
+                assetConfig := mload(add(add(assetConfigs, 0x20), mul(i, 0x20)))
+            }
+        } else {
+            assetConfig = AssetConfig({
+                asset: address(0),
+                priceFeed: address(0),
+                decimals: uint8(0),
+                borrowCollateralFactor: uint64(0),
+                liquidateCollateralFactor: uint64(0),
+                liquidationFactor: uint64(0),
+                supplyCap: uint128(0)
+            });
+        }
         address asset = assetConfig.asset;
         address priceFeed = assetConfig.priceFeed;
         uint8 decimals_ = assetConfig.decimals;
