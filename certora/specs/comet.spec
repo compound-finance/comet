@@ -118,7 +118,7 @@ invariant totalCollateralPerAsset(address asset)
  Description :  
         for each asset, the contract's balance is at least as the total supply 
 formula : 
-        totalsCollateral[asset].totalSupplyAsset == asset.balanceOf(this)
+        totalsCollateral[asset].totalSupplyAsset <= asset.balanceOf(this)
 */
 invariant totalCollateralPerAssetVsAssetBalance(address asset) 
         getTotalsSupplyAsset(asset)  <= tokenBalanceOf(asset, currentContract) 
@@ -213,7 +213,8 @@ rule additivity_of_withdraw( uint x, uint y){
 //     withdraw(e,e.msg.sender,)
 // }
 
-rule usage_registered_assets_only(address asset) {
+rule usage_registered_assets_only(address asset, method f) {
+    // check that every function call that has an asset arguments reverts on a non-registered asset 
     assert false, "todo";
 }
 
@@ -251,7 +252,20 @@ rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address re
 }
 
 
-rule withdraw_reserves(address to){
+
+
+rule withdraw_reserves_decreases(address to, uint amount){
+    env e;
+
+    int256 before = getReserves();
+    withdrawReserves(e,to,amount);
+    int256 after = getReserves();
+
+    assert amount >0 && to != currentContract => before > after;
+}
+
+
+rule withdraw_reserves_monotonicity(address to){
     env e;
 
     uint amount1;
@@ -271,24 +285,12 @@ rule withdraw_reserves(address to){
 }
 
 
-rule withdraw_reserves_decreases(address to, uint amount){
+rule verify_isBorrowCollateralized(address account, method f){
     env e;
+    calldataarg args;
 
-    int256 before = getReserves();
-    withdrawReserves(e,to,amount);
-    int256 after = getReserves();
-
-    assert amount >0 && to != currentContract => before > after;
-}
-
-
-rule verify_isBorrowCollateralized(address account){
-    env e;
-
-    storage init = lastStorage;
-    
     bool collateralized1 = isBorrowCollateralized(account);
-        accrue(e) at init;
+    f(e,args) ;
     bool collateralized2 = isBorrowCollateralized(account);
 
     assert collateralized1 == collateralized2;

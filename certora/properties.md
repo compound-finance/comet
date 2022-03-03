@@ -11,31 +11,68 @@
 | 3 | `supplyIndex_borrowIndex_rise_with_time` | DONE | ✅ | - | - |
 | 4 | `borrowBase_vs_utilization` | DONE | ✅ | - | - |
 | 5 | `utilization_zero` | DONE | ✅ | -| - |
-| 6 | `isLiquiditable_false_should_not_change` | IN PROGRESS | 👷 | - | - |
-| 7 | `isLiquiditable_true_should_not_change` | IN PROGRESS | 👷 | - | - |
-| 8 | `presentValue_greater_principle` | DONE | ✅ | under assumption | - |
-| 9 | `presentValue_G_zero` | DONE | ✅ | - | - |
-| 10 | `presentValue_EQ_principal` | DONE | ✅ | under assumption | - |
-| NEW | `supplyRate_vs_utilization` | DONE | ✅ | - | - |
-| NEW | `utilization_zero_supplyRate_zero` | DONE | ✅ | - | - |
+| 6 | `isLiquiditable_false_should_not_change` |  DONE | ✅  | - | DONE |
+| 7 | `presentValue_GE_principle` |  DONE | ✅ | - | No assumption |
+| 8 | `presentValue_G_zero` | PROGRESS | 👷 | - | - |
+| 9 | `presentValue_EQ_principal` | DONE | ✅ | - | No assumption |
+| 10 | `supplyRate_vs_utilization` | DONE | ✅ | - | New rule |
+| 11 | `utilization_zero_supplyRate_zero` | DONE | ✅ | - | New Rule |
+| 12 | `getSupplyRate_revert_characteristic` | DONE | ✅  | reserveRate > factorScale() |  |
+| 13 | `isCol_implies_not_isLiq` | PROGRESS | 👷 | - | New Rule |
 |   |                       **Flags**                      |
-| 12 | `check_flag_updates` | DONE | ✅ | update is coherent with getters | - |
-| 13 | `check_flag_getters` | DONE | ✅ | getters are coherent with update | - |
-| 14 | `check_pauseSupply_functionality` | DONE | ✅ | on safe summarization | - |
-| 15 | `check_pauseTransfer_functionality` | DONE | ✅ | " | - |
-| 16 | `check_pauseWithdraw_functionality` | DONE | ✅ | " | - |
-| 17 | `check_pauseAbsorb_functionality` | DONE | ✅ | " | - |
-| 18 | `check_pauseBuy_functionality` | DONE | ✅ | " | - |
-| 19 | `check_update_UserCollateral` | IN PROGRESS | 👷 | expected to fail due to `offset > 8` (or 16 on fixed code) | - |
-| 20 | `update_changes_single_bit` | IN PROGRESS | ✅ | - | - |
-| 21 | `update_changes_single_user_assetIn` | DONE | ✅ | - | - |
-| | **High level** |
-| 22 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions  | - |
-| 23 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | found issue with absorb | - |
-| 24 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions | - |
-| 25 | `antiMonotonicityOfBuyCollateral` | IN PROGRESS | 🕝 | with assumptions asset!=base, minAmount > 0| - |
-| 26 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - | - |
+| 14 | `check_flag_updates` | DONE | ✅ | update is coherent with getters | - |
+| 15 | `check_flag_getters` | DONE | ✅ | getters are coherent with update | - |
+| 16 | `check_pauseSupply_functionality` | DONE | ✅ | on safe summarization | - |
+| 17 | `check_pauseTransfer_functionality` | DONE | ✅ | " | - |
+| 18 | `check_pauseWithdraw_functionality` | DONE | ✅ | " | - |
+| 19 | `check_pauseAbsorb_functionality` | DONE | ✅ | " | - |
+| 20 | `check_pauseBuy_functionality` | DONE | ✅ | " | - |
+| 21 | `check_update_UserCollateral` | IN PROGRESS | 👷 | expected to fail due to `offset > 8` (or 16 on fixed code) | FIX still open |
+| 22 | `update_changes_single_bit` | DONE | ✅ | - | - |
+| 23 | `update_changes_single_user_assetIn` | DONE | ✅ | - | - |
+| | **Asset Info** |
+| 24 | `reversibility_of_packing` | DONE | ✅ | need to recheck | NEW |
+| | **High level totals** |
+| 25 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions  | - |
+| 26   | `totalCollateralPerAssetVsAssetBalance` | IN PROGRESS | 👷 | - | New - expecting to fail? |
+| 27 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions | - |
+| 28 | `base_balance_vs_totals` | IN PROGRESS | 👷| on simplified assumptions | - |
+| | **High level updates** |
+| 29 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | found issue with absorb | - |
+| | **BuyCollateral** |
+| 30 | `antiMonotonicityOfBuyCollateral` | DONE | ✅ | with assumptions asset!=base, minAmount > 0, and msg.sender| discuss minAmount |
+| 31   | `buyCollateralMax` | DONE | ❌ | no limit, one can withdraw all asset, DOS on withdraw? |
+| | **Absorb** |
+| 32 | `absorb_reserves_increase` | IN PROGRESS | 👷  | - | NEW |
+| | **Supply** |
+|33 | `supply_increase_balance` | IN PROGRESS | ✅ | need to generalize | NEW |
+| | **Withdraw** |
+| 34 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - | - |
+| 35 | `withdraw_decrease_balance` | IN PROGRESS | ✅ | need to generalize | NEW |
+| | **Reserve** |
+| 36 | `withdraw_reserves_decreases` | DONE | ✅ | - | NEW |
+| 37 | `withdraw_reserves_monotonicity` | DONE | ✅ | - | NEW |
+| 38 | `no_reserves_zero_balance` | DONE | ✅ | on simplified assumptions | |
+|    | **General**
+| 39 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷  | - | - | 
+| 40 | `usage_registered_assets_only` | IN PROGRESS | 👷  | - | - |
 
+
+## plan for upcoming weeks
+
+- more high level properties from the list
+
+- revert characteristic
+1.  accrue 
+2. dependency on reserveRate
+3. max values
+
+- reentrancy - callbacks from erc20
+ also from priceoracle
+ 
+- solidity flag `viaIR: true` 
+
+-  review rules and study coverage by injecting bugs  
 
 
 ## Assumptions on Interest computation 
@@ -142,21 +179,6 @@ On buyCollateral system's balanace in base should increase iff system's balance 
 5. Basebalance_vs_totals( 👷 ) - Gadi
 
 6. no_reserves_zero_balance
-## plan for upcoming weeks
-
-- more high level properties from the list
-
-- revert characteristic
-1.  accrue 
-2. dependency on reserveRate
-3. max values
-
-- reentrancy - callbacks from erc20
- also from priceoracle
- 
-- solidity flag `viaIR: true` 
-
--  review rules and study coverage by injecting bugs  
 
  
  

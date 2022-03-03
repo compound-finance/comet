@@ -174,15 +174,13 @@ rule borrowBase_vs_utilization(){
 
 /* 
  Description :  
-     Verifies that isLiquidatable == false can change to true only if getPrice() has changed
+     Verifies that isLiquidatable == false can change to true only if getPrice() has changed for base or asset
 
-formula : 
-        isLiquidatable(e2,account) => price1 != price2;
 
- status : failed
+
+ status : pass
  reason : 
- link https://vaas-stg.certora.com/output/65782/5240447a217a62b1d892/?anonymousKey=cddebb60c69464b5d715c547ab600e08ea032c0c#isLiquidatable_false_should_not_changeResults
-*/
+ */
 rule isLiquidatable_false_should_not_change(address account){
     env e1;
     env e2;
@@ -205,8 +203,10 @@ rule isLiquidatable_false_should_not_change(address account){
                 priceAsset1 != priceAsset2 || priceBase1 != priceBase2 ;
 }
 
-// isBorrowCollateralized => account can borrow, hence he's not Liquidatable
-// FAILS
+/* 
+ Description :  
+     isBorrowCollateralized => account can borrow, hence he's not Liquidatable
+*/
 rule isCol_implies_not_isLiq(address account){
     env e;
 
@@ -310,6 +310,7 @@ reserveRate(e) > factorScale()
 
 status: No violation - so the function always revert 
 */
+/*
 rule getSupplyRate_revert_characteristic(){
     env e;
 
@@ -319,6 +320,7 @@ rule getSupplyRate_revert_characteristic(){
 
     assert false;
 }
+*/
 
 rule utilization_zero_supplyRate_zero(){
     env e;
