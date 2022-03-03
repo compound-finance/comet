@@ -1,8 +1,11 @@
-import { Comet, ethers, expect, exp, makeProtocol, wait } from './helpers';
+import { exp, expect, makeProtocol } from './helpers';
 
 describe('constructor', function () {
-  it.skip('sets the baseBorrowMin', async function () {
-    // XXX
+  it('sets the baseBorrowMin', async function () {
+    const { comet } = await makeProtocol({
+      baseBorrowMin: exp(100,6)
+    });
+    expect(await comet.baseBorrowMin()).to.eq(exp(100,6));
   });
 
   it.skip('verifies asset scales', async function () {
