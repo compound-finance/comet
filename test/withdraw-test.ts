@@ -203,6 +203,17 @@ describe('withdraw', function () {
 
     await expect(cometAsB.withdraw(USDC.address, 100e6)).to.be.revertedWith("custom error 'Paused()'");
   });
+
+  it('reverts if borrow amount is less than baseBorrowMin', async () => {
+    const { comet, tokens, users: [alice, bob] } = await makeProtocol({
+      baseBorrowMin: exp(1,6)
+    });
+    const { USDC } = tokens;
+
+    await expect(
+      comet.connect(alice).withdraw(USDC.address, exp(.5, 6))
+    ).to.be.revertedWith("custom error 'BorrowTooSmall()'");
+  });
 });
 
 describe('withdrawFrom', function () {
