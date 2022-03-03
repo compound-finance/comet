@@ -12,9 +12,9 @@
 | 4 | `borrowBase_vs_utilization` | DONE | ✅ | - | - |
 | 5 | `utilization_zero` | DONE | ✅ | -| - |
 | 6 | `isLiquiditable_false_should_not_change` |  DONE | ✅  | - | DONE |
-| 7 | `presentValue_GE_principle` | PROGRESS | 👷 | under assumption | - |
+| 7 | `presentValue_GE_principle` |  DONE | ✅ | - | No assumption |
 | 8 | `presentValue_G_zero` | PROGRESS | 👷 | - | - |
-| 9 | `presentValue_EQ_principal` | PROGRESS | 👷 | under assumption | - |
+| 9 | `presentValue_EQ_principal` | DONE | ✅ | - | No assumption |
 | 10 | `supplyRate_vs_utilization` | DONE | ✅ | - | New rule |
 | 11 | `utilization_zero_supplyRate_zero` | DONE | ✅ | - | New Rule |
 | 12 | `getSupplyRate_revert_characteristic` | DONE | ✅  | reserveRate > factorScale() |  |
