@@ -1212,7 +1212,7 @@ contract Comet is CometCore {
     /**
      * @notice Fallback to calling the extension delegate for everything else
      */
-    fallback() external payable {
+/*    fallback() external payable {
         address delegate = extensionDelegate;
         assembly {
             calldatacopy(0, 0, calldatasize())
@@ -1222,5 +1222,5 @@ contract Comet is CometCore {
             case 0 { revert(0, returndatasize()) }
             default { return(0, returndatasize()) }
         }
-    }
+    } */
 }

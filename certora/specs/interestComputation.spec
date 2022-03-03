@@ -13,14 +13,14 @@ methods{
     getTotalBaseSupplyIndex() returns (uint64) envfree;
     getTotalBaseBorrowIndex() returns (uint64) envfree;
     getlastAccrualTime() returns (uint40) envfree;
-    factorScale() returns (uint64) envfree;
+    FACTOR_SCALE() returns (uint64) envfree;
     perSecondInterestRateBase() returns (uint64) envfree;
     perSecondInterestRateSlopeLow() returns (uint64) envfree;
     perSecondInterestRateSlopeHigh() returns (uint64) envfree;
     kink() returns (uint64) envfree;
     baseIndexScale() returns (uint64) envfree;
     targetReserves() returns (uint104) envfree;
-
+    
     latestRoundData() returns uint256 => DISPATCHER(true);
 
 }
@@ -206,6 +206,14 @@ env e2;
     assert isLiquidatable(e2,account) => price1 != price2;
 }
 
+// isBorrowCollateralized => account can borrow, hence he's not Liquidatable
+// FAILS
+rule isCol_implies_not_isLiq(address account){
+    env e;
+
+    assert isBorrowCollateralized(e,account) => !isLiquidatable(e,account);
+}
+
 /* 
  Description :  
      Verifies that TotalBaseSupplyIndex and getTotalBaseBorrowIndex always greater than baseIndexScale
@@ -316,10 +324,20 @@ rule quote_Collateral(address asset, uint baseAmount ){
 // }
 
 
+// Description :  
+//      reserveRate > factorScale => getSupplyRate will always revert
+
+// formula : 
+//      presentValue >= _principalValue;
+
+//  status : proved
+//  reason : 
+//  link   : https://vaas-stg.certora.com/output/65782/f2f32f50a2bbf14deb79/?anonymousKey=494980dfd3ebcced1ee0d1088acf1a795f9f2a08#SupplyIndex_vs_BorrowIndexResults
+
 rule reserveRate(){
     env e;
 
-        require reserveRate(e) > factorScale();
+        require reserveRate(e) > factorScale(e);
         //https://vaas-stg.certora.com/output/65782/cbe17cbd3ad5d102aa82/?anonymousKey=7e7fac8ec3cd530f2329ae8c4af394e874918af2
 
     getSupplyRate(e);

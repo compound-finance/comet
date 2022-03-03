@@ -4,5 +4,5 @@ certoraRun certora/harness/CometHarnessInterest.sol certora/harness/SymbolicPric
     --staging shelly/integrateJohnsBranches \
     --settings -enableEqualitySaturation=false,-solver=z3,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \
     --optimistic_loop \
-    --rule supplyRate_vs_Utilization \
+    --rule $1 \
     --msg "$1"

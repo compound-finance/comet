@@ -241,8 +241,8 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
     // https://vaas-stg.certora.com/output/23658/b7cc8ac5bd1d3f414f2f/?anonymousKey=d47ea2a5120f88658704e5ece8bfb45d59b2eb85
     require asset != _baseToken; 
     // if minAmount is not given, one can get zero ?
-    //https://vaas-stg.certora.com/output/23658/dfa775ba4793df498a7c/?anonymousKey=69209d915245b6e0c583550af5c6c27fc5382559
-    //require minAmount > 0 ; 
+    //https://vaas-stg.certora.com/output/23658/d48bc0a10849dc638048/?anonymousKey=4162738a94af8200c99d01c633d0eb025fedeaf4
+    require minAmount > 0 ; 
     
     require e.msg.sender != currentContract;
     require recipient != currentContract;
@@ -271,12 +271,14 @@ rule withdraw_reserves(address to){
     
     storage init = lastStorage;
     
+    require to != currentContract && amount1 > 0;
+
     withdrawReserves(e,to,amount1);
         int reserves1 = getReserves();
     withdrawReserves(e,to,amount2) at init;
         int reserves2 = getReserves();
 
-    assert reserves1 >= reserves2;
+    assert reserves1 > reserves2;
 }
 
 
@@ -291,12 +293,6 @@ rule withdraw_reserves_decreases(address to, uint amount){
 }
 
 
-    
-invariant reserves_vs_targetReserves()
-        to_mathint(getReserves()) <= to_mathint(targetReserves())
-
-
-
 rule verify_isBorrowCollateralized(address account){
     env e;
 
@@ -309,22 +305,74 @@ rule verify_isBorrowCollateralized(address account){
     assert collateralized1 == collateralized1;
 }
 
-rule supply_decrease_utilization(uint amount){
+rule supply_increase_balance(uint amount){
     env e;
 
-    uint utilization_1 = getUtilization(e);
+    simplifiedAssumptions();
+
+    uint balance1 = _baseToken.balanceOf(currentContract);
     supply(e,_baseToken,amount);
-    uint utilization_2 = getUtilization(e);
+    uint balance2 = _baseToken.balanceOf(currentContract);
     
-    assert utilization_1 >= utilization_2;
+    assert balance2 - balance1 == amount;
 }
 
-rule withdraw_increase_utilization(uint amount){
+rule withdraw_decrease_balance(address asset, uint amount){
     env e;
 
-    uint utilization_1 = getUtilization(e);
+    simplifiedAssumptions();
+
+    uint balance1 = _baseToken.balanceOf(currentContract);
     withdraw(e,_baseToken,amount);
-    uint utilization_2 = getUtilization(e);
+    uint balance2 = _baseToken.balanceOf(currentContract);
     
-    assert utilization_1 <= utilization_2;
+    assert balance1 - balance2 == amount;
+}
+
+rule call_absorb(address absorber, address account) {
+    address[] accounts;
+    env e;
+
+    require accounts[0] == account;
+    require absorber != account;
+    require accounts.length == 1;
+
+    absorb(e, absorber, accounts);
+    absorb(e, absorber, accounts);
+
+    assert false; 
+}
+
+
+// note - need loop_iter=2 for this rule
+rule call_absorb_2(address absorber, address account1, address account2) {
+    address[] accounts;
+    env e;
+
+    require absorber != account1 && absorber != account2;
+    require accounts.length == 2;
+
+    require account1 == account2;
+
+    require accounts[0] == account1;
+    require accounts[1] == account2;
+
+    absorb(e, absorber, accounts);
+
+    assert false; 
+}
+
+rule absorb_reserves_increas(address absorber, address account) {
+    address[] accounts;
+    env e;
+
+    require accounts[0] == account;
+    require absorber != account;
+    require accounts.length == 1;
+
+    int pre = getReserves();
+    absorb(e, absorber, accounts);
+    int post = getReserves();
+
+    assert pre >= post; 
 }
