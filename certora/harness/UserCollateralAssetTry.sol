@@ -218,7 +218,7 @@ constructor(Configuration memory config) {
      * @dev Whether user has a non-zero balance of an asset, given assetsIn flags
      */
     function isInAsset2(uint16 assetsIn, uint8 assetOffset) virtual public view returns (bool) {
-        return (assetsIn & (uint8(1) << (assetOffset-1)) != 0);
+        return (assetsIn & (uint8(1) << (assetOffset)) != 0);
     }
 
     /**

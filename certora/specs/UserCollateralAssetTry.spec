@@ -17,7 +17,7 @@ rule check_update_UserCollateral_red(address asset, uint128 initialUserBalance, 
     uint8 assetOffset_ = getAssetOffsetByAsset(asset);
     bool flagUserAsset_ = isInAsset2(assetIn_, assetOffset_);
 
-    assert (initialUserBalance == 0 && finalUserBalance > 0) => flagUserAsset_, "Balance changed from 0 to non zero, yet the getter retrieve false";
-    assert (initialUserBalance > 0 && finalUserBalance == 0) => !flagUserAsset_, "Balance changed from non zero to 0, yet the getter retrieve trueenvfree";
-    // assert ((initialUserBalance == 0 && finalUserBalance > 0) => flagUserAsset_) && ((initialUserBalance > 0 && finalUserBalance == 0) => !flagUserAsset_), "try";
+    // assert (initialUserBalance == 0 && finalUserBalance > 0) => flagUserAsset_, "Balance changed from 0 to non zero, yet the getter retrieve false";
+    // assert (initialUserBalance > 0 && finalUserBalance == 0) => !flagUserAsset_, "Balance changed from non zero to 0, yet the getter retrieve trueenvfree";
+    assert ((initialUserBalance == 0 && finalUserBalance > 0) => flagUserAsset_) && ((initialUserBalance > 0 && finalUserBalance == 0) => !flagUserAsset_), "try";
 }
