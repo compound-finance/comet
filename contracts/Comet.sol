@@ -95,7 +95,7 @@ contract Comet is CometCore {
     uint public immutable baseTrackingBorrowSpeed;
 
     /// @notice The minimum amount of base wei for rewards to accrue
-    /// @dev This must be large enough so as to prevent division by base wei from overflowing the 64 bit indices.
+    /// @dev This must be large enough so as to prevent division by base wei from overflowing the 64 bit indices
     /// @dev uint104
     uint public immutable baseMinForRewards;
 
@@ -219,7 +219,7 @@ contract Comet is CometCore {
         if (lastAccrualTime != 0) revert AlreadyInitialized();
 
         // Initialize aggregates
-        lastAccrualTime = getNow();
+        lastAccrualTime = getNowInternal();
         baseSupplyIndex = BASE_INDEX_SCALE;
         baseBorrowIndex = BASE_INDEX_SCALE;
         trackingSupplyIndex = 0;
@@ -385,7 +385,7 @@ contract Comet is CometCore {
     /**
      * @return The current timestamp
      **/
-    function getNow() virtual public view returns (uint40) {
+    function getNowInternal() virtual internal view returns (uint40) {
         if (block.timestamp >= 2**40) revert TimestampTooLarge();
         return uint40(block.timestamp);
     }
@@ -394,7 +394,7 @@ contract Comet is CometCore {
      * @dev Accrue interest (and rewards) in base token supply and borrows
      **/
     function accrueInternal() internal {
-        uint40 now_ = getNow();
+        uint40 now_ = getNowInternal();
         uint timeElapsed = now_ - lastAccrualTime;
         if (timeElapsed > 0) {
             uint supplyRate = getSupplyRate();
