@@ -215,12 +215,31 @@ describe('withdraw', function () {
     ).to.be.revertedWith("custom error 'BorrowTooSmall()'");
   });
 
-  it('reverts if withdraw amount is not collateralzed', async () => {
+  it('reverts if base withdraw amount is not collateralzed', async () => {
     const { comet, tokens, users: [alice, bob] } = await makeProtocol();
     const { USDC } = tokens;
 
     await expect(
       comet.connect(alice).withdraw(USDC.address, exp(1, 6))
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+  });
+
+  it('reverts if collateral withdraw amount is not collateralized', async () => {
+    const { comet, tokens, users: [alice] } = await makeProtocol();
+    const { WETH } = tokens;
+
+    const totalsCollateral = Object.assign({}, await comet.totalsCollateral(WETH.address), {
+      totalSupplyAsset: exp(1,18),
+    });
+    await wait(comet.setTotalsCollateral(WETH.address, totalsCollateral));
+
+    // user has a borrow, but with collateral to cover
+    await comet.setBasePrincipal(alice.address, -100e6);
+    await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
+
+    // reverts if withdraw would leave borrow uncollateralized
+    await expect(
+      comet.connect(alice).withdraw(WETH.address, exp(1, 18))
     ).to.be.revertedWith("custom error 'NotCollateralized()'");
   });
 });
