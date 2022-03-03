@@ -305,33 +305,41 @@ rule verify_isBorrowCollateralized(address account){
     assert collateralized1 == collateralized1;
 }
 
-rule supply_decrease_utilization(uint amount){
+rule supply_increase_balance(uint amount){
     env e;
 
     simplifiedAssumptions();
 
-    uint utilization_1 = getUtilization(e);
+    uint balance1 = _baseToken.balanceOf(currentContract);
     supply(e,_baseToken,amount);
-    uint utilization_2 = getUtilization(e);
+    uint balance2 = _baseToken.balanceOf(currentContract);
     
-    assert utilization_1 >= utilization_2;
+    assert balance2 - balance1 == amount;
 }
 
-rule withdraw_increase_utilization(uint amount){
+rule withdraw_decrease_balance(address asset, uint amount){
     env e;
 
-    uint utilization_1 = getUtilization(e);
+    simplifiedAssumptions();
+
+    uint balance1 = _baseToken.balanceOf(currentContract);
     withdraw(e,_baseToken,amount);
-    uint utilization_2 = getUtilization(e);
+    uint balance2 = _baseToken.balanceOf(currentContract);
     
-    assert utilization_1 <= utilization_2;
+    assert balance1 - balance2 == amount;
 }
 
 rule call_absorb(address absorber, address account) {
     address[] accounts;
     env e;
+
     require accounts[0] == account;
+    require absorber != account;
+    require accounts.length == 1;
+
     absorb(e, absorber, accounts);
+    absorb(e, absorber, accounts);
+
     assert false; 
 }
 
@@ -340,8 +348,31 @@ rule call_absorb(address absorber, address account) {
 rule call_absorb_2(address absorber, address account1, address account2) {
     address[] accounts;
     env e;
+
+    require absorber != account1 && absorber != account2;
+    require accounts.length == 2;
+
+    require account1 == account2;
+
     require accounts[0] == account1;
     require accounts[1] == account2;
+
     absorb(e, absorber, accounts);
+
     assert false; 
+}
+
+rule absorb_reserves_increas(address absorber, address account) {
+    address[] accounts;
+    env e;
+
+    require accounts[0] == account;
+    require absorber != account;
+    require accounts.length == 1;
+
+    int pre = getReserves();
+    absorb(e, absorber, accounts);
+    int post = getReserves();
+
+    assert pre >= post; 
 }

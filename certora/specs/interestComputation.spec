@@ -206,6 +206,14 @@ env e2;
     assert isLiquidatable(e2,account) => price1 != price2;
 }
 
+// isBorrowCollateralized => account can borrow, hence he's not Liquidatable
+// FAILS
+rule isCol_implies_not_isLiq(address account){
+    env e;
+
+    assert isBorrowCollateralized(e,account) => !isLiquidatable(e,account);
+}
+
 /* 
  Description :  
      Verifies that TotalBaseSupplyIndex and getTotalBaseBorrowIndex always greater than baseIndexScale

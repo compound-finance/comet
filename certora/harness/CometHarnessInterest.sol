@@ -59,7 +59,7 @@ contract CometHarnessInterest is CometHarnessWrappers {
         return getUtilizationInternal(totalsBasic1);
     }
 
-    function factorScale() view returns (uint64){
+    function factorScale() public view returns (uint64){
         return FACTOR_SCALE;
     }
 }
