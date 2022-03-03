@@ -296,26 +296,29 @@ rule verify_isBorrowCollateralized(address account, method f){
     assert collateralized1 == collateralized2;
 }
 
-rule supply_increase_balance(uint amount){
+rule supply_increase_balance(address asset, uint amount){
     env e;
+    require e.msg.sender != currentContract;
 
     simplifiedAssumptions();
 
-    uint balance1 = _baseToken.balanceOf(currentContract);
-    supply(e,_baseToken,amount);
-    uint balance2 = _baseToken.balanceOf(currentContract);
+
+    uint balance1 = tokenBalanceOf(e, asset, currentContract);
+    supply(e, asset, amount);
+    uint balance2 = tokenBalanceOf(e, asset, currentContract);
     
     assert balance2 - balance1 == amount;
 }
 
 rule withdraw_decrease_balance(address asset, uint amount){
     env e;
+    require e.msg.sender != currentContract;
 
     simplifiedAssumptions();
 
-    uint balance1 = _baseToken.balanceOf(currentContract);
-    withdraw(e,_baseToken,amount);
-    uint balance2 = _baseToken.balanceOf(currentContract);
+    uint balance1 = tokenBalanceOf(e, asset, currentContract);
+    withdraw(e, asset, amount);
+    uint balance2 = tokenBalanceOf(e, asset, currentContract);
     
     assert balance1 - balance2 == amount;
 }

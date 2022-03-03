@@ -210,6 +210,9 @@ rule isLiquidatable_false_should_not_change(address account){
 rule isCol_implies_not_isLiq(address account){
     env e;
 
+    address asset;
+    require getLiquidateCollateralFactor(e,asset) < getBorrowCollateralFactor(e,asset);
+
     assert isBorrowCollateralized(e,account) => !isLiquidatable(e,account);
 }
 
