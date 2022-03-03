@@ -79,7 +79,7 @@ describe('CometExt', function () {
     });
   });
 
-  it('returns principal baseBalanceOf', async () => {
+  it('returns principal as baseBalanceOf', async () => {
     const {
       comet,
       users: [user],
@@ -90,4 +90,29 @@ describe('CometExt', function () {
     const baseBalanceOf = await comet.baseBalanceOf(user.address);
     expect(baseBalanceOf).to.eq(100e6);
   });
+
+  it('returns collateralBalance (in units of the collateral asset)', async () => {
+    const {
+      comet,
+      users: [user],
+      tokens
+    } = await makeProtocol();
+
+    const { WETH } = tokens;
+
+    await comet.setCollateralBalance(
+      user.address,
+      WETH.address,
+      exp(5, 18)
+    );
+
+    const collateralBalanceOf = await comet.collateralBalanceOf(
+      user.address,
+      WETH.address
+    );
+    expect(collateralBalanceOf).to.eq(exp(5,18));
+  });
+
+
+
 });
