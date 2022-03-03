@@ -60,6 +60,15 @@ contract CometHarnessGetters is Comet {
     function getTotalsSupplyAsset(address asset) public view returns (uint128)  {
         return totalsCollateral[asset].totalSupplyAsset;
     }
+    function getLiquidateCollateralFactor(address asset) public view returns (uint64)  {
+        AssetInfo memory assetInfo = super.getAssetInfoByAddress(asset);
+        return assetInfo.liquidateCollateralFactor;
+    }    
+
+    function getBorrowCollateralFactor(address asset) public view returns (uint64)  {
+        AssetInfo memory assetInfo = super.getAssetInfoByAddress(asset);
+        return assetInfo.borrowCollateralFactor;
+    }    
 
     function getUserCollateralBalanceByAsset(address user, address asset) public view returns (uint128) {
         return userCollateral[user][asset].balance;
