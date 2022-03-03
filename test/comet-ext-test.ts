@@ -155,4 +155,32 @@ describe('CometExt', function () {
       ).to.be.revertedWith('BadAmount()');
     });
   });
+
+  describe('allowance', function() {
+    it('returns unint256.max when spender has permission for user', async () => {
+      const {
+        comet,
+        users: [user, spender]
+      } = await makeProtocol();
+
+      // authorize
+      await comet.connect(user).allow(spender.address, true);
+
+      const allowance = await comet.allowance(user.address, spender.address);
+      expect(allowance).to.eq(ethers.constants.MaxUint256);
+    });
+
+    it('returns 0 when spender does not have permission for user', async () => {
+      const {
+        comet,
+        users: [user, spender]
+      } = await makeProtocol();
+
+      // un-authorize
+      await comet.connect(user).allow(spender.address, false);
+
+      const allowance = await comet.allowance(user.address, spender.address);
+      expect(allowance).to.eq(0);
+    });
+  });
 });
