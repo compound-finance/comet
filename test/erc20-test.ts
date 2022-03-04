@@ -59,32 +59,6 @@ describe('erc20', function () {
     });
   });
 
-  describe('borrowBalanceOf', function () {
-    it('returns borrow amount (when principal amount is negative)', async () => {
-      const {
-        comet,
-        users: [user],
-      } = await makeProtocol();
-
-      await comet.setBasePrincipal(user.address, -100e6); // borrow of $100 USDC
-
-      const borrowBalanceOf = await comet.borrowBalanceOf(user.address);
-      expect(borrowBalanceOf).to.eq(100e6)
-    });
-
-    it('returns 0 when principal amount is positive', async () => {
-      const {
-        comet,
-        users: [user],
-      } = await makeProtocol();
-
-      await comet.setBasePrincipal(user.address, 100e6);
-
-      const borrowBalanceOf = await comet.borrowBalanceOf(user.address);
-      expect(borrowBalanceOf).to.eq(0);
-    });
-  });
-
   it('performs ERC20 transfer of base', async () => {
     const {
       comet,
@@ -126,7 +100,7 @@ describe('erc20', function () {
       await comet.setBasePrincipal(alice.address, 100e6);
 
       await expect(
-        comet.transferFrom(alice.address, bob.address, 100e6)
+        comet.connect(bob).transferFrom(alice.address, bob.address, 100e6)
       ).to.be.revertedWith("custom error 'Unauthorized()'");
     });
 
@@ -143,20 +117,41 @@ describe('erc20', function () {
         bob.address,
         ethers.constants.MaxUint256
       );
-      // XXX emits Approval
 
       expect(await comet.allowance(alice.address, bob.address)).to.eq(ethers.constants.MaxUint256);
 
-      await comet.connect(alice).transferFrom(alice.address, bob.address, 100e6);
+      // bob can now transfer funds from alice
+      await comet.connect(bob).transferFrom(alice.address, bob.address, 100e6);
 
       expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
       expect(await comet.baseBalanceOf(bob.address)).to.eq(100e6);
     });
 
-    it.skip('reverts ERC20 transferFrom with revoked approval', async () => {
-      // XXX
-      // XXX emits Approval
-      // XXX check allowance
+    it('reverts ERC20 transferFrom with revoked approval', async () => {
+      const {
+        comet,
+        users: [alice, bob],
+      } = await makeProtocol();
+
+      await comet.setBasePrincipal(alice.address, 100e6);
+
+      // bob is approved
+      await comet.connect(alice).approve(
+        bob.address,
+        ethers.constants.MaxUint256
+      );
+
+      expect(await comet.allowance(alice.address, bob.address)).to.eq(ethers.constants.MaxUint256);
+
+      // approval is revoked
+      await comet.connect(alice).approve(bob.address, 0);
+
+      expect(await comet.allowance(alice.address, bob.address)).to.eq(0);
+
+      // bob cannot transfer funds from alice
+      await expect(
+        comet.connect(bob).transferFrom(alice.address, bob.address, 100e6)
+      ).to.be.revertedWith("custom error 'Unauthorized()'");
     });
   });
 
