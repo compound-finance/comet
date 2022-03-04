@@ -134,15 +134,7 @@ describe('transfer', function () {
     await expect(cometAsB.transferAsset(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
   });
 
-  it.skip('reverts if transferring base results in an under collateralized borrow', async () => {
-    // XXX
-  });
-
   it.skip('borrows base if collateralized', async () => {
-    // XXX
-  });
-
-  it.skip('reverts if transferring collateral results in an under collateralized borrow', async () => {
     // XXX
   });
 
@@ -189,7 +181,7 @@ describe('transfer', function () {
     ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
   });
 
-  it('reverts if base transfer is not collateralized', async () => {
+  it('reverts if transferring base results in an under collateralized borrow', async () => {
     const { comet, tokens, users: [alice, bob]} = await makeProtocol();
     const { USDC } = tokens;
 
@@ -198,7 +190,7 @@ describe('transfer', function () {
     ).to.be.revertedWith("custom error 'NotCollateralized()'");
   });
 
-  it('reverts if collateral transfer is not collateralized', async () => {
+  it('reverts if transferring collateral results in an under collateralized borrow', async () => {
     const { comet, tokens, users: [alice, bob]} = await makeProtocol();
     const { WETH } = tokens;
 
