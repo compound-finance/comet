@@ -888,6 +888,29 @@ contract Comet is CometCore {
     }
 
     /**
+     * @notice ERC20 transfer an amount of base token to dst
+     * @param dst The recipient address
+     * @param amount The quantity to transfer
+     * @return true
+     */
+    function transfer(address dst, uint amount) external returns (bool) {
+        transferInternal(msg.sender, msg.sender, dst, baseToken, amount);
+        return true;
+    }
+
+    /**
+     * @notice ERC20 transfer an amount of base token from src to dst, if allowed
+     * @param src The sender address
+     * @param dst The recipient address
+     * @param amount The quantity to transfer
+     * @return true
+     */
+    function transferFrom(address src, address dst, uint amount) external returns (bool) {
+        transferInternal(msg.sender, src, dst, baseToken, amount);
+        return true;
+    }
+
+    /**
      * @notice Transfer an amount of asset to dst
      * @param dst The recipient address
      * @param asset The asset to transfer
