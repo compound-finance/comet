@@ -82,19 +82,21 @@ export class Cache {
     let c = this.cache;
     let paths = this.getPath(spec);
     for (let [i, path] of paths.entries()) {
-      if (c instanceof Map && c.has(path)) {
-        c = c.get(path);
+      if (i === paths.length - 1) {
+        c.set(path, data);
+        return;
       } else {
-        // If we're an intermediate key, we want to build an object to iterate on
-        // But if we're the last key, we want to store the object here.
-        if (i === paths.length - 1) {
-          c.set(path, data);
+        if (c instanceof Map && c.has(path)) {
+          c = c.get(path);
         } else {
+          // If we're an intermediate key, we want to build an object to iterate on
+          // But if we're the last key, we want to store the object here.
           c.set(path, new Map());
           c = c.get(path);
         }
       }
     }
+    throw new Error("unreachable");
   }
 
   private async putDisk<T>(spec: FileSpec, data: T, transformer: (T) => string) {

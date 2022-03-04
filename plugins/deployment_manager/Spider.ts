@@ -106,34 +106,36 @@ async function runSpider(
           relationConfig.proxy,
           `${defaultAlias}:implementation`
         );
-        [implAddress] = implDiscovered.map(([address, alias]) => address);
-        if (!implAddress) {
-          throw new Error(
-            `Unknown or invalid implementation address: discovered: ${JSON.stringify(
-              implDiscovered
-            )}`
+
+        if (implDiscovered.length > 0) {
+          [implAddress] = implDiscovered.map(([address, alias]) => address);
+
+          // Recurse a single step to get implementation
+          visited = await runSpider(
+            cache,
+            network,
+            hre,
+            relationConfigMap,
+            implDiscovered,
+            visited,
+            importRetries,
+            importRetryDelay
+          );
+
+          let { buildFile: proxyBuildFile } = visited.get(implAddress);
+          if (!proxyBuildFile) {
+            throw new Error(
+              `Failed to spider implementation for ${defaultAlias} at ${implAddress}`
+            );
+          }
+          const [proxyContractName, proxyContractMetadata] = getPrimaryContract(proxyBuildFile);
+
+          contract = new hre.ethers.Contract(
+            address,
+            mergeABI(contractMetadata.abi, proxyContractMetadata.abi),
+            hre.ethers.provider
           );
         }
-
-        // Recurse a single step to get implementation
-        visited = await runSpider(
-          cache,
-          network,
-          hre,
-          relationConfigMap,
-          implDiscovered,
-          visited,
-          importRetries,
-          importRetryDelay
-        );
-
-        let { buildFile: proxyBuildFile } = visited.get(implAddress);
-        if (!proxyBuildFile) {
-          throw new Error(`Failed to spider implementation for ${defaultAlias} at ${implAddress}`);
-        }
-        const [proxyContractName, proxyContractMetadata] = getPrimaryContract(proxyBuildFile);
-
-        contract = new hre.ethers.Contract(address, mergeABI(contractMetadata.abi, proxyContractMetadata.abi), hre.ethers.provider);
       }
 
       // Store the build file. This is the primary result of spidering: a huge list

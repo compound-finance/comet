@@ -3,12 +3,12 @@ import { Contract, Signer } from 'ethers';
 
 import { Alias, Address, BuildFile } from './Types';
 
-import { Aliases, putAlias, storeAliases } from './Aliases';
+import { Aliases, getAliases, putAlias, storeAliases } from './Aliases';
 import { Cache } from './Cache';
 import { ContractMap, getContracts } from './ContractMap';
 import { Deployer, DeployOpts, deploy, deployBuild } from './Deploy';
 import { fetchAndCacheContract } from './Import';
-import { putProxy, storeProxies } from './Proxies';
+import { Proxies, getProxies, putProxy, storeProxies } from './Proxies';
 import { getRelationConfig } from './RelationConfig';
 import { Roots, getRoots, putRoots } from './Roots';
 import { spider } from './Spider';
@@ -141,6 +141,14 @@ export class DeploymentManager {
     await storeAliases(this.cache, aliases);
     await storeProxies(this.cache, proxies);
     this.invalidateContractsCache();
+  }
+
+  async getProxies(): Promise<Proxies> {
+    return await getProxies(this.cache);
+  }
+
+  async getAliases(): Promise<Aliases> {
+    return await getAliases(this.cache);
   }
 
   /* Returns a memory-cached map of contracts indexed by alias. Note: this map

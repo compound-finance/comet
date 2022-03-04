@@ -11,7 +11,10 @@ interface ModernConfig {
 }
 
 function getModernConfigs(requirements: object): ModernConfig[] | null {
-  let fuzzedConfigs = getFuzzedRequirements(requirements).map(r => ({ upgrade: r['upgrade'], cometConfig: r['cometConfig'] }));
+  let fuzzedConfigs = getFuzzedRequirements(requirements).map((r) => ({
+    upgrade: r['upgrade'],
+    cometConfig: r['cometConfig'],
+  }));
 
   return fuzzedConfigs;
 }
@@ -22,23 +25,31 @@ export class ModernConstraint<T extends CometContext> implements Constraint<T> {
 
     let solutions = [];
     // XXX Inefficient log. Can be removed later
-    console.log("Comet config overrides to upgrade with are: ", modernConfigs.map(c => c['cometConfig']));
+    console.log(
+      'Comet config overrides to upgrade with are: ',
+      modernConfigs.map((c) => c['cometConfig'])
+    );
     for (let config of modernConfigs) {
       if (config.upgrade) {
         solutions.push(async function solution(context: T): Promise<T> {
-          console.log("Upgrading to modern...");
+          console.log('Upgrading to modern...');
           // TODO: Make this deployment script less ridiculous, e.g. since it redeploys tokens right now
-          let comet = await context.getComet();
-          let { comet: newComet } = await deployComet(context.deploymentManager, false, config.cometConfig);
+          let oldComet = await context.getComet();
+          let { comet: newComet } = await deployComet(
+            context.deploymentManager,
+            false,
+            config.cometConfig
+          );
           let initializer: string | undefined;
-          if (!comet.totalsBasic || (await comet.totalsBasic()).lastAccrualTime === 0) {
-            initializer = (await newComet.populateTransaction.initializeStorage()).data
+          if (!oldComet.totalsBasic || (await oldComet.totalsBasic()).lastAccrualTime === 0) {
+            initializer = (await newComet.populateTransaction.initializeStorage()).data;
           }
 
           await context.upgradeTo(newComet, world, initializer);
           await context.setAssets();
+          await context.spider();
 
-          console.log("Upgraded to modern...");
+          console.log('Upgraded to modern...');
 
           return context; // It's been modified
         });

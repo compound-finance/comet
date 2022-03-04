@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import { tempDir } from './TestHelpers';
 
 import { Cache } from '../Cache';
+import { objectFromMap } from '../Utils';
 
 describe('Cache', () => {
   it('read and store values in-memory', async () => {
@@ -50,6 +51,22 @@ describe('Cache', () => {
     cache.cache = new Map(); // Kill in-memory key
 
     expect(await cache.readCache({ rel: 'abc' })).to.eql(5);
+  });
+
+  describe('map', () => {
+    it('read and store values in-memory rel', async () => {
+      let cache = new Cache('test', false, tempDir());
+
+      await cache.storeMap({ rel: 'abc' }, new Map([['a', 5]]));
+
+      expect(cache.cache).to.eql(new Map([['test', new Map([['abc', new Map([['a', 5]])]])]]));
+
+      expect(objectFromMap(await cache.readCache({ rel: 'abc' }))).to.eql({a: 5});
+
+      await cache.storeMap({ rel: 'abc' }, new Map([['a', 6]]));
+
+      expect(objectFromMap(await cache.readCache({ rel: 'abc' }))).to.eql({a: 6});
+    });
   });
 
   describe('getFilePath', async () => {

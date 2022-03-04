@@ -104,7 +104,7 @@ export async function deployNetworkComet(
   }
 
   return {
-    comet: await deploymentManager.hre.ethers.getContractAt('CometInterface', comet.address) as CometInterface,
+    comet,
     proxy,
   };
 }

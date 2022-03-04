@@ -13,7 +13,8 @@ import {
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { deployComet } from '../../src/deploy';
-import { CometInterface as Comet, ProxyAdmin, ERC20, ERC20__factory } from '../../build/types';
+import { wait } from '../../test/helpers';
+import { Comet, CometInterface, ProxyAdmin, ERC20, ERC20__factory } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
@@ -26,7 +27,7 @@ export interface CometProperties {
   actors: ActorMap;
   assets: AssetMap;
   remoteToken?: Contract;
-  comet: Comet;
+  comet: CometInterface;
   proxyAdmin: ProxyAdmin;
 }
 
@@ -58,9 +59,12 @@ export class CometContext {
     return await this.deploymentManager.contracts();
   }
 
-  async getComet(): Promise<Comet> {
-    // TODO: CompoundInterface?
-    return await this.deploymentManager.contract('comet') as Comet;
+  async getComet(): Promise<CometInterface> {
+    return await this.deploymentManager.contract('comet') as CometInterface;
+  }
+
+  async getCometImplemenation(): Promise<Comet> {
+    return await this.deploymentManager.contract('comet:implementation') as Comet;
   }
 
   async getCometAdmin(): Promise<ProxyAdmin> {
@@ -69,6 +73,8 @@ export class CometContext {
 
   async upgradeTo(newComet: Comet, world: World, data?: string) {
     let comet = await this.getComet();
+    let cometAdmin = await this.getCometAdmin();
+
     // Set the admin and pause guardian addresses again since these may have changed.
     let governorAddress = await comet.governor(); // TODO: is this newComet?
     let pauseGuardianAddress = await comet.pauseGuardian();
@@ -76,13 +82,16 @@ export class CometContext {
     let pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
 
     if (data) {
-      await (await this.getCometAdmin()).connect(adminSigner).upgradeAndCall(comet.address, newComet.address, data);
+      await wait(cometAdmin.connect(adminSigner).upgradeAndCall(comet.address, newComet.address, data));
     } else {
-      await (await this.getCometAdmin()).connect(adminSigner).upgrade(comet.address, newComet.address);
+      await wait(cometAdmin.connect(adminSigner).upgrade(comet.address, newComet.address));
     }
-
     this.actors['admin'] = await buildActor('admin', adminSigner, this);
     this.actors['pauseGuardian'] = await buildActor('pauseGuardian', pauseGuardianSigner, this);
+  }
+
+  async spider() {
+    await this.deploymentManager.spider();
   }
 
   primaryActor(): CometActor {

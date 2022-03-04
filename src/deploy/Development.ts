@@ -184,7 +184,7 @@ export async function deployDevelopmentComet(
   }
 
   return {
-    comet: await deploymentManager.hre.ethers.getContractAt('CometInterface', comet.address) as CometInterface,
+    comet,
     proxy,
     tokens: [dai, gold, silver],
   };
