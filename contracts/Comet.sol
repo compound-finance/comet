@@ -409,8 +409,8 @@ contract Comet is CometCore {
                 uint borrowSpeed = baseTrackingBorrowSpeed;
                 trackingBorrowIndex += safe64(divBaseWei(borrowSpeed * timeElapsed, totalBorrowBase));
             }
+            lastAccrualTime = now_;
         }
-        lastAccrualTime = now_;
     }
 
     /**
@@ -500,7 +500,7 @@ contract Comet is CometCore {
                 uint newAmount = mulPrice(
                     userCollateral[account][asset.asset].balance,
                     getPrice(asset.priceFeed),
-                    safe64(asset.scale)
+                    asset.scale
                 );
                 liquidity += signed256(mulFactor(
                     newAmount,
@@ -532,7 +532,7 @@ contract Comet is CometCore {
                 uint newAmount = mulPrice(
                     userCollateral[account][asset.asset].balance,
                     getPrice(asset.priceFeed),
-                    safe64(asset.scale)
+                    asset.scale
                 );
                 liquidity += signed256(mulFactor(
                     newAmount,
@@ -1057,13 +1057,10 @@ contract Comet is CometCore {
      * @dev Withdraw an amount of collateral asset from src to `to`
      */
     function withdrawCollateral(address src, address to, address asset, uint128 amount) internal {
-        TotalsCollateral memory totals = totalsCollateral[asset];
-        totals.totalSupplyAsset -= amount;
-
         uint128 srcCollateral = userCollateral[src][asset].balance;
         uint128 srcCollateralNew = srcCollateral - amount;
 
-        totalsCollateral[asset] = totals;
+        totalsCollateral[asset].totalSupplyAsset -= amount;
         userCollateral[src][asset].balance = srcCollateralNew;
 
         updateAssetsIn(src, asset, srcCollateral, srcCollateralNew);
@@ -1082,6 +1079,8 @@ contract Comet is CometCore {
     function absorb(address absorber, address[] calldata accounts) external {
         if (isAbsorbPaused()) revert Paused();
 
+        accrueInternal();
+
         uint startGas = gasleft();
         for (uint i = 0; i < accounts.length; i++) {
             absorbInternal(accounts[i]);
@@ -1099,8 +1098,6 @@ contract Comet is CometCore {
      * @dev Transfer user's collateral and debt to the protocol itself.
      */
     function absorbInternal(address account) internal {
-        accrueInternal();
-
         if (!isLiquidatable(account)) revert NotLiquidatable();
 
         UserBasic memory accountUser = userBasic[account];
@@ -1115,20 +1112,20 @@ contract Comet is CometCore {
                 AssetInfo memory assetInfo = getAssetInfo(i);
                 address asset = assetInfo.asset;
                 uint128 seizeAmount = userCollateral[account][asset].balance;
-                if (seizeAmount > 0) {
-                    userCollateral[account][asset].balance = 0;
-                    userCollateral[address(this)][asset].balance += seizeAmount;
+                userCollateral[account][asset].balance = 0;
+                userCollateral[address(this)][asset].balance += seizeAmount;
 
-                    uint value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
-                    deltaValue += mulFactor(value, assetInfo.liquidationFactor);
-                }
+                uint value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
+                deltaValue += mulFactor(value, assetInfo.liquidationFactor);
             }
         }
 
         uint104 deltaBalance = safe104(divPrice(deltaValue, basePrice, uint64(baseScale)));
         int104 newBalance = oldBalance + signed104(deltaBalance);
         // New balance will not be negative, all excess debt absorbed by reserves
-        newBalance = newBalance < 0 ? int104(0) : newBalance;
+        if (newBalance < 0) {
+            newBalance = 0;
+        }
         updateBaseBalance(account, accountUser, principalValue(newBalance));
 
         // reset assetsIn
