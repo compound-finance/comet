@@ -19,16 +19,70 @@ describe('erc20', function () {
     expect(await comet.decimals()).to.be.equal(6);
   });
 
-  it.skip('has correct totalSupply', async () => {
-    // XXX
+  it('has correct totalSupply', async () => {
+    const { comet } = await makeProtocol();
+
+    let totalsBasic = await comet.totalsBasic();
+    totalsBasic = Object.assign({}, totalsBasic, {
+      totalSupplyBase: 100e6,
+    });
+    await comet.setTotalsBasic(totalsBasic);
+
+    const totalSupply = await comet.totalSupply();
+
+    expect(totalSupply).to.eq(100e6);
   });
 
-  it.skip('calculates balanceOf', async () => {
-    // XXX
+  describe('balanceOf', function () {
+    it('returns principal amount (when value is positive)', async () => {
+      const {
+        comet,
+        users: [user],
+      } = await makeProtocol();
+
+      await comet.setBasePrincipal(user.address, 100e6);
+
+      const balanceOf = await comet.balanceOf(user.address);
+      expect(balanceOf).to.eq(100e6);
+    });
+
+    it('returns 0 (when principal amount is negative)', async () => {
+      const {
+        comet,
+        users: [user],
+      } = await makeProtocol();
+
+      await comet.setBasePrincipal(user.address, -100e6);
+
+      const balanceOf = await comet.balanceOf(user.address);
+      expect(balanceOf).to.eq(0);
+    });
   });
 
-  it.skip('calculates borrowBalanceOf', async () => {
-    // XXX
+  describe('borrowBalanceOf', function () {
+    it('returns borrow amount (when principal amount is negative)', async () => {
+      const {
+        comet,
+        users: [user],
+      } = await makeProtocol();
+
+      await comet.setBasePrincipal(user.address, -100e6); // borrow of $100 USDC
+
+      const borrowBalanceOf = await comet.borrowBalanceOf(user.address);
+      expect(borrowBalanceOf).to.eq(100e6)
+    });
+
+    it('returns 0 when principal amount is positive', async () => {
+      const {
+        comet,
+        users: [user],
+      } = await makeProtocol();
+
+      await comet.setBasePrincipal(user.address, 100e6);
+
+      const borrowBalanceOf = await comet.borrowBalanceOf(user.address);
+      expect(borrowBalanceOf).to.eq(0);
+    });
   });
 
   it.skip('performs ERC20 transfer of base', async () => {
