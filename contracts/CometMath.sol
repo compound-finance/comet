@@ -12,9 +12,7 @@ contract CometMath {
     error InvalidUInt64();
     error InvalidUInt104();
     error InvalidUInt128();
-    error InvalidInt64();
     error InvalidInt104();
-    error InvalidInt128();
     error InvalidInt256();
     error NegativeNumber();
 
@@ -37,19 +35,9 @@ contract CometMath {
         return uint128(n);
     }
 
-    function signed64(uint64 n) internal pure returns (int64) {
-        if (n > uint64(type(int64).max)) revert InvalidInt64();
-        return int64(n);
-    }
-
     function signed104(uint104 n) internal pure returns (int104) {
         if (n > uint104(type(int104).max)) revert InvalidInt104();
         return int104(n);
-    }
-
-    function signed128(uint128 n) internal pure returns (int128) {
-        if (n > uint128(type(int128).max)) revert InvalidInt128();
-        return int128(n);
     }
 
     function signed256(uint256 n) internal pure returns (int256) {
