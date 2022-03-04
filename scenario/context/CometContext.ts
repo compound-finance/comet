@@ -217,6 +217,7 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   await deploymentManager.spider();
 
   let context = new CometContext(deploymentManager, undefined);
+  let comet = await context.getComet();
 
   let signers = await world.hre.ethers.getSigners();
 
@@ -224,8 +225,8 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
     signers;
   let adminSigner, pauseGuardianSigner;
 
-  let governorAddress = await (await context.getComet()).governor();
-  let pauseGuardianAddress = await (await context.getComet()).pauseGuardian();
+  let governorAddress = await comet.governor();
+  let pauseGuardianAddress = await comet.pauseGuardian();
   adminSigner = await world.impersonateAddress(governorAddress);
   pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
 

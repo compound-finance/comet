@@ -92,9 +92,6 @@ export class Runner<T, U> {
         await constraint.check(scenario.requirements, ctx, world);
       }
 
-      // bind all functions on object
-      // bindFunctions(ctx);
-
       // requirements met, run the property
       try {
         await scenario.property(await scenario.transformer(ctx), world, ctx);
@@ -103,10 +100,6 @@ export class Runner<T, U> {
         // TODO: Include the specific solution (set of states) that failed in the result
         return this.generateResult(base, scenario, startTime, numSolutionSets, e);
       } finally {
-        // revert back to the frozen world for the next scenario
-        // XXX revert to contextSnapshot instead when deep cloning of contexts is implemented.
-        // snapshots can only be used once, so take another for next time
-        // XXX revert to storing the snapshot in contextSnapshot when deep cloning of contexts is implemented.
         contextSnapshot = await world._revertAndSnapshot(contextSnapshot);
       }
     }

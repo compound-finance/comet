@@ -7,6 +7,7 @@ export type ForkSpec = {
   url?: string;
   blockNumber?: number;
   allocation?: number;
+  chainId?: number;
 };
 
 export class World {

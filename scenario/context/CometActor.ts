@@ -81,9 +81,7 @@ export default class CometActor {
 
   async transferAssetFrom({ src, dst, asset, amount }) {
     let comet = await this.context.getComet();
-    await (
-      await comet.connect(this.signer).transferAssetFrom(src, dst, asset, amount)
-    ).wait();
+    await (await comet.connect(this.signer).transferAssetFrom(src, dst, asset, amount)).wait();
   }
 
   async signAuthorization({
@@ -98,7 +96,7 @@ export default class CometActor {
     nonce: BigNumberish;
     expiry: number;
     chainId: number;
-  }) {
+  }): Promise<Signature> {
     let comet = await this.context.getComet();
     const domain = {
       name: await comet.name(),
@@ -144,8 +142,6 @@ export default class CometActor {
 
   async withdrawReserves(to: CometActor, amount: number) {
     let comet = await this.context.getComet();
-    await (
-      await comet.connect(this.signer).withdrawReserves(to.address, amount)
-    ).wait();
+    await (await comet.connect(this.signer).withdrawReserves(to.address, amount)).wait();
   }
 }

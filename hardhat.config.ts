@@ -158,11 +158,13 @@ const config: HardhatUserConfig = {
       },
       {
         name: 'kovan',
+        chainId: 42,
         url: getDefaultProviderURL('kovan'),
         allocation: 0.1, // eth
       },
       {
         name: 'fuji',
+        chainId: 43113,
         url: 'https://api.avax-test.network/ext/bc/C/rpc',
       },
     ],
