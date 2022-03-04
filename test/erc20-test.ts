@@ -103,6 +103,20 @@ describe('erc20', function () {
   });
 
   describe('transferFrom', function() {
+    it('performs ERC20 transferFrom when user transfers their own funds', async () => {
+      const {
+        comet,
+        users: [alice, bob],
+      } = await makeProtocol();
+
+      await comet.setBasePrincipal(alice.address, 100e6);
+
+      await comet.connect(alice).transferFrom(alice.address, bob.address, 100e6)
+
+      expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
+      expect(await comet.baseBalanceOf(bob.address)).to.eq(100e6);
+    });
+
     it('reverts ERC20 transferFrom without approval', async () => {
       const {
         comet,
