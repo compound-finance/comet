@@ -134,8 +134,15 @@ describe('transfer', function () {
     await expect(cometAsB.transferAsset(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
   });
 
-  it.skip('borrows base if collateralized', async () => {
-    // XXX
+  it('borrows base if collateralized', async () => {
+    const { comet, tokens, users: [alice, bob]} = await makeProtocol();
+    const { WETH, USDC } = tokens;
+
+    await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
+
+    await comet.connect(alice).transferAsset(bob.address, USDC.address, 100e6);
+
+    expect(await comet.baseBalanceOf(alice.address)).to.eq(-99999999); // 100e6 (minus borrowFactor)
   });
 
   it('cant borrow less than the minimum', async () => {
