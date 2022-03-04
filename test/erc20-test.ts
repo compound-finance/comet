@@ -1,23 +1,20 @@
-import { expect, exp, makeProtocol, portfolio, wait } from './helpers';
+import { expect, makeProtocol } from './helpers';
 
 describe('erc20', function () {
   it('has correct name', async () => {
-    const protocol = await makeProtocol({  });
-    const { comet } = protocol;
+    const { comet } = await makeProtocol();
 
     expect(await comet.name()).to.be.equal("Compound Comet");
   });
 
   it('has correct symbol', async () => {
-    const protocol = await makeProtocol({  });
-    const { comet } = protocol;
+    const { comet } = await makeProtocol();
 
     expect(await comet.symbol()).to.be.equal("📈BASE");
   });
 
   it('has correct decimals', async () => {
-    const protocol = await makeProtocol({  });
-    const { comet } = protocol;
+    const { comet } = await makeProtocol();
 
     expect(await comet.decimals()).to.be.equal(6);
   });
