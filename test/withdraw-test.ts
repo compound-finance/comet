@@ -185,8 +185,17 @@ describe('withdrawTo', function () {
     await expect(cometAsB.withdrawTo(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
   });
 
-  it.skip('borrows to withdraw if necessary/possible', async () => {
-    // XXX
+  it('borrows to withdraw if necessary/possible', async () => {
+    const { comet, tokens, users: [alice, bob] } = await makeProtocol();
+    const { WETH, USDC } = tokens;
+
+    await USDC.allocateTo(comet.address, 1e6);
+    await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
+
+    await comet.connect(alice).withdrawTo(bob.address, USDC.address, 1e6);
+
+    expect(await comet.baseBalanceOf(alice.address)).to.eq(-999999); // 1e6 (minus borrowFactor)
+    expect(await USDC.balanceOf(bob.address)).to.eq(1e6);
   });
 
   it.skip('is not broken by malicious re-entrancy', async () => {
