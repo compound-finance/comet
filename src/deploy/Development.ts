@@ -10,10 +10,6 @@ import {
   CometFactory,
   FaucetToken__factory,
   FaucetToken,
-  ProxyAdmin,
-  ProxyAdmin__factory,
-  ProxyAdminAdmin,
-  ProxyAdminAdmin__factory,
   SimplePriceFeed,
   SimplePriceFeed__factory,
   Timelock,
@@ -22,6 +18,10 @@ import {
   TransparentUpgradeableProxy__factory,
   Configurator,
   Configurator__factory,
+  CometProxyAdmin,
+  CometProxyAdmin__factory,
+  TransparentUpgradeableConfiguratorProxy,
+  TransparentUpgradeableConfiguratorProxy__factory,
 } from '../../build/types';
 import { ConfigurationStruct } from '../../build/types/Comet';
 import { ExtConfigurationStruct } from '../../build/types/CometExt';
@@ -191,26 +191,19 @@ export async function deployDevelopmentComet(
       []
     );
 
-    let proxyAdminAdminArgs: [] = [];
-    let proxyAdminAdmin = await deploymentManager.deploy<ProxyAdminAdmin, ProxyAdminAdmin__factory, []>(
-      'ProxyAdminAdmin.sol',
-      proxyAdminAdminArgs
-    );
-    await proxyAdminAdmin.transferOwnership(timelock.address);
-
     let proxyAdminArgs: [] = [];
-    let proxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
-      'vendor/proxy/ProxyAdmin.sol',
+    let proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
+      'CometProxyAdmin.sol',
       proxyAdminArgs
     );
-    await proxyAdmin.transferOwnership(proxyAdminAdmin.address);
+    await proxyAdmin.transferOwnership(timelock.address);
     
     // Configuration proxy
     configuratorProxy = await deploymentManager.deploy<
-      TransparentUpgradeableProxy,
-      TransparentUpgradeableProxy__factory,
+      TransparentUpgradeableConfiguratorProxy,
+      TransparentUpgradeableConfiguratorProxy__factory,
       [string, string, string]
-    >('vendor/proxy/TransparentUpgradeableProxy.sol', [
+    >('TransparentUpgradeableConfiguratorProxy.sol', [
       configurator.address,
       proxyAdmin.address,
       (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data,

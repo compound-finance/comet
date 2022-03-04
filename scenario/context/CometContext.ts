@@ -14,7 +14,7 @@ import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { deployComet } from '../../src/deploy';
 import { wait } from '../../test/helpers';
-import { Comet, CometInterface, ProxyAdmin, ERC20, ERC20__factory, Configurator, ProxyAdminAdmin, Timelock } from '../../build/types';
+import { Comet, CometInterface, ProxyAdmin, ERC20, ERC20__factory, Configurator, Timelock, CometProxyAdmin } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
@@ -29,7 +29,9 @@ export interface CometProperties {
   assets: AssetMap;
   remoteToken?: Contract;
   comet: CometInterface;
+  configurator: Configurator;
   proxyAdmin: ProxyAdmin;
+  timelock: Timelock;
 }
 
 export class CometContext {
@@ -76,6 +78,11 @@ export class CometContext {
     return await this.deploymentManager.contract('configurator') as Configurator;
   }
 
+  async getTimelock(): Promise<Timelock> {
+    return await this.deploymentManager.contract('timelock') as Timelock;
+
+  }
+
   async upgradeTo(newComet: Comet, world: World, data?: string) {
     let comet = await this.getComet();
     let cometAdmin = await this.getCometAdmin();
@@ -86,6 +93,7 @@ export class CometContext {
     let adminSigner = await world.impersonateAddress(governorAddress);
     let pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
 
+    // XXX need to upgrade via timelock
     if (data) {
       await wait(cometAdmin.connect(adminSigner).upgradeAndCall(comet.address, newComet.address, data));
     } else {
@@ -187,7 +195,9 @@ async function getContextProperties(context: CometContext): Promise<CometPropert
     assets: context.assets,
     remoteToken: context.remoteToken,
     comet: await context.getComet(),
+    configurator: await context.getConfigurator(),
     proxyAdmin: await context.getCometAdmin(),
+    timelock: await context.getTimelock(),
   }
 }
 

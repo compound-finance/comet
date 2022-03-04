@@ -17,14 +17,14 @@ import {
   SimplePriceFeed__factory,
   TransparentUpgradeableProxy,
   TransparentUpgradeableProxy__factory,
-  ProxyAdmin,
-  ProxyAdmin__factory,
+  TransparentUpgradeableConfiguratorProxy,
+  TransparentUpgradeableConfiguratorProxy__factory,
+  CometProxyAdmin,
+  CometProxyAdmin__factory,
   CometFactory,
   CometFactory__factory,
   Configurator,
   Configurator__factory,
-  ProxyAdminAdmin,
-  ProxyAdminAdmin__factory,
 } from '../build/types';
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
@@ -96,9 +96,8 @@ export type Protocol = {
 export type ConfiguratorAndProtocol = {
   governor: SignerWithAddress,
   configurator: Configurator,
-  configuratorProxy: TransparentUpgradeableProxy,
-  proxyAdminAdmin: ProxyAdminAdmin,
-  proxyAdmin: ProxyAdmin,
+  configuratorProxy: TransparentUpgradeableConfiguratorProxy,
+  proxyAdmin: CometProxyAdmin,
   cometFactory: CometFactory,
   comet: Comet,
   cometProxy: TransparentUpgradeableProxy,
@@ -368,20 +367,14 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
       return acc;
     }, []),
   };
-  
-  // Deploy ProxyAdminAdmin
-  const ProxyAdminAdmin = (await ethers.getContractFactory('ProxyAdminAdmin')) as ProxyAdminAdmin__factory;
-  const proxyAdminAdmin = await ProxyAdminAdmin.connect(governor).deploy();
-  await proxyAdminAdmin.deployed();
 
   // Deploy ProxyAdmin
-  const ProxyAdmin = (await ethers.getContractFactory('ProxyAdmin')) as ProxyAdmin__factory;
+  const ProxyAdmin = (await ethers.getContractFactory('CometProxyAdmin')) as CometProxyAdmin__factory;
   const proxyAdmin = await ProxyAdmin.connect(governor).deploy();
   await proxyAdmin.deployed();
-  await wait(proxyAdmin.transferOwnership(proxyAdminAdmin.address));
 
   // Deploy Configurator proxy
-  const ConfiguratorProxy = (await ethers.getContractFactory('TransparentUpgradeableProxy')) as TransparentUpgradeableProxy__factory;
+  const ConfiguratorProxy = (await ethers.getContractFactory('TransparentUpgradeableConfiguratorProxy')) as TransparentUpgradeableConfiguratorProxy__factory;
   const configuratorProxy = await ConfiguratorProxy.deploy(
     configurator.address,
     proxyAdmin.address,
@@ -401,7 +394,6 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   return {
     governor,
     proxyAdmin,
-    proxyAdminAdmin,
     comet,
     cometProxy,
     configurator,

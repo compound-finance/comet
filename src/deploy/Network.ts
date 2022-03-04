@@ -13,14 +13,12 @@ import {
   CometFactory,
   FaucetToken__factory,
   FaucetToken,
-  ProxyAdmin,
-  ProxyAdmin__factory,
-  ProxyAdminAdmin,
-  ProxyAdminAdmin__factory,
-  SimplePriceFeed,
-  SimplePriceFeed__factory,
+  CometProxyAdmin,
+  CometProxyAdmin__factory,
   TransparentUpgradeableProxy,
   TransparentUpgradeableProxy__factory,
+  TransparentUpgradeableConfiguratorProxy,
+  TransparentUpgradeableConfiguratorProxy__factory,
   Configurator,
   Configurator__factory,
   Timelock,
@@ -114,26 +112,19 @@ export async function deployNetworkComet(
       []
     );
 
-    let proxyAdminAdminArgs: [] = [];
-    let proxyAdminAdmin = await deploymentManager.deploy<ProxyAdminAdmin, ProxyAdminAdmin__factory, []>(
-      'ProxyAdminAdmin.sol',
-      proxyAdminAdminArgs
-    );
-    await proxyAdminAdmin.transferOwnership(timelock.address);
-
     let proxyAdminArgs: [] = [];
-    let proxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
-      'vendor/proxy/transparent/ProxyAdmin.sol',
+    let proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
+      'CometProxyAdmin.sol',
       proxyAdminArgs
     );
-    await proxyAdmin.transferOwnership(proxyAdminAdmin.address);
+    await proxyAdmin.transferOwnership(timelock.address);
     
     // Configuration proxy
     configuratorProxy = await deploymentManager.deploy<
-      TransparentUpgradeableProxy,
-      TransparentUpgradeableProxy__factory,
+      TransparentUpgradeableConfiguratorProxy,
+      TransparentUpgradeableConfiguratorProxy__factory,
       [string, string, string]
-    >('vendor/proxy/TransparentUpgradeableProxy.sol', [
+    >('TransparentUpgradeableConfiguratorProxy.sol', [
       configurator.address,
       proxyAdmin.address,
       (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data,

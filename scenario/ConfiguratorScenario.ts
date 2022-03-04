@@ -1,26 +1,20 @@
-import { CometContext, scenario } from './context/CometContext';
+import { CometContext, CometProperties, scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { filterEvent, wait } from '../test/helpers';
 import { utils } from 'ethers';
 
-function getNewCometAddress(tx): string {
-  let event = filterEvent(tx, 'CometDeployed');
-  let [newCometAddr] = event.args;
-  return newCometAddr;
-}
-
-scenario.only('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, proxyAdminAdmin, timelock, actors }, world) => {
+scenario.only('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, timelock, actors }, world) => {
   const { admin, albert } = actors;
 
   expect(await comet.governor()).to.equal(admin.address);
   expect((await configurator.getConfiguration()).governor).to.equal(admin.address);
 
   let setGovernorCalldata = utils.defaultAbiCoder.encode(["address"], [albert.address]);
-  let deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address", "address"], [proxyAdmin.address, configurator.address, comet.address]);
+  let deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
   await timelock.execute(
-    [configurator.address, proxyAdminAdmin.address],
+    [configurator.address, proxyAdmin.address],
     [0, 0],
-    ["setGovernor(address)", "deployAndUpgradeTo(address,address,address)"],
+    ["setGovernor(address)", "deployAndUpgradeTo(address,address)"],
     [setGovernorCalldata, deployAndUpgradeToCalldata]
   );
 
@@ -28,8 +22,7 @@ scenario.only('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, 
   expect((await configurator.getConfiguration()).governor).to.be.equal(albert.address);
 });
 
-// XXX Get this working
-scenario.skip('add assets', {}, async ({ comet, configurator, proxyAdmin, actors, assets }: CometContext, world) => {
+scenario.only('add assets', {}, async ({ comet, configurator, proxyAdmin, timelock, actors, assets }: CometProperties, world) => {
   let numAssets = await comet.numAssets();
   let collateralAssets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
   let contextAssets =
@@ -48,10 +41,24 @@ scenario.skip('add assets', {}, async ({ comet, configurator, proxyAdmin, actors
     liquidationFactor: (0.95e18).toString(),
     supplyCap: (1000000e8).toString(),
   };
-  await configurator.addAsset(newAssetConfig);
-  let tx = await wait(await configurator.deploy());
-  let newCometAddr = getNewCometAddress(tx);
-  await proxyAdmin.upgrade(comet.address, newCometAddr)
+  let addAssetCalldata = utils.defaultAbiCoder.encode(
+    ["address", "address", "uint8", "uint64", "uint64", "uint64", "uint128"],
+    [
+      newAssetConfig.asset, 
+      newAssetConfig.priceFeed, 
+      newAssetConfig.decimals, 
+      newAssetConfig.borrowCollateralFactor, 
+      newAssetConfig.liquidateCollateralFactor, 
+      newAssetConfig.liquidationFactor, 
+      newAssetConfig.supplyCap
+    ]);
+  let deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
+  await timelock.execute(
+    [configurator.address, proxyAdmin.address],
+    [0, 0],
+    ["addAsset((address,address,uint8,uint64,uint64,uint64,uint128))", "deployAndUpgradeTo(address,address)"],
+    [addAssetCalldata, deployAndUpgradeToCalldata]
+  );
 
   // Verify new asset is added
   numAssets = await comet.numAssets();
