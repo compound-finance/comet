@@ -85,8 +85,19 @@ describe('erc20', function () {
     });
   });
 
-  it.skip('performs ERC20 transfer of base', async () => {
-    // XXX
+  it('performs ERC20 transfer of base', async () => {
+    const {
+      comet,
+      users: [alice, bob],
+    } = await makeProtocol();
+
+    expect(await comet.baseBalanceOf(bob.address)).to.eq(0);
+
+    await comet.setBasePrincipal(alice.address, 100e6);
+
+    await comet.connect(alice).transfer(bob.address, 100e6);
+
+    expect(await comet.baseBalanceOf(bob.address)).to.eq(100e6);
     // XXX emits Transfer
   });
 
