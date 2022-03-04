@@ -34,7 +34,7 @@ describe('erc20', function () {
   });
 
   describe('balanceOf', function () {
-    it('returns principal amount (when value is positive)', async () => {
+    it('returns presentValue of principal (when principal is positive)', async () => {
       const {
         comet,
         users: [user],
@@ -42,8 +42,14 @@ describe('erc20', function () {
 
       await comet.setBasePrincipal(user.address, 100e6);
 
+      let totalsBasic = await comet.totalsBasic();
+      totalsBasic = Object.assign({}, totalsBasic, {
+        baseSupplyIndex: totalsBasic.baseSupplyIndex.mul(2),
+      });
+      await comet.setTotalsBasic(totalsBasic);
+
       const balanceOf = await comet.balanceOf(user.address);
-      expect(balanceOf).to.eq(100e6);
+      expect(balanceOf).to.eq(200e6);
     });
 
     it('returns 0 (when principal amount is negative)', async () => {
