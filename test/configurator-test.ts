@@ -1,7 +1,7 @@
 import { ethers, exp, expect, makeConfigurator, wait } from './helpers';
 import { CometFactory, CometFactory__factory, Comet__factory, Configurator, Timelock__factory } from '../build/types';
 
-describe.only('configurator', function () {
+describe('configurator', function () {
   it('deploys Comet', async () => {
     const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
 
@@ -60,5 +60,8 @@ describe.only('configurator', function () {
     await timelock.execute([configuratorProxy.address, proxyAdmin.address], [0, 0], ["setGovernor(address)", "deployAndUpgradeTo(address,address)"], [setGovernorCalldata, deployAndUpgradeToCalldata]);
     
     expect((await configuratorAsProxy.getConfiguration()).governor).to.be.equal(alice.address);
+  });
+
+  it.skip('reverts if initialized more than once', async () => {
   });
 });

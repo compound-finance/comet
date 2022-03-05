@@ -16,7 +16,6 @@ contract Configurator is ConfiguratorStorage {
     error AlreadyInitialized();
     error InvalidAddress();
 
-    // XXX should only be able to call this once
     function initialize(address _admin, address _factory, Configuration calldata _config) public {
         if (admin != address(0)) revert AlreadyInitialized();
         if (_admin == address(0)) revert InvalidAddress();

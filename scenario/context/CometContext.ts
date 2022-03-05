@@ -1,4 +1,4 @@
-import { BytesLike, Signer, Contract } from 'ethers';
+import { BytesLike, Signer, Contract, utils } from 'ethers';
 import { ForkSpec, World, buildScenarioFn } from '../../plugins/scenario';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
@@ -85,7 +85,8 @@ export class CometContext {
 
   async upgradeTo(newComet: Comet, world: World, data?: string) {
     let comet = await this.getComet();
-    let cometAdmin = await this.getCometAdmin();
+    let proxyAdmin = await this.getCometAdmin();
+    let timelock = await this.getTimelock();
 
     // Set the admin and pause guardian addresses again since these may have changed.
     let governorAddress = await comet.governor(); // TODO: is this newComet?
@@ -93,11 +94,22 @@ export class CometContext {
     let adminSigner = await world.impersonateAddress(governorAddress);
     let pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
 
-    // XXX need to upgrade via timelock
     if (data) {
-      await wait(cometAdmin.connect(adminSigner).upgradeAndCall(comet.address, newComet.address, data));
+      let calldata = utils.defaultAbiCoder.encode(["address", "address","bytes"], [comet.address, newComet.address,data]);
+      await timelock.execute(
+        [proxyAdmin.address],
+        [0],
+        ["upgradeAndCall(address,address,bytes)"],
+        [calldata]
+      );
     } else {
-      await wait(cometAdmin.connect(adminSigner).upgrade(comet.address, newComet.address));
+      let calldata = utils.defaultAbiCoder.encode(["address", "address"], [comet.address, newComet.address]);
+      await timelock.execute(
+        [proxyAdmin.address],
+        [0],
+        ["upgrade(address,address)"],
+        [calldata]
+      );
     }
     this.actors['admin'] = await buildActor('admin', adminSigner, this);
     this.actors['pauseGuardian'] = await buildActor('pauseGuardian', pauseGuardianSigner, this);

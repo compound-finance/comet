@@ -1,9 +1,8 @@
 import { CometContext, CometProperties, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { filterEvent, wait } from '../test/helpers';
 import { utils } from 'ethers';
 
-scenario.only('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, timelock, actors }, world) => {
+scenario('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, timelock, actors }, world) => {
   const { admin, albert } = actors;
 
   expect(await comet.governor()).to.equal(admin.address);
@@ -22,7 +21,7 @@ scenario.only('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, 
   expect((await configurator.getConfiguration()).governor).to.be.equal(albert.address);
 });
 
-scenario.only('add assets', {}, async ({ comet, configurator, proxyAdmin, timelock, actors, assets }: CometProperties, world) => {
+scenario('add assets', {}, async ({ comet, configurator, proxyAdmin, timelock, actors, assets }: CometProperties, world) => {
   let numAssets = await comet.numAssets();
   let collateralAssets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
   let contextAssets =
@@ -32,10 +31,11 @@ scenario.only('add assets', {}, async ({ comet, configurator, proxyAdmin, timelo
 
   // Add new asset and deploy + upgrade
   let newAsset = await comet.getAssetInfo(0);
+  let newAssetDecimals = newAsset.scale.toString().split('0').length - 1; // # of 0's in scale
   let newAssetConfig = {
     asset: newAsset.asset,
     priceFeed: newAsset.priceFeed,
-    decimals: (8).toString(),
+    decimals: newAssetDecimals.toString(),
     borrowCollateralFactor: (0.9e18).toString(),
     liquidateCollateralFactor: (1e18).toString(),
     liquidationFactor: (0.95e18).toString(),
@@ -54,10 +54,16 @@ scenario.only('add assets', {}, async ({ comet, configurator, proxyAdmin, timelo
     ]);
   let deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
   await timelock.execute(
-    [configurator.address, proxyAdmin.address],
-    [0, 0],
-    ["addAsset((address,address,uint8,uint64,uint64,uint64,uint128))", "deployAndUpgradeTo(address,address)"],
-    [addAssetCalldata, deployAndUpgradeToCalldata]
+    [configurator.address],
+    [0],
+    ["addAsset((address,address,uint8,uint64,uint64,uint64,uint128))"],
+    [addAssetCalldata]
+  );
+  await timelock.execute(
+    [proxyAdmin.address],
+    [0],
+    ["deployAndUpgradeTo(address,address)"],
+    [deployAndUpgradeToCalldata]
   );
 
   // Verify new asset is added
@@ -70,7 +76,7 @@ scenario.only('add assets', {}, async ({ comet, configurator, proxyAdmin, timelo
   expect(updatedCollateralAssets.map(a => a.asset)).to.have.members(updatedContextAssets);
 });
 
-scenario.only('reverts if configurator is not called by admin', {}, async ({ comet, configurator, proxyAdmin, actors }, world) => {
+scenario('reverts if configurator is not called by admin', {}, async ({ comet, configurator, proxyAdmin, actors }, world) => {
   const { albert } = actors;
 
   await expect(configurator.connect(albert.signer).setGovernor(albert.address)).to.be.revertedWith(

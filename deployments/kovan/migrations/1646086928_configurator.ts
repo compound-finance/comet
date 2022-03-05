@@ -102,7 +102,7 @@ migration('1646086928_configurator', {
       ['LINK', link],
     ]);
 
-    let { comet, cometProxy, configuratorProxy } = await deployNetworkComet(deploymentManager, true, {}, contracts);
+    let { cometProxy, configuratorProxy } = await deployNetworkComet(deploymentManager, true, {}, contracts);
 
     return {
       comet: cometProxy.address,

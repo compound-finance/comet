@@ -13,14 +13,14 @@ let cloneAddr = {
   wavax: '0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7',
 };
 
-migration('1644432723_deploy_fuji', {
+migration('1646440158_configurator', {
   prepare: async (deploymentManager: DeploymentManager) => {
     let [signer] = await deploymentManager.hre.ethers.getSigners();
     let signerAddress = await signer.getAddress();
 
     let usdcProxyAdminArgs: [] = [];
     let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
-      'vendor/proxy/transparent/ProxyAdmin.sol',
+      'vendor/proxy/ProxyAdmin.sol',
       usdcProxyAdminArgs
     );
 
@@ -38,6 +38,7 @@ migration('1644432723_deploy_fuji', {
     );
 
     await wait(await usdcProxy.changeAdmin(usdcProxyAdmin.address));
+
     usdc = usdcImplementation.attach(usdcProxy.address);
     // Give signer 10,000 USDC
     await wait(
@@ -52,22 +53,26 @@ migration('1644432723_deploy_fuji', {
         signerAddress
       )
     );
+
     await wait(usdc.configureMinter(signerAddress, exp(10000, 6)));
+
+    await wait(usdc.mint(signerAddress, exp(10000, 6)));
+
+    let wbtc = await deploymentManager.clone(cloneAddr.wbtc, [], cloneNetwork);
+
+    // Give signer 1000 WBTC
     await wait(
-      usdc.mint(
+      wbtc.mint(
         signerAddress,
-        exp(10000, 6),
+        exp(10000, 8),
         '0x0000000000000000000000000000000000000000',
         0,
         '0x0000000000000000000000000000000000000000000000000000000000000000'
       )
     );
 
-    let wbtc = await deploymentManager.clone(cloneAddr.wbtc, [], cloneNetwork);
-    // Give signer 1000 WBTC
-    await wait(wbtc.mint(signerAddress, exp(1000, 8)));
-
     let wavax = await deploymentManager.clone(cloneAddr.wavax, [], cloneNetwork);
+
     // Give admin 0.01 WAVAX tokens [this is a precious resource here!]
     await wait(wavax.deposit({ value: exp(0.01, 18) }));
 
@@ -78,10 +83,11 @@ migration('1644432723_deploy_fuji', {
       ['WAVAX', wavax],
     ]);
 
-    let { comet, cometProxy } = await deployNetworkComet(deploymentManager, true, {}, contracts);
+    let { cometProxy, configuratorProxy } = await deployNetworkComet(deploymentManager, true, {}, contracts);
 
     return {
       comet: cometProxy.address,
+      configurator: configuratorProxy.address,
       usdc: usdc.address,
       wbtc: wbtc.address,
       wavax: wavax.address,
