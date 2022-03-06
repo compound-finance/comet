@@ -3,7 +3,7 @@ import "erc20.spec"
 
 
 using SymbolicBaseToken as _baseToken 
-using CometExt as _ext
+
 
 
 methods {
@@ -200,13 +200,20 @@ rule additivity_of_withdraw( uint x, uint y){
     require x + y < 2^255;
 
     withdraw(e,_baseToken, x);
-    int104 baseX = _ext.baseBalanceOf(e,e.msg.sender);
+    int104 baseX = baseBalanceOf(e,e.msg.sender);
     withdraw(e,_baseToken, y);
-    int104 baseY = _ext.baseBalanceOf(e,e.msg.sender);
+    int104 baseY = baseBalanceOf(e,e.msg.sender);
     withdraw(e,_baseToken, x + y) at init;
-    int104 baseXY = _ext.baseBalanceOf(e,e.msg.sender);
+    int104 baseXY = baseBalanceOf(e,e.msg.sender);
 
     assert baseXY == baseY;
+}
+
+rule sanity(method f) {
+	env e;
+	calldataarg arg;
+	baseBalanceOf(e, arg);
+	assert false, "this method should have a non reverting path";
 }
 
 // rule withdraw_min(){

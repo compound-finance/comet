@@ -82,5 +82,11 @@ contract CometHarnessGetters is Comet {
         return BASE_INDEX_SCALE;
     }
      
+    function baseBalanceOf(address account) public returns (int104) {
+        (bool success, bytes memory result) = extensionDelegate.delegatecall(
+            abi.encodeWithSignature("baseBalanceOf(address)", account));
+        require(success);
+        return abi.decode(result, (int104));
+    }
     
 }
