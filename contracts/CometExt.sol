@@ -4,7 +4,19 @@ pragma solidity ^0.8.11;
 import "./CometCore.sol";
 
 contract CometExt is CometCore {
+    /** Custom events **/
+
     event Approval(address indexed owner, address indexed spender, uint256 amount);
+
+    /** Custom errors **/
+
+    error BadAmount();
+    error BadNonce();
+    error BadSignatory();
+    error InvalidValueS();
+    error InvalidValueV();
+    error SignatureExpired();
+    error Unauthorized();
 
     /** Public constants **/
 
@@ -46,6 +58,22 @@ contract CometExt is CometCore {
     function priceScale() external pure returns (uint64) { return PRICE_SCALE; }
     function maxAssets() external pure returns (uint8) { return MAX_ASSETS; }
 
+    /**
+     * @notice Aggregate variables tracked for the entire market
+     **/
+    function totalsBasic() public view returns (TotalsBasic memory) {
+        return TotalsBasic({
+            baseSupplyIndex: baseSupplyIndex,
+            baseBorrowIndex: baseBorrowIndex,
+            trackingSupplyIndex: trackingSupplyIndex,
+            trackingBorrowIndex: trackingBorrowIndex,
+            totalSupplyBase: totalSupplyBase,
+            totalBorrowBase: totalBorrowBase,
+            lastAccrualTime: lastAccrualTime,
+            pauseFlags: pauseFlags
+        });
+    }
+
     /** Additional ERC20 functionality and approval interface **/
 
     /**
@@ -59,11 +87,11 @@ contract CometExt is CometCore {
                 break;
             }
         }
-        bytes memory symbol = new bytes(i);
+        bytes memory symbol_ = new bytes(i);
         for (uint8 j = 0; j < i; j++) {
-            symbol[j] = symbol32[j];
+            symbol_[j] = symbol32[j];
         }
-        return string(symbol);
+        return string(symbol_);
     }
 
     /**
@@ -71,8 +99,7 @@ contract CometExt is CometCore {
      * @return The supply of tokens
      **/
     function totalSupply() external view returns (uint256) {
-        TotalsBasic memory totals = totalsBasic;
-        return presentValueSupply(totals, totals.totalSupplyBase);
+        return presentValueSupply(baseSupplyIndex, totalSupplyBase);
     }
 
     /**
@@ -82,7 +109,7 @@ contract CometExt is CometCore {
      */
     function balanceOf(address account) external view returns (uint256) {
         int104 principal = userBasic[account].principal;
-        return principal > 0 ? presentValueSupply(totalsBasic, unsigned104(principal)) : 0;
+        return principal > 0 ? presentValueSupply(baseSupplyIndex, unsigned104(principal)) : 0;
     }
 
     /**
@@ -92,7 +119,7 @@ contract CometExt is CometCore {
      */
     function borrowBalanceOf(address account) external view returns (uint256) {
         int104 principal = userBasic[account].principal;
-        return principal < 0 ? presentValueBorrow(totalsBasic, unsigned104(-principal)) : 0;
+        return principal < 0 ? presentValueBorrow(baseSupplyIndex, unsigned104(-principal)) : 0;
     }
 
      /**
@@ -101,7 +128,7 @@ contract CometExt is CometCore {
       * @return The present day base balance of the account
       */
     function baseBalanceOf(address account) external view returns (int104) {
-        return presentValue(totalsBasic, userBasic[account].principal);
+        return presentValue(userBasic[account].principal);
     }
 
     /**
@@ -126,7 +153,7 @@ contract CometExt is CometCore {
         } else if (amount == 0) {
             allowInternal(msg.sender, spender, false);
         } else {
-            revert("bad approval amount");
+            revert BadAmount();
         }
         emit Approval(msg.sender, spender, amount);
         return true;
@@ -179,16 +206,16 @@ contract CometExt is CometCore {
         bytes32 r,
         bytes32 s
     ) external {
-        require(uint256(s) <= MAX_VALID_ECDSA_S, "invalid value: s");
+        if (uint256(s) > MAX_VALID_ECDSA_S) revert InvalidValueS();
         // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
-        require(v == 27 || v == 28, "invalid value: v");
+        if (v != 27 && v != 28) revert InvalidValueV();
         bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), keccak256(bytes(version)), block.chainid, address(this)));
         bytes32 structHash = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, owner, manager, isAllowed_, nonce, expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
-        require(owner == signatory, "owner is not signatory");
-        require(nonce == userNonce[signatory]++, "invalid nonce");
-        require(block.timestamp < expiry, "signed transaction expired");
+        if (owner != signatory) revert BadSignatory();
+        if (nonce != userNonce[signatory]++) revert BadNonce();
+        if (block.timestamp >= expiry) revert SignatureExpired();
         allowInternal(signatory, manager, isAllowed_);
     }
 }

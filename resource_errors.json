@@ -1,0 +1,13 @@
+{
+    "topics": [
+        {
+            "name": "solc",
+            "messages": [
+                {
+                    "message": "DeclarationError: Identifier already declared.",
+                    "location": []
+                }
+            ]
+        }
+    ]
+}

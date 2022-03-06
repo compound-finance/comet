@@ -14,50 +14,50 @@ import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/Aggregat
 contract CometHarnessInterest is CometHarnessWrappers {
     constructor(Configuration memory config) CometHarnessWrappers(config) { }
 
-    function getSpecificSupplyRateInternal(uint64 _baseSupplyIndex, uint64 _baseBorrowIndex, uint64 _trackingSupplyIndex, uint64 _trackingBorrowIndex) public view returns (uint64){
-        TotalsBasic memory totalsBasic1 = 
-        TotalsBasic ({
-            baseSupplyIndex: _baseSupplyIndex,
-            baseBorrowIndex: _baseBorrowIndex,
-            trackingSupplyIndex: _trackingSupplyIndex,
-            trackingBorrowIndex: _trackingBorrowIndex,
-            totalSupplyBase: totalsBasic.totalSupplyBase,
-            totalBorrowBase: totalsBasic.totalBorrowBase,
-            lastAccrualTime: totalsBasic.lastAccrualTime,
-            pauseFlags: totalsBasic.pauseFlags
-        });
-        return getSupplyRateInternal(totalsBasic1);
-    }
+    // function getSpecificSupplyRateInternal(uint64 _baseSupplyIndex, uint64 _baseBorrowIndex, uint64 _trackingSupplyIndex, uint64 _trackingBorrowIndex) public view returns (uint64){
+    //     TotalsBasic memory totalsBasic1 = 
+    //     TotalsBasic ({
+    //         baseSupplyIndex: _baseSupplyIndex,
+    //         baseBorrowIndex: _baseBorrowIndex,
+    //         trackingSupplyIndex: _trackingSupplyIndex,
+    //         trackingBorrowIndex: _trackingBorrowIndex,
+    //         totalSupplyBase: totalSupplyBase,
+    //         totalBorrowBase: totalBorrowBase,
+    //         lastAccrualTime: lastAccrualTime,
+    //         pauseFlags: pauseFlags
+    //     });
+    //     return getSupplyRate();
+    // }
 
-    function getSpecificBorrowRateInternal(uint64 _baseSupplyIndex, uint64 _baseBorrowIndex, uint64 _trackingSupplyIndex, uint64 _trackingBorrowIndex) public view returns (uint64){
-        TotalsBasic memory totalsBasic1 = 
-        TotalsBasic ({
-            baseSupplyIndex: _baseSupplyIndex,
-            baseBorrowIndex: _baseBorrowIndex,
-            trackingSupplyIndex: _trackingSupplyIndex,
-            trackingBorrowIndex: _trackingBorrowIndex,
-            totalSupplyBase: totalsBasic.totalSupplyBase,
-            totalBorrowBase: totalsBasic.totalBorrowBase,
-            lastAccrualTime: totalsBasic.lastAccrualTime,
-            pauseFlags: totalsBasic.pauseFlags
-        });
-        return getBorrowRateInternal(totalsBasic1);
-    }
+    // function getSpecificBorrowRateInternal(uint64 _baseSupplyIndex, uint64 _baseBorrowIndex, uint64 _trackingSupplyIndex, uint64 _trackingBorrowIndex) public view returns (uint64){
+    //     TotalsBasic memory totalsBasic1 = 
+    //     TotalsBasic ({
+    //         baseSupplyIndex: _baseSupplyIndex,
+    //         baseBorrowIndex: _baseBorrowIndex,
+    //         trackingSupplyIndex: _trackingSupplyIndex,
+    //         trackingBorrowIndex: _trackingBorrowIndex,
+    //         totalSupplyBase: totalSupplyBase,
+    //         totalBorrowBase: totalBorrowBase,
+    //         lastAccrualTime: lastAccrualTime,
+    //         pauseFlags: pauseFlags
+    //     });
+    //     return getBorrowRate();
+    // }
 
-    function getSpecificUtilizationInternal(uint64 _baseSupplyIndex, uint64 _baseBorrowIndex, uint64 _trackingSupplyIndex, uint64 _trackingBorrowIndex) public view returns (uint){
-        TotalsBasic memory totalsBasic1 = 
-        TotalsBasic ({
-            baseSupplyIndex: _baseSupplyIndex,
-            baseBorrowIndex: _baseBorrowIndex,
-            trackingSupplyIndex: _trackingSupplyIndex,
-            trackingBorrowIndex: _trackingBorrowIndex,
-            totalSupplyBase: totalsBasic.totalSupplyBase,
-            totalBorrowBase: totalsBasic.totalBorrowBase,
-            lastAccrualTime: totalsBasic.lastAccrualTime,
-            pauseFlags: totalsBasic.pauseFlags
-        });
-        return getUtilizationInternal(totalsBasic1);
-    }
+    // function getSpecificUtilizationInternal(uint64 _baseSupplyIndex, uint64 _baseBorrowIndex, uint64 _trackingSupplyIndex, uint64 _trackingBorrowIndex) public view returns (uint){
+    //     TotalsBasic memory totalsBasic1 = 
+    //     TotalsBasic ({
+    //         baseSupplyIndex: _baseSupplyIndex,
+    //         baseBorrowIndex: _baseBorrowIndex,
+    //         trackingSupplyIndex: _trackingSupplyIndex,
+    //         trackingBorrowIndex: _trackingBorrowIndex,
+    //         totalSupplyBase: totalSupplyBase,
+    //         totalBorrowBase: totalBorrowBase,
+    //         lastAccrualTime: lastAccrualTime,
+    //         pauseFlags: pauseFlags
+    //     });
+    //     return getUtilization();
+    // }
 
     function factorScale() public view returns (uint64){
         return FACTOR_SCALE;

@@ -286,7 +286,7 @@ describe('absorb', function () {
   it('reverts if an account is not underwater', async () => {
     const { comet, users: [alice, bob] } = await makeProtocol();
 
-    await expect(comet.absorb(alice.address, [bob.address])).to.be.revertedWith("account is not underwater");
+    await expect(comet.absorb(alice.address, [bob.address])).to.be.revertedWith("custom error 'NotLiquidatable()'");
   });
 
   it.skip('reverts if collateral asset value overflows base balance', async () => {
@@ -304,6 +304,34 @@ describe('absorb', function () {
     await wait(comet.connect(pauseGuardian).pause(false, false, false, true, false));
     expect(await comet.isAbsorbPaused()).to.be.true;
 
-    await expect(cometAsB.absorb(bob.address, [alice.address])).to.be.revertedWith('absorb is paused');
+    await expect(cometAsB.absorb(bob.address, [alice.address])).to.be.revertedWith("custom error 'Paused()'");
+  });
+
+  it('updates assetsIn for liquidated account', async () => {
+    const { comet, users: [absorber, underwater], tokens } = await makeProtocol();
+    const { COMP, WETH } = tokens;
+
+    await comet.setCollateralBalance(underwater.address, COMP.address, exp(1,18));
+    await comet.setCollateralBalance(underwater.address, WETH.address, exp(1,18));
+
+    expect(await comet.getAssetList(underwater.address)).to.deep.equal([
+      COMP.address,
+      WETH.address,
+    ]);
+
+    const borrowAmount = exp(4000, 6); // borrow of $4k > collateral of $3k + $175
+    await comet.setBasePrincipal(underwater.address, -borrowAmount);
+    const totalsBasic = Object.assign({}, await comet.totalsBasic(), {
+      totalBorrowBase: borrowAmount,
+    });
+    await wait(comet.setTotalsBasic(totalsBasic));
+
+    const isLiquidatable = await comet.isLiquidatable(underwater.address);
+
+    expect(isLiquidatable).to.be.true;
+
+    await comet.absorb(absorber.address, [underwater.address]);
+
+    expect(await comet.getAssetList(underwater.address)).to.be.empty;
   });
 });

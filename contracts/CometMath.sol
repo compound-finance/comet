@@ -7,52 +7,51 @@ pragma solidity ^0.8.11;
  * @author Compound
  */
 contract CometMath {
+    /** Custom errors **/
+
+    error InvalidUInt64();
+    error InvalidUInt104();
+    error InvalidUInt128();
+    error InvalidInt104();
+    error InvalidInt256();
+    error NegativeNumber();
+
     function min(uint104 a, uint104 b) internal pure returns (uint104) {
         return a < b ? a : b;
     }
 
     function safe64(uint n) internal pure returns (uint64) {
-        require(n <= type(uint64).max, "number exceeds size (64 bits)");
+        if (n > type(uint64).max) revert InvalidUInt64();
         return uint64(n);
     }
 
     function safe104(uint n) internal pure returns (uint104) {
-        require(n <= type(uint104).max, "number exceeds size (104 bits)");
+        if (n > type(uint104).max) revert InvalidUInt104();
         return uint104(n);
     }
 
     function safe128(uint n) internal pure returns (uint128) {
-        require(n <= type(uint128).max, "number exceeds size (128 bits)");
+        if (n > type(uint128).max) revert InvalidUInt128();
         return uint128(n);
     }
 
-    function signed64(uint64 n) internal pure returns (int64) {
-        require(n <= uint64(type(int64).max), "number exceeds max int size");
-        return int64(n);
-    }
-
     function signed104(uint104 n) internal pure returns (int104) {
-        require(n <= uint104(type(int104).max), "number exceeds max int size");
+        if (n > uint104(type(int104).max)) revert InvalidInt104();
         return int104(n);
     }
 
-    function signed128(uint128 n) internal pure returns (int128) {
-        require(n <= uint128(type(int128).max), "number exceeds max int size");
-        return int128(n);
-    }
-
     function signed256(uint256 n) internal pure returns (int256) {
-        require(n <= uint256(type(int256).max), "number exceeds max int size");
+        if (n > uint256(type(int256).max)) revert InvalidInt256();
         return int256(n);
     }
 
     function unsigned104(int104 n) internal pure returns (uint104) {
-        require(n >= 0, "number is negative");
+        if (n < 0) revert NegativeNumber();
         return uint104(n);
     }
 
     function unsigned256(int256 n) internal pure returns (uint256) {
-        require(n >= 0, "number is negative");
+        if (n < 0) revert NegativeNumber();
         return uint256(n);
     }
 

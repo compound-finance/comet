@@ -45,12 +45,10 @@ contract CometHarnessWrappers is CometHarnessGetters {
     }
 
     function call_principalValue(int104 presentValue_) external view returns (int104) {
-        TotalsBasic memory totals = totalsBasic;
-        return super.principalValue(totals, presentValue_);
+        return super.principalValue(presentValue_);
     }
     function call_presentValue(int104 principalValue_) external view returns (int104) {
-        TotalsBasic memory totals = totalsBasic;
-        return super.presentValue(totals, principalValue_);
+        return super.presentValue(principalValue_);
     }
 
     function get_asset00_a() public view returns (uint256){

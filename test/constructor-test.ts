@@ -18,7 +18,7 @@ describe('constructor', function () {
           },
         },
       })
-    ).to.be.revertedWith('bad price feed decimals');
+    ).to.be.revertedWith("custom error 'BadDecimals()'");
   });
 
   it('reverts if asset has a price feed that does not have 8 decimals', async () => {
@@ -34,6 +34,25 @@ describe('constructor', function () {
           },
         },
       })
-    ).to.be.revertedWith('bad price feed decimals');
+    ).to.be.revertedWith("custom error 'BadDecimals()'");
+  });
+
+  it('reverts if base token has more than 18 decimals', async () => {
+    await expect(
+      makeProtocol({
+        assets: {
+          USDC: {
+            decimals: 19,
+          },
+        },
+      })
+    ).to.be.revertedWith("custom error 'BadDecimals()'");
+  });
+
+  it('reverts if initializeStorage is called after initialization', async () => {
+    const { comet } = await makeProtocol();
+    await expect(
+      comet.initializeStorage()
+    ).to.be.revertedWith("custom error 'AlreadyInitialized()'");
   });
 });

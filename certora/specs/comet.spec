@@ -2,7 +2,7 @@ import "B_cometSummarization.spec"
 import "erc20.spec"
 
 
-using SymbolicBaseToken as _baseToken 
+using SymbolicBaseToken as _baseToken
 
 
 methods {
@@ -19,7 +19,7 @@ methods {
     getTotalBorrowBase() returns (uint104) envfree 
     getTotalsSupplyAsset(address asset) returns (uint128) envfree  
     getReserves() returns (int) envfree
-    targetReserves() returns (uint104) envfree
+    targetReserves() returns (uint256) envfree
 
     _baseToken.balanceOf(address account) returns (uint256) envfree
 
@@ -199,11 +199,11 @@ rule additivity_of_withdraw( uint x, uint y){
     require x + y < 2^255;
 
     withdraw(e,_baseToken, x);
-    int104 baseX = baseBalanceOf(e,e.msg.sender);
+    int104 baseX = _ext.baseBalanceOf(e,e.msg.sender);
     withdraw(e,_baseToken, y);
-    int104 baseY = baseBalanceOf(e,e.msg.sender);
+    int104 baseY = _ext.baseBalanceOf(e,e.msg.sender);
     withdraw(e,_baseToken, x + y) at init;
-    int104 baseXY = baseBalanceOf(e,e.msg.sender);
+    int104 baseXY = _ext.baseBalanceOf(e,e.msg.sender);
 
     assert baseXY == baseY;
 }

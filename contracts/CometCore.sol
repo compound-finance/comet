@@ -60,57 +60,57 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
      * @param manager The manager account
      * @return Whether or not the manager has permission
      */
-    function hasPermission(address owner, address manager) public view returns (bool) {
+    function hasPermission(address owner, address manager) internal view returns (bool) {
         return owner == manager || isAllowed[owner][manager];
     }
 
     /**
      * @dev The positive present supply balance if positive or the negative borrow balance if negative
      */
-    function presentValue(TotalsBasic memory totals, int104 principalValue_) internal pure returns (int104) {
+    function presentValue(int104 principalValue_) internal view returns (int104) {
         if (principalValue_ >= 0) {
-            return signed104(presentValueSupply(totals, unsigned104(principalValue_)));
+            return signed104(presentValueSupply(baseSupplyIndex, unsigned104(principalValue_)));
         } else {
-            return -signed104(presentValueBorrow(totals, unsigned104(-principalValue_)));
+            return -signed104(presentValueBorrow(baseBorrowIndex, unsigned104(-principalValue_)));
         }
     }
 
     /**
      * @dev The principal amount projected forward by the supply index
      */
-    function presentValueSupply(TotalsBasic memory totals, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * totals.baseSupplyIndex / BASE_INDEX_SCALE);
+    function presentValueSupply(uint64 baseSupplyIndex_, uint104 principalValue_) internal pure returns (uint104) {
+        return uint104(uint(principalValue_) * baseSupplyIndex_ / BASE_INDEX_SCALE);
     }
 
     /**
      * @dev The principal amount projected forward by the borrow index
      */
-    function presentValueBorrow(TotalsBasic memory totals, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * totals.baseBorrowIndex / BASE_INDEX_SCALE);
+    function presentValueBorrow(uint64 baseBorrowIndex_, uint104 principalValue_) internal pure returns (uint104) {
+        return uint104(uint(principalValue_) * baseBorrowIndex_ / BASE_INDEX_SCALE);
     }
 
     /**
      * @dev The positive principal if positive or the negative principal if negative
      */
-    function principalValue(TotalsBasic memory totals, int104 presentValue_) internal pure returns (int104) {
+    function principalValue(int104 presentValue_) internal view returns (int104) {
         if (presentValue_ >= 0) {
-            return signed104(principalValueSupply(totals, unsigned104(presentValue_)));
+            return signed104(principalValueSupply(baseSupplyIndex, unsigned104(presentValue_)));
         } else {
-            return -signed104(principalValueBorrow(totals, unsigned104(-presentValue_)));
+            return -signed104(principalValueBorrow(baseBorrowIndex, unsigned104(-presentValue_)));
         }
     }
 
     /**
      * @dev The present value projected backward by the supply index
      */
-    function principalValueSupply(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * BASE_INDEX_SCALE / totals.baseSupplyIndex);
+    function principalValueSupply(uint64 baseSupplyIndex_, uint104 presentValue_) internal pure returns (uint104) {
+        return uint104(uint(presentValue_) * BASE_INDEX_SCALE / baseSupplyIndex_);
     }
 
     /**
      * @dev The present value projected backwrd by the borrow index
      */
-    function principalValueBorrow(TotalsBasic memory totals, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * BASE_INDEX_SCALE / totals.baseBorrowIndex);
+    function principalValueBorrow(uint64 baseBorrowIndex_, uint104 presentValue_) internal pure returns (uint104) {
+        return uint104(uint(presentValue_) * BASE_INDEX_SCALE / baseBorrowIndex_);
     }
 }

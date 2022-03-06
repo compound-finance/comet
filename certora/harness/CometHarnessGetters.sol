@@ -18,26 +18,26 @@ contract CometHarnessGetters is Comet {
     } 
 
     function getPauseFlags() public view returns (uint8) {
-        return totalsBasic.pauseFlags;
+        return pauseFlags;
     }
 
     function getTotalBaseSupplyIndex() public view returns (uint64) {
-        return totalsBasic.baseSupplyIndex;
+        return baseSupplyIndex;
     }
 
     function getTotalBaseBorrowIndex() public view returns (uint64) {
-        return totalsBasic.baseBorrowIndex;
+        return baseBorrowIndex;
     }
     function getlastAccrualTime() public view returns (uint40) {
-        return totalsBasic.lastAccrualTime;
+        return lastAccrualTime;
     }
 
     function getTotalSupplyBase() public view returns (uint104) {
-        return totalsBasic.totalSupplyBase;
+        return totalSupplyBase;
     }
 
     function getTotalBorrowBase() public view returns (uint104) {
-        return totalsBasic.totalBorrowBase;
+        return totalBorrowBase;
     }
 
     function getAssetinOfUser(address user) public view returns (uint16) {

@@ -5,6 +5,7 @@ do
     echo ${file%.*}
     certoraRun certora/harness/$file \
     --verify ${file%.*}:certora/specs/Z_sanity.spec "$@" \
-    --solc solc8.11 --staging shelly/integrateJohnsBranches \
+    --solc solc8.11 --staging \
+    --send_only \
     --msg "checking sanity on ${file%.*}"
 done

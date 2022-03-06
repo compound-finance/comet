@@ -2,7 +2,7 @@ certoraRun certora/harness/CometHarnessInterest.sol certora/harness/SymbolicPric
     --verify CometHarnessInterest:certora/specs/interestComputation.spec  \
     --link CometHarnessInterest:baseTokenPriceFeed=SymbolicPriceOracleA \
     --solc solc8.11 \
-    --staging shelly/divideConstantsOverJohnsBranch \
+    --staging \
     --optimistic_loop \
     --rule $1 \
     --settings -divideByConstants=1,-enableEqualitySaturation=false,-solver=z3,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \

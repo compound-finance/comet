@@ -88,35 +88,34 @@ contract CometHarness is CometHarnessWrappers {
 
     /*********** Simplification ***********/
     /* under approximation (not taking into account all possible cases) */
-    function accrue(TotalsBasic memory totals) internal override view returns (TotalsBasic memory) {
-        return totals;
-    }
+    // function accrue(TotalsBasic memory totals) internal override view returns (TotalsBasic memory) {
+    //     return totals;
+    // }
 
     /* safe approximation? (taking into account all possible cases) */
     
-    mapping( uint104 => mapping (uint104 => uint64 ))  symbolicSupplyRate;
-    mapping( uint104 => mapping (uint104 => uint64 ))  symbolicBorrowRate;
-    mapping( uint104 => mapping (uint104 => uint64 ))  symbolicUtilization;
+    // mapping( uint104 => mapping (uint104 => uint64 ))  symbolicSupplyRate;
+    // mapping( uint104 => mapping (uint104 => uint64 ))  symbolicBorrowRate;
+    // mapping( uint104 => mapping (uint104 => uint64 ))  symbolicUtilization;
     
 
-    function getSupplyRateInternal(TotalsBasic memory totals) internal view virtual override returns (uint64) {
-        return symbolicSupplyRate[totals.totalSupplyBase][totals.totalBorrowBase];
-    }
+    // function getSupplyRateInternal(TotalsBasic memory totals) internal view virtual override returns (uint64) {
+    //     return symbolicSupplyRate[totals.totalSupplyBase][totals.totalBorrowBase];
+    // }
 
-    function getBorrowRateInternal(TotalsBasic memory totals) internal  virtual override view returns (uint64) {
-        return symbolicBorrowRate[totals.totalSupplyBase][totals.totalBorrowBase];
-
-    }
+    // function getBorrowRateInternal(TotalsBasic memory totals) internal  virtual override view returns (uint64) {
+    //     return symbolicBorrowRate[totals.totalSupplyBase][totals.totalBorrowBase];
+    // }
     
-    function getUtilizationInternal(TotalsBasic memory totals) internal view override returns  (uint) {
-        return symbolicUtilization[totals.totalSupplyBase][totals.totalBorrowBase];
-    }
+    // function getUtilizationInternal(TotalsBasic memory totals) internal view override returns  (uint) {
+    //     return symbolicUtilization[totals.totalSupplyBase][totals.totalBorrowBase];
+    // }
 
 
     function testTotalSupply() public view returns (uint104) {
-        TotalsBasic memory totals = totalsBasic;
-        totals = accrue(totals);
-        uint104 totalSupplyBalance = presentValueSupply(totals, totals.totalSupplyBase);
+        // TotalsBasic memory totals = totalsBasic;
+        // totals = accrue(totals);
+        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
         return totalSupplyBalance;
     }
 
@@ -135,5 +134,6 @@ contract CometHarness is CometHarnessWrappers {
         return this.transferAssetFrom(src, dst, asset, amount);
     }
 
+   
 
 }

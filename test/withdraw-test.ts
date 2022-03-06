@@ -151,7 +151,7 @@ describe('withdrawTo', function () {
     await wait(comet.connect(pauseGuardian).pause(false, false, true, false, false));
     expect(await comet.isWithdrawPaused()).to.be.true;
 
-    await expect(cometAsB.withdrawTo(alice.address, USDC.address, 1)).to.be.revertedWith('withdraw is paused');
+    await expect(cometAsB.withdrawTo(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
   });
 
   it.skip('borrows to withdraw if necessary/possible', async () => {
@@ -201,7 +201,46 @@ describe('withdraw', function () {
     await wait(comet.connect(pauseGuardian).pause(false, false, true, false, false));
     expect(await comet.isWithdrawPaused()).to.be.true;
 
-    await expect(cometAsB.withdraw(USDC.address, 100e6)).to.be.revertedWith('withdraw is paused');
+    await expect(cometAsB.withdraw(USDC.address, 100e6)).to.be.revertedWith("custom error 'Paused()'");
+  });
+
+  it('reverts if withdraw amount is less than baseBorrowMin', async () => {
+    const { comet, tokens, users: [alice, bob] } = await makeProtocol({
+      baseBorrowMin: exp(1,6)
+    });
+    const { USDC } = tokens;
+
+    await expect(
+      comet.connect(alice).withdraw(USDC.address, exp(.5, 6))
+    ).to.be.revertedWith("custom error 'BorrowTooSmall()'");
+  });
+
+  it('reverts if base withdraw amount is not collateralzed', async () => {
+    const { comet, tokens, users: [alice, bob] } = await makeProtocol();
+    const { USDC } = tokens;
+
+    await expect(
+      comet.connect(alice).withdraw(USDC.address, exp(1, 6))
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+  });
+
+  it('reverts if collateral withdraw amount is not collateralized', async () => {
+    const { comet, tokens, users: [alice] } = await makeProtocol();
+    const { WETH } = tokens;
+
+    const totalsCollateral = Object.assign({}, await comet.totalsCollateral(WETH.address), {
+      totalSupplyAsset: exp(1,18),
+    });
+    await wait(comet.setTotalsCollateral(WETH.address, totalsCollateral));
+
+    // user has a borrow, but with collateral to cover
+    await comet.setBasePrincipal(alice.address, -100e6);
+    await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
+
+    // reverts if withdraw would leave borrow uncollateralized
+    await expect(
+      comet.connect(alice).withdraw(WETH.address, exp(1, 18))
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
   });
 });
 
@@ -247,7 +286,7 @@ describe('withdrawFrom', function () {
     const cometAsC = comet.connect(charlie);
 
     await expect(cometAsC.withdrawFrom(bob.address, alice.address, COMP.address, 7))
-      .to.be.revertedWith('operator not permitted');
+      .to.be.revertedWith("custom error 'Unauthorized()'");
   });
 
   it('reverts if withdraw is paused', async () => {
@@ -264,6 +303,6 @@ describe('withdrawFrom', function () {
     expect(await comet.isWithdrawPaused()).to.be.true;
 
     await wait(cometAsB.allow(charlie.address, true));
-    await expect(cometAsC.withdrawFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith('withdraw is paused');
+    await expect(cometAsC.withdrawFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith("custom error 'Paused()'");
   });
 });

@@ -114,7 +114,7 @@ describe('transfer', function () {
     await wait(comet.connect(pauseGuardian).pause(false, true, false, false, false));
     expect(await comet.isTransferPaused()).to.be.true;
 
-    await expect(cometAsB.transferAsset(alice.address, USDC.address, 1)).to.be.revertedWith('transfer is paused');
+    await expect(cometAsB.transferAsset(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
   });
 
   it.skip('reverts if transferring base results in an under collateralized borrow', async () => {
@@ -142,7 +142,7 @@ describe('transfer', function () {
 
     const amount = (await comet.baseBorrowMin()).sub(1);
     await expect(cometAsB.transferAsset(alice.address, USDC.address, amount)).to.be.revertedWith(
-      'borrow too small'
+      "custom error 'BorrowTooSmall()'"
     );
   });
 
@@ -156,7 +156,7 @@ describe('transfer', function () {
 
     await expect(
       comet.connect(alice).transferAsset(alice.address, USDC.address, 100)
-    ).to.be.revertedWith('self-transfer not allowed');
+    ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
   });
 
   it('reverts on self-transfer of collateral', async () => {
@@ -169,7 +169,30 @@ describe('transfer', function () {
 
     await expect(
       comet.connect(alice).transferAsset(alice.address, COMP.address, 100)
-    ).to.be.revertedWith('self-transfer not allowed');
+    ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
+  });
+
+  it('reverts if base transfer is not collateralized', async () => {
+    const { comet, tokens, users: [alice, bob]} = await makeProtocol();
+    const { USDC } = tokens;
+
+    await expect(
+      comet.connect(alice).transferAsset(bob.address, USDC.address, 100e6)
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+  });
+
+  it('reverts if collateral transfer is not collateralized', async () => {
+    const { comet, tokens, users: [alice, bob]} = await makeProtocol();
+    const { WETH } = tokens;
+
+    // user has a borrow, but with collateral to cover
+    await comet.setBasePrincipal(alice.address, -100e6);
+    await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
+
+    // reverts if transfer would leave the borrow uncollateralized
+    await expect(
+      comet.connect(alice).transferAsset(bob.address, WETH.address, exp(1,18))
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
   });
 });
 
@@ -214,7 +237,7 @@ describe('transferFrom', function () {
 
     await expect(
       cometAsC.transferAssetFrom(bob.address, alice.address, COMP.address, 7)
-    ).to.be.revertedWith('operator not permitted');
+    ).to.be.revertedWith("custom error 'Unauthorized()'");
   });
 
   it('reverts on transfer of base token from address to itself', async () => {
@@ -229,7 +252,7 @@ describe('transferFrom', function () {
 
     await expect(
       comet.connect(alice).transferAssetFrom(bob.address, bob.address, USDC.address, 100)
-    ).to.be.revertedWith('self-transfer not allowed');
+    ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
   });
 
   it('reverts on transfer of collateral from address to itself', async () => {
@@ -244,7 +267,7 @@ describe('transferFrom', function () {
 
     await expect(
       comet.connect(alice).transferAssetFrom(bob.address, bob.address, COMP.address, 100)
-    ).to.be.revertedWith('self-transfer not allowed');
+    ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
   });
 
   it('reverts if transfer is paused', async () => {
@@ -261,6 +284,6 @@ describe('transferFrom', function () {
     expect(await comet.isTransferPaused()).to.be.true;
 
     await wait(cometAsB.allow(charlie.address, true));
-    await expect(cometAsC.transferAssetFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith('transfer is paused');
+    await expect(cometAsC.transferAssetFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith("custom error 'Paused()'");
   });
 });
