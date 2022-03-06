@@ -2,7 +2,8 @@ import "B_cometSummarization.spec"
 import "erc20.spec"
 
 
-using SymbolicBaseToken as _baseToken
+using SymbolicBaseToken as _baseToken 
+using CometExt as _ext
 
 
 methods {
