@@ -11,8 +11,16 @@ function curry<A, B, C>(f: (A) => B, g: (B) => C): (A) => C {
   return (x) => g(f(x));
 }
 
-function deepClone(o: object): object {
-  return JSON.parse(JSON.stringify(o));
+function deepClone(c: CacheMap): CacheMap {
+  let res = new Map();
+  for (let [name, entry] of c.entries()) {
+    if (entry instanceof Map) {
+      res.set(name, deepClone(entry));
+    } else {
+      res.set(name, entry);
+    }
+  }
+  return res;
 }
 
 function parseJson<K>(x: string | undefined): K {
@@ -27,14 +35,16 @@ function stringifyJson<K>(k: K): string {
   return JSON.stringify(k, null, 4);
 }
 
+type CacheMap = Map<string, any | CacheMap>;
+
 export class Cache {
-  cache: object;
+  cache: CacheMap;
   deployment: string;
   deploymentDir: string;
   writeCacheToDisk: boolean;
 
   constructor(deployment: string, writeCacheToDisk?: boolean, deploymentDir?: string) {
-    this.cache = {}; // todo cache config?
+    this.cache = new Map(); // todo cache config?
     this.deployment = deployment;
     this.deploymentDir = deploymentDir ?? nodepath.join(process.cwd(), 'deployments');
     this.writeCacheToDisk = writeCacheToDisk ?? false;
@@ -59,8 +69,8 @@ export class Cache {
   private getMemory<T>(spec: FileSpec): T | undefined {
     let c = this.cache;
     for (let path of this.getPath(spec)) {
-      if (c.hasOwnProperty(path)) {
-        c = c[path];
+      if (c instanceof Map && c.has(path)) {
+        c = c.get(path);
       } else {
         return undefined;
       }
@@ -72,19 +82,21 @@ export class Cache {
     let c = this.cache;
     let paths = this.getPath(spec);
     for (let [i, path] of paths.entries()) {
-      if (c.hasOwnProperty(path)) {
-        c = c[path];
+      if (i === paths.length - 1) {
+        c.set(path, data);
+        return;
       } else {
-        // If we're an intermediate key, we want to build an object to iterate on
-        // But if we're the last key, we want to store the object here.
-        if (i === paths.length - 1) {
-          c[path] = data;
+        if (c instanceof Map && c.has(path)) {
+          c = c.get(path);
         } else {
-          c[path] = {};
-          c = c[path];
+          // If we're an intermediate key, we want to build an object to iterate on
+          // But if we're the last key, we want to store the object here.
+          c.set(path, new Map());
+          c = c.get(path);
         }
       }
     }
+    throw new Error("unreachable");
   }
 
   private async putDisk<T>(spec: FileSpec, data: T, transformer: (T) => string) {
@@ -135,14 +147,14 @@ export class Cache {
   }
 
   clearMemory() {
-    this.cache = {};
+    this.cache = new Map();
   }
 
   storeMemory(): object {
     return deepClone(this.cache);
   }
 
-  loadMemory(cache: object) {
+  loadMemory(cache: CacheMap) {
     this.cache = deepClone(cache);
   }
 

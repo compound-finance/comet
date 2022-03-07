@@ -10,7 +10,7 @@ export class BaseTokenProtocolBalanceConstraint<T extends CometContext> implemen
     }
     if (typeof baseTokenRequirements['balance'] !== 'undefined') {
       return async (context: CometContext) => {
-        const { comet } = context;
+        let comet = await context.getComet();
         const amount = baseTokenRequirements['balance'];
         const baseToken = context.getAssetByAddress(await comet.baseToken());
 
@@ -26,7 +26,7 @@ export class BaseTokenProtocolBalanceConstraint<T extends CometContext> implemen
     }
     if (typeof baseTokenRequirements['balance'] !== 'undefined') {
       const amount = baseTokenRequirements['balance'];
-      const { comet } = context;
+      let comet = await context.getComet();
 
       const baseToken = context.getAssetByAddress(await comet.baseToken());
 

@@ -59,7 +59,9 @@ export function getFieldKey(alias: Alias, config: RelationInnerConfig): FieldKey
 }
 
 function asAddressArray(val: any, msg: string): string[] {
-  if (typeof val === 'string') {
+  if (val === null) {
+    return [];
+  } else if (typeof val === 'string') {
     return [val];
   } else if (Array.isArray(val)) {
     if (val.every((x) => typeof x === 'string')) {

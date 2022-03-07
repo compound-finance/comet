@@ -13,23 +13,35 @@ import {
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { deployComet } from '../../src/deploy';
-import { CometInterface as Comet, ProxyAdmin, ERC20, ERC20__factory } from '../../build/types';
+import { wait } from '../../test/helpers';
+import { Comet, CometInterface, ProxyAdmin, ERC20, ERC20__factory } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 
+type ActorMap = { [name: string]: CometActor };
+type AssetMap = { [name: string]: CometAsset };
+
+export interface CometProperties {
+  deploymentManager: DeploymentManager;
+  actors: ActorMap;
+  assets: AssetMap;
+  remoteToken?: Contract;
+  comet: CometInterface;
+  proxyAdmin: ProxyAdmin;
+}
+
 export class CometContext {
   deploymentManager: DeploymentManager;
-  actors: { [name: string]: CometActor };
-  assets: { [name: string]: CometAsset };
-  remoteToken: Contract | undefined;
-  comet: Comet;
-  proxyAdmin: ProxyAdmin;
+  actors: ActorMap;
+  assets: AssetMap;
+  remoteToken?: Contract;
 
-  constructor(deploymentManager: DeploymentManager, comet: Comet, proxyAdmin: ProxyAdmin) {
+  constructor(deploymentManager: DeploymentManager, remoteToken: Contract | undefined) {
     this.deploymentManager = deploymentManager;
-    this.comet = comet;
-    this.proxyAdmin = proxyAdmin;
+    this.actors = {};
+    this.assets = {};
+    this.remoteToken = remoteToken;
   }
 
   private debug(...args: any[]) {
@@ -47,23 +59,39 @@ export class CometContext {
     return await this.deploymentManager.contracts();
   }
 
-  async upgradeTo(newComet: Comet, world: World, data?: string) {
-    if (data) {
-      await this.proxyAdmin.upgradeAndCall(this.comet.address, newComet.address, data);
-    } else {
-      await this.proxyAdmin.upgrade(this.comet.address, newComet.address);
-    }
+  async getComet(): Promise<CometInterface> {
+    return await this.deploymentManager.contract('comet') as CometInterface;
+  }
 
-    this.comet = new this.deploymentManager.hre.ethers.Contract(this.comet.address, newComet.interface, this.comet.signer) as Comet;
+  async getCometImplemenation(): Promise<Comet> {
+    return await this.deploymentManager.contract('comet:implementation') as Comet;
+  }
+
+  async getCometAdmin(): Promise<ProxyAdmin> {
+    return await this.deploymentManager.contract('cometAdmin') as ProxyAdmin;
+  }
+
+  async upgradeTo(newComet: Comet, world: World, data?: string) {
+    let comet = await this.getComet();
+    let cometAdmin = await this.getCometAdmin();
 
     // Set the admin and pause guardian addresses again since these may have changed.
-    let governorAddress = await this.comet.governor();
-    let pauseGuardianAddress = await this.comet.pauseGuardian();
+    let governorAddress = await comet.governor(); // TODO: is this newComet?
+    let pauseGuardianAddress = await comet.pauseGuardian();
     let adminSigner = await world.impersonateAddress(governorAddress);
     let pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
 
+    if (data) {
+      await wait(cometAdmin.connect(adminSigner).upgradeAndCall(comet.address, newComet.address, data));
+    } else {
+      await wait(cometAdmin.connect(adminSigner).upgrade(comet.address, newComet.address));
+    }
     this.actors['admin'] = await buildActor('admin', adminSigner, this);
     this.actors['pauseGuardian'] = await buildActor('pauseGuardian', pauseGuardianSigner, this);
+  }
+
+  async spider() {
+    await this.deploymentManager.spider();
   }
 
   primaryActor(): CometActor {
@@ -130,12 +158,13 @@ export class CometContext {
   }
 
   async setAssets() {
+    let comet = await this.getComet();
     let signer = (await this.deploymentManager.hre.ethers.getSigners())[1]; // dunno?
-    let numAssets = await this.comet.numAssets();
+    let numAssets = await comet.numAssets();
     let assetAddresses = [
-      await this.comet.baseToken(),
+      await comet.baseToken(),
       ...await Promise.all(Array(numAssets).fill(0).map(async (_, i) => {
-        return (await this.comet.getAssetInfo(i)).asset;
+        return (await comet.getAssetInfo(i)).asset;
       })),
     ];
 
@@ -143,6 +172,17 @@ export class CometContext {
       let erc20 = ERC20__factory.connect(address, signer);
       return [await erc20.symbol(), new CometAsset(erc20)];
     })));
+  }
+}
+
+async function getContextProperties(context: CometContext): Promise<CometProperties> {
+  return {
+    deploymentManager: context.deploymentManager,
+    actors: context.actors,
+    assets: context.assets,
+    remoteToken: context.remoteToken,
+    comet: await context.getComet(),
+    proxyAdmin: await context.getCometAdmin(),
   }
 }
 
@@ -176,7 +216,9 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
 
   await deploymentManager.spider();
 
-  let comet = await getContract<Comet>('comet', 'CometInterface');
+  let context = new CometContext(deploymentManager, undefined);
+  let comet = await context.getComet();
+
   let signers = await world.hre.ethers.getSigners();
 
   let [localAdminSigner, localPauseGuardianSigner, albertSigner, bettySigner, charlesSigner] =
@@ -187,10 +229,6 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   let pauseGuardianAddress = await comet.pauseGuardian();
   adminSigner = await world.impersonateAddress(governorAddress);
   pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
-
-  let proxyAdmin = (await getContract<ProxyAdmin>('cometAdmin')).connect(adminSigner);
-
-  let context = new CometContext(deploymentManager, comet, proxyAdmin);
 
   context.actors = {
     admin: await buildActor('admin', adminSigner, context),
@@ -207,9 +245,11 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
 };
 
 async function forkContext(c: CometContext): Promise<CometContext> {
-  // Deep clone the cache's cache
-  c.deploymentManager.cache.cloneMemory();
-  return c;
+  let context = new CometContext(DeploymentManager.fork(c.deploymentManager), c.remoteToken);
+  context.actors = Object.fromEntries(Object.entries(c.actors).map(([name, actor]) => [name, CometActor.fork(actor, context)]));
+  context.assets = Object.fromEntries(Object.entries(c.assets).map(([name, asset]) => [name, CometAsset.fork(asset)]));
+
+  return context;
 }
 
 export const constraints = [
@@ -221,4 +261,4 @@ export const constraints = [
   new BaseTokenProtocolBalanceConstraint(),
 ];
 
-export const scenario = buildScenarioFn<CometContext>(getInitialContext, forkContext, constraints);
+export const scenario = buildScenarioFn<CometContext, CometProperties>(getInitialContext, getContextProperties, forkContext, constraints);

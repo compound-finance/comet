@@ -9,10 +9,10 @@ scenario(
     },
     upgrade: true,
   },
-  async ({ comet, actors, getAssetByAddress }) => {
+  async ({ comet, actors }, world, context) => {
     const { admin, albert } = actors;
 
-    const baseToken = getAssetByAddress(await comet.baseToken());
+    const baseToken = context.getAssetByAddress(await comet.baseToken());
 
     expect(await baseToken.balanceOf(comet.address)).to.equal(100n);
 

@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 
 import { Contract, utils } from 'ethers';
-import { Address, BuildFile, ContractMetadata } from './Types';
+import { ABI, Address, BuildFile, ContractMetadata } from './Types';
 
 export function debug(...args: any[]) {
   if (process.env['DEBUG']) {
@@ -52,6 +52,13 @@ export function getPrimaryContract(buildFile: BuildFile): [string, ContractMetad
   }
 
   return [targetContract, contractMetadata];
+}
+
+export function mergeABI(abi0: ABI, abi1: ABI): ABI {
+  let parsedABI0 = typeof abi0 === 'string' ? JSON.parse(abi0) : abi0;
+  let parsedABI1 = typeof abi1 === 'string' ? JSON.parse(abi1) : abi1;
+
+  return [...parsedABI0, ...parsedABI1];
 }
 
 export function objectToMap<V>(obj: object | { [k: string]: V }): Map<string, V> {

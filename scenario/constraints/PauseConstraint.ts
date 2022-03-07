@@ -46,16 +46,17 @@ export class PauseConstraint<T extends CometContext> implements Constraint<T> {
   async check(requirements: object, context: T, world: World) {
     const pauseRequirements = requirements['pause'];
     if (!pauseRequirements) {
-      return null;
+      return;
     }
+
+    let comet = await context.getComet();
     if (typeof pauseRequirements['all'] !== 'undefined') {
       const isPaused = pauseRequirements['all'];
-
-      expect(await context.comet.isSupplyPaused()).to.be.equals(isPaused);
-      expect(await context.comet.isTransferPaused()).to.be.equals(isPaused);
-      expect(await context.comet.isWithdrawPaused()).to.be.equals(isPaused);
-      expect(await context.comet.isAbsorbPaused()).to.be.equals(isPaused);
-      expect(await context.comet.isBuyPaused()).to.be.equals(isPaused);
+      expect(await comet.isSupplyPaused()).to.be.equals(isPaused);
+      expect(await comet.isTransferPaused()).to.be.equals(isPaused);
+      expect(await comet.isWithdrawPaused()).to.be.equals(isPaused);
+      expect(await comet.isAbsorbPaused()).to.be.equals(isPaused);
+      expect(await comet.isBuyPaused()).to.be.equals(isPaused);
     } else {
       const supplyPaused = pauseRequirements['supplyPaused'] ?? false;
       const transferPaused = pauseRequirements['transferPaused'] ?? false;
@@ -63,11 +64,11 @@ export class PauseConstraint<T extends CometContext> implements Constraint<T> {
       const absorbPaused = pauseRequirements['absorbPaused'] ?? false;
       const buyPaused = pauseRequirements['buyPaused'] ?? false;
 
-      expect(await context.comet.isSupplyPaused()).to.be.equals(supplyPaused);
-      expect(await context.comet.isTransferPaused()).to.be.equals(transferPaused);
-      expect(await context.comet.isWithdrawPaused()).to.be.equals(withdrawPaused);
-      expect(await context.comet.isAbsorbPaused()).to.be.equals(absorbPaused);
-      expect(await context.comet.isBuyPaused()).to.be.equals(buyPaused);
+      expect(await comet.isSupplyPaused()).to.be.equals(supplyPaused);
+      expect(await comet.isTransferPaused()).to.be.equals(transferPaused);
+      expect(await comet.isWithdrawPaused()).to.be.equals(withdrawPaused);
+      expect(await comet.isAbsorbPaused()).to.be.equals(absorbPaused);
+      expect(await comet.isBuyPaused()).to.be.equals(buyPaused);
     }
   }
 }
