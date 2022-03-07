@@ -17,6 +17,9 @@ abstract contract CometInterface is CometCore, ERC20 {
     function supplyTo(address dst, address asset, uint amount) virtual external;
     function supplyFrom(address from, address dst, address asset, uint amount) virtual external;
 
+    function transfer(address dst, uint amount) virtual external returns (bool);
+    function transferFrom(address src, address dst, uint amount) virtual external returns (bool);
+
     function transferAsset(address dst, address asset, uint amount) virtual external;
     function transferAssetFrom(address src, address dst, address asset, uint amount) virtual external;
 

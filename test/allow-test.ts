@@ -1,4 +1,4 @@
-import { Comet, ethers, expect, exp, makeProtocol, wait } from './helpers';
+import { ethers, expect, makeProtocol } from './helpers';
 
 describe('allow', function () {
   it('isAllowed defaults to false', async () => {
