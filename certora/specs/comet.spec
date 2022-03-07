@@ -77,54 +77,6 @@ rule assetIn_Initialized_With_Balance(method f, address user, address asset) fil
 // balance change => update asset
 
 
-/*
-
-Description: 
-        Summary of balances (base):
-formula: 
-        sum(userBasic[u].principal) == totalsBasic.totalSupplyBase - totalsBasic.totalBorrowBase
-status:
-
-*/
-invariant totalBaseToken() 
-	sumUserBasicPrinciple == to_mathint(getTotalSupplyBase()) - to_mathint(getTotalBorrowBase()) filtered { f-> !similarFunctions(f) && !f.isView }
-{
-    preserved {
-        simplifiedAssumptions();
-    }
-}
-
-
-
-/* 
- Description :  
-        The sum of collateral per asset over all users is equal to total collateral of asset:
-
-formula : 
-        sum(userCollateral[u][asset].balance) == totalsCollateral[asset].totalSupplyAsset
-
- status : proved 
- link https://vaas-stg.certora.com/output/23658/c653b4018c776983368a?anonymousKey=ed01d8a8a20618fae0c3e40f1e1e3a99c2a253e8
-*/
-invariant totalCollateralPerAsset(address asset) 
-    sumBalancePerAssert[asset] == getTotalsSupplyAsset(asset)     
-    filtered { f-> !similarFunctions(f) && !f.isView }
-    {
-        preserved {
-            simplifiedAssumptions();
-        }
-    }
-
-/* 
- Description :  
-        for each asset, the contract's balance is at least as the total supply 
-formula : 
-        totalsCollateral[asset].totalSupplyAsset <= asset.balanceOf(this)
-*/
-invariant totalCollateralPerAssetVsAssetBalance(address asset) 
-        getTotalsSupplyAsset(asset)  <= tokenBalanceOf(asset, currentContract) 
-        filtered { f-> !similarFunctions(f) && !f.isView }
-
 
 function simplifiedAssumptions() {
     env e;
@@ -133,81 +85,7 @@ function simplifiedAssumptions() {
     require _baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase();
 }
 
-/* 
- Description :  
-        Can withdraw all contract's balance without revert
 
- formula : 
-        withdraw(msg.sender, baseToken.balanceOf(currentContract)) -> no revert
-
- status : proved
- reason :
- link   : 
-*/
-
-rule withdraw_all_balance(){
-    env e;
-    simplifiedAssumptions();
-    uint256 balance = _baseToken.balanceOf(currentContract);
-    withdraw(e,e.msg.sender,balance);
-    assert false;
-}
-
-/* 
- Description :  
-        when contract balance == 0 , reserves should be LE zero
-
- formula : 
-        _baseToken.balanceOf(currentContract) == 0 => getReserves() <= 0
-
- status : proved
- reason :
- link   :
-*/
-invariant no_reserves_zero_balance()
-_baseToken.balanceOf(currentContract) == 0 => getReserves() <= 0
-filtered { f-> !similarFunctions(f) && !f.isView }
-    {
-        preserved {
-            simplifiedAssumptions();
-        }
-    }
-/* 
- Description :  
-        Due to summarization the following should hold
-
- formula : 
-        baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase()
-
- status : failed
- reason :
- link   : 
-*/
-invariant base_balance_vs_totals()
-_baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase()
-filtered { f-> !similarFunctions(f) && !f.isView }
-    {
-        preserved {
-            simplifiedAssumptions();
-        }
-    }
-
-rule additivity_of_withdraw( uint x, uint y){
-    env e;
-    storage init = lastStorage;
-    
-    simplifiedAssumptions();
-    require x + y < 2^255;
-
-    withdraw(e,_baseToken, x);
-    int104 baseX = baseBalanceOf(e,e.msg.sender);
-    withdraw(e,_baseToken, y);
-    int104 baseY = baseBalanceOf(e,e.msg.sender);
-    withdraw(e,_baseToken, x + y) at init;
-    int104 baseXY = baseBalanceOf(e,e.msg.sender);
-
-    assert baseXY == baseY;
-}
 
 rule sanity(method f) {
 	env e;
@@ -226,71 +104,10 @@ rule usage_registered_assets_only(address asset, method f) {
     assert false, "todo";
 }
 
-rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
-    env e;
-    // https://vaas-stg.certora.com/output/23658/b7cc8ac5bd1d3f414f2f/?anonymousKey=d47ea2a5120f88658704e5ece8bfb45d59b2eb85
-    require asset != _baseToken; 
-    // if minAmount is not given, one can get zero ?
-    //https://vaas-stg.certora.com/output/23658/d48bc0a10849dc638048/?anonymousKey=4162738a94af8200c99d01c633d0eb025fedeaf4
-    require minAmount > 0 ; 
-    
-    require e.msg.sender != currentContract;
-    require recipient != currentContract;
-
-    uint256 balanceAssetBefore = tokenBalanceOf(asset, currentContract);
-    uint256 balanceBaseBefore = tokenBalanceOf(_baseToken, currentContract);
-    buyCollateral(e, asset, minAmount, baseAmount, recipient);
-    uint256 balanceAssetAfter = tokenBalanceOf(asset, currentContract);
-    uint256 balanceBaseAfter = tokenBalanceOf(_baseToken, currentContract);
-    assert (balanceAssetAfter <= balanceAssetBefore);
-    assert (balanceBaseBefore <= balanceBaseAfter);
-    assert (balanceBaseBefore < balanceBaseAfter <=> balanceAssetAfter < balanceAssetBefore);
-}
-
-rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address recipient) {
-    env e;
-    require asset != _baseToken; 
-    require e.msg.sender != currentContract;
-    require recipient != currentContract;
-
-    uint256 balanceAssetBefore = tokenBalanceOf(asset, currentContract);
-    buyCollateral(e, asset, minAmount, baseAmount, recipient);
-    uint256 balanceAssetAfter = tokenBalanceOf(asset, currentContract);
-    assert (balanceAssetBefore > 0 => balanceAssetAfter > 0);
-}
 
 
 
 
-rule withdraw_reserves_decreases(address to, uint amount){
-    env e;
-
-    int256 before = getReserves();
-    withdrawReserves(e,to,amount);
-    int256 after = getReserves();
-
-    assert amount >0 && to != currentContract => before > after;
-}
-
-
-rule withdraw_reserves_monotonicity(address to){
-    env e;
-
-    uint amount1;
-    uint amount2;
-    require amount2 > amount1;    
-    
-    storage init = lastStorage;
-    
-    require to != currentContract && amount1 > 0;
-
-    withdrawReserves(e,to,amount1);
-        int reserves1 = getReserves();
-    withdrawReserves(e,to,amount2) at init;
-        int reserves2 = getReserves();
-
-    assert reserves1 > reserves2;
-}
 
 
 rule verify_isBorrowCollateralized(address account, method f){
@@ -304,94 +121,6 @@ rule verify_isBorrowCollateralized(address account, method f){
     assert collateralized1 == collateralized2;
 }
 
-rule supply_increase_balance(address asset, uint amount){
-    env e;
-    require e.msg.sender != currentContract;
-
-    simplifiedAssumptions();
 
 
-    uint balance1 = tokenBalanceOf(asset, currentContract);
-    supply(e, asset, amount);
-    uint balance2 = tokenBalanceOf(asset, currentContract);
-    
-    assert balance2 - balance1 == amount;
-}
 
-rule withdraw_decrease_balance(address asset, uint amount){
-    env e;
-    require e.msg.sender != currentContract;
-
-    simplifiedAssumptions();
-
-    uint balance1 = tokenBalanceOf(asset, currentContract);
-    withdraw(e, asset, amount);
-    uint balance2 = tokenBalanceOf(asset, currentContract);
-    
-    assert balance1 - balance2 == amount;
-}
-
-rule call_absorb(address absorber, address account) {
-    address[] accounts;
-    env e;
-
-    require accounts[0] == account;
-    require absorber != account;
-    require accounts.length == 1;
-
-    absorb(e, absorber, accounts);
-    absorb(e, absorber, accounts);
-
-    assert false; 
-}
-
-
-// note - need loop_iter=2 for this rule
-rule call_absorb_2(address absorber, address account1, address account2) {
-    address[] accounts;
-    env e;
-
-    require absorber != account1 && absorber != account2;
-    require accounts.length == 2;
-
-    require account1 == account2;
-
-    require accounts[0] == account1;
-    require accounts[1] == account2;
-
-    absorb(e, absorber, accounts);
-
-    assert false; 
-}
-
-rule absorb_reserves_increase(address absorber, address account) {
-    address[] accounts;
-    env e;
-
-    require accounts[0] == account;
-    require absorber != account;
-    require accounts.length == 1;
-
-    int pre = getReserves();
-    absorb(e, absorber, accounts);
-    int post = getReserves();
-
-    assert pre >= post; 
-}
-
-rule buyCol_then_withdraw(address account, uint amount){
-    env e;
-    require e.msg.sender != currentContract;
-    
-    storage init = lastStorage;
-
-    address asset; address recipient;
-    uint minAmount; uint baseAmount;
-    require asset != currentContract && recipient != currentContract;
-
-    withdraw(e, account, amount);
-    buyCollateral(e, asset, minAmount, baseAmount, recipient) at init;
-    invoke withdraw(e, account, amount);
-
-    assert !lastReverted;
-}

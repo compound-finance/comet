@@ -4,4 +4,5 @@ certoraRun certora/harness/CometHarnessGetters.sol --verify CometHarnessGetters:
     --optimistic_loop \
     --send_only \
     --settings -enableEqualitySaturation=false,-multiAssertCheck,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \
-    --msg "$1"
+    --solc_args '["--experimental-via-ir"]' \
+    --msg "V_pauseGuardians $1"

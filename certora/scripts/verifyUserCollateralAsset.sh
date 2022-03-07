@@ -4,4 +4,5 @@ certoraRun certora/harness/CometHarnessWrappers.sol \
     --staging \
     --optimistic_loop \
     --settings -useBitVectorTheory,-smt_hashingScheme=plainInjectivity,-deleteSMTFile=false,-postProcessCounterExamples=false \
-    --msg "$1"
+    --solc_args '["--experimental-via-ir"]' \
+    --msg "UserCollateralAsset $1"
