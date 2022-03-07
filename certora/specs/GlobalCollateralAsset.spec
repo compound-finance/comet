@@ -19,7 +19,7 @@ rule reversability_of_packing(uint8 i, address assetArg, address priceFeedArg, u
     if (assetArg == 0 ){
         assert (asset_ == assetArg, "asset is non-zero");
         assert (priceFeed_ == 0, "price feed is non-zero");
-        assert (scale_ == 0, "scale is non-zero");
+        assert (scale_ == 10^0, "scale is not 1");
         assert (borrowCollateralFactor_ == 0, "borrow Collateral Factor is non-zero");
         assert (liquidateCollateralFactor_ == 0, "liquidate Collateral Factor is non-zero");
         assert (liquidationFactor_ == 0, "liquidation Factor is non-zero");
