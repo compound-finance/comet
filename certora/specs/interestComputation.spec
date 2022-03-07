@@ -15,12 +15,12 @@ methods{
     getTotalBaseBorrowIndex() returns (uint64) envfree;
     getlastAccrualTime() returns (uint40) envfree;
     FACTOR_SCALE() returns (uint64) envfree;
-    perSecondInterestRateBase() returns (uint64) envfree;
-    perSecondInterestRateSlopeLow() returns (uint64) envfree;
-    perSecondInterestRateSlopeHigh() returns (uint64) envfree;
-    kink() returns (uint64) envfree;
+    perSecondInterestRateBase() returns (uint256) envfree;
+    perSecondInterestRateSlopeLow() returns (uint256) envfree;
+    perSecondInterestRateSlopeHigh() returns (uint256) envfree;
+    kink() returns (uint256) envfree;
     baseIndexScale() returns (uint64) envfree;
-    targetReserves() returns (uint104) envfree;
+    targetReserves() returns (uint256) envfree;
     
     latestRoundData() returns uint256 => DISPATCHER(true);
 
@@ -124,10 +124,10 @@ rule utilization_zero(){
     uint64 borrowRate = getBorrowRate(e);
 
     // for debug
-    uint64 perSecondInterestRateBase1 = perSecondInterestRateBase();
-    uint64 perSecondInterestRateSlopeLow1 = perSecondInterestRateSlopeLow();
-    uint64 perSecondInterestRateSlopeHigh1 = perSecondInterestRateSlopeHigh();
-    uint64 kink1 = kink();
+    uint256 perSecondInterestRateBase1 = perSecondInterestRateBase();
+    uint256 perSecondInterestRateSlopeLow1 = perSecondInterestRateSlopeLow();
+    uint256 perSecondInterestRateSlopeHigh1 = perSecondInterestRateSlopeHigh();
+    uint256 kink1 = kink();
 
     assert getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase() ;
 }
