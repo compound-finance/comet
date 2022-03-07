@@ -38,7 +38,7 @@ export async function deployNetworkComet(
 ): Promise<DeployedContracts> {
   
   const timelock = await deploymentManager.deploy<Timelock, Timelock__factory, []>(
-    'Timelock.sol',
+    'test/Timelock.sol',
     []
   );
 

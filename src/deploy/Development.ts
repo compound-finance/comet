@@ -69,7 +69,7 @@ export async function deployDevelopmentComet(
   const signers = await deploymentManager.hre.ethers.getSigners();
 
   const timelock = await deploymentManager.deploy<Timelock, Timelock__factory, []>(
-    'Timelock.sol',
+    'test/Timelock.sol',
     []
   );
 
