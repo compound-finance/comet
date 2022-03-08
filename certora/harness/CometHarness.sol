@@ -36,6 +36,10 @@ contract CometHarness is CometHarnessWrappers {
         return getAssetInfo(asset_index[asset]);
     }
 
+    function getAssetSupplyCapByAddress(address asset) external view returns (uint128){
+        return getAssetInfo(asset_index[asset]).supplyCap;
+    }
+
     function get_Index_Of_Collateral_Asset(address asset) public view returns (uint8){
         return asset_index[asset];
     }
@@ -45,7 +49,7 @@ contract CometHarness is CometHarnessWrappers {
     }
 
     // summarization/harness for user collateral asset 
-    mapping (uint16 => mapping (address => bool)) asset_in_state; 
+    mapping (uint16 => mapping (address => bool)) asset_in_state;
     mapping (uint16 => mapping (address => mapping (bool => uint16))) asset_in_state_changes; 
 
     function isInAsset(uint16 assetsIn, uint8 assetOffset) override internal view returns (bool) {

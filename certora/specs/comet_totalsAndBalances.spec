@@ -1,5 +1,9 @@
 import "comet.spec"
 
+methods{
+    getAssetSupplyCapByAddress(address) returns (uint128) envfree
+}
+
 /*
 
 Description: 
@@ -94,3 +98,23 @@ filtered { f-> !similarFunctions(f) && !f.isView }
         }
     }
 
+// The totalSupply of any collateral asset is less than or equal to the supplyCap
+invariant collateral_totalSupply_LE_supplyCap(address asset)
+    getTotalsSupplyAsset(asset) <= getAssetSupplyCapByAddress(asset)
+
+// // 
+// rule at_time_of_borrow_collateral_greater_than_zero(address user, address asset, method f){
+//     env e; calldataarg args;
+//     require getPrincipal(user) >= 0;
+//     f(e, args);
+//     assert getPrincipal(user) < 0 => isBorrowCollateralized(user);
+// }
+
+invariant at_time_of_borrow_collateral_greater_than_zero(address user)
+        getPrincipal(user) < 0 => isBorrowCollateralized(user)
+        {
+            preserved 
+            {
+                require user != currentContract;
+            }
+        }
