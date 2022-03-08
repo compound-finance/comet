@@ -67,24 +67,24 @@ hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 
 
 /* move to comet an use summarization */
 
-// // B@B - assetIn of a specific asset is initialized (!0) or uninitialized (0) along with the collateral balance
-// invariant assetIn_Initialized_With_Balance(address user, address asset)
-//     getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset))
-//     {
-//         preserved
-//         {
-//             require user != currentContract;
-//         }
-//     }
-
 // B@B - assetIn of a specific asset is initialized (!0) or uninitialized (0) along with the collateral balance
-rule assetIn_Initialized_With_Balance(method f, address user, address asset) filtered { f -> f.selector != call_updateAssetsIn(address, address, uint128, uint128).selector } {
-    env e; calldataarg args;
-    require user != currentContract;
-    require getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset));
-    f(e, args);
-    assert getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset));
-}
+invariant assetIn_Initialized_With_Balance(address user, address asset)
+    getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset))
+    {
+        preserved
+        {
+            require user != currentContract;
+        }
+    }
+
+// // B@B - assetIn of a specific asset is initialized (!0) or uninitialized (0) along with the collateral balance
+// rule assetIn_Initialized_With_Balance(method f, address user, address asset) filtered { f -> f.selector != call_updateAssetsIn(address, address, uint128, uint128).selector } {
+//     env e; calldataarg args;
+//     require user != currentContract;
+//     require getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset));
+//     f(e, args);
+//     assert getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset));
+// }
 // balance change => update asset
 
 
