@@ -141,10 +141,8 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
   const assets = opts.assets || defaultAssets();
   let priceFeeds = {};
+  const PriceFeedFactory = (await ethers.getContractFactory('SimplePriceFeed')) as SimplePriceFeed__factory;
   for (const asset in assets) {
-    const PriceFeedFactory = (await ethers.getContractFactory(
-      'SimplePriceFeed'
-    )) as SimplePriceFeed__factory;
     const initialPrice = exp(assets[asset].initialPrice || 1, 8);
     const priceFeedDecimals = assets[asset].priceFeedDecimals || 8;
     const priceFeed = await PriceFeedFactory.deploy(initialPrice, priceFeedDecimals);
