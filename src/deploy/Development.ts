@@ -193,7 +193,7 @@ export async function deployDevelopmentComet(
 
     let proxyAdminArgs: [] = [];
     let proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
-      'CometProxyAdmin.sol',
+      'vendored/CometProxyAdmin.sol',
       proxyAdminArgs
     );
     await proxyAdmin.transferOwnership(timelock.address);
@@ -203,7 +203,7 @@ export async function deployDevelopmentComet(
       TransparentUpgradeableConfiguratorProxy,
       TransparentUpgradeableConfiguratorProxy__factory,
       [string, string, string]
-    >('TransparentUpgradeableConfiguratorProxy.sol', [
+    >('vendored/TransparentUpgradeableConfiguratorProxy.sol', [
       configurator.address,
       proxyAdmin.address,
       (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data,

@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.11;
 
-import "./vendor/proxy/TransparentUpgradeableProxy.sol";
+import "../vendor/proxy/TransparentUpgradeableProxy.sol";
 
 /**
  * @dev A TransparentUpgradeableProxy that allows its admin to call its implementation.
