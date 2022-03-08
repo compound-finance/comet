@@ -53,19 +53,19 @@ migration('1644432723_deploy_fuji', {
       )
     );
     await wait(usdc.configureMinter(signerAddress, exp(10000, 6)));
+    await wait(usdc.mint(signerAddress, exp(10000, 6)));
+
+    let wbtc = await deploymentManager.clone(cloneAddr.wbtc, [], cloneNetwork);
+    // Give signer 1000 WBTC
     await wait(
-      usdc.mint(
+      wbtc.mint(
         signerAddress,
-        exp(10000, 6),
+        exp(10000, 8),
         '0x0000000000000000000000000000000000000000',
         0,
         '0x0000000000000000000000000000000000000000000000000000000000000000'
       )
     );
-
-    let wbtc = await deploymentManager.clone(cloneAddr.wbtc, [], cloneNetwork);
-    // Give signer 1000 WBTC
-    await wait(wbtc.mint(signerAddress, exp(1000, 8)));
 
     let wavax = await deploymentManager.clone(cloneAddr.wavax, [], cloneNetwork);
     // Give admin 0.01 WAVAX tokens [this is a precious resource here!]
@@ -78,10 +78,11 @@ migration('1644432723_deploy_fuji', {
       ['WAVAX', wavax],
     ]);
 
-    let { comet, cometProxy } = await deployNetworkComet(deploymentManager, true, {}, contracts);
+    let { cometProxy, configuratorProxy } = await deployNetworkComet(deploymentManager, true, {}, contracts);
 
     return {
       comet: cometProxy.address,
+      configurator: configuratorProxy.address,
       usdc: usdc.address,
       wbtc: wbtc.address,
       wavax: wavax.address,

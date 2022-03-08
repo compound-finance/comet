@@ -102,10 +102,11 @@ migration('1644388553_deploy_kovan', {
       ['LINK', link],
     ]);
 
-    let { comet, cometProxy } = await deployNetworkComet(deploymentManager, true, {}, contracts);
+    let { cometProxy, configuratorProxy } = await deployNetworkComet(deploymentManager, true, {}, contracts);
 
     return {
       comet: cometProxy.address,
+      configurator: configuratorProxy.address,
       usdc: usdc.address,
       wbtc: wbtc.address,
       weth: weth.address,
