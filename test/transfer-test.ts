@@ -142,7 +142,16 @@ describe('transfer', function () {
 
     await comet.connect(alice).transferAsset(bob.address, USDC.address, 100e6);
 
-    expect(await comet.baseBalanceOf(alice.address)).to.eq(-99999999); // 100e6 (minus borrowFactor)
+    const totalsBasic = await comet.totalsBasic();
+
+    const baseIndexScale = await comet.baseIndexScale();
+
+    expect(await comet.baseBalanceOf(alice.address)).to.eq(
+      -baseIndexScale
+        .mul(100e6)
+        .div(totalsBasic.baseBorrowIndex)
+        .toNumber()
+    );
   });
 
   it('cant borrow less than the minimum', async () => {
