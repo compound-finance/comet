@@ -88,9 +88,9 @@ contract CometHarness is CometHarnessWrappers {
 
     /*********** Simplification ***********/
     /* under approximation (not taking into account all possible cases) */
-    // function accrue(TotalsBasic memory totals) internal override view returns (TotalsBasic memory) {
-    //     return totals;
-    // }
+     function accrueInternal() override internal {
+
+     }
 
     /* safe approximation? (taking into account all possible cases) */
     
