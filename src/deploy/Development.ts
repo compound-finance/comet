@@ -178,7 +178,6 @@ export async function deployDevelopmentComet(
   );
 
   let cometProxy = null;
-  // XXX should we return configuratorProxy as well?
   let configuratorProxy = null;
   if (deployProxy) {
     const cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(

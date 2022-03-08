@@ -14,6 +14,7 @@ describe('configurator', function () {
   });
 
   it.skip('sets entire Configuration and deploys Comet with new configuration', async () => {
+    // XXX
   });
 
   it('sets governor and deploys Comet with new configuration', async () => {
@@ -29,6 +30,7 @@ describe('configurator', function () {
   });
 
   it.skip('adds asset and deploys Comet with new configuration', async () => {
+    // XXX
   });
 
   it('reverts if deploy is called from non-governor', async () => {

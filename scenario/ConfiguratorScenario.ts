@@ -84,12 +84,15 @@ scenario('reverts if configurator is not called by admin', {}, async ({ comet, c
   );
 });
 
-scenario('reverts if proxy is not upgraded by ProxyAdmin', {}, async ({ comet, proxyAdmin, actors }, world) => {
+scenario.skip('reverts if proxy is not upgraded by ProxyAdmin', {}, async ({ comet, proxyAdmin, actors }, world) => {
+  // XXX
 });
 
 
-scenario('fallbacks to implementation if called by non-admin', {}, async ({ comet, proxyAdmin, actors }, world) => {
+scenario.skip('fallbacks to implementation if called by non-admin', {}, async ({ comet, proxyAdmin, actors }, world) => {
+  // XXX
 });
 
-scenario('transfer admin of configurator', {}, async ({ comet, proxyAdmin, actors }, world) => {
+scenario.skip('transfer admin of configurator', {}, async ({ comet, proxyAdmin, actors }, world) => {
+  // XXX
 });
