@@ -393,7 +393,7 @@ contract Comet is CometCore {
     /**
      * @dev Accrue interest (and rewards) in base token supply and borrows
      **/
-    function accrueInternal() internal {
+    function accrueInternal() virtual internal {
         uint40 now_ = getNowInternal();
         uint timeElapsed = now_ - lastAccrualTime;
         if (timeElapsed > 0) {
