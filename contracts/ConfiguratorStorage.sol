@@ -9,6 +9,10 @@ import "./CometConfiguration.sol";
  * @author Compound
  */
 contract ConfiguratorStorage is CometConfiguration {
+    /// @notice The current version of Configurator. This version should be
+    /// checked in the initializer function.
+    uint public version;
+
     /// @notice Configuration settings used to deploy new Comet instances
     /// by the configurator
     /// @dev This needs to be internal to avoid a `CompilerError: Stack too deep

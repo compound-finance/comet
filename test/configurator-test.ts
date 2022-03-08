@@ -62,6 +62,11 @@ describe('configurator', function () {
     expect((await configuratorAsProxy.getConfiguration()).governor).to.be.equal(alice.address);
   });
 
-  it.skip('reverts if initialized more than once', async () => {
+  it('reverts if initialized more than once', async () => {
+    const { governor, configurator, configuratorProxy, cometFactory } = await makeConfigurator();
+
+    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+    let configuration = await configuratorAsProxy.getConfiguration();
+    await expect(configuratorAsProxy.initialize(governor.address, cometFactory.address, configuration)).to.be.revertedWith("custom error 'AlreadyInitialized()'");
   });
 });
