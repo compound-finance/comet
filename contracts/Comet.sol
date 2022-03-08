@@ -163,30 +163,34 @@ contract Comet is CometCore {
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
-        governor = config.governor;
-        pauseGuardian = config.pauseGuardian;
-        baseToken = config.baseToken;
-        baseTokenPriceFeed = config.baseTokenPriceFeed;
-        extensionDelegate = config.extensionDelegate;
+        unchecked {
+            governor = config.governor;
+            pauseGuardian = config.pauseGuardian;
+            baseToken = config.baseToken;
+            baseTokenPriceFeed = config.baseTokenPriceFeed;
+            extensionDelegate = config.extensionDelegate;
 
-        decimals = decimals_;
-        baseScale = uint64(10 ** decimals_);
-        trackingIndexScale = config.trackingIndexScale;
-        accrualDescaleFactor = baseScale / 1e6;
+            decimals = decimals_;
+            baseScale = uint64(10 ** decimals_);
+            trackingIndexScale = config.trackingIndexScale;
+            accrualDescaleFactor = baseScale / 1e6;
 
-        baseMinForRewards = config.baseMinForRewards;
-        baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
-        baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
+            baseMinForRewards = config.baseMinForRewards;
+            baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
+            baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
 
-        baseBorrowMin = config.baseBorrowMin;
-        targetReserves = config.targetReserves;
+            baseBorrowMin = config.baseBorrowMin;
+            targetReserves = config.targetReserves;
+        }
 
         // Set interest rate model configs
-        kink = config.kink;
-        perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
-        perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
-        perSecondInterestRateBase = config.perYearInterestRateBase / SECONDS_PER_YEAR;
-        reserveRate = config.reserveRate;
+        unchecked {
+            kink = config.kink;
+            perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
+            perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
+            perSecondInterestRateBase = config.perYearInterestRateBase / SECONDS_PER_YEAR;
+            reserveRate = config.reserveRate;
+        }
 
         // Set asset info
         numAssets = uint8(config.assetConfigs.length);
@@ -263,27 +267,29 @@ contract Comet is CometCore {
         if (assetConfig.borrowCollateralFactor >= assetConfig.liquidateCollateralFactor) revert BorrowCFTooLarge();
         if (assetConfig.liquidateCollateralFactor > MAX_COLLATERAL_FACTOR) revert LiquidateCFTooLarge();
 
-        // Keep 4 decimals for each factor
-        uint descale = FACTOR_SCALE / 1e4;
-        uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
-        uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
-        uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
+        unchecked {
+            // Keep 4 decimals for each factor
+            uint descale = FACTOR_SCALE / 1e4;
+            uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
+            uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
+            uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
 
-        // Be nice and check descaled values are still within range
-        if (borrowCollateralFactor >= liquidateCollateralFactor) revert BorrowCFTooLarge();
+            // Be nice and check descaled values are still within range
+            if (borrowCollateralFactor >= liquidateCollateralFactor) revert BorrowCFTooLarge();
 
-        // Keep whole units of asset for supply cap
-        uint64 supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals_));
+            // Keep whole units of asset for supply cap
+            uint64 supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals_));
 
-        uint256 word_a = (uint160(asset) << 0 |
-                          uint256(borrowCollateralFactor) << 160 |
-                          uint256(liquidateCollateralFactor) << 176 |
-                          uint256(liquidationFactor) << 192);
-        uint256 word_b = (uint160(priceFeed) << 0 |
-                          uint256(decimals_) << 160 |
-                          uint256(supplyCap) << 168);
+            uint256 word_a = (uint160(asset) << 0 |
+                              uint256(borrowCollateralFactor) << 160 |
+                              uint256(liquidateCollateralFactor) << 176 |
+                              uint256(liquidationFactor) << 192);
+            uint256 word_b = (uint160(priceFeed) << 0 |
+                              uint256(decimals_) << 160 |
+                              uint256(supplyCap) << 168);
 
-        return (word_a, word_b);
+            return (word_a, word_b);
+        }
     }
 
     /**
