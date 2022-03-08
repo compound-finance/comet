@@ -275,10 +275,15 @@ export async function wait(
   };
 }
 
-export function filterEvent(data, eventName) {
-  return data.receipt.events?.filter((x) => {
-    return x.event == eventName;
-  })[0];
+export function event(tx, index) {
+  const ev = tx.receipt.events[index], args = {};
+  for (const k in ev.args) {
+    const v = ev.args[k];
+    if (isNaN(Number(k))) {
+      args[k] = v._isBigNumber ? BigInt(v) : v;
+    }
+  }
+  return { [ev.event]: args };
 }
 
 export function inCoverage() {

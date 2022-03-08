@@ -1,4 +1,4 @@
-import { ethers, expect, makeProtocol } from './helpers';
+import { ethers, event, expect, makeProtocol, wait } from './helpers';
 
 describe('erc20', function () {
   it('has correct name', async () => {
@@ -75,11 +75,17 @@ describe('erc20', function () {
 
     await comet.setBasePrincipal(alice.address, 100e6);
 
-    await comet.connect(alice).transfer(bob.address, 100e6);
+    const tx = await wait(comet.connect(alice).transfer(bob.address, 100e6));
 
     expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
     expect(await comet.baseBalanceOf(bob.address)).to.eq(100e6);
-    // XXX emits Transfer
+    expect(event(tx, 0)).to.be.deep.equal({
+      Transfer: {
+        from: alice.address,
+        to: bob.address,
+        amount: BigInt(100e6),
+      }
+    });
   });
 
   describe('transferFrom', function() {
@@ -168,11 +174,15 @@ describe('erc20', function () {
         users: [user, spender]
       } = await makeProtocol();
 
-      await comet.connect(user).approve(
-        spender.address,
-        ethers.constants.MaxUint256
-      );
-      // XXX emits Approval
+      const MaxU256 = BigInt(ethers.constants.MaxUint256.toString());
+      const tx = await wait(comet.connect(user).approve(spender.address, MaxU256));
+      expect(event(tx, 0)).to.be.deep.equal({
+        Approval: {
+          owner: user.address,
+          spender: spender.address,
+          amount: MaxU256,
+        }
+      });
 
       const isAllowed = await comet.isAllowed(user.address, spender.address);
       expect(isAllowed).to.be.true;
@@ -184,11 +194,14 @@ describe('erc20', function () {
         users: [user, spender]
       } = await makeProtocol();
 
-      await comet.connect(user).approve(
-        spender.address,
-        0
-      );
-      // XXX emits Approval
+      const tx = await wait(comet.connect(user).approve(spender.address, 0));
+      expect(event(tx, 0)).to.be.deep.equal({
+        Approval: {
+          owner: user.address,
+          spender: spender.address,
+          amount: BigInt(0),
+        }
+      });
 
       const isAllowed = await comet.isAllowed(user.address, spender.address);
       expect(isAllowed).to.be.false;

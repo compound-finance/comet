@@ -985,6 +985,8 @@ contract Comet is CometCore {
             if (uint104(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
             if (!isBorrowCollateralized(src)) revert NotCollateralized();
         }
+
+        emit Transfer(src, dst, amount);
     }
 
     /**
