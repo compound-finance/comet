@@ -37,25 +37,26 @@
 | 26   | `totalCollateralPerAssetVsAssetBalance` | IN PROGRESS | 👷 | - | New - expecting to fail? |
 | 27 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions | - |
 | 28 | `base_balance_vs_totals` | IN PROGRESS | 👷| on simplified assumptions | - |
+| 29 | `Collateral_totalSupply_LE_supplyCap` | DONE | ✅ | using the summarization of getAssetInfo | NEW |
 | | **High level updates** |
-| 29 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | found issue with absorb | - |
+| 30 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | found issue with absorb | - |
 | | **BuyCollateral** |
-| 30 | `antiMonotonicityOfBuyCollateral` | DONE | ✅ | with assumptions asset!=base, minAmount > 0, and msg.sender| discuss minAmount |
-| 31   | `buyCollateralMax` | DONE | ❌ | no limit, one can withdraw all asset, DOS on withdraw? |
+| 31 | `antiMonotonicityOfBuyCollateral` | DONE | ✅ | with assumptions asset!=base, minAmount > 0, and msg.sender| discuss minAmount |
+| 32   | `buyCollateralMax` | DONE | ❌ | no limit, one can withdraw all asset, DOS on withdraw? |
 | | **Absorb** |
-| 32 | `absorb_reserves_increase` | IN PROGRESS | 👷  | - | NEW |
+| 33 | `absorb_reserves_increase` | IN PROGRESS | 👷  | - | NEW |
 | | **Supply** |
-|33 | `supply_increase_balance` | IN PROGRESS | ✅ | need to generalize | NEW |
+| 34 | `supply_increase_balance` | IN PROGRESS | ✅ | need to generalize | NEW |
 | | **Withdraw** |
-| 34 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - | - |
-| 35 | `withdraw_decrease_balance` | IN PROGRESS | ✅ | need to generalize | NEW |
+| 35 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - | - |
+| 36 | `withdraw_decrease_balance` | IN PROGRESS | ✅ | need to generalize | NEW |
 | | **Reserve** |
-| 36 | `withdraw_reserves_decreases` | DONE | ✅ | - | NEW |
-| 37 | `withdraw_reserves_monotonicity` | DONE | ✅ | - | NEW |
-| 38 | `no_reserves_zero_balance` | DONE | ✅ | on simplified assumptions | |
+| 37 | `withdraw_reserves_decreases` | DONE | ✅ | - | NEW |
+| 38 | `withdraw_reserves_monotonicity` | DONE | ✅ | - | NEW |
+| 39 | `no_reserves_zero_balance` | DONE | ✅ | on simplified assumptions | |
 |    | **General**
-| 39 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷  | - | - | 
-| 40 | `usage_registered_assets_only` | IN PROGRESS | 👷  | - | - |
+| 40 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷  | - | - | 
+| 41 | `usage_registered_assets_only` | IN PROGRESS | 👷  | - | - |
 
 
 ## plan for upcoming weeks
@@ -116,7 +117,7 @@ p4 := reserveRate(e) > 0
 
 2. `utilization_zero` - Zero utilization is only on initial baseIntersetRate  ( ✅ ) - Gadi
 
-3. `isLiquiditable_false_should_not_change` - computation of isLiquidatable on the same state changes from false to true only due to price change or accrue ( 👷 ) - Gadi 
+3. `isLiquiditable_false_should_not_change` - computation of isLiquidatable on the same state changes from false to true only due to price change or accrue ( 👷 ) - Gadi
 
 4. `isLiquiditable_true_should_not_change` - computation of isLiquidatable on the same state changes from true to false only due to price change, supplying more collateral, or supply more base ( 👷 ) - Gadi 
 
@@ -178,14 +179,70 @@ On buyCollateral system's balanace in base should increase iff system's balance 
 
 5. Basebalance_vs_totals( 👷 ) - Gadi
 
-6. no_reserves_zero_balance
+6. no_reserves_zero_balance ( 👷 ) - Gadi
 
+7. The sum of collateral per asset over all users is equal to total collateral of asset:
+```CVL 
+sum(userCollateral[u][asset].balance) == totalsCollateral[asset].totalSupplyAsset
+```
+
+8. Summary of balances (base):
+```CVL
+sum(userBasic[u].principal) == totalsBasic.totalSupplyBase - totalsBasic.totalBorrowBase - ( ) Nurit
+```
+
+9. TotalSupplyAsset vs. external balance (collateral)*:
+```CVL
+totalsCollateral[asset].totalSupplyAsset == asset.balanceOf(this)
+```
+*In reality it can break in case of external transfer directly to the contract.
  
- 
+10. TotalSupplyBase vs. external balance (base):
+```CVL
+totalsBasic.totalSupplyBase - totalsBasic.totalBorrowBase <= base.balanceOf(this)
+```
+*It will be fine by the Compound team if we switch `==` with `<=`. can break with external transfer to the contract.
+
+11. `Collateral_totalSupply_LE_supplyCap` - Max totalSupplyAsset (collateral)*: - ( ✅ ) Michael
+    ```CVL 
+        totalsCollateral[asset].totalSupplyAsset <= getAssetInfo().supplyCap
+    ```
+*This property can break in reality since a governor is able to change the config. In this case a governor can determine a supplycap smaller than current supply in the system.
+
 ## simplified Assumptions regarding comet*: 
 
 - baseSupplyIndex and baseBorrowIndex at baseIndexScale
-- latestRoundData returns answer > 0
+
+
+## Checking permissions.
+- change in balance can only occur from sender == owner or if the sender is allowed
+needs delegate call.
+
+
+## isBorrowCollateralized
+- isBorrowCollateralized == false -> f() -> isBorrowCollateralized == false (on the same timestamp accrue should not change the state)
+
+## MICHAEL
+
+2. If someone borrowed then his collateral more than zero:
+    1. ```CVL
+        userBasic.principle < 0 => UserCollateral.balance != 0
+        ```
+    
+    2. On the borrowing block the collateral must be greater or equal to the borrow value.
+    ```CVL
+    collateral >= borrow
+    ```
+### asset uniqueness
+- if an asset doesnt exist it should revert on every function call with asset.
+asset_index, index_asset are correlated. not exist means index of asset is 0 and the asset in element 0 is not the same asset.
+
+
+
+
+
+
+
 
 
 
@@ -197,69 +254,16 @@ On buyCollateral system's balanace in base should increase iff system's balance 
     withdrawCollateral(userCollateral[user][asset].balance) will work
 ```
 
-2. Each collateral asset should be unique (and probably distinct from the base asset).
-
-3. The sum of collateral per asset over all users is equal to total collateral of asset:
-```CVL 
-sum(userCollateral[u][asset].balance) == totalsCollateral[asset].totalSupplyAsset
-```
-
-4. Summary of balances (base):
-```CVL
-sum(userBasic[u].principal) == totalsBasic.totalSupplyBase - totalsBasic.totalBorrowBase
-```
-
-5. Max totalSupplyAsset (collateral)*:
-    1. ```CVL 
-        totalsCollateral[asset].totalSupplyAsset <= getAssetInfo().supplyCap
-        ```
-    *This property can break in reality since a governor is able to change the config. In this case a governor can determine a supplycap smaller than current supply in the system. In this case the following property should hold:
-
-    2. ```CVL
-        totalsCollateral[asset].totalSupplyAsset > getAssetInfo().supplyCap => no deposit of assets are possible
-        ```
-
-6. TotalSupplyAsset vs. external balance (collateral)*:
-```CVL
-totalsCollateral[asset].totalSupplyAsset == asset.balanceOf(this)
-```
-*In reality it can break in case of external transfer directly to the contract.
-
-7. TotalSupplyBase vs. external balance (base):
-```CVL
-totalsBasic.totalSupplyBase - totalsBasic.totalBorrowBase == base.balanceOf(this)
-```
-*It will be fine by the Compound team if we switch `==` with `<=`. can break with external transfer to the contract.
-
 8. User’s collateral bigger than debt*:
 ```CVL
 sum(userCollateral[user][asset].balance) >= presentValue(userBasic[user].principal)
 ```
 *Assuming no price changes occur and `accrue` haven’t invoked. (`accrue` can pile debt on borrower and get him under water)
 
-9. Maximum amount of debt:
-```CVL
-maxAmountToRepay <= amountBorrowed*((1+maxRate)**deltaT)
-
-maxRate = baseRate + slopeLow*kink+slopeHigh*(1-kink)
-```
-
 10. Can always withdraw all liquidity:
 ```CVL
 withdrawBase(getBorrowLiquidity()/priceFeed) will work always
 ```
-
-11. If someone borrowed then his collateral more than zero:
-    1. ```CVL
-        borrow[user] != 0 => collateral[user] != 0
-        ```
-    
-    2. On the borrowing block the collateral must be greater or equal to the borrow value.
-    ```CVL
-    collateral >= borrow
-    ```
-
-12. `liquidateCollateralFactor > borrowCollateralFactor` - Michael
 
 13. A user should get more rewards (interest) if he keeps its liquidity for longer.
 
@@ -315,11 +319,6 @@ isLiquidatable => getLiquidationMargin < 0 && getBorrowLiquidity < 0
 25. getSupplyRateInternal monotonic with respect to utilization:
 ```CVL
 SupplyRate rise <=> getUtilizationInternal rise
-```
-
-26. borrow rate should always be higher than the supply rate:
-```CVL
-BorrowRate > SupplyRate
 ```
 
 </br>
