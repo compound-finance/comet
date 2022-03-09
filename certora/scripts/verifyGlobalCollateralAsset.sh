@@ -5,4 +5,5 @@ certoraRun certora/harness/CometHarnessWrappers.sol \
     --optimistic_loop \
     --settings -useBitVectorTheory,-smt_hashingScheme=plainInjectivity,-deleteSMTFile=false,-postProcessCounterExamples=false \
     --solc_args '["--experimental-via-ir"]' \
+    --rule reversability_of_packing \
     --msg "GlobalCollateralAsset $1"

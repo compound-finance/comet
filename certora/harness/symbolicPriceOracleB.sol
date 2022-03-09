@@ -27,7 +27,6 @@ contract SymbolicPriceOracleB {
             uint80
         )
     {
-        require (answer[block.timestamp] > 0);
         return (roundId, answer[block.timestamp], startedAt, updatedAt, answeredInRound);
     }
 }
