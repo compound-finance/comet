@@ -36,6 +36,10 @@ contract CometHarness is CometHarnessWrappers {
         return getAssetInfo(asset_index[asset]);
     }
 
+    function getAssetSupplyCapByAddress(address asset) external view returns (uint128){
+        return getAssetInfo(asset_index[asset]).supplyCap;
+    }
+
     function get_Index_Of_Collateral_Asset(address asset) public view returns (uint8){
         return asset_index[asset];
     }
@@ -45,7 +49,7 @@ contract CometHarness is CometHarnessWrappers {
     }
 
     // summarization/harness for user collateral asset 
-    mapping (uint16 => mapping (address => bool)) asset_in_state; 
+    mapping (uint16 => mapping (address => bool)) asset_in_state;
     mapping (uint16 => mapping (address => mapping (bool => uint16))) asset_in_state_changes; 
 
     function isInAsset(uint16 assetsIn, uint8 assetOffset) override internal view returns (bool) {
@@ -88,9 +92,9 @@ contract CometHarness is CometHarnessWrappers {
 
     /*********** Simplification ***********/
     /* under approximation (not taking into account all possible cases) */
-    // function accrue(TotalsBasic memory totals) internal override view returns (TotalsBasic memory) {
-    //     return totals;
-    // }
+     function accrueInternal() override internal {
+
+     }
 
     /* safe approximation? (taking into account all possible cases) */
     
@@ -125,13 +129,21 @@ contract CometHarness is CometHarnessWrappers {
     // }
 
     function transferAssetFromBase(address src, address dst, address asset, uint amount) external {
+        if (isTransferPaused()) revert Paused();
+        if (!hasPermission(src, msg.sender)) revert Unauthorized();
+        if (src == dst) revert NoSelfTransfer();
+
         require (asset == baseToken);
-        return this.transferAssetFrom(src, dst, asset, amount);
+        return super.transferBase(src, dst, safe104(amount));
     }
 
     function transferFromAsset(address src, address dst, address asset, uint amount) external {
+        if (isTransferPaused()) revert Paused();
+        if (!hasPermission(src, msg.sender)) revert Unauthorized();
+        if (src == dst) revert NoSelfTransfer();
+
         require (asset != baseToken);
-        return this.transferAssetFrom(src, dst, asset, amount);
+        return super.transferCollateral(src, dst, asset, safe128(amount));
     }
 
    

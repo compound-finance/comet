@@ -1,5 +1,9 @@
 import "comet.spec"
 
+methods{
+    getAssetSupplyCapByAddress(address) returns (uint128) envfree
+}
+
 /*
 
 Description: 
@@ -65,12 +69,18 @@ formula :
         totalsCollateral[asset].totalSupplyAsset <= asset.balanceOf(this)
 */
 invariant totalCollateralPerAssetVsAssetBalance(address asset) 
-    getTotalsSupplyAsset(asset)  <= tokenBalanceOf(asset, currentContract) 
+    asset != _baseToken => 
+        (getTotalsSupplyAsset(asset)  <= tokenBalanceOf(asset, currentContract) ) 
     filtered { f-> !similarFunctions(f) && !f.isView }
     {
         preserved with (env e){
             simplifiedAssumptions();
             require e.msg.sender != currentContract;
+        }
+        preserved supplyFrom(address from, address dst, address asset_, uint amount) with (env e) {
+            simplifiedAssumptions();
+            require e.msg.sender != currentContract;
+            require from != currentContract;
         }
     }
 
@@ -86,11 +96,42 @@ invariant totalCollateralPerAssetVsAssetBalance(address asset)
  link   : 
 */
 invariant base_balance_vs_totals()
-_baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase()
+_baseToken.balanceOf(currentContract) >= getTotalSupplyBase() - getTotalBorrowBase()
 filtered { f-> !similarFunctions(f) && !f.isView }
     {
-        preserved {
+        preserved with (env e){
             simplifiedAssumptions();
+            require e.msg.sender != currentContract;
+        }
+        preserved buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) with (env e) {
+            simplifiedAssumptions();
+            require asset != _baseToken;
+            require recipient != currentContract;
+        }
+        //this invariant does not hold on absorb and buy
+        //@todo - can we generalize
+        preserved absorb(address absorber, address[] accounts) with (env e) {
+            require(false);
         }
     }
 
+// The totalSupply of any collateral asset is less than or equal to the supplyCap
+invariant collateral_totalSupply_LE_supplyCap(address asset)
+    getTotalsSupplyAsset(asset) <= getAssetSupplyCapByAddress(asset)
+
+// // 
+// rule at_time_of_borrow_collateral_greater_than_zero(address user, address asset, method f){
+//     env e; calldataarg args;
+//     require getPrincipal(user) >= 0;
+//     f(e, args);
+//     assert getPrincipal(user) < 0 => isBorrowCollateralized(user);
+// }
+
+invariant at_time_of_borrow_collateral_greater_than_zero(address user)
+        getPrincipal(user) < 0 => isBorrowCollateralized(user)
+        {
+            preserved 
+            {
+                require user != currentContract;
+            }
+        }

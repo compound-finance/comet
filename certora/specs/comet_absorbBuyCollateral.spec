@@ -11,15 +11,17 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
     
     require e.msg.sender != currentContract;
     require recipient != currentContract;
-
+    
     uint256 balanceAssetBefore = tokenBalanceOf(asset, currentContract);
     uint256 balanceBaseBefore = tokenBalanceOf(_baseToken, currentContract);
     buyCollateral(e, asset, minAmount, baseAmount, recipient);
     uint256 balanceAssetAfter = tokenBalanceOf(asset, currentContract);
     uint256 balanceBaseAfter = tokenBalanceOf(_baseToken, currentContract);
+
     assert (balanceAssetAfter <= balanceAssetBefore);
     assert (balanceBaseBefore <= balanceBaseAfter);
     assert (balanceBaseBefore < balanceBaseAfter <=> balanceAssetAfter < balanceAssetBefore);
+    
 }
 
 rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address recipient) {

@@ -13,6 +13,8 @@ methods{
     getPauseFlags() returns (uint8) envfree
     signedMulPrice(int amount, uint price, uint tokenScale) => ghostSignedMulPrice(amount,price,tokenScale);
     mulPrice(uint amount, uint price, uint tokenScale) => ghostMulPrice(amount,price,tokenScale);
+    getPrincipal(address) returns (int104) envfree
+
 }
 
 ghost ghostSignedMulPrice(int, uint, uint) returns int256; 

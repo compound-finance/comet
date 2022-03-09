@@ -8,4 +8,4 @@ certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harne
     --settings -enableEqualitySaturation=false,-solver=z3,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \
     --solc_args '["--experimental-via-ir"]' \
     --loop_iter 2 \
-    --msg "comet_absorbBuyCollateral $1"
+    --msg "comet_withdrawSupply $1"
