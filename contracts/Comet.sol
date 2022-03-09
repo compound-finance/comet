@@ -17,9 +17,9 @@ contract Comet is CometCore {
     event Transfer(address indexed from, address indexed to, uint256 amount);
     event Withdraw(address indexed src, address indexed to, uint256 amount);
 
-    event Supply(address indexed from, address indexed dst, address indexed asset, uint256 amount);
-    event Transfer(address indexed from, address indexed to, address indexed asset, uint256 amount);
-    event Withdraw(address indexed src, address indexed to, address indexed asset, uint256 amount);
+    event SupplyCollateral(address indexed from, address indexed dst, address indexed asset, uint256 amount);
+    event TransferCollateral(address indexed from, address indexed to, address indexed asset, uint256 amount);
+    event WithdrawCollateral(address indexed src, address indexed to, address indexed asset, uint256 amount);
 
     /** Custom errors **/
 
@@ -900,7 +900,7 @@ contract Comet is CometCore {
 
         updateAssetsIn(dst, asset, dstCollateral, dstCollateralNew);
 
-        emit Supply(from, dst, asset, amount);
+        emit SupplyCollateral(from, dst, asset, amount);
     }
 
     /**
@@ -1017,7 +1017,7 @@ contract Comet is CometCore {
         // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
         if (!isBorrowCollateralized(src)) revert NotCollateralized();
 
-        emit Transfer(src, dst, asset, amount);
+        emit TransferCollateral(src, dst, asset, amount);
     }
 
     /**
@@ -1115,7 +1115,7 @@ contract Comet is CometCore {
 
         doTransferOut(asset, to, amount);
 
-        emit Withdraw(src, to, asset, amount);
+        emit WithdrawCollateral(src, to, asset, amount);
     }
 
     /**

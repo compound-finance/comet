@@ -10,6 +10,13 @@ import "./ERC20.sol";
  * @author Compound
  */
 abstract contract CometInterface is CometCore, ERC20 {
+    event Supply(address indexed from, address indexed dst, uint256 amount);
+    event Withdraw(address indexed src, address indexed to, uint256 amount);
+
+    event SupplyCollateral(address indexed from, address indexed dst, address indexed asset, uint256 amount);
+    event TransferCollateral(address indexed from, address indexed to, address indexed asset, uint256 amount);
+    event WithdrawCollateral(address indexed src, address indexed to, address indexed asset, uint256 amount);
+
     function allow(address manager, bool isAllowed) virtual external;
     function allowBySig(address owner, address manager, bool isAllowed, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s) virtual external;
 

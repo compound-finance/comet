@@ -1,4 +1,4 @@
-import { expect, exp, makeProtocol, portfolio, wait } from './helpers';
+import { event, expect, exp, makeProtocol, portfolio, wait } from './helpers';
 
 describe('transfer', function () {
   it('transfers base from sender if the asset is base', async () => {
@@ -20,6 +20,14 @@ describe('transfer', function () {
     const t1 = await comet.totalsBasic();
     const p1 = await portfolio(protocol, alice.address);
     const q1 = await portfolio(protocol, bob.address);
+
+    expect(event(s0, 0)).to.be.deep.equal({
+      Transfer: {
+        from: bob.address,
+        to: alice.address,
+        amount: BigInt(100e6),
+      }
+    });
 
     expect(p0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(q0.internal).to.be.deep.equal({ USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n });
@@ -50,6 +58,15 @@ describe('transfer', function () {
     const t1 = await comet.totalsCollateral(COMP.address);
     const p1 = await portfolio(protocol, alice.address);
     const q1 = await portfolio(protocol, bob.address);
+
+    expect(event(s0, 0)).to.be.deep.equal({
+      TransferCollateral: {
+        from: bob.address,
+        to: alice.address,
+        asset: COMP.address,
+        amount: BigInt(8e8),
+      }
+    });
 
     expect(p0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(q0.internal).to.be.deep.equal({ USDC: 0n, COMP: exp(8, 8), WETH: 0n, WBTC: 0n });

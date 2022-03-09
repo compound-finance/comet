@@ -1,4 +1,4 @@
-import { Comet, ethers, expect, exp, makeProtocol, portfolio, wait } from './helpers';
+import { Comet, ethers, event, expect, exp, makeProtocol, portfolio, wait } from './helpers';
 
 describe('supplyTo', function () {
   it('supplies base from sender if the asset is base', async () => {
@@ -18,6 +18,21 @@ describe('supplyTo', function () {
     const t1 = await comet.totalsBasic();
     const p1 = await portfolio(protocol, alice.address)
     const q1 = await portfolio(protocol, bob.address)
+
+    expect(event(s0, 0)).to.be.deep.equal({
+      Transfer: {
+        from: bob.address,
+        to: comet.address,
+        amount: BigInt(100e6),
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      Supply: {
+        from: bob.address,
+        dst: alice.address,
+        amount: BigInt(100e6),
+      }
+    });
 
     expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(p0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
@@ -50,6 +65,22 @@ describe('supplyTo', function () {
     const t1 = await comet.totalsCollateral(COMP.address);
     const p1 = await portfolio(protocol, alice.address)
     const q1 = await portfolio(protocol, bob.address)
+
+    expect(event(s0, 0)).to.be.deep.equal({
+      Transfer: {
+        from: bob.address,
+        to: comet.address,
+        amount: BigInt(8e8),
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      SupplyCollateral: {
+        from: bob.address,
+        dst: alice.address,
+        asset: COMP.address,
+        amount: BigInt(8e8),
+      }
+    });
 
     expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(p0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
