@@ -1,10 +1,8 @@
 import "A_setupNoSummarization.spec"
 
 
+
 methods{
-    getSpecificSupplyRateInternal(uint64,uint64,uint64,uint64) returns (uint64) envfree;
-    getSpecificBorrowRateInternal(uint64,uint64,uint64,uint64) returns (uint64) envfree;
-    getSpecificUtilizationInternal(uint64,uint64,uint64,uint64) returns (uint)  envfree;
 
     call_presentValue(int104) returns (int104) envfree;
     call_principalValue(int104) returns (int104) envfree;
@@ -14,7 +12,7 @@ methods{
     getTotalBaseSupplyIndex() returns (uint64) envfree;
     getTotalBaseBorrowIndex() returns (uint64) envfree;
     getlastAccrualTime() returns (uint40) envfree;
-    FACTOR_SCALE() returns (uint64) envfree;
+    // FACTOR_SCALE() returns (uint64) envfree;
     perSecondInterestRateBase() returns (uint256) envfree;
     perSecondInterestRateSlopeLow() returns (uint256) envfree;
     perSecondInterestRateSlopeHigh() returns (uint256) envfree;
@@ -42,11 +40,11 @@ rule supplyIndex_borrowIndex_rise_with_time(){
     env e;
     uint64 base_supply_index_1 = getTotalBaseSupplyIndex();
     uint64 base_borrow_index_1 = getTotalBaseBorrowIndex();
-    accrue(e);
+    call_accrueInternal(e);
     uint64 base_supply_index_2 = getTotalBaseSupplyIndex();
     uint64 base_borrow_index_2 = getTotalBaseBorrowIndex();
 
-    assert getNow(e) > getlastAccrualTime() => 
+    assert call_getNowInternal(e) > getlastAccrualTime() => 
                    (base_supply_index_2 > base_supply_index_1 &&
                     base_borrow_index_2 > base_borrow_index_1);
 }
@@ -65,7 +63,7 @@ rule supplyIndex_borrowIndex_monotonic(){
     env e;
     uint64 base_supply_index_1 = getTotalBaseSupplyIndex();
     uint64 base_borrow_index_1 = getTotalBaseBorrowIndex();
-    accrue(e);
+    call_accrueInternal(e);
     uint64 base_supply_index_2 = getTotalBaseSupplyIndex();
     uint64 base_borrow_index_2 = getTotalBaseBorrowIndex();
 
@@ -82,24 +80,15 @@ rule supplyIndex_borrowIndex_monotonic(){
  status : proved
 */
 rule supplyRate_vs_utilization(){
-    env e;
-    setup(e);
+    env e1;
+    env e2;
+    setup(e1);
 
-    uint64 baseSupplyIndex1;
-    uint64 baseBorrowIndex1;
-    uint64 trackingSupplyIndex1;
-    uint64 trackingBorrowIndex1;
+    uint   utilization_1 = getUtilization(e1);
+    uint64 supplyRate_1 = getSupplyRate(e1);
 
-    uint   utilization_1 = getSpecificUtilizationInternal(baseSupplyIndex1,baseBorrowIndex1,trackingSupplyIndex1,trackingBorrowIndex1);
-    uint64 supplyRate_1 = getSpecificSupplyRateInternal(baseSupplyIndex1,baseBorrowIndex1,trackingSupplyIndex1,trackingBorrowIndex1);
-
-    uint64 baseSupplyIndex2;
-    uint64 baseBorrowIndex2;
-    uint64 trackingSupplyIndex2;
-    uint64 trackingBorrowIndex2;
-
-    uint utilization_2 = getSpecificUtilizationInternal(baseSupplyIndex2,baseBorrowIndex2,trackingSupplyIndex2,trackingBorrowIndex2);
-    uint64 supplyRate_2 = getSpecificSupplyRateInternal(baseSupplyIndex2,baseBorrowIndex2,trackingSupplyIndex2,trackingBorrowIndex2);
+    uint utilization_2 = getUtilization(e2);
+    uint64 supplyRate_2 = getSupplyRate(e2);
 
     assert utilization_2 > utilization_1 => supplyRate_2 >= supplyRate_1;
 }
@@ -134,24 +123,24 @@ rule utilization_zero(){
     
 /* 
  Description :  
-     if accrue() with lower timestamp succeeds then accrue with higher timestamp should succeed as well
+     if accrueInternal() with lower timestamp succeeds then accrueInternal with higher timestamp should succeed as well
 
 formula : 
         !lastReverted;
 
  status : failed
  reason : 
- link https://vaas-stg.certora.com/output/65782/5240447a217a62b1d892/?anonymousKey=cddebb60c69464b5d715c547ab600e08ea032c0c#accrue_not_revertedResults
+ link https://vaas-stg.certora.com/output/65782/5240447a217a62b1d892/?anonymousKey=cddebb60c69464b5d715c547ab600e08ea032c0c#accrueInternal_not_revertedResults
 */
-rule accrue_not_reverted(){
+rule accrueInternal_not_reverted(){
     env e1;
     env e2;
     setup(e1);
     require e2.msg.value == 0 && e1.msg.value == 0; // reverts if msg.value != 0
     require e2.block.timestamp == e1.block.timestamp + 1;
     require e2.block.timestamp < 2^40; // reverts if block.timestamp > 2^40
-    accrue(e1);
-    invoke accrue(e2);
+    call_accrueInternal(e1);
+    invoke call_accrueInternal(e2);
 
     assert !lastReverted;
 }
@@ -233,7 +222,7 @@ rule supplyIndex_borrowIndex_GE_baseIndexScale(){
     setup(e);
     require getTotalBaseSupplyIndex() >= baseIndexScale() &&
         getTotalBaseBorrowIndex() >= baseIndexScale();
-    accrue(e);
+    call_accrueInternal(e);
     assert getTotalBaseSupplyIndex() >= baseIndexScale() &&
         getTotalBaseBorrowIndex() >= baseIndexScale();
 }
@@ -332,3 +321,7 @@ function setup(env e){
     require getTotalBaseSupplyIndex() >= baseIndexScale() &&
         getTotalBaseBorrowIndex() >= baseIndexScale();
 }
+
+
+
+
