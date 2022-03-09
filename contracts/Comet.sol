@@ -13,7 +13,13 @@ import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.
 contract Comet is CometCore {
     /** Custom events **/
 
+    event Supply(address indexed from, address indexed dst, uint256 amount);
     event Transfer(address indexed from, address indexed to, uint256 amount);
+    event Withdraw(address indexed src, address indexed to, uint256 amount);
+
+    event Supply(address indexed from, address indexed dst, address indexed asset, uint256 amount);
+    event Transfer(address indexed from, address indexed to, address indexed asset, uint256 amount);
+    event Withdraw(address indexed src, address indexed to, address indexed asset, uint256 amount);
 
     /** Custom errors **/
 
@@ -871,6 +877,8 @@ contract Comet is CometCore {
         totalBorrowBase = principalValueBorrow(baseBorrowIndex, totalBorrowBalance);
 
         updateBaseBalance(dst, dstUser, principalValue(dstBalance));
+
+        emit Supply(from, dst, amount);
     }
 
     /**
@@ -891,6 +899,8 @@ contract Comet is CometCore {
         userCollateral[dst][asset].balance = dstCollateralNew;
 
         updateAssetsIn(dst, asset, dstCollateral, dstCollateralNew);
+
+        emit Supply(from, dst, asset, amount);
     }
 
     /**
@@ -1006,6 +1016,8 @@ contract Comet is CometCore {
 
         // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
         if (!isBorrowCollateralized(src)) revert NotCollateralized();
+
+        emit Transfer(src, dst, asset, amount);
     }
 
     /**
@@ -1082,6 +1094,8 @@ contract Comet is CometCore {
         }
 
         doTransferOut(baseToken, to, amount);
+
+        emit Withdraw(src, to, amount);
     }
 
     /**
@@ -1100,6 +1114,8 @@ contract Comet is CometCore {
         if (!isBorrowCollateralized(src)) revert NotCollateralized();
 
         doTransferOut(asset, to, amount);
+
+        emit Withdraw(src, to, asset, amount);
     }
 
     /**
