@@ -194,7 +194,15 @@ describe('withdrawTo', function () {
 
     await comet.connect(alice).withdrawTo(bob.address, USDC.address, 1e6);
 
-    expect(await comet.baseBalanceOf(alice.address)).to.eq(-999999); // 1e6 (minus borrowFactor)
+    const totalsBasic = await comet.totalsBasic();
+    const baseIndexScale = await comet.baseIndexScale();
+
+    expect(await comet.baseBalanceOf(alice.address)).to.eq(
+      -baseIndexScale
+        .mul(1e6)
+        .div(totalsBasic.baseBorrowIndex)
+        .toNumber()
+    );
     expect(await USDC.balanceOf(bob.address)).to.eq(1e6);
   });
 
