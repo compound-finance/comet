@@ -18,7 +18,7 @@
 | 10 | `supplyRate_vs_utilization` | DONE | ✅ | - | New rule |
 | 11 | `utilization_zero_supplyRate_zero` | DONE | ✅ | - | New Rule |
 | 12 | `getSupplyRate_revert_characteristic` | DONE | ✅  | reserveRate > factorScale() |  |
-| 13 | `isCol_implies_not_isLiq` | PROGRESS | 👷 | - | New Rule |
+| 13 | `isCol_implies_not_isLiq` |DONE | ✅   | - | New Rule |
 |   |                       **Flags**                      |
 | 14 | `check_flag_updates` | DONE | ✅ | update is coherent with getters | - |
 | 15 | `check_flag_getters` | DONE | ✅ | getters are coherent with update | - |
@@ -34,14 +34,14 @@
 | 24 | `reversibility_of_packing` | DONE | ✅ | need to recheck | NEW |
 | | **High level totals** |
 | 25 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions  | - |
-| 26   | `totalCollateralPerAssetVsAssetBalance` | IN PROGRESS | 👷 | - | New - expecting to fail? |
+| 26   | `totalCollateralPerAssetVsAssetBalance` | IN PROGRESS | 👷 | - | New  |
 | 27 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions | - |
 | 28 | `base_balance_vs_totals` | IN PROGRESS | 👷| on simplified assumptions | - |
 | | **High level updates** |
 | 29 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | found issue with absorb | - |
 | | **BuyCollateral** |
 | 30 | `antiMonotonicityOfBuyCollateral` | DONE | ✅ | with assumptions asset!=base, minAmount > 0, and msg.sender| discuss minAmount |
-| 31   | `buyCollateralMax` | DONE | ❌ | no limit, one can withdraw all asset, DOS on withdraw? |
+| 31   | `buyCollateralMax` | IN PROGRESS | 👷 | - |
 | | **Absorb** |
 | 32 | `absorb_reserves_increase` | IN PROGRESS | 👷  | - | NEW |
 | | **Supply** |

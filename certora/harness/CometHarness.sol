@@ -125,13 +125,21 @@ contract CometHarness is CometHarnessWrappers {
     // }
 
     function transferAssetFromBase(address src, address dst, address asset, uint amount) external {
+        if (isTransferPaused()) revert Paused();
+        if (!hasPermission(src, msg.sender)) revert Unauthorized();
+        if (src == dst) revert NoSelfTransfer();
+
         require (asset == baseToken);
-        return this.transferAssetFrom(src, dst, asset, amount);
+        return super.transferBase(src, dst, safe104(amount));
     }
 
     function transferFromAsset(address src, address dst, address asset, uint amount) external {
+        if (isTransferPaused()) revert Paused();
+        if (!hasPermission(src, msg.sender)) revert Unauthorized();
+        if (src == dst) revert NoSelfTransfer();
+
         require (asset != baseToken);
-        return this.transferAssetFrom(src, dst, asset, amount);
+        return super.transferCollateral(src, dst, asset, safe128(amount));
     }
 
    
