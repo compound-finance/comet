@@ -79,6 +79,7 @@ export class Runner<T, U> {
     );
     const baseSolutions: Solution<T>[][] = [[identity]];
 
+    let cumulativeGas = 0;
     for (const combo of combos(baseSolutions.concat(solutionChoices))) {
       // create a fresh copy of context that solutions can modify
       let ctx: T = await scenario.forker(context);
@@ -94,7 +95,10 @@ export class Runner<T, U> {
 
       // requirements met, run the property
       try {
-        await scenario.property(await scenario.transformer(ctx), world, ctx);
+        let txnReceipt = await scenario.property(await scenario.transformer(ctx), world, ctx);
+        if (txnReceipt) {
+          cumulativeGas += txnReceipt.cumulativeGasUsed.toNumber();
+        }
         numSolutionSets++;
       } catch (e) {
         // TODO: Include the specific solution (set of states) that failed in the result
@@ -104,13 +108,14 @@ export class Runner<T, U> {
       }
     }
     // Send success result only after all combinations of solutions have passed for this scenario.
-    return this.generateResult(base, scenario, startTime, numSolutionSets);
+    return this.generateResult(base, scenario, startTime, cumulativeGas, numSolutionSets);
   }
 
   private generateResult(
     base: ForkSpec,
     scenario: Scenario<T, U>,
     startTime: number,
+    totalGas: number,
     numSolutionSets: number,
     err?: any
   ): Result {
@@ -126,6 +131,7 @@ export class Runner<T, U> {
       base: base.name,
       file: scenario.file || scenario.name,
       scenario: scenario.name,
+      gasUsed: totalGas / numSolutionSets,
       numSolutionSets,
       elapsed: Date.now() - startTime,
       error: err || null,

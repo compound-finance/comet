@@ -20,6 +20,7 @@ export interface Result {
   base: string;
   file: string;
   scenario: string;
+  gasUsed?: number;
   numSolutionSets?: number;
   elapsed?: number;
   error?: Error;
