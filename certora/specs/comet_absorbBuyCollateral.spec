@@ -74,9 +74,11 @@ rule buyCol_then_withdraw(address account, uint amount){
     
     storage init = lastStorage;
 
-    address asset; address recipient;
+    address asset; address recipient; address operator;
     uint minAmount; uint baseAmount;
+    
     require asset != currentContract && recipient != currentContract;
+    require !isWithdrawPaused() && hasPermission(e,account,operator);
 
     withdraw(e, account, amount);
     buyCollateral(e, asset, minAmount, baseAmount, recipient) at init;

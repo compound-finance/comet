@@ -21,6 +21,7 @@ methods {
     getTotalsSupplyAsset(address asset) returns (uint128) envfree  
     getReserves() returns (int) envfree
     targetReserves() returns (uint256) envfree
+    initializeStorage() envfree
 
     _baseToken.balanceOf(address account) returns (uint256) envfree
 
@@ -36,7 +37,8 @@ definition similarFunctions(method f) returns bool =
             f.selector == withdrawTo(address,address,uint).selector ||
             f.selector == transferAsset(address,address,uint).selector ||
             f.selector == supplyTo(address,address,uint).selector ||
-            f.selector == supply(address,uint).selector ;
+            f.selector == supply(address,uint).selector ||
+            f.selector == initializeStorage().selector ;
 
 
 
@@ -82,7 +84,7 @@ function simplifiedAssumptions() {
     env e;
     require getTotalBaseSupplyIndex(e) == baseIndexScale(e);
     require getTotalBaseBorrowIndex(e) == baseIndexScale(e);
-    require _baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase();
+    require _baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase(); //Gadi incorrect
 }
 
 
@@ -121,6 +123,9 @@ rule verify_isBorrowCollateralized(address account, method f){
     assert collateralized1 == collateralized2;
 }
 
+// rule balance_change_vs_accrue(method f){
+//     env e;
 
+// }
 
 
