@@ -1,10 +1,11 @@
 import { Constraint, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import { expect } from 'chai';
+import { Requirements } from './Requirements';
 
-export class PauseConstraint<T extends CometContext> implements Constraint<T> {
-  async solve(requirements: object, context: T, world: World) {
-    const pauseRequirements = requirements['pause'];
+export class PauseConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
+  async solve(requirements: R, context: T, world: World) {
+    const pauseRequirements = requirements.pause;
     if (!pauseRequirements) {
       return null;
     }
@@ -43,8 +44,8 @@ export class PauseConstraint<T extends CometContext> implements Constraint<T> {
     }
   }
 
-  async check(requirements: object, context: T, world: World) {
-    const pauseRequirements = requirements['pause'];
+  async check(requirements: R, context: T, world: World) {
+    const pauseRequirements = requirements.pause;
     if (!pauseRequirements) {
       return;
     }

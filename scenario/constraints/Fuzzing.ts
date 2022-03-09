@@ -1,3 +1,5 @@
+import { Requirements } from "./Requirements";
+
 export enum FuzzType {
   INT64,
   UINT64
@@ -78,7 +80,7 @@ export function getFuzzedValues(fuzzConfig: FuzzConfig): any[] {
   }
 }
 
-export function getFuzzedRequirements(requirements: object): object[] {
+export function getFuzzedRequirements(requirements: Requirements): Requirements[] {
   let fuzzedRequirements = [];
   let keyValues: KV[][] = [];
   // Create a list of fuzzed values for each key that needs to be fuzzed.

@@ -18,6 +18,7 @@ import { Comet, CometInterface, ProxyAdmin, ERC20, ERC20__factory } from '../../
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
+import { Requirements } from '../constraints/Requirements';
 
 type ActorMap = { [name: string]: CometActor };
 type AssetMap = { [name: string]: CometAsset };
@@ -261,4 +262,4 @@ export const constraints = [
   new BaseTokenProtocolBalanceConstraint(),
 ];
 
-export const scenario = buildScenarioFn<CometContext, CometProperties>(getInitialContext, getContextProperties, forkContext, constraints);
+export const scenario = buildScenarioFn<CometContext, CometProperties, Requirements>(getInitialContext, getContextProperties, forkContext, constraints);

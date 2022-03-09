@@ -3,6 +3,7 @@ import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { CometContext } from '../context/CometContext';
 
 import { expect } from 'chai';
+import { Requirements } from './Requirements';
 
 function matchGroup(str, patterns) {
   for (const k in patterns) {
@@ -32,9 +33,9 @@ function parseAmount(amount) {
   }
 }
 
-export class BalanceConstraint<T extends CometContext> implements Constraint<T> {
-  async solve(requirements: object, context: T, world: World) {
-    const assetsByActor = requirements['balances'];
+export class BalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
+  async solve(requirements: R, context: T, world: World) {
+    const assetsByActor = requirements.balances;
     if (assetsByActor) {
       const actorsByAsset = Object.entries(assetsByActor).reduce((a, [actor, assets]) => {
         return Object.entries(assets).reduce((a, [asset, rawAmount]) => {
@@ -88,7 +89,7 @@ export class BalanceConstraint<T extends CometContext> implements Constraint<T> 
     }
   }
 
-  async check(requirements: object, context: T, world: World) {
+  async check(requirements: R, context: T, world: World) {
     const assetsByActor = requirements['balances'];
     if (assetsByActor) {
       for (const [actorName, assets] of Object.entries(assetsByActor)) {

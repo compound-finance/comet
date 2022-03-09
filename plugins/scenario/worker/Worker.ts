@@ -48,8 +48,8 @@ function postMessage(worker: SimpleWorker | undefined, message: any) {
   }
 }
 
-export async function run<T, U>({ scenarioConfig, bases, config, worker }: WorkerData) {
-  let scenarios: { [name: string]: Scenario<T, U> };
+export async function run<T, U, R>({ scenarioConfig, bases, config, worker }: WorkerData) {
+  let scenarios: { [name: string]: Scenario<T, U, R> };
   let runners = {};
 
   if (!worker) {
@@ -57,7 +57,7 @@ export async function run<T, U>({ scenarioConfig, bases, config, worker }: Worke
     createContext(...config);
     scenarios = await loadScenarios(scenarioGlob);
   } else {
-    scenarios = getLoader<T, U>().getScenarios();
+    scenarios = getLoader<T, U, R>().getScenarios();
   }
 
   for (let base of bases) {
