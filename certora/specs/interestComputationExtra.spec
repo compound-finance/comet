@@ -1,5 +1,7 @@
 import "A_setupNoSummarization.spec"
+import "erc20.spec"
 
+using SymbolicBaseToken as _baseToken 
 
 
 methods{
@@ -257,7 +259,7 @@ rule presentValue_G_zero( int104 presentValue){
     env e;
     setup(e);
     int104 principalValue = call_principalValue(presentValue);
-    require presentValue == call_presentValue(principalValue);
+    //require presentValue == call_presentValue(principalValue);
     assert presentValue > 0 <=> principalValue > 0;
 }
 
@@ -324,4 +326,57 @@ function setup(env e){
 
 
 
+rule withdraw_affects(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
+    env e;
+    calldataarg args;
+  
+  call_accrueInternal(e);
+
+  int104 principal;
+  int104 presentValue1 = call_presentValue(principal);
+        f(e,args) ;
+  int104 presentValue2 = call_presentValue(principal);
+  
+  assert presentValue1 == presentValue2;
+}
+
+rule verify_isBorrowCollateralized(address account, method f){
+    env e;
+    calldataarg args;
+
+    bool collateralized1 = isBorrowCollateralized(e,account);
+        f(e,args) ;
+    bool collateralized2 = isBorrowCollateralized(e,account);
+
+    assert collateralized1 == collateralized2;
+}
+
+rule additivity_of_withdraw( uint x, uint y){
+    env e;
+    storage init = lastStorage;
+    
+    // simplifiedAssumptions();
+    require x + y < 2^255;
+
+    withdraw(e,_baseToken, x);
+    int104 baseX = baseBalanceOf(e,e.msg.sender);
+    withdraw(e,_baseToken, y);
+    int104 baseY = baseBalanceOf(e,e.msg.sender);
+    
+    withdraw(e,_baseToken, x + y)  at init;
+    int104 baseXY = baseBalanceOf(e,e.msg.sender);
+
+    assert baseXY == baseY;
+}
+
+rule withdraw_more_reserves(address to , uint amount){
+    env e;
+    require to != currentContract;
+
+    withdrawReserves(e,to, amount);
+    call_accrueInternal(e);
+    int reserves = getReserves(e);
+
+    assert reserves >= 0;
+}
 
