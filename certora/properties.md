@@ -3,6 +3,9 @@
 
 ## Table
 
+
+
+
 | # | Rule Name | Progress | Verdict | Comment | Update |
 |-- | --------- | -------- | ------- | ------- | ------ |
 |   |                      **Interest computation**                    |
