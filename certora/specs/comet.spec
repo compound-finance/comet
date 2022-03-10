@@ -85,7 +85,6 @@ function simplifiedAssumptions() {
     env e;
     require getTotalBaseSupplyIndex(e) == baseIndexScale(e);
     require getTotalBaseBorrowIndex(e) == baseIndexScale(e);
-    // require _baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase();
 }
 
 
