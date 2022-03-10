@@ -24,7 +24,7 @@ contract StandardToken {
         decimals = _decimalUnits;
     }
 
-    function transfer(address dst, uint256 amount) external returns (bool) {
+    function transfer(address dst, uint256 amount) external virtual returns (bool) {
         balanceOf[msg.sender] = balanceOf[msg.sender] - amount;
         balanceOf[dst] = balanceOf[dst] + amount;
         emit Transfer(msg.sender, dst, amount);

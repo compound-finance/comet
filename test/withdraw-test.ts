@@ -1,5 +1,5 @@
-import { Comet, ethers, event, expect, exp, makeProtocol, portfolio, wait } from './helpers';
 import { BigNumber } from "ethers";
+import { Comet, ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, wait } from './helpers';
 
 describe('withdrawTo', function () {
   it('withdraws base from sender if the asset is base', async () => {
@@ -210,10 +210,6 @@ describe('withdrawTo', function () {
     expect(await comet.baseBalanceOf(alice.address)).to.eq(baseBalanceOf);
     expect(await USDC.balanceOf(bob.address)).to.eq(1e6);
   });
-
-  it.skip('is not broken by malicious re-entrancy', async () => {
-    // XXX
-  });
 });
 
 describe('withdraw', function () {
@@ -294,6 +290,39 @@ describe('withdraw', function () {
     await expect(
       comet.connect(alice).withdraw(WETH.address, exp(1, 18))
     ).to.be.revertedWith("custom error 'NotCollateralized()'");
+  });
+
+  it('is not broken by malicious reentrancy transferFrom', async () => {
+    const { comet, tokens, users: [alice, bob] } = await makeProtocol({
+      assets: {
+        USDC: {
+          decimals: 6
+        },
+        EVIL: {
+          decimals: 6,
+          initialPrice: 2,
+          reentryAttack: ReentryAttack.TransferFrom
+        }
+      }
+    });
+    const { EVIL } = tokens;
+
+    const totalsCollateral = Object.assign({}, await comet.totalsCollateral(EVIL.address), {
+      totalSupplyAsset: 100e6,
+    });
+    await comet.setTotalsCollateral(EVIL.address, totalsCollateral);
+
+    await comet.setCollateralBalance(alice.address, EVIL.address, exp(1,6));
+    await comet.connect(alice).allow(EVIL.address, true);
+
+    // alice withdraws EVIL token; in callback, EVIL token calls
+    // transferFrom(alice.address, Evil.address, 1e6)
+    await expect(
+      comet.connect(alice).withdraw(EVIL.address, 1e6)
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+
+    expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
+    expect(await comet.baseBalanceOf(EVIL.address)).to.eq(0);
   });
 });
 

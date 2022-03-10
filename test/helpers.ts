@@ -9,6 +9,7 @@ import {
   CometHarness,
   CometHarness__factory,
   CometHarnessInterface as Comet,
+  EvilToken__factory,
   FaucetToken,
   FaucetToken__factory,
   SimplePriceFeed,
@@ -20,6 +21,11 @@ import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract
 export { Comet, ethers, expect };
 
 export type Numeric = number | bigint;
+
+export enum ReentryAttack {
+  TransferFrom = 0,
+  Withdraw = 1
+}
 
 export type ProtocolOpts = {
   start?: number;
@@ -34,6 +40,7 @@ export type ProtocolOpts = {
       supplyCap?: Numeric;
       initialPrice?: number;
       priceFeedDecimals?: number;
+      reentryAttack?: ReentryAttack;
     };
   };
   symbol?: string,
@@ -169,13 +176,19 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const targetReserves = dfn(opts.targetReserves, 0);
 
   const FaucetFactory = (await ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
+  const EvilFactory = (await ethers.getContractFactory('EvilToken')) as EvilToken__factory;
   const tokens = {};
   for (const symbol in assets) {
     const config = assets[symbol];
     const decimals = config.decimals || 18;
     const initial = config.initial || 1e6;
     const name = config.name || symbol;
-    const token = (tokens[symbol] = await FaucetFactory.deploy(initial, name, decimals, symbol));
+    let token;
+    if (config.reentryAttack === undefined) {
+      token = (tokens[symbol] = await FaucetFactory.deploy(initial, name, decimals, symbol));
+    } else {
+      token = (tokens[symbol] = await EvilFactory.deploy(initial, name, decimals, symbol, config.reentryAttack));
+    }
     await token.deployed();
   }
 
