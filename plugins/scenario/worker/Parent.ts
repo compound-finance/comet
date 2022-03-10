@@ -20,6 +20,7 @@ export interface Result {
   base: string;
   file: string;
   scenario: string;
+  gasUsed?: number;
   numSolutionSets?: number;
   elapsed?: number;
   error?: Error;
@@ -148,8 +149,11 @@ export async function runScenario<T, U>(
 
   function mergeResult(index: number, result: Result) {
     pending.delete(key(result.base, result.scenario));
-    // Update the scenario name to include the number of solution sets run.
+    // Update the scenario name to include the number of solution sets run and average gas cost.
     result.scenario += ` [${pluralize(result.numSolutionSets, 'run', 'runs')}]`;
+    if (result.gasUsed) {
+      result.scenario += ` [Avg gas: ${result.gasUsed}]`;
+    }
     results.push(result);
 
     resetStallTimer();

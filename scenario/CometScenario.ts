@@ -6,12 +6,14 @@ scenario('initializes governor correctly', {}, async ({ comet, actors }, world) 
   expect(await comet.governor()).to.equal(actors['admin']!.address);
 });
 
-scenario('Comet#allow > allows a user to authorize a manager', {}, async ({ comet, actors }) => {
+scenario('Comet#allow > allows a user to authorize a manager', { upgrade: true }, async ({ comet, actors }) => {
   const { albert, betty } = actors;
 
-  await albert.allow(betty, true);
+  const txn = await albert.allow(betty, true);
 
   expect(await comet.isAllowed(albert.address, betty.address)).to.be.true;
+
+  return txn; // return txn to measure gas
 });
 
 scenario('Comet#allow > allows a user to rescind authorization', {}, async ({ comet, actors }) => {
