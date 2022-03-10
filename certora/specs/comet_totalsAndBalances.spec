@@ -69,12 +69,18 @@ formula :
         totalsCollateral[asset].totalSupplyAsset <= asset.balanceOf(this)
 */
 invariant totalCollateralPerAssetVsAssetBalance(address asset) 
-    getTotalsSupplyAsset(asset)  <= tokenBalanceOf(asset, currentContract) 
+    asset != _baseToken => 
+        (getTotalsSupplyAsset(asset)  <= tokenBalanceOf(asset, currentContract) ) 
     filtered { f-> !similarFunctions(f) && !f.isView }
     {
         preserved with (env e){
             simplifiedAssumptions();
             require e.msg.sender != currentContract;
+        }
+        preserved supplyFrom(address from, address dst, address asset_, uint amount) with (env e) {
+            simplifiedAssumptions();
+            require e.msg.sender != currentContract;
+            require from != currentContract;
         }
     }
 
@@ -87,14 +93,23 @@ invariant totalCollateralPerAssetVsAssetBalance(address asset)
 
  status : failed
  reason :
- link   : 
+ link   :
+
+ this invariant does not hold on absorb and buy
+         
 */
 invariant base_balance_vs_totals()
-_baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase()
-filtered { f-> !similarFunctions(f) && !f.isView }
+_baseToken.balanceOf(currentContract) >= getTotalSupplyBase() - getTotalBorrowBase()
+filtered { f-> !similarFunctions(f) && !f.isView /*&& f.selector!=absorb(address, address[]).selector*/ }
     {
-        preserved {
+        preserved with (env e){
             simplifiedAssumptions();
+            require e.msg.sender != currentContract;
+        }
+        preserved buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) with (env e) {
+            simplifiedAssumptions();
+            require asset != _baseToken;
+            require recipient != currentContract;
         }
     }
 

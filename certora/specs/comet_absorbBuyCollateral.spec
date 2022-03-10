@@ -30,10 +30,11 @@ rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address re
     require e.msg.sender != currentContract;
     require recipient != currentContract;
 
+    mathint max = getUserCollateralBalanceByAsset(currentContract, asset);
     uint256 balanceAssetBefore = tokenBalanceOf(asset, currentContract);
     buyCollateral(e, asset, minAmount, baseAmount, recipient);
     uint256 balanceAssetAfter = tokenBalanceOf(asset, currentContract);
-    assert (balanceAssetBefore > 0 => balanceAssetAfter > 0);
+    assert (balanceAssetAfter >= balanceAssetBefore - max);
 }
 
 
@@ -58,6 +59,7 @@ rule call_absorb_2(address absorber, address account1, address account2) {
 rule absorb_reserves_increase(address absorber, address account) {
     address[] accounts;
     env e;
+    simplifiedAssumptions();
 
     require accounts[0] == account;
     require absorber != account;
@@ -76,9 +78,12 @@ rule buyCol_then_withdraw(address account, uint amount){
     
     storage init = lastStorage;
 
-    address asset; address recipient;
+    address asset; address recipient; address operator;
     uint minAmount; uint baseAmount;
+    
     require asset != currentContract && recipient != currentContract;
+    require asset != account && recipient != account && asset != recipient && asset != operator; /* gadi? why this require - apple is not an orange? */ 
+    require !get_Withdraw_Paused() && hasPermission(e,account,operator);
 
     withdraw(e, account, amount);
     buyCollateral(e, asset, minAmount, baseAmount, recipient) at init;

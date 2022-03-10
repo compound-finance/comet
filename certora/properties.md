@@ -18,10 +18,10 @@
 | 7 | `presentValue_GE_principle` |  DONE | ✅ | - | No assumption |
 | 8 | `presentValue_G_zero` | PROGRESS | 👷 | - | - |
 | 9 | `presentValue_EQ_principal` | DONE | ✅ | - | No assumption |
-| 10 | `supplyRate_vs_utilization` | DONE | ✅ | - | New rule |
-| 11 | `utilization_zero_supplyRate_zero` | DONE | ✅ | - | New Rule |
+| 10 | `supplyRate_vs_utilization` | DONE | ✅ | - | - |
+| 11 | `utilization_zero_supplyRate_zero` | DONE | ✅ | - | - |
 | 12 | `getSupplyRate_revert_characteristic` | DONE | ✅  | reserveRate > factorScale() |  |
-| 13 | `isCol_implies_not_isLiq` | PROGRESS | 👷 | - | New Rule |
+| 13 | `isCol_implies_not_isLiq` |DONE | ✅   | - | - |
 |   |                       **Flags**                      |
 | 14 | `check_flag_updates` | DONE | ✅ | update is coherent with getters | - |
 | 15 | `check_flag_getters` | DONE | ✅ | getters are coherent with update | - |
@@ -35,27 +35,28 @@
 | 23 | `update_changes_single_user_assetIn` | DONE | ✅ | - | - |
 | | **Asset Info** |
 | 24 | `reversibility_of_packing` | DONE | ✅ | need to recheck | NEW |
-| | **High level totals** |
+| | **High level totals and balances** |
 | 25 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions  | - |
-| 26   | `totalCollateralPerAssetVsAssetBalance` | IN PROGRESS | 👷 | - | New - expecting to fail? |
+| 26   | `totalCollateralPerAssetVsAssetBalance` | IN PROGRESS | 👷 | - |   |
 | 27 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions | - |
 | 28 | `base_balance_vs_totals` | IN PROGRESS | 👷| on simplified assumptions | - |
 | 29 | `Collateral_totalSupply_LE_supplyCap` | DONE | ✅ | using the summarization of getAssetInfo | NEW |
+|    | `at_time_of_borrow_collateral_greater_than_zero` | IN PROGRESS | 👷 | NEW |
 | | **High level updates** |
 | 30 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | found issue with absorb | - |
 | | **BuyCollateral** |
-| 31 | `antiMonotonicityOfBuyCollateral` | DONE | ✅ | with assumptions asset!=base, minAmount > 0, and msg.sender| discuss minAmount |
-| 32   | `buyCollateralMax` | DONE | ❌ | no limit, one can withdraw all asset, DOS on withdraw? |
+| 30 | `antiMonotonicityOfBuyCollateral` | DONE | ✅ | with assumptions asset!=base, minAmount > 0, and msg.sender| discuss minAmount |
+| 31   | `buyCollateralMax` | IN PROGRESS | 👷 | - |
 | | **Absorb** |
-| 33 | `absorb_reserves_increase` | IN PROGRESS | 👷  | - | NEW |
+| 33 | `absorb_reserves_increase` | IN PROGRESS | 👷  | - |  |
 | | **Supply** |
-| 34 | `supply_increase_balance` | IN PROGRESS | ✅ | need to generalize | NEW |
+| 34 | `supply_increase_balance` | IN PROGRESS | ✅ | need to generalize |  |
 | | **Withdraw** |
 | 35 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - | - |
-| 36 | `withdraw_decrease_balance` | IN PROGRESS | ✅ | need to generalize | NEW |
+| 36 | `withdraw_decrease_balance` | IN PROGRESS | ✅ | need to generalize |  |
 | | **Reserve** |
-| 37 | `withdraw_reserves_decreases` | DONE | ✅ | - | NEW |
-| 38 | `withdraw_reserves_monotonicity` | DONE | ✅ | - | NEW |
+| 37 | `withdraw_reserves_decreases` | DONE | ✅ | - |  |
+| 38 | `withdraw_reserves_monotonicity` | DONE | ✅ | - |  |
 | 39 | `no_reserves_zero_balance` | DONE | ✅ | on simplified assumptions | |
 |    | **General**
 | 40 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷  | - | - | 

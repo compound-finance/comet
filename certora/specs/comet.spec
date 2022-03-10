@@ -21,6 +21,7 @@ methods {
     getTotalsSupplyAsset(address asset) returns (uint128) envfree  
     getReserves() returns (int) envfree
     targetReserves() returns (uint256) envfree
+    initializeStorage() envfree
 
     _baseToken.balanceOf(address account) returns (uint256) envfree
 
@@ -30,15 +31,6 @@ methods {
     asset_index(address) returns (uint8) envfree
     tokenBalanceOf(address, address) returns uint256 envfree 
 }
-
-definition similarFunctions(method f) returns bool =    
-            f.selector == withdraw(address,uint256).selector ||
-            f.selector == withdrawTo(address,address,uint).selector ||
-            f.selector == transferAsset(address,address,uint).selector ||
-            f.selector == supplyTo(address,address,uint).selector ||
-            f.selector == supply(address,uint).selector ;
-
-
 
 
 ghost mathint sumUserBasicPrinciple  {
@@ -164,3 +156,18 @@ rule verify_isBorrowCollateralized(address account, method f){
 
     assert collateralized2;
 }
+
+rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f.isView && f.selector != call_accrueInternal().selector}{
+    env e;
+    calldataarg args;
+
+    require !AccrueWasCalled(e) ;
+
+    int104 balance_pre = baseBalanceOf(e,currentContract);
+    f(e,args) ;
+    int104 balance_post = baseBalanceOf(e,currentContract);
+
+    assert balance_post != balance_pre => AccrueWasCalled(e);
+}
+
+

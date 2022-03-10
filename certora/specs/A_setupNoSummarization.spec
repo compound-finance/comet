@@ -1,10 +1,10 @@
 methods{
     // 0xc8c7fe6b envfree // getAssetInfo(uint8) returns (AssetInfo)
-    getNow() returns (uint40)
-    accrue()
-    allow(address, bool)
-    allowBySig(address, address, bool, uint256, uint256, uint8, bytes32, bytes32)
-    hasPermission(address, address) returns (bool) envfree
+    // getNowInternal() returns (uint40)
+    // accrue()
+    // allow(address, bool)
+    // allowBySig(address, address, bool, uint256, uint256, uint8, bytes32, bytes32)
+    // hasPermission(address, address) returns (bool)
     getSupplyRate() returns (uint64)
     getBorrowRate() returns (uint64)
     getUtilization() returns (uint)
@@ -21,7 +21,7 @@ methods{
     isAbsorbPaused() returns (bool) envfree
     isBuyPaused() returns (bool) envfree
     baseBalanceOf(address) returns (int104) envfree
-    collateralBalanceOf(address, address) returns (uint128) envfree
+    // collateralBalanceOf(address, address) returns (uint128) envfree
     supply(address, uint)
     supplyTo(address, address, uint)
     supplyFrom(address, address, address, uint)
@@ -46,3 +46,11 @@ function envNotZero(env e){
     require e.block.number != 0;
     require e.msg.sender != 0;
 }
+
+definition similarFunctions(method f) returns bool =    
+            f.selector == withdraw(address,uint256).selector ||
+            f.selector == withdrawTo(address,address,uint).selector ||
+            f.selector == transferAsset(address,address,uint).selector ||
+            f.selector == supplyTo(address,address,uint).selector ||
+            f.selector == supply(address,uint).selector ||
+            f.selector == initializeStorage().selector ;

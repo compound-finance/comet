@@ -88,6 +88,16 @@ definition all_public_supply_methods(method f) returns bool =
     f.selector == supplyTo(address, address, uint).selector || 
     f.selector == supplyFrom(address, address, address, uint).selector;
 
+
+definition similarFunctions(method f) returns bool =    
+            f.selector == withdraw(address,uint256).selector ||
+            f.selector == withdrawTo(address,address,uint).selector ||
+            f.selector == transferAsset(address,address,uint).selector ||
+            f.selector == supplyTo(address,address,uint).selector ||
+            f.selector == supply(address,uint).selector ||
+            f.selector == initializeStorage().selector ;
+
+
 // calling all different supply functions with revert
 // @note if you want to use this without revert just call the function with require on the output to be false
 function supply_functions_with_revert(method f, env e) returns bool{

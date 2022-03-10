@@ -45,6 +45,15 @@ contract CometHarnessWrappers is CometHarnessGetters {
     function call_presentValue(int104 principalValue_) external view returns (int104) {
         return super.presentValue(principalValue_);
     }
+    function call_accrueInternal() external {
+        return super.accrueInternal();
+    }
+    function call_getNowInternal() external view returns (uint40) {
+        return super.getNowInternal();
+    }
+    // function call_allow(address owner, address manager, bool isAllowed_) external {
+    //     return super.allowInternal(owner, manager, isAllowed);
+    // }
 
     function get_asset00_a() public view returns (uint256){
         return asset00_a;
