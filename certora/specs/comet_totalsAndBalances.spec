@@ -93,11 +93,14 @@ invariant totalCollateralPerAssetVsAssetBalance(address asset)
 
  status : failed
  reason :
- link   : 
+ link   :
+
+ this invariant does not hold on absorb and buy
+         
 */
 invariant base_balance_vs_totals()
 _baseToken.balanceOf(currentContract) >= getTotalSupplyBase() - getTotalBorrowBase()
-filtered { f-> !similarFunctions(f) && !f.isView }
+filtered { f-> !similarFunctions(f) && !f.isView /*&& f.selector!=absorb(address, address[]).selector*/ }
     {
         preserved with (env e){
             simplifiedAssumptions();
@@ -107,11 +110,6 @@ filtered { f-> !similarFunctions(f) && !f.isView }
             simplifiedAssumptions();
             require asset != _baseToken;
             require recipient != currentContract;
-        }
-        //this invariant does not hold on absorb and buy
-        //@todo - can we generalize
-        preserved absorb(address absorber, address[] accounts) with (env e) {
-            require(false);
         }
     }
 
