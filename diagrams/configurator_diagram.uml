@@ -11,7 +11,8 @@ rectangle CometImpl
 
 GovSimple --> Timelock
 Timelock --> ProxyAdmin : admin
-Timelock --> ConfiguratorProxy : admin
+Timelock ~~> ConfiguratorImpl : governor
+Timelock ~~> CometImpl : governor
 ProxyAdmin --> ConfiguratorProxy
 ProxyAdmin --> CometProxy
 ConfiguratorProxy --> ConfiguratorImpl : impl
