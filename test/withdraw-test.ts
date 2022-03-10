@@ -1,4 +1,5 @@
 import { Comet, ethers, event, expect, exp, makeProtocol, portfolio, wait } from './helpers';
+import { BigNumber } from "ethers";
 
 describe('withdrawTo', function () {
   it('withdraws base from sender if the asset is base', async () => {
@@ -192,17 +193,21 @@ describe('withdrawTo', function () {
     await USDC.allocateTo(comet.address, 1e6);
     await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
 
+    let t0 = await comet.totalsBasic();
+    t0 = Object.assign({}, t0, {
+      baseBorrowIndex: t0.baseBorrowIndex.mul(2),
+    });
+    await comet.setTotalsBasic(t0);
+
     await comet.connect(alice).withdrawTo(bob.address, USDC.address, 1e6);
 
-    const totalsBasic = await comet.totalsBasic();
+    const t1 = await comet.totalsBasic();
     const baseIndexScale = await comet.baseIndexScale();
 
-    expect(await comet.baseBalanceOf(alice.address)).to.eq(
-      -baseIndexScale
-        .mul(1e6)
-        .div(totalsBasic.baseBorrowIndex)
-        .toNumber()
-    );
+    const principalValue = BigNumber.from(-1e6).mul(baseIndexScale).div(t1.baseBorrowIndex);
+    const baseBalanceOf = principalValue.mul(t1.baseBorrowIndex).div(baseIndexScale);
+
+    expect(await comet.baseBalanceOf(alice.address)).to.eq(baseBalanceOf);
     expect(await USDC.balanceOf(bob.address)).to.eq(1e6);
   });
 
