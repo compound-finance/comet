@@ -1197,6 +1197,8 @@ contract Comet is CometCore {
     function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external {
         if (isBuyPaused()) revert Paused();
 
+        accrueInternal();
+
         int reserves = getReserves();
         if (reserves >= 0 && uint(reserves) >= targetReserves) revert NotForSale();
 
@@ -1231,7 +1233,11 @@ contract Comet is CometCore {
      */
     function withdrawReserves(address to, uint amount) external {
         if (msg.sender != governor) revert Unauthorized();
+
+        accrueInternal();
+
         if (amount > unsigned256(getReserves())) revert InsufficientReserves();
+
         doTransferOut(baseToken, to, amount);
     }
 
