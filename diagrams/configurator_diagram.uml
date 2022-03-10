@@ -17,7 +17,7 @@ ProxyAdmin --> ConfiguratorProxy
 ProxyAdmin --> CometProxy
 ConfiguratorProxy --> ConfiguratorImpl : impl
 ConfiguratorImpl --> CometFactory
-CometFactory --> CometImpl : makes
+CometFactory ..> CometImpl : makes
 CometProxy --> CometImpl : impl
 
 @enduml
