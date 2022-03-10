@@ -9,6 +9,7 @@ import {
   CometHarness,
   CometHarness__factory,
   CometHarnessInterface as Comet,
+  EvilToken,
   EvilToken__factory,
   FaucetToken,
   FaucetToken__factory,
@@ -24,7 +25,7 @@ export type Numeric = number | bigint;
 
 export enum ReentryAttack {
   TransferFrom = 0,
-  Withdraw = 1
+  WithdrawFrom = 1
 }
 
 export type ProtocolOpts = {
@@ -40,7 +41,7 @@ export type ProtocolOpts = {
       supplyCap?: Numeric;
       initialPrice?: number;
       priceFeedDecimals?: number;
-      reentryAttack?: ReentryAttack;
+      isEvil?: boolean;
     };
   };
   symbol?: string,
@@ -184,10 +185,10 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     const initial = config.initial || 1e6;
     const name = config.name || symbol;
     let token;
-    if (config.reentryAttack === undefined) {
-      token = (tokens[symbol] = await FaucetFactory.deploy(initial, name, decimals, symbol));
+    if (config.isEvil) {
+      token = (tokens[symbol] = await EvilFactory.deploy(initial, name, decimals, symbol));
     } else {
-      token = (tokens[symbol] = await EvilFactory.deploy(initial, name, decimals, symbol, config.reentryAttack));
+      token = (tokens[symbol] = await FaucetFactory.deploy(initial, name, decimals, symbol));
     }
     await token.deployed();
   }
