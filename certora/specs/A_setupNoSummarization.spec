@@ -20,14 +20,13 @@ methods{
     isWithdrawPaused() returns (bool) envfree
     isAbsorbPaused() returns (bool) envfree
     isBuyPaused() returns (bool) envfree
-    baseBalanceOf(address)
-    // collateralBalanceOf(address, address) returns (uint128)
+    baseBalanceOf(address) returns (int104) envfree
+    // collateralBalanceOf(address, address) returns (uint128) envfree
     supply(address, uint)
     supplyTo(address, address, uint)
     supplyFrom(address, address, address, uint)
-    // transfer(address, address, uint)
-    // transferFrom(address, address, address, uint)
-    // transferCollateral(address, address, address, uint128)
+    transferAsset(address, address, uint)
+    transferAssetFrom(address, address, address, uint)
     withdraw(address, uint)
     withdrawTo(address, address, uint)
     withdrawFrom(address, address, address, uint)
@@ -39,10 +38,6 @@ methods{
     // cometHarnessGetters
     getAssetinOfUser(address) returns (uint16) envfree
     getAssetOffsetByAsset(address) returns (uint8) envfree
-
-    // self generated getters
-    governor() envfree
-    pauseGuardian() envfree
 }
 
 // assumes some non-zero values on the environment

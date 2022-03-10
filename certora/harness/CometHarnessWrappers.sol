@@ -23,11 +23,6 @@ contract CometHarnessWrappers is CometHarnessGetters {
         super.updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
     }
 
-    // external wrapper for updateAssetsIn() ---- REMOVE
-    function call_updateAssetsIn_red(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance) external {
-        super.updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
-    }
-
     // external wrapper for _getPackedAsset()
     function call__getPackedAsset(uint8 i, address assetArg, address priceFeedArg, uint8 decimalsArg, uint64 borrowCollateralFactorArg, uint64 liquidateCollateralFactorArg, uint64 liquidationFactorArg, uint128 supplyCapArg) public view returns (uint256, uint256) {
         AssetConfig memory assetConfigInst = AssetConfig({        

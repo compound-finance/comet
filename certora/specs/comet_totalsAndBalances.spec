@@ -95,7 +95,7 @@ filtered { f-> !similarFunctions(f) && !f.isView /*&& f.selector!=absorb(address
         }
     }
 
-// The totalSupply of any collateral asset is less than or equal to the supplyCap
+// V@V - The totalSupply of any collateral asset is less than or equal to the supplyCap
 invariant collateral_totalSupply_LE_supplyCap(address asset)
     getTotalsSupplyAsset(asset) <= getAssetSupplyCapByAddress(asset)
 
@@ -107,6 +107,7 @@ invariant collateral_totalSupply_LE_supplyCap(address asset)
 //     assert getPrincipal(user) < 0 => isBorrowCollateralized(user);
 // }
 
+// 
 invariant at_time_of_borrow_collateral_greater_than_zero(address user)
         getPrincipal(user) < 0 => isBorrowCollateralized(user)
         {
