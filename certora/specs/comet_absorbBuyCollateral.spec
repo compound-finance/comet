@@ -39,21 +39,18 @@ rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address re
 
 
 // note - need loop_iter=2 for this rule
-rule call_absorb_2(address absorber, address account1, address account2) {
+rule canNot_absorb_same_account(address absorber, address account) {
     address[] accounts;
     env e;
 
-    require absorber != account1 && absorber != account2;
     require accounts.length == 2;
+    
+    require accounts[0] == account;
+    require accounts[1] == account;
 
-    require account1 == account2;
+    absorb@withrevert(e, absorber, accounts);
 
-    require accounts[0] == account1;
-    require accounts[1] == account2;
-
-    absorb(e, absorber, accounts);
-
-    assert false; 
+    assert lastReverted; 
 }
 
 rule absorb_reserves_increase(address absorber, address account) {
@@ -83,7 +80,7 @@ rule buyCol_then_withdraw(address account, uint amount){
     
     require asset != currentContract && recipient != currentContract;
     require asset != account && recipient != account && asset != recipient && asset != operator; /* gadi? why this require - apple is not an orange? */ 
-    require !get_Withdraw_Paused() && hasPermission(e,account,operator);
+    require !get_Withdraw_Paused() /* && hasPermission(e,account,operator) */;
 
     withdraw(e, account, amount);
     buyCollateral(e, asset, minAmount, baseAmount, recipient) at init;

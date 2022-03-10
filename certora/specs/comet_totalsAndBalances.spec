@@ -21,25 +21,7 @@ invariant totalBaseToken()
     }
 }
 
-/* 
- Description :  
-        when contract balance == 0 , reserves should be LE zero
 
- formula : 
-        _baseToken.balanceOf(currentContract) == 0 => getReserves() <= 0
-
- status : proved
- reason :
- link   :
-*/
-invariant no_reserves_zero_balance()
-_baseToken.balanceOf(currentContract) == 0 => getReserves() <= 0
-filtered { f-> !similarFunctions(f) && !f.isView }
-    {
-        preserved {
-            simplifiedAssumptions();
-        }
-    }
 
 
 
