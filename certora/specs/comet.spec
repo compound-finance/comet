@@ -107,27 +107,15 @@ function simplifiedAssumptions() {
 // }
 
 
-rule verify_isBorrowCollateralized(address account, method f){
-    env e;
-    calldataarg args;
-
-    bool collateralized1 = isBorrowCollateralized(account);
-    require collateralized1;
-    f(e,args) ;
-    bool collateralized2 = isBorrowCollateralized(account);
-
-    assert collateralized2;
-}
-
 rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f.isView && f.selector != call_accrueInternal().selector}{
     env e;
     calldataarg args;
 
     require !AccrueWasCalled(e) ;
-    address token;
-    uint256 balance_pre = tokenBalanceOf(token,currentContract);
+
+    uint256 balance_pre = tokenBalanceOf(_baseToken,currentContract);
     f(e,args) ;
-    uint256 balance_post = tokenBalanceOf(token,currentContract);
+    uint256 balance_post = tokenBalanceOf(_baseToken,currentContract);
 
     assert balance_post != balance_pre => AccrueWasCalled(e);
 }
