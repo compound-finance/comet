@@ -90,9 +90,12 @@ contract CometHarness is CometHarnessWrappers {
         return (nonDet1,nonDet2);
     }
 
+    bool public AccrueWasCalled;
     /*********** Simplification ***********/
     /* under approximation (not taking into account all possible cases) */
      function accrueInternal() override internal {
+
+        AccrueWasCalled = !AccrueWasCalled;
 
      }
 
