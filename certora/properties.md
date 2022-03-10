@@ -19,15 +19,15 @@
 | 2 | `supplyIndex_borrowIndex_monotonic` | DONE | ✅ | - | - |
 | 3 | `supplyIndex_borrowIndex_rise_with_time` | DONE | ✅ | - | - |
 | 4 | `borrowBase_vs_utilization` | DONE | ✅ | - | - |
-| 5 | `utilization_zero` | DONE | ✅ | -| - |
-| 6 | `isLiquiditable_false_should_not_change` |  DONE | ✅  | - | DONE |
-| 7 | `presentValue_GE_principle` |  DONE | ✅ | - | No assumption |
-| 8 | `presentValue_G_zero` | DONE | 👷 | - | DONE |
-| 9 | `presentValue_EQ_principal` | DONE | ✅ | - | No assumption |
+| 5 | `utilization_zero` | DONE | ✅ | - | - |
+| 6 | `isLiquiditable_false_should_not_change` | DONE | ✅  | - | DONE |
+| 7 | `presentValue_GE_principle` |  DONE | ✅ | No assumption | - |
+| 8 | `presentValue_G_zero` | DONE | ✅ | - | DONE |
+| 9 | `presentValue_EQ_principal` | DONE | ✅ | No assumption | - |
 | 10 | `supplyRate_vs_utilization` | DONE | ✅ | - | - |
 | 11 | `utilization_zero_supplyRate_zero` | DONE | ✅ | - | - |
-| 12 | `getSupplyRate_revert_characteristic` | DONE | ✅  | reserveRate > factorScale() |  |
-| 13 | `isCol_implies_not_isLiq` |DONE | ✅   | - | - |
+| 12 | `getSupplyRate_revert_characteristic` | DONE | ✅ | reserveRate > factorScale() | - |
+| 13 | `isCol_implies_not_isLiq` | DONE | ✅ | - | - |
 |   |                       **Flags**                      |
 | 14 | `check_flag_updates` | DONE | ✅ | update is coherent with getters | - |
 | 15 | `check_flag_getters` | DONE | ✅ | getters are coherent with update | - |
@@ -42,36 +42,36 @@
 | | **Asset Info** |
 | 24 | `reversibility_of_packing` | DONE | ✅ | need to recheck | - |
 | | **High level totals and balances** |
-| 25 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions  | - |
-| 26 | `totalCollateralPerAssetVsAssetBalance` | IN PROGRESS | 👷 | - |   |
-| 27 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions |  |
+| 25 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions | - |
+| 26 | `totalCollateralPerAssetVsAssetBalance` | IN PROGRESS | 👷 | - | - |
+| 27 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions | - |
 | 28 | `base_balance_vs_totals` | IN PROGRESS | 👷| on simplified assumptions | breaks |
 | 29 | `Collateral_totalSupply_LE_supplyCap` | DONE | ✅ | using the summarization of getAssetInfo | NEW |
-|    | `at_time_of_borrow_collateral_greater_than_zero` | IN PROGRESS | 👷 | NEW |
+| 30 | `at_time_of_borrow_collateral_greater_than_zero` | IN PROGRESS | 👷 | - | NEW |
 | | **High level updates** |
-| 30 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 |  | - |
-| | `balance_change_vs_accrue` | IN PROGRESS | 👷 |  | NEW - fails | 
-| | **BuyCollateral** |
-| 30 | `antiMonotonicityOfBuyCollateral` | DONE | ✅ | - | - |
-| 31 | `buyCollateralMax` | DONE | ✅ | - | NEW |
+| 31 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | - | - |
+| 32 | `balance_change_vs_accrue` | IN PROGRESS | 👷 | fails | NEW | 
+| 33 | **BuyCollateral** |
+| 34 | `antiMonotonicityOfBuyCollateral` | DONE | ✅ | - | - |
+| 35 | `buyCollateralMax` | DONE | ✅ | - | NEW |
 | | **Absorb** |
-| 33 | `absorb_reserves_increase` | IN PROGRESS | 👷  | - |  |
-| | `canNot_double_absorb` | DONE | ✅  | - | NEW |
-| | `canNot_absorb_same_account`| IN PROGRESS | 👷  | - | NEW |
-| | `absorb_reserves_increase` | DONE | ✅  | - | NEW |
+| 36 | `absorb_reserves_increase` | IN PROGRESS | 👷 | - | - |
+| 37 | `canNot_double_absorb` | DONE | ✅ | - | NEW |
+| 38 | `canNot_absorb_same_account`| IN PROGRESS | 👷 | - | NEW |
+| 39 | `absorb_reserves_increase` | DONE | ✅ | - | NEW |
 | | **Supply** |
-| 34 | `supply_increase_balance` | DONE| ✅ | need to generalize | DONE |
+| 40 | `supply_increase_balance` | DONE| ✅ | need to generalize | DONE |
 | | **Withdraw** |
-| 35 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - | - |
-| 36 | `withdraw_decrease_balance` | DONE| ✅ | need to generalize | DONE|
+| 41 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - | - |
+| 42 | `withdraw_decrease_balance` | DONE| ✅ | need to generalize | DONE |
 | | **Reserve** |
-| 37 | `withdraw_reserves_decreases` | DONE | ✅ | - |  |
-| 38 | `withdraw_reserves_monotonicity` | DONE | ✅ | - |  |
-| 39 | `no_reserves_zero_balance` | DONE | ✅ | on simplified assumptions | |
-|    | `withdraw_more_reserves` | FAIL | - | NEW | 
-|    | **General**
-| 40 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷  | - | - | 
-| 41 | `usage_registered_assets_only` | IN PROGRESS | 👷  | - | - |
+| 43 | `withdraw_reserves_decreases` | DONE | ✅ | - | - |
+| 44 | `withdraw_reserves_monotonicity` | DONE | ✅ | - | - |
+| 45 | `no_reserves_zero_balance` | DONE | ✅ | on simplified assumptions | - |
+| 46 | `withdraw_more_reserves` | DONE | ❌ | FAIL | NEW | 
+| | **General**
+| 47 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷 | - | - | 
+| 48 | `usage_registered_assets_only` | IN PROGRESS | 👷 | - | - |
 
 
 ## plan for upcoming weeks
