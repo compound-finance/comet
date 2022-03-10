@@ -1,4 +1,5 @@
 import { event, expect, exp, makeProtocol, portfolio, wait } from './helpers';
+import { BigNumber } from "ethers";
 
 describe('transfer', function () {
   it('transfers base from sender if the asset is base', async () => {
@@ -140,18 +141,25 @@ describe('transfer', function () {
 
     await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
 
-    await comet.connect(alice).transferAsset(bob.address, USDC.address, 100e6);
-
-    const totalsBasic = await comet.totalsBasic();
-
     const baseIndexScale = await comet.baseIndexScale();
 
-    expect(await comet.baseBalanceOf(alice.address)).to.eq(
-      -baseIndexScale
-        .mul(100e6)
-        .div(totalsBasic.baseBorrowIndex)
-        .toNumber()
-    );
+    let t0 = await comet.totalsBasic();
+    t0 = Object.assign({}, t0, {
+      baseBorrowIndex: t0.baseBorrowIndex.mul(2),
+    });
+    await comet.setTotalsBasic(t0);
+
+    await comet.connect(alice).transferAsset(bob.address, USDC.address, 100e6);
+
+    const t1 = await comet.totalsBasic();
+
+    // transferBase sets principal to principalValueBorrow(-100e6)
+    const principalValue = BigNumber.from(-100e6).mul(baseIndexScale).div(t1.baseBorrowIndex);
+
+    // baseBalanceOf returns presentValueBorrow(principal)
+    const baseBalanceOf = principalValue.mul(t1.baseBorrowIndex).div(baseIndexScale);
+
+    expect(await comet.baseBalanceOf(alice.address)).to.eq(baseBalanceOf);
   });
 
   it('cant borrow less than the minimum', async () => {
