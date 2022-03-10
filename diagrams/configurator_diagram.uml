@@ -1,0 +1,23 @@
+@startuml
+
+rectangle GovSimple
+rectangle Timelock
+rectangle ProxyAdmin
+rectangle ConfiguratorProxy
+rectangle ConfiguratorImpl
+rectangle CometFactory
+rectangle CometProxy
+rectangle CometImpl
+
+GovSimple --> Timelock
+Timelock --> ProxyAdmin : admin
+Timelock ~~> ConfiguratorImpl : governor
+Timelock ~~> CometImpl : governor
+ProxyAdmin --> ConfiguratorProxy
+ProxyAdmin --> CometProxy
+ConfiguratorProxy --> ConfiguratorImpl : impl
+ConfiguratorImpl --> CometFactory
+CometFactory ..> CometImpl : makes
+CometProxy --> CometImpl : impl
+
+@enduml
