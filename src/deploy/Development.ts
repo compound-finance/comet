@@ -21,6 +21,7 @@ import { ExtConfigurationStruct } from '../../build/types/CometExt';
 import { BigNumberish } from 'ethers';
 export { Comet } from '../../build/types';
 import { DeployedContracts, ProtocolConfiguration } from './index';
+import { packAssetConfig } from './NetworkConfiguration';
 
 async function makeToken(
   deploymentManager: DeploymentManager,
@@ -72,21 +73,21 @@ export async function deployDevelopmentComet(
   let assetConfig0 = {
     asset: gold.address,
     priceFeed: goldPriceFeed.address,
-    decimals: (8).toString(),
-    borrowCollateralFactor: (0.9e18).toString(),
-    liquidateCollateralFactor: (1e18).toString(),
-    liquidationFactor: (0.95e18).toString(),
-    supplyCap: (1000000e8).toString(),
+    decimals: 8,
+    borrowCF: 0.9,
+    liquidateCF: 1,
+    liquidationFactor: 0.95,
+    supplyCap: 1000000e8,
   };
 
   let assetConfig1 = {
     asset: silver.address,
     priceFeed: silverPriceFeed.address,
-    decimals: (10).toString(),
-    borrowCollateralFactor: (0.4e18).toString(),
-    liquidateCollateralFactor: (0.5e18).toString(),
-    liquidationFactor: (0.9e18).toString(),
-    supplyCap: (500000e10).toString(),
+    decimals: 10,
+    borrowCF: 0.4,
+    liquidateCF: 0.5,
+    liquidationFactor: 0.9,
+    supplyCap: 500000e10,
   };
 
   const {
@@ -127,7 +128,7 @@ export async function deployDevelopmentComet(
       baseMinForRewards: 1, // XXX
       baseBorrowMin: 1, // XXX
       targetReserves: 0, // XXX
-      assetConfigs: [assetConfig0, assetConfig1],
+      assetConfigs: [assetConfig0, assetConfig1].map(c => packAssetConfig(c.asset, c)),
     },
     ...configurationOverrides,
   };

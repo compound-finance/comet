@@ -14,7 +14,7 @@ describe('constructor', function () {
     expect(await comet.baseBorrowMin()).to.eq(exp(100,6));
   });
 
-  it('verifies asset scales', async function () {
+  it('does not verify configs', async function () {
     const [governor, pauseGuardian] = await ethers.getSigners();
 
     // extension delegate
@@ -27,10 +27,6 @@ describe('constructor', function () {
     // tokens
     const assets = {
       USDC: { decimals: 6 },
-      EVIL: {
-        decimals: 18,
-        packedDecimals: 19,
-      }
     };
     const FaucetFactory = (await ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
     const tokens = {};
@@ -51,7 +47,7 @@ describe('constructor', function () {
     }
 
     const CometFactory = (await ethers.getContractFactory('CometHarness')) as CometHarness__factory;
-    await expect(CometFactory.deploy({
+    const comet = await CometFactory.deploy({
       governor: governor.address,
       pauseGuardian: pauseGuardian.address,
       extensionDelegate: extensionDelegate.address,
@@ -70,15 +66,11 @@ describe('constructor', function () {
       baseBorrowMin: exp(1, 6),
       targetReserves: 0,
       assetConfigs: [{
-        asset: tokens["EVIL"].address,
-        priceFeed: priceFeeds["EVIL"].address,
-        decimals: assets["EVIL"].packedDecimals, // <-- packed decimals differ from deployed token's decimals
-        borrowCollateralFactor: ONE - 1n,
-        liquidateCollateralFactor: ONE,
-        liquidationFactor: ONE,
-        supplyCap: exp(100, 18),
+        word_a: 0,
+        word_b: 0,
       }],
-    })).to.be.revertedWith("custom error 'BadDecimals()'");
+    });
+    expect((await comet.getAssetInfo(0)).asset).to.be.equal('0x0000000000000000000000000000000000000000');
   });
 
   it('reverts if baseTokenPriceFeed does not have 8 decimals', async () => {
@@ -93,7 +85,8 @@ describe('constructor', function () {
     ).to.be.revertedWith("custom error 'BadDecimals()'");
   });
 
-  it('reverts if asset has a price feed that does not have 8 decimals', async () => {
+  // Note: with pre-packing we do not check this
+  it.skip('reverts if asset has a price feed that does not have 8 decimals', async () => {
     await expect(
       makeProtocol({
         assets: {
