@@ -249,20 +249,14 @@ contract Comet is CometCore {
     /**
      * @dev Checks and gets the packed asset info for storage
      */
-    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
-        uint256 word_a = 0;
-        uint256 word_b = 0;
-
+    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256 word_a, uint256 word_b) {
         if (i < assetConfigs.length) {
-            AssetConfig memory assetConfig;
             assembly {
-                assetConfig := mload(add(add(assetConfigs, 0x20), mul(i, 0x20)))
+                let assetConfig := mload(add(add(assetConfigs, 0x20), mul(i, 0x20)))
+                word_a := mload(assetConfig)
+                word_b := mload(add(assetConfig, 0x20))
             }
-            word_a = assetConfig.word_a;
-            word_b = assetConfig.word_b;
         }
-
-        return (word_a, word_b);
     }
 
     /**
