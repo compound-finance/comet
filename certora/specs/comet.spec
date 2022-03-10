@@ -32,16 +32,6 @@ methods {
     tokenBalanceOf(address, address) returns uint256 envfree 
 }
 
-definition similarFunctions(method f) returns bool =    
-            f.selector == withdraw(address,uint256).selector ||
-            f.selector == withdrawTo(address,address,uint).selector ||
-            f.selector == transferAsset(address,address,uint).selector ||
-            f.selector == supplyTo(address,address,uint).selector ||
-            f.selector == supply(address,uint).selector ||
-            f.selector == initializeStorage().selector ;
-
-
-
 
 ghost mathint sumUserBasicPrinciple  {
 	init_state axiom sumUserBasicPrinciple==0; 
@@ -129,9 +119,17 @@ rule verify_isBorrowCollateralized(address account, method f){
     assert collateralized2;
 }
 
-// rule balance_change_vs_accrue(method f){
-//     env e;
+rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f.isView && f.selector != call_accrueInternal().selector}{
+    env e;
+    calldataarg args;
 
-// }
+    require !AccrueWasCalled(e) ;
+
+    int104 balance_pre = baseBalanceOf(e,currentContract);
+    f(e,args) ;
+    int104 balance_post = baseBalanceOf(e,currentContract);
+
+    assert balance_post != balance_pre => AccrueWasCalled(e);
+}
 
 

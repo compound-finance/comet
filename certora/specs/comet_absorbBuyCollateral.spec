@@ -80,7 +80,8 @@ rule buyCol_then_withdraw(address account, uint amount){
     uint minAmount; uint baseAmount;
     
     require asset != currentContract && recipient != currentContract;
-    require !isWithdrawPaused() && hasPermission(e,account,operator);
+    require asset != account && recipient != account && asset != recipient && asset != operator;
+    require !get_Withdraw_Paused() && hasPermission(e,account,operator);
 
     withdraw(e, account, amount);
     buyCollateral(e, asset, minAmount, baseAmount, recipient) at init;
