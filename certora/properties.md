@@ -42,9 +42,9 @@
 | | **Asset Info** |
 | 24 | `reversibility_of_packing` | DONE | ✅ | need to recheck | - |
 | | **High level totals and balances** |
-| 25 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions  | - |
-| 26 | `totalCollateralPerAssetVsAssetBalance` | IN PROGRESS | 👷 | - |   |
-| 27 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions |  |
+| 25 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions | - |
+| 26 | `totalCollateralPerAssetVsAssetBalance` | IN PROGRESS | 👷 | - | - |
+| 27 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions | - |
 | 28 | `base_balance_vs_totals` | IN PROGRESS | 👷| on simplified assumptions | breaks |
 | 29 | `Collateral_totalSupply_LE_supplyCap` | DONE | ✅ | using the summarization of getAssetInfo | NEW |
 | 30  | `at_time_of_borrow_collateral_greater_than_zero` | IN PROGRESS | 👷 | - | NEW| 
