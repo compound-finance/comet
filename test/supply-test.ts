@@ -149,6 +149,7 @@ describe('supplyTo', function () {
     await expect(cometAsB.supplyTo(alice.address, COMP.address, 8e8)).to.be.revertedWith("custom error 'SupplyCapExceeded()'");
   });
 
+  // XXX
   it('reverts if the asset is neither collateral nor base', async () => {
     const protocol = await makeProtocol();
     const { comet, users: [alice, bob], unsupportedToken: USUP } = protocol;

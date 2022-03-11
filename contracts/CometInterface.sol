@@ -71,26 +71,13 @@ abstract contract CometInterface is CometCore, ERC20 {
     function baseTokenPriceFeed() virtual external view returns (address);
     function extensionDelegate() virtual external view returns (address);
 
-    function kink() virtual external view returns (uint64);
-    function perSecondInterestRateSlopeLow() virtual external view returns (uint64);
-    function perSecondInterestRateSlopeHigh() virtual external view returns (uint64);
-    function perSecondInterestRateBase() virtual external view returns (uint64);
-    function reserveRate() virtual external view returns (uint64);
-
     function baseScale() virtual external view returns (uint64);
     function baseIndexScale() virtual external view returns (uint64);
     function factorScale() virtual external view returns (uint64);
     function priceScale() virtual external view returns (uint64);
     function trackingIndexScale() virtual external view returns (uint64);
 
-    function baseTrackingSupplySpeed() virtual external view returns (uint64);
-    function baseTrackingBorrowSpeed() virtual external view returns (uint64);
-    function baseMinForRewards() virtual external view returns (uint104);
-    function baseBorrowMin() virtual external view returns (uint104);
-    function targetReserves() virtual external view returns (uint104);
-
     function maxAssets() virtual external view returns (uint8);
-    function numAssets() virtual external view returns (uint8);
 
     function totalsBasic() virtual external view returns (TotalsBasic memory);
 
