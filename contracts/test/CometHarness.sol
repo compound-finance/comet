@@ -53,6 +53,20 @@ contract CometHarness is Comet {
         updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
     }
 
+    function getAssetInfo(uint8 i) external view returns (AssetInfo memory) {
+        if (i >= numAssets) revert BadAsset();
+        return AssetInfo({
+            offset: i,
+            asset: getAssetAddress(i),
+            priceFeed: getAssetPriceFeed(i),
+            scale: getAssetScale(i),
+            borrowCollateralFactor: getAssetBorrowCF(i),
+            liquidateCollateralFactor: getAssetLiquidateCF(i),
+            liquidationFactor: getAssetLiquidationFactor(i),
+            supplyCap: getAssetSupplyCap(i)
+         });
+    }
+
     function getAssetList(address account) external view returns (address[] memory result) {
         uint16 assetsIn = userBasic[account].assetsIn;
 
@@ -68,7 +82,7 @@ contract CometHarness is Comet {
         uint j = 0;
         for (uint8 i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
-                result[j] = getAssetInfo(i).asset;
+                result[j] = getAssetAddress(i);
                 j++;
             }
         }
