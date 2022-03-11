@@ -31,7 +31,7 @@ contract StandardToken {
         return true;
     }
 
-    function transferFrom(address src, address dst, uint256 amount) external returns (bool) {
+    function transferFrom(address src, address dst, uint256 amount) external virtual returns (bool) {
         allowance[src][msg.sender] = allowance[src][msg.sender] - amount;
         balanceOf[src] = balanceOf[src] - amount;
         balanceOf[dst] = balanceOf[dst] + amount;
