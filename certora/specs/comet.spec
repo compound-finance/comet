@@ -109,7 +109,7 @@ function call_functions_with_specific_asset(method f, env e, address asset) retu
 
 // B@B - assetIn of a specific asset is initialized (!0) or uninitialized (0) along with the collateral balance
 rule assetIn_Initialized_With_Balance(method f, address user, address asset) 
-    filtered { f -> f.selector != call_updateAssetsIn(address, address, uint128, uint128).selector && !similarFunctions(f) && !f.isView } {
+    filtered { f ->  !similarFunctions(f) && !f.isView } {
     
     env e; calldataarg args;
     require user != currentContract;
@@ -155,7 +155,7 @@ rule verify_isBorrowCollateralized(address account, method f){
     assert collateralized2;
 }
 
-rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f.isView && f.selector != call_accrueInternal().selector}{
+rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
     env e;
     calldataarg args;
 
@@ -169,7 +169,7 @@ rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f
 }
 
 
-rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) && !f.isView && f.selector != call_accrueInternal().selector}{
+rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
     env e;
     calldataarg args;
     address token;

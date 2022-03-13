@@ -2,7 +2,7 @@
 pragma solidity ^0.8.11;
 
 import "../../contracts/Comet.sol";
-import "./CometHarnessWrappers.sol";
+import "./CometHarnessGetters.sol";
 
 import "../../contracts/ERC20.sol";
 import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
@@ -12,8 +12,8 @@ import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/Aggregat
  * @notice 
  * @author Certora
  */
-contract CometHarness is CometHarnessWrappers {
-    constructor(Configuration memory config) CometHarnessWrappers(config) {
+contract CometHarness is CometHarnessGetters {
+    constructor(Configuration memory config) CometHarnessGetters(config) {
     }
 
 ////////////////////////////////////////////////////////////////////////////////
