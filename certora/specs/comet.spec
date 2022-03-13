@@ -140,10 +140,7 @@ function simplifiedAssumptions() {
 //     withdraw(e,e.msg.sender,)
 // }
 
-// rule usage_registered_assets_only(address asset, method f) {
-//     // check that every function call that has an asset arguments reverts on a non-registered asset 
-//     assert false, "todo";
-// }
+
 
 
 rule verify_isBorrowCollateralized(address account, method f){
@@ -172,3 +169,25 @@ rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f
 }
 
 
+rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) && !f.isView && f.selector != call_accrueInternal().selector}{
+    env e;
+    calldataarg args;
+    address token;
+    
+    bool registered = isRegisterdAsAsset(e,token);
+    require token != _baseToken;
+    uint256 balance_pre = tokenBalanceOf(token,currentContract);
+    f(e,args) ;
+    uint256 balance_post = tokenBalanceOf(token,currentContract);
+
+    assert balance_post != balance_pre => registered;
+}
+
+
+ rule usage_registered_assets_only(address asset, method f) {
+//     // check that every function call that has an asset arguments reverts on a non-registered asset 
+    env e; calldataarg args;
+    bool registered = isRegisterdAsAsset(e,asset);
+    call_functions_with_specific_asset(f, e, asset);
+    assert registered; //if the function passed it must be registered 
+ }

@@ -20,9 +20,9 @@
 | 3 | `supplyIndex_borrowIndex_rise_with_time` | DONE | ✅ | - | - |
 | 4 | `borrowBase_vs_utilization` | DONE | ✅ | - | - |
 | 5 | `utilization_zero` | DONE | ✅ | -| - |
-| 6 | `isLiquiditable_false_should_not_change` |  DONE | ✅  | - | DONE |
+| 6 | `isLiquiditable_false_should_not_change` |  DONE | ✅  | - |  |
 | 7 | `presentValue_GE_principle` |  DONE | ✅ | - | - |
-| 8 | `presentValue_G_zero` | DONE | ✅  | - | DONE |
+| 8 | `presentValue_G_zero` | DONE | ✅  | - |  |
 | 9 | `presentValue_EQ_principal` | DONE | ✅ | - | - |
 | 10 | `supplyRate_vs_utilization` | DONE | ✅ | - | - |
 | 11 | `utilization_zero_supplyRate_zero` | DONE | ✅ | - | - |
@@ -46,24 +46,24 @@
 | 26 | `totalCollateralPerAssetVsAssetBalance` | IN PROGRESS | 👷 | - | - |
 | 27 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions | - |
 | 28 | `base_balance_vs_totals` | IN PROGRESS | 👷| on simplified assumptions | breaks |
-| 29 | `Collateral_totalSupply_LE_supplyCap` | DONE | ✅ | using the summarization of getAssetInfo | NEW |
-| 30  | `at_time_of_borrow_collateral_greater_than_zero` | IN PROGRESS | 👷 | - | NEW| 
+| 29 | `Collateral_totalSupply_LE_supplyCap` | DONE | ✅ | using the summarization of getAssetInfo |  |
+| 30  | `at_time_of_borrow_collateral_greater_than_zero` | IN PROGRESS | 👷 | - | | 
 | |**High level updates** |
 | 31 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | - | - |
-| 32 | `balance_change_vs_accrue` | IN PROGRESS | 👷 | fails (withdrawReserves -? buyCollateral - ok) | NEW | 
+| 32 | `balance_change_vs_accrue` | IN PROGRESS | 👷 | fails (withdrawReserves -? buyCollateral - ok) | Follow fix? | 
 | | **BuyCollateral** |
 | 33 | `antiMonotonicityOfBuyCollateral` | DONE | ✅ | - | - |
 | 34 | `buyCollateralMax` | DONE | ✅ | - | NEW |
 | | **Absorb** |
 | 35 | `absorb_reserves_increase` | IN PROGRESS | 👷  | - |  |
-| 36 | `canNot_double_absorb` | DONE | ✅  | in two calls | NEW |
-| 37 | `canNot_absorb_same_account`| IN PROGRESS | 🕝  | in one call | NEW |
-| 38 | `absorb_reserves_increase` | DONE | ✅  | - | NEW |
+| 36 | `canNot_double_absorb` | DONE | ✅  | in two calls |  |
+| 37 | `canNot_absorb_same_account`| IN PROGRESS | 🕝  | in one call |  |
+| 38 | `absorb_reserves_increase` | DONE | ✅  | - |  |
 | | **Supply** |
-| 39 | `supply_increase_balance` | DONE| ✅ | need to generalize | DONE |
+| 39 | `supply_increase_balance` | DONE| ✅ | need to generalize |  |
 | | **Withdraw** |
 | 40 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - | - |
-| 41 | `withdraw_decrease_balance` | DONE| ✅ | need to generalize | DONE|
+| 41 | `withdraw_decrease_balance` | DONE| ✅ | need to generalize | |
 | | **Reserve** |
 | 42 | `withdraw_reserves_decreases` | DONE | ✅ | - |  |
 | 43 | `withdraw_reserves_monotonicity` | DONE | ✅ | - |  |
@@ -72,6 +72,7 @@
 |    | **General**
 | 46 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷  | - | - | 
 | 47 | `usage_registered_assets_only` | IN PROGRESS | 👷  | - | - |
+| 48 | `balance_change_vs_registered` | DONE | ✅ | - |  NEW |
 
 
 ## Plan for upcoming weeks (End March)

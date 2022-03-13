@@ -32,8 +32,10 @@ contract CometHarness is CometHarnessWrappers {
         return assetInfo;
     }
 
-    function getAssetInfoByAddress(address asset) override internal view returns (AssetInfo memory){
-        return getAssetInfo(asset_index[asset]);
+    function getAssetInfoByAddress(address asset) override internal view returns (AssetInfo memory){       
+         AssetInfo memory assetInfo =  getAssetInfo(asset_index[asset]);
+         require (assetInfo.asset == asset);
+         return assetInfo;
     }
 
     function getAssetSupplyCapByAddress(address asset) external view returns (uint128){
@@ -149,6 +151,10 @@ contract CometHarness is CometHarnessWrappers {
         return super.transferCollateral(src, dst, asset, safe128(amount));
     }
 
+
+    function isRegisterdAsAsset(address token) view external returns (bool) {
+        return getAssetInfoByAddress(token).asset == token;
+    }
    
 
 }
