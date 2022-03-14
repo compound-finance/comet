@@ -128,8 +128,7 @@ function simplifiedAssumptions() {
 
 
 
-
-rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f.isView && f.selector != call_accrueInternal().selector}{
+rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
     env e;
     calldataarg args;
 
@@ -158,9 +157,10 @@ rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) &
 }
 
 
- rule usage_registered_assets_only(address asset, method f) {
+ rule usage_registered_assets_only(address asset, method f) filtered { f -> !similarFunctions(f) && !f.isView } { 
 //     // check that every function call that has an asset arguments reverts on a non-registered asset 
     env e; calldataarg args;
+    simplifiedAssumptions();
     bool registered = isRegisterdAsAsset(e,asset);
     call_functions_with_specific_asset(f, e, asset);
     assert registered; //if the function passed it must be registered 

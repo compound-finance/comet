@@ -55,7 +55,7 @@ contract CometHarness is CometHarnessGetters {
     mapping (uint16 => mapping (address => mapping (bool => uint16))) asset_in_state_changes; 
 
     function isInAsset(uint16 assetsIn, uint8 assetOffset) override internal view returns (bool) {
-        require (asset_to_index[index_to_asset[assetOffset]] == assetOffset);
+        //require (asset_to_index[index_to_asset[assetOffset]] == assetOffset);
         return asset_in_state[assetsIn][index_to_asset[assetOffset]];
     }
 
@@ -78,18 +78,21 @@ contract CometHarness is CometHarnessGetters {
         if (initialUserBalance == 0 && finalUserBalance != 0) {
             // set bit for asset
             flag = true;
-            assetInAfter = asset_in_state_changes[assetInBefore][asset][flag];
-            userBasic[account].assetsIn = assetInAfter;
+         //   assetInAfter = asset_in_state_changes[assetInBefore][asset][flag];
+         //   userBasic[account].assetsIn = assetInAfter;
         } else if (initialUserBalance != 0 && finalUserBalance == 0) {
             // clear bit for asset
             flag = false;
-            assetInAfter = asset_in_state_changes[assetInBefore][asset][flag];
-            userBasic[account].assetsIn = assetInAfter;
+         //   assetInAfter = asset_in_state_changes[assetInBefore][asset][flag];
+        //    userBasic[account].assetsIn = assetInAfter;
         }
         else{
             return;
         }
+        assetInAfter = asset_in_state_changes[assetInBefore][asset][flag];
+        userBasic[account].assetsIn = assetInAfter;
         require(asset_in_state[assetInAfter][asset] == flag);
+        require(isInAsset(assetInAfter,asset_to_index[asset]) == flag ); 
     }
 
     uint256 nonDet1;
@@ -135,10 +138,10 @@ contract CometHarness is CometHarnessGetters {
     }
 
 
-    // function transferFrom(address src, address dst, address asset, uint amount) public override {
+    //transferAssetFrom is rather complex, splitting it to two functions 
+    function transferAssetFrom(address src, address dst, address asset, uint amount) public override {
        
-    // }
-
+     }
     function transferAssetFromBase(address src, address dst, address asset, uint amount) external {
         if (isTransferPaused()) revert Paused();
         if (!hasPermission(src, msg.sender)) revert Unauthorized();
@@ -148,7 +151,7 @@ contract CometHarness is CometHarnessGetters {
         return super.transferBase(src, dst, safe104(amount));
     }
 
-    function transferFromAsset(address src, address dst, address asset, uint amount) external {
+    function transferAssetFromAsset(address src, address dst, address asset, uint amount) external {
         if (isTransferPaused()) revert Paused();
         if (!hasPermission(src, msg.sender)) revert Unauthorized();
         if (src == dst) revert NoSelfTransfer();
@@ -156,7 +159,6 @@ contract CometHarness is CometHarnessGetters {
         require (asset != baseToken);
         return super.transferCollateral(src, dst, asset, safe128(amount));
     }
-
 
     function isRegisterdAsAsset(address token) view external returns (bool) {
         return getAssetInfoByAddress(token).asset == token;
