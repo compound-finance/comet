@@ -72,8 +72,12 @@
 | 46 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷  | - | - | 
 | 47 | `usage_registered_assets_only` | DONE | ✅ | - |  DONE |
 | 48 | `balance_change_vs_registered` | DONE | ✅ | - |  NEW |
-
-
+|    | **CometExt**
+| 49 | `allowanceOnlyZeroOrMax` | DONE | ✅ | - | NEW |
+| 50 | `approveFailsOnInvalidAllowance` | DONE | ✅ | - | NEW |
+| 51 | `validAllowanceChanges` | DONE | ✅ | - | NEW |
+| 52 | `validApproveSucceeds` | DONE | ✅ | - | NEW |
+| 53 | `withdrawAfterApprove` | IN PROGRESS | 🕝 | - | NEW |
 ## Plan for upcoming weeks (End March)
 
 - A few more high-level properties
