@@ -20,9 +20,9 @@
 | 3 | `supplyIndex_borrowIndex_rise_with_time` | DONE | ✅ | - | - |
 | 4 | `borrowBase_vs_utilization` | DONE | ✅ | - | - |
 | 5 | `utilization_zero` | DONE | ✅ | -| - |
-| 6 | `isLiquiditable_false_should_not_change` |  DONE | ✅  | - |  |
+| 6 | `isLiquiditable_false_should_not_change` |  DONE | ✅  | - | - |
 | 7 | `presentValue_GE_principle` |  DONE | ✅ | - | - |
-| 8 | `presentValue_G_zero` | DONE | ✅  | - |  |
+| 8 | `presentValue_G_zero` | DONE | ✅  | - | - |
 | 9 | `presentValue_EQ_principal` | DONE | ✅ | - | - |
 | 10 | `supplyRate_vs_utilization` | DONE | ✅ | - | - |
 | 11 | `utilization_zero_supplyRate_zero` | DONE | ✅ | - | - |
@@ -46,8 +46,8 @@
 | 26 | `totalCollateralPerAssetVsAssetBalance` | IN PROGRESS | 👷 | - | - |
 | 27 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions | - |
 | 28 | `base_balance_vs_totals` | IN PROGRESS | 👷| on simplified assumptions | breaks |
-| 29 | `Collateral_totalSupply_LE_supplyCap` | DONE | ✅ | using the summarization of getAssetInfo |  |
-| 30  | `at_time_of_borrow_collateral_greater_than_zero` | IN PROGRESS | 👷 | - | | 
+| 29 | `Collateral_totalSupply_LE_supplyCap` | DONE | ✅ | using the summarization of getAssetInfo | - |
+| 30  | `at_time_of_borrow_collateral_greater_than_zero` | IN PROGRESS | 👷 | - | - | 
 | |**High level updates** |
 | 31 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | - | - |
 | 32 | `balance_change_vs_accrue` | IN PROGRESS | 👷 | fails (withdrawReserves -? buyCollateral - ok) | Follow fix? | 
@@ -55,26 +55,30 @@
 | 33 | `antiMonotonicityOfBuyCollateral` | DONE | ✅ | - | - |
 | 34 | `buyCollateralMax` | DONE | ✅ | - | NEW |
 | | **Absorb** |
-| 35 | `absorb_reserves_increase` | IN PROGRESS | 👷  | - |  |
-| 36 | `canNot_double_absorb` | DONE | ✅  | in two calls |  |
-| 37 | `canNot_absorb_same_account`| IN PROGRESS | 🕝  | in one call |  |
-| 38 | `absorb_reserves_increase` | DONE | ✅  | - |  |
+| 35 | `absorb_reserves_increase` | IN PROGRESS | 👷  | - | - |
+| 36 | `canNot_double_absorb` | DONE | ✅  | in two calls | - |
+| 37 | `canNot_absorb_same_account`| IN PROGRESS | 🕝  | in one call | - |
+| 38 | `absorb_reserves_increase` | DONE | ✅  | - | - |
 | | **Supply** |
-| 39 | `supply_increase_balance` | DONE| ✅ | need to generalize |  |
+| 39 | `supply_increase_balance` | DONE| ✅ | need to generalize | - |
 | | **Withdraw** |
 | 40 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - | - |
 | 41 | `withdraw_decrease_balance` | DONE| ✅ | need to generalize | |
 | | **Reserve** |
-| 42 | `withdraw_reserves_decreases` | DONE | ✅ | - |  |
-| 43 | `withdraw_reserves_monotonicity` | DONE | ✅ | - |  |
-| 44 | `no_reserves_zero_balance` | DONE | ✅ | on simplified assumptions | |
-| 45 | `withdraw_more_reserves` | FAIL | - | NEW | 
+| 42 | `withdraw_reserves_decreases` | DONE | ✅ | - | - |
+| 43 | `withdraw_reserves_monotonicity` | DONE | ✅ | - | - |
+| 44 | `no_reserves_zero_balance` | DONE | ✅ | on simplified assumptions | - |
+| 45 | `withdraw_more_reserves` | FAIL | - | - | NEW |
 |    | **General**
 | 46 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷  | - | - | 
 | 47 | `usage_registered_assets_only` | IN PROGRESS | 👷  | - | - |
 | 48 | `balance_change_vs_registered` | DONE | ✅ | - |  NEW |
-
-
+|    | **CometExt**
+| 49 | `allowanceOnlyZeroOrMax` | DONE | ✅ | - | NEW |
+| 50 | `approveFailsOnInvalidAllowance` | DONE | ✅ | - | NEW |
+| 51 | `validAllowanceChanges` | DONE | ✅ | - | NEW |
+| 52 | `validApproveSucceeds` | DONE | ✅ | - | NEW |
+| 53 | `withdrawAfterApprove` | IN PROGRESS | 🕝 | - | NEW |
 ## Plan for upcoming weeks (End March)
 
 - A few more high-level properties
@@ -246,18 +250,6 @@ needs delegate call.
     ```CVL
     collateral >= borrow
     ```
-### asset uniqueness
-- if an asset doesnt exist it should revert on every function call with asset.
-asset_index, index_asset are correlated. not exist means index of asset is 0 and the asset in element 0 is not the same asset.
-
-
-
-
-
-
-
-
-
 
 
 ## work in progress 
