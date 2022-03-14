@@ -1,5 +1,5 @@
-import { EvilToken, FaucetToken } from '../build/types';
-import { expect, exp, makeProtocol, portfolio, ReentryAttack, wait } from './helpers';
+import { EvilToken, EvilToken__factory, FaucetToken } from '../build/types';
+import { ethers, expect, exp, makeProtocol, portfolio, ReentryAttack, wait } from './helpers';
 
 describe('buyCollateral', function () {
   it('allows buying collateral when reserves < target reserves', async () => {
@@ -218,7 +218,7 @@ describe('buyCollateral', function () {
     // Note: fee-tokens are not currently supported (for efficiency) and should not be added
   });
 
-  describe.only('reentrancy', function() {
+  describe('reentrancy', function() {
     it('is not broken by reentrancy supply ', async () => {
       const wethArgs = {
         initial: 1e4,
@@ -253,7 +253,7 @@ describe('buyCollateral', function () {
         assets: {
           EVIL: {
             ...baseTokenArgs,
-            isEvil: true,
+            factory: await ethers.getContractFactory('EvilToken') as EvilToken__factory,
           },
           WETH: wethArgs,
         },
