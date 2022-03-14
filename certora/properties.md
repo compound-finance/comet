@@ -9,6 +9,9 @@
 
 ## Table
 
+
+
+
 | # | Rule Name | Progress | Verdict | Comment | Update |
 |-- | --------- | -------- | ------- | ------- | ------ |
 |   |                      **Interest computation**                    |
@@ -17,76 +20,74 @@
 | 3 | `supplyIndex_borrowIndex_rise_with_time` | DONE | ✅ | - | - |
 | 4 | `borrowBase_vs_utilization` | DONE | ✅ | - | - |
 | 5 | `utilization_zero` | DONE | ✅ | -| - |
-| 6 | `isLiquiditable_false_should_not_change` |  DONE | ✅  | - | DONE |
-| 7 | `presentValue_GE_principle` |  DONE | ✅ | - | No assumption |
-| 8 | `presentValue_G_zero` | DONE | 👷 | - | DONE |
-| 9 | `presentValue_EQ_principal` | DONE | ✅ | - | No assumption |
+| 6 | `isLiquiditable_false_should_not_change` |  DONE | ✅  | - |  |
+| 7 | `presentValue_GE_principle` |  DONE | ✅ | - | - |
+| 8 | `presentValue_G_zero` | DONE | ✅  | - |  |
+| 9 | `presentValue_EQ_principal` | DONE | ✅ | - | - |
 | 10 | `supplyRate_vs_utilization` | DONE | ✅ | - | - |
 | 11 | `utilization_zero_supplyRate_zero` | DONE | ✅ | - | - |
-| 12 | `getSupplyRate_revert_characteristic` | DONE | ✅  | reserveRate > factorScale() |  |
+| 12 | `getSupplyRate_revert_characteristic` | DONE | ✅  | - | - |
 | 13 | `isCol_implies_not_isLiq` |DONE | ✅   | - | - |
 |   |                       **Flags**                      |
-| 14 | `check_flag_updates` | DONE | ✅ | update is coherent with getters | - |
-| 15 | `check_flag_getters` | DONE | ✅ | getters are coherent with update | - |
+| 14 | `check_flag_updates` | DONE | ✅ | - | - |
+| 15 | `check_flag_getters` | DONE | ✅ | - | - |
 | 16 | `check_pauseSupply_functionality` | DONE | ✅ | on safe summarization | - |
 | 17 | `check_pauseTransfer_functionality` | DONE | ✅ | " | - |
 | 18 | `check_pauseWithdraw_functionality` | DONE | ✅ | " | - |
 | 19 | `check_pauseAbsorb_functionality` | DONE | ✅ | " | - |
 | 20 | `check_pauseBuy_functionality` | DONE | ✅ | " | - |
-| 21 | `check_update_UserCollateral` | DONE | 👷 | need to recheck | - |
+| 21 | `check_update_UserCollateral` | DONE | ✅ | need to recheck | - |
 | 22 | `update_changes_single_bit` | DONE | ✅ | - | - |
 | 23 | `update_changes_single_user_assetIn` | DONE | ✅ | - | - |
 | | **Asset Info** |
 | 24 | `reversibility_of_packing` | DONE | ✅ | need to recheck | - |
 | | **High level totals and balances** |
-| 25 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions  | - |
-| 26 | `totalCollateralPerAssetVsAssetBalance` | IN PROGRESS | 👷 | - |   |
-| 27 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions |  |
+| 25 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions | - |
+| 26 | `totalCollateralPerAssetVsAssetBalance` | IN PROGRESS | 👷 | - | - |
+| 27 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions | - |
 | 28 | `base_balance_vs_totals` | IN PROGRESS | 👷| on simplified assumptions | breaks |
-| 29 | `Collateral_totalSupply_LE_supplyCap` | DONE | ✅ | using the summarization of getAssetInfo | NEW |
-|    | `at_time_of_borrow_collateral_greater_than_zero` | IN PROGRESS | 👷 | NEW |
-| | **High level updates** |
-| 30 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 |  | - |
-| | `balance_change_vs_accrue` | IN PROGRESS | 👷 |  | NEW - fails | 
+| 29 | `Collateral_totalSupply_LE_supplyCap` | DONE | ✅ | using the summarization of getAssetInfo |  |
+| 30  | `at_time_of_borrow_collateral_greater_than_zero` | IN PROGRESS | 👷 | - | | 
+| |**High level updates** |
+| 31 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | - | - |
+| 32 | `balance_change_vs_accrue` | IN PROGRESS | 👷 | fails (withdrawReserves -? buyCollateral - ok) | Follow fix? | 
 | | **BuyCollateral** |
-| 30 | `antiMonotonicityOfBuyCollateral` | DONE | ✅ | - | - |
-| 31 | `buyCollateralMax` | DONE | ✅ | - | NEW |
+| 33 | `antiMonotonicityOfBuyCollateral` | DONE | ✅ | - | - |
+| 34 | `buyCollateralMax` | DONE | ✅ | - | NEW |
 | | **Absorb** |
-| 33 | `absorb_reserves_increase` | IN PROGRESS | 👷  | - |  |
-| | `canNot_double_absorb` | DONE | ✅  | - | NEW |
-| | `canNot_absorb_same_account`| IN PROGRESS | 👷  | - | NEW |
-| | `absorb_reserves_increase` | DONE | ✅  | - | NEW |
+| 35 | `absorb_reserves_increase` | IN PROGRESS | 👷  | - |  |
+| 36 | `canNot_double_absorb` | DONE | ✅  | in two calls |  |
+| 37 | `canNot_absorb_same_account`| IN PROGRESS | 🕝  | in one call |  |
+| 38 | `absorb_reserves_increase` | DONE | ✅  | - |  |
 | | **Supply** |
-| 34 | `supply_increase_balance` | DONE| ✅ | need to generalize | DONE |
+| 39 | `supply_increase_balance` | DONE| ✅ | need to generalize |  |
 | | **Withdraw** |
-| 35 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - | - |
-| 36 | `withdraw_decrease_balance` | DONE| ✅ | need to generalize | DONE|
+| 40 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - | - |
+| 41 | `withdraw_decrease_balance` | DONE| ✅ | need to generalize | |
 | | **Reserve** |
-| 37 | `withdraw_reserves_decreases` | DONE | ✅ | - |  |
-| 38 | `withdraw_reserves_monotonicity` | DONE | ✅ | - |  |
-| 39 | `no_reserves_zero_balance` | DONE | ✅ | on simplified assumptions | |
-|    | `withdraw_more_reserves` | FAIL | - | NEW | 
+| 42 | `withdraw_reserves_decreases` | DONE | ✅ | - |  |
+| 43 | `withdraw_reserves_monotonicity` | DONE | ✅ | - |  |
+| 44 | `no_reserves_zero_balance` | DONE | ✅ | on simplified assumptions | |
+| 45 | `withdraw_more_reserves` | FAIL | - | NEW | 
 |    | **General**
-| 40 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷  | - | - | 
-| 41 | `usage_registered_assets_only` | IN PROGRESS | 👷  | - | - |
+| 46 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷  | - | - | 
+| 47 | `usage_registered_assets_only` | IN PROGRESS | 👷  | - | - |
+| 48 | `balance_change_vs_registered` | DONE | ✅ | - |  NEW |
 
 
-## plan for upcoming weeks
+## Plan for upcoming weeks (End March)
 
-- more high level properties from the list
+- A few more high-level properties
+    -  approve and permissions (governor only)
+- Finish open rules
+- Reentrancy - callbacks from erc20
+ - Run with less simplifications
+    - BaseSupplyIndex != BaseBorrowIndex 
+    - one multiply 2 of the other 
 
-- revert characteristic
-1.  accrue 
-2. dependency on reserveRate
-3. max values
+- ✅ solidity flag `viaIR: true` 
 
-- reentrancy - callbacks from erc20
- also from priceoracle
- 
-- solidity flag `viaIR: true` 
-
--  review rules and study coverage by injecting bugs  
-
+-  Review rules and study coverage by injecting bugs  
 
 ## Assumptions on Interest computation 
 

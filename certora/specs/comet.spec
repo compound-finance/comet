@@ -52,6 +52,44 @@ hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 
     sumBalancePerAssert[t] = sumBalancePerAssert[t] - old_balance + balance;
 }
 
+function call_functions_with_specific_asset(method f, env e, address asset) returns uint{
+    address _account; uint amount; address account_; uint minAmount;
+    address[] accounts_array;
+	/*if (f.selector == collateralBalanceOf(address, address).selector) {
+        uint128 balance = collateralBalanceOf(e, _account, asset);
+        return balance;
+	} else */if (f.selector == supply(address, uint).selector) {
+        supply(e, asset, amount);
+	} else if (f.selector == supplyTo(address, address, uint).selector) {
+        supplyTo(e, account_, asset, amount);
+	} else if  (f.selector == supplyFrom(address, address, address, uint).selector) {
+        supplyFrom(e, _account, account_, asset, amount);
+	} else if (f.selector == transferAsset(address, address, uint).selector) {
+        transferAsset(e, account_, asset, amount);
+	} else if (f.selector == transferAssetFrom(address, address, address, uint).selector) {
+        transferAssetFrom(e, _account, account_, asset, amount);
+	} else if (f.selector == withdraw(address, uint).selector) {
+        withdraw(e, asset, amount);
+	} else if (f.selector == withdrawTo(address, address, uint).selector) {
+        withdrawTo(e, account_, asset, amount);
+	} else if (f.selector == withdrawFrom(address, address, address, uint).selector) {
+        withdrawFrom(e, _account, account_, asset, amount);
+	} else if (f.selector == absorb(address, address[]).selector) {
+        absorb(e, _account, accounts_array);
+	} else if (f.selector == buyCollateral(address, uint, uint, address).selector) {
+        buyCollateral(e, asset, minAmount, amount, account_);
+	} else if (f.selector == quoteCollateral(address, uint).selector) {
+        uint price = quoteCollateral(e, asset, amount);
+        return price;
+	} else if (f.selector == withdrawReserves(address, uint).selector) {
+        withdrawReserves(e, account_, amount);
+	} else {
+        calldataarg args;
+        f(e, args);
+    }
+    return 1;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////   Michael   /////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,24 +97,26 @@ hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 
 
 /* move to comet an use summarization */
 
-// B@B - assetIn of a specific asset is initialized (!0) or uninitialized (0) along with the collateral balance
-invariant assetIn_Initialized_With_Balance(address user, address asset)
-    getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset))
-    {
-        preserved
-        {
-            require user != currentContract;
-        }
-    }
-
 // // B@B - assetIn of a specific asset is initialized (!0) or uninitialized (0) along with the collateral balance
-// rule assetIn_Initialized_With_Balance(method f, address user, address asset) filtered { f -> f.selector != call_updateAssetsIn(address, address, uint128, uint128).selector } {
-//     env e; calldataarg args;
-//     require user != currentContract;
-//     require getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset));
-//     f(e, args);
-//     assert getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset));
-// }
+// invariant assetIn_Initialized_With_Balance(address user, address asset)
+//     getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset))
+//     {
+//         preserved
+//         {
+//             require user != currentContract;
+//         }
+//     }
+
+// B@B - assetIn of a specific asset is initialized (!0) or uninitialized (0) along with the collateral balance
+rule assetIn_Initialized_With_Balance(method f, address user, address asset) 
+    filtered { f ->  !similarFunctions(f) && !f.isView } {
+    
+    env e; calldataarg args;
+    require user != currentContract;
+    require getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset));
+    call_functions_with_specific_asset(f, e, asset);
+    assert getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset));
+}
 // balance change => update asset
 
 
@@ -85,7 +125,6 @@ function simplifiedAssumptions() {
     env e;
     require getTotalBaseSupplyIndex(e) == baseIndexScale(e);
     require getTotalBaseBorrowIndex(e) == baseIndexScale(e);
-    // require _baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase();
 }
 
 
@@ -101,10 +140,7 @@ function simplifiedAssumptions() {
 //     withdraw(e,e.msg.sender,)
 // }
 
-// rule usage_registered_assets_only(address asset, method f) {
-//     // check that every function call that has an asset arguments reverts on a non-registered asset 
-//     assert false, "todo";
-// }
+
 
 
 rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f.isView && f.selector != call_accrueInternal().selector}{
@@ -121,3 +157,25 @@ rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f
 }
 
 
+rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
+    env e;
+    calldataarg args;
+    address token;
+    
+    bool registered = isRegisterdAsAsset(e,token);
+    require token != _baseToken;
+    uint256 balance_pre = tokenBalanceOf(token,currentContract);
+    f(e,args) ;
+    uint256 balance_post = tokenBalanceOf(token,currentContract);
+
+    assert balance_post != balance_pre => registered;
+}
+
+
+ rule usage_registered_assets_only(address asset, method f) {
+//     // check that every function call that has an asset arguments reverts on a non-registered asset 
+    env e; calldataarg args;
+    bool registered = isRegisterdAsAsset(e,asset);
+    call_functions_with_specific_asset(f, e, asset);
+    assert registered; //if the function passed it must be registered 
+ }

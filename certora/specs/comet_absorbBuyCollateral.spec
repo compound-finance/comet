@@ -69,6 +69,26 @@ rule absorb_reserves_increase(address absorber, address account) {
     assert pre >= post; 
 }
 
+rule antiMonotonicityOfAbsorb(address absorber, address account) {
+    address[] accounts;
+    env e;
+    simplifiedAssumptions();
+
+    require accounts[0] == account;
+    
+    address asset;
+    uint256 balanceBefore = getUserCollateralBalanceByAsset(account, currentContract);
+    uint104 borrowBefore = getTotalBorrowBase();
+
+    int pre = getReserves();
+    absorb(e, absorber, accounts);
+
+    uint256 balanceAfter = getUserCollateralBalanceByAsset(account, currentContract);
+    uint104 borrowAfter = getTotalBorrowBase();
+    assert borrowAfter < borrowBefore <=> balanceAfter > balanceBefore;
+    
+}
+
 rule buyCol_then_withdraw(address account, uint amount){
     env e;
     require e.msg.sender != currentContract;
