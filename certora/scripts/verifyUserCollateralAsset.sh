@@ -1,5 +1,5 @@
-certoraRun certora/harness/CometHarnessWrappers.sol \
-    --verify CometHarnessWrappers:certora/specs/UserCollateralAsset.spec  \
+certoraRun certora/harness/CometHarness.sol \
+    --verify CometHarness:certora/specs/UserCollateralAsset.spec  \
     --solc solc8.11 \
     --staging \
     --optimistic_loop \

@@ -107,8 +107,8 @@ invariant collateral_totalSupply_LE_supplyCap(address asset)
 //     assert getPrincipal(user) < 0 => isBorrowCollateralized(user);
 // }
 
-// 
-invariant at_time_of_borrow_collateral_greater_than_zero(address user)
+// B@B - 
+invariant borrow_then_collateralized(address user)
         getPrincipal(user) < 0 => isBorrowCollateralized(user)
         {
             preserved 

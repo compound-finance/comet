@@ -15,12 +15,12 @@ contract CometHarnessWrappers is CometHarnessGetters {
 
     // external wrapper for isInAsset()
     function call_IsInAsset(uint16 assetsIn, uint8 assetOffset) external view returns (bool) {
-        return super.isInAsset(assetsIn, assetOffset);
+        return isInAsset(assetsIn, assetOffset);
     }
 
     // external wrapper for updateAssetsIn()
     function call_updateAssetsIn(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance) external {
-        super.updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
+        updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
     }
 
     // external wrapper for _getPackedAsset()
