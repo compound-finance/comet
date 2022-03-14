@@ -96,12 +96,6 @@ function call_functions_with_specific_asset(method f, env e, address asset) retu
 ////////////////////////////////////////////////////////////////////////////////
 //
 
-invariant test_correlation_maps_asset(address asset, uint8 offset)
-    index_to_asset(asset_to_index(asset)) == asset
-
-invariant test_correlation_maps_index(address asset, uint8 offset)
-    asset_to_index(index_to_asset(offset)) == asset
-
 // B@B - assetIn of a specific asset is initialized (!0) or uninitialized (0) along with the collateral balance
 rule assetIn_Initialized_With_Balance(method f, address user, address asset) 
     filtered { f ->  !similarFunctions(f) && !f.isView } {
