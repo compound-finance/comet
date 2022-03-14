@@ -113,7 +113,6 @@ invariant collateral_totalSupply_LE_supplyCap(address asset)
 // }
 
 // B@B - 
-/*
 invariant borrow_then_collateralized(address user)
         getPrincipal(user) < 0 => isBorrowCollateralized(user)
         {
@@ -122,4 +121,4 @@ invariant borrow_then_collateralized(address user)
                 require user != currentContract;
             }
         }
-        */
+        
