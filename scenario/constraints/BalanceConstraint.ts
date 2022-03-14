@@ -9,7 +9,7 @@ import CometAsset from '../context/CometAsset';
 function matchGroup(str, patterns) {
   for (const k in patterns) {
     const match = patterns[k].exec(str);
-    if (match) return { [k]: BigNumber.from(match[1]) };
+    if (match) return { [k]: match[1] };
   }
   throw new Error(`No match for ${str} in ${patterns}`);
 }
@@ -20,7 +20,7 @@ function parseAmount(amount) {
     case 'bigint':
       return { $gte: Number(amount) };
     case 'number':
-      return { $gte: BigNumber.from(amount) };
+      return { $gte: amount };
     case 'string':
       return matchGroup(amount, {
         $gte: />=\s*(\d+)/,
