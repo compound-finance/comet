@@ -102,7 +102,7 @@ export class Runner<T, U> {
         numSolutionSets++;
       } catch (e) {
         // TODO: Include the specific solution (set of states) that failed in the result
-        return this.generateResult(base, scenario, startTime, 0, numSolutionSets, e);
+        return this.generateResult(base, scenario, startTime, 0, ++numSolutionSets, e);
       } finally {
         contextSnapshot = await world._revertAndSnapshot(contextSnapshot);
       }
