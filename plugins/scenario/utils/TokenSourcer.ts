@@ -52,6 +52,7 @@ async function removeTokens(
   });
 }
 
+// XXX make sure we don't source tokens directly from the protocol
 async function addTokens(
   hre: HardhatRuntimeEnvironment,
   amount: BigNumber,

@@ -1,21 +1,33 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { exp } from '../test/helpers';
-import { BigNumber } from 'ethers';
 
-// XXX requires balances
 scenario(
   'Comet#transfer > collateral asset, enough balance',
   {
     upgrade: true,
     balances: {
-      // albert: { COMP: exp(101, 18) },
+      albert: { asset0: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }) => {
+  async ({ comet, actors }, world, context) => {
     const { albert, betty } = actors;
-    // XXX
-    //await albert.transferAsset(betty, COMP, exp(100, 18));
+    const { asset: asset0Address, scale } = await comet.getAssetInfo(0);
+    const collateralAsset = context.getAssetByAddress(asset0Address);
+
+    expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(scale.toBigInt() * 100n);
+
+    // Albert supplies 100 units of collateral to Comet
+    await collateralAsset.approve(albert, comet.address);
+    await albert.supplyAsset({asset: collateralAsset.address, amount: scale.toBigInt() * 100n})
+
+    // Albert transfers 50 units of collateral to Betty
+    const toTransfer = scale.toBigInt() * 50n;
+    const txn = await albert.transferAsset({dst: betty.address, asset: collateralAsset.address, amount: toTransfer}); // XXX need to know decimals
+
+    expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(scale.mul(50));
+    expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(scale.mul(50));
+
+    return txn; // return txn to measure gas
   }
 );
 
