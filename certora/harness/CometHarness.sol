@@ -81,9 +81,13 @@ contract CometHarness is CometHarnessGetters {
             // clear bit for asset
             flag = false;
         }
+        els {
+            return
+        }
         assetInAfter = asset_in_state_changes[assetInBefore][asset][flag];
         userBasic[account].assetsIn = assetInAfter;
         require(asset_in_state[assetInAfter][asset] == flag);
+        require(isInAsset(assetsInAfter,asset_index[asset]) == false ); 
     }
 
     uint256 nonDet1;
