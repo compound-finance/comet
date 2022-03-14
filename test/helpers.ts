@@ -41,7 +41,7 @@ export type ProtocolOpts = {
       supplyCap?: Numeric;
       initialPrice?: number;
       priceFeedDecimals?: number;
-      isEvil?: boolean;
+      factory?: FaucetToken__factory | EvilToken__factory;
     };
   };
   symbol?: string,
@@ -177,19 +177,15 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const targetReserves = dfn(opts.targetReserves, 0);
 
   const FaucetFactory = (await ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
-  const EvilFactory = (await ethers.getContractFactory('EvilToken')) as EvilToken__factory;
   const tokens = {};
   for (const symbol in assets) {
     const config = assets[symbol];
     const decimals = config.decimals || 18;
     const initial = config.initial || 1e6;
     const name = config.name || symbol;
+    const factory = config.factory || FaucetFactory;
     let token;
-    if (config.isEvil) {
-      token = (tokens[symbol] = await EvilFactory.deploy(initial, name, decimals, symbol));
-    } else {
-      token = (tokens[symbol] = await FaucetFactory.deploy(initial, name, decimals, symbol));
-    }
+    token = (tokens[symbol] = await factory.deploy(initial, name, decimals, symbol));
     await token.deployed();
   }
 

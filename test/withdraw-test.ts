@@ -1,6 +1,6 @@
 import { BigNumber } from "ethers";
-import { EvilToken, FaucetToken } from '../build/types';
-import { Comet, ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, wait } from './helpers';
+import { EvilToken, EvilToken__factory, FaucetToken } from '../build/types';
+import { ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, wait } from './helpers';
 
 describe('withdrawTo', function () {
   it('withdraws base from sender if the asset is base', async () => {
@@ -303,7 +303,7 @@ describe('withdraw', function () {
           EVIL: {
             decimals: 6,
             initialPrice: 2,
-            isEvil: true
+            factory: await ethers.getContractFactory('EvilToken') as EvilToken__factory,
           }
         }
       });
@@ -349,7 +349,7 @@ describe('withdraw', function () {
           EVIL: {
             decimals: 6,
             initialPrice: 2,
-            isEvil: true
+            factory: await ethers.getContractFactory('EvilToken') as EvilToken__factory,
           }
         }
       });
