@@ -20,34 +20,34 @@ contract CometHarness is CometHarnessGetters {
 ////////////////////////   global collateral asset     /////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 // 
-    mapping (address => uint8) public asset_index;
-    mapping (uint8 => address) public index_asset;
+    mapping (address => uint8) public asset_to_index;
+    mapping (uint8 => address) public index_to_asset;
     mapping (uint8 => AssetInfo) public asset_info;
 
 
     function getAssetInfo(uint8 i) override public view returns (AssetInfo memory){
         AssetInfo memory assetInfo = asset_info[i];
         require (assetInfo.offset == i);
-        require (assetInfo.asset == index_asset[i]);
+        require (assetInfo.asset == index_to_asset[i]);
         return assetInfo;
     }
 
     function getAssetInfoByAddress(address asset) override internal view returns (AssetInfo memory){       
-         AssetInfo memory assetInfo =  getAssetInfo(asset_index[asset]);
+         AssetInfo memory assetInfo =  getAssetInfo(asset_to_index[asset]);
          require (assetInfo.asset == asset);
          return assetInfo;
     }
 
     function getAssetSupplyCapByAddress(address asset) external view returns (uint128){
-        return getAssetInfo(asset_index[asset]).supplyCap;
+        return getAssetInfo(asset_to_index[asset]).supplyCap;
     }
 
     function get_Index_Of_Collateral_Asset(address asset) public view returns (uint8){
-        return asset_index[asset];
+        return asset_to_index[asset];
     }
 
     function get_Collateral_Asset_By_Index(uint8 index) public view returns (address){
-        return index_asset[index];
+        return index_to_asset[index];
     }
 
     // summarization/harness for user collateral asset 
@@ -55,7 +55,8 @@ contract CometHarness is CometHarnessGetters {
     mapping (uint16 => mapping (address => mapping (bool => uint16))) asset_in_state_changes; 
 
     function isInAsset(uint16 assetsIn, uint8 assetOffset) override internal view returns (bool) {
-        return asset_in_state[assetsIn][index_asset[assetOffset]];
+        //require (asset_to_index[index_to_asset[assetOffset]] == assetOffset);
+        return asset_in_state[assetsIn][index_to_asset[assetOffset]];
     }
 
     function call_Summarized_IsInAsset(uint16 assetsIn, uint8 assetOffset) external view returns (bool) {
@@ -77,17 +78,21 @@ contract CometHarness is CometHarnessGetters {
         if (initialUserBalance == 0 && finalUserBalance != 0) {
             // set bit for asset
             flag = true;
+         //   assetInAfter = asset_in_state_changes[assetInBefore][asset][flag];
+         //   userBasic[account].assetsIn = assetInAfter;
         } else if (initialUserBalance != 0 && finalUserBalance == 0) {
             // clear bit for asset
             flag = false;
+         //   assetInAfter = asset_in_state_changes[assetInBefore][asset][flag];
+        //    userBasic[account].assetsIn = assetInAfter;
         }
-        els {
-            return
+        else{
+            return;
         }
         assetInAfter = asset_in_state_changes[assetInBefore][asset][flag];
         userBasic[account].assetsIn = assetInAfter;
         require(asset_in_state[assetInAfter][asset] == flag);
-        require(isInAsset(assetsInAfter,asset_index[asset]) == false ); 
+        require(isInAsset(assetInAfter,asset_to_index[asset]) == flag ); 
     }
 
     uint256 nonDet1;
@@ -133,10 +138,10 @@ contract CometHarness is CometHarnessGetters {
     }
 
 
-    // function transferFrom(address src, address dst, address asset, uint amount) public override {
+    //transferAssetFrom is rather complex, splitting it to two functions 
+    function transferAssetFrom(address src, address dst, address asset, uint amount) public override {
        
-    // }
-
+     }
     function transferAssetFromBase(address src, address dst, address asset, uint amount) external {
         if (isTransferPaused()) revert Paused();
         if (!hasPermission(src, msg.sender)) revert Unauthorized();
@@ -146,7 +151,7 @@ contract CometHarness is CometHarnessGetters {
         return super.transferBase(src, dst, safe104(amount));
     }
 
-    function transferFromAsset(address src, address dst, address asset, uint amount) external {
+    function transferAssetFromAsset(address src, address dst, address asset, uint amount) external {
         if (isTransferPaused()) revert Paused();
         if (!hasPermission(src, msg.sender)) revert Unauthorized();
         if (src == dst) revert NoSelfTransfer();
@@ -154,7 +159,6 @@ contract CometHarness is CometHarnessGetters {
         require (asset != baseToken);
         return super.transferCollateral(src, dst, asset, safe128(amount));
     }
-
 
     function isRegisterdAsAsset(address token) view external returns (bool) {
         return getAssetInfoByAddress(token).asset == token;

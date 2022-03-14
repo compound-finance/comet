@@ -28,7 +28,8 @@ methods {
     getUserCollateralBalanceByAsset(address, address) returns uint128 envfree
     call_Summarized_IsInAsset(uint16, uint8) returns (bool) envfree
     getAssetinOfUser(address) returns (uint16) envfree
-    asset_index(address) returns (uint8) envfree
+    asset_to_index(address) returns (uint8) envfree
+    index_to_asset(uint8) returns (address) envfree
     tokenBalanceOf(address, address) returns uint256 envfree 
 }
 
@@ -95,17 +96,11 @@ function call_functions_with_specific_asset(method f, env e, address asset) retu
 ////////////////////////////////////////////////////////////////////////////////
 //
 
-/* move to comet an use summarization */
+invariant test_correlation_maps_asset(address asset, uint8 offset)
+    index_to_asset(asset_to_index(asset)) == asset
 
-// // B@B - assetIn of a specific asset is initialized (!0) or uninitialized (0) along with the collateral balance
-// invariant assetIn_Initialized_With_Balance(address user, address asset)
-//     getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset))
-//     {
-//         preserved
-//         {
-//             require user != currentContract;
-//         }
-//     }
+invariant test_correlation_maps_index(address asset, uint8 offset)
+    asset_to_index(index_to_asset(offset)) == asset
 
 // B@B - assetIn of a specific asset is initialized (!0) or uninitialized (0) along with the collateral balance
 rule assetIn_Initialized_With_Balance(method f, address user, address asset) 
@@ -113,13 +108,10 @@ rule assetIn_Initialized_With_Balance(method f, address user, address asset)
     
     env e; calldataarg args;
     require user != currentContract;
-    require getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset));
+    require getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_to_index(asset));
     call_functions_with_specific_asset(f, e, asset);
-    assert getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_index(asset));
+    assert getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_to_index(asset));
 }
-// balance change => update asset
-
-
 
 function simplifiedAssumptions() {
     env e;
@@ -142,8 +134,7 @@ function simplifiedAssumptions() {
 
 
 
-
-rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f.isView && f.selector != call_accrueInternal().selector}{
+rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
     env e;
     calldataarg args;
 
@@ -172,9 +163,10 @@ rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) &
 }
 
 
- rule usage_registered_assets_only(address asset, method f) {
+ rule usage_registered_assets_only(address asset, method f) filtered { f -> !similarFunctions(f) && !f.isView } { 
 //     // check that every function call that has an asset arguments reverts on a non-registered asset 
     env e; calldataarg args;
+    simplifiedAssumptions();
     bool registered = isRegisterdAsAsset(e,asset);
     call_functions_with_specific_asset(f, e, asset);
     assert registered; //if the function passed it must be registered 
