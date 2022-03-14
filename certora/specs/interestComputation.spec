@@ -256,9 +256,11 @@ rule presentValue_GE_principal( int104 presentValue){
 rule presentValue_G_zero( int104 presentValue){
     env e;
     setup(e);
+    
     int104 principalValue = call_principalValue(presentValue);
-    require presentValue == call_presentValue(principalValue);
-    assert presentValue > 0 <=> principalValue > 0;
+    
+    assert (presentValue == call_presentValue(principalValue)) => 
+            (presentValue > 0 <=> principalValue > 0);
 }
 
 

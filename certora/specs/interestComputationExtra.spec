@@ -340,15 +340,13 @@ rule withdraw_affects(method f)filtered { f-> !similarFunctions(f) && !f.isView 
   assert presentValue1 == presentValue2;
 }
 
-rule verify_isBorrowCollateralized(address account, method f){
+rule verify_isBorrowCollateralized(address account, method f)filtered { f-> !similarFunctions(f) && !f.isView }{
     env e;
     calldataarg args;
 
-    bool collateralized1 = isBorrowCollateralized(e,account);
-        f(e,args) ;
-    bool collateralized2 = isBorrowCollateralized(e,account);
-
-    assert collateralized1 == collateralized2;
+    require isBorrowCollateralized(e,account);
+    f(e,args) ;
+    assert isBorrowCollateralized(e,account);
 }
 
 rule additivity_of_withdraw( uint x, uint y){
