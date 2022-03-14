@@ -11,14 +11,6 @@ import "comet.spec"
  link   : 
 */
 
-rule withdraw_all_balance(){
-    env e;
-    simplifiedAssumptions();
-    uint256 balance = _baseToken.balanceOf(currentContract);
-    withdraw(e,e.msg.sender,balance);
-    assert false;
-}
-
 rule withdraw_reserves_decreases(address to, uint amount){
     env e;
 
