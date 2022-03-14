@@ -3,21 +3,24 @@ import { CometContext } from '../context/CometContext';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { BigNumber } from 'ethers';
+import { exp } from '../../test/helpers';
 import CometAsset from '../context/CometAsset';
 
 function matchGroup(str, patterns) {
   for (const k in patterns) {
     const match = patterns[k].exec(str);
-    if (match) return { [k]: BigNumber.from(match[1]) };
+    if (match) return { [k]: match[1] };
   }
   throw new Error(`No match for ${str} in ${patterns}`);
 }
 
+// `amount` should be the unit amount of an asset instead of the gwei amount
 function parseAmount(amount) {
   switch (typeof amount) {
     case 'bigint':
+      return { $gte: Number(amount) };
     case 'number':
-      return { $gte: BigNumber.from(amount) };
+      return { $gte: amount };
     case 'string':
       return matchGroup(amount, {
         $gte: />=\s*(\d+)/,
@@ -75,18 +78,18 @@ export class BalanceConstraint<T extends CometContext, R extends Requirements> i
             const actor = context.actors[actorName];
             const amount = actorsByAsset[assetName][actorName];
             const balance = await asset.balanceOf(actor.address);
-            const assetScale = BigNumber.from(10).pow(BigNumber.from(await asset.token.decimals()));
+            const decimals = await asset.token.decimals();
             let toTransfer = 0n;
             if (amount.$eq) {
-              toTransfer = amount.$eq.mul(assetScale).toBigInt() - balance;
+              toTransfer = exp(amount.$eq, decimals) - balance;
             } else if (amount.$gte) {
-              toTransfer = amount.$gte.mul(assetScale).toBigInt() - balance;
+              toTransfer = exp(amount.$gte, decimals) - balance;
             } else if (amount.$lte) {
-              toTransfer = amount.$lte.mul(assetScale.toBigInt()) - balance;
+              toTransfer = exp(amount.$lte, decimals) - balance;
             } else if (amount.$gt) {
-              toTransfer = amount.$gt.mul(assetScale).toBigInt() - balance + 1n;
+              toTransfer = exp(amount.$gt, decimals) - balance + 1n;
             } else if (amount.$lt) {
-              toTransfer = amount.$lt.mul(assetScale).toBigInt() - balance - 1n;
+              toTransfer = exp(amount.$lt, decimals) - balance - 1n;
             } else {
               throw new Error(`Bad amount: ${amount}`);
             }
@@ -108,17 +111,17 @@ export class BalanceConstraint<T extends CometContext, R extends Requirements> i
           const asset = await getAssetFromName(assetName, context)
           const amount = parseAmount(rawAmount);
           const balance = BigNumber.from(await asset.balanceOf(actor.address));
-          const assetScale = BigNumber.from(10).pow(BigNumber.from(await asset.token.decimals()));
+          const decimals = await asset.token.decimals();
           if (amount.$eq) {
-            expect(balance).to.equal(amount.$eq.mul(assetScale).toBigInt());
+            expect(balance).to.equal(exp(amount.$eq, decimals));
           } else if (amount.$gte) {
-            expect(balance).to.be.at.least(amount.$gte.mul(assetScale).toBigInt());
+            expect(balance).to.be.at.least(exp(amount.$gte, decimals));
           } else if (amount.$lte) {
-            expect(balance).to.be.at.most(amount.$lte.mul(assetScale).toBigInt());
+            expect(balance).to.be.at.most(exp(amount.$lte, decimals));
           } else if (amount.$gt) {
-            expect(balance).to.be.above(amount.$gt.mul(assetScale).toBigInt());
+            expect(balance).to.be.above(exp(amount.$gt, decimals));
           } else if (amount.$lt) {
-            expect(balance).to.be.below(amount.$lt.mul(assetScale).toBigInt());
+            expect(balance).to.be.below(exp(amount.$lt, decimals));
           }
         }
       }
