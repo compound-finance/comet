@@ -42,7 +42,8 @@ async function getAssetFromName(name: string, context: CometContext): Promise<Co
   let comet = await context.getComet(); // TODO: can optimize by taking this as an arg instead
   if (collateralAssetRegex.test(name)) {
     // If name matches regex, e.g. "asset10"
-    let { asset: collateralAsset } = await comet.getAssetInfo(0);
+    const assetIndex = name.match(/[0-9]+/g)[0];
+    const { asset: collateralAsset } = await comet.getAssetInfo(assetIndex);
     return context.getAssetByAddress(collateralAsset);
   } else {
     // If name doesn't match regex, try to find the asset directly from the assets list
