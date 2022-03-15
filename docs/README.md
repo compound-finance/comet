@@ -938,18 +938,18 @@ const infoObject = await comet.callStatic.getAssetInfo(0);
 
 ### Get Price
 
-The [Open Price Feed](https://compound.finance/docs/prices) accounts price data for the Compound protocol. The protocol uses it as a source of truth for asset prices. Prices are updated by [Chainlink Price Feeds](https://data.chain.link/). The codebase is hosted on [GitHub](https://github.com/compound-finance/open-oracle), and maintained by the community.
+The protocol's prices are updated by [Chainlink Price Feeds](https://data.chain.link/). In order to fetch the present price of an asset, the price feed contract address for that asset must be passed to the `getPrice` function.
 
-This function returns the price of an asset in USD.
+This function returns the price of an asset in USD with 8 decimal places.
 
 #### Comet
 
 ```solidity
-function getPrice(address asset) returns (uint)
+function getPrice(address priceFeed) returns (uint128)
 ```
 
-* `asset`: The ERC-20 address of the asset being queried.
-* `RETURNS`:  Returns the USD price with 6 decimal places as an unsigned integer scaled up by `10 ^ 6`. E.g. `5000000000` means that the asset's price is $5000 USD.
+* `priceFeed`: The ERC-20 address of the Chainlink price feed contract for the asset.
+* `RETURNS`:  Returns the USD price with 8 decimal places as an unsigned integer scaled up by `10 ^ 8`. E.g. `500000000000` means that the asset's price is $5000 USD.
 
 #### Solidity
 
