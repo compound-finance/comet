@@ -40,4 +40,8 @@ export default class CometAsset {
     let finalAmount = amount ?? constants.MaxUint256;
     await wait(this.token.connect(from.signer).approve(spenderAddress, finalAmount));
   }
+
+  async decimals(): Promise<number> {
+    return this.token.decimals();
+  }
 }
