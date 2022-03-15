@@ -25,7 +25,7 @@ interface DeploymentManagerConfig {
   debug?: boolean;
 }
 
-function getNetwork(deployment: string): string {
+export function getNetwork(deployment: string): string {
   return deployment; // TODO: Handle deployments that don't map correctly
 }
 

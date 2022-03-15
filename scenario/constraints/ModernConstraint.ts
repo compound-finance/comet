@@ -19,6 +19,21 @@ function getModernConfigs(requirements: object): ModernConfig[] | null {
   return fuzzedConfigs;
 }
 
+export async function upgradeComet(context: CometContext, world: World, cometConfig: ProtocolConfiguration) {
+  console.log('Upgrading comet to modern...');
+          
+  let { comet: newComet } = await deployComet(
+    context.deploymentManager,
+    false,
+    cometConfig
+  );
+  await context.upgradeTo(newComet, world);
+  await context.setAssets();
+  await context.spider();
+
+  console.log('Upgraded to modern...');
+}
+
 export class ModernConstraint<T extends CometContext> implements Constraint<T> {
   async solve(requirements: object, context: T, world: World) {
     let modernConfigs = getModernConfigs(requirements);
@@ -32,31 +47,13 @@ export class ModernConstraint<T extends CometContext> implements Constraint<T> {
     for (let config of modernConfigs) {
       if (config.upgrade) {
         solutions.push(async function solution(context: T): Promise<T> {
-          console.log('Upgrading to modern...');
-          // TODO: Make this deployment script less ridiculous, e.g. since it redeploys tokens right now
-          let oldComet = await context.getComet();
-          let { comet: newComet } = await deployComet(
-            context.deploymentManager,
-            false,
-            config.cometConfig
-          );
-          let initializer: string | undefined;
-          if (!oldComet.totalsBasic || (await oldComet.totalsBasic()).lastAccrualTime === 0) {
-            initializer = (await newComet.populateTransaction.initializeStorage()).data;
-          }
-
-          await context.upgradeTo(newComet, world, initializer);
-          await context.setAssets();
-          await context.spider();
-
-          console.log('Upgraded to modern...');
-
+          await upgradeComet(context, world, config.cometConfig);
           return context; // It's been modified
         });
       }
     }
 
-    return solutions;
+    return solutions.length > 0 ? solutions : null;
   }
 
   async check(requirements: object, context: T, world: World) {

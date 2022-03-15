@@ -136,6 +136,12 @@ export default class CometActor {
       .allowBySig(owner, manager, isAllowed, nonce, expiry, signature.v, signature.r, signature.s)).wait();
   }
 
+  async getCollateralBalance(asset: AddressLike) {
+    let assetAddress = await resolveAddress(asset);
+    let comet = await this.context.getComet();
+    return await comet.userCollateral(this.address, assetAddress);
+  }
+
   async show() {
     return console.log(`Actor#${this.name}{${JSON.stringify(this.info)}}`);
   }

@@ -13,7 +13,7 @@ import { expect } from 'chai';
 
   ## Configuration
 
-  **requirements**: `{ utilization: number }`
+  **requirements**: `{ utilization: number?, defaultBaseAmount: number? }`
 
   If passed in, the constraint will ensure that the utilization of the protocol
   is exactly the given value. If this constraint cannot be fulfilled, we will
@@ -21,15 +21,19 @@ import { expect } from 'chai';
 
   * Example: `{ utilization: 0.5 }` to target 50% utilization (borrows / supply).
   * Note: if utilization is passed as 0, this will target either borrows=0 or supply=0
+  * 
+  * * Example: `{ utilization: 0.5, defaultBaseAmount: 10 }` to target 50% utilization with a base amount 10 units of the token (if none exists already)
 **/
 
 interface UtilizationConfig {
   utilization?: number;
+  defaultBaseAmount: number;
 }
 
 function getUtilizationConfig(requirements: object): UtilizationConfig | null {
   return {
     utilization: optionalNumber(requirements, 'utilization'),
+    defaultBaseAmount: optionalNumber(requirements, 'defaultBaseAmount') ?? 10
   };
 }
 
@@ -54,7 +58,7 @@ else
 */
 export class UtilizationConstraint<T extends CometContext> implements Constraint<T> {
   async solve(requirements: object, context: T, world: World) {
-    let { utilization } = getUtilizationConfig(requirements);
+    let { utilization, defaultBaseAmount } = getUtilizationConfig(requirements);
 
     if (!utilization) {
       return null;
@@ -75,7 +79,7 @@ export class UtilizationConstraint<T extends CometContext> implements Constraint
 
         // TODO: Handle units for precision, etc
         if (totalSupplyBase == 0n) {
-          toSupplyBase = 10n * (await comet.baseScale()).toBigInt(); // Have at least 10 base units
+          toSupplyBase = BigInt(defaultBaseAmount) * (await comet.baseScale()).toBigInt(); // Have at least N base units
         }
 
         let expectedSupplyBase = totalSupplyBase + toSupplyBase;

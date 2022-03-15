@@ -18,6 +18,7 @@ import { Comet, CometInterface, ProxyAdmin, ERC20, ERC20__factory } from '../../
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
+import { AssetConfigStruct } from '../../build/types/Comet';
 
 type ActorMap = { [name: string]: CometActor };
 type AssetMap = { [name: string]: CometAsset };
@@ -133,12 +134,20 @@ export class CometContext {
     let recipientAddress = resolveAddress(recipient);
     let cometAsset = typeof asset === 'string' ? this.getAssetByAddress(asset) : asset;
 
+    async function checkBalance() {
+      let balance = await cometAsset.balanceOf(recipientAddress);
+      if (balance < BigInt(amount)) {
+        throw new Error(`Failed to secure ${amount} of ${asset} for ${recipient}`);
+      }
+    }
+
     // First, try to steal from a known actor
     for (let [name, actor] of Object.entries(this.actors)) {
       let actorBalance = await cometAsset.balanceOf(actor);
       if (actorBalance > amount) {
         this.debug(`Source Tokens: stealing from actor ${name}`);
         await cometAsset.transfer(actor, amount, recipientAddress);
+        await checkBalance();
         return;
       }
     }
@@ -154,6 +163,7 @@ export class CometContext {
         asset: cometAsset.address,
         address: recipientAddress,
       });
+      await checkBalance();
     }
   }
 
@@ -172,6 +182,20 @@ export class CometContext {
       let erc20 = ERC20__factory.connect(address, signer);
       return [await erc20.symbol(), new CometAsset(erc20)];
     })));
+  }
+
+  async getAssetConfigs(): Promise<AssetConfigStruct[]> {
+    let comet = await this.getComet();
+    let signer = (await this.deploymentManager.hre.ethers.getSigners())[1]; // dunno?
+
+    return await Promise.all([...new Array(await comet.numAssets())].map(async (_, i) => {
+      let assetInfo = await comet.getAssetInfo(i);
+      let decimals = await ERC20__factory.connect(assetInfo.asset, signer).decimals();
+      return {
+        ...assetInfo,
+        decimals
+      };
+    }));
   }
 }
 

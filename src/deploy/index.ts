@@ -11,6 +11,16 @@ import { BigNumberish } from 'ethers';
 import { deployNetworkComet } from './Network';
 import { deployDevelopmentComet } from './Development';
 
+let priceFeeds = {
+  kovan: {
+    comp: '0xECF93D14d25E02bA2C13698eeDca9aA98348EFb6',
+    wbtc: '0x6135b13325bfC4B00278B4abC5e20bbce2D6580e',
+    weth: '0x9326BFA02ADD2366b30bacB125260Af641031331',
+    uni: '0xDA5904BdBfB4EF12a3955aEcA103F51dc87c7C39',
+    link: '0x396c5E36DD0a0F5a5D33dae44368D4193f69a1F0',
+  },
+};
+
 export interface ProtocolConfiguration {
   symbol?: string;
   governor?: string;
@@ -51,4 +61,16 @@ export async function deployComet(
   } else {
     return await deployDevelopmentComet(deploymentManager, deployProxy, configurationOverrides);
   }
+}
+
+export function getPriceFeed(name: string, network: string): string {
+  let networkFeeds = priceFeeds[network];
+  if (!networkFeeds) {
+    throw new Error(`No known price feeds for network ${network}`);
+  }
+  let priceFeed = networkFeeds[name.toLowerCase()];
+  if (!priceFeed) {
+    throw new Error(`No known price feeds for ${name} on network ${network}`);
+  }
+  return priceFeed;
 }
