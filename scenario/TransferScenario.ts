@@ -6,7 +6,7 @@ scenario(
   {
     upgrade: true,
     balances: {
-      albert: { asset$0: 100 }, // in units of asset, not wei
+      albert: { $asset0: 100 }, // in units of asset, not wei
     },
   },
   async ({ comet, actors }, world, context) => {
