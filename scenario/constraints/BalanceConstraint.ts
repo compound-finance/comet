@@ -37,19 +37,20 @@ function parseAmount(amount) {
 }
 
 async function getAssetFromName(name: string, context: CometContext): Promise<CometAsset> {
-  // XXX add another regex for baseAsset as well
-  const collateralAssetRegex = /\$asset[0-9]+/;
-  const baseAssetRegex = /\$base/;
+  const collateralAssetRegex = /asset[0-9]+/;
+  const baseAssetRegex = /base/;
   let comet = await context.getComet(); // TODO: can optimize by taking this as an arg instead
-  if (collateralAssetRegex.test(name)) {
-    // If name matches regex, e.g. "asset$10"
-    const assetIndex = name.match(/[0-9]+/g)[0];
-    const { asset: collateralAsset } = await comet.getAssetInfo(assetIndex);
-    return context.getAssetByAddress(collateralAsset);
-  } else if (baseAssetRegex.test(name)) {
-    // If name matches "base"
-    const baseAsset = await comet.baseToken();
-    return context.getAssetByAddress(baseAsset);
+  if (name.startsWith('$')) {
+    let asset: string;
+    if (collateralAssetRegex.test(name)) {
+      // If name matches regex, e.g. "$asset10"
+      const assetIndex = name.match(/[0-9]+/g)[0];
+      ({ asset } = await comet.getAssetInfo(assetIndex));
+    } else if (baseAssetRegex.test(name)) {
+      // If name matches "base"
+      asset = await comet.baseToken();
+    }
+    return context.getAssetByAddress(asset);
   } else {
     // If name doesn't match regex, try to find the asset directly from the assets list
     return context.assets[name];
