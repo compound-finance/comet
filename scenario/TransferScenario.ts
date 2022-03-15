@@ -6,7 +6,7 @@ scenario(
   {
     upgrade: true,
     balances: {
-      albert: { asset0: 100 }, // in units of asset, not wei
+      albert: { asset$0: 100 }, // in units of asset, not wei
     },
   },
   async ({ comet, actors }, world, context) => {
@@ -22,7 +22,7 @@ scenario(
 
     // Albert transfers 50 units of collateral to Betty
     const toTransfer = scale.toBigInt() * 50n;
-    const txn = await albert.transferAsset({dst: betty.address, asset: collateralAsset.address, amount: toTransfer}); // XXX need to know decimals
+    const txn = await albert.transferAsset({dst: betty.address, asset: collateralAsset.address, amount: toTransfer});
 
     expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(scale.mul(50));
     expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(scale.mul(50));
