@@ -1,6 +1,7 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 
+// XXX consider creating these tests for assets0-15
 scenario(
   'Comet#transfer > collateral asset, enough balance',
   {
@@ -31,12 +32,12 @@ scenario(
   }
 );
 
-scenario.only(
+scenario(
   'Comet#transfer > base asset, enough balance',
   {
     upgrade: true,
     balances: {
-      albert: { base: 100 }, // in units of asset, not wei
+      albert: { $base: 100 }, // in units of asset, not wei
     },
   },
   async ({ comet, actors }, world, context) => {
@@ -75,7 +76,7 @@ scenario(
   },
   async ({ comet, actors }) => {
     const { albert, betty } = actors;
-    // XXX
+    // XXX need comet balances constraint
     //await albert.transferAsset(betty, USDC, exp(100, 6));
   }
 );
