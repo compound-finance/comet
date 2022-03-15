@@ -31,6 +31,39 @@ scenario(
   }
 );
 
+scenario.only(
+  'Comet#transfer > base asset, enough balance',
+  {
+    upgrade: true,
+    balances: {
+      albert: { base: 100 }, // in units of asset, not wei
+    },
+  },
+  async ({ comet, actors }, world, context) => {
+    const { albert, betty } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const scale = await comet.baseScale();
+
+    console.log('base asset is ', await baseAsset.token.symbol())
+
+    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(scale.toBigInt() * 100n);
+
+    // Albert supplies 100 units of collateral to Comet
+    await baseAsset.approve(albert, comet.address);
+    await albert.supplyAsset({asset: baseAsset.address, amount: scale.toBigInt() * 100n})
+
+    // Albert transfers 50 units of collateral to Betty
+    const toTransfer = scale.toBigInt() * 50n;
+    const txn = await albert.transferAsset({dst: betty.address, asset: baseAsset.address, amount: toTransfer});
+
+    expect(await comet.balanceOf(albert.address)).to.be.equal(scale.mul(50));
+    expect(await comet.balanceOf(betty.address)).to.be.equal(scale.mul(50));
+
+    return txn; // return txn to measure gas
+  }
+);
+
 scenario(
   'Comet#transfer > partial withdraw / borrow base to partial repay / supply',
   {
