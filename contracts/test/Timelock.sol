@@ -17,7 +17,6 @@ contract Timelock {
                 callData = abi.encodePacked(bytes4(keccak256(bytes(signatures[i]))), data[i]);
             }
 
-            // solium-disable-next-line security/no-call-value
             (bool success, bytes memory returnData) = targets[i].call{value: values[i]}(callData);
             require(success, "failed to call");
         }
