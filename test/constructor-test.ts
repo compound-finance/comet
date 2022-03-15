@@ -62,6 +62,7 @@ describe('constructor', function () {
       perYearInterestRateSlopeLow: exp(1, 17),
       perYearInterestRateSlopeHigh: exp(3, 18),
       reserveRate: exp(1, 17),
+      storeFrontPriceFactor: exp(1, 18),
       trackingIndexScale: exp(1, 15),
       baseTrackingSupplySpeed: exp(1, 15),
       baseTrackingBorrowSpeed: exp(1, 15),

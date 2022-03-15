@@ -2,7 +2,10 @@ import { Comet, ethers, expect, exp, makeProtocol, portfolio, wait } from './hel
 
 describe('buyCollateral', function () {
   it('allows buying collateral when reserves < target reserves', async () => {
-    const protocol = await makeProtocol({base: 'USDC', targetReserves: 100,
+    const protocol = await makeProtocol({
+      base: 'USDC',
+      storeFrontPriceFactor: exp(0.9, 18),
+      targetReserves: 100,
       assets: {
         USDC: {
           initial: 1e6,
@@ -25,29 +28,38 @@ describe('buyCollateral', function () {
 
     // Set up token balances and accounting
     await USDC.allocateTo(alice.address, 100e6);
-    await COMP.allocateTo(comet.address, exp(50, 18));
-    await wait(comet.setTotalsCollateral(COMP.address, { totalSupplyAsset: exp(50, 18), _reserved: 0 }));
-    await wait(comet.setCollateralBalance(comet.address, COMP.address, exp(50, 18)));
+    await COMP.allocateTo(comet.address, exp(60, 18));
+    await wait(comet.setTotalsCollateral(COMP.address, { totalSupplyAsset: exp(60, 18), _reserved: 0 }));
+    await wait(comet.setCollateralBalance(comet.address, COMP.address, exp(60, 18)));
 
     const r0 = await comet.getReserves();
     const p0 = await portfolio(protocol, alice.address);
     await wait(baseAsA.approve(comet.address, exp(50, 6)));
-    // Alice buys 50e18 wei COMP for 50e6 wei USDC
+    // Alice buys 50e6 wei USDC worth of COMP
     await wait(cometAsA.buyCollateral(COMP.address, exp(50, 18), 50e6, alice.address));
     const p1 = await portfolio(protocol, alice.address)
     const r1 = await comet.getReserves();
 
+    const assetPriceDiscounted = exp(0.9, 8);
+    const basePrice = exp(1, 8);
+    const assetScale = exp(1, 18);
+    const baseScale = exp(1, 6);
+    const baseAmount = 50n * baseScale;
     expect(r0).to.be.equal(0n);
     expect(r0).to.be.lt(await comet.targetReserves());
     expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n});
     expect(p0.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n});
     expect(p1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n});
-    expect(p1.external).to.be.deep.equal({USDC: exp(50, 6), COMP: exp(50, 18)});
+    expect(p1.external).to.be.deep.equal({USDC: exp(50, 6), COMP: assetScale * basePrice / assetPriceDiscounted * baseAmount / baseScale});
+    expect(p1.external).to.be.deep.equal({USDC: exp(50, 6), COMP: 55555555555555555550n});
     expect(r1).to.be.equal(exp(50, 6));
   });
 
   it('allows buying collateral when reserves < 0 and target reserves is 0', async () => {
-    const protocol = await makeProtocol({base: 'USDC', targetReserves: 0,
+    const protocol = await makeProtocol({
+      base: 'USDC',
+      storeFrontPriceFactor: exp(0.9, 18),
+      targetReserves: 0,
       assets: {
         USDC: {
           initial: 1e6,
@@ -76,14 +88,14 @@ describe('buyCollateral', function () {
 
     // Set up token balances and accounting
     await USDC.allocateTo(alice.address, 100e6);
-    await COMP.allocateTo(comet.address, exp(50, 18));
-    await wait(comet.setTotalsCollateral(COMP.address, { totalSupplyAsset: exp(50, 18), _reserved: 0 }));
-    await wait(comet.setCollateralBalance(comet.address, COMP.address, exp(50, 18)));
+    await COMP.allocateTo(comet.address, exp(60, 18));
+    await wait(comet.setTotalsCollateral(COMP.address, { totalSupplyAsset: exp(60, 18), _reserved: 0 }));
+    await wait(comet.setCollateralBalance(comet.address, COMP.address, exp(60, 18)));
 
     const r0 = await comet.getReserves();
     const p0 = await portfolio(protocol, alice.address);
     await wait(baseAsA.approve(comet.address, exp(50, 6)));
-    // Alice buys 50e18 wei COMP for 50e6 wei USDC
+    // Alice buys 50e6 wei USDC worth of COMP
     await wait(cometAsA.buyCollateral(COMP.address, exp(50, 18), 50e6, alice.address));
     const p1 = await portfolio(protocol, alice.address)
     const r1 = await comet.getReserves();
@@ -93,7 +105,7 @@ describe('buyCollateral', function () {
     expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n});
     expect(p0.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n});
     expect(p1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n});
-    expect(p1.external).to.be.deep.equal({USDC: exp(50, 6), COMP: exp(50, 18)});
+    expect(p1.external).to.be.deep.equal({USDC: exp(50, 6), COMP: 55555555555555555550n});
     expect(r1).to.be.equal(-50e6);
   });
 

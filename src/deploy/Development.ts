@@ -100,6 +100,7 @@ export async function deployDevelopmentComet(
     perYearInterestRateSlopeHigh,
     perYearInterestRateBase,
     reserveRate,
+    storeFrontPriceFactor,
     trackingIndexScale,
     baseTrackingSupplySpeed,
     baseTrackingBorrowSpeed,
@@ -114,11 +115,12 @@ export async function deployDevelopmentComet(
       pauseGuardian: await signers[1].getAddress(),
       baseToken: dai.address,
       baseTokenPriceFeed: daiPriceFeed.address,
-      kink: (8e17).toString(), // 0.8
-      perYearInterestRateBase: (5e15).toString(), // 0.005
-      perYearInterestRateSlopeLow: (1e17).toString(), // 0.1
-      perYearInterestRateSlopeHigh: (3e18).toString(), // 3.0
-      reserveRate: (1e17).toString(), // 0.1
+      kink: (0.8e18).toString(),
+      perYearInterestRateBase: (0.005e18).toString(),
+      perYearInterestRateSlopeLow: (0.1e18).toString(),
+      perYearInterestRateSlopeHigh: (3e18).toString(),
+      reserveRate: (0.1e18).toString(),
+      storeFrontPriceFactor: (0.95e18).toString(),
       trackingIndexScale: (1e15).toString(), // XXX add 'exp' to scen framework?
       baseTrackingSupplySpeed: 0, // XXX
       baseTrackingBorrowSpeed: 0, // XXX
@@ -149,6 +151,7 @@ export async function deployDevelopmentComet(
     perYearInterestRateSlopeHigh,
     perYearInterestRateBase,
     reserveRate,
+    storeFrontPriceFactor,
     trackingIndexScale,
     baseTrackingSupplySpeed,
     baseTrackingBorrowSpeed,

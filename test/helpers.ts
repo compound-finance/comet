@@ -47,6 +47,7 @@ export type ProtocolOpts = {
   interestRateSlopeLow?: Numeric;
   interestRateSlopeHigh?: Numeric;
   reserveRate?: Numeric;
+  storeFrontPriceFactor?: Numeric;
   trackingIndexScale?: Numeric;
   baseTrackingSupplySpeed?: Numeric;
   baseTrackingBorrowSpeed?: Numeric;
@@ -161,6 +162,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const perYearInterestRateSlopeLow = dfn(opts.interestRateSlopeLow, exp(0.1, 18));
   const perYearInterestRateSlopeHigh = dfn(opts.interestRateSlopeHigh, exp(3, 18));
   const reserveRate = dfn(opts.reserveRate, exp(0.1, 18));
+  const storeFrontPriceFactor = dfn(opts.storeFrontPriceFactor, exp(0.97, 18));
   const trackingIndexScale = opts.trackingIndexScale || exp(1, 15);
   const baseTrackingSupplySpeed = dfn(opts.baseTrackingSupplySpeed, trackingIndexScale);
   const baseTrackingBorrowSpeed = dfn(opts.baseTrackingBorrowSpeed, trackingIndexScale);
@@ -202,6 +204,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     perYearInterestRateSlopeLow,
     perYearInterestRateSlopeHigh,
     reserveRate,
+    storeFrontPriceFactor,
     trackingIndexScale,
     baseTrackingSupplySpeed,
     baseTrackingBorrowSpeed,

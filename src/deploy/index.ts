@@ -22,6 +22,7 @@ export interface ProtocolConfiguration {
   perYearInterestRateSlopeLow?: BigNumberish;
   perYearInterestRateSlopeHigh?: BigNumberish;
   reserveRate?: BigNumberish;
+  storeFrontPriceFactor?: BigNumberish;
   trackingIndexScale?: BigNumberish;
   baseTrackingSupplySpeed?: BigNumberish;
   baseTrackingBorrowSpeed?: BigNumberish;

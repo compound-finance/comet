@@ -28,6 +28,7 @@ contract Comet is CometCore {
     error BadAmount();
     error BadAsset();
     error BadDecimals();
+    error BadDiscount();
     error BadMinimum();
     error BadPrice();
     error BorrowTooSmall();
@@ -83,6 +84,10 @@ contract Comet is CometCore {
     /// @notice The rate of total interest paid that goes into reserves (factor)
     /// @dev uint64
     uint public immutable reserveRate;
+
+    /// @notice The fraction of actual price to charge for liquidated collateral
+    /// @dev uint64
+    uint public immutable storeFrontPriceFactor;
 
     /// @notice The scale for base token (must be less than 18 decimals)
     /// @dev uint64
@@ -163,6 +168,7 @@ contract Comet is CometCore {
         // Sanity checks
         uint8 decimals_ = ERC20(config.baseToken).decimals();
         if (decimals_ > MAX_BASE_DECIMALS) revert BadDecimals();
+        if (config.storeFrontPriceFactor > FACTOR_SCALE) revert BadDiscount();
         if (config.assetConfigs.length > MAX_ASSETS) revert TooManyAssets();
         if (config.baseMinForRewards == 0) revert BadMinimum();
         if (AggregatorV3Interface(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
@@ -175,6 +181,7 @@ contract Comet is CometCore {
             baseToken = config.baseToken;
             baseTokenPriceFeed = config.baseTokenPriceFeed;
             extensionDelegate = config.extensionDelegate;
+            storeFrontPriceFactor = config.storeFrontPriceFactor;
 
             decimals = decimals_;
             baseScale = uint64(10 ** decimals_);
@@ -1218,11 +1225,11 @@ contract Comet is CometCore {
      * @return The quote in terms of the collateral asset
      */
     function quoteCollateral(address asset, uint baseAmount) public view returns (uint) {
-        // XXX: Add StoreFrontDiscount.
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         uint128 assetPrice = getPrice(assetInfo.priceFeed);
+        uint128 assetPriceDiscounted = uint128(mulFactor(assetPrice, storeFrontPriceFactor));
         uint128 basePrice = getPrice(baseTokenPriceFeed);
-        uint assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPrice;
+        uint assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPriceDiscounted;
         return assetWeiPerUnitBase * baseAmount / baseScale;
     }
 
