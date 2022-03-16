@@ -7,14 +7,23 @@ scenario.only(
   { remote_token: { mainnet: ['WBTC'] }, utilization: 0.5, defaultBaseAmount: 5000 },
   async ({ comet, assets, actors }, world, context) => {
     let tokenAmounts = {
-      'WBTC': 1
+      'WBTC': exp(10, 8),
+      'WETH': exp(0.01, 18),
+      'UNI': exp(100, 18),
     };
+    const minterAddress = "0xdd940fc821853799eaf27e9eb0a420ed3bcdc3ef";
+    const minter = await world.impersonateAddress(minterAddress);
+
     let primary = context.primaryActor();
     for (let [token, amount] of Object.entries(tokenAmounts)) {
       let asset = assets[token]!;
-      await context.sourceTokens(world, amount, asset, primary);
-      await asset.approve(primary, comet);
-      await comet.connect(primary.signer).supply(asset.address, exp(amount, await asset.decimals()));
+      // await context.sourceTokens(world, amount, asset, primary);
+      await asset.approve(primary, comet); //
+      await asset.token.connect(minter).transfer(
+        primary.address,
+        amount
+      );
+      await comet.connect(primary.signer).supply(asset.address, amount);
       console.log("gas", token, asset, await primary.getCollateralBalance(asset));
     }
 
