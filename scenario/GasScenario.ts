@@ -1,13 +1,14 @@
 import { CometProperties, scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { exp, wait } from '../test/helpers';
+import { opCodesForTransaction } from "../test/trace";
 
 scenario.only(
   'has reasonable gas for 5 collateral assets',
   { remote_token: { mainnet: ['WBTC'] }, utilization: 0.5, defaultBaseAmount: 5000 },
   async ({ comet, assets, actors }, world, context) => {
     let tokenAmounts = {
-      'WBTC': exp(10, 8),
+      'WBTC': exp(.07, 8),
       'WETH': exp(0.01, 18),
       'UNI': exp(100, 18),
     };
@@ -24,11 +25,20 @@ scenario.only(
         amount
       );
       await comet.connect(primary.signer).supply(asset.address, amount);
-      console.log("gas", token, asset, await primary.getCollateralBalance(asset));
+      // console.log("gas", token, asset, await primary.getCollateralBalance(asset));
     }
 
     await comet.connect(primary.signer).withdraw(await comet.baseToken(), exp(10, 6));
     let tx = await wait(comet.connect(primary.signer).withdraw(await comet.baseToken(), exp(1500, 6)));
     console.log({tx})
+
+    const { totalGasCost, orderedOpcodeCounts, opcodeGasTotal } = await opCodesForTransaction(
+      world.hre.network.provider,
+      tx
+    );
+    console.log(`totalGasCost: ${totalGasCost}`);
+    console.log(`opcodeGasTotal: ${opcodeGasTotal}`);
+    console.log(orderedOpcodeCounts);
+
   }
 );

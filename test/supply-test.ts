@@ -1,6 +1,21 @@
 import { Comet, ethers, event, expect, exp, makeProtocol, portfolio, wait } from './helpers';
+import { opCodesForTransaction } from "./trace";
 
 describe('supplyTo', function () {
+  it.only('gas test', async () => {
+    const {comet, users: [alice], tokens} = await makeProtocol();
+    const { USDC } = tokens;
+
+    await USDC.allocateTo(alice.address, 100e6);
+    await USDC.connect(alice).approve(comet.address, 100e6);
+
+    const tx = await wait(comet.connect(alice).supply(USDC.address, 100e6));
+
+    const { totalGasCost, orderedOpcodeCounts } = await opCodesForTransaction(tx);
+    console.log(`totalGasCost: ${totalGasCost}`);
+    console.log(orderedOpcodeCounts);
+  });
+
   it('supplies base from sender if the asset is base', async () => {
     const protocol = await makeProtocol({base: 'USDC'});
     const { comet, tokens, users: [alice, bob] } = protocol;
