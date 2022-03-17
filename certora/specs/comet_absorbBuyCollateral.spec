@@ -21,8 +21,8 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
     assert (balanceAssetAfter <= balanceAssetBefore);
     assert (balanceBaseBefore <= balanceBaseAfter);
     assert (balanceBaseBefore < balanceBaseAfter <=> balanceAssetAfter < balanceAssetBefore);
-    
 }
+
 
 rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address recipient) {
     env e;
@@ -39,12 +39,11 @@ rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address re
 
 
 // note - need loop_iter=2 for this rule
+// T@T - The same account cannot be absorbed twice
 rule canNot_absorb_same_account(address absorber, address account) {
     address[] accounts;
     env e;
-
     require accounts.length == 2;
-    
     require accounts[0] == account;
     require accounts[1] == account;
 
@@ -53,22 +52,26 @@ rule canNot_absorb_same_account(address absorber, address account) {
     assert lastReverted; 
 }
 
-rule absorb_reserves_increase(address absorber, address account) {
+
+// V@V - After absorbtion of account, the system's reserves must not increase
+rule absorb_reserves_decrease(address absorber, address account) {
     address[] accounts;
     env e;
     simplifiedAssumptions();
 
     require accounts[0] == account;
-    require absorber != account;
+    require absorber != account; // might be redundant
     require accounts.length == 1;
 
     int pre = getReserves();
     absorb(e, absorber, accounts);
     int post = getReserves();
 
-    assert pre >= post; 
+    assert pre >= post;
 }
 
+
+// T@T - In case of absorbtion, if the balance of a collateral asset increase in the system, then the total borrow of users is decreased
 rule antiMonotonicityOfAbsorb(address absorber, address account) {
     address[] accounts;
     env e;
@@ -80,16 +83,15 @@ rule antiMonotonicityOfAbsorb(address absorber, address account) {
     uint256 balanceBefore = getUserCollateralBalanceByAsset(account, currentContract);
     uint104 borrowBefore = getTotalBorrowBase();
 
-    int pre = getReserves();
     absorb(e, absorber, accounts);
 
     uint256 balanceAfter = getUserCollateralBalanceByAsset(account, currentContract);
     uint104 borrowAfter = getTotalBorrowBase();
-    //assert borrowAfter < borrowBefore <=> balanceAfter > balanceBefore; // this does not hold as the system may gain nothing
     assert balanceAfter > balanceBefore => borrowAfter < borrowBefore ; 
     
 }
 
+// ?@? - 
 rule buyCol_then_withdraw(address account, uint amount){
     env e;
     require e.msg.sender != currentContract;
@@ -110,12 +112,14 @@ rule buyCol_then_withdraw(address account, uint amount){
     assert !lastReverted;
 }
 
+
+// V@V - The same account cannot be absorbed after already absorbed
 rule canNot_double_absorb(address absorber, address account) {
     address[] accounts;
     env e;
 
     require accounts[0] == account;
-    require absorber != account;
+    require absorber != account; // might be redundant
     require accounts.length == 1;
 
     absorb(e, absorber, accounts);

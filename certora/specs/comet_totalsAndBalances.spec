@@ -109,14 +109,3 @@ rule borrow_then_collateralized(address user, address asset, method f) filtered 
     call_functions_with_specific_asset(f, e, asset);
     assert getPrincipal(user) < 0 => isBorrowCollateralized(user);
 }
-
-// //  
-// invariant borrow_then_collateralized(address user)
-//         getPrincipal(user) < 0 => isBorrowCollateralized(user)
-//         {
-//             preserved 
-//             {
-//                 require user != currentContract;
-//             }
-//         }
-        
