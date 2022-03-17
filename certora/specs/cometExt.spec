@@ -1,3 +1,5 @@
+// Rules for CometExt.sol
+
 methods {
     allowance(address, address) returns (uint256) envfree
     approve(address, uint256 )  returns (bool)
@@ -9,34 +11,25 @@ function valid_allowance(uint256 amount) returns bool {
 }
 
 
-// rules to test allowance:
-// correct allowance after approve, correct spender, correct owner
-// both add and remove (approve 0) allowance
-
-// integrity - allowance after other functions are called
-
-// separate rule for allowance 0
-
-// @w
-// correct allowance after approve
-
-
-// allowance can be only 0 or MAX_INT
+// V@V - allowance may be equal only to 0 or max_uint
 invariant allowanceOnlyZeroOrMax(address owner, address spender)
     valid_allowance(allowance(owner, spender))
 
-// approve fails on invalid amount (not 0 or MAX_INT)
+
+// V@V - approve fails on invalid amount (different from 0 or max_uint)
 rule approveFailsOnInvalidAllowance(address spender, uint256 amount) {
 
     require !valid_allowance(amount);
     
     env e;
+
     approve@withrevert(e, spender, amount);
     assert lastReverted;
 }
 
-// allowance changes only on allow or approve
-// TODO strengthen: who can change allowance: msg.sender or manager?
+// V@V -  allowance changes only on allow or approve
+// also tests that if allowance changed for an address different from msg.sender,
+// it happened as a result of allowBySig
 rule validAllowanceChanges(method f, address owner, address spender) {
     env e;
     calldataarg args;
@@ -57,9 +50,15 @@ rule validAllowanceChanges(method f, address owner, address spender) {
 }
 
 
-// TODO rule when approve succeeds
-// with right amount and right sender, assert no revert
+// V@V approve must work when the amount is valid and value is sent to the function
+rule validApproveSucceeds(address spender, uint256 amount) {
+    env e;
+    require valid_allowance(amount);
 
+    // the rule fails with any value > 0
+    require e.msg.value == 0;
 
-// TODO rule in comet.spec
-// check allowance in withdrawal
+    approve@withrevert(e, spender, amount);
+
+    assert !lastReverted;
+}

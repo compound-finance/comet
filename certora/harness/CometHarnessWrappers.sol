@@ -66,4 +66,8 @@ contract CometHarnessWrappers is CometHarnessGetters {
     function exponent_of_ten(uint8 n) public pure returns (uint64){
         return uint64(uint64(10) ** n);
     }
+    
+    function call_hasPermission(address owner, address manager) public view returns (bool) {
+        return hasPermission(owner, manager);
+    }//
 }
