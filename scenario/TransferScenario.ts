@@ -88,7 +88,6 @@ scenario.only(
 
     // Albert with positive balance transfers to Betty with negative balance
     const toTransfer = 150n * scale;
-    console.log('to transfer is ', toTransfer)
     await albert.transferAsset({ dst: betty.address, asset: baseAsset.address, amount: toTransfer })
 
     // Albert ends with negative balance and Betty with positive balance
@@ -97,20 +96,34 @@ scenario.only(
   }
 );
 
-scenario(
+scenario.only(
   'Comet#transferFrom > withdraw to repay',
   {
     upgrade: true,
-    balances: {
-      // albert: { USDC: exp(100, 6) },
-      // betty: { USDC: exp(-100, 6) },
+    cometBalances: {
+      albert: { $base: 100, $asset0: 1_000 }, // in units of asset, not wei
+      betty: { $base: -100 },
+      charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
     },
   },
-  async ({ comet, actors }) => {
-    const { albert, betty, charles } = actors;
-    // XXX
-    //await albert.allow(charles, true);
-    //await charles.transferAssetFrom(albert, better, USDC, exp(100, 6));
+  async ({ comet, actors }, world, context) => {
+    const { albert, betty } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const scale = (await comet.baseScale()).toBigInt();
+    const precision = scale / 1_000_000n; // 1e-6 asset units of precision
+
+    expectApproximately(await albert.getCometBaseBalance(), 100n * scale, precision);
+    expectApproximately(await betty.getCometBaseBalance(), -100n * scale, precision);
+
+    await albert.allow(betty, true);
+
+    // Betty withdraws from Albert to repay her own borrows
+    const toTransfer = 50n * scale;
+    await betty.transferAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: toTransfer })
+
+    expectApproximately(await albert.getCometBaseBalance(), 50n * scale, precision);
+    expectApproximately(await betty.getCometBaseBalance(), -50n * scale, precision);
   }
 );
 
