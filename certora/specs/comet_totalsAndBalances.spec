@@ -93,6 +93,11 @@ filtered { f-> !similarFunctions(f) && !f.isView /*&& f.selector!=absorb(address
             require asset != _baseToken;
             require recipient != currentContract;
         }
+        preserved supplyFrom(address from, address dst, address asset, uint amount) with (env e) {
+            simplifiedAssumptions();
+            require e.msg.sender != currentContract;
+            require from != currentContract;
+        }
     }
 
 // V@V - The totalSupply of any collateral asset is less than or equal to the supplyCap
@@ -116,3 +121,4 @@ invariant borrow_then_collateralized(address user)
                 require user != currentContract;
             }
         }
+        

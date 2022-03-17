@@ -85,7 +85,8 @@ rule antiMonotonicityOfAbsorb(address absorber, address account) {
 
     uint256 balanceAfter = getUserCollateralBalanceByAsset(account, currentContract);
     uint104 borrowAfter = getTotalBorrowBase();
-    assert borrowAfter < borrowBefore <=> balanceAfter > balanceBefore;
+    //assert borrowAfter < borrowBefore <=> balanceAfter > balanceBefore; // this does not hold as the system may gain nothing
+    assert balanceAfter > balanceBefore => borrowAfter < borrowBefore ; 
     
 }
 

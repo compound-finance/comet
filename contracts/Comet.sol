@@ -904,7 +904,7 @@ contract Comet is CometCore {
      * @param asset The asset to transfer
      * @param amount The quantity to transfer
      */
-    function transferAssetFrom(address src, address dst, address asset, uint amount) external {
+    function transferAssetFrom(address src, address dst, address asset, uint amount) virtual external {
         return transferInternal(msg.sender, src, dst, asset, amount);
     }
 
