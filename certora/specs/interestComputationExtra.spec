@@ -344,25 +344,34 @@ rule verify_isBorrowCollateralized(address account, method f)filtered { f-> !sim
     env e;
     calldataarg args;
 
+    // address asset;
+    // require getAssetScaleByAsset(asset) == 1; 
+    simplifiedAssumptions();
+
     require isBorrowCollateralized(e,account);
     f(e,args) ;
     assert isBorrowCollateralized(e,account);
 }
+// same as above rule but Invariant
+invariant _isBorrowCollateralized(address account, env e)
+    isBorrowCollateralized(e,account)
+filtered { f-> !similarFunctions(f) && !f.isView }
+
 
 rule additivity_of_withdraw( uint x, uint y){
     env e;
     storage init = lastStorage;
     
-    // simplifiedAssumptions();
+    simplifiedAssumptions();
     require x + y < 2^255;
 
     withdraw(e,_baseToken, x);
-    int104 baseX = baseBalanceOf(e,e.msg.sender);
+    int104 baseX = baseBalanceOf(e.msg.sender);
     withdraw(e,_baseToken, y);
-    int104 baseY = baseBalanceOf(e,e.msg.sender);
+    int104 baseY = baseBalanceOf(e.msg.sender);
     
     withdraw(e,_baseToken, x + y)  at init;
-    int104 baseXY = baseBalanceOf(e,e.msg.sender);
+    int104 baseXY = baseBalanceOf(e.msg.sender);
 
     assert baseXY == baseY;
 }
@@ -378,3 +387,29 @@ rule withdraw_more_reserves(address to , uint amount){
     assert reserves >= 0;
 }
 
+// transfer should not change the combine present value of src and dst
+rule verify_transferAsset(){
+    env e;
+
+    address src;
+    address dst;
+    address asset;
+    uint amount;
+
+    simplifiedAssumptions();
+
+    mathint presentValue_src1 = to_mathint(call_presentValue(getPrincipal(e,src)));
+    mathint presentValue_dst1 = to_mathint(call_presentValue(getPrincipal(e,dst)));
+
+    transferAssetFrom(e, src, dst, asset, amount);
+
+    mathint presentValue_src2 = to_mathint(call_presentValue(getPrincipal(e,src)));
+    mathint presentValue_dst2 = to_mathint(call_presentValue(getPrincipal(e,dst)));
+
+    assert presentValue_src1 + presentValue_dst1 == presentValue_src2 + presentValue_dst2;
+}
+
+function simplifiedAssumptions() {
+    require getTotalBaseSupplyIndex() == baseIndexScale();
+    require getTotalBaseBorrowIndex() == baseIndexScale();
+}
