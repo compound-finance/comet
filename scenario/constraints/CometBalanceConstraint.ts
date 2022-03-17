@@ -11,8 +11,6 @@ async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, world: 
   // XXX getting the first collateral might not be always correct
   const { asset: collateralAsset, borrowCollateralFactor, priceFeed, scale } = await comet.getAssetInfo(0);
 
-  console.log('attempting to borrow')
-
   const collateralToken = context.getAssetByAddress(collateralAsset);
   const baseTokenAddress = await comet.baseToken();
 
@@ -28,21 +26,13 @@ async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, world: 
   collateralNeeded = (collateralNeeded * 11n) / 10n; // add fudge factor
 
   await context.sourceTokens(world, collateralNeeded, collateralToken, borrowActor);
-  console.log('sourced collateral ', collateralNeeded, await collateralToken.token.symbol())
   await collateralToken.approve(borrowActor, comet);
   await borrowActor.supplyAsset({ asset: collateralToken.address, amount: collateralNeeded });
-  console.log('supplied collateral token')
-  console.log(`attempting to borrow ${toBorrowBase} base from remaining ${await context.getAssetByAddress(baseTokenAddress).balanceOf(comet.address)}`)
   await borrowActor.withdrawAsset({ asset: baseTokenAddress, amount: toBorrowBase });
-  console.log('withdrew base token')
 }
 
-// USE THIS TO CALCULATE EXPECTED BALANCE, THEN 
 function getExpectedBaseBalance(balance: bigint, baseIndexScale: bigint, borrowOrSupplyIndex: bigint) {
-  // transferBase sets principal to principalValueBorrow(-100e6)
   const principalValue = balance * baseIndexScale / borrowOrSupplyIndex;
-
-  // baseBalanceOf returns presentValueBorrow(principal)
   const baseBalanceOf = principalValue * borrowOrSupplyIndex / baseIndexScale;
   return baseBalanceOf;
 }
@@ -97,12 +87,10 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
               // Case: Supply asset
               // 1. Source tokens to user
               await context.sourceTokens(world, toTransfer, asset.address, actor.address);
-              console.log('sourced tokens')
               // 2. Supply tokens to Comet
               // Note: but will interest rates cause supply/borrow to not exactly match the desired amount?
               await asset.approve(actor, comet.address);
               await actor.supplyAsset({asset: asset.address, amount: toTransfer})
-              console.log('supplied asset amount: ', toTransfer)
             } else if (toTransfer < 0) {
               const toWithdraw = -toTransfer;
               const baseToken = await context.getAssetByAddress(await comet.baseToken());
@@ -113,7 +101,6 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
                 const cometBaseBalanceShortfall = toWithdraw - cometBaseBalance;
                 // 2. If there is a shortfall, make up for it by sourcing base tokens to Comet
                 if (cometBaseBalanceShortfall > 0) {
-                  console.log('making up for base shortfall')
                   await context.sourceTokens(world, cometBaseBalanceShortfall, baseToken.address, comet.address);
                 }
                 // 3. Borrow base (will supply collateral if needed to borrow)
@@ -122,7 +109,6 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
                 // Case: Withdraw collateral asset
                 // 1. Withdraw collateral
                 await actor.withdrawAsset({ asset: asset.address, amount: toWithdraw });
-                console.log('withdrew collat')
               }
             }
           }
@@ -155,7 +141,6 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
             } else {
               baseIndex = (await comet.totalsBasic()).baseBorrowIndex.toBigInt();
             }
-            // IF amount.amount is negative, then is a borrow so use the borrow index. otherwise use supply index
             expectedBalance = getExpectedBaseBalance(exp(amount.val, decimals), baseIndexScale, baseIndex);
           } else {
             actualBalance = await comet.collateralBalanceOf(actor.address, asset.address);
