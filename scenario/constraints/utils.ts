@@ -1,6 +1,19 @@
 import { CometContext } from '../context/CometContext';
 import CometAsset from '../context/CometAsset';
 
+export interface ComparativeAmount {
+  val: number,
+  op: ComparisonOp,
+}
+
+export enum ComparisonOp {
+  GTE,
+  GT,
+  LTE,
+  LT,
+  EQ
+}
+
 export function requireString(o: object, key: string, err: string): string {
   let value: unknown = o[key];
   if (value === undefined) {
@@ -67,19 +80,19 @@ export async function getAssetFromName(name: string, context: CometContext): Pro
 }
 
 // `amount` should be the unit amount of an asset instead of the gwei amount
-export function parseAmount(amount) {
+export function parseAmount(amount): ComparativeAmount {
   switch (typeof amount) {
     case 'bigint':
-      return { $gte: Number(amount) };
+      return amount >= 0n ? { val: Number(amount), op: ComparisonOp.GTE } : { val: Number(amount), op: ComparisonOp.LTE };
     case 'number':
-      return { $gte: amount };
+      return amount >= 0 ? { val: amount, op: ComparisonOp.GTE } : { val: amount, op: ComparisonOp.LTE };
     case 'string':
       return matchGroup(amount, {
-        $gte: />=\s*(\d+)/,
-        $gt: />\s*(\d+)/,
-        $lte: /<=\s*(\d+)/,
-        $lt: /<\s*(\d+)/,
-        $eq: /==\s*(\d+)/,
+        [ComparisonOp.GTE]: />=\s*(\d+)/,
+        [ComparisonOp.GT]: />\s*(\d+)/,
+        [ComparisonOp.LTE]: /<=\s*(\d+)/,
+        [ComparisonOp.LT]: /<\s*(\d+)/,
+        [ComparisonOp.EQ]: /==\s*(\d+)/,
       });
     case 'object':
       return amount;
@@ -88,10 +101,10 @@ export function parseAmount(amount) {
   }
 }
 
-function matchGroup(str, patterns) {
+function matchGroup(str, patterns): ComparativeAmount {
   for (const k in patterns) {
     const match = patterns[k].exec(str);
-    if (match) return { [k]: match[1] };
+    if (match) return { val: match[1], op: ComparisonOp[k] };
   }
   throw new Error(`No match for ${str} in ${patterns}`);
 }

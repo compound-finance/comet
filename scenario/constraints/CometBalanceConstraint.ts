@@ -4,7 +4,7 @@ import CometActor from '../context/CometActor';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { exp, factorScale } from '../../test/helpers';
-import { getAssetFromName, parseAmount } from './utils';
+import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount } from './utils';
 
 async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, world: World, context: CometContext) {
   const comet = await context.getComet();
@@ -37,6 +37,16 @@ async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, world: 
   console.log('withdrew base token')
 }
 
+// USE THIS TO CALCULATE EXPECTED BALANCE, THEN 
+function getExpectedBaseBalance(balance: bigint, baseIndexScale: bigint, borrowOrSupplyIndex: bigint) {
+  // transferBase sets principal to principalValueBorrow(-100e6)
+  const principalValue = balance * baseIndexScale / borrowOrSupplyIndex;
+
+  // baseBalanceOf returns presentValueBorrow(principal)
+  const baseBalanceOf = principalValue * borrowOrSupplyIndex / baseIndexScale;
+  return baseBalanceOf;
+}
+
 export class CometBalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, initialContext: T, initialWorld: World) {
     const assetsByActor = requirements.cometBalances;
@@ -64,22 +74,24 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
           const asset = await getAssetFromName(assetName, context)
           for (const actorName in actorsByAsset[assetName]) {
             const actor = context.actors[actorName];
-            const amount = actorsByAsset[assetName][actorName];
+            const amount: ComparativeAmount = actorsByAsset[assetName][actorName];
             const cometBalance = (await comet.collateralBalanceOf(actor.address, asset.address)).toBigInt();
             const decimals = await asset.token.decimals();
             let toTransfer = 0n;
-            if (amount.$eq) {
-              toTransfer = exp(amount.$eq, decimals) - cometBalance;
-            } else if (amount.$gte) {
-              toTransfer = exp(amount.$gte, decimals) - cometBalance;
-            } else if (amount.$lte) {
-              toTransfer = exp(amount.$lte, decimals) - cometBalance;
-            } else if (amount.$gt) {
-              toTransfer = exp(amount.$gt, decimals) - cometBalance + 1n;
-            } else if (amount.$lt) {
-              toTransfer = exp(amount.$lt, decimals) - cometBalance - 1n;
-            } else {
-              throw new Error(`Bad amount: ${amount}`);
+            switch (amount.op) {
+              case ComparisonOp.EQ:
+              case ComparisonOp.GTE:
+              case ComparisonOp.LTE:        
+                toTransfer = exp(amount.val, decimals) - cometBalance;
+                break;
+              case ComparisonOp.GT:
+                toTransfer = exp(amount.val, decimals) - cometBalance + 1n;
+                break;
+              case ComparisonOp.LT:
+                toTransfer = exp(amount.val, decimals) - cometBalance - 1n;
+                break;
+              default:
+                throw new Error(`Bad amount: ${amount}`);
             }
             if (toTransfer > 0) {
               // Case: Supply asset
@@ -132,22 +144,39 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
           const amount = parseAmount(rawAmount);
           const decimals = await asset.token.decimals();
           const baseToken = await comet.baseToken();
-          let balance;
+          let actualBalance;
+          let expectedBalance;
           if (asset.address === baseToken) {
-            balance = await comet.baseBalanceOf(actor.address);
+            actualBalance = await comet.baseBalanceOf(actor.address);
+            const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
+            let baseIndex;
+            if (amount.val >= 0) {
+              baseIndex = (await comet.totalsBasic()).baseSupplyIndex.toBigInt();
+            } else {
+              baseIndex = (await comet.totalsBasic()).baseBorrowIndex.toBigInt();
+            }
+            // IF amount.amount is negative, then is a borrow so use the borrow index. otherwise use supply index
+            expectedBalance = getExpectedBaseBalance(exp(amount.val, decimals), baseIndexScale, baseIndex);
           } else {
-            balance = await comet.collateralBalanceOf(actor.address, asset.address);
+            actualBalance = await comet.collateralBalanceOf(actor.address, asset.address);
+            expectedBalance = exp(amount.val, decimals);
           }
-          if (amount.$eq) {
-            expect(balance).to.equal(exp(amount.$eq, decimals));
-          } else if (amount.$gte) {
-            expect(balance).to.be.at.least(exp(amount.$gte, decimals));
-          } else if (amount.$lte) {
-            expect(balance).to.be.at.most(exp(amount.$lte, decimals));
-          } else if (amount.$gt) {
-            expect(balance).to.be.above(exp(amount.$gt, decimals));
-          } else if (amount.$lt) {
-            expect(balance).to.be.below(exp(amount.$lt, decimals));
+          switch (amount.op) {
+            case ComparisonOp.EQ:
+              expect(actualBalance).to.equal(expectedBalance);
+              break;
+            case ComparisonOp.GTE:
+              expect(actualBalance).to.be.at.least(expectedBalance);
+              break;
+            case ComparisonOp.LTE:        
+              expect(actualBalance).to.be.at.most(expectedBalance);
+              break;
+            case ComparisonOp.GT:
+              expect(actualBalance).to.be.above(expectedBalance);
+              break;
+            case ComparisonOp.LT:
+              expect(actualBalance).to.be.below(expectedBalance);
+              break;
           }
         }
       }

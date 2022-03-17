@@ -990,8 +990,8 @@ contract Comet is CometCore {
         (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcBalance, amount);
         (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, amount);
 
-        totalSupplyBalance += supplyAmount - withdrawAmount;
-        totalBorrowBalance += borrowAmount - repayAmount;
+        totalSupplyBalance = totalSupplyBalance + supplyAmount - withdrawAmount;
+        totalBorrowBalance = totalSupplyBalance + borrowAmount - repayAmount;
 
         srcBalance -= signed104(amount);
         dstBalance += signed104(amount);

@@ -46,6 +46,11 @@ export default class CometActor {
     return this.signer.getBalance();
   }
 
+  async getCometBaseBalance(): Promise<bigint> {
+    let comet = await this.context.getComet();
+    return (await comet.baseBalanceOf(this.signer.address)).toBigInt();
+  }
+
   async sendEth(recipient: AddressLike, amount: number) {
     let tx = await this.signer.sendTransaction({
       to: resolveAddress(recipient),

@@ -1,5 +1,6 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
+import { expectApproximately } from './utils';
 
 // XXX consider creating these tests for assets0-15
 scenario(
@@ -65,19 +66,34 @@ scenario(
   }
 );
 
-scenario(
+scenario.only(
   'Comet#transfer > partial withdraw / borrow base to partial repay / supply',
   {
     upgrade: true,
     cometBalances: {
-      albert: { $base: -100 }, // in units of asset, not wei
+      albert: { $base: 100, $asset0: 1_000 }, // in units of asset, not wei
+      betty: { $base: -100 },
+      charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
     },
   },
-  async ({ comet, actors }) => {
+  async ({ comet, actors }, world, context) => {
     const { albert, betty } = actors;
-    // XXX need comet balances constraint
-    // someone with positive balance provides to someone with negative balance
-    //await albert.transferAsset(betty, USDC, exp(100, 6));
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const scale = (await comet.baseScale()).toBigInt();
+    const precision = scale / 1_000_000n; // 1e-6 asset units of precision
+
+    expectApproximately(await albert.getCometBaseBalance(), 100n * scale, precision);
+    expectApproximately(await betty.getCometBaseBalance(), -100n * scale, precision);
+
+    // Albert with positive balance transfers to Betty with negative balance
+    const toTransfer = 150n * scale;
+    console.log('to transfer is ', toTransfer)
+    await albert.transferAsset({ dst: betty.address, asset: baseAsset.address, amount: toTransfer })
+
+    // Albert ends with negative balance and Betty with positive balance
+    expectApproximately(await albert.getCometBaseBalance(), -50n * scale, precision);
+    expectApproximately(await betty.getCometBaseBalance(), 50n * scale, precision);
   }
 );
 
