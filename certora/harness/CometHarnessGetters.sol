@@ -78,8 +78,12 @@ contract CometHarnessGetters is Comet {
         return ERC20(token).balanceOf(user);
     }
 
-    function baseIndexScale() public returns (uint64) {
+    function baseIndexScale() public pure returns (uint64) {
         return BASE_INDEX_SCALE;
+    }
+
+    function get_FACTOR_SCALE() public pure returns (uint64) {
+        return FACTOR_SCALE;
     }
      
     function baseBalanceOf(address account) public returns (int104) {

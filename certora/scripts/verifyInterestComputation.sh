@@ -1,6 +1,6 @@
 certoraRun certora/harness/CometHarnessWrappers.sol certora/harness/SymbolicPriceOracleA.sol certora/harness/SymbolicPriceOracleB.sol \
     --verify CometHarnessWrappers:certora/specs/interestComputation.spec  \
-    --link CometHarnessInterest:baseTokenPriceFeed=SymbolicPriceOracleA \
+    --link CometHarnessWrappers:baseTokenPriceFeed=SymbolicPriceOracleA \
     --solc solc8.11 \
     --staging \
     --optimistic_loop \

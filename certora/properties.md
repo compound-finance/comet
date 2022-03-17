@@ -2,7 +2,7 @@
 
 
 ## Questions
-
+- quote collateral rounding error
 
 ## Table
 
@@ -14,46 +14,48 @@ Symbols:
 
 | # | Rule Name | Progress | Verdict | Comment | Update |
 |-- | --------- | -------- | ------- | ------- | ------ |
-|   |                      **Interest computation**                    |
+|   |             **Interest computation**              |
 | 1 | `supplyIndex_borrowIndex_GE_baseIndexScale` | DONE | ✅ | - | - |
 | 2 | `supplyIndex_borrowIndex_monotonic` | DONE | ✅ | - | - |
 | 3 | `supplyIndex_borrowIndex_rise_with_time` | DONE | ✅ | - | - |
 | 4 | `borrowBase_vs_utilization` | DONE | ✅ | - | - |
 | 5 | `utilization_zero` | DONE | ✅ | -| - |
-| 6 | `isLiquiditable_false_should_not_change` |  DONE | ✅  | - | - |
-| 7 | `presentValue_GE_principle` |  DONE | ✅ | - | - |
+| 6 | `isLiquiditable_false_should_not_change` |  DONE | ✅ | - | - |
+| 7 | `absolute_presentValue_GE_principal` | DONE | ✅ | - | Refined |
 | 8 | `presentValue_G_zero` | DONE | ✅  | - | - |
 | 9 | `presentValue_EQ_principal` | DONE | ✅ | - | - |
 | 10 | `supplyRate_vs_utilization` | DONE | ✅ | - | - |
 | 11 | `utilization_zero_supplyRate_zero` | DONE | ✅ | - | - |
-| 12 | `getSupplyRate_revert_characteristic` | DONE | ✅  | - | - |
-| 13 | `isCol_implies_not_isLiq` |DONE | ✅   | - | - |
+| 12 | `getSupplyRate_revert_characteristic` | DONE | ✅ | - | Refined |
+| 13 | `isCol_implies_not_isLiq` | DONE | ✅ | - | - |
+| 14 | `only_accrue_change_presentValue` | ✅ | - | NEW |
+| 15 | `verify_transferAsset` | DONE | ✅ | - | NEW |
 |   |                       **Flags**                      |
-| 14 | `check_flag_updates` | DONE | ✅ | - | - |
-| 15 | `check_flag_getters` | DONE | ✅ | - | - |
-| 16 | `check_pauseSupply_functionality` | DONE | ✅ | on safe summarization | - |
-| 17 | `check_pauseTransfer_functionality` | DONE | ✅ | " | - |
-| 18 | `check_pauseWithdraw_functionality` | DONE | ✅ | " | - |
-| 19 | `check_pauseAbsorb_functionality` | DONE | ✅ | " | - |
-| 20 | `check_pauseBuy_functionality` | DONE | ✅ | " | - |
-| 21 | `check_update_UserCollateral` | DONE | ✅ | need to recheck | - |
-| 22 | `update_changes_single_bit` | DONE | ✅ | - | - |
-| 23 | `update_changes_single_user_assetIn` | DONE | ✅ | - | - |
+| 15 | `check_flag_updates` | DONE | ✅ | - | - |
+| 16 | `check_flag_getters` | DONE | ✅ | - | - |
+| 17 | `check_pauseSupply_functionality` | DONE | ✅ | on safe summarization | - |
+| 18 | `check_pauseTransfer_functionality` | DONE | ✅ | " | - |
+| 19 | `check_pauseWithdraw_functionality` | DONE | ✅ | " | - |
+| 20 | `check_pauseAbsorb_functionality` | DONE | ✅ | " | - |
+| 21 | `check_pauseBuy_functionality` | DONE | ✅ | " | - |
+| 22 | `check_update_UserCollateral` | DONE | ✅ | need to recheck | - |
+| 23 | `update_changes_single_bit` | DONE | ✅ | - | - |
+| 24 | `update_changes_single_user_assetIn` | DONE | ✅ | - | - |
 | | **Asset Info** |
-| 24 | `reversibility_of_packing` | DONE | ✅ | need to recheck | - |
+| 25 | `reversibility_of_packing` | DONE | ✅ | need to recheck | - |
 | | **High level totals and balances** |
-| 25 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions | - |
-| 26 | `totalCollateralPerAssetVsAssetBalance` | DONE | ✅ | - | DONE |
-| 27 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions | - |
-| 28 | `base_balance_vs_totals` | IN PROGRESS | 👷 | on simplified assumptions | breaks |
-| 29 | `Collateral_totalSupply_LE_supplyCap` | DONE | ✅ | using the summarization of getAssetInfo | - |
-| 30  | `borrow_then_collateralized` | IN PROGRESS | 👷 | - | - | 
+| 26 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions | - |
+| 27 | `totalCollateralPerAssetVsAssetBalance` | DONE | ✅ | - | DONE |
+| 28 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions | - |
+| 29 | `base_balance_vs_totals` | IN PROGRESS | 👷 | on simplified assumptions | breaks |
+| 30 | `Collateral_totalSupply_LE_supplyCap` | DONE | ✅ | using the summarization of getAssetInfo | - |
+| 31  | `borrow_then_collateralized` | IN PROGRESS | 👷 | - | - | 
 | |**High level updates** |
-| 31 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | - | - |
-| 32 | `balance_change_vs_accrue` | IN PROGRESS | 👷 | fails (withdrawReserves -? buyCollateral - ok) | Follow fix? | 
+| 32 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | - | - |
+| 33 | `balance_change_vs_accrue` | IN PROGRESS | 👷 | fails (withdrawReserves -? buyCollateral - ok) | Follow fix? | 
 | | **BuyCollateral** |
-| 33 | `antiMonotonicityOfBuyCollateral` | DONE | ✅ | - | - |
-| 34 | `buyCollateralMax` | DONE | ✅ | - | NEW |
+| 34 | `antiMonotonicityOfBuyCollateral` | DONE | ✅ | - | - |
+| 35 | `buyCollateralMax` | DONE | ✅ | - | NEW |
 | | **Absorb** |
 | 36 | `canNot_double_absorb` | DONE | ✅  | in two calls | - |
 | 37 | `canNot_absorb_same_account`| IN PROGRESS | 🕝  | in one call | - |
@@ -62,16 +64,16 @@ Symbols:
 | 39 | `supply_increase_balance` | DONE| ✅ | need to generalize | - |
 | | **Withdraw** |
 | 40 | `additivity_of_withdraw` | IN PROGRESS | 🕝 | - | - |
-| 41 | `withdraw_decrease_balance` | DONE| ✅ | need to generalize | |
+| 41 | `withdraw_decrease_balance` | DONE| ✅ | need to generalize | - |
 | | **Reserve** |
 | 42 | `withdraw_reserves_decreases` | DONE | ✅ | - | - |
 | 43 | `withdraw_reserves_monotonicity` | DONE | ✅ | - | - |
 | 44 | `no_reserves_zero_balance` | DONE | ✅ | on simplified assumptions | - |
-| 45 | `withdraw_more_reserves` | FAIL | - | - | follow fix |
+| 45 | `withdraw_more_reserves` | FAIL | ❌ | - | FOLLOW FIX |
 |    | **General**
 | 46 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷 | - | - | 
-| 47 | `usage_registered_assets_only` | DONE | ✅ | - |  DONE |
-| 48 | `balance_change_vs_registered` | DONE | ✅ | - |  NEW |
+| 47 | `usage_registered_assets_only` | DONE | ✅ | - | NEW |
+| 48 | `balance_change_vs_registered` | DONE | ✅ | - | NEW |
 |    | **CometExt**
 | 49 | `allowanceOnlyZeroOrMax` | DONE | ✅ | - | NEW |
 | 50 | `approveFailsOnInvalidAllowance` | DONE | ✅ | - | NEW |

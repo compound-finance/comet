@@ -1,31 +1,39 @@
 import "A_setupNoSummarization.spec"
+import "erc20.spec"
 
-
+using SymbolicBaseToken as _baseToken 
 
 methods{
 
     call_presentValue(int104) returns (int104) envfree;
     call_principalValue(int104) returns (int104) envfree;
-
     getAssetScaleByAsset(address) returns (uint64) envfree;
-
     getBaseSupplyIndex() returns (uint64) envfree;
     getBaseBorrowIndex() returns (uint64) envfree;
     getlastAccrualTime() returns (uint40) envfree;
-    // FACTOR_SCALE() returns (uint64) envfree;
     perSecondInterestRateBase() returns (uint256) envfree;
     perSecondInterestRateSlopeLow() returns (uint256) envfree;
     perSecondInterestRateSlopeHigh() returns (uint256) envfree;
     kink() returns (uint256) envfree;
     baseIndexScale() returns (uint64) envfree;
     targetReserves() returns (uint256) envfree;
-    
-    latestRoundData() returns uint256 => DISPATCHER(true);
-
+    latestRoundData() returns (uint256) => DISPATCHER(true);
+    get_FACTOR_SCALE() returns (uint64) envfree
 }
 
-// latest run all : 
- 
+// BaseSupplyIndex and BaseBorrowIndex are monotonically increasing variables
+// proved in supplyIndex_borrowIndex_GE_baseIndexScale.
+function setup(env e){
+    require getBaseSupplyIndex() >= baseIndexScale() &&
+        getBaseBorrowIndex() >= baseIndexScale();
+}
+
+// The supply index and borrow index are set to the initial value - simplify computation
+function simplifiedAssumptions() {
+    require getBaseSupplyIndex() == baseIndexScale();
+    require getBaseBorrowIndex() == baseIndexScale();
+}
+
 /* 
  Description :  
         baseSupplyIndex increase with time
@@ -36,6 +44,7 @@ methods{
  status : proved
  
 */
+// V@V - indices are increasing after accrue (when time elapse)
 rule supplyIndex_borrowIndex_rise_with_time(){
     env e;
     uint64 base_supply_index_1 = getBaseSupplyIndex();
@@ -56,9 +65,11 @@ rule supplyIndex_borrowIndex_rise_with_time(){
         baseBorrowIndex monotonic
 
  formula : 
+
  status : proved
 
 */
+// V@V - indices are monotonically increased
 rule supplyIndex_borrowIndex_monotonic(){
     env e;
     uint64 base_supply_index_1 = getBaseSupplyIndex();
@@ -70,7 +81,8 @@ rule supplyIndex_borrowIndex_monotonic(){
     assert  base_supply_index_2 >= base_supply_index_1;
     assert  base_borrow_index_2 >= base_borrow_index_1;
 }
- 
+
+
 /* 
  Description :  
         utilization increase implies supplyRate increase
@@ -79,9 +91,9 @@ rule supplyIndex_borrowIndex_monotonic(){
 
  status : proved
 */
+// V@V - If the utilization is increased the supplyRate cannot decrease
 rule supplyRate_vs_utilization(){
-    env e1;
-    env e2;
+    env e1; env e2;
     setup(e1);
 
     uint   utilization_1 = getUtilization(e1);
@@ -94,85 +106,57 @@ rule supplyRate_vs_utilization(){
 }
 
 
-
 /* 
- Description :  
-     if borrowRate == base interest rate then utilization == 0    
-formula : 
+    Description :  
+     if borrowRate == base interest rate then utilization == 0   
+
+    formula : 
         borrowRate == perSecondInterestRateBase() => getUtilization(e) == 0;
+    
+    status : first assert proved
 
- status : first assert proved , second failed
- reason : failed due to rounding down in utilization -> mulFactor
- link https://vaas-stg.certora.com/output/65782/b3fe39e314b1d0a592f5/?anonymousKey=877a0bbb8eea456fcacf3b5ed85d5c947d4cf890#utilization_zeroResults
+    reason : failed due to rounding down in utilization -> mulFactor
+    link https://vaas-stg.certora.com/output/65782/b3fe39e314b1d0a592f5/?anonymousKey=877a0bbb8eea456fcacf3b5ed85d5c947d4cf890#utilization_zeroResults
 */
-
+// V@V - When utilization is 0, borrow rate equals to the base borrow rate.
 rule utilization_zero(){
     env e;
     setup(e);
-
     uint64 borrowRate = getBorrowRate(e);
-
-    // for debug
-    uint256 perSecondInterestRateBase1 = perSecondInterestRateBase();
-    uint256 perSecondInterestRateSlopeLow1 = perSecondInterestRateSlopeLow();
-    uint256 perSecondInterestRateSlopeHigh1 = perSecondInterestRateSlopeHigh();
-    uint256 kink1 = kink();
-
     assert getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase() ;
 }
-    
-/* 
- Description :  
-     if accrueInternal() with lower timestamp succeeds then accrueInternal with higher timestamp should succeed as well
-
-formula : 
-        !lastReverted;
-
- status : failed
- reason : 
- link https://vaas-stg.certora.com/output/65782/5240447a217a62b1d892/?anonymousKey=cddebb60c69464b5d715c547ab600e08ea032c0c#accrueInternal_not_revertedResults
-*/
-rule accrueInternal_not_reverted(){
-    env e1;
-    env e2;
-    setup(e1);
-    require e2.msg.value == 0 && e1.msg.value == 0; // reverts if msg.value != 0
-    require e2.block.timestamp == e1.block.timestamp + 1;
-    require e2.block.timestamp < 2^40; // reverts if block.timestamp > 2^40
-    call_accrueInternal(e1);
-    invoke call_accrueInternal(e2);
-
-    assert !lastReverted;
-}
 
 
 /* 
- Description :  
+    Description :  
      if Borrow Base == 0 utilization should equal zero
 
-formula : 
+    formula : 
         getTotalBorrowBase(e) == 0 => getUtilization(e) == 0;
 
- status : proved
- reason : 
+    status : proved
+ 
+    reason : 
  */
+// V@V - If nobody borrows from the system, the utilization must be 0.
 rule borrowBase_vs_utilization(){
     env e;
     assert getTotalBorrowBase(e) == 0 => getUtilization(e) == 0;
 }
 
+
 /* 
- Description :  
+    Description :  
      Verifies that isLiquidatable == false can change to true only if getPrice() has changed for base or asset
 
+    status : pass
 
-
- status : pass
- reason : 
+    reason : 
  */
-rule isLiquidatable_false_should_not_change(address account){
-    env e1;
-    env e2;
+// V@V - A liquiditable user cannot turn unliquiditable unless the price ratio of the collateral changed.
+// This is without calling any functions, just due to change in time that result a change in price
+rule isLiquiditable_false_should_not_change(address account){
+    env e1; env e2;
     require e2.block.timestamp > e1.block.timestamp;
     setup(e1);
 
@@ -187,7 +171,6 @@ rule isLiquidatable_false_should_not_change(address account){
     uint priceAsset1 = getPrice(e1,priceFeedAsset);
     uint priceAsset2 = getPrice(e2,priceFeedAsset);
 
-
     assert isLiquidatable(e2,account) => 
                 priceAsset1 != priceAsset2 || priceBase1 != priceBase2 ;
 }
@@ -196,79 +179,81 @@ rule isLiquidatable_false_should_not_change(address account){
  Description :  
      isBorrowCollateralized => account can borrow, hence he's not Liquidatable
 */
+// V@V - if a user is collateralized then they are not liquiditable
 rule isCol_implies_not_isLiq(address account){
     env e;
-
     address asset;
+    // assuming a condition that exist in the constructor
     require getLiquidateCollateralFactor(e,asset) > getBorrowCollateralFactor(e,asset);
 
     assert isBorrowCollateralized(e,account) => !isLiquidatable(e,account);
 }
 
 /* 
- Description :  
+    Description :  
      Verifies that TotalBaseSupplyIndex and getBaseBorrowIndex always greater than baseIndexScale
 
-formula : 
+    formula : 
         getBaseSupplyIndex() >= baseIndexScale() &&
         getBaseBorrowIndex() >= baseIndexScale();
 
- status : proved
- reason : 
- link   : 
+    status : proved
+
+    reason : 
+
+    link   : 
 */
+// V@V - BaseSupplyIndex and BaseBorrowIndex are monotonically increasing variables
+// proved to be used in other rules.
 rule supplyIndex_borrowIndex_GE_baseIndexScale(){
     env e;
-    setup(e);
     require getBaseSupplyIndex() >= baseIndexScale() &&
         getBaseBorrowIndex() >= baseIndexScale();
+    
     call_accrueInternal(e);
+
     assert getBaseSupplyIndex() >= baseIndexScale() &&
         getBaseBorrowIndex() >= baseIndexScale();
 }
 
 
 /* 
- Description :  
+    Description :  
      presentValue always greater than principalValue
 
-formula : 
+    formula : 
      presentValue >= _principalValue;
 
- status : proved
- reason : 
- link   : https://vaas-stg.certora.com/output/65782/f2f32f50a2bbf14deb79/?anonymousKey=494980dfd3ebcced1ee0d1088acf1a795f9f2a08#SupplyIndex_vs_BorrowIndexResults
+    status : proved
+    reason : 
+    link   : https://vaas-stg.certora.com/output/65782/f2f32f50a2bbf14deb79/?anonymousKey=494980dfd3ebcced1ee0d1088acf1a795f9f2a08#SupplyIndex_vs_BorrowIndexResults
 */
-rule presentValue_GE_principal( int104 presentValue){
-    env e;
-   setup(e);
-
-    int104 principalValue = call_principalValue(presentValue);
-    //require presentValue == call_presentValue(principalValue);
-
-    require presentValue > 0;
-    // https://vaas-stg.certora.com/output/65782/3bdac29a51e516bd3aec/?anonymousKey=0644f550abc407e9846eb7aed3b2eb501d557677
-
-    assert presentValue >= principalValue;
-}
-
-
-rule presentValue_G_zero( int104 presentValue){
+// V@V - the absolute presentValue is GE to the absolut principleValue 
+rule absolute_presentValue_GE_principal(int104 presentValue){
     env e;
     setup(e);
-    
     int104 principalValue = call_principalValue(presentValue);
-    
-    assert (presentValue == call_presentValue(principalValue)) => 
-            (presentValue > 0 <=> principalValue > 0);
+
+    assert presentValue >= 0 => presentValue >= principalValue;
+    assert presentValue < 0 => presentValue <= principalValue;
 }
 
 
-rule presentValue_EQ_principal( int104 presentValue){
+// V@V - presentValue is positive iff principleValue is positive
+rule presentValue_G_zero(int104 presentValue){
+    env e;
+    setup(e);
+    int104 principalValue = call_principalValue(presentValue);
+    assert presentValue > 0 <=> principalValue > 0;
+}
+
+
+// ?@? - 
+rule presentValue_EQ_principal(int104 presentValue){
     env e;
    setup(e);
     
-    require getBaseBorrowIndex() > getBaseSupplyIndex();
+    require getBaseBorrowIndex() > getBaseSupplyIndex(); // needed assumption
     // https://vaas-stg.certora.com/output/65782/683fbc8491afe9dab5e0/?anonymousKey=4f9fb2a878f00e7301e64c53ff9e3d55c804aa6b#presentValue_EQ_principalResults
     
     int104 principalValue = call_principalValue(presentValue);
@@ -278,52 +263,107 @@ rule presentValue_EQ_principal( int104 presentValue){
     // https://vaas-stg.certora.com/output/65782/a9dfef3acdd36876a26f/?anonymousKey=4649138f310d0a7a36b20d7d146e0f9e23d6215e
 
     assert presentValue == principalValue => 
-            getBaseSupplyIndex() == baseIndexScale() && 
-            presentValueInv == presentValue;
-}
-
-rule quote_Collateral(address asset, uint baseAmount ){
-    env e;
-    uint64 scale = getAssetScaleByAsset(asset);
-    require scale == baseScale(e);
-    require baseAmount > 0 && baseAmount < 2^255;
-    uint quote1 = quoteCollateral(e,asset, baseAmount);
-    uint quote2 = quoteCollateral(e,asset, baseAmount + 1);
-
-    uint price = getPrice(e,asset);
-
-    assert quote2 - quote1 <= scale * price;
+            (getBaseSupplyIndex() == baseIndexScale() && 
+            presentValueInv == presentValue);
 }
 
 
-/* This rule checks if getSupplyRate always reverts on 
-reserveRate(e) > factorScale()
-
-status: No violation - so the function always revert 
-*/
-/*
-rule getSupplyRate_revert_characteristic(){
-    env e;
-
-    require reserveRate(e) > FACTOR_SCALE();
-   
-    getSupplyRate(e);
-
-    assert false;
-}
-*/
-
+// V@V - If utilization is 0, then supplyRate is 0
 rule utilization_zero_supplyRate_zero(){
     env e;
     assert getUtilization(e) == 0 => getSupplyRate(e) == 0;
 }
 
 
-function setup(env e){
-    require getBaseSupplyIndex() >= baseIndexScale() &&
-        getBaseBorrowIndex() >= baseIndexScale();
+// V@V - getSupplyRate should always revert if reserveRate > FACTOR_SCALE
+rule getSupplyRate_revert_characteristic(){
+    env e;
+    getSupplyRate@withrevert(e);
+    bool isRevert = lastReverted;
+
+    assert (reserveRate(e) > get_FACTOR_SCALE()) => isRevert;
 }
 
 
+// V@V - Calling to accrue is the only way to change presentValue
+rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
+    env e; calldataarg args;
+  
+  call_accrueInternal(e); // maybe change to lastAccrualTime == nowInternal
+
+  int104 principal;
+  int104 presentValue1 = call_presentValue(principal);
+        f(e,args);
+  int104 presentValue2 = call_presentValue(principal);
+  
+  assert presentValue1 == presentValue2;
+}
 
 
+// B@B - at a point in time where user is collateralized, no action will change its status to uncollateralized
+rule verify_isBorrowCollateralized(address account, method f)filtered { f-> !similarFunctions(f) && !f.isView }{
+    env e; calldataarg args;
+    simplifiedAssumptions();
+
+    require getlastAccrualTime() == call_getNowInternal(e);
+    require isBorrowCollateralized(e,account);
+    f(e,args) ;
+    assert isBorrowCollateralized(e,account);
+}
+
+
+// T@T - withdraw(x) + withdraw(y) = withdraw(x+y)
+rule additivity_of_withdraw(uint x, uint y){
+    env e;
+    storage init = lastStorage;
+    
+    simplifiedAssumptions();
+    require x + y < 2^255;
+
+    withdraw(e,_baseToken, x);
+    int104 baseX = baseBalanceOf(e.msg.sender);
+    withdraw(e,_baseToken, y);
+    int104 baseY = baseBalanceOf(e.msg.sender);
+    
+    withdraw(e,_baseToken, x + y)  at init;
+    int104 baseXY = baseBalanceOf(e.msg.sender);
+
+    assert baseXY == baseY;
+}
+
+
+// F@F - reserves cannot have negative value
+// Found bug - Accrue should be called at the beginning of withdrawReserves()
+rule withdraw_more_reserves(address to , uint amount){
+    env e;
+    require to != currentContract;
+
+    withdrawReserves(e,to, amount);
+    call_accrueInternal(e);
+    int reserves = getReserves(e);
+
+    assert reserves >= 0;
+}
+
+
+// V@V - transfer should not change the combine presentValue of src and dst
+rule verify_transferAsset(){
+    env e;
+
+    address src;
+    address dst;
+    address asset;
+    uint amount;
+
+    simplifiedAssumptions();
+
+    mathint presentValue_src1 = to_mathint(call_presentValue(getPrincipal(e,src)));
+    mathint presentValue_dst1 = to_mathint(call_presentValue(getPrincipal(e,dst)));
+
+    transferAssetFrom(e, src, dst, asset, amount);
+
+    mathint presentValue_src2 = to_mathint(call_presentValue(getPrincipal(e,src)));
+    mathint presentValue_dst2 = to_mathint(call_presentValue(getPrincipal(e,dst)));
+
+    assert presentValue_src1 + presentValue_dst1 == presentValue_src2 + presentValue_dst2;
+}
