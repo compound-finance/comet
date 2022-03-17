@@ -44,7 +44,7 @@ describe('supplyTo', function () {
     expect(q1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(t1.totalSupplyBase).to.be.equal(t0.totalSupplyBase.add(100e6));
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
-    // XXX disable during coverage?
+    // XXX disable during coverage? more ideally coverage would not modify gas costs
     //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(100000);
   });
 
@@ -91,7 +91,7 @@ describe('supplyTo', function () {
     expect(q1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(q1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(t1.totalSupplyAsset).to.be.equal(t0.totalSupplyAsset.add(8e8));
-    // XXX disable during coverage?
+    // XXX disable during coverage? more ideally coverage would not modify gas costs
     //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(125000);
   });
 
@@ -179,7 +179,7 @@ describe('supplyTo', function () {
   });
 
   it.skip('supplies the correct amount in a fee-like situation', async () => {
-    // XXX
+    // Note: fee-tokens are not currently supported (for efficiency) and should not be added
   });
 
   it.skip('is not broken by malicious re-entrancy', async () => {

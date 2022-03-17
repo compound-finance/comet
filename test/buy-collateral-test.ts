@@ -214,7 +214,7 @@ describe('buyCollateral', function () {
   });
 
   it.skip('buys the correct amount in a fee-like situation', async () => {
-    // XXX
+    // Note: fee-tokens are not currently supported (for efficiency) and should not be added
   });
 
   it.skip('is not broken by malicious re-entrancy', async () => {

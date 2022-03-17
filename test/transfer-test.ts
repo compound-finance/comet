@@ -36,7 +36,7 @@ describe('transfer', function () {
     expect(q1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyBase).to.be.equal(t0.totalSupplyBase);
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
-    // XXX disable during coverage?
+    // XXX disable during coverage? more ideally coverage would not modify gas costs
     //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(80000);
   });
 
@@ -74,7 +74,7 @@ describe('transfer', function () {
     expect(p1.internal).to.be.deep.equal({ USDC: 0n, COMP: exp(8, 8), WETH: 0n, WBTC: 0n });
     expect(q1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyAsset).to.be.equal(t0.totalSupplyAsset);
-    // XXX disable during coverage?
+    // XXX disable during coverage? more ideally coverage would not modify gas costs
     //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(50000);
   });
 
