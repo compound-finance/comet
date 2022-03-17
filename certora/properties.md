@@ -78,7 +78,7 @@
 | 51 | `validAllowanceChanges` | DONE | ✅ | - | NEW |
 | 52 | `validApproveSucceeds` | DONE | ✅ | - | NEW |
 | 53 | `balance_change_by_allowed_only` | IN PROGRESS | 🕝 | - | NEW |
-| 54 | `governorIntegrity` | IN PROGRESS | ✅ | - | NEW |
+| 54 | `governorIntegrity` | DONE | ✅ | - | NEW |
 ## Plan for upcoming weeks (End March)
 
 - A few more high-level properties
