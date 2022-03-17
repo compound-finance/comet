@@ -20,11 +20,11 @@ scenario(
 
     // Albert supplies 100 units of collateral to Comet
     await collateralAsset.approve(albert, comet.address);
-    await albert.supplyAsset({asset: collateralAsset.address, amount: 100n * scale.toBigInt()})
+    await albert.supplyAsset({ asset: collateralAsset.address, amount: 100n * scale.toBigInt() })
 
     // Albert transfers 50 units of collateral to Betty
     const toTransfer = scale.toBigInt() * 50n;
-    const txn = await albert.transferAsset({dst: betty.address, asset: collateralAsset.address, amount: toTransfer});
+    const txn = await albert.transferAsset({ dst: betty.address, asset: collateralAsset.address, amount: toTransfer });
 
     expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(scale.mul(50));
     expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(scale.mul(50));
@@ -51,11 +51,11 @@ scenario(
 
     // Albert supplies 100 units of collateral to Comet
     await baseAsset.approve(albert, comet.address);
-    await albert.supplyAsset({asset: baseAsset.address, amount: 100n * scale})
+    await albert.supplyAsset({ asset: baseAsset.address, amount: 100n * scale })
 
     // Albert transfers 50 units of collateral to Betty
     const toTransfer = scale * 50n;
-    const txn = await albert.transferAsset({dst: betty.address, asset: baseAsset.address, amount: toTransfer});
+    const txn = await albert.transferAsset({ dst: betty.address, asset: baseAsset.address, amount: toTransfer });
 
     expect(await comet.balanceOf(albert.address)).to.be.equal(50n * scale);
     expect(await comet.balanceOf(betty.address)).to.be.equal(50n * scale);
@@ -64,14 +64,14 @@ scenario(
   }
 );
 
-scenario.only(
+scenario(
   'Comet#transfer > partial withdraw / borrow base to partial repay / supply',
   {
     upgrade: true,
     cometBalances: {
-      albert: { $base: 10, $asset0: 100 }, // in units of asset, not wei
+      albert: { $base: 10, $asset0: 50 }, // in units of asset, not wei
       betty: { $base: -10 },
-      charles: { $base: 100 }, // to give the protocol enough base for others to borrow from
+      charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
     },
   },
   async ({ comet, actors }, world, context) => {
@@ -86,7 +86,7 @@ scenario.only(
 
     // Albert with positive balance transfers to Betty with negative balance
     const toTransfer = 15n * scale;
-    await albert.transferAsset({ dst: betty.address, asset: baseAsset.address, amount: toTransfer })
+    await albert.transferAsset({ dst: betty.address, asset: baseAsset.address, amount: toTransfer });
 
     // Albert ends with negative balance and Betty with positive balance
     expectApproximately(await albert.getCometBaseBalance(), -5n * scale, precision);
@@ -94,14 +94,14 @@ scenario.only(
   }
 );
 
-scenario.only(
+scenario(
   'Comet#transferFrom > withdraw to repay',
   {
     upgrade: true,
     cometBalances: {
-      albert: { $base: 10, $asset0: 100 }, // in units of asset, not wei
+      albert: { $base: 10, $asset0: 50 }, // in units of asset, not wei
       betty: { $base: -10 },
-      charles: { $base: 100 }, // to give the protocol enough base for others to borrow from
+      charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
     },
   },
   async ({ comet, actors }, world, context) => {
@@ -118,20 +118,77 @@ scenario.only(
 
     // Betty withdraws from Albert to repay her own borrows
     const toTransfer = 5n * scale;
-    await betty.transferAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: toTransfer })
+    await betty.transferAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: toTransfer });
 
     expectApproximately(await albert.getCometBaseBalance(), 5n * scale, precision);
     expectApproximately(await betty.getCometBaseBalance(), -5n * scale, precision);
   }
 );
 
-scenario.skip(
+scenario(
   'Comet#transfer reverts if undercollateralized',
   {
     upgrade: true,
+    cometBalances: {
+      albert: { $base: 100, $asset0: 0.000001 }, // in units of asset, not wei
+      betty: { $base: -100 },
+      charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
+    },
   },
-  async ({ comet, actors }) => {
-    // XXX
+  async ({ comet, actors }, world, context) => {
+    const { albert, betty } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const scale = (await comet.baseScale()).toBigInt();
+    const precision = scale / 1_000_000n; // 1e-6 asset units of precision
+
+    expectApproximately(await albert.getCometBaseBalance(), 100n * scale, precision);
+    expectApproximately(await betty.getCometBaseBalance(), -100n * scale, precision);
+
+    // Albert with positive balance transfers to Betty with negative balance
+    const toTransfer = 150n * scale;
+    await expect(
+      albert.transferAsset({
+        dst: betty.address,
+        asset: baseAsset.address,
+        amount: toTransfer,
+      })
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+  }
+);
+
+scenario(
+  'Comet#transferFrom reverts if undercollateralized',
+  {
+    upgrade: true,
+    cometBalances: {
+      albert: { $base: 100, $asset0: 0.000001 }, // in units of asset, not wei
+      betty: { $base: -100 },
+      charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
+    },
+  },
+  async ({ comet, actors }, world, context) => {
+    const { albert, betty } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const scale = (await comet.baseScale()).toBigInt();
+    const precision = scale / 1_000_000n; // 1e-6 asset units of precision
+
+    expectApproximately(await albert.getCometBaseBalance(), 100n * scale, precision);
+    expectApproximately(await betty.getCometBaseBalance(), -100n * scale, precision);
+
+    await albert.allow(betty, true);
+
+    // Albert with positive balance transfers to Betty with negative balance
+    const toTransfer = 150n * scale;
+    await expect(
+      betty.transferAssetFrom({
+        src: albert.address,
+        dst: betty.address,
+        asset: baseAsset.address,
+        amount: toTransfer,
+      })
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
   }
 );
 

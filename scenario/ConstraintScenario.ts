@@ -2,7 +2,7 @@ import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { expectApproximately } from './utils';
 
-scenario.only(
+scenario(
   'Comet#constraint > collateral CometBalanceConstraint + BalanceConstraint both satisfied',
   {
     upgrade: true,
@@ -23,7 +23,7 @@ scenario.only(
   }
 );
 
-scenario.only(
+scenario(
   'Comet#constraint > base CometBalanceConstraint + BalanceConstraint both satisfied',
   {
     upgrade: true,
@@ -45,7 +45,7 @@ scenario.only(
   }
 );
 
-scenario.only(
+scenario(
   'Comet#constraint > negative comet base balance (borrow position)',
   {
     upgrade: true,    
