@@ -9,8 +9,8 @@ methods{
 
     getAssetScaleByAsset(address) returns (uint64) envfree;
 
-    getTotalBaseSupplyIndex() returns (uint64) envfree;
-    getTotalBaseBorrowIndex() returns (uint64) envfree;
+    getBaseSupplyIndex() returns (uint64) envfree;
+    getBaseBorrowIndex() returns (uint64) envfree;
     getlastAccrualTime() returns (uint40) envfree;
     // FACTOR_SCALE() returns (uint64) envfree;
     perSecondInterestRateBase() returns (uint256) envfree;
@@ -38,11 +38,11 @@ methods{
 */
 rule supplyIndex_borrowIndex_rise_with_time(){
     env e;
-    uint64 base_supply_index_1 = getTotalBaseSupplyIndex();
-    uint64 base_borrow_index_1 = getTotalBaseBorrowIndex();
+    uint64 base_supply_index_1 = getBaseSupplyIndex();
+    uint64 base_borrow_index_1 = getBaseBorrowIndex();
     call_accrueInternal(e);
-    uint64 base_supply_index_2 = getTotalBaseSupplyIndex();
-    uint64 base_borrow_index_2 = getTotalBaseBorrowIndex();
+    uint64 base_supply_index_2 = getBaseSupplyIndex();
+    uint64 base_borrow_index_2 = getBaseBorrowIndex();
 
     assert call_getNowInternal(e) > getlastAccrualTime() => 
                    (base_supply_index_2 > base_supply_index_1 &&
@@ -61,11 +61,11 @@ rule supplyIndex_borrowIndex_rise_with_time(){
 */
 rule supplyIndex_borrowIndex_monotonic(){
     env e;
-    uint64 base_supply_index_1 = getTotalBaseSupplyIndex();
-    uint64 base_borrow_index_1 = getTotalBaseBorrowIndex();
+    uint64 base_supply_index_1 = getBaseSupplyIndex();
+    uint64 base_borrow_index_1 = getBaseBorrowIndex();
     call_accrueInternal(e);
-    uint64 base_supply_index_2 = getTotalBaseSupplyIndex();
-    uint64 base_borrow_index_2 = getTotalBaseBorrowIndex();
+    uint64 base_supply_index_2 = getBaseSupplyIndex();
+    uint64 base_borrow_index_2 = getBaseBorrowIndex();
 
     assert  base_supply_index_2 >= base_supply_index_1;
     assert  base_borrow_index_2 >= base_borrow_index_1;
@@ -207,11 +207,11 @@ rule isCol_implies_not_isLiq(address account){
 
 /* 
  Description :  
-     Verifies that TotalBaseSupplyIndex and getTotalBaseBorrowIndex always greater than baseIndexScale
+     Verifies that TotalBaseSupplyIndex and getBaseBorrowIndex always greater than baseIndexScale
 
 formula : 
-        getTotalBaseSupplyIndex() >= baseIndexScale() &&
-        getTotalBaseBorrowIndex() >= baseIndexScale();
+        getBaseSupplyIndex() >= baseIndexScale() &&
+        getBaseBorrowIndex() >= baseIndexScale();
 
  status : proved
  reason : 
@@ -220,11 +220,11 @@ formula :
 rule supplyIndex_borrowIndex_GE_baseIndexScale(){
     env e;
     setup(e);
-    require getTotalBaseSupplyIndex() >= baseIndexScale() &&
-        getTotalBaseBorrowIndex() >= baseIndexScale();
+    require getBaseSupplyIndex() >= baseIndexScale() &&
+        getBaseBorrowIndex() >= baseIndexScale();
     call_accrueInternal(e);
-    assert getTotalBaseSupplyIndex() >= baseIndexScale() &&
-        getTotalBaseBorrowIndex() >= baseIndexScale();
+    assert getBaseSupplyIndex() >= baseIndexScale() &&
+        getBaseBorrowIndex() >= baseIndexScale();
 }
 
 
@@ -268,7 +268,7 @@ rule presentValue_EQ_principal( int104 presentValue){
     env e;
    setup(e);
     
-    require getTotalBaseBorrowIndex() > getTotalBaseSupplyIndex();
+    require getBaseBorrowIndex() > getBaseSupplyIndex();
     // https://vaas-stg.certora.com/output/65782/683fbc8491afe9dab5e0/?anonymousKey=4f9fb2a878f00e7301e64c53ff9e3d55c804aa6b#presentValue_EQ_principalResults
     
     int104 principalValue = call_principalValue(presentValue);
@@ -278,7 +278,7 @@ rule presentValue_EQ_principal( int104 presentValue){
     // https://vaas-stg.certora.com/output/65782/a9dfef3acdd36876a26f/?anonymousKey=4649138f310d0a7a36b20d7d146e0f9e23d6215e
 
     assert presentValue == principalValue => 
-            getTotalBaseSupplyIndex() == baseIndexScale() && 
+            getBaseSupplyIndex() == baseIndexScale() && 
             presentValueInv == presentValue;
 }
 
@@ -320,8 +320,8 @@ rule utilization_zero_supplyRate_zero(){
 
 
 function setup(env e){
-    require getTotalBaseSupplyIndex() >= baseIndexScale() &&
-        getTotalBaseBorrowIndex() >= baseIndexScale();
+    require getBaseSupplyIndex() >= baseIndexScale() &&
+        getBaseBorrowIndex() >= baseIndexScale();
 }
 
 

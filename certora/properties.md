@@ -2,15 +2,15 @@
 
 
 ## Questions
-1. approve(address spender, uint256 amount)  why not boolean
-2. buyCollateral points
-3. accrue on withdrawReserves
 
 
 ## Table
 
-
-
+Symbols:
+- ✅ - Verified
+- 👷 - In progress
+- 🕝 - Timeout
+- ❌ - Failed/BUG
 
 | # | Rule Name | Progress | Verdict | Comment | Update |
 |-- | --------- | -------- | ------- | ------- | ------ |
@@ -45,7 +45,7 @@
 | 25 | `totalCollateralPerAsset` | DONE | ✅ | on simplified assumptions | - |
 | 26 | `totalCollateralPerAssetVsAssetBalance` | DONE | ✅ | - | DONE |
 | 27 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions | - |
-| 28 | `base_balance_vs_totals` | IN PROGRESS | 👷| on simplified assumptions | breaks |
+| 28 | `base_balance_vs_totals` | IN PROGRESS | 👷 | on simplified assumptions | breaks |
 | 29 | `Collateral_totalSupply_LE_supplyCap` | DONE | ✅ | using the summarization of getAssetInfo | - |
 | 30  | `borrow_then_collateralized` | IN PROGRESS | 👷 | - | - | 
 | |**High level updates** |
@@ -69,7 +69,7 @@
 | 44 | `no_reserves_zero_balance` | DONE | ✅ | on simplified assumptions | - |
 | 45 | `withdraw_more_reserves` | FAIL | - | - | follow fix |
 |    | **General**
-| 46 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷  | - | - | 
+| 46 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷 | - | - | 
 | 47 | `usage_registered_assets_only` | DONE | ✅ | - |  DONE |
 | 48 | `balance_change_vs_registered` | DONE | ✅ | - |  NEW |
 |    | **CometExt**
@@ -78,6 +78,80 @@
 | 51 | `validAllowanceChanges` | DONE | ✅ | - | NEW |
 | 52 | `validApproveSucceeds` | DONE | ✅ | - | NEW |
 | 53 | `withdrawAfterApprove` | IN PROGRESS | 🕝 | - | NEW |
+
+
+## Interest Computation
+
+1. `supplyIndex_borrowIndex_GE_baseIndexScale` - 
+2. `supplyIndex_borrowIndex_monotonic` - 
+3. `supplyIndex_borrowIndex_rise_with_time` - 
+4. `borrowBase_vs_utilization` - 
+5. `utilization_zero` - 
+6. `isLiquiditable_false_should_not_change` - 
+7. `presentValue_GE_principle` - 
+8. `presentValue_G_zero` - 
+9. `presentValue_EQ_principal` - 
+10. `supplyRate_vs_utilization` - 
+11. `utilization_zero_supplyRate_zero` - 
+12. `getSupplyRate_revert_characteristic` - 
+13. `isCol_implies_not_isLiq` - 
+
+
+## Flags
+1. `check_flag_updates` - 
+2. `check_flag_getters` - 
+3. `check_pauseSupply_functionality` - 
+4. `check_pauseTransfer_functionality` - 
+5. `check_pauseWithdraw_functionality` - 
+6. `check_pauseAbsorb_functionality` - 
+7. `check_pauseBuy_functionality` - 
+8. `check_update_UserCollateral` - 
+9. `update_changes_single_bit` - 
+10. `update_changes_single_user_assetIn` - 
+
+
+## Asset Info
+1. `reversibility_of_packing` - 
+
+## High level totals and balances
+1. `totalCollateralPerAsset` - 
+2. `totalCollateralPerAssetVsAssetBalance` - 
+3. `totalBaseToken` - 
+4. `base_balance_vs_totals` - 
+5. `Collateral_totalSupply_LE_supplyCap` - 
+6. `borrow_then_collateralized` - 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Plan for upcoming weeks (End March)
 
 - A few more high-level properties

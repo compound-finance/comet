@@ -21,11 +21,11 @@ contract CometHarnessGetters is Comet {
         return pauseFlags;
     }
 
-    function getTotalBaseSupplyIndex() public view returns (uint64) {
+    function getBaseSupplyIndex() public view returns (uint64) {
         return baseSupplyIndex;
     }
 
-    function getTotalBaseBorrowIndex() public view returns (uint64) {
+    function getBaseBorrowIndex() public view returns (uint64) {
         return baseBorrowIndex;
     }
     function getlastAccrualTime() public view returns (uint40) {

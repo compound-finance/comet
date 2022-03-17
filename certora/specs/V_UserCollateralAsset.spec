@@ -5,13 +5,10 @@ methods{
     call_updateAssetsIn(address, address, uint128, uint128) envfree
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////   Properties   ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
-
-
 
 // B@B - if a specific asset balance is being updated from 0 to non-0 or vice versa, isInAsset should return the appropriate value
 rule check_update_UserCollateral(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance){
@@ -23,8 +20,6 @@ rule check_update_UserCollateral(address account, address asset, uint128 initial
 
     assert (initialUserBalance == 0 && finalUserBalance > 0) => flagUserAsset_, "Balance changed from 0 to non zero, yet the getter retrieve false";
     assert (initialUserBalance > 0 && finalUserBalance == 0) => !flagUserAsset_, "Balance changed from non zero to 0, yet the getter retrieve true";
-    // assert ((initialUserBalance == 0 && finalUserBalance > 0) => flagUserAsset_) && ((initialUserBalance > 0 && finalUserBalance == 0) => !flagUserAsset_), "try";
-
 }
 
 // V@V update assetIn changes a single bit - it's impossible that 2 distinct asset bits will be change at the same call to update
@@ -43,8 +38,6 @@ rule update_changes_single_bit(address account, address asset, uint128 initialUs
     bool flagUserAsset2_ = call_IsInAsset(assetIn_, assetOffset2);
 
     assert !(_flagUserAsset1 != flagUserAsset1_ && _flagUserAsset2 != flagUserAsset2_), "2 bits changed at once";
-    // require assetOffset_ <= 15; // this is an assumption - it will fail it assetOffset
-
 }
 
 

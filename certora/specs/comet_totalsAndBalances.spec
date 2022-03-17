@@ -23,8 +23,6 @@ invariant totalBaseToken()
 
 
 
-
-
 /* 
  Description :  
         The sum of collateral per asset over all users is equal to total collateral of asset:
@@ -33,7 +31,7 @@ formula :
         sum(userCollateral[u][asset].balance) == totalsCollateral[asset].totalSupplyAsset
 
  status : proved 
- link https://vaas-stg.certora.com/output/23658/c653b4018c776983368a?anonymousKey=ed01d8a8a20618fae0c3e40f1e1e3a99c2a253e8
+ link: https://vaas-stg.certora.com/output/23658/c653b4018c776983368a?anonymousKey=ed01d8a8a20618fae0c3e40f1e1e3a99c2a253e8
 */
 invariant totalCollateralPerAsset(address asset) 
     sumBalancePerAssert[asset] == getTotalsSupplyAsset(asset)     
@@ -104,21 +102,21 @@ filtered { f-> !similarFunctions(f) && !f.isView /*&& f.selector!=absorb(address
 invariant collateral_totalSupply_LE_supplyCap(address asset)
     getTotalsSupplyAsset(asset) <= getAssetSupplyCapByAddress(asset)
 
-// // 
-// rule at_time_of_borrow_collateral_greater_than_zero(address user, address asset, method f){
-//     env e; calldataarg args;
-//     require getPrincipal(user) >= 0;
-//     f(e, args);
-//     assert getPrincipal(user) < 0 => isBorrowCollateralized(user);
-// }
+// B@B -
+rule borrow_then_collateralized(address user, address asset, method f) filtered {f -> !similarFunctions(f) && !f.isView } {
+    env e;
+    require getPrincipal(user) < 0 => isBorrowCollateralized(user);
+    call_functions_with_specific_asset(f, e, asset);
+    assert getPrincipal(user) < 0 => isBorrowCollateralized(user);
+}
 
-// B@B - 
-invariant borrow_then_collateralized(address user)
-        getPrincipal(user) < 0 => isBorrowCollateralized(user)
-        {
-            preserved 
-            {
-                require user != currentContract;
-            }
-        }
+// //  
+// invariant borrow_then_collateralized(address user)
+//         getPrincipal(user) < 0 => isBorrowCollateralized(user)
+//         {
+//             preserved 
+//             {
+//                 require user != currentContract;
+//             }
+//         }
         

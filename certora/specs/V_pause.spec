@@ -5,7 +5,7 @@ import "A_setupNoSummarization.spec"
 ////////////////////////////////////////////////////////////////////////////////
 //
 
-// V@V pause revert only if the sender is not governor or pause guardian
+// V@V - pause revert only if the sender is not governor or pause guardian
 rule check_flag_updates(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused){
     env e;
     require e.msg.value == 0;

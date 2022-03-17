@@ -1,9 +1,11 @@
 
 methods{
-    /*
-     * These summarization are safe since we proved the correctness of getters and update in pause.spec
-     */
-    // notice that calling these methods the summarization doesn't apply.
+    ////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////   pause summarizations   ////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    //
+    // These summarization are safe since we proved the correctness of getters and update in pause.spec
+    // * notice that when calling these methods from the spec the summarization doesn't apply.
     pause(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused) => set_Paused_Summarization(supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused)
     isSupplyPaused() returns (bool) envfree => get_Supply_Paused()
     isTransferPaused() returns (bool) envfree => get_Transfer_Paused()
@@ -11,10 +13,11 @@ methods{
     isAbsorbPaused() returns (bool) envfree => get_Absorb_Paused()
     isBuyPaused() returns (bool) envfree => get_Buy_Paused()
     getPauseFlags() returns (uint8) envfree
+
+
     signedMulPrice(int amount, uint price, uint tokenScale) => ghostSignedMulPrice(amount,price,tokenScale);
     mulPrice(uint amount, uint price, uint tokenScale) => ghostMulPrice(amount,price,tokenScale);
     getPrincipal(address) returns (int104) envfree
-
 }
 
 ghost ghostSignedMulPrice(int, uint, uint) returns int256; 
@@ -22,12 +25,23 @@ ghost ghostSignedMulPrice(int, uint, uint) returns int256;
 ghost ghostMulPrice(uint, uint, uint) returns uint256; 
 
 
+// a list of functions that are similar to other functions, 
+// usually these methods call internal functions with less degrees of freedom than their similar (more pre-determined args)
+definition similarFunctions(method f) returns bool =    
+            f.selector == withdraw(address,uint256).selector ||
+            f.selector == withdrawTo(address,address,uint).selector ||
+            f.selector == transferAsset(address,address,uint).selector ||
+            f.selector == supplyTo(address,address,uint).selector ||
+            f.selector == supply(address,uint).selector ||
+            f.selector == initializeStorage().selector ;
+
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////   pause getters and update   //////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
 // summarization for the pause functionality.
-// These summarization are safe since we proved the correctness of getters and update in governance.spec 
+// These summarization are safe since we proved the correctness of getters and update in pause.spec, pauseGuardians.spec
 //
 
 // pasue ghosts
@@ -88,63 +102,10 @@ definition all_public_supply_methods(method f) returns bool =
     f.selector == supplyTo(address, address, uint).selector || 
     f.selector == supplyFrom(address, address, address, uint).selector;
 
-
-definition similarFunctions(method f) returns bool =    
-            f.selector == withdraw(address,uint256).selector ||
-            f.selector == withdrawTo(address,address,uint).selector ||
-            f.selector == transferAsset(address,address,uint).selector ||
-            f.selector == supplyTo(address,address,uint).selector ||
-            f.selector == supply(address,uint).selector ||
-            f.selector == initializeStorage().selector ;
-
-
-// calling all different supply functions with revert
-// @note if you want to use this without revert just call the function with require on the output to be false
-function supply_functions_with_revert(method f, env e) returns bool{
-    calldataarg args;
-    bool reverted;
-    
-    if (f.selector == supply(address, uint).selector) {
-        supply@withrevert(e, args);
-        reverted = lastReverted;
-    } else if (f.selector == supplyTo(address, address, uint).selector) {
-        supplyTo@withrevert(e, args);
-        reverted = lastReverted;
-    } else if (f.selector == supplyFrom(address, address, address, uint).selector) {
-        supplyFrom@withrevert(e, args);
-        reverted = lastReverted;
-    } else{
-        f@withrevert(e, args);
-        reverted = lastReverted;
-    }
-    return reverted;
-}
-
 // a definition of all supply functions in the contract
 definition all_public_transfer_methods(method f) returns bool =
     f.selector == transferAsset(address, address, uint).selector || 
     f.selector == transferAssetFrom(address, address, address, uint).selector;
-
-
-// calling all different transfer functions with revert
-// @note if you want to use this without revert just call the function with require on the output to be false
-function transfer_functions_with_revert(method f, env e) returns bool{
-    calldataarg args;
-    bool reverted;
-    
-    if (f.selector == transferAsset(address, address, uint).selector) {
-        transferAsset@withrevert(e, args);
-        reverted = lastReverted;
-    } else if (f.selector == transferAssetFrom(address, address, address, uint).selector) {
-        transferAssetFrom@withrevert(e, args);
-        reverted = lastReverted;
-    } else{
-        // assert false, "this is an assert false";
-        f@withrevert(e, args);
-        reverted = lastReverted;
-    }
-    return reverted;
-}
 
 // a definition of all withdraw functions in the contract
 definition all_public_withdraw_methods(method f) returns bool =
@@ -152,74 +113,10 @@ definition all_public_withdraw_methods(method f) returns bool =
     f.selector == withdrawTo(address, address, uint).selector || 
     f.selector == withdrawFrom(address, address, address, uint).selector;
 
-
-// calling all different withdraw functions with revert
-// @note if you want to use this without revert just call the function with require on the output to be false
-function withdraw_functions_with_revert(method f, env e) returns bool{
-    calldataarg args;
-    bool reverted;
-    
-    if (f.selector == withdraw(address, uint).selector) {
-        withdraw@withrevert(e, args);
-        reverted = lastReverted;
-    } else if (f.selector == withdrawTo(address, address, uint).selector) {
-        withdrawTo@withrevert(e, args);
-        reverted = lastReverted;
-    } else if (f.selector == withdrawFrom(address, address, address, uint).selector) {
-        withdrawFrom@withrevert(e, args);
-        reverted = lastReverted;
-    } else{
-        f@withrevert(e, args);
-        reverted = lastReverted;
-    }
-    return reverted;
-}
-
 // a definition of all absorb functions in the contract
 definition all_public_absorb_methods(method f) returns bool =
     f.selector == absorb(address, address[]).selector;
 
-
-// calling all different absorb functions with revert
-// @note if you want to use this without revert just call the function with require on the output to be false
-function absorb_functions_with_revert(method f, env e) returns bool{
-    calldataarg args;
-    bool reverted;
-    
-    if (f.selector == absorb(address, address[]).selector) {
-        absorb@withrevert(e, args);
-        reverted = lastReverted;
-    } else{
-        f@withrevert(e, args);
-        reverted = lastReverted;
-    }
-    return reverted;
-}
-
 // a definition of all buy functions in the contract
 definition all_public_buy_methods(method f) returns bool =
     f.selector == buyCollateral(address, uint, uint, address).selector;
-
-
-// calling all different buy functions with revert
-// @note if you want to use this without revert just call the function with require on the output to be false
-function buy_functions_with_revert(method f, env e) returns bool{
-    calldataarg args;
-    bool reverted;
-    
-    if (f.selector == buyCollateral(address, uint, uint, address).selector) {
-        buyCollateral@withrevert(e, args);
-        reverted = lastReverted;
-    } else{
-        f@withrevert(e, args);
-        reverted = lastReverted;
-    }
-    return reverted;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////   userCollaterAsset   /////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-// functions and definitions for pause guardian integrity
-//

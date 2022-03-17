@@ -1,4 +1,4 @@
-// erc20 methods
+// erc20 methods - summarization to the implementation of ERC20 contract
 methods {
     name()                                returns (string)  => DISPATCHER(true) 
     symbol()                              returns (string)  => DISPATCHER(true) 

@@ -98,7 +98,7 @@ function call_functions_with_specific_asset(method f, env e, address asset) retu
 
 // B@B - assetIn of a specific asset is initialized (!0) or uninitialized (0) along with the collateral balance
 rule assetIn_Initialized_With_Balance(method f, address user, address asset) 
-    filtered { f ->  !similarFunctions(f) && !f.isView } {
+    filtered { f ->  !similarFunctions(f) && !f.isView && f.selector != absorb(address, address[]).selector && f.selector != certorafallback_0().selector } {
     
     env e; calldataarg args;
     require user != currentContract;
@@ -109,8 +109,8 @@ rule assetIn_Initialized_With_Balance(method f, address user, address asset)
 
 function simplifiedAssumptions() {
     env e;
-    require getTotalBaseSupplyIndex(e) == baseIndexScale(e);
-    require getTotalBaseBorrowIndex(e) == baseIndexScale(e);
+    require getBaseSupplyIndex(e) == baseIndexScale(e);
+    require getBaseBorrowIndex(e) == baseIndexScale(e);
 }
 
 

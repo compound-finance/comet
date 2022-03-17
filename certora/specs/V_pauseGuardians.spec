@@ -25,7 +25,6 @@ rule check_pauseSupply_functionality(method f, env e) filtered {f -> all_public_
         reverted_supply = lastReverted;
     }
 
-    // bool reverted_supply = supply_functions_with_revert(f, e);
     assert flagSupply => reverted_supply;
 }
 
@@ -46,7 +45,6 @@ rule check_pauseTransfer_functionality(method f, env e) filtered {f -> all_publi
         reverted_transfer = lastReverted;
     }
     
-    // bool reverted_transfer = transfer_functions_with_revert(f, e);
     assert flagTransfer => reverted_transfer;
 }
 
@@ -71,7 +69,6 @@ rule check_pauseWithdraw_functionality(method f, env e) filtered {f -> all_publi
         reverted_withdraw = lastReverted;
     }
 
-    // bool reverted_withdraw = withdraw_functions_with_revert(f, e);
     assert flagWithdraw => reverted_withdraw;
 }
 
@@ -90,7 +87,6 @@ rule check_pauseAbsorb_functionality(method f, env e) filtered {f -> all_public_
         reverted_absorb = lastReverted;
     }
 
-    // bool reverted_absorb = absorb_functions_with_revert(f, e);
     assert flagAbsorb => reverted_absorb;
 }
 
@@ -109,6 +105,5 @@ rule check_pauseBuy_functionality(method f, env e) filtered {f -> all_public_buy
         reverted_buy = lastReverted;
     }
 
-    // bool reverted_buy = buy_functions_with_revert(f, e);
     assert flagBuy => reverted_buy;
 }

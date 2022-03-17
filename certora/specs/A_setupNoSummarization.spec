@@ -1,10 +1,4 @@
 methods{
-    // 0xc8c7fe6b envfree // getAssetInfo(uint8) returns (AssetInfo)
-    // getNowInternal() returns (uint40)
-    // accrue()
-    // allow(address, bool)
-    // allowBySig(address, address, bool, uint256, uint256, uint8, bytes32, bytes32)
-    // hasPermission(address, address) returns (bool)
     getSupplyRate() returns (uint64)
     getBorrowRate() returns (uint64)
     getUtilization() returns (uint)
@@ -21,7 +15,6 @@ methods{
     isAbsorbPaused() returns (bool) envfree
     isBuyPaused() returns (bool) envfree
     baseBalanceOf(address) returns (int104) envfree
-    // collateralBalanceOf(address, address) returns (uint128) envfree
     supply(address, uint)
     supplyTo(address, address, uint)
     supplyFrom(address, address, address, uint)
@@ -38,13 +31,10 @@ methods{
     // cometHarnessGetters
     getAssetinOfUser(address) returns (uint16) envfree
     getAssetOffsetByAsset(address) returns (uint8) envfree
-}
 
-// assumes some non-zero values on the environment
-function envNotZero(env e){
-    require e.block.timestamp != 0;
-    require e.block.number != 0;
-    require e.msg.sender != 0;
+    // Getters of public vars
+    governor() returns (address) envfree
+    pauseGuardian() returns (address) envfree
 }
 
 definition similarFunctions(method f) returns bool =    
