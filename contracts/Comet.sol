@@ -241,6 +241,9 @@ contract Comet is CometCore {
         baseBorrowIndex = BASE_INDEX_SCALE;
         trackingSupplyIndex = 0;
         trackingBorrowIndex = 0;
+
+        // Approve governor on behalf of contract
+        isAllowed[address(this)][governor] = true;
     }
 
     /**
