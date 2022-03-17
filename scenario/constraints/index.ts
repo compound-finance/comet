@@ -4,3 +4,4 @@ export { RemoteTokenConstraint } from '../constraints/RemoteTokenConstraint';
 export { ModernConstraint } from '../constraints/ModernConstraint';
 export { UtilizationConstraint } from '../constraints/UtilizationConstraint';
 export { BaseTokenProtocolBalanceConstraint } from './BaseTokenProtocolBalanceConstraint';
+export { CometBalanceConstraint } from './CometBalanceConstraint';

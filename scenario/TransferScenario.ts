@@ -69,14 +69,14 @@ scenario(
   'Comet#transfer > partial withdraw / borrow base to partial repay / supply',
   {
     upgrade: true,
-    balances: {
-      // albert: { USDC: exp(50, 6) },
-      // betty: { USDC: exp(-50, 6) }
+    cometBalances: {
+      albert: { $base: -100 }, // in units of asset, not wei
     },
   },
   async ({ comet, actors }) => {
     const { albert, betty } = actors;
     // XXX need comet balances constraint
+    // someone with positive balance provides to someone with negative balance
     //await albert.transferAsset(betty, USDC, exp(100, 6));
   }
 );

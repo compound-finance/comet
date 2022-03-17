@@ -4,58 +4,7 @@ import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { BigNumber } from 'ethers';
 import { exp } from '../../test/helpers';
-import CometAsset from '../context/CometAsset';
-
-function matchGroup(str, patterns) {
-  for (const k in patterns) {
-    const match = patterns[k].exec(str);
-    if (match) return { [k]: match[1] };
-  }
-  throw new Error(`No match for ${str} in ${patterns}`);
-}
-
-// `amount` should be the unit amount of an asset instead of the gwei amount
-function parseAmount(amount) {
-  switch (typeof amount) {
-    case 'bigint':
-      return { $gte: Number(amount) };
-    case 'number':
-      return { $gte: amount };
-    case 'string':
-      return matchGroup(amount, {
-        $gte: />=\s*(\d+)/,
-        $gt: />\s*(\d+)/,
-        $lte: /<=\s*(\d+)/,
-        $lt: /<\s*(\d+)/,
-        $eq: /==\s*(\d+)/,
-      });
-    case 'object':
-      return amount;
-    default:
-      throw new Error(`Unrecognized amount: ${amount}`);
-  }
-}
-
-async function getAssetFromName(name: string, context: CometContext): Promise<CometAsset> {
-  let comet = await context.getComet(); // TODO: can optimize by taking this as an arg instead
-  if (name.startsWith('$')) {
-    const collateralAssetRegex = /asset[0-9]+/;
-    const baseAssetRegex = /base/;
-    let asset: string;
-    if (collateralAssetRegex.test(name)) {
-      // If name matches regex, e.g. "$asset10"
-      const assetIndex = name.match(/[0-9]+/g)[0];
-      ({ asset } = await comet.getAssetInfo(assetIndex));
-    } else if (baseAssetRegex.test(name)) {
-      // If name matches "base"
-      asset = await comet.baseToken();
-    }
-    return context.getAssetByAddress(asset);
-  } else {
-    // If name doesn't match regex, try to find the asset directly from the assets list
-    return context.assets[name];
-  }
-}
+import { getAssetFromName, parseAmount } from './utils';
 
 export class BalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, initialContext: T, initialWorld: World) {
