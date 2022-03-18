@@ -33,6 +33,13 @@ describe('supplyTo', function () {
         amount: BigInt(100e6),
       }
     });
+    expect(event(s0, 2)).to.be.deep.equal({
+      Transfer: {
+        from: ethers.constants.AddressZero,
+        to: alice.address,
+        amount: BigInt(100e6),
+      }
+    });
 
     expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(p0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});

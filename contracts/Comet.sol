@@ -886,6 +886,7 @@ contract Comet is CometCore {
         updateBaseBalance(dst, dstUser, principalValue(dstBalance));
 
         emit Supply(from, dst, amount);
+        emit Transfer(address(0), dst, amount);
     }
 
     /**
@@ -1103,6 +1104,7 @@ contract Comet is CometCore {
         doTransferOut(baseToken, to, amount);
 
         emit Withdraw(src, to, amount);
+        emit Transfer(src, address(0), amount);
     }
 
     /**
