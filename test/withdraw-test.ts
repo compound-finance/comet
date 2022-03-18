@@ -1,5 +1,6 @@
-import { Comet, ethers, event, expect, exp, makeProtocol, portfolio, wait } from './helpers';
 import { BigNumber } from "ethers";
+import { EvilToken, EvilToken__factory, FaucetToken } from '../build/types';
+import { ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, wait } from './helpers';
 
 describe('withdrawTo', function () {
   it('withdraws base from sender if the asset is base', async () => {
@@ -210,10 +211,6 @@ describe('withdrawTo', function () {
     expect(await comet.baseBalanceOf(alice.address)).to.eq(baseBalanceOf);
     expect(await USDC.balanceOf(bob.address)).to.eq(1e6);
   });
-
-  it.skip('is not broken by malicious re-entrancy', async () => {
-    // XXX
-  });
 });
 
 describe('withdraw', function () {
@@ -295,6 +292,102 @@ describe('withdraw', function () {
       comet.connect(alice).withdraw(WETH.address, exp(1, 18))
     ).to.be.revertedWith("custom error 'NotCollateralized()'");
   });
+
+  describe('reentrancy', function() {
+    it('is not broken by malicious reentrancy transferFrom', async () => {
+      const { comet, tokens, users: [alice, bob] } = await makeProtocol({
+        assets: {
+          USDC: {
+            decimals: 6
+          },
+          EVIL: {
+            decimals: 6,
+            initialPrice: 2,
+            factory: await ethers.getContractFactory('EvilToken') as EvilToken__factory,
+          }
+        }
+      });
+      const { USDC, EVIL } = <{USDC: FaucetToken, EVIL: EvilToken}>tokens;
+
+      await USDC.allocateTo(comet.address, 100e6);
+
+      const attack = Object.assign({}, await EVIL.getAttack(), {
+        attackType: ReentryAttack.TransferFrom,
+        recipient: bob.address,
+        asset: USDC.address,
+        amount: 1e6
+      });
+      await EVIL.setAttack(attack);
+
+      const totalsCollateral = Object.assign({}, await comet.totalsCollateral(EVIL.address), {
+        totalSupplyAsset: 100e6,
+      });
+      await comet.setTotalsCollateral(EVIL.address, totalsCollateral);
+
+      await comet.setCollateralBalance(alice.address, EVIL.address, exp(1,6));
+      await comet.connect(alice).allow(EVIL.address, true);
+
+      // in callback, EVIL token calls transferFrom(alice.address, bob.address, 1e6)
+      await expect(
+        comet.connect(alice).withdraw(EVIL.address, 1e6)
+      ).to.be.revertedWith("custom error 'NotCollateralized()'");
+
+      // no USDC transferred
+      expect(await USDC.balanceOf(comet.address)).to.eq(100e6);
+      expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
+      expect(await USDC.balanceOf(alice.address)).to.eq(0);
+      expect(await comet.baseBalanceOf(bob.address)).to.eq(0);
+      expect(await USDC.balanceOf(bob.address)).to.eq(0);
+    });
+
+    it('is not broken by malicious reentrancy withdrawFrom', async () => {
+      const { comet, tokens, users: [alice, bob] } = await makeProtocol({
+        assets: {
+          USDC: {
+            decimals: 6
+          },
+          EVIL: {
+            decimals: 6,
+            initialPrice: 2,
+            factory: await ethers.getContractFactory('EvilToken') as EvilToken__factory,
+          }
+        }
+      });
+      const { USDC, EVIL } = <{USDC: FaucetToken, EVIL: EvilToken}>tokens;
+
+      await USDC.allocateTo(comet.address, 100e6);
+
+      const attack = Object.assign({}, await EVIL.getAttack(), {
+        attackType: ReentryAttack.WithdrawFrom,
+        recipient: bob.address,
+        asset: USDC.address,
+        amount: 1e6
+      });
+      await EVIL.setAttack(attack);
+
+      const totalsCollateral = Object.assign({}, await comet.totalsCollateral(EVIL.address), {
+        totalSupplyAsset: 100e6,
+      });
+      await comet.setTotalsCollateral(EVIL.address, totalsCollateral);
+
+      await comet.setCollateralBalance(alice.address, EVIL.address, exp(1,6));
+
+      await comet.connect(alice).allow(EVIL.address, true);
+
+      // in callback, EvilToken attempts to withdraw USDC to bob's address
+      await expect(
+        comet.connect(alice).withdraw(EVIL.address, 1e6)
+      ).to.be.revertedWith("custom error 'NotCollateralized()'");
+
+      // no USDC transferred
+      expect(await USDC.balanceOf(comet.address)).to.eq(100e6);
+      expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
+      expect(await USDC.balanceOf(alice.address)).to.eq(0);
+      expect(await comet.baseBalanceOf(bob.address)).to.eq(0);
+      expect(await USDC.balanceOf(bob.address)).to.eq(0);
+    });
+  });
+
 });
 
 describe('withdrawFrom', function () {
