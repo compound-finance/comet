@@ -340,6 +340,7 @@ describe('buyCollateral', function () {
           exp(3000, 6),
           evilAlice.address
         );
+
       await evilComet.accrue();
 
       const normalTotalsBasic = await normalComet.totalsBasic();
@@ -348,6 +349,7 @@ describe('buyCollateral', function () {
       const evilTotalsCollateral = await evilComet.totalsCollateral(evilWETH.address);
 
       expect(normalTotalsBasic.baseSupplyIndex).to.equal(evilTotalsBasic.baseSupplyIndex);
+      // XXX determine the source of the discrepency between the baseBorrowIndexes
       // expect(normalTotalsBasic.baseBorrowIndex).to.equal(evilTotalsBasic.baseBorrowIndex);
       expect(normalTotalsBasic.trackingSupplyIndex).to.equal(evilTotalsBasic.trackingSupplyIndex);
       expect(normalTotalsBasic.trackingBorrowIndex).to.equal(evilTotalsBasic.trackingBorrowIndex);
