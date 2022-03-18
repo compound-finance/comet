@@ -16,11 +16,11 @@ function assertInterestRatesMatch(expectedRate, actualRate, precision = MINIMUM_
 describe('interest rates', function () {
   it('when below kink utilization with 0.1 reserve rate', async () => {
     const params = {
-      kink: exp(8, 17), // 0.8
-      perYearInterestRateBase: exp(5, 15), // 0.005
-      perYearInterestRateSlopeLow: exp(1, 17), // 0.1
-      perYearInterestRateSlopeHigh: exp(3, 18), // 3.0
-      reserveRate: exp(1, 17) // 0.1
+      kink: exp(0.8, 18), // 80%
+      interestRateBase: exp(0.005, 18), // 0.5%
+      interestRateSlopeLow: exp(0.1, 18), // 10%
+      interestRateSlopeHigh: exp(3, 18), // 300%
+      reserveRate: exp(0.1, 18) // 10%
     };
     const { comet } = await makeProtocol(params);
     const baseIndexScale = await comet.baseIndexScale();
@@ -55,11 +55,11 @@ describe('interest rates', function () {
 
   it('when above kink utilization with 0.1 reserve rate', async () => {
     const params = {
-      kink: exp(8, 17), // 0.8
-      perYearInterestRateBase: exp(5, 15), // 0.005
-      perYearInterestRateSlopeLow: exp(1, 17), // 0.1
-      perYearInterestRateSlopeHigh: exp(3, 18), // 3.0
-      reserveRate: exp(1, 17) // 0.1
+      kink: exp(0.8, 18),
+      interestRateBase: exp(0.005, 18),
+      interestRateSlopeLow: exp(0.1, 18),
+      interestRateSlopeHigh: exp(3, 18),
+      reserveRate: exp(0.1, 18)
     };
     const { comet } = await makeProtocol(params);
     const baseIndexScale = await comet.baseIndexScale();
@@ -92,12 +92,49 @@ describe('interest rates', function () {
     assertInterestRatesMatch(exp(385, 15), borrowRate.mul(SECONDS_PER_YEAR));
   });
 
+  it('when above 100% utilization with 0.1 reserve rate', async () => {
+    const params = {
+      kink: exp(0.8, 18),
+      interestRateBase: exp(0.01, 18),
+      interestRateSlopeLow: exp(0.02, 18),
+      interestRateSlopeHigh: exp(0.1, 18),
+      reserveRate: exp(0.1, 18)
+    };
+    const { comet } = await makeProtocol(params);
+
+    const baseIndexScale = await comet.baseIndexScale();
+
+    // 110% utilization
+    const totals = {
+      trackingSupplyIndex: 0,
+      trackingBorrowIndex: 0,
+      baseSupplyIndex: baseIndexScale,
+      baseBorrowIndex: baseIndexScale,
+      totalSupplyBase: 100n,
+      totalBorrowBase: 110n,
+      lastAccrualTime: 0,
+      pauseFlags: 0,
+    };
+    await wait(comet.setTotalsBasic(totals));
+
+    const utilization = await comet.getUtilization();
+    const supplyRate = await comet.getSupplyRate();
+    const borrowRate = await comet.getBorrowRate();
+
+    expect(utilization).to.be.equal(exp(1.1, 18));
+    expect(Number(supplyRate)).to.be.lessThan(Number(borrowRate));
+    // = (0.01 + 0.02 * 0.8 + 0.1 * (1.1 - 0.8)) * (1 - 0.1) = 0.0504
+    assertInterestRatesMatch(exp(0.0504, 18), supplyRate.mul(SECONDS_PER_YEAR));
+    // = (0.01 + 0.02 * 0.8 + 0.1 * (1.1 - 0.8)) = 0.056
+    assertInterestRatesMatch(exp(0.056, 18), borrowRate.mul(SECONDS_PER_YEAR));
+  });
+
   it('with no reserve rate', async () => {
     const params = {
-      kink: exp(8, 17), // 0.8
-      perYearInterestRateBase: exp(5, 15), // 0.005
-      perYearInterestRateSlopeLow: exp(1, 17), // 0.1
-      perYearInterestRateSlopeHigh: exp(3, 18), // 3.0
+      kink: exp(0.8, 18),
+      interestRateBase: exp(0.005, 18),
+      interestRateSlopeLow: exp(0.1, 18),
+      interestRateSlopeHigh: exp(3, 18),
       reserveRate: 0
     };
     const { comet } = await makeProtocol(params);
@@ -133,11 +170,11 @@ describe('interest rates', function () {
 
   it('when 0 utilization', async () => {
     const params = {
-      kink: exp(8, 17), // 0.8
-      perYearInterestRateBase: exp(5, 15), // 0.005
-      perYearInterestRateSlopeLow: exp(1, 17), // 0.1
-      perYearInterestRateSlopeHigh: exp(3, 18), // 3.0
-      reserveRate: exp(1, 17) // 0.1
+      kink: exp(0.8, 18),
+      interestRateBase: exp(0.005, 18),
+      interestRateSlopeLow: exp(0.1, 18),
+      interestRateSlopeHigh: exp(3, 18),
+      reserveRate: exp(0.1, 18)
     };
     const { comet } = await makeProtocol(params);
     const baseIndexScale = await comet.baseIndexScale();

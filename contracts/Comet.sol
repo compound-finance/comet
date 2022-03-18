@@ -440,13 +440,13 @@ contract Comet is CometCore {
      */
     function getSupplyRate() public view returns (uint64) {
         uint utilization = getUtilization();
-        uint reserveScalingFactor = utilization * (FACTOR_SCALE - reserveRate) / FACTOR_SCALE;
+        uint scalar = min(utilization, FACTOR_SCALE) * (FACTOR_SCALE - reserveRate) / FACTOR_SCALE;
         if (utilization <= kink) {
             // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
-            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization))));
+            return safe64(mulFactor(scalar, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization))));
         } else {
             // (interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)) * utilization * (1 - reserveRate)
-            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)))));
+            return safe64(mulFactor(scalar, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)))));
         }
     }
 
@@ -638,7 +638,7 @@ contract Comet is CometCore {
      * @dev The amounts broken into repay and supply amounts, given negative balance
      */
     function repayAndSupplyAmount(int104 balance, uint104 amount) internal pure returns (uint104, uint104) {
-        uint104 repayAmount = balance < 0 ? min(unsigned104(-balance), amount) : 0;
+        uint104 repayAmount = balance < 0 ? uint104(min(unsigned104(-balance), amount)) : 0;
         uint104 supplyAmount = amount - repayAmount;
         return (repayAmount, supplyAmount);
     }
@@ -647,7 +647,7 @@ contract Comet is CometCore {
      * @dev The amounts broken into withdraw and borrow amounts, given positive balance
      */
     function withdrawAndBorrowAmount(int104 balance, uint104 amount) internal pure returns (uint104, uint104) {
-        uint104 withdrawAmount = balance > 0 ? min(unsigned104(balance), amount) : 0;
+        uint104 withdrawAmount = balance > 0 ? uint104(min(unsigned104(balance), amount)) : 0;
         uint104 borrowAmount = amount - withdrawAmount;
         return (withdrawAmount, borrowAmount);
     }
