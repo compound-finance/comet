@@ -86,11 +86,13 @@ scenario(
 
     // Albert with positive balance transfers to Betty with negative balance
     const toTransfer = 15n * scale;
-    await albert.transferAsset({ dst: betty.address, asset: baseAsset.address, amount: toTransfer });
+    const txn = await albert.transferAsset({ dst: betty.address, asset: baseAsset.address, amount: toTransfer });
 
     // Albert ends with negative balance and Betty with positive balance
     expectApproximately(await albert.getCometBaseBalance(), -5n * scale, precision);
     expectApproximately(await betty.getCometBaseBalance(), 5n * scale, precision);
+
+    return txn; // return txn to measure gas
   }
 );
 
@@ -109,7 +111,7 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
-    const precision = scale / 1_000_000n; // 1e-6 asset units of precision
+    const precision = scale / 100_000n; // 1e-5 asset units of precision
 
     expectApproximately(await albert.getCometBaseBalance(), 10n * scale, precision);
     expectApproximately(await betty.getCometBaseBalance(), -10n * scale, precision);
@@ -118,10 +120,12 @@ scenario(
 
     // Betty withdraws from Albert to repay her own borrows
     const toTransfer = 5n * scale;
-    await betty.transferAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: toTransfer });
+    const txn = await betty.transferAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: toTransfer });
 
     expectApproximately(await albert.getCometBaseBalance(), 5n * scale, precision);
     expectApproximately(await betty.getCometBaseBalance(), -5n * scale, precision);
+
+    return txn; // return txn to measure gas
   }
 );
 
