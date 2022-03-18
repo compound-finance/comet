@@ -171,12 +171,15 @@ export class CometContext {
     let comet = await this.getComet();
     let signer = (await this.deploymentManager.hre.ethers.getSigners())[1]; // dunno?
     let numAssets = await comet.numAssets();
+    console.log(`CometContext#setAssets -> numAssets: ${numAssets}`);
     let assetAddresses = [
       await comet.baseToken(),
       ...await Promise.all(Array(numAssets).fill(0).map(async (_, i) => {
         return (await comet.getAssetInfo(i)).asset;
       })),
     ];
+    console.log(`assetAddresses: ${assetAddresses}`);
+    console.log(assetAddresses);
 
     this.assets = Object.fromEntries(await Promise.all(assetAddresses.map(async (address) => {
       let erc20 = ERC20__factory.connect(address, signer);
@@ -190,6 +193,8 @@ export class CometContext {
 
     return await Promise.all([...new Array(await comet.numAssets())].map(async (_, i) => {
       let assetInfo = await comet.getAssetInfo(i);
+      console.log("getAssetConfigs");
+      console.log(`assetInfo: ${assetInfo}`);
       let decimals = await ERC20__factory.connect(assetInfo.asset, signer).decimals();
       return {
         ...assetInfo,

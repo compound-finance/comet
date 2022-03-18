@@ -5,7 +5,7 @@ import { opCodesForTransaction } from "../test/trace";
 
 scenario.only(
   'has reasonable gas for 5 collateral assets',
-  { remote_token: { mainnet: ['WBTC'] }, utilization: 0.5, defaultBaseAmount: 5000 },
+  { remote_token: { mainnet: ['WBTC', 'WETH', 'UNI'] }, defaultBaseAmount: 5000, upgrade: true },
   async ({ comet, assets, actors }, world, context) => {
     let tokenAmounts = {
       'WBTC': exp(.07, 8),

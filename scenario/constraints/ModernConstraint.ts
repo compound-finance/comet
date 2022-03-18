@@ -1,9 +1,10 @@
 import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
-import { ProtocolConfiguration, deployComet } from '../../src/deploy';
+import { ProtocolConfiguration, deployComet, getPriceFeed } from '../../src/deploy';
 import { getFuzzedRequirements } from './Fuzzing';
 import CometAsset from '../context/CometAsset';
 import { Contract } from 'ethers';
+import { ERC20, ERC20__factory } from '../../build/types';
 
 interface ModernConfig {
   upgrade: boolean;
@@ -21,11 +22,38 @@ function getModernConfigs(requirements: object): ModernConfig[] | null {
 
 export async function upgradeComet(context: CometContext, world: World, cometConfig: ProtocolConfiguration) {
   console.log('Upgrading comet to modern...');
-          
+
+  const oldComet = await context.getComet();
+  const primaryActor = await context.primaryActor().signer;
+
+  let numAssets = await oldComet.numAssets();
+  let oldCometAssets = [
+    ...await Promise.all(Array(numAssets).fill(0).map(async (_, i) => {
+      const assetInfo = await oldComet.getAssetInfo(i);
+      const erc20 = ERC20__factory.connect(assetInfo.asset, primaryActor);
+
+      return {
+        asset: assetInfo.asset,
+        priceFeed: assetInfo.priceFeed,
+        decimals: await erc20.decimals(),
+        borrowCollateralFactor: assetInfo.borrowCollateralFactor,
+        liquidateCollateralFactor: assetInfo.liquidateCollateralFactor,
+        liquidationFactor: assetInfo.liquidationFactor,
+        supplyCap: assetInfo.supplyCap
+      };
+    })),
+  ];
+
+  console.log("about to upgrade; oldCometAssets:");
+  console.log(oldCometAssets);
+
   let { comet: newComet } = await deployComet(
     context.deploymentManager,
     false,
-    cometConfig
+    {
+      ...cometConfig,
+      assetConfigs: oldCometAssets
+    }
   );
   await context.upgradeTo(newComet, world);
   await context.setAssets();

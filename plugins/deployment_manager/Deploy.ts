@@ -92,7 +92,7 @@ export async function deploy<
     factory = factory.connect(deployOpts.connect);
   }
 
-  debug(`Deploying ${contractName} with args`, deployArgs);
+  console.log(`Deploying ${contractName} with args`, deployArgs);
 
   let contract = await factory.deploy(...deployArgs);
   await contract.deployed();
@@ -114,7 +114,7 @@ export async function deploy<
 
   await maybeStoreCache(deployOpts, contract, buildFile);
 
-  debug(`Deployed ${contractName} via tx ${contract.deployTransaction?.hash}`);
+  console.log(`Deployed ${contractName} via tx ${contract.deployTransaction?.hash}`);
 
   return contract;
 }

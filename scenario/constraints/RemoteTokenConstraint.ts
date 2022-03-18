@@ -40,6 +40,9 @@ export class RemoteTokenConstraint<T extends CometContext> implements Constraint
       let currentAssets = context.assets;
       let assetConfigs = await context.getAssetConfigs();
 
+      console.log(`assetConfigs: ${assetConfigs}`);
+      console.log(assetConfigs);
+
       for (let [network, tokens] of Object.entries(parsedRequirements)) {
         let fn = networks[network];
         if (typeof fn !== 'function') {

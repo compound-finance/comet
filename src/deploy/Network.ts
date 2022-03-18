@@ -81,6 +81,8 @@ export async function deployNetworkComet(
     targetReserves,
     assetConfigs,
   };
+  console.log("Network -> assetConfigs");
+  console.log(assetConfigs);
   const comet = await deploymentManager.deploy<Comet, Comet__factory, [ConfigurationStruct]>(
     'Comet.sol',
     [configuration]

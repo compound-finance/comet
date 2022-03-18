@@ -11,9 +11,9 @@ describe('supplyTo', function () {
 
     const tx = await wait(comet.connect(alice).supply(USDC.address, 100e6));
 
-    const { totalGasCost, orderedOpcodeCounts } = await opCodesForTransaction(tx);
-    console.log(`totalGasCost: ${totalGasCost}`);
-    console.log(orderedOpcodeCounts);
+    // const { totalGasCost, orderedOpcodeCounts } = await opCodesForTransaction(tx);
+    // console.log(`totalGasCost: ${totalGasCost}`);
+    // console.log(orderedOpcodeCounts);
   });
 
   it('supplies base from sender if the asset is base', async () => {

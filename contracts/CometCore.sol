@@ -54,6 +54,21 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
     /// @dev The scale for factors
     uint64 internal constant FACTOR_SCALE = 1e18;
 
+    /// DELETE
+    function getAssetInfo(uint8 i) external view returns (AssetInfo memory) {
+        if (i >= numAssets) revert("BadAsset");
+        return AssetInfo({
+            offset: i,
+            asset: assetAddress[i],
+            priceFeed: assetPriceFeed[i],
+            scale: assetScale[i],
+            borrowCollateralFactor: assetBorrowCollateralFactor[i],
+            liquidateCollateralFactor: assetLiquidateCollateralFactor[i],
+            liquidationFactor: assetLiquidationFactor[i],
+            supplyCap: assetSupplyCap[i]
+         });
+    }
+
     /**
      * @notice Determine if the manager has permission to act on behalf of the owner
      * @param owner The owner account
