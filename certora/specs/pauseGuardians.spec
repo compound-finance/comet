@@ -5,6 +5,22 @@ import "B_cometSummarization.spec"
 ////////////////////////////////////////////////////////////////////////////////
 //
 
+/*
+    @Rule
+
+    @Description:
+        Checks supply functions are reverting if pauseSupply is true.
+
+    @Formula:
+        Supply_function@withrevert()
+        flagSupply => reverted_supply
+
+    @Notes:
+        Checked on all 3
+
+    @Link:
+        https://vaas-stg.certora.com/output/99814/67400db9f8db2ac5fc28/?anonymousKey=5a8d77cce4d9b17c991f9cd079d4197dfa79f68b
+*/
 // V@V - checks supply functions are reverting if pauseSupply is true
 rule check_pauseSupply_functionality(method f, env e) filtered {f -> all_public_supply_methods(f)} {
     bool flagSupply = get_Supply_Paused(); // summarization

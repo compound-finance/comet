@@ -92,5 +92,13 @@ contract CometHarnessGetters is Comet {
         require(success);
         return abi.decode(result, (int104));
     }
+
+    function getGovernor() public view returns (address) {
+        return governor;
+    }
+
+    function getPauseGuardian() public view returns (address) {
+        return pauseGuardian;
+    }
     
 }

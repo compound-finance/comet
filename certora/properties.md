@@ -28,7 +28,7 @@ Symbols:
 | 11 | `utilization_zero_supplyRate_zero` | DONE | ✅ | - | - |
 | 12 | `getSupplyRate_revert_characteristic` | DONE | ✅ | - | Refined |
 | 13 | `isCol_implies_not_isLiq` | DONE | ✅ | - | - |
-| 14 | `only_accrue_change_presentValue` | ✅ | - | NEW |
+| 14 | `only_accrue_change_presentValue` | DONE | ✅ | - | NEW |
 | 15 | `verify_transferAsset` | DONE | ✅ | - | NEW |
 |   |                       **Flags**                      |
 | 15 | `check_flag_updates` | DONE | ✅ | - | - |
@@ -154,6 +154,8 @@ Symbols:
 
 
 
+| 53 | `balance_change_by_allowed_only` | IN PROGRESS | 🕝 | - | NEW |
+| 54 | `governorIntegrity` | DONE | ✅ | - | NEW |
 ## Plan for upcoming weeks (End March)
 
 - A few more high-level properties
