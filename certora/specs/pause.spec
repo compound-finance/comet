@@ -5,6 +5,21 @@ import "A_setupNoSummarization.spec"
 ////////////////////////////////////////////////////////////////////////////////
 //
 
+/*
+    @Rule
+
+    @Description:
+        pause revert only if the sender is not governor or pause guardian
+
+    @Formula:
+        pause@withrevert()
+        isReverted <=> (e.msg.sender != governor() && e.msg.sender != pauseGuardian())
+
+    @
+
+    @Link:
+        https://vaas-stg.certora.com/output/44289/aec9938177320f5f4e0b/?anonymousKey=a1c9246f90a625038e25b3a898610d4c0c7d20a6
+*/
 // V@V - pause revert only if the sender is not governor or pause guardian
 rule check_flag_updates(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused){
     env e;
@@ -14,7 +29,21 @@ rule check_flag_updates(bool supplyPaused, bool transferPaused, bool withdrawPau
     assert isRevert <=> (e.msg.sender != governor() && e.msg.sender != pauseGuardian()), "reverted although sender is either governor or guardian";
 }
 
-// V@V - checks the integrity of getters  - after an update the getters retrieve same values as 
+
+/*
+    @Rule
+
+    @Description:
+        checks the integrity of getters  - after an update the getters retrieve same values as sent when called to pause
+
+    @Formula:
+        pause@withrevert(args)
+        !isRevert => pauseArg == pauseGetter
+
+    @Link:
+        https://vaas-stg.certora.com/output/44289/42b33ca481471f064fde/?anonymousKey=3f76285b08be14481b9efa4eb7e04fc60dabaa3b
+*/
+// V@V - checks the integrity of getters  - after an update the getters retrieve same values as sent when called to pause
 rule check_flag_getters(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused){
     env e;
     pause@withrevert(e, supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused);

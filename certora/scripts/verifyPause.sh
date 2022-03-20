@@ -4,6 +4,7 @@ certoraRun certora/harness/CometHarnessGetters.sol \
     --staging \
     --optimistic_loop \
     --send_only \
+    --rule check_flag_getters \
     --settings -useBitVectorTheory \
     --solc_args '["--experimental-via-ir"]' \
     --msg "pause $1"
