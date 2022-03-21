@@ -52,6 +52,7 @@ async function removeTokens(
   });
 }
 
+// XXX make sure we don't source tokens directly from the protocol
 async function addTokens(
   hre: HardhatRuntimeEnvironment,
   amount: BigNumber,
@@ -109,11 +110,12 @@ async function fetchQuery(
     if (res.length > 0) {
       return { recentLogs: res, blocksDelta: toBlock - fromBlock };
     } else {
+      let nextToBlock = fromBlock;
       let nextFrom = fromBlock - 1000;
       if (nextFrom < 0) {
         return { err: new Error('No events found by chain genesis') };
       }
-      return await fetchQuery(contract, filter, nextFrom, toBlock);
+      return await fetchQuery(contract, filter, nextFrom, nextToBlock);
     }
   } catch (err) {
     if (err.message.includes("query returned more")) {

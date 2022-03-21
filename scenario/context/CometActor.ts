@@ -74,6 +74,11 @@ export default class CometActor {
     ).wait();
   }
 
+  async supplyAsset({ asset, amount }): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).supply(asset, amount)).wait();
+  }
+
   async transferAsset({ dst, asset, amount }): Promise<ContractReceipt> {
     let comet = await this.context.getComet();
     return await (await comet.connect(this.signer).transferAsset(dst, asset, amount)).wait();
