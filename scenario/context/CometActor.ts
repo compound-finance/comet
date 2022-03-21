@@ -46,6 +46,11 @@ export default class CometActor {
     return this.signer.getBalance();
   }
 
+  async getCometBaseBalance(): Promise<bigint> {
+    let comet = await this.context.getComet();
+    return (await comet.baseBalanceOf(this.signer.address)).toBigInt();
+  }
+
   async sendEth(recipient: AddressLike, amount: number) {
     let tx = await this.signer.sendTransaction({
       to: resolveAddress(recipient),
@@ -87,6 +92,11 @@ export default class CometActor {
   async transferAssetFrom({ src, dst, asset, amount }): Promise<ContractReceipt> {
     let comet = await this.context.getComet();
     return await (await comet.connect(this.signer).transferAssetFrom(src, dst, asset, amount)).wait();
+  }
+
+  async withdrawAsset({ asset, amount }): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).withdraw(asset, amount)).wait();
   }
 
   async signAuthorization({

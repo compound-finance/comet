@@ -4,58 +4,7 @@ import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { BigNumber } from 'ethers';
 import { exp } from '../../test/helpers';
-import CometAsset from '../context/CometAsset';
-
-function matchGroup(str, patterns) {
-  for (const k in patterns) {
-    const match = patterns[k].exec(str);
-    if (match) return { [k]: match[1] };
-  }
-  throw new Error(`No match for ${str} in ${patterns}`);
-}
-
-// `amount` should be the unit amount of an asset instead of the gwei amount
-function parseAmount(amount) {
-  switch (typeof amount) {
-    case 'bigint':
-      return { $gte: Number(amount) };
-    case 'number':
-      return { $gte: amount };
-    case 'string':
-      return matchGroup(amount, {
-        $gte: />=\s*(\d+)/,
-        $gt: />\s*(\d+)/,
-        $lte: /<=\s*(\d+)/,
-        $lt: /<\s*(\d+)/,
-        $eq: /==\s*(\d+)/,
-      });
-    case 'object':
-      return amount;
-    default:
-      throw new Error(`Unrecognized amount: ${amount}`);
-  }
-}
-
-async function getAssetFromName(name: string, context: CometContext): Promise<CometAsset> {
-  let comet = await context.getComet(); // TODO: can optimize by taking this as an arg instead
-  if (name.startsWith('$')) {
-    const collateralAssetRegex = /asset[0-9]+/;
-    const baseAssetRegex = /base/;
-    let asset: string;
-    if (collateralAssetRegex.test(name)) {
-      // If name matches regex, e.g. "$asset10"
-      const assetIndex = name.match(/[0-9]+/g)[0];
-      ({ asset } = await comet.getAssetInfo(assetIndex));
-    } else if (baseAssetRegex.test(name)) {
-      // If name matches "base"
-      asset = await comet.baseToken();
-    }
-    return context.getAssetByAddress(asset);
-  } else {
-    // If name doesn't match regex, try to find the asset directly from the assets list
-    return context.assets[name];
-  }
-}
+import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount } from './utils';
 
 export class BalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, initialContext: T, initialWorld: World) {
@@ -83,22 +32,24 @@ export class BalanceConstraint<T extends CometContext, R extends Requirements> i
           const asset = await getAssetFromName(assetName, context)
           for (const actorName in actorsByAsset[assetName]) {
             const actor = context.actors[actorName];
-            const amount = actorsByAsset[assetName][actorName];
+            const amount: ComparativeAmount = actorsByAsset[assetName][actorName];
             const balance = await asset.balanceOf(actor.address);
             const decimals = await asset.token.decimals();
             let toTransfer = 0n;
-            if (amount.$eq) {
-              toTransfer = exp(amount.$eq, decimals) - balance;
-            } else if (amount.$gte) {
-              toTransfer = exp(amount.$gte, decimals) - balance;
-            } else if (amount.$lte) {
-              toTransfer = exp(amount.$lte, decimals) - balance;
-            } else if (amount.$gt) {
-              toTransfer = exp(amount.$gt, decimals) - balance + 1n;
-            } else if (amount.$lt) {
-              toTransfer = exp(amount.$lt, decimals) - balance - 1n;
-            } else {
-              throw new Error(`Bad amount: ${amount}`);
+            switch (amount.op) {
+              case ComparisonOp.EQ:
+              case ComparisonOp.GTE:
+              case ComparisonOp.LTE:        
+                toTransfer = exp(amount.val, decimals) - balance;
+                break;
+              case ComparisonOp.GT:
+                toTransfer = exp(amount.val, decimals) - balance + 1n;
+                break;
+              case ComparisonOp.LT:
+                toTransfer = exp(amount.val, decimals) - balance - 1n;
+                break;
+              default:
+                throw new Error(`Bad amount: ${amount}`);
             }
             await context.sourceTokens(world, toTransfer, asset.address, actor.address);
           }
@@ -119,16 +70,22 @@ export class BalanceConstraint<T extends CometContext, R extends Requirements> i
           const amount = parseAmount(rawAmount);
           const balance = BigNumber.from(await asset.balanceOf(actor.address));
           const decimals = await asset.token.decimals();
-          if (amount.$eq) {
-            expect(balance).to.equal(exp(amount.$eq, decimals));
-          } else if (amount.$gte) {
-            expect(balance).to.be.at.least(exp(amount.$gte, decimals));
-          } else if (amount.$lte) {
-            expect(balance).to.be.at.most(exp(amount.$lte, decimals));
-          } else if (amount.$gt) {
-            expect(balance).to.be.above(exp(amount.$gt, decimals));
-          } else if (amount.$lt) {
-            expect(balance).to.be.below(exp(amount.$lt, decimals));
+          switch (amount.op) {
+            case ComparisonOp.EQ:
+              expect(balance).to.equal(exp(amount.val, decimals));
+              break;
+            case ComparisonOp.GTE:
+              expect(balance).to.be.at.least(exp(amount.val, decimals));
+              break;
+            case ComparisonOp.LTE:        
+              expect(balance).to.be.at.most(exp(amount.val, decimals));
+              break;
+            case ComparisonOp.GT:
+              expect(balance).to.be.above(exp(amount.val, decimals));
+              break;
+            case ComparisonOp.LT:
+              expect(balance).to.be.below(exp(amount.val, decimals));
+              break;
           }
         }
       }

@@ -9,6 +9,7 @@ import {
   RemoteTokenConstraint,
   UtilizationConstraint,
   BaseTokenProtocolBalanceConstraint,
+  CometBalanceConstraint
 } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
@@ -256,6 +257,7 @@ async function forkContext(c: CometContext): Promise<CometContext> {
 export const constraints = [
   new ModernConstraint(),
   new PauseConstraint(),
+  new CometBalanceConstraint(),
   new BalanceConstraint(),
   new RemoteTokenConstraint(),
   new UtilizationConstraint(),
