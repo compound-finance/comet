@@ -103,9 +103,11 @@ invariant collateral_totalSupply_LE_supplyCap(address asset)
     getTotalsSupplyAsset(asset) <= getAssetSupplyCapByAddress(asset)
 
 // B@B -
-rule borrow_then_collateralized(address user, address asset, method f) filtered {f -> !similarFunctions(f) && !f.isView } {
+rule borrow_then_collateralized(address user, address asset, method f) filtered {f -> !similarFunctions(f) && !f.isView && !f.isFallback} {
     env e;
-    require getPrincipal(user) < 0 => isBorrowCollateralized(user);
+    simplifiedAssumptions();
+    require(getAssetOffsetByAsset(e,asset) == 0);
+    require getPrincipal(user) < 0 => isBorrowCollateralized(e, user);
     call_functions_with_specific_asset(f, e, asset);
-    assert getPrincipal(user) < 0 => isBorrowCollateralized(user);
+    assert getPrincipal(user) < 0 => isBorrowCollateralized(e, user);
 }
