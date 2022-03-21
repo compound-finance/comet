@@ -528,7 +528,7 @@ contract Comet is CometCore {
                 ));
 
                 console.log("liquidity after asset no.: %s", i);
-
+                console.logInt(liquidity);
             }
         }
 

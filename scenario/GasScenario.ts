@@ -28,7 +28,6 @@ scenario.only(
       // console.log("gas", token, asset, await primary.getCollateralBalance(asset));
     }
 
-    // await comet.connect(primary.signer).withdraw(await comet.baseToken(), exp(10, 6));
     let tx = await wait(comet.connect(primary.signer).withdraw(await comet.baseToken(), exp(1500, 6)));
     console.log({tx})
 
