@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: XXX
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.13;
 
 /**
  * @title Standard ERC20 token
