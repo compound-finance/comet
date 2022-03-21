@@ -91,27 +91,6 @@ rule antiMonotonicityOfAbsorb(address absorber, address account) {
     
 }
 
-// ?@? - 
-rule buyCol_then_withdraw(address account, uint amount){
-    env e;
-    require e.msg.sender != currentContract;
-    
-    storage init = lastStorage;
-
-    address asset; address recipient; address operator;
-    uint minAmount; uint baseAmount;
-    
-    require asset != currentContract && recipient != currentContract;
-    require asset != account && recipient != account && asset != recipient && asset != operator; /* gadi? why this require - apple is not an orange? */ 
-    require !get_Withdraw_Paused() /* && hasPermission(e,account,operator) */;
-
-    withdraw(e, account, amount);
-    buyCollateral(e, asset, minAmount, baseAmount, recipient) at init;
-    invoke withdraw(e, account, amount);
-
-    assert !lastReverted;
-}
-
 
 // V@V - The same account cannot be absorbed after already absorbed
 rule canNot_double_absorb(address absorber, address account) {

@@ -285,33 +285,6 @@ rule getSupplyRate_revert_characteristic(){
 }
 
 
-// V@V - Calling to accrue is the only way to change presentValue
-rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
-    env e; calldataarg args;
-  
-  call_accrueInternal(e); // maybe change to lastAccrualTime == nowInternal
-
-  int104 principal;
-  int104 presentValue1 = call_presentValue(principal);
-        f(e,args);
-  int104 presentValue2 = call_presentValue(principal);
-  
-  assert presentValue1 == presentValue2;
-}
-
-
-// B@B - at a point in time where user is collateralized, no action will change its status to uncollateralized
-rule verify_isBorrowCollateralized(address account, method f)filtered { f-> !similarFunctions(f) && !f.isView }{
-    env e; calldataarg args;
-    simplifiedAssumptions();
-
-    require getlastAccrualTime() == call_getNowInternal(e);
-    require isBorrowCollateralized(e,account);
-    f(e,args) ;
-    assert isBorrowCollateralized(e,account);
-}
-
-
 // F@F - reserves cannot have negative value
 // Found bug - Accrue should be called at the beginning of withdrawReserves()
 rule withdraw_more_reserves(address to , uint amount){
@@ -323,27 +296,4 @@ rule withdraw_more_reserves(address to , uint amount){
     int reserves = getReserves(e);
 
     assert reserves >= 0;
-}
-
-
-// V@V - transfer should not change the combine presentValue of src and dst
-rule verify_transferAsset(){
-    env e;
-
-    address src;
-    address dst;
-    address asset;
-    uint amount;
-
-    simplifiedAssumptions();
-
-    mathint presentValue_src1 = to_mathint(call_presentValue(getPrincipal(e,src)));
-    mathint presentValue_dst1 = to_mathint(call_presentValue(getPrincipal(e,dst)));
-
-    transferAssetFrom(e, src, dst, asset, amount);
-
-    mathint presentValue_src2 = to_mathint(call_presentValue(getPrincipal(e,src)));
-    mathint presentValue_dst2 = to_mathint(call_presentValue(getPrincipal(e,dst)));
-
-    assert presentValue_src1 + presentValue_dst1 == presentValue_src2 + presentValue_dst2;
 }

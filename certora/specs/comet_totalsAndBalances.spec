@@ -80,7 +80,7 @@ invariant totalCollateralPerAssetVsAssetBalance(address asset)
 */
 invariant base_balance_vs_totals()
 _baseToken.balanceOf(currentContract) >= getTotalSupplyBase() - getTotalBorrowBase()
-filtered { f-> !similarFunctions(f) && !f.isView /*&& f.selector!=absorb(address, address[]).selector*/ }
+filtered { f-> !similarFunctions(f) && !f.isView && f.selector!=absorb(address, address[]).selector }
     {
         preserved with (env e){
             simplifiedAssumptions();

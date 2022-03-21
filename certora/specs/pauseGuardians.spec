@@ -22,7 +22,7 @@ import "B_cometSummarization.spec"
     @Link:
         https://vaas-stg.certora.com/output/44289/a534afa257cbbaba166f/?anonymousKey=d9dba8d11b27e6080c0be78fcf34faa6a82404aa
 */
-// V@V - checks supply functions are reverting if pauseSupply is true
+
 rule check_pauseSupply_functionality(method f, env e) filtered {f -> all_public_supply_methods(f)} {
     bool flagSupply = get_Supply_Paused(); // summarization
 
@@ -62,7 +62,7 @@ rule check_pauseSupply_functionality(method f, env e) filtered {f -> all_public_
     @Link:
         https://vaas-stg.certora.com/output/44289/e68f2912fa8d9255c585/?anonymousKey=ac6a6b3111e00a489fbb327f5e1ca203d06e85c1
 */
-// V@V - checks transfer functions are reverting if pauseTransfer is true
+
 rule check_pauseTransfer_functionality(method f, env e) filtered {f -> all_public_transfer_methods(f)} {
     bool flagTransfer = get_Transfer_Paused(); // summarization
     
@@ -99,7 +99,7 @@ rule check_pauseTransfer_functionality(method f, env e) filtered {f -> all_publi
     @Link:
         https://vaas-stg.certora.com/output/44289/94e8584987759917a93a/?anonymousKey=465e987cc0aed5c9db75b6e9a776813262e313bd
 */
-// V@V - checks withdraw functions are reverting if pauseWithdraw is true
+
 rule check_pauseWithdraw_functionality(method f, env e) filtered {f -> all_public_withdraw_methods(f)} {
     bool flagWithdraw = get_Withdraw_Paused(); // summarization
 
@@ -139,7 +139,7 @@ rule check_pauseWithdraw_functionality(method f, env e) filtered {f -> all_publi
     @Link:
         https://vaas-stg.certora.com/output/44289/c814d6d628223a274101/?anonymousKey=caf7b0c67138f130be7bc804ce41985da2e7e4f8
 */
-// V@V - checks absorb functions are reverting if pauseAbsorb is true
+
 rule check_pauseAbsorb_functionality(method f, env e) filtered {f -> all_public_absorb_methods(f)} {
     bool flagAbsorb = get_Absorb_Paused(); // summarization
 
@@ -171,7 +171,7 @@ rule check_pauseAbsorb_functionality(method f, env e) filtered {f -> all_public_
     @Link:
         https://vaas-stg.certora.com/output/44289/5404a5c669fcf693ad06/?anonymousKey=27a47ff7f88d83cd7861c85bf676e6f947c6d5c4
 */
-// V@V - checks buy functions are reverting if pauseBuy is true
+
 rule check_pauseBuy_functionality(method f, env e) filtered {f -> all_public_buy_methods(f)} {
     bool flagBuy = get_Buy_Paused(); // summarization
 
