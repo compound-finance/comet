@@ -21,13 +21,16 @@ function getModernConfigs(requirements: object): ModernConfig[] | null {
 
 export async function upgradeComet(context: CometContext, world: World, cometConfig: ProtocolConfiguration) {
   console.log('Upgrading comet to modern...');
-          
-  let { comet: newComet } = await deployComet(
+
+  let { comet: newComet, configurationStruct } = await deployComet(
     context.deploymentManager,
     false,
     cometConfig
   );
-  await context.upgradeTo(newComet, world);
+
+  const data = (await newComet.populateTransaction.initializeStorage(configurationStruct)).data;
+
+  await context.upgradeTo(newComet, world, data);
   await context.setAssets();
   await context.spider();
 

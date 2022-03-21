@@ -101,12 +101,13 @@ export async function deployNetworkComet(
     >('vendor/proxy/TransparentUpgradeableProxy.sol', [
       comet.address,
       proxyAdmin.address,
-      (await comet.populateTransaction.initializeStorage()).data,
+      (await comet.populateTransaction.initializeStorage(configuration)).data,
     ]);
   }
 
   return {
     comet,
     proxy,
+    configurationStruct: configuration
   };
 }

@@ -6,7 +6,7 @@ import {
   ERC20,
   TransparentUpgradeableProxy,
 } from '../../build/types';
-import { AssetConfigStruct } from '../../build/types/Comet';
+import { AssetConfigStruct, ConfigurationStruct } from '../../build/types/Comet';
 import { BigNumberish } from 'ethers';
 import { deployNetworkComet } from './Network';
 import { deployDevelopmentComet } from './Development';
@@ -46,6 +46,7 @@ export interface DeployedContracts {
   comet: Comet;
   proxy: TransparentUpgradeableProxy | null;
   tokens?: ERC20[];
+  configurationStruct: ConfigurationStruct
 }
 
 export async function deployComet(
@@ -64,6 +65,7 @@ export async function deployComet(
   }
 }
 
+/*
 export function getPriceFeed(name: string, network: string): string {
   let networkFeeds = priceFeeds[network];
   if (!networkFeeds) {
@@ -75,3 +77,4 @@ export function getPriceFeed(name: string, network: string): string {
   }
   return priceFeed;
 }
+*/

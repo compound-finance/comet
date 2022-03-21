@@ -1,21 +1,36 @@
 import { DeploymentManager, getNetwork } from '../../plugins/deployment_manager/DeploymentManager';
-import { Contract } from 'ethers';
+import { Contract, VoidSigner } from 'ethers';
 import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import { requireString, requireList } from './utils';
-import * as Mainnet from '../../src/deploy/mainnet/CloneTokens';
-import { getPriceFeed } from '../../src/deploy';
+// import * as Mainnet from '../../src/deploy/mainnet/CloneTokens';
+import { deployToken as deployMainnetToken } from '../../src/deploy/mainnet/CloneTokens';
+import { clonePriceFeed as cloneMainnetPriceFeed } from '../../src/deploy/mainnet/ClonePriceFeeds';
+// import { getPriceFeed } from '../../src/deploy';
 import { upgradeComet } from './ModernConstraint';
 import { exp, wait } from '../../test/helpers';
 
-const networks: {
-  [network: string]: (
-    name: string,
-    deploymentManager: DeploymentManager,
-    signerAddress: string
-  ) => Promise<Contract>;
+type DeployTokenFn = (
+  name: string,
+  deploymentManager: DeploymentManager,
+  signerAddress: string
+) => Promise<Contract>;
+
+type DeployPriceFeedFn = (
+  name: string,
+  deploymentManager: DeploymentManager
+) => Promise<Contract>;
+
+const deployFunctions: {
+  [network: string]: {
+    deployTokenFn: DeployTokenFn,
+    deployPriceFeedFn: DeployPriceFeedFn
+  },
 } = {
-  mainnet: Mainnet.deployToken,
+  mainnet: {
+    deployTokenFn: deployMainnetToken,
+    deployPriceFeedFn: cloneMainnetPriceFeed
+  }
 };
 
 interface RemoteTokenConfig {
@@ -41,8 +56,8 @@ export class RemoteTokenConstraint<T extends CometContext> implements Constraint
       let assetConfigs = await context.getAssetConfigs();
 
       for (let [network, tokens] of Object.entries(parsedRequirements)) {
-        let fn = networks[network];
-        if (typeof fn !== 'function') {
+        const { deployTokenFn, deployPriceFeedFn } = deployFunctions[network];
+        if (typeof deployTokenFn !== 'function') {
           throw new Error(`Unknown network for remote token: ${network}`);
         }
         for (let symbol of tokens) {
@@ -50,12 +65,14 @@ export class RemoteTokenConstraint<T extends CometContext> implements Constraint
             console.log(`Comet already registered ${symbol}`);
           } else {
             console.log(`Registered remote token ${network} ${symbol}`);
-            let token = await fn(symbol, context.deploymentManager, context.primaryActor().address);
+            let token = await deployTokenFn(symbol, context.deploymentManager, context.primaryActor().address);
             let decimals = await token.decimals();
+
+            const priceFeed = await deployPriceFeedFn(symbol, context.deploymentManager); // add configuration options to set price?
 
             assetConfigs.push({
               asset: token.address,
-              priceFeed: getPriceFeed(symbol, getNetwork(context.deploymentManager.deployment)),
+              priceFeed: priceFeed.address,
               decimals,
               borrowCollateralFactor: exp(1, 18),
               liquidateCollateralFactor: exp(1, 18),

@@ -5,7 +5,7 @@ import { opCodesForTransaction } from "../test/trace";
 
 scenario.only(
   'has reasonable gas for 5 collateral assets',
-  { remote_token: { mainnet: ['WBTC'] }, utilization: 0.5, defaultBaseAmount: 5000 },
+  { remote_token: { mainnet: ['WBTC', 'WETH', 'UNI'] }, utilization: 0.5, defaultBaseAmount: 5000, upgrade: true },
   async ({ comet, assets, actors }, world, context) => {
     let tokenAmounts = {
       'WBTC': exp(.07, 8),
@@ -20,15 +20,19 @@ scenario.only(
       let asset = assets[token]!;
       // await context.sourceTokens(world, amount, asset, primary);
       await asset.approve(primary, comet); //
+
       await asset.token.connect(minter).transfer(
         primary.address,
         amount
       );
+
       await comet.connect(primary.signer).supply(asset.address, amount);
-      // console.log("gas", token, asset, await primary.getCollateralBalance(asset));
+      console.log("gas", token, asset, await primary.getCollateralBalance(asset));
     }
 
-    await comet.connect(primary.signer).withdraw(await comet.baseToken(), exp(10, 6));
+    console.log(`await comet.decimals(): ${await comet.decimals()}`);
+
+    // await comet.connect(primary.signer).withdraw(await comet.baseToken(), exp(10, 6));
     let tx = await wait(comet.connect(primary.signer).withdraw(await comet.baseToken(), exp(1500, 6)));
     console.log({tx})
 
@@ -39,6 +43,5 @@ scenario.only(
     console.log(`totalGasCost: ${totalGasCost}`);
     console.log(`opcodeGasTotal: ${opcodeGasTotal}`);
     console.log(orderedOpcodeCounts);
-
   }
 );

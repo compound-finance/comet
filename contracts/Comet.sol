@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity ^0.8.11;
 
+/* DELETE */
+import "hardhat/console.sol";
+
 import "./CometCore.sol";
 import "./ERC20.sol";
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
@@ -99,23 +102,34 @@ contract Comet is CometCore {
             baseToken = config.baseToken;
             baseTokenPriceFeed = config.baseTokenPriceFeed;
             extensionDelegate = config.extensionDelegate;
-            storeFrontPriceFactor = config.storeFrontPriceFactor;
 
             decimals = decimals_;
             baseScale = uint64(10 ** decimals_);
             trackingIndexScale = config.trackingIndexScale;
             accrualDescaleFactor = baseScale / 1e6;
+        }
 
-            baseMinForRewards = config.baseMinForRewards;
+        // Initialize storage
+        initializeStorage(config);
+    }
+
+    /**
+     * @notice Initialize storage for the contract
+     * @dev Can be used from constructor or proxy
+     */
+    function initializeStorage(Configuration memory config) public {
+        // if (lastAccrualTime != 0) revert AlreadyInitialized();
+
+        unchecked {
+            storeFrontPriceFactor = config.storeFrontPriceFactor;
+            targetReserves = config.targetReserves;
             baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
             baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
 
+            baseMinForRewards = config.baseMinForRewards;
             baseBorrowMin = config.baseBorrowMin;
-            targetReserves = config.targetReserves;
-        }
 
-        // Set interest rate model configs
-        unchecked {
+            // Set interest rate model configs
             kink = config.kink;
             perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
             perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
@@ -138,23 +152,26 @@ contract Comet is CometCore {
             assetSupplyCap[i] = assetConfig.supplyCap;
         }
 
-        // Initialize storage
-        initializeStorage();
-    }
-
-    /**
-     * @notice Initialize storage for the contract
-     * @dev Can be used from constructor or proxy
-     */
-    function initializeStorage() public {
-        if (lastAccrualTime != 0) revert AlreadyInitialized();
-
         // Initialize aggregates
         lastAccrualTime = getNowInternal();
         baseSupplyIndex = BASE_INDEX_SCALE;
         baseBorrowIndex = BASE_INDEX_SCALE;
         trackingSupplyIndex = 0;
         trackingBorrowIndex = 0;
+    }
+
+    function getAssetInfo(uint8 i) external view returns (AssetInfo memory) {
+        if (i >= numAssets) revert BadAsset();
+        return AssetInfo({
+            offset: i,
+            asset: assetAddress[i],
+            priceFeed: assetPriceFeed[i],
+            scale: assetScale[i],
+            borrowCollateralFactor: assetBorrowCollateralFactor[i],
+            liquidateCollateralFactor: assetLiquidateCollateralFactor[i],
+            liquidationFactor: assetLiquidationFactor[i],
+            supplyCap: assetSupplyCap[i]
+         });
     }
 
     /**
@@ -265,11 +282,15 @@ contract Comet is CometCore {
             uint64(baseScale)
         );
 
+        console.log("initial liquidity:");
+        console.logInt(liquidity);
+
         for (uint8 i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
                 if (liquidity >= 0) {
                     return true;
                 }
+                console.log("collateralizing with asset no.: %s", i);
 
                 uint newAmount = mulPrice(
                     userCollateral[account][assetAddress[i]].balance,
@@ -280,8 +301,14 @@ contract Comet is CometCore {
                     newAmount,
                     assetBorrowCollateralFactor[i]
                 ));
+
+                console.log("liquidity after asset no.: %s", i);
+                console.logInt(liquidity);
             }
         }
+
+        console.log("final liquidity:");
+        console.logInt(liquidity);
 
         return liquidity >= 0;
     }

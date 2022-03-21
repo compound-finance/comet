@@ -180,7 +180,7 @@ export async function deployDevelopmentComet(
     >('vendor/proxy/TransparentUpgradeableProxy.sol', [
       comet.address,
       proxyAdmin.address,
-      (await comet.populateTransaction.initializeStorage()).data,
+      (await comet.populateTransaction.initializeStorage(configuration)).data,
     ]);
 
     await deploymentManager.putRoots(new Map([['comet', proxy.address]]));
@@ -190,5 +190,6 @@ export async function deployDevelopmentComet(
     comet,
     proxy,
     tokens: [dai, gold, silver],
+    configurationStruct: configuration
   };
 }

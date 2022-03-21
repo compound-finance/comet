@@ -21,7 +21,7 @@ import { expect } from 'chai';
 
   * Example: `{ utilization: 0.5 }` to target 50% utilization (borrows / supply).
   * Note: if utilization is passed as 0, this will target either borrows=0 or supply=0
-  * 
+  *
   * * Example: `{ utilization: 0.5, defaultBaseAmount: 10 }` to target 50% utilization with a base amount 10 units of the token (if none exists already)
 **/
 
@@ -102,7 +102,11 @@ export class UtilizationConstraint<T extends CometContext> implements Constraint
           });
 
           await baseToken.approve(supplyActor, comet);
+          console.log("UtilizationConstraint -> sourceTokens called");
           await context.sourceTokens(world, toSupplyBase, baseToken, supplyActor);
+          console.log("about to supplyBase");
+          console.log(`comet.address: ${comet.address}`);
+          console.log(`await comet.baseMinForRewards(): ${await comet.baseMinForRewards()}`);
           await comet.connect(supplyActor.signer).supply(baseToken.address, toSupplyBase);
         }
 
