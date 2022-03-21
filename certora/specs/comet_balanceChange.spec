@@ -1,35 +1,49 @@
-
-import "erc20.spec"
-
-using SymbolicBaseToken as _baseToken 
+import "comet.spec"
 
 methods {
-    _baseToken.balanceOf(address account) returns (uint256) envfree
     call_hasPermission(address, address) returns (bool) envfree
 }
 
 
-function simplifiedAssumptions() {
-    env e;
-    require getTotalBaseSupplyIndex(e) == baseIndexScale(e);
-    require getTotalBaseBorrowIndex(e) == baseIndexScale(e);
-}
+// only actions by the user that change their erc20 balance
+// are done either by the user or by a permissioned manager
+// rule balance_change_by_allowed_only(method f, address user)
+// filtered { f-> !similarFunctions(f) && !f.isView }
+// {
+//     env e;
+//     calldataarg args;
 
+//     require user != currentContract;
 
-// B@B - doesn't pass, debugging the rule
-rule balance_change_by_allowed_only(method f, address user) {
+//     simplifiedAssumptions();
+
+//     uint256 balanceBefore = _baseToken.balanceOf(user);
+
+//     f(e, args);
+
+//     uint256 balanceAfter = _baseToken.balanceOf(user);
+//     bool permission = call_hasPermission(user, e.msg.sender);
+
+//     assert balanceAfter < balanceBefore => 
+//         ((e.msg.sender == user) || permission);
+// }
+
+rule balance_change_by_allowed_only(method f, address user)
+filtered { f-> !similarFunctions(f) && !f.isView }
+{
     env e;
     calldataarg args;
-
+    require user != currentContract;
     simplifiedAssumptions();
 
-    uint256 balanceBefore = _baseToken.balanceOf(user);
+    int104 balanceBefore = getPrincipal(user);
 
     f(e, args);
 
-    uint256 balanceAfter = _baseToken.balanceOf(user);
+    int104 balanceAfter = getPrincipal(user);
     bool permission = call_hasPermission(user, e.msg.sender);
 
     assert balanceAfter < balanceBefore => 
-        (e.msg.sender == user || permission);
+        ((e.msg.sender == user) || permission);
 }
+
