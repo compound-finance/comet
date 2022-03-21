@@ -12,7 +12,7 @@ methods {
     latestRoundData() returns uint256 => DISPATCHER(true);
 
     //todo - move to setup?
-    isBorrowCollateralized(address) returns bool envfree
+    isBorrowCollateralized(address) returns bool 
     getUserCollateralBalance(address,address) returns uint128 envfree
 
     baseToken() returns address envfree
@@ -69,6 +69,10 @@ function call_functions_with_specific_asset(method f, env e, address asset) retu
         transferAsset(e, account_, asset, amount);
 	} else if (f.selector == transferAssetFrom(address, address, address, uint).selector) {
         transferAssetFrom(e, _account, account_, asset, amount);
+	} else if (f.selector == transferAssetFromBase(address, address, address, uint).selector) {
+        transferAssetFromBase(e, _account, account_, asset, amount);
+	} else if (f.selector == transferAssetFromAsset(address, address, address, uint).selector) {
+        transferAssetFromAsset(e, _account, account_, asset, amount);
 	} else if (f.selector == withdraw(address, uint).selector) {
         withdraw(e, asset, amount);
 	} else if (f.selector == withdrawTo(address, address, uint).selector) {
