@@ -4,7 +4,7 @@ import { exp, wait } from '../test/helpers';
 
 scenario.only(
   'has reasonable gas for 5 collateral assets',
-  { remote_token: { mainnet: ['WBTC'] }, utilization: 0.5, defaultBaseAmount: 5000 },
+  { remote_token: { mainnet: ['WBTC', 'WETH', 'UNI'] }, utilization: 0.5, defaultBaseAmount: 5000, upgrade: true },
   async ({ comet, assets, actors }, world, context) => {
     let tokenAmounts = {
       'WBTC': exp(10, 8),
@@ -27,7 +27,7 @@ scenario.only(
       console.log("gas", token, asset, await primary.getCollateralBalance(asset));
     }
 
-    await comet.connect(primary.signer).withdraw(await comet.baseToken(), exp(10, 6));
+    // await comet.connect(primary.signer).withdraw(await comet.baseToken(), exp(10, 6));
     let tx = await wait(comet.connect(primary.signer).withdraw(await comet.baseToken(), exp(1500, 6)));
     console.log({tx})
   }

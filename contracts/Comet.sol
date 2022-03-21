@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity ^0.8.11;
 
+/* DELETE */
+import "hardhat/console.sol";
+
 import "./CometCore.sol";
 import "./ERC20.sol";
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
@@ -502,11 +505,16 @@ contract Comet is CometCore {
             uint64(baseScale)
         );
 
+        console.log("initial liquidity:");
+        console.logInt(liquidity);
+
         for (uint8 i = 0; i < numAssets; i++) {
             if (isInAsset(assetsIn, i)) {
                 if (liquidity >= 0) {
                     return true;
                 }
+
+                console.log("collateralizing with asset no.: %s", i);
 
                 AssetInfo memory asset = getAssetInfo(i);
                 uint newAmount = mulPrice(
@@ -518,8 +526,14 @@ contract Comet is CometCore {
                     newAmount,
                     asset.borrowCollateralFactor
                 ));
+
+                console.log("liquidity after asset no.: %s", i);
+
             }
         }
+
+        console.log("final liquidity:");
+        console.logInt(liquidity);
 
         return liquidity >= 0;
     }
