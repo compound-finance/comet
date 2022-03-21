@@ -15,23 +15,23 @@ methods{
     perSecondInterestRateSlopeLow() returns (uint256) envfree;
     perSecondInterestRateSlopeHigh() returns (uint256) envfree;
     kink() returns (uint256) envfree;
-    baseIndexScale() returns (uint64) envfree;
+    getBaseIndexScale() returns (uint64) envfree;
     targetReserves() returns (uint256) envfree;
     latestRoundData() returns (uint256) => DISPATCHER(true);
     get_FACTOR_SCALE() returns (uint64) envfree
 }
 
 // BaseSupplyIndex and BaseBorrowIndex are monotonically increasing variables
-// proved in supplyIndex_borrowIndex_GE_baseIndexScale.
+// proved in supplyIndex_borrowIndex_GE_getBaseIndexScale.
 function setup(env e){
-    require getBaseSupplyIndex() >= baseIndexScale() &&
-        getBaseBorrowIndex() >= baseIndexScale();
+    require getBaseSupplyIndex() >= getBaseIndexScale() &&
+        getBaseBorrowIndex() >= getBaseIndexScale();
 }
 
 // The supply index and borrow index are set to the initial value - simplify computation
 function simplifiedAssumptions() {
-    require getBaseSupplyIndex() == baseIndexScale();
-    require getBaseBorrowIndex() == baseIndexScale();
+    require getBaseSupplyIndex() == getBaseIndexScale();
+    require getBaseBorrowIndex() == getBaseIndexScale();
 }
 
 /* 
@@ -191,11 +191,11 @@ rule isCol_implies_not_isLiq(address account){
 
 /* 
     Description :  
-     Verifies that TotalBaseSupplyIndex and getBaseBorrowIndex always greater than baseIndexScale
+     Verifies that TotalBaseSupplyIndex and getBaseBorrowIndex always greater than getBaseIndexScale
 
     formula : 
-        getBaseSupplyIndex() >= baseIndexScale() &&
-        getBaseBorrowIndex() >= baseIndexScale();
+        getBaseSupplyIndex() >= getBaseIndexScale() &&
+        getBaseBorrowIndex() >= getBaseIndexScale();
 
     status : proved
 
@@ -205,15 +205,15 @@ rule isCol_implies_not_isLiq(address account){
 */
 // V@V - BaseSupplyIndex and BaseBorrowIndex are monotonically increasing variables
 // proved to be used in other rules.
-rule supplyIndex_borrowIndex_GE_baseIndexScale(){
+rule supplyIndex_borrowIndex_GE_getBaseIndexScale(){
     env e;
-    require getBaseSupplyIndex() >= baseIndexScale() &&
-        getBaseBorrowIndex() >= baseIndexScale();
+    require getBaseSupplyIndex() >= getBaseIndexScale() &&
+        getBaseBorrowIndex() >= getBaseIndexScale();
     
     call_accrueInternal(e);
 
-    assert getBaseSupplyIndex() >= baseIndexScale() &&
-        getBaseBorrowIndex() >= baseIndexScale();
+    assert getBaseSupplyIndex() >= getBaseIndexScale() &&
+        getBaseBorrowIndex() >= getBaseIndexScale();
 }
 
 
@@ -263,7 +263,7 @@ rule presentValue_EQ_principal(int104 presentValue){
     // https://vaas-stg.certora.com/output/65782/a9dfef3acdd36876a26f/?anonymousKey=4649138f310d0a7a36b20d7d146e0f9e23d6215e
 
     assert presentValue == principalValue => 
-            (getBaseSupplyIndex() == baseIndexScale() && 
+            (getBaseSupplyIndex() == getBaseIndexScale() && 
             presentValueInv == presentValue);
 }
 

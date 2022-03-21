@@ -13,7 +13,10 @@ import "B_cometSummarization.spec"
         Checks supply functions are reverting if pauseSupply is true.
 
     @Formula:
-        Supply_function@withrevert()
+        {
+            flagSupply = 
+        }
+        < call any supply function with revert >
         flagSupply => reverted_supply
 
     @Notes:
