@@ -9,20 +9,20 @@ type ScenarioFn<T, U> = (
   property: Property<T, U>
 ) => Promise<void>;
 
-interface ScenarioBuilder<T, U> {
-  (name: string, requirements: object, property: Property<T, U>): void;
-  only: (name: string, requirements: object, property: Property<T, U>) => void;
-  skip: (name: string, requirements: object, property: Property<T, U>) => void;
+interface ScenarioBuilder<T, U, R> {
+  (name: string, requirements: R, property: Property<T, U>): void;
+  only: (name: string, requirements: R, property: Property<T, U>) => void;
+  skip: (name: string, requirements: R, property: Property<T, U>) => void;
 }
 
-export function addScenario<T, U>(
+export function addScenario<T, U, R>(
   name: string,
-  requirements: object,
+  requirements: R,
   property: Property<T, U>,
   initializer: Initializer<T>,
   transformer: Transformer<T, U>,
   forker: Forker<T>,
-  constraints: Constraint<T>[],
+  constraints: Constraint<T, R>[],
   flags: ScenarioFlags = null
 ) {
   getLoader().addScenario(
@@ -37,15 +37,15 @@ export function addScenario<T, U>(
   );
 }
 
-export function buildScenarioFn<T, U>(
+export function buildScenarioFn<T, U, R>(
   initializer: Initializer<T>,
   transformer: Transformer<T, U>,
   forker: Forker<T>,
-  constraints: Constraint<T>[]
+  constraints: Constraint<T, R>[]
 ) {
   let addScenarioWithOpts =
-    (flags: ScenarioFlags) => (name: string, requirements: object, property: Property<T, U>) => {
-      addScenario<T, U>(
+    (flags: ScenarioFlags) => (name: string, requirements: R, property: Property<T, U>) => {
+      addScenario<T, U, R>(
         name,
         requirements,
         property,
@@ -57,7 +57,7 @@ export function buildScenarioFn<T, U>(
       );
     };
 
-  let res: ScenarioBuilder<T, U> = Object.assign(addScenarioWithOpts(null), {
+  let res: ScenarioBuilder<T, U, R> = Object.assign(addScenarioWithOpts(null), {
     only: addScenarioWithOpts('only'),
     skip: addScenarioWithOpts('skip'),
   });

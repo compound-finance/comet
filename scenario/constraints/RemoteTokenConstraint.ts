@@ -1,5 +1,6 @@
 import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
+import { Requirements } from './Requirements';
 import { requireString, requireList } from './utils';
 
 interface RemoteTokenConfig {
@@ -8,8 +9,8 @@ interface RemoteTokenConfig {
   args: any[];
 }
 
-function getRemoteTokenConfig(requirements: object): RemoteTokenConfig | null {
-  let remoteToken = requirements['remote_token'];
+function getRemoteTokenConfig(requirements: Requirements): RemoteTokenConfig | null {
+  let remoteToken = requirements.remoteToken;
   if (!remoteToken) {
     return null;
   }
@@ -22,8 +23,8 @@ function getRemoteTokenConfig(requirements: object): RemoteTokenConfig | null {
   };
 }
 
-export class RemoteTokenConstraint<T extends CometContext> implements Constraint<T> {
-  async solve(requirements: object, context: T, world: World) {
+export class RemoteTokenConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
+  async solve(requirements: R, context: T, world: World) {
     let parsedRequirements = getRemoteTokenConfig(requirements);
     if (parsedRequirements === null) {
       return null;
@@ -36,7 +37,7 @@ export class RemoteTokenConstraint<T extends CometContext> implements Constraint
     };
   }
 
-  async check(requirements: object, context: T, world: World) {
+  async check(requirements: R, context: T, world: World) {
     return; // XXX
   }
 }

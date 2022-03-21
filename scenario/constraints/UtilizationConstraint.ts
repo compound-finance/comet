@@ -4,6 +4,7 @@ import { deployComet } from '../../src/deploy';
 import { optionalNumber } from './utils';
 import { defactor, exp, factor, factorScale, ZERO } from '../../test/helpers';
 import { expect } from 'chai';
+import { Requirements } from './Requirements';
 
 /**
   # Utilization Constraint
@@ -52,8 +53,8 @@ else
   -> borrows / target = (supply+X)
   -> ( borrows / target ) - supply = X
 */
-export class UtilizationConstraint<T extends CometContext> implements Constraint<T> {
-  async solve(requirements: object, context: T, world: World) {
+export class UtilizationConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
+  async solve(requirements: R, context: T, world: World) {
     let { utilization } = getUtilizationConfig(requirements);
 
     if (!utilization) {
@@ -149,7 +150,7 @@ export class UtilizationConstraint<T extends CometContext> implements Constraint
     }
   }
 
-  async check(requirements: object, context: T, world: World) {
+  async check(requirements: R, context: T, world: World) {
     let { utilization } = getUtilizationConfig(requirements);
 
     if (utilization) {

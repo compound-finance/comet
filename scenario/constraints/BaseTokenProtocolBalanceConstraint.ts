@@ -1,10 +1,11 @@
 import { Constraint, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import { expect } from 'chai';
+import { Requirements } from './Requirements';
 
-export class BaseTokenProtocolBalanceConstraint<T extends CometContext> implements Constraint<T> {
-  async solve(requirements: object, context: T, world: World) {
-    const baseTokenRequirements = requirements['baseToken'];
+export class BaseTokenProtocolBalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
+  async solve(requirements: R, context: T, world: World) {
+    const baseTokenRequirements = requirements.baseToken;
     if (!baseTokenRequirements) {
       return null;
     }
@@ -19,8 +20,8 @@ export class BaseTokenProtocolBalanceConstraint<T extends CometContext> implemen
     }
   }
 
-  async check(requirements: object, context: T, world: World) {
-    const baseTokenRequirements = requirements['baseToken'];
+  async check(requirements: R, context: T, world: World) {
+    const baseTokenRequirements = requirements.baseToken;
     if (!baseTokenRequirements) {
       return null;
     }
