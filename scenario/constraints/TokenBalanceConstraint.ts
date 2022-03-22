@@ -6,9 +6,9 @@ import { BigNumber } from 'ethers';
 import { exp } from '../../test/helpers';
 import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount } from './utils';
 
-export class BalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
+export class TokenBalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, initialContext: T, initialWorld: World) {
-    const assetsByActor = requirements.balances;
+    const assetsByActor = requirements.tokenBalances;
     if (assetsByActor) {
       const actorsByAsset = Object.entries(assetsByActor).reduce((a, [actor, assets]) => {
         return Object.entries(assets).reduce((a, [asset, rawAmount]) => {

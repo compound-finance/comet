@@ -3,7 +3,7 @@ import { ForkSpec, World, buildScenarioFn } from '../../plugins/scenario';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import {
-  BalanceConstraint,
+  TokenBalanceConstraint,
   ModernConstraint,
   PauseConstraint,
   RemoteTokenConstraint,
@@ -258,7 +258,7 @@ export const constraints = [
   new ModernConstraint(),
   new PauseConstraint(),
   new CometBalanceConstraint(),
-  new BalanceConstraint(),
+  new TokenBalanceConstraint(),
   new RemoteTokenConstraint(),
   new UtilizationConstraint(),
   new BaseTokenProtocolBalanceConstraint(),

@@ -1,6 +1,6 @@
 // XXX Define strict types for these objects
 export interface Requirements {
-    balances?: object, // XXX Balance constraint
+    tokenBalances?: object, // XXX Balance constraint
     cometBalances?: object, // XXX Comet balance constraint
     upgrade?: boolean, // Modern constraint
     cometConfig?: object, // XXX Modern constraint

@@ -7,7 +7,7 @@ scenario(
   'Comet#supply > base asset',
   {
     upgrade: true,
-    balances: {
+    tokenBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
@@ -33,7 +33,7 @@ scenario(
   'Comet#supply > collateral asset',
   {
     upgrade: true,
-    balances: {
+    tokenBalances: {
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
   },
@@ -59,7 +59,7 @@ scenario(
   'Comet#supply > repay borrow',
   {
     upgrade: true,
-    balances: {
+    tokenBalances: {
       albert: { $base: 100 }
     },
     cometBalances: {
@@ -89,7 +89,7 @@ scenario(
   'Comet#supplyFrom > base asset',
   {
     upgrade: true,
-    balances: {
+    tokenBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
@@ -119,7 +119,7 @@ scenario(
   'Comet#supplyFrom > collateral asset',
   {
     upgrade: true,
-    balances: {
+    tokenBalances: {
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
   },
@@ -149,7 +149,7 @@ scenario(
   'Comet#supplyFrom > repay borrow',
   {
     upgrade: true,
-    balances: {
+    tokenBalances: {
       albert: { $base: 100 }
     },
     cometBalances: {
@@ -184,7 +184,7 @@ scenario.skip(
   'Comet#supply reverts if not enough ERC20 approval',
   {
     upgrade: true,
-    balances: {
+    tokenBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
@@ -208,7 +208,7 @@ scenario.skip(
   'Comet#supplyFrom reverts if not enough ERC20 approval',
   {
     upgrade: true,
-    balances: {
+    tokenBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
@@ -234,7 +234,7 @@ scenario.skip(
   'Comet#supply reverts if not enough ERC20 balance',
   {
     upgrade: true,
-    balances: {
+    tokenBalances: {
       albert: { $base: 10 }, // in units of asset, not wei
     },
   },
@@ -259,7 +259,7 @@ scenario.skip(
   'Comet#supplyFrom reverts if not enough ERC20 balance',
   {
     upgrade: true,
-    balances: {
+    tokenBalances: {
       albert: { $base: 10 }, // in units of asset, not wei
     },
   },
@@ -286,7 +286,7 @@ scenario(
   'Comet#supplyFrom reverts if operator not given permission',
   {
     upgrade: true,
-    balances: {
+    tokenBalances: {
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
   },
