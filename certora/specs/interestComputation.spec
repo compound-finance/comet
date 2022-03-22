@@ -15,7 +15,7 @@ methods{
     perSecondInterestRateSlopeLow() returns (uint256) envfree;
     perSecondInterestRateSlopeHigh() returns (uint256) envfree;
     kink() returns (uint256) envfree;
-    baseIndexScale() returns (uint64) envfree;
+    getBaseIndexScale() returns (uint64) envfree;
     targetReserves() returns (uint256) envfree;
     latestRoundData() returns (uint256) => DISPATCHER(true);
     get_FACTOR_SCALE() returns (uint64) envfree
@@ -28,16 +28,16 @@ methods{
 
 
 // BaseSupplyIndex and BaseBorrowIndex are monotonically increasing variables
-// proved in supplyIndex_borrowIndex_GE_baseIndexScale.
+// proved in supplyIndex_borrowIndex_GE_getBaseIndexScale.
 function setup(env e){
-    require getBaseSupplyIndex() >= baseIndexScale() &&
-        getBaseBorrowIndex() >= baseIndexScale();
+    require getBaseSupplyIndex() >= getBaseIndexScale() &&
+        getBaseBorrowIndex() >= getBaseIndexScale();
 }
 
 // The supply index and borrow index are set to the initial value - simplify computation
 function simplifiedAssumptions() {
-    require getBaseSupplyIndex() == baseIndexScale();
-    require getBaseBorrowIndex() == baseIndexScale();
+    require getBaseSupplyIndex() == getBaseIndexScale();
+    require getBaseBorrowIndex() == getBaseIndexScale();
 }
 
 /* 
@@ -213,11 +213,11 @@ rule isCol_implies_not_isLiq(address account){
 
 /* 
     Description :  
-     Verifies that TotalBaseSupplyIndex and getBaseBorrowIndex always greater than baseIndexScale
+     Verifies that TotalBaseSupplyIndex and getBaseBorrowIndex always greater than getBaseIndexScale
 
     formula : 
-        getBaseSupplyIndex() >= baseIndexScale() &&
-        getBaseBorrowIndex() >= baseIndexScale();
+        getBaseSupplyIndex() >= getBaseIndexScale() &&
+        getBaseBorrowIndex() >= getBaseIndexScale();
 
     status : proved
 
@@ -227,15 +227,15 @@ rule isCol_implies_not_isLiq(address account){
 */
 // V@V - BaseSupplyIndex and BaseBorrowIndex are monotonically increasing variables
 // proved to be used in other rules.
-rule supplyIndex_borrowIndex_GE_baseIndexScale(){
+rule supplyIndex_borrowIndex_GE_getBaseIndexScale(){
     env e;
-    require getBaseSupplyIndex() >= baseIndexScale() &&
-        getBaseBorrowIndex() >= baseIndexScale();
+    require getBaseSupplyIndex() >= getBaseIndexScale() &&
+        getBaseBorrowIndex() >= getBaseIndexScale();
     
     call_accrueInternal(e);
 
-    assert getBaseSupplyIndex() >= baseIndexScale() &&
-        getBaseBorrowIndex() >= baseIndexScale();
+    assert getBaseSupplyIndex() >= getBaseIndexScale() &&
+        getBaseBorrowIndex() >= getBaseIndexScale();
 }
 
 
@@ -285,7 +285,7 @@ rule presentValue_EQ_principal(int104 presentValue){
     // https://vaas-stg.certora.com/output/65782/a9dfef3acdd36876a26f/?anonymousKey=4649138f310d0a7a36b20d7d146e0f9e23d6215e
 
     assert presentValue == principalValue => 
-            (getBaseSupplyIndex() == baseIndexScale() && 
+            (getBaseSupplyIndex() == getBaseIndexScale() && 
             presentValueInv == presentValue);
 }
 
@@ -307,33 +307,6 @@ rule getSupplyRate_revert_characteristic(){
 }
 
 
-// V@V - Calling to accrue is the only way to change presentValue
-rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
-    env e; calldataarg args;
-  
-  call_accrueInternal(e); // maybe change to lastAccrualTime == nowInternal
-
-  int104 principal;
-  int104 presentValue1 = call_presentValue(principal);
-        f(e,args);
-  int104 presentValue2 = call_presentValue(principal);
-  
-  assert presentValue1 == presentValue2;
-}
-
-
-// B@B - at a point in time where user is collateralized, no action will change its status to uncollateralized
-rule verify_isBorrowCollateralized(address account, method f)filtered { f-> !similarFunctions(f) && !f.isView }{
-    env e; calldataarg args;
-    simplifiedAssumptions();
-
-    require getlastAccrualTime() == call_getNowInternal(e);
-    require isBorrowCollateralized(e,account);
-    f(e,args) ;
-    assert isBorrowCollateralized(e,account);
-}
-
-
 // F@F - reserves cannot have negative value
 // Found bug - Accrue should be called at the beginning of withdrawReserves()
 rule withdraw_more_reserves(address to , uint amount){
@@ -345,27 +318,4 @@ rule withdraw_more_reserves(address to , uint amount){
     int reserves = getReserves(e);
 
     assert reserves >= 0;
-}
-
-
-// V@V - transfer should not change the combine presentValue of src and dst
-rule verify_transferAsset(){
-    env e;
-
-    address src;
-    address dst;
-    address asset;
-    uint amount;
-
-    simplifiedAssumptions();
-
-    mathint presentValue_src1 = to_mathint(call_presentValue(getPrincipal(e,src)));
-    mathint presentValue_dst1 = to_mathint(call_presentValue(getPrincipal(e,dst)));
-
-    transferAssetFrom(e, src, dst, asset, amount);
-
-    mathint presentValue_src2 = to_mathint(call_presentValue(getPrincipal(e,src)));
-    mathint presentValue_dst2 = to_mathint(call_presentValue(getPrincipal(e,dst)));
-
-    assert presentValue_src1 + presentValue_dst1 == presentValue_src2 + presentValue_dst2;
 }

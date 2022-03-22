@@ -1,7 +1,7 @@
 import "A_setupNoSummarization.spec"
 
 methods{
-    call_IsInAsset(uint16, uint8) returns (bool) envfree
+    call_isInAsset(uint16, uint8) returns (bool) envfree
     call_updateAssetsIn(address, address, uint128, uint128) envfree
     assetsInOfUser() envfree // temp, needs to be removed
     updateAssetsIn2(address, uint128, uint128) envfree

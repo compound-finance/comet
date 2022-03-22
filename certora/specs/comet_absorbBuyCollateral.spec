@@ -30,7 +30,7 @@ rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address re
     require e.msg.sender != currentContract;
     require recipient != currentContract;
 
-    mathint max = getUserCollateralBalanceByAsset(currentContract, asset);
+    mathint max = getUserCollateralBalance(currentContract, asset);
     uint256 balanceAssetBefore = tokenBalanceOf(asset, currentContract);
     buyCollateral(e, asset, minAmount, baseAmount, recipient);
     uint256 balanceAssetAfter = tokenBalanceOf(asset, currentContract);
@@ -80,36 +80,15 @@ rule antiMonotonicityOfAbsorb(address absorber, address account) {
     require accounts[0] == account;
     
     address asset;
-    uint256 balanceBefore = getUserCollateralBalanceByAsset(account, currentContract);
+    uint256 balanceBefore = getUserCollateralBalance(account, currentContract);
     uint104 borrowBefore = getTotalBorrowBase();
 
     absorb(e, absorber, accounts);
 
-    uint256 balanceAfter = getUserCollateralBalanceByAsset(account, currentContract);
+    uint256 balanceAfter = getUserCollateralBalance(account, currentContract);
     uint104 borrowAfter = getTotalBorrowBase();
     assert balanceAfter > balanceBefore => borrowAfter < borrowBefore ; 
     
-}
-
-// ?@? - 
-rule buyCol_then_withdraw(address account, uint amount){
-    env e;
-    require e.msg.sender != currentContract;
-    
-    storage init = lastStorage;
-
-    address asset; address recipient; address operator;
-    uint minAmount; uint baseAmount;
-    
-    require asset != currentContract && recipient != currentContract;
-    require asset != account && recipient != account && asset != recipient && asset != operator; /* gadi? why this require - apple is not an orange? */ 
-    require !get_Withdraw_Paused() /* && hasPermission(e,account,operator) */;
-
-    withdraw(e, account, amount);
-    buyCollateral(e, asset, minAmount, baseAmount, recipient) at init;
-    invoke withdraw(e, account, amount);
-
-    assert !lastReverted;
 }
 
 

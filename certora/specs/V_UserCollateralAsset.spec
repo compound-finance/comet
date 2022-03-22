@@ -1,7 +1,7 @@
 import "A_setupNoSummarization.spec"
 
 methods{
-    call_IsInAsset(uint16, uint8) returns (bool) envfree
+    call_isInAsset(uint16, uint8) returns (bool) envfree
     call_updateAssetsIn(address, address, uint128, uint128) envfree
 }
 
@@ -16,7 +16,7 @@ rule check_update_UserCollateral(address account, address asset, uint128 initial
     call_updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
     uint16 assetIn_ = getAssetinOfUser(account);
     uint8 assetOffset_ = getAssetOffsetByAsset(asset);
-    bool flagUserAsset_ = call_IsInAsset(assetIn_, assetOffset_);
+    bool flagUserAsset_ = call_isInAsset(assetIn_, assetOffset_);
 
     assert (initialUserBalance == 0 && finalUserBalance > 0) => flagUserAsset_, "Balance changed from 0 to non zero, yet the getter retrieve false";
     assert (initialUserBalance > 0 && finalUserBalance == 0) => !flagUserAsset_, "Balance changed from non zero to 0, yet the getter retrieve true";
@@ -27,15 +27,15 @@ rule update_changes_single_bit(address account, address asset, uint128 initialUs
     uint16 _assetIn = getAssetinOfUser(account);
     uint8 assetOffset1;
     uint8 assetOffset2;
-    bool _flagUserAsset1 = call_IsInAsset(_assetIn, assetOffset1);
-    bool _flagUserAsset2 = call_IsInAsset(_assetIn, assetOffset2);
+    bool _flagUserAsset1 = call_isInAsset(_assetIn, assetOffset1);
+    bool _flagUserAsset2 = call_isInAsset(_assetIn, assetOffset2);
     
     require assetOffset1 != assetOffset2;
     call_updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
     
     uint16 assetIn_ = getAssetinOfUser(account);
-    bool flagUserAsset1_ = call_IsInAsset(assetIn_, assetOffset1);
-    bool flagUserAsset2_ = call_IsInAsset(assetIn_, assetOffset2);
+    bool flagUserAsset1_ = call_isInAsset(assetIn_, assetOffset1);
+    bool flagUserAsset2_ = call_isInAsset(assetIn_, assetOffset2);
 
     assert !(_flagUserAsset1 != flagUserAsset1_ && _flagUserAsset2 != flagUserAsset2_), "2 bits changed at once";
 }

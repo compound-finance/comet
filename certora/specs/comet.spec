@@ -25,11 +25,11 @@ methods {
 
     _baseToken.balanceOf(address account) returns (uint256) envfree
 
-    getUserCollateralBalanceByAsset(address, address) returns uint128 envfree
-    call_Summarized_IsInAsset(uint16, uint8) returns (bool) envfree
+    getUserCollateralBalance(address, address) returns uint128 envfree
+    callSummarizedIsInAsset(uint16, uint8) returns (bool) envfree
     getAssetinOfUser(address) returns (uint16) envfree
-    asset_to_index(address) returns (uint8) envfree
-    index_to_asset(uint8) returns (address) envfree
+    assetToIndex(address) returns (uint8) envfree
+    indexToAsset(uint8) returns (address) envfree
     tokenBalanceOf(address, address) returns uint256 envfree 
 }
 
@@ -106,15 +106,15 @@ rule assetIn_Initialized_With_Balance(method f, address user, address asset)
     
     env e; calldataarg args;
     require user != currentContract;
-    require getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_to_index(asset));
+    require getUserCollateralBalance(user, asset) > 0 <=> callSummarizedIsInAsset(getAssetinOfUser(user), assetToIndex(asset));
     call_functions_with_specific_asset(f, e, asset);
-    assert getUserCollateralBalanceByAsset(user, asset) > 0 <=> call_Summarized_IsInAsset(getAssetinOfUser(user), asset_to_index(asset));
+    assert getUserCollateralBalance(user, asset) > 0 <=> callSummarizedIsInAsset(getAssetinOfUser(user), assetToIndex(asset));
 }
 
 function simplifiedAssumptions() {
     env e;
-    require getBaseSupplyIndex(e) == baseIndexScale(e);
-    require getBaseBorrowIndex(e) == baseIndexScale(e);
+    require getBaseSupplyIndex(e) == getBaseIndexScale(e);
+    require getBaseBorrowIndex(e) == getBaseIndexScale(e);
 }
 
 
@@ -169,3 +169,43 @@ rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) &
     call_functions_with_specific_asset(f, e, asset);
     assert registered; //if the function passed it must be registered 
  }
+
+
+// moved from CometInterest
+
+// ?@? - Calling to accrue is the only way to change presentValue
+rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
+    env e; calldataarg args;
+  
+  call_accrueInternal(e); // maybe change to lastAccrualTime == nowInternal
+
+  int104 principal;
+  int104 presentValue1 = call_presentValue(principal);
+        f(e,args);
+  int104 presentValue2 = call_presentValue(principal);
+  
+  assert presentValue1 == presentValue2;
+}
+
+
+// ?@? - transfer should not change the combine presentValue of src and dst
+rule verify_transferAsset(){
+    env e;
+
+    address src;
+    address dst;
+    address asset;
+    uint amount;
+
+    simplifiedAssumptions();
+
+    mathint presentValue_src1 = to_mathint(call_presentValue(getPrincipal(e,src)));
+    mathint presentValue_dst1 = to_mathint(call_presentValue(getPrincipal(e,dst)));
+
+    transferAssetFrom(e, src, dst, asset, amount);
+
+    mathint presentValue_src2 = to_mathint(call_presentValue(getPrincipal(e,src)));
+    mathint presentValue_dst2 = to_mathint(call_presentValue(getPrincipal(e,dst)));
+
+    assert presentValue_src1 + presentValue_dst1 == presentValue_src2 + presentValue_dst2;
+}
