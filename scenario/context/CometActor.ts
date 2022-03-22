@@ -166,7 +166,7 @@ export default class CometActor {
     return console.log(`Actor#${this.name}{${JSON.stringify(this.info)}}`);
   }
 
-  async withdrawReserves(to: CometActor, amount: number): Promise<ContractReceipt> {
+  async withdrawReserves(to: CometActor, amount: BigNumberish): Promise<ContractReceipt> {
     let comet = await this.context.getComet();
     return await (await comet.connect(this.signer).withdrawReserves(to.address, amount)).wait();
   }

@@ -8,7 +8,6 @@ import {
   PauseConstraint,
   RemoteTokenConstraint,
   UtilizationConstraint,
-  BaseTokenProtocolBalanceConstraint,
   CometBalanceConstraint
 } from '../constraints';
 import CometActor from './CometActor';
@@ -261,7 +260,6 @@ export const constraints = [
   new TokenBalanceConstraint(),
   new RemoteTokenConstraint(),
   new UtilizationConstraint(),
-  new BaseTokenProtocolBalanceConstraint(),
 ];
 
 export const scenario = buildScenarioFn<CometContext, CometProperties, Requirements>(getInitialContext, getContextProperties, forkContext, constraints);
