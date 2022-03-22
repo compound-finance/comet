@@ -2,6 +2,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumberish, Signature, ethers, ContractReceipt } from 'ethers';
 import { CometContext } from './CometContext';
 import { AddressLike, resolveAddress } from './Address';
+import { ERC20__factory } from '../../build/types';
 
 const types = {
   Authorization: [
@@ -46,6 +47,11 @@ export default class CometActor {
     return this.signer.getBalance();
   }
 
+  async getErc20Balance(tokenAddress: string): Promise<bigint> {
+    let erc20 = ERC20__factory.connect(tokenAddress, this.signer);
+    return (await erc20.balanceOf(this.signer.address)).toBigInt();
+  }
+
   async getCometBaseBalance(): Promise<bigint> {
     let comet = await this.context.getComet();
     return (await comet.baseBalanceOf(this.signer.address)).toBigInt();
@@ -82,6 +88,11 @@ export default class CometActor {
   async supplyAsset({ asset, amount }): Promise<ContractReceipt> {
     let comet = await this.context.getComet();
     return await (await comet.connect(this.signer).supply(asset, amount)).wait();
+  }
+
+  async supplyAssetFrom({ src, dst, asset, amount }): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).supplyFrom(src, dst, asset, amount)).wait();
   }
 
   async transferAsset({ dst, asset, amount }): Promise<ContractReceipt> {
