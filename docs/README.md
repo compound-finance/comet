@@ -885,7 +885,7 @@ const timestamp = await comet.callStatic.getNow();
 
 ### Get Asset Info
 
-This method returns information about the specified asset.
+This method returns asset information such as the collateral factors, asset price feed address, and more. In order to create a loop to fetch information for every asset, use the `numAssets` constant, which indicates the total number of supported assets.
 
 #### Comet
 
