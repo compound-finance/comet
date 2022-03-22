@@ -53,6 +53,7 @@ contract CometExt is CometCore {
 
     /** External getters for internal constants **/
 
+    function baseAccrualScale() external pure returns (uint64) { return BASE_ACCRUAL_SCALE; }
     function baseIndexScale() external pure returns (uint64) { return BASE_INDEX_SCALE; }
     function factorScale() external pure returns (uint64) { return FACTOR_SCALE; }
     function priceScale() external pure returns (uint64) { return PRICE_SCALE; }
@@ -139,6 +140,15 @@ contract CometExt is CometCore {
      */
     function collateralBalanceOf(address account, address asset) external view returns (uint128) {
         return userCollateral[account][asset].balance;
+    }
+
+    /**
+     * @notice Query the total accrued base rewards for an account
+     * @param account The account to query
+     * @return The accrued rewards, scaled by `BASE_ACCRUAL_SCALE`
+     */
+    function baseTrackingAccrued(address account) external view returns (uint64) {
+        return userBasic[account].baseTrackingAccrued;
     }
 
     /**

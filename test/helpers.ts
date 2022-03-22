@@ -9,6 +9,8 @@ import {
   CometHarness,
   CometHarness__factory,
   CometHarnessInterface as Comet,
+  CometRewards,
+  CometRewards__factory,
   EvilToken,
   EvilToken__factory,
   FaucetToken,
@@ -108,6 +110,17 @@ export type ConfiguratorAndProtocol = {
   users: SignerWithAddress[]
 }
 
+export type RewardsOpts = {
+  governor?: SignerWithAddress;
+  configs?: [Comet, FaucetToken][];
+};
+
+export type Rewards = {
+  opts: RewardsOpts;
+  governor: SignerWithAddress;
+  rewards: CometRewards;
+};
+
 export function dfn<T>(x: T | undefined | null, dflt: T): T {
   return x == undefined ? dflt : x;
 }
@@ -140,27 +153,27 @@ export function toYears(seconds: number, secondsPerYear = 31536000): number {
   return seconds / secondsPerYear;
 }
 
-export function defaultAssets(overrides = {}) {
+export function defaultAssets(overrides = {}, perAssetOverrides = {}) {
   return {
     COMP: Object.assign({
       initial: 1e7,
       decimals: 18,
       initialPrice: 175,
-    }, overrides),
+    }, overrides, perAssetOverrides['COMP'] || {}),
     USDC: Object.assign({
       initial: 1e6,
       decimals: 6,
-    }, overrides),
+    }, overrides, perAssetOverrides['USDC'] || {}),
     WETH: Object.assign({
       initial: 1e4,
       decimals: 18,
       initialPrice: 3000,
-    }, overrides),
+    }, overrides, perAssetOverrides['WETH'] || {}),
     WBTC: Object.assign({
       initial: 1e3,
       decimals: 8,
       initialPrice: 41000,
-    }, overrides),
+    }, overrides, perAssetOverrides['WBTC'] || {}),
   };
 }
 
@@ -419,6 +432,42 @@ type Portfolio = {
   external: {
     [symbol: string]: BigInt,
   }
+}
+
+export async function makeRewards(opts: RewardsOpts = {}): Promise<Rewards> {
+  const signers = await ethers.getSigners();
+
+  const governor = opts.governor || signers[0];
+  const configs = opts.configs || [];
+
+  const RewardsFactory = (await ethers.getContractFactory('CometRewards')) as CometRewards__factory;
+  const rewards = await RewardsFactory.deploy(governor.address);
+  await rewards.deployed();
+
+  for (const [comet, token] of configs) {
+    await wait(rewards._setRewardConfig(comet.address, token.address));
+  }
+
+  return {
+    opts,
+    governor,
+    rewards
+  };
+}
+
+export function objectify(arrayObject) {
+  const obj = {};
+  for (const key in arrayObject) {
+    if (isNaN(Number(key))) {
+      const value = arrayObject[key];
+      if (value._isBigNumber) {
+        obj[key] = BigInt(value);
+      } else {
+        obj[key] = value;
+      }
+    }
+  }
+  return obj;
 }
 
 export async function portfolio({ comet, base, tokens }, account): Promise<Portfolio>  {

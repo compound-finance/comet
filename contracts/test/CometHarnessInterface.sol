@@ -4,6 +4,7 @@ pragma solidity ^0.8.11;
 import "../CometInterface.sol";
 
 abstract contract CometHarnessInterface is CometInterface {
+    function accrue() virtual external;
     function getNow() virtual external view returns (uint40);
     function setNow(uint now_) virtual external;
     function setTotalsBasic(TotalsBasic memory totals) virtual external;
