@@ -11,21 +11,48 @@ function valid_allowance(uint256 amount) returns bool {
 }
 
 
-// V@V - allowance may be equal only to 0 or max_uint
+/* 
+ Description :  
+        Spender's allowance may only be equal to 0 or to max_uint256
+
+ formula : 
+        allowance[owner][spender] == 0 || allowance[owner][spender] == max_uint256
+
+ status : proved       
+*/
 invariant allowanceOnlyZeroOrMax(address owner, address spender)
     valid_allowance(allowance(owner, spender))
 
 
-// V@V - approve fails on invalid amount (different from 0 or max_uint)
+/* 
+ Description :  
+        Trying to approve an allowance which is not 0 or max_uint should fail
+
+ formula : 
+        amount > 0 && amount < max_uint256 => approve(spender, amount) reverts
+
+ status : proved     
+*/
 rule approveFailsOnInvalidAllowance(address spender, uint256 amount) {
     env e;
+    require amount > 0 && amount < max_uint256;
     approve@withrevert(e, spender, amount);
     assert lastReverted;
 }
 
-// V@V -  allowance changes only on allow or approve
-// also tests that if allowance changed for an address different from msg.sender,
-// it happened as a result of allowBySig
+/* 
+ Description :  
+        Allowance changes only as a result of approve(), allow() and allowBySig().
+        Allowance changes for non msg.sender only as a result of allowBySig()
+
+ formula : 
+        allowance[owner][spender] = x;
+        op;
+        allowance[owner][spender] = y;
+        x != y => op in {approve(), allow(), allowBySig()}
+
+ status : proved     
+*/
 rule validAllowanceChanges(method f, address owner, address spender) {
     env e; calldataarg args;
     uint256 allowanceBefore = allowance(owner, spender);
@@ -43,7 +70,15 @@ rule validAllowanceChanges(method f, address owner, address spender) {
 }
 
 
-// V@V approve must work when the amount is valid and value is sent to the function
+/* 
+ Description :  
+        Trying to approve an allowance which is 0 or max_uint should always succeed
+
+ formula : 
+        amount == 0 && amount == max_uint256 => approve(spender, amount) doesn't revert
+
+ status : proved     
+*/
 rule validApproveSucceeds(address spender, uint256 amount) {
     env e;
     require valid_allowance(amount);

@@ -13,7 +13,14 @@ definition governorOrPauseGuardian(address a) returns bool =
     a == governor() || a == pauseGuardian();
 
 
-// verify that pause and withdrawReserves don't revert only when msg.sender is governor
+/* 
+ Description :  
+        pause() and withdrawReserves() functions work only when called by a governor or pauseGuardian
+
+ formula : 
+
+ status : proved     
+*/
 rule governorIntegrity(method f) filtered { f -> governedFunctions(f)  }
 {
     env e;

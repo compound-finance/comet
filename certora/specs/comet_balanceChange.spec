@@ -4,30 +4,18 @@ methods {
     call_hasPermission(address, address) returns (bool) envfree
 }
 
+/* 
+ Description :  
+        User principal balance may decrease only by a call from them or from a permissioned manager
 
-// only actions by the user that change their erc20 balance
-// are done either by the user or by a permissioned manager
-// rule balance_change_by_allowed_only(method f, address user)
-// filtered { f-> !similarFunctions(f) && !f.isView }
-// {
-//     env e;
-//     calldataarg args;
+ formula : 
+        userBasic[user].principal == x;
+        op;
+        userBasic[user].principal == y;
+        y < x => msg.sender == user || hasPermission[user][msg.sender] == true; 
 
-//     require user != currentContract;
-
-//     simplifiedAssumptions();
-
-//     uint256 balanceBefore = _baseToken.balanceOf(user);
-
-//     f(e, args);
-
-//     uint256 balanceAfter = _baseToken.balanceOf(user);
-//     bool permission = call_hasPermission(user, e.msg.sender);
-
-//     assert balanceAfter < balanceBefore => 
-//         ((e.msg.sender == user) || permission);
-// }
-
+ status : proved     
+*/
 rule balance_change_by_allowed_only(method f, address user)
 filtered { f-> !similarFunctions(f) && !f.isView }
 {
