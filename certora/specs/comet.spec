@@ -13,8 +13,7 @@ methods {
 
     //todo - move to setup?
     isBorrowCollateralized(address) returns bool 
-    getUserCollateralBalance(address,address) returns uint128 envfree
-
+    
     baseToken() returns address envfree
     getTotalSupplyBase() returns (uint104) envfree
     getTotalBorrowBase() returns (uint104) envfree 
