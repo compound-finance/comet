@@ -357,3 +357,13 @@ scenario(
     ).to.be.revertedWith("custom error 'Paused()'");
   }
 );
+
+scenario(
+  'Comet#supply reverts if asset is not supported',
+  {
+    upgrade: true,
+  },
+  async ({ comet, actors }, world, context) => {
+    // XXX requires deploying an unsupported asset (maybe via remote token constraint)
+  }
+);
