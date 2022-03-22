@@ -25,7 +25,6 @@ methods {
 
     _baseToken.balanceOf(address account) returns (uint256) envfree
 
-    getUserCollateralBalance(address, address) returns uint128 envfree
     callSummarizedIsInAsset(uint16, uint8) returns (bool) envfree
     getAssetinOfUser(address) returns (uint16) envfree
     assetToIndex(address) returns (uint8) envfree

@@ -28,7 +28,7 @@ import "B_cometSummarization.spec"
 */
 
 rule check_pauseSupply_functionality(method f, env e) filtered {f -> all_public_supply_methods(f)} {
-    bool flagSupply = get_Supply_Paused(); // summarization
+    bool flagSupply = get_supply_paused(); // summarization
 
     calldataarg args;
     bool reverted_supply;
@@ -68,7 +68,7 @@ rule check_pauseSupply_functionality(method f, env e) filtered {f -> all_public_
 */
 
 rule check_pauseTransfer_functionality(method f, env e) filtered {f -> all_public_transfer_methods(f)} {
-    bool flagTransfer = get_Transfer_Paused(); // summarization
+    bool flagTransfer = get_transfer_paused(); // summarization
     
     calldataarg args;
     bool reverted_transfer;
@@ -105,7 +105,7 @@ rule check_pauseTransfer_functionality(method f, env e) filtered {f -> all_publi
 */
 
 rule check_pauseWithdraw_functionality(method f, env e) filtered {f -> all_public_withdraw_methods(f)} {
-    bool flagWithdraw = get_Withdraw_Paused(); // summarization
+    bool flagWithdraw = get_withdraw_paused(); // summarization
 
     calldataarg args;
     bool reverted_withdraw;
@@ -145,7 +145,7 @@ rule check_pauseWithdraw_functionality(method f, env e) filtered {f -> all_publi
 */
 
 rule check_pauseAbsorb_functionality(method f, env e) filtered {f -> all_public_absorb_methods(f)} {
-    bool flagAbsorb = get_Absorb_Paused(); // summarization
+    bool flagAbsorb = get_absorb_paused(); // summarization
 
     calldataarg args;
     bool reverted_absorb;
@@ -177,7 +177,7 @@ rule check_pauseAbsorb_functionality(method f, env e) filtered {f -> all_public_
 */
 
 rule check_pauseBuy_functionality(method f, env e) filtered {f -> all_public_buy_methods(f)} {
-    bool flagBuy = get_Buy_Paused(); // summarization
+    bool flagBuy = get_buy_paused(); // summarization
 
     calldataarg args;
     bool reverted_buy;
