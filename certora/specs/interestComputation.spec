@@ -21,6 +21,12 @@ methods{
     get_FACTOR_SCALE() returns (uint64) envfree
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//////////////////////////   Interest Computations   ////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+
+
 // BaseSupplyIndex and BaseBorrowIndex are monotonically increasing variables
 // proved in supplyIndex_borrowIndex_GE_baseIndexScale.
 function setup(env e){
@@ -45,6 +51,22 @@ function simplifiedAssumptions() {
  
 */
 // V@V - indices are increasing after accrue (when time elapse)
+/*
+    @Rule
+
+    @Description:
+        baseSupplyIndex increase with time
+        baseBorrowIndex increase with time
+
+    @Formula:
+        Supply_function@withrevert()
+        flagSupply => reverted_supply
+
+    @Notes:
+
+    @Link:
+        https://vaas-stg.certora.com/output/44289/a534afa257cbbaba166f/?anonymousKey=d9dba8d11b27e6080c0be78fcf34faa6a82404aa
+*/
 rule supplyIndex_borrowIndex_rise_with_time(){
     env e;
     uint64 base_supply_index_1 = getBaseSupplyIndex();
