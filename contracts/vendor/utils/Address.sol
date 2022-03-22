@@ -7,7 +7,7 @@ pragma solidity ^0.8.11;
  */
 library Address {
     /**
-     * @dev Returns true if `account` is a contract.
+     * @dev Returns true if `account` is a dontract.
      *
      * [IMPORTANT]
      * ====
