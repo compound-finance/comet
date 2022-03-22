@@ -9,7 +9,7 @@ import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/Aggregat
 
 /**
  * @title Certora's comet summarization contract
- * @notice 
+ * @notice A contract that holds summarizations and simplifications of methods and components of comet 
  * @author Certora
  */
 contract CometHarness is CometHarnessGetters {
