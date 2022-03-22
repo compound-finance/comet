@@ -4,22 +4,7 @@ methods{
     getAssetSupplyCapByAddress(address) returns (uint128) envfree
 }
 
-/*
 
-Description: 
-        Summary of balances (base):
-formula: 
-        sum(userBasic[u].principal) == totalsBasic.totalSupplyBase - totalsBasic.totalBorrowBase
-status:
-
-*/
-invariant totalBaseToken() 
-	sumUserBasicPrinciple == to_mathint(getTotalSupplyBase()) - to_mathint(getTotalBorrowBase()) filtered { f-> !similarFunctions(f) && !f.isView }
-{
-    preserved {
-        simplifiedAssumptions();
-    }
-}
 
 
 
@@ -102,12 +87,3 @@ filtered { f-> !similarFunctions(f) && !f.isView && f.selector!=absorb(address, 
 invariant collateral_totalSupply_LE_supplyCap(address asset)
     getTotalsSupplyAsset(asset) <= getAssetSupplyCapByAddress(asset)
 
-// B@B -
-rule borrow_then_collateralized(address user, address asset, method f) filtered {f -> !similarFunctions(f) && !f.isView && !f.isFallback} {
-    env e;
-    simplifiedAssumptions();
-    require(getAssetOffsetByAsset(e,asset) == 0);
-    require getPrincipal(user) < 0 => isBorrowCollateralized(e, user);
-    call_functions_with_specific_asset(f, e, asset);
-    assert getPrincipal(user) < 0 => isBorrowCollateralized(e, user);
-}
