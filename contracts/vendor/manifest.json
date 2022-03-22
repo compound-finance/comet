@@ -5,236 +5,103 @@
       "source": {
         "git": {
           "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
-          "commit": "788d338c9b53d57f7229f79815573dcb91ecede1",
-          "path": ["contracts"]
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
         }
-      },
-      "patches": [
-        {
-          "oldStart": 1,
-          "oldLines": 14,
-          "newStart": 1,
-          "newLines": 14,
-          "lines": [
-            " // SPDX-License-Identifier: MIT",
-            " ",
-            "-pragma solidity ^0.8.11;",
-            "+pragma solidity ^0.8.0;",
-            " ",
-            " /**",
-            "  * @dev Collection of functions related to the address type",
-            "  */",
-            " library Address {",
-            "     /**",
-            "-     * @dev Returns true if `account` is a dontract.",
-            "+     * @dev Returns true if `account` is a contract.",
-            "      *",
-            "      * [IMPORTANT]",
-            "      * ====",
-            "      * It is unsafe to assume that an address for which this function returns"
-          ]
-        },
-        {
-          "oldStart": 28,
-          "oldLines": 10,
-          "newStart": 28,
-          "newLines": 11,
-          "lines": [
-            "         // construction, since the code is only stored at the end of the",
-            "         // constructor execution.",
-            " ",
-            "         uint256 size;",
-            "-        // solhint-disable-next-line no-inline-assembly",
-            "-        assembly { size := extcodesize(account) }",
-            "+        assembly {",
-            "+            size := extcodesize(account)",
-            "+        }",
-            "         return size > 0;",
-            "     }",
-            " ",
-            "     /**"
-          ]
-        },
-        {
-          "oldStart": 52,
-          "oldLines": 10,
-          "newStart": 53,
-          "newLines": 9,
-          "lines": [
-            "      */",
-            "     function sendValue(address payable recipient, uint256 amount) internal {",
-            "         require(address(this).balance >= amount, \"Address: insufficient balance\");",
-            " ",
-            "-        // solhint-disable-next-line avoid-low-level-calls, avoid-call-value",
-            "-        (bool success, ) = recipient.call{ value: amount }(\"\");",
-            "+        (bool success, ) = recipient.call{value: amount}(\"\");",
-            "         require(success, \"Address: unable to send value, recipient may have reverted\");",
-            "     }",
-            " ",
-            "     /**"
-          ]
-        },
-        {
-          "oldStart": 76,
-          "oldLines": 18,
-          "newStart": 76,
-          "newLines": 22,
-          "lines": [
-            "      *",
-            "      * _Available since v3.1._",
-            "      */",
-            "     function functionCall(address target, bytes memory data) internal returns (bytes memory) {",
-            "-      return functionCall(target, data, \"Address: low-level call failed\");",
-            "+        return functionCall(target, data, \"Address: low-level call failed\");",
-            "     }",
-            " ",
-            "     /**",
-            "      * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`], but with",
-            "      * `errorMessage` as a fallback revert reason when `target` reverts.",
-            "      *",
-            "      * _Available since v3.1._",
-            "      */",
-            "-    function functionCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {",
-            "+    function functionCall(",
-            "+        address target,",
-            "+        bytes memory data,",
-            "+        string memory errorMessage",
-            "+    ) internal returns (bytes memory) {",
-            "         return functionCallWithValue(target, data, 0, errorMessage);",
-            "     }",
-            " ",
-            "     /**"
-          ]
-        },
-        {
-          "oldStart": 100,
-          "oldLines": 9,
-          "newStart": 104,
-          "newLines": 13,
-          "lines": [
-            "      * - the called Solidity function must be `payable`.",
-            "      *",
-            "      * _Available since v3.1._",
-            "      */",
-            "-    function functionCallWithValue(address target, bytes memory data, uint256 value) internal returns (bytes memory) {",
-            "+    function functionCallWithValue(",
-            "+        address target,",
-            "+        bytes memory data,",
-            "+        uint256 value",
-            "+    ) internal returns (bytes memory) {",
-            "         return functionCallWithValue(target, data, value, \"Address: low-level call with value failed\");",
-            "     }",
-            " ",
-            "     /**"
-          ]
-        },
-        {
-          "oldStart": 110,
-          "oldLines": 14,
-          "newStart": 118,
-          "newLines": 18,
-          "lines": [
-            "      * with `errorMessage` as a fallback revert reason when `target` reverts.",
-            "      *",
-            "      * _Available since v3.1._",
-            "      */",
-            "-    function functionCallWithValue(address target, bytes memory data, uint256 value, string memory errorMessage) internal returns (bytes memory) {",
-            "+    function functionCallWithValue(",
-            "+        address target,",
-            "+        bytes memory data,",
-            "+        uint256 value,",
-            "+        string memory errorMessage",
-            "+    ) internal returns (bytes memory) {",
-            "         require(address(this).balance >= value, \"Address: insufficient balance for call\");",
-            "         require(isContract(target), \"Address: call to non-contract\");",
-            " ",
-            "-        // solhint-disable-next-line avoid-low-level-calls",
-            "-        (bool success, bytes memory returndata) = target.call{ value: value }(data);",
-            "+        (bool success, bytes memory returndata) = target.call{value: value}(data);",
-            "         return _verifyCallResult(success, returndata, errorMessage);",
-            "     }",
-            " ",
-            "     /**"
-          ]
-        },
-        {
-          "oldStart": 135,
-          "oldLines": 12,
-          "newStart": 147,
-          "newLines": 15,
-          "lines": [
-            "      * but performing a static call.",
-            "      *",
-            "      * _Available since v3.3._",
-            "      */",
-            "-    function functionStaticCall(address target, bytes memory data, string memory errorMessage) internal view returns (bytes memory) {",
-            "+    function functionStaticCall(",
-            "+        address target,",
-            "+        bytes memory data,",
-            "+        string memory errorMessage",
-            "+    ) internal view returns (bytes memory) {",
-            "         require(isContract(target), \"Address: static call to non-contract\");",
-            " ",
-            "-        // solhint-disable-next-line avoid-low-level-calls",
-            "         (bool success, bytes memory returndata) = target.staticcall(data);",
-            "         return _verifyCallResult(success, returndata, errorMessage);",
-            "     }",
-            " "
-          ]
-        },
-        {
-          "oldStart": 159,
-          "oldLines": 25,
-          "newStart": 174,
-          "newLines": 31,
-          "lines": [
-            "      * but performing a delegate call.",
-            "      *",
-            "      * _Available since v3.4._",
-            "      */",
-            "-    function functionDelegateCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {",
-            "+    function functionDelegateCall(",
-            "+        address target,",
-            "+        bytes memory data,",
-            "+        string memory errorMessage",
-            "+    ) internal returns (bytes memory) {",
-            "         require(isContract(target), \"Address: delegate call to non-contract\");",
-            " ",
-            "-        // solhint-disable-next-line avoid-low-level-calls",
-            "         (bool success, bytes memory returndata) = target.delegatecall(data);",
-            "         return _verifyCallResult(success, returndata, errorMessage);",
-            "     }",
-            " ",
-            "-    function _verifyCallResult(bool success, bytes memory returndata, string memory errorMessage) private pure returns(bytes memory) {",
-            "+    function _verifyCallResult(",
-            "+        bool success,",
-            "+        bytes memory returndata,",
-            "+        string memory errorMessage",
-            "+    ) private pure returns (bytes memory) {",
-            "         if (success) {",
-            "             return returndata;",
-            "         } else {",
-            "             // Look for revert reason and bubble it up if present",
-            "             if (returndata.length > 0) {",
-            "                 // The easiest way to bubble the revert reason is using memory via assembly",
-            " ",
-            "-                // solhint-disable-next-line no-inline-assembly",
-            "                 assembly {",
-            "                     let returndata_size := mload(returndata)",
-            "                     revert(add(32, returndata), returndata_size)",
-            "                 }"
-          ]
+      }
+    },
+    "utils/Context.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
         }
-      ]
+      }
+    },
+    "proxy/Proxy.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "proxy/transparent/ProxyAdmin.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "proxy/transparent/TransparentUpgradeableProxy.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "proxy/ERC1967/ERC1967Proxy.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "proxy/ERC1967/ERC1967Upgrade.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "access/Ownable.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "proxy/beacon/IBeacon.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "interfaces/draft-IERC1822.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "utils/StorageSlot.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
     }
   },
   "allowedExtra": [
-    "access/Ownable.sol",
-    "proxy/Proxy.sol",
-    "proxy/ProxyAdmin.sol",
-    "proxy/TransparentUpgradeableProxy.sol",
-    "proxy/UpgradeableProxy.sol",
-    "utils/Context.sol",
     "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol"
   ]
 }
