@@ -1,6 +1,6 @@
 import { scenario } from './context/CometContext';
-import { expect } from 'chai';
 import { expectApproximately } from './utils';
+import { defactor, expect } from '../test/helpers';
 
 scenario(
   'Comet#constraint > collateral CometBalanceConstraint + BalanceConstraint both satisfied',
@@ -48,7 +48,7 @@ scenario(
 scenario(
   'Comet#constraint > negative comet base balance (borrow position)',
   {
-    upgrade: true,    
+    upgrade: true,
     tokenBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
@@ -64,5 +64,37 @@ scenario(
 
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
     expectApproximately(await albert.getCometBaseBalance(), -100n * scale, 1n);
+  }
+);
+
+scenario(
+  'UtilizationConstraint > sets utilization to 25%',
+  { utilization: 0.25, upgrade: true },
+  async ({ comet, actors }) => {
+    expect(defactor(await comet.getUtilization())).to.approximately(0.25, 0.000001);
+  }
+);
+
+scenario(
+  'UtilizationConstraint > utilization is 50%',
+  { utilization: 0.50, upgrade: true },
+  async ({ comet, actors }) => {
+    expect(defactor(await comet.getUtilization())).to.approximately(0.5, 0.000001);
+  }
+);
+
+scenario(
+  'UtilizationConstraint > utilization is 75%',
+  { utilization: 0.75, upgrade: true },
+  async ({ comet, actors }) => {
+    expect(defactor(await comet.getUtilization())).to.approximately(0.75, 0.000001);
+  }
+);
+
+scenario(
+  'UtilizationConstraint > utilization is 100%',
+  { utilization: 1, upgrade: true },
+  async ({ comet, actors }) => {
+    expect(defactor(await comet.getUtilization())).to.approximately(1, 0.000001);
   }
 );

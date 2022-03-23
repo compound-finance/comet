@@ -80,7 +80,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
         }
 
         let expectedSupplyBase = totalSupplyBase + toSupplyBase;
-        let currentUtilization = totalBorrowBase / expectedSupplyBase;
+        let currentUtilization = factor(Number(totalBorrowBase)) / expectedSupplyBase;
 
         if (currentUtilization < utilizationFactor) {
           toBorrowBase =
@@ -107,6 +107,12 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
           // To borrow as much, we need to supply some collateral. We technically
           // could provide a solution for each token, but we don't know them in advance,
           // generally, so let's just pick the first one and source enough of it.
+
+          // bail if `toBorrowBase` is lower than baseBorrowMin
+          const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
+          if (toBorrowBase < baseBorrowMin) {
+            return context;
+          }
 
           let { asset: collateralAsset, borrowCollateralFactor, priceFeed, scale } = await comet.getAssetInfo(0);
 
@@ -142,6 +148,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
           await context.sourceTokens(world, collateralNeeded, collateralToken, borrowActor);
           await collateralToken.approve(borrowActor, comet);
           await comet.connect(borrowActor.signer).supply(collateralToken.address, collateralNeeded);
+
           await comet.connect(borrowActor.signer).withdraw(baseToken.address, toBorrowBase);
         }
 
@@ -155,7 +162,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
 
     if (utilization) {
       let comet = await context.getComet();
-      expect(defactor(await comet.getUtilization())).to.approximately(0.5, 0.000001);
+      expect(defactor(await comet.getUtilization())).to.approximately(utilization, 0.000001);
     }
   }
 }
