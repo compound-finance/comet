@@ -10,26 +10,9 @@ Please join the #development room in the Compound community [Discord](https://co
 
 ## Interest Rates
 
-Compound III supply and borrow interest rates are bound by separate curves which are configured by governance. The current interest rates are single points on those curves.
+Compound III supply and borrow interest rates are bound by separate curves. The current interest rates are single points on those curves.
 
-Each interest rate curve has a utilization "kink" that affects the resulting rate calculation.
-
-```
-## Kink, ReserveRate, InterestRateBase, InterestRateSlopeLow, and InterestRateSlopeHigh
-## are numbers that are configured via governance only.
-
-Utilization = TotalBaseBorrowed / TotalBaseSupplied
-
-## If the Utilization is currently less than or equal to the Kink parameter
-BorrowRate = InterestRateBase + InterestRateSlopeLow * Utilization
-## Else
-BorrowRate = InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeHigh * (Utilization - Kink)
-
-## If the Utilization is currently less than or equal to the Kink parameter
-SupplyRate = (InterestRateBase + InterestRateSlopeLow * Utilization) * Utilization * (1 - ReserveRate)
-## Else
-SupplyRate = (InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeHigh * (Utilization - Kink)) * Utilization * (1 - ReserveRate)
-```
+Each curve has a utilization "kink" that affects the resulting rate calculation. All of the variables referenced in the formulas are set exclusively by Compound Governance.
 
 Accounts can earn interest by supplying the base asset. All other supported assets that can be supplied serve as collateral for borrowing and do not earn interest.
 
@@ -39,7 +22,12 @@ Owed interest accrues to open borrows of the base asset. Borrower interest accru
 
 This method returns the current supply rate APY as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the supply rate is:
 
-`Utilization * SupplyRateSlope`
+```
+## If the Utilization is currently less than or equal to the Kink parameter
+SupplyRate = (InterestRateBase + InterestRateSlopeLow * Utilization) * Utilization * (1 - ReserveRate)
+## Else
+SupplyRate = (InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeHigh * (Utilization - Kink)) * Utilization * (1 - ReserveRate)
+```
 
 #### Compound III
 
@@ -74,7 +62,12 @@ const supplyRate = await comet.callStatic.getSupplyRate();
 
 This method returns the current borrow rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the borrow rate is:
 
-`BorrowRateBase + UtilizationBorrowRateSlope`
+```
+## If the Utilization is currently less than or equal to the Kink parameter
+BorrowRate = InterestRateBase + InterestRateSlopeLow * Utilization
+## Else
+BorrowRate = InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeHigh * (Utilization - Kink)
+```
 
 #### Compound III
 
