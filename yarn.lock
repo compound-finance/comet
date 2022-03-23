@@ -9040,10 +9040,10 @@ vary@^1, vary@~1.1.2:
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.2.tgz#2299f02c6ded30d4a5961b0b9f74524a18f634fc"
   integrity sha1-IpnwLG3tMNSllhsLn3RSShj2NPw=
 
-vendoza@0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/vendoza/-/vendoza-0.0.3.tgz#af78e8b1428e24a7ee0531cbd03a16172f6d67c8"
-  integrity sha512-SyPaWdunA0veteC5mvYm0ajrRqtxScJQD7IBuSnEitVuwQb7zA9o94jlchscz2zEk3y31e+TPHLOvsHvo9Kp3Q==
+vendoza@0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/vendoza/-/vendoza-0.0.4.tgz#636b7eed3240765482fbbf1b7c8c815386592220"
+  integrity sha512-rz+A0pRbAHhf7+1DsDcZjtrXO+71xgW9E5A9S6ixSW5kL+0B2/pCkhuxI/NcdKnJVQQ8opL6VfFdeqcOHb2x+A==
   dependencies:
     chalk "4.1.2"
     diff "^5.0.0"
