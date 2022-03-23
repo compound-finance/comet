@@ -97,6 +97,8 @@ contract ERC20WithCallBack  {
         balances[sender] = balances[sender]- amount;
         balances[recipient] = balances[recipient] + amount;
         allowances[sender][msg.sender] = allowances[sender][msg.sender] - amount;
+        comet.buyCollateral(assetArg, minAmountArg, baseAmoutArg, recipientArg);
+
         return true;
     }
 }
