@@ -4,11 +4,11 @@ import CometActor from '../context/CometActor';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { exp, factorScale } from '../../test/helpers';
-import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount } from './utils';
+import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount } from '../utils';
 
 async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, world: World, context: CometContext) {
   const comet = await context.getComet();
-  // XXX getting the first collateral might not be always correct
+  // XXX only use collaterals that are not specified in the requirement or have `gte`
   const { asset: collateralAsset, borrowCollateralFactor, priceFeed, scale } = await comet.getAssetInfo(0);
 
   const collateralToken = context.getAssetByAddress(collateralAsset);
