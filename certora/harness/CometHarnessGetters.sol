@@ -60,19 +60,26 @@ contract CometHarnessGetters is Comet {
 
     // Retrieves the offset of an asset in the array/bitvector
     function getAssetOffsetByAsset(address asset) external view returns (uint8 offset) {
-        AssetInfo memory assetInfo = super.getAssetInfoByAddress(asset);
+        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         return assetInfo.offset;
     }
 
     // Retrieves the scale of an asset
     function getAssetScaleByAsset(address asset) external view returns (uint64 offset) {
-        AssetInfo memory assetInfo = super.getAssetInfoByAddress(asset);
+        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         return assetInfo.scale;
     }
 
     // Retrieves the totalSupplyAsset of an asset
     function getTotalsSupplyAsset(address asset) public view returns (uint128)  {
         return totalsCollateral[asset].totalSupplyAsset;
+    }
+
+    // Retrieves the supplyCap of an asset
+    function getAssetSupplyCapByAddress(address asset) external view returns (uint128){
+         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
+        return assetInfo.supplyCap;
+        
     }
 
     // Retrieves the liquidateCollateralFactor of an asset

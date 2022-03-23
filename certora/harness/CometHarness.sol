@@ -19,11 +19,15 @@ contract CometHarness is CometHarnessGetters {
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////////   global collateral asset   //////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-// 
+//
+    // Safe summarization of assetInfo according to properties proven in globalCollateralAsset.spec
+    // under the assumption that the constructor is called with unique assets 
+
     // Summarization of the assetConfigs array into maps that save:
     // 1. The index of each asset,
     // 2. The asset of each index,
     // 3. The AssetInfo of at each index
+
     mapping (address => uint8) public assetToIndex;
     mapping (uint8 => address) public indexToAsset;
     mapping (uint8 => AssetInfo) public assetInfoMap;
@@ -45,15 +49,13 @@ contract CometHarness is CometHarnessGetters {
         return assetInfo;
     }
 
-    // 
-    function getAssetSupplyCapByAddress(address asset) external view returns (uint128){
-        return getAssetInfo(assetToIndex[asset]).supplyCap;
-    }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////////   user collateral asset   ///////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 // 
+    /// Safe summarization of assetInfo according to properties proven in userCollateralAsset.spec
     // Summarization for assetIn bitvector. Saves assetIn info into maps:
     // 1. Given a bitvector and an asset determine if the bit is on or off (boolean)
     // 2. Given a bitvector, an asset and a boolean value that specify the supposed value of a specific asset, directs to the new bitvector that is formed.
@@ -107,44 +109,25 @@ contract CometHarness is CometHarnessGetters {
     }
 
 
-    bool public AccrueWasCalled;
+    
     /*********** Simplification ***********/
     /* under approximation (not taking into account all possible cases) */
-     function accrueInternal() override internal {
-
-        AccrueWasCalled = !AccrueWasCalled;
+    //This is equiveleant to assuming that accure has been called on the current timestamp 
+    // many properties of accrue are proven in interestComputation.spec
+    bool public accrueWasCalled;
+    function accrueInternal() override internal {
+        accrueWasCalled = !accrueWasCalled;
 
      }
 
-    /* safe approximation? (taking into account all possible cases) */
-    
-    // mapping( uint104 => mapping (uint104 => uint64 ))  symbolicSupplyRate;
-    // mapping( uint104 => mapping (uint104 => uint64 ))  symbolicBorrowRate;
-    // mapping( uint104 => mapping (uint104 => uint64 ))  symbolicUtilization;
-    
-
-    // function getSupplyRateInternal(TotalsBasic memory totals) internal view virtual override returns (uint64) {
-    //     return symbolicSupplyRate[totals.totalSupplyBase][totals.totalBorrowBase];
-    // }
-
-    // function getBorrowRateInternal(TotalsBasic memory totals) internal  virtual override view returns (uint64) {
-    //     return symbolicBorrowRate[totals.totalSupplyBase][totals.totalBorrowBase];
-    // }
-    
-    // function getUtilizationInternal(TotalsBasic memory totals) internal view override returns  (uint) {
-    //     return symbolicUtilization[totals.totalSupplyBase][totals.totalBorrowBase];
-    // }
+ 
 
 
-    function testTotalSupply() public view returns (uint104) {
-        // TotalsBasic memory totals = totalsBasic;
-        // totals = accrue(totals);
-        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        return totalSupplyBalance;
-    }
-
-
-    //transferAssetFrom is rather complex, splitting it to two functions 
+    /* Simplificaiton: 
+        transferAssetFrom is rather complex; 
+        splitting it to two functions allows Certora Prover to be able to run onthis functions.
+        Note : any change to the orig  transferAssetFrom should be adapted here! 
+    */  
     function transferAssetFrom(address src, address dst, address asset, uint amount) public override {
        
      }
@@ -167,6 +150,9 @@ contract CometHarness is CometHarnessGetters {
     }
 
     
+    /* Helpers: 
+        A function to check if an address is registers, i.e, it has an assetInfo strcture 
+    */  
     function isRegisterdAsAsset(address token) view external returns (bool) {
         return getAssetInfoByAddress(token).asset == token;
     }
