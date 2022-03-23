@@ -40,32 +40,21 @@ function simplifiedAssumptions() {
     require getBaseBorrowIndex() == getBaseIndexScale();
 }
 
-/* 
- Description :  
-        baseSupplyIndex increase with time
-        baseBorrowIndex increase with time
-
- formula : 
-
- status : proved
- 
-*/
-// V@V - indices are increasing after accrue (when time elapse)
 /*
     @Rule
+        supplyIndex_borrowIndex_rise_with_time
 
-    @Description:
+    @Description: indices are increasing after accrue (when time elapse)
         baseSupplyIndex increase with time
         baseBorrowIndex increase with time
 
     @Formula:
-        Supply_function@withrevert()
-        flagSupply => reverted_supply
-
+        NowInternal(e) > lastAccrualTime() => baseSupplyIndex_2 > baseSupplyIndex_1 &&
+                                              baseBorrowIndex_2 > baseBorrowIndex_1
     @Notes:
 
     @Link:
-        https://vaas-stg.certora.com/output/44289/a534afa257cbbaba166f/?anonymousKey=d9dba8d11b27e6080c0be78fcf34faa6a82404aa
+        
 */
 rule supplyIndex_borrowIndex_rise_with_time(){
     env e;
@@ -80,18 +69,23 @@ rule supplyIndex_borrowIndex_rise_with_time(){
                     base_borrow_index_2 > base_borrow_index_1);
 }
 
- 
-/* 
- Description :  
+/*
+    @Rule
+        supplyIndex_borrowIndex_monotonic
+
+    @Description: supplyIndex_borrowIndex_monotonic
         baseSupplyIndex monotonic
         baseBorrowIndex monotonic
 
- formula : 
+    @Formula:
+        baseSupplyIndex_2 >= baseSupplyIndex_1 &&
+        baseBorrowIndex_2 >= baseBorrowIndex_1
 
- status : proved
+    @Notes:
 
+    @Link:
+        
 */
-// V@V - indices are monotonically increased
 rule supplyIndex_borrowIndex_monotonic(){
     env e;
     uint64 base_supply_index_1 = getBaseSupplyIndex();
@@ -104,16 +98,21 @@ rule supplyIndex_borrowIndex_monotonic(){
     assert  base_borrow_index_2 >= base_borrow_index_1;
 }
 
+/*
+    @Rule
+        supplyRate_vs_utilization
 
-/* 
- Description :  
-        utilization increase implies supplyRate increase
+    @Description: utilization increase implies supplyRate increase
+        If the utilization is increased the supplyRate cannot decrease
 
- formula : 
+    @Formula:
+        utilization_2 > utilization_1 => supplyRate_2 >= supplyRate_1
 
- status : proved
+    @Notes:
+
+    @Link:
+        
 */
-// V@V - If the utilization is increased the supplyRate cannot decrease
 rule supplyRate_vs_utilization(){
     env e1; env e2;
     setup(e1);
@@ -127,20 +126,22 @@ rule supplyRate_vs_utilization(){
     assert utilization_2 > utilization_1 => supplyRate_2 >= supplyRate_1;
 }
 
+/*
+    @Rule
+        utilization_zero
 
-/* 
-    Description :  
-     if borrowRate == base interest rate then utilization == 0   
+    @Description:
+        if borrowRate == base interest rate then utilization == 0
+        When utilization is 0, borrow rate equals to the base borrow rate.
 
-    formula : 
-        borrowRate == perSecondInterestRateBase() => getUtilization(e) == 0;
-    
-    status : first assert proved
+    @Formula:
+        borrowRate == perSecondInterestRateBase() => Utilization() == 0
 
-    reason : failed due to rounding down in utilization -> mulFactor
-    link https://vaas-stg.certora.com/output/65782/b3fe39e314b1d0a592f5/?anonymousKey=877a0bbb8eea456fcacf3b5ed85d5c947d4cf890#utilization_zeroResults
+    @Notes:
+
+    @Link:
+        
 */
-// V@V - When utilization is 0, borrow rate equals to the base borrow rate.
 rule utilization_zero(){
     env e;
     setup(e);
@@ -149,35 +150,44 @@ rule utilization_zero(){
 }
 
 
-/* 
-    Description :  
-     if Borrow Base == 0 utilization should equal zero
+/*
+    @Rule
+        borrowBase_vs_utilization
 
-    formula : 
-        getTotalBorrowBase(e) == 0 => getUtilization(e) == 0;
+    @Description:
+        if BorrowBase == 0 utilization should equal zero
+        If nobody borrows from the system, the utilization must be 0.
 
-    status : proved
- 
-    reason : 
- */
-// V@V - If nobody borrows from the system, the utilization must be 0.
+    @Formula:
+        BorrowBase() == 0 => Utilization() == 0;
+
+    @Notes:
+
+    @Link:
+        
+*/
 rule borrowBase_vs_utilization(){
     env e;
     assert getTotalBorrowBase(e) == 0 => getUtilization(e) == 0;
 }
 
+/*
+    @Rule
+        isLiquiditable_false_should_not_change
 
-/* 
-    Description :  
-     Verifies that isLiquidatable == false can change to true only if getPrice() has changed for base or asset
+    @Description:
+        Verifies that isLiquidatable == false can change to true only if getPrice() has changed for base or asset
+        A liquiditable user cannot turn unliquiditable unless the price ratio of the collateral changed.
 
-    status : pass
+    @Formula:
+        BorrowBase() == 0 => Utilization() == 0;
 
-    reason : 
- */
-// V@V - A liquiditable user cannot turn unliquiditable unless the price ratio of the collateral changed.
-// This is without calling any functions, just due to change in time that result a change in price
-rule isLiquiditable_false_should_not_change(address account){
+    @Notes: This is without calling any functions, just due to change in time that result a change in price
+
+    @Link:
+        
+*/
+rule isLiquidatable_false_should_not_change(address account){
     env e1; env e2;
     require e2.block.timestamp > e1.block.timestamp;
     setup(e1);
@@ -202,6 +212,22 @@ rule isLiquiditable_false_should_not_change(address account){
      isBorrowCollateralized => account can borrow, hence he's not Liquidatable
 */
 // V@V - if a user is collateralized then they are not liquiditable
+/*
+    @Rule
+        isCol_implies_not_isLiq
+
+    @Description:
+        isBorrowCollateralized => account can borrow, hence he's not Liquidatable
+         if a user is collateralized then they are not liquiditable
+
+    @Formula:
+        isBorrowCollateralized(account) => !isLiquidatable(account);
+
+    @Notes:
+
+    @Link:
+        
+*/
 rule isCol_implies_not_isLiq(address account){
     env e;
     address asset;
@@ -211,22 +237,23 @@ rule isCol_implies_not_isLiq(address account){
     assert isBorrowCollateralized(e,account) => !isLiquidatable(e,account);
 }
 
-/* 
-    Description :  
-     Verifies that TotalBaseSupplyIndex and getBaseBorrowIndex always greater than getBaseIndexScale
+/*
+    @Rule
+        supplyIndex_borrowIndex_GE_getBaseIndexScale
 
-    formula : 
-        getBaseSupplyIndex() >= getBaseIndexScale() &&
-        getBaseBorrowIndex() >= getBaseIndexScale();
+    @Description:
+        Verifies that TotalBaseSupplyIndex and getBaseBorrowIndex always greater than getBaseIndexScale
 
-    status : proved
+    @Formula:
+        BaseSupplyIndex() >= BaseIndexScale() &&
+        BaseBorrowIndex() >= BaseIndexScale();
 
-    reason : 
 
-    link   : 
+    @Notes: proved to be used in other rules.
+
+    @Link:
+        
 */
-// V@V - BaseSupplyIndex and BaseBorrowIndex are monotonically increasing variables
-// proved to be used in other rules.
 rule supplyIndex_borrowIndex_GE_getBaseIndexScale(){
     env e;
     require getBaseSupplyIndex() >= getBaseIndexScale() &&
@@ -238,19 +265,21 @@ rule supplyIndex_borrowIndex_GE_getBaseIndexScale(){
         getBaseBorrowIndex() >= getBaseIndexScale();
 }
 
+/*
+    @Rule
+        absolute_presentValue_GE_principal
 
-/* 
-    Description :  
-     presentValue always greater than principalValue
+    @Description:
+        presentValue always greater than principalValue
 
-    formula : 
-     presentValue >= _principalValue;
+    @Formula:
+        presentValue >= _principalValue;
 
-    status : proved
-    reason : 
-    link   : https://vaas-stg.certora.com/output/65782/f2f32f50a2bbf14deb79/?anonymousKey=494980dfd3ebcced1ee0d1088acf1a795f9f2a08#SupplyIndex_vs_BorrowIndexResults
+    @Notes: the absolute presentValue is GE to the absolut principleValue 
+
+    @Link:
+        
 */
-// V@V - the absolute presentValue is GE to the absolut principleValue 
 rule absolute_presentValue_GE_principal(int104 presentValue){
     env e;
     setup(e);
@@ -261,7 +290,21 @@ rule absolute_presentValue_GE_principal(int104 presentValue){
 }
 
 
-// V@V - presentValue is positive iff principleValue is positive
+/*
+    @Rule
+        presentValue_G_zero
+
+    @Description:
+        presentValue is positive iff principleValue is positive
+
+    @Formula:
+        presentValue > 0 <=> principalValue > 0
+
+    @Notes:
+
+    @Link:
+        
+*/
 rule presentValue_G_zero(int104 presentValue){
     env e;
     setup(e);
@@ -270,7 +313,21 @@ rule presentValue_G_zero(int104 presentValue){
 }
 
 
-// ?@? - 
+/*
+    @Rule
+        presentValue_EQ_principal
+
+    @Description:
+        presentValue equal principalValue implies:
+
+    @Formula:
+        presentValue == principalValue => BaseSupplyIndex == BaseIndexScale
+
+    @Notes:
+
+    @Link:
+        
+*/
 rule presentValue_EQ_principal(int104 presentValue){
     env e;
    setup(e);
@@ -290,14 +347,42 @@ rule presentValue_EQ_principal(int104 presentValue){
 }
 
 
-// V@V - If utilization is 0, then supplyRate is 0
+/*
+    @Rule
+        utilization_zero_supplyRate_zero
+
+    @Description:
+        If utilization is 0, then supplyRate is 0
+
+    @Formula:
+        Utilization == 0 => SupplyRate == 0
+
+    @Notes:
+
+    @Link:
+        
+*/
 rule utilization_zero_supplyRate_zero(){
     env e;
     assert getUtilization(e) == 0 => getSupplyRate(e) == 0;
 }
 
 
-// V@V - getSupplyRate should always revert if reserveRate > FACTOR_SCALE
+/*
+    @Rule
+        getSupplyRate_revert_characteristic
+
+    @Description:
+        getSupplyRate should always revert if reserveRate > FACTOR_SCALE
+
+    @Formula:
+        reserveRate > FACTOR_SCALE => isRevert
+
+    @Notes:
+
+    @Link:
+        
+*/
 rule getSupplyRate_revert_characteristic(){
     env e;
     getSupplyRate@withrevert(e);
@@ -306,9 +391,21 @@ rule getSupplyRate_revert_characteristic(){
     assert (reserveRate(e) > get_FACTOR_SCALE()) => isRevert;
 }
 
+/*
+    @Rule
+        withdraw_more_reserves
 
-// F@F - reserves cannot have negative value
-// Found bug - Accrue should be called at the beginning of withdrawReserves()
+    @Description:
+        withdrawReserves cannot end up with negative reserves
+
+    @Formula:
+        reserveRate > FACTOR_SCALE => isRevert
+
+    @Notes: Found bug - Accrue should be called prior to withdrawReserves()
+
+    @Link:
+        
+*/
 rule withdraw_more_reserves(address to , uint amount){
     env e;
     require to != currentContract;
@@ -318,4 +415,40 @@ rule withdraw_more_reserves(address to , uint amount){
     int reserves = getReserves(e);
 
     assert reserves >= 0;
+}
+
+/*
+    @Rule
+        verify_transferAsset
+
+    @Description:
+        transfer should not change the combine presentValue of src and dst
+
+    @Formula:
+        presentValue_src1 + presentValue_dst1 == presentValue_src2 + presentValue_dst2
+
+    @Notes:
+
+    @Link:
+        
+*/
+rule verify_transferAsset(){
+    env e;
+
+    address src;
+    address dst;
+    address asset;
+    uint amount;
+
+    simplifiedAssumptions();
+
+    mathint presentValue_src1 = to_mathint(call_presentValue(getPrincipal(e,src)));
+    mathint presentValue_dst1 = to_mathint(call_presentValue(getPrincipal(e,dst)));
+
+    transferAssetFrom(e, src, dst, asset, amount);
+
+    mathint presentValue_src2 = to_mathint(call_presentValue(getPrincipal(e,src)));
+    mathint presentValue_dst2 = to_mathint(call_presentValue(getPrincipal(e,dst)));
+
+    assert presentValue_src1 + presentValue_dst1 == presentValue_src2 + presentValue_dst2;
 }

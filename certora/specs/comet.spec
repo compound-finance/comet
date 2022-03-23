@@ -25,7 +25,6 @@ methods {
 
     _baseToken.balanceOf(address account) returns (uint256) envfree
 
-    getUserCollateralBalance(address, address) returns uint128 envfree
     callSummarizedIsInAsset(uint16, uint8) returns (bool) envfree
     getAssetinOfUser(address) returns (uint16) envfree
     assetToIndex(address) returns (uint8) envfree
@@ -51,6 +50,10 @@ hook Sstore userBasic[KEY address a].principal int104 balance
 
 hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 balance (uint128 old_balance) STORAGE {
     sumBalancePerAssert[t] = sumBalancePerAssert[t] - old_balance + balance;
+}
+
+hook Sload uint64 scale assetInfoMap[KEY uint8 assetOffset].scale STORAGE {
+        require scale == 1;
 }
 
 function call_functions_with_specific_asset(method f, env e, address asset) returns uint{
