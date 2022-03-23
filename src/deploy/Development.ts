@@ -169,7 +169,7 @@ export async function deployDevelopmentComet(
   if (deployProxy) {
     let proxyAdminArgs: [] = [];
     let proxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
-      'vendor/proxy/ProxyAdmin.sol',
+      'vendor/proxy/transparent/ProxyAdmin.sol',
       proxyAdminArgs
     );
 
@@ -177,7 +177,7 @@ export async function deployDevelopmentComet(
       TransparentUpgradeableProxy,
       TransparentUpgradeableProxy__factory,
       [string, string, string]
-    >('vendor/proxy/TransparentUpgradeableProxy.sol', [
+    >('vendor/proxy/transparent/TransparentUpgradeableProxy.sol', [
       comet.address,
       proxyAdmin.address,
       (await comet.populateTransaction.initializeStorage()).data,
