@@ -36,7 +36,7 @@ async function setupContracts(
 ): Promise<TestContracts> {
   let proxyAdminArgs: [] = [];
   let proxyAdmin = await deploy<ProxyAdmin, ProxyAdmin__factory, []>(
-    'vendor/proxy/ProxyAdmin.sol',
+    'vendor/proxy/transparent/ProxyAdmin.sol',
     proxyAdminArgs,
     hre,
     { cache }
@@ -54,7 +54,7 @@ async function setupContracts(
     TransparentUpgradeableProxy__factory,
     [string, string, string]
   >(
-    'vendor/proxy/TransparentUpgradeableProxy.sol',
+    'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
     [
       finnImpl.address,
       proxyAdmin.address,
