@@ -1,6 +1,15 @@
 {
   "strict": true,
   "files": {
+    "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol": {
+      "source": {
+        "git": {
+          "repo": "org-25111032@github.com:smartcontractkit/chainlink.git",
+          "commit": "aa5a452c2a3761fcb24fccc7165b42aae015023e",
+          "path": "contracts/src/v0.8/interfaces/AggregatorV3Interface.sol"
+        }
+      }
+    },
     "utils/Address.sol": {
       "source": {
         "git": {
@@ -100,8 +109,5 @@
         }
       }
     }
-  },
-  "allowedExtra": [
-    "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol"
-  ]
+  }
 }
