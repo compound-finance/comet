@@ -142,13 +142,13 @@ rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f
     env e;
     calldataarg args;
 
-    require !AccrueWasCalled(e) ;
+    require !accrueWasCalled(e) ;
 
     uint256 balance_pre = tokenBalanceOf(_baseToken,currentContract);
     f(e,args) ;
     uint256 balance_post = tokenBalanceOf(_baseToken,currentContract);
 
-    assert balance_post != balance_pre => AccrueWasCalled(e);
+    assert balance_post != balance_pre => accrueWasCalled(e);
 }
 
 
