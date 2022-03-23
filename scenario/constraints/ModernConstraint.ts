@@ -57,7 +57,7 @@ export class ModernConstraint<T extends CometContext, R extends Requirements> im
       }
     }
 
-    return solutions;
+    return solutions.length > 0 ? solutions : null;
   }
 
   async check(requirements: R, context: T, world: World) {
