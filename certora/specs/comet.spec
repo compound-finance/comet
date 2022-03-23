@@ -119,20 +119,24 @@ function simplifiedAssumptions() {
     require getBaseBorrowIndex(e) == getBaseIndexScale(e);
 }
 
+/*
+    @Rule
+        balance_change_vs_accrue
 
-// rule sanity(method f) {
-// 	env e;
-// 	calldataarg arg;
-// 	baseBalanceOf(e, arg);
-// 	assert false, "this method should have a non reverting path";
-// }
+    @Description:
+        can't change balance without calling accrue
 
-// rule withdraw_min(){
-//     env e;
-//     withdraw(e,e.msg.sender,)
-// }
+    @Formula:
+        balance_pre = tokenBalanceOf(_baseToken,currentContract)
+        call any function
+        balance_post = tokenBalanceOf(_baseToken,currentContract)
+        assert balance_post != balance_pre => AccrueWasCalled
 
+    @Notes:
 
+    @Link:
+
+*/
 
 rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
     env e;
@@ -173,13 +177,29 @@ rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) &
  }
 
 
-// moved from CometInterest
+/*
+    @Rule
+        only_accrue_change_presentValue
 
-// ?@? - Calling to accrue is the only way to change presentValue
+    @Description:
+        Calling to accrue is the only way to change presentValue
+
+    @Formula:
+        presentValue1 = presentValue(principal)
+        call any function
+        presentValue2 = presentValue(principal)
+        assert presentValue1 == presentValue2
+
+    @Notes:
+
+    @Link:
+        
+*/
 rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
     env e; calldataarg args;
-  
-  call_accrueInternal(e); // maybe change to lastAccrualTime == nowInternal
+    simplifiedAssumptions();  
+
+    require getlastAccrualTime() == call_getNowInternal(e); // don't call accrue
 
   int104 principal;
   int104 presentValue1 = call_presentValue(principal);
@@ -190,7 +210,21 @@ rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f
 }
 
 
-// ?@? - transfer should not change the combine presentValue of src and dst
+/*
+    @Rule
+        verify_transferAsset
+
+    @Description:
+        transfer should not change the combine presentValue of src and dst
+
+    @Formula:
+        presentValue_src1 + presentValue_dst1 == presentValue_src2 + presentValue_dst2
+
+    @Notes:
+
+    @Link:
+        
+*/
 rule verify_transferAsset(){
     env e;
 

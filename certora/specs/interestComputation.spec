@@ -416,39 +416,3 @@ rule withdraw_more_reserves(address to , uint amount){
 
     assert reserves >= 0;
 }
-
-/*
-    @Rule
-        verify_transferAsset
-
-    @Description:
-        transfer should not change the combine presentValue of src and dst
-
-    @Formula:
-        presentValue_src1 + presentValue_dst1 == presentValue_src2 + presentValue_dst2
-
-    @Notes:
-
-    @Link:
-        
-*/
-rule verify_transferAsset(){
-    env e;
-
-    address src;
-    address dst;
-    address asset;
-    uint amount;
-
-    simplifiedAssumptions();
-
-    mathint presentValue_src1 = to_mathint(call_presentValue(getPrincipal(e,src)));
-    mathint presentValue_dst1 = to_mathint(call_presentValue(getPrincipal(e,dst)));
-
-    transferAssetFrom(e, src, dst, asset, amount);
-
-    mathint presentValue_src2 = to_mathint(call_presentValue(getPrincipal(e,src)));
-    mathint presentValue_dst2 = to_mathint(call_presentValue(getPrincipal(e,dst)));
-
-    assert presentValue_src1 + presentValue_dst1 == presentValue_src2 + presentValue_dst2;
-}
