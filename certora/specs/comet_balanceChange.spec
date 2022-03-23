@@ -4,18 +4,28 @@ methods {
     call_hasPermission(address, address) returns (bool) envfree
 }
 
-/* 
- Description :  
+/*
+    @Rule
+
+    @Description:
         User principal balance may decrease only by a call from them or from a permissioned manager
 
- formula : 
-        userBasic[user].principal == x;
-        op;
-        userBasic[user].principal == y;
-        y < x => msg.sender == user || hasPermission[user][msg.sender] == true; 
+    @Formula:
+        {
+             userBasic[user].principal = x
+        }
+        < op >
+        {
+            userBasic[user].principal = y
+            y < x => user = msg.sender || hasPermission[user][msg.sender] == true; 
+        }
 
- status : proved     
+    @Notes:
+        
+    @Link:
+        https://vaas-stg.certora.com/output/67509/8b70e8c3633a54cfc7ba?anonymousKey=d2c319cb2734c3978e15fa3833f55b19c48f8fda
 */
+
 rule balance_change_by_allowed_only(method f, address user)
 filtered { f-> !similarFunctions(f) && !f.isView }
 {
@@ -34,4 +44,3 @@ filtered { f-> !similarFunctions(f) && !f.isView }
     assert balanceAfter < balanceBefore => 
         ((e.msg.sender == user) || permission);
 }
-

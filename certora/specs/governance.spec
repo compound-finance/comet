@@ -1,6 +1,4 @@
 methods {
-    pause(bool ,bool ,bool ,bool ,bool)
-    withdrawReserves(address , uint) 
     governor() returns (address) envfree
     pauseGuardian() returns (address) envfree
 }
@@ -13,13 +11,21 @@ definition governorOrPauseGuardian(address a) returns bool =
     a == governor() || a == pauseGuardian();
 
 
-/* 
- Description :  
-        pause() and withdrawReserves() functions work only when called by a governor or pauseGuardian
+/*
+    @Rule
 
- formula : 
+    @Description:
+        pause() and withdrawReserves() may be called only by governor or by pauseGuardian (pause)
 
- status : proved     
+    @Formula:
+        { }
+        < call to function pause() or withdrawReserves() >
+        { !lastReverted => user(msg.sender) = governor || user(msg.sender) = pauseGuardian}
+
+    @Notes:
+
+    @Link:
+        https://vaas-stg.certora.com/output/67509/440f56e30a982ae399d3/?anonymousKey=125470c4b4a2982c43ea946109e021b940c49b6b
 */
 rule governorIntegrity(method f) filtered { f -> governedFunctions(f)  }
 {

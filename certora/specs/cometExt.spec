@@ -10,28 +10,40 @@ function valid_allowance(uint256 amount) returns bool {
     return (amount == 0 || amount == max_uint256);
 }
 
+/*
+    @Rule
 
-/* 
- Description :  
+    @Description:
         Spender's allowance may only be equal to 0 or to max_uint256
 
- formula : 
-        allowance[owner][spender] == 0 || allowance[owner][spender] == max_uint256
+    @Formula:
+        allowance[owner][spender] = 0 || allowance[owner][spender] = max_uint256
 
- status : proved       
+    @Notes:
+
+    @Link:
+        https://vaas-stg.certora.com/output/67509/a24bef867b4182d0ff68?anonymousKey=4a4d2ee36793cf0700bd496f045f0ad3c64e5191
+
 */
 invariant allowanceOnlyZeroOrMax(address owner, address spender)
     valid_allowance(allowance(owner, spender))
 
+/*
+    @Rule
 
-/* 
- Description :  
+    @Description:
         Trying to approve an allowance which is not 0 or max_uint should fail
 
- formula : 
-        amount > 0 && amount < max_uint256 => approve(spender, amount) reverts
+    @Formula:
+        { 0 < amount < max_uint256 }
+        < call approve() with amount >
+        { lastReverted = true }
 
- status : proved     
+    @Notes:
+
+    @Link:
+        https://vaas-stg.certora.com/output/67509/c3d2d3cf8c215d055b2e/?anonymousKey=253def519e372bae51eecc09b459fb60849b850e
+
 */
 rule approveFailsOnInvalidAllowance(address spender, uint256 amount) {
     env e;
@@ -40,18 +52,28 @@ rule approveFailsOnInvalidAllowance(address spender, uint256 amount) {
     assert lastReverted;
 }
 
-/* 
- Description :  
+/*
+    @Rule
+
+    @Description:
         Allowance changes only as a result of approve(), allow() and allowBySig().
         Allowance changes for non msg.sender only as a result of allowBySig()
 
- formula : 
-        allowance[owner][spender] = x;
-        op;
-        allowance[owner][spender] = y;
-        x != y => op in {approve(), allow(), allowBySig()}
+    @Formula:
+        { 
+            allowance[owner][spender] = x 
+        }
+        < call to any function f >
+        { 
+            allowance[owner][spender] = y
+            x != y => f.selector = approve || f.selector = allow || f.selector = allowBySig
+        }
 
- status : proved     
+    @Notes:
+
+    @Link:
+        https://vaas-stg.certora.com/output/67509/9620fa8dc4cfe4a67cdd?anonymousKey=42c7e941001d7ca062ee1d4ee7cfd3304b52f2fc
+
 */
 rule validAllowanceChanges(method f, address owner, address spender) {
     env e; calldataarg args;
@@ -70,14 +92,27 @@ rule validAllowanceChanges(method f, address owner, address spender) {
 }
 
 
-/* 
- Description :  
-        Trying to approve an allowance which is 0 or max_uint should always succeed
+/*
+    @Rule
 
- formula : 
-        amount == 0 && amount == max_uint256 => approve(spender, amount) doesn't revert
+    @Description:
+        Approve with a valid amount (0 or max_uint256) succeds
 
- status : proved     
+    @Formula:
+        { 
+            amount = 0 || amount = max_uint256
+        }
+        <   
+            approve(spender, amount)
+        >
+        {
+            lastReverted = false
+        }
+
+    @Notes:
+
+    @Link:
+        https://vaas-stg.certora.com/output/67509/9a48f15e2358f6600c36?anonymousKey=194acb8989d08cbd7b5cec1e8045fb319bd5138d
 */
 rule validApproveSucceeds(address spender, uint256 amount) {
     env e;
