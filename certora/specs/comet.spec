@@ -51,6 +51,10 @@ hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 
     sumBalancePerAssert[t] = sumBalancePerAssert[t] - old_balance + balance;
 }
 
+hook Sload uint64 scale assetInfoMap[KEY uint8 assetOffset].scale STORAGE {
+        require scale == 1;
+}
+
 function call_functions_with_specific_asset(method f, env e, address asset) returns uint{
     address _account; uint amount; address account_; uint minAmount;
     address[] accounts_array;
