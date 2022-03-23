@@ -4,7 +4,7 @@ import CometActor from '../context/CometActor';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { exp, factorScale } from '../../test/helpers';
-import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount } from '../utils';
+import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, max, min } from '../utils';
 
 async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, world: World, context: CometContext) {
   const comet = await context.getComet();
@@ -70,9 +70,15 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
             let toTransfer = 0n;
             switch (amount.op) {
               case ComparisonOp.EQ:
-              case ComparisonOp.GTE:
-              case ComparisonOp.LTE:        
                 toTransfer = exp(amount.val, decimals) - cometBalance;
+                break;
+              case ComparisonOp.GTE:
+                // `toTransfer` should not be negative
+                toTransfer = max(exp(amount.val, decimals) - cometBalance, 0);
+                break;
+              case ComparisonOp.LTE:
+                // `toTransfer` should not be positive        
+                toTransfer = min(exp(amount.val, decimals) - cometBalance, 0);
                 break;
               case ComparisonOp.GT:
                 toTransfer = exp(amount.val, decimals) - cometBalance + 1n;

@@ -7,6 +7,9 @@ export function abs(x: bigint): bigint {
   return x < 0n ? -x : x;
 }
 
+export const max = (...args) => args.reduce((m, e) => e > m ? e : m);
+export const min = (...args) => args.reduce((m, e) => e < m ? e : m);
+
 export function expectApproximately(expected: bigint, actual: bigint, precision: bigint = 0n) {
   expect(BigNumber.from(abs(expected - actual))).to.be.lte(BigNumber.from(precision));
 }

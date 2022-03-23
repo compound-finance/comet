@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { BigNumber } from 'ethers';
 import { exp } from '../../test/helpers';
-import { ComparativeAmount, ComparisonOp, getActorAddressFromName, getAssetFromName, parseAmount } from '../utils';
+import { ComparativeAmount, ComparisonOp, getActorAddressFromName, getAssetFromName, parseAmount, max, min } from '../utils';
 
 export class TokenBalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, initialContext: T, initialWorld: World) {
@@ -38,9 +38,15 @@ export class TokenBalanceConstraint<T extends CometContext, R extends Requiremen
             let toTransfer = 0n;
             switch (amount.op) {
               case ComparisonOp.EQ:
-              case ComparisonOp.GTE:
-              case ComparisonOp.LTE:        
                 toTransfer = exp(amount.val, decimals) - balance;
+                break;
+              case ComparisonOp.GTE:
+                // `toTransfer` should not be negative
+                toTransfer = max(exp(amount.val, decimals) - balance, 0);
+                break;
+              case ComparisonOp.LTE:
+                // `toTransfer` should not be positive        
+                toTransfer = min(exp(amount.val, decimals) - balance, 0);
                 break;
               case ComparisonOp.GT:
                 toTransfer = exp(amount.val, decimals) - balance + 1n;
