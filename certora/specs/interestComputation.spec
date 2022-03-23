@@ -40,6 +40,8 @@ function simplifiedAssumptions() {
     require getBaseBorrowIndex() == getBaseIndexScale();
 }
 
+
+
 /*
     @Rule
         supplyIndex_borrowIndex_rise_with_time
