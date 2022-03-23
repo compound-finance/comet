@@ -411,12 +411,26 @@ scenario(
   }
 );
 
-scenario.skip(
+scenario(
   'Comet#transfer reverts if borrow is less than minimum borrow',
   {
     upgrade: true,
+    cometBalances: {
+      albert: { $base: 0, $asset0: 100 }
+    }
   },
   async ({ comet, actors }, world, context) => {
-    // XXX
+    const { albert, betty } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const minBorrow = (await comet.baseBorrowMin()).toBigInt();
+
+    await expect(
+      albert.transferAsset({
+        dst: betty.address,
+        asset: baseAsset.address,
+        amount: minBorrow / 2n
+      })
+    ).to.be.revertedWith("custom error 'BorrowTooSmall()'");
   }
 );

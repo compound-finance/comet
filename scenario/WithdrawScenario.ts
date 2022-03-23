@@ -258,18 +258,78 @@ scenario(
   }
 );
 
-scenario.skip(
-  'Comet#withdraw reverts if asset is not supported',
+scenario(
+  'Comet#withdraw base reverts if position is undercollateralized',
   {
     upgrade: true,
+    cometBalances: {
+      albert: { $base: 0 }, // in units of asset, not wei
+      charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
+    },
   },
   async ({ comet, actors }, world, context) => {
-    // XXX requires deploying an unsupported asset (maybe via remote token constraint)
+    const { albert } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const scale = (await comet.baseScale()).toBigInt();
+
+    await expect(
+      albert.withdrawAsset({
+        asset: baseAsset.address,
+        amount: 100n * scale,
+      })
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+  }
+);
+
+scenario(
+  'Comet#withdraw collateral reverts if position is undercollateralized',
+  {
+    upgrade: true,
+    cometBalances: {
+      albert: { $base: -100, $asset0: 100 }, // in units of asset, not wei
+    },
+  },
+  async ({ comet, actors }, world, context) => {
+    const { albert } = actors;
+    const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
+    const collateralAsset = context.getAssetByAddress(asset0Address);
+    const scale = scaleBN.toBigInt();
+
+    await expect(
+      albert.withdrawAsset({
+        asset: collateralAsset.address,
+        amount: 100n * scale
+      })
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+  }
+);
+
+scenario(
+  'Comet#withdraw reverts if borrow is less than minimum borrow',
+  {
+    upgrade: true,
+    cometBalances: {
+      albert: { $base: 0, $asset0: 100 }
+    }
+  },
+  async ({ comet, actors }, world, context) => {
+    const { albert } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const minBorrow = (await comet.baseBorrowMin()).toBigInt();
+
+    await expect(
+      albert.withdrawAsset({
+        asset: baseAsset.address,
+        amount: minBorrow / 2n
+      })
+    ).to.be.revertedWith("custom error 'BorrowTooSmall()'");
   }
 );
 
 scenario.skip(
-  'Comet#withdraw reverts if position is undercollateralized',
+  'Comet#withdraw reverts if asset is not supported',
   {
     upgrade: true,
   },
@@ -284,16 +344,6 @@ scenario.skip(
     upgrade: true,
   },
   async ({ comet, actors }, world, context) => {
-    // XXX requires deploying an unsupported asset (maybe via remote token constraint)
-  }
-);
-
-scenario.skip(
-  'Comet#withdraw reverts if borrow is less than minimum borrow',
-  {
-    upgrade: true,
-  },
-  async ({ comet, actors }, world, context) => {
-    // XXX requires deploying an unsupported asset (maybe via remote token constraint)
+    // XXX fix for development base, where Faucet token doesn't give the same revert message
   }
 );
