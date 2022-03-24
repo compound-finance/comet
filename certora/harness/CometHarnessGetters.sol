@@ -127,4 +127,9 @@ contract CometHarnessGetters is Comet {
         require(success);
         return abi.decode(result, (int104));
     }
+    
+       // External wrapper for hasPermission
+    function call_hasPermission(address owner, address manager) external view returns (bool) {
+        return hasPermission(owner, manager);
+    }
 }

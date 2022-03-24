@@ -21,12 +21,12 @@ Symbols:
 | 4 | `borrowBase_vs_utilization` | DONE | ✅ | - | - |
 | 5 | `utilization_zero` | DONE | ✅ | -| - |
 | 6 | `isLiquiditable_false_should_not_change` |  DONE | ✅ | - | - |
-| 7 | `absolute_presentValue_GE_principal` | DONE | ✅ | - | Refined |
+| 7 | `absolute_presentValue_GE_principal` | DONE | ✅ | - | - |
 | 8 | `presentValue_G_zero` | DONE | ✅  | - | - |
 | 9 | `presentValue_EQ_principal` | DONE | ✅ | - | - |
 | 10 | `supplyRate_vs_utilization` | DONE | ✅ | - | - |
 | 11 | `utilization_zero_supplyRate_zero` | DONE | ✅ | - | - |
-| 12 | `getSupplyRate_revert_characteristic` | DONE | ✅ | - | Refined |
+| 12 | `getSupplyRate_revert_characteristic` | DONE | ✅ | - | - |
 | 13 | `isCol_implies_not_isLiq` | DONE | ✅ | - | - |
 | 14 | `only_accrue_change_presentValue` | DONE | ✅ | - | NEW |
 | 15 | `verify_transferAsset` | DONE | ✅ | - | NEW |
@@ -49,13 +49,13 @@ Symbols:
 | 28 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions | - |
 | 29 | `base_balance_vs_totals` | IN PROGRESS | 👷 | on simplified assumptions | breaks |
 | 30 | `Collateral_totalSupply_LE_supplyCap` | DONE | ✅ | using the summarization of getAssetInfo | - |
-| 31  | `borrow_then_collateralized` | IN PROGRESS | 👷 | - | - | 
+| 31  | `borrow_then_collateralized` | IN PROGRESS | 🕝 | - | - | 
 | |**High level updates** |
 | 32 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | - | - |
 | 33 | `balance_change_vs_accrue` | IN PROGRESS | 👷 | fails (withdrawReserves -? buyCollateral - ok) | Follow fix? | 
 | | **BuyCollateral** |
 | 34 | `antiMonotonicityOfBuyCollateral` | DONE | ✅ | - | - |
-| 35 | `buyCollateralMax` | DONE | ✅ | - | NEW |
+| 35 | `buyCollateralMax` | DONE | ✅ | - | - |
 | | **Absorb** |
 | 36 | `canNot_double_absorb` | DONE | ✅  | in two calls | - |
 | 37 | `canNot_absorb_same_account`| IN PROGRESS | 🕝  | in one call | - |
@@ -72,14 +72,14 @@ Symbols:
 | 45 | `withdraw_more_reserves` | FAIL | ❌ | - | FOLLOW FIX |
 |    | **General**
 | 46 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷 | - | - | 
-| 47 | `usage_registered_assets_only` | DONE | ✅ | - | NEW |
-| 48 | `balance_change_vs_registered` | DONE | ✅ | - | NEW |
+| 47 | `usage_registered_assets_only` | DONE | ✅ | - | - |
+| 48 | `balance_change_vs_registered` | DONE | ✅ | - | - |
 |    | **CometExt**
-| 49 | `allowanceOnlyZeroOrMax` | DONE | ✅ | - | NEW |
-| 50 | `approveFailsOnInvalidAllowance` | DONE | ✅ | - | NEW |
-| 51 | `validAllowanceChanges` | DONE | ✅ | - | NEW |
-| 52 | `validApproveSucceeds` | DONE | ✅ | - | NEW |
-| 53 | `withdrawAfterApprove` | IN PROGRESS | 🕝 | - | NEW |
+| 49 | `allowanceOnlyZeroOrMax` | DONE | ✅ | - | - |
+| 50 | `approveFailsOnInvalidAllowance` | DONE | ✅ | - | - |
+| 51 | `validAllowanceChanges` | DONE | ✅ | - | - |
+| 52 | `validApproveSucceeds` | DONE | ✅ | - | - |
+| 53 | `withdrawAfterApprove` | IN PROGRESS | 🕝 | - | - |
 
 
 ## Interest Computation

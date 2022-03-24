@@ -6,6 +6,7 @@ import "B_cometSummarization.spec"
 ////////////////////////////////////////////////////////////////////////////////
 //
 
+//  @Complete Run: https://vaas-stg.certora.com/output/44289/fd7593841f1bfb3f09ed/?anonymousKey=b1106e54098acbe885e603a65e61e777425d4cbf
 
 /*
     @Rule
@@ -15,10 +16,14 @@ import "B_cometSummarization.spec"
 
     @Formula:
         {
-            flagSupply = 
+            flagSupply = get_supply_paused()
         }
-        < call any supply function with revert >
-        flagSupply => reverted_supply
+
+        < call any supply function >
+
+        {
+            flagSupply => revert
+        }
 
     @Notes:
         Checked on all 3 supply functions
@@ -57,8 +62,15 @@ rule check_pauseSupply_functionality(method f, env e) filtered {f -> all_public_
         checks transfer functions are reverting if pauseTransfer is true.
 
     @Formula:
-        Transfer_function@withrevert()
-        flagTransfer => reverted_transfer
+        {
+            flagTransfer = get_transfer_paused()
+        }
+
+        < call any transfer function >
+        
+        {
+            flagTransfer => revert
+        }
 
     @Notes:
         Checked on both transfer functions
@@ -94,8 +106,15 @@ rule check_pauseTransfer_functionality(method f, env e) filtered {f -> all_publi
         checks withdraw functions are reverting if pauseWithdraw is true
 
     @Formula:
-        Withdraw_function@withrevert()
-        flagWithdraw => reverted_withdraw
+        {
+            flagWithdraw = get_withdraw_paused()
+        }
+
+        < call any withdraw function >
+        
+        {
+            flagWithdraw => revert
+        }
 
     @Notes:
         Checked on all 3 withdraw functions
@@ -135,10 +154,18 @@ rule check_pauseWithdraw_functionality(method f, env e) filtered {f -> all_publi
         checks absorb functions are reverting if pauseAbsorb is true
 
     @Formula:
-        Absorb_function@withrevert()
-        flagAbsorb => reverted_absorb
+        {
+            flagAbsorb = get_absorb_paused()
+        }
+
+        < call any absorb function >
+        
+        {
+            flagAbsorb => revert
+        }
 
     @Notes:
+
 
     @Link:
         https://vaas-stg.certora.com/output/44289/c814d6d628223a274101/?anonymousKey=caf7b0c67138f130be7bc804ce41985da2e7e4f8
@@ -169,8 +196,18 @@ rule check_pauseAbsorb_functionality(method f, env e) filtered {f -> all_public_
         checks buy functions are reverting if pauseBuy is true
 
     @Formula:
-        Buy_function@withrevert()
-        flagBuy => reverted_buy
+        {
+            flagBuy = get_buy_paused()
+        }
+
+        < call any buy function >
+        
+        {
+            flagBuy => revert
+        }
+
+    @Note:
+
 
     @Link:
         https://vaas-stg.certora.com/output/44289/5404a5c669fcf693ad06/?anonymousKey=27a47ff7f88d83cd7861c85bf676e6f947c6d5c4

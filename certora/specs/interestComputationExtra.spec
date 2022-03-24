@@ -93,35 +93,4 @@ rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f
   assert presentValue1 == presentValue2;
 }
 
-/*
-    @Rule
-        balance_change_vs_accrue
-
-    @Description:
-        can't change balance without calling accrue
-
-    @Formula:
-        balance_pre = tokenBalanceOf(_baseToken,currentContract)
-        call any function
-        balance_post = tokenBalanceOf(_baseToken,currentContract)
-        assert balance_post != balance_pre => AccrueWasCalled
-
-    @Notes:
-
-    @Link:
-
-*/
-
-rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
-    env e;
-    calldataarg args;
-
-    require !AccrueWasCalled(e) ;
-
-    uint256 balance_pre = tokenBalanceOf(e,_baseToken,currentContract);
-    f(e,args) ;
-    uint256 balance_post = tokenBalanceOf(e,_baseToken,currentContract);
-
-    assert balance_post != balance_pre => AccrueWasCalled(e);
-}
 

@@ -1,3 +1,13 @@
 {
-    "topics": []
+    "topics": [
+        {
+            "name": "type_check",
+            "messages": [
+                {
+                    "message": "Syntax error in spec file (erc20.spec:141:1): named pattern root 'balanceOf' is not defined: did you spell something wrong? Note, named slots are only supported from solc 0.5.13 onward.",
+                    "location": []
+                }
+            ]
+        }
+    ]
 }

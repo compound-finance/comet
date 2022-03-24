@@ -36,8 +36,8 @@ invariant allowanceOnlyZeroOrMax(address owner, address spender)
 
     @Formula:
         { 0 < amount < max_uint256 }
-        < call approve() with amount >
-        { lastReverted = true }
+        < approve(spender, amount) >
+        { lastReverted }
 
     @Notes:
 

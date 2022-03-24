@@ -5,9 +5,51 @@ methods{
     call_getPackedAsset(uint8, address, address, uint8, uint64, uint64, uint64 ,uint128) returns (uint256, uint256) envfree
     getAsset00_a() returns (uint256) envfree
     getAsset00_b() returns (uint256) envfree
-    0xc8c7fe6b envfree
+    0xc8c7fe6b envfree // getAssetInfo(uint8) returns (AssetInfo)
     powerOfTen(uint8) returns (uint64) envfree
 }
+
+//  @Complete Run: https://vaas-stg.certora.com/output/44289/440b2480ee47ade7c8c8/?anonymousKey=00dccb7618aa762ec6c95274cae99909a5f75c7b
+
+/*
+    @Rule
+
+    @Description:
+        Checking correct unpacking of assetInfo after packing.
+
+    @Formula:
+        {
+            
+        }
+        
+        word_a, word_b = call_getPackedAsset(i, assetArg, priceFeedArg, decimalsArg, borrowCollateralFactorArg, liquidateCollateralFactorArg, liquidationFactorArg, supplyCapArg) &&
+        offset_, asset_, priceFeed_, scale_, borrowCollateralFactor_, liquidateCollateralFactor_, liquidationFactor_, supplyCap_ = getAssetInfo(i)
+
+        {
+            assetArg == 0 => (asset_ == assetArg &&
+                              priceFeed_ == 0 &&
+                              scale_ == 10^0 &&
+                              borrowCollateralFactor_ == 0 &&
+                              liquidateCollateralFactor_ == 0 &&
+                              liquidationFactor_ == 0 &&
+                              supplyCap_ == 0)
+                    &&
+            assetArg != 0 => (asset_ == assetArg &&
+                              priceFeed_ == priceFeedArg &&
+                              scale_ == powerOfTen(decimalArgs) &&
+                              borrowCollateralFactor_ == borrowCollateralFactorArg &&
+                              liquidateCollateralFactor_ == liquidateCollateralFactorArg &&
+                              liquidationFactor_ == liquidationFactorArg &&
+                              supplyCap_ == supplyCapArg)
+            
+        }
+
+    @Note:
+        Assuming storage of the packed info to assetXX_a and assetXX_b is being done correctly
+
+    @Link:
+        https://vaas-stg.certora.com/output/44289/440b2480ee47ade7c8c8/?anonymousKey=00dccb7618aa762ec6c95274cae99909a5f75c7b
+*/
 
 rule reversability_of_packing(uint8 i, address assetArg, address priceFeedArg, uint8 decimalsArg, uint64 borrowCollateralFactorArg, uint64 liquidateCollateralFactorArg, uint64 liquidationFactorArg, uint128 supplyCapArg){
     require i == 0; // checking for the 1st asset only, assuming that the retrival of the correct asset in _getAssetConfig being done correctly
