@@ -5,7 +5,6 @@ import "erc20.spec"
 using SymbolicBaseToken as _baseToken 
 
 
-
 methods {
     latestRoundData() returns uint256 => DISPATCHER(true);
 
@@ -35,14 +34,14 @@ methods {
 ////////////////////////////////////////////////////////////////////////////////
 //
 
-//The following are simplifications (under approximations) due to the complexity fo the code
+// A set of simplifications (under approximations) that are being applied due to the complexity fo the code
 function simplifiedAssumptions() {
     env e;
     require getBaseSupplyIndex(e) == getBaseIndexScale(e);
     require getBaseBorrowIndex(e) == getBaseIndexScale(e);
 }
 
-// simplification - assume scale is always 1 
+// Simplification - assume scale is always 1 
 hook Sload uint64 scale assetInfoMap[KEY uint8 assetOffset].scale STORAGE {
         require scale == 1;
 }
@@ -52,28 +51,30 @@ hook Sload uint64 scale assetInfoMap[KEY uint8 assetOffset].scale STORAGE {
 ////////////////////////////////////////////////////////////////////////////////
 //
 
-//summarization of the user principle 
+// Summarization of the user principle - the ghost tracks the sum of principles across all users
 ghost mathint sumUserBasicPrinciple  {
 	init_state axiom sumUserBasicPrinciple==0; 
 }
 
-//summarization of the user collateral per asset
-ghost mapping( address => mathint) sumBalancePerAssert {
-    init_state axiom forall address t. sumBalancePerAssert[t]==0;
+// Summarization of the user collateral per asset - mapping ghost that keeps track on the sum of balances of each collateral asset
+ghost mapping(address => mathint) sumBalancePerAsset {
+    init_state axiom forall address t. sumBalancePerAsset[t]==0;
 }
 
+// A hook updating the user principle ghost on every write to storage
 hook Sstore userBasic[KEY address a].principal int104 balance
     (int104 old_balance) STORAGE {
-  sumUserBasicPrinciple  = sumUserBasicPrinciple +
+  sumUserBasicPrinciple = sumUserBasicPrinciple +
       to_mathint(balance) - to_mathint(old_balance);
 }
 
+// A hook updating an asset's total balance on every write to storage
 hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 balance (uint128 old_balance) STORAGE {
-    sumBalancePerAssert[t] = sumBalancePerAssert[t] - old_balance + balance;
+    sumBalancePerAsset[t] = sumBalancePerAsset[t] - old_balance + balance;
 }
 
 
-// General function to call each method on a specific asset 
+// General function that calls each method on a specific asset 
 function call_functions_with_specific_asset(method f, env e, address asset) returns uint{
     address _account; uint amount; address account_; uint minAmount;
     address[] accounts_array;
@@ -113,23 +114,31 @@ function call_functions_with_specific_asset(method f, env e, address asset) retu
     return 1;
 }
 
+
 /*
     @Rule
 
     @Description:
-        Checks supply functions are reverting if pauseSupply is true.
+        The assetIn switch of a specific asset is either initialized (!0) or uninitialized (0) along with the collateral balance
 
     @Formula:
-       getUserCollateralBalance(e,user, asset) > 0 <=> isInAsset(getAssetinOfUser(user), assetToIndex(asset));
+        {
+            userCollateral[user][asset].balance > 0 <=> isInAsset(userBasic[user].assetsIn, asset.offset)
+        }
 
-    @Notes:
-        Checked on all 3 supply functions
+        < call any function with a specific asset >
+        
+        {
+            userCollateral[user][asset].balance > 0 <=> isInAsset(userBasic[user].assetsIn, asset.offset)
+        }
+
+    @Note:
+        This property was proved on summarized version of the function isInAsset().
 
     @Link:
-        https://vaas-stg.certora.com/output/44289/a534afa257cbbaba166f/?anonymousKey=d9dba8d11b27e6080c0be78fcf34faa6a82404aa
 */
 
-rule assetIn_initialized_with_balance(method f, address user, address asset) 
+rule assetIn_Initialized_With_Balance(method f, address user, address asset) 
     filtered { f ->  !similarFunctions(f) && !f.isView && f.selector != absorb(address, address[]).selector && f.selector != certorafallback_0().selector } {
     
     env e; calldataarg args;
@@ -141,16 +150,21 @@ rule assetIn_initialized_with_balance(method f, address user, address asset)
 
 
 /*
-    @Rule
-        balance_change_vs_accrue
+    @Rule:
 
     @Description:
         can't change balance without calling accrue
 
     @Formula:
-        { balance_pre = tokenBalanceOf(_baseToken,currentContract) }
-        call any function
-        { balance_pre != tokenBalanceOf(_baseToken,currentContract) => accrueWasCalled() }
+        {
+            balance_pre = tokenBalanceOf(_baseToken,currentContract)
+        }
+
+        < call any function >
+
+        {
+            balance_pre != tokenBalanceOf(_baseToken,currentContract) => accrueWasCalled()
+        }
 
     @Notes:
 
@@ -171,10 +185,31 @@ rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f
     assert balance_post != balance_pre => accrueWasCalled(e);
 }
 
+/*
+    @Rule:
+
+    @Description:
+
+
+    @Formula:
+        {
+
+        }
+
+        
+
+        {
+            
+        }
+
+    @Notes:
+
+    @Link:
+
+*/
 
 rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
-    env e;
-    calldataarg args;
+    env e; calldataarg args;
     address token;
     
     bool registered = isRegisterdAsAsset(e,token);
@@ -186,9 +221,31 @@ rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) &
     assert balance_post != balance_pre => registered;
 }
 
+/*
+    @Rule:
 
- rule usage_registered_assets_only(address asset, method f) filtered { f -> !similarFunctions(f) && !f.isView } { 
-//     // check that every function call that has an asset arguments reverts on a non-registered asset 
+    @Description:
+
+
+    @Formula:
+        {
+
+        }
+
+        
+
+        {
+            
+        }
+
+    @Notes:
+
+    @Link:
+
+*/
+
+rule usage_registered_assets_only(address asset, method f) filtered { f -> !similarFunctions(f) && !f.isView } { 
+    // check that every function call that has an asset arguments reverts on a non-registered asset 
     env e; calldataarg args;
     simplifiedAssumptions();
     bool registered = isRegisterdAsAsset(e,asset);
