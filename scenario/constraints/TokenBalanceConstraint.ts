@@ -4,11 +4,11 @@ import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { BigNumber } from 'ethers';
 import { exp } from '../../test/helpers';
-import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount } from './utils';
+import { ComparativeAmount, ComparisonOp, getActorAddressFromName, getAssetFromName, parseAmount } from './utils';
 
-export class BalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
+export class TokenBalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, initialContext: T, initialWorld: World) {
-    const assetsByActor = requirements.balances;
+    const assetsByActor = requirements.tokenBalances;
     if (assetsByActor) {
       const actorsByAsset = Object.entries(assetsByActor).reduce((a, [actor, assets]) => {
         return Object.entries(assets).reduce((a, [asset, rawAmount]) => {
@@ -31,9 +31,9 @@ export class BalanceConstraint<T extends CometContext, R extends Requirements> i
         for (const assetName in actorsByAsset) {
           const asset = await getAssetFromName(assetName, context)
           for (const actorName in actorsByAsset[assetName]) {
-            const actor = context.actors[actorName];
+            const actor = await getActorAddressFromName(actorName, context);
             const amount: ComparativeAmount = actorsByAsset[assetName][actorName];
-            const balance = await asset.balanceOf(actor.address);
+            const balance = await asset.balanceOf(actor);
             const decimals = await asset.token.decimals();
             let toTransfer = 0n;
             switch (amount.op) {
@@ -51,7 +51,7 @@ export class BalanceConstraint<T extends CometContext, R extends Requirements> i
               default:
                 throw new Error(`Bad amount: ${amount}`);
             }
-            await context.sourceTokens(world, toTransfer, asset.address, actor.address);
+            await context.sourceTokens(world, toTransfer, asset.address, actor);
           }
         }
         return context;
@@ -61,14 +61,14 @@ export class BalanceConstraint<T extends CometContext, R extends Requirements> i
   }
 
   async check(requirements: R, context: T, world: World) {
-    const assetsByActor = requirements['balances'];
+    const assetsByActor = requirements.tokenBalances;
     if (assetsByActor) {
       for (const [actorName, assets] of Object.entries(assetsByActor)) {
         for (const [assetName, rawAmount] of Object.entries(assets)) {
-          const actor = context.actors[actorName];
+          const actor = await getActorAddressFromName(actorName, context);
           const asset = await getAssetFromName(assetName, context)
           const amount = parseAmount(rawAmount);
-          const balance = BigNumber.from(await asset.balanceOf(actor.address));
+          const balance = BigNumber.from(await asset.balanceOf(actor));
           const decimals = await asset.token.decimals();
           switch (amount.op) {
             case ComparisonOp.EQ:

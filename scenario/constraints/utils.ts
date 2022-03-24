@@ -58,6 +58,20 @@ export function optionalNumber<T>(o: object, key: string): number {
   return value;  
 }
 
+export async function getActorAddressFromName(name: string, context: CometContext): Promise<string> {
+  if (name.startsWith('$')) {
+    const cometRegex = /comet/;
+    let actorAddress: string;
+    if (cometRegex.test(name)) {
+      // If name matches regex, e.g. "$comet"
+      actorAddress = (await context.getComet()).address;
+    }
+    return actorAddress;
+  } else {
+    return context.actors[name].address;
+  }
+}
+
 export async function getAssetFromName(name: string, context: CometContext): Promise<CometAsset> {
   let comet = await context.getComet(); // TODO: can optimize by taking this as an arg instead
   if (name.startsWith('$')) {

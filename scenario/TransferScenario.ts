@@ -7,7 +7,7 @@ scenario(
   'Comet#transfer > collateral asset, enough balance',
   {
     upgrade: true,
-    balances: {
+    tokenBalances: {
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
   },
@@ -37,7 +37,7 @@ scenario(
   'Comet#transfer > base asset, enough balance',
   {
     upgrade: true,
-    balances: {
+    tokenBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },

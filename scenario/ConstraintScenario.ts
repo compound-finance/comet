@@ -6,7 +6,7 @@ scenario(
   'Comet#constraint > collateral CometBalanceConstraint + BalanceConstraint both satisfied',
   {
     upgrade: true,
-    balances: {
+    tokenBalances: {
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
     cometBalances: {
@@ -27,7 +27,7 @@ scenario(
   'Comet#constraint > base CometBalanceConstraint + BalanceConstraint both satisfied',
   {
     upgrade: true,
-    balances: {
+    tokenBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
     cometBalances: {
@@ -49,7 +49,7 @@ scenario(
   'Comet#constraint > negative comet base balance (borrow position)',
   {
     upgrade: true,    
-    balances: {
+    tokenBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
     cometBalances: {

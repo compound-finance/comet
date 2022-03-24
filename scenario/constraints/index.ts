@@ -1,7 +1,6 @@
-export { BalanceConstraint } from '../constraints/BalanceConstraint';
-export { PauseConstraint } from '../constraints/PauseConstraint';
-export { RemoteTokenConstraint } from '../constraints/RemoteTokenConstraint';
-export { ModernConstraint } from '../constraints/ModernConstraint';
-export { UtilizationConstraint } from '../constraints/UtilizationConstraint';
-export { BaseTokenProtocolBalanceConstraint } from './BaseTokenProtocolBalanceConstraint';
+export { TokenBalanceConstraint } from './TokenBalanceConstraint';
+export { PauseConstraint } from './PauseConstraint';
+export { RemoteTokenConstraint } from './RemoteTokenConstraint';
+export { ModernConstraint } from './ModernConstraint';
+export { UtilizationConstraint } from './UtilizationConstraint';
 export { CometBalanceConstraint } from './CometBalanceConstraint';

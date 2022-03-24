@@ -4,8 +4,8 @@ import { expect } from 'chai';
 scenario(
   'Comet#withdrawReserves > governor withdraw reserves',
   {
-    baseToken: {
-      balance: 100,
+    tokenBalances: {
+      $comet: { $base: 100 },
     },
     upgrade: true,
   },
@@ -13,13 +13,14 @@ scenario(
     const { admin, albert } = actors;
 
     const baseToken = context.getAssetByAddress(await comet.baseToken());
+    const scale = (await comet.baseScale()).toBigInt();
 
-    expect(await baseToken.balanceOf(comet.address)).to.equal(100n);
+    expect(await baseToken.balanceOf(comet.address)).to.equal(100n * scale);
 
-    const txn = await admin.withdrawReserves(albert, 10);
+    const txn = await admin.withdrawReserves(albert, 10n * scale);
 
-    expect(await baseToken.balanceOf(comet.address)).to.equal(90n);
-    expect(await baseToken.balanceOf(albert.address)).to.equal(10n);
+    expect(await baseToken.balanceOf(comet.address)).to.equal(90n * scale);
+    expect(await baseToken.balanceOf(albert.address)).to.equal(10n * scale);
 
     return txn; // return txn to measure gas
   }
@@ -28,8 +29,8 @@ scenario(
 scenario(
   'Comet#withdrawReserves > reverts if not called by governor',
   {
-    baseToken: {
-      balance: 100,
+    tokenBalances: {
+      $comet: { $base: 100 },
     },
     upgrade: true,
   },
@@ -44,15 +45,17 @@ scenario(
 scenario(
   'Comet#withdrawReserves > reverts if not enough reserves are owned by protocol',
   {
-    baseToken: {
-      balance: 100,
+    tokenBalances: {
+      $comet: { $base: 100 },
     },
     upgrade: true,
   },
-  async ({ actors }) => {
+  async ({ comet, actors }) => {
     const { admin, albert } = actors;
 
-    await expect(admin.withdrawReserves(albert, 101)).to.be.revertedWith("custom error 'InsufficientReserves()'");
+    const scale = (await comet.baseScale()).toBigInt();
+
+    await expect(admin.withdrawReserves(albert, 101n * scale)).to.be.revertedWith("custom error 'InsufficientReserves()'");
   }
 );
 
