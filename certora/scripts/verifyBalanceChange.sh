@@ -3,7 +3,7 @@ then
     RULE="--rule $1"
 fi
 
-certoraRun contracts/CometExt.sol certora/harness/CometHarnessWrappers.sol certora/harness/SymbolicBaseToken.sol certora/harness/SymbolicAssetTokenA.sol certora/harness/SymbolicAssetTokenB.sol certora/harness/SymbolicPriceOracleA.sol certora/harness/SymbolicPriceOracleB.sol \
+certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harness/SymbolicBaseToken.sol certora/harness/SymbolicAssetTokenA.sol certora/harness/SymbolicAssetTokenB.sol certora/harness/SymbolicPriceOracleA.sol certora/harness/SymbolicPriceOracleB.sol \
     --verify CometHarnessWrappers:certora/specs/comet_balanceChange.spec $RULE \
     --link CometHarnessWrappers:baseToken=SymbolicBaseToken CometHarnessWrappers:extensionDelegate=CometExt \
     --solc solc8.11 \
