@@ -206,7 +206,6 @@ scenario(
     },
   },
   async ({ comet, actors }, world, context) => {
-    console.log('starting test')
     const { albert, betty } = actors;
     const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
