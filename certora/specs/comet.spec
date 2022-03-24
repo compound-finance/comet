@@ -8,7 +8,6 @@ using SymbolicBaseToken as _baseToken
 
 methods {
     //temporary under approximations
-    // isInAsset(uint16 assetsIn, uint8 assetOffset) => CONSTANT;
     latestRoundData() returns uint256 => DISPATCHER(true);
 
     //todo - move to setup?
@@ -32,37 +31,55 @@ methods {
     tokenBalanceOf(address, address) returns uint256 envfree 
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////   Ghosts   ///////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
 
+// A ghost aimed to track the sum of all users' principles in the system
 ghost mathint sumUserBasicPrinciple  {
 	init_state axiom sumUserBasicPrinciple==0; 
 }
 
-ghost mapping( address => mathint) sumBalancePerAssert {
+// A mapping ghost that keeps track of
+ghost mapping(address => mathint) sumBalancePerAssert {
     init_state axiom forall address t. sumBalancePerAssert[t]==0;
 }
 
-
+// 
 hook Sstore userBasic[KEY address a].principal int104 balance
     (int104 old_balance) STORAGE {
   sumUserBasicPrinciple  = sumUserBasicPrinciple +
       to_mathint(balance) - to_mathint(old_balance);
 }
 
+//
 hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 balance (uint128 old_balance) STORAGE {
     sumBalancePerAssert[t] = sumBalancePerAssert[t] - old_balance + balance;
 }
 
+//
 hook Sload uint64 scale assetInfoMap[KEY uint8 assetOffset].scale STORAGE {
         require scale == 1;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////   Functions   ///////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+
+// A set of simplifications to be assumed in order to reduce comutation complexity
+function simplifiedAssumptions() {
+    env e;
+    require getBaseSupplyIndex(e) == getBaseIndexScale(e);
+    require getBaseBorrowIndex(e) == getBaseIndexScale(e);
+}
+
+// A helper function that calls each method with a specific asset
 function call_functions_with_specific_asset(method f, env e, address asset) returns uint{
     address _account; uint amount; address account_; uint minAmount;
     address[] accounts_array;
-	/*if (f.selector == collateralBalanceOf(address, address).selector) {
-        uint128 balance = collateralBalanceOf(e, _account, asset);
-        return balance;
-	} else */if (f.selector == supply(address, uint).selector) {
+	if (f.selector == supply(address, uint).selector) {
         supply(e, asset, amount);
 	} else if (f.selector == supplyTo(address, address, uint).selector) {
         supplyTo(e, account_, asset, amount);
@@ -103,7 +120,30 @@ function call_functions_with_specific_asset(method f, env e, address asset) retu
 ////////////////////////////////////////////////////////////////////////////////
 //
 
-// B@B - assetIn of a specific asset is initialized (!0) or uninitialized (0) along with the collateral balance
+/*
+    @Rule
+
+    @Description:
+        The assetIn switch of a specific asset is either initialized (!0) or uninitialized (0) along with the collateral balance
+
+    @Formula:
+        {
+            userCollateral[user][asset].balance > 0 <=> isInAsset(userBasic[user].assetsIn, asset.offset)
+        }
+
+        < call any function with a specific asset >
+        
+        {
+            userCollateral[user][asset].balance > 0 <=> isInAsset(userBasic[user].assetsIn, asset.offset)
+        }
+
+    @Note:
+        This property was proved on summarized version of the function isInAsset().
+
+    @Link:
+        
+*/
+
 rule assetIn_Initialized_With_Balance(method f, address user, address asset) 
     filtered { f ->  !similarFunctions(f) && !f.isView && f.selector != absorb(address, address[]).selector && f.selector != certorafallback_0().selector } {
     
@@ -114,17 +154,9 @@ rule assetIn_Initialized_With_Balance(method f, address user, address asset)
     assert getUserCollateralBalance(e,user, asset) > 0 <=> callSummarizedIsInAsset(getAssetinOfUser(user), assetToIndex(asset));
 }
 
-function simplifiedAssumptions() {
-    env e;
-    require getBaseSupplyIndex(e) == getBaseIndexScale(e);
-    require getBaseBorrowIndex(e) == getBaseIndexScale(e);
-}
-
-
 
 rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
-    env e;
-    calldataarg args;
+    env e; calldataarg args;
     address token;
     
     bool registered = isRegisterdAsAsset(e,token);
