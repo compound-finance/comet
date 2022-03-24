@@ -1,5 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumberish, Signature, ethers, ContractReceipt, ContractTransaction } from 'ethers';
+import { BigNumberish, Signature, ethers, ContractReceipt } from 'ethers';
 import { CometContext } from './CometContext';
 import { AddressLike, resolveAddress } from './Address';
 import { ERC20__factory } from '../../build/types';
