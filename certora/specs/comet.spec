@@ -18,6 +18,7 @@ methods {
     getTotalSupplyBase() returns (uint104) envfree
     getTotalBorrowBase() returns (uint104) envfree 
     getTotalsSupplyAsset(address asset) returns (uint128) envfree  
+    getAssetSupplyCapByAddress(address) returns (uint128) envfree
     getReserves() returns (int) envfree
     targetReserves() returns (uint256) envfree
     initializeStorage() 
@@ -49,6 +50,10 @@ hook Sstore userBasic[KEY address a].principal int104 balance
 
 hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 balance (uint128 old_balance) STORAGE {
     sumBalancePerAssert[t] = sumBalancePerAssert[t] - old_balance + balance;
+}
+
+hook Sload uint64 scale assetInfoMap[KEY uint8 assetOffset].scale STORAGE {
+        require scale == 1;
 }
 
 function call_functions_with_specific_asset(method f, env e, address asset) returns uint{
@@ -104,9 +109,9 @@ rule assetIn_Initialized_With_Balance(method f, address user, address asset)
     
     env e; calldataarg args;
     require user != currentContract;
-    require getUserCollateralBalance(user, asset) > 0 <=> callSummarizedIsInAsset(getAssetinOfUser(user), assetToIndex(asset));
+    require getUserCollateralBalance(e,user, asset) > 0 <=> callSummarizedIsInAsset(getAssetinOfUser(user), assetToIndex(asset));
     call_functions_with_specific_asset(f, e, asset);
-    assert getUserCollateralBalance(user, asset) > 0 <=> callSummarizedIsInAsset(getAssetinOfUser(user), assetToIndex(asset));
+    assert getUserCollateralBalance(e,user, asset) > 0 <=> callSummarizedIsInAsset(getAssetinOfUser(user), assetToIndex(asset));
 }
 
 function simplifiedAssumptions() {
@@ -115,33 +120,6 @@ function simplifiedAssumptions() {
     require getBaseBorrowIndex(e) == getBaseIndexScale(e);
 }
 
-
-// rule sanity(method f) {
-// 	env e;
-// 	calldataarg arg;
-// 	baseBalanceOf(e, arg);
-// 	assert false, "this method should have a non reverting path";
-// }
-
-// rule withdraw_min(){
-//     env e;
-//     withdraw(e,e.msg.sender,)
-// }
-
-
-
-rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
-    env e;
-    calldataarg args;
-
-    require !AccrueWasCalled(e) ;
-
-    uint256 balance_pre = tokenBalanceOf(_baseToken,currentContract);
-    f(e,args) ;
-    uint256 balance_post = tokenBalanceOf(_baseToken,currentContract);
-
-    assert balance_post != balance_pre => AccrueWasCalled(e);
-}
 
 
 rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
@@ -167,43 +145,3 @@ rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) &
     call_functions_with_specific_asset(f, e, asset);
     assert registered; //if the function passed it must be registered 
  }
-
-
-// moved from CometInterest
-
-// ?@? - Calling to accrue is the only way to change presentValue
-rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
-    env e; calldataarg args;
-  
-  call_accrueInternal(e); // maybe change to lastAccrualTime == nowInternal
-
-  int104 principal;
-  int104 presentValue1 = call_presentValue(principal);
-        f(e,args);
-  int104 presentValue2 = call_presentValue(principal);
-  
-  assert presentValue1 == presentValue2;
-}
-
-
-// ?@? - transfer should not change the combine presentValue of src and dst
-rule verify_transferAsset(){
-    env e;
-
-    address src;
-    address dst;
-    address asset;
-    uint amount;
-
-    simplifiedAssumptions();
-
-    mathint presentValue_src1 = to_mathint(call_presentValue(getPrincipal(e,src)));
-    mathint presentValue_dst1 = to_mathint(call_presentValue(getPrincipal(e,dst)));
-
-    transferAssetFrom(e, src, dst, asset, amount);
-
-    mathint presentValue_src2 = to_mathint(call_presentValue(getPrincipal(e,src)));
-    mathint presentValue_dst2 = to_mathint(call_presentValue(getPrincipal(e,dst)));
-
-    assert presentValue_src1 + presentValue_dst1 == presentValue_src2 + presentValue_dst2;
-}

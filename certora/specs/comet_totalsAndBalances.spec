@@ -1,24 +1,24 @@
-import "comet.spec"
+import "comet.spec"    
 
-methods{
-    getAssetSupplyCapByAddress(address) returns (uint128) envfree
-}
-
-
+////////////////////////////////////////////////////////////////////////////////
+//////////////////////////   Total Assets and Balances  ////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 
+/*
+    @Rule
 
-/* 
- Description :  
+    @Description:
         The sum of collateral per asset over all users is equal to total collateral of asset:
 
-formula : 
+    @Formula : 
         sum(userCollateral[u][asset].balance) == totalsCollateral[asset].totalSupplyAsset
 
- status : proved 
- link: https://vaas-stg.certora.com/output/23658/c653b4018c776983368a?anonymousKey=ed01d8a8a20618fae0c3e40f1e1e3a99c2a253e8
+    
+    @Link: https://vaas-stg.certora.com/output/23658/01cae74fe43232e6e6c5/?anonymousKey=9f050514a528f70e110a2a9f2dde24ffb85f39da
+
 */
-invariant totalCollateralPerAsset(address asset) 
+invariant total_collateral_per_asset(address asset) 
     sumBalancePerAssert[asset] == getTotalsSupplyAsset(asset)     
     filtered { f-> !similarFunctions(f) && !f.isView }
     {
@@ -27,13 +27,22 @@ invariant totalCollateralPerAsset(address asset)
         }
     }
 
-/* 
- Description :  
-        for each asset, the contract's balance is at least as the total supply 
-formula : 
+/*
+    @Rule
+
+    @Description:
+        For each asset, the contract's balance is at least as the total supply 
+
+    @Formula: 
         totalsCollateral[asset].totalSupplyAsset <= asset.balanceOf(this)
+
+    @Notes: 
+        Safely assume that comet is not the msg.sender, this is a safe assumption since there is no call statement from Comet to itself. 
+        Also assume that no address can supply from Comet, as comet does not give allowance
+    @Link: https://vaas-stg.certora.com/output/23658/01cae74fe43232e6e6c5/?anonymousKey=9f050514a528f70e110a2a9f2dde24ffb85f39da
 */
-invariant totalCollateralPerAssetVsAssetBalance(address asset) 
+
+invariant total_asset_collateral_vs_asset_balance(address asset) 
     asset != _baseToken => 
         (getTotalsSupplyAsset(asset)  <= tokenBalanceOf(asset, currentContract) ) 
     filtered { f-> !similarFunctions(f) && !f.isView }
@@ -49,23 +58,24 @@ invariant totalCollateralPerAssetVsAssetBalance(address asset)
         }
     }
 
-/* 
- Description :  
-        Due to summarization the following should hold
+/*
+    @Rule
 
- formula : 
+    @Description:
+        The base token balance of the system, is at least the supplied minus the borrowed
+
+    @Formula: 
         baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase()
 
- status : failed
- reason :
- link   :
-
- this invariant does not hold on absorb and buy
+    @Note: This invariant does not hold on absorb.  
+     Safely assume that comet is not the msg.sender, this is a safe assumption since there is no call statement from Comet to itself. 
+        Also assume that no address can supply from Comet, as comet does not give allowance
+    @Link: https://vaas-stg.certora.com/output/23658/01cae74fe43232e6e6c5/?anonymousKey=9f050514a528f70e110a2a9f2dde24ffb85f39da     
          
 */
 invariant base_balance_vs_totals()
-_baseToken.balanceOf(currentContract) >= getTotalSupplyBase() - getTotalBorrowBase()
-filtered { f-> !similarFunctions(f) && !f.isView && f.selector!=absorb(address, address[]).selector }
+    _baseToken.balanceOf(currentContract) >= getTotalSupplyBase() - getTotalBorrowBase()
+    filtered { f-> !similarFunctions(f) && !f.isView && f.selector!=absorb(address, address[]).selector }
     {
         preserved with (env e){
             simplifiedAssumptions();
@@ -83,7 +93,21 @@ filtered { f-> !similarFunctions(f) && !f.isView && f.selector!=absorb(address, 
         }
     }
 
-// V@V - The totalSupply of any collateral asset is less than or equal to the supplyCap
+/*
+    @Rule
+
+    @Description:
+        The total supply of an asset is not greater than it's supply cap
+
+    @Formula: 
+        baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase()
+`
+    @Link: https://vaas-stg.certora.com/output/23658/01cae74fe43232e6e6c5/?anonymousKey=9f050514a528f70e110a2a9f2dde24ffb85f39da     
+         
+*/
 invariant collateral_totalSupply_LE_supplyCap(address asset)
     getTotalsSupplyAsset(asset) <= getAssetSupplyCapByAddress(asset)
+
+
+
 
