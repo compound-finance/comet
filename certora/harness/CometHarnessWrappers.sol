@@ -59,10 +59,6 @@ contract CometHarnessWrappers is CometHarnessGetters {
         return super.getNowInternal();
     }
 
-    // External wrapper for hasPermission
-    function call_hasPermission(address owner, address manager) external view returns (bool) {
-        return hasPermission(owner, manager);
-    }
 
     // Compute the n-th power of 10
     function powerOfTen(uint8 n) public pure returns (uint64){
