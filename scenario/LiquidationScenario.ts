@@ -86,7 +86,6 @@ scenario(
   {
     cometBalances: {
       albert: { $base: -10000 },
-      betty: { $base: 100 }
     },
     utilization: 1
   },
@@ -128,7 +127,6 @@ scenario(
     },
     cometBalances: {
       albert: { $base: -10000 },
-      betty: { $base: 100 }
     },
     utilization: 1
   },
