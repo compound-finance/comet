@@ -51,7 +51,7 @@ scenario(
 );
 
 scenario(
-  'Comet#liquidation > prevents liquidation when absord is paused',
+  'Comet#liquidation > prevents liquidation when absorb is paused',
   {
     cometBalances: {
       albert: { $base: -10000 },
