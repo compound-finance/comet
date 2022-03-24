@@ -1,5 +1,11 @@
+if [[ "$1" ]]
+then
+    RULE="--rule $1"
+fi
+
+
 certoraRun certora/erc20/USDT.sol:TetherToken  \
-    --verify TetherToken:certora/erc20/erc20.spec  \
+    --verify TetherToken:certora/erc20/erc20.spec $RULE  \
     --solc solc4.24 \
     --staging \
     --optimistic_loop \
