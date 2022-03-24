@@ -60,3 +60,68 @@ rule verify_isBorrowCollateralized(address account, method f)filtered { f-> !sim
     f(e,args) ;
     assert isBorrowCollateralized(e,account);
 }
+
+/*
+    @Rule
+        only_accrue_change_presentValue
+
+    @Description:
+        Calling to accrue is the only way to change presentValue
+
+    @Formula:
+        presentValue1 = presentValue(principal)
+        call any function
+        presentValue2 = presentValue(principal)
+        assert presentValue1 == presentValue2
+
+    @Notes:
+
+    @Link:
+        
+*/
+rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
+    env e; calldataarg args;
+    simplifiedAssumptions();  
+
+    require getlastAccrualTime() == call_getNowInternal(e); // don't call accrue
+
+  int104 principal;
+  int104 presentValue1 = call_presentValue(principal);
+        f(e,args);
+  int104 presentValue2 = call_presentValue(principal);
+  
+  assert presentValue1 == presentValue2;
+}
+
+/*
+    @Rule
+        balance_change_vs_accrue
+
+    @Description:
+        can't change balance without calling accrue
+
+    @Formula:
+        balance_pre = tokenBalanceOf(_baseToken,currentContract)
+        call any function
+        balance_post = tokenBalanceOf(_baseToken,currentContract)
+        assert balance_post != balance_pre => AccrueWasCalled
+
+    @Notes:
+
+    @Link:
+
+*/
+
+rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
+    env e;
+    calldataarg args;
+
+    require !AccrueWasCalled(e) ;
+
+    uint256 balance_pre = tokenBalanceOf(_baseToken,currentContract);
+    f(e,args) ;
+    uint256 balance_post = tokenBalanceOf(_baseToken,currentContract);
+
+    assert balance_post != balance_pre => AccrueWasCalled(e);
+}
+
