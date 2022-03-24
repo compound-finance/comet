@@ -11,12 +11,23 @@ isolating for timeElapsed:
 timeElapsed = -liquidationMargin / (baseBalanceOf * price / baseScale) / (borrowRate / factorScale);
 */
 async function timeUntilUnderwater({comet, actor, fudgeFactor = 0n}: {comet: CometInterface, actor: CometActor, fudgeFactor?: bigint}): Promise<number> {
-  const liquidationMargin = (await (await comet.getLiquidationMargin(actor.address)).toBigInt());
+  const liquidationMargin = (await comet.getLiquidationMargin(actor.address)).toBigInt();
   const baseBalanceOf = (await comet.baseBalanceOf(actor.address)).toBigInt();
   const basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
   const borrowRate = (await comet.getBorrowRate()).toBigInt();
   const baseScale = (await comet.baseScale()).toBigInt();
   const factorScale = (await comet.factorScale()).toBigInt();
+
+  console.log(`liquidationMargin: ${liquidationMargin}`);
+  console.log(`baseBalanceOf: ${baseBalanceOf}`);
+  console.log(`basePrice: ${basePrice}`);
+  console.log(`borrowRate: ${borrowRate}`);
+  console.log(`baseScale: ${baseScale}`);
+  console.log(`factorScale: ${factorScale}`);
+
+  if (liquidationMargin < 0) {
+    return 0; // already underwater
+  }
 
   // XXX throw error if baseBalanceOf is positive and liquidationMargin is positive
   return Number((-liquidationMargin * factorScale * baseScale /
@@ -27,24 +38,28 @@ async function timeUntilUnderwater({comet, actor, fudgeFactor = 0n}: {comet: Com
 scenario(
   'Comet#liquidation > isLiquidatable=true for underwater position',
   {
-    cometBalances: {
-      albert: { $base: -10000 },
-      betty: { $base: 100 }
+    tokenBalances: {
+      $comet: { $base: 100 },
     },
-    utilization: 1
+    cometBalances: {
+      albert: { $base: -10 },
+      betty: { $base: 10 },
+    },
   },
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
     const baseToken = await comet.baseToken();
+    const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
 
     await world.increaseTime(
       await timeUntilUnderwater({
         comet,
-        actor: albert
+        actor: albert,
+        fudgeFactor: 60n * 10n // 10 minutes past when position is underwater
       })
     );
 
-    await comet.connect(betty.signer).withdraw(baseToken, 10); // force accrue
+    await betty.withdrawAsset({asset: baseToken, amount: baseBorrowMin}); // force accrue
 
     expect(await comet.isLiquidatable(albert.address)).to.be.true;
   }
@@ -122,7 +137,7 @@ scenario(
 scenario(
   'Comet#liquidation > governor can withdraw collateral after successful liquidation',
   {
-    balances: {
+    tokenBalances: {
       albert: { $asset0: .001 }, // low value, to make it easy to source
     },
     cometBalances: {
