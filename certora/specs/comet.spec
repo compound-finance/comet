@@ -5,12 +5,9 @@ import "erc20.spec"
 using SymbolicBaseToken as _baseToken 
 
 
-
 methods {
-    //temporary under approximations
     latestRoundData() returns uint256 => DISPATCHER(true);
 
-    //todo - move to setup?
     isBorrowCollateralized(address) returns bool 
     
     baseToken() returns address envfree
@@ -25,6 +22,7 @@ methods {
     _baseToken.balanceOf(address account) returns (uint256) envfree
 
     callSummarizedIsInAsset(uint16, uint8) returns (bool) envfree
+    call_hasPermission(address, address) returns (bool) envfree
     getAssetinOfUser(address) returns (uint16) envfree
     assetToIndex(address) returns (uint8) envfree
     indexToAsset(uint8) returns (address) envfree
@@ -32,50 +30,51 @@ methods {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////   Ghosts   ///////////////////////////////////
+//////////////////////////   Simplifications   /////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
 
-// A ghost aimed to track the sum of all users' principles in the system
-ghost mathint sumUserBasicPrinciple  {
-	init_state axiom sumUserBasicPrinciple==0; 
-}
-
-// A mapping ghost that keeps track of
-ghost mapping(address => mathint) sumBalancePerAssert {
-    init_state axiom forall address t. sumBalancePerAssert[t]==0;
-}
-
-// 
-hook Sstore userBasic[KEY address a].principal int104 balance
-    (int104 old_balance) STORAGE {
-  sumUserBasicPrinciple  = sumUserBasicPrinciple +
-      to_mathint(balance) - to_mathint(old_balance);
-}
-
-//
-hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 balance (uint128 old_balance) STORAGE {
-    sumBalancePerAssert[t] = sumBalancePerAssert[t] - old_balance + balance;
-}
-
-//
-hook Sload uint64 scale assetInfoMap[KEY uint8 assetOffset].scale STORAGE {
-        require scale == 1;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////   Functions   ///////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-
-// A set of simplifications to be assumed in order to reduce comutation complexity
+// A set of simplifications (under approximations) that are being applied due to the complexity fo the code
 function simplifiedAssumptions() {
     env e;
     require getBaseSupplyIndex(e) == getBaseIndexScale(e);
     require getBaseBorrowIndex(e) == getBaseIndexScale(e);
 }
 
-// A helper function that calls each method with a specific asset
+// Simplification - assume scale is always 1 
+hook Sload uint64 scale assetInfoMap[KEY uint8 assetOffset].scale STORAGE {
+        require scale == 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////   Ghost    ////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+
+// Summarization of the user principle - the ghost tracks the sum of principles across all users
+ghost mathint sumUserBasicPrinciple  {
+	init_state axiom sumUserBasicPrinciple==0; 
+}
+
+// Summarization of the user collateral per asset - mapping ghost that keeps track on the sum of balances of each collateral asset
+ghost mapping(address => mathint) sumBalancePerAsset {
+    init_state axiom forall address t. sumBalancePerAsset[t]==0;
+}
+
+// A hook updating the user principle ghost on every write to storage
+hook Sstore userBasic[KEY address a].principal int104 balance
+    (int104 old_balance) STORAGE {
+  sumUserBasicPrinciple = sumUserBasicPrinciple +
+      to_mathint(balance) - to_mathint(old_balance);
+}
+
+// A hook updating an asset's total balance on every write to storage
+hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 balance (uint128 old_balance) STORAGE {
+    sumBalancePerAsset[t] = sumBalancePerAsset[t] - old_balance + balance;
+}
+
+
+// General function that calls each method on a specific asset 
 function call_functions_with_specific_asset(method f, env e, address asset) returns uint{
     address _account; uint amount; address account_; uint minAmount;
     address[] accounts_array;
@@ -115,10 +114,6 @@ function call_functions_with_specific_asset(method f, env e, address asset) retu
     return 1;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////   Michael   /////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
 
 /*
     @Rule
@@ -141,7 +136,6 @@ function call_functions_with_specific_asset(method f, env e, address asset) retu
         This property was proved on summarized version of the function isInAsset().
 
     @Link:
-        
 */
 
 rule assetIn_Initialized_With_Balance(method f, address user, address asset) 
@@ -154,6 +148,65 @@ rule assetIn_Initialized_With_Balance(method f, address user, address asset)
     assert getUserCollateralBalance(e,user, asset) > 0 <=> callSummarizedIsInAsset(getAssetinOfUser(user), assetToIndex(asset));
 }
 
+
+/*
+    @Rule:
+
+    @Description:
+        can't change balance without calling accrue
+
+    @Formula:
+        {
+            balance_pre = tokenBalanceOf(_baseToken,currentContract)
+        }
+
+        < call any function >
+
+        {
+            balance_pre != tokenBalanceOf(_baseToken,currentContract) => accrueWasCalled()
+        }
+
+    @Notes:
+
+    @Link:
+
+*/
+
+rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
+    env e;
+    calldataarg args;
+
+    require !accrueWasCalled(e) ;
+
+    uint256 balance_pre = tokenBalanceOf(_baseToken,currentContract);
+    f(e,args) ;
+    uint256 balance_post = tokenBalanceOf(_baseToken,currentContract);
+
+    assert balance_post != balance_pre => accrueWasCalled(e);
+}
+
+/*
+    @Rule:
+
+    @Description:
+
+
+    @Formula:
+        {
+
+        }
+
+        
+
+        {
+            
+        }
+
+    @Notes:
+
+    @Link:
+
+*/
 
 rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
     env e; calldataarg args;
@@ -168,9 +221,31 @@ rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) &
     assert balance_post != balance_pre => registered;
 }
 
+/*
+    @Rule:
 
- rule usage_registered_assets_only(address asset, method f) filtered { f -> !similarFunctions(f) && !f.isView } { 
-//     // check that every function call that has an asset arguments reverts on a non-registered asset 
+    @Description:
+
+
+    @Formula:
+        {
+
+        }
+
+        
+
+        {
+            
+        }
+
+    @Notes:
+
+    @Link:
+
+*/
+
+rule usage_registered_assets_only(address asset, method f) filtered { f -> !similarFunctions(f) && !f.isView } { 
+    // check that every function call that has an asset arguments reverts on a non-registered asset 
     env e; calldataarg args;
     simplifiedAssumptions();
     bool registered = isRegisterdAsAsset(e,asset);
