@@ -5,6 +5,7 @@ import "A_setupNoSummarization.spec"
 ////////////////////////////////////////////////////////////////////////////////
 //
 
+//  @Complete Run: https://vaas-stg.certora.com/output/44289/e65164716a1ae6fbff52/?anonymousKey=aab07af2418b3f06877ef63452681a65cdd9a9cd
 
 /*
     @Rule

@@ -1,3 +1,45 @@
 {
-    "topics": []
+    "topics": [
+        {
+            "name": "type_check",
+            "messages": [
+                {
+                    "message": "Syntax error in spec file (comet.spec:178:3): could not type expression \"?call_accrueInternal(?e)\", message: No function-like entry for call_accrueInternal was found in the symbol table. Perhaps something was misspelled?",
+                    "location": []
+                },
+                {
+                    "message": "Syntax error in spec file (comet.spec:178:3): A FunctionIdExp should not be used as a command",
+                    "location": []
+                },
+                {
+                    "message": "Syntax error in spec file (comet.spec:181:3): could not type expression \"?call_presentValue(?principal)\", message: No function-like entry for call_presentValue was found in the symbol table. Perhaps something was misspelled?",
+                    "location": []
+                },
+                {
+                    "message": "Syntax error in spec file (comet.spec:183:3): could not type expression \"?call_presentValue(?principal)\", message: No function-like entry for call_presentValue was found in the symbol table. Perhaps something was misspelled?",
+                    "location": []
+                },
+                {
+                    "message": "Syntax error in spec file (comet.spec:200:5): could not type expression \"?call_presentValue(?getPrincipal(?e, ?src))\", message: No function-like entry for call_presentValue was found in the symbol table. Perhaps something was misspelled?",
+                    "location": []
+                },
+                {
+                    "message": "Syntax error in spec file (comet.spec:201:5): could not type expression \"?call_presentValue(?getPrincipal(?e, ?dst))\", message: No function-like entry for call_presentValue was found in the symbol table. Perhaps something was misspelled?",
+                    "location": []
+                },
+                {
+                    "message": "Syntax error in spec file (comet.spec:205:5): could not type expression \"?call_presentValue(?getPrincipal(?e, ?src))\", message: No function-like entry for call_presentValue was found in the symbol table. Perhaps something was misspelled?",
+                    "location": []
+                },
+                {
+                    "message": "Syntax error in spec file (comet.spec:206:5): could not type expression \"?call_presentValue(?getPrincipal(?e, ?dst))\", message: No function-like entry for call_presentValue was found in the symbol table. Perhaps something was misspelled?",
+                    "location": []
+                },
+                {
+                    "message": "Syntax error in spec file (comet.spec:178:3): Some ambiguous applications have not been resolved successfully",
+                    "location": []
+                }
+            ]
+        }
+    ]
 }
