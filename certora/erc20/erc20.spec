@@ -138,10 +138,10 @@ ghost sumOfBalances() returns uint256;
 
 // can't test on generic ERC20 because each contract might call the variable different name
 
-hook Sstore balanceOf[KEY address a] uint256 balance (uint256 old_balance) STORAGE {
-	havoc sumOfBalances assuming 
-        sumOfBalances@new() == sumOfBalances@old() + (balance - old_balance);
-}
+// hook Sstore balanceOf[KEY address a] uint256 balance (uint256 old_balance) STORAGE {
+// 	havoc sumOfBalances assuming 
+//         sumOfBalances@new() == sumOfBalances@old() + (balance - old_balance);
+// }
 
 
 
@@ -183,7 +183,7 @@ rule ChangingAllowance(method f, address from, address spender) {
         uint256 amount;
         require amount <= allowanceBefore;
         decreaseAllowance(e, spender, amount);
-        if (from == msg.sender && spender == spender_) {
+        if (from == e.msg.sender && spender == spender_) {
             assert allowance(from, spender) == allowanceBefore - amount;
         } else {
             assert allowance(from, spender) == allowanceBefore;
@@ -193,7 +193,7 @@ rule ChangingAllowance(method f, address from, address spender) {
         uint256 amount;
         require amount + allowanceBefore < max_uint256;
         increaseAllowance(e, spender, amount);
-        if (from == msg.sender && spender == spender_) {
+        if (from == e.msg.sender && spender == spender_) {
             assert allowance(from, spender) == allowanceBefore + amount;
         } else {
             assert allowance(from, spender) == allowanceBefore;
