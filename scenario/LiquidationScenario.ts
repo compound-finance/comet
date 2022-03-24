@@ -65,30 +65,35 @@ scenario(
   }
 );
 
-scenario(
+scenario.only(
   'Comet#liquidation > prevents liquidation when absorb is paused',
   {
+    tokenBalances: {
+      $comet: { $base: 100 },
+    },
     cometBalances: {
-      albert: { $base: -10000 },
-      betty: { $base: 100 }
+      albert: { $base: -10 },
+      betty: { $base: 10 }
     },
     pause: {
       absorbPaused: true,
     },
-    utilization: 1
+    upgrade: true
   },
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
     const baseToken = await comet.baseToken();
+    const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
 
     await world.increaseTime(
       await timeUntilUnderwater({
         comet,
-        actor: albert
+        actor: albert,
+        fudgeFactor: 60n * 10n // 10 minutes past when position is underwater
       })
     );
 
-    await comet.connect(betty.signer).withdraw(baseToken, 10); // force accrue
+    await betty.withdrawAsset({asset: baseToken, amount: baseBorrowMin}); // force accrue
 
     await expect(
       comet.absorb(betty.address, [albert.address])
