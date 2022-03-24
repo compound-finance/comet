@@ -1,5 +1,11 @@
+if [[ "$1" ]]
+then
+    RULE="--rule $1"
+fi
+
+
 certoraRun certora/erc20/USDC.sol:FiatTokenV2_1  \
-    --verify FiatTokenV2_1:certora/erc20/erc20.spec  \
+    --verify FiatTokenV2_1:certora/erc20/erc20.spec $RULE  \
     --solc solc6.12 \
     --staging \
     --optimistic_loop \

@@ -20,7 +20,7 @@ definition governorOrPauseGuardian(address a) returns bool =
     @Formula:
         { }
         < call to function pause() or withdrawReserves() >
-        { !lastReverted => user(msg.sender) = governor || user(msg.sender) = pauseGuardian}
+        { !lastReverted => msg.sender = governor || msg.sender = pauseGuardian}
 
     @Notes:
 
