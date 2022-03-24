@@ -1,7 +1,7 @@
 import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import { Requirements } from './Requirements';
-import { requireString, requireList } from './utils';
+import { requireString, requireList } from '../utils';
 
 interface RemoteTokenConfig {
   network: string;

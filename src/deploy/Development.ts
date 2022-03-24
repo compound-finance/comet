@@ -125,7 +125,7 @@ export async function deployDevelopmentComet(
       baseTrackingSupplySpeed: 0, // XXX
       baseTrackingBorrowSpeed: 0, // XXX
       baseMinForRewards: 1, // XXX
-      baseBorrowMin: 1, // XXX
+      baseBorrowMin: (1e18).toString(),
       targetReserves: 0, // XXX
       assetConfigs: [assetConfig0, assetConfig1],
     },

@@ -19,7 +19,7 @@ scenario(
 
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
 
-    // Albert supplies 100 units of collateral to Comet
+    // Albert supplies 100 units of base to Comet
     await baseAsset.approve(albert, comet.address);
     const txn = await albert.supplyAsset({ asset: baseAsset.address, amount: 100n * scale })
 
@@ -367,3 +367,5 @@ scenario(
     // XXX requires deploying an unsupported asset (maybe via remote token constraint)
   }
 );
+
+// XXX enforce supply cap

@@ -110,6 +110,11 @@ export default class CometActor {
     return await (await comet.connect(this.signer).withdraw(asset, amount)).wait();
   }
 
+  async withdrawAssetFrom({ src, dst, asset, amount }): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).withdrawFrom(src, dst, asset, amount)).wait();
+  }
+
   async signAuthorization({
     manager,
     isAllowed,

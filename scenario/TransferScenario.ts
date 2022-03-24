@@ -130,7 +130,7 @@ scenario(
 );
 
 scenario(
-  'Comet#transfer reverts if undercollateralized',
+  'Comet#transfer base reverts if undercollateralized',
   {
     upgrade: true,
     cometBalances: {
@@ -162,7 +162,7 @@ scenario(
 );
 
 scenario(
-  'Comet#transferFrom reverts if undercollateralized',
+  'Comet#transferFrom base reverts if undercollateralized',
   {
     upgrade: true,
     cometBalances: {
@@ -191,6 +191,61 @@ scenario(
         dst: betty.address,
         asset: baseAsset.address,
         amount: toTransfer,
+      })
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+  }
+);
+
+scenario(
+  'Comet#transfer collateral reverts if undercollateralized',
+  {
+    upgrade: true,
+    cometBalances: {
+      albert: { $base: -100, $asset0: 100 }, // in units of asset, not wei
+      betty: { $asset0: 0 },
+    },
+  },
+  async ({ comet, actors }, world, context) => {
+    const { albert, betty } = actors;
+    const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
+    const collateralAsset = context.getAssetByAddress(asset0Address);
+    const scale = scaleBN.toBigInt();
+
+    // Albert transfers all his collateral to Betty
+    await expect(
+      albert.transferAsset({
+        dst: betty.address,
+        asset: collateralAsset.address,
+        amount: 100n * scale,
+      })
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+  }
+);
+
+scenario(
+  'Comet#transferFrom collateral reverts if undercollateralized',
+  {
+    upgrade: true,
+    cometBalances: {
+      albert: { $base: -100, $asset0: 100 }, // in units of asset, not wei
+      betty: { $asset0: 0 },
+    },
+  },
+  async ({ comet, actors }, world, context) => {
+    const { albert, betty } = actors;
+    const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
+    const collateralAsset = context.getAssetByAddress(asset0Address);
+    const scale = scaleBN.toBigInt();
+
+    await albert.allow(betty, true);
+
+    // Betty transfers all of Albert's collateral to herself
+    await expect(
+      betty.transferAssetFrom({
+        src: albert.address,
+        dst: betty.address,
+        asset: collateralAsset.address,
+        amount: 100n * scale,
       })
     ).to.be.revertedWith("custom error 'NotCollateralized()'");
   }
@@ -283,6 +338,28 @@ scenario(
 );
 
 scenario(
+  'Comet#transferFrom reverts if operator not given permission',
+  {
+    upgrade: true,
+  },
+  async ({ comet, actors }, world, context) => {
+    const { albert, betty } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const scale = (await comet.baseScale()).toBigInt();
+
+    await expect(
+      betty.transferAssetFrom({
+        src: albert.address,
+        dst: betty.address,
+        asset: baseAsset.address,
+        amount: 1n * scale,
+      })
+    ).to.be.revertedWith("custom error 'Unauthorized()'");
+  }
+);
+
+scenario(
   'Comet#transfer reverts when transfer is paused',
   {
     upgrade: true,
@@ -330,5 +407,29 @@ scenario(
         amount: 100,
       })
     ).to.be.revertedWith("custom error 'Paused()'");
+  }
+);
+
+scenario(
+  'Comet#transfer reverts if borrow is less than minimum borrow',
+  {
+    upgrade: true,
+    cometBalances: {
+      albert: { $base: 0, $asset0: 100 }
+    }
+  },
+  async ({ comet, actors }, world, context) => {
+    const { albert, betty } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const minBorrow = (await comet.baseBorrowMin()).toBigInt();
+
+    await expect(
+      albert.transferAsset({
+        dst: betty.address,
+        asset: baseAsset.address,
+        amount: minBorrow / 2n
+      })
+    ).to.be.revertedWith("custom error 'BorrowTooSmall()'");
   }
 );
