@@ -118,9 +118,9 @@ rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f
 
     require !AccrueWasCalled(e) ;
 
-    uint256 balance_pre = tokenBalanceOf(_baseToken,currentContract);
+    uint256 balance_pre = tokenBalanceOf(e,_baseToken,currentContract);
     f(e,args) ;
-    uint256 balance_post = tokenBalanceOf(_baseToken,currentContract);
+    uint256 balance_post = tokenBalanceOf(e,_baseToken,currentContract);
 
     assert balance_post != balance_pre => AccrueWasCalled(e);
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity ^0.8.11;
-import '../../contracts/CometInterface.sol'
+import '../../contracts/CometInterface.sol';
 
 /**
  * @title Certora's dummy ERC20 implementation contract
