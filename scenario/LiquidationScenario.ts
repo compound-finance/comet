@@ -65,7 +65,7 @@ scenario(
   }
 );
 
-scenario.only(
+scenario(
   'Comet#liquidation > prevents liquidation when absorb is paused',
   {
     tokenBalances: {
@@ -104,19 +104,23 @@ scenario.only(
 scenario(
   'Comet#liquidation > allows liquidation of underwater positions',
   {
-    cometBalances: {
-      albert: { $base: -10000 },
+    tokenBalances: {
+      $comet: { $base: 100 },
     },
-    utilization: 1
+    cometBalances: {
+      albert: { $base: -10 },
+      betty: { $base: 10 }
+    },
+    upgrade: true
   },
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
-    const baseToken = await comet.baseToken();
 
     await world.increaseTime(
       await timeUntilUnderwater({
         comet,
-        actor: albert
+        actor: albert,
+        fudgeFactor: 60n * 10n // 10 minutes past when position is underwater
       })
     );
 
@@ -132,8 +136,9 @@ scenario(
     expect(lp1.numAbsorbed.toNumber()).to.eq(lp0.numAbsorbed.toNumber() + 1);
     // XXX test approxSpend?
 
-    // clears liquidated user balance
-    expect(await comet.baseBalanceOf(albert.address)).to.eq(0);
+    const baseBalance = (await comet.baseBalanceOf(albert.address)).toNumber();
+    expect(baseBalance).to.be.greaterThanOrEqual(0);
+
     // clears assetsIn
     expect((await comet.userBasic(albert.address)).assetsIn).to.eq(0);
   }
