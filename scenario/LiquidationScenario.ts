@@ -18,13 +18,6 @@ async function timeUntilUnderwater({comet, actor, fudgeFactor = 0n}: {comet: Com
   const baseScale = (await comet.baseScale()).toBigInt();
   const factorScale = (await comet.factorScale()).toBigInt();
 
-  console.log(`liquidationMargin: ${liquidationMargin}`);
-  console.log(`baseBalanceOf: ${baseBalanceOf}`);
-  console.log(`basePrice: ${basePrice}`);
-  console.log(`borrowRate: ${borrowRate}`);
-  console.log(`baseScale: ${baseScale}`);
-  console.log(`factorScale: ${factorScale}`);
-
   if (liquidationMargin < 0) {
     return 0; // already underwater
   }
@@ -144,20 +137,33 @@ scenario(
   }
 );
 
-scenario(
+// The versions of the contracts on Kovan and Fuji do not include the line:
+//
+// function initializeStorage() public {
+//   // ...
+//   isAllowed[address(this)][governor] = true;
+// }
+//
+// And since you can't call initializeStorage after accue has been called, you
+// can't use ModernConstaint to upgrade to a version of the contract that
+// includes that line.
+//
+// So the governor of the contract is not approved to withdraw collateral
+//
+// XXX enable once we've upgraded the deployments on Kovan and Fuji
+scenario.skip(
   'Comet#liquidation > governor can withdraw collateral after successful liquidation',
   {
     tokenBalances: {
       albert: { $asset0: .001 }, // low value, to make it easy to source
     },
     cometBalances: {
-      albert: { $base: -10000 },
+      albert: { $base: -10 },
     },
-    utilization: 1
+    upgrade: true
   },
   async ({ comet, actors }, world) => {
     const { albert, betty, admin } = actors;
-    const baseToken = await comet.baseToken();
     const { asset: asset0Address, scale } = await comet.getAssetInfo(0);
 
     const collateralBalance = scale.toBigInt() / 1000n; // .001
@@ -165,15 +171,16 @@ scenario(
     await world.increaseTime(
       await timeUntilUnderwater({
         comet,
-        actor: albert
+        actor: albert,
+        fudgeFactor: 60n * 10n // 10 minutes past when position is underwater
       })
     );
 
     await comet.absorb(betty.address, [albert.address]);
 
-    const txReceipt = await admin.withdrawFrom({
+    const txReceipt = await admin.withdrawAssetFrom({
       src: comet.address,
-      to: admin.address,
+      dst: admin.address,
       asset: asset0Address,
       amount: collateralBalance
     });
