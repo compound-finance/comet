@@ -33,10 +33,6 @@ function getUtilizationConfig(requirements: object): UtilizationConfig | null {
   };
 }
 
-function floor(n: number): bigint {
-  return BigInt(Math.floor(n));
-}
-
 /*
 some math notes:
 
@@ -82,11 +78,9 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
         let currentUtilizationFactor = (totalBorrowBase * factorScale) / expectedSupplyBase;
 
         if (currentUtilizationFactor < utilizationFactor) {
-          toBorrowBase =
-            toBorrowBase + floor(utilization * Number(expectedSupplyBase)) - totalBorrowBase;
+          toBorrowBase = toBorrowBase + (utilizationFactor * expectedSupplyBase / factorScale) - totalBorrowBase;
         } else {
-          toSupplyBase =
-            toSupplyBase + floor(Number(totalBorrowBase) / utilization) - expectedSupplyBase;
+          toSupplyBase = toSupplyBase + (totalBorrowBase * factorScale / utilizationFactor) - expectedSupplyBase;
         }
 
         // It's really hard to target a utilization if we don't have _any_ base token supply, since
