@@ -54,7 +54,7 @@ export class World {
     return await this.hre.ethers.getSigner(address);
   }
 
-  async timestamp(): Promise<number> {
+  async timestamp() {
     const blockNumber = await this.hre.ethers.provider.getBlockNumber();
     return (await this.hre.ethers.provider.getBlock(blockNumber)).timestamp;
   }

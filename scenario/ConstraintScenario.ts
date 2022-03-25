@@ -70,31 +70,31 @@ scenario(
 scenario(
   'UtilizationConstraint > sets utilization to 25%',
   { utilization: 0.25, upgrade: true },
-  async ({ comet, actors }) => {
+  async ({ comet }) => {
     expect(defactor(await comet.getUtilization())).to.approximately(0.25, 0.000001);
   }
 );
 
 scenario(
-  'UtilizationConstraint > utilization is 50%',
+  'UtilizationConstraint > sets utilization to 50%',
   { utilization: 0.50, upgrade: true },
-  async ({ comet, actors }) => {
+  async ({ comet }) => {
     expect(defactor(await comet.getUtilization())).to.approximately(0.5, 0.000001);
   }
 );
 
 scenario(
-  'UtilizationConstraint > utilization is 75%',
+  'UtilizationConstraint > sets utilization to 75%',
   { utilization: 0.75, upgrade: true },
-  async ({ comet, actors }) => {
+  async ({ comet }) => {
     expect(defactor(await comet.getUtilization())).to.approximately(0.75, 0.000001);
   }
 );
 
 scenario(
-  'UtilizationConstraint > utilization is 100%',
+  'UtilizationConstraint > sets utilization to 100%',
   { utilization: 1, upgrade: true },
-  async ({ comet, actors }) => {
+  async ({ comet }) => {
     expect(defactor(await comet.getUtilization())).to.approximately(1, 0.000001);
   }
 );
