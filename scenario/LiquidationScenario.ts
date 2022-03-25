@@ -101,7 +101,10 @@ scenario(
       $comet: { $base: 100 },
     },
     cometBalances: {
-      albert: { $base: -10 },
+      albert: {
+        $base: -10,
+        $asset0: .001
+      },
       betty: { $base: 10 }
     },
     upgrade: true
@@ -131,6 +134,13 @@ scenario(
 
     const baseBalance = (await comet.baseBalanceOf(albert.address)).toNumber();
     expect(baseBalance).to.be.greaterThanOrEqual(0);
+
+    // clears out all of liquidated user's collateral
+    const numAssets = await comet.numAssets();
+    for (let i = 0; i < numAssets; i++) {
+      const { asset } = await comet.getAssetInfo(i);
+      expect(await comet.collateralBalanceOf(albert.address, asset)).to.eq(0);
+    }
 
     // clears assetsIn
     expect((await comet.userBasic(albert.address)).assetsIn).to.eq(0);
