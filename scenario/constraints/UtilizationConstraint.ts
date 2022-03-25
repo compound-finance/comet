@@ -101,12 +101,6 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
           // could provide a solution for each token, but we don't know them in advance,
           // generally, so let's just pick the first one and source enough of it.
 
-          // bail if `toBorrowBase` is lower than baseBorrowMin
-          const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
-          if (toBorrowBase < baseBorrowMin) {
-            return context;
-          }
-
           let { asset: collateralAsset, borrowCollateralFactor, priceFeed, scale } = await comet.getAssetInfo(0);
 
           let collateralToken = context.getAssetByAddress(collateralAsset);
