@@ -1,8 +1,7 @@
-import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
+import { Constraint, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
-import { deployComet } from '../../src/deploy';
 import { optionalNumber } from '../utils';
-import { defactor, exp, factor, factorScale, ZERO } from '../../test/helpers';
+import { defactor, factor, factorScale } from '../../test/helpers';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
 
@@ -80,9 +79,9 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
         }
 
         let expectedSupplyBase = totalSupplyBase + toSupplyBase;
-        let currentUtilization = factor(Number(totalBorrowBase)) / expectedSupplyBase;
+        let currentUtilizationFactor = (totalBorrowBase * factorScale) / expectedSupplyBase;
 
-        if (currentUtilization < utilizationFactor) {
+        if (currentUtilizationFactor < utilizationFactor) {
           toBorrowBase =
             toBorrowBase + floor(utilization * Number(expectedSupplyBase)) - totalBorrowBase;
         } else {
