@@ -151,7 +151,7 @@ scenario(
 // So the governor of the contract is not approved to withdraw collateral
 //
 // XXX enable once we've upgraded the deployments on Kovan and Fuji
-scenario.skip(
+scenario(
   'Comet#liquidation > governor can withdraw collateral after successful liquidation',
   {
     cometBalances: {
