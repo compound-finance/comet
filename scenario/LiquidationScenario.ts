@@ -137,20 +137,6 @@ scenario(
   }
 );
 
-// The versions of the contracts on Kovan and Fuji do not include the line:
-//
-// function initializeStorage() public {
-//   // ...
-//   isAllowed[address(this)][governor] = true;
-// }
-//
-// And since you can't call initializeStorage after accue has been called, you
-// can't use ModernConstaint to upgrade to a version of the contract that
-// includes that line.
-//
-// So the governor of the contract is not approved to withdraw collateral
-//
-// XXX enable once we've upgraded the deployments on Kovan and Fuji
 scenario(
   'Comet#liquidation > governor can withdraw collateral after successful liquidation',
   {
