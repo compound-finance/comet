@@ -154,11 +154,11 @@ scenario(
 scenario.skip(
   'Comet#liquidation > governor can withdraw collateral after successful liquidation',
   {
-    tokenBalances: {
-      albert: { $asset0: .001 }, // low value, to make it easy to source
-    },
     cometBalances: {
-      albert: { $base: -10 },
+      albert: {
+        $base: -10,
+        $asset0: .001
+      },
     },
     upgrade: true
   },
