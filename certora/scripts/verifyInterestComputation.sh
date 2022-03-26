@@ -4,6 +4,6 @@ certoraRun certora/harness/CometHarnessWrappers.sol certora/harness/SymbolicPric
     --solc solc8.11 \
     --staging \
     --optimistic_loop \
-    --settings -enableEqualitySaturation=false,-solver=z3,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \
+    --settings -enableEqualitySaturation=false \
     --solc_args '["--experimental-via-ir"]' \
     --msg "Comet intereest computation $1 : $2"

@@ -80,6 +80,7 @@ rule antiMonotonicityOfAbsorb(address absorber, address account) {
     require accounts[0] == account;
     
     address asset;
+    //todo - Nurit i think this is wrong! 
     uint256 balanceBefore = getUserCollateralBalance(account, currentContract);
     uint104 borrowBefore = getTotalBorrowBase();
 

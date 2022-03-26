@@ -54,7 +54,7 @@ contract CometHarnessGetters is Comet {
     }
 
     // Retrieves a user's principal from CometStorage
-    function getPrincipal(address user) public view returns (int104) {
+    function getUserPrincipal(address user) public view returns (int104) {
         return userBasic[user].principal;
     }
 
@@ -128,8 +128,10 @@ contract CometHarnessGetters is Comet {
         return abi.decode(result, (int104));
     }
     
-       // External wrapper for hasPermission
+    // External wrapper for hasPermission
     function call_hasPermission(address owner, address manager) external view returns (bool) {
         return hasPermission(owner, manager);
     }
+
 }
+

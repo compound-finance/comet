@@ -128,9 +128,10 @@ contract CometHarness is CometHarnessGetters {
         splitting it to two functions allows Certora Prover to be able to run onthis functions.
         Note : any change to the orig  transferAssetFrom should be adapted here! 
     */  
+    /*
     function transferAssetFrom(address src, address dst, address asset, uint amount) public override {
        
-     }
+    }
     function transferAssetFromBase(address src, address dst, address asset, uint amount) external {
         if (isTransferPaused()) revert Paused();
         if (!hasPermission(src, msg.sender)) revert Unauthorized();
@@ -149,6 +150,7 @@ contract CometHarness is CometHarnessGetters {
         return super.transferCollateral(src, dst, asset, safe128(amount));
     }
 
+    */
     
     /* Helpers: 
         A function to check if an address is registers, i.e, it has an assetInfo strcture 

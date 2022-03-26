@@ -1,9 +1,28 @@
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+    This file is run with scripts/verifyComet.sh
+    On a version with summarization ans some simplifications: 
+    CometHarness.sol and B_commetSummarization.spec
+
+*/
+
 import "B_cometSummarization.spec"
 import "erc20.spec"
 
-
+// Reference to an external contract representing the baseToken 
 using SymbolicBaseToken as _baseToken 
 
+////////////////////////////////////////////////////////////////////////////
+//                                Methods                                 //
+////////////////////////////////////////////////////////////////////////////
+/*
+    Declaration of methods that are used in the rules. envfree indicate that
+    the method is not dependent on the environment (msg.value, msg.sender).
+    Methods that are not declared here are assumed to be dependent on env.
+*/
 
 methods {
     latestRoundData() returns uint256 => DISPATCHER(true);
@@ -15,6 +34,7 @@ methods {
     getTotalBorrowBase() returns (uint104) envfree 
     getTotalsSupplyAsset(address asset) returns (uint128) envfree  
     getAssetSupplyCapByAddress(address) returns (uint128) envfree
+    baseBalanceOf(address) returns (int104) envfree
     getReserves() returns (int) envfree
     targetReserves() returns (uint256) envfree
     initializeStorage() 
@@ -23,6 +43,7 @@ methods {
 
     callSummarizedIsInAsset(uint16, uint8) returns (bool) envfree
     call_hasPermission(address, address) returns (bool) envfree
+    getUserCollateralBalance(address, address) returns (uint128) envfree
     getAssetinOfUser(address) returns (uint16) envfree
     assetToIndex(address) returns (uint8) envfree
     indexToAsset(uint8) returns (address) envfree
@@ -88,11 +109,11 @@ function call_functions_with_specific_asset(method f, env e, address asset) retu
         transferAsset(e, account_, asset, amount);
 	} else if (f.selector == transferAssetFrom(address, address, address, uint).selector) {
         transferAssetFrom(e, _account, account_, asset, amount);
-	} else if (f.selector == transferAssetFromBase(address, address, address, uint).selector) {
+	} /*else if (f.selector == transferAssetFromBase(address, address, address, uint).selector) {
         transferAssetFromBase(e, _account, account_, asset, amount);
 	} else if (f.selector == transferAssetFromAsset(address, address, address, uint).selector) {
         transferAssetFromAsset(e, _account, account_, asset, amount);
-	} else if (f.selector == withdraw(address, uint).selector) {
+	} */ else if (f.selector == withdraw(address, uint).selector) {
         withdraw(e, asset, amount);
 	} else if (f.selector == withdrawTo(address, address, uint).selector) {
         withdrawTo(e, account_, asset, amount);
@@ -143,9 +164,9 @@ rule assetIn_Initialized_With_Balance(method f, address user, address asset)
     
     env e; calldataarg args;
     require user != currentContract;
-    require getUserCollateralBalance(e,user, asset) > 0 <=> callSummarizedIsInAsset(getAssetinOfUser(user), assetToIndex(asset));
+    require getUserCollateralBalance(user, asset) > 0 <=> callSummarizedIsInAsset(getAssetinOfUser(user), assetToIndex(asset));
     call_functions_with_specific_asset(f, e, asset);
-    assert getUserCollateralBalance(e,user, asset) > 0 <=> callSummarizedIsInAsset(getAssetinOfUser(user), assetToIndex(asset));
+    assert getUserCollateralBalance(user, asset) > 0 <=> callSummarizedIsInAsset(getAssetinOfUser(user), assetToIndex(asset));
 }
 
 
@@ -252,3 +273,92 @@ rule usage_registered_assets_only(address asset, method f) filtered { f -> !simi
     call_functions_with_specific_asset(f, e, asset);
     assert registered; //if the function passed it must be registered 
  }
+
+
+
+ /*
+    @Rule
+        verify_transferAsset
+
+    @Description:
+        transfer should not change the combine presentValue of src and dst
+
+    @Formula:
+        { presentValue_src1 = baseBalanceOf(src),
+          presentValue_dst1 = baseBalanceOf(dst)
+        }
+
+    @Notes:
+
+    @Link:
+        
+*/
+rule verify_transferAsset(){
+    env e;
+
+    address src;
+    address dst;
+    address asset;
+    uint amount;
+
+    simplifiedAssumptions();
+
+    mathint presentValue_src1 = to_mathint(baseBalanceOf(src));
+    mathint presentValue_dst1 = to_mathint(baseBalanceOf(dst));
+    mathint collateral_src1 = to_mathint(getUserCollateralBalance(asset, src)); 
+    mathint collateral_dst1 =to_mathint(getUserCollateralBalance(asset, dst)); 
+
+    transferAssetFrom(e, src, dst, asset, amount);
+
+    mathint presentValue_src2 = to_mathint(baseBalanceOf(src));
+    mathint presentValue_dst2 = to_mathint(baseBalanceOf(dst));
+    mathint collateral_src2 = to_mathint(getUserCollateralBalance(asset, src)); 
+    mathint collateral_dst2 =to_mathint(getUserCollateralBalance(asset, dst)); 
+
+
+    assert presentValue_src1 + presentValue_dst1 == presentValue_src2 + presentValue_dst2;
+    assert collateral_src2 + collateral_dst2 == collateral_src2 + collateral_dst2;
+}
+
+
+
+/*
+    @Rule
+
+    @Description:
+        User principal balance may decrease only by a call from them or from a permissioned manager
+
+    @Formula:
+        {
+             userBasic[user].principal = x
+        }
+        < op >
+        {
+            userBasic[user].principal = y
+            y < x => user = msg.sender || hasPermission[user][msg.sender] == true; 
+        }
+
+    @Notes:
+        
+    @Link:
+        https://vaas-stg.certora.com/output/67509/8b70e8c3633a54cfc7ba?anonymousKey=d2c319cb2734c3978e15fa3833f55b19c48f8fda
+*/
+
+rule balance_change_by_allowed_only(method f, address user)
+filtered { f-> !similarFunctions(f) && !f.isView }
+{
+    env e;
+    calldataarg args;
+    require user != currentContract;
+    simplifiedAssumptions();
+
+    int104 balanceBefore = getUserPrincipal(user);
+
+    f(e, args);
+
+    int104 balanceAfter = getUserPrincipal(user);
+    bool permission = call_hasPermission(user, e.msg.sender);
+
+    assert balanceAfter < balanceBefore => 
+        ((e.msg.sender == user) || permission);
+}
