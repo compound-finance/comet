@@ -2,10 +2,10 @@ import { Contract, Signer } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import { Cache, FileSpec } from './Cache';
-import { Address, Alias, BuildFile } from './Types';
+import { ABI, Address, Alias, BuildFile } from './Types';
 import { Aliases, getAliases } from './Aliases';
 import { Proxies, getProxies } from './Proxies';
-import { getPrimaryContract } from './Utils';
+import { getPrimaryContract, mergeABI } from './Utils';
 
 export type ContractMap = Map<Alias, Contract>;
 
@@ -19,27 +19,52 @@ export async function getContractsFromAliases(
 ): Promise<ContractMap> {
   let contracts: ContractMap = new Map();
   let theSigner = signer ?? (await hre.ethers.getSigners())[0];
-
   for (let [alias, address] of aliases.entries()) {
-    let implAddress = proxies.get(alias);
-    let implBuildFile;
-    if (implAddress) {
-      implBuildFile = await getRequiredBuildFile(cache, implAddress, `${alias}:implementation`);
-    }
-
-    let [name, contract] = await getContractByAddress(
+    let contract = await getContractByAddressProxy(
       cache,
-      alias,
+      proxies,
       address,
       hre,
       theSigner,
-      implBuildFile
+      [],
+      alias,
+      address
     );
 
     contracts.set(alias, contract);
   }
 
   return contracts;
+}
+
+// Returns an ethers' wrapped contract from a given build file (based on its name and address)
+async function getContractByAddressProxy(
+  cache: Cache,
+  proxies: Proxies,
+  address: Address,
+  hre: HardhatRuntimeEnvironment,
+  signer: Signer,
+  accABI: ABI,
+  accAlias: string,
+  accAddress: Address
+): Promise<Contract> {
+  let name;
+  let { contract, abi } = await getContractByAddress(cache, accAlias, accAddress, hre, signer);
+  let nextABI = mergeABI(accABI, abi);
+  if (proxies.has(accAlias)) {
+    return await getContractByAddressProxy(
+      cache,
+      proxies,
+      address,
+      hre,
+      signer,
+      nextABI,
+      `${accAlias}:implementation`,
+      proxies.get(accAlias)
+    );
+  } else {
+    return new hre.ethers.Contract(address, nextABI, signer);
+  }
 }
 
 // Returns an ethers' wrapped contract from a given build file (based on its name and address)
@@ -50,7 +75,7 @@ async function getContractByAddress(
   hre: HardhatRuntimeEnvironment,
   signer: Signer,
   implBuildFile?: BuildFile
-): Promise<[string, Contract]> {
+): Promise<{ name: string; contract: Contract; abi: ABI }> {
   let buildFile = await getRequiredBuildFile(cache, address, alias);
   let [contractName, metadata] = getPrimaryContract(buildFile);
   let abi;
@@ -61,7 +86,7 @@ async function getContractByAddress(
     abi = metadata.abi;
   }
 
-  return [contractName, new hre.ethers.Contract(address, abi, signer)];
+  return { name: contractName, contract: new hre.ethers.Contract(address, abi, signer), abi: abi };
 }
 
 function getFileSpec(address: Address): FileSpec {
@@ -79,7 +104,7 @@ export async function storeBuildFile(cache: Cache, address: Address, buildFile: 
 async function getRequiredBuildFile(
   cache: Cache,
   address: Address,
-  alias?: Alias,
+  alias?: Alias
 ): Promise<BuildFile> {
   let buildFile = await getBuildFile(cache, address);
   if (!buildFile) {

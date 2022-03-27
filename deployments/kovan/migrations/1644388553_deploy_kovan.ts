@@ -23,7 +23,7 @@ migration('1644388553_deploy_kovan', {
 
     let usdcProxyAdminArgs: [] = [];
     let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
-      'vendor/proxy/ProxyAdmin.sol',
+      'vendor/proxy/transparent/ProxyAdmin.sol',
       usdcProxyAdminArgs
     );
 

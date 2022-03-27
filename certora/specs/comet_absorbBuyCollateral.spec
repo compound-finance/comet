@@ -1,7 +1,25 @@
 import "comet.spec"
 
 
-rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
+/*
+    @Rule
+        antiMonotonicityOfBuyCollateral
+
+    @Description: After call to buy collateral:
+        balance asset decrease      &&
+        balance Base increase       &&
+        balance Base increase IFF balance asset decrease
+         
+
+    @Formula:
+        balanceAssetAfter <= balanceAssetBefore     &&
+        balanceBaseBefore <= balanceBaseAfter       &&
+        balanceBaseBefore < balanceBaseAfter <=> balanceAssetAfter < balanceAssetBefore
+
+    @Notes:
+
+    @Link:
+*/rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
     env e;
     // https://vaas-stg.certora.com/output/23658/b7cc8ac5bd1d3f414f2f/?anonymousKey=d47ea2a5120f88658704e5ece8bfb45d59b2eb85
     require asset != _baseToken; 
@@ -23,6 +41,21 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
     assert (balanceBaseBefore < balanceBaseAfter <=> balanceAssetAfter < balanceAssetBefore);
 }
 
+/*
+    @Rule
+        buyCollateralMax
+
+    @Description:
+        After absorb, user's collateral is added to Contract's collateral.
+        Can't buy more collateral than contract's collateral (max) 
+
+    @Formula:
+        balanceAssetAfter >= balanceAssetBefore - max
+
+    @Notes:
+
+    @Link:
+*/
 
 rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address recipient) {
     env e;
@@ -38,8 +71,22 @@ rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address re
 }
 
 
-// note - need loop_iter=2 for this rule
-// T@T - The same account cannot be absorbed twice
+/*
+    @Rule
+        canNot_absorb_same_account
+
+    @Description:
+        The same account cannot be absorbed twice
+
+    @Formula:
+        require accounts[0] == account && accounts[1] == account
+        absorb@withrevert(e, absorber, accounts);
+        assert lastReverted; 
+
+    @Notes: need loop_iter=2 for this rule
+
+    @Link:
+*/
 rule canNot_absorb_same_account(address absorber, address account) {
     address[] accounts;
     env e;
@@ -53,6 +100,20 @@ rule canNot_absorb_same_account(address absorber, address account) {
 }
 
 
+/*
+    @Rule
+        absorb_reserves_decrease
+
+    @Description:
+        After absorbtion of account, the system's reserves must not increase
+
+    @Formula:
+        Reserves_before >= Reserves_after
+
+    @Notes:
+
+    @Link:
+*/
 // V@V - After absorbtion of account, the system's reserves must not increase
 rule absorb_reserves_decrease(address absorber, address account) {
     address[] accounts;
@@ -71,28 +132,59 @@ rule absorb_reserves_decrease(address absorber, address account) {
 }
 
 
-// T@T - In case of absorbtion, if the balance of a collateral asset increase in the system, then the total borrow of users is decreased
+/*
+    @Rule
+        antiMonotonicityOfAbsorb
+
+    @Description:
+        as the collateral balance increases the BorrowBase decreases
+
+    @Formula:
+        balanceAfter > balanceBefore => borrowAfter < borrowBefore
+
+    @Notes:
+
+    @Link:
+*/
 rule antiMonotonicityOfAbsorb(address absorber, address account) {
     address[] accounts;
     env e;
     simplifiedAssumptions();
 
     require accounts[0] == account;
+    require account != currentContract;
     
     address asset;
-    uint256 balanceBefore = getUserCollateralBalance(account, currentContract);
+   
+    uint256 balanceBefore = getUserCollateralBalance(currentContract, asset);
     uint104 borrowBefore = getTotalBorrowBase();
 
     absorb(e, absorber, accounts);
 
-    uint256 balanceAfter = getUserCollateralBalance(account, currentContract);
+    uint256 balanceAfter = getUserCollateralBalance(currentContract, asset);
     uint104 borrowAfter = getTotalBorrowBase();
     assert balanceAfter > balanceBefore => borrowAfter < borrowBefore ; 
     
 }
 
 
-// V@V - The same account cannot be absorbed after already absorbed
+/*
+    @Rule
+        canNot_double_absorb
+
+    @Description:
+        The same account cannot be absorbed after already absorbed
+
+    @Formula:
+            require accounts[0] == account;
+            absorb(e, absorber, accounts); //success
+            absorb@withrevert(e, absorber, accounts);
+            assert lastReverted; //last call to absorb always reverts
+
+    @Notes:
+
+    @Link:
+*/
 rule canNot_double_absorb(address absorber, address account) {
     address[] accounts;
     env e;

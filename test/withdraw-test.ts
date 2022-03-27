@@ -1,4 +1,6 @@
-import { Comet, ethers, expect, exp, makeProtocol, portfolio, wait } from './helpers';
+import { BigNumber } from "ethers";
+import { EvilToken, EvilToken__factory, FaucetToken } from '../build/types';
+import { ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, wait } from './helpers';
 
 describe('withdrawTo', function () {
   it('withdraws base from sender if the asset is base', async () => {
@@ -22,6 +24,28 @@ describe('withdrawTo', function () {
     const p1 = await portfolio(protocol, alice.address)
     const q1 = await portfolio(protocol, bob.address)
 
+    expect(event(s0, 0)).to.be.deep.equal({
+      Transfer: {
+        from: comet.address,
+        to: alice.address,
+        amount: BigInt(100e6),
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      Withdraw: {
+        src: bob.address,
+        to: alice.address,
+        amount: BigInt(100e6),
+      }
+    });
+    expect(event(s0, 2)).to.be.deep.equal({
+      Transfer: {
+        from: bob.address,
+        to: ethers.constants.AddressZero,
+        amount: BigInt(100e6),
+      }
+    });
+
     expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(p0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(q0.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
@@ -32,7 +56,7 @@ describe('withdrawTo', function () {
     expect(q1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(t1.totalSupplyBase).to.be.equal(0n);
     expect(t1.totalBorrowBase).to.be.equal(0n);
-    // XXX disable during coverage?
+    // XXX disable during coverage? more ideally coverage would not modify gas costs
     //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(80000);
   });
 
@@ -57,6 +81,22 @@ describe('withdrawTo', function () {
     const p1 = await portfolio(protocol, alice.address)
     const q1 = await portfolio(protocol, bob.address)
 
+    expect(event(s0, 0)).to.be.deep.equal({
+      Transfer: {
+        from: comet.address,
+        to: alice.address,
+        amount: BigInt(8e8),
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      WithdrawCollateral: {
+        src: bob.address,
+        to: alice.address,
+        asset: COMP.address,
+        amount: BigInt(8e8),
+      }
+    });
+
     expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(p0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(q0.internal).to.be.deep.equal({USDC: 0n, COMP: exp(8, 8), WETH: 0n, WBTC: 0n});
@@ -66,7 +106,7 @@ describe('withdrawTo', function () {
     expect(q1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(q1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(t1.totalSupplyAsset).to.be.equal(0n);
-    // XXX disable during coverage?
+    // XXX disable during coverage? more ideally coverage would not modify gas costs
     //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(60000);
   });
 
@@ -154,12 +194,29 @@ describe('withdrawTo', function () {
     await expect(cometAsB.withdrawTo(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
   });
 
-  it.skip('borrows to withdraw if necessary/possible', async () => {
-    // XXX
-  });
+  it('borrows to withdraw if necessary/possible', async () => {
+    const { comet, tokens, users: [alice, bob] } = await makeProtocol();
+    const { WETH, USDC } = tokens;
 
-  it.skip('is not broken by malicious re-entrancy', async () => {
-    // XXX
+    await USDC.allocateTo(comet.address, 1e6);
+    await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
+
+    let t0 = await comet.totalsBasic();
+    t0 = Object.assign({}, t0, {
+      baseBorrowIndex: t0.baseBorrowIndex.mul(2),
+    });
+    await comet.setTotalsBasic(t0);
+
+    await comet.connect(alice).withdrawTo(bob.address, USDC.address, 1e6);
+
+    const t1 = await comet.totalsBasic();
+    const baseIndexScale = await comet.baseIndexScale();
+
+    const principalValue = BigNumber.from(-1e6).mul(baseIndexScale).div(t1.baseBorrowIndex);
+    const baseBalanceOf = principalValue.mul(t1.baseBorrowIndex).div(baseIndexScale);
+
+    expect(await comet.baseBalanceOf(alice.address)).to.eq(baseBalanceOf);
+    expect(await USDC.balanceOf(bob.address)).to.eq(1e6);
   });
 });
 
@@ -242,6 +299,102 @@ describe('withdraw', function () {
       comet.connect(alice).withdraw(WETH.address, exp(1, 18))
     ).to.be.revertedWith("custom error 'NotCollateralized()'");
   });
+
+  describe('reentrancy', function() {
+    it('is not broken by malicious reentrancy transferFrom', async () => {
+      const { comet, tokens, users: [alice, bob] } = await makeProtocol({
+        assets: {
+          USDC: {
+            decimals: 6
+          },
+          EVIL: {
+            decimals: 6,
+            initialPrice: 2,
+            factory: await ethers.getContractFactory('EvilToken') as EvilToken__factory,
+          }
+        }
+      });
+      const { USDC, EVIL } = <{USDC: FaucetToken, EVIL: EvilToken}>tokens;
+
+      await USDC.allocateTo(comet.address, 100e6);
+
+      const attack = Object.assign({}, await EVIL.getAttack(), {
+        attackType: ReentryAttack.TransferFrom,
+        recipient: bob.address,
+        asset: USDC.address,
+        amount: 1e6
+      });
+      await EVIL.setAttack(attack);
+
+      const totalsCollateral = Object.assign({}, await comet.totalsCollateral(EVIL.address), {
+        totalSupplyAsset: 100e6,
+      });
+      await comet.setTotalsCollateral(EVIL.address, totalsCollateral);
+
+      await comet.setCollateralBalance(alice.address, EVIL.address, exp(1,6));
+      await comet.connect(alice).allow(EVIL.address, true);
+
+      // in callback, EVIL token calls transferFrom(alice.address, bob.address, 1e6)
+      await expect(
+        comet.connect(alice).withdraw(EVIL.address, 1e6)
+      ).to.be.revertedWith("custom error 'NotCollateralized()'");
+
+      // no USDC transferred
+      expect(await USDC.balanceOf(comet.address)).to.eq(100e6);
+      expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
+      expect(await USDC.balanceOf(alice.address)).to.eq(0);
+      expect(await comet.baseBalanceOf(bob.address)).to.eq(0);
+      expect(await USDC.balanceOf(bob.address)).to.eq(0);
+    });
+
+    it('is not broken by malicious reentrancy withdrawFrom', async () => {
+      const { comet, tokens, users: [alice, bob] } = await makeProtocol({
+        assets: {
+          USDC: {
+            decimals: 6
+          },
+          EVIL: {
+            decimals: 6,
+            initialPrice: 2,
+            factory: await ethers.getContractFactory('EvilToken') as EvilToken__factory,
+          }
+        }
+      });
+      const { USDC, EVIL } = <{USDC: FaucetToken, EVIL: EvilToken}>tokens;
+
+      await USDC.allocateTo(comet.address, 100e6);
+
+      const attack = Object.assign({}, await EVIL.getAttack(), {
+        attackType: ReentryAttack.WithdrawFrom,
+        recipient: bob.address,
+        asset: USDC.address,
+        amount: 1e6
+      });
+      await EVIL.setAttack(attack);
+
+      const totalsCollateral = Object.assign({}, await comet.totalsCollateral(EVIL.address), {
+        totalSupplyAsset: 100e6,
+      });
+      await comet.setTotalsCollateral(EVIL.address, totalsCollateral);
+
+      await comet.setCollateralBalance(alice.address, EVIL.address, exp(1,6));
+
+      await comet.connect(alice).allow(EVIL.address, true);
+
+      // in callback, EvilToken attempts to withdraw USDC to bob's address
+      await expect(
+        comet.connect(alice).withdraw(EVIL.address, 1e6)
+      ).to.be.revertedWith("custom error 'NotCollateralized()'");
+
+      // no USDC transferred
+      expect(await USDC.balanceOf(comet.address)).to.eq(100e6);
+      expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
+      expect(await USDC.balanceOf(alice.address)).to.eq(0);
+      expect(await comet.baseBalanceOf(bob.address)).to.eq(0);
+      expect(await USDC.balanceOf(bob.address)).to.eq(0);
+    });
+  });
+
 });
 
 describe('withdrawFrom', function () {

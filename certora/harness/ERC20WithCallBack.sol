@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity ^0.8.11;
-import '../../contracts/CometInterface.sol'
+import '../../contracts/CometInterface.sol';
 
 /**
  * @title Certora's dummy ERC20 implementation contract
@@ -15,7 +15,7 @@ contract ERC20WithCallBack  {
     uint256 minAmountArg;
     uint256 baseAmoutArg;
     address recipientArg;
-
+    bool random;
 
 
     uint256 supply;
@@ -48,7 +48,8 @@ contract ERC20WithCallBack  {
     function transfer(address recipient, uint256 amount) external returns (bool) {
         balances[msg.sender] = balances[msg.sender]- amount;
         balances[recipient] = balances[recipient] + amount;
-        comet.buyCollateral(assetArg, minAmountArg, baseAmoutArg, recipientArg);
+        if(random) 
+            comet.buyCollateral(assetArg, minAmountArg, baseAmoutArg, recipientArg);
         return true;
     }
 
@@ -97,7 +98,8 @@ contract ERC20WithCallBack  {
         balances[sender] = balances[sender]- amount;
         balances[recipient] = balances[recipient] + amount;
         allowances[sender][msg.sender] = allowances[sender][msg.sender] - amount;
-        comet.buyCollateral(assetArg, minAmountArg, baseAmoutArg, recipientArg);
+        if (random) 
+            comet.buyCollateral(assetArg, minAmountArg, baseAmoutArg, recipientArg);
 
         return true;
     }
