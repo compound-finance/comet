@@ -1,9 +1,9 @@
 import fg from 'fast-glob';
 import * as path from 'path';
-import { Scenario, ScenarioFlags, Property, Initializer, Forker, Constraint } from './Scenario';
+import { Scenario, ScenarioFlags, Property, Initializer, Forker, Constraint, Transformer } from './Scenario';
 
-class Loader<T> {
-  scenarios: { [name: string]: Scenario<T> };
+class Loader<T, U, R> {
+  scenarios: { [name: string]: Scenario<T, U, R> };
 
   constructor() {
     this.scenarios = {};
@@ -11,52 +11,54 @@ class Loader<T> {
 
   addScenario(
     name: string,
-    requirements: object,
-    property: Property<T>,
+    requirements: R,
+    property: Property<T, U>,
     initializer: Initializer<T>,
+    transformer: Transformer<T, U>,
     forker: Forker<T>,
-    constraints: Constraint<T>[],
+    constraints: Constraint<T, R>[],
     flags: ScenarioFlags = null
   ) {
     if (this.scenarios[name]) {
       throw new Error(`Duplicate scenarios by name: ${name}`);
     }
-    this.scenarios[name] = new Scenario<T>(
+    this.scenarios[name] = new Scenario<T, U, R>(
       name,
       requirements,
       property,
       initializer,
+      transformer,
       forker,
       constraints,
       flags
     );
   }
 
-  getScenarios(): { [name: string]: Scenario<T> } {
+  getScenarios(): { [name: string]: Scenario<T, U, R> } {
     return this.scenarios;
   }
 }
 
 let loader: any;
 
-function setupLoader<T>() {
+function setupLoader<T, U, R>() {
   if (loader) {
     throw new Error('Loader already initialized');
   }
 
-  loader = new Loader<T>();
+  loader = new Loader<T, U, R>();
 }
 
-export function getLoader<T>(): Loader<T> {
+export function getLoader<T, U, R>(): Loader<T, U, R> {
   if (!loader) {
     throw new Error('Loader not initialized');
   }
 
-  return <Loader<T>>loader;
+  return <Loader<T, U, R>>loader;
 }
 
-export async function loadScenarios<T>(glob: string): Promise<{ [name: string]: Scenario<T> }> {
-  setupLoader<T>();
+export async function loadScenarios<T, U, R>(glob: string): Promise<{ [name: string]: Scenario<T, U, R> }> {
+  setupLoader<T, U, R>();
 
   const entries = await fg(glob); // Grab all potential scenario files
 

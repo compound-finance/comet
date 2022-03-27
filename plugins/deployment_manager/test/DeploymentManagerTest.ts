@@ -41,7 +41,7 @@ export interface TestContracts {
 export async function setupContracts(deploymentManager: DeploymentManager): Promise<TestContracts> {
   let proxyAdminArgs: [] = [];
   let proxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
-    'vendor/proxy/ProxyAdmin.sol',
+    'vendor/proxy/transparent/ProxyAdmin.sol',
     proxyAdminArgs
   );
 
@@ -54,7 +54,7 @@ export async function setupContracts(deploymentManager: DeploymentManager): Prom
     TransparentUpgradeableProxy,
     TransparentUpgradeableProxy__factory,
     [string, string, string]
-  >('vendor/proxy/TransparentUpgradeableProxy.sol', [
+  >('vendor/proxy/transparent/TransparentUpgradeableProxy.sol', [
     finnImpl.address,
     proxyAdmin.address,
     (

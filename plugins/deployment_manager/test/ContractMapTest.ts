@@ -55,7 +55,15 @@ describe('ContractMap', () => {
       await storeBuildFile(
         cache,
         '0x0000000000000000000000000000000000000000',
-        updateBuildFileABI(faucetTokenBuildFile, [])
+        updateBuildFileABI(faucetTokenBuildFile, [
+          {
+            anonymous: false,
+            inputs: [],
+            name: 'cool',
+            type: 'function',
+            stateMutability: 'view',
+          },
+        ])
       );
 
       // No proxy
@@ -66,7 +74,10 @@ describe('ContractMap', () => {
       expect(await contractMap.get('token').address).to.eql(
         '0x0000000000000000000000000000000000000000'
       );
-      expect(Object.keys(await contractMap.get('token').populateTransaction)).to.eql([]);
+      expect(Object.keys(await contractMap.get('token').populateTransaction)).to.eql([
+        'cool()',
+        'cool',
+      ]);
 
       // With proxy
       await storeBuildFile(
@@ -83,6 +94,7 @@ describe('ContractMap', () => {
         '0x0000000000000000000000000000000000000000'
       );
       expect(Object.keys(await contractMap.get('token').populateTransaction)).to.eql([
+        'cool()',
         'allocateTo(address,uint256)',
         'allowance(address,address)',
         'approve(address,uint256)',
@@ -93,6 +105,7 @@ describe('ContractMap', () => {
         'totalSupply()',
         'transfer(address,uint256)',
         'transferFrom(address,address,uint256)',
+        'cool',
         'allocateTo',
         'allowance',
         'approve',
@@ -103,6 +116,55 @@ describe('ContractMap', () => {
         'totalSupply',
         'transfer',
         'transferFrom',
+      ]);
+
+      // With double proxy
+      await storeBuildFile(
+        cache,
+        '0x0000000000000000000000000000000000000002',
+        updateBuildFileABI(faucetTokenBuildFile, [
+          {
+            anonymous: false,
+            inputs: [],
+            name: 'cooler',
+            type: 'function',
+            stateMutability: 'view',
+          },
+        ])
+      );
+
+      proxies.set('token:implementation', '0x0000000000000000000000000000000000000002');
+      contractMap = await getContractsFromAliases(cache, aliases, proxies, hre);
+
+      expect([...contractMap.keys()]).to.eql(['token']);
+      expect(await contractMap.get('token').address).to.eql(
+        '0x0000000000000000000000000000000000000000'
+      );
+      expect(Object.keys(await contractMap.get('token').populateTransaction)).to.eql([
+        'cool()',
+        'allocateTo(address,uint256)',
+        'allowance(address,address)',
+        'approve(address,uint256)',
+        'balanceOf(address)',
+        'decimals()',
+        'name()',
+        'symbol()',
+        'totalSupply()',
+        'transfer(address,uint256)',
+        'transferFrom(address,address,uint256)',
+        'cooler()',
+        'cool',
+        'allocateTo',
+        'allowance',
+        'approve',
+        'balanceOf',
+        'decimals',
+        'name',
+        'symbol',
+        'totalSupply',
+        'transfer',
+        'transferFrom',
+        'cooler',
       ]);
     });
 

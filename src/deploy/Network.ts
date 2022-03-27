@@ -40,6 +40,7 @@ export async function deployNetworkComet(
     perYearInterestRateSlopeHigh,
     perYearInterestRateBase,
     reserveRate,
+    storeFrontPriceFactor,
     trackingIndexScale,
     baseTrackingSupplySpeed,
     baseTrackingBorrowSpeed,
@@ -71,6 +72,7 @@ export async function deployNetworkComet(
     perYearInterestRateSlopeHigh,
     perYearInterestRateBase,
     reserveRate,
+    storeFrontPriceFactor,
     trackingIndexScale,
     baseTrackingSupplySpeed,
     baseTrackingBorrowSpeed,
@@ -88,7 +90,7 @@ export async function deployNetworkComet(
   if (deployProxy) {
     let proxyAdminArgs: [] = [];
     let proxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
-      'vendor/proxy/ProxyAdmin.sol',
+      'vendor/proxy/transparent/ProxyAdmin.sol',
       proxyAdminArgs
     );
 
@@ -96,7 +98,7 @@ export async function deployNetworkComet(
       TransparentUpgradeableProxy,
       TransparentUpgradeableProxy__factory,
       [string, string, string]
-    >('vendor/proxy/TransparentUpgradeableProxy.sol', [
+    >('vendor/proxy/transparent/TransparentUpgradeableProxy.sol', [
       comet.address,
       proxyAdmin.address,
       (await comet.populateTransaction.initializeStorage()).data,
@@ -104,7 +106,7 @@ export async function deployNetworkComet(
   }
 
   return {
-    comet: await deploymentManager.hre.ethers.getContractAt('CometInterface', comet.address) as CometInterface,
+    comet,
     proxy,
   };
 }

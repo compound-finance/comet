@@ -295,8 +295,7 @@ describe('absorb', function () {
 
   it('reverts if absorb is paused', async () => {
     const protocol = await makeProtocol();
-    const { comet, tokens, pauseGuardian, users: [alice, bob] } = protocol;
-    const { COMP } = tokens;
+    const { comet, pauseGuardian, users: [alice, bob] } = protocol;
 
     const cometAsB = comet.connect(bob);
 
