@@ -274,6 +274,7 @@ rule usage_registered_assets_only(address asset, method f) filtered { f -> !simi
     assert registered; //if the function passed it must be registered 
  }
 
+ 
 
 
  /*

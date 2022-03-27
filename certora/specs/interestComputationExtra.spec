@@ -94,3 +94,32 @@ rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f
 }
 
 
+rule increase_profit(){
+    env e1;
+    env e2;
+    require e2.block.timestamp > e1.block.timestamp;
+
+    uint amount;
+    address account1;
+    address account2 = e1.msg.sender;
+
+    // simplifiedAssumptions();
+
+    require getUserPrincipal(e1,account2) == 0;
+
+    call_accrueInternal(e1);
+
+    mathint presentValue_account1_1 = to_mathint(call_presentValue(getUserPrincipal(e1,account1)));
+    mathint presentValue_account2_1 = to_mathint(call_presentValue(getUserPrincipal(e1,account2)));
+
+    withdraw(e1, _baseToken, amount);
+
+    require call_getNowInternal(e1) > getlastAccrualTime();
+    call_accrueInternal(e1);
+    
+    mathint presentValue_account1_2 = to_mathint(call_presentValue(getUserPrincipal(e2,account1)));
+    mathint presentValue_account2_2 = to_mathint(call_presentValue(getUserPrincipal(e2,account2)));
+
+    assert presentValue_account1_2 - presentValue_account1_1 > presentValue_account2_2 - presentValue_account2_1;
+    // assert false;
+}

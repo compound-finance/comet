@@ -82,7 +82,36 @@ rule noFeeOnTransfer(address bob, uint256 amount) {
     assert balanceAfter == balanceBefore + amount;
 }
 
-rule TransferCorrect(address to, uint256 amount) {
+/*
+    @Rule
+
+
+    @Description:
+        Token transfer works correctly. Balances are updated if not reverted. 
+        If reverted then the transfer amount was too high, or the recipient is 0.
+
+    @Formula:
+        {
+            balanceFromBefore = balanceOf(msg.sender)
+            balanceToBefore = balanceOf(to)
+        }
+        <
+            transfer(to, amount)
+        >
+        {
+            lastreverted => to = 0 || amount > balanceOf(msg.sender)
+            !lastreverte => balanceOf(to) = balanceToBefore + amount &&
+                            balanceOf(msg.sender) = balanceFromBefore - amount
+        }
+
+    @Notes:
+        This rule fails on tokens with a blacklist function, like USDC and USDT.
+        The prover finds a counterexample of a reverted transfer to a blacklisted address or a transfer in a paused state.
+
+    @Link:
+
+*/
+rule transferCorrect(address to, uint256 amount) {
     env e;
     require e.msg.value == 0;
     uint256 fromBalanceBefore = balanceOf(e.msg.sender);
@@ -103,6 +132,36 @@ rule TransferCorrect(address to, uint256 amount) {
     }
 }
 
+/*
+    @Rule
+
+
+    @Description:
+        Test that transferFrom works correctly. Balances are updated if not reverted. 
+        If reverted, it means the transfer amount was too high, or the recipient is 0
+
+    @Formula:
+        {
+            balanceFromBefore = balanceOf(from)
+            balanceToBefore = balanceOf(to)
+        }
+        <
+            transfer(to, amount)
+        >
+        {
+            lastreverted => to = 0 || amount > balanceOf(from)
+            !lastreverted => balanceOf(to) = balanceToBefore + amount &&
+                            balanceOf(from) = balanceFromBefore - amount
+        }
+
+    @Notes:
+        This rule fails on tokens with a blacklist and or pause function, like USDC and USDT.
+        The prover finds a counterexample of a reverted transfer to a blacklisted address or a transfer in a paused state.
+
+    @Link:
+
+*/
+
 rule TransferFromCorrect(address from, address to, uint256 amount) {
     env e;
     require e.msg.value == 0;
@@ -111,42 +170,60 @@ rule TransferFromCorrect(address from, address to, uint256 amount) {
     uint256 allowanceBefore = allowance(from, e.msg.sender);
     require fromBalanceBefore + toBalanceBefore <= max_uint256;
 
-    transferFrom@withrevert(e, from, to, amount);
-    bool reverted = lastReverted;
-    if (!reverted) {
-        if (from == to) {
-            assert balanceOf(from) == fromBalanceBefore;
-            assert allowance(from, e.msg.sender) == allowanceBefore;
-        } else {
-            assert balanceOf(from) == fromBalanceBefore - amount;
-            assert balanceOf(to) == toBalanceBefore + amount;
-            if (allowanceBefore == max_uint256) {
-                assert allowance(from, e.msg.sender) == max_uint256;
-            } else {
-                assert allowance(from, e.msg.sender) == allowanceBefore - amount;
-            }
-        }
+    transferFrom(e, from, to, amount);
+
+    if (from == to) {
+        assert balanceOf(from) == fromBalanceBefore;
+        assert allowance(from, e.msg.sender) == allowanceBefore;
     } else {
-        assert allowanceBefore < amount || amount > fromBalanceBefore || to == 0;
+        assert balanceOf(from) == fromBalanceBefore - amount;
+        assert balanceOf(to) == toBalanceBefore + amount;
+        assert allowance(from, e.msg.sender) == allowanceBefore - amount;
     }
+}
+
+rule TransferFromReverts(address from, address to, uint256 amount) {
+    env e;
+    uint256 allowanceBefore = allowance(from, e.msg.sender);
+    uint256 fromBalanceBefore = balanceOf(from);
+    require from != 0 && e.msg.sender != 0;
+    require e.msg.value == 0;
+    require fromBalanceBefore + balanceOf(to) <= max_uint256;
+
+    transferFrom@withrevert(e, from, to, amount);
+
+    assert lastReverted <=> (allowanceBefore < amount || amount > fromBalanceBefore || to == 0);
 }
 
 invariant ZeroAddressNoBalance()
     balanceOf(0) == 0
 
-ghost sumOfBalances() returns uint256;
 
-// can't test on generic ERC20 because each contract might call the variable different name
+/*
+    @Rule
 
-// hook Sstore balanceOf[KEY address a] uint256 balance (uint256 old_balance) STORAGE {
-// 	havoc sumOfBalances assuming 
-//         sumOfBalances@new() == sumOfBalances@old() + (balance - old_balance);
-// }
+    @Description:
+        Contract calls don't change token total supply.
 
+    @Formula:
+        {
+            supplyBefore = totalSupply()
+        }
+        < f(e, args)>
+        {
+            supplyAfter = totalSupply()
+            supplyBefore == supplyAfter
+        }
 
+    @Notes:
+        This rule should fail for any token that has functions that change totalSupply(), like mint() and burn().
+        It's still important to run the rule and see if it fails in functions that _aren't_ supposed to modify totalSupply()
 
+    @Link:
+
+*/
 rule NoChangeTotalSupply(method f) {
-    require f.selector != burn(uint256).selector && f.selector != mint(address, uint256).selector;
+    // require f.selector != burn(uint256).selector && f.selector != mint(address, uint256).selector;
     uint256 totalSupplyBefore = totalSupply();
     env e;
     calldataarg args;
@@ -154,8 +231,36 @@ rule NoChangeTotalSupply(method f) {
     assert totalSupply() == totalSupplyBefore;
 }
 
+/*
+    @Rule
+
+    @Description:
+        Allowance changes correctly as a result of calls to approve, transfer, increaseAllowance, decreaseAllowance
+
+    @Formula:
+        {
+            allowanceBefore = allowance(from, spender)
+        }
+        <
+            f(e, args)
+        >
+        {
+            f.selector = approve(spender, amount) => allowance(from, spender) = amount
+            f.selector = transferFrom(from, spender, amount) => allowance(from, spender) = allowanceBefore - amount
+            f.selector = decreaseAllowance(spender, delta) => allowance(from, spender) = allowanceBefore - delta
+            f.selector = increaseAllowance(spender, delta) => allowance(from, spender) = allowanceBefore + delta
+            generic f.selector => allowance(from, spender) == allowanceBefore
+        }
+
+    @Notes:
+        Some ERC20 tokens have functions like permit() that change allowance via a signature. 
+        The rule will fail on such functions.
+
+    @Link:
+
+*/
 rule ChangingAllowance(method f, address from, address spender) {
-    require f.selector != permit(address,address,uint256,uint256,uint8,bytes32,bytes32).selector;
+    // require f.selector != permit(address,address,uint256,uint256,uint8,bytes32,bytes32).selector;
     uint256 allowanceBefore = allowance(from, spender);
     env e;
     if (f.selector == approve(address, uint256).selector) {
@@ -182,7 +287,7 @@ rule ChangingAllowance(method f, address from, address spender) {
         address spender_;
         uint256 amount;
         require amount <= allowanceBefore;
-        decreaseAllowance(e, spender, amount);
+        decreaseAllowance(e, spender_, amount);
         if (from == e.msg.sender && spender == spender_) {
             assert allowance(from, spender) == allowanceBefore - amount;
         } else {
@@ -192,13 +297,13 @@ rule ChangingAllowance(method f, address from, address spender) {
         address spender_;
         uint256 amount;
         require amount + allowanceBefore < max_uint256;
-        increaseAllowance(e, spender, amount);
+        increaseAllowance(e, spender_, amount);
         if (from == e.msg.sender && spender == spender_) {
             assert allowance(from, spender) == allowanceBefore + amount;
         } else {
             assert allowance(from, spender) == allowanceBefore;
         }
-    }
+    } else
     {
         calldataarg args;
         f(e, args);
@@ -206,6 +311,28 @@ rule ChangingAllowance(method f, address from, address spender) {
     }
 }
 
+/*
+    @Rule
+
+    @Description:
+        Transfer from a to b doesn't change the sum of their balances
+
+    @Formula:
+        {
+            balancesBefore = balanceOf(msg.sender) + balanceOf(b)
+        }
+        <
+            transfer(b, amount)
+        >
+        {
+            balancesBefore == balanceOf(msg.sender) + balanceOf(b)
+        }
+
+    @Notes:
+
+    @Link:
+
+*/
 rule TransferSumOfFromAndToBalancesStaySame(address to, uint256 amount) {
     env e;
     mathint sum = balanceOf(e.msg.sender) + balanceOf(to);
@@ -214,6 +341,28 @@ rule TransferSumOfFromAndToBalancesStaySame(address to, uint256 amount) {
     assert balanceOf(e.msg.sender) + balanceOf(to) == sum;
 }
 
+/*
+    @Rule
+
+    @Description:
+        Transfer using transferFrom() from a to b doesn't change the sum of their balances
+
+    @Formula:
+        {
+            balancesBefore = balanceOf(a) + balanceOf(b)
+        }
+        <
+            transferFrom(a, b)
+        >
+        {
+            balancesBefore == balanceOf(a) + balanceOf(b)
+        }
+
+    @Notes:
+
+    @Link:
+
+*/
 rule TransferFromSumOfFromAndToBalancesStaySame(address from, address to, uint256 amount) {
     env e;
     mathint sum = balanceOf(from) + balanceOf(to);
@@ -222,6 +371,28 @@ rule TransferFromSumOfFromAndToBalancesStaySame(address from, address to, uint25
     assert balanceOf(from) + balanceOf(to) == sum;
 }
 
+/*
+    @Rule
+
+    @Description:
+        Transfer from msg.sender to alice doesn't change the balance of other addresses
+
+    @Formula:
+        {
+            balanceBefore = balanceOf(bob)
+        }
+        <
+            transfer(alice, amount)
+        >
+        {
+            balanceOf(bob) == balanceBefore
+        }
+
+    @Notes:
+
+    @Link:
+
+*/
 rule TransferDoesntChangeOtherBalance(address to, uint256 amount, address other) {
     env e;
     require other != e.msg.sender;
@@ -231,6 +402,28 @@ rule TransferDoesntChangeOtherBalance(address to, uint256 amount, address other)
     assert balanceBefore == balanceOf(other);
 }
 
+/*
+    @Rule
+
+    @Description:
+        Transfer from alice to bob using transferFrom doesn't change the balance of other addresses
+
+    @Formula:
+        {
+            balanceBefore = balanceOf(charlie)
+        }
+        <
+            transferFrom(alice, bob, amount)
+        >
+        {
+            balanceOf(charlie) = balanceBefore
+        }
+
+    @Notes:
+
+    @Link:
+
+*/
 rule TransferFromDoesntChangeOtherBalance(address from, address to, uint256 amount, address other) {
     env e;
     require other != from;
@@ -240,41 +433,35 @@ rule TransferFromDoesntChangeOtherBalance(address from, address to, uint256 amou
     assert balanceBefore == balanceOf(other);
 }
 
-rule SumOfBalancesIsTotalSupply(method f) {
-    require sumOfBalances() == totalSupply();
-    require f.selector != burn(uint256).selector && f.selector != mint(address, uint256).selector;
+/*
+    @Rule
 
-    env e;
-    if (f.selector != transfer(address, uint256).selector && f.selector != transferFrom(address, address, uint256).selector) {
-        calldataarg args;
-        f(e, args);
-    }
+    @Description:
+        Balance of an address, who is not a sender or a recipient in transfer functions, doesn't decrease 
+        as a result of contract calls
 
-    if (f.selector == transfer(address, uint256).selector) {
-        address to;
-        uint256 amount;
-        require balanceOf(e.msg.sender) + balanceOf(to) < max_uint256;
-        transfer(e, to, amount);
-    }
+    @Formula:
+        {
+            balanceBefore = balanceOf(charlie)
+        }
+        <
+            f(e, args)
+        >
+        {
+            f.selector != transfer && f.selector != transferFrom => balanceOf(charlie) == balanceBefore
+        }
 
-    if (f.selector == transferFrom(address, address, uint256).selector) {
-        address from;
-        address to;
-        uint256 amount;
-        require balanceOf(from) + balanceOf(to) < max_uint256;
-        transferFrom(e, from, to, amount);
-    }
+    @Notes:
+        USDC token has functions like transferWithAuthorization that use a signed message for allowance. 
+        FTT token has a burnFrom that lets an approved spender to burn owner's token.
+        Certora prover finds these counterexamples to this rule.
+        In general, the rule will fail on all functions other than transfer/transferFrom that change a balance of an address.
 
-    assert sumOfBalances() == totalSupply();
-}
+    @Link:
 
+*/
 rule OtherBalanceOnlyGoesUp(address other, method f) {
-    // USDC functions that violate this
-    require f.selector != receiveWithAuthorization(address,address,uint256,uint256,uint256,bytes32,uint8,bytes32,bytes32).selector &&
-        f.selector != transferWithAuthorization(address,address,uint256,uint256,uint256,bytes32,uint8,bytes32,bytes32).selector &&
-        f.selector != initializeV2_1(address).selector;
     env e;
-    // totalSupply would have already overflowed in this case, so we can assume this
     uint256 balanceBefore = balanceOf(other);
 
     if (f.selector == transferFrom(address, address, uint256).selector) {
@@ -283,7 +470,6 @@ rule OtherBalanceOnlyGoesUp(address other, method f) {
         uint256 amount;
         require(other != from);
         require balanceOf(from) + balanceBefore < max_uint256;
-
         transferFrom(e, from, to, amount);
     } else if (f.selector == transfer(address, uint256).selector) {
         require other != e.msg.sender;
@@ -298,3 +484,5 @@ rule OtherBalanceOnlyGoesUp(address other, method f) {
 
     assert balanceOf(other) >= balanceBefore;
 }
+
+// add documentation insde code so that it serves as a teaching example
