@@ -60,6 +60,7 @@ function simplifiedAssumptions() {
     env e;
     require getBaseSupplyIndex(e) == getBaseIndexScale(e);
     require getBaseBorrowIndex(e) == getBaseIndexScale(e);
+    require baseScale(e) == getFactorScale(e); 
 }
 
 // Simplification - assume scale is always 1 
