@@ -127,6 +127,12 @@ contract Comet is CometCore {
     /// @notice Factor to divide by when accruing rewards in order to preserve 6 decimals (i.e. baseScale / 1e6)
     uint internal immutable accrualDescaleFactor;
 
+    /// @dev XXX
+    uint16 internal constant REWARD_SAFETY_MULTIPLIER = 5000;
+
+    /// @notice XXX
+    uint internal immutable rewardSafetyThreshold;
+
     /**  Collateral asset configuration (packed) **/
 
     uint256 internal immutable asset00_a;
@@ -194,6 +200,8 @@ contract Comet is CometCore {
 
             baseBorrowMin = config.baseBorrowMin;
             targetReserves = config.targetReserves;
+
+            rewardSafetyThreshold = REWARD_SAFETY_MULTIPLIER * baseScale;
         }
 
         // Set interest rate model configs
@@ -424,8 +432,9 @@ contract Comet is CometCore {
             baseSupplyIndex += safe64(mulFactor(baseSupplyIndex, supplyRate * timeElapsed));
             baseBorrowIndex += safe64(mulFactor(baseBorrowIndex, borrowRate * timeElapsed));
             if (totalSupplyBase >= baseMinForRewards) {
-                uint supplySpeed = baseTrackingSupplySpeed;
-                trackingSupplyIndex += safe64(divBaseWei(supplySpeed * timeElapsed, totalSupplyBase));
+                uint rewardDivisor = totalSupplyBase < rewardSafetyThreshold ? rewardSafetyThreshold : totalSupplyBase;
+                uint rewards = divBaseWei(baseTrackingSupplySpeed * timeElapsed, rewardDivisor);
+                trackingSupplyIndex += safe64(rewards);
             }
             if (totalBorrowBase >= baseMinForRewards) {
                 uint borrowSpeed = baseTrackingBorrowSpeed;
