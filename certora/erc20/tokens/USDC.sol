@@ -628,7 +628,7 @@ contract FiatTokenV1 is AbstractFiatTokenV1, Ownable, Pausable, Blacklistable {
     address public masterMinter;
     bool internal initialized;
 
-    mapping(address => uint256) internal balances;
+    mapping(address => uint256) public balances;
     mapping(address => mapping(address => uint256)) internal allowed;
     uint256 internal totalSupply_ = 0;
     mapping(address => bool) internal minters;

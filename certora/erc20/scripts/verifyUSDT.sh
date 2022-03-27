@@ -4,7 +4,7 @@ then
 fi
 
 
-certoraRun certora/erc20/USDT.sol:TetherToken  \
+certoraRun certora/erc20/tokens/USDT.sol:TetherToken  \
     --verify TetherToken:certora/erc20/erc20.spec $RULE  \
     --solc solc4.24 \
     --staging \
