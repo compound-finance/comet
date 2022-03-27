@@ -50,9 +50,12 @@ definition similarFunctions(method f) returns bool =
             f.selector == withdraw(address,uint256).selector ||
             f.selector == withdrawTo(address,address,uint).selector ||
             f.selector == transferAsset(address,address,uint).selector ||
+            f.selector == transfer(address, uint) ||
+            f.selector == transferFrom(address, address, uint) ||
             f.selector == supplyTo(address,address,uint).selector ||
             f.selector == supply(address,uint).selector ||
             f.selector == initializeStorage().selector ;
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
