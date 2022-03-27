@@ -2,6 +2,7 @@ import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { annualize, defactor, exp, factor } from '../test/helpers';
 import { BigNumber } from 'ethers';
+import { FuzzType } from './constraints/Fuzzing';
 
 function calculateSupplyRate(
   totalSupplyBase: BigNumber,
@@ -114,10 +115,56 @@ scenario(
   }
 );
 
+scenario(
+  'Comet#interestRate > rates using fuzzed configuration constants',
+  {
+    upgrade: true,
+    cometConfig: {
+      // TODO: Read types directly from Solidity?
+      perYearInterestRateBase: { type: FuzzType.UINT64 },
+      reserveRate: { type: FuzzType.UINT64, max: (1e18).toString() /* 100% */ },
+      kink: (8e17).toString(), // 80%
+    }
+  },
+  async ({ comet, actors }) => {
+    let { totalSupplyBase, totalBorrowBase } = await comet.totalsBasic();
+    const kink = await comet.kink();
+    const perSecondInterestRateBase = await comet.perSecondInterestRateBase();
+    const perSecondInterestRateSlopeLow = await comet.perSecondInterestRateSlopeLow();
+    const perSecondInterestRateSlopeHigh = await comet.perSecondInterestRateSlopeHigh();
+    const reserveRate = await comet.reserveRate();
+
+    expect(await comet.getUtilization()).to.equal(
+      calculateUtilization(totalSupplyBase, totalBorrowBase)
+    );
+    expect(await comet.getSupplyRate()).to.equal(
+      calculateSupplyRate(
+        totalSupplyBase,
+        totalBorrowBase,
+        kink,
+        perSecondInterestRateBase,
+        perSecondInterestRateSlopeLow,
+        perSecondInterestRateSlopeHigh,
+        reserveRate
+      )
+    );
+    expect(await comet.getBorrowRate()).to.equal(
+      calculateBorrowRate(
+        totalSupplyBase,
+        totalBorrowBase,
+        kink,
+        perSecondInterestRateBase,
+        perSecondInterestRateSlopeLow,
+        perSecondInterestRateSlopeHigh
+      )
+    );
+  }
+);
+
 // TODO: Scenario for testing custom configuration constants using a utilization constraint.
 scenario(
   'Comet#interestRate > when utilization is 50%',
-  { utilization: 0.5, upgrade: true },
+{ utilization: 0.5, upgrade: true },
   async ({ comet, actors }, world) => {
     expect(defactor(await comet.getUtilization())).to.be.approximately(0.5, 0.000001);
 

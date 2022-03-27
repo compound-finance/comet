@@ -3,12 +3,12 @@ import { Contract, Signer } from 'ethers';
 
 import { Alias, Address, BuildFile } from './Types';
 
-import { Aliases, putAlias, storeAliases } from './Aliases';
+import { Aliases, getAliases, putAlias, storeAliases } from './Aliases';
 import { Cache } from './Cache';
 import { ContractMap, getContracts } from './ContractMap';
 import { Deployer, DeployOpts, deploy, deployBuild } from './Deploy';
 import { fetchAndCacheContract } from './Import';
-import { putProxy, storeProxies } from './Proxies';
+import { Proxies, getProxies, putProxy, storeProxies } from './Proxies';
 import { getRelationConfig } from './RelationConfig';
 import { Roots, getRoots, putRoots } from './Roots';
 import { spider } from './Spider';
@@ -143,6 +143,14 @@ export class DeploymentManager {
     this.invalidateContractsCache();
   }
 
+  async getProxies(): Promise<Proxies> {
+    return await getProxies(this.cache);
+  }
+
+  async getAliases(): Promise<Aliases> {
+    return await getAliases(this.cache);
+  }
+
   /* Returns a memory-cached map of contracts indexed by alias. Note: this map
    * is cached in-memory (and invalidated when aliases or proxies change), so
    * you should feel free to call this as often as you would like without concern
@@ -215,5 +223,11 @@ export class DeploymentManager {
   async clone<C extends Contract>(address: string, args: any[], network?: string): Promise<C> {
     let buildFile = await this.import(address, network);
     return await this.deployBuild(buildFile, args) as C;
+  }
+
+  static fork(d: DeploymentManager): DeploymentManager {
+    let copy = new DeploymentManager(d.deployment, d.hre, d.config);
+    copy.cache.loadMemory(d.cache.cache);
+    return copy;
   }
 }

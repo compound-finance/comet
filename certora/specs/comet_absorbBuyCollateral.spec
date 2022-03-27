@@ -152,14 +152,16 @@ rule antiMonotonicityOfAbsorb(address absorber, address account) {
     simplifiedAssumptions();
 
     require accounts[0] == account;
+    require account != currentContract;
     
     address asset;
-    uint256 balanceBefore = getUserCollateralBalance(account, currentContract);
+   
+    uint256 balanceBefore = getUserCollateralBalance(currentContract, asset);
     uint104 borrowBefore = getTotalBorrowBase();
 
     absorb(e, absorber, accounts);
 
-    uint256 balanceAfter = getUserCollateralBalance(account, currentContract);
+    uint256 balanceAfter = getUserCollateralBalance(currentContract, asset);
     uint104 borrowAfter = getTotalBorrowBase();
     assert balanceAfter > balanceBefore => borrowAfter < borrowBefore ; 
     

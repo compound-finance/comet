@@ -17,7 +17,23 @@ methods{
 
     signedMulPrice(int amount, uint price, uint tokenScale) => ghostSignedMulPrice(amount,price,tokenScale);
     mulPrice(uint amount, uint price, uint tokenScale) => ghostMulPrice(amount,price,tokenScale);
-    getPrincipal(address) returns (int104) envfree
+    getUserPrincipal(address) returns (int104) envfree 
+    getPrincipal(int104 x) returns (int104) envfree => identityInt(x);
+    presentValueSupply(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
+    presentValueBorrow(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
+    principalValue(int104 x) returns (int104) envfree => identityInt(x);
+    principalValueSupply(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
+    principalValueBorrow(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
+
+
+}
+
+function identityInt(int104 x) returns int104 {
+    return x;
+}
+
+function identity(uint104 x) returns uint104 {
+    return x;
 }
 
 ghost ghostSignedMulPrice(int, uint, uint) returns int256; 

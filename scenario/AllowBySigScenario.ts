@@ -20,7 +20,7 @@ scenario(
       chainId: await world.chainId(),
     });
 
-    await betty.allowBySig({
+    const txn = await betty.allowBySig({
       owner: albert.address,
       manager: betty.address,
       isAllowed: true,
@@ -30,6 +30,8 @@ scenario(
     });
 
     expect(await comet.isAllowed(albert.address, betty.address)).to.be.true;
+
+    return txn; // return txn to measure gas
   }
 );
 

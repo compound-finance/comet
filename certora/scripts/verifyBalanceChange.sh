@@ -4,8 +4,8 @@ then
 fi
 
 certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harness/SymbolicBaseToken.sol certora/harness/SymbolicAssetTokenA.sol certora/harness/SymbolicAssetTokenB.sol certora/harness/SymbolicPriceOracleA.sol certora/harness/SymbolicPriceOracleB.sol \
-    --verify CometHarnessWrappers:certora/specs/comet_balanceChange.spec $RULE \
-    --link CometHarnessWrappers:baseToken=SymbolicBaseToken CometHarnessWrappers:extensionDelegate=CometExt \
+    --verify CometHarness:certora/specs/comet_balanceChange.spec $RULE \
+    --link CometHarness:baseToken=SymbolicBaseToken CometHarness:extensionDelegate=CometExt \
     --solc solc8.11 \
     --staging \
     --optimistic_loop \

@@ -73,6 +73,7 @@ function hreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
         ...(base.blockNumber && { blockNumber: base.blockNumber }),
       },
     },
+    ...(base.chainId ? { chainId: base.chainId } : {}),
   };
 
   const forkedConfig = {

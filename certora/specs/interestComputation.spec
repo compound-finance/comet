@@ -18,7 +18,7 @@ methods{
     getBaseIndexScale() returns (uint64) envfree;
     targetReserves() returns (uint256) envfree;
     latestRoundData() returns (uint256) => DISPATCHER(true);
-    get_FACTOR_SCALE() returns (uint64) envfree
+    getFactorScale() returns (uint64) envfree
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -311,7 +311,9 @@ rule presentValue_G_zero(int104 presentValue){
     env e;
     setup(e);
     int104 principalValue = call_principalValue(presentValue);
-    assert presentValue > 0 <=> principalValue > 0;
+    int104 presentValue_ = call_presentValue(principalValue);
+    assert presentValue_ == presentValue => 
+    ( presentValue > 0 <=> principalValue > 0);
 }
 
 
@@ -390,7 +392,7 @@ rule getSupplyRate_revert_characteristic(){
     getSupplyRate@withrevert(e);
     bool isRevert = lastReverted;
 
-    assert (reserveRate(e) > get_FACTOR_SCALE()) => isRevert;
+    assert (reserveRate(e) > getFactorScale()) => isRevert;
 }
 
 /*
@@ -419,38 +421,3 @@ rule withdraw_more_reserves(address to , uint amount){
     assert reserves >= 0;
 }
 
-/*
-    @Rule
-        verify_transferAsset
-
-    @Description:
-        transfer should not change the combine presentValue of src and dst
-
-    @Formula:
-        presentValue_src1 + presentValue_dst1 == presentValue_src2 + presentValue_dst2
-
-    @Notes:
-
-    @Link:
-        
-*/
-rule verify_transferAsset(){
-    env e;
-
-    address src;
-    address dst;
-    address asset;
-    uint amount;
-
-    simplifiedAssumptions();
-
-    mathint presentValue_src1 = to_mathint(call_presentValue(getPrincipal(e,src)));
-    mathint presentValue_dst1 = to_mathint(call_presentValue(getPrincipal(e,dst)));
-
-    transferAssetFrom(e, src, dst, asset, amount);
-
-    mathint presentValue_src2 = to_mathint(call_presentValue(getPrincipal(e,src)));
-    mathint presentValue_dst2 = to_mathint(call_presentValue(getPrincipal(e,dst)));
-
-    assert presentValue_src1 + presentValue_dst1 == presentValue_src2 + presentValue_dst2;
-}

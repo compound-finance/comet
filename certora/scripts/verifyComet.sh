@@ -8,9 +8,8 @@ certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harne
     --link CometHarness:baseToken=SymbolicBaseToken CometHarness:extensionDelegate=CometExt \
     --solc solc8.11 \
     --staging NoRedundancyCheck \
-    --send_only \
     --rule_sanity \
     --optimistic_loop \
     --settings -enableEqualitySaturation=false,-solver=z3,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \
     --solc_args '["--experimental-via-ir"]' \
-    --msg "CometHarness:comet.spec $RULE"
+    --msg "CometHarness:comet.spec sanity $RULE"

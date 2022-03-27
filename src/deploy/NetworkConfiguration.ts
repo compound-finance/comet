@@ -73,6 +73,7 @@ interface NetworkConfiguration {
   baseTokenPriceFeed: string;
   reserveRate: number;
   borrowMin: number;
+  storeFrontPriceFactor: number;
   targetReserves: number;
   rates: NetworkRateConfiguration;
   tracking: NetworkTrackingConfiguration;
@@ -173,6 +174,7 @@ export async function getConfiguration(
   let pauseGuardian = address(networkConfiguration.pauseGuardian);
   let reserveRate = percentage(networkConfiguration.reserveRate);
   let baseBorrowMin = number(networkConfiguration.borrowMin); // TODO: in token units (?)
+  let storeFrontPriceFactor = number(networkConfiguration.storeFrontPriceFactor);
   let targetReserves = number(networkConfiguration.targetReserves);
 
   let interestRateInfo = getInterestRateInfo(networkConfiguration.rates);
@@ -188,6 +190,7 @@ export async function getConfiguration(
     baseTokenPriceFeed,
     ...interestRateInfo,
     reserveRate,
+    storeFrontPriceFactor,
     ...trackingInfo,
     baseBorrowMin,
     targetReserves,

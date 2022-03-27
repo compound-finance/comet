@@ -2,7 +2,7 @@ import { hasNetworkConfiguration } from './NetworkConfiguration';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import {
-  CometInterface as Comet,
+  Comet,
   ERC20,
   TransparentUpgradeableProxy,
 } from '../../build/types';
@@ -22,6 +22,7 @@ export interface ProtocolConfiguration {
   perYearInterestRateSlopeLow?: BigNumberish;
   perYearInterestRateSlopeHigh?: BigNumberish;
   reserveRate?: BigNumberish;
+  storeFrontPriceFactor?: BigNumberish;
   trackingIndexScale?: BigNumberish;
   baseTrackingSupplySpeed?: BigNumberish;
   baseTrackingBorrowSpeed?: BigNumberish;

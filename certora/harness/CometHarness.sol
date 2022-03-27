@@ -109,7 +109,6 @@ contract CometHarness is CometHarnessGetters {
     }
 
 
-    
     /*********** Simplification ***********/
     /* under approximation (not taking into account all possible cases) */
     //This is equiveleant to assuming that accure has been called on the current timestamp 
@@ -117,39 +116,9 @@ contract CometHarness is CometHarnessGetters {
     bool public accrueWasCalled;
     function accrueInternal() override internal {
         accrueWasCalled = !accrueWasCalled;
-
      }
 
- 
 
-
-    /* Simplificaiton: 
-        transferAssetFrom is rather complex; 
-        splitting it to two functions allows Certora Prover to be able to run onthis functions.
-        Note : any change to the orig  transferAssetFrom should be adapted here! 
-    */  
-    function transferAssetFrom(address src, address dst, address asset, uint amount) public override {
-       
-     }
-    function transferAssetFromBase(address src, address dst, address asset, uint amount) external {
-        if (isTransferPaused()) revert Paused();
-        if (!hasPermission(src, msg.sender)) revert Unauthorized();
-        if (src == dst) revert NoSelfTransfer();
-
-        require (asset == baseToken);
-        return super.transferBase(src, dst, safe104(amount));
-    }
-
-    function transferAssetFromAsset(address src, address dst, address asset, uint amount) external {
-        if (isTransferPaused()) revert Paused();
-        if (!hasPermission(src, msg.sender)) revert Unauthorized();
-        if (src == dst) revert NoSelfTransfer();
-
-        require (asset != baseToken);
-        return super.transferCollateral(src, dst, asset, safe128(amount));
-    }
-
-    
     /* Helpers: 
         A function to check if an address is registers, i.e, it has an assetInfo strcture 
     */  
