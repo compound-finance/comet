@@ -110,11 +110,7 @@ function call_functions_with_specific_asset(method f, env e, address asset) retu
         transferAsset(e, account_, asset, amount);
 	} else if (f.selector == transferAssetFrom(address, address, address, uint).selector) {
         transferAssetFrom(e, _account, account_, asset, amount);
-	} /*else if (f.selector == transferAssetFromBase(address, address, address, uint).selector) {
-        transferAssetFromBase(e, _account, account_, asset, amount);
-	} else if (f.selector == transferAssetFromAsset(address, address, address, uint).selector) {
-        transferAssetFromAsset(e, _account, account_, asset, amount);
-	} */ else if (f.selector == withdraw(address, uint).selector) {
+	} else if (f.selector == withdraw(address, uint).selector) {
         withdraw(e, asset, amount);
 	} else if (f.selector == withdrawTo(address, address, uint).selector) {
         withdrawTo(e, account_, asset, amount);
@@ -211,17 +207,20 @@ rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f
     @Rule:
 
     @Description:
-
+        If the balance of an asset in the contract changes, it must be registered in as a recognized asset
 
     @Formula:
         {
-
+            registered = getAssetInfoByAddress(token).asset == token &&
+            token != _baseToken && 
+            balance_pre = tokenBalanceOf(token,currentContract)
         }
 
-        
+        < call any function >
 
         {
-            
+            balance_post = tokenBalanceOf(token,currentContract) &&
+            balance_post != balance_pre => registered
         }
 
     @Notes:
@@ -247,27 +246,27 @@ rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) &
     @Rule:
 
     @Description:
-
+        Checks that every function call that has an asset arguments reverts on a non-registered asset 
 
     @Formula:
         {
-
+            registered = getAssetInfoByAddress(asset).asset == asset &&
         }
 
-        
+        < call any function with a specific asset >
 
         {
-            
+            registered
         }
 
     @Notes:
+
 
     @Link:
 
 */
 
 rule usage_registered_assets_only(address asset, method f) filtered { f -> !similarFunctions(f) && !f.isView } { 
-    // check that every function call that has an asset arguments reverts on a non-registered asset 
     env e; calldataarg args;
     simplifiedAssumptions();
     bool registered = isRegisterdAsAsset(e,asset);
@@ -279,14 +278,27 @@ rule usage_registered_assets_only(address asset, method f) filtered { f -> !simi
 
  /*
     @Rule
-        verify_transferAsset
 
     @Description:
-        transfer should not change the combine presentValue of src and dst
+        Transfer should not change the combine presentValue of src and dst
 
     @Formula:
-        { presentValue_src1 = baseBalanceOf(src),
-          presentValue_dst1 = baseBalanceOf(dst)
+        { 
+            presentValue_src1 = baseBalanceOf(src) &&
+            presentValue_dst1 = baseBalanceOf(dst) &&
+            collateral_src1 = getUserCollateralBalance(asset, src) && 
+            collateral_dst1 = getUserCollateralBalance(asset, dst) 
+        }
+
+        transferAssetFrom(src, dst, asset, amount)
+
+        {
+            presentValue_src2 = baseBalanceOf(src) &&
+            presentValue_dst2 = baseBalanceOf(dst) &&
+            collateral_src2 = getUserCollateralBalance(asset, src) && 
+            collateral_dst2 = getUserCollateralBalance(asset, dst) &&
+            presentValue_src1 + presentValue_dst1 == presentValue_src2 + presentValue_dst2 &&
+            collateral_src2 + collateral_dst2 == collateral_src2 + collateral_dst2
         }
 
     @Notes:
@@ -333,7 +345,9 @@ rule verify_transferAsset(){
         {
              userBasic[user].principal = x
         }
-        < op >
+
+        < call any function >
+        
         {
             userBasic[user].principal = y
             y < x => user = msg.sender || hasPermission[user][msg.sender] == true; 
