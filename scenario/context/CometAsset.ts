@@ -14,6 +14,10 @@ export default class CometAsset {
     this.address = token.address;
   }
 
+  static fork(asset: CometAsset): CometAsset {
+    return new CometAsset(asset.token);
+  }
+
   async balanceOf(actorOrAddress: string | CometActor): Promise<bigint> {
     let address: string;
     if (typeof(actorOrAddress) === 'string') {

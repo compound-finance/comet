@@ -7,6 +7,7 @@ export type ForkSpec = {
   url?: string;
   blockNumber?: number;
   allocation?: number;
+  chainId?: number;
 };
 
 export class World {
@@ -23,18 +24,26 @@ export class World {
     return !!this.base.url;
   }
 
-  async _snapshot() {
-    return this.hre.network.provider.request({
+  async _snapshot(): Promise<string> {
+    return (await this.hre.network.provider.request({
       method: 'evm_snapshot',
       params: [],
-    });
+    })) as string;
   }
 
-  async _revert(snapshot) {
+  async _revert(snapshot: string) {
     return this.hre.network.provider.request({
       method: 'evm_revert',
       params: [snapshot],
     });
+  }
+
+  async _revertAndSnapshot(snapshot: string): Promise<string> {
+    await this.hre.network.provider.request({
+      method: 'evm_revert',
+      params: [snapshot],
+    });
+    return await this._snapshot();
   }
 
   async impersonateAddress(address: string): Promise<SignerWithAddress> {

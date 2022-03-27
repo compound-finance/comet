@@ -49,7 +49,7 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
     uint64 internal constant BASE_INDEX_SCALE = 1e15;
 
     /// @dev The scale for prices (in USD)
-    uint64 internal constant PRICE_SCALE = 1e8;
+    uint64 internal constant PRICE_SCALE = uint64(10 ** PRICE_FEED_DECIMALS);
 
     /// @dev The scale for factors
     uint64 internal constant FACTOR_SCALE = 1e18;

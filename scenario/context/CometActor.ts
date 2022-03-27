@@ -1,7 +1,8 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumberish, Signature, ethers } from 'ethers';
+import { BigNumberish, Signature, ethers, ContractReceipt } from 'ethers';
 import { CometContext } from './CometContext';
 import { AddressLike, resolveAddress } from './Address';
+import { ERC20__factory } from '../../build/types';
 
 const types = {
   Authorization: [
@@ -38,8 +39,22 @@ export default class CometActor {
     this.info = info;
   }
 
+  static fork(actor: CometActor, context: CometContext): CometActor {
+    return new CometActor(actor.name, actor.signer, actor.address, context, actor.info);
+  }
+
   async getEthBalance() {
     return this.signer.getBalance();
+  }
+
+  async getErc20Balance(tokenAddress: string): Promise<bigint> {
+    let erc20 = ERC20__factory.connect(tokenAddress, this.signer);
+    return (await erc20.balanceOf(this.signer.address)).toBigInt();
+  }
+
+  async getCometBaseBalance(): Promise<bigint> {
+    let comet = await this.context.getComet();
+    return (await comet.baseBalanceOf(this.signer.address)).toBigInt();
   }
 
   async sendEth(recipient: AddressLike, amount: number) {
@@ -50,8 +65,9 @@ export default class CometActor {
     await tx.wait();
   }
 
-  async allow(manager: CometActor, isAllowed: boolean) {
-    await (await this.context.comet.connect(this.signer).allow(manager.address, isAllowed)).wait();
+  async allow(manager: CometActor, isAllowed: boolean): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).allow(manager.address, isAllowed)).wait();
   }
 
   async pause({
@@ -60,22 +76,43 @@ export default class CometActor {
     withdrawPaused = false,
     absorbPaused = false,
     buyPaused = false,
-  }) {
-    await (
-      await this.context.comet
+  }): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (
+      await comet
         .connect(this.signer)
         .pause(supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused)
     ).wait();
   }
 
-  async transferAsset({ dst, asset, amount }) {
-    await (await this.context.comet.connect(this.signer).transferAsset(dst, asset, amount)).wait();
+  async supplyAsset({ asset, amount }): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).supply(asset, amount)).wait();
   }
 
-  async transferAssetFrom({ src, dst, asset, amount }) {
-    await (
-      await this.context.comet.connect(this.signer).transferAssetFrom(src, dst, asset, amount)
-    ).wait();
+  async supplyAssetFrom({ src, dst, asset, amount }): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).supplyFrom(src, dst, asset, amount)).wait();
+  }
+
+  async transferAsset({ dst, asset, amount }): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).transferAsset(dst, asset, amount)).wait();
+  }
+
+  async transferAssetFrom({ src, dst, asset, amount }): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).transferAssetFrom(src, dst, asset, amount)).wait();
+  }
+
+  async withdrawAsset({ asset, amount }): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).withdraw(asset, amount)).wait();
+  }
+
+  async withdrawAssetFrom({ src, dst, asset, amount }): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).withdrawFrom(src, dst, asset, amount)).wait();
   }
 
   async signAuthorization({
@@ -90,12 +127,13 @@ export default class CometActor {
     nonce: BigNumberish;
     expiry: number;
     chainId: number;
-  }) {
+  }): Promise<Signature> {
+    let comet = await this.context.getComet();
     const domain = {
-      name: await this.context.comet.name(),
-      version: await this.context.comet.version(),
+      name: await comet.name(),
+      version: await comet.version(),
       chainId: chainId,
-      verifyingContract: this.context.comet.address,
+      verifyingContract: comet.address,
     };
     const value = {
       owner: this.address,
@@ -122,19 +160,19 @@ export default class CometActor {
     nonce: BigNumberish;
     expiry: number;
     signature: Signature;
-  }) {
-    await this.context.comet
+  }): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (await comet
       .connect(this.signer)
-      .allowBySig(owner, manager, isAllowed, nonce, expiry, signature.v, signature.r, signature.s);
+      .allowBySig(owner, manager, isAllowed, nonce, expiry, signature.v, signature.r, signature.s)).wait();
   }
 
   async show() {
     return console.log(`Actor#${this.name}{${JSON.stringify(this.info)}}`);
   }
 
-  async withdrawReserves(to: CometActor, amount: number) {
-    await (
-      await this.context.comet.connect(this.signer).withdrawReserves(to.address, amount)
-    ).wait();
+  async withdrawReserves(to: CometActor, amount: BigNumberish): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).withdrawReserves(to.address, amount)).wait();
   }
 }

@@ -1,0 +1,113 @@
+{
+  "strict": true,
+  "files": {
+    "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol": {
+      "source": {
+        "git": {
+          "repo": "org-25111032@github.com:smartcontractkit/chainlink.git",
+          "commit": "aa5a452c2a3761fcb24fccc7165b42aae015023e",
+          "path": "contracts/src/v0.8/interfaces/AggregatorV3Interface.sol"
+        }
+      }
+    },
+    "utils/Address.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "utils/Context.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "proxy/Proxy.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "proxy/transparent/ProxyAdmin.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "proxy/transparent/TransparentUpgradeableProxy.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "proxy/ERC1967/ERC1967Proxy.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "proxy/ERC1967/ERC1967Upgrade.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "access/Ownable.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "proxy/beacon/IBeacon.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "interfaces/draft-IERC1822.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    },
+    "utils/StorageSlot.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "afb20119b33072da041c97ea717d3ce4417b5e01",
+          "path": "contracts/{}"
+        }
+      }
+    }
+  }
+}
