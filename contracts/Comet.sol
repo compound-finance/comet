@@ -13,7 +13,13 @@ import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.
 contract Comet is CometCore {
     /** Custom events **/
 
+    event Supply(address indexed from, address indexed dst, uint256 amount);
     event Transfer(address indexed from, address indexed to, uint256 amount);
+    event Withdraw(address indexed src, address indexed to, uint256 amount);
+
+    event SupplyCollateral(address indexed from, address indexed dst, address indexed asset, uint256 amount);
+    event TransferCollateral(address indexed from, address indexed to, address indexed asset, uint256 amount);
+    event WithdrawCollateral(address indexed src, address indexed to, address indexed asset, uint256 amount);
 
     /** Custom errors **/
 
@@ -22,6 +28,7 @@ contract Comet is CometCore {
     error BadAmount();
     error BadAsset();
     error BadDecimals();
+    error BadDiscount();
     error BadMinimum();
     error BadPrice();
     error BorrowTooSmall();
@@ -77,6 +84,10 @@ contract Comet is CometCore {
     /// @notice The rate of total interest paid that goes into reserves (factor)
     /// @dev uint64
     uint public immutable reserveRate;
+
+    /// @notice The fraction of actual price to charge for liquidated collateral
+    /// @dev uint64
+    uint public immutable storeFrontPriceFactor;
 
     /// @notice The scale for base token (must be less than 18 decimals)
     /// @dev uint64
@@ -157,36 +168,42 @@ contract Comet is CometCore {
         // Sanity checks
         uint8 decimals_ = ERC20(config.baseToken).decimals();
         if (decimals_ > MAX_BASE_DECIMALS) revert BadDecimals();
+        if (config.storeFrontPriceFactor > FACTOR_SCALE) revert BadDiscount();
         if (config.assetConfigs.length > MAX_ASSETS) revert TooManyAssets();
         if (config.baseMinForRewards == 0) revert BadMinimum();
         if (AggregatorV3Interface(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
-        governor = config.governor;
-        pauseGuardian = config.pauseGuardian;
-        baseToken = config.baseToken;
-        baseTokenPriceFeed = config.baseTokenPriceFeed;
-        extensionDelegate = config.extensionDelegate;
+        unchecked {
+            governor = config.governor;
+            pauseGuardian = config.pauseGuardian;
+            baseToken = config.baseToken;
+            baseTokenPriceFeed = config.baseTokenPriceFeed;
+            extensionDelegate = config.extensionDelegate;
+            storeFrontPriceFactor = config.storeFrontPriceFactor;
 
-        decimals = decimals_;
-        baseScale = uint64(10 ** decimals_);
-        trackingIndexScale = config.trackingIndexScale;
-        accrualDescaleFactor = baseScale / 1e6;
+            decimals = decimals_;
+            baseScale = uint64(10 ** decimals_);
+            trackingIndexScale = config.trackingIndexScale;
+            accrualDescaleFactor = baseScale / 1e6;
 
-        baseMinForRewards = config.baseMinForRewards;
-        baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
-        baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
+            baseMinForRewards = config.baseMinForRewards;
+            baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
+            baseTrackingBorrowSpeed = config.baseTrackingBorrowSpeed;
 
-        baseBorrowMin = config.baseBorrowMin;
-        targetReserves = config.targetReserves;
+            baseBorrowMin = config.baseBorrowMin;
+            targetReserves = config.targetReserves;
+        }
 
         // Set interest rate model configs
-        kink = config.kink;
-        perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
-        perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
-        perSecondInterestRateBase = config.perYearInterestRateBase / SECONDS_PER_YEAR;
-        reserveRate = config.reserveRate;
+        unchecked {
+            kink = config.kink;
+            perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
+            perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
+            perSecondInterestRateBase = config.perYearInterestRateBase / SECONDS_PER_YEAR;
+            reserveRate = config.reserveRate;
+        }
 
         // Set asset info
         numAssets = uint8(config.assetConfigs.length);
@@ -224,6 +241,9 @@ contract Comet is CometCore {
         baseBorrowIndex = BASE_INDEX_SCALE;
         trackingSupplyIndex = 0;
         trackingBorrowIndex = 0;
+
+        // Approve governor on behalf of contract
+        isAllowed[address(this)][governor] = true;
     }
 
     /**
@@ -263,27 +283,29 @@ contract Comet is CometCore {
         if (assetConfig.borrowCollateralFactor >= assetConfig.liquidateCollateralFactor) revert BorrowCFTooLarge();
         if (assetConfig.liquidateCollateralFactor > MAX_COLLATERAL_FACTOR) revert LiquidateCFTooLarge();
 
-        // Keep 4 decimals for each factor
-        uint descale = FACTOR_SCALE / 1e4;
-        uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
-        uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
-        uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
+        unchecked {
+            // Keep 4 decimals for each factor
+            uint descale = FACTOR_SCALE / 1e4;
+            uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
+            uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
+            uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
 
-        // Be nice and check descaled values are still within range
-        if (borrowCollateralFactor >= liquidateCollateralFactor) revert BorrowCFTooLarge();
+            // Be nice and check descaled values are still within range
+            if (borrowCollateralFactor >= liquidateCollateralFactor) revert BorrowCFTooLarge();
 
-        // Keep whole units of asset for supply cap
-        uint64 supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals_));
+            // Keep whole units of asset for supply cap
+            uint64 supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals_));
 
-        uint256 word_a = (uint160(asset) << 0 |
-                          uint256(borrowCollateralFactor) << 160 |
-                          uint256(liquidateCollateralFactor) << 176 |
-                          uint256(liquidationFactor) << 192);
-        uint256 word_b = (uint160(priceFeed) << 0 |
-                          uint256(decimals_) << 160 |
-                          uint256(supplyCap) << 168);
+            uint256 word_a = (uint160(asset) << 0 |
+                              uint256(borrowCollateralFactor) << 160 |
+                              uint256(liquidateCollateralFactor) << 176 |
+                              uint256(liquidationFactor) << 192);
+            uint256 word_b = (uint160(priceFeed) << 0 |
+                              uint256(decimals_) << 160 |
+                              uint256(supplyCap) << 168);
 
-        return (word_a, word_b);
+            return (word_a, word_b);
+        }
     }
 
     /**׳
@@ -865,6 +887,9 @@ contract Comet is CometCore {
         totalBorrowBase = principalValueBorrow(baseBorrowIndex, totalBorrowBalance);
 
         updateBaseBalance(dst, dstUser, principalValue(dstBalance));
+
+        emit Supply(from, dst, amount);
+        emit Transfer(address(0), dst, amount);
     }
 
     /**
@@ -885,6 +910,31 @@ contract Comet is CometCore {
         userCollateral[dst][asset].balance = dstCollateralNew;
 
         updateAssetsIn(dst, asset, dstCollateral, dstCollateralNew);
+
+        emit SupplyCollateral(from, dst, asset, amount);
+    }
+
+    /**
+     * @notice ERC20 transfer an amount of base token to dst
+     * @param dst The recipient address
+     * @param amount The quantity to transfer
+     * @return true
+     */
+    function transfer(address dst, uint amount) external returns (bool) {
+        transferInternal(msg.sender, msg.sender, dst, baseToken, amount);
+        return true;
+    }
+
+    /**
+     * @notice ERC20 transfer an amount of base token from src to dst, if allowed
+     * @param src The sender address
+     * @param dst The recipient address
+     * @param amount The quantity to transfer
+     * @return true
+     */
+    function transferFrom(address src, address dst, uint amount) external returns (bool) {
+        transferInternal(msg.sender, src, dst, baseToken, amount);
+        return true;
     }
 
     /**
@@ -940,8 +990,9 @@ contract Comet is CometCore {
         (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcBalance, amount);
         (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, amount);
 
-        totalSupplyBalance += supplyAmount - withdrawAmount;
-        totalBorrowBalance += borrowAmount - repayAmount;
+        // Note: Instead of `totalSupplyBalance += supplyAmount - withdrawAmount` to avoid underflow errors.
+        totalSupplyBalance = totalSupplyBalance + supplyAmount - withdrawAmount;
+        totalBorrowBalance = totalBorrowBalance + borrowAmount - repayAmount;
 
         srcBalance -= signed104(amount);
         dstBalance += signed104(amount);
@@ -956,6 +1007,8 @@ contract Comet is CometCore {
             if (uint104(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
             if (!isBorrowCollateralized(src)) revert NotCollateralized();
         }
+
+        emit Transfer(src, dst, amount);
     }
 
     /**
@@ -975,6 +1028,8 @@ contract Comet is CometCore {
 
         // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
         if (!isBorrowCollateralized(src)) revert NotCollateralized();
+
+        emit TransferCollateral(src, dst, asset, amount);
     }
 
     /**
@@ -1051,6 +1106,9 @@ contract Comet is CometCore {
         }
 
         doTransferOut(baseToken, to, amount);
+
+        emit Withdraw(src, to, amount);
+        emit Transfer(src, address(0), amount);
     }
 
     /**
@@ -1069,6 +1127,8 @@ contract Comet is CometCore {
         if (!isBorrowCollateralized(src)) revert NotCollateralized();
 
         doTransferOut(asset, to, amount);
+
+        emit WithdrawCollateral(src, to, asset, amount);
     }
 
     /**
@@ -1150,6 +1210,8 @@ contract Comet is CometCore {
     function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external {
         if (isBuyPaused()) revert Paused();
 
+        accrueInternal();
+
         int reserves = getReserves();
         if (reserves >= 0 && uint(reserves) >= targetReserves) revert NotForSale();
 
@@ -1169,11 +1231,11 @@ contract Comet is CometCore {
      * @return The quote in terms of the collateral asset
      */
     function quoteCollateral(address asset, uint baseAmount) public view returns (uint) {
-        // XXX: Add StoreFrontDiscount.
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         uint128 assetPrice = getPrice(assetInfo.priceFeed);
+        uint128 assetPriceDiscounted = uint128(mulFactor(assetPrice, storeFrontPriceFactor));
         uint128 basePrice = getPrice(baseTokenPriceFeed);
-        uint assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPrice;
+        uint assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPriceDiscounted;
         return assetWeiPerUnitBase * baseAmount / baseScale;
     }
 
@@ -1184,7 +1246,11 @@ contract Comet is CometCore {
      */
     function withdrawReserves(address to, uint amount) external {
         if (msg.sender != governor) revert Unauthorized();
+
+        accrueInternal();
+
         if (amount > unsigned256(getReserves())) revert InsufficientReserves();
+
         doTransferOut(baseToken, to, amount);
     }
 

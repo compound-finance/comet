@@ -9,6 +9,8 @@ import {
   CometHarness,
   CometHarness__factory,
   CometHarnessInterface as Comet,
+  EvilToken,
+  EvilToken__factory,
   FaucetToken,
   FaucetToken__factory,
   SimplePriceFeed,
@@ -20,6 +22,11 @@ import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract
 export { Comet, ethers, expect };
 
 export type Numeric = number | bigint;
+
+export enum ReentryAttack {
+  TransferFrom = 0,
+  WithdrawFrom = 1
+}
 
 export type ProtocolOpts = {
   start?: number;
@@ -34,6 +41,7 @@ export type ProtocolOpts = {
       supplyCap?: Numeric;
       initialPrice?: number;
       priceFeedDecimals?: number;
+      factory?: FaucetToken__factory | EvilToken__factory;
     };
   };
   symbol?: string,
@@ -47,6 +55,7 @@ export type ProtocolOpts = {
   interestRateSlopeLow?: Numeric;
   interestRateSlopeHigh?: Numeric;
   reserveRate?: Numeric;
+  storeFrontPriceFactor?: Numeric;
   trackingIndexScale?: Numeric;
   baseTrackingSupplySpeed?: Numeric;
   baseTrackingBorrowSpeed?: Numeric;
@@ -141,10 +150,8 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
   const assets = opts.assets || defaultAssets();
   let priceFeeds = {};
+  const PriceFeedFactory = (await ethers.getContractFactory('SimplePriceFeed')) as SimplePriceFeed__factory;
   for (const asset in assets) {
-    const PriceFeedFactory = (await ethers.getContractFactory(
-      'SimplePriceFeed'
-    )) as SimplePriceFeed__factory;
     const initialPrice = exp(assets[asset].initialPrice || 1, 8);
     const priceFeedDecimals = assets[asset].priceFeedDecimals || 8;
     const priceFeed = await PriceFeedFactory.deploy(initialPrice, priceFeedDecimals);
@@ -158,11 +165,12 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const users = signers.slice(2); // guaranteed to not be governor or pause guardian
   const base = opts.base || 'USDC';
   const reward = opts.reward || 'COMP';
-  const kink = dfn(opts.kink, exp(8, 17)); // 0.8
-  const perYearInterestRateBase = dfn(opts.interestRateBase, exp(5, 15)); // 0.005
-  const perYearInterestRateSlopeLow = dfn(opts.interestRateSlopeLow, exp(1, 17)); // 0.1
-  const perYearInterestRateSlopeHigh = dfn(opts.interestRateSlopeHigh, exp(3, 18)); // 3.0
-  const reserveRate = dfn(opts.reserveRate, exp(1, 17)); // 0.1
+  const kink = dfn(opts.kink, exp(0.8, 18));
+  const perYearInterestRateBase = dfn(opts.interestRateBase, exp(0.005, 18));
+  const perYearInterestRateSlopeLow = dfn(opts.interestRateSlopeLow, exp(0.1, 18));
+  const perYearInterestRateSlopeHigh = dfn(opts.interestRateSlopeHigh, exp(3, 18));
+  const reserveRate = dfn(opts.reserveRate, exp(0.1, 18));
+  const storeFrontPriceFactor = dfn(opts.storeFrontPriceFactor, exp(0.97, 18));
   const trackingIndexScale = opts.trackingIndexScale || exp(1, 15);
   const baseTrackingSupplySpeed = dfn(opts.baseTrackingSupplySpeed, trackingIndexScale);
   const baseTrackingBorrowSpeed = dfn(opts.baseTrackingBorrowSpeed, trackingIndexScale);
@@ -177,7 +185,9 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     const decimals = config.decimals || 18;
     const initial = config.initial || 1e6;
     const name = config.name || symbol;
-    const token = (tokens[symbol] = await FaucetFactory.deploy(initial, name, decimals, symbol));
+    const factory = config.factory || FaucetFactory;
+    let token;
+    token = (tokens[symbol] = await factory.deploy(initial, name, decimals, symbol));
     await token.deployed();
   }
 
@@ -204,6 +214,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     perYearInterestRateSlopeLow,
     perYearInterestRateSlopeHigh,
     reserveRate,
+    storeFrontPriceFactor,
     trackingIndexScale,
     baseTrackingSupplySpeed,
     baseTrackingBorrowSpeed,
@@ -275,10 +286,15 @@ export async function wait(
   };
 }
 
-export function filterEvent(data, eventName) {
-  return data.receipt.events?.filter((x) => {
-    return x.event == eventName;
-  })[0];
+export function event(tx, index) {
+  const ev = tx.receipt.events[index], args = {};
+  for (const k in ev.args) {
+    const v = ev.args[k];
+    if (isNaN(Number(k))) {
+      args[k] = v._isBigNumber ? BigInt(v) : v;
+    }
+  }
+  return { [ev.event]: args };
 }
 
 export function inCoverage() {

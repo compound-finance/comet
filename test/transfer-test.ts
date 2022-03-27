@@ -1,4 +1,5 @@
-import { expect, exp, makeProtocol, portfolio, wait } from './helpers';
+import { event, expect, exp, makeProtocol, portfolio, wait } from './helpers';
+import { BigNumber } from "ethers";
 
 describe('transfer', function () {
   it('transfers base from sender if the asset is base', async () => {
@@ -21,13 +22,21 @@ describe('transfer', function () {
     const p1 = await portfolio(protocol, alice.address);
     const q1 = await portfolio(protocol, bob.address);
 
+    expect(event(s0, 0)).to.be.deep.equal({
+      Transfer: {
+        from: bob.address,
+        to: alice.address,
+        amount: BigInt(100e6),
+      }
+    });
+
     expect(p0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(q0.internal).to.be.deep.equal({ USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(p1.internal).to.be.deep.equal({ USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(q1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyBase).to.be.equal(t0.totalSupplyBase);
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
-    // XXX disable during coverage?
+    // XXX disable during coverage? more ideally coverage would not modify gas costs
     //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(80000);
   });
 
@@ -51,12 +60,21 @@ describe('transfer', function () {
     const p1 = await portfolio(protocol, alice.address);
     const q1 = await portfolio(protocol, bob.address);
 
+    expect(event(s0, 0)).to.be.deep.equal({
+      TransferCollateral: {
+        from: bob.address,
+        to: alice.address,
+        asset: COMP.address,
+        amount: BigInt(8e8),
+      }
+    });
+
     expect(p0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(q0.internal).to.be.deep.equal({ USDC: 0n, COMP: exp(8, 8), WETH: 0n, WBTC: 0n });
     expect(p1.internal).to.be.deep.equal({ USDC: 0n, COMP: exp(8, 8), WETH: 0n, WBTC: 0n });
     expect(q1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyAsset).to.be.equal(t0.totalSupplyAsset);
-    // XXX disable during coverage?
+    // XXX disable during coverage? more ideally coverage would not modify gas costs
     //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(50000);
   });
 
@@ -117,16 +135,31 @@ describe('transfer', function () {
     await expect(cometAsB.transferAsset(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
   });
 
-  it.skip('reverts if transferring base results in an under collateralized borrow', async () => {
-    // XXX
-  });
+  it('borrows base if collateralized', async () => {
+    const { comet, tokens, users: [alice, bob]} = await makeProtocol();
+    const { WETH, USDC } = tokens;
 
-  it.skip('borrows base if collateralized', async () => {
-    // XXX
-  });
+    await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
 
-  it.skip('reverts if transferring collateral results in an under collateralized borrow', async () => {
-    // XXX
+    const baseIndexScale = await comet.baseIndexScale();
+
+    let t0 = await comet.totalsBasic();
+    t0 = Object.assign({}, t0, {
+      baseBorrowIndex: t0.baseBorrowIndex.mul(2),
+    });
+    await comet.setTotalsBasic(t0);
+
+    await comet.connect(alice).transferAsset(bob.address, USDC.address, 100e6);
+
+    const t1 = await comet.totalsBasic();
+
+    // transferBase sets principal to principalValueBorrow(-100e6)
+    const principalValue = BigNumber.from(-100e6).mul(baseIndexScale).div(t1.baseBorrowIndex);
+
+    // baseBalanceOf returns presentValueBorrow(principal)
+    const baseBalanceOf = principalValue.mul(t1.baseBorrowIndex).div(baseIndexScale);
+
+    expect(await comet.baseBalanceOf(alice.address)).to.eq(baseBalanceOf);
   });
 
   it('cant borrow less than the minimum', async () => {
@@ -172,7 +205,7 @@ describe('transfer', function () {
     ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
   });
 
-  it('reverts if base transfer is not collateralized', async () => {
+  it('reverts if transferring base results in an under collateralized borrow', async () => {
     const { comet, tokens, users: [alice, bob]} = await makeProtocol();
     const { USDC } = tokens;
 
@@ -181,7 +214,7 @@ describe('transfer', function () {
     ).to.be.revertedWith("custom error 'NotCollateralized()'");
   });
 
-  it('reverts if collateral transfer is not collateralized', async () => {
+  it('reverts if transferring collateral results in an under collateralized borrow', async () => {
     const { comet, tokens, users: [alice, bob]} = await makeProtocol();
     const { WETH } = tokens;
 

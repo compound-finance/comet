@@ -15,7 +15,7 @@ import { Address, Alias, BuildFile, ContractMetadata } from './Types';
 import { Aliases } from './Aliases';
 import { Proxies } from './Proxies';
 import { Roots } from './Roots';
-import { asArray, cross, debug, getPrimaryContract, objectFromMap } from './Utils';
+import { asArray, cross, debug, getPrimaryContract, objectFromMap, mergeABI } from './Utils';
 import { fetchAndCacheContract } from './Import';
 
 function isValidAddress(address: Address): boolean {
@@ -106,33 +106,36 @@ async function runSpider(
           relationConfig.proxy,
           `${defaultAlias}:implementation`
         );
-        [implAddress] = implDiscovered.map(([address, alias]) => address);
-        if (!implAddress) {
-          throw new Error(
-            `Unknown or invalid implementation address: discovered: ${JSON.stringify(
-              implDiscovered
-            )}`
+
+        if (implDiscovered.length > 0) {
+          [implAddress] = implDiscovered.map(([address, alias]) => address);
+
+          // Recurse a single step to get implementation
+          visited = await runSpider(
+            cache,
+            network,
+            hre,
+            relationConfigMap,
+            implDiscovered,
+            visited,
+            importRetries,
+            importRetryDelay
+          );
+
+          let { buildFile: proxyBuildFile } = visited.get(implAddress);
+          if (!proxyBuildFile) {
+            throw new Error(
+              `Failed to spider implementation for ${defaultAlias} at ${implAddress}`
+            );
+          }
+          const [proxyContractName, proxyContractMetadata] = getPrimaryContract(proxyBuildFile);
+
+          contract = new hre.ethers.Contract(
+            address,
+            mergeABI(contractMetadata.abi, proxyContractMetadata.abi),
+            hre.ethers.provider
           );
         }
-
-        // Recurse a single step to get implementation
-        visited = await runSpider(
-          cache,
-          network,
-          hre,
-          relationConfigMap,
-          implDiscovered,
-          visited,
-          importRetries,
-          importRetryDelay
-        );
-
-        let { contract: proxyContract } = visited.get(implAddress);
-        if (!proxyContract) {
-          throw new Error(`Failed to spider implementation for ${defaultAlias} at ${implAddress}`);
-        }
-
-        contract = proxyContract.attach(address);
       }
 
       // Store the build file. This is the primary result of spidering: a huge list

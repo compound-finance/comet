@@ -16,7 +16,7 @@ scenario(
     expect(await comet.isBuyPaused()).to.be.false;
 
     const { admin } = actors;
-    await admin.pause({
+    const txn = await admin.pause({
       supplyPaused: true,
       transferPaused: true,
       withdrawPaused: true,
@@ -29,6 +29,8 @@ scenario(
     expect(await comet.isWithdrawPaused()).to.be.true;
     expect(await comet.isAbsorbPaused()).to.be.true;
     expect(await comet.isBuyPaused()).to.be.true;
+
+    return txn; // return txn to measure gas
   }
 );
 

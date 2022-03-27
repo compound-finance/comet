@@ -15,7 +15,7 @@ async function main() {
     verifyContracts: !isDevelopment,
     debug: true,
   });
-  let { comet } = await deployComet(dm);
+  await deployComet(dm);
   await dm.spider();
 }
 

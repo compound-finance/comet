@@ -17,6 +17,8 @@ import './tasks/scenario/task.ts';
 
 // Relation Config
 import relationConfigMap from './deployments/relations';
+import fujiRelationConfigMap from './deployments/fuji/relations';
+import kovanRelationConfigMap from './deployments/kovan/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -143,6 +145,10 @@ const config: HardhatUserConfig = {
 
   deploymentManager: {
     relationConfigMap,
+    networks: {
+      fuji: fujiRelationConfigMap,
+      kovan: kovanRelationConfigMap,
+    },
   },
 
   scenario: {
@@ -152,11 +158,13 @@ const config: HardhatUserConfig = {
       },
       {
         name: 'kovan',
+        chainId: 42,
         url: getDefaultProviderURL('kovan'),
         allocation: 0.1, // eth
       },
       {
         name: 'fuji',
+        chainId: 43113,
         url: 'https://api.avax-test.network/ext/bc/C/rpc',
       },
     ],
@@ -173,7 +181,7 @@ const config: HardhatUserConfig = {
   },
 
   paths: {
-    tests: "./{test,plugins/deployment_manager/test}",
+    tests: './{test,plugins/deployment_manager/test}',
   },
 
   contractSizer: {

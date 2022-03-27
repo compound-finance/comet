@@ -1,7 +1,10 @@
+
+export type ABI = string | any[];
+
 export interface ContractMetadata {
   address: Address;
   name: string;
-  abi: string;
+  abi: ABI;
   bin: string;
   metadata: string;
   source?: string;

@@ -100,6 +100,7 @@ export async function deployDevelopmentComet(
     perYearInterestRateSlopeHigh,
     perYearInterestRateBase,
     reserveRate,
+    storeFrontPriceFactor,
     trackingIndexScale,
     baseTrackingSupplySpeed,
     baseTrackingBorrowSpeed,
@@ -114,16 +115,17 @@ export async function deployDevelopmentComet(
       pauseGuardian: await signers[1].getAddress(),
       baseToken: dai.address,
       baseTokenPriceFeed: daiPriceFeed.address,
-      kink: (8e17).toString(), // 0.8
-      perYearInterestRateBase: (5e15).toString(), // 0.005
-      perYearInterestRateSlopeLow: (1e17).toString(), // 0.1
-      perYearInterestRateSlopeHigh: (3e18).toString(), // 3.0
-      reserveRate: (1e17).toString(), // 0.1
+      kink: (0.8e18).toString(),
+      perYearInterestRateBase: (0.005e18).toString(),
+      perYearInterestRateSlopeLow: (0.1e18).toString(),
+      perYearInterestRateSlopeHigh: (3e18).toString(),
+      reserveRate: (0.1e18).toString(),
+      storeFrontPriceFactor: (0.95e18).toString(),
       trackingIndexScale: (1e15).toString(), // XXX add 'exp' to scen framework?
       baseTrackingSupplySpeed: 0, // XXX
       baseTrackingBorrowSpeed: 0, // XXX
       baseMinForRewards: 1, // XXX
-      baseBorrowMin: 1, // XXX
+      baseBorrowMin: (1e18).toString(),
       targetReserves: 0, // XXX
       assetConfigs: [assetConfig0, assetConfig1],
     },
@@ -149,6 +151,7 @@ export async function deployDevelopmentComet(
     perYearInterestRateSlopeHigh,
     perYearInterestRateBase,
     reserveRate,
+    storeFrontPriceFactor,
     trackingIndexScale,
     baseTrackingSupplySpeed,
     baseTrackingBorrowSpeed,
@@ -166,7 +169,7 @@ export async function deployDevelopmentComet(
   if (deployProxy) {
     let proxyAdminArgs: [] = [];
     let proxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
-      'vendor/proxy/ProxyAdmin.sol',
+      'vendor/proxy/transparent/ProxyAdmin.sol',
       proxyAdminArgs
     );
 
@@ -174,7 +177,7 @@ export async function deployDevelopmentComet(
       TransparentUpgradeableProxy,
       TransparentUpgradeableProxy__factory,
       [string, string, string]
-    >('vendor/proxy/TransparentUpgradeableProxy.sol', [
+    >('vendor/proxy/transparent/TransparentUpgradeableProxy.sol', [
       comet.address,
       proxyAdmin.address,
       (await comet.populateTransaction.initializeStorage()).data,
@@ -184,7 +187,7 @@ export async function deployDevelopmentComet(
   }
 
   return {
-    comet: await deploymentManager.hre.ethers.getContractAt('CometInterface', comet.address) as CometInterface,
+    comet,
     proxy,
     tokens: [dai, gold, silver],
   };
