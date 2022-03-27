@@ -105,21 +105,21 @@ rule increase_profit(){
 
     // simplifiedAssumptions();
 
-    // require getPrincipal(e1,account2) == 0;
+    require getUserPrincipal(e1,account2) == 0;
 
-    // call_accrueInternal(e1);
+    call_accrueInternal(e1);
 
-    // mathint presentValue_account1_1 = to_mathint(call_presentValue(getPrincipal(e1,account1)));
-    // mathint presentValue_account2_1 = to_mathint(call_presentValue(getPrincipal(e1,account2)));
+    mathint presentValue_account1_1 = to_mathint(call_presentValue(getUserPrincipal(e1,account1)));
+    mathint presentValue_account2_1 = to_mathint(call_presentValue(getUserPrincipal(e1,account2)));
 
     withdraw(e1, _baseToken, amount);
 
-    // require call_getNowInternal(e1) > getlastAccrualTime();
-    // call_accrueInternal(e1);
+    require call_getNowInternal(e1) > getlastAccrualTime();
+    call_accrueInternal(e1);
     
-    // mathint presentValue_account1_2 = to_mathint(call_presentValue(getPrincipal(e2,account1)));
-    // mathint presentValue_account2_2 = to_mathint(call_presentValue(getPrincipal(e2,account2)));
+    mathint presentValue_account1_2 = to_mathint(call_presentValue(getUserPrincipal(e2,account1)));
+    mathint presentValue_account2_2 = to_mathint(call_presentValue(getUserPrincipal(e2,account2)));
 
-    // assert presentValue_account1_2 - presentValue_account1_1 > presentValue_account2_2 - presentValue_account2_1;
-    assert false;
+    assert presentValue_account1_2 - presentValue_account1_1 > presentValue_account2_2 - presentValue_account2_1;
+    // assert false;
 }
