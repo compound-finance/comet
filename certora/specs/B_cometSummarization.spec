@@ -15,8 +15,8 @@ methods{
     getPauseFlags() returns (uint8) envfree
 
 
-    signedMulPrice(int amount, uint price, uint tokenScale) => ghostSignedMulPrice(amount,price,tokenScale);
-    mulPrice(uint amount, uint price, uint tokenScale) => ghostMulPrice(amount,price,tokenScale);
+ //   signedMulPrice(int128 a, uint128 b, uint64 scale) => ghostSignedMulPrice(amount,price,tokenScale);
+  //  mulPrice(uint amount, uint price, uint tokenScale) => ghostMulPrice(amount,price,tokenScale);
     getUserPrincipal(address) returns (int104) envfree 
     getPrincipal(int104 x) returns (int104) envfree => identityInt(x);
     presentValueSupply(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
@@ -25,6 +25,7 @@ methods{
     principalValueSupply(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
     principalValueBorrow(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
 
+    getPrice(address priceFeed) returns (uint128) => ALWAYS(1)
 
 }
 
@@ -35,11 +36,14 @@ function identityInt(int104 x) returns int104 {
 function identity(uint104 x) returns uint104 {
     return x;
 }
-
-ghost ghostSignedMulPrice(int, uint, uint) returns int256; 
+/*
+ghost ghostSignedMulPrice(int128 a, uint128 b, uint64 scale) returns int256 {
+    init_state axiom forall int128 x. forall uint128 y. forall uint64 z 
+    ghostSignedMulPrice(x,y,z) = z * y;
+}
 
 ghost ghostMulPrice(uint, uint, uint) returns uint256; 
-
+*/
 
 // A set of functions that are similar to other functions in the original contract and can be omitted during verifications due to this similarity.
 // e.g. there are 3 withdraw functions in comet - withdraw, withdrawTo and withdrawFrom.
