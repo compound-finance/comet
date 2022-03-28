@@ -1,7 +1,25 @@
 import "comet.spec"
 
 
-// V@V - when a manager withdraw from the reserves, the system's reserves must decrease
+/*
+    @Rule
+
+    @Description:
+        when a manager withdraw from the reserves, the system's reserves must decrease
+
+    @Formula:
+    {
+        before = getReserves()
+    }
+        withdrawReserves(to,amount)
+    {
+        before > getReserves()
+    }
+
+    @Notes:
+
+    @Link:
+*/
 rule withdraw_reserves_decreases(address to, uint amount){
     env e;
 
@@ -13,7 +31,27 @@ rule withdraw_reserves_decreases(address to, uint amount){
 }
 
 
-// V@V - The more a manager withdraw from reserves, the less reserves the system should have
+/*
+    @Rule
+
+    @Description:
+        The more a manager withdraw from reserves, the less reserves the system should have
+
+    @Formula:
+    {
+        
+    }
+        withdrawReserves(x); r1 = getReserves()
+        ~ 
+        withdrawReserves(y); r2 = getReserves()
+    {
+        x > y => r1 > r2
+    }
+
+    @Notes:
+
+    @Link:
+*/
 rule withdraw_reserves_monotonicity(address to){
     env e;
 
@@ -32,8 +70,25 @@ rule withdraw_reserves_monotonicity(address to){
 }
 
 
-// V@V - integrity of supply - balance increase by supply amount 
-// TODO: should increase presentValue by amount
+/*
+    @Rule
+
+    @Description:
+        integrity of supply - balance increase by supply amount 
+
+    @Formula:
+    {
+        balance1 = tokenBalanceOf(asset, currentContract)
+    }
+        supply(asset, amount)
+    {
+        tokenBalanceOf(asset, currentContract) - balance1 == amount
+    }
+
+    @Notes: should increase presentValue by amount
+
+    @Link:
+*/
 rule supply_increase_balance(address asset, uint amount){
     env e;
     require e.msg.sender != currentContract;
@@ -48,8 +103,25 @@ rule supply_increase_balance(address asset, uint amount){
 }
 
 
-// V@V - integrity of withdraw - balance increase by supply amount 
-// TODO: should decrease presentValue by amount
+/*
+    @Rule
+
+    @Description:
+        integrity of withdraw - balance increase by supply amount
+
+    @Formula:
+    {
+        balance1 = tokenBalanceOf(asset, currentContract)
+    }
+        withdraw(asset, amount)
+    {
+        tokenBalanceOf(asset, currentContract) - balance1 == amount
+    }
+
+    @Notes: should decrease presentValue by amount
+
+    @Link:
+*/
 rule withdraw_decrease_balance(address asset, uint amount){
     env e;
     require e.msg.sender != currentContract;
@@ -63,8 +135,27 @@ rule withdraw_decrease_balance(address asset, uint amount){
     assert balance1 - balance2 == amount;
 }
 
-// withdraw 
+/*
+    @Rule
 
+    @Description:
+        additivity of withdraw : withdraw(x) + withdraw(y) = withdraw(x+y)
+
+    @Formula:
+    {
+        
+    }
+        withdraw(Base, x); withdraw(Base, y) ; base1 = baseBalanceOf(e.msg.sender)
+        ~
+        withdraw(_baseToken, x + y); base2 = baseBalanceOf(e.msg.sender)
+    {
+        base1 == base2
+    }
+
+    @Notes:
+
+    @Link:
+*/
 // T@T - withdraw(x) + withdraw(y) = withdraw(x+y)
 rule additivity_of_withdraw( uint x, uint y){
     env e;

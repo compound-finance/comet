@@ -27,7 +27,8 @@ import "comet.spec"
     @Notes:
 
     @Link:
-*/rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
+*/
+rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
     env e;
     // https://vaas-stg.certora.com/output/23658/b7cc8ac5bd1d3f414f2f/?anonymousKey=d47ea2a5120f88658704e5ece8bfb45d59b2eb85
     require asset != _baseToken; 
@@ -137,7 +138,6 @@ rule canNot_absorb_same_account(address absorber, address account) {
 
     @Link:
 */
-// V@V - After absorbtion of account, the system's reserves must not increase
 rule absorb_reserves_decrease(address absorber, address account) {
     address[] accounts;
     env e;

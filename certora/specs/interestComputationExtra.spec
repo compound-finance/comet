@@ -129,6 +129,6 @@ rule increase_profit(){
     mathint presentValue_account1_2 = to_mathint(call_presentValue(getUserPrincipal(e2,account1)));
     mathint presentValue_account2_2 = to_mathint(call_presentValue(getUserPrincipal(e2,account2)));
 
-    assert presentValue_account1_2 - presentValue_account1_1 > presentValue_account2_2 - presentValue_account2_1;
+    assert presentValue_account1_2 - presentValue_account1_1 >= presentValue_account2_2 - presentValue_account2_1;
     // assert false;
 }
