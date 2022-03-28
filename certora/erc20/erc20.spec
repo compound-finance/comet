@@ -7,11 +7,6 @@ methods {
     decreaseAllowance(address, uint256)
 }
 
-// function allowanceIncDecFunctions() returns bool {
-//     return increaseAllowance(address, uint256).selector in currentContract 
-//     && decreaseAllowance(address, uint256).selector in currentContract;
-// }
-
 /*
     @Rule
 
@@ -119,7 +114,7 @@ rule noFeeOnTransfer(address bob, uint256 amount) {
 */
 rule transferCorrect(address to, uint256 amount) {
     env e;
-    require e.msg.value == 0;
+    require e.msg.value == 0 && e.msg.sender != 0;
     uint256 fromBalanceBefore = balanceOf(e.msg.sender);
     uint256 toBalanceBefore = balanceOf(to);
     require fromBalanceBefore + toBalanceBefore <= max_uint256;
@@ -178,16 +173,36 @@ rule TransferFromCorrect(address from, address to, uint256 amount) {
 
     transferFrom(e, from, to, amount);
 
-    if (from == to) {
-        assert balanceOf(from) == fromBalanceBefore;
-        assert allowance(from, e.msg.sender) == allowanceBefore;
-    } else {
-        assert balanceOf(from) == fromBalanceBefore - amount;
-        assert balanceOf(to) == toBalanceBefore + amount;
-        assert allowance(from, e.msg.sender) == allowanceBefore - amount;
-    }
+    assert from != to =>
+        balanceOf(from) == fromBalanceBefore - amount &&
+        balanceOf(to) == toBalanceBefore + amount &&
+        allowance(from, e.msg.sender) == allowanceBefore - amount;
 }
 
+/*
+    @Rule
+
+    @Description:
+        transferFrom should revert if and only if the amount is too high or the recipient is 0.
+
+    @Formula:
+        {
+            allowanceBefore = allowance(alice, bob)
+            fromBalanceBefore = balanceOf(alice)
+        }
+        <
+            transferFrom(alice, bob, amount)
+        >
+        {
+            lastReverted <=> allowanceBefore < amount || amount > fromBalanceBefore || to = 0
+        }
+
+    @Notes:
+        Fails on tokens with pause/blacklist functions, like USDC.
+
+    @Link:
+
+*/
 rule TransferFromReverts(address from, address to, uint256 amount) {
     env e;
     uint256 allowanceBefore = allowance(from, e.msg.sender);
@@ -201,6 +216,21 @@ rule TransferFromReverts(address from, address to, uint256 amount) {
     assert lastReverted <=> (allowanceBefore < amount || amount > fromBalanceBefore || to == 0);
 }
 
+/*
+    @Rule
+
+    @Description:
+        Balance of address 0 is always 0
+
+    @Formula:
+        { balanceOf[0] = 0 }
+
+    @Notes:
+
+
+    @Link:
+
+*/
 invariant ZeroAddressNoBalance()
     balanceOf(0) == 0
 
@@ -266,7 +296,6 @@ rule NoChangeTotalSupply(method f) {
 
 */
 rule ChangingAllowance(method f, address from, address spender) {
-    // require f.selector != permit(address,address,uint256,uint256,uint8,bytes32,bytes32).selector;
     uint256 allowanceBefore = allowance(from, spender);
     env e;
     if (f.selector == approve(address, uint256).selector) {
