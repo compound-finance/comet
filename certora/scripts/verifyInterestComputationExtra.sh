@@ -10,6 +10,7 @@ certoraRun certora/harness/CometHarnessWrappers.sol contracts/CometExt.sol \
     --link CometHarnessWrappers:baseTokenPriceFeed=SymbolicPriceOracleA CometHarnessWrappers:extensionDelegate=CometExt \
     --solc solc8.11 \
     --staging \
+    --send_only \
     --optimistic_loop \
     --settings -enableEqualitySaturation=false,-solver=z3,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \
     --solc_args '["--experimental-via-ir"]' \
