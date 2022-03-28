@@ -103,11 +103,14 @@ rule increase_profit(){
     address account1;
     address account2 = e1.msg.sender;
 
+    require account1 != currentContract && account2 != currentContract;
+
     // simplifiedAssumptions();
 
+    require getUserPrincipal(e1,account1) != 0;
     require getUserPrincipal(e1,account2) == 0;
 
-    call_accrueInternal(e1);
+    // call_accrueInternal(e1);
 
     mathint presentValue_account1_1 = to_mathint(call_presentValue(getUserPrincipal(e1,account1)));
     mathint presentValue_account2_1 = to_mathint(call_presentValue(getUserPrincipal(e1,account2)));
