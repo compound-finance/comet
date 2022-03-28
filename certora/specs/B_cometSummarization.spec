@@ -13,11 +13,10 @@ methods{
     isAbsorbPaused() returns (bool) envfree => get_absorb_paused()
     isBuyPaused() returns (bool) envfree => get_buy_paused()
     getPauseFlags() returns (uint8) envfree
-
-
- //   signedMulPrice(int128 a, uint128 b, uint64 scale) => ghostSignedMulPrice(amount,price,tokenScale);
-  //  mulPrice(uint amount, uint price, uint tokenScale) => ghostMulPrice(amount,price,tokenScale);
     getUserPrincipal(address) returns (int104) envfree 
+    
+    
+    // The following summarization are under approximations, they are assuming that BaseSupplyIndex and BaseBorrowIndex are at the base index scale   
     getPrincipal(int104 x) returns (int104) envfree => identityInt(x);
     presentValueSupply(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
     presentValueBorrow(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
@@ -25,6 +24,7 @@ methods{
     principalValueSupply(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
     principalValueBorrow(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
 
+    // Another simplification assuming the price is always 1 
     getPrice(address priceFeed) returns (uint128) => ALWAYS(1)
 
 }
@@ -36,18 +36,10 @@ function identityInt(int104 x) returns int104 {
 function identity(uint104 x) returns uint104 {
     return x;
 }
-/*
-ghost ghostSignedMulPrice(int128 a, uint128 b, uint64 scale) returns int256 {
-    init_state axiom forall int128 x. forall uint128 y. forall uint64 z 
-    ghostSignedMulPrice(x,y,z) = z * y;
-}
-
-ghost ghostMulPrice(uint, uint, uint) returns uint256; 
-*/
 
 // A set of functions that are similar to other functions in the original contract and can be omitted during verifications due to this similarity.
 // e.g. there are 3 withdraw functions in comet - withdraw, withdrawTo and withdrawFrom.
-// All of these functinos are calling the internal function withdrawInternal with some input args from the user and some predefined args.
+// All of these functions are calling the internal function withdrawInternal with some input args from the user and some predefined args.
 // WithdrawFrom is the most general out of the 3, in such way that by passing specific value to withdrawFrom, one can simulate a call to the other 2 withdraw functions,
 // Therefore it's enough to check correctness of withdrawFrom, given that we allow arbitrary input values when calling the function
 definition similarFunctions(method f) returns bool =    
@@ -70,7 +62,7 @@ definition similarFunctions(method f) returns bool =
 // These summarization are safe since we proved the correctness of getters and update in pause.spec, pauseGuardians.spec
 //
 
-// Pasue ghosts
+// Pause ghosts
 ghost bool supply_paused_ghost; // ghost variable tracking supplyPaused value
 ghost bool transfer_paused_ghost; // ghost variable tracking transferPaused value
 ghost bool withdraw_paused_ghost; // ghost variable tracking withdrawPaused value
