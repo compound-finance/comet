@@ -1,7 +1,10 @@
 import "comet.spec"
 
+////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////   Properties   ///////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
 //  Complete Run: https://vaas-stg.certora.com/output/44289/109d5257e0229a088c11/?anonymousKey=4fe9bb16b23f2292ed7f4bea9eb83991ed3eed93
-
 
 /*
     @Rule
@@ -20,7 +23,10 @@ import "comet.spec"
     @Notes:
 
     @Link:
-*/rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
+
+*/
+
+rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
     env e;
     // https://vaas-stg.certora.com/output/23658/b7cc8ac5bd1d3f414f2f/?anonymousKey=d47ea2a5120f88658704e5ece8bfb45d59b2eb85
     require asset != _baseToken; 
@@ -55,6 +61,7 @@ import "comet.spec"
     @Notes:
 
     @Link:
+
 */
 
 rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address recipient) {
@@ -86,7 +93,9 @@ rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address re
         need loop_iter=2 for this rule
 
     @Link:
+
 */
+
 rule canNot_absorb_same_account(address absorber, address account) {
     address[] accounts;
     env e;
@@ -112,8 +121,9 @@ rule canNot_absorb_same_account(address absorber, address account) {
     @Notes:
 
     @Link:
+
 */
-// V@V - After absorbtion of account, the system's reserves must not increase
+
 rule absorb_reserves_decrease(address absorber, address account) {
     address[] accounts;
     env e;
@@ -135,7 +145,7 @@ rule absorb_reserves_decrease(address absorber, address account) {
     @Rule
 
     @Description:
-        as the collateral balance increases the BorrowBase decreases
+        As the collateral balance increases the BorrowBase decreases
 
     @Formula:
         balanceAfter > balanceBefore => borrowAfter < borrowBefore
@@ -143,7 +153,9 @@ rule absorb_reserves_decrease(address absorber, address account) {
     @Notes:
 
     @Link:
+    
 */
+
 rule antiMonotonicityOfAbsorb(address absorber, address account) {
     address[] accounts;
     env e;
@@ -181,7 +193,9 @@ rule antiMonotonicityOfAbsorb(address absorber, address account) {
     @Notes:
 
     @Link:
+
 */
+
 rule canNot_double_absorb(address absorber, address account) {
     address[] accounts;
     env e;

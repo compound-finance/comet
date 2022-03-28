@@ -1,5 +1,10 @@
 import "A_setupNoSummarization.spec"
 
+////////////////////////////////////////////////////////////////////////////////
+//////////////////////////   Methods Declarations   ////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+
 methods{
     call_isInAsset(uint16, uint8) returns (bool) envfree
     call_updateAssetsIn(address, address, uint128, uint128) envfree
@@ -9,7 +14,6 @@ methods{
 /////////////////////////////////   Properties   ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
-
 //  @Complete Run: https://vaas-stg.certora.com/output/44289/e04f799f478e41c5ee2b/?anonymousKey=8dd81a5b173bc72bd7c358f861c42db9ea9ba0dd
 
 /*
@@ -35,7 +39,6 @@ methods{
 
     @Note:
         
-
     @Link:
         
 */
@@ -75,7 +78,6 @@ rule check_update_UserCollateral(address account, address asset, uint128 initial
         }
 
     @Note:
-        
 
     @Link:
         
@@ -120,7 +122,6 @@ rule update_changes_single_bit(address account, address asset, uint128 initialUs
 
     @Note:
         
-
     @Link:
         
 */

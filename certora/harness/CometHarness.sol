@@ -115,7 +115,7 @@ contract CometHarness is CometHarnessGetters {
     // many properties of accrue are proven in interestComputation.spec
     bool public accrueWasCalled;
     function accrueInternal() override internal {
-        accrueWasCalled = !accrueWasCalled;
+        accrueWasCalled = true;
      }
 
 

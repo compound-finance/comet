@@ -3,6 +3,11 @@ import "erc20.spec"
 
 using SymbolicBaseToken as _baseToken 
 
+////////////////////////////////////////////////////////////////////////////////
+//////////////////////////   Methods Declarations   ////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+
 methods{
 
     call_presentValue(int104) returns (int104) envfree;
@@ -40,15 +45,13 @@ function simplifiedAssumptions() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//////////////////////////   Interest Computations   ////////////////////////////
+/////////////////////////////////   Properties   ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
 //  @Complete Run: https://vaas-stg.certora.com/output/44289/c766fa3c420016eef7f9/?anonymousKey=743c9c59bebc55c6980346d0876de3c7348f748c
 
-
 /*
     @Rule
-        supplyIndex_borrowIndex_rise_with_time
 
     @Description: indices are increasing after accrue (when time elapse)
         baseSupplyIndex increase with time
@@ -62,6 +65,7 @@ function simplifiedAssumptions() {
     @Link:
         
 */
+
 rule supplyIndex_borrowIndex_rise_with_time(){
     env e;
     uint64 base_supply_index_1 = getBaseSupplyIndex();
@@ -77,7 +81,6 @@ rule supplyIndex_borrowIndex_rise_with_time(){
 
 /*
     @Rule
-        supplyIndex_borrowIndex_monotonic
 
     @Description: supplyIndex_borrowIndex_monotonic
         baseSupplyIndex monotonic
@@ -92,6 +95,7 @@ rule supplyIndex_borrowIndex_rise_with_time(){
     @Link:
         
 */
+
 rule supplyIndex_borrowIndex_monotonic(){
     env e;
     uint64 base_supply_index_1 = getBaseSupplyIndex();
@@ -106,7 +110,6 @@ rule supplyIndex_borrowIndex_monotonic(){
 
 /*
     @Rule
-        supplyRate_vs_utilization
 
     @Description: utilization increase implies supplyRate increase
         If the utilization is increased the supplyRate cannot decrease
@@ -119,6 +122,7 @@ rule supplyIndex_borrowIndex_monotonic(){
     @Link:
         
 */
+
 rule supplyRate_vs_utilization(){
     env e1; env e2;
     setup(e1);
@@ -134,7 +138,6 @@ rule supplyRate_vs_utilization(){
 
 /*
     @Rule
-        utilization_zero
 
     @Description:
         if borrowRate == base interest rate then utilization == 0
@@ -148,6 +151,7 @@ rule supplyRate_vs_utilization(){
     @Link:
         
 */
+
 rule utilization_zero(){
     env e;
     setup(e);
@@ -158,10 +162,9 @@ rule utilization_zero(){
 
 /*
     @Rule
-        borrowBase_vs_utilization
 
     @Description:
-        if BorrowBase == 0 utilization should equal zero
+        If BorrowBase == 0 utilization should equal zero.
         If nobody borrows from the system, the utilization must be 0.
 
     @Formula:
@@ -172,6 +175,7 @@ rule utilization_zero(){
     @Link:
         
 */
+
 rule borrowBase_vs_utilization(){
     env e;
     assert getTotalBorrowBase(e) == 0 => getUtilization(e) == 0;
@@ -179,7 +183,6 @@ rule borrowBase_vs_utilization(){
 
 /*
     @Rule
-        isLiquiditable_false_should_not_change
 
     @Description:
         Verifies that isLiquidatable == false can change to true only if getPrice() has changed for base or asset
@@ -193,6 +196,7 @@ rule borrowBase_vs_utilization(){
     @Link:
         
 */
+
 rule isLiquidatable_false_should_not_change(address account){
     env e1; env e2;
     require e2.block.timestamp > e1.block.timestamp;
@@ -213,14 +217,8 @@ rule isLiquidatable_false_should_not_change(address account){
                 priceAsset1 != priceAsset2 || priceBase1 != priceBase2 ;
 }
 
-/* 
- Description :  
-     isBorrowCollateralized => account can borrow, hence he's not Liquidatable
-*/
-// V@V - if a user is collateralized then they are not liquiditable
 /*
     @Rule
-        isCol_implies_not_isLiq
 
     @Description:
         isBorrowCollateralized => account can borrow, hence he's not Liquidatable
@@ -234,6 +232,7 @@ rule isLiquidatable_false_should_not_change(address account){
     @Link:
         
 */
+
 rule isCol_implies_not_isLiq(address account){
     env e;
     address asset;
@@ -245,7 +244,6 @@ rule isCol_implies_not_isLiq(address account){
 
 /*
     @Rule
-        supplyIndex_borrowIndex_GE_getBaseIndexScale
 
     @Description:
         Verifies that TotalBaseSupplyIndex and getBaseBorrowIndex always greater than getBaseIndexScale
@@ -255,11 +253,13 @@ rule isCol_implies_not_isLiq(address account){
         BaseBorrowIndex() >= BaseIndexScale();
 
 
-    @Notes: proved to be used in other rules.
+    @Notes: 
+        Proved to be used in other rules.
 
     @Link:
         
 */
+
 rule supplyIndex_borrowIndex_GE_getBaseIndexScale(){
     env e;
     require getBaseSupplyIndex() >= getBaseIndexScale() &&
@@ -273,7 +273,6 @@ rule supplyIndex_borrowIndex_GE_getBaseIndexScale(){
 
 /*
     @Rule
-        absolute_presentValue_GE_principal
 
     @Description:
         presentValue always greater than principalValue
@@ -281,11 +280,13 @@ rule supplyIndex_borrowIndex_GE_getBaseIndexScale(){
     @Formula:
         presentValue >= _principalValue;
 
-    @Notes: the absolute presentValue is GE to the absolut principleValue 
+    @Notes: 
+        The absolute presentValue is GE to the absolut principleValue 
 
     @Link:
         
 */
+
 rule absolute_presentValue_GE_principal(int104 presentValue){
     env e;
     setup(e);
@@ -298,7 +299,6 @@ rule absolute_presentValue_GE_principal(int104 presentValue){
 
 /*
     @Rule
-        presentValue_G_zero
 
     @Description:
         presentValue is positive iff principleValue is positive
@@ -311,6 +311,7 @@ rule absolute_presentValue_GE_principal(int104 presentValue){
     @Link:
         
 */
+
 rule presentValue_G_zero(int104 presentValue){
     env e;
     setup(e);
@@ -323,7 +324,6 @@ rule presentValue_G_zero(int104 presentValue){
 
 /*
     @Rule
-        presentValue_EQ_principal
 
     @Description:
         presentValue equal principalValue implies:
@@ -336,6 +336,7 @@ rule presentValue_G_zero(int104 presentValue){
     @Link:
         
 */
+
 rule presentValue_EQ_principal(int104 presentValue){
     env e;
    setup(e);
@@ -357,7 +358,6 @@ rule presentValue_EQ_principal(int104 presentValue){
 
 /*
     @Rule
-        utilization_zero_supplyRate_zero
 
     @Description:
         If utilization is 0, then supplyRate is 0
@@ -370,6 +370,7 @@ rule presentValue_EQ_principal(int104 presentValue){
     @Link:
         
 */
+
 rule utilization_zero_supplyRate_zero(){
     env e;
     assert getUtilization(e) == 0 => getSupplyRate(e) == 0;
@@ -378,7 +379,6 @@ rule utilization_zero_supplyRate_zero(){
 
 /*
     @Rule
-        getSupplyRate_revert_characteristic
 
     @Description:
         getSupplyRate should always revert if reserveRate > FACTOR_SCALE
@@ -391,6 +391,7 @@ rule utilization_zero_supplyRate_zero(){
     @Link:
         
 */
+
 rule getSupplyRate_revert_characteristic(){
     env e;
     getSupplyRate@withrevert(e);
@@ -401,7 +402,6 @@ rule getSupplyRate_revert_characteristic(){
 
 /*
     @Rule
-        withdraw_more_reserves
 
     @Description:
         withdrawReserves cannot end up with negative reserves
@@ -409,11 +409,13 @@ rule getSupplyRate_revert_characteristic(){
     @Formula:
         reserveRate > FACTOR_SCALE => isRevert
 
-    @Notes: Found bug - Accrue should be called prior to withdrawReserves()
+    @Notes:
+        Found bug - Accrue should be called prior to withdrawReserves()
 
     @Link:
         
 */
+
 rule withdraw_more_reserves(address to , uint amount){
     env e;
     require to != currentContract;
@@ -424,4 +426,3 @@ rule withdraw_more_reserves(address to , uint amount){
 
     assert reserves >= 0;
 }
-

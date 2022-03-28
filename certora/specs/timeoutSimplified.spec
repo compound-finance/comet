@@ -1,6 +1,10 @@
 
 
-// T@T -
+/* 
+ Description :  
+     isBorrowCollateralized => account can borrow, hence he's not Liquidatable
+*/
+// V@V - if a user is collateralized then they are not liquiditable
 rule borrow_then_collateralized(address user, address asset, method f) filtered {f -> !similarFunctions(f) && !f.isView && !f.isFallback} {
     env e;
     simplifiedAssumptions();

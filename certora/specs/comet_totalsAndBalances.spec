@@ -1,18 +1,10 @@
 import "comet.spec"    
 
-/**
- * @title Certora's Comet 
- * @notice A contract that holds summarizations and simplifications of methods and components of comet 
- * @author Certora
- */
-
-
-
-
 ////////////////////////////////////////////////////////////////////////////////
-//////////////////////////   Total Assets and Balances  ////////////////////////
+/////////////////////////////////   Properties   ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-
+//
+//  @Complete Run: 
 
 /*
     @Rule
@@ -23,8 +15,11 @@ import "comet.spec"
     @Formula : 
         sum(userCollateral[u][asset].balance) == totalsCollateral[asset].totalSupplyAsset
 
-    
-    @Link: https://vaas-stg.certora.com/output/23658/01cae74fe43232e6e6c5/?anonymousKey=9f050514a528f70e110a2a9f2dde24ffb85f39da
+    @Note:
+
+
+    @Link: 
+        https://vaas-stg.certora.com/output/23658/01cae74fe43232e6e6c5/?anonymousKey=9f050514a528f70e110a2a9f2dde24ffb85f39da
 
 */
 invariant total_collateral_per_asset(address asset) 
@@ -48,7 +43,10 @@ invariant total_collateral_per_asset(address asset)
     @Notes: 
         Safely assume that comet is not the msg.sender, this is a safe assumption since there is no call statement from Comet to itself. 
         Also assume that no address can supply from Comet, as comet does not give allowance
-    @Link: https://vaas-stg.certora.com/output/23658/01cae74fe43232e6e6c5/?anonymousKey=9f050514a528f70e110a2a9f2dde24ffb85f39da
+
+    @Link:
+        https://vaas-stg.certora.com/output/23658/01cae74fe43232e6e6c5/?anonymousKey=9f050514a528f70e110a2a9f2dde24ffb85f39da
+
 */
 
 invariant total_asset_collateral_vs_asset_balance(address asset) 
@@ -77,11 +75,14 @@ invariant total_asset_collateral_vs_asset_balance(address asset)
         baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase()
 
     @Note: This invariant does not hold on absorb.  
-     Safely assume that comet is not the msg.sender, this is a safe assumption since there is no call statement from Comet to itself. 
+        Safely assume that comet is not the msg.sender, this is a safe assumption since there is no call statement from Comet to itself. 
         Also assume that no address can supply from Comet, as comet does not give allowance
-    @Link: https://vaas-stg.certora.com/output/23658/01cae74fe43232e6e6c5/?anonymousKey=9f050514a528f70e110a2a9f2dde24ffb85f39da     
-         
+    
+    @Link: 
+        https://vaas-stg.certora.com/output/23658/01cae74fe43232e6e6c5/?anonymousKey=9f050514a528f70e110a2a9f2dde24ffb85f39da              
+
 */
+
 invariant base_balance_vs_totals()
     _baseToken.balanceOf(currentContract) >= getTotalSupplyBase() - getTotalBorrowBase()
     filtered { f-> !similarFunctions(f) && !f.isView && f.selector!=absorb(address, address[]).selector }
@@ -110,25 +111,33 @@ invariant base_balance_vs_totals()
 
     @Formula: 
         baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase()
-`
-    @Link: https://vaas-stg.certora.com/output/23658/01cae74fe43232e6e6c5/?anonymousKey=9f050514a528f70e110a2a9f2dde24ffb85f39da     
+
+    @Note:
+
+    @Link:
+        https://vaas-stg.certora.com/output/23658/01cae74fe43232e6e6c5/?anonymousKey=9f050514a528f70e110a2a9f2dde24ffb85f39da     
          
 */
+
 invariant collateral_totalSupply_LE_supplyCap(address asset)
     getTotalsSupplyAsset(asset) <= getAssetSupplyCapByAddress(asset)
-
 
 
 /*
     @Rule
 
     @Description:
-        Summary of principle balances equals the totalS
+        Summary of principle balances equals the totals
+
     @Formula: 
         sum(userBasic[u].principal) == totalsBasic.totalSupplyBase - totalsBasic.totalBorrowBase
-status:
+
+    @Note:
+
+    @Link:
 
 */
+
 invariant totalBaseToken() 
 	sumUserBasicPrinciple == to_mathint(getTotalSupplyBase()) - to_mathint(getTotalBorrowBase()) filtered { f-> !similarFunctions(f) && !f.isView }
 {
@@ -148,7 +157,9 @@ invariant totalBaseToken()
         {
              userBasic[user].principal = x
         }
-        < op >
+
+        < call to any function >
+        
         {
             userBasic[user].principal = y
             y < x => user = msg.sender || hasPermission[user][msg.sender] == true; 
@@ -158,6 +169,7 @@ invariant totalBaseToken()
         
     @Link:
         https://vaas-stg.certora.com/output/67509/8b70e8c3633a54cfc7ba?anonymousKey=d2c319cb2734c3978e15fa3833f55b19c48f8fda
+
 */
 
 rule balance_change_by_allowed_only(method f, address user)
@@ -193,15 +205,19 @@ filtered { f-> !similarFunctions(f) && !f.isView }
 
     @Formula:
         {
-             isBorrowCollateralized(e, user)
+            isBorrowCollateralized(e, user)
         }
-        < op >
+
+        < call any function >
+        
         {
             isBorrowCollateralized(e, user)
         }
 
     @Notes:
-        
+    
+    @Link: 
+    
 */
 
 rule collateralized_after_operation(address user, address asset, method f) filtered {f -> !similarFunctions(f) && !f.isView && !f.isFallback} {
