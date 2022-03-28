@@ -36,17 +36,24 @@ function simplifiedAssumptions() {
 
 /*
     @Rule
-        verify_isBorrowCollateralized
 
     @Description:
-        at a point in time where user is collateralized, no action will change its status to uncollateralized
+        At a point in time where user is collateralized, no action will change its status to uncollateralized
 
     @Formula:
-        require isBorrowCollateralized(account);
-        call any function
-        assert isBorrowCollateralized(account);
+        {
+            lastAccrualTime() == getNowInternal() &&
+            isBorrowCollateralized(account)
+        }
+        
+        < call any function >
+        
+        {
+            isBorrowCollateralized(account)
+        }
 
     @Notes:
+        
 
     @Link:
 */
@@ -63,7 +70,6 @@ rule verify_isBorrowCollateralized(address account, method f)filtered { f-> !sim
 
 /*
     @Rule
-        only_accrue_change_presentValue
 
     @Description:
         Calling to accrue is the only way to change presentValue

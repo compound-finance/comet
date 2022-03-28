@@ -1,0 +1,33 @@
+{
+    "topics": [
+        {
+            "name": "type_check",
+            "messages": [
+                {
+                    "message": "Syntax error in spec file (erc20.spec:290:9): could not type expression \"?decreaseAllowance(?e, ?spender_, ?amount)\", message: No function-like entry for decreaseAllowance was found in the symbol table. Perhaps something was misspelled?",
+                    "location": []
+                },
+                {
+                    "message": "Syntax error in spec file (erc20.spec:290:9): A FunctionIdExp should not be used as a command",
+                    "location": []
+                },
+                {
+                    "message": "Syntax error in spec file (erc20.spec:300:9): could not type expression \"?increaseAllowance(?e, ?spender_, ?amount)\", message: No function-like entry for increaseAllowance was found in the symbol table. Perhaps something was misspelled?",
+                    "location": []
+                },
+                {
+                    "message": "Syntax error in spec file (erc20.spec:300:9): A FunctionIdExp should not be used as a command",
+                    "location": []
+                },
+                {
+                    "message": "Syntax error in spec file (erc20.spec:290:9): Some ambiguous applications have not been resolved successfully",
+                    "location": []
+                },
+                {
+                    "message": "Syntax error in spec file (erc20.spec:300:9): Some ambiguous applications have not been resolved successfully",
+                    "location": []
+                }
+            ]
+        }
+    ]
+}

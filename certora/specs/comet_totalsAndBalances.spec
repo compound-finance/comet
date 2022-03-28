@@ -183,3 +183,32 @@ filtered { f-> !similarFunctions(f) && !f.isView }
         ((e.msg.sender == user) || permission);
     assert colBalanceAfter < colBalanceBefore =>  (e.msg.sender == user || permission || f.selector == absorb(address,address[]).selector) ;
 }
+
+
+/*
+    @Rule
+
+    @Description:
+        Any operation on a collateralized account leaves the account collateralized
+
+    @Formula:
+        {
+             isBorrowCollateralized(e, user)
+        }
+        < op >
+        {
+            isBorrowCollateralized(e, user)
+        }
+
+    @Notes:
+        
+*/
+
+rule collateralized_after_operation(address user, address asset, method f) filtered {f -> !similarFunctions(f) && !f.isView && !f.isFallback} {
+    env e;
+    simplifiedAssumptions();
+    require(getAssetOffsetByAsset(e,asset) == 0);
+    require(isBorrowCollateralized(e, user));
+    call_functions_with_specific_asset(f, e, asset);
+    assert isBorrowCollateralized(e, user);
+}
