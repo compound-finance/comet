@@ -1,3 +1,13 @@
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+    This file is run with scripts/verifyGovernance.sh
+
+    This file contains rules related to operations allowed by the governor
+*/
+
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////////   Methods Declarations   ////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

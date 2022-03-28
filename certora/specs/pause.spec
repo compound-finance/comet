@@ -1,3 +1,12 @@
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+    This file is run with scripts/verifyPause.sh
+
+    This file contains rules related to modeling and updating pause flags.
+*/
 import "A_setupNoSummarization.spec"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -13,8 +22,10 @@ import "A_setupNoSummarization.spec"
         pause revert only if the sender is not governor or pause guardian
 
     @Formula:
-        pause()
+        {
 
+        }
+            pause()
         {
             revert <=> (msg.sender != governor && msg.sender != pauseGuardian)
         }
@@ -53,11 +64,11 @@ rule check_flag_updates(bool supplyPaused, bool transferPaused, bool withdrawPau
             flagWithdraw_ = isWithdrawPaused() &&
             flagAbsorb_ = isAbsorbPaused() &&
             flagBuy_ = isBuyPaused() && 
-            not revert => flagSupply_ == supplyPaused && 
-            not revert => flagTransfer_ == transferPaused &&
-            not revert => flagWithdraw_ == withdrawPaused &&
-            not revert => flagAbsorb_ == absorbPaused &&
-            not revert => flagBuy_ == buyPaused
+            !revert => flagSupply_ == supplyPaused && 
+            !revert => flagTransfer_ == transferPaused &&
+            !revert => flagWithdraw_ == withdrawPaused &&
+            !revert => flagAbsorb_ == absorbPaused &&
+            !revert => flagBuy_ == buyPaused
         }
 
     @Note:

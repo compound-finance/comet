@@ -1,3 +1,13 @@
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+    This file is run with scripts/verifyUserCollateralAsset.sh
+
+    This file contains rules related to storing the collateral assets of a user.
+*/
+
 import "A_setupNoSummarization.spec"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -31,8 +41,8 @@ methods{
 
         {
             assetIn_ = getAssetinOfUser(account) &&
-            uint8 assetOffset_ = getAssetOffsetByAsset(asset) &&
-            bool flagUserAsset_ = call_isInAsset(assetIn_, assetOffset_) &&
+            assetOffset_ = getAssetOffsetByAsset(asset) &&
+            flagUserAsset_ = call_isInAsset(assetIn_, assetOffset_) &&
             (initialUserBalance == 0 && finalUserBalance > 0) => flagUserAsset_ &&
             (initialUserBalance > 0 && finalUserBalance == 0) => !flagUserAsset_
         }
@@ -43,7 +53,6 @@ methods{
         
 */
 
-//B@B - unsound
 rule check_update_UserCollateral(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance){
     uint16 _assetIn = getAssetinOfUser(account);
     call_updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);

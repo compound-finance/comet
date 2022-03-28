@@ -1,3 +1,11 @@
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+    This file is a base file included in other spec files run with summarization and simplifications. 
+*/
+
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////////   Methods Declarations   ////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -26,7 +34,8 @@ methods{
     ////////////////////////////////////////////////////////////////////////////////
     //
     // All summarized functions return their input value in order to simplify the computational complexity
-    //
+    // These summarization are under approximations, they are assuming that BaseSupplyIndex and BaseBorrowIndex are at the base index scale   
+
     getPrincipal(int104 x) returns (int104) envfree => identityInt(x);
     presentValueSupply(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
     presentValueBorrow(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
@@ -34,6 +43,7 @@ methods{
     principalValueSupply(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
     principalValueBorrow(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
 
+    // Another simplification assuming the price is always 1 
     getPrice(address priceFeed) returns (uint128) => ALWAYS(1)
 
 }
