@@ -3,8 +3,14 @@ methods {
     totalSupply()                         returns (uint256)   envfree
     balanceOf(address)                    returns (uint256)   envfree
     allowance(address,address)            returns (uint)      envfree
+    increaseAllowance(address, uint256)
+    decreaseAllowance(address, uint256)
 }
 
+// function allowanceIncDecFunctions() returns bool {
+//     return increaseAllowance(address, uint256).selector in currentContract 
+//     && decreaseAllowance(address, uint256).selector in currentContract;
+// }
 
 /*
     @Rule
