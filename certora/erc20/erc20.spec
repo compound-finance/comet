@@ -1,4 +1,19 @@
-// erc20 methods - summarization to the implementation of ERC20 contract
+/*
+    This is a specification file for the verification of ERC20s
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+*/
+
+
+////////////////////////////////////////////////////////////////////////////
+//                                Methods                                 //
+////////////////////////////////////////////////////////////////////////////
+/*
+    Declaration of methods that are used in the rules. envfree indicate that
+    the method is not dependent on the environment (msg.value, msg.sender).
+    Methods that are not declared here are assumed to be dependent on env.
+*/
 methods {
     totalSupply()                         returns (uint256)   envfree
     balanceOf(address)                    returns (uint256)   envfree
@@ -100,8 +115,8 @@ rule noFeeOnTransfer(address bob, uint256 amount) {
             transfer(to, amount)
         >
         {
-            lastreverted => to = 0 || amount > balanceOf(msg.sender)
-            !lastreverte => balanceOf(to) = balanceToBefore + amount &&
+            lastReverted => to = 0 || amount > balanceOf(msg.sender)
+            !lastReverted => balanceOf(to) = balanceToBefore + amount &&
                             balanceOf(msg.sender) = balanceFromBefore - amount
         }
 
@@ -147,7 +162,7 @@ rule transferCorrect(address to, uint256 amount) {
             balanceToBefore = balanceOf(to)
         }
         <
-            transfer(to, amount)
+            transferFrom(from, to, amount)
         >
         {
             lastreverted => to = 0 || amount > balanceOf(from)
@@ -519,5 +534,3 @@ rule OtherBalanceOnlyGoesUp(address other, method f) {
 
     assert balanceOf(other) >= balanceBefore;
 }
-
-// add documentation insde code so that it serves as a teaching example
