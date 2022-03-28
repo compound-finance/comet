@@ -13,14 +13,22 @@ import "comet.spec"
          
 
     @Formula:
-        balanceAssetAfter <= balanceAssetBefore     &&
-        balanceBaseBefore <= balanceBaseAfter       &&
-        balanceBaseBefore < balanceBaseAfter <=> balanceAssetAfter < balanceAssetBefore
+    {
+        balanceAssetBefore = tokenBalanceOf(asset, currentContract)
+        balanceBaseBefore = tokenBalanceOf(_baseToken, currentContract)
+    }
+        buyCollateral(asset, minAmount, baseAmount, recipient)
+    {
+        tokenBalanceOf(asset, currentContract) <= balanceAssetBefore        &&
+        balanceBaseBefore <= tokenBalanceOf(_baseToken, currentContract)    &&
+        balanceBaseBefore < tokenBalanceOf(_baseToken, currentContract) <=> tokenBalanceOf(asset, currentContract) < balanceAssetBefore
+    }
 
     @Notes:
 
     @Link:
-*/rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
+*/
+rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
     env e;
     // https://vaas-stg.certora.com/output/23658/b7cc8ac5bd1d3f414f2f/?anonymousKey=d47ea2a5120f88658704e5ece8bfb45d59b2eb85
     require asset != _baseToken; 
@@ -50,7 +58,14 @@ import "comet.spec"
         Can't buy more collateral than contract's collateral (max) 
 
     @Formula:
-        balanceAssetAfter >= balanceAssetBefore - max
+    {
+        max = getUserCollateralBalance(currentContract, asset)
+        balanceAssetBefore = tokenBalanceOf(asset, currentContract)
+    }
+        buyCollateral(asset, minAmount, baseAmount, recipient)
+    {
+        tokenBalanceOf(asset, currentContract) >= balanceAssetBefore - max
+    }
 
     @Notes:
 
@@ -75,12 +90,16 @@ rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address re
     @Rule
 
     @Description:
-        The same account cannot be absorbed twice
+        if the array of accounts has ywo similar ones then absorb should revert
 
     @Formula:
-        require accounts[0] == account && accounts[1] == account
-        absorb@withrevert(e, absorber, accounts);
-        assert lastReverted; 
+    {
+        accounts[0] == account && accounts[1] == account
+    }
+        absorb@withrevert(absorber, accounts)
+    {
+        lastReverted   
+    }
 
     @Notes: 
         need loop_iter=2 for this rule
@@ -107,13 +126,18 @@ rule canNot_absorb_same_account(address absorber, address account) {
         After absorbtion of account, the system's reserves must not increase
 
     @Formula:
-        Reserves_before >= Reserves_after
+    {
+        pre = getReserves()
+    }
+        obsorb()
+    {
+        getReserves() <= pre
+    }
 
     @Notes:
 
     @Link:
 */
-// V@V - After absorbtion of account, the system's reserves must not increase
 rule absorb_reserves_decrease(address absorber, address account) {
     address[] accounts;
     env e;
@@ -138,7 +162,14 @@ rule absorb_reserves_decrease(address absorber, address account) {
         as the collateral balance increases the BorrowBase decreases
 
     @Formula:
-        balanceAfter > balanceBefore => borrowAfter < borrowBefore
+    {
+        balanceBefore = getUserCollateralBalance(this, asset)
+        borrowBefore = getTotalBorrowBase()
+    }
+        absorb()
+    {
+        getUserCollateralBalance(this, asset) > balanceBefore => getTotalBorrowBase() < borrowBefore
+    }
 
     @Notes:
 
@@ -170,13 +201,16 @@ rule antiMonotonicityOfAbsorb(address absorber, address account) {
     @Rule
 
     @Description:
-        The same account cannot be absorbed after already absorbed
+        The same account cannot be absorbed repeatedly
 
     @Formula:
-            require accounts[0] == account;
-            absorb(e, absorber, accounts); //success
-            absorb@withrevert(e, absorber, accounts);
-            assert lastReverted; //last call to absorb always reverts
+    {
+        absorb(absorber, accounts); //success
+    }
+        absorb@withrevert(absorber, accounts);
+    {
+        lastReverted; //last call to absorb always reverts
+    }
 
     @Notes:
 

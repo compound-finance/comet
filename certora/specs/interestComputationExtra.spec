@@ -99,6 +99,39 @@ rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f
   assert presentValue1 == presentValue2;
 }
 
+/*
+    @Rule
+        withdraw_more_reserves
+
+    @Description:
+        withdrawReserves cannot end up with negative reserves
+
+    @Formula:
+    {
+
+    }
+        withdrawReserves(amount);
+        accrueInternal();
+    {
+        Reserves() >= 0
+    }
+
+    @Notes: Found bug - Accrue should be called prior to withdrawReserves() - FIXED
+
+    @Link:
+        
+*/
+rule withdraw_more_reserves(address to , uint amount){
+    env e;
+    require to != currentContract;
+
+    withdrawReserves(e,to, amount);
+    call_accrueInternal(e);
+
+    assert getReserves(e) >= 0;
+}
+
+
 
 rule increase_profit(){
     env e1;
@@ -113,13 +146,13 @@ rule increase_profit(){
 
     // simplifiedAssumptions();
 
-    require getUserPrincipal(e1,account1) != 0;
-    require getUserPrincipal(e1,account2) == 0;
-
     // call_accrueInternal(e1);
 
     mathint presentValue_account1_1 = to_mathint(call_presentValue(getUserPrincipal(e1,account1)));
     mathint presentValue_account2_1 = to_mathint(call_presentValue(getUserPrincipal(e1,account2)));
+
+    require presentValue_account1_1 != 0;
+    require presentValue_account2_1 == 0;
 
     withdraw(e1, _baseToken, amount);
 
@@ -129,6 +162,5 @@ rule increase_profit(){
     mathint presentValue_account1_2 = to_mathint(call_presentValue(getUserPrincipal(e2,account1)));
     mathint presentValue_account2_2 = to_mathint(call_presentValue(getUserPrincipal(e2,account2)));
 
-    assert presentValue_account1_2 - presentValue_account1_1 > presentValue_account2_2 - presentValue_account2_1;
-    // assert false;
+    assert presentValue_account1_2 - presentValue_account1_1 >= presentValue_account2_2 - presentValue_account2_1;
 }

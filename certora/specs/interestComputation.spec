@@ -399,29 +399,4 @@ rule getSupplyRate_revert_characteristic(){
     assert (reserveRate(e) > getFactorScale()) => isRevert;
 }
 
-/*
-    @Rule
-        withdraw_more_reserves
-
-    @Description:
-        withdrawReserves cannot end up with negative reserves
-
-    @Formula:
-        reserveRate > FACTOR_SCALE => isRevert
-
-    @Notes: Found bug - Accrue should be called prior to withdrawReserves()
-
-    @Link:
-        
-*/
-rule withdraw_more_reserves(address to , uint amount){
-    env e;
-    require to != currentContract;
-
-    withdrawReserves(e,to, amount);
-    call_accrueInternal(e);
-    int reserves = getReserves(e);
-
-    assert reserves >= 0;
-}
 
