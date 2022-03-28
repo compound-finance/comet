@@ -1,4 +1,12 @@
 
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+    This file is a base file included in other spec files run with summarization and simplifications. 
+*/
+
 methods{
     ////////////////////////////////////////////////////////////////////////////////
     //////////////////////////   pause summarizations   ////////////////////////////

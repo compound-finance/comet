@@ -1,5 +1,12 @@
-// Rules for CometExt.sol
+/*
+    This is a specification file for the verification of CometExt.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
 
+    This file is run with scripts/verifyCometExt.sh
+
+    This file contains rules related to allowance and approvals.
+*/
 methods {
     allowance(address, address) returns (uint256) envfree
     approve(address, uint256 )  returns (bool)
@@ -98,7 +105,7 @@ rule validAllowanceChanges(method f, address owner, address spender) {
     @Rule
 
     @Description:
-        Approve with a valid amount (0 or max_uint256) succeds
+        Approve with a valid amount (0 or max_uint256) succeeds
 
     @Formula:
         { 
@@ -108,7 +115,7 @@ rule validAllowanceChanges(method f, address owner, address spender) {
             approve(spender, amount)
         >
         {
-            lastReverted = false
+            !lastReverted
         }
 
     @Notes:

@@ -1,3 +1,12 @@
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+    This file is run with scripts/verifyPauseGuardians.sh
+
+    This file contains rules related to validity of pausing the system.
+*/
 import "B_cometSummarization.spec"
 
 
