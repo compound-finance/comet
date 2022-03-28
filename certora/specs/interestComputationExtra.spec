@@ -113,13 +113,13 @@ rule increase_profit(){
 
     // simplifiedAssumptions();
 
-    require getUserPrincipal(e1,account1) != 0;
-    require getUserPrincipal(e1,account2) == 0;
-
     // call_accrueInternal(e1);
 
     mathint presentValue_account1_1 = to_mathint(call_presentValue(getUserPrincipal(e1,account1)));
     mathint presentValue_account2_1 = to_mathint(call_presentValue(getUserPrincipal(e1,account2)));
+
+    require presentValue_account1_1 != 0;
+    require presentValue_account2_1 == 0;
 
     withdraw(e1, _baseToken, amount);
 
