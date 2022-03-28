@@ -1,9 +1,10 @@
 import "comet.spec"
 
+//  Complete Run: https://vaas-stg.certora.com/output/44289/109d5257e0229a088c11/?anonymousKey=4fe9bb16b23f2292ed7f4bea9eb83991ed3eed93
+
 
 /*
     @Rule
-        antiMonotonicityOfBuyCollateral
 
     @Description: After call to buy collateral:
         balance asset decrease      &&
@@ -43,7 +44,6 @@ import "comet.spec"
 
 /*
     @Rule
-        buyCollateralMax
 
     @Description:
         After absorb, user's collateral is added to Contract's collateral.
@@ -73,7 +73,6 @@ rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address re
 
 /*
     @Rule
-        canNot_absorb_same_account
 
     @Description:
         The same account cannot be absorbed twice
@@ -83,7 +82,8 @@ rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address re
         absorb@withrevert(e, absorber, accounts);
         assert lastReverted; 
 
-    @Notes: need loop_iter=2 for this rule
+    @Notes: 
+        need loop_iter=2 for this rule
 
     @Link:
 */
@@ -102,7 +102,6 @@ rule canNot_absorb_same_account(address absorber, address account) {
 
 /*
     @Rule
-        absorb_reserves_decrease
 
     @Description:
         After absorbtion of account, the system's reserves must not increase
@@ -134,7 +133,6 @@ rule absorb_reserves_decrease(address absorber, address account) {
 
 /*
     @Rule
-        antiMonotonicityOfAbsorb
 
     @Description:
         as the collateral balance increases the BorrowBase decreases
@@ -170,7 +168,6 @@ rule antiMonotonicityOfAbsorb(address absorber, address account) {
 
 /*
     @Rule
-        canNot_double_absorb
 
     @Description:
         The same account cannot be absorbed after already absorbed

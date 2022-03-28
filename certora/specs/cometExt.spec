@@ -10,6 +10,8 @@ function valid_allowance(uint256 amount) returns bool {
     return (amount == 0 || amount == max_uint256);
 }
 
+//  @Complete Run: https://vaas-stg.certora.com/output/44289/2b35f19f0d084f7904da/?anonymousKey=1a6da243372e7ea8f91e64b8b98cb7ca5959eb7a
+
 /*
     @Rule
 
