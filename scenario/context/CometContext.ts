@@ -82,12 +82,10 @@ export class CometContext {
     let adminSigner = await world.impersonateAddress(governorAddress);
     let pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
 
-    const cometAdminOwner = await world.impersonateAddress(await cometAdmin.owner());
-
     if (data) {
-      await wait(cometAdmin.connect(cometAdminOwner).upgradeAndCall(comet.address, newComet.address, data));
+      await wait(cometAdmin.connect(adminSigner).upgradeAndCall(comet.address, newComet.address, data));
     } else {
-      await wait(cometAdmin.connect(cometAdminOwner).upgrade(comet.address, newComet.address));
+      await wait(cometAdmin.connect(adminSigner).upgrade(comet.address, newComet.address));
     }
     this.actors['admin'] = await buildActor('admin', adminSigner, this);
     this.actors['pauseGuardian'] = await buildActor('pauseGuardian', pauseGuardianSigner, this);
