@@ -111,6 +111,10 @@ export function annualize(n: bigint | BigNumber, secondsPerYear = 31536000n): nu
   return defactor(toBigInt(n) * secondsPerYear);
 }
 
+export function toYears(seconds: number, secondsPerYear = 31536000): number {
+  return seconds / secondsPerYear;
+}
+
 export function defaultAssets(overrides = {}) {
   return {
     COMP: Object.assign({
