@@ -116,10 +116,15 @@ migration('1644388553_deploy_kovan', {
     };
   },
   enact: async (deploymentManager: DeploymentManager, contracts) => {
+    deploymentManager.putRoots(new Map(Object.entries(contracts)));
+
     console.log("You should set roots.json to:");
     console.log("");
     console.log("");
     console.log(JSON.stringify(contracts, null, 4));
     console.log("");
   },
+  enacted: async (deploymentManager: DeploymentManager) => {
+    return false; // XXX
+  }
 });

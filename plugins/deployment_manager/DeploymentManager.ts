@@ -225,6 +225,10 @@ export class DeploymentManager {
     return await this.deployBuild(buildFile, args) as C;
   }
 
+  network(): string {
+    return getNetwork(this.deployment);
+  }
+
   static fork(d: DeploymentManager): DeploymentManager {
     let copy = new DeploymentManager(d.deployment, d.hre, d.config);
     copy.cache.loadMemory(d.cache.cache);

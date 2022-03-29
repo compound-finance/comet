@@ -18,6 +18,9 @@ migration<Vars>('${timestamp}_${name}', {
   enact: async (deploymentManager: DeploymentManager, vars: Vars) => {
     
   },
+  enacted: async (deploymentManager: DeploymentManager) => {
+    return false;
+  },
 });\n`;
 }
 
