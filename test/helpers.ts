@@ -204,8 +204,6 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     await extensionDelegate.deployed();
   }
 
-  if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
-
   const CometFactory = (await ethers.getContractFactory('CometHarness')) as CometHarness__factory;
   const comet = await CometFactory.deploy({
     governor: governor.address,
@@ -241,6 +239,9 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     }, []),
   });
   await comet.deployed();
+
+  if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
+  await comet.initializeStorage();
 
   const baseTokenBalance = opts.baseTokenBalance;
   if (baseTokenBalance) {
