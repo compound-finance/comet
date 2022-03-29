@@ -3,7 +3,7 @@ import { migration } from '../../../plugins/deployment_manager/Migration';
 import { deployNetworkComet } from '../../../src/deploy/Network';
 import { exp, wait } from '../../../test/helpers';
 import { ProxyAdmin, ProxyAdmin__factory } from '../../../build/types';
-import { getConfiguration } from '../../../src/deploy/NetworkConfiguration';
+import { loadNetworkConfiguration } from '../../../src/deploy/NetworkConfiguration';
 
 let cloneNetwork = 'avalanche';
 let cloneAddr = {
@@ -18,7 +18,7 @@ migration('1644432723_deploy_fuji', {
     let [signer] = await deploymentManager.hre.ethers.getSigners();
     let signerAddress = await signer.getAddress();
 
-    const { governor } = await getConfiguration(deploymentManager.deployment, deploymentManager.hre);
+    const { governor } = await loadNetworkConfiguration("fuji");
 
     if (signerAddress !== governor) {
       throw new Error(`wrong deployer address; please deploy as governor: ${governor}`);
