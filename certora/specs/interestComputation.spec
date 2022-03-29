@@ -54,43 +54,7 @@ function setup(env e){
 //
 //  @Complete Run: https://vaas-stg.certora.com/output/44289/4bb13f119ed44ccc0b04/?anonymousKey=f69fa5e910f1279c4b7c750442aa139164bafec1
 
-/*
-    @Rule
 
-    @Description: indices are increasing after accrue (when time elapse)
-        baseSupplyIndex increase with time
-        baseBorrowIndex increase with time
-
-    @Formula:
-        {   
-            supply_index = getBaseSupplyIndex() &&
-            borrow_index = getBaseBorrowIndex() &&
-            lastUpdated = getlastAccrualTime()
-        }
-            accrueInternal();
-        { }
-            getNowInternal() > lastUpdated => getBaseSupplyIndex() > supply_index &&
-                                              getBaseBorrowIndex() > borrow_index
-    @Notes:
-
-    @Link:
-        
-*/
-
-rule supplyIndex_borrowIndex_rise_with_time(){
-    env e;
-    setup(e);
-    uint64 base_supply_index_1 = getBaseSupplyIndex();
-    uint64 base_borrow_index_1 = getBaseBorrowIndex();
-    uint40 lastUpdated = getlastAccrualTime();
-    call_accrueInternal(e);
-    uint64 base_supply_index_2 = getBaseSupplyIndex();
-    uint64 base_borrow_index_2 = getBaseBorrowIndex();
-
-    assert call_getNowInternal(e) > lastUpdated => 
-                (base_supply_index_2 > base_supply_index_1 &&
-                base_borrow_index_2 > base_borrow_index_1); 
-}
 
 /*
     @Rule
