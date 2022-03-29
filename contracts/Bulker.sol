@@ -11,11 +11,13 @@ contract Bulker {
     address public immutable baseToken;
 
     /** Actions **/
-    uint internal constant ACTION_SUPPLY_ASSET = 1;
-    uint internal constant ACTION_SUPPLY_ETH = 2;
-    uint internal constant ACTION_TRANSFER_ASSET = 3;
-    uint internal constant ACTION_WITHDRAW_ASSET = 4;
-    uint internal constant ACTION_WITHDRAW_ETH = 5;
+    enum Action {
+        SupplyAsset,
+        SupplyEth,
+        TransferAsset,
+        WithdrawAsset,
+        WithdrawEth
+    }
 
     /** Custom errors **/
     error InvalidArgument();
@@ -27,24 +29,24 @@ contract Bulker {
         baseToken = CometInterface(comet_).baseToken();
     }
 
-    function invoke(uint[] calldata actions, bytes[] calldata data) external payable {
+    function invoke(Action[] calldata actions, bytes[] calldata data) external payable {
         if (actions.length != data.length) revert InvalidArgument();
         
         for (uint i = 0; i < actions.length; ) {
-            uint action = actions[i];
-            if (action == ACTION_SUPPLY_ASSET) {
+            Action action = actions[i];
+            if (action == Action.SupplyAsset) {
                 (address to, address asset, uint amount) = abi.decode(data[i], (address, address, uint));
                 supplyTo(to, asset, amount);
-            } else if (action == ACTION_SUPPLY_ETH) {
+            } else if (action == Action.SupplyEth) {
                 (address to, uint amount) = abi.decode(data[i], (address, uint));
                 supplyEthTo(to, amount);
-            } else if (action == ACTION_TRANSFER_ASSET) {
+            } else if (action == Action.TransferAsset) {
                 (address to, address asset, uint amount) = abi.decode(data[i], (address, address, uint));
                 transferTo(to, asset, amount);
-            } else if (action == ACTION_WITHDRAW_ASSET) {
+            } else if (action == Action.WithdrawAsset) {
                 (address to, address asset, uint amount) = abi.decode(data[i], (address, address, uint));
                 withdrawTo(to, asset, amount);
-            } else if (action == ACTION_WITHDRAW_ETH) {
+            } else if (action == Action.WithdrawEth) {
                 (address to, uint amount) = abi.decode(data[i], (address, uint));
                 withdrawEthTo(to, amount);
             }
