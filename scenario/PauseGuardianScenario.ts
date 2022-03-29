@@ -83,6 +83,6 @@ scenario(
         absorbPaused: true,
         buyPaused: true,
       })
-    ).to.be.revertedWith('Unauthorized');
+    ).to.be.revertedWith("custom error 'Unauthorized()'");
   }
 );
