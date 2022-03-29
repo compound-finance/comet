@@ -1,4 +1,4 @@
-import "A_setupNoSummarization.spec"
+import "setup_noSummarization.spec"
 
 methods{
     call_isInAsset(uint16, uint8) returns (bool) envfree

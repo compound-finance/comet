@@ -1,4 +1,4 @@
-import "A_setupNoSummarization.spec"
+import "setup_noSummarization.spec"
 import "erc20.spec"
 
 using SymbolicBaseToken as _baseToken 
@@ -125,7 +125,6 @@ rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f
 
 /*
     @Rule
-        withdraw_more_reserves
 
     @Description:
         withdrawReserves cannot end up with negative reserves

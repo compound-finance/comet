@@ -3,12 +3,12 @@
     smart contract using the Certora prover. For more information,
 	visit: https://www.certora.com/
 
-    This file is run with scripts/verifyUserCollateralAsset.sh
+    This file is run with scripts/verifyUserAssetIn.sh
 
     This file contains rules related to storing the collateral assets of a user.
 */
 
-import "A_setupNoSummarization.spec"
+import "setup_noSummarization.spec"
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////////   Methods Declarations   ////////////////////////////

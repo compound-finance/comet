@@ -4,14 +4,14 @@ then
 fi
 
 certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harness/SymbolicBaseToken.sol certora/harness/SymbolicAssetTokenA.sol certora/harness/SymbolicAssetTokenB.sol certora/harness/SymbolicPriceOracleA.sol certora/harness/SymbolicPriceOracleB.sol \
-    --verify CometHarness:certora/specs/comet_totalsAndBalances.spec $RULE \
+    --verify CometHarness:certora/specs/cometAbsorbBuyCollateral.spec \
     --link CometHarness:baseToken=SymbolicBaseToken CometHarness:extensionDelegate=CometExt \
     --solc solc8.11 \
-    --staging NoRedundancyCheck \
-    --rule_sanity \
-    --disable_auto_cache_key_gen \
+    --staging \
+    $RULE \
     --send_only \
     --optimistic_loop \
-    --settings -enableEqualitySaturation=false,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \
+    --loop_iter 2 \
+    --settings -enableEqualitySaturation=false,-solver=z3,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \
     --solc_args '["--experimental-via-ir"]' \
-    --msg "CometHarness:comet_totalsAndBalances.spec 2 rules commented sanity $RULE"
+    --msg "CometHarness:cometAbsorbBuyCollateral.spec $RULE "

@@ -1,4 +1,4 @@
-import "A_setupNoSummarization.spec"
+import "setup_noSummarization.spec"
 import "erc20.spec"
 
 using SymbolicBaseToken as _baseToken 
@@ -48,7 +48,7 @@ function simplifiedAssumptions() {
 /////////////////////////////////   Properties   ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
-//  @Complete Run: https://vaas-stg.certora.com/output/44289/c766fa3c420016eef7f9/?anonymousKey=743c9c59bebc55c6980346d0876de3c7348f748c
+//  @Complete Run: https://vaas-stg.certora.com/output/44289/4bb13f119ed44ccc0b04/?anonymousKey=f69fa5e910f1279c4b7c750442aa139164bafec1
 
 /*
     @Rule

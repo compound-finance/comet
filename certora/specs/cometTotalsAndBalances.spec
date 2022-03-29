@@ -82,25 +82,25 @@ invariant total_asset_collateral_vs_asset_balance(address asset)
         https://vaas-stg.certora.com/output/23658/01cae74fe43232e6e6c5/?anonymousKey=9f050514a528f70e110a2a9f2dde24ffb85f39da
 */
 
-// invariant base_balance_vs_totals()
-//     _baseToken.balanceOf(currentContract) >= getTotalSupplyBase() - getTotalBorrowBase()
-//     filtered { f-> !similarFunctions(f) && !f.isView && f.selector!=absorb(address, address[]).selector }
-//     {
-//         preserved with (env e){
-//             simplifiedAssumptions();
-//             require e.msg.sender != currentContract;
-//         }
-//         preserved buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) with (env e) {
-//             simplifiedAssumptions();
-//             require asset != _baseToken;
-//             require recipient != currentContract;
-//         }
-//         preserved supplyFrom(address from, address dst, address asset, uint amount) with (env e) {
-//             simplifiedAssumptions();
-//             require e.msg.sender != currentContract;
-//             require from != currentContract;
-//         }
-//     }
+invariant base_balance_vs_totals()
+    _baseToken.balanceOf(currentContract) >= getTotalSupplyBase() - getTotalBorrowBase()
+    filtered { f-> !similarFunctions(f) && !f.isView && f.selector!=absorb(address, address[]).selector }
+    {
+        preserved with (env e){
+            simplifiedAssumptions();
+            require e.msg.sender != currentContract;
+        }
+        preserved buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) with (env e) {
+            simplifiedAssumptions();
+            require asset != _baseToken;
+            require recipient != currentContract;
+        }
+        preserved supplyFrom(address from, address dst, address asset, uint amount) with (env e) {
+            simplifiedAssumptions();
+            require e.msg.sender != currentContract;
+            require from != currentContract;
+        }
+    }
 
 /*
     @Rule
@@ -217,11 +217,11 @@ filtered { f-> !similarFunctions(f) && !f.isView }
     
 */
 
-// rule collateralized_after_operation(address user, address asset, method f) filtered {f -> !similarFunctions(f) && !f.isView && !f.isFallback} {
-//     env e;
-//     simplifiedAssumptions();
-//     require(getAssetOffsetByAsset(e,asset) == 0);
-//     require(isBorrowCollateralized(e, user));
-//     call_functions_with_specific_asset(f, e, asset);
-//     assert isBorrowCollateralized(e, user);
-// }
+rule collateralized_after_operation(address user, address asset, method f) filtered {f -> !similarFunctions(f) && !f.isView && !f.isFallback} {
+    env e;
+    simplifiedAssumptions();
+    require(getAssetOffsetByAsset(e,asset) == 0);
+    require(isBorrowCollateralized(e, user));
+    call_functions_with_specific_asset(f, e, asset);
+    assert isBorrowCollateralized(e, user);
+}

@@ -9,7 +9,7 @@
 
 */
 
-import "B_cometSummarization.spec"
+import "setup_cometSummarization.spec"
 import "erc20.spec"
 
 // Reference to an external contract representing the baseToken 
