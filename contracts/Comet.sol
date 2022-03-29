@@ -223,9 +223,6 @@ contract Comet is CometCore {
         (asset12_a, asset12_b) = _getPackedAsset(config.assetConfigs, 12);
         (asset13_a, asset13_b) = _getPackedAsset(config.assetConfigs, 13);
         (asset14_a, asset14_b) = _getPackedAsset(config.assetConfigs, 14);
-
-        // Initialize storage
-        initializeStorage();
     }
 
     /**
