@@ -15,9 +15,10 @@ import "erc20.spec"
 // Reference to an external contract representing the baseToken 
 using SymbolicBaseToken as _baseToken 
 
-////////////////////////////////////////////////////////////////////////////
-//                                Methods                                 //
-////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//////////////////////////   Methods Declarations   ////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
 /*
     Declaration of methods that are used in the rules. envfree indicate that
     the method is not dependent on the environment (msg.value, msg.sender).
@@ -50,95 +51,97 @@ methods {
     tokenBalanceOf(address, address) returns uint256 envfree 
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
-//////////////////////////   Simplifications   /////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-
-// A set of simplifications (under approximations) that are being applied due to the complexity fo the code
-function simplifiedAssumptions() {
-    env e;
-    require getBaseSupplyIndex(e) == getBaseIndexScale(e);
-    require getBaseBorrowIndex(e) == getBaseIndexScale(e);
-    require baseScale(e) == getFactorScale(e); 
-}
-
-// Simplification - assume scale is always 1 
-hook Sload uint64 scale assetInfoMap[KEY uint8 assetOffset].scale STORAGE {
-        require scale == 1;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////   Ghost    ////////////////////////////////////
+////////////////////////////////   Functions   /////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
 
-// Summarization of the user principle - the ghost tracks the sum of principles across all users
-ghost mathint sumUserBasicPrinciple  {
-	init_state axiom sumUserBasicPrinciple==0; 
-}
-
-// Summarization of the user collateral per asset - mapping ghost that keeps track on the sum of balances of each collateral asset
-ghost mapping(address => mathint) sumBalancePerAsset {
-    init_state axiom forall address t. sumBalancePerAsset[t]==0;
-}
-
-// A hook updating the user principle ghost on every write to storage
-hook Sstore userBasic[KEY address a].principal int104 balance
-    (int104 old_balance) STORAGE {
-  sumUserBasicPrinciple = sumUserBasicPrinciple +
-      to_mathint(balance) - to_mathint(old_balance);
-}
-
-// A hook updating an asset's total balance on every write to storage
-hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 balance (uint128 old_balance) STORAGE {
-    sumBalancePerAsset[t] = sumBalancePerAsset[t] - old_balance + balance;
-}
-
-
-// General function that calls each method on a specific asset 
-function call_functions_with_specific_asset(method f, env e, address asset) returns uint{
-    address _account; uint amount; address account_; uint minAmount;
-    address[] accounts_array;
-	if (f.selector == supply(address, uint).selector) {
-        supply(e, asset, amount);
-	} else if (f.selector == supplyTo(address, address, uint).selector) {
-        supplyTo(e, account_, asset, amount);
-	} else if  (f.selector == supplyFrom(address, address, address, uint).selector) {
-        supplyFrom(e, _account, account_, asset, amount);
-	} else if (f.selector == transferAsset(address, address, uint).selector) {
-        transferAsset(e, account_, asset, amount);
-	} else if (f.selector == transferAssetFrom(address, address, address, uint).selector) {
-        transferAssetFrom(e, _account, account_, asset, amount);
-	} else if (f.selector == withdraw(address, uint).selector) {
-        withdraw(e, asset, amount);
-	} else if (f.selector == withdrawTo(address, address, uint).selector) {
-        withdrawTo(e, account_, asset, amount);
-	} else if (f.selector == withdrawFrom(address, address, address, uint).selector) {
-        withdrawFrom(e, _account, account_, asset, amount);
-	} else if (f.selector == absorb(address, address[]).selector) {
-        absorb(e, _account, accounts_array);
-	} else if (f.selector == buyCollateral(address, uint, uint, address).selector) {
-        buyCollateral(e, asset, minAmount, amount, account_);
-	} else if (f.selector == quoteCollateral(address, uint).selector) {
-        uint price = quoteCollateral(e, asset, amount);
-        return price;
-	} else if (f.selector == withdrawReserves(address, uint).selector) {
-        withdrawReserves(e, account_, amount);
-	} else {
-        calldataarg args;
-        f(e, args);
+    // General function that calls each method on a specific asset 
+    function call_functions_with_specific_asset(method f, env e, address asset) returns uint{
+        address _account; uint amount; address account_; uint minAmount;
+        address[] accounts_array;
+        if (f.selector == supply(address, uint).selector) {
+            supply(e, asset, amount);
+        } else if (f.selector == supplyTo(address, address, uint).selector) {
+            supplyTo(e, account_, asset, amount);
+        } else if  (f.selector == supplyFrom(address, address, address, uint).selector) {
+            supplyFrom(e, _account, account_, asset, amount);
+        } else if (f.selector == transferAsset(address, address, uint).selector) {
+            transferAsset(e, account_, asset, amount);
+        } else if (f.selector == transferAssetFrom(address, address, address, uint).selector) {
+            transferAssetFrom(e, _account, account_, asset, amount);
+        } else if (f.selector == withdraw(address, uint).selector) {
+            withdraw(e, asset, amount);
+        } else if (f.selector == withdrawTo(address, address, uint).selector) {
+            withdrawTo(e, account_, asset, amount);
+        } else if (f.selector == withdrawFrom(address, address, address, uint).selector) {
+            withdrawFrom(e, _account, account_, asset, amount);
+        } else if (f.selector == absorb(address, address[]).selector) {
+            absorb(e, _account, accounts_array);
+        } else if (f.selector == buyCollateral(address, uint, uint, address).selector) {
+            buyCollateral(e, asset, minAmount, amount, account_);
+        } else if (f.selector == quoteCollateral(address, uint).selector) {
+            uint price = quoteCollateral(e, asset, amount);
+            return price;
+        } else if (f.selector == withdrawReserves(address, uint).selector) {
+            withdrawReserves(e, account_, amount);
+        } else {
+            calldataarg args;
+            f(e, args);
+        }
+        return 1;
     }
-    return 1;
+
+    ////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////   Simplifications   /////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    //
+
+    // A set of simplifications (under approximations) that are being applied due to the complexity fo the code
+    function simplifiedAssumptions() {
+        env e;
+        require getBaseSupplyIndex(e) == getBaseIndexScale(e);
+        require getBaseBorrowIndex(e) == getBaseIndexScale(e);
+        require baseScale(e) == getFactorScale(e); 
 }
+
+    // Simplification - assume scale is always 1 
+    hook Sload uint64 scale assetInfoMap[KEY uint8 assetOffset].scale STORAGE {
+            require scale == 1;
+    }
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////   Ghosts and Hooks    /////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+
+    // Summarization of the user principle - the ghost tracks the sum of principles across all users
+    ghost mathint sumUserBasicPrinciple  {
+        init_state axiom sumUserBasicPrinciple==0; 
+    }
+
+    // Summarization of the user collateral per asset - mapping ghost that keeps track on the sum of balances of each collateral asset
+    ghost mapping(address => mathint) sumBalancePerAsset {
+        init_state axiom forall address t. sumBalancePerAsset[t]==0;
+    }
+
+    // A hook updating the user principle ghost on every write to storage
+    hook Sstore userBasic[KEY address a].principal int104 balance
+        (int104 old_balance) STORAGE {
+    sumUserBasicPrinciple = sumUserBasicPrinciple +
+        to_mathint(balance) - to_mathint(old_balance);
+    }
+
+    // A hook updating an asset's total balance on every write to storage
+    hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 balance (uint128 old_balance) STORAGE {
+        sumBalancePerAsset[t] = sumBalancePerAsset[t] - old_balance + balance;
+    }
 
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////   Properties   ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
-//  @Complete Run: https://vaas-stg.certora.com/output/44289/391e54914a3c1c4f4423/?anonymousKey=cdd4209075451b47d41e75b7eae89b164a27d4f4
-
+//  @Complete Run: https://vaas-stg.certora.com/output/44289/e5184dec7b12603ad7ee/?anonymousKey=eab0c5abd7d9ac5a24c1355b03e5492461d31057
 
 /*
     @Rule
@@ -281,9 +284,6 @@ rule usage_registered_assets_only(address asset, method f) filtered { f -> !simi
     assert registered; //if the function passed it must be registered 
  }
 
- 
-
-
  /*
     @Rule
 
@@ -314,6 +314,7 @@ rule usage_registered_assets_only(address asset, method f) filtered { f -> !simi
     @Link:
         
 */
+
 rule verify_transferAsset(){
     env e;
 
@@ -340,8 +341,6 @@ rule verify_transferAsset(){
     assert presentValue_src1 + presentValue_dst1 == presentValue_src2 + presentValue_dst2;
     assert collateral_src2 + collateral_dst2 == collateral_src2 + collateral_dst2;
 }
-
-
 
 /*
     @Rule

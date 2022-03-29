@@ -10,9 +10,9 @@ import "comet.spec"
     @Rule
 
     @Description: After call to buy collateral:
-        balance asset decrease      &&
+        balance collateral decrease      &&
         balance Base increase       &&
-        balance Base increase IFF balance asset decrease
+        balance Base increase IFF balance collateral decrease
          
 
     @Formula:
@@ -20,7 +20,9 @@ import "comet.spec"
         balanceAssetBefore = tokenBalanceOf(asset, currentContract)
         balanceBaseBefore = tokenBalanceOf(_baseToken, currentContract)
     }
-        buyCollateral(asset, minAmount, baseAmount, recipient)
+    
+    buyCollateral(asset, minAmount, baseAmount, recipient)
+    
     {
         tokenBalanceOf(asset, currentContract) <= balanceAssetBefore        &&
         balanceBaseBefore <= tokenBalanceOf(_baseToken, currentContract)    &&
@@ -38,7 +40,7 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
     // https://vaas-stg.certora.com/output/23658/b7cc8ac5bd1d3f414f2f/?anonymousKey=d47ea2a5120f88658704e5ece8bfb45d59b2eb85
     require asset != _baseToken; 
     // if minAmount is not given, one can get zero ?
-    //https://vaas-stg.certora.com/output/23658/d48bc0a10849dc638048/?anonymousKey=4162738a94af8200c99d01c633d0eb025fedeaf4
+    // https://vaas-stg.certora.com/output/23658/d48bc0a10849dc638048/?anonymousKey=4162738a94af8200c99d01c633d0eb025fedeaf4
     require minAmount > 0 ; 
     
     require e.msg.sender != currentContract;
@@ -67,7 +69,9 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
         max = getUserCollateralBalance(currentContract, asset)
         balanceAssetBefore = tokenBalanceOf(asset, currentContract)
     }
-        buyCollateral(asset, minAmount, baseAmount, recipient)
+    
+    buyCollateral(asset, minAmount, baseAmount, recipient)
+    
     {
         tokenBalanceOf(asset, currentContract) >= balanceAssetBefore - max
     }
@@ -137,7 +141,9 @@ rule canNot_absorb_same_account(address absorber, address account) {
     {
         pre = getReserves()
     }
-        obsorb()
+
+    obsorb()
+    
     {
         getReserves() <= pre
     }
@@ -176,7 +182,9 @@ rule absorb_reserves_decrease(address absorber, address account) {
         balanceBefore = getUserCollateralBalance(this, asset)
         borrowBefore = getTotalBorrowBase()
     }
-        absorb()
+    
+    absorb()
+    
     {
         getUserCollateralBalance(this, asset) > balanceBefore => getTotalBorrowBase() < borrowBefore
     }
@@ -219,7 +227,9 @@ rule antiMonotonicityOfAbsorb(address absorber, address account) {
     {
         absorb(absorber, accounts); //success
     }
-        absorb@withrevert(absorber, accounts);
+    
+    absorb@withrevert(absorber, accounts);
+    
     {
         lastReverted; //last call to absorb always reverts
     }

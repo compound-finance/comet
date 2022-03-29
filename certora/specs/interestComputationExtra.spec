@@ -3,6 +3,11 @@ import "erc20.spec"
 
 using SymbolicBaseToken as _baseToken 
 
+////////////////////////////////////////////////////////////////////////////////
+//////////////////////////   Methods Declarations   ////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+
 methods{
 
     call_presentValue(int104) returns (int104) envfree;
@@ -21,6 +26,11 @@ methods{
     get_FACTOR_SCALE() returns (uint64) envfree
 }
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////   Functions   /////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+
 // BaseSupplyIndex and BaseBorrowIndex are monotonically increasing variables
 // proved in supplyIndex_borrowIndex_GE_getBaseIndexScale.
 function setup(env e){
@@ -33,6 +43,12 @@ function simplifiedAssumptions() {
     require getBaseSupplyIndex() == getBaseIndexScale();
     require getBaseBorrowIndex() == getBaseIndexScale();
 }
+
+////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////   Properties   ///////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+//  @Complete Run: 
 
 /*
     @Rule
@@ -54,15 +70,15 @@ function simplifiedAssumptions() {
 
     @Notes:
         
-
     @Link:
+
 */
+
 rule verify_isBorrowCollateralized(address account, method f)filtered { f-> !similarFunctions(f) && !f.isView }{
     env e; calldataarg args;
     simplifiedAssumptions();
-
     require getlastAccrualTime() == call_getNowInternal(e);
-
+    
     require isBorrowCollateralized(e,account);
     f(e,args) ;
     assert isBorrowCollateralized(e,account);
@@ -75,28 +91,36 @@ rule verify_isBorrowCollateralized(address account, method f)filtered { f-> !sim
         Calling to accrue is the only way to change presentValue
 
     @Formula:
-        presentValue1 = presentValue(principal)
-        call any function
-        presentValue2 = presentValue(principal)
-        assert presentValue1 == presentValue2
+        {
+            getlastAccrualTime() == call_getNowInternal() &&
+            presentValue1 = presentValue(principal)
+        }
+
+        < call any function >
+        
+        {
+            presentValue2 = presentValue(principal)
+            presentValue1 == presentValue2
+        }
 
     @Notes:
 
     @Link:
         
 */
+
 rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
     env e; calldataarg args;
     simplifiedAssumptions();  
 
     require getlastAccrualTime() == call_getNowInternal(e); // don't call accrue
 
-  int104 principal;
-  int104 presentValue1 = call_presentValue(principal);
-        f(e,args);
-  int104 presentValue2 = call_presentValue(principal);
-  
-  assert presentValue1 == presentValue2;
+    int104 principal;
+    int104 presentValue1 = call_presentValue(principal);
+    f(e,args);
+    int104 presentValue2 = call_presentValue(principal);
+    
+    assert presentValue1 == presentValue2;
 }
 
 /*
@@ -110,13 +134,16 @@ rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f
     {
 
     }
-        withdrawReserves(amount);
-        accrueInternal();
+
+    withdrawReserves(amount);
+    accrueInternal();
+    
     {
         Reserves() >= 0
     }
 
-    @Notes: Found bug - Accrue should be called prior to withdrawReserves() - FIXED
+    @Notes: 
+        Found bug - Accrue should be called prior to withdrawReserves() - FIXED
 
     @Link:
         
@@ -130,7 +157,6 @@ rule withdraw_more_reserves(address to , uint amount){
 
     assert getReserves(e) >= 0;
 }
-
 
 
 rule increase_profit(){

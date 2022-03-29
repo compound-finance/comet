@@ -7,8 +7,11 @@ certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harne
     --verify CometHarness:certora/specs/comet_totalsAndBalances.spec $RULE \
     --link CometHarness:baseToken=SymbolicBaseToken CometHarness:extensionDelegate=CometExt \
     --solc solc8.11 \
-    --staging \
+    --staging NoRedundancyCheck \
+    --rule_sanity \
+    --disable_auto_cache_key_gen \
+    --send_only \
     --optimistic_loop \
     --settings -enableEqualitySaturation=false,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \
     --solc_args '["--experimental-via-ir"]' \
-    --msg "CometHarness:comet_totalsAndBalances.spec $RULE"
+    --msg "CometHarness:comet_totalsAndBalances.spec 2 rules commented sanity $RULE"
