@@ -78,6 +78,9 @@ export class CometContext {
 
     // Set the admin and pause guardian addresses again since these may have changed.
     let governorAddress = await comet.governor(); // TODO: is this newComet?
+
+    console.log(`upgradeTo governorAddress: ${governorAddress}`);
+
     let pauseGuardianAddress = await comet.pauseGuardian();
     let adminSigner = await world.impersonateAddress(governorAddress);
     let pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
@@ -227,6 +230,7 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   let adminSigner, pauseGuardianSigner;
 
   let governorAddress = await comet.governor();
+  console.log(`getInitialContext governorAddress: ${governorAddress}`);
   let pauseGuardianAddress = await comet.pauseGuardian();
   adminSigner = await world.impersonateAddress(governorAddress);
   pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
