@@ -20,12 +20,15 @@ Owed interest accrues to open borrows of the base asset. Borrower interest accru
 
 ### Get Supply Rate
 
-This method returns the current supply rate APY as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the supply rate is:
+This method returns the current supply rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the supply rate is:
 
 ```
 ## If the Utilization is currently less than or equal to the Kink parameter
+
 SupplyRate = (InterestRateBase + InterestRateSlopeLow * Utilization) * Utilization * (1 - ReserveRate)
+
 ## Else
+
 SupplyRate = (InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeHigh * (Utilization - Kink)) * Utilization * (1 - ReserveRate)
 ```
 
@@ -35,7 +38,7 @@ SupplyRate = (InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlope
 function getSupplyRate() returns (uint)
 ```
 
-* `RETURNS`: The current APY as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 25% APY.
+* `RETURNS`: The current APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 25% APR.
 
 #### Solidity
 
@@ -64,8 +67,11 @@ This method returns the current borrow rate APR as the decimal representation of
 
 ```
 ## If the Utilization is currently less than or equal to the Kink parameter
+
 BorrowRate = InterestRateBase + InterestRateSlopeLow * Utilization
+
 ## Else
+
 BorrowRate = InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeHigh * (Utilization - Kink)
 ```
 
@@ -113,7 +119,9 @@ Balance=PrincipalBaseBorrowIndexNow [Principal<0]
 
 ### Supply
 
-The supply function transfers an asset to the protocol and adds it to the account's balance. This method can be used to **supply collateral, supply the base asset, or repay an open borrow** of the base asset. If the base asset is supplied resulting in the account having a balance greater than zero, the base asset earns interest based on the current supply rate.
+The supply function transfers an asset to the protocol and adds it to the account's balance. This method can be used to **supply collateral, supply the base asset, or repay an open borrow** of the base asset.
+
+If the base asset is supplied resulting in the account having a balance greater than zero, the base asset earns interest based on the current supply rate. Collateral assets that are supplied do not earn interest.
 
 There are three separate methods to supply an asset to Compound III. The first is on behalf of the caller, the second is to a separate account, and the third is for a manager on behalf of an account.
 
@@ -160,7 +168,7 @@ await comet.supply(usdcAddress, 1000000);
 
 #### Withdraw
 
-The withdraw method is used to **withdraw collateral** that is not currently supporting an open borrow. Withdraw is **also used to borrow the base asset** from the protocol if there is sufficient collateral for the account. It can also be called from an allowed manager address. To check an account's present ability to increase its borrow size, see the *Borrow Collateralization* function.
+The withdraw method is used to **withdraw collateral** that is not currently supporting an open borrow. Withdraw is **also used to borrow the base asset** from the protocol if there is sufficient collateral for the account. It can also be called from an allowed manager address. To check an account's present ability to increase its borrow size, see the *[Get Borrow Liquidity](#get-borrow-liquidity)* function.
 
 The borrow collateral factors are percentages which represent the USD value of a supplied collateral that can be borrowed in the base asset. If the borrow collateral factor for WBTC is 85%, an account can borrow up to 85% of the USD value of its supplied WBTC in the base asset. Collateral factors can be fetched using the *[Get Asset Info](#get-asset-info)* function.
 
@@ -209,7 +217,7 @@ await comet.withdraw(usdcAddress, 100000000);
 
 ### Get Borrow Liquidity
 
-This function returns the amount of base asset that is presently borrowable by an account as an integer scaled up by `10 ^ 8`. If the returned value is negative, the account is not allowed to borrow any more from the protocol until more collateral is supplied or there is repayment such that the account's borrow liquidity becomes positive. A negative borrow liquidity does not necessarily imply that the account is presently liquidatable (see [isLiquidatable](#liquidatable-accounts) function).
+This function returns the amount of base asset that is presently borrowable by an account as an integer scaled up by `10 ^ 8`. If the returned value is negative, the account is not allowed to borrow any more from the protocol until more collateral is supplied or there is repayment such that the account's borrow liquidity becomes positive. A negative borrow liquidity does not necessarily imply that the account is presently liquidatable (see *[isLiquidatable](#liquidatable-accounts)* function).
 
 #### Compound III
 
@@ -243,7 +251,7 @@ const borrowLiquidity = await comet.callStatic.getBorrowLiquidity('0xAccount');
 
 ### Borrow Collateralization
 
-This function returns true if the account passed to it has non-negative liquidity based on the borrow collateral factors. This function returns false if an account does not have sufficient liquidity to increase its borrow position. A return value of false does not necessarily imply that the account is presently liquidatable (see [isLiquidatable](#liquidatable-accounts) function).
+This function returns true if the account passed to it has non-negative liquidity based on the borrow collateral factors. This function returns false if an account does not have sufficient liquidity to increase its borrow position. A return value of false does not necessarily imply that the account is presently liquidatable (see *[isLiquidatable](#liquidatable-accounts)* function).
 
 #### Compound III
 
@@ -281,11 +289,11 @@ Compound III borrowers need to consider the *borrow collateral factors* and the 
 
 The liquidation collateral factors are strictly greater than the borrow collateral factors. If a borrower violates the liquidation collateral factor requirements, their account is subject to liquidation. Examples of instances where this occurs are described below.
 
-Collateral factors are stored as integers that represent decimal values scaled up by `10 ^ 18` in the Compound III smart contract. For example, a value of `950000000000000000` represents a 95% collateral factor. Borrow and liquidation collateral factors can be fetched using the *[Get Asset Info](#get-asset-info)* function.
+Collateral factors are stored as integers that represent decimal values scaled up by `10 ^ 18` in the Comet smart contract. For example, a value of `950000000000000000` represents a 95% collateral factor. Borrow and liquidation collateral factors can be fetched using the *[Get Asset Info](#get-asset-info)* function.
 
 An account is subject to liquidation if its borrowed amount exceeds the limits set by the liquidation collateral factors. The three instances where this can occur are when borrower interest owed accrues beyond the limit, when the USD value of the collateral drops below supporting the open borrow, or when the USD value of the borrowed asset increases too much. If an underwater account violates the borrow collateral factors, but does not violate the liquidation collateral factors, it is not yet subject to liquidation.
 
-Liquidation is the absorption of an underwater account into the protocol, triggered by the [Absorb](#absorb) function. The protocol seizes all of the account's collateral and repays its open borrow. The protocol can then attempt to sell some or all of the collateral to recover any reserves that covered liquidation. If any excess collateral is seized, the protocol will pay the excess back to the account in the base asset.
+Liquidation is the absorption of an underwater account into the protocol, triggered by the *[absorb](#absorb)* function. The protocol seizes all of the account's collateral and repays its open borrow. The protocol can then attempt to sell some or all of the collateral to recover any reserves that covered liquidation. If any excess collateral is seized, the protocol will pay the excess back to the account in the base asset.
 
 Any address can call the Absorb function. The caller has the amount of gas spent noted. In the future, they could be compensated via governance.
 
@@ -367,7 +375,7 @@ await comet.absorb('0xUnderwaterAddress');
 
 This function allows any account to buy collateral from the protocol, at a discount from the Price Feed's price, using base tokens. A minimum collateral amount should be specified to indicate the maximum slippage acceptable for the buyer.
 
-This function can be used after an account has been liquidated and there is collateral available to be purchased. Doing so increases protocol reserves. The amount of collateral available can be found by calling `comet.collateralBalanceOf(cometAddress, assetAddress)`. The price of the collateral can be determined by using the [quoteCollateral](#ask-price) function.
+This function can be used after an account has been liquidated and there is collateral available to be purchased. Doing so increases protocol reserves. The amount of collateral available can be found by calling the *[Collateral Balance](#collateral-balance)* function. The price of the collateral can be determined by using the *[quoteCollateral](#ask-price)* function.
 
 #### Compound III
 
@@ -442,7 +450,6 @@ const reserves = await comet.callStatic.getReserves();
 ### Ask Price
 
 In order to repay the borrows of absorbed accounts, the protocol needs to sell the seized collateral. The *Ask Price* is the price of the asset to be sold with a fixed discount (configured by governance). This function uses the price returned by the protocol's price feed.
-[Insert formula for the Ask Price]
 
 #### Compound III
 
@@ -514,7 +521,7 @@ const [ numAbsorbs, numAbsorbed, approxSpend ] = await comet.callStatic.liquidat
 
 ## Account Management
 
-In addition to self-management, Compound III accounts can enable other addresses to have write permissions for their account. Account managers can supply collateral, withdraw collateral, or transfer collateral within the protocol on behalf of another account. This is possible only after an account has enabled permissions by using the Allow function.
+In addition to self-management, Compound III accounts can enable other addresses to have write permissions for their account. Account managers can withdraw or transfer collateral within the protocol on behalf of another account. This is possible only after an account has enabled permissions by using the *[allow](#allow)* function.
 
 ### Allow
 
@@ -1012,7 +1019,7 @@ const price = await comet.callStatic.getPrice(usdcAddress);
 
 ## Governance
 
-Compound III is a decentralized protocol that is governed by holders of COMP. Governance allows the community to propose, vote, and implement changes through the administrative functions of the Compound III protocol contract. For more information on the [governance](https://compound.finance/docs/governance) system see the governance section.
+Compound III is a decentralized protocol that is governed by holders and delegates of COMP. Governance allows the community to propose, vote, and implement changes through the administrative smart contract functions of the Compound III protocol. For more information on the [governance](https://compound.finance/docs/governance) system see the governance section.
 
 ### Withdraw Reserves
 
