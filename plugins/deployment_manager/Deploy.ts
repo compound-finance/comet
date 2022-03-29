@@ -85,6 +85,9 @@ export async function deploy<
   hre: HardhatRuntimeEnvironment,
   deployOpts: DeployOpts = {}
 ): Promise<C> {
+
+  hre.ethers.utils.Logger.setLogLevel(hre.ethers.utils.Logger.levels.OFF);
+
   let contractFileName = contractFile.split('/').reverse()[0];
   let contractName = contractFileName.replace('.sol', '');
   let factory = (await hre.ethers.getContractFactory(contractName)) as unknown as Factory;

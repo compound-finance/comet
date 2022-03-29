@@ -233,6 +233,8 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   adminSigner = await world.impersonateAddress(governorAddress);
   pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
 
+  const scottSigner = await world.impersonateAddress("0xA192D95D542878a8704420A1b09a8d0f5464b063");
+
   context.actors = {
     admin: await buildActor('admin', adminSigner, context),
     pauseGuardian: await buildActor('pauseGuardian', pauseGuardianSigner, context),
@@ -240,6 +242,7 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
     betty: await buildActor('betty', bettySigner, context),
     charles: await buildActor('charles', charlesSigner, context),
     signer: await buildActor('signer', localAdminSigner, context),
+    scott: await buildActor('scott', scottSigner, context)
   };
 
   await context.setAssets();
