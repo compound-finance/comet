@@ -1,7 +1,7 @@
 {
   "symbol": "📈USDC",
-  "governor": "0xdd940fc821853799eaf27e9eb0a420ed3bcdc3ef",
-  "pauseGuardian": "0xdd940fc821853799eaf27e9eb0a420ed3bcdc3ef",
+  "governor": "0xA192D95D542878a8704420A1b09a8d0f5464b063",
+  "pauseGuardian": "0xA192D95D542878a8704420A1b09a8d0f5464b063",
   "baseToken": "USDC",
   "baseTokenPriceFeed": "0x7898AcCC83587C3C55116c5230C17a6Cd9C71bad",
   "reserveRate": 0.1,

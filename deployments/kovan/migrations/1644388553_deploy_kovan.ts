@@ -1,9 +1,9 @@
 import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../plugins/deployment_manager/Migration';
 import { deployNetworkComet } from '../../../src/deploy/Network';
-import { DeployedContracts } from '../../../src/deploy/index';
 import { exp, wait } from '../../../test/helpers';
 import { ProxyAdmin, ProxyAdmin__factory } from '../../../build/types';
+import { getConfiguration } from '../../../src/deploy/NetworkConfiguration';
 
 let cloneNetwork = 'mainnet';
 let cloneAddr = {
@@ -20,6 +20,12 @@ migration('1644388553_deploy_kovan', {
   prepare: async (deploymentManager: DeploymentManager) => {
     let [signer] = await deploymentManager.hre.ethers.getSigners();
     let signerAddress = await signer.getAddress();
+
+    const { governor } = await getConfiguration(deploymentManager.deployment, deploymentManager.hre);
+
+    if (signerAddress !== governor) {
+      throw new Error(`wrong deployer address; please deploy as governor: ${governor}`);
+    }
 
     let usdcProxyAdminArgs: [] = [];
     let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
