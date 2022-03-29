@@ -263,7 +263,7 @@ rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) &
 
     @Formula:
         {
-            registered = getAssetInfoByAddress(asset).asset == asset &&
+            registered = getAssetInfoByAddress(asset).asset == asset 
         }
 
         < call any function with a specific asset >
