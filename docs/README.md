@@ -168,7 +168,7 @@ const comet = new ethers.Contract(contractAddress, abiJson, provider);
 await comet.supply(usdcAddress, 1000000);
 ```
 
-#### Withdraw
+### Withdraw
 
 The withdraw method is used to **withdraw collateral** that is not currently supporting an open borrow. Withdraw is **also used to borrow the base asset** from the protocol if there is sufficient collateral for the account. It can also be called from an allowed manager address. To check an account's present ability to increase its borrow size, see the *[Get Borrow Liquidity](#get-borrow-liquidity)* function.
 
@@ -203,7 +203,7 @@ Comet comet = Comet(0xCometAddress);
 comet.withdraw(0xwbtcAddress, 100000000);
 ```
 
-### Web3.js v1.5.x
+#### Web3.js v1.5.x
 
 ```js
 const comet = new web3.eth.Contract(abiJson, contractAddress);
