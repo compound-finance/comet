@@ -104,7 +104,7 @@ migration('1644388553_deploy_kovan', {
       ['LINK', link],
     ]);
 
-    if (signerAddress !== governor) {
+    if (signerAddress.toLowerCase() !== governor.toLowerCase()) {
       for (const [contractName, contract] of contracts) {
         const signerBalance = await contract.balanceOf(signerAddress);
         console.log(`transferring ${signerBalance} ${contractName} to governor`);

@@ -80,7 +80,7 @@ migration('1644432723_deploy_fuji', {
       ['WAVAX', wavax],
     ]);
 
-    if (signerAddress !== governor) {
+    if (signerAddress.toLowerCase() !== governor.toLowerCase()) {
       for (const [contractName, contract] of contracts) {
         const signerBalance = await contract.balanceOf(signerAddress);
         console.log(`transferring ${signerBalance} ${contractName} to governor`);
