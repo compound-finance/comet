@@ -1,3 +1,15 @@
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+    This file is run with scripts/verifyCometWithdrawAndSupply.sh
+    On a version with summarization ans some simplifications: 
+    CometHarness.sol and setup_cometSummarization.spec
+
+    This files contains rules related to withdraw and supply functions 
+
+*/
 import "comet.spec"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -20,7 +32,7 @@ import "comet.spec"
     withdrawReserves(to,amount)
     
     {
-        before > getReserves()
+        amount > 0 => getReserves() < before 
     }
 
     @Notes:
