@@ -82,14 +82,11 @@ migration('1644432723_deploy_fuji', {
 
     if (signerAddress !== governor) {
       for (const [contractName, contract] of contracts) {
-        console.log(`transferring ${await contract.balanceOf(signerAddress)} ${contractName} to governor`);
+        const signerBalance = await contract.balanceOf(signerAddress);
+        console.log(`transferring ${signerBalance} ${contractName} to governor`);
 
-        await contract.connect(signer).transfer(
-          governor,
-          await contract.balanceOf(signerAddress)
-        );
-
-        console.log(`transfer complete; ${contractName}.balanceOf(governor): ${await contract.balanceOf(governor)}`);
+        await wait(contract.connect(signer).transfer(governor, signerBalance));
+        console.log(`transfer complete (${contractName}.balanceOf(governor): ${await contract.balanceOf(governor)})`);
       }
     }
 
