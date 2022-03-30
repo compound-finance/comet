@@ -1,4 +1,4 @@
-import { BytesLike, Signer, Contract } from 'ethers';
+import { BytesLike, Signer, Contract, utils } from 'ethers';
 import { ForkSpec, World, buildScenarioFn } from '../../plugins/scenario';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
@@ -14,7 +14,7 @@ import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { deployComet } from '../../src/deploy';
 import { wait } from '../../test/helpers';
-import { Comet, CometInterface, ProxyAdmin, ERC20, ERC20__factory } from '../../build/types';
+import { Comet, CometInterface, ProxyAdmin, ERC20, ERC20__factory, Configurator, Timelock, CometProxyAdmin } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
@@ -29,7 +29,9 @@ export interface CometProperties {
   assets: AssetMap;
   remoteToken?: Contract;
   comet: CometInterface;
+  configurator: Configurator;
   proxyAdmin: ProxyAdmin;
+  timelock: Timelock;
 }
 
 export class CometContext {
@@ -72,9 +74,19 @@ export class CometContext {
     return await this.deploymentManager.contract('cometAdmin') as ProxyAdmin;
   }
 
+  async getConfigurator(): Promise<Configurator> {
+    return await this.deploymentManager.contract('configurator') as Configurator;
+  }
+
+  async getTimelock(): Promise<Timelock> {
+    return await this.deploymentManager.contract('timelock') as Timelock;
+
+  }
+
   async upgradeTo(newComet: Comet, world: World, data?: string) {
     let comet = await this.getComet();
-    let cometAdmin = await this.getCometAdmin();
+    let proxyAdmin = await this.getCometAdmin();
+    let timelock = await this.getTimelock();
 
     // Set the admin and pause guardian addresses again since these may have changed.
     let governorAddress = await comet.governor(); // TODO: is this newComet?
@@ -83,9 +95,21 @@ export class CometContext {
     let pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
 
     if (data) {
-      await wait(cometAdmin.connect(adminSigner).upgradeAndCall(comet.address, newComet.address, data));
+      let calldata = utils.defaultAbiCoder.encode(["address", "address", "bytes"], [comet.address, newComet.address,data]);
+      await timelock.execute(
+        [proxyAdmin.address],
+        [0],
+        ["upgradeAndCall(address,address,bytes)"],
+        [calldata]
+      );
     } else {
-      await wait(cometAdmin.connect(adminSigner).upgrade(comet.address, newComet.address));
+      let calldata = utils.defaultAbiCoder.encode(["address", "address"], [comet.address, newComet.address]);
+      await timelock.execute(
+        [proxyAdmin.address],
+        [0],
+        ["upgrade(address,address)"],
+        [calldata]
+      );
     }
     this.actors['admin'] = await buildActor('admin', adminSigner, this);
     this.actors['pauseGuardian'] = await buildActor('pauseGuardian', pauseGuardianSigner, this);
@@ -183,7 +207,9 @@ async function getContextProperties(context: CometContext): Promise<CometPropert
     assets: context.assets,
     remoteToken: context.remoteToken,
     comet: await context.getComet(),
+    configurator: await context.getConfigurator(),
     proxyAdmin: await context.getCometAdmin(),
+    timelock: await context.getTimelock(),
   }
 }
 

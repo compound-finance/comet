@@ -71,6 +71,7 @@ scenario(
     pause: {
       all: false,
     },
+    upgrade: true,
   },
   async ({ comet, actors }) => {
     const { albert } = actors;

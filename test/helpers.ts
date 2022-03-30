@@ -15,6 +15,16 @@ import {
   FaucetToken__factory,
   SimplePriceFeed,
   SimplePriceFeed__factory,
+  TransparentUpgradeableProxy,
+  TransparentUpgradeableProxy__factory,
+  TransparentUpgradeableConfiguratorProxy,
+  TransparentUpgradeableConfiguratorProxy__factory,
+  CometProxyAdmin,
+  CometProxyAdmin__factory,
+  CometFactory,
+  CometFactory__factory,
+  Configurator,
+  Configurator__factory,
 } from '../build/types';
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
@@ -82,6 +92,20 @@ export type Protocol = {
     [symbol: string]: SimplePriceFeed;
   };
 };
+
+export type ConfiguratorAndProtocol = {
+  governor: SignerWithAddress,
+  configurator: Configurator,
+  configuratorProxy: TransparentUpgradeableConfiguratorProxy,
+  proxyAdmin: CometProxyAdmin,
+  cometFactory: CometFactory,
+  comet: Comet,
+  cometProxy: TransparentUpgradeableProxy,
+  tokens: {
+    [symbol: string]: FaucetToken;
+  },
+  users: SignerWithAddress[]
+}
 
 export function dfn<T>(x: T | undefined | null, dflt: T): T {
   return x == undefined ? dflt : x;
@@ -261,6 +285,124 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     tokens,
     unsupportedToken,
     priceFeeds,
+  };
+}
+
+// Only for testing configurator. Non-configurator tests need to deploy the CometHarness instead.
+export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<ConfiguratorAndProtocol> {
+  const signers = await ethers.getSigners();
+
+  const assets = opts.assets || defaultAssets();
+  let priceFeeds = {};
+  for (const asset in assets) {
+    const PriceFeedFactory = (await ethers.getContractFactory(
+      'SimplePriceFeed'
+    )) as SimplePriceFeed__factory;
+    const initialPrice = exp(assets[asset].initialPrice || 1, 8);
+    const priceFeedDecimals = assets[asset].priceFeedDecimals || 8;
+    const priceFeed = await PriceFeedFactory.deploy(initialPrice, priceFeedDecimals);
+    await priceFeed.deployed();
+    priceFeeds[asset] = priceFeed;
+  }
+
+  const governor = opts.governor || signers[0];
+  const pauseGuardian = opts.pauseGuardian || signers[1];
+  const users = signers.slice(2); // guaranteed to not be governor or pause guardian
+  const base = opts.base || 'USDC';
+  const reward = opts.reward || 'COMP';
+  const kink = dfn(opts.kink, exp(0.8, 18));
+  const perYearInterestRateBase = dfn(opts.interestRateBase, exp(0.005, 18));
+  const perYearInterestRateSlopeLow = dfn(opts.interestRateSlopeLow, exp(0.1, 18));
+  const perYearInterestRateSlopeHigh = dfn(opts.interestRateSlopeHigh, exp(3, 18));
+  const reserveRate = dfn(opts.reserveRate, exp(0.1, 18));
+  const storeFrontPriceFactor = dfn(opts.storeFrontPriceFactor, exp(0.97, 18));
+  const trackingIndexScale = opts.trackingIndexScale || exp(1, 15);
+  const baseTrackingSupplySpeed = dfn(opts.baseTrackingSupplySpeed, trackingIndexScale);
+  const baseTrackingBorrowSpeed = dfn(opts.baseTrackingBorrowSpeed, trackingIndexScale);
+  const baseMinForRewards = dfn(opts.baseMinForRewards, exp(1, assets[base].decimals));
+  const baseBorrowMin = dfn(opts.baseBorrowMin, exp(1, assets[base].decimals));
+  const targetReserves = dfn(opts.targetReserves, 0);
+
+  const { tokens, comet, extensionDelegate } = await makeProtocol(opts);
+
+  if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
+
+  // Deploy CometFactory
+  const CometFactoryFactory = (await ethers.getContractFactory('CometFactory')) as CometFactory__factory;
+  const cometFactory = await CometFactoryFactory.deploy();
+  await cometFactory.deployed();
+
+  // Deploy Configurator
+  const ConfiguratorFactory = (await ethers.getContractFactory('Configurator')) as Configurator__factory;
+  const configurator = await ConfiguratorFactory.deploy();
+  await configurator.deployed();
+  const configuration = {
+    governor: governor.address,
+    pauseGuardian: pauseGuardian.address,
+    extensionDelegate: extensionDelegate.address,
+    baseToken: tokens[base].address,
+    baseTokenPriceFeed: priceFeeds[base].address,
+    kink,
+    perYearInterestRateBase,
+    perYearInterestRateSlopeLow,
+    perYearInterestRateSlopeHigh,
+    reserveRate,
+    storeFrontPriceFactor,
+    trackingIndexScale,
+    baseTrackingSupplySpeed,
+    baseTrackingBorrowSpeed,
+    baseMinForRewards,
+    baseBorrowMin,
+    targetReserves,
+    assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], i) => {
+      if (symbol != base) {
+        acc.push({
+          asset: tokens[symbol].address,
+          priceFeed: priceFeeds[symbol].address,
+          decimals: dfn(assets[symbol].decimals, 18),
+          borrowCollateralFactor: dfn(config.borrowCF, ONE - 1n),
+          liquidateCollateralFactor: dfn(config.liquidateCF, ONE),
+          liquidationFactor: dfn(config.liquidationFactor, ONE),
+          supplyCap: dfn(config.supplyCap, exp(100, dfn(config.decimals, 18))),
+        });
+      }
+      return acc;
+    }, []),
+  };
+
+  // Deploy ProxyAdmin
+  const ProxyAdmin = (await ethers.getContractFactory('CometProxyAdmin')) as CometProxyAdmin__factory;
+  const proxyAdmin = await ProxyAdmin.connect(governor).deploy();
+  await proxyAdmin.deployed();
+
+  // Deploy Configurator proxy
+  const ConfiguratorProxy = (await ethers.getContractFactory('TransparentUpgradeableConfiguratorProxy')) as TransparentUpgradeableConfiguratorProxy__factory;
+  const configuratorProxy = await ConfiguratorProxy.deploy(
+    configurator.address,
+    proxyAdmin.address,
+    (await configurator.populateTransaction.initialize(governor.address, cometFactory.address, configuration)).data,
+  );
+  await configuratorProxy.deployed();
+
+  // Deploy Comet proxy
+  const CometProxy = (await ethers.getContractFactory('TransparentUpgradeableProxy')) as TransparentUpgradeableProxy__factory;
+  const cometProxy = await CometProxy.deploy(
+    comet.address,
+    proxyAdmin.address,
+    (await comet.populateTransaction.initializeStorage()).data,
+  );
+  await configuratorProxy.deployed();
+
+  return {
+    governor,
+    proxyAdmin,
+    comet,
+    cometProxy,
+    configurator,
+    configuratorProxy,
+    cometFactory,
+    tokens,
+    users
   };
 }
 
