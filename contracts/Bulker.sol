@@ -67,35 +67,30 @@ contract Bulker {
     }
 
     function transferTo(address to, address asset, uint amount) internal {
-        if (amount == type(uint256).max) {
-            amount = getMaxAmount(asset);
-        }
+        amount = getAmount(weth, amount);
         CometInterface(comet).transferAssetFrom(msg.sender, to, asset, amount);
     }
 
     function withdrawTo(address to, address asset, uint amount) internal {
-        if (amount == type(uint256).max) {
-            amount = getMaxAmount(weth);
-        }
+        amount = getAmount(weth, amount);
         CometInterface(comet).withdrawFrom(msg.sender, to, asset, amount);
     }
 
     function withdrawEthTo(address to, uint amount) internal {
-        if (amount == type(uint256).max) {
-            amount = getMaxAmount(weth);
-        }
+        amount = getAmount(weth, amount);
         CometInterface(comet).withdrawFrom(msg.sender, address(this), weth, amount);
         IWETH9(weth).withdraw(amount);
         (bool success, ) = to.call{ value: amount }("");
         if (!success) revert FailedToSendEther();
     }
 
-    function getMaxAmount(address asset) internal view returns (uint) {
-        uint amount;
-        if (asset == baseToken) {
-            amount = CometInterface(comet).balanceOf(msg.sender);
-        } else {
-            amount = CometInterface(comet).collateralBalanceOf(msg.sender, asset);
+    function getAmount(address asset, uint amount) internal view returns (uint) {
+        if (amount == type(uint256).max) {
+            if (asset == baseToken) {
+                amount = CometInterface(comet).balanceOf(msg.sender);
+            } else {
+                amount = CometInterface(comet).collateralBalanceOf(msg.sender, asset);
+            }
         }
         return amount;
     }
