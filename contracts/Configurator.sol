@@ -43,6 +43,7 @@ contract Configurator is ConfiguratorStorage {
     }
 
     // XXX What about removing an asset?
+    // XXX Should we check MAX_ASSETS here as well?
     /// @dev only callable by admin
     function addAsset(AssetConfig calldata asset) external {
         if (msg.sender != admin) revert Unauthorized();
