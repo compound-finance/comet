@@ -1,3 +1,17 @@
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+    This file is run with scripts/verifyCometAbsorbBuyCollateral.sh
+    On a version with summarization ans some simplifications: 
+    CometHarness.sol and setup_cometSummarization.spec
+
+    This file contains properties regarding the two function related to liquidation:
+    absorb and buyCollateral 
+
+*/
+
 import "comet.spec"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -26,7 +40,7 @@ import "comet.spec"
     {
         tokenBalanceOf(asset, currentContract) <= balanceAssetBefore        &&
         balanceBaseBefore <= tokenBalanceOf(_baseToken, currentContract)    &&
-        balanceBaseBefore < tokenBalanceOf(_baseToken, currentContract) <=> tokenBalanceOf(asset, currentContract) < balanceAssetBefore
+        ( balanceBaseBefore < tokenBalanceOf(_baseToken, currentContract) <=> tokenBalanceOf(asset, currentContract) < balanceAssetBefore )
     }
 
     @Notes:
@@ -37,10 +51,7 @@ import "comet.spec"
 
 rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
     env e;
-    // https://vaas-stg.certora.com/output/23658/b7cc8ac5bd1d3f414f2f/?anonymousKey=d47ea2a5120f88658704e5ece8bfb45d59b2eb85
     require asset != _baseToken; 
-    // if minAmount is not given, one can get zero ?
-    // https://vaas-stg.certora.com/output/23658/d48bc0a10849dc638048/?anonymousKey=4162738a94af8200c99d01c633d0eb025fedeaf4
     require minAmount > 0 ; 
     
     require e.msg.sender != currentContract;
@@ -160,7 +171,6 @@ rule absorb_reserves_decrease(address absorber, address account) {
     simplifiedAssumptions();
 
     require accounts[0] == account;
-    require absorber != account; // might be redundant
     require accounts.length == 1;
 
     int pre = getReserves();
@@ -175,7 +185,7 @@ rule absorb_reserves_decrease(address absorber, address account) {
     @Rule
 
     @Description:
-        As the collateral balance increases the BorrowBase decreases
+        on absorb, as the collateral balance increases the total BorrowBase decreases
 
     @Formula:
     {
@@ -245,7 +255,6 @@ rule canNot_double_absorb(address absorber, address account) {
     env e;
 
     require accounts[0] == account;
-    require absorber != account; // might be redundant
     require accounts.length == 1;
 
     absorb(e, absorber, accounts);
