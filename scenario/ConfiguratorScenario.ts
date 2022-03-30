@@ -76,7 +76,13 @@ scenario('add assets', {}, async ({ comet, configurator, proxyAdmin, timelock, a
   expect(updatedCollateralAssets.map(a => a.asset)).to.have.members(updatedContextAssets);
 });
 
-scenario('reverts if configurator is not called by admin', {}, async ({ comet, configurator, proxyAdmin, actors }, world) => {
+// XXX Hardhat currently can't parse custom errors from external contracts. We can use `upgrade: true` and 
+// have an option for the ModernConstraint to also re-deploy proxies.
+// https://github.com/NomicFoundation/hardhat/issues/1618
+scenario.skip(
+  'reverts if configurator is not called by admin', 
+  {}, 
+  async ({ comet, configurator, proxyAdmin, actors }, world) => {
   const { albert } = actors;
 
   await expect(configurator.connect(albert.signer).setGovernor(albert.address)).to.be.revertedWith(

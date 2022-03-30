@@ -310,11 +310,12 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   const users = signers.slice(2); // guaranteed to not be governor or pause guardian
   const base = opts.base || 'USDC';
   const reward = opts.reward || 'COMP';
-  const kink = dfn(opts.kink, exp(8, 17)); // 0.8
-  const perYearInterestRateBase = dfn(opts.interestRateBase, exp(5, 15)); // 0.005
-  const perYearInterestRateSlopeLow = dfn(opts.interestRateSlopeLow, exp(1, 17)); // 0.1
-  const perYearInterestRateSlopeHigh = dfn(opts.interestRateSlopeHigh, exp(3, 18)); // 3.0
-  const reserveRate = dfn(opts.reserveRate, exp(1, 17)); // 0.1
+  const kink = dfn(opts.kink, exp(0.8, 18));
+  const perYearInterestRateBase = dfn(opts.interestRateBase, exp(0.005, 18));
+  const perYearInterestRateSlopeLow = dfn(opts.interestRateSlopeLow, exp(0.1, 18));
+  const perYearInterestRateSlopeHigh = dfn(opts.interestRateSlopeHigh, exp(3, 18));
+  const reserveRate = dfn(opts.reserveRate, exp(0.1, 18));
+  const storeFrontPriceFactor = dfn(opts.storeFrontPriceFactor, exp(0.97, 18));
   const trackingIndexScale = opts.trackingIndexScale || exp(1, 15);
   const baseTrackingSupplySpeed = dfn(opts.baseTrackingSupplySpeed, trackingIndexScale);
   const baseTrackingBorrowSpeed = dfn(opts.baseTrackingBorrowSpeed, trackingIndexScale);
@@ -346,6 +347,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     perYearInterestRateSlopeLow,
     perYearInterestRateSlopeHigh,
     reserveRate,
+    storeFrontPriceFactor,
     trackingIndexScale,
     baseTrackingSupplySpeed,
     baseTrackingBorrowSpeed,

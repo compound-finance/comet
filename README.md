@@ -58,7 +58,7 @@ An example deployment command looks like:
 
 Third-party contracts (e.g. OZ proxies) live under `contracts/vendor`.
 
-Third-party contracts that have been modified slightly for Comet's use case live under `contracts/vendored`. There are currently two such contracts:
+There are currently two Comet-related contracts that extend directly from the vendor contracts. The contracts are:
 
 1. **TransparentUpgradeableConfiguratorProxy**: This contract extends OZ's `TransparentUpgradeableProxy`. We override the `_beforeFallback` function so that the proxy's admin can directly call the implementation. We only need this feature for the Configurator's proxy.
 2. **CometProxyAdmin**: This contract extends OZ's `ProxyAdmin`. We created a new function called `deployAndUpgradeTo`, which calls `Configurator.deploy()` and upgrades Comet proxy's implementation to this newly deployed Comet contract. This function is needed so we can pass the address of the new Comet to the `Proxy.upgrade()` call in one transaction.

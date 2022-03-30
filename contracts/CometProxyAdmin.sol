@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity ^0.8.11;
 
-import "../vendor/proxy/ProxyAdmin.sol";
+import "./vendor/proxy/transparent/ProxyAdmin.sol";
 
 interface Deployable {
   function deploy() external returns (address);

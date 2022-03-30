@@ -58,7 +58,6 @@ contract Configurator is ConfiguratorStorage {
     /// @dev callable by anyone
     function deploy() external returns (address) {
         address newComet = CometFactory(factory).clone(configuratorParams);
-        // cometImpl = newComet;
         emit CometDeployed(newComet);
         return newComet;
     }
