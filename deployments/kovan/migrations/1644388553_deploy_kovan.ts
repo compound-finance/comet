@@ -4,6 +4,7 @@ import { deployNetworkComet } from '../../../src/deploy/Network';
 import { exp, wait } from '../../../test/helpers';
 import { ProxyAdmin, ProxyAdmin__factory } from '../../../build/types';
 import { loadNetworkConfiguration } from '../../../src/deploy/NetworkConfiguration';
+import { Contract } from 'ethers';
 
 let cloneNetwork = 'mainnet';
 let cloneAddr = {
@@ -20,12 +21,7 @@ migration('1644388553_deploy_kovan', {
   prepare: async (deploymentManager: DeploymentManager) => {
     let [signer] = await deploymentManager.hre.ethers.getSigners();
     let signerAddress = await signer.getAddress();
-
     const { governor } = await loadNetworkConfiguration("kovan");
-
-    if (signerAddress !== governor) {
-      throw new Error(`wrong deployer address; please deploy as governor: ${governor}`);
-    }
 
     let usdcProxyAdminArgs: [] = [];
     let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
@@ -99,7 +95,7 @@ migration('1644388553_deploy_kovan', {
     );
 
     // Contracts referenced in `configuration.json`.
-    let contracts = new Map([
+    let contracts = new Map<string, Contract>([
       ['USDC', usdc],
       ['WBTC', wbtc],
       ['WETH', weth],
@@ -107,6 +103,19 @@ migration('1644388553_deploy_kovan', {
       ['UNI', uni],
       ['LINK', link],
     ]);
+
+    if (signerAddress !== governor) {
+      for (const [contractName, contract] of contracts) {
+        console.log(`transferring ${await contract.balanceOf(signerAddress)} ${contractName} to governor`);
+
+        await contract.connect(signer).transfer(
+          governor,
+          await contract.balanceOf(signerAddress)
+        );
+
+        console.log(`transfer complete; ${contractName}.balanceOf(governor): ${await contract.balanceOf(governor)}`);
+      }
+    }
 
     let { cometProxy, configuratorProxy } = await deployNetworkComet(deploymentManager, true, {}, contracts);
 
