@@ -2,7 +2,9 @@
 
 ## Introduction
 
-Compound III is a protocol on Ethereum which enables supplying of crypto assets as collateral in order to borrow the *base asset*, which is USDC. Accounts can also earn interest by supplying the base asset to the protocol. The codebase is [open-source](https://github.com/compound-finance/compound-v3), and maintained by the community.
+Compound III is an EVM compatible protcol that enables supplying of crypto assets as collateral in order to borrow the *base asset*. Accounts can also earn interest by supplying the base asset to the protocol. The codebase is [open-source](https://github.com/compound-finance/compound-v3), and maintained by the community.
+
+The initial deployment of Compound III is on Ethereum and the base asset is USDC.
 
 The [v3.compound.finance](https://v3.compound.finance) interface is [open-source](https://github.com/compound-finance/palisade), deployed to IPFS, and is maintained by the community.
 
