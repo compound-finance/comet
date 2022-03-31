@@ -11,13 +11,11 @@ contract Bulker {
     address public immutable baseToken;
 
     /** Actions **/
-    enum Action {
-        SupplyAsset,
-        SupplyEth,
-        TransferAsset,
-        WithdrawAsset,
-        WithdrawEth
-    }
+    uint public constant ACTION_SUPPLY_ASSET = 1;
+    uint public constant ACTION_SUPPLY_ETH = 2;
+    uint public constant ACTION_TRANSFER_ASSET = 3;
+    uint public constant ACTION_WITHDRAW_ASSET = 4;
+    uint public constant ACTION_WITHDRAW_ETH = 5;
 
     /** Custom errors **/
     error InvalidArgument();
@@ -29,24 +27,29 @@ contract Bulker {
         baseToken = CometInterface(comet_).baseToken();
     }
 
-    function invoke(Action[] calldata actions, bytes[] calldata data) external payable {
+    /**
+     * @notice Fallback for receiving ether. Needed for ACTION_WITHDRAW_ETH.
+     */
+    receive() external payable {}
+
+    function invoke(uint[] calldata actions, bytes[] calldata data) external payable {
         if (actions.length != data.length) revert InvalidArgument();
         
         for (uint i = 0; i < actions.length; ) {
-            Action action = actions[i];
-            if (action == Action.SupplyAsset) {
+            uint action = actions[i];
+            if (action == ACTION_SUPPLY_ASSET) {
                 (address to, address asset, uint amount) = abi.decode(data[i], (address, address, uint));
                 supplyTo(to, asset, amount);
-            } else if (action == Action.SupplyEth) {
+            } else if (action == ACTION_SUPPLY_ETH) {
                 (address to, uint amount) = abi.decode(data[i], (address, uint));
                 supplyEthTo(to, amount);
-            } else if (action == Action.TransferAsset) {
+            } else if (action == ACTION_TRANSFER_ASSET) {
                 (address to, address asset, uint amount) = abi.decode(data[i], (address, address, uint));
                 transferTo(to, asset, amount);
-            } else if (action == Action.WithdrawAsset) {
+            } else if (action == ACTION_WITHDRAW_ASSET) {
                 (address to, address asset, uint amount) = abi.decode(data[i], (address, address, uint));
                 withdrawTo(to, asset, amount);
-            } else if (action == Action.WithdrawEth) {
+            } else if (action == ACTION_WITHDRAW_ETH) {
                 (address to, uint amount) = abi.decode(data[i], (address, uint));
                 withdrawEthTo(to, amount);
             }
@@ -59,10 +62,9 @@ contract Bulker {
         CometInterface(comet).supplyFrom(msg.sender, to, asset, amount);
     }
 
-    // XXX test that amount > msg.value fails
-    // XXX test that multiple supplyEthTo with 2 x amount > msg.value fails. Also test that 2 x amount <= msg.value passes
     function supplyEthTo(address to, uint amount) internal {
         IWETH9(weth).deposit{ value: amount }();
+        IWETH9(weth).approve(comet, amount);
         CometInterface(comet).supplyFrom(address(this), to, weth, amount);
     }
 
@@ -85,7 +87,7 @@ contract Bulker {
     }
 
     /**
-     * @dev Handles the max transfer/withdraw case so that no dust is left in the protocol.
+     * @notice Handles the max transfer/withdraw case so that no dust is left in the protocol.
      */
     function getAmount(address asset, uint amount) internal view returns (uint) {
         if (amount == type(uint256).max) {
