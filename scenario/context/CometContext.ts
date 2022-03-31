@@ -95,7 +95,7 @@ export class CometContext {
     let pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
 
     if (data) {
-      let calldata = utils.defaultAbiCoder.encode(["address", "address", "bytes"], [comet.address, newComet.address,data]);
+      let calldata = utils.defaultAbiCoder.encode(["address", "address", "bytes"], [comet.address, newComet.address, data]);
       await timelock.execute(
         [proxyAdmin.address],
         [0],

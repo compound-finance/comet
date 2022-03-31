@@ -115,7 +115,7 @@ const config: HardhatUserConfig = {
       gasPrice: 'auto',
       blockGasLimit: 12000000,
       accounts: {
-        mnemonic: 'myth like bonus scare over problem client lizard pioneer submit female collect',
+        mnemonic: MNEMONIC || 'myth like bonus scare over problem client lizard pioneer submit female collect',
       },
       // this should be default commented out and only enabled during dev to allow partial testing
       // XXX comment out by default once we've made the full contract fit

@@ -152,7 +152,7 @@ export async function hasNetworkConfiguration(network: string): Promise<boolean>
   return await fileExists(configurationFile);
 }
 
-async function loadNetworkConfiguration(network: string): Promise<NetworkConfiguration> {
+export async function loadNetworkConfiguration(network: string): Promise<NetworkConfiguration> {
   let configurationFile = getNetworkConfigurationFilePath(network);
   let configurationJson = await fs.readFile(configurationFile, 'utf8');
   return JSON.parse(configurationJson) as NetworkConfiguration;
