@@ -20,7 +20,7 @@ contract CometHarness is CometHarnessGetters {
 /////////////////////////   global collateral asset   //////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
-    // Safe summarization of assetInfo according to properties proven in globalCollateralAsset.spec
+    // Safe summarization of assetInfo according to properties proven in assetInfo.spec
     // under the assumption that the constructor is called with unique assets 
 
     // Summarization of the assetConfigs array into maps that save:
@@ -115,7 +115,7 @@ contract CometHarness is CometHarnessGetters {
     // many properties of accrue are proven in interestComputation.spec
     bool public accrueWasCalled;
     function accrueInternal() override internal {
-        accrueWasCalled = !accrueWasCalled;
+        accrueWasCalled = true;
      }
 
 

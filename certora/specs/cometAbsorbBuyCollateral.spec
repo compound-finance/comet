@@ -1,15 +1,32 @@
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+    This file is run with scripts/verifyCometAbsorbBuyCollateral.sh
+    On a version with summarization ans some simplifications: 
+    CometHarness.sol and setup_cometSummarization.spec
+
+    This file contains properties regarding the two function related to liquidation:
+    absorb and buyCollateral 
+
+*/
+
 import "comet.spec"
 
+////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////   Properties   ///////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
 //  Complete Run: https://vaas-stg.certora.com/output/44289/109d5257e0229a088c11/?anonymousKey=4fe9bb16b23f2292ed7f4bea9eb83991ed3eed93
-
 
 /*
     @Rule
 
     @Description: After call to buy collateral:
-        balance asset decrease      &&
+        balance collateral decrease      &&
         balance Base increase       &&
-        balance Base increase IFF balance asset decrease
+        balance Base increase IFF balance collateral decrease
          
 
     @Formula:
@@ -17,23 +34,24 @@ import "comet.spec"
         balanceAssetBefore = tokenBalanceOf(asset, currentContract)
         balanceBaseBefore = tokenBalanceOf(_baseToken, currentContract)
     }
-        buyCollateral(asset, minAmount, baseAmount, recipient)
+    
+    buyCollateral(asset, minAmount, baseAmount, recipient)
+    
     {
         tokenBalanceOf(asset, currentContract) <= balanceAssetBefore        &&
         balanceBaseBefore <= tokenBalanceOf(_baseToken, currentContract)    &&
-        balanceBaseBefore < tokenBalanceOf(_baseToken, currentContract) <=> tokenBalanceOf(asset, currentContract) < balanceAssetBefore
+        ( balanceBaseBefore < tokenBalanceOf(_baseToken, currentContract) <=> tokenBalanceOf(asset, currentContract) < balanceAssetBefore )
     }
 
     @Notes:
 
     @Link:
+
 */
+
 rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
     env e;
-    // https://vaas-stg.certora.com/output/23658/b7cc8ac5bd1d3f414f2f/?anonymousKey=d47ea2a5120f88658704e5ece8bfb45d59b2eb85
     require asset != _baseToken; 
-    // if minAmount is not given, one can get zero ?
-    //https://vaas-stg.certora.com/output/23658/d48bc0a10849dc638048/?anonymousKey=4162738a94af8200c99d01c633d0eb025fedeaf4
     require minAmount > 0 ; 
     
     require e.msg.sender != currentContract;
@@ -62,7 +80,9 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
         max = getUserCollateralBalance(currentContract, asset)
         balanceAssetBefore = tokenBalanceOf(asset, currentContract)
     }
-        buyCollateral(asset, minAmount, baseAmount, recipient)
+    
+    buyCollateral(asset, minAmount, baseAmount, recipient)
+    
     {
         tokenBalanceOf(asset, currentContract) >= balanceAssetBefore - max
     }
@@ -70,6 +90,7 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
     @Notes:
 
     @Link:
+
 */
 
 rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address recipient) {
@@ -105,7 +126,9 @@ rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address re
         need loop_iter=2 for this rule
 
     @Link:
+
 */
+
 rule canNot_absorb_same_account(address absorber, address account) {
     address[] accounts;
     env e;
@@ -129,7 +152,9 @@ rule canNot_absorb_same_account(address absorber, address account) {
     {
         pre = getReserves()
     }
-        obsorb()
+
+    obsorb()
+    
     {
         getReserves() <= pre
     }
@@ -137,14 +162,15 @@ rule canNot_absorb_same_account(address absorber, address account) {
     @Notes:
 
     @Link:
+
 */
+
 rule absorb_reserves_decrease(address absorber, address account) {
     address[] accounts;
     env e;
     simplifiedAssumptions();
 
     require accounts[0] == account;
-    require absorber != account; // might be redundant
     require accounts.length == 1;
 
     int pre = getReserves();
@@ -159,14 +185,16 @@ rule absorb_reserves_decrease(address absorber, address account) {
     @Rule
 
     @Description:
-        as the collateral balance increases the BorrowBase decreases
+        on absorb, as the collateral balance increases the total BorrowBase decreases
 
     @Formula:
     {
         balanceBefore = getUserCollateralBalance(this, asset)
         borrowBefore = getTotalBorrowBase()
     }
-        absorb()
+    
+    absorb()
+    
     {
         getUserCollateralBalance(this, asset) > balanceBefore => getTotalBorrowBase() < borrowBefore
     }
@@ -174,7 +202,9 @@ rule absorb_reserves_decrease(address absorber, address account) {
     @Notes:
 
     @Link:
+    
 */
+
 rule antiMonotonicityOfAbsorb(address absorber, address account) {
     address[] accounts;
     env e;
@@ -207,7 +237,9 @@ rule antiMonotonicityOfAbsorb(address absorber, address account) {
     {
         absorb(absorber, accounts); //success
     }
-        absorb@withrevert(absorber, accounts);
+    
+    absorb@withrevert(absorber, accounts);
+    
     {
         lastReverted; //last call to absorb always reverts
     }
@@ -215,13 +247,14 @@ rule antiMonotonicityOfAbsorb(address absorber, address account) {
     @Notes:
 
     @Link:
+
 */
+
 rule canNot_double_absorb(address absorber, address account) {
     address[] accounts;
     env e;
 
     require accounts[0] == account;
-    require absorber != account; // might be redundant
     require accounts.length == 1;
 
     absorb(e, absorber, accounts);

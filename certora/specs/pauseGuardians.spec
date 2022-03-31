@@ -1,11 +1,18 @@
-import "B_cometSummarization.spec"
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
 
+    This file is run with scripts/verifyPauseGuardians.sh
+
+    This file contains rules related to validity of pausing the system.
+*/
+import "setup_cometSummarization.spec"
 
 ////////////////////////////////////////////////////////////////////////////////
-//////////////////////////   pauseGuard Integrity   ////////////////////////////
+/////////////////////////////////   Properties   ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
-
 //  @Complete Run: https://vaas-stg.certora.com/output/44289/fd7593841f1bfb3f09ed/?anonymousKey=b1106e54098acbe885e603a65e61e777425d4cbf
 
 /*
@@ -166,7 +173,6 @@ rule check_pauseWithdraw_functionality(method f, env e) filtered {f -> all_publi
 
     @Notes:
 
-
     @Link:
         https://vaas-stg.certora.com/output/44289/c814d6d628223a274101/?anonymousKey=caf7b0c67138f130be7bc804ce41985da2e7e4f8
 */
@@ -207,7 +213,6 @@ rule check_pauseAbsorb_functionality(method f, env e) filtered {f -> all_public_
         }
 
     @Note:
-
 
     @Link:
         https://vaas-stg.certora.com/output/44289/5404a5c669fcf693ad06/?anonymousKey=27a47ff7f88d83cd7861c85bf676e6f947c6d5c4

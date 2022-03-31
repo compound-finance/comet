@@ -4,7 +4,7 @@ do
     file=$(basename $f)
     echo ${file%.*}
     certoraRun certora/harness/$file \
-    --verify ${file%.*}:certora/specs/Z_sanity.spec "$@" \
+    --verify ${file%.*}:certora/specs/sanity.spec "$@" \
     --solc solc8.11 --staging \
     --send_only \
     --msg "checking sanity on ${file%.*}"

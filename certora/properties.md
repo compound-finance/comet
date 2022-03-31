@@ -90,7 +90,7 @@ Symbols:
 4. `borrowBase_vs_utilization` - 
 5. `utilization_zero` - 
 6. `isLiquiditable_false_should_not_change` - 
-7. `presentValue_GE_principle` - 
+7. `presentValue_GE_principal` - 
 8. `presentValue_G_zero` - 
 9. `presentValue_EQ_principal` - 
 10. `supplyRate_vs_utilization` - 
@@ -217,16 +217,16 @@ p4 := reserveRate(e) > 0
 
 ## Properties regarding variable evolution
 
-1. `presentValue_greater_principle` - presentValue should always be greater or equal to principle. ( ✅ ) - Gadi
+1. `presentValue_greater_principal` - presentValue should always be greater or equal to principal. ( ✅ ) - Gadi
 
-2. `presentValue_G_zero` - presentValue and principle value are initialized/not initialized together. ( ✅ ) - Gadi
+2. `presentValue_G_zero` - presentValue and principal value are initialized/not initialized together. ( ✅ ) - Gadi
     ```CVL
-        presentValue > 0 <=> principleValue > 0
+        presentValue > 0 <=> principalValue > 0
     ```
 
-3. `presentValue_EQ_principle` - If presentValue and principle are equal, the totalBaseSupplyIndex is equal to baseIndexScale. ( ✅ ) - Gadi
+3. `presentValue_EQ_principal` - If presentValue and principal are equal, the totalBaseSupplyIndex is equal to baseIndexScale. ( ✅ ) - Gadi
     ```CVL
-        present == principle => totalBaseSupplyIndex == baseIndexScale
+        present == principal => totalBaseSupplyIndex == baseIndexScale
     ```
 
 ## integrity of `pause()`:
@@ -320,7 +320,7 @@ needs delegate call.
 
 2. If someone borrowed then his collateral more than zero:
     1. ```CVL
-        userBasic.principle < 0 => UserCollateral.balance != 0
+        userBasic.principal < 0 => UserCollateral.balance != 0
         ```
     
     2. On the borrowing block the collateral must be greater or equal to the borrow value.

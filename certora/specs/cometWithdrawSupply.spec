@@ -1,5 +1,22 @@
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+    This file is run with scripts/verifyCometWithdrawAndSupply.sh
+    On a version with summarization ans some simplifications: 
+    CometHarness.sol and setup_cometSummarization.spec
+
+    This files contains rules related to withdraw and supply functions 
+
+*/
 import "comet.spec"
 
+////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////   Properties   ///////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+//  @Complete Run: https://vaas-stg.certora.com/output/44289/99a246e5f5d8283f105a/?anonymousKey=9bcfba613c2844f47591636fc141b424e1d25d65
 
 /*
     @Rule
@@ -11,15 +28,19 @@ import "comet.spec"
     {
         before = getReserves()
     }
-        withdrawReserves(to,amount)
+
+    withdrawReserves(to,amount)
+    
     {
-        before > getReserves()
+        amount > 0 => getReserves() < before 
     }
 
     @Notes:
 
     @Link:
+    
 */
+
 rule withdraw_reserves_decreases(address to, uint amount){
     env e;
 
@@ -41,9 +62,11 @@ rule withdraw_reserves_decreases(address to, uint amount){
     {
         
     }
-        withdrawReserves(x); r1 = getReserves()
-        ~ 
-        withdrawReserves(y); r2 = getReserves()
+     
+    withdrawReserves(x); r1 = getReserves()
+    ~ 
+    withdrawReserves(y); r2 = getReserves()
+    
     {
         x > y => r1 > r2
     }
@@ -51,7 +74,9 @@ rule withdraw_reserves_decreases(address to, uint amount){
     @Notes:
 
     @Link:
+
 */
+
 rule withdraw_reserves_monotonicity(address to){
     env e;
 
@@ -80,15 +105,20 @@ rule withdraw_reserves_monotonicity(address to){
     {
         balance1 = tokenBalanceOf(asset, currentContract)
     }
-        supply(asset, amount)
+    
+    supply(asset, amount)
+    
     {
         tokenBalanceOf(asset, currentContract) - balance1 == amount
     }
 
-    @Notes: should increase presentValue by amount
+    @Notes:
+        should increase presentValue by amount
 
     @Link:
+
 */
+
 rule supply_increase_balance(address asset, uint amount){
     env e;
     require e.msg.sender != currentContract;
@@ -113,15 +143,19 @@ rule supply_increase_balance(address asset, uint amount){
     {
         balance1 = tokenBalanceOf(asset, currentContract)
     }
-        withdraw(asset, amount)
+    
+    withdraw(asset, amount)
+    
     {
         tokenBalanceOf(asset, currentContract) - balance1 == amount
     }
 
-    @Notes: should decrease presentValue by amount
+    @Notes:
+        should decrease presentValue by amount
 
     @Link:
 */
+
 rule withdraw_decrease_balance(address asset, uint amount){
     env e;
     require e.msg.sender != currentContract;
@@ -145,9 +179,11 @@ rule withdraw_decrease_balance(address asset, uint amount){
     {
         
     }
-        withdraw(Base, x); withdraw(Base, y) ; base1 = baseBalanceOf(e.msg.sender)
-        ~
-        withdraw(_baseToken, x + y); base2 = baseBalanceOf(e.msg.sender)
+    
+    withdraw(Base, x); withdraw(Base, y) ; base1 = baseBalanceOf(e.msg.sender)
+    ~
+    withdraw(_baseToken, x + y); base2 = baseBalanceOf(e.msg.sender)
+    
     {
         base1 == base2
     }
@@ -155,8 +191,9 @@ rule withdraw_decrease_balance(address asset, uint amount){
     @Notes:
 
     @Link:
+
 */
-// T@T - withdraw(x) + withdraw(y) = withdraw(x+y)
+
 rule additivity_of_withdraw( uint x, uint y){
     env e;
     storage init = lastStorage;

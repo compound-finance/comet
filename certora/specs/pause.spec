@@ -1,11 +1,19 @@
-import "A_setupNoSummarization.spec"
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+    This file is run with scripts/verifyPause.sh
+
+    This file contains rules related to modeling and updating pause flags.
+*/
+import "setup_noSummarization.spec"
 
 ////////////////////////////////////////////////////////////////////////////////
-////////////////////////////   Getters & Update   //////////////////////////////
+/////////////////////////////////   Properties   ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
-
-//  @Complete Run: https://vaas-stg.certora.com/output/44289/e65164716a1ae6fbff52/?anonymousKey=aab07af2418b3f06877ef63452681a65cdd9a9cd
+//  @Complete Run: https://vaas-stg.certora.com/output/44289/0123d879e2bb504d510c/?anonymousKey=68362fb76d5752a267d8de6e385e512cfd7f05d4
 
 /*
     @Rule
@@ -14,8 +22,10 @@ import "A_setupNoSummarization.spec"
         pause revert only if the sender is not governor or pause guardian
 
     @Formula:
-        pause()
+        {
 
+        }
+            pause()
         {
             revert <=> (msg.sender != governor && msg.sender != pauseGuardian)
         }
@@ -54,11 +64,11 @@ rule check_flag_updates(bool supplyPaused, bool transferPaused, bool withdrawPau
             flagWithdraw_ = isWithdrawPaused() &&
             flagAbsorb_ = isAbsorbPaused() &&
             flagBuy_ = isBuyPaused() && 
-            not revert => flagSupply_ == supplyPaused && 
-            not revert => flagTransfer_ == transferPaused &&
-            not revert => flagWithdraw_ == withdrawPaused &&
-            not revert => flagAbsorb_ == absorbPaused &&
-            not revert => flagBuy_ == buyPaused
+            !revert => flagSupply_ == supplyPaused && 
+            !revert => flagTransfer_ == transferPaused &&
+            !revert => flagWithdraw_ == withdrawPaused &&
+            !revert => flagAbsorb_ == absorbPaused &&
+            !revert => flagBuy_ == buyPaused
         }
 
     @Note:

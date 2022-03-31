@@ -1,14 +1,32 @@
-import "A_setupNoSummarization.spec"
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+    This file is run with scripts/verifyGlobalCollateralAsset.sh
+
+    This file contains rules related to collateral asset info.
+*/
+import "setup_noSummarization.spec"
+
+////////////////////////////////////////////////////////////////////////////////
+//////////////////////////   Methods Declarations   ////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
 
 methods{
     getUserCollateralBalance(address, address) returns (uint128) envfree
     call_getPackedAsset(uint8, address, address, uint8, uint64, uint64, uint64 ,uint128) returns (uint256, uint256) envfree
     getAsset00_a() returns (uint256) envfree
     getAsset00_b() returns (uint256) envfree
-    0xc8c7fe6b envfree // getAssetInfo(uint8) returns (AssetInfo)
+    getAssetInfo(uint8) envfree 
     powerOfTen(uint8) returns (uint64) envfree
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////   Properties   ///////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
 //  @Complete Run: https://vaas-stg.certora.com/output/44289/7284048c8fbf909492a9/?anonymousKey=c227c7e03da3d5ae968061657d93c30958f367eb
 
 /*
@@ -52,12 +70,12 @@ methods{
 */
 
 rule reversability_of_packing(uint8 i, address assetArg, address priceFeedArg, uint8 decimalsArg, uint64 borrowCollateralFactorArg, uint64 liquidateCollateralFactorArg, uint64 liquidationFactorArg, uint128 supplyCapArg){
-    require i == 0; // checking for the 1st asset only, assuming that the retrival of the correct asset in _getAssetConfig being done correctly
+    require i == 0; // checking for the 1st asset only, assuming that the retrieval of the correct asset in _getAssetConfig being done correctly
     uint256 word_a; uint256 word_b;
     word_a, word_b = call_getPackedAsset(i, assetArg, priceFeedArg, decimalsArg, borrowCollateralFactorArg, liquidateCollateralFactorArg, liquidationFactorArg, supplyCapArg); 
     uint8 offset_; address asset_; address priceFeed_; uint64 scale_; uint64 borrowCollateralFactor_; uint64 liquidateCollateralFactor_; uint64 liquidationFactor_; uint128 supplyCap_;
     offset_, asset_, priceFeed_, scale_, borrowCollateralFactor_, liquidateCollateralFactor_, liquidationFactor_, supplyCap_ = getAssetInfo(i);
-    require word_a == getAsset00_a() && word_b == getAsset00_b(); // assumtion that assetXX_a, assetXX_b are being loaded with correct value
+    require word_a == getAsset00_a() && word_b == getAsset00_b(); // assumption that assetXX_a, assetXX_b are being loaded with correct value
     if (assetArg == 0 ){
         assert (asset_ == assetArg, "asset is non-zero");
         assert (priceFeed_ == 0, "price feed is non-zero");

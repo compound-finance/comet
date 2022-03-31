@@ -1,4 +1,19 @@
-import "A_setupNoSummarization.spec"
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+    This file is run with scripts/verifyUserAssetIn.sh
+
+    This file contains rules related to storing the collateral assets of a user.
+*/
+
+import "setup_noSummarization.spec"
+
+////////////////////////////////////////////////////////////////////////////////
+//////////////////////////   Methods Declarations   ////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
 
 methods{
     call_isInAsset(uint16, uint8) returns (bool) envfree
@@ -9,7 +24,6 @@ methods{
 /////////////////////////////////   Properties   ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
-
 //  @Complete Run: https://vaas-stg.certora.com/output/44289/e04f799f478e41c5ee2b/?anonymousKey=8dd81a5b173bc72bd7c358f861c42db9ea9ba0dd
 
 /*
@@ -27,20 +41,18 @@ methods{
 
         {
             assetIn_ = getAssetinOfUser(account) &&
-            uint8 assetOffset_ = getAssetOffsetByAsset(asset) &&
-            bool flagUserAsset_ = call_isInAsset(assetIn_, assetOffset_) &&
+            assetOffset_ = getAssetOffsetByAsset(asset) &&
+            flagUserAsset_ = call_isInAsset(assetIn_, assetOffset_) &&
             (initialUserBalance == 0 && finalUserBalance > 0) => flagUserAsset_ &&
             (initialUserBalance > 0 && finalUserBalance == 0) => !flagUserAsset_
         }
 
     @Note:
         
-
     @Link:
         
 */
 
-//B@B - unsound
 rule check_update_UserCollateral(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance){
     uint16 _assetIn = getAssetinOfUser(account);
     call_updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
@@ -75,7 +87,6 @@ rule check_update_UserCollateral(address account, address asset, uint128 initial
         }
 
     @Note:
-        
 
     @Link:
         
@@ -120,7 +131,6 @@ rule update_changes_single_bit(address account, address asset, uint128 initialUs
 
     @Note:
         
-
     @Link:
         
 */
