@@ -67,12 +67,12 @@ contract Bulker {
     }
 
     function transferTo(address to, address asset, uint amount) internal {
-        amount = getAmount(weth, amount);
+        amount = getAmount(asset, amount);
         CometInterface(comet).transferAssetFrom(msg.sender, to, asset, amount);
     }
 
     function withdrawTo(address to, address asset, uint amount) internal {
-        amount = getAmount(weth, amount);
+        amount = getAmount(asset, amount);
         CometInterface(comet).withdrawFrom(msg.sender, to, asset, amount);
     }
 
@@ -84,12 +84,15 @@ contract Bulker {
         if (!success) revert FailedToSendEther();
     }
 
+    /**
+     * @dev Handles the max transfer/withdraw case so that no dust is left in the protocol.
+     */
     function getAmount(address asset, uint amount) internal view returns (uint) {
         if (amount == type(uint256).max) {
             if (asset == baseToken) {
-                amount = CometInterface(comet).balanceOf(msg.sender);
+                return CometInterface(comet).balanceOf(msg.sender);
             } else {
-                amount = CometInterface(comet).collateralBalanceOf(msg.sender, asset);
+                return CometInterface(comet).collateralBalanceOf(msg.sender, asset);
             }
         }
         return amount;
