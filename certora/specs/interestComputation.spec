@@ -1,7 +1,17 @@
-import "setup_noSummarization.spec"
-import "erc20.spec"
 
-using SymbolicBaseToken as _baseToken 
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+    This file is run with scripts/verifyInterestComputation.sh
+    on a wrapped extension of comet that enables calling internal functions.
+    It contains rule on the mathematical functions and variables such as:
+    presentValue, principalValue, accrue, supply rate, borrow rate and more
+*/
+
+import "setup_noSummarization.spec"
+ 
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////////   Methods Declarations   ////////////////////////////
@@ -38,46 +48,13 @@ function setup(env e){
         getBaseBorrowIndex() >= getBaseIndexScale();
 }
 
-// The supply index and borrow index are set to the initial value - simplify computation
-function simplifiedAssumptions() {
-    require getBaseSupplyIndex() == getBaseIndexScale();
-    require getBaseBorrowIndex() == getBaseIndexScale();
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////   Properties   ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
 //  @Complete Run: https://vaas-stg.certora.com/output/44289/4bb13f119ed44ccc0b04/?anonymousKey=f69fa5e910f1279c4b7c750442aa139164bafec1
 
-/*
-    @Rule
 
-    @Description: indices are increasing after accrue (when time elapse)
-        baseSupplyIndex increase with time
-        baseBorrowIndex increase with time
-
-    @Formula:
-        NowInternal(e) > lastAccrualTime() => baseSupplyIndex_2 > baseSupplyIndex_1 &&
-                                              baseBorrowIndex_2 > baseBorrowIndex_1
-    @Notes:
-
-    @Link:
-        
-*/
-
-rule supplyIndex_borrowIndex_rise_with_time(){
-    env e;
-    uint64 base_supply_index_1 = getBaseSupplyIndex();
-    uint64 base_borrow_index_1 = getBaseBorrowIndex();
-    call_accrueInternal(e);
-    uint64 base_supply_index_2 = getBaseSupplyIndex();
-    uint64 base_borrow_index_2 = getBaseBorrowIndex();
-
-    assert call_getNowInternal(e) > getlastAccrualTime() => 
-                   (base_supply_index_2 > base_supply_index_1 &&
-                    base_borrow_index_2 > base_borrow_index_1);
-}
 
 /*
     @Rule
@@ -85,6 +62,16 @@ rule supplyIndex_borrowIndex_rise_with_time(){
     @Description: supplyIndex_borrowIndex_monotonic
         baseSupplyIndex monotonic
         baseBorrowIndex monotonic
+
+     @Formula:
+        {   
+            supply_index = getBaseSupplyIndex() &&
+            borrow_index = getBaseBorrowIndex() &&
+        }
+            accrueInternal();
+        { }
+            getBaseSupplyIndex() >= supply_index &&
+                                              getBaseBorrowIndex() >= borrow_index
 
     @Formula:
         baseSupplyIndex_2 >= baseSupplyIndex_1 &&
@@ -115,7 +102,7 @@ rule supplyIndex_borrowIndex_monotonic(){
         If the utilization is increased the supplyRate cannot decrease
 
     @Formula:
-        utilization_2 > utilization_1 => supplyRate_2 >= supplyRate_1
+        utilization(t1) > utilization(t2) => supplyRate(t2) >= supplyRate(t1)
 
     @Notes:
 
@@ -140,12 +127,10 @@ rule supplyRate_vs_utilization(){
     @Rule
 
     @Description:
-        if borrowRate == base interest rate then utilization == 0
         When utilization is 0, borrow rate equals to the base borrow rate.
 
     @Formula:
-        borrowRate == perSecondInterestRateBase() => Utilization() == 0
-
+        utilization(t) = 0 =>  getBorrowRate(t) = perSecondInterestRateBase() 
     @Notes:
 
     @Link:
@@ -164,11 +149,10 @@ rule utilization_zero(){
     @Rule
 
     @Description:
-        If BorrowBase == 0 utilization should equal zero.
         If nobody borrows from the system, the utilization must be 0.
 
     @Formula:
-        BorrowBase() == 0 => Utilization() == 0;
+        getTotalBorrowBase(t) == 0 => utilization(t) == 0;
 
     @Notes:
 
@@ -186,10 +170,13 @@ rule borrowBase_vs_utilization(){
 
     @Description:
         Verifies that isLiquidatable == false can change to true only if getPrice() has changed for base or asset
-        A liquiditable user cannot turn unliquiditable unless the price ratio of the collateral changed.
+        A liquidatable user cannot turn un-liquidatable unless the price ratio of the collateral changed.
 
     @Formula:
-        BorrowBase() == 0 => Utilization() == 0;
+     
+        t2 > t1 && !isLiquidatable(t1,account) && isLiquidatable(t1,account) =>
+           ( getPrice(t1,priceFeedBase) !=  getPrice(t2,priceFeedBase) ||
+             getPrice(e1,priceFeedAsset) != getPrice(e2,priceFeedAsset) )
 
     @Notes: This is without calling any functions, just due to change in time that result a change in price
 
@@ -221,8 +208,7 @@ rule isLiquidatable_false_should_not_change(address account){
     @Rule
 
     @Description:
-        isBorrowCollateralized => account can borrow, hence he's not Liquidatable
-         if a user is collateralized then they are not liquiditable
+        if a account is collateralized then it is not liquiditable
 
     @Formula:
         isBorrowCollateralized(account) => !isLiquidatable(account);
@@ -278,7 +264,9 @@ rule supplyIndex_borrowIndex_GE_getBaseIndexScale(){
         presentValue always greater than principalValue
 
     @Formula:
-        presentValue >= _principalValue;
+        principalValue = principalValue(presentValue) &&
+            presentValue >= 0 => presentValue >= principalValue &&
+            presentValue < 0 => presentValue <= principalValue 
 
     @Notes: 
         The absolute presentValue is GE to the absolut principalValue 
@@ -304,7 +292,10 @@ rule absolute_presentValue_GE_principal(int104 presentValue){
         presentValue is positive iff principalValue is positive
 
     @Formula:
-        presentValue > 0 <=> principalValue > 0
+        ( principalValue = principalValue(presentValue) && 
+          presentValue = presentValue(principalValue) )
+            =>
+        ( presentValue > 0 <=> principalValue > 0 )
 
     @Notes:
 
@@ -341,14 +332,11 @@ rule presentValue_EQ_principal(int104 presentValue){
     env e;
    setup(e);
     
-    require getBaseBorrowIndex() > getBaseSupplyIndex(); // needed assumption
-    // https://vaas-stg.certora.com/output/65782/683fbc8491afe9dab5e0/?anonymousKey=4f9fb2a878f00e7301e64c53ff9e3d55c804aa6b#presentValue_EQ_principalResults
-    
+    require getBaseBorrowIndex() > getBaseSupplyIndex(); 
     int104 principalValue = call_principalValue(presentValue);
     int104 presentValueInv = call_presentValue(principalValue);
 
     require presentValue != 0;
-    // https://vaas-stg.certora.com/output/65782/a9dfef3acdd36876a26f/?anonymousKey=4649138f310d0a7a36b20d7d146e0f9e23d6215e
 
     assert presentValue == principalValue => 
             (getBaseSupplyIndex() == getBaseIndexScale() && 
@@ -384,7 +372,11 @@ rule utilization_zero_supplyRate_zero(){
         getSupplyRate should always revert if reserveRate > FACTOR_SCALE
 
     @Formula:
-        reserveRate > FACTOR_SCALE => isRevert
+        { }
+            getSupplyRate()
+        { 
+            reserveRate > FACTOR_SCALE => lastReverted 
+        }
 
     @Notes:
 

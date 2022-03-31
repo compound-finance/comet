@@ -1,3 +1,13 @@
+/*
+    This is a specification file for the verification of Comet.sol
+    smart contract using the Certora prover. For more information,
+	visit: https://www.certora.com/
+
+    This file is run with scripts/verifyCometTotalsAndBalances.sh
+    On a version with summarization ans some simplifications: 
+    CometHarness.sol and setup_cometSummarization.spec
+
+*/
 import "comet.spec"    
 
 ////////////////////////////////////////////////////////////////////////////////

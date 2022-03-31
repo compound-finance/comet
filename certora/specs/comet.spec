@@ -5,7 +5,7 @@
 
     This file is run with scripts/verifyComet.sh
     On a version with summarization ans some simplifications: 
-    CometHarness.sol and B_commetSummarization.spec
+    CometHarness.sol and setup_cometSummarization.spec
 
 */
 
@@ -102,7 +102,10 @@ methods {
         env e;
         require getBaseSupplyIndex(e) == getBaseIndexScale(e);
         require getBaseBorrowIndex(e) == getBaseIndexScale(e);
-        require baseScale(e) == getFactorScale(e); 
+        require baseScale(e) == getFactorScale(e);
+        require getAccrualDescaleFactor(e) == 1;
+        require trackingIndexScale(e) == 1; 
+
 }
 
     // Simplification - assume scale is always 1 
@@ -260,7 +263,7 @@ rule balance_change_vs_registered(method f)filtered { f-> !similarFunctions(f) &
 
     @Formula:
         {
-            registered = getAssetInfoByAddress(asset).asset == asset &&
+            registered = getAssetInfoByAddress(asset).asset == asset 
         }
 
         < call any function with a specific asset >

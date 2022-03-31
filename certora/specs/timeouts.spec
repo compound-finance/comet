@@ -188,3 +188,42 @@ rule increase_profit(){
 
     assert presentValue_account1_2 - presentValue_account1_1 >= presentValue_account2_2 - presentValue_account2_1;
 }
+
+
+/*
+    @Rule
+
+    @Description: indices are increasing after accrue (when time elapse)
+        baseSupplyIndex increase with time
+        baseBorrowIndex increase with time
+
+    @Formula:
+        {   
+            supply_index = getBaseSupplyIndex() &&
+            borrow_index = getBaseBorrowIndex() &&
+            lastUpdated = getlastAccrualTime()
+        }
+            accrueInternal();
+        { }
+            getNowInternal() > lastUpdated => getBaseSupplyIndex() > supply_index &&
+                                              getBaseBorrowIndex() > borrow_index
+    @Notes:
+
+    @Link:
+        
+*/
+
+rule supplyIndex_borrowIndex_rise_with_time(){
+    env e;
+    setup(e);
+    uint64 base_supply_index_1 = getBaseSupplyIndex();
+    uint64 base_borrow_index_1 = getBaseBorrowIndex();
+    uint40 lastUpdated = getlastAccrualTime();
+    call_accrueInternal(e);
+    uint64 base_supply_index_2 = getBaseSupplyIndex();
+    uint64 base_borrow_index_2 = getBaseBorrowIndex();
+
+    assert call_getNowInternal(e) > lastUpdated => 
+                (base_supply_index_2 > base_supply_index_1 &&
+                base_borrow_index_2 > base_borrow_index_1); 
+}

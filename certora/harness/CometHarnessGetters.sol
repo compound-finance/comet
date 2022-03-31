@@ -120,6 +120,11 @@ contract CometHarnessGetters is Comet {
         return asset00_b;
     }
 
+    // Retrieve getAccrualDescaleFactor
+    function getAccrualDescaleFactor() external view returns (uint256) {
+        return accrualDescaleFactor;
+    } 
+    
     // Calling baseBalanceOf (in CometExt) by delegating CometExt to reach Comet.sol storage
     function baseBalanceOf(address account) public returns (int104) {
         (bool success, bytes memory result) = extensionDelegate.delegatecall(
