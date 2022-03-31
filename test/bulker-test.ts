@@ -86,6 +86,29 @@ describe('bulker', function () {
     expect(await comet.collateralBalanceOf(alice.address, WETH.address)).to.be.equal(supplyAmount);
   });
 
+  it('supply ETH refunds unused ETH', async () => {
+    const protocol = await makeProtocol({
+      assets: defaultAssets({}, {
+        WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
+      })
+    });
+    const { comet, tokens: { WETH }, users: [alice] } = protocol;
+    const bulkerInfo = await makeBulker({ comet: comet.address, weth: WETH.address })
+    const { bulker } = bulkerInfo;
+
+    // No approval is actually needed on the supplyEth action!
+
+    // Alice supplies 10 ETH through the bulker but actually sends 20 ETH
+    const aliceBalanceBefore = await alice.getBalance();
+    const supplyAmount = exp(10, 18);
+    let supplyEthCalldata = ethers.utils.defaultAbiCoder.encode(["address", "uint"], [alice.address, supplyAmount]);
+    const txn = await wait(bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_ETH()], [supplyEthCalldata], { value: supplyAmount * 2n }));
+    const aliceBalanceAfter = await alice.getBalance();
+
+    expect(await comet.collateralBalanceOf(alice.address, WETH.address)).to.be.equal(supplyAmount);
+    expect(aliceBalanceBefore.sub(aliceBalanceAfter)).to.be.equal(supplyAmount + getGasUsed(txn));
+  });
+
   it('supply ETH with insufficient ETH', async () => {
     const protocol = await makeProtocol({
       assets: defaultAssets({}, {
@@ -102,7 +125,7 @@ describe('bulker', function () {
     const supplyAmount = exp(10, 18);
     let supplyEthCalldata = ethers.utils.defaultAbiCoder.encode(["address", "uint"], [alice.address, supplyAmount]);
     await expect(bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_ETH()], [supplyEthCalldata], { value: supplyAmount / 2n }))
-      .to.be.revertedWith('function call failed to execute');
+      .to.be.revertedWith('code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
   });
 
   it('transfer base asset', async () => {

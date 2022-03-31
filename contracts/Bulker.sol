@@ -40,6 +40,7 @@ contract Bulker {
     function invoke(uint[] calldata actions, bytes[] calldata data) external payable {
         if (actions.length != data.length) revert InvalidArgument();
         
+        uint unusedEth = msg.value;
         for (uint i = 0; i < actions.length; ) {
             uint action = actions[i];
             if (action == ACTION_SUPPLY_ASSET) {
@@ -47,6 +48,7 @@ contract Bulker {
                 supplyTo(to, asset, amount);
             } else if (action == ACTION_SUPPLY_ETH) {
                 (address to, uint amount) = abi.decode(data[i], (address, uint));
+                unusedEth -= amount;
                 supplyEthTo(to, amount);
             } else if (action == ACTION_TRANSFER_ASSET) {
                 (address to, address asset, uint amount) = abi.decode(data[i], (address, address, uint));
@@ -60,7 +62,12 @@ contract Bulker {
             }
             unchecked { i++; }
         }
-        // XXX refund unused ETH
+        
+        // Refund unused ETH back to msg.sender
+        if (unusedEth > 0) {
+            (bool success, ) = msg.sender.call{ value: unusedEth }("");
+            if (!success) revert FailedToSendEther();
+        }
     }
 
     /**
