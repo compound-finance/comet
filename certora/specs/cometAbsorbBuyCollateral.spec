@@ -49,7 +49,7 @@ import "comet.spec"
 
 */
 
-rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
+rule anti_monotonicity_of_buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
     env e;
     require asset != _baseToken; 
     require minAmount > 0 ; 
@@ -73,7 +73,7 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
 
     @Description:
         After absorb, user's collateral is added to Contract's collateral.
-        Can't buy more collateral than contract's collateral (max) 
+        One cannot buy more collateral than contract's collateral.
 
     @Formula:
     {
@@ -93,7 +93,7 @@ rule antiMonotonicityOfBuyCollateral(address asset, uint minAmount, uint baseAmo
 
 */
 
-rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address recipient) {
+rule buyCollateral_max(address asset, uint minAmount, uint baseAmount, address recipient) {
     env e;
     require asset != _baseToken; 
     require e.msg.sender != currentContract;
@@ -111,7 +111,7 @@ rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address re
     @Rule
 
     @Description:
-        if the array of accounts has ywo similar ones then absorb should revert
+        if the array of accounts has the same account twice then absorb should revert
 
     @Formula:
     {
@@ -129,7 +129,7 @@ rule buyCollateralMax(address asset, uint minAmount, uint baseAmount, address re
 
 */
 
-rule canNot_absorb_same_account(address absorber, address account) {
+rule cannot_absorb_same_account(address absorber, address account) {
     address[] accounts;
     env e;
     require accounts.length == 2;
@@ -153,7 +153,7 @@ rule canNot_absorb_same_account(address absorber, address account) {
         pre = getReserves()
     }
 
-    obsorb()
+    absorb(absorber, accounts)
     
     {
         getReserves() <= pre
@@ -205,7 +205,7 @@ rule absorb_reserves_decrease(address absorber, address account) {
     
 */
 
-rule antiMonotonicityOfAbsorb(address absorber, address account) {
+rule anti_monotonicity_of_absorb(address absorber, address account) {
     address[] accounts;
     env e;
     simplifiedAssumptions();
@@ -235,13 +235,13 @@ rule antiMonotonicityOfAbsorb(address absorber, address account) {
 
     @Formula:
     {
-        absorb(absorber, accounts); //success
+       
     }
-    
-    absorb@withrevert(absorber, accounts);
+    absorb(absorber, accounts); 
+    absorb@withrevert(absorber, accounts)
     
     {
-        lastReverted; //last call to absorb always reverts
+        lastReverted 
     }
 
     @Notes:
@@ -250,7 +250,7 @@ rule antiMonotonicityOfAbsorb(address absorber, address account) {
 
 */
 
-rule canNot_double_absorb(address absorber, address account) {
+rule cannot_double_absorb(address absorber, address account) {
     address[] accounts;
     env e;
 

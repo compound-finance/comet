@@ -169,7 +169,7 @@ methods {
     @Link:
 */
 
-rule assetIn_Initialized_With_Balance(method f, address user, address asset) 
+rule assetIn_initialized_with_balance(method f, address user, address asset) 
     filtered { f ->  !similarFunctions(f) && !f.isView && f.selector != absorb(address, address[]).selector && f.selector != certorafallback_0().selector } {
     
     env e; calldataarg args;
@@ -345,45 +345,4 @@ rule verify_transferAsset(){
     assert collateral_src2 + collateral_dst2 == collateral_src2 + collateral_dst2;
 }
 
-/*
-    @Rule
 
-    @Description:
-        User principal balance may decrease only by a call from them or from a permissioned manager
-
-    @Formula:
-        {
-             userBasic[user].principal = x
-        }
-
-        < call any function >
-        
-        {
-            userBasic[user].principal = y
-            y < x => user = msg.sender || hasPermission[user][msg.sender] == true; 
-        }
-
-    @Notes:
-        
-    @Link:
-        https://vaas-stg.certora.com/output/67509/8b70e8c3633a54cfc7ba?anonymousKey=d2c319cb2734c3978e15fa3833f55b19c48f8fda
-*/
-
-rule balance_change_by_allowed_only(method f, address user)
-filtered { f-> !similarFunctions(f) && !f.isView }
-{
-    env e;
-    calldataarg args;
-    require user != currentContract;
-    simplifiedAssumptions();
-
-    int104 balanceBefore = getUserPrincipal(user);
-
-    f(e, args);
-
-    int104 balanceAfter = getUserPrincipal(user);
-    bool permission = call_hasPermission(user, e.msg.sender);
-
-    assert balanceAfter < balanceBefore => 
-        ((e.msg.sender == user) || permission);
-}

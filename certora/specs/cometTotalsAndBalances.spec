@@ -146,7 +146,7 @@ invariant collateral_totalSupply_LE_supplyCap(address asset)
 
 */
 
-invariant totalBaseToken() 
+invariant total_base_token() 
 	sumUserBasicPrincipal == to_mathint(getTotalSupplyBase()) - to_mathint(getTotalBorrowBase()) filtered { f-> !similarFunctions(f) && !f.isView }
 {
     preserved {
