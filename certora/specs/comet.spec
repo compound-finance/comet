@@ -115,9 +115,9 @@ methods {
 ////////////////////////////////////////////////////////////////////////////////
 //
 
-    // Summarization of the user principle - the ghost tracks the sum of principles across all users
-    ghost mathint sumUserBasicPrinciple  {
-        init_state axiom sumUserBasicPrinciple==0; 
+    // Summarization of the user principal - the ghost tracks the sum of principals across all users
+    ghost mathint sumUserBasicPrincipal  {
+        init_state axiom sumUserBasicPrincipal==0; 
     }
 
     // Summarization of the user collateral per asset - mapping ghost that keeps track on the sum of balances of each collateral asset
@@ -125,10 +125,10 @@ methods {
         init_state axiom forall address t. sumBalancePerAsset[t]==0;
     }
 
-    // A hook updating the user principle ghost on every write to storage
+    // A hook updating the user principal ghost on every write to storage
     hook Sstore userBasic[KEY address a].principal int104 balance
         (int104 old_balance) STORAGE {
-    sumUserBasicPrinciple = sumUserBasicPrinciple +
+    sumUserBasicPrincipal = sumUserBasicPrincipal +
         to_mathint(balance) - to_mathint(old_balance);
     }
 

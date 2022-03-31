@@ -9,7 +9,6 @@ using SymbolicBaseToken as _baseToken
 //
 
 methods{
-
     call_presentValue(int104) returns (int104) envfree;
     call_principalValue(int104) returns (int104) envfree;
     getAssetScaleByAsset(address) returns (uint64) envfree;

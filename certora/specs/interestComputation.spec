@@ -281,7 +281,7 @@ rule supplyIndex_borrowIndex_GE_getBaseIndexScale(){
         presentValue >= _principalValue;
 
     @Notes: 
-        The absolute presentValue is GE to the absolut principleValue 
+        The absolute presentValue is GE to the absolut principalValue 
 
     @Link:
         
@@ -301,7 +301,7 @@ rule absolute_presentValue_GE_principal(int104 presentValue){
     @Rule
 
     @Description:
-        presentValue is positive iff principleValue is positive
+        presentValue is positive iff principalValue is positive
 
     @Formula:
         presentValue > 0 <=> principalValue > 0

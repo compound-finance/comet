@@ -13,7 +13,7 @@ import "comet.spec"
         The sum of collateral per asset over all users is equal to total collateral of asset:
 
     @Formula : 
-        sum(userCollateral[u][asset].balance) == totalsCollateral[asset].totalSupplyAsset
+        sum(userCollateral[user][asset].balance) == totalsCollateral[asset].totalSupplyAsset
 
     @Note:
 
@@ -125,10 +125,10 @@ invariant collateral_totalSupply_LE_supplyCap(address asset)
     @Rule
 
     @Description:
-        Summary of principle balances equals the totals
+        Summary of principal balances equals the totals
 
     @Formula: 
-        sum(userBasic[u].principal) == totalsBasic.totalSupplyBase - totalsBasic.totalBorrowBase
+        sum(userBasic[user].principal) == totalsBasic.totalSupplyBase - totalsBasic.totalBorrowBase
 
     @Note:
 
@@ -137,7 +137,7 @@ invariant collateral_totalSupply_LE_supplyCap(address asset)
 */
 
 invariant totalBaseToken() 
-	sumUserBasicPrinciple == to_mathint(getTotalSupplyBase()) - to_mathint(getTotalBorrowBase()) filtered { f-> !similarFunctions(f) && !f.isView }
+	sumUserBasicPrincipal == to_mathint(getTotalSupplyBase()) - to_mathint(getTotalBorrowBase()) filtered { f-> !similarFunctions(f) && !f.isView }
 {
     preserved {
         simplifiedAssumptions();
