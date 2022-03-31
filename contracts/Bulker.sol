@@ -32,6 +32,11 @@ contract Bulker {
      */
     receive() external payable {}
 
+    /**
+     * @notice Executes a list of actions in order
+     * @param actions The list of actions to execute in order
+     * @param data The list of calldata to use for each action
+     */
     function invoke(uint[] calldata actions, bytes[] calldata data) external payable {
         if (actions.length != data.length) revert InvalidArgument();
         
@@ -58,26 +63,41 @@ contract Bulker {
         // XXX refund unused ETH
     }
 
+    /**
+     * @notice Supplies an asset to a user in Comet
+     */
     function supplyTo(address to, address asset, uint amount) internal {
         CometInterface(comet).supplyFrom(msg.sender, to, asset, amount);
     }
 
+    /**
+     * @notice Wraps ETH and supplies WETH to a user in Comet
+     */
     function supplyEthTo(address to, uint amount) internal {
         IWETH9(weth).deposit{ value: amount }();
         IWETH9(weth).approve(comet, amount);
         CometInterface(comet).supplyFrom(address(this), to, weth, amount);
     }
 
+    /**
+     * @notice Transfers an asset to a user in Comet
+     */
     function transferTo(address to, address asset, uint amount) internal {
         amount = getAmount(asset, amount);
         CometInterface(comet).transferAssetFrom(msg.sender, to, asset, amount);
     }
 
+    /**
+     * @notice Withdraws an asset to a user in Comet
+     */
     function withdrawTo(address to, address asset, uint amount) internal {
         amount = getAmount(asset, amount);
         CometInterface(comet).withdrawFrom(msg.sender, to, asset, amount);
     }
 
+    /**
+     * @notice Withdraws WETH from Comet to a user after unwrapping it to ETH
+     */
     function withdrawEthTo(address to, uint amount) internal {
         amount = getAmount(weth, amount);
         CometInterface(comet).withdrawFrom(msg.sender, address(this), weth, amount);
