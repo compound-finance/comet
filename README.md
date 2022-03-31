@@ -1,4 +1,4 @@
-# Compound Comet
+# Compound Comet!
 
 ## Getting started
 
