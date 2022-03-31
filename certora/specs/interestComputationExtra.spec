@@ -141,26 +141,26 @@ rule increase_profit(){
     uint amount;
     address account1;
     address account2 = e1.msg.sender;
-
     require account1 != currentContract && account2 != currentContract;
 
-    // simplifiedAssumptions();
+    require perSecondInterestRateBase() == 0;
 
+    storage init = lastStorage;
+    
+    simplifiedAssumptions();
     // call_accrueInternal(e1);
 
-    mathint presentValue_account1_1 = to_mathint(call_presentValue(getUserPrincipal(e1,account1)));
-    mathint presentValue_account2_1 = to_mathint(call_presentValue(getUserPrincipal(e1,account2)));
+    require call_presentValue(getUserPrincipal(e1,account2)) == 0;
+    mathint presentValue_account1_1 = to_mathint(call_presentValue(getUserPrincipal(e2,account1)));
 
-    require presentValue_account1_1 != 0;
-    require presentValue_account2_1 == 0;
+    withdraw(e1, _baseToken, amount) at init;
 
-    withdraw(e1, _baseToken, amount);
-
-    require call_getNowInternal(e1) > getlastAccrualTime();
-    call_accrueInternal(e1);
+    // require call_getNowInternal(e1) > getlastAccrualTime();
+    // call_accrueInternal(e1);
     
     mathint presentValue_account1_2 = to_mathint(call_presentValue(getUserPrincipal(e2,account1)));
     mathint presentValue_account2_2 = to_mathint(call_presentValue(getUserPrincipal(e2,account2)));
 
-    assert presentValue_account1_2 - presentValue_account1_1 >= presentValue_account2_2 - presentValue_account2_1;
+    // assert presentValue_account1_2 - presentValue_account1_1 >= presentValue_account2_2 - presentValue_account2_1;
+    assert presentValue_account1_1 >= presentValue_account1_2 + presentValue_account2_2;
 }
