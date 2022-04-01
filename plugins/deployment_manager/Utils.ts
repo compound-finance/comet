@@ -65,26 +65,25 @@ export function getPrimaryContract(buildFile: BuildFile): [string, ContractMetad
   return [targetContract, contractMetadata];
 }
 
-// XXX select which version of constructor to retain in merged ABI
+// merge two ABIs
+// conflicting entries (like constructors) will defer to the second abi
+// ("abi1"); duplicate entires are removed
 export function mergeABI(abi0: ABI, abi1: ABI): ABIEntry[] {
   let parsedABI0: ABIEntry[] = typeof abi0 === 'string' ? JSON.parse(abi0) : abi0;
   let parsedABI1: ABIEntry[] = typeof abi1 === 'string' ? JSON.parse(abi1) : abi1;
 
   const mergedABI = [...parsedABI0, ...parsedABI1];
 
-  const res = [];
   const entries = {}
 
   for (const abiEntry of mergedABI) {
-    const key = JSON.stringify(abiEntry);
+    // only allow one constructor or one unique entry
+    const key = abiEntry.type == "constructor" ? "constructor" : JSON.stringify(abiEntry);
 
-    if (!(key in entries)) {
-      res.push(abiEntry);
-      entries[key] = true;
-    }
+    entries[key] = abiEntry;
   }
 
-  return res;
+  return Object.values(entries);
 }
 
 export function objectToMap<V>(obj: object | { [k: string]: V }): Map<string, V> {
