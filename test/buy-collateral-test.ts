@@ -1,5 +1,5 @@
 import { EvilToken, EvilToken__factory, FaucetToken } from '../build/types';
-import { ethers, expect, exp, makeProtocol, portfolio, ReentryAttack, wait } from './helpers';
+import { ethers, expect, exp, getBlock, makeProtocol, portfolio, ReentryAttack, wait } from './helpers';
 
 describe('buyCollateral', function () {
   it('allows buying collateral when reserves < target reserves', async () => {
@@ -293,6 +293,21 @@ describe('buyCollateral', function () {
       });
       await evilComet.setTotalsCollateral(evilWETH.address, t1);
 
+      // ensure both Comets have the same lastAccrualTime
+      const start = (await getBlock()).timestamp;
+
+      let tb0 = await normalComet.totalsBasic();
+      tb0 = Object.assign({}, tb0, {
+        lastAccrualTime: start
+      });
+      await normalComet.setTotalsBasic(tb0);
+
+      let tb1 = await evilComet.totalsBasic();
+      tb1 = Object.assign({}, tb1, {
+        lastAccrualTime: start
+      });
+      await evilComet.setTotalsBasic(tb1);
+
       // 5 WETH have been absorbed
       await normalComet.setCollateralBalance(
         normalComet.address,
@@ -308,6 +323,10 @@ describe('buyCollateral', function () {
       // approve Comet to move funds
       await normalUSDC.connect(normalAlice).approve(normalComet.address, exp(5000, 6));
       await EVIL.connect(evilAlice).approve(EVIL.address, exp(5000, 6));
+
+      // perform the supplies for each protocol in the same block, so that the
+      // same amount of time elapses for each when calculating interest
+      await ethers.provider.send("evm_setAutomine", [false]);
 
       // call supply
       await normalComet
@@ -341,7 +360,9 @@ describe('buyCollateral', function () {
           evilAlice.address
         );
 
-      await evilComet.accrue();
+      // !important; reenable automine
+      await ethers.provider.send('evm_mine', [start + 1000]);
+      await ethers.provider.send("evm_setAutomine", [true]);
 
       const normalTotalsBasic = await normalComet.totalsBasic();
       const normalTotalsCollateral = await normalComet.totalsCollateral(normalWETH.address);
@@ -349,8 +370,7 @@ describe('buyCollateral', function () {
       const evilTotalsCollateral = await evilComet.totalsCollateral(evilWETH.address);
 
       expect(normalTotalsBasic.baseSupplyIndex).to.equal(evilTotalsBasic.baseSupplyIndex);
-      // XXX determine the source of the discrepency between the baseBorrowIndexes
-      // expect(normalTotalsBasic.baseBorrowIndex).to.equal(evilTotalsBasic.baseBorrowIndex);
+      expect(normalTotalsBasic.baseBorrowIndex).to.equal(evilTotalsBasic.baseBorrowIndex);
       expect(normalTotalsBasic.trackingSupplyIndex).to.equal(evilTotalsBasic.trackingSupplyIndex);
       expect(normalTotalsBasic.trackingBorrowIndex).to.equal(evilTotalsBasic.trackingBorrowIndex);
       expect(normalTotalsBasic.totalSupplyBase).to.equal(evilTotalsBasic.totalSupplyBase);
@@ -369,6 +389,5 @@ describe('buyCollateral', function () {
 
       expect(normalBobPortfolio.internal.USDC).to.equal(evilBobPortfolio.internal.EVIL);
     });
-
   });
 });
