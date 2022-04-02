@@ -24,7 +24,7 @@ methods {
 ////////////////////////////////////////////////////////////////////////////////
 //
 
-// A function that retrives true only if the amount is 0 or max_uint256
+// A function that retrieves true only if the amount is 0 or max_uint256
 function valid_allowance(uint256 amount) returns bool {
     return (amount == 0 || amount == max_uint256);
 }
@@ -50,7 +50,7 @@ function valid_allowance(uint256 amount) returns bool {
         https://vaas-stg.certora.com/output/67509/a24bef867b4182d0ff68?anonymousKey=4a4d2ee36793cf0700bd496f045f0ad3c64e5191
 */
 
-invariant allowanceOnlyZeroOrMax(address owner, address spender)
+invariant allowance_only_zero_or_max(address owner, address spender)
     valid_allowance(allowance(owner, spender))
 
 /*
@@ -76,7 +76,7 @@ invariant allowanceOnlyZeroOrMax(address owner, address spender)
         https://vaas-stg.certora.com/output/67509/c3d2d3cf8c215d055b2e/?anonymousKey=253def519e372bae51eecc09b459fb60849b850e
 */
 
-rule approveFailsOnInvalidAllowance(address spender, uint256 amount) {
+rule approve_fails_on_invalid_allowance(address spender, uint256 amount) {
     env e;
     require amount > 0 && amount < max_uint256;
     approve@withrevert(e, spender, amount);
@@ -108,7 +108,7 @@ rule approveFailsOnInvalidAllowance(address spender, uint256 amount) {
         https://vaas-stg.certora.com/output/67509/9620fa8dc4cfe4a67cdd?anonymousKey=42c7e941001d7ca062ee1d4ee7cfd3304b52f2fc
 */
 
-rule validAllowanceChanges(method f, address owner, address spender) {
+rule valid_allowance_changes(method f, address owner, address spender) {
     env e; calldataarg args;
     uint256 allowanceBefore = allowance(owner, spender);
     f(e, args);
@@ -149,7 +149,7 @@ rule validAllowanceChanges(method f, address owner, address spender) {
         https://vaas-stg.certora.com/output/67509/9a48f15e2358f6600c36?anonymousKey=194acb8989d08cbd7b5cec1e8045fb319bd5138d
 */
 
-rule validApproveSucceeds(address spender, uint256 amount) {
+rule valid_approve_succeeds(address spender, uint256 amount) {
     env e;
     require valid_allowance(amount);
     // the rule fails with any value > 0

@@ -19,7 +19,7 @@ import "setup_noSummarization.spec"
     @Rule
 
     @Description:
-        pause revert only if the sender is not governor or pause guardian
+        pause revert if only if the sender is not governor or pause guardian
 
     @Formula:
         {
@@ -36,7 +36,7 @@ import "setup_noSummarization.spec"
         https://vaas-stg.certora.com/output/44289/aec9938177320f5f4e0b/?anonymousKey=a1c9246f90a625038e25b3a898610d4c0c7d20a6
 */
 
-rule check_flag_updates(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused){
+rule ability_to_update_flags(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused){
     env e;
     require e.msg.value == 0;
     pause@withrevert(e, supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused);
@@ -59,16 +59,11 @@ rule check_flag_updates(bool supplyPaused, bool transferPaused, bool withdrawPau
         pause(supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused)
 
         {
-            flagSupply_ = isSupplyPaused() &&
-            flagTransfer_ = isTransferPaused() &&
-            flagWithdraw_ = isWithdrawPaused() &&
-            flagAbsorb_ = isAbsorbPaused() &&
-            flagBuy_ = isBuyPaused() && 
-            !revert => flagSupply_ == supplyPaused && 
-            !revert => flagTransfer_ == transferPaused &&
-            !revert => flagWithdraw_ == withdrawPaused &&
-            !revert => flagAbsorb_ == absorbPaused &&
-            !revert => flagBuy_ == buyPaused
+            !lastRevert => ( supplyPaused = supplyPaused() &&
+            transferPaused = isTransferPaused() &&
+            withdrawPaused = isWithdrawPaused() &&
+            absorbPaused = isAbsorbPaused() &&
+            buyPaused = isBuyPaused() )        
         }
 
     @Note:
@@ -77,7 +72,7 @@ rule check_flag_updates(bool supplyPaused, bool transferPaused, bool withdrawPau
         https://vaas-stg.certora.com/output/44289/42b33ca481471f064fde/?anonymousKey=3f76285b08be14481b9efa4eb7e04fc60dabaa3b
 */
 
-rule check_flag_getters(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused){
+rule integrity_of_flag_updates(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused){
     env e;
     pause@withrevert(e, supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused);
     bool isRevert = lastReverted;

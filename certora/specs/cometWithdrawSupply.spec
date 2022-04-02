@@ -99,7 +99,7 @@ rule withdraw_reserves_monotonicity(address to){
     @Rule
 
     @Description:
-        integrity of supply - balance increase by supply amount 
+        integrity of supply - balance increased by supply amount 
 
     @Formula:
     {
@@ -137,17 +137,17 @@ rule supply_increase_balance(address asset, uint amount){
     @Rule
 
     @Description:
-        integrity of withdraw - balance increase by supply amount
+        integrity of withdraw - balance decreased by supply amount
 
     @Formula:
     {
-        balance1 = tokenBalanceOf(asset, currentContract)
+        b = tokenBalanceOf(asset, currentContract)
     }
     
     withdraw(asset, amount)
     
     {
-        tokenBalanceOf(asset, currentContract) - balance1 == amount
+        b - tokenBalanceOf(asset, currentContract) = amount
     }
 
     @Notes:
@@ -173,19 +173,18 @@ rule withdraw_decrease_balance(address asset, uint amount){
     @Rule
 
     @Description:
-        additivity of withdraw : withdraw(x) + withdraw(y) = withdraw(x+y)
-
+        Splitting a withdraw to two step result in the same outcome
     @Formula:
     {
         
     }
     
-    withdraw(Base, x); withdraw(Base, y) ; base1 = baseBalanceOf(e.msg.sender)
+    withdraw(Base, x); withdraw(Base, y) ; base1 := baseBalanceOf(e.msg.sender)
     ~
-    withdraw(_baseToken, x + y); base2 = baseBalanceOf(e.msg.sender)
+    withdraw(_baseToken, x + y); base2 := baseBalanceOf(e.msg.sender)
     
     {
-        base1 == base2
+        base1 = base2
     }
 
     @Notes:

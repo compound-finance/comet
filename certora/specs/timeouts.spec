@@ -49,39 +49,6 @@ function simplifiedAssumptions() {
 //
 //  @Complete Run: 
 
-/*
-    @Rule
-
-    @Description:
-        At a point in time where user is collateralized, no action will change its status to uncollateralized
-
-    @Formula:
-        {
-            lastAccrualTime() == getNowInternal() &&
-            isBorrowCollateralized(account)
-        }
-        
-        < call any function >
-        
-        {
-            isBorrowCollateralized(account)
-        }
-
-    @Notes:
-        
-    @Link:
-
-*/
-
-rule verify_isBorrowCollateralized(address account, method f)filtered { f-> !similarFunctions(f) && !f.isView }{
-    env e; calldataarg args;
-    simplifiedAssumptions();
-    require getlastAccrualTime() == call_getNowInternal(e);
-    
-    require isBorrowCollateralized(e,account);
-    f(e,args) ;
-    assert isBorrowCollateralized(e,account);
-}
 
 /*
     @Rule
@@ -154,39 +121,6 @@ rule withdraw_more_reserves(address to , uint amount){
     call_accrueInternal(e);
 
     assert getReserves(e) >= 0;
-}
-
-
-rule increase_profit(){
-    env e1;
-    env e2;
-    require e2.block.timestamp > e1.block.timestamp;
-
-    uint amount;
-    address account1;
-    address account2 = e1.msg.sender;
-    require account1 != currentContract && account2 != currentContract;
-
-    require perSecondInterestRateBase() == 0;
-
-    storage init = lastStorage;
-    
-    simplifiedAssumptions();
-    // call_accrueInternal(e1);
-
-    require call_presentValue(getUserPrincipal(e1,account2)) == 0;
-    mathint presentValue_account1_1 = to_mathint(call_presentValue(getUserPrincipal(e2,account1)));
-
-    withdraw(e1, _baseToken, amount) at init;
-
-    // require call_getNowInternal(e1) > getlastAccrualTime();
-    // call_accrueInternal(e1);
-    
-    mathint presentValue_account1_2 = to_mathint(call_presentValue(getUserPrincipal(e2,account1)));
-    mathint presentValue_account2_2 = to_mathint(call_presentValue(getUserPrincipal(e2,account2)));
-
-    // assert presentValue_account1_2 - presentValue_account1_1 >= presentValue_account2_2 - presentValue_account2_1;
-    assert presentValue_account1_1 >= presentValue_account1_2 + presentValue_account2_2;
 }
 
 

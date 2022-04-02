@@ -71,20 +71,18 @@ rule check_update_UserCollateral(address account, address asset, uint128 initial
         Update assetIn changes a single bit - it's impossible that 2 distinct asset bits will be change at the same call to update
 
     @Formula:
-        {
-            _assetIn = getAssetinOfUser(account) &&
-            _flagUserAsset1 = isInAsset(_assetIn, assetOffset1) &&
-            _flagUserAsset2 = isInAsset(_assetIn, assetOffset2) &&
-            assetOffset1 != assetOffset2
-        }
+    {          
+        _flagUserAsset1 = isInAsset(userBasic[user].assetsIn, assetOffset1) &&
+        _flagUserAsset2 = isInAsset(userBasic[user].assetsIn, assetOffset2) &&
+        assetOffset1 != assetOffset2
+    }
 
         updateAssetsIn(account, asset, initialUserBalance, finalUserBalance)
 
-        {
-            assetIn_ = getAssetinOfUser(account) &&
-            flagUserAsset1_ = call_isInAsset(assetIn_, assetOffset1) &&
-            flagUserAsset2_ = call_isInAsset(assetIn_, assetOffset2);
-        }
+    {
+        isInAsset(userBasic[user].assetsIn, assetOffset1) = _flagUserAsset1  ||
+        isInAsset(userBasic[user].assetsIn, assetOffset2) = _flagUserAsset2 
+    }    
 
     @Note:
 
@@ -116,19 +114,16 @@ rule update_changes_single_bit(address account, address asset, uint128 initialUs
         Update assetIn changes the assetIn of a single user - no other users are affected by update.
 
     @Formula:
-        {
-            _assetIn1 = getAssetinOfUser(account1) &&
-            _assetIn2 = getAssetinOfUser(account2)
-        }
-        
-        updateAssetsIn(account1, asset1, initialUserBalance, finalUserBalance)
+   {
+        other != user &&
+        assetIn = userBasic[other].assetsIn
+    }
 
-        {
-            assetIn1_ = getAssetinOfUser(account1) &&
-            assetIn2_ = getAssetinOfUser(account2) &&
-            (account1 != account2) => !(_assetIn1 != assetIn1_ && _assetIn2 != assetIn2_)
-        }
+        updateAssetsIn(account, asset, initialUserBalance, finalUserBalance)
 
+    {
+         userBasic[other].assetsIn != assetIn 
+    }
     @Note:
         
     @Link:

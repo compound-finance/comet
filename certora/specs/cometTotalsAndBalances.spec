@@ -20,15 +20,12 @@ import "comet.spec"
     @Rule
 
     @Description:
-        The sum of collateral per asset over all users is equal to total collateral of asset:
+        The sum of collateral per asset over all users is equal to total collateral of asset
 
     @Formula : 
-        sum(userCollateral[user][asset].balance) == totalsCollateral[asset].totalSupplyAsset
+        sum(userCollateral[user][asset].balance) = totalsCollateral[asset].totalSupplyAsset
 
     @Note:
-
-    @Link: 
-        https://vaas-stg.certora.com/output/23658/01cae74fe43232e6e6c5/?anonymousKey=9f050514a528f70e110a2a9f2dde24ffb85f39da
 
 */
 
@@ -54,8 +51,6 @@ invariant total_collateral_per_asset(address asset)
         Safely assume that comet is not the msg.sender, this is a safe assumption since there is no call statement from Comet to itself. 
         Also assume that no address can supply from Comet, as comet does not give allowance
 
-    @Link:
-        https://vaas-stg.certora.com/output/23658/01cae74fe43232e6e6c5/?anonymousKey=9f050514a528f70e110a2a9f2dde24ffb85f39da
 */
 
 invariant total_asset_collateral_vs_asset_balance(address asset) 
@@ -81,15 +76,13 @@ invariant total_asset_collateral_vs_asset_balance(address asset)
         The base token balance of the system, is at least the supplied minus the borrowed
 
     @Formula: 
-        baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase()
+        baseToken.balanceOf(currentContract) >= getTotalSupplyBase() - getTotalBorrowBase()
 
     @Note:
         This invariant does not hold on absorb.  
         Safely assume that comet is not the msg.sender, this is a safe assumption since there is no call statement from Comet to itself. 
         Also assume that no address can supply from Comet, as comet does not give allowance
     
-    @Link: 
-        https://vaas-stg.certora.com/output/23658/01cae74fe43232e6e6c5/?anonymousKey=9f050514a528f70e110a2a9f2dde24ffb85f39da
 */
 
 invariant base_balance_vs_totals()
@@ -119,7 +112,7 @@ invariant base_balance_vs_totals()
         The total supply of an asset is not greater than it's supply cap
 
     @Formula: 
-        baseToken.balanceOf(currentContract) == getTotalSupplyBase() - getTotalBorrowBase()
+        totalsCollateral[asset].totalSupplyAsset <= getAssetSupplyCapByAddress(asset)
 
     @Note:
 
@@ -163,14 +156,16 @@ invariant total_base_token()
 
     @Formula:
         {
-             userBasic[user].principal = x
+            x = userBasic[user].principal &&
+            b = userCollateral[user][asset].balance &&
+            p = hasPermission[user][msg.sender] 
         }
 
-        < call any function >
+        < call op() by msg.sender>
         
         {
-            userBasic[user].principal = y
-            y < x => user = msg.sender || hasPermission[user][msg.sender] == true; 
+            ( userBasic[user].principal < x  => ( user = msg.sender || p ) ) &&
+            userCollateral[user][asset].balance < y => ( user = msg.sender || p  || op=absorb )
         }
 
     @Notes:

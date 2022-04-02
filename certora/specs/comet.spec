@@ -184,7 +184,7 @@ rule assetIn_initialized_with_balance(method f, address user, address asset)
     @Rule:
 
     @Description:
-        can't change balance without calling accrue
+        Base balance can change only on updated accrued state
 
     @Formula:
         {
@@ -220,20 +220,20 @@ rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f
     @Rule:
 
     @Description:
-        If the balance of an asset in the contract changes, it must be registered in as a recognized asset
+        If the system's balance in some asset changed, asset must be registered in as a recognized asset
 
     @Formula:
         {
-            registered = getAssetInfoByAddress(token).asset == token &&
-            token != _baseToken && 
-            balance_pre = tokenBalanceOf(token,currentContract)
+                registered = getAssetInfoByAddress(token).asset == token &&
+                token != _baseToken && 
+                b = tokenBalanceOf(token,currentContract)
         }
 
-        < call any function >
+                < call any function >
 
         {
-            balance_post = tokenBalanceOf(token,currentContract) &&
-            balance_post != balance_pre => registered
+                tokenBalanceOf(token,currentContract) != b => registered
+
         }
 
     @Notes:
