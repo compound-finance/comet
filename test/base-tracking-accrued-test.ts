@@ -1,4 +1,4 @@
-import { ethers, expect, exp, makeProtocol } from './helpers';
+import { ethers, expect, exp, fastForward, makeProtocol } from './helpers';
 
 describe('baseTrackingAccrued', function() {
   it('supply updates baseTrackingAccrued to 6 decimal value', async () => {
@@ -114,7 +114,7 @@ describe('baseTrackingAccrued', function() {
     expect(userBasic1.baseTrackingAccrued).to.eq(0);
 
     // allow 10 seconds to pass
-    await ethers.provider.send('evm_increaseTime', [10]);
+    await fastForward(10);
 
     // supply again
     await comet.connect(alice).supply(USDC.address, 1e6);

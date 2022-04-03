@@ -6,7 +6,7 @@ import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
 import '@typechain/hardhat';
-import 'solidity-coverage';
+import 'hardhat-cover';
 import 'hardhat-contract-sizer';
 import 'hardhat-gas-reporter';
 
@@ -100,10 +100,24 @@ const config: HardhatUserConfig = {
   solidity: {
     version: '0.8.11',
     settings: {
-      optimizer: {
-        enabled: true,
-        runs: 1,
+      optimizer: (
+        process.env['OPTIMIZER_DISABLED'] ? { enabled: false } : {
+          enabled: true,
+          runs: 1,
+          details: {
+            yulDetails: {
+              optimizerSteps: 'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul'
+            },
+          },
+        }
+      ),
+      outputSelection: {
+        "*": {
+          "*": ["evm.deployedBytecode.sourceMap"]
+        },
       },
+      // XXX for when we enable viaIR in a future merge:
+      //viaIR: process.env['OPTIMIZER_DISABLED'] ? false : true,
     },
   },
 

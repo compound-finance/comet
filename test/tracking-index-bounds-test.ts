@@ -1,4 +1,4 @@
-import { Comet, ethers, expect, exp, factor, defaultAssets, makeProtocol, portfolio, wait, toYears } from './helpers';
+import { Comet, ethers, expect, exp, factor, defaultAssets, fastForward, makeProtocol, portfolio, wait, toYears } from './helpers';
 import { BigNumber } from 'ethers';
 
 describe('total tracking index bounds', function () {
@@ -26,7 +26,7 @@ describe('total tracking index bounds', function () {
     });
     await wait(comet.setTotalsBasic(t0));
 
-    await ethers.provider.send('evm_increaseTime', [secondsUntilOverflow-1]);
+    await fastForward(secondsUntilOverflow-1);
 
     // First accrue is successful without overflow
     await comet.accrue();
@@ -59,7 +59,7 @@ describe('total tracking index bounds', function () {
     });
     await wait(comet.setTotalsBasic(t0));
 
-    await ethers.provider.send('evm_increaseTime', [secondsUntilOverflow-1]);
+    await fastForward(secondsUntilOverflow-1);
 
     // First accrue is successful without overflow
     await comet.accrue();
@@ -92,7 +92,7 @@ describe('total tracking index bounds', function () {
       totalSupplyBase: BigNumber.from(exp(1, 15)).mul(await comet.baseScale()).mul(3), // 3e15 base units
     });
     await wait(comet.setTotalsBasic(t2));
-    
+
     await comet.accrue();
     const t3 = await comet.totalsBasic();
 
@@ -124,7 +124,7 @@ describe('total tracking index bounds', function () {
       totalBorrowBase: BigNumber.from(exp(1, 15)).mul(await comet.baseScale()).mul(3), // 3e15 base units
     });
     await wait(comet.setTotalsBasic(t2));
-    
+
     await comet.accrue();
     const t3 = await comet.totalsBasic();
 

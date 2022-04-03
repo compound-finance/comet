@@ -1,4 +1,4 @@
-import { Comet, ethers, event, expect, exp, makeProtocol, portfolio, wait } from './helpers';
+import { Comet, ethers, event, expect, exp, hre, makeProtocol, portfolio, wait } from './helpers';
 
 describe('supplyTo', function () {
   it('supplies base from sender if the asset is base', async () => {
@@ -51,8 +51,7 @@ describe('supplyTo', function () {
     expect(q1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(t1.totalSupplyBase).to.be.equal(t0.totalSupplyBase.add(100e6));
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
-    // XXX disable during coverage? more ideally coverage would not modify gas costs
-    //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(100000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(120000);
   });
 
   it('supplies collateral from sender if the asset is collateral', async () => {
@@ -98,8 +97,7 @@ describe('supplyTo', function () {
     expect(q1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(q1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(t1.totalSupplyAsset).to.be.equal(t0.totalSupplyAsset.add(8e8));
-    // XXX disable during coverage? more ideally coverage would not modify gas costs
-    //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(125000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(140000);
   });
 
   it('calculates base principal correctly', async () => {

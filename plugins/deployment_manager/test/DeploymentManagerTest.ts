@@ -26,7 +26,7 @@ import { getRoots } from '../Roots';
 import { Address } from '../Types';
 import { objectFromMap } from '../Utils';
 import { deploy } from '../Deploy';
-import { faucetTokenBuildFile, tokenArgs } from './DeployTest';
+import { faucetTokenBuildFile, tokenArgs } from './DeployHelpers';
 import { tempDir } from './TestHelpers';
 
 export interface TestContracts {

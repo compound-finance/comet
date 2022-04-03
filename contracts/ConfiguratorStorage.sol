@@ -21,7 +21,7 @@ contract ConfiguratorStorage is CometConfiguration {
     Configuration internal configuratorParams; // XXX can create a public getter for this
 
     /// @notice The admin of the protocol
-    address public admin; 
+    address public admin;
 
     /// @notice Address for the Comet factory contract
     address public factory;
