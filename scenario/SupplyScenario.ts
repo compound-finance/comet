@@ -202,8 +202,7 @@ scenario(
   }
 );
 
-// XXX fix for development base, where Faucet token doesn't give the same revert message
-scenario.skip(
+scenario.only(
   'Comet#supplyFrom reverts if not enough ERC20 approval',
   {
     upgrade: true,
@@ -216,6 +215,9 @@ scenario.skip(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
+
+    await albert.allow(betty, true);
+    await baseAsset.approve(albert, betty, 10n * scale);
 
     await expect(
       betty.supplyAssetFrom({
@@ -252,7 +254,6 @@ scenario(
   }
 );
 
-// XXX fix for development base, where Faucet token doesn't give the same revert message
 scenario.skip(
   'Comet#supplyFrom reverts if not enough ERC20 balance',
   {
