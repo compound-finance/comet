@@ -12,8 +12,8 @@ interface TimelockInterface {
 /**
   * GovSimple:
   *  - A system similar to Compound's Governor{Alpha, Bravo, Charlie} but just for test-net.
-  *  - Instead of allowing voting by tokens, the system is run by a set of governors with unlimited power. Anyone in this set should be able to add or remove other governors (it's test-net).
-  *  - There is no voting - everything passes by will of any governor.
+  *  - Instead of allowing voting by tokens, the system is run by a set of admins with unlimited power. Anyone in this set should be able to add or remove other admins (it's test-net).
+  *  - There is no voting - everything passes by will of any admin.
   *  - The ABI for proposing, queueing, executing should be identical to main-net. The execution should, similarly, go through a simple test-net Timelock.
   *  - ABI:
   *    - function propose(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint)
@@ -24,14 +24,6 @@ contract GovernorSimple {
 
     /// @notice An event emitted when a new proposal is created
     event ProposalCreated(uint id, address proposer, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, uint startBlock, string description);
-
-    /// @notice An event emitted when a vote has been cast on a proposal
-    /// @param voter The address which casted a vote
-    /// @param proposalId The proposal id which was voted on
-    /// @param support Support value for the vote. 0=against, 1=for, 2=abstain
-    /// @param votes Number of votes which were cast by the voter
-    /// @param reason The reason given for the vote by the voter
-    event VoteCast(address indexed voter, uint proposalId, uint8 support, uint votes, string reason);
 
     /// @notice An event emitted when a proposal has been canceled
     event ProposalCanceled(uint id);
@@ -48,8 +40,8 @@ contract GovernorSimple {
     /// @notice The timelock
     TimelockInterface public timelock;
 
-    /// @notice The list of governors that can propose, cancel, queue, and execute proposals
-    address[] public governors;
+    /// @notice The list of admins that can propose, cancel, queue, and execute proposals
+    address[] public admins;
 
     /// @notice The total number of proposals
     uint public proposalCount;
@@ -97,12 +89,17 @@ contract GovernorSimple {
         Executed
     }
 
-    constructor(address timelock_, address[] memory governors_) {
+    /**
+      * @notice Initialize the initial contract storage
+      * @param timelock_ The address of the Timelock
+      * @param admins_ The admins of governor
+      */
+    function initialize(address timelock_, address[] memory admins_) external {
         // XXX use custom errors
         require(address(timelock) == address(0), "GovernorBravo::initialize: can only initialize once");
-        // XXX governor can't be empty?
+        // XXX admins can't be empty?
         timelock = TimelockInterface(timelock_);
-        governors = governors_; // XXX consider using a mapping instead
+        admins = admins_; // XXX consider using a mapping instead
     }
 
     /**
@@ -115,7 +112,7 @@ contract GovernorSimple {
       * @return Proposal id of new proposal
       */
     function propose(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint) {
-        require(isGovernor(msg.sender), "GovernorBravo::propose: only governors can propose");
+        require(isAdmin(msg.sender), "GovernorBravo::propose: only governors can propose");
         require(targets.length == values.length && targets.length == signatures.length && targets.length == calldatas.length, "GovernorBravo::propose: proposal function information arity mismatch");
         require(targets.length != 0, "GovernorBravo::propose: must provide actions");
         require(targets.length <= proposalMaxOperations, "GovernorBravo::propose: too many actions");
@@ -147,7 +144,7 @@ contract GovernorSimple {
       * @param proposalId The id of the proposal to queue
       */
     function queue(uint proposalId) external {
-        require(isGovernor(msg.sender), "GovernorBravo::propose: only governors can propose");
+        require(isAdmin(msg.sender), "GovernorBravo::propose: only governors can propose");
         require(state(proposalId) == ProposalState.Active, "GovernorBravo::queue: proposal can only be queued if it is active");
         
         Proposal storage proposal = proposals[proposalId];
@@ -168,7 +165,7 @@ contract GovernorSimple {
       * @param proposalId The id of the proposal to execute
       */
     function execute(uint proposalId) external payable {
-        require(isGovernor(msg.sender), "GovernorBravo::propose: only governors can propose");
+        require(isAdmin(msg.sender), "GovernorBravo::propose: only governors can propose");
         require(state(proposalId) == ProposalState.Queued, "GovernorBravo::execute: proposal can only be executed if it is queued");
         
         Proposal storage proposal = proposals[proposalId];
@@ -185,7 +182,7 @@ contract GovernorSimple {
       * @param proposalId The id of the proposal to cancel
       */
     function cancel(uint proposalId) external {
-        require(isGovernor(msg.sender), "GovernorBravo::propose: only governors can propose");
+        require(isAdmin(msg.sender), "GovernorBravo::propose: only governors can propose");
         require(state(proposalId) != ProposalState.Executed, "GovernorBravo::cancel: cannot cancel executed proposal");
 
         Proposal storage proposal = proposals[proposalId];
@@ -225,9 +222,9 @@ contract GovernorSimple {
     }
 
     /// @notice Checks whether an account is a governor or not
-    function isGovernor(address account) internal view returns (bool) {
-        for (uint i = 0; i < governors.length; i++) {
-            if (governors[i] == account) {
+    function isAdmin(address account) internal view returns (bool) {
+        for (uint i = 0; i < admins.length; i++) {
+            if (admins[i] == account) {
                 return true;
             }
         }

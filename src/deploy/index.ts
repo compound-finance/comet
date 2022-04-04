@@ -4,6 +4,8 @@ import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentMa
 import {
   Comet,
   ERC20,
+  GovernorSimple,
+  SimpleTimelock,
   TransparentUpgradeableProxy,
 } from '../../build/types';
 import { AssetConfigStruct } from '../../build/types/Comet';
@@ -36,6 +38,8 @@ export interface DeployedContracts {
   comet: Comet;
   cometProxy: TransparentUpgradeableProxy | null;
   configuratorProxy: TransparentUpgradeableProxy | null;
+  timelock: SimpleTimelock,
+  governor: GovernorSimple,
   tokens?: ERC20[];
 }
 

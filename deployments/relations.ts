@@ -59,6 +59,15 @@ let relationConfigMap: RelationConfigMap = {
       }
     }
   },
+  timelock: {
+    relations: {
+      governor: {
+        field: async (timelock) => {
+          return await timelock.admin();
+        }
+      }
+    }
+  },
   FiatTokenProxy: {
     proxy: {
       field: {

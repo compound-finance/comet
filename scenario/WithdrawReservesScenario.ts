@@ -1,5 +1,6 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
+import { utils } from 'ethers';
 
 scenario(
   'Comet#withdrawReserves > governor withdraw reserves',
@@ -9,15 +10,23 @@ scenario(
     },
     upgrade: true,
   },
-  async ({ comet, actors }, world, context) => {
-    const { admin, albert } = actors;
+  async ({ comet, timelock, actors }, world, context) => {
+    const { albert } = actors;
 
     const baseToken = context.getAssetByAddress(await comet.baseToken());
     const scale = (await comet.baseScale()).toBigInt();
 
     expect(await baseToken.balanceOf(comet.address)).to.equal(100n * scale);
 
-    const txn = await admin.withdrawReserves(albert, 10n * scale);
+    expect(await comet.governor()).to.equal(timelock.address);
+
+    let withdrawReservesCalldata = utils.defaultAbiCoder.encode(["address", "uint256"], [albert.address, 10n * scale]);
+    const txn = await context.fastGovernanceExecute(
+      [comet.address],
+      [0],
+      ["withdrawReserves(address,uint256)"],
+      [withdrawReservesCalldata]
+    );
 
     expect(await baseToken.balanceOf(comet.address)).to.equal(90n * scale);
     expect(await baseToken.balanceOf(albert.address)).to.equal(10n * scale);
@@ -50,12 +59,19 @@ scenario(
     },
     upgrade: true,
   },
-  async ({ comet, actors }) => {
+  async ({ comet, actors }, world, context) => {
     const { admin, albert } = actors;
 
     const scale = (await comet.baseScale()).toBigInt();
 
-    await expect(admin.withdrawReserves(albert, 101n * scale)).to.be.revertedWith("custom error 'InsufficientReserves()'");
+    let withdrawReservesCalldata = utils.defaultAbiCoder.encode(["address", "uint256"], [albert.address, 101n * scale]);
+    // Note: Should be `InsufficientReserves()` error, but that error is masked by the Timelock error
+    await expect(context.fastGovernanceExecute(
+      [comet.address],
+      [0],
+      ["withdrawReserves(address,uint256)"],
+      [withdrawReservesCalldata]
+    )).to.be.revertedWith('Timelock::executeTransaction: Transaction execution reverted.');
   }
 );
 

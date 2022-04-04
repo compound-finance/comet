@@ -10,10 +10,12 @@ import {
   CometFactory,
   FaucetToken__factory,
   FaucetToken,
+  GovernorSimple,
+  GovernorSimple__factory,
   SimplePriceFeed,
   SimplePriceFeed__factory,
-  Timelock,
-  Timelock__factory,
+  SimpleTimelock,
+  SimpleTimelock__factory,
   TransparentUpgradeableProxy,
   TransparentUpgradeableProxy__factory,
   Configurator,
@@ -25,7 +27,7 @@ import {
 } from '../../build/types';
 import { ConfigurationStruct } from '../../build/types/Comet';
 import { ExtConfigurationStruct } from '../../build/types/CometExt';
-import { BigNumberish } from 'ethers';
+import { BigNumberish, constants, utils } from 'ethers';
 export { Comet } from '../../build/types';
 import { DeployedContracts, ProtocolConfiguration } from './index';
 
@@ -67,11 +69,7 @@ export async function deployDevelopmentComet(
   configurationOverrides: ProtocolConfiguration = {}
 ): Promise<DeployedContracts> {
   const signers = await deploymentManager.hre.ethers.getSigners();
-
-  const timelock = await deploymentManager.deploy<Timelock, Timelock__factory, []>(
-    'test/Timelock.sol',
-    []
-  );
+  const admin = await signers[0].getAddress();
 
   let dai = await makeToken(deploymentManager, 1000000, 'DAI', 18, 'DAI');
   let gold = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
@@ -101,6 +99,19 @@ export async function deployDevelopmentComet(
     supplyCap: (500000e10).toString(),
   };
 
+  const governorSimple = await deploymentManager.deploy<GovernorSimple, GovernorSimple__factory, []>(
+    'test/GovernorSimple.sol',
+    []
+  );
+
+  const timelock = await deploymentManager.deploy<SimpleTimelock, SimpleTimelock__factory, [string]>(
+    'test/SimpleTimelock.sol',
+    [governorSimple.address]
+  );
+
+  // Initialize the storage of GovernorSimple
+  await governorSimple.initialize(timelock.address, [admin])
+
   const {
     symbol,
     governor,
@@ -123,7 +134,7 @@ export async function deployDevelopmentComet(
   } = {
     ...{
       symbol: '📈BASE',
-      governor: await signers[0].getAddress(),
+      governor: timelock.address,
       pauseGuardian: await signers[1].getAddress(),
       baseToken: dai.address,
       baseTokenPriceFeed: daiPriceFeed.address,
@@ -226,6 +237,8 @@ export async function deployDevelopmentComet(
     comet,
     cometProxy,
     configuratorProxy,
+    timelock,
+    governor: governorSimple,
     tokens: [dai, gold, silver],
   };
 }

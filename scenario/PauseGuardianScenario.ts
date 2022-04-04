@@ -15,8 +15,8 @@ scenario(
     expect(await comet.isAbsorbPaused()).to.be.false;
     expect(await comet.isBuyPaused()).to.be.false;
 
-    const { admin } = actors;
-    const txn = await admin.pause({
+    const { pauseGuardian } = actors;
+    const txn = await pauseGuardian.pause({
       supplyPaused: true,
       transferPaused: true,
       withdrawPaused: true,

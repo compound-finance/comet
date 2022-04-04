@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { BigNumberish } from 'ethers';
+import { BigNumberish, utils } from 'ethers';
 
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
@@ -13,6 +13,8 @@ import {
   CometFactory,
   FaucetToken__factory,
   FaucetToken,
+  GovernorSimple,
+  GovernorSimple__factory,
   CometProxyAdmin,
   CometProxyAdmin__factory,
   TransparentUpgradeableProxy,
@@ -21,8 +23,8 @@ import {
   TransparentUpgradeableConfiguratorProxy__factory,
   Configurator,
   Configurator__factory,
-  Timelock,
-  Timelock__factory,
+  SimpleTimelock,
+  SimpleTimelock__factory,
 } from '../../build/types';
 import { ConfigurationStruct } from '../../build/types/Comet';
 import { ExtConfigurationStruct } from '../../build/types/CometExt';
@@ -36,11 +38,21 @@ export async function deployNetworkComet(
   configurationOverrides: ProtocolConfiguration = {},
   contractMapOverride?: ContractMap,
 ): Promise<DeployedContracts> {
-  
-  const timelock = await deploymentManager.deploy<Timelock, Timelock__factory, []>(
-    'test/Timelock.sol',
+  const signers = await deploymentManager.hre.ethers.getSigners();
+  const admin = await signers[0].getAddress();
+
+  const governorSimple = await deploymentManager.deploy<GovernorSimple, GovernorSimple__factory, []>(
+    'test/GovernorSimple.sol',
     []
   );
+
+  const timelock = await deploymentManager.deploy<SimpleTimelock, SimpleTimelock__factory, [string]>(
+    'test/SimpleTimelock.sol',
+    [governorSimple.address]
+  );
+
+  // Initialize the storage of GovernorSimple
+  await governorSimple.initialize(timelock.address, [admin])
 
   const {
     symbol,
@@ -62,6 +74,7 @@ export async function deployNetworkComet(
     targetReserves,
     assetConfigs,
   } = {
+    governor: timelock.address,
     ...await getConfiguration(deploymentManager.deployment, deploymentManager.hre, contractMapOverride),
     ...configurationOverrides
   };
@@ -146,5 +159,7 @@ export async function deployNetworkComet(
     comet,
     cometProxy,
     configuratorProxy,
+    timelock,
+    governor: governorSimple
   };
 }
