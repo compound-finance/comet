@@ -137,7 +137,7 @@ scenario(
 
     // Betty supplies 100 units of collateral from Albert
     const txn = await betty.supplyAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: 100n * scale });
-    
+
     expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(0n);
     expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(100n * scale);
 
@@ -180,7 +180,7 @@ scenario(
 );
 
 // XXX fix for development base, where Faucet token doesn't give the same revert message
-scenario.skip(
+scenario(
   'Comet#supply reverts if not enough ERC20 approval',
   {
     upgrade: true,
