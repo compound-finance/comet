@@ -196,7 +196,7 @@ export async function deployDevelopmentComet(
       proxyAdminArgs
     );
     await proxyAdmin.transferOwnership(timelock.address);
-    
+
     // Configuration proxy
     configuratorProxy = await deploymentManager.deploy<
       TransparentUpgradeableConfiguratorProxy,
@@ -207,7 +207,7 @@ export async function deployDevelopmentComet(
       proxyAdmin.address,
       (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data,
     ]);
-    
+
     // Comet proxy
     cometProxy = await deploymentManager.deploy<
       TransparentUpgradeableProxy,
