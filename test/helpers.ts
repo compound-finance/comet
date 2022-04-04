@@ -35,7 +35,8 @@ export type Numeric = number | bigint;
 
 export enum ReentryAttack {
   TransferFrom = 0,
-  WithdrawFrom = 1
+  WithdrawFrom = 1,
+  SupplyFrom = 2
 }
 
 export type ProtocolOpts = {
@@ -406,7 +407,16 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   };
 }
 
-export async function portfolio({ comet, base, tokens }, account) {
+type Portfolio = {
+  internal: {
+    [symbol: string]: BigInt,
+  },
+  external: {
+    [symbol: string]: BigInt,
+  }
+}
+
+export async function portfolio({ comet, base, tokens }, account): Promise<Portfolio>  {
   const internal = { [base]: BigInt(await comet.baseBalanceOf(account)) };
   const external = { [base]: BigInt(await tokens[base].balanceOf(account)) };
   for (const symbol in tokens) {

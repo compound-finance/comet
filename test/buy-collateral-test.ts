@@ -1,4 +1,5 @@
-import { Comet, ethers, expect, exp, makeProtocol, portfolio, wait } from './helpers';
+import { EvilToken, EvilToken__factory, FaucetToken } from '../build/types';
+import { ethers, expect, exp, getBlock, makeProtocol, portfolio, ReentryAttack, wait } from './helpers';
 
 describe('buyCollateral', function () {
   it('allows buying collateral when reserves < target reserves', async () => {
@@ -217,7 +218,176 @@ describe('buyCollateral', function () {
     // Note: fee-tokens are not currently supported (for efficiency) and should not be added
   });
 
-  it.skip('is not broken by malicious re-entrancy', async () => {
-    // XXX
+  describe('reentrancy', function() {
+    it('is not broken by reentrancy supply ', async () => {
+      const wethArgs = {
+        initial: 1e4,
+        decimals: 18,
+        initialPrice: 3000,
+      };
+      const baseTokenArgs = {
+        decimals: 6,
+        initial: 1e6,
+        initialPrice: 1,
+      };
+
+      // 1. normal scenario, USDC base
+      const normalProtocol = await makeProtocol({
+        base: "USDC",
+        assets: {
+          USDC: baseTokenArgs,
+          WETH: wethArgs,
+        },
+        targetReserves: 1
+      });
+      const {
+        comet: normalComet,
+        tokens: normalTokens,
+        users: [normalAlice, normalBob, evilAlice, evilBob] // addresses are constant
+      } = normalProtocol;
+      const { USDC: normalUSDC, WETH: normalWETH } = normalTokens;
+
+      // 2. malicious scenario, EVIL token is base
+      const evilProtocol = await makeProtocol({
+        base: "EVIL",
+        assets: {
+          EVIL: {
+            ...baseTokenArgs,
+            factory: await ethers.getContractFactory('EvilToken') as EvilToken__factory,
+          },
+          WETH: wethArgs,
+        },
+        targetReserves: 1
+      });
+      const {
+        comet: evilComet,
+        tokens: evilTokens,
+      } = evilProtocol;
+      const { WETH: evilWETH, EVIL } = <{WETH: FaucetToken, EVIL: EvilToken}>evilTokens;
+      // add attack to EVIL token
+      const attack = Object.assign({}, await EVIL.getAttack(), {
+        attackType: ReentryAttack.SupplyFrom,
+        source: evilAlice.address,
+        destination: evilBob.address,
+        asset: EVIL.address,
+        amount: 1e6,
+        maxCalls: 1
+      });
+      await EVIL.setAttack(attack);
+
+      // allocate tokens
+      await normalWETH.allocateTo(normalComet.address, exp(100, 18));
+      await normalUSDC.allocateTo(normalAlice.address, exp(5000, 6));
+      // allocate tokens (evil)
+      await evilWETH.allocateTo(evilComet.address, exp(100, 18));
+      await EVIL.allocateTo(evilAlice.address, exp(5000, 6));
+
+      // set collateral balance
+      const t0 = Object.assign({}, await normalComet.totalsCollateral(normalWETH.address), {
+        totalSupplyAsset: exp(100, 18),
+      });
+      await normalComet.setTotalsCollateral(normalWETH.address, t0);
+
+      const t1 = Object.assign({}, await evilComet.totalsCollateral(evilWETH.address), {
+        totalSupplyAsset: exp(100, 18),
+      });
+      await evilComet.setTotalsCollateral(evilWETH.address, t1);
+
+      // ensure both Comets have the same lastAccrualTime
+      const start = (await getBlock()).timestamp;
+
+      let tb0 = await normalComet.totalsBasic();
+      tb0 = Object.assign({}, tb0, {
+        lastAccrualTime: start
+      });
+      await normalComet.setTotalsBasic(tb0);
+
+      let tb1 = await evilComet.totalsBasic();
+      tb1 = Object.assign({}, tb1, {
+        lastAccrualTime: start
+      });
+      await evilComet.setTotalsBasic(tb1);
+
+      // 5 WETH have been absorbed
+      await normalComet.setCollateralBalance(
+        normalComet.address,
+        normalWETH.address,
+        exp(5, 18)
+      );
+      await evilComet.setCollateralBalance(
+        evilComet.address,
+        evilWETH.address,
+        exp(5, 18)
+      );
+
+      // approve Comet to move funds
+      await normalUSDC.connect(normalAlice).approve(normalComet.address, exp(5000, 6));
+      await EVIL.connect(evilAlice).approve(EVIL.address, exp(5000, 6));
+
+      // perform the supplies for each protocol in the same block, so that the
+      // same amount of time elapses for each when calculating interest
+      await ethers.provider.send("evm_setAutomine", [false]);
+
+      // call supply
+      await normalComet
+        .connect(normalAlice)
+        .supplyFrom(
+          normalAlice.address,
+          normalBob.address,
+          normalUSDC.address,
+          1e6
+        );
+
+      // call buyCollateral
+      await normalComet
+        .connect(normalAlice)
+        .buyCollateral(
+          normalWETH.address,
+          exp(.5, 18),
+          exp(3000, 6),
+          normalAlice.address
+        );
+
+      // authorize EVIL, since callback will originate from EVIL token address
+      await evilComet.connect(evilAlice).allow(EVIL.address, true);
+      // call buyCollateral; supplyFrom is called in in callback
+      await evilComet
+        .connect(evilAlice)
+        .buyCollateral(
+          evilWETH.address,
+          exp(.5, 18),
+          exp(3000, 6),
+          evilAlice.address
+        );
+
+      // !important; reenable automine
+      await ethers.provider.send('evm_mine', [start + 1000]);
+      await ethers.provider.send("evm_setAutomine", [true]);
+
+      const normalTotalsBasic = await normalComet.totalsBasic();
+      const normalTotalsCollateral = await normalComet.totalsCollateral(normalWETH.address);
+      const evilTotalsBasic = await evilComet.totalsBasic();
+      const evilTotalsCollateral = await evilComet.totalsCollateral(evilWETH.address);
+
+      expect(normalTotalsBasic.baseSupplyIndex).to.equal(evilTotalsBasic.baseSupplyIndex);
+      expect(normalTotalsBasic.baseBorrowIndex).to.equal(evilTotalsBasic.baseBorrowIndex);
+      expect(normalTotalsBasic.trackingSupplyIndex).to.equal(evilTotalsBasic.trackingSupplyIndex);
+      expect(normalTotalsBasic.trackingBorrowIndex).to.equal(evilTotalsBasic.trackingBorrowIndex);
+      expect(normalTotalsBasic.totalSupplyBase).to.equal(evilTotalsBasic.totalSupplyBase);
+      expect(normalTotalsBasic.totalBorrowBase).to.equal(evilTotalsBasic.totalBorrowBase);
+
+      expect(normalTotalsCollateral.totalSupplyAsset).to.eq(evilTotalsCollateral.totalSupplyAsset);
+
+      const normalAlicePortfolio = await portfolio(normalProtocol, normalAlice.address);
+      const evilAlicePortfolio = await portfolio(evilProtocol, evilAlice.address);
+
+      expect(normalAlicePortfolio.internal.USDC).to.deep.equal(evilAlicePortfolio.internal.EVIL);
+      expect(normalAlicePortfolio.internal.WETH).to.deep.equal(evilAlicePortfolio.internal.WETH);
+
+      const normalBobPortfolio = await portfolio(normalProtocol, normalBob.address);
+      const evilBobPortfolio = await portfolio(evilProtocol, evilBob.address);
+
+      expect(normalBobPortfolio.internal.USDC).to.equal(evilBobPortfolio.internal.EVIL);
+    });
   });
 });

