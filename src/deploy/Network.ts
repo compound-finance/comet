@@ -52,7 +52,7 @@ export async function deployNetworkComet(
   );
 
   // Initialize the storage of GovernorSimple
-  await governorSimple.initialize(timelock.address, [admin])
+  await governorSimple.initialize(timelock.address, [admin]);
 
   const {
     symbol,

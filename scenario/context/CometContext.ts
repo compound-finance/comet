@@ -18,6 +18,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { Requirements } from '../constraints/Requirements';
+import { fastGovernanceExecute } from '../utils';
 
 type ActorMap = { [name: string]: CometActor };
 type AssetMap = { [name: string]: CometAsset };
@@ -206,13 +207,7 @@ export class CometContext {
   async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
     let admin = this.actors['admin'];
     let governor = (await this.getGovernor()).connect(admin.signer);
-
-    let tx = await (await governor.propose(targets, values, signatures, calldatas, 'FastExecuteProposal')).wait();
-    let event = tx.events.find(event => event.event === 'ProposalCreated');
-    let [ proposalId ] = event.args;
-
-    await governor.queue(proposalId);
-    await governor.execute(proposalId);
+    await fastGovernanceExecute(governor, targets, values, signatures, calldatas);
   }
 }
 

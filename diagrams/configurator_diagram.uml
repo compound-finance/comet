@@ -9,7 +9,7 @@ rectangle CometFactory
 rectangle CometProxy
 rectangle CometImpl
 
-GovSimple --> Timelock
+GovSimple --> Timelock : admin
 Timelock --> ProxyAdmin : admin
 Timelock ~~> ConfiguratorImpl : governor
 Timelock ~~> CometImpl : governor
