@@ -67,7 +67,7 @@ export function getPrimaryContract(buildFile: BuildFile): [string, ContractMetad
 
 // merge two ABIs
 // conflicting entries (like constructors) will defer to the second abi
-// ("abi1"); duplicate entires are removed
+// ("abi1"); duplicate entries are removed
 export function mergeABI(abi0: ABI, abi1: ABI): ABIEntry[] {
   let parsedABI0: ABIEntry[] = typeof abi0 === 'string' ? JSON.parse(abi0) : abi0;
   let parsedABI1: ABIEntry[] = typeof abi1 === 'string' ? JSON.parse(abi1) : abi1;
