@@ -112,10 +112,10 @@ contract GovernorSimple {
       * @return Proposal id of new proposal
       */
     function propose(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint) {
-        require(isAdmin(msg.sender), "GovernorBravo::propose: only governors can propose");
-        require(targets.length == values.length && targets.length == signatures.length && targets.length == calldatas.length, "GovernorBravo::propose: proposal function information arity mismatch");
-        require(targets.length != 0, "GovernorBravo::propose: must provide actions");
-        require(targets.length <= proposalMaxOperations, "GovernorBravo::propose: too many actions");
+        require(isAdmin(msg.sender), "GovernorSimple::propose: only governors can propose");
+        require(targets.length == values.length && targets.length == signatures.length && targets.length == calldatas.length, "GovernorSimple::propose: proposal function information arity mismatch");
+        require(targets.length != 0, "GovernorSimple::propose: must provide actions");
+        require(targets.length <= proposalMaxOperations, "GovernorSimple::propose: too many actions");
 
         uint startBlock = block.number;
 
@@ -127,7 +127,7 @@ contract GovernorSimple {
             values: values,
             signatures: signatures,
             calldatas: calldatas,
-            startBlock: block.number,
+            startBlock: startBlock,
             canceled: false,
             queued: false,
             executed: false
@@ -144,8 +144,8 @@ contract GovernorSimple {
       * @param proposalId The id of the proposal to queue
       */
     function queue(uint proposalId) external {
-        require(isAdmin(msg.sender), "GovernorBravo::propose: only governors can propose");
-        require(state(proposalId) == ProposalState.Active, "GovernorBravo::queue: proposal can only be queued if it is active");
+        require(isAdmin(msg.sender), "GovernorSimple::propose: only governors can queue");
+        require(state(proposalId) == ProposalState.Active, "GovernorSimple::queue: proposal can only be queued if it is active");
         
         Proposal storage proposal = proposals[proposalId];
         proposal.queued = true;
@@ -156,7 +156,7 @@ contract GovernorSimple {
     }
 
     function queueOrRevertInternal(address target, uint value, string memory signature, bytes memory data) internal {
-        require(!timelock.queuedTransactions(keccak256(abi.encode(target, value, signature, data))), "GovernorBravo::queueOrRevertInternal: identical proposal action already queued at eta");
+        require(!timelock.queuedTransactions(keccak256(abi.encode(target, value, signature, data))), "GovernorSimple::queueOrRevertInternal: identical proposal action already queued at eta");
         timelock.queueTransaction(target, value, signature, data);
     }
 
@@ -165,8 +165,8 @@ contract GovernorSimple {
       * @param proposalId The id of the proposal to execute
       */
     function execute(uint proposalId) external payable {
-        require(isAdmin(msg.sender), "GovernorBravo::propose: only governors can propose");
-        require(state(proposalId) == ProposalState.Queued, "GovernorBravo::execute: proposal can only be executed if it is queued");
+        require(isAdmin(msg.sender), "GovernorSimple::propose: only governors can execute");
+        require(state(proposalId) == ProposalState.Queued, "GovernorSimple::execute: proposal can only be executed if it is queued");
         
         Proposal storage proposal = proposals[proposalId];
         proposal.queued = false;
@@ -182,8 +182,8 @@ contract GovernorSimple {
       * @param proposalId The id of the proposal to cancel
       */
     function cancel(uint proposalId) external {
-        require(isAdmin(msg.sender), "GovernorBravo::propose: only governors can propose");
-        require(state(proposalId) != ProposalState.Executed, "GovernorBravo::cancel: cannot cancel executed proposal");
+        require(isAdmin(msg.sender), "GovernorSimple::propose: only governors can cancel");
+        require(state(proposalId) != ProposalState.Executed, "GovernorSimple::cancel: cannot cancel executed proposal");
 
         Proposal storage proposal = proposals[proposalId];
         proposal.canceled = true;
@@ -208,7 +208,7 @@ contract GovernorSimple {
       * @return Proposal state
       */
     function state(uint proposalId) public view returns (ProposalState) {
-        require(proposalCount >= proposalId, "GovernorBravo::state: invalid proposal id");
+        require(proposalCount >= proposalId, "GovernorSimple::state: invalid proposal id");
         Proposal memory proposal = proposals[proposalId];
         if (proposal.canceled) {
             return ProposalState.Canceled;
