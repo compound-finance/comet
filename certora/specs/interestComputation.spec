@@ -69,13 +69,11 @@ function setup(env e){
             borrow_index = getBaseBorrowIndex() &&
         }
             accrueInternal();
-        { }
+        { 
             getBaseSupplyIndex() >= supply_index &&
-                                              getBaseBorrowIndex() >= borrow_index
+            getBaseBorrowIndex() >= borrow_index
+        }
 
-    @Formula:
-        baseSupplyIndex_2 >= baseSupplyIndex_1 &&
-        baseBorrowIndex_2 >= baseBorrowIndex_1
 
     @Notes:
 
@@ -211,7 +209,7 @@ rule isLiquidatable_false_should_not_change(address account){
         if a account is collateralized then it is not liquiditable
 
     @Formula:
-        isBorrowCollateralized(account) => !isLiquidatable(account);
+        isBorrowCollateralized(account) => !isLiquidatable(account)
 
     @Notes:
 
@@ -264,12 +262,12 @@ rule supplyIndex_borrowIndex_GE_getBaseIndexScale(){
         presentValue always greater than principalValue
 
     @Formula:
-        principalValue = principalValue(presentValue) &&
-            presentValue >= 0 => presentValue >= principalValue &&
-            presentValue < 0 => presentValue <= principalValue 
+        principalValue = principalValue(presentValue) =>
+           (presentValue >= 0 => presentValue >= principalValue &&
+            presentValue < 0 => presentValue <= principalValue ) 
 
     @Notes: 
-        The absolute presentValue is GE to the absolut principalValue 
+        The absolute presentValue is GE to the absolute principalValue 
 
     @Link:
         
