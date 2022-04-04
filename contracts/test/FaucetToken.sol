@@ -33,6 +33,7 @@ contract StandardToken {
 
     function transferFrom(address src, address dst, uint256 amount) external virtual returns (bool) {
         require(amount <= allowance[src][msg.sender], "ERC20: transfer amount exceeds allowance");
+        require(amount <= balanceOf[msg.sender], "ERC20: transfer amount exceeds balance");
         allowance[src][msg.sender] = allowance[src][msg.sender] - amount;
         balanceOf[src] = balanceOf[src] - amount;
         balanceOf[dst] = balanceOf[dst] + amount;

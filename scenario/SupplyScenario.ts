@@ -179,7 +179,6 @@ scenario(
   }
 );
 
-// XXX fix for development base, where Faucet token doesn't give the same revert message
 scenario(
   'Comet#supply reverts if not enough ERC20 approval',
   {
@@ -229,8 +228,7 @@ scenario.skip(
   }
 );
 
-// XXX fix for development base, where Faucet token doesn't give the same revert message
-scenario.skip(
+scenario(
   'Comet#supply reverts if not enough ERC20 balance',
   {
     upgrade: true,
