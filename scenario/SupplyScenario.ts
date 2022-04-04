@@ -202,7 +202,7 @@ scenario(
   }
 );
 
-scenario.only(
+scenario(
   'Comet#supplyFrom reverts if not enough ERC20 approval',
   {
     upgrade: true,
@@ -254,7 +254,7 @@ scenario(
   }
 );
 
-scenario.skip(
+scenario(
   'Comet#supplyFrom reverts if not enough ERC20 balance',
   {
     upgrade: true,

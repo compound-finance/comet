@@ -25,6 +25,7 @@ contract StandardToken {
     }
 
     function transfer(address dst, uint256 amount) external virtual returns (bool) {
+        require(amount <= balanceOf[msg.sender], "ERC20: transfer amount exceeds balance");
         balanceOf[msg.sender] = balanceOf[msg.sender] - amount;
         balanceOf[dst] = balanceOf[dst] + amount;
         emit Transfer(msg.sender, dst, amount);
