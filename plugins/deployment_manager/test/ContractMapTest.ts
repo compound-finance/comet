@@ -94,7 +94,6 @@ describe('ContractMap', () => {
         '0x0000000000000000000000000000000000000000'
       );
       expect(Object.keys(await contractMap.get('token').populateTransaction)).to.eql([
-        'cool()',
         'allocateTo(address,uint256)',
         'allowance(address,address)',
         'approve(address,uint256)',
@@ -105,7 +104,7 @@ describe('ContractMap', () => {
         'totalSupply()',
         'transfer(address,uint256)',
         'transferFrom(address,address,uint256)',
-        'cool',
+        'cool()',
         'allocateTo',
         'allowance',
         'approve',
@@ -116,6 +115,7 @@ describe('ContractMap', () => {
         'totalSupply',
         'transfer',
         'transferFrom',
+        'cool',
       ]);
 
       // With double proxy
@@ -141,7 +141,7 @@ describe('ContractMap', () => {
         '0x0000000000000000000000000000000000000000'
       );
       expect(Object.keys(await contractMap.get('token').populateTransaction)).to.eql([
-        'cool()',
+        'cooler()',
         'allocateTo(address,uint256)',
         'allowance(address,address)',
         'approve(address,uint256)',
@@ -152,8 +152,8 @@ describe('ContractMap', () => {
         'totalSupply()',
         'transfer(address,uint256)',
         'transferFrom(address,address,uint256)',
-        'cooler()',
-        'cool',
+        'cool()',
+        'cooler',
         'allocateTo',
         'allowance',
         'approve',
@@ -164,7 +164,7 @@ describe('ContractMap', () => {
         'totalSupply',
         'transfer',
         'transferFrom',
-        'cooler',
+        'cool',
       ]);
     });
 
