@@ -62,7 +62,7 @@ const supplyRate = await comet.methods.getSupplyRate().call();
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const supplyRate = await comet.getSupplyRate();
+const supplyRate = await comet.callStatic.getSupplyRate();
 ```
 
 ### Get Borrow Rate
@@ -105,7 +105,7 @@ const borrowRate = await comet.methods.getBorrowRate().call();
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const borrowRate = await comet.getBorrowRate();
+const borrowRate = await comet.callStatic.getBorrowRate();
 ```
 
 ## Collateral & Borrowing
@@ -252,7 +252,7 @@ const borrowLiquidity = await comet.methods.getBorrowLiquidity('0xAccount').call
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const borrowLiquidity = await comet.getBorrowLiquidity('0xAccount');
+const borrowLiquidity = await comet.callStatic.getBorrowLiquidity('0xAccount');
 ```
 
 ### Borrow Collateralization
@@ -286,7 +286,7 @@ const isCollateralized = await comet.methods.isBorrowCollateralized('0xAccount')
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const isCollateralized = await comet.isBorrowCollateralized('0xAccount');
+const isCollateralized = await comet.callStatic.isBorrowCollateralized('0xAccount');
 ```
 
 ## Liquidation
@@ -332,7 +332,7 @@ const isLiquidatable = await comet.methods.isLiquidatable('0xAccount').call();
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const isLiquidatable = await comet.isLiquidatable('0xAccount');
+const isLiquidatable = await comet.callStatic.isLiquidatable('0xAccount');
 ```
 
 ### Absorb
@@ -413,6 +413,8 @@ await comet.buyCollateral('0xAssetAddress', 5e18, 5e18, '0xRecipient');
 
 Reserves are a portion of historical interest set aside as cash which can be withdrawn or transferred through the protocol's governance. A portion of borrower interest accrues into the protocol, determined by the reserve factor. The Compound III account [liquidation](#liquidation) process uses and also adds to protocol reserves.
 
+There is an immutable value in the Comet contract that represents a target reserve value. Once the contract has reached the level of target reserves, liquidators are not able to buy collateral from the protocol.
+
 ### Get Reserves
 
 This function returns the amount of protocol reserves for the base asset as an integer.
@@ -443,7 +445,40 @@ const reserves = await comet.methods.getReserves().call();
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const reserves = await comet.getReserves();
+const reserves = await comet.callStatic.getReserves();
+```
+
+### Target Reserves
+
+This immutable value represents the target amount of reserves of the base token. If the protocol holds greater than or equal to this amount of reserves, the *[buyCollateral](#buy-collateral)* function can no longer be successfully called.
+
+#### Compound III
+
+```solidity
+function targetReserves() returns (uint)
+```
+
+* `RETURN`: The target reserve value of the base asset as an integer, scaled up by 10 to the "decimals" integer in the base asset's contract.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint targetReserves = comet.targetReserves();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const targetReserves = await comet.methods.targetReserves().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const targetReserves = await comet.callStatic.targetReserves();
 ```
 
 ### Ask Price
@@ -478,7 +513,7 @@ const askPrice = await comet.methods.quoteCollateral('0xERC20Address', 1000000).
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const askPrice = await comet.quoteCollateral('0xERC20Address', 1000000);
+const askPrice = await comet.callStatic.quoteCollateral('0xERC20Address', 1000000);
 ```
 
 ### Liquidator Points
@@ -515,7 +550,7 @@ const [ numAbsorbs, numAbsorbed, approxSpend ] = await comet.methods.liquidatorP
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const [ numAbsorbs, numAbsorbed, approxSpend ] = await comet.liquidatorPoints('0xLiquidatorAddress');
+const [ numAbsorbs, numAbsorbed, approxSpend ] = await comet.callStatic.liquidatorPoints('0xLiquidatorAddress');
 ```
 
 ## Account Management
@@ -640,7 +675,7 @@ const isManager = await comet.methods.hasPermission('0xOwner', '0xManager').call
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const isManager = await comet.hasPermission('0xOwner', '0xManager');
+const isManager = await comet.callStatic.hasPermission('0xOwner', '0xManager');
 ```
 
 ### Transfer
@@ -681,6 +716,10 @@ const comet = new ethers.Contract(contractAddress, abiJson, provider);
 await comet.transfer(receiverAddress, usdcAddress, 100000000);
 ```
 
+### Interfaces & ERC-20 Compatibility
+
+The Comet contract is a fully compatible ERC-20 wrapper for the base token. All of the interface methods of ERC-20 are externally exposed for accounts that supply or borrow. The **CometInterface.sol** contract file contains an example of a Solidity interface for the Comet contract.
+
 ## Helper Functions
 
 ### Get Utilization
@@ -715,7 +754,7 @@ const utilization = await comet.methods.getUtilization().call();
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const utilization = await comet.getUtilization();
+const utilization = await comet.callStatic.getUtilization();
 ```
 
 ### Total Collateral
@@ -750,7 +789,7 @@ const [ totalSupplyAsset ] = await comet.methods.totalsCollateral('0xERC20Addres
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const [ totalSupplyAsset ] = await comet.totalsCollateral('0xERC20Address');
+const [ totalSupplyAsset ] = await comet.callStatic.totalsCollateral('0xERC20Address');
 ```
 
 ### Collateral Balance
@@ -785,7 +824,7 @@ const balance = await comet.methods.collateralBalanceOf('0xAccount', '0xUsdcAddr
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const balance = await comet.collateralBalanceOf('0xAccount', '0xUsdcAddress');
+const balance = await comet.callStatic.collateralBalanceOf('0xAccount', '0xUsdcAddress');
 ```
 
 ### Supplied Base Balance
@@ -819,7 +858,7 @@ const balance = await comet.methods.balanceOf('0xAccount').call();
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const balance = await comet.balanceOf('0xAccount');
+const balance = await comet.callStatic.balanceOf('0xAccount');
 ```
 
 ### Borrow Balance
@@ -853,7 +892,7 @@ const owed = await comet.methods.borrowBalanceOf('0xAccount').call();
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const owed = await comet.borrowBalanceOf('0xAccount');
+const owed = await comet.callStatic.borrowBalanceOf('0xAccount');
 ```
 
 ### Base Balance as Integer
@@ -887,7 +926,7 @@ const baseBalance = await comet.methods.baseBalanceOf('0xAccount').call();
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const baseBalance = await comet.baseBalanceOf('0xAccount');
+const baseBalance = await comet.callStatic.baseBalanceOf('0xAccount');
 ```
 
 ### Account Data
@@ -932,7 +971,7 @@ const [ principal, baseTrackingIndex, baseTrackingAccrued, assetsIn ] = await co
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const [ principal, baseTrackingIndex, baseTrackingAccrued, assetsIn ] = await comet.userBasic('0xAccount');
+const [ principal, baseTrackingIndex, baseTrackingAccrued, assetsIn ] = await comet.callStatic.userBasic('0xAccount');
 ```
 
 ### Get Asset Info
@@ -985,7 +1024,7 @@ const infoObject = await comet.methods.getAssetInfo(0).call();
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const infoObject = await comet.getAssetInfo(0);
+const infoObject = await comet.callStatic.getAssetInfo(0);
 ```
 
 ### Get Price
@@ -1021,7 +1060,7 @@ const price = await Comet.methods.getPrice(usdcAddress).call();
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const price = await comet.getPrice(usdcAddress);
+const price = await comet.callStatic.getPrice(usdcAddress);
 ```
 
 ## Governance
