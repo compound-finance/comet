@@ -79,4 +79,8 @@ contract CometHarness is Comet {
     function accrue() external {
         accrueInternal();
     }
+
+    function hasPermissionExternal(address owner, address manager) external view returns (bool) {
+        return hasPermission(owner, manager);
+    }
 }
