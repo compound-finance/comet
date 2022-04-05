@@ -10,8 +10,7 @@ interface Vars {
 };
 
 // XXX create a scenario for this migration when MigrationConstraint is ready
-migration<Vars>('1649108513_upgrade_timelock_and_set_up_governor', {
-  // Prepared via Github Actions run: https://github.com/compound-finance/comet/actions/runs/2093081942
+migration<Vars>('1649117302_upgrade_timelock_and_set_up_governor', {
   prepare: async (deploymentManager: DeploymentManager) => {
     let [signer] = await deploymentManager.hre.ethers.getSigners();
 
