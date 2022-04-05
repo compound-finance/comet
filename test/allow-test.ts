@@ -39,7 +39,8 @@ describe('allow', function () {
     expect(await comet.isAllowed(userAddress, managerAddress)).to.be.false;
   });
 
-  it('has permission only if the user is allowed or self', async () => {
-    // XXX
+  it('governor is allowed on behalf of Comet', async () => {
+    const { comet, governor } = await makeProtocol();
+    expect(await comet.isAllowed(comet.address, governor.address)).to.be.true;
   });
 });
