@@ -176,7 +176,8 @@ rule borrowBase_vs_utilization(){
            ( getPrice(t1,priceFeedBase) !=  getPrice(t2,priceFeedBase) ||
              getPrice(e1,priceFeedAsset) != getPrice(e2,priceFeedAsset) )
 
-    @Notes: This is without calling any functions, just due to change in time that result a change in price
+    @Notes: 
+        This is without calling any functions, just due to change in time that result a change in price.
 
     @Link:
         
