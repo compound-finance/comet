@@ -4,8 +4,16 @@
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
 import hre from 'hardhat';
-import { deployComet } from '../src/deploy';
+import { ethers } from 'hardhat';
 import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
+import {
+  Comet__factory,
+  Comet,
+  Configurator,
+} from '../build/types';
+import { ConfigurationStruct } from '../build/types/CometFactory';
+
+const delay = ms => new Promise(res => setTimeout(res, ms));
 
 async function verifyContract(address: string, constructorArguments) {
   try {
@@ -26,102 +34,48 @@ async function verifyContract(address: string, constructorArguments) {
   }
 }
 
+/**
+ * Deploys the latest version of `Comet` and verifies it on Etherscan. 
+ * 
+ * This gets around the issue of Etherscan not being able to verify contracts deployed by another contract 
+ * (e.g. `CometFactory`) by deploying another contract with the exact same bytecode via an EOA and verifying 
+ * that instead.
+ * 
+ * Note: The Comet source code in this repo MUST match the Comet deployed on-chain. If not, verification will
+ * fail.
+ */
 async function main() {
-  // address governor;
-  // address pauseGuardian;
-  // address baseToken;
-  // address baseTokenPriceFeed;
-  // address extensionDelegate;
+  await hre.run('compile');
+  let isDevelopment = hre.network.name === 'hardhat';
+  let dm = new DeploymentManager(hre.network.name, hre, {
+    writeCacheToDisk: true,
+    verifyContracts: !isDevelopment,
+    debug: true,
+  });
 
-  // uint64 kink;
-  // uint64 perYearInterestRateSlopeLow;
-  // uint64 perYearInterestRateSlopeHigh;
-  // uint64 perYearInterestRateBase;
-  // uint64 reserveRate;
-  // uint64 storeFrontPriceFactor;
-  // uint64 trackingIndexScale;
-  // uint64 baseTrackingSupplySpeed;
-  // uint64 baseTrackingBorrowSpeed;
-  // uint104 baseMinForRewards;
-  // uint104 baseBorrowMin;
-  // uint104 targetReserves;
+  let signers = await dm.hre.ethers.getSigners();
+  let admin = await signers[0];
+  
+  let configuratorAddress = "0x62f5a823efcd2bac5df35141acccd2099cc83b72"; // can move to command line
+  let configurator = (await ethers.getContractAt("Configurator", configuratorAddress, admin)) as Configurator;
+  let config: ConfigurationStruct = await configurator.getConfiguration();
+  console.log("Latest configuration is: ", config)
 
-  // AssetConfig[] assetConfigs;
-  let args = [
-    {
-      governor: "0x920002E8e3210f22B2759f320081694Feadc444a",
-      pauseGuardian: "0x1C2C3c2E3232080e0738187520372e30Ce2e34CB",
-      baseToken: "0x4004FdD0eC968d955862806d500988D58B2e7030",
-      baseTokenPriceFeed: "0x9211c6b3BF41A10F78539810Cf5c64e1BB78Ec60",
-      extensionDelegate: "0xF9C3eB5d8113D26F0e0F3A20163c0cFBA8E12941",
-      kink: "800000000000000000",
-      perYearInterestRateSlopeLow: "20000000000000000",
-      perYearInterestRateSlopeHigh: "100000000000000000",
-      perYearInterestRateBase: "10000000000000000",
-      reserveRate: "100000000000000000",
-      storeFrontPriceFactor: "0",
-      trackingIndexScale: "1000000000000000",
-      baseTrackingSupplySpeed: "0",
-      baseTrackingBorrowSpeed: "0",
-      baseMinForRewards: "1",
-      baseBorrowMin: "1000000",
-      targetReserves: "0",
-      assetConfigs: 
-      [
-        {
-          asset: "0xE38227061686DF3cA2B48f270F1B037DF8637e69",
-          priceFeed: "0xECF93D14d25E02bA2C13698eeDca9aA98348EFb6",
-          decimals: 18,
-          borrowCollateralFactor: "600000000000000000",
-          liquidateCollateralFactor: "700000000000000000",
-          liquidationFactor: "900000000000000000",
-          supplyCap: "100000000000000000000",
-        },      
-        {
-          asset: "0x9266BE32DFcD78984775B2920927EfBE44C5CEfa",
-          priceFeed: "0x6135b13325bfC4B00278B4abC5e20bbce2D6580e",
-          decimals: 8,
-          borrowCollateralFactor: "400000000000000000",
-          liquidateCollateralFactor: "500000000000000000",
-          liquidationFactor: "900000000000000000",
-          supplyCap: "10000000000",
-        },
-        {
-          asset: "0x05C2cEcF8c4C30e8bE5c396488f0cBE53176f620",
-          priceFeed: "0x9326BFA02ADD2366b30bacB125260Af641031331",
-          decimals: 18,
-          borrowCollateralFactor: "700000000000000000",
-          liquidateCollateralFactor: "800000000000000000",
-          liquidationFactor: "900000000000000000",
-          supplyCap: "ßß100000000000000000000",
-        },
-        {
-          asset: "0x8cB051f87727E50879732f1e4f7B7D1D2B499267",
-          priceFeed: "0xDA5904BdBfB4EF12a3955aEcA103F51dc87c7C39",
-          decimals: 18,
-          borrowCollateralFactor: "700000000000000000",
-          liquidateCollateralFactor: "800000000000000000",
-          liquidationFactor: "900000000000000000",
-          supplyCap: "100000000000000000000",
-        },
-        {
-          asset: "0x9E787a03A3E05C375dC4bE552862Edfc51106722",
-          priceFeed: "0x396c5E36DD0a0F5a5D33dae44368D4193f69a1F0",
-          decimals: 18,
-          borrowCollateralFactor: "400000000000000000",
-          liquidateCollateralFactor: "500000000000000000",
-          liquidationFactor: "900000000000000000",
-          supplyCap: "10000000000000000000",
-        }
-      ]
-    }
-  ];
+  // Deploy Comet with latest configuration
+  const comet = await dm.deploy<Comet, Comet__factory, [ConfigurationStruct]>(
+    'Comet.sol',
+    [config]
+  );
+  console.log('Comet deployed at ', comet.address)
+
+  console.log('Waiting 1 min before verification')
+  await delay(60000);
 
   console.log('Starting verification!')
 
-  await verifyContract("0xa52dcb6bd70ac1af6aefd76d52726c38aff0046c", args);
+  await verifyContract(comet.address, [config]);
 
-  console.log('Finished verifying!')
+  console.log('Finished verification!')
 }
 
 // We recommend this pattern to be able to use async/await everywhere
