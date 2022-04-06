@@ -12,11 +12,15 @@ The directory also feature a `timeout.spec` file which contain rules that do not
 3. harness - Contains all the inheriting contracts that add/modify functionalities to the original contract, as well as all the symbolic and dummy implementations of the external contract on which `Comet.sol` relies.
 All of these harnesses, i.e. modifications/simplifications, are absolutely necessary to run the verifications. They are mostly done in a safe manner, e.g. by proving their correctness first, then simplifying them in order to reduce computational complexity. Assumptions and under-approximations are also done in a few places, in order to supply partial coverage where full coverage is not achievable.
 
-4. erc20 - Contains a scaffold specification for ERC20 tokens which can be thickened and improved by defining the desired properties. This verification effort is aimed as a preemptive measure - it allows to verify certain properties of an ERC20 token before enlisting it in the system.
+4. erc20 - Contains a scaffold specification for ERC20 tokens which can be thickened and improved by defining the desired properties. This verification effort is aimed as a preemptive measure - it allows to verify certain desired properties of an ERC20 token before enlisting it in the system.
 We've added scripts for running the spec on 3 common tokens deployed on mainnet - USDC, Sushi and FTT - as a demo.
-The idea is to get thorough inspection of each token of interest and see if and which properties are violated and whether we trust it enough to enlist it as a base/collateral token in the Comet protocol.
+The idea is to get thorough inspection of each token of interest and see if and which properties are violated and whether we trust it enough to enlist it as a base/collateral token in the Comet protocol. More on that can be found [here](erc20/Readme.md) and [here](#FormalPropertiesForERC20)
 
 All `.sol` and `.spec` files are well documented. Every assumption, simplification and approximation are written in the relevant place, and should be taken into consideration when reviewing the results.
+
+</br>
+
+---
 
 ## Running Instructions
 In order to run a verification job:
@@ -35,6 +39,10 @@ In order to run a verification job:
 
 * You can also run the script `verifyAll.sh` to run all the scripts consecutively. It also contains a patch apply command, so be mindful not to reverse it if you already executed the second point.
 
+</br>
+
+---
+
 ## Overview of Comet protocol 
 Compound Comet is a protocol that allows supplying volatile assets as collateral, and borrowing only a single (e.g. stable) coin.
 
@@ -48,32 +56,9 @@ The protocol has a distinct borrow and supply rate curve for the borrowed token.
 
 In case that a borrower's collateral does not cover its current debt, a 2 step absorption mechanism is provided. Absorption can be executed by anyone:
 
-- **Step 1** - Once a user (Alice) is in a liquiditable state, any user in the system (including Alice herself) can call `absorb()` on her. The absorption sorts out Alice's check books by giving up her debts while absorbing all of her collateral assets **to the system**. The user that successfully called `absorb()`, receive `LiquidatorPoints`.
+- **Step 1** - Once a user (Alice) is in a liquidatable state, any user in the system (including Alice herself) can call `absorb()` on her. The absorption sorts out Alice's check books by giving up her debts while absorbing all of her collateral assets **to the system**. The user that successfully called `absorb()`, receive `LiquidatorPoints`.
 
 - **Step 2** - Now that Alice's account is balanced, and her collateral has been absorbed into the system, the collateral is available for anyone to buy for a discount.
-
-```graphviz
-digraph hierarchy {
-graph [label="Compound Comet Architecture\n\n", labelloc=t, fontsize=25];
-nodesep=1.0
-node [color=Red,fontname=Courier,shape=box] 
-edge [color=Blue, style=dashed]
-
-{ rank = sink; CometConfiguration; }
-{ rank = sink; CometStorage; }
-{ rank = sink; CometMath; }
-CometCore;
-CometFactory;
-{ rank = source; Comet; }
-{ rank = source; CometExt; }
-
-{CometConfiguration CometStorage CometMath}->{CometCore} [dir=back]
-{CometConfiguration}->{CometFactory} [dir=back]
-
-CometCore->{Comet CometExt} [dir=back]
-
-}
-```
 
 As the goal of Comet is to be highly optimized for a particular use case, it seek to minimize the number of contracts involved. The protocol is implemented primarily in a monolithic contract.
 
@@ -123,41 +108,32 @@ User A can transfer his assets stored in the system to user B if those assets do
 ### accrueInternal (internal function)
 An important function that updates the aggregated interest rates for suppliers and for the borrowers
 
+</br>
+
+---
 
 ## Verified Contracts
-
 In order to have a better coverage of the system, and due to computational complexities that are arise in the process of verifying a complex system as Comet, some harness to the original contract were required.
 The harnesses contains additional or modified functionalities to the original contract.
 We've split our harness into several levels of modifications, which allows greater control in determining which rule is verified under which conditions and assumptions. All harnesses are inheriting from the original contract they aspire to modify.
 
-```graphviz
-digraph HarnessStructure {
-graph [label="Harness Structure\n\n", labelloc=t, fontsize=25];
-nodesep=1.0
-node [color=Red,fontname=Courier,shape=box]
-edge [color=Blue, style=dashed]
+</br>
 
-{ rank = sink; Comet; }
-CometHarnessGetters;
-{ rank = source CometHarnessWrappers; }
-{ rank = source; CometHarness; }
-
-Comet->{CometHarnessGetters} [dir=back]
-CometHarnessGetters->{CometHarnessWrappers CometHarness}[dir=back]
-}
-```
-
-#### CometHarnessGetters
+### CometHarnessGetters
 A collection of getters that otherwise would be invisible to the SPEC file.
 
-#### CometHarnessWrappers
+</br>
+
+### CometHarnessWrappers
 A collection of functions that wrap the source code functions and data structures that otherwise would be invisible to the SPEC file. (for example : internal functions).
 
-#### CometHarness
+</br>
+
+### CometHarness
 A collection of summarizations and simplifications of methods and components of comet.
 Some summarization are safe approximation as important properties have been proven on the original code. For example: replacing the extensively bitwise operation functions `isInAsset` with a simpler but symatically equievelant summarization. Since `isInAsset` have been proven to be correct with respect to a set of properties this simplification is a safe approximation. However some simplifications are under-approximation as they don't take into account all possible states of the contract. 
 
-The following table describe which spec file ran with which harness and setup spec, and therefore with which simplifications:
+The following table describe which spec file runs on which harness contract and which setup spec, to give a better sense of the assumptions and simplifications that were used in the verification of these specific rules:
 
 | Spec                      | Harness used         | spec import               |
 | ------------------------- | -------------------- | ------------------------- |
