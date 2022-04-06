@@ -744,3 +744,200 @@ GetSupplyRate should always revert if reserveRate > FACTOR_SCALE
 ## Verification of reentrancy safety  
 
 ## Formal Properties for ERC20 Assets to be listed
+
+As part of our effort to secure the protocol, we've prepared a scaffold specification for ERC20 tokens. This set of rules is aimed as a preemptive measure - it allows to verify certain desired properties of an ERC20 token before enlisting it in the system.
+The specifications can be thought of as an inspection tool that retrieve information on specified tokens - whether they meet or violate the set of desired properties. With that said, tokens that does meet the criteria will not necessarily be overlooked, it is down to the developers and the deployers of the protocol to take the information and deal with it as they see fit - enlisting it knowing the risk, or tweaking the protocol slightly to overcome the gap.
+
+We shall present here the set of properties we've written for that purpose, but bare in mind that by no means this is a complete set of checks. This is a framework on which the community can build, thicken and improve their set of desired properties.
+
+1. **noFeeOnTransferFrom**
+Verify that there is no fee on transferFrom() (like potentially on USDT)
+```
+        {
+            balances[bob] = y
+            allowance(alice, msg.sender) ≥ amount
+        }
+        
+        transferFrom(alice, bob, amount)
+        
+        {
+            balances[bob] = y + amount
+        }
+```
+
+2. **noFeeOnTransfer**
+Verify that there is no fee on transfer() (like potentially on USDT)
+```
+        {
+            balances[bob] = y
+            balances[msg.sender] ≥ amount
+        }
+
+        transfer(bob, amount)
+            
+        {
+            balances[bob] = y + amount
+        }
+``` 
+
+3. **transferCorrect**
+Token transfer works correctly. Balances are updated if not reverted.  If reverted then the transfer amount was too high, or the recipient is 0.
+```
+        {
+            balanceFromBefore = balanceOf(msg.sender)
+            balanceToBefore = balanceOf(to)
+        }
+
+        transfer(to, amount)
+
+        {
+            lastReverted ⇒ to = 0 v amount > balanceOf(msg.sender)
+            ¬lastReverted ⇒ balanceOf(to) = balanceToBefore + amount ∧
+                            balanceOf(msg.sender) = balanceFromBefore - amount
+        }
+```
+
+4. **TransferFromCorrect**
+Test that transferFrom works correctly. Balances are updated if not reverted. If reverted, it means the transfer amount was too high, or the recipient is 0
+```
+        {
+            balanceFromBefore = balanceOf(from)
+            balanceToBefore = balanceOf(to)
+        }
+
+        transferFrom(from, to, amount)
+
+        {
+            lastreverted ⇒ to = 0 v amount > balanceOf(from)
+            ¬lastreverted ⇒ balanceOf(to) = balanceToBefore + amount ∧
+                            balanceOf(from) = balanceFromBefore - amount
+        }
+```
+
+5. **TransferFromReverts**
+transferFrom should revert if and only if the amount is too high or the recipient is 0.
+```
+        {
+            allowanceBefore = allowance(alice, bob)
+            fromBalanceBefore = balanceOf(alice)
+        }
+
+        transferFrom(alice, bob, amount)
+
+        {
+            lastReverted ⇔ allowanceBefore < amount v amount > fromBalanceBefore v to = 0
+        }
+```
+
+6. **ZeroAddressNoBalance**
+Balance of address 0 is always 0
+```
+        balanceOf[0] = 0
+```
+
+7. **NoChangeTotalSupply**
+Contract calls don't change token total supply.
+```
+        {
+            supplyBefore = totalSupply()
+        }
+        
+        < call any function >
+        
+        {
+            supplyAfter = totalSupply()
+            supplyBefore == supplyAfter
+        }
+```
+
+8. **ChangingAllowance**
+Allowance changes correctly as a result of calls to approve, transfer, increaseAllowance, decreaseAllowance
+```
+        {
+            allowanceBefore = allowance(from, spender)
+        }
+
+        < call any function >
+
+        {
+            f.selector = approve(spender, amount) ⇒ allowance(from, spender) = amount
+            f.selector = transferFrom(from, spender, amount) ⇒ allowance(from, spender) = allowanceBefore - amount
+            f.selector = decreaseAllowance(spender, delta) ⇒ allowance(from, spender) = allowanceBefore - delta
+            f.selector = increaseAllowance(spender, delta) ⇒ allowance(from, spender) = allowanceBefore + delta
+            generic f.selector ⇒ allowance(from, spender) == allowanceBefore
+        }
+```
+
+9. **TransferSumOfFromAndToBalancesStaySame**
+Transfer from a to b doesn't change the sum of their balances
+```
+        {
+            balancesBefore = balanceOf(msg.sender) + balanceOf(b)
+        }
+        
+        transfer(b, amount)
+            
+        {
+            balancesBefore == balanceOf(msg.sender) + balanceOf(b)
+        }
+```
+
+10. **TransferFromSumOfFromAndToBalancesStaySame**
+Transfer using transferFrom() from a to b doesn't change the sum of their balances
+```
+        {
+            balancesBefore = balanceOf(a) + balanceOf(b)
+        }
+
+        transferFrom(a, b)
+
+        {
+            balancesBefore == balanceOf(a) + balanceOf(b)
+        }
+```
+
+11. **TransferDoesntChangeOtherBalance**
+Transfer from msg.sender to alice doesn't change the balance of other addresses
+```
+        {
+            balanceBefore = balanceOf(bob)
+        }
+
+        transfer(alice, amount)
+
+        {
+            balanceOf(bob) == balanceBefore
+        }
+```
+
+12. **TransferFromDoesntChangeOtherBalance**
+Transfer from alice to bob using transferFrom doesn't change the balance of other addresses
+```
+        {
+            balanceBefore = balanceOf(charlie)
+        }
+
+        transferFrom(alice, bob, amount)
+
+        {
+            balanceOf(charlie) = balanceBefore
+        }
+```
+
+13. **OtherBalanceOnlyGoesUp**
+Balance of an address, who is not a sender or a recipient in transfer functions, doesn't decrease as a result of contract calls.
+```
+        {
+            balanceBefore = balanceOf(charlie)
+        }
+
+        < call any function >
+        
+        {
+            f.selector ≠ transfer ∧ f.selector ≠ transferFrom ⇒ balanceOf(charlie) == balanceBefore
+        }
+```
+
+The certora team added a demo on 3 common tokens deployed on mainnet - USDC, Sushi and FTT.
+The spec doesn't pass completely on any of these tokens, because each of them has some functions that
+violate the rules: mint/burn, pause/blacklist, and others.
