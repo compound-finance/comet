@@ -96,7 +96,7 @@ contract GovernorSimple {
       */
     function initialize(address timelock_, address[] memory admins_) external {
         // XXX use custom errors
-        require(address(timelock) == address(0), "GovernorBravo::initialize: can only initialize once");
+        require(address(timelock) == address(0), "GovernorSimple::initialize: can only initialize once");
         // XXX admins can't be empty?
         timelock = TimelockInterface(timelock_);
         admins = admins_; // XXX consider using a mapping instead

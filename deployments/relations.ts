@@ -62,9 +62,7 @@ let relationConfigMap: RelationConfigMap = {
   timelock: {
     relations: {
       governor: {
-        field: async (timelock) => {
-          return await timelock.admin();
-        }
+        field: async (timelock) => await timelock.admin(),
       }
     }
   },

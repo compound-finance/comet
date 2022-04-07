@@ -1,95 +1,102 @@
 import { ethers } from 'hardhat';
 import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../plugins/deployment_manager/Migration';
-import { CometInterface, ProxyAdmin, Configurator, OldTimelockInterface, SimpleTimelock, SimpleTimelock__factory, GovernorSimple, GovernorSimple__factory } from '../../../build/types';
-import { fastGovernanceExecute } from '../../../scenario/utils';
+import { CometInterface, ProxyAdmin, Configurator, SimpleTimelock, SimpleTimelock__factory, GovernorSimple, GovernorSimple__factory } from '../../../build/types';
 
 interface Vars {
-  timelock: string,
-  governor: string,
+  timelock: SimpleTimelock,
+  governor: GovernorSimple,
 };
 
 // XXX create a scenario for this migration when MigrationConstraint is ready
 migration<Vars>('1649108513_upgrade_timelock_and_set_up_governor', {
   // Prepared via Github Actions run: https://github.com/compound-finance/comet/actions/runs/2093081942
   prepare: async (deploymentManager: DeploymentManager) => {
+    await deploymentManager.hre.run('compile');
+
     let [signer] = await deploymentManager.hre.ethers.getSigners();
 
     // Deploy new Timelock and Governor contracts
-    const governor = await deploymentManager.deploy<GovernorSimple, GovernorSimple__factory, []>(
+    const newGovernor = await deploymentManager.deploy<GovernorSimple, GovernorSimple__factory, []>(
       'test/GovernorSimple.sol',
       []
     );
   
     const newTimelock = await deploymentManager.deploy<SimpleTimelock, SimpleTimelock__factory, [string]>(
       'test/SimpleTimelock.sol',
-      [governor.address]
+      [newGovernor.address]
     );
 
     // Initialize the storage of GovernorSimple. This sets `signer` as the only admin right now.
-    await governor.initialize(newTimelock.address, [signer.address]);
+    await newGovernor.initialize(newTimelock.address, [signer.address]);
 
-    // Set new Timelock as the new admin for ProxyAdmin and the new governor for Configurator and Comet:
-    // 1. Set admin of ProxyAdmin to be the new Timelock. Old Timelock needs to call ProxyAdmin.transferOwnership
-    // 2. Set admin of Configurator to be the new Timelock. Old Timelock needs to call Configurator.transferAdmin
-    // 3. Set governor as new Timelock in configurator and upgrade Comet. New Timelock needs to call via governance proposal
+    return {
+      timelock: newTimelock,
+      governor: newGovernor
+    };
+  },
+  enact: async (deploymentManager: DeploymentManager, contracts: Vars) => {
+    let [signer] = await deploymentManager.hre.ethers.getSigners();
 
-    const oldTimelock = await deploymentManager.contract('timelock') as OldTimelockInterface;
+    const newTimelock = contracts.timelock;
+    const newGovernor = contracts.governor;
+
+    const oldGovernor = await deploymentManager.contract('governor') as GovernorSimple;
     const proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
     const configurator = await deploymentManager.contract('configurator') as Configurator;
     const comet = await deploymentManager.contract('comet') as CometInterface;
 
-    // 1. Set admin of ProxyAdmin to be the new Timelock. Old Timelock needs to call ProxyAdmin.transferOwnership
-    const transferOwnershipCalldata = ethers.utils.defaultAbiCoder.encode(["address"], [newTimelock.address]);
-    await oldTimelock.execute(
-      [proxyAdmin.address], 
-      [0], 
-      ["transferOwnership(address)"], 
-      [transferOwnershipCalldata]
-    );
-
-    // 2. Set admin of Configurator to be the new Timelock. Old Timelock needs to call Configurator.transferAdmin
-    const transferAdminCalldata = ethers.utils.defaultAbiCoder.encode(["address"], [newTimelock.address]);
-    await oldTimelock.execute(
-      [configurator.address], 
-      [0], 
-      ["transferAdmin(address)"], 
-      [transferAdminCalldata]
-    );
-
-    // 3. Set governor as new Timelock in configurator and upgrade Comet. New Timelock needs to call via governance proposal
+    // Set new Timelock as the new admin for ProxyAdmin and the new governor for Configurator and Comet:
+    // 1. Set governor as new Timelock in configurator.
+    // 2. Deploy and upgrade to new version of Comet.
+    // 3. Set owner of ProxyAdmin to be the new Timelock.
+    // 4. Set admin of Configurator to be the new Timelock.
+    const transferProxyAdminOwnership = ethers.utils.defaultAbiCoder.encode(["address"], [newTimelock.address]);
+    const transferConfiguratorAdminCalldata = ethers.utils.defaultAbiCoder.encode(["address"], [newTimelock.address]);
     const setGovernorCalldata = ethers.utils.defaultAbiCoder.encode(["address"], [newTimelock.address]);
     const deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
-    const governorAsAdmin = governor.connect(signer);
-    await fastGovernanceExecute(
-      governorAsAdmin,
-      [configurator.address, proxyAdmin.address], 
-      [0, 0], 
-      ["setGovernor(address)", "deployAndUpgradeTo(address,address)"], 
-      [setGovernorCalldata, deployAndUpgradeToCalldata]
-    );
+    const oldGovernorAsAdmin = oldGovernor.connect(signer);
 
-    // Log out new states to manually verify (helpful to verify during simulation)
-    console.log("Old Timelock: ", oldTimelock.address);
-    console.log("New Timelock: ", newTimelock.address);
-    console.log("Governor: ", governor.address);
-    console.log("Governor's Admin: ", await governor.admins(0));
-    console.log("Governor's Timelock: ", await governor.timelock());
-    console.log("Timelock's Admin: ", await newTimelock.admin());
-    console.log("ProxyAdmin's Admin: ", await proxyAdmin.owner());
-    console.log("Configurator's Admin: ", await configurator.callStatic.admin());
-    console.log("Comet's Admin: ", await comet.governor());
+    // Create a new proposal and queue it up. Execution can be done manually or in a third step.
+    let tx = await (await oldGovernorAsAdmin.propose(
+      [
+        configurator.address, 
+        proxyAdmin.address,
+        proxyAdmin.address, 
+        configurator.address, 
+      ], 
+      [0, 0, 0, 0], 
+      [
+        "setGovernor(address)", 
+        "deployAndUpgradeTo(address,address)",
+        "transferOwnership(address)", 
+        "transferAdmin(address)", 
+      ], 
+      [
+        setGovernorCalldata, 
+        deployAndUpgradeToCalldata,
+        transferProxyAdminOwnership, 
+        transferConfiguratorAdminCalldata,
+      ],
+      'Upgrade Timelock and Governor')
+    ).wait();
+    let event = tx.events.find(event => event.event === 'ProposalCreated');
+    let [ proposalId ] = event.args;
+  
+    await oldGovernorAsAdmin.queue(proposalId);
 
-    return {
-      timelock: newTimelock.address,
-      governor: governor.address
-    };
-  },
-  enact: async (deploymentManager: DeploymentManager, contracts: Vars) => {
-    console.log("No roots need to be updated. But here's the new set of contracts: ");
-    console.log("");
-    console.log("");
-    console.log(JSON.stringify(contracts, null, 4));
-    console.log("");
+    console.log(`Created proposal ${proposalId} and queued it. Proposal still needs to be executed.`);
+
+    // XXX create a third step that actually executes the proposal on testnet and logs the results
+    // Log out new states to manually verify (helpful to verify via simulation)
+    // console.log("Old Timelock: ", oldTimelock.address);
+    // console.log("New Timelock: ", newTimelock.address);
+    // console.log("Governor: ", newGovernor.address);
+    // console.log("Governor's Admin: ", await newGovernor.admins(0));
+    // console.log("Governor's Timelock: ", await newGovernor.timelock());
+    // console.log("Timelock's Admin: ", await newTimelock.admin());
+    // console.log("ProxyAdmin's Admin: ", await proxyAdmin.owner());
+    // console.log("Configurator's Admin: ", await configurator.callStatic.admin());
+    // console.log("Comet's Admin: ", await comet.governor());
   },
 });

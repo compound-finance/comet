@@ -56,7 +56,8 @@ async function main() {
   let signers = await dm.hre.ethers.getSigners();
   let admin = await signers[0];
   
-  let configuratorAddress = "0x62f5a823efcd2bac5df35141acccd2099cc83b72"; // can move to command line
+  // XXX move to command line, which requires this to be a Hardhat task since HH scripts can't take user arguments
+  let configuratorAddress = "0x62f5a823efcd2bac5df35141acccd2099cc83b72";
   let configurator = (await ethers.getContractAt("Configurator", configuratorAddress, admin)) as Configurator;
   let config: ConfigurationStruct = await configurator.getConfiguration();
   console.log("Latest configuration is: ", config)
