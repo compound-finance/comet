@@ -7,7 +7,7 @@ certoraRun certora/harness/CometHarnessWrappers.sol certora/harness/SymbolicPric
     --verify CometHarnessWrappers:certora/specs/interestComputation.spec \
     --link CometHarnessWrappers:baseTokenPriceFeed=SymbolicPriceOracleA \
     --solc solc8.11 \
-    --staging \
+    --cloud \
     $RULE \
     --send_only \
     --optimistic_loop \
