@@ -59,7 +59,6 @@ methods{
                               liquidateCollateralFactor_ == liquidateCollateralFactorArg &&
                               liquidationFactor_ == liquidationFactorArg &&
                               supplyCap_ == supplyCapArg)
-            
         }
 
     @Note:

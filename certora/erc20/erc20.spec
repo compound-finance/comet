@@ -34,9 +34,9 @@ methods {
             balances[bob] = y
             allowance(alice, msg.sender) >= amount
         }
-        <
-            transferFrom(alice, bob, amount)
-        >
+
+        transferFrom(alice, bob, amount)
+
         {
             balances[bob] = y + amount
         }
@@ -71,9 +71,9 @@ rule noFeeOnTransferFrom(address alice, address bob, uint256 amount) {
             balances[bob] = y
             balances[msg.sender] >= amount
         }
-        <
-            transfer(bob, amount)
-        >
+
+        transfer(bob, amount)
+
         {
             balances[bob] = y + amount
         }
@@ -111,9 +111,9 @@ rule noFeeOnTransfer(address bob, uint256 amount) {
             balanceFromBefore = balanceOf(msg.sender)
             balanceToBefore = balanceOf(to)
         }
-        <
-            transfer(to, amount)
-        >
+
+        transfer(to, amount)
+
         {
             lastReverted => to = 0 || amount > balanceOf(msg.sender)
             !lastReverted => balanceOf(to) = balanceToBefore + amount &&
@@ -161,9 +161,9 @@ rule transferCorrect(address to, uint256 amount) {
             balanceFromBefore = balanceOf(from)
             balanceToBefore = balanceOf(to)
         }
-        <
-            transferFrom(from, to, amount)
-        >
+
+        transferFrom(from, to, amount)
+
         {
             lastreverted => to = 0 || amount > balanceOf(from)
             !lastreverted => balanceOf(to) = balanceToBefore + amount &&
@@ -205,9 +205,9 @@ rule TransferFromCorrect(address from, address to, uint256 amount) {
             allowanceBefore = allowance(alice, bob)
             fromBalanceBefore = balanceOf(alice)
         }
-        <
-            transferFrom(alice, bob, amount)
-        >
+
+        transferFrom(alice, bob, amount)
+
         {
             lastReverted <=> allowanceBefore < amount || amount > fromBalanceBefore || to = 0
         }
@@ -260,7 +260,9 @@ invariant ZeroAddressNoBalance()
         {
             supplyBefore = totalSupply()
         }
-        < f(e, args)>
+
+        < call any function >
+        
         {
             supplyAfter = totalSupply()
             supplyBefore == supplyAfter
@@ -292,9 +294,9 @@ rule NoChangeTotalSupply(method f) {
         {
             allowanceBefore = allowance(from, spender)
         }
-        <
-            f(e, args)
-        >
+
+        < call any function >
+
         {
             f.selector = approve(spender, amount) => allowance(from, spender) = amount
             f.selector = transferFrom(from, spender, amount) => allowance(from, spender) = allowanceBefore - amount
@@ -371,9 +373,9 @@ rule ChangingAllowance(method f, address from, address spender) {
         {
             balancesBefore = balanceOf(msg.sender) + balanceOf(b)
         }
-        <
-            transfer(b, amount)
-        >
+
+        transfer(b, amount)
+
         {
             balancesBefore == balanceOf(msg.sender) + balanceOf(b)
         }
@@ -401,9 +403,9 @@ rule TransferSumOfFromAndToBalancesStaySame(address to, uint256 amount) {
         {
             balancesBefore = balanceOf(a) + balanceOf(b)
         }
-        <
-            transferFrom(a, b)
-        >
+
+        transferFrom(a, b)
+
         {
             balancesBefore == balanceOf(a) + balanceOf(b)
         }
@@ -431,9 +433,9 @@ rule TransferFromSumOfFromAndToBalancesStaySame(address from, address to, uint25
         {
             balanceBefore = balanceOf(bob)
         }
-        <
-            transfer(alice, amount)
-        >
+
+        transfer(alice, amount)
+
         {
             balanceOf(bob) == balanceBefore
         }
@@ -462,9 +464,9 @@ rule TransferDoesntChangeOtherBalance(address to, uint256 amount, address other)
         {
             balanceBefore = balanceOf(charlie)
         }
-        <
-            transferFrom(alice, bob, amount)
-        >
+
+        transferFrom(alice, bob, amount)
+
         {
             balanceOf(charlie) = balanceBefore
         }
@@ -494,9 +496,9 @@ rule TransferFromDoesntChangeOtherBalance(address from, address to, uint256 amou
         {
             balanceBefore = balanceOf(charlie)
         }
-        <
-            f(e, args)
-        >
+
+        < call any function >
+
         {
             f.selector != transfer && f.selector != transferFrom => balanceOf(charlie) == balanceBefore
         }
