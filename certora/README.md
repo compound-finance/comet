@@ -745,16 +745,16 @@ GetSupplyRate should always revert if reserveRate > FACTOR_SCALE
 
 ## Verification of reentrancy safety  
 
-To verify the safety for reentrancy calls from a possible malicious/broken erc20, we have prepared an erc20 token that callback Comet functions. We allowed the ERC token to have a call back to the following Comet functions:
+To verify the safety for re-entrency calls from a possible malicious/broken erc20, we have prepared an erc20 token that callsback Comet functions. We allowed the ERC token to have a call back to the following Comet functions:
 
-- buyCollateral
- - supply
- - withdraw
- - transferFrom
-
+buyCollateral
+supply
+withdraw
+transferAssetFrom
+transferFrom
 We have checked properties 1- 23 given this malicious token as a potential asset.
-As expected, a few properties  are violated, e.g. 
-Property #6 (Balance change by allowed only) is violated when the callback is to withdraw as the Certora prover considers the case that the ERC has an allowance. In addition, some cases of properties had timed out and could not be verified.
+As expected, a few properties do not hold but do not indicate an issue in the Comet code. For example, property #6 (Balance change by allowed only) fails when the callback is to withdraw as the Certora prover considers the case that the ERC20 asset has an allowance. In addition, some cases of properties had timed out and could not be verified.
+
 ## Formal Properties for ERC20 Assets to be listed
 
 As part of our effort to secure the protocol, we've prepared a scaffold specification for ERC20 tokens. This set of rules is aimed as a preemptive measure - it allows to verify certain desired properties of an ERC20 token before enlisting it in the system.
