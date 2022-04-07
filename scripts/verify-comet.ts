@@ -3,8 +3,7 @@
 //
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
-import hre from 'hardhat';
-import { ethers } from 'hardhat';
+import hre, { ethers } from 'hardhat';
 import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
 import {
   Comet__factory,
