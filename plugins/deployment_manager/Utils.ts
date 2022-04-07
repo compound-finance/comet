@@ -78,7 +78,7 @@ export function mergeABI(abi0: ABI, abi1: ABI): ABIEntry[] {
 
   for (const abiEntry of mergedABI) {
     // only allow one constructor or one unique entry
-    const key = abiEntry.type == "constructor" ? "constructor" : JSON.stringify(abiEntry);
+    const key = abiEntry.type === "constructor" ? "constructor" : JSON.stringify(abiEntry);
 
     entries[key] = abiEntry;
   }
