@@ -6,7 +6,7 @@ fi
 certoraRun contracts/CometExt.sol  \
     --verify CometExt:certora/specs/cometExt.spec  \
     --solc solc8.11 \
-    --staging \
+    --cloud \
     $RULE \
     --send_only \
     --optimistic_loop \

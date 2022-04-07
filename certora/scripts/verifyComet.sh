@@ -7,7 +7,7 @@ certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harne
     --verify CometHarness:certora/specs/comet.spec \
     --link CometHarness:baseToken=SymbolicBaseToken CometHarness:extensionDelegate=CometExt \
     --solc solc8.11 \
-    --staging \
+    --cloud \
     $RULE \
     --send_only \
     --optimistic_loop \
