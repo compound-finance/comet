@@ -5,7 +5,7 @@ fi
 
 certoraRun certora/harness/CometHarnessGetters.sol --verify CometHarnessGetters:certora/specs/pauseGuardians.spec  \
     --solc solc8.11 \
-    --staging \
+    --cloud \
     $RULE \
     --optimistic_loop \
     --settings -enableEqualitySaturation=false,-multiAssertCheck,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \

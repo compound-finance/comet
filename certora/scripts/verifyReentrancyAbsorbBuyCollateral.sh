@@ -11,7 +11,7 @@ certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harne
     $RULE \
     --send_only \
     --optimistic_loop \
-    --loop_iter 2 \
+    --loop_iter 2 --rule_sanity \
     --settings -contractRecursionLimit=1,-enableEqualitySaturation=false,-solver=z3,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \
     --solc_args '["--experimental-via-ir"]' \
     --msg "CometHarness:cometAbsorbBuyCollateral.spec Reentrancy sanity $RULE "

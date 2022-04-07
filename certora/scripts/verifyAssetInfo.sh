@@ -6,7 +6,7 @@ fi
 certoraRun certora/harness/CometHarnessWrappers.sol \
     --verify CometHarnessWrappers:certora/specs/assetInfo.spec  \
     --solc solc8.11 \
-    --staging \
+    --cloud \
     $RULE \
     --send_only \
     --optimistic_loop \
