@@ -938,6 +938,6 @@ Balance of an address, who is not a sender or a recipient in transfer functions,
         }
 ```
 
-The certora team added a demo on 3 common tokens deployed on mainnet - USDC, Sushi and FTT.
+The Certora team added a demo on 3 common tokens deployed on mainnet - USDC, Sushi and FTT.
 The spec doesn't pass completely on any of these tokens, because each of them has some functions that
 violate the rules: mint/burn, pause/blacklist, and others.
