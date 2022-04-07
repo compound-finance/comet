@@ -45,7 +45,7 @@ export class TokenBalanceConstraint<T extends CometContext, R extends Requiremen
                 toTransfer = max(exp(amount.val, decimals) - balance, 0);
                 break;
               case ComparisonOp.LTE:
-                // `toTransfer` should not be positive        
+                // `toTransfer` should not be positive
                 toTransfer = min(exp(amount.val, decimals) - balance, 0);
                 break;
               case ComparisonOp.GT:
@@ -83,7 +83,7 @@ export class TokenBalanceConstraint<T extends CometContext, R extends Requiremen
             case ComparisonOp.GTE:
               expect(balance).to.be.at.least(exp(amount.val, decimals));
               break;
-            case ComparisonOp.LTE:        
+            case ComparisonOp.LTE:
               expect(balance).to.be.at.most(exp(amount.val, decimals));
               break;
             case ComparisonOp.GT:

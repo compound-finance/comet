@@ -8,7 +8,7 @@ import { tempDir } from './TestHelpers';
 import { Cache } from '../Cache';
 import { getContracts, getContractsFromAliases, storeBuildFile } from '../ContractMap';
 import { deploy } from '../Deploy';
-import { faucetTokenBuildFile, tokenArgs } from './DeployTest';
+import { faucetTokenBuildFile, tokenArgs } from './DeployHelpers';
 import { objectFromMap } from '../Utils';
 import { BuildFile } from '../Types';
 

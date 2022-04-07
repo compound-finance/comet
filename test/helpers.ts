@@ -29,7 +29,7 @@ import {
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
 
-export { Comet, ethers, expect };
+export { Comet, ethers, expect, hre };
 
 export type Numeric = number | bigint;
 
@@ -172,6 +172,12 @@ export const ZERO = factor(0);
 export async function getBlock(n?: number): Promise<Block> {
   const blockNumber = n === undefined ? await ethers.provider.getBlockNumber() : n;
   return ethers.provider.getBlock(blockNumber);
+}
+
+export async function fastForward(seconds: number): Promise<Block> {
+  const block = await getBlock();
+  await ethers.provider.send('evm_setNextBlockTimestamp', [block.timestamp + seconds]);
+  return block;
 }
 
 export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
@@ -326,8 +332,6 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
 
   const { tokens, comet, extensionDelegate } = await makeProtocol(opts);
 
-  if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
-
   // Deploy CometFactory
   const CometFactoryFactory = (await ethers.getContractFactory('CometFactory')) as CometFactory__factory;
   const cometFactory = await CometFactoryFactory.deploy();
@@ -377,11 +381,12 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   await proxyAdmin.deployed();
 
   // Deploy Configurator proxy
+  const initializeCalldata = (await configurator.populateTransaction.initialize(governor.address, cometFactory.address, configuration)).data;
   const ConfiguratorProxy = (await ethers.getContractFactory('TransparentUpgradeableConfiguratorProxy')) as TransparentUpgradeableConfiguratorProxy__factory;
   const configuratorProxy = await ConfiguratorProxy.deploy(
     configurator.address,
     proxyAdmin.address,
-    (await configurator.populateTransaction.initialize(governor.address, cometFactory.address, configuration)).data,
+    initializeCalldata,
   );
   await configuratorProxy.deployed();
 
@@ -452,8 +457,4 @@ export function event(tx, index) {
     }
   }
   return { [ev.event]: args };
-}
-
-export function inCoverage() {
-  return hre['__SOLIDITY_COVERAGE_RUNNING'];
 }
