@@ -8,7 +8,7 @@ The directory also features a `timeout.spec` file, which contains rules that do 
 2. scripts - Contains all the necessary run scripts to execute the spec files on the Certora Prover. These scripts composed of a run command of Certora Prover, contracts to take into account in the verification context, declaration of the compiler and a set of additional settings. Each script is named after spec it verifies.
 
 3. harness - Contains all the inheriting contracts that add/simplify functionalities to the original contract. You will also find a set of symbolic and dummy implementations of external contracts on which `Comet.sol` relies.
-These harnesses, i.e. extenstions/simplifications, are necessary to run the verifications. Most simplifications are a safe approximation, e.g., proving their correctness first, then simplifying them to reduce computational complexity. Assumptions and under-approximations are also done in a few places, in order to supply partial coverage where full coverage is not achievable.
+These harnesses, i.e. extensions/simplifications, are necessary to run the verifications. Most simplifications are a safe approximation, e.g., proving their correctness first, then simplifying them to reduce computational complexity. Assumptions and under-approximations are also done in a few places, in order to supply partial coverage where full coverage is not achievable.
 
 4. erc20 - Contains a scaffold specification for ERC20 tokens which can be thickened and improved by defining the desired properties. This verification effort is aimed as a preemptive measure - it allows to verify certain desired properties of an ERC20 token before enlisting it in the system.
 We've added scripts for running the spec on 3 common tokens deployed on mainnet - USDC, Sushi and FTT - as a demo.
@@ -89,7 +89,7 @@ The protocol designates a part of the supplied liquidity and a part of the accum
 Withdraws base token reserves remained, if called by the governor. 
 
 ### isBorrowCollateralized
-Recalculates the present value of the borrower's collateral and the present value of the borrowed amount , and compares it with the protocol's collateralization policy.
+Recalculates the present value of the borrower's collateral and the present value of the borrowed amount , and compares it with the protocol's Collateralization policy.
 
 ### isLiquidatable
 Recalculates the present value of the borrower's collateral and the present value of the borrowed amount , and compares it with the protocol's liquidation policy.
@@ -129,7 +129,7 @@ A collection of functions that wrap the source code functions and data structure
 
 ### CometHarness
 A collection of summarizations and simplifications of methods and components of comet.
-Some summarization are safe approximation as important properties have been proven on the original code. For example: replacing the extensively bitwise operation functions `isInAsset` with a simpler but symatically equievelant summarization. Since `isInAsset` have been proven to be correct with respect to a set of properties this simplification is a safe approximation. However some simplifications are under-approximation as they don't take into account all possible states of the contract. 
+Some summarization are safe approximation as important properties have been proven on the original code. For example: replacing the extensively bitwise operation functions `isInAsset` with a simpler but semantically equivalent summarization. Since `isInAsset` have been proven to be correct with respect to a set of properties this simplification is a safe approximation. However some simplifications are under-approximation as they don't take into account all possible states of the contract. 
 
 The following table describe which spec file runs on which harness contract and which setup spec, to give a better sense of the assumptions and simplifications that were used in the verification of these specific rules:
 
@@ -158,9 +158,13 @@ We made the following assumptions during our verification:
 
 Some rules are proven over a the following set of simplified assumptions:
 
-- Method `accrue` does not change any value specifically the supply and borrow rate
-- The supply and borrow rate at the initial value
-- pressentValue 
+- Method `accrue` does not change any value - specifically the supply and borrow rate
+
+- The supply and borrow rate kept constant at the initial value
+
+- Base scale set to Factor scale
+
+- AccrualDescaleFactor and trackingIndexScale are both 1
 
 
 ## Notations
@@ -741,6 +745,16 @@ GetSupplyRate should always revert if reserveRate > FACTOR_SCALE
 
 ## Verification of reentrancy safety  
 
+To verify the safety for reentrancy calls from a possible malicious/broken erc20, we have prepared an erc20 token that callback Comet functions. We allowed the ERC token to have a call back to the following Comet functions:
+
+- buyCollateral
+ - supply
+ - withdraw
+ - transferFrom
+
+We have checked properties 1- 23 given this malicious token as a potential asset.
+As expected, a few properties  are violated, e.g. 
+Property #6 (Balance change by allowed only) is violated when the callback is to withdraw as the Certora prover considers the case that the ERC has an allowance. In addition, some cases of properties had timed out and could not be verified.
 ## Formal Properties for ERC20 Assets to be listed
 
 As part of our effort to secure the protocol, we've prepared a scaffold specification for ERC20 tokens. This set of rules is aimed as a preemptive measure - it allows to verify certain desired properties of an ERC20 token before enlisting it in the system.
