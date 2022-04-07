@@ -1,29 +1,27 @@
-# Summary of Formal Verification
-
 ## Verification Overview
-The current directory contains Certora's best effort to formally verify Compound's Comet protocol.
-In this directory you will find 4 subdirectories:
+The current directory contains Certora's formal verification of Compound's Comet protocol.
+In this directory you will find four subdirectories:
 
 1. specs - Contains all the specification files that were written by Certora for the Comet protocol. The rules are generally divided into sub-efforts that focus on proving specific functionalities, e.g. `cometAbsorbBuyCollateral.spec` focuses on verifying properties that involve the absorption and buy collateral functionalities, etc.
-The directory also feature a `timeout.spec` file which contain rules that do not return a definite result due to time outs, and 2 `setup_xxx.spec` files that contains declarations and safe simplifications.
+The directory also features a `timeout.spec` file, which contains rules that do not return a definite result due to timeouts, and 2 `setup_xxx.spec` files that contain declarations and safe simplifications.
 
-2. scripts - Contains all the necessary run scripts to execute the spec files on the Certora Prover. These scripts composed of a run command of the CVT, contracts to take into account in the verification context, declaration of the compiler and a set of additional settings. Each script share the same name as the spec it suppose to run with a prefix "verify".
+2. scripts - Contains all the necessary run scripts to execute the spec files on the Certora Prover. These scripts composed of a run command of Certora Prover, contracts to take into account in the verification context, declaration of the compiler and a set of additional settings. Each script is named after spec it verifies.
 
-3. harness - Contains all the inheriting contracts that add/modify functionalities to the original contract, as well as all the symbolic and dummy implementations of the external contract on which `Comet.sol` relies.
-All of these harnesses, i.e. modifications/simplifications, are absolutely necessary to run the verifications. They are mostly done in a safe manner, e.g. by proving their correctness first, then simplifying them in order to reduce computational complexity. Assumptions and under-approximations are also done in a few places, in order to supply partial coverage where full coverage is not achievable.
+3. harness - Contains all the inheriting contracts that add/simplify functionalities to the original contract. You will also find a set of symbolic and dummy implementations of external contracts on which `Comet.sol` relies.
+These harnesses, i.e. extenstions/simplifications, are necessary to run the verifications. Most simplifications are a safe approximation, e.g., proving their correctness first, then simplifying them to reduce computational complexity. Assumptions and under-approximations are also done in a few places, in order to supply partial coverage where full coverage is not achievable.
 
 4. erc20 - Contains a scaffold specification for ERC20 tokens which can be thickened and improved by defining the desired properties. This verification effort is aimed as a preemptive measure - it allows to verify certain desired properties of an ERC20 token before enlisting it in the system.
 We've added scripts for running the spec on 3 common tokens deployed on mainnet - USDC, Sushi and FTT - as a demo.
 The idea is to get thorough inspection of each token of interest and see if and which properties are violated and whether we trust it enough to enlist it as a base/collateral token in the Comet protocol. More on that can be found [here](erc20/Readme.md) and [here](#FormalPropertiesForERC20)
 
-All `.sol` and `.spec` files are well documented. Every assumption, simplification and approximation are written in the relevant place, and should be taken into consideration when reviewing the results.
+All `.sol` and `.spec` files are well documented. Every assumption, simplification and approximation are written in the relevant place, and should be considered when reviewing the results.
 
 </br>
 
 ---
 
 ## Running Instructions
-In order to run a verification job:
+To run a verification job:
 
 1. Open terminal and `cd` your way to the main Comet repository.
 
