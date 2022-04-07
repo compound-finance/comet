@@ -9,13 +9,7 @@ import '../../contracts/CometInterface.sol';
  */
 contract ERC20WithCallBack  {
 
-    /* symbolic variables for calling back comet */
-    CometInterface comet;
-    address assetArg;
-    uint256 minAmountArg;
-    uint256 baseAmoutArg;
-    address recipientArg;
-    bool random;
+
 
 
     uint256 supply;
@@ -26,6 +20,27 @@ contract ERC20WithCallBack  {
     string public symbol;
     uint public decimals;
 
+
+    /* symbolic variables for calling back comet */
+    CometInterface comet;
+    address assetArg;
+    address srcArg;
+    address toArg;
+    uint256 amountArg;
+    uint256 minAmountArg;
+    uint256 baseAmoutArg;
+    address recipientArg;
+    bool random;
+
+    function callBack() internal {
+        // add callbacks to pool - check one function at a time to have less timeouts 
+        if (random) 
+            //comet.withdrawFrom(srcArg, toArg, assetArg, amountArg)
+            // comet.buyCollateral(assetArg, minAmountArg, baseAmoutArg, recipientArg);
+            // comet.supply(assetArg,amountArg);
+            //comet.transferFrom(srcArg, toArg, amountArg); 
+            comet.transferAssetFrom(srcArg, toArg, assetArg, amountArg);
+    }
     /**
      * @dev Returns the amount of tokens in existence.
      */
@@ -48,8 +63,7 @@ contract ERC20WithCallBack  {
     function transfer(address recipient, uint256 amount) external returns (bool) {
         balances[msg.sender] = balances[msg.sender]- amount;
         balances[recipient] = balances[recipient] + amount;
-        if(random) 
-            comet.buyCollateral(assetArg, minAmountArg, baseAmoutArg, recipientArg);
+        callBack();
         return true;
     }
 
@@ -98,9 +112,7 @@ contract ERC20WithCallBack  {
         balances[sender] = balances[sender]- amount;
         balances[recipient] = balances[recipient] + amount;
         allowances[sender][msg.sender] = allowances[sender][msg.sender] - amount;
-        if (random) 
-            comet.buyCollateral(assetArg, minAmountArg, baseAmoutArg, recipientArg);
-
+        callBack();
         return true;
     }
 }
