@@ -753,7 +753,7 @@ withdraw
 transferAssetFrom
 transferFrom
 We have checked properties 1- 23 given this malicious token as a potential asset.
-As expected, a few properties do not hold but do not indicate an issue in the Comet code. For exmaple, property #6 (Balance change by allowed only) fails when the callback is to withdraw as the Certora prover considers the case that the ERC20 asset has an allowance. In addition, some cases of properties had timed out and could not be verified.
+As expected, a few properties do not hold but do not indicate an issue in the Comet code. For example, property #6 (Balance change by allowed only) fails when the callback is to withdraw as the Certora prover considers the case that the ERC20 asset has an allowance. In addition, some cases of properties had timed out and could not be verified.
 
 ## Formal Properties for ERC20 Assets to be listed
 
