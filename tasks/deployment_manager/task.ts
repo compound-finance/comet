@@ -90,6 +90,7 @@ task('migrate', 'Runs migration')
         debug: true,
         verifyContracts: true,
       });
+      await dm.spider();
       let migrationsGlob = path.join('deployments', network, 'migrations', '**.ts');
       let migrations = await loadMigrations(migrationsGlob);
 

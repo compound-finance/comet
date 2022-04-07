@@ -2,15 +2,15 @@ import { CometContext, CometProperties, scenario } from './context/CometContext'
 import { expect } from 'chai';
 import { utils } from 'ethers';
 
-scenario('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, timelock, actors }, world) => {
+scenario('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, timelock, actors }, world, context) => {
   const { admin, albert } = actors;
 
-  expect(await comet.governor()).to.equal(admin.address);
-  expect((await configurator.getConfiguration()).governor).to.equal(admin.address);
+  expect(await comet.governor()).to.equal(timelock.address);
+  expect((await configurator.getConfiguration()).governor).to.equal(timelock.address);
 
   let setGovernorCalldata = utils.defaultAbiCoder.encode(["address"], [albert.address]);
   let deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
-  await timelock.execute(
+  await context.fastGovernanceExecute(
     [configurator.address, proxyAdmin.address],
     [0, 0],
     ["setGovernor(address)", "deployAndUpgradeTo(address,address)"],
@@ -21,7 +21,7 @@ scenario('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, timel
   expect((await configurator.getConfiguration()).governor).to.be.equal(albert.address);
 });
 
-scenario('add assets', {}, async ({ comet, configurator, proxyAdmin, timelock, actors, assets }: CometProperties, world) => {
+scenario('add assets', {}, async ({ comet, configurator, proxyAdmin, timelock, actors, assets }: CometProperties, world, context) => {
   let numAssets = await comet.numAssets();
   let collateralAssets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
   let contextAssets =
@@ -53,13 +53,13 @@ scenario('add assets', {}, async ({ comet, configurator, proxyAdmin, timelock, a
       newAssetConfig.supplyCap
     ]);
   let deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
-  await timelock.execute(
+  await context.fastGovernanceExecute(
     [configurator.address],
     [0],
     ["addAsset((address,address,uint8,uint64,uint64,uint64,uint128))"],
     [addAssetCalldata]
   );
-  await timelock.execute(
+  await context.fastGovernanceExecute(
     [proxyAdmin.address],
     [0],
     ["deployAndUpgradeTo(address,address)"],

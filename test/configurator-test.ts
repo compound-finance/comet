@@ -1,5 +1,5 @@
 import { ethers, exp, expect, makeConfigurator, wait } from './helpers';
-import { CometFactory, CometFactory__factory, Comet__factory, Configurator, Timelock__factory } from '../build/types';
+import { CometFactory, CometFactory__factory, Comet__factory, Configurator, SimpleTimelock__factory } from '../build/types';
 
 describe('configurator', function () {
   it('deploys Comet', async () => {
@@ -11,10 +11,6 @@ describe('configurator', function () {
     await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
     expect(await proxyAdmin.getProxyImplementation(cometProxy.address)).to.not.be.equal(comet.address);
-  });
-
-  it.skip('sets entire Configuration and deploys Comet with new configuration', async () => {
-    // XXX
   });
 
   it('sets governor and deploys Comet with new configuration', async () => {
@@ -43,10 +39,10 @@ describe('configurator', function () {
     const { governor, configurator, configuratorProxy, proxyAdmin, comet, cometProxy, users: [alice] } = await makeConfigurator();
 
     const TimelockFactory = (await ethers.getContractFactory(
-      'Timelock'
-    )) as Timelock__factory;
+      'SimpleTimelock'
+    )) as SimpleTimelock__factory;
 
-    const timelock = await TimelockFactory.deploy();
+    const timelock = await TimelockFactory.deploy(governor.address);
     await timelock.deployed();
     await proxyAdmin.transferOwnership(timelock.address);
 
@@ -59,7 +55,7 @@ describe('configurator', function () {
     // 2. DeployAndUpgradeTo
     let setGovernorCalldata = ethers.utils.defaultAbiCoder.encode(["address"], [alice.address]);
     let deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address"], [configuratorProxy.address, cometProxy.address]);
-    await timelock.execute([configuratorProxy.address, proxyAdmin.address], [0, 0], ["setGovernor(address)", "deployAndUpgradeTo(address,address)"], [setGovernorCalldata, deployAndUpgradeToCalldata]);
+    await timelock.executeTransactions([configuratorProxy.address, proxyAdmin.address], [0, 0], ["setGovernor(address)", "deployAndUpgradeTo(address,address)"], [setGovernorCalldata, deployAndUpgradeToCalldata]);
     
     expect((await configuratorAsProxy.getConfiguration()).governor).to.be.equal(alice.address);
   });

@@ -36,10 +36,12 @@ export class ModernConstraint<T extends CometContext, R extends Requirements> im
           console.log('Upgrading to modern...');
           // TODO: Make this deployment script less ridiculous, e.g. since it redeploys tokens right now
           let oldComet = await context.getComet();
+          let timelock = await context.getTimelock();
+          let cometConfig = { governor: timelock.address, ...config.cometConfig } // Use old timelock as governor
           let { comet: newComet } = await deployComet(
             context.deploymentManager,
             false,
-            config.cometConfig
+            cometConfig
           );
           let initializer: string | undefined;
           if (!oldComet.totalsBasic || (await oldComet.totalsBasic()).lastAccrualTime === 0) {

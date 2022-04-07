@@ -12,10 +12,10 @@ export class PauseConstraint<T extends CometContext, R extends Requirements> imp
     if (typeof pauseRequirements['all'] !== 'undefined') {
       return async (context: CometContext) => {
         const { actors } = context;
-        const { admin } = actors;
+        const { pauseGuardian } = actors;
 
         const isPaused = pauseRequirements['all'];
-        await admin.pause({
+        await pauseGuardian.pause({
           supplyPaused: isPaused,
           transferPaused: isPaused,
           withdrawPaused: isPaused,
@@ -26,14 +26,14 @@ export class PauseConstraint<T extends CometContext, R extends Requirements> imp
     } else {
       return async (context: CometContext) => {
         const { actors } = context;
-        const { admin } = actors;
+        const { pauseGuardian } = actors;
 
         const supplyPaused = pauseRequirements['supplyPaused'] ?? false;
         const transferPaused = pauseRequirements['transferPaused'] ?? false;
         const withdrawPaused = pauseRequirements['withdrawPaused'] ?? false;
         const absorbPaused = pauseRequirements['absorbPaused'] ?? false;
         const buyPaused = pauseRequirements['buyPaused'] ?? false;
-        await admin.pause({
+        await pauseGuardian.pause({
           supplyPaused,
           transferPaused,
           withdrawPaused,
