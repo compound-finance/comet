@@ -142,9 +142,9 @@ contract GovernorSimple {
       * @param proposalId The id of the proposal to queue
       */
     function queue(uint proposalId) external {
-        require(isAdmin(msg.sender), "GovernorSimple::propose: only governors can queue");
+        require(isAdmin(msg.sender), "GovernorSimple::queue: only governors can queue");
         require(state(proposalId) == ProposalState.Active, "GovernorSimple::queue: proposal can only be queued if it is active");
-        
+
         Proposal storage proposal = proposals[proposalId];
         proposal.queued = true;
         for (uint i = 0; i < proposal.targets.length; i++) {
@@ -163,9 +163,9 @@ contract GovernorSimple {
       * @param proposalId The id of the proposal to execute
       */
     function execute(uint proposalId) external payable {
-        require(isAdmin(msg.sender), "GovernorSimple::propose: only governors can execute");
+        require(isAdmin(msg.sender), "GovernorSimple::execute: only governors can execute");
         require(state(proposalId) == ProposalState.Queued, "GovernorSimple::execute: proposal can only be executed if it is queued");
-        
+
         Proposal storage proposal = proposals[proposalId];
         proposal.queued = false;
         proposal.executed = true;
@@ -180,7 +180,7 @@ contract GovernorSimple {
       * @param proposalId The id of the proposal to cancel
       */
     function cancel(uint proposalId) external {
-        require(isAdmin(msg.sender), "GovernorSimple::propose: only governors can cancel");
+        require(isAdmin(msg.sender), "GovernorSimple::cancel: only governors can cancel");
         require(state(proposalId) != ProposalState.Executed, "GovernorSimple::cancel: cannot cancel executed proposal");
 
         Proposal storage proposal = proposals[proposalId];
@@ -220,12 +220,42 @@ contract GovernorSimple {
     }
 
     /// @notice Checks whether an account is a governor or not
-    function isAdmin(address account) internal view returns (bool) {
+    function isAdmin(address account) public view returns (bool) {
         for (uint i = 0; i < admins.length; i++) {
             if (admins[i] == account) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * @notice Add new admin
+     * @param newAdminAddress Address of admin to add
+     */
+    function addAdmin(address newAdminAddress) external {
+        require(isAdmin(msg.sender), "GovernorSimple::addAdmin: only governors can add governors");
+        admins.push(newAdminAddress);
+    }
+
+    /**
+     * @notice Remove admin from admin array
+     * @param adminAddress Address of admin to remove
+     */
+    function removeAdmin(address adminAddress) external {
+        require(isAdmin(msg.sender), "GovernorSimple::removeAdmin: only governors can remove governors");
+        require(msg.sender != adminAddress, "GovernorSimple::removeAdmin: cannot remove self as admin"); // ensure there is always one admin
+
+        bool addressFound = false;
+
+        for (uint i = 0; i < admins.length; i++) {
+            if (admins[i] == adminAddress) {
+                admins[i] == admins[admins.length - 1];
+                addressFound = true;
+            }
+        }
+        if (addressFound) {
+            admins.pop();
+        }
     }
 }
