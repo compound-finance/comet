@@ -1,4 +1,5 @@
-import { Comet, ethers, event, expect, exp, hre, makeProtocol, portfolio, wait } from './helpers';
+import { ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, wait } from './helpers';
+import { EvilToken, EvilToken__factory } from '../build/types';
 
 describe('supplyTo', function () {
   it('supplies base from sender if the asset is base', async () => {
@@ -187,8 +188,37 @@ describe('supplyTo', function () {
     // Note: fee-tokens are not currently supported (for efficiency) and should not be added
   });
 
-  it.skip('is not broken by malicious re-entrancy', async () => {
-    // XXX
+  it('prevents exceeding the supply cap via re-entrancy', async () => {
+    const { comet, tokens, users: [alice, bob] } = await makeProtocol({
+      assets: {
+        USDC: {
+          decimals: 6
+        },
+        EVIL: {
+          decimals: 6,
+          initialPrice: 2,
+          factory: await ethers.getContractFactory('EvilToken') as EvilToken__factory,
+          supplyCap: 100e6
+        }
+      }
+    });
+    const { EVIL } = <{EVIL: EvilToken}>tokens;
+
+    const attack = Object.assign({}, await EVIL.getAttack(), {
+      attackType: ReentryAttack.SupplyFrom,
+      source: alice.address,
+      destination: bob.address,
+      asset: EVIL.address,
+      amount: 75e6,
+      maxCalls: 1
+    });
+    await EVIL.setAttack(attack);
+
+    await comet.connect(alice).allow(EVIL.address, true);
+
+    await expect(
+      comet.connect(alice).supplyTo(bob.address, EVIL.address, 75e6)
+    ).to.be.revertedWith("custom error 'SupplyCapExceeded()'");
   });
 });
 
