@@ -238,9 +238,6 @@ contract Comet is CometCore {
         baseBorrowIndex = BASE_INDEX_SCALE;
         trackingSupplyIndex = 0;
         trackingBorrowIndex = 0;
-
-        // Approve governor on behalf of contract
-        isAllowed[address(this)][governor] = true;
     }
 
     /**
@@ -1249,6 +1246,18 @@ contract Comet is CometCore {
         if (amount > unsigned256(getReserves())) revert InsufficientReserves();
 
         doTransferOut(baseToken, to, amount);
+    }
+
+    /**
+     * @notice Allow or disallow another address to withdraw from Comet's Comet balance. Only
+     * callable by governor.
+     * @param manager The account which will be allowed or disallowed
+     * @param isAllowed_ Whether to allow or disallow
+     */
+    function allowThis(address manager, bool isAllowed_) external {
+        if (msg.sender != governor) revert Unauthorized();
+
+        isAllowed[address(this)][manager] = isAllowed_;
     }
 
     /**
