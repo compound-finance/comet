@@ -1141,6 +1141,69 @@ const comet = new ethers.Contract(contractAddress, abiJson, provider);
 const price = await comet.callStatic.getPrice(usdcAddress);
 ```
 
+## Bulk Actions
+
+The Compound III codebase contains the source of an external contract called *Bulker* that is designed to allow multiple Comet functions to be called in a single transaction.
+
+Use cases of the Bulker contract include but are not limited to:
+  * Supplying of a collateral asset and borrowing of the base asset.
+  * Supplying or withdrawing of the native EVM token (like Ether) directly.
+  * Transfering or withdrawing of the base asset without leaving dust in the account.
+
+### Invoke
+
+This function allows callers to pass an array of action codes and calldatas that are executed, one by one, in a single transaction.
+
+#### Bulker
+
+```solidity
+uint public constant ACTION_SUPPLY_ASSET = 1;
+uint public constant ACTION_SUPPLY_ETH = 2;
+uint public constant ACTION_TRANSFER_ASSET = 3;
+uint public constant ACTION_WITHDRAW_ASSET = 4;
+uint public constant ACTION_WITHDRAW_ETH = 5;
+
+function invoke(uint[] calldata actions, bytes[] calldata data) external payable
+```
+
+* `actions`: An array of integers that correspond to the actions defined in the contract constructor.
+* `data`: An array of calldatas for each action to be called in the invoke transaction.
+  * Supply Asset, Withdraw Asset, Transfer Asset
+    * `to`: The destination address, within or external to the protocol.
+    * `asset`: The address of the ERC-20 asset contract.
+    * `amount`: The amount of the asset as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
+  * Supply ETH, Withdraw ETH (or equivalent native chain token)
+    * `to`: The destination address, within or external to the protocol.
+    * `amount`: The amount of the native token as an unsigned integer scaled up by 10 to the number of decimals of precision of the native EVM token.
+* `RETURN`: No return, reverts on error.
+
+#### Solidity
+
+```solidity
+Bulker bulker = Bulker(0xBulkerAddress);
+// ERC-20 `approve` the bulker. Then Comet `allow` the bulker to be a manager before calling `invoke`.
+bytes memory supplyAssetCalldata = (abi.encode('0xAccount', '0xAsset', 1234567);
+bulker.invoke([ 1 ], [ supplyAssetCalldata ]);
+```
+
+#### Web3.js v1.5.x
+
+```js
+const Bulker = new web3.eth.Contract(abiJson, contractAddress);
+// ERC-20 `approve` the bulker. Then Comet `allow` the bulker to be a manager before calling `invoke`.
+const supplyAssetCalldata = web3.eth.abi.encodeParameters(['address', 'address', 'uint'], ['0xAccount', '0xAsset', amount]);
+await Bulker.methods.invoke([ 1 ], [ supplyAssetCalldata ]).send();
+```
+
+#### Ethers.js v5.x
+
+```js
+const bulker = new ethers.Contract(contractAddress, abiJson, provider);
+// ERC-20 `approve` the bulker. Then Comet `allow` the bulker to be a manager before calling `invoke`.
+const supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], ['0xAccount', '0xAsset', amount]);
+await bulker.invoke([ 1 ], [ supplyAssetCalldata ]);
+```
+
 ## Governance
 
 Compound III is a decentralized protocol that is governed by holders and delegates of COMP. Governance allows the community to propose, vote, and implement changes through the administrative smart contract functions of the Compound III protocol. For more information on the [governance](https://compound.finance/docs/governance) system see the governance section.
