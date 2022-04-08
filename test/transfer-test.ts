@@ -151,13 +151,7 @@ describe('transfer', function () {
 
     const t1 = await comet.totalsBasic();
 
-    // transferBase sets principal to principalValueBorrow(-100e6)
-    const principalValue = BigNumber.from(-100e6).mul(baseIndexScale).div(t1.baseBorrowIndex);
-
-    // baseBalanceOf returns presentValueBorrow(principal)
-    const baseBalanceOf = principalValue.mul(t1.baseBorrowIndex).div(baseIndexScale);
-
-    expect(await comet.baseBalanceOf(alice.address)).to.eq(baseBalanceOf);
+    expect(await comet.baseBalanceOf(alice.address)).to.eq(-100e6);
   });
 
   it('cant borrow less than the minimum', async () => {

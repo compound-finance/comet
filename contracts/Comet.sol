@@ -186,7 +186,7 @@ contract Comet is CometCore {
             decimals = decimals_;
             baseScale = uint64(10 ** decimals_);
             trackingIndexScale = config.trackingIndexScale;
-            accrualDescaleFactor = baseScale / 1e6;
+            accrualDescaleFactor = baseScale / BASE_ACCRUAL_SCALE;
 
             baseMinForRewards = config.baseMinForRewards;
             baseTrackingSupplySpeed = config.baseTrackingSupplySpeed;
@@ -430,6 +430,16 @@ contract Comet is CometCore {
             }
             lastAccrualTime = now_;
         }
+    }
+
+    /**
+     * @notice Accrue interest and rewards for an account
+     **/
+    function accrueAccount(address account) public {
+        accrueInternal();
+
+        UserBasic memory basic = userBasic[account];
+        updateBaseBalance(account, basic, basic.principal);
     }
 
     /**

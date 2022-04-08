@@ -210,10 +210,7 @@ describe('withdrawTo', function () {
     const t1 = await comet.totalsBasic();
     const baseIndexScale = await comet.baseIndexScale();
 
-    const principalValue = BigNumber.from(-1e6).mul(baseIndexScale).div(t1.baseBorrowIndex);
-    const baseBalanceOf = principalValue.mul(t1.baseBorrowIndex).div(baseIndexScale);
-
-    expect(await comet.baseBalanceOf(alice.address)).to.eq(baseBalanceOf);
+    expect(await comet.baseBalanceOf(alice.address)).to.eq(-1e6);
     expect(await USDC.balanceOf(bob.address)).to.eq(1e6);
   });
 });

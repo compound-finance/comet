@@ -52,11 +52,11 @@ contract EvilToken is FaucetToken {
         attack = attack_;
     }
 
-    function transfer(address dst, uint256 amount) external override returns (bool) {
+    function transfer(address, uint256) external override returns (bool) {
         return performAttack();
     }
 
-    function transferFrom(address src, address dst, uint256 amount) external override returns (bool) {
+    function transferFrom(address, address, uint256) external override returns (bool) {
         return performAttack();
     }
 

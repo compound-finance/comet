@@ -184,16 +184,16 @@ describe('baseTrackingAccrued', function() {
     await comet.connect(alice).withdraw(USDC.address, 1e6);
 
     const userBasic2 = await comet.userBasic(alice.address);
-    expect(userBasic2.principal).to.eq(-999_999); // reduced by borrowCollateralFactor
+    expect(userBasic2.principal).to.eq(-1e6);
     expect(userBasic2.baseTrackingAccrued).to.eq(0);
 
     // withdraw again
     await comet.connect(alice).withdraw(USDC.address, 1e6);
 
     const userBasic3 = await comet.userBasic(alice.address);
-    expect(userBasic3.principal).to.eq(-1_999_998); // -999_999 * 2
+    expect(userBasic3.principal).to.eq(-2e6);
 
     // 1 second elapsed = 1 unit of rewards accrued
-    expect(userBasic3.baseTrackingAccrued).to.eq(999_999);
+    expect(userBasic3.baseTrackingAccrued).to.eq(1e6);
   });
 });

@@ -1,4 +1,4 @@
-import { Comet, ethers, expect, exp, getBlock, makeProtocol, wait } from './helpers';
+import { Comet, ethers, expect, exp, fastForward, getBlock, makeProtocol, wait } from './helpers';
 
 function projectBaseIndex(index, rate, time, factorScale = exp(1, 18)) {
   return index.add(index.mul(rate.mul(time)).div(factorScale));
@@ -180,9 +180,9 @@ describe('accrue', function () {
       totalSupplyBase: 14000,
       totalBorrowBase: 13000,
     });
-    await ethers.provider.send('evm_increaseTime', [998]);
+    await fastForward(998);
     const s0 = await wait(comet.setTotalsBasic(t1));
-    await ethers.provider.send('evm_increaseTime', [2]);
+    await fastForward(2);
     await expect(wait(comet.accrue())).to.be.revertedWith("custom error 'InvalidUInt64()'");
     const t2 = await comet.totalsBasic();
 
@@ -208,27 +208,27 @@ describe('accrue', function () {
       totalSupplyBase: 14000,
       totalBorrowBase: 13000, // needs to have positive utilization for supply rate to be > 0
     });
-    await ethers.provider.send('evm_increaseTime', [998]);
+    await fastForward(998);
     const s0 = await wait(comet.setTotalsBasic(t1));
-    await ethers.provider.send('evm_increaseTime', [2]);
+    await fastForward(2);
     await expect(wait(comet.accrue())).to.be.revertedWith('reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
 
     const t2 = Object.assign({}, t0, {
       baseBorrowIndex: 2n**64n - 1n,
     });
-    await ethers.provider.send('evm_increaseTime', [998]);
+    await fastForward(998);
     const s1 = await wait(comet.setTotalsBasic(t2));
-    await ethers.provider.send('evm_increaseTime', [2]);
+    await fastForward(2);
     await expect(wait(comet.accrue())).to.be.revertedWith('reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
   });
 
   it('supports up to the maximum timestamp then breaks', async () => {
     const { comet } = await makeProtocol();
 
-    await ethers.provider.send('evm_increaseTime', [100]);
+    await fastForward(100);
     const a0 = await wait(comet.accrue());
 
-    await ethers.provider.send('evm_increaseTime', [2**40]);
+    await fastForward(2**40);
     await expect(wait(comet.accrue())).to.be.revertedWith("custom error 'TimestampTooLarge()'");
     await ethers.provider.send('hardhat_reset', []); // dont break downstream tests...
   });
