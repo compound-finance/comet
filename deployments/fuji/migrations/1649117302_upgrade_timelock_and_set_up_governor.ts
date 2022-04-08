@@ -22,7 +22,7 @@ migration<Vars>('1649117302_upgrade_timelock_and_set_up_governor', {
       'test/GovernorSimple.sol',
       []
     );
-  
+
     const newTimelock = await deploymentManager.deploy<SimpleTimelock, SimpleTimelock__factory, [string]>(
       'test/SimpleTimelock.sol',
       [newGovernor.address]
@@ -61,32 +61,36 @@ migration<Vars>('1649117302_upgrade_timelock_and_set_up_governor', {
     // Create a new proposal and queue it up. Execution can be done manually or in a third step.
     let tx = await (await oldGovernorAsAdmin.propose(
       [
-        configurator.address, 
+        configurator.address,
         proxyAdmin.address,
-        proxyAdmin.address, 
-        configurator.address, 
-      ], 
-      [0, 0, 0, 0], 
+        proxyAdmin.address,
+        configurator.address,
+      ],
+      [0, 0, 0, 0],
       [
-        "setGovernor(address)", 
+        "setGovernor(address)",
         "deployAndUpgradeTo(address,address)",
-        "transferOwnership(address)", 
-        "transferAdmin(address)", 
-      ], 
+        "transferOwnership(address)",
+        "transferAdmin(address)",
+      ],
       [
-        setGovernorCalldata, 
+        setGovernorCalldata,
         deployAndUpgradeToCalldata,
-        transferProxyAdminOwnership, 
+        transferProxyAdminOwnership,
         transferConfiguratorAdminCalldata,
       ],
       'Upgrade Timelock and Governor')
     ).wait();
     let event = tx.events.find(event => event.event === 'ProposalCreated');
     let [ proposalId ] = event.args;
-  
+
     await oldGovernorAsAdmin.queue(proposalId);
 
     console.log(`Created proposal ${proposalId} and queued it. Proposal still needs to be executed.`);
+
+    console.log(`Executing proposal ${proposalId}...`);
+    await oldGovernorAsAdmin.execute(proposalId);
+    console.log(`Executed proposal ${proposalId}`);
 
     // XXX create a third step that actually executes the proposal on testnet and logs the results
     // Log out new states to manually verify (helpful to verify via simulation)
