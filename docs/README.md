@@ -36,7 +36,7 @@ SupplyRate = (InterestRateBase + InterestRateSlopeLow * Utilization) * Utilizati
 SupplyRate = (InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeHigh * (Utilization - Kink)) * Utilization * (1 - ReserveRate)
 ```
 
-#### Compound III
+#### Comet
 
 ```solidity
 function getSupplyRate() returns (uint)
@@ -79,7 +79,7 @@ BorrowRate = InterestRateBase + InterestRateSlopeLow * Utilization
 BorrowRate = InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeHigh * (Utilization - Kink)
 ```
 
-#### Compound III
+#### Comet
 
 ```solidity
 function getBorrowRate() returns (uint)
@@ -135,7 +135,7 @@ There are three separate methods to supply an asset to Compound III. The first i
 
 Before supplying an asset to Compound III, the caller must first execute the asset's ERC-20 approve of the Comet contract.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function supply(address asset, uint amount)
@@ -180,7 +180,7 @@ await comet.supply(usdcAddress, 1000000);
 
 The withdraw method is used to **withdraw collateral** that is not currently supporting an open borrow. Withdraw is **also used to borrow the base asset** from the protocol if there is sufficient collateral for the account. It can also be called from an allowed manager address. To check an account's present ability to increase its borrow size, see the *[Get Borrow Liquidity](#get-borrow-liquidity)* function.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function withdraw(address asset, uint amount)
@@ -225,7 +225,7 @@ await comet.withdraw(usdcAddress, 100000000);
 
 This function returns the amount of base asset that is presently borrowable by an account as an integer scaled up by `10 ^ 8`. If the returned value is negative, the account is not allowed to borrow any more from the protocol until more collateral is supplied or there is repayment such that the account's borrow liquidity becomes positive. A negative borrow liquidity does not necessarily imply that the account is presently liquidatable (see *[isLiquidatable](#liquidatable-accounts)* function).
 
-#### Compound III
+#### Comet
 
 ```solidity
 function getBorrowLiquidity(address account) returns (int256)
@@ -259,7 +259,7 @@ const borrowLiquidity = await comet.callStatic.getBorrowLiquidity('0xAccount');
 
 This function returns true if the account passed to it has non-negative liquidity based on the borrow collateral factors. This function returns false if an account does not have sufficient liquidity to increase its borrow position. A return value of false does not necessarily imply that the account is presently liquidatable (see *[isLiquidatable](#liquidatable-accounts)* function).
 
-#### Compound III
+#### Comet
 
 ```solidity
 function isBorrowCollateralized(address account) returns (bool)
@@ -305,7 +305,7 @@ Liquidation is the absorption of an underwater account into the protocol, trigge
 
 This function returns true if the account passed to it has negative liquidity based on the liquidation collateral factor. A return value of true indicates that the account is presently liquidatable.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function isLiquidatable(address account) returns (bool)
@@ -339,7 +339,7 @@ const isLiquidatable = await comet.callStatic.isLiquidatable('0xAccount');
 
 This function can be called by any address to liquidate an underwater account. It transfers the account's debt to the protocol account, decreases cash reserves to repay the account's borrows, and adds the collateral to the protocol's own balance. The caller has the amount of gas spent noted. In the future, they could be compensated via governance.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function absorb(address absorber, address[] calldata accounts)
@@ -376,7 +376,7 @@ This function allows any account to buy collateral from the protocol, at a disco
 
 This function can be used after an account has been liquidated and there is collateral available to be purchased. Doing so increases protocol reserves. The amount of collateral available can be found by calling the *[Collateral Balance](#collateral-balance)* function. The price of the collateral can be determined by using the *[quoteCollateral](#ask-price)* function.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external
@@ -419,7 +419,7 @@ There is an immutable value in the Comet contract that represents a target reser
 
 This function returns the amount of protocol reserves for the base asset as an integer.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function getReserves() returns (uint)
@@ -452,7 +452,7 @@ const reserves = await comet.callStatic.getReserves();
 
 This immutable value represents the target amount of reserves of the base token. If the protocol holds greater than or equal to this amount of reserves, the *[buyCollateral](#buy-collateral)* function can no longer be successfully called.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function targetReserves() returns (uint)
@@ -485,7 +485,7 @@ const targetReserves = await comet.callStatic.targetReserves();
 
 In order to repay the borrows of absorbed accounts, the protocol needs to sell the seized collateral. The *Ask Price* is the price of the asset to be sold with a fixed discount (configured by governance). This function uses the price returned by the protocol's price feed.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function quoteCollateral(address asset, uint amount) returns (uint)
@@ -520,7 +520,7 @@ const askPrice = await comet.callStatic.quoteCollateral('0xERC20Address', 100000
 
 The protocol keeps track of the successful executions of absorb by tallying liquidator "points" and gas the liquidator has spent.
 
-#### Compound III
+#### Comet
 
 ```solidity
 mapping(address => LiquidatorPoints) public liquidatorPoints;
@@ -553,6 +553,84 @@ const comet = new ethers.Contract(contractAddress, abiJson, provider);
 const [ numAbsorbs, numAbsorbed, approxSpend ] = await comet.callStatic.liquidatorPoints('0xLiquidatorAddress');
 ```
 
+## Protocol Rewards
+
+Compound III has a built-in system for tracking rewards for accounts that use the protocol. The full history of accrual of rewards are tracked for suppliers and borrowers of the base asset. The rewards can be any ERC-20 token.
+
+### Reward Accrual
+
+The reward accrual is tracked in the Comet contract and rewards can be claimed by users from an external Comet Rewards contract. Rewards are accounted for with up to 6 decimals of precision.
+
+#### Comet
+
+```solidity
+function baseTrackingAccrued(address account) external view returns (uint64);
+```
+
+* `RETURNS`: Returns the amount of reward token accrued based on usage of the base asset within the protocol for the specified account, scaled up by `10 ^ 6`.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint64 accrued = comet.baseTrackingAccrued(0xAccount);
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const accrued = await comet.methods.baseTrackingAccrued('0xAccount').call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const accrued = await comet.callStatic.baseTrackingAccrued('0xAccount');
+```
+
+### Claim Rewards
+
+Any account can claim rewards for a specific account. Account owners and managers can also claim rewards to a specific address.
+
+#### Comet Rewards
+
+```solidity
+function claim(address comet, address src, bool shouldAccrue) external
+```
+
+```solidity
+function claimTo(address comet, address src, address to, bool shouldAccrue) external
+```
+
+* `comet`: The address of the Comet contract.
+* `src`: The account in which to claim rewards.
+* `to`: The account in which to transfer the claimed rewards.
+* `shouldAccrue`: If true, the protocol will account for the rewards owed to the account as of the current block before transferring.
+* `RETURN`: No return, reverts on error.
+
+#### Solidity
+
+```solidity
+CometRewards rewards = CometRewards(0xCometAddress);
+rewards.claim(0xCometAddress, 0xAccount, true);
+```
+
+#### Web3.js v1.5.x
+
+```js
+const rewards = new web3.eth.Contract(abiJson, contractAddress);
+await rewards.methods.claim(cometAddress, accountAddress, true).send();
+```
+
+#### Ethers.js v5.x
+
+```js
+const rewards = new ethers.Contract(contractAddress, abiJson, provider);
+await rewards.claim(cometAddress, accountAddress, true);
+```
+
 ## Account Management
 
 In addition to self-management, Compound III accounts can enable other addresses to have write permissions for their account. Account managers can withdraw or transfer collateral within the protocol on behalf of another account. This is possible only after an account has enabled permissions by using the *[allow](#allow)* function.
@@ -561,7 +639,7 @@ In addition to self-management, Compound III accounts can enable other addresses
 
 Allow or disallow another address to withdraw or transfer on behalf of the sender's address.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function allow(address manager, bool isAllowed)
@@ -597,7 +675,7 @@ await comet.allow(managerAddress, true);
 
 This is a separate version of the allow function that enables submission using an EIP-712 offline signature. For more details on how to create an offline signature, review [EIP-712](https://eips.ethereum.org/EIPS/eip-712).
 
-#### Compound III
+#### Comet
 
 ```solidity
 function allowBySig(
@@ -647,7 +725,7 @@ await comet.allowBySig('0xowner', '0xmanager', true, nonce, expiry, v, r, s);
 
 This method returns a boolean that indicates the status of an account's management address.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function hasPermission(address owner, address manager) public view returns (bool)
@@ -682,7 +760,7 @@ const isManager = await comet.callStatic.hasPermission('0xOwner', '0xManager');
 
 This method is used to transfer an asset within the protocol to another address. A manager of an account is also able to perform a transfer on behalf of the account. Account balances change but the asset does not leave the protocol contract. The transfer will fail if it would make the account liquidatable.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function transferCollateral(address dst, address asset, uint amount)
@@ -728,7 +806,7 @@ This method returns the current protocol utilization of the base asset. The form
 
 `Utilization = TotalBorrows / TotalSupply`
 
-#### Compound III
+#### Comet
 
 ```solidity
 function getUtilization() returns (uint)
@@ -761,7 +839,7 @@ const utilization = await comet.callStatic.getUtilization();
 
 The protocol tracks the current amount of collateral that all accounts have supplied. Each valid collateral asset sum is tracked in a mapping with the asset address that points to a struct.
 
-#### Compound III
+#### Comet
 
 ```solidity
 mapping(address => TotalsCollateral) public totalsCollateral;
@@ -796,7 +874,7 @@ const [ totalSupplyAsset ] = await comet.callStatic.totalsCollateral('0xERC20Add
 
 This method returns the current balance of a collateral asset for a specified account in the protocol.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function collateralBalanceOf(address account, address asset) returns (uint128)
@@ -831,7 +909,7 @@ const balance = await comet.callStatic.collateralBalanceOf('0xAccount', '0xUsdcA
 
 This method returns the current balance of base asset for a specified account in the protocol, including interest. If the account is presently borrowing or not supplying, it will return `0`.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function balanceOf(address account) returns (uint256)
@@ -865,7 +943,7 @@ const balance = await comet.callStatic.balanceOf('0xAccount');
 
 This method returns the current balance of borrowed base asset for a specified account in the protocol, including interest. If the account has a non-negative base asset balance, it will return `0`.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function borrowBalanceOf(address account) returns (uint256)
@@ -899,7 +977,7 @@ const owed = await comet.callStatic.borrowBalanceOf('0xAccount');
 
 This method returns the current balance of base asset for a specified account in the protocol, including interest. If the account is currently borrowing, the return value will be negative. If the account is currently supplying the base asset, the return value will be positive.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function baseBalanceOf(address account) returns (int104)
@@ -933,7 +1011,7 @@ const baseBalance = await comet.callStatic.baseBalanceOf('0xAccount');
 
 The protocol tracks data like the principal and indexes for each account that supplies and borrows. The data is stored in a mapping with the account address that points to a struct.
 
-#### Compound III
+#### Comet
 
 ```solidity
 struct UserBasic {
@@ -978,7 +1056,7 @@ const [ principal, baseTrackingIndex, baseTrackingAccrued, assetsIn ] = await co
 
 This method returns asset information such as the collateral factors, asset price feed address, and more. In order to create a loop to fetch information for every asset, use the `numAssets` constant, which indicates the total number of supported assets.
 
-#### Compound III
+#### Comet
 
 ```solidity
 struct AssetInfo {
@@ -1033,7 +1111,7 @@ The protocol's prices are updated by [Chainlink Price Feeds](https://data.chain.
 
 This function returns the price of an asset in USD with 8 decimal places.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function getPrice(address priceFeed) returns (uint128)
@@ -1071,7 +1149,7 @@ Compound III is a decentralized protocol that is governed by holders and delegat
 
 This function allows governance to withdraw base token reserves from the protocol and send them to a specified address. Only the governor address may call this function.
 
-#### Compound III
+#### Comet
 
 ```solidity
 function withdrawReserves(address to, uint amount) external
