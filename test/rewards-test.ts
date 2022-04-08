@@ -146,7 +146,7 @@ describe('CometRewards', () => {
       await expect(
         rewards
           .claim(comet.address, alice.address, true)
-      ).to.be.revertedWith("panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)");
+      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
     });
   });
 
@@ -327,7 +327,7 @@ describe('CometRewards', () => {
         rewards
           .connect(bob)
           .claimTo(comet.address, alice.address, bob.address, true)
-      ).to.be.revertedWith("panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)");
+      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
     });
 
     it('fails if caller is not permitted to claim rewards for owner', async () => {
