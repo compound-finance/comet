@@ -116,8 +116,7 @@ const config: HardhatUserConfig = {
           "*": ["evm.deployedBytecode.sourceMap"]
         },
       },
-      // XXX for when we enable viaIR in a future merge:
-      //viaIR: process.env['OPTIMIZER_DISABLED'] ? false : true,
+      viaIR: process.env['OPTIMIZER_DISABLED'] ? false : true,
     },
   },
 
