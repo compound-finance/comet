@@ -592,7 +592,7 @@ const accrued = await comet.callStatic.baseTrackingAccrued('0xAccount');
 
 ### Claim Rewards
 
-Any account can claim rewards for a specific account. Account owners and managers can also claim rewards to a specific address.
+Any account can claim rewards for a specific account. Account owners and managers can also claim rewards to a specific address. The claim functions are available on the external Comet Rewards contract.
 
 #### Comet Rewards
 
@@ -613,7 +613,7 @@ function claimTo(address comet, address src, address to, bool shouldAccrue) exte
 #### Solidity
 
 ```solidity
-CometRewards rewards = CometRewards(0xCometAddress);
+CometRewards rewards = CometRewards(0xRewardsAddress);
 rewards.claim(0xCometAddress, 0xAccount, true);
 ```
 
