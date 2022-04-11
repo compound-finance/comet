@@ -1,0 +1,3 @@
+.certora*
+**.last_conf*
+certora-logs
