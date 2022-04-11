@@ -44,30 +44,59 @@ To run a verification job:
 ## Overview of Comet protocol 
 Compound Comet is a protocol that allows supplying volatile assets as collateral, and borrowing only a single (e.g. stable) coin.
 
-The system pre-define 2 sorts of tokens:
+The system pre-defines 2 sorts of tokens:
 
-- **Base Token** - A single token, most likely a stable coin, that can be borrowed and supplied to the system with an interest determined by parameters of the system.
+- **Base Token** - A single token, most likely a stable coin, that can be borrowed from or supplied to the system with interest determined by parameters of the system.
 
-- **Collateral Token** - Up to 16 distinct ERC20 assets, most likely volatile coins/tokens, that can be supplied as collateral against a borrow.
+- **Collateral Token** - Up to 16 distinct ERC20 assets, most likely volatile coins/tokens, that can be supplied as collateral against a loan.
 
-The protocol has a distinct borrow and supply rate curve for the borrowed token.
+The protocol has a distinct borrow and supply rate curves for the borrowed token.
 
-In case that a borrower's collateral does not cover its current debt, a 2 step absorption mechanism is provided. Absorption can be executed by anyone:
+In the event a borrower's collateral does not cover its current debt, a 2 step absorption mechanism is provided. Absorption can be executed by anyone:
 
-- **Step 1** - Once a user (Alice) is in a liquidatable state, any user in the system (including Alice herself) can call `absorb()` on her. The absorption sorts out Alice's check books by giving up her debts while absorbing all of her collateral assets **to the system**. The user that successfully called `absorb()`, receive `LiquidatorPoints`.
+- **Step 1** - Once a user (Alice) is in a liquidatable state, any user in the system (including Alice herself) can call `absorb()` on her. The absorption sorts out Alice's balance sheet by giving up her debts while absorbing all of her collateral assets **to the system**. The user that successfully called `absorb()` receives `LiquidatorPoints`.
 
 - **Step 2** - Now that Alice's account is balanced, and her collateral has been absorbed into the system, the collateral is available for anyone to buy for a discount.
 
-As the goal of Comet is to be highly optimized for a particular use case, it seek to minimize the number of contracts involved. The protocol is implemented primarily in a monolithic contract.
+<div id="Compound_Comet_Architecture">
+    
+```graphviz
+digraph hierarchy {
+graph [label="Compound Comet Architecture\n\n", labelloc=t, fontsize=25];
+nodesep=1.0
+node [color=Red,fontname=Courier,shape=box] 
+edge [color=Blue, style=dashed]
+
+{ rank = sink; CometConfiguration; }
+{ rank = sink; CometStorage; }
+{ rank = sink; CometMath; }
+CometCore;
+CometFactory;
+{ rank = source; Comet; }
+{ rank = source; CometExt; }
+
+{CometConfiguration CometStorage CometMath}->{CometCore} [dir=back]
+{CometConfiguration}->{CometFactory} [dir=back]
+
+CometCore->{Comet CometExt} [dir=back]
+
+}
+```
+    
+</div>
+
+As the goal of Comet is to be highly optimized for a particular use case, it seeks to minimize the number of contracts involved. The protocol is implemented primarily in a monolithic contract.
+
+## Contract Functions
 
 ### Supply
-Serves three distinct purposes
+Serves three distinct purposes:
 1. Supply liquidity in Base tokens
 2. Supply collateral in volatile assets
 3. Return borrowed Base tokens
 
 ### Withdraw
-Serves three distinct purposes
+Serves three distinct purposes:
 1. Withdraw liquidity in Base tokens
 2. Withdraw collateral
 3. Borrow Base tokens
@@ -79,57 +108,58 @@ Returns the actual interest rate promised to liquidity providers. The rate is a 
 Returns the actual interest rate the borrowers should expect. The rate is a function of liquidity utilization and interest rate slope.
 
 ### getUtilization
-Returns the rate of the utilization, or the rate of efficiency in utilizing the liquidity
+Returns the rate of the utilization, or the rate of efficiency in utilizing the liquidity.
 
 ### getReserves
 Returns the amount of reserves left in the system.
 The protocol designates a part of the supplied liquidity and a part of the accumulated interest to the reserves. These reserves are then used in special cases, for example when the borrower fails to comply with the collateral obligations and the loan has to be liquidated.
 
 ### withdrawReserves
-Withdraws base token reserves remained, if called by the governor. 
+Withdraws remaining base token reserves, if called by the governor. 
 
 ### isBorrowCollateralized
-Recalculates the present value of the borrower's collateral and the present value of the borrowed amount , and compares it with the protocol's Collateralization policy.
+Recalculates the present value of the borrower's collateral and the present value of the borrowed amount then evaluates them with respect to the protocol's collateralization policy.
 
 ### isLiquidatable
-Recalculates the present value of the borrower's collateral and the present value of the borrowed amount , and compares it with the protocol's liquidation policy.
+Recalculates the present value of the borrower's collateral and the present value of the borrowed amount then evaluates them with respect to the protocol's liquidation policy.
 
 ### absorb
-if isLiquidatable = false , a user may call absorb, in which case the system will liquidate the loan and transfer the remaining collateral to the contract.
+Liquidates a loan and transfers the remaining collateral to the contract. A user may call absorb if `isLiquidatable = true`.
 
 ### buyCollateral
-A user may buy from the system the "absorbed" collateral by providing the appropriate amount of Base tokens.
+Allows a user to buy the "absorbed" collateral from the system by providing the appropriate amount of Base tokens.
 
 ### transferAsset
-User A can transfer his assets stored in the system to user B if those assets do not serve as collateral.
+Allows user A to transfer his assets stored in the system to user B so long as those assets do not serve as collateral.
 
 ### accrueInternal (internal function)
-An important function that updates the aggregated interest rates for suppliers and for the borrowers
+An important function that updates the aggregated interest rates for suppliers and for the borrowers.
 
 </br>
 
 ---
 
 ## Verified Contracts
-In order to have a better coverage of the system, and due to computational complexities that are arise in the process of verifying a complex system as Comet, some harness to the original contract were required.
-The harnesses contains additional or modified functionalities to the original contract.
-We've split our harness into several levels of modifications, which allows greater control in determining which rule is verified under which conditions and assumptions. All harnesses are inheriting from the original contract they aspire to modify.
+
+In order to have a better coverage of the system, and due to computational complexities that arise in the process of verifying a system as complex as Comet, some harnesses to the original contract were required.
+The harnesses contain additional or modified functionalities for the original contract.
+We've split our harnesses into several levels of modifications, which allows for greater control in determining which rule is verified under which conditions and assumptions. All harnesses inherit from the original contract they modify.
 
 </br>
 
-### CometHarnessGetters
+#### CometHarnessGetters
 A collection of getters that otherwise would be invisible to the SPEC file.
 
 </br>
 
-### CometHarnessWrappers
+#### CometHarnessWrappers
 A collection of functions that wrap the source code functions and data structures that otherwise would be invisible to the SPEC file. (for example : internal functions).
 
 </br>
 
-### CometHarness
+#### CometHarness
 A collection of summarizations and simplifications of methods and components of comet.
-Some summarization are safe approximation as important properties have been proven on the original code. For example: replacing the extensively bitwise operation functions `isInAsset` with a simpler but semantically equivalent summarization. Since `isInAsset` have been proven to be correct with respect to a set of properties this simplification is a safe approximation. However some simplifications are under-approximation as they don't take into account all possible states of the contract. 
+Some summarizations are safe approximations as important properties have been proven on the original code. For example: replacing the extensively bitwise operation functions `isInAsset` with a simpler but semantically equivalent summarization. Since `isInAsset` have been proven to be correct with respect to a set of properties this simplification is a safe approximation. However some simplifications are under-approximation as they don't take into account all possible states of the contract. 
 
 The following table describe which spec file runs on which harness contract and which setup spec, to give a better sense of the assumptions and simplifications that were used in the verification of these specific rules:
 
@@ -156,27 +186,27 @@ We made the following assumptions during our verification:
 
 - We unroll loops. Violations that require a loop to execute more than twice will not be detected.
 
-Some rules are proven over a the following set of simplified assumptions:
+Some rules are proven over the following set of simplified assumptions:
 
-- Method `accrue` does not change any value - specifically the supply and borrow rate
+- The `accrue` method does not change any value - specifically the supply and borrow rate
 
-- The supply and borrow rate kept constant at the initial value
+- The supply and borrow rate are kept constant at the initial value
 
 - Base scale set to Factor scale
-
-- AccrualDescaleFactor and trackingIndexScale are both 1
-
+ 
+- `AccrualDescaleFactor` and `trackingIndexScale` are both 1
+ 
 
 ## Notations
 
 ✔️ indicates the rule is formally verified on the latest reviewed commit. We write ✔️* when the rule was verified on the simplified assumptions described above. 
 
-¬[](https://i.imgur.com/rDhiM7e.png =20x20) indicates the rule was violated under one of the tested versions of the code.
+❌ indicates the rule was violated under one of the tested versions of the code.
 
 
 🔁 indicates the rule is timing out.
 
-We use Hoare triples of the form {p} C {q}, which means that if the execution of program C starts in any state satisfying p, it will end in a state satisfying q. In Solidity, p is similar to require, and q is similar to assert. 
+We use Hoare triples of the form {p} C {q}, which means that if the execution of program C starts in any state satisfying p, it will end in a state satisfying q. p and q are analogous to require and assert in Solidity. 
 
 The syntax {p} (C1 ～ C2) {q} is a generalization of Hoare rules, called relational properties. {p} is a requirement on the states before C1 and C2, and {q} describes the states after their executions. Notice that C1 and C2 result in different states. As a special case, C1～op C2, where op is a getter, indicating that C1 and C2  result in states with the same value for op.
 
@@ -186,7 +216,7 @@ The syntax {p} (C1 ～ C2) {q} is a generalization of Hoare rules, called relati
 This section details the verification of Comet.
 Over fifty properties are defined for Comet. the properties are separated into sections, starting with the high-level properties. 
 In addition, a methodology for checking reentrancy safety has been applied to verify the unlikely case of a call back from an ERC20 contract.
-Last, a set of properties for listing ERC20 assets are formally defined and can be easily applied on any ERC20 contract. 
+Lastly, a set of properties for listing ERC20 assets are formally defined and can be easily applied on any ERC20 contract. 
 
 
 
@@ -194,32 +224,32 @@ Last, a set of properties for listing ERC20 assets are formally defined and can 
 ###### files comet.spec, cometTotalsAndBalances.spec
 
 1. **Total collateral per asset** ✔️*
-The sum of collateral per asset over all users is equal to total collateral of asset
+The sum of collateral per asset over all users must equal the total collateral for that asset
  ```
  sum(userCollateral[user][asset].balance) = totalsCollateral[asset].totalSupplyAsset
  ```
 2. **Total asset collateral vs asset balance** ✔️*
-For each asset, the contract's balance is at least as the total supply 
+The total supply of an asset must not exceed the contract's balance for that asset.
 ```
 totalsCollateral[asset].totalSupplyAsset ≤ asset.balanceOf(this)
 ```
 3. **Base balance vs totals** ✔️*
-The base token balance of the system, is at least the supplied minus the borrowed
+The base token balance of the system must be at least as large as the total supply of base tokens minus the total base tokens borrowed
 ```
 baseToken.balanceOf(currentContract) ≥ getTotalSupplyBase() - getTotalBorrowBase()
 ```
 4. **Collateral totalSupply LE supplyCap** ✔️*
-The total supply of an asset is not greater than it's supply cap
+The total supply of an asset must not be greater than its supply cap
 ```
  totalsCollateral[asset].totalSupplyAsset ≤ getAssetSupplyCapByAddress(asset)
 ```
 5. **Total base token** ✔️*
-Summary of principal balances equals the totals
+The sum of principal balances over all users must equal the total base token within the system
 ```
 sum(userBasic[user].principal) == totalsBasic.totalSupplyBase - totalsBasic.totalBorrowBase
 ```
 6. **Balance change by allowed only** ✔️*
-User principal balance may decrease only by a call from them or from a permissioned manager
+A user's principal balance may decrease only by a call from them or from a permissioned manager
 ```
     {
         x = userBasic[user].principal ∧
@@ -234,8 +264,8 @@ User principal balance may decrease only by a call from them or from a permissio
         userCollateral[user][asset].balance < y ⇒ ( user = msg.sender v p  v op=absorb )	                  
     }
 ```
-7. **Collateralized_after_operation** ✔️*
- Any operation on a collateralized account leaves the account collateralized
+7. **Collateralized after operation** ✔️*
+ Any operation on a collateralized account must leave the account collateralized
  ```
     {
         isBorrowCollateralized(t, user)
@@ -248,12 +278,12 @@ User principal balance may decrease only by a call from them or from a permissio
     }
  ```
 8. **AssetIn initialized with balance** ✔️*
-The assetIn switch of a specific asset is either initialized along with the collateral balance
+The assetIn switch of a specific asset must be initialized along with the collateral balance
 ```
 userCollateral[user][asset].balance > 0 ⇔ isInAsset(userBasic[user].assetsIn, asset.offset)
 ```
 9. **Balance change vs accrue** ✔️* 
-Base balance can change only on updated accrued state
+Base balance must change only on updated accrued state
 ```
     {
         balance_pre = tokenBalanceOf(_baseToken,currentContract)
@@ -266,7 +296,7 @@ Base balance can change only on updated accrued state
     }
 ```
 10.  **Balance change vs registered** ✔️*
-If the system's balance in some asset changed, asset must be registered in as a recognized asset
+A change in the system's balance of some asset must only occur for assets registered as recognized assets
 ```
     {
         registered = getAssetInfoByAddress(token).asset == token ∧
@@ -282,7 +312,7 @@ If the system's balance in some asset changed, asset must be registered in as a 
     }
 ```
 11. **Usage registered assets only** ✔️*
-Checks that every function call that has an asset arguments reverts on a non-registered asset 
+Every function that has an asset argument must revert on a non-registered asset.
 ```
     {
         
@@ -295,7 +325,7 @@ Checks that every function call that has an asset arguments reverts on a non-reg
     }
 ```
 12. **Verify transferAsset** ✔️*
-Transfer should not change the combined presentValue of src and dst
+A transfer must not change the combined presentValue of src and dst
 ```
     { 
         p = baseBalanceOf(src) + baseBalanceOf(dst) ∧
@@ -311,8 +341,9 @@ Transfer should not change the combined presentValue of src and dst
 ```
 
 ### Properties regarding withdraw and supply
+###### files cometAbsorbBuyCollateral.spec
 13. **Withdraw reserves decreases** ✔️*
-When a manager withdraw from the reserves, the system's reserves must decrease
+When a manager withdraws from the reserves, the system's reserves must decrease
 ```
     {
         before = getReserves()
@@ -325,7 +356,7 @@ When a manager withdraw from the reserves, the system's reserves must decrease
     }
 ```
 14. **Withdraw reserves monotonicity** ✔️*
-The more a manager withdraw from reserves, the less reserves the system should have
+The larger a withdrawal from reserves a manager makes, the smaller the remaining reserves in the system must be
 ```
     {
         
@@ -340,7 +371,7 @@ The more a manager withdraw from reserves, the less reserves the system should h
     }
 ```
 15. **Supply increase balance** ✔️*
-Integrity of supply - balance increased by supply amount 
+If a certain amount of an asset is supplied, the balance of that asset must increase by that amount
 ```
     {
         balance1 = tokenBalanceOf(asset, currentContract)
@@ -354,7 +385,7 @@ Integrity of supply - balance increased by supply amount
 
 ```
 16. **Withdraw decrease balance** ✔️*
-Integrity of withdraw - balance decreased by supply amount
+If a certain amount of an asset is withdrawn, the balance of that asset must decrease by that amount
 ```
     {
         b = tokenBalanceOf(asset, currentContract)
@@ -363,12 +394,12 @@ Integrity of withdraw - balance decreased by supply amount
     withdraw(asset, amount)
     
     {
-        b - tokenBalanceOf(asset, currentContract) = amount
+        b - tokenBalanceOf(asset, currentContract) == amount
     }
 
 ```
 17. **Additivity of withdraw** ✔️*
-Splitting a withdraw to two step result in the same outcome
+Performing two distinct withdrawals must result in the same outcome as performing a single withdrawal for the same total amount
 ```
     {
         
@@ -379,20 +410,20 @@ Splitting a withdraw to two step result in the same outcome
     withdraw(_baseToken, x + y); base2 := baseBalanceOf(e.msg.sender)
     
     {
-        base1 = base2
+        base1 == base2
     }
 ```
 
 ### Properties regarding absorb and buyCollateral
 ###### files: cometAbsorbBuyCollateral.spec
 18. **Anti monotonicity of buyCollateral** ✔️*
-After call to buy collateral:
-        (i) balance collateral decrease 
-        (ii) balance Base increase 
-        (iii) balance Base increase if anf only if balance collateral decrease
+After a call to buy collateral:
+        (i) the collateral balance must decrease 
+        (ii) the Base balance must increase 
+        (iii) the Base balance must increase if and only if the collateral balance decreases
 ```
     {
-        balanceAssetBefore = tokenBalanceOf(asset, currentContract)
+        balanceAssetBefore = tokenBalanceOf(asset, currentContract)     ∧
         balanceBaseBefore = tokenBalanceOf(_baseToken, currentContract)
     }
     
@@ -474,7 +505,6 @@ The same account cannot be absorbed repeatedly
         lastReverted
     }
 ```
-
 
 ### Properties regarding setting allowance
 ###### files: cometExt.spec
@@ -728,228 +758,229 @@ presentValue == principalValue ⇒ BaseSupplyIndex == BaseIndexScale
 If utilization is 0, then supplyRate is 0
 
 ```
-        Utilization == 0 ⇒ SupplyRate == 0
+    Utilization == 0 ⇒ SupplyRate == 0
 ```
 50.  **SupplyRate revert characteristic**  ✔️
 GetSupplyRate should always revert if reserveRate > FACTOR_SCALE
 ```
-        {
-        
-        }
-            getSupplyRate()
-        { 
-            reserveRate > FACTOR_SCALE ⇒ lastReverted 
-        }
+    {
+
+    }
+        getSupplyRate()
+    { 
+        reserveRate > FACTOR_SCALE ⇒ lastReverted 
+    }
 
 ```
 
-## Verification of reentrancy safety  
 
-To verify the safety for re-entrency calls from a possible malicious/broken erc20, we have prepared an erc20 token that callsback Comet functions. We allowed the ERC token to have a call back to the following Comet functions:
+## Verification of reentrancy Safety  
 
-buyCollateral
-supply
-withdraw
-transferAssetFrom
-transferFrom
+To verify the safety for re-entrency calls from a possible malicious/broken erc20, we prepared an erc20 token that callsback Comet functions. We allowed the ERC token to have a call back to the following Comet functions:
+
+- buyCollateral
+ - supply
+ - withdraw
+ - transferAssetFrom
+ - transferFrom
+
 We have checked properties 1- 23 given this malicious token as a potential asset.
-As expected, a few properties do not hold but do not indicate an issue in the Comet code. For example, property #6 (Balance change by allowed only) fails when the callback is to withdraw as the Certora prover considers the case that the ERC20 asset has an allowance. In addition, some cases of properties had timed out and could not be verified.
+As expected, a few properties do not hold but do not indicate an issue in the Comet code. For example, 
+property #6 (Balance change by allowed only) fails when the callback is to withdraw since the Certora prover considers the case where the ERC20 asset has an allowance. In addition, some cases of properties had timed out and could not be verified.
 
 ## Formal Properties for ERC20 Assets to be listed
 
-As part of our effort to secure the protocol, we've prepared a scaffold specification for ERC20 tokens. This set of rules is aimed as a preemptive measure - it allows to verify certain desired properties of an ERC20 token before enlisting it in the system.
-The specifications can be thought of as an inspection tool that retrieve information on specified tokens - whether they meet or violate the set of desired properties. With that said, tokens that does meet the criteria will not necessarily be overlooked, it is down to the developers and the deployers of the protocol to take the information and deal with it as they see fit - enlisting it knowing the risk, or tweaking the protocol slightly to overcome the gap.
+As part of our effort to secure the protocol, we've prepared a scaffold specification for ERC20 tokens. This set of rules is aimed as a preemptive measure - it allows verification of certain desired properties of an ERC20 token before enlisting it in the system.
+The specifications can be thought of as an inspection tool that retrieves information on specified tokens - whether they meet or violate the set of desired properties. 
 
-We shall present here the set of properties we've written for that purpose, but bare in mind that by no means this is a complete set of checks. This is a framework on which the community can build, thicken and improve their set of desired properties.
+We present here a set of properties we've written for that purpose. This is a framework on which the community can build, solidify, and improve their set of desired properties.
 
 1. **noFeeOnTransferFrom**
 Verify that there is no fee on transferFrom() (like potentially on USDT)
 ```
-        {
-            balances[bob] = y
-            allowance(alice, msg.sender) ≥ amount
-        }
-        
-        transferFrom(alice, bob, amount)
-        
-        {
-            balances[bob] = y + amount
-        }
+    {
+        balances[bob] = y
+        allowance(alice, msg.sender) ≥ amount
+    }
+
+    transferFrom(alice, bob, amount)
+
+    {
+        balances[bob] = y + amount
+    }
 ```
 
 2. **noFeeOnTransfer**
 Verify that there is no fee on transfer() (like potentially on USDT)
 ```
-        {
-            balances[bob] = y
-            balances[msg.sender] ≥ amount
-        }
+    {
+        balances[bob] = y
+        balances[msg.sender] ≥ amount
+    }
 
-        transfer(bob, amount)
-            
-        {
-            balances[bob] = y + amount
-        }
+    transfer(bob, amount)
+
+    {
+        balances[bob] = y + amount
+    }
 ``` 
 
 3. **transferCorrect**
 Token transfer works correctly. Balances are updated if not reverted.  If reverted then the transfer amount was too high, or the recipient is 0.
 ```
-        {
-            balanceFromBefore = balanceOf(msg.sender)
-            balanceToBefore = balanceOf(to)
-        }
+    {
+        balanceFromBefore = balanceOf(msg.sender)
+        balanceToBefore = balanceOf(to)
+    }
 
-        transfer(to, amount)
+    transfer(to, amount)
 
-        {
-            lastReverted ⇒ to = 0 v amount > balanceOf(msg.sender)
-            ¬lastReverted ⇒ balanceOf(to) = balanceToBefore + amount ∧
-                            balanceOf(msg.sender) = balanceFromBefore - amount
-        }
+    {
+        lastReverted ⇒ to = 0 v amount > balanceOf(msg.sender)
+        ¬lastReverted ⇒ balanceOf(to) = balanceToBefore + amount ∧
+                        balanceOf(msg.sender) = balanceFromBefore - amount
+    }
 ```
 
 4. **TransferFromCorrect**
 Test that transferFrom works correctly. Balances are updated if not reverted. If reverted, it means the transfer amount was too high, or the recipient is 0
 ```
-        {
-            balanceFromBefore = balanceOf(from)
-            balanceToBefore = balanceOf(to)
-        }
+    {
+        balanceFromBefore = balanceOf(from)
+        balanceToBefore = balanceOf(to)
+    }
 
-        transferFrom(from, to, amount)
+    transferFrom(from, to, amount)
 
-        {
-            lastreverted ⇒ to = 0 v amount > balanceOf(from)
-            ¬lastreverted ⇒ balanceOf(to) = balanceToBefore + amount ∧
-                            balanceOf(from) = balanceFromBefore - amount
-        }
+    {
+        (lastreverted ⇒ to = 0 v amount > balanceOf(from)) ∧
+        (¬lastreverted ⇒ (balanceOf(to) = balanceToBefore + amount ∧
+                          balanceOf(from) = balanceFromBefore - amount))
+    }
 ```
 
 5. **TransferFromReverts**
 transferFrom should revert if and only if the amount is too high or the recipient is 0.
 ```
-        {
-            allowanceBefore = allowance(alice, bob)
-            fromBalanceBefore = balanceOf(alice)
-        }
+    {
+        allowanceBefore = allowance(alice, bob)
+        fromBalanceBefore = balanceOf(alice)
+    }
 
-        transferFrom(alice, bob, amount)
+    transferFrom(alice, bob, amount)
 
-        {
-            lastReverted ⇔ allowanceBefore < amount v amount > fromBalanceBefore v to = 0
-        }
+    {
+        lastReverted ⇔ allowanceBefore < amount v amount > fromBalanceBefore v to = 0
+    }
 ```
 
 6. **ZeroAddressNoBalance**
 Balance of address 0 is always 0
 ```
-        balanceOf[0] = 0
+    balanceOf[0] = 0
 ```
 
 7. **NoChangeTotalSupply**
 Contract calls don't change token total supply.
 ```
-        {
-            supplyBefore = totalSupply()
-        }
-        
-        < call any function >
-        
-        {
-            supplyAfter = totalSupply()
-            supplyBefore == supplyAfter
-        }
+    {
+        supplyBefore = totalSupply()
+    }
+
+    < call any function >
+
+    {
+        supplyBefore = totalSupply()
+    }
 ```
 
 8. **ChangingAllowance**
 Allowance changes correctly as a result of calls to approve, transfer, increaseAllowance, decreaseAllowance
 ```
-        {
-            allowanceBefore = allowance(from, spender)
-        }
+    {
+        allowanceBefore = allowance(from, spender)
+    }
 
-        < call any function >
+    < call any function f>
 
-        {
-            f.selector = approve(spender, amount) ⇒ allowance(from, spender) = amount
-            f.selector = transferFrom(from, spender, amount) ⇒ allowance(from, spender) = allowanceBefore - amount
-            f.selector = decreaseAllowance(spender, delta) ⇒ allowance(from, spender) = allowanceBefore - delta
-            f.selector = increaseAllowance(spender, delta) ⇒ allowance(from, spender) = allowanceBefore + delta
-            generic f.selector ⇒ allowance(from, spender) == allowanceBefore
-        }
+    {
+        f = approve(spender, amount) ⇒ allowance(from, spender) = amount
+        f = transferFrom(from, spender, amount) ⇒ allowance(from, spender) = allowanceBefore - amount
+        f = decreaseAllowance(spender, delta) ⇒ allowance(from, spender) = allowanceBefore - delta
+        f  = increaseAllowance(spender, delta) ⇒ allowance(from, spender) = allowanceBefore + delta
+        other f ⇒ allowance(from, spender) == allowanceBefore
+    }
 ```
 
 9. **TransferSumOfFromAndToBalancesStaySame**
 Transfer from a to b doesn't change the sum of their balances
 ```
-        {
-            balancesBefore = balanceOf(msg.sender) + balanceOf(b)
-        }
-        
-        transfer(b, amount)
-            
-        {
-            balancesBefore == balanceOf(msg.sender) + balanceOf(b)
-        }
+    {
+        balancesBefore = balanceOf(msg.sender) + balanceOf(b)
+    }
+
+    transfer(b, amount)
+
+    {
+        balancesBefore = balanceOf(msg.sender) + balanceOf(b)
+    }
 ```
 
 10. **TransferFromSumOfFromAndToBalancesStaySame**
 Transfer using transferFrom() from a to b doesn't change the sum of their balances
 ```
-        {
-            balancesBefore = balanceOf(a) + balanceOf(b)
-        }
+    {
+        balancesBefore = balanceOf(a) + balanceOf(b)
+    }
 
-        transferFrom(a, b)
+    transferFrom(a, b)
 
-        {
-            balancesBefore == balanceOf(a) + balanceOf(b)
-        }
+    {
+        balancesBefore = balanceOf(a) + balanceOf(b)
+    }
 ```
 
 11. **TransferDoesntChangeOtherBalance**
 Transfer from msg.sender to alice doesn't change the balance of other addresses
 ```
-        {
-            balanceBefore = balanceOf(bob)
-        }
+    {
+        balanceBefore = balanceOf(bob)
+    }
 
-        transfer(alice, amount)
+    transfer(alice, amount)
 
-        {
-            balanceOf(bob) == balanceBefore
-        }
+    {
+        balanceOf(bob) = balanceBefore
+    }
 ```
 
 12. **TransferFromDoesntChangeOtherBalance**
 Transfer from alice to bob using transferFrom doesn't change the balance of other addresses
 ```
-        {
-            balanceBefore = balanceOf(charlie)
-        }
+    {
+        balanceBefore = balanceOf(charlie)
+    }
 
-        transferFrom(alice, bob, amount)
+    transferFrom(alice, bob, amount)
 
-        {
-            balanceOf(charlie) = balanceBefore
-        }
+    {
+        balanceOf(charlie) = balanceBefore
+    }
 ```
 
 13. **OtherBalanceOnlyGoesUp**
 Balance of an address, who is not a sender or a recipient in transfer functions, doesn't decrease as a result of contract calls.
 ```
-        {
-            balanceBefore = balanceOf(charlie)
-        }
+    {
+        balanceBefore = balanceOf(charlie)
+    }
 
-        < call any function >
-        
-        {
-            f.selector ≠ transfer ∧ f.selector ≠ transferFrom ⇒ balanceOf(charlie) == balanceBefore
-        }
+    < call any function f >
+
+    {
+        f ≠ transfer ∧ f ≠ transferFrom ⇒ balanceOf(charlie) = balanceBefore
+    }
 ```
 
 The Certora team added a demo on 3 common tokens deployed on mainnet - USDC, Sushi and FTT.
-The spec doesn't pass completely on any of these tokens, because each of them has some functions that
-violate the rules: mint/burn, pause/blacklist, and others.
+The spec doesn't pass completely on any of these tokens, because each of them has some functions that violate the rules: mint/burn, pause/blacklist, and others.
