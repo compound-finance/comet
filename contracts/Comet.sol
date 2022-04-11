@@ -236,8 +236,10 @@ contract Comet is CometCore {
         lastAccrualTime = getNowInternal();
         baseSupplyIndex = BASE_INDEX_SCALE;
         baseBorrowIndex = BASE_INDEX_SCALE;
-        trackingSupplyIndex = 0;
-        trackingBorrowIndex = 0;
+
+        // Implicit initialization (not worth increasing contract size)
+        // trackingSupplyIndex = 0;
+        // trackingBorrowIndex = 0;
     }
 
     /**
@@ -250,15 +252,7 @@ contract Comet is CometCore {
                 assetConfig := mload(add(add(assetConfigs, 0x20), mul(i, 0x20)))
             }
         } else {
-            assetConfig = AssetConfig({
-                asset: address(0),
-                priceFeed: address(0),
-                decimals: uint8(0),
-                borrowCollateralFactor: uint64(0),
-                liquidateCollateralFactor: uint64(0),
-                liquidationFactor: uint64(0),
-                supplyCap: uint128(0)
-            });
+            return (0, 0);
         }
         address asset = assetConfig.asset;
         address priceFeed = assetConfig.priceFeed;

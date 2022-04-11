@@ -153,6 +153,8 @@ contract CometExt is CometCore {
 
     /**
       * @notice Approve or disallow `spender` to transfer on sender's behalf
+      * @dev Note: this binary approval is unlike most other ERC20 tokens
+      * @dev Note: this grants full approval for spender to manage *all* the owner's assets
       * @param spender The address of the account which may transfer tokens
       * @param amount Either uint.max (to allow) or zero (to disallow)
       * @return Whether or not the approval change succeeded
@@ -171,6 +173,8 @@ contract CometExt is CometCore {
 
     /**
       * @notice Get the current allowance from `owner` for `spender`
+      * @dev Note: this binary allowance is unlike most other ERC20 tokens
+      * @dev Note: this allowance allows spender to manage *all* the owner's assets
       * @param owner The address of the account which owns the tokens to be spent
       * @param spender The address of the account which may transfer tokens
       * @return Either uint.max (spender is allowed) or zero (spender is disallowed)
