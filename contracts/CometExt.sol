@@ -223,7 +223,6 @@ contract CometExt is CometCore {
         bytes32 structHash = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, owner, manager, isAllowed_, nonce, expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
-        if (signatory == address(0)) revert BadSignatory();
         if (owner != signatory) revert BadSignatory();
         if (nonce != userNonce[signatory]++) revert BadNonce();
         if (block.timestamp >= expiry) revert SignatureExpired();

@@ -347,7 +347,7 @@ describe('allowBySig', function () {
     expect(await comet.userNonce(signer.address)).to.equal(signatureArgs.nonce);
   });
 
-  it('fails if owner is zero address', async () => {
+  it.only('allows manager to authorize zero address', async () => {
     expect(await comet.isAllowed(ethers.constants.AddressZero, manager.address)).to.be.false;
 
     const blockNumber = await ethers.provider.getBlockNumber();
@@ -360,22 +360,20 @@ describe('allowBySig', function () {
     };
 
     // manager uses invalid signature to force ecrecover to return address(0)
-    await expect(
-      comet
-        .connect(manager)
-        .allowBySig(
-          ethers.constants.AddressZero,
-          manager.address,
-          true,
-          await comet.userNonce(ethers.constants.AddressZero),
-          timestamp + 100,
-          invalidSignature.v,
-          invalidSignature.r,
-          invalidSignature.s,
-        )
-    ).to.be.revertedWith("custom error 'BadSignatory()'");
+    await comet
+      .connect(manager)
+      .allowBySig(
+        ethers.constants.AddressZero,
+        manager.address,
+        true,
+        await comet.userNonce(ethers.constants.AddressZero),
+        timestamp + 100,
+        invalidSignature.v,
+        invalidSignature.r,
+        invalidSignature.s,
+      );
 
-    // does not authorize manager for address(0)
-    expect(await comet.isAllowed(ethers.constants.AddressZero, manager.address)).to.be.false;
+    // authorizes manager for address(0)
+    expect(await comet.isAllowed(ethers.constants.AddressZero, manager.address)).to.be.true;
   });
 });
