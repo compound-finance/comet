@@ -120,7 +120,7 @@ contract CometExt is CometCore {
      */
     function borrowBalanceOf(address account) external view returns (uint256) {
         int104 principal = userBasic[account].principal;
-        return principal < 0 ? presentValueBorrow(baseSupplyIndex, unsigned104(-principal)) : 0;
+        return principal < 0 ? presentValueBorrow(baseBorrowIndex, unsigned104(-principal)) : 0;
     }
 
      /**

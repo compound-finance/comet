@@ -1,37 +1,45 @@
-import { expect, exp, makeProtocol } from './helpers';
+import { CometHarnessInterface, FaucetToken } from '../build/types';
+import { expect, exp, makeProtocol, setTotalsBasic } from './helpers';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 describe('CometExt', function () {
+  let comet: CometHarnessInterface;
+  let user: SignerWithAddress;
+  let tokens: { [symbol: string]: FaucetToken };
+
+  beforeEach(async () => {
+    ({
+      comet,
+      users: [user],
+      tokens,
+    } = await makeProtocol());
+
+    // Set different indices
+    await setTotalsBasic(comet, {
+      baseSupplyIndex: 2e15,
+      baseBorrowIndex: 3e15,
+    });
+  });
+
   it('returns factor scale', async () => {
-    const { comet } = await makeProtocol();
     const factorScale = await comet.factorScale();
     expect(factorScale).to.eq(exp(1, 18));
   });
 
   it('returns price scale', async () => {
-    const { comet } = await makeProtocol();
     const priceScale = await comet.priceScale();
     expect(priceScale).to.eq(exp(1, 8));
   });
 
   describe('borrowBalanceOf', function () {
     it('returns borrow amount (when principal amount is negative)', async () => {
-      const {
-        comet,
-        users: [user],
-      } = await makeProtocol();
-
       await comet.setBasePrincipal(user.address, -100e6); // borrow of $100 USDC
 
       const borrowBalanceOf = await comet.borrowBalanceOf(user.address);
-      expect(borrowBalanceOf).to.eq(100e6)
+      expect(borrowBalanceOf).to.eq(300e6) // baseSupplyIndex = 3e15
     });
 
     it('returns 0 when principal amount is positive', async () => {
-      const {
-        comet,
-        users: [user],
-      } = await makeProtocol();
-
       await comet.setBasePrincipal(user.address, 100e6);
 
       const borrowBalanceOf = await comet.borrowBalanceOf(user.address);
@@ -40,24 +48,13 @@ describe('CometExt', function () {
   });
 
   it('returns principal as baseBalanceOf', async () => {
-    const {
-      comet,
-      users: [user],
-    } = await makeProtocol();
-
     await comet.setBasePrincipal(user.address, 100e6);
 
     const baseBalanceOf = await comet.baseBalanceOf(user.address);
-    expect(baseBalanceOf).to.eq(100e6);
+    expect(baseBalanceOf).to.eq(200e6); // baseSupplyIndex = 2e15
   });
 
   it('returns collateralBalance (in units of the collateral asset)', async () => {
-    const {
-      comet,
-      users: [user],
-      tokens
-    } = await makeProtocol();
-
     const { WETH } = tokens;
 
     await comet.setCollateralBalance(

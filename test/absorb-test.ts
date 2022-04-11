@@ -1,4 +1,4 @@
-import { Comet, ethers, expect, exp, factor, defaultAssets, makeProtocol, portfolio, wait } from './helpers';
+import { Comet, ethers, expect, exp, factor, defaultAssets, makeProtocol, portfolio, wait, setTotalsBasic } from './helpers';
 
 describe('absorb', function () {
   it('reverts if total borrows underflows', async () => {
@@ -17,10 +17,7 @@ describe('absorb', function () {
     const protocol = await makeProtocol(params);
     const { comet, users: [absorber, underwater] } = protocol;
 
-    const t0 = Object.assign({}, await comet.totalsBasic(), {
-      totalBorrowBase: 100n,
-    });
-    await wait(comet.setTotalsBasic(t0));
+    await setTotalsBasic(comet, { totalBorrowBase: 100n });
 
     await comet.setBasePrincipal(underwater.address, -100);
 
@@ -74,10 +71,7 @@ describe('absorb', function () {
     const protocol = await makeProtocol(params);
     const { comet, users: [absorber, underwater1, underwater2] } = protocol;
 
-    const t0 = Object.assign({}, await comet.totalsBasic(), {
-      totalBorrowBase: 2000n,
-    });
-    await wait(comet.setTotalsBasic(t0));
+    await setTotalsBasic(comet, { totalBorrowBase: 2000n });
 
     const r0 = await comet.getReserves();
 
@@ -136,11 +130,10 @@ describe('absorb', function () {
     const { comet, tokens, users: [absorber, underwater1, underwater2, underwater3] } = protocol;
     const { COMP, USDC, WBTC, WETH } = tokens;
 
-    const t0 = Object.assign({}, await comet.totalsBasic(), {
+    await setTotalsBasic(comet, {
       totalBorrowBase: exp(3e15, 6),
       totalSupplyBase: exp(4e15, 6),
     });
-    await wait(comet.setTotalsBasic(t0));
 
     const r0 = await comet.getReserves();
 
@@ -231,10 +224,9 @@ describe('absorb', function () {
     const { COMP, USDC, WBTC, WETH } = tokens;
 
     const debt = 1n - (exp(41000, 6) + exp(3000, 6) + exp(175, 6));
-    const t0 = Object.assign({}, await comet.totalsBasic(), {
+    await setTotalsBasic(comet, {
       totalBorrowBase: -debt,
     });
-    await wait(comet.setTotalsBasic(t0));
 
     const r0 = await comet.getReserves();
 
@@ -320,10 +312,7 @@ describe('absorb', function () {
 
     const borrowAmount = exp(4000, 6); // borrow of $4k > collateral of $3k + $175
     await comet.setBasePrincipal(underwater.address, -borrowAmount);
-    const totalsBasic = Object.assign({}, await comet.totalsBasic(), {
-      totalBorrowBase: borrowAmount,
-    });
-    await wait(comet.setTotalsBasic(totalsBasic));
+    const totalsBasic = await setTotalsBasic(comet, { totalBorrowBase: borrowAmount });
 
     const isLiquidatable = await comet.isLiquidatable(underwater.address);
 

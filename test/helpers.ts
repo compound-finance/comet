@@ -27,9 +27,11 @@ import {
   CometFactory__factory,
   Configurator,
   Configurator__factory,
+  CometHarnessInterface,
 } from '../build/types';
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
+import { TotalsBasicStructOutput } from '../build/types/CometHarness';
 
 export { Comet, ethers, expect, hre };
 
@@ -453,6 +455,13 @@ export async function makeRewards(opts: RewardsOpts = {}): Promise<Rewards> {
     governor,
     rewards
   };
+}
+
+export async function setTotalsBasic(comet: CometHarnessInterface, overrides = {}): Promise<TotalsBasicStructOutput> {
+  const t0 = await comet.totalsBasic();
+  const t1 = Object.assign({}, t0, overrides);
+  await wait(comet.setTotalsBasic(t1));
+  return t1;
 }
 
 export function objectify(arrayObject) {
