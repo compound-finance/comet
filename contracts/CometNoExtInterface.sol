@@ -2,7 +2,6 @@
 pragma solidity ^0.8.11;
 
 import "./CometCore.sol";
-import "./ERC20.sol";
 
 /**
  * @title Compound's Comet (without Ext) Interface
