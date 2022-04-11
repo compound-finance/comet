@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
-pragma solidity ^0.8.11;
+pragma solidity 0.8.13;
 
 interface TimelockInterface {
     function queuedTransactions(bytes32 hash) external view returns (bool);
@@ -144,7 +144,7 @@ contract GovernorSimple {
     function queue(uint proposalId) external {
         require(isAdmin(msg.sender), "GovernorSimple::propose: only governors can queue");
         require(state(proposalId) == ProposalState.Active, "GovernorSimple::queue: proposal can only be queued if it is active");
-        
+
         Proposal storage proposal = proposals[proposalId];
         proposal.queued = true;
         for (uint i = 0; i < proposal.targets.length; i++) {
@@ -165,7 +165,7 @@ contract GovernorSimple {
     function execute(uint proposalId) external payable {
         require(isAdmin(msg.sender), "GovernorSimple::propose: only governors can execute");
         require(state(proposalId) == ProposalState.Queued, "GovernorSimple::execute: proposal can only be executed if it is queued");
-        
+
         Proposal storage proposal = proposals[proposalId];
         proposal.queued = false;
         proposal.executed = true;
