@@ -85,7 +85,7 @@ BorrowRate = InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeH
 function getBorrowRate() returns (uint)
 ```
 
-* `RETURNS`:  The current APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `90000000000000000` indicates a 9% APR.
+* `RETURNS`: The current APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `90000000000000000` indicates a 9% APR.
 
 #### Solidity
 
@@ -118,7 +118,7 @@ If a borrowing account subsequently no longer meets the borrow collateral factor
 
 Account *balances* for the base token are signed integers. An account balance greater than zero indicates the base asset is supplied and a balance less than zero indicates the base asset is borrowed.
 
-Global *indices* for supply and borrow are unsigned integers that increase over time. When an account interacts with the protocol, the indices are saved. An account's present balance can be calculated using the current index with the following formulas that implement the indicies.
+Global *indices* for supply and borrow are unsigned integers that increase over time. When an account interacts with the protocol, the indices are saved. An account's present balance can be calculated using the current index with the following formulas that implement the indices.
 
 ```
 Balance=PrincipalBaseSupplyIndexNow [Principal0]
@@ -223,7 +223,7 @@ await comet.withdraw(usdcAddress, 100000000);
 
 ### Get Borrow Liquidity
 
-This function returns the amount of base asset that is presently borrowable by an account as an integer scaled up by `10 ^ 8`. If the returned value is negative, the account is not allowed to borrow any more from the protocol until more collateral is supplied or there is repayment such that the account's borrow liquidity becomes positive. A negative borrow liquidity does not necessarily imply that the account is presently liquidatable (see *[isLiquidatable](#liquidatable-accounts)* function).
+This function returns the amount of base asset in USD that is presently borrowable by an account as an integer scaled up by `10 ^ 8`. If the returned value is negative, the account is not allowed to borrow any more from the protocol until more collateral is supplied or there is repayment such that the account's borrow liquidity becomes positive. A negative borrow liquidity does not necessarily imply that the account is presently liquidatable (see *[isLiquidatable](#liquidatable-accounts)* function).
 
 #### Comet
 
@@ -232,7 +232,7 @@ function getBorrowLiquidity(address account) returns (int256)
 ```
 
 * `account`: The account to examine borrow liquidity.
-* `RETURNS`:  Returns the current borrow liquidity of the account in the base asset as an integer scaled up by `10 ^ 8`.
+* `RETURNS`: Returns the current borrow liquidity of the account in USD as an integer scaled up by `10 ^ 8`.
 
 #### Solidity
 
@@ -266,7 +266,7 @@ function isBorrowCollateralized(address account) returns (bool)
 ```
 
 * `account`: The account to examine collateralization.
-* `RETURNS`:  Returns true if the account has enough liquidity for borrowing.
+* `RETURNS`: Returns true if the account has enough liquidity for borrowing.
 
 #### Solidity
 
@@ -301,6 +301,41 @@ An account is subject to liquidation if its borrowed amount exceeds the limits s
 
 Liquidation is the absorption of an underwater account into the protocol, triggered by the *[absorb](#absorb)* function. The protocol seizes all of the account's collateral and repays its open borrow. The protocol can then attempt to sell some or all of the collateral to recover any reserves that covered liquidation. If any excess collateral is seized, the protocol will pay the excess back to the account in the base asset.
 
+### Account Liquidation Margin
+
+This function returns the USD value of liquidity available before the specified account becomes liquidatable. If the returned integer is less than zero, the account is presently liquidatable.
+
+#### Comet
+
+```solidity
+function getLiquidationMargin(address account) public view returns (int)
+```
+
+* `account`: The account to examine liquidity available.
+* `RETURNS`: Returns an integer of the current liquidity available to the account in USD as an integer scaled up by `10 ^ 8`.
+
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+int liquidity = comet.getLiquidationMargin(0xAccount);
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const liquidity = await comet.methods.getLiquidationMargin('0xAccount').call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const liquidity = await comet.callStatic.getLiquidationMargin('0xAccount');
+```
+
 ### Liquidatable Accounts
 
 This function returns true if the account passed to it has negative liquidity based on the liquidation collateral factor. A return value of true indicates that the account is presently liquidatable.
@@ -312,7 +347,7 @@ function isLiquidatable(address account) returns (bool)
 ```
 
 * `account`: The account to examine liquidatability.
-* `RETURNS`:  Returns true if the account is presently able to be liquidated.
+* `RETURNS`: Returns true if the account is presently able to be liquidated.
 
 #### Solidity
 
@@ -425,7 +460,7 @@ This function returns the amount of protocol reserves for the base asset as an i
 function getReserves() returns (uint)
 ```
 
-* `RETURNS`:  The amount of base asset stored as reserves in the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
+* `RETURNS`: The amount of base asset stored as reserves in the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
 
 #### Solidity
 
@@ -812,13 +847,13 @@ This method returns the current protocol utilization of the base asset. The form
 function getUtilization() returns (uint)
 ```
 
-* `RETURNS`:  The current protocol utilization in USD as an unsigned integer, scaled up by `10 ^ 18`. E.g. `1000000000000000000000000000` is $1 billion USD.
+* `RETURNS`: The current protocol utilization percentage as a decimal, represented by an unsigned integer, scaled up by `10 ^ 18`. E.g. `1e17 or 100000000000000000` is 10% utilization.
 
 #### Solidity
 
 ```solidity
 Comet comet = Comet(0xCometAddress);
-uint utilization = comet.getUtilization(); // example: 1000000000000000000000000000 (1 billion)
+uint utilization = comet.getUtilization(); // example: 10000000000000000 (1%)
 ```
 
 #### Web3.js v1.5.x
@@ -1118,7 +1153,7 @@ function getPrice(address priceFeed) returns (uint128)
 ```
 
 * `priceFeed`: The ERC-20 address of the Chainlink price feed contract for the asset.
-* `RETURNS`:  Returns the USD price with 8 decimal places as an unsigned integer scaled up by `10 ^ 8`. E.g. `500000000000` means that the asset's price is $5000 USD.
+* `RETURNS`: Returns the USD price with 8 decimal places as an unsigned integer scaled up by `10 ^ 8`. E.g. `500000000000` means that the asset's price is $5000 USD.
 
 #### Solidity
 
@@ -1143,12 +1178,12 @@ const price = await comet.callStatic.getPrice(usdcAddress);
 
 ## Bulk Actions
 
-The Compound III codebase contains the source of an external contract called *Bulker* that is designed to allow multiple Comet functions to be called in a single transaction.
+The Compound III codebase contains the source code of an external contract called *Bulker* that is designed to allow multiple Comet functions to be called in a single transaction.
 
 Use cases of the Bulker contract include but are not limited to:
   * Supplying of a collateral asset and borrowing of the base asset.
   * Supplying or withdrawing of the native EVM token (like Ether) directly.
-  * Transfering or withdrawing of the base asset without leaving dust in the account.
+  * Transferring or withdrawing of the base asset without leaving dust in the account.
 
 ### Invoke
 
@@ -1182,7 +1217,7 @@ function invoke(uint[] calldata actions, bytes[] calldata data) external payable
 ```solidity
 Bulker bulker = Bulker(0xBulkerAddress);
 // ERC-20 `approve` the bulker. Then Comet `allow` the bulker to be a manager before calling `invoke`.
-bytes memory supplyAssetCalldata = (abi.encode('0xAccount', '0xAsset', 1234567);
+bytes memory supplyAssetCalldata = (abi.encode('0xAccount', '0xAsset', amount);
 bulker.invoke([ 1 ], [ supplyAssetCalldata ]);
 ```
 
