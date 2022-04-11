@@ -4,7 +4,7 @@ pragma solidity ^0.8.11;
 import "./CometCore.sol";
 
 /**
- * @title Compound's Comet Interface
+ * @title Compound's Comet Ext Interface
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
