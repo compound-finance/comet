@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity 0.8.13;
 
-/* DELETE */
-import "hardhat/console.sol";
-
 import "./CometCore.sol";
 import "./ERC20.sol";
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
