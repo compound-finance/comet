@@ -25,6 +25,9 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
     //    including the size of UserBasic.assetsIn and corresponding integer conversions.
     uint8 internal constant MAX_ASSETS = 15;
 
+    /// @dev The min number of decimals base token can have
+    uint8 internal constant MIN_BASE_DECIMALS = 6;
+
     /// @dev The max number of decimals base token can have
     ///  Note this cannot just be increased arbitrarily.
     uint8 internal constant MAX_BASE_DECIMALS = 18;

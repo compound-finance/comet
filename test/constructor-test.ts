@@ -109,6 +109,18 @@ describe('constructor', function () {
     ).to.be.revertedWith("custom error 'BadDecimals()'");
   });
 
+  it('reverts if base token has fewer than 6 decimals', async () => {
+    await expect(
+      makeProtocol({
+        assets: {
+          USDC: {
+            decimals: 5,
+          },
+        },
+      })
+    ).to.be.revertedWith("custom error 'BadDecimals()'");
+  });
+
   it('reverts if base token has more than 18 decimals', async () => {
     await expect(
       makeProtocol({

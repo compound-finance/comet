@@ -168,6 +168,7 @@ contract Comet is CometCore {
     constructor(Configuration memory config) {
         // Sanity checks
         uint8 decimals_ = ERC20(config.baseToken).decimals();
+        if (decimals_ < MIN_BASE_DECIMALS) revert BadDecimals();
         if (decimals_ > MAX_BASE_DECIMALS) revert BadDecimals();
         if (config.storeFrontPriceFactor > FACTOR_SCALE) revert BadDiscount();
         if (config.assetConfigs.length > MAX_ASSETS) revert TooManyAssets();
