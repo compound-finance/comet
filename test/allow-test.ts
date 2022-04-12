@@ -38,8 +38,22 @@ describe('allow', function () {
 
     expect(await comet.isAllowed(userAddress, managerAddress)).to.be.false;
   });
+});
 
-  it('has permission only if the user is allowed or self', async () => {
-    // XXX
+describe('hasPermission', function () {
+  it('is true for self', async () => {
+    const { comet, users: [alice] } = await makeProtocol();
+    expect(await comet.hasPermission(alice.address, alice.address)).to.be.true;
+  });
+
+  it('is false by default for others', async () => {
+    const { comet, users: [alice, bob] } = await makeProtocol();
+    expect(await comet.hasPermission(alice.address, bob.address)).to.be.false;
+  });
+
+  it('is true when user is allowed', async () => {
+    const { comet, users: [alice, bob] } = await makeProtocol();
+    await comet.connect(alice).allow(bob.address, true);
+    expect(await comet.hasPermission(alice.address, bob.address)).to.be.true;
   });
 });
