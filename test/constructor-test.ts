@@ -172,4 +172,24 @@ describe('constructor', function () {
       })
     ).to.be.revertedWith("custom error 'KinkTooLarge()'");
   });
+
+  it('is not possible to create a perSecondInterestRateSlopeLow above FACTOR_SCALE', async () => {
+    const uint64Max = BigInt(2**64) - 1n;
+
+    const { comet } = await makeProtocol({
+      interestRateSlopeLow: uint64Max
+    });
+
+    // max value of interestRateSlopeLow should result in a value less than FACTOR_SCALE
+    expect(
+      (await comet.perSecondInterestRateBase()).lt(exp(1, 18))
+    ).to.be.true;
+
+    // exceeding the max value of interestRateSlopeLow should overflow
+    await expect(
+      makeProtocol({
+        interestRateSlopeLow: uint64Max + 1n
+      })
+    ).to.be.reverted;
+  });
 });

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity 0.8.13;
 
+/* DELETE */
+import "hardhat/console.sol";
+
 import "./CometCore.sol";
 import "./ERC20.sol";
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
@@ -177,7 +180,7 @@ contract Comet is CometCore {
         if (AggregatorV3Interface(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
         if (config.reserveRate > FACTOR_SCALE) revert ReserveRateTooLarge();
         if (config.kink > FACTOR_SCALE) revert KinkTooLarge();
-        // XXX other sanity checks? for rewards?
+        // XXX sanity checks for rewards?
 
         // Copy configuration
         unchecked {
