@@ -30,7 +30,7 @@ abstract contract CometExtInterface is CometCore {
 
     /**
       * ===== ERC20 interfaces =====
-      * Does not include the following functions/events, which are defined in `CometNoExtInterface` instead:
+      * Does not include the following functions/events, which are defined in `CometMainInterface` instead:
       * - function decimals() virtual external view returns (uint8)
       * - function transfer(address dst, uint amount) virtual external returns (bool)
       * - function transferFrom(address src, address dst, uint amount) virtual external returns (bool)

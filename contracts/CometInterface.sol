@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity 0.8.13;
 
-import "./CometNoExtInterface.sol";
+import "./CometMainInterface.sol";
 import "./CometExtInterface.sol";
 
 /**
@@ -9,4 +9,4 @@ import "./CometExtInterface.sol";
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-abstract contract CometInterface is CometNoExtInterface, CometExtInterface {}
+abstract contract CometInterface is CometMainInterface, CometExtInterface {}

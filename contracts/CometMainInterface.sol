@@ -4,11 +4,11 @@ pragma solidity ^0.8.11;
 import "./CometCore.sol";
 
 /**
- * @title Compound's Comet (without Ext) Interface
+ * @title Compound's Comet Main Interface (without Ext)
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-abstract contract CometNoExtInterface is CometCore {
+abstract contract CometMainInterface is CometCore {
     event Supply(address indexed from, address indexed dst, uint256 amount);
     event Transfer(address indexed from, address indexed to, uint256 amount);
     event Withdraw(address indexed src, address indexed to, uint256 amount);
