@@ -1,4 +1,4 @@
-import { Comet, ethers, expect, exp, fastForward, getBlock, makeProtocol, wait } from './helpers';
+import { Comet, ethers, expect, exp, fastForward, getBlock, makeProtocol, wait, setTotalsBasic } from './helpers';
 
 function projectBaseIndex(index, rate, time, factorScale = exp(1, 18)) {
   return index.add(index.mul(rate.mul(time)).div(factorScale));
@@ -48,13 +48,13 @@ describe('accrue', function () {
     const baseIndexScale = await comet.baseIndexScale();
 
     const now = Math.floor(Date.now() / 1000);
-    const f0 = await wait(comet.setNow(now));
+    const f0 = await wait(comet.setNow(now)); // this freezes the timestamp for the entire test
 
     const totals = {
       trackingSupplyIndex: 0,
       trackingBorrowIndex: 0,
-      baseSupplyIndex: baseIndexScale,
-      baseBorrowIndex: baseIndexScale,
+      baseSupplyIndex: 2e15,
+      baseBorrowIndex: 3e15,
       totalSupplyBase: 1000n,
       totalBorrowBase: 1000n,
       lastAccrualTime: 0,
@@ -93,12 +93,10 @@ describe('accrue', function () {
     };
     const { comet } = await makeProtocol(params);
 
-    const t0 = await comet.totalsBasic();
-    const t1 = Object.assign({}, t0, {
+    const t1 = await setTotalsBasic(comet, {
       totalSupplyBase: 11000n,
       totalBorrowBase: 11000n,
     });
-    const s0 = await wait(comet.setTotalsBasic(t1));
 
     const supplyRate = await comet.getSupplyRate();
     expect(supplyRate).to.be.equal(19549086756);
@@ -134,11 +132,10 @@ describe('accrue', function () {
     const { comet } = await makeProtocol(params);
 
     const t0 = await comet.totalsBasic();
-    const t1 = Object.assign({}, t0, {
+    const t1  = await setTotalsBasic(comet, {
       totalSupplyBase: exp(14000, 6),
       totalBorrowBase: exp(13000, 6),
     });
-    const s0 = await wait(comet.setTotalsBasic(t1));
 
     const supplyRate = await comet.getSupplyRate();
     expect(supplyRate).to.be.equal(12474082097);

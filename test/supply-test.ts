@@ -1,4 +1,4 @@
-import { ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, wait } from './helpers';
+import { ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, setTotalsBasic, wait } from './helpers';
 import { EvilToken, EvilToken__factory } from '../build/types';
 
 describe('supplyTo', function () {
@@ -110,11 +110,10 @@ describe('supplyTo', function () {
     const baseAsB = USDC.connect(bob);
     const cometAsB = comet.connect(bob);
 
-    let totals0 = await comet.totalsBasic();
-    totals0 = Object.assign({}, await comet.totalsBasic(), {
+    const totals0 = await setTotalsBasic(comet, {
       baseSupplyIndex: 2e15,
     });
-    await wait(comet.setTotalsBasic(totals0));
+
     const alice0 = await portfolio(protocol, alice.address);
     const bob0 = await portfolio(protocol, bob.address);
     const aliceBasic0 = await comet.userBasic(alice.address);

@@ -1,4 +1,4 @@
-import { Comet, ethers, expect, exp, factor, defaultAssets, fastForward, makeProtocol, portfolio, wait, toYears } from './helpers';
+import { Comet, ethers, expect, exp, factor, defaultAssets, fastForward, makeProtocol, portfolio, setTotalsBasic, wait, toYears } from './helpers';
 import { BigNumber } from 'ethers';
 
 describe('total tracking index bounds', function () {
@@ -21,10 +21,9 @@ describe('total tracking index bounds', function () {
     const expectedYearsUntilOverflow = 5.85;
     expect(toYears(secondsUntilOverflow)).to.be.approximately(expectedYearsUntilOverflow, 0.01);
 
-    const t0 = Object.assign({}, await comet.totalsBasic(), {
+    await setTotalsBasic(comet, {
       totalSupplyBase: BigNumber.from(baseMinForRewards), // 10k USDC base units
     });
-    await wait(comet.setTotalsBasic(t0));
 
     await fastForward(secondsUntilOverflow-1);
 
@@ -54,10 +53,9 @@ describe('total tracking index bounds', function () {
     const expectedYearsUntilOverflow = 5.85;
     expect(toYears(secondsUntilOverflow)).to.be.approximately(expectedYearsUntilOverflow, 0.01);
 
-    const t0 = Object.assign({}, await comet.totalsBasic(), {
+    await setTotalsBasic(comet, {
       totalBorrowBase: BigNumber.from(baseMinForRewards), // 10k USDC base units
     });
-    await wait(comet.setTotalsBasic(t0));
 
     await fastForward(secondsUntilOverflow-1);
 
@@ -77,10 +75,9 @@ describe('total tracking index bounds', function () {
     const protocol = await makeProtocol(params);
     const { comet } = protocol;
 
-    const t0 = Object.assign({}, await comet.totalsBasic(), {
+    const t0 = await setTotalsBasic(comet, {
       totalSupplyBase: BigNumber.from(exp(1, 15)).mul(await comet.baseScale()), // 1e15 base units
     });
-    await wait(comet.setTotalsBasic(t0));
 
     await comet.accrue();
     const t1 = await comet.totalsBasic();
@@ -88,10 +85,9 @@ describe('total tracking index bounds', function () {
     // Tracking index should properly accrue
     expect(t1.trackingSupplyIndex).to.not.be.equal(t0.trackingSupplyIndex);
 
-    const t2 = Object.assign({}, await comet.totalsBasic(), {
+    const t2 = await setTotalsBasic(comet, {
       totalSupplyBase: BigNumber.from(exp(1, 15)).mul(await comet.baseScale()).mul(3), // 3e15 base units
     });
-    await wait(comet.setTotalsBasic(t2));
 
     await comet.accrue();
     const t3 = await comet.totalsBasic();
@@ -109,10 +105,9 @@ describe('total tracking index bounds', function () {
     const protocol = await makeProtocol(params);
     const { comet } = protocol;
 
-    const t0 = Object.assign({}, await comet.totalsBasic(), {
+    const t0 = await setTotalsBasic(comet, {
       totalBorrowBase: BigNumber.from(exp(1, 15)).mul(await comet.baseScale()), // 1e15 base units
     });
-    await wait(comet.setTotalsBasic(t0));
 
     await comet.accrue();
     const t1 = await comet.totalsBasic();
@@ -120,10 +115,9 @@ describe('total tracking index bounds', function () {
     // Tracking index should properly accrue
     expect(t1.trackingBorrowIndex).to.not.be.equal(t0.trackingBorrowIndex);
 
-    const t2 = Object.assign({}, await comet.totalsBasic(), {
+    const t2 = await setTotalsBasic(comet, {
       totalBorrowBase: BigNumber.from(exp(1, 15)).mul(await comet.baseScale()).mul(3), // 3e15 base units
     });
-    await wait(comet.setTotalsBasic(t2));
 
     await comet.accrue();
     const t3 = await comet.totalsBasic();

@@ -23,16 +23,15 @@ describe('interest rates', function () {
       reserveRate: exp(1, 17) // 0.1
     };
     const { comet } = await makeProtocol(params);
-    const baseIndexScale = await comet.baseIndexScale();
 
     // 10% utilization
     const totals = {
       trackingSupplyIndex: 0,
       trackingBorrowIndex: 0,
-      baseSupplyIndex: baseIndexScale,
-      baseBorrowIndex: baseIndexScale,
-      totalSupplyBase: 100n,
-      totalBorrowBase: 10n,
+      baseSupplyIndex: 2e15,
+      baseBorrowIndex: 4e15,
+      totalSupplyBase: 500n,
+      totalBorrowBase: 25n,
       lastAccrualTime: 0,
       pauseFlags: 0,
     };
@@ -62,16 +61,15 @@ describe('interest rates', function () {
       reserveRate: exp(1, 17) // 0.1
     };
     const { comet } = await makeProtocol(params);
-    const baseIndexScale = await comet.baseIndexScale();
 
     // 90% utilization
     const totals = {
       trackingSupplyIndex: 0,
       trackingBorrowIndex: 0,
-      baseSupplyIndex: baseIndexScale,
-      baseBorrowIndex: baseIndexScale,
-      totalSupplyBase: 100n,
-      totalBorrowBase: 90n,
+      baseSupplyIndex: 2e15,
+      baseBorrowIndex: 3e15,
+      totalSupplyBase: 50n,
+      totalBorrowBase: 30n,
       lastAccrualTime: 0,
       pauseFlags: 0,
     };
@@ -101,16 +99,15 @@ describe('interest rates', function () {
       reserveRate: 0
     };
     const { comet } = await makeProtocol(params);
-    const baseIndexScale = await comet.baseIndexScale();
 
     // 10% utilization
     const totals = {
       trackingSupplyIndex: 0,
       trackingBorrowIndex: 0,
-      baseSupplyIndex: baseIndexScale,
-      baseBorrowIndex: baseIndexScale,
-      totalSupplyBase: 100n,
-      totalBorrowBase: 10n,
+      baseSupplyIndex: 4e15,
+      baseBorrowIndex: 2e15,
+      totalSupplyBase: 25n,
+      totalBorrowBase: 5n,
       lastAccrualTime: 0,
       pauseFlags: 0,
     };
@@ -140,15 +137,14 @@ describe('interest rates', function () {
       reserveRate: exp(1, 17) // 0.1
     };
     const { comet } = await makeProtocol(params);
-    const baseIndexScale = await comet.baseIndexScale();
 
     // 0% utilization
     const totals = {
       trackingSupplyIndex: 0,
       trackingBorrowIndex: 0,
-      baseSupplyIndex: baseIndexScale,
-      baseBorrowIndex: baseIndexScale,
-      totalSupplyBase: 100n,
+      baseSupplyIndex: 2e15,
+      baseBorrowIndex: 3e15,
+      totalSupplyBase: 50n,
       totalBorrowBase: 0,
       lastAccrualTime: 0,
       pauseFlags: 0,

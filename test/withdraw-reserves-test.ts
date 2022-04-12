@@ -1,4 +1,4 @@
-import { expect, makeProtocol, wait } from './helpers';
+import { expect, makeProtocol, setTotalsBasic, wait } from './helpers';
 
 describe('withdrawReserves', function () {
   it('withdraws reserves from the protocol', async () => {
@@ -53,12 +53,10 @@ describe('withdrawReserves', function () {
 
     const totalsBasic = await comet.totalsBasic();
 
-    await wait(
-      comet.setTotalsBasic({
-        ...totalsBasic,
-        totalSupplyBase: 100n,
-      })
-    );
+    await setTotalsBasic(comet, {
+      baseSupplyIndex: 2e15,
+      totalSupplyBase: 50n,
+    });
 
     expect(await comet.getReserves()).to.be.equal(100);
 

@@ -1,4 +1,4 @@
-import { ethers, event, expect, makeProtocol, wait } from './helpers';
+import { ethers, event, expect, makeProtocol, setTotalsBasic, wait } from './helpers';
 
 describe('erc20', function () {
   it('has correct name', async () => {
@@ -22,11 +22,10 @@ describe('erc20', function () {
   it('has correct totalSupply', async () => {
     const { comet } = await makeProtocol();
 
-    let totalsBasic = await comet.totalsBasic();
-    totalsBasic = Object.assign({}, totalsBasic, {
-      totalSupplyBase: 100e6,
+    await setTotalsBasic(comet, {
+      baseSupplyIndex: 2e15,
+      totalSupplyBase: 50e6,
     });
-    await comet.setTotalsBasic(totalsBasic);
 
     const totalSupply = await comet.totalSupply();
 
@@ -43,10 +42,9 @@ describe('erc20', function () {
       await comet.setBasePrincipal(user.address, 100e6);
 
       let totalsBasic = await comet.totalsBasic();
-      totalsBasic = Object.assign({}, totalsBasic, {
+      await setTotalsBasic(comet, {
         baseSupplyIndex: totalsBasic.baseSupplyIndex.mul(2),
       });
-      await comet.setTotalsBasic(totalsBasic);
 
       const balanceOf = await comet.balanceOf(user.address);
       expect(balanceOf).to.eq(200e6);
@@ -73,7 +71,10 @@ describe('erc20', function () {
 
     expect(await comet.baseBalanceOf(bob.address)).to.eq(0);
 
-    await comet.setBasePrincipal(alice.address, 100e6);
+    await comet.setBasePrincipal(alice.address, 50e6);
+    await setTotalsBasic(comet, {
+      baseSupplyIndex: 2e15,
+    });
 
     const tx = await wait(comet.connect(alice).transfer(bob.address, 100e6));
 
@@ -95,7 +96,10 @@ describe('erc20', function () {
         users: [alice, bob],
       } = await makeProtocol();
 
-      await comet.setBasePrincipal(alice.address, 100e6);
+      await comet.setBasePrincipal(alice.address, 50e6);
+      await setTotalsBasic(comet, {
+        baseSupplyIndex: 2e15,
+      });
 
       await comet.connect(alice).transferFrom(alice.address, bob.address, 100e6)
 

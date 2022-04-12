@@ -1,4 +1,4 @@
-import { event, expect, exp, makeProtocol, portfolio, wait } from './helpers';
+import { event, expect, exp, makeProtocol, portfolio, setTotalsBasic, wait } from './helpers';
 import { BigNumber } from "ethers";
 
 describe('transfer', function () {
@@ -84,11 +84,9 @@ describe('transfer', function () {
     await comet.setBasePrincipal(bob.address, 50e6); // 100e6 in present value
     const cometAsB = comet.connect(bob);
 
-    let totals0 = await comet.totalsBasic();
-    totals0 = Object.assign({}, await comet.totalsBasic(), {
+    const totals0 = await setTotalsBasic(comet, {
       baseSupplyIndex: 2e15,
     });
-    await wait(comet.setTotalsBasic(totals0));
 
     const alice0 = await portfolio(protocol, alice.address);
     const bob0 = await portfolio(protocol, bob.address);
@@ -142,10 +140,9 @@ describe('transfer', function () {
     const baseIndexScale = await comet.baseIndexScale();
 
     let t0 = await comet.totalsBasic();
-    t0 = Object.assign({}, t0, {
+    t0 = await setTotalsBasic(comet, {
       baseBorrowIndex: t0.baseBorrowIndex.mul(2),
     });
-    await comet.setTotalsBasic(t0);
 
     await comet.connect(alice).transferAsset(bob.address, USDC.address, 100e6);
 
