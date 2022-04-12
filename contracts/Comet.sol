@@ -25,7 +25,6 @@ contract Comet is CometCore {
 
     error Absurd();
     error AlreadyInitialized();
-    error BadAmount();
     error BadAsset();
     error BadDecimals();
     error BadDiscount();
@@ -41,6 +40,7 @@ contract Comet is CometCore {
     error NotForSale();
     error NotLiquidatable();
     error Paused();
+    error ReserveRateTooLarge();
     error SupplyCapExceeded();
     error TimestampTooLarge();
     error TooManyAssets();
@@ -174,6 +174,7 @@ contract Comet is CometCore {
         if (config.assetConfigs.length > MAX_ASSETS) revert TooManyAssets();
         if (config.baseMinForRewards == 0) revert BadMinimum();
         if (AggregatorV3Interface(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
+        if (config.reserveRate > FACTOR_SCALE) revert ReserveRateTooLarge();
         // XXX other sanity checks? for rewards?
 
         // Copy configuration

@@ -156,4 +156,12 @@ describe('constructor', function () {
       comet.initializeStorage()
     ).to.be.revertedWith("custom error 'AlreadyInitialized()'");
   });
+
+  it('reverts if reserveRate is greater than FACTOR_SCALE (1e18)', async () => {
+    await expect(
+      makeProtocol({
+        reserveRate: exp(2,18)
+      })
+    ).to.be.revertedWith("custom error 'ReserveRateTooLarge()'");
+  });
 });
