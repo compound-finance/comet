@@ -160,8 +160,16 @@ describe('constructor', function () {
   it('reverts if reserveRate is greater than FACTOR_SCALE (1e18)', async () => {
     await expect(
       makeProtocol({
-        reserveRate: exp(2,18)
+        reserveRate: exp(1.1,18)
       })
     ).to.be.revertedWith("custom error 'ReserveRateTooLarge()'");
+  });
+
+  it('reverts if kink is greater than FACTOR_SCALE (1e18)', async () => {
+    await expect(
+      makeProtocol({
+        kink: exp(1.2,18)
+      })
+    ).to.be.revertedWith("custom error 'KinkTooLarge()'");
   });
 });

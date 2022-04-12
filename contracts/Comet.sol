@@ -34,6 +34,7 @@ contract Comet is CometCore {
     error BorrowTooSmall();
     error BorrowCFTooLarge();
     error InsufficientReserves();
+    error KinkTooLarge();
     error LiquidateCFTooLarge();
     error NoSelfTransfer();
     error NotCollateralized();
@@ -175,6 +176,7 @@ contract Comet is CometCore {
         if (config.baseMinForRewards == 0) revert BadMinimum();
         if (AggregatorV3Interface(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
         if (config.reserveRate > FACTOR_SCALE) revert ReserveRateTooLarge();
+        if (config.kink > FACTOR_SCALE) revert KinkTooLarge();
         // XXX other sanity checks? for rewards?
 
         // Copy configuration
