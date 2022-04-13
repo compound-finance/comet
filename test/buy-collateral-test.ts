@@ -51,8 +51,7 @@ describe('buyCollateral', function () {
     expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n});
     expect(p0.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n});
     expect(p1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n});
-    expect(p1.external).to.be.deep.equal({USDC: exp(50, 6), COMP: assetScale * basePrice / assetPriceDiscounted * baseAmount / baseScale});
-    expect(p1.external).to.be.deep.equal({USDC: exp(50, 6), COMP: 55555555555555555550n});
+    expect(p1.external).to.be.deep.equal({USDC: exp(50, 6), COMP: 55555555555555555555n});
     expect(r1).to.be.equal(exp(50, 6));
   });
 
@@ -106,7 +105,7 @@ describe('buyCollateral', function () {
     expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n});
     expect(p0.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n});
     expect(p1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n});
-    expect(p1.external).to.be.deep.equal({USDC: exp(50, 6), COMP: 55555555555555555550n});
+    expect(p1.external).to.be.deep.equal({USDC: exp(50, 6), COMP: 55555555555555555555n});
     expect(r1).to.be.equal(-50e6);
   });
 
