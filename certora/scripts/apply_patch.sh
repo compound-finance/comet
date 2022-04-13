@@ -1,1 +1,0 @@
-patch -p1 ./contracts/Comet.sol ./certora/scripts/certora_modifications.patch

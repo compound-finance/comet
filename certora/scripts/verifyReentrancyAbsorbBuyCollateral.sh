@@ -9,7 +9,6 @@ certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harne
     --solc solc8.11 \
     --staging jtoman/comet-recursion \
     $RULE \
-    --send_only \
     --optimistic_loop \
     --loop_iter 2 --rule_sanity \
     --settings -contractRecursionLimit=1,-enableEqualitySaturation=false,-solver=z3,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \

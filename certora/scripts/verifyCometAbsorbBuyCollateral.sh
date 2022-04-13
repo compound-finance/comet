@@ -8,10 +8,9 @@ certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harne
     --link CometHarness:baseToken=SymbolicBaseToken CometHarness:extensionDelegate=CometExt \
     --solc solc8.11 \
     --cloud \
-    $RULE \
-    --send_only \
+    --rule $1 \
     --optimistic_loop \
     --loop_iter 2 \
     --settings -enableEqualitySaturation=false,-solver=z3,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \
     --solc_args '["--experimental-via-ir"]' \
-    --msg "CometHarness:cometAbsorbBuyCollateral.spec $RULE "
+    --msg "CometHarness:cometAbsorbBuyCollateral.spec $1 "
