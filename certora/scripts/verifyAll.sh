@@ -1,4 +1,4 @@
-patch -p1 ./contracts/Comet.sol ./certora/scripts/certora_modifications.patch
+patch -p1 ./contracts/Comet.sol ./certora/certora_modifications.patch
 sh certora/scripts/verifyAssetInfo.sh
 sh certora/scripts/verifyComet.sh
 sh certora/scripts/verifyCometAbsorbBuyCollateral.sh
@@ -10,4 +10,4 @@ sh certora/scripts/verifyInterestComputation.sh
 sh certora/scripts/verifyPause.sh
 sh certora/scripts/verifyPauseGuardians.sh
 sh certora/scripts/verifyUserAssetIn.sh
-patch -p1 -R ./contracts/Comet.sol ./certora/scripts/certora_modifications.patch 
+patch -p1 -R ./contracts/Comet.sol ./certora/certora_modifications.patch 
