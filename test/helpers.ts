@@ -429,10 +429,10 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
 
 type Portfolio = {
   internal: {
-    [symbol: string]: BigInt,
+    [symbol: string]: bigint,
   },
   external: {
-    [symbol: string]: BigInt,
+    [symbol: string]: bigint,
   }
 }
 
@@ -489,6 +489,23 @@ export async function portfolio({ comet, base, tokens }, account): Promise<Portf
     }
   }
   return { internal, external };
+}
+
+export async function calculatePortfolioValue({ tokens, priceFeeds}, portfolio: Portfolio): Promise<bigint> {
+  let value = 0n;
+  for (const symbol in portfolio.external) {
+    let price = (await priceFeeds[symbol].price()).toBigInt();
+    let decimalScale = 10n**(BigInt(await tokens[symbol].decimals()));
+    let amount = portfolio.external[symbol];
+    value += price * amount / decimalScale;
+  }
+  for (const symbol in portfolio.internal) {
+    let price = (await priceFeeds[symbol].price()).toBigInt();
+    let decimalScale = 10n**(BigInt(await tokens[symbol].decimals()));
+    let amount = portfolio.internal[symbol];
+    value += price * amount / decimalScale;
+  }
+  return value;
 }
 
 export interface TransactionResponseExt extends TransactionResponse {
