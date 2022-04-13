@@ -412,7 +412,7 @@ contract Comet is CometCore {
             baseSupplyIndex_ += safe64(mulFactor(baseSupplyIndex_, supplyRate * timeElapsed));
             baseBorrowIndex_ += safe64(mulFactor(baseBorrowIndex_, borrowRate * timeElapsed));
         }
-        return (baseSupplyIndex, baseBorrowIndex);
+        return (baseSupplyIndex_, baseBorrowIndex_);
     }
 
     /**
