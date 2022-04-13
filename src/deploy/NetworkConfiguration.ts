@@ -124,22 +124,35 @@ function getTrackingInfo(tracking: NetworkTrackingConfiguration): TrackingInfo {
   };
 }
 
+export function packAssetConfig(assetAddress: string, assetConfig: NetworkAssetConfiguration): AssetConfigStruct {
+    const descale = (10n**18n) / (10n**4n);
+    let priceFeedAddress = address(assetConfig.priceFeed);
+    let decimals = BigInt(assetConfig.decimals);
+    let borrowCF = BigInt(percentage(assetConfig.borrowCF));
+    let liquidateCF = BigInt(percentage(assetConfig.liquidateCF));
+    let liquidationFactor = BigInt(percentage(assetConfig.liquidationFactor));
+    let supplyCap = BigInt(number(assetConfig.supplyCap)); // TODO: Decimals (what?)
+    return {
+      word_a: (
+        (BigInt(assetAddress)) |
+          ((borrowCF / descale) << 160n) |
+          ((liquidateCF / descale) << 176n) |
+          ((liquidationFactor / descale) << 192n)
+      ),
+      word_b: (
+        (BigInt(priceFeedAddress)) |
+          (decimals << 160n) |
+          ((supplyCap / (10n**decimals)) << 168n)
+      ),
+    };
+}
+
 function getAssetConfigs(
   assets: { [name: string]: NetworkAssetConfiguration },
   contractMap: ContractMap
 ): AssetConfigStruct[] {
   return Object.entries(assets).map(([assetName, assetConfig]) => {
-    let assetAddress = getContractAddress(assetName, contractMap);
-
-    return {
-      asset: assetAddress,
-      priceFeed: address(assetConfig.priceFeed),
-      decimals: number(assetConfig.decimals),
-      borrowCollateralFactor: percentage(assetConfig.borrowCF),
-      liquidateCollateralFactor: percentage(assetConfig.liquidateCF),
-      liquidationFactor: percentage(assetConfig.liquidationFactor),
-      supplyCap: number(assetConfig.supplyCap), // TODO: Decimals
-    };
+    return packAssetConfig(getContractAddress(assetName, contractMap), assetConfig);
   });
 }
 

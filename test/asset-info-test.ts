@@ -65,7 +65,8 @@ describe('asset info', function () {
     await expect(comet.getAssetInfo(3)).to.be.revertedWith("custom error 'BadAsset()'");
   });
 
-  it('reverts if collateral factors are out of range', async () => {
+  // Note: with pre-packing we do not check this
+  it.skip('reverts if collateral factors are out of range', async () => {
     await expect(makeProtocol({
       assets: {
         USDC: {},
