@@ -1,13 +1,13 @@
 patch -p1 ./contracts/Comet.sol ./certora/scripts/certora_modifications.patch
-./certora/scripts/verifyAssetInfo.sh
-./certora/scripts/verifyComet.sh
-./certora/scripts/verifyCometAbsorbBuyCollateral.sh
-./certora/scripts/verifyCometExt.sh
-./certora/scripts/verifyCometTotalsAndBalances.sh
-./certora/scripts/verifyCometWithdrawSupply.sh
-./certora/scripts/verifyGovernance.sh
-./certora/scripts/verifyInterestComputation.sh
-./certora/scripts/verifyPause.sh
-./certora/scripts/verifyPauseGuardians.sh
-./certora/scripts/verifyUserAssetIn.sh
+sh certora/scripts/verifyAssetInfo.sh
+sh certora/scripts/verifyComet.sh
+sh certora/scripts/verifyCometAbsorbBuyCollateral.sh
+sh certora/scripts/verifyCometExt.sh
+sh certora/scripts/verifyCometTotalsAndBalances.sh
+sh certora/scripts/verifyCometWithdrawSupply.sh
+sh certora/scripts/verifyGovernance.sh
+sh certora/scripts/verifyInterestComputation.sh
+sh certora/scripts/verifyPause.sh
+sh certora/scripts/verifyPauseGuardians.sh
+sh certora/scripts/verifyUserAssetIn.sh
 patch -p1 -R ./contracts/Comet.sol ./certora/scripts/certora_modifications.patch 
