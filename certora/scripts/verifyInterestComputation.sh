@@ -9,7 +9,6 @@ certoraRun certora/harness/CometHarnessWrappers.sol certora/harness/SymbolicPric
     --solc solc8.11 \
     --cloud \
     $RULE \
-    --send_only \
     --optimistic_loop \
     --settings -enableEqualitySaturation=false \
     --solc_args '["--experimental-via-ir"]' \

@@ -8,7 +8,6 @@ certoraRun contracts/CometExt.sol certora/harness/CometHarnessGetters.sol certor
     --solc solc8.11 \
     --cloud \
     $RULE \
-    --send_only \
     --optimistic_loop \
     --settings -enableEqualitySaturation=false,-solver=z3,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \
     --solc_args '["--experimental-via-ir"]' \

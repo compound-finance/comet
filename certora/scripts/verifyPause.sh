@@ -8,7 +8,6 @@ certoraRun certora/harness/CometHarnessGetters.sol \
     --solc solc8.11 \
     --cloud \
     $RULE \
-    --send_only \
     --optimistic_loop \
     --settings -useBitVectorTheory \
     --solc_args '["--experimental-via-ir"]' \

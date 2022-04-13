@@ -9,7 +9,6 @@ certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harne
     --solc solc8.11 \
     --cloud \
     $RULE \
-    --send_only \
     --optimistic_loop \
     --settings -enableEqualitySaturation=false,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \
     --solc_args '["--experimental-via-ir"]' \

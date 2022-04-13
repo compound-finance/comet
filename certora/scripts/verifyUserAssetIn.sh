@@ -8,7 +8,6 @@ certoraRun certora/harness/CometHarnessWrappers.sol \
     --solc solc8.11 \
     --cloud \
     $RULE \
-    --send_only \
     --optimistic_loop \
     --send_only \
     --settings -useBitVectorTheory,-smt_hashingScheme=plainInjectivity,-deleteSMTFile=false,-postProcessCounterExamples=false \
