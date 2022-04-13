@@ -190,9 +190,7 @@ contract Comet is CometCore {
             decimals = decimals_;
             baseScale = uint64(10 ** decimals_);
             trackingIndexScale = config.trackingIndexScale;
-            if (baseScale < BASE_ACCRUAL_SCALE) {
-                revert BadDecimals();
-            }
+            if (baseScale < BASE_ACCRUAL_SCALE) revert BadDecimals();
             accrualDescaleFactor = baseScale / BASE_ACCRUAL_SCALE;
 
             baseMinForRewards = config.baseMinForRewards;
