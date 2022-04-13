@@ -57,3 +57,46 @@ describe('hasPermission', function () {
     expect(await comet.hasPermission(alice.address, bob.address)).to.be.true;
   });
 });
+
+describe('allowThis', function () {
+  it('isAllowed defaults to false', async () => {
+    const { comet } = await makeProtocol();
+    const [admin] = await ethers.getSigners();
+    const adminAddress = admin.address;
+
+    expect(await comet.isAllowed(comet.address, adminAddress)).to.be.false;
+  });
+
+  it('allows governor to authorize a manager', async () => {
+    const { comet } = await makeProtocol();
+    const [admin] = await ethers.getSigners();
+    const adminAddress = admin.address;
+
+    await comet.connect(admin).allowThis(adminAddress, true);
+
+    expect(await comet.isAllowed(comet.address, adminAddress)).to.be.true;
+  });
+
+  it('allows governor to rescind authorization', async () => {
+    const { comet } = await makeProtocol();
+    const [admin, user] = await ethers.getSigners();
+    const userAddress = user.address;
+
+    await comet.connect(admin).allowThis(userAddress, true);
+
+    expect(await comet.isAllowed(comet.address, userAddress)).to.be.true;
+
+    await comet.connect(admin).allowThis(userAddress, false);
+
+    expect(await comet.isAllowed(comet.address, userAddress)).to.be.false;
+  });
+
+  it('reverts if not called by governor', async () => {
+    const { comet } = await makeProtocol();
+    const [ _admin, user ] = await ethers.getSigners();
+    const userAddress = user.address;
+
+    await expect(comet.connect(user).allowThis(userAddress, true))
+      .to.be.revertedWith("custom error 'Unauthorized()'");
+  });
+});
