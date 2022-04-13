@@ -53,15 +53,15 @@ jobs:
       max-parallel: 16
       matrix:
         rule:
-          - verifyAssetInfo.sh reversibility_of_packing
-          - verifyComet.sh assetIn_initialized_with_balance
-          - verifyComet.sh balance_change_vs_accrue
-          - verifyComet.sh balance_change_vs_registered
-          - verifyComet.sh usage_registered_assets_only
-          - verifyComet.sh verify_transferAsset
-          - verifyCometAbsorbBuyCollateral.sh anti_monotonicity_of_buyCollateral
-          - verifyCometAbsorbBuyCollateral.sh buyCollateral_max
-          - verifyCometAbsorbBuyCollateral.sh cannot_absorb_same_account
+          - verifyAssetInfo.sh "reversibility_of_packing"
+          - verifyComet.sh "assetIn_initialized_with_balance"
+          - verifyComet.sh "balance_change_vs_accrue"
+          - verifyComet.sh "balance_change_vs_registered"
+          - verifyComet.sh "usage_registered_assets_only"
+          - verifyComet.sh "verify_transferAsset"
+          - verifyCometAbsorbBuyCollateral.sh "anti_monotonicity_of_buyCollateral"
+          - verifyCometAbsorbBuyCollateral.sh "buyCollateral_max"
+          - verifyCometAbsorbBuyCollateral.sh "cannot_absorb_same_account"
           # - verifyCometAbsorbBuyCollateral.sh absorb_reserves_decrease
           # - verifyCometAbsorbBuyCollateral.sh anti_monotonicity_of_absorb
           # - verifyCometAbsorbBuyCollateral.sh cannot_double_absorb
