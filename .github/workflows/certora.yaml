@@ -5,9 +5,9 @@ on:
     branches:
       - main
       - certora
-  pull_request:
-    branches:
-      - main
+  # pull_request:
+  #   branches:
+  #     - main
 
   workflow_dispatch:
 
