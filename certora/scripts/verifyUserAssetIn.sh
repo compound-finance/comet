@@ -9,7 +9,6 @@ certoraRun certora/harness/CometHarnessWrappers.sol \
     --cloud \
     $RULE \
     --optimistic_loop \
-    --send_only \
     --settings -useBitVectorTheory,-smt_hashingScheme=plainInjectivity,-deleteSMTFile=false,-postProcessCounterExamples=false \
     --solc_args '["--experimental-via-ir"]' \
     --msg "CometHarnessWrappers:userAssetIn.spec $RULE"
