@@ -58,9 +58,9 @@ jobs:
           # - verifyComet.sh balance_change_vs_accrue
           # - verifyComet.sh balance_change_vs_registered
           # - verifyComet.sh usage_registered_assets_only
-          - verifyComet.sh verify_transferAsset
+          # - verifyComet.sh verify_transferAsset
           - verifyCometAbsorbBuyCollateral.sh anti_monotonicity_of_buyCollateral
-          # - verifyCometAbsorbBuyCollateral.sh buyCollateral_max
+          - verifyCometAbsorbBuyCollateral.sh buyCollateral_max
           # - verifyCometAbsorbBuyCollateral.sh cannot_absorb_same_account
           # - verifyCometAbsorbBuyCollateral.sh absorb_reserves_decrease
           # - verifyCometAbsorbBuyCollateral.sh anti_monotonicity_of_absorb
