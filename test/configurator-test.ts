@@ -51,7 +51,7 @@ describe('configurator', function () {
     await proxyAdmin.transferOwnership(timelock.address);
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-    await configuratorAsProxy.transferAdmin(timelock.address); // set timelock as admin of Configurator
+    await configuratorAsProxy.transferGovernor(timelock.address); // set timelock as admin of Configurator
 
     expect((await configuratorAsProxy.getConfiguration()).governor).to.be.equal(governor.address);
 
@@ -60,7 +60,7 @@ describe('configurator', function () {
     let setGovernorCalldata = ethers.utils.defaultAbiCoder.encode(["address"], [alice.address]);
     let deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address"], [configuratorProxy.address, cometProxy.address]);
     await timelock.execute([configuratorProxy.address, proxyAdmin.address], [0, 0], ["setGovernor(address)", "deployAndUpgradeTo(address,address)"], [setGovernorCalldata, deployAndUpgradeToCalldata]);
-    
+
     expect((await configuratorAsProxy.getConfiguration()).governor).to.be.equal(alice.address);
   });
 
