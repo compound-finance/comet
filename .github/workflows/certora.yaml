@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
 
       - name: Check key
         env:
@@ -24,7 +24,7 @@ jobs:
         run: echo "key length" ${#CERTORAKEY}
 
       - name: Install python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v2
         with: { python-version: 3.6, cache: 'pip' }
 
       - name: Install java
