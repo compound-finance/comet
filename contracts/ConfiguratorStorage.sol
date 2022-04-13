@@ -20,8 +20,8 @@ contract ConfiguratorStorage is CometConfiguration {
     /// getters created for public variables.
     Configuration internal configuratorParams; // XXX can create a public getter for this
 
-    /// @notice The admin of the protocol
-    address public admin;
+    /// @notice The governor of the protocol
+    address public governor;
 
     /// @notice Address for the Comet factory contract
     address public factory;
