@@ -8,7 +8,6 @@ certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harne
     --link CometHarness:baseToken=SymbolicBaseToken CometHarness:extensionDelegate=CometExt ERC20WithCallBack:comet=CometHarness \
     --solc solc8.11 \
     $RULE \
-    --send_only \
     --optimistic_loop \
     --staging jtoman/comet-recursion \
     --settings -enableEqualitySaturation=false,-smt_usePz3=true,-contractRecursionLimit=1,-smt_z3PreprocessorTimeout=2 \
