@@ -40,9 +40,6 @@ jobs:
           chmod +x solc-static-linux
           sudo mv solc-static-linux /usr/local/bin/solc8.11
       
-      - name: apply patch
-        run: 
-
       - name: Verify rule ${{ matrix.rule }}
         run: |
           touch certora/applyHarness.patch
