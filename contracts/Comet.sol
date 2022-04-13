@@ -1242,8 +1242,10 @@ contract Comet is CometCore {
         uint128 assetPrice = getPrice(assetInfo.priceFeed);
         uint128 assetPriceDiscounted = uint128(mulFactor(assetPrice, storeFrontPriceFactor));
         uint128 basePrice = getPrice(baseTokenPriceFeed);
-        uint assetWeiPerUnitBase = assetInfo.scale * basePrice / assetPriceDiscounted;
-        return assetWeiPerUnitBase * baseAmount / baseScale;
+        // # of collateral assets
+        // = (TotalValueOfBaseAmount / DiscountedPriceOfCollateralAsset) * assetScale
+        // = ((basePrice * baseAmount / baseScale) / assetPriceDiscounted) * assetScale
+        return basePrice * baseAmount * assetInfo.scale / assetPriceDiscounted / baseScale;
     }
 
     /**
