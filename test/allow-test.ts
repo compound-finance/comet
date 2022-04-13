@@ -72,7 +72,7 @@ describe('allowThis', function () {
 
     expect(await comet.isAllowed(comet.address, userAddress)).to.be.true;
 
-    comet.connect(admin).allowThis(userAddress, false);
+    await comet.connect(admin).allowThis(userAddress, false);
 
     expect(await comet.isAllowed(comet.address, userAddress)).to.be.false;
   });
