@@ -401,16 +401,28 @@ contract Comet is CometCore {
     }
 
     /**
+     * @dev Calculate accrued interest indices for base token supply and borrows
+     **/
+    function accruedInterestIndices(uint timeElapsed) internal view returns (uint64, uint64) {
+        uint64 baseSupplyIndex_ = baseSupplyIndex;
+        uint64 baseBorrowIndex_ = baseBorrowIndex;
+        if (timeElapsed > 0) {
+            uint supplyRate = getSupplyRate();
+            uint borrowRate = getBorrowRate();
+            baseSupplyIndex_ += safe64(mulFactor(baseSupplyIndex_, supplyRate * timeElapsed));
+            baseBorrowIndex_ += safe64(mulFactor(baseBorrowIndex_, borrowRate * timeElapsed));
+        }
+        return (baseSupplyIndex, baseBorrowIndex);
+    }
+
+    /**
      * @dev Accrue interest (and rewards) in base token supply and borrows
      **/
     function accrueInternal() internal {
         uint40 now_ = getNowInternal();
         uint timeElapsed = now_ - lastAccrualTime;
         if (timeElapsed > 0) {
-            uint supplyRate = getSupplyRate();
-            uint borrowRate = getBorrowRate();
-            baseSupplyIndex += safe64(mulFactor(baseSupplyIndex, supplyRate * timeElapsed));
-            baseBorrowIndex += safe64(mulFactor(baseBorrowIndex, borrowRate * timeElapsed));
+            (baseSupplyIndex, baseBorrowIndex) = accruedInterestIndices(timeElapsed);
             if (totalSupplyBase >= baseMinForRewards) {
                 uint supplySpeed = baseTrackingSupplySpeed;
                 trackingSupplyIndex += safe64(divBaseWei(supplySpeed * timeElapsed, totalSupplyBase));
@@ -1274,6 +1286,40 @@ contract Comet is CometCore {
         if (msg.sender != governor) revert Unauthorized();
 
         isAllowed[address(this)][manager] = isAllowed_;
+    }
+
+    /**
+     * @notice Get the total number of tokens in circulation
+     * @dev Note: uses updated interest indices to calculate
+     * @return The supply of tokens
+     **/
+    function totalSupply() external view returns (uint256) {
+        (uint64 baseSupplyIndex_, ) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
+        return presentValueSupply(baseSupplyIndex_, totalSupplyBase);
+    }
+
+    /**
+     * @notice Query the current positive base balance of an account or zero
+     * @dev Note: uses updated interest indices to calculate
+     * @param account The account whose balance to query
+     * @return The present day base balance magnitude of the account, if positive
+     */
+    function balanceOf(address account) external view returns (uint256) {
+        (uint64 baseSupplyIndex_, ) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
+        int104 principal = userBasic[account].principal;
+        return principal > 0 ? presentValueSupply(baseSupplyIndex_, unsigned104(principal)) : 0;
+    }
+
+    /**
+     * @notice Query the current negative base balance of an account or zero
+     * @dev Note: uses updated interest indices to calculate
+     * @param account The account whose balance to query
+     * @return The present day base balance magnitude of the account, if negative
+     */
+    function borrowBalanceOf(address account) external view returns (uint256) {
+        (, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
+        int104 principal = userBasic[account].principal;
+        return principal < 0 ? presentValueBorrow(baseBorrowIndex_, unsigned104(-principal)) : 0;
     }
 
     /**

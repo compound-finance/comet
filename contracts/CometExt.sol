@@ -96,35 +96,8 @@ contract CometExt is CometCore {
     }
 
     /**
-     * @notice Get the total number of tokens in circulation
-     * @return The supply of tokens
-     **/
-    function totalSupply() external view returns (uint256) {
-        return presentValueSupply(baseSupplyIndex, totalSupplyBase);
-    }
-
-    /**
-     * @notice Query the current positive base balance of an account or zero
-     * @param account The account whose balance to query
-     * @return The present day base balance magnitude of the account, if positive
-     */
-    function balanceOf(address account) external view returns (uint256) {
-        int104 principal = userBasic[account].principal;
-        return principal > 0 ? presentValueSupply(baseSupplyIndex, unsigned104(principal)) : 0;
-    }
-
-    /**
-     * @notice Query the current negative base balance of an account or zero
-     * @param account The account whose balance to query
-     * @return The present day base balance magnitude of the account, if negative
-     */
-    function borrowBalanceOf(address account) external view returns (uint256) {
-        int104 principal = userBasic[account].principal;
-        return principal < 0 ? presentValueBorrow(baseBorrowIndex, unsigned104(-principal)) : 0;
-    }
-
-     /**
       * @notice Query the current base balance of an account
+      * @dev Note: does not update interest indices before calculating
       * @param account The account whose balance to query
       * @return The present day base balance of the account
       */
