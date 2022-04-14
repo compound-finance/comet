@@ -170,8 +170,6 @@ export async function getConfiguration(
   let symbol = networkConfiguration.symbol;
   let baseToken = getContractAddress(networkConfiguration.baseToken, contractMap);
   let baseTokenPriceFeed = address(networkConfiguration.baseTokenPriceFeed);
-  let governor = address(networkConfiguration.governor);
-  let pauseGuardian = address(networkConfiguration.pauseGuardian);
   let reserveRate = percentage(networkConfiguration.reserveRate);
   let baseBorrowMin = number(networkConfiguration.borrowMin); // TODO: in token units (?)
   let storeFrontPriceFactor = number(networkConfiguration.storeFrontPriceFactor);
@@ -184,8 +182,6 @@ export async function getConfiguration(
 
   return {
     symbol,
-    governor,
-    pauseGuardian,
     baseToken,
     baseTokenPriceFeed,
     ...interestRateInfo,
