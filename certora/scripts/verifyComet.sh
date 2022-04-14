@@ -1,7 +1,7 @@
-# if [[ "$1" ]]
-# then
-#     RULE="--rule $1"
-# fi
+if [[ "$1" ]]
+then
+    RULE="--rule $1"
+fi
 
 certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harness/SymbolicBaseToken.sol certora/harness/SymbolicAssetTokenA.sol certora/harness/SymbolicAssetTokenB.sol certora/harness/SymbolicPriceOracleA.sol certora/harness/SymbolicPriceOracleB.sol \
     --verify CometHarness:certora/specs/comet.spec \
