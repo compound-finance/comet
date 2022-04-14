@@ -90,6 +90,7 @@ abstract contract CometInterface is CometCore, ERC20 {
     function baseMinForRewards() virtual external view returns (uint104);
     function baseBorrowMin() virtual external view returns (uint104);
     function targetReserves() virtual external view returns (uint104);
+    function storeFrontPriceFactor() virtual external view returns (uint64);
 
     function maxAssets() virtual external view returns (uint8);
     function numAssets() virtual external view returns (uint8);

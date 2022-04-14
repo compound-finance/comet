@@ -76,6 +76,7 @@ contract Configurator is ConfiguratorStorage {
         emit SetPauseGuardian(oldPauseGuardian, newPauseGuardian);
     }
 
+    /// XXX Probably doesn't make sense for governance to change this?
     /// @dev only callable by admin
     function setBaseToken(address newBaseToken) external {
         if (msg.sender != governor) revert Unauthorized();
@@ -148,6 +149,7 @@ contract Configurator is ConfiguratorStorage {
         emit SetStoreFrontPriceFactor(oldStoreFrontPriceFactor, newStoreFrontPriceFactor);
     }
 
+    /// XXX Probably doesn't make sense for governance to change this?
     /// @dev only callable by admin
     function setTrackingIndexScale(uint64 newTrackingIndexScale) external {
         if (msg.sender != governor) revert Unauthorized();
