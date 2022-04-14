@@ -427,15 +427,6 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   };
 }
 
-type Portfolio = {
-  internal: {
-    [symbol: string]: BigInt,
-  },
-  external: {
-    [symbol: string]: BigInt,
-  }
-}
-
 export async function makeRewards(opts: RewardsOpts = {}): Promise<Rewards> {
   const signers = await ethers.getSigners();
 
@@ -479,8 +470,23 @@ export function objectify(arrayObject) {
   return obj;
 }
 
+export async function baseBalanceOf(comet: Comet, account: string): Promise<bigint> {
+  const balanceOf = await comet.balanceOf(account);
+  const borrowBalanceOf = await comet.borrowBalanceOf(account);
+  return balanceOf.sub(borrowBalanceOf).toBigInt();
+}
+
+type Portfolio = {
+  internal: {
+    [symbol: string]: BigInt,
+  },
+  external: {
+    [symbol: string]: BigInt,
+  }
+}
+
 export async function portfolio({ comet, base, tokens }, account): Promise<Portfolio>  {
-  const internal = { [base]: BigInt(await comet.baseBalanceOf(account)) };
+  const internal = { [base]: await baseBalanceOf(comet, account) };
   const external = { [base]: BigInt(await tokens[base].balanceOf(account)) };
   for (const symbol in tokens) {
     if (symbol != base) {
