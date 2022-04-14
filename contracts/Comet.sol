@@ -509,9 +509,14 @@ contract Comet is CometCore {
      */
     function isBorrowCollateralized(address account) public view returns (bool) {
         uint16 assetsIn = userBasic[account].assetsIn;
+        int104 principal = userBasic[account].principal;
+
+        if (principal >= 0) {
+            return true;
+        }
 
         int liquidity = signedMulPrice(
-            presentValue(userBasic[account].principal),
+            presentValue(principal),
             getPrice(baseTokenPriceFeed),
             uint64(baseScale)
         );
@@ -577,9 +582,14 @@ contract Comet is CometCore {
      */
     function isLiquidatable(address account) public view returns (bool) {
         uint16 assetsIn = userBasic[account].assetsIn;
+        int104 principal = userBasic[account].principal;
+
+        if (principal >= 0) {
+            return false;
+        }
 
         int liquidity = signedMulPrice(
-            presentValue(userBasic[account].principal),
+            presentValue(principal),
             getPrice(baseTokenPriceFeed),
             uint64(baseScale)
         );
