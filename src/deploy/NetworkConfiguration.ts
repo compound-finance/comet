@@ -67,8 +67,8 @@ interface NetworkAssetConfiguration {
 
 interface NetworkConfiguration {
   symbol: string;
-  governor: string;
-  pauseGuardian: string;
+  governor?: string;
+  pauseGuardian?: string;
   baseToken: string;
   baseTokenPriceFeed: string;
   reserveRate: number;
@@ -182,6 +182,12 @@ export async function getConfiguration(
 
   return {
     symbol,
+    ...(networkConfiguration.governor && {
+      governor: address(networkConfiguration.governor)
+    }),
+    ...(networkConfiguration.pauseGuardian && {
+      pauseGuardian: address(networkConfiguration.pauseGuardian)
+    }),
     baseToken,
     baseTokenPriceFeed,
     ...interestRateInfo,
