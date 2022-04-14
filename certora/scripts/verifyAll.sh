@@ -1,20 +1,9 @@
 patch -p1 ./contracts/Comet.sol ./certora/certora_modifications.patch
-sh certora/scripts/verifyAssetInfo.sh reversibility_of_packing
 sh certora/scripts/verifyComet.sh assetIn_initialized_with_balance
 sh certora/scripts/verifyComet.sh balance_change_vs_accrue
 sh certora/scripts/verifyComet.sh balance_change_vs_registered
 sh certora/scripts/verifyComet.sh usage_registered_assets_only
 sh certora/scripts/verifyComet.sh verify_transferAsset
-sh certora/scripts/verifyCometAbsorbBuyCollateral.sh anti_monotonicity_of_buyCollateral
-sh certora/scripts/verifyCometAbsorbBuyCollateral.sh buyCollateral_max
-sh certora/scripts/verifyCometAbsorbBuyCollateral.sh cannot_absorb_same_account
-sh certora/scripts/verifyCometAbsorbBuyCollateral.sh absorb_reserves_decrease
-sh certora/scripts/verifyCometAbsorbBuyCollateral.sh anti_monotonicity_of_absorb
-sh certora/scripts/verifyCometAbsorbBuyCollateral.sh cannot_double_absorb
-sh certora/scripts/verifyCometExt.sh allowance_only_zero_or_max
-sh certora/scripts/verifyCometExt.sh approve_fails_on_invalid_allowance
-sh certora/scripts/verifyCometExt.sh valid_allowance_changes
-sh certora/scripts/verifyCometExt.sh valid_approve_succeeds
 sh certora/scripts/verifyCometTotalsAndBalances.sh total_collateral_per_asset
 sh certora/scripts/verifyCometTotalsAndBalances.sh total_asset_collateral_vs_asset_balance
 sh certora/scripts/verifyCometTotalsAndBalances.sh base_balance_vs_totals
@@ -22,32 +11,13 @@ sh certora/scripts/verifyCometTotalsAndBalances.sh collateral_totalSupply_LE_sup
 sh certora/scripts/verifyCometTotalsAndBalances.sh total_base_token
 sh certora/scripts/verifyCometTotalsAndBalances.sh balance_change_by_allowed_only
 sh certora/scripts/verifyCometTotalsAndBalances.sh collateralized_after_operation
-sh certora/scripts/verifyCometWithdrawSupply.sh withdraw_reserves_decreases
-sh certora/scripts/verifyCometWithdrawSupply.sh withdraw_reserves_monotonicity
-sh certora/scripts/verifyCometWithdrawSupply.sh supply_increase_balance
-sh certora/scripts/verifyCometWithdrawSupply.sh withdraw_decrease_balance
-sh certora/scripts/verifyCometWithdrawSupply.sh additivity_of_withdraw
-sh certora/scripts/verifyGovernance.sh governorIntegrity
-sh certora/scripts/verifyInterestComputation.sh supplyIndex_borrowIndex_monotonic
-sh certora/scripts/verifyInterestComputation.sh supplyRate_vs_utilization
-sh certora/scripts/verifyInterestComputation.sh utilization_zero
-sh certora/scripts/verifyInterestComputation.sh borrowBase_vs_utilization
-sh certora/scripts/verifyInterestComputation.sh isLiquidatable_false_should_not_change
-sh certora/scripts/verifyInterestComputation.sh isCol_implies_not_isLiq
-sh certora/scripts/verifyInterestComputation.sh supplyIndex_borrowIndex_GE_getBaseIndexScale
-sh certora/scripts/verifyInterestComputation.sh absolute_presentValue_GE_principal
-sh certora/scripts/verifyInterestComputation.sh presentValue_G_zero
-sh certora/scripts/verifyInterestComputation.sh presentValue_EQ_principal
-sh certora/scripts/verifyInterestComputation.sh utilization_zero_supplyRate_zero
-sh certora/scripts/verifyInterestComputation.sh getSupplyRate_revert_characteristic
-sh certora/scripts/verifyPause.sh ability_to_update_flags
-sh certora/scripts/verifyPause.sh integrity_of_flag_updates
-sh certora/scripts/verifyPauseGuardians.sh check_pauseSupply_functionality
-sh certora/scripts/verifyPauseGuardians.sh check_pauseTransfer_functionality
-sh certora/scripts/verifyPauseGuardians.sh check_pauseWithdraw_functionality
-sh certora/scripts/verifyPauseGuardians.sh check_pauseAbsorb_functionality
-sh certora/scripts/verifyPauseGuardians.sh check_pauseBuy_functionality
-sh certora/scripts/verifyUserAssetIn.sh check_update_UserCollateral
-sh certora/scripts/verifyUserAssetIn.sh update_changes_single_bit
-sh certora/scripts/verifyUserAssetIn.sh update_changes_single_user_assetIn
+sh certora/scripts/verifyAssetInfo.sh
+sh certora/scripts/verifyCometAbsorbBuyCollateral.sh
+sh certora/scripts/verifyCometExt.sh
+sh certora/scripts/verifyCometWithdrawSupply.sh
+sh certora/scripts/verifyGovernance.sh
+sh certora/scripts/verifyInterestComputation.sh
+sh certora/scripts/verifyPause.sh
+sh certora/scripts/verifyPauseGuardians.sh
+sh certora/scripts/verifyUserAssetIn.sh
 patch -p1 -R ./contracts/Comet.sol ./certora/certora_modifications.patch 

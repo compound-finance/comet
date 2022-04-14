@@ -53,22 +53,11 @@ jobs:
       max-parallel: 16
       matrix:
         rule:
-          - verifyAssetInfo.sh reversibility_of_packing
           - verifyComet.sh assetIn_initialized_with_balance
           - verifyComet.sh balance_change_vs_accrue
           - verifyComet.sh balance_change_vs_registered
           - verifyComet.sh usage_registered_assets_only
           - verifyComet.sh verify_transferAsset
-          - verifyCometAbsorbBuyCollateral.sh anti_monotonicity_of_buyCollateral
-          - verifyCometAbsorbBuyCollateral.sh buyCollateral_max
-          - verifyCometAbsorbBuyCollateral.sh cannot_absorb_same_account
-          - verifyCometAbsorbBuyCollateral.sh absorb_reserves_decrease
-          - verifyCometAbsorbBuyCollateral.sh anti_monotonicity_of_absorb
-          - verifyCometAbsorbBuyCollateral.sh cannot_double_absorb
-          - verifyCometExt.sh allowance_only_zero_or_max
-          - verifyCometExt.sh approve_fails_on_invalid_allowance
-          - verifyCometExt.sh valid_allowance_changes
-          - verifyCometExt.sh valid_approve_succeeds
           - verifyCometTotalsAndBalances.sh total_collateral_per_asset
           - verifyCometTotalsAndBalances.sh total_asset_collateral_vs_asset_balance
           - verifyCometTotalsAndBalances.sh base_balance_vs_totals
@@ -76,31 +65,12 @@ jobs:
           - verifyCometTotalsAndBalances.sh total_base_token
           - verifyCometTotalsAndBalances.sh balance_change_by_allowed_only
           - verifyCometTotalsAndBalances.sh collateralized_after_operation
-          - verifyCometWithdrawSupply.sh withdraw_reserves_decreases
-          - verifyCometWithdrawSupply.sh withdraw_reserves_monotonicity
-          - verifyCometWithdrawSupply.sh supply_increase_balance
-          - verifyCometWithdrawSupply.sh withdraw_decrease_balance
-          - verifyCometWithdrawSupply.sh additivity_of_withdraw
-          - verifyGovernance.sh governorIntegrity
-          - verifyInterestComputation.sh supplyIndex_borrowIndex_monotonic
-          - verifyInterestComputation.sh supplyRate_vs_utilization
-          - verifyInterestComputation.sh utilization_zero
-          - verifyInterestComputation.sh borrowBase_vs_utilization
-          - verifyInterestComputation.sh isLiquidatable_false_should_not_change
-          - verifyInterestComputation.sh isCol_implies_not_isLiq
-          - verifyInterestComputation.sh supplyIndex_borrowIndex_GE_getBaseIndexScale
-          - verifyInterestComputation.sh absolute_presentValue_GE_principal
-          - verifyInterestComputation.sh presentValue_G_zero
-          - verifyInterestComputation.sh presentValue_EQ_principal
-          - verifyInterestComputation.sh utilization_zero_supplyRate_zero
-          - verifyInterestComputation.sh getSupplyRate_revert_characteristic
-          - verifyPause.sh ability_to_update_flags
-          - verifyPause.sh integrity_of_flag_updates
-          - verifyPauseGuardians.sh check_pauseSupply_functionality
-          - verifyPauseGuardians.sh check_pauseTransfer_functionality
-          - verifyPauseGuardians.sh check_pauseWithdraw_functionality
-          - verifyPauseGuardians.sh check_pauseAbsorb_functionality
-          - verifyPauseGuardians.sh check_pauseBuy_functionality
-          - verifyUserAssetIn.sh check_update_UserCollateral
-          - verifyUserAssetIn.sh update_changes_single_bit
-          - verifyUserAssetIn.sh update_changes_single_user_assetIn
+          - verifyAssetInfo.sh
+          - verifyCometAbsorbBuyCollateral.sh
+          - verifyCometExt.sh
+          - verifyCometWithdrawSupply.sh
+          - verifyGovernance.sh
+          - verifyInterestComputation.sh
+          - verifyPause.sh
+          - verifyPauseGuardians.sh
+          - verifyUserAssetIn.sh
