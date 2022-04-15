@@ -52,6 +52,7 @@ describe('configurator', function () {
     await expect(configuratorAsProxy.initialize(governor.address, cometFactory.address, configuration)).to.be.revertedWith("custom error 'AlreadyInitialized()'");
   });
 
+  // XXX test events
   describe('configuration setters', function () {
     it('sets governor and deploys Comet with new configuration', async () => {
       const { governor, configurator, configuratorProxy, proxyAdmin, comet, cometProxy, users: [alice] } = await makeConfigurator();
