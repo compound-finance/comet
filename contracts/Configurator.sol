@@ -282,7 +282,6 @@ contract Configurator is ConfiguratorStorage {
                 return i;
             }
         }
-        // XXX test error
         revert AssetDoesNotExist();
     }
 

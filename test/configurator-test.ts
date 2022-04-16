@@ -530,6 +530,16 @@ describe('configurator', function () {
       expect((await cometAsProxy.getAssetInfo(0)).supplyCap).to.be.equal(newSupplyCap);
     });
 
+    it('reverts if updating a non-existent asset', async () => {
+      const { configurator, configuratorProxy } = await makeConfigurator();
+
+      const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+
+      await expect(
+        configuratorAsProxy.updateAssetSupplyCap(ethers.constants.AddressZero, exp(555, 18))
+      ).to.be.revertedWith("custom error 'AssetDoesNotExist()'");
+    });
+
     it('reverts if setter is called from non-governor', async () => {
       const { configuratorProxy, configurator, users: [alice] } = await makeConfigurator();
 
