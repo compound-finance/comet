@@ -134,6 +134,12 @@ export function defactor(f: bigint | BigNumber): number {
   return Number(toBigInt(f)) / 1e18;
 }
 
+// Truncates a factor to a certain number of decimals
+export function truncateDecimals(factor: bigint | BigNumber, decimals = 4) {
+  const descaleFactor = factorScale / exp(1, decimals);
+  return toBigInt(factor) / descaleFactor * descaleFactor;
+}
+
 function toBigInt(f: bigint | BigNumber): bigint {
   if (typeof f === 'bigint') {
     return f;
