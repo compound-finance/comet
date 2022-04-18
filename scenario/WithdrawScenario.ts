@@ -77,7 +77,7 @@ scenario(
 
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(0n);
     expect(await comet.balanceOf(albert.address)).to.be.equal(0n);
-    
+
     // Albert borrows 1 unit of base from Comet
     const txn = await albert.withdrawAsset({ asset: baseAsset.address, amount: 1n * scale });
 
@@ -166,7 +166,7 @@ scenario(
 
     expect(await baseAsset.balanceOf(betty.address)).to.be.equal(0n);
     expect(await comet.balanceOf(albert.address)).to.be.equal(0n);
-    
+
     await albert.allow(betty, true);
 
     // Betty borrows 1 unit of base using Albert's account
@@ -195,7 +195,7 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
-    
+
     // Betty borrows 1 unit of base using Albert's account
     await expect(
       betty.withdrawAssetFrom({

@@ -1,9 +1,9 @@
-import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
+import { Constraint, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import CometActor from '../context/CometActor';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
-import { exp, factorScale } from '../../test/helpers';
+import { baseBalanceOf, exp, factorScale } from '../../test/helpers';
 import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, max, min } from '../utils';
 
 async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, world: World, context: CometContext) {
@@ -77,7 +77,7 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
                 toTransfer = max(exp(amount.val, decimals) - cometBalance, 0);
                 break;
               case ComparisonOp.LTE:
-                // `toTransfer` should not be positive        
+                // `toTransfer` should not be positive
                 toTransfer = min(exp(amount.val, decimals) - cometBalance, 0);
                 break;
               case ComparisonOp.GT:
@@ -136,10 +136,10 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
           const amount = parseAmount(rawAmount);
           const decimals = await asset.token.decimals();
           const baseToken = await comet.baseToken();
-          let actualBalance;
-          let expectedBalance;
+          let actualBalance: number;
+          let expectedBalance: number;
           if (asset.address === baseToken) {
-            actualBalance = await comet.baseBalanceOf(actor.address);
+            actualBalance = Number(await baseBalanceOf(comet, actor.address));
             const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
             let baseIndex;
             if (amount.val >= 0) {
@@ -147,10 +147,10 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
             } else {
               baseIndex = (await comet.totalsBasic()).baseBorrowIndex.toBigInt();
             }
-            expectedBalance = getExpectedBaseBalance(exp(amount.val, decimals), baseIndexScale, baseIndex);
+            expectedBalance = Number(getExpectedBaseBalance(exp(amount.val, decimals), baseIndexScale, baseIndex));
           } else {
-            actualBalance = await comet.collateralBalanceOf(actor.address, asset.address);
-            expectedBalance = exp(amount.val, decimals);
+            actualBalance = (await comet.collateralBalanceOf(actor.address, asset.address)).toNumber();
+            expectedBalance = Number(exp(amount.val, decimals));
           }
           switch (amount.op) {
             case ComparisonOp.EQ:
@@ -159,7 +159,7 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
             case ComparisonOp.GTE:
               expect(actualBalance).to.be.at.least(expectedBalance);
               break;
-            case ComparisonOp.LTE:        
+            case ComparisonOp.LTE:
               expect(actualBalance).to.be.at.most(expectedBalance);
               break;
             case ComparisonOp.GT:

@@ -12,7 +12,7 @@ timeElapsed = -liquidationMargin / (baseBalanceOf * price / baseScale) / (borrow
 */
 async function timeUntilUnderwater({comet, actor, fudgeFactor = 0n}: {comet: CometInterface, actor: CometActor, fudgeFactor?: bigint}): Promise<number> {
   const liquidationMargin = (await comet.getLiquidationMargin(actor.address)).toBigInt();
-  const baseBalanceOf = (await comet.baseBalanceOf(actor.address)).toBigInt();
+  const baseBalance = await actor.getCometBaseBalance();
   const basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
   const borrowRate = (await comet.getBorrowRate()).toBigInt();
   const baseScale = (await comet.baseScale()).toBigInt();
@@ -24,7 +24,7 @@ async function timeUntilUnderwater({comet, actor, fudgeFactor = 0n}: {comet: Com
 
   // XXX throw error if baseBalanceOf is positive and liquidationMargin is positive
   return Number((-liquidationMargin * factorScale * baseScale /
-          (baseBalanceOf * basePrice) /
+          (baseBalance * basePrice) /
           borrowRate) + fudgeFactor);
 }
 
@@ -132,8 +132,8 @@ scenario(
     expect(lp1.numAbsorbed.toNumber()).to.eq(lp0.numAbsorbed.toNumber() + 1);
     // XXX test approxSpend?
 
-    const baseBalance = (await comet.baseBalanceOf(albert.address)).toNumber();
-    expect(baseBalance).to.be.greaterThanOrEqual(0);
+    const baseBalance = await albert.getCometBaseBalance();
+    expect(Number(baseBalance)).to.be.greaterThanOrEqual(0);
 
     // clears out all of liquidated user's collateral
     const numAssets = await comet.numAssets();
@@ -150,8 +150,8 @@ scenario(
 // XXX Skipping temporarily because testnet is in a weird state where an EOA ('admin') still
 // has permission to withdraw Comet's collateral, while Timelock does not. This is because the
 // permission was set up in the initialize() function. There is currently no way to update this
-// permission in Comet, so a new function (e.g. `approveCometPermission`) needs to be created 
-// to allow governance to modify which addresses can withdraw assets from Comet's Comet balance. 
+// permission in Comet, so a new function (e.g. `approveCometPermission`) needs to be created
+// to allow governance to modify which addresses can withdraw assets from Comet's Comet balance.
 scenario.skip(
   'Comet#liquidation > governor can withdraw collateral after successful liquidation',
   {
