@@ -45,8 +45,15 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
     let migrationsGlob = path.join('deployments', context.deploymentManager.network(), 'migrations', '**.ts');
     let migrations = Object.values(await loadMigrations(migrationsGlob));
     let pendingMigrations = await asyncFilter(migrations, async (migration) => !await migration.actions.enacted(context.deploymentManager));
+
     for (let migrationList of subsets(pendingMigrations)) {
       solutions.push(async function (context: T): Promise<T> {
+        // ensure that signer is a governor of the timelock before attempting to
+        // run migrations
+        const { admin, signer } = context.actors;
+        const governor = await context.getGovernor();
+        await governor.connect(admin.signer).addAdmin(signer.address);
+
         migrationList.sort((a, b) => a.name.localeCompare(b.name))
         debug(`Running scenario with migrations: ${JSON.stringify(migrationList.map((migration) => migration.name))}`);
         for (let migration of migrationList) {
