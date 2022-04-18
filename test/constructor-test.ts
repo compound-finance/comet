@@ -162,7 +162,7 @@ describe('constructor', function () {
       makeProtocol({
         reserveRate: exp(1.1,18)
       })
-    ).to.be.revertedWith("custom error 'ReserveRateTooLarge()'");
+    ).to.be.revertedWith("custom error 'BadReserveRate()'");
   });
 
   it('reverts if kink is greater than FACTOR_SCALE (1e18)', async () => {
@@ -170,7 +170,7 @@ describe('constructor', function () {
       makeProtocol({
         kink: exp(1.2,18)
       })
-    ).to.be.revertedWith("custom error 'KinkTooLarge()'");
+    ).to.be.revertedWith("custom error 'BadKink()'");
   });
 
   it('is not possible to create a perSecondInterestRateSlopeLow above FACTOR_SCALE', async () => {

@@ -28,20 +28,20 @@ contract Comet is CometCore {
     error BadAsset();
     error BadDecimals();
     error BadDiscount();
+    error BadKink();
     error BadLiquidationFactor();
     error BadMinimum();
     error BadPrice();
+    error BadReserveRate();
     error BorrowTooSmall();
     error BorrowCFTooLarge();
     error InsufficientReserves();
-    error KinkTooLarge();
     error LiquidateCFTooLarge();
     error NoSelfTransfer();
     error NotCollateralized();
     error NotForSale();
     error NotLiquidatable();
     error Paused();
-    error ReserveRateTooLarge();
     error SupplyCapExceeded();
     error TimestampTooLarge();
     error TooManyAssets();
@@ -174,8 +174,8 @@ contract Comet is CometCore {
         if (config.assetConfigs.length > MAX_ASSETS) revert TooManyAssets();
         if (config.baseMinForRewards == 0) revert BadMinimum();
         if (AggregatorV3Interface(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
-        if (config.reserveRate > FACTOR_SCALE) revert ReserveRateTooLarge();
-        if (config.kink > FACTOR_SCALE) revert KinkTooLarge();
+        if (config.reserveRate > FACTOR_SCALE) revert BadReserveRate();
+        if (config.kink > FACTOR_SCALE) revert BadKink();
         // XXX sanity checks for rewards?
 
         // Copy configuration
