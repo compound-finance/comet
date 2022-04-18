@@ -41,7 +41,7 @@ export let loader: any;
 
 export function setupLoader<T>() {
   if (loader) {
-    throw new Error('Loader already initialized');
+    return loader;
   }
 
   loader = new Loader<T>();
