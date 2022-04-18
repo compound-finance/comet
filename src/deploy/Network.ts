@@ -75,6 +75,7 @@ export async function deployNetworkComet(
     assetConfigs,
   } = {
     governor: timelock.address,
+    pauseGuardian: timelock.address,
     ...await getConfiguration(deploymentManager.deployment, deploymentManager.hre, contractMapOverride),
     ...configurationOverrides
   };
@@ -131,7 +132,7 @@ export async function deployNetworkComet(
       proxyAdminArgs
     );
     await proxyAdmin.transferOwnership(timelock.address);
-    
+
     // Configuration proxy
     configuratorProxy = await deploymentManager.deploy<
       TransparentUpgradeableConfiguratorProxy,
@@ -142,7 +143,7 @@ export async function deployNetworkComet(
       proxyAdmin.address,
       (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data,
     ]);
-    
+
     // Comet proxy
     cometProxy = await deploymentManager.deploy<
       TransparentUpgradeableProxy,

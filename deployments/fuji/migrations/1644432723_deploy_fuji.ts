@@ -3,7 +3,6 @@ import { migration } from '../../../plugins/deployment_manager/Migration';
 import { deployNetworkComet } from '../../../src/deploy/Network';
 import { exp, wait } from '../../../test/helpers';
 import { ProxyAdmin, ProxyAdmin__factory } from '../../../build/types';
-import { loadNetworkConfiguration } from '../../../src/deploy/NetworkConfiguration';
 import { Contract } from 'ethers';
 
 let cloneNetwork = 'avalanche';
@@ -18,7 +17,6 @@ migration('1644432723_deploy_fuji', {
   prepare: async (deploymentManager: DeploymentManager) => {
     let [signer] = await deploymentManager.hre.ethers.getSigners();
     let signerAddress = await signer.getAddress();
-    const { governor } = await loadNetworkConfiguration("fuji");
 
     let usdcProxyAdminArgs: [] = [];
     let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
@@ -79,16 +77,6 @@ migration('1644432723_deploy_fuji', {
       ['WBTC.e', wbtc],
       ['WAVAX', wavax],
     ]);
-
-    if (signerAddress.toLowerCase() !== governor.toLowerCase()) {
-      for (const [contractName, contract] of contracts) {
-        const signerBalance = await contract.balanceOf(signerAddress);
-        console.log(`transferring ${signerBalance} ${contractName} to governor`);
-
-        await wait(contract.connect(signer).transfer(governor, signerBalance));
-        console.log(`transfer complete (${contractName}.balanceOf(governor): ${await contract.balanceOf(governor)})`);
-      }
-    }
 
     let { cometProxy, configuratorProxy } = await deployNetworkComet(deploymentManager, true, {}, contracts);
 
