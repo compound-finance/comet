@@ -181,15 +181,13 @@ describe('constructor', function () {
     });
 
     // max value of interestRateSlopeLow should result in a value less than FACTOR_SCALE
-    expect(
-      (await comet.perSecondInterestRateBase()).lt(exp(1, 18))
-    ).to.be.true;
+    expect(await comet.perSecondInterestRateBase()).to.be.lt(exp(1, 18));
 
     // exceeding the max value of interestRateSlopeLow should overflow
     await expect(
       makeProtocol({
         interestRateSlopeLow: uint64Max + 1n
       })
-    ).to.be.reverted;
+    ).to.be.rejectedWith("value out-of-bounds"); // ethers.js error
   });
 });
