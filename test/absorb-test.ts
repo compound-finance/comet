@@ -1,4 +1,4 @@
-import { Comet, ethers, expect, exp, factor, defaultAssets, makeProtocol, portfolio, wait, setTotalsBasic } from './helpers';
+import { Comet, ethers, event, expect, exp, factor, defaultAssets, makeProtocol, portfolio, wait, setTotalsBasic } from './helpers';
 
 describe('absorb', function () {
   it('reverts if total borrows underflows', async () => {
@@ -60,6 +60,14 @@ describe('absorb', function () {
     expect(lU1.numAbsorbs).to.be.equal(0);
     expect(lU1.numAbsorbed).to.be.equal(0);
     expect(lU1.approxSpend).to.be.equal(0);
+
+    expect(event(a0, 0)).to.be.deep.equal({
+      Absorb: {
+        absorber: absorber.address,
+        borrower: underwater.address,
+        debtAbsorbed: 100n,
+      }
+    });
   });
 
   it('absorbs 2 accounts and pays out the absorber', async () => {
@@ -118,6 +126,21 @@ describe('absorb', function () {
     expect(lA1.numAbsorbed).to.be.equal(2);
     //expect(lA1.approxSpend).to.be.equal(459757131288n);
     expect(lA1.approxSpend).to.be.lt(a0.receipt.gasUsed.mul(a0.receipt.effectiveGasPrice));
+
+    expect(event(a0, 0)).to.be.deep.equal({
+      Absorb: {
+        absorber: absorber.address,
+        borrower: underwater1.address,
+        debtAbsorbed: 100n,
+      }
+    });
+    expect(event(a0, 1)).to.be.deep.equal({
+      Absorb: {
+        absorber: absorber.address,
+        borrower: underwater2.address,
+        debtAbsorbed: 700n,
+      }
+    });
   });
 
   it('absorbs 3 accounts with collateral and pays out the absorber', async () => {
@@ -207,6 +230,28 @@ describe('absorb', function () {
     expect(lA1.numAbsorbed).to.be.equal(3);
     //expect(lA1.approxSpend).to.be.equal(130651238630n);
     expect(lA1.approxSpend).to.be.lt(a0.receipt.gasUsed.mul(a0.receipt.effectiveGasPrice));
+
+    expect(event(a0, 0)).to.be.deep.equal({
+      Absorb: {
+        absorber: absorber.address,
+        borrower: underwater1.address,
+        debtAbsorbed: exp(1, 6),
+      }
+    });
+    expect(event(a0, 1)).to.be.deep.equal({
+      Absorb: {
+        absorber: absorber.address,
+        borrower: underwater2.address,
+        debtAbsorbed: exp(1, 12),
+      }
+    });
+    expect(event(a0, 2)).to.be.deep.equal({
+      Absorb: {
+        absorber: absorber.address,
+        borrower: underwater3.address,
+        debtAbsorbed: exp(1, 18),
+      }
+    });
   });
 
   it('absorbs an account with more than enough collateral to still cover debt', async () => {
@@ -273,6 +318,14 @@ describe('absorb', function () {
     expect(lA1.numAbsorbed).to.be.equal(1);
     //expect(lA1.approxSpend).to.be.equal(1672498842684n);
     expect(lA1.approxSpend).to.be.lt(a0.receipt.gasUsed.mul(a0.receipt.effectiveGasPrice));
+
+    expect(event(a0, 0)).to.be.deep.equal({
+      Absorb: {
+        absorber: absorber.address,
+        borrower: underwater.address,
+        debtAbsorbed: pU1.internal.USDC - debt,
+      }
+    });
   });
 
   it('reverts if an account is not underwater', async () => {

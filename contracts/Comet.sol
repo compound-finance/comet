@@ -1175,7 +1175,7 @@ contract Comet is CometCore {
         uint startGas = gasleft();
         accrueInternal();
         for (uint i = 0; i < accounts.length; i++) {
-            absorbInternal(accounts[i]);
+            absorbInternal(absorber, accounts[i]);
         }
         uint gasUsed = startGas - gasleft();
 
@@ -1189,7 +1189,7 @@ contract Comet is CometCore {
     /**
      * @dev Transfer user's collateral and debt to the protocol itself.
      */
-    function absorbInternal(address account) internal {
+    function absorbInternal(address absorber, address account) internal {
         if (!isLiquidatable(account)) revert NotLiquidatable();
 
         UserBasic memory accountUser = userBasic[account];
@@ -1234,7 +1234,7 @@ contract Comet is CometCore {
         totalBorrowBase -= repayAmount;
 
         uint104 debtAbsorbed = unsigned104(newBalance - oldBalance);
-        emit Absorb(msg.sender, account, debtAbsorbed);
+        emit Absorb(absorber, account, debtAbsorbed);
     }
 
     /**
