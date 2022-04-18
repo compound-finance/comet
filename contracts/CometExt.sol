@@ -16,7 +16,6 @@ contract CometExt is CometCore {
     error InvalidValueS();
     error InvalidValueV();
     error SignatureExpired();
-    error Unauthorized();
 
     /** Public constants **/
 
