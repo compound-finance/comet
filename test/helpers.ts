@@ -28,6 +28,7 @@ import {
   Configurator,
   Configurator__factory,
   CometHarnessInterface,
+  CometInterface,
 } from '../build/types';
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
@@ -470,7 +471,7 @@ export function objectify(arrayObject) {
   return obj;
 }
 
-export async function baseBalanceOf(comet: Comet, account: string): Promise<bigint> {
+export async function baseBalanceOf(comet: CometInterface, account: string): Promise<bigint> {
   const balanceOf = await comet.balanceOf(account);
   const borrowBalanceOf = await comet.borrowBalanceOf(account);
   return balanceOf.sub(borrowBalanceOf).toBigInt();
