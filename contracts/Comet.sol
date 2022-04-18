@@ -1143,9 +1143,8 @@ contract Comet is CometCore {
     function absorb(address absorber, address[] calldata accounts) external {
         if (isAbsorbPaused()) revert Paused();
 
-        accrueInternal();
-
         uint startGas = gasleft();
+        accrueInternal();
         for (uint i = 0; i < accounts.length; i++) {
             absorbInternal(accounts[i]);
         }
