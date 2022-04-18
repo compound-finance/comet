@@ -1,4 +1,4 @@
-import { ethers } from 'hardhat';
+import { ethers } from 'ethers';
 import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../plugins/deployment_manager/Migration';
 import { CometInterface, ProxyAdmin, Configurator, SimpleTimelock, SimpleTimelock__factory, GovernorSimple, GovernorSimple__factory } from '../../../build/types';
@@ -21,7 +21,7 @@ migration<Vars>('1649108513_upgrade_timelock_and_set_up_governor', {
       'test/GovernorSimple.sol',
       []
     );
-  
+
     const newTimelock = await deploymentManager.deploy<SimpleTimelock, SimpleTimelock__factory, [string]>(
       'test/SimpleTimelock.sol',
       [newGovernor.address]
@@ -60,29 +60,29 @@ migration<Vars>('1649108513_upgrade_timelock_and_set_up_governor', {
     // Create a new proposal and queue it up. Execution can be done manually or in a third step.
     let tx = await (await oldGovernorAsAdmin.propose(
       [
-        configurator.address, 
+        configurator.address,
         proxyAdmin.address,
-        proxyAdmin.address, 
-        configurator.address, 
-      ], 
-      [0, 0, 0, 0], 
+        proxyAdmin.address,
+        configurator.address,
+      ],
+      [0, 0, 0, 0],
       [
-        "setGovernor(address)", 
+        "setGovernor(address)",
         "deployAndUpgradeTo(address,address)",
-        "transferOwnership(address)", 
-        "transferAdmin(address)", 
-      ], 
+        "transferOwnership(address)",
+        "transferAdmin(address)",
+      ],
       [
-        setGovernorCalldata, 
+        setGovernorCalldata,
         deployAndUpgradeToCalldata,
-        transferProxyAdminOwnership, 
+        transferProxyAdminOwnership,
         transferConfiguratorAdminCalldata,
       ],
       'Upgrade Timelock and Governor')
     ).wait();
     let event = tx.events.find(event => event.event === 'ProposalCreated');
     let [ proposalId ] = event.args;
-  
+
     await oldGovernorAsAdmin.queue(proposalId);
 
     console.log(`Created proposal ${proposalId} and queued it. Proposal still needs to be executed.`);
@@ -99,4 +99,7 @@ migration<Vars>('1649108513_upgrade_timelock_and_set_up_governor', {
     // console.log("Configurator's Admin: ", await configurator.callStatic.admin());
     // console.log("Comet's Admin: ", await comet.governor());
   },
+  enacted: async (deploymentManager: DeploymentManager) => {
+    return false; // XXX
+  }
 });
