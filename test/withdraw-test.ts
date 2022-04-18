@@ -331,9 +331,9 @@ describe('withdraw', function () {
 
       // no USDC transferred
       expect(await USDC.balanceOf(comet.address)).to.eq(100e6);
-      // expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
+      expect(await baseBalanceOf(comet, alice.address)).to.eq(0n);
       expect(await USDC.balanceOf(alice.address)).to.eq(0);
-      // expect(await comet.baseBalanceOf(bob.address)).to.eq(0);
+      expect(await baseBalanceOf(comet, bob.address)).to.eq(0n);
       expect(await USDC.balanceOf(bob.address)).to.eq(0);
     });
 
@@ -378,9 +378,9 @@ describe('withdraw', function () {
 
       // no USDC transferred
       expect(await USDC.balanceOf(comet.address)).to.eq(100e6);
-      // expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
+      expect(await baseBalanceOf(comet, alice.address)).to.eq(0n);
       expect(await USDC.balanceOf(alice.address)).to.eq(0);
-      // expect(await comet.baseBalanceOf(bob.address)).to.eq(0);
+      expect(await baseBalanceOf(comet, bob.address)).to.eq(0n);
       expect(await USDC.balanceOf(bob.address)).to.eq(0);
     });
   });
