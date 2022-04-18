@@ -47,12 +47,6 @@ describe('CometExt', function () {
     });
   });
 
-  it('returns principal as baseBalanceOf', async () => {
-    await comet.setBasePrincipal(user.address, 100e6);
-
-    expect(await baseBalanceOf(comet, user.address)).to.eq(BigInt(200e6)); // baseSupplyIndex = 2e15
-  });
-
   it('returns collateralBalance (in units of the collateral asset)', async () => {
     const { WETH } = tokens;
 
