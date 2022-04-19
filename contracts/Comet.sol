@@ -1125,7 +1125,8 @@ contract Comet is CometCore {
         totalsCollateral[asset].totalSupplyAsset -= amount;
         userCollateral[src][asset].balance = srcCollateralNew;
 
-        updateAssetsIn(src, getAssetInfoByAddress(asset), srcCollateral, srcCollateralNew);
+        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
+        updateAssetsIn(src, assetInfo, srcCollateral, srcCollateralNew);
 
         // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
         if (!isBorrowCollateralized(src)) revert NotCollateralized();
