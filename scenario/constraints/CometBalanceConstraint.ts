@@ -5,6 +5,7 @@ import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { baseBalanceOf, exp, factorScale } from '../../test/helpers';
 import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, max, min } from '../utils';
+import { BigNumber } from 'ethers';
 
 async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, world: World, context: CometContext) {
   const comet = await context.getComet();
@@ -136,10 +137,10 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
           const amount = parseAmount(rawAmount);
           const decimals = await asset.token.decimals();
           const baseToken = await comet.baseToken();
-          let actualBalance: number;
-          let expectedBalance: number;
+          let actualBalance: BigNumber;
+          let expectedBalance: BigNumber;
           if (asset.address === baseToken) {
-            actualBalance = Number(await baseBalanceOf(comet, actor.address));
+            actualBalance = BigNumber.from(await baseBalanceOf(comet, actor.address));
             const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
             let baseIndex;
             if (amount.val >= 0) {
@@ -147,10 +148,10 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
             } else {
               baseIndex = (await comet.totalsBasic()).baseBorrowIndex.toBigInt();
             }
-            expectedBalance = Number(getExpectedBaseBalance(exp(amount.val, decimals), baseIndexScale, baseIndex));
+            expectedBalance = BigNumber.from(getExpectedBaseBalance(exp(amount.val, decimals), baseIndexScale, baseIndex));
           } else {
-            actualBalance = (await comet.collateralBalanceOf(actor.address, asset.address)).toNumber();
-            expectedBalance = Number(exp(amount.val, decimals));
+            actualBalance = BigNumber.from(await comet.collateralBalanceOf(actor.address, asset.address));
+            expectedBalance = BigNumber.from(exp(amount.val, decimals));
           }
           switch (amount.op) {
             case ComparisonOp.EQ:
