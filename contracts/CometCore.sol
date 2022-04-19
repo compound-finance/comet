@@ -82,14 +82,14 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
      * @dev The principal amount projected forward by the supply index
      */
     function presentValueSupply(uint64 baseSupplyIndex_, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * baseSupplyIndex_ / BASE_INDEX_SCALE);
+        return safe104(uint(principalValue_) * baseSupplyIndex_ / BASE_INDEX_SCALE);
     }
 
     /**
      * @dev The principal amount projected forward by the borrow index
      */
     function presentValueBorrow(uint64 baseBorrowIndex_, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * baseBorrowIndex_ / BASE_INDEX_SCALE);
+        return safe104(uint(principalValue_) * baseBorrowIndex_ / BASE_INDEX_SCALE);
     }
 
     /**
@@ -107,13 +107,13 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
      * @dev The present value projected backward by the supply index (rounded down)
      */
     function principalValueSupply(uint64 baseSupplyIndex_, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104((uint(presentValue_) * BASE_INDEX_SCALE) / baseSupplyIndex_);
+        return safe104((uint(presentValue_) * BASE_INDEX_SCALE) / baseSupplyIndex_);
     }
 
     /**
      * @dev The present value projected backward by the borrow index (rounded up)
      */
     function principalValueBorrow(uint64 baseBorrowIndex_, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104((uint(presentValue_) * BASE_INDEX_SCALE + baseBorrowIndex_ - 1) / baseBorrowIndex_);
+        return safe104((uint(presentValue_) * BASE_INDEX_SCALE + baseBorrowIndex_ - 1) / baseBorrowIndex_);
     }
 }
