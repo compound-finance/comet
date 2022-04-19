@@ -24,9 +24,9 @@ contract Comet is CometCore {
     /// @notice Event emitted when an action is paused/unpaused
     event PauseAction(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused);
     /// @notice Event emitted when a borrow position is absorbed by the protocol
-    event Absorb(address absorber, address borrower, uint104 debtAbsorbed);
+    event Absorb(address indexed absorber, address indexed borrower, uint104 debtAbsorbed);
     /// @notice Event emitted when a collateral asset is purchased from the protocol
-    event BuyCollateral(address buyer, address asset, uint baseAmount, uint collateralAmount);
+    event BuyCollateral(address indexed buyer, address indexed asset, uint baseAmount, uint collateralAmount);
 
     /** Custom errors **/
 
