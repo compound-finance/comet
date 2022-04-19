@@ -80,7 +80,7 @@ describe('withdrawReserves', function () {
     expect(await comet.getReserves()).to.be.equal(-100);
 
     await expect(comet.connect(governor).withdrawReserves(alice.address, 100)).to.be.revertedWith(
-      "custom error 'NegativeNumber()'"
+      "custom error 'InsufficientReserves()'"
     );
   });
 });

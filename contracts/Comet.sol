@@ -1254,7 +1254,8 @@ contract Comet is CometCore {
 
         accrueInternal();
 
-        if (amount > unsigned256(getReserves())) revert InsufficientReserves();
+        int reserves = getReserves();
+        if (reserves <= 0 || amount > unsigned256(getReserves())) revert InsufficientReserves();
 
         doTransferOut(baseToken, to, amount);
     }
