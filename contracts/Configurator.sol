@@ -15,7 +15,6 @@ contract Configurator is ConfiguratorStorage {
     event SetFactory(address oldFactory, address newFactory);
     event SetGovernor(address oldGovernor, address newGovernor);
     event SetPauseGuardian(address oldPauseGuardian, address newPauseGuardian);
-    event SetBaseToken(address oldBaseToken, address newBaseToken);
     event SetBaseTokenPriceFeed(address oldBaseTokenPriceFeed, address newBaseTokenPriceFeed);
     event SetExtensionDelegate(address oldExt, address newExt);
     event SetKink(uint64 oldKink, uint64 newKink);
@@ -24,7 +23,6 @@ contract Configurator is ConfiguratorStorage {
     event SetPerYearInterestRateBase(uint64 oldIRBase, uint64 newIRBase);
     event SetReserveRate(uint64 oldReserveRate, uint64 newReserveRate);
     event SetStoreFrontPriceFactor(uint64 oldStoreFrontPriceFactor, uint64 newStoreFrontPriceFactor);
-    event SetTrackingIndexScale(uint64 oldTrackingIndexScale, uint64 newTrackingIndexScale);
     event SetBaseTrackingSupplySpeed(uint64 oldBaseTrackingSupplySpeed, uint64 newBaseTrackingSupplySpeed);
     event SetBaseTrackingBorrowSpeed(uint64 oldBaseTrackingBorrowSpeed, uint64 newBaseTrackingBorrowSpeed);
     event SetBaseMinForRewards(uint104 oldBaseMinForRewards, uint104 newBaseMinForRewards);
@@ -66,6 +64,11 @@ contract Configurator is ConfiguratorStorage {
     }
 
     /** Setters for Comet-related configuration **/
+    /**
+    * The following configuration parameters do not have setters:
+    *   - BaseToken
+    *   - TrackingIndexScale
+    */
 
     /// @dev only callable by governor
     function setGovernor(address newGovernor) external {
@@ -81,15 +84,6 @@ contract Configurator is ConfiguratorStorage {
         address oldPauseGuardian = configuratorParams.pauseGuardian;
         configuratorParams.pauseGuardian = newPauseGuardian;
         emit SetPauseGuardian(oldPauseGuardian, newPauseGuardian);
-    }
-
-    /// XXX Probably doesn't make sense for governance to change this?
-    /// @dev only callable by governor
-    function setBaseToken(address newBaseToken) external {
-        if (msg.sender != governor) revert Unauthorized();
-        address oldBaseToken = configuratorParams.baseToken;
-        configuratorParams.baseToken = newBaseToken;
-        emit SetBaseToken(oldBaseToken, newBaseToken);
     }
 
     /// @dev only callable by governor
@@ -154,15 +148,6 @@ contract Configurator is ConfiguratorStorage {
         uint64 oldStoreFrontPriceFactor = configuratorParams.storeFrontPriceFactor;
         configuratorParams.storeFrontPriceFactor = newStoreFrontPriceFactor;
         emit SetStoreFrontPriceFactor(oldStoreFrontPriceFactor, newStoreFrontPriceFactor);
-    }
-
-    /// XXX Probably doesn't make sense for governance to change this?
-    /// @dev only callable by governor
-    function setTrackingIndexScale(uint64 newTrackingIndexScale) external {
-        if (msg.sender != governor) revert Unauthorized();
-        uint64 oldTrackingIndexScale = configuratorParams.trackingIndexScale;
-        configuratorParams.trackingIndexScale = newTrackingIndexScale;
-        emit SetTrackingIndexScale(oldTrackingIndexScale, newTrackingIndexScale);
     }
 
     /// @dev only callable by governor

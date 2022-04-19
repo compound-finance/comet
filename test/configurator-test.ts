@@ -113,24 +113,6 @@ describe('configurator', function () {
       expect(await cometAsProxy.pauseGuardian()).to.be.equal(newPauseGuardian);
     });
 
-    it('sets baseToken and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, tokens } = await makeConfigurator();
-      const { COMP } = tokens;
-
-      const cometAsProxy = comet.attach(cometProxy.address);
-      const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-      expect((await configuratorAsProxy.getConfiguration()).baseToken).to.be.equal(await comet.baseToken());
-
-      const oldBaseToken = await comet.baseToken();
-      const newBaseToken = COMP.address;
-      await wait(configuratorAsProxy.setBaseToken(newBaseToken));
-      await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
-
-      expect(oldBaseToken).to.be.not.equal(newBaseToken);
-      expect((await configuratorAsProxy.getConfiguration()).baseToken).to.be.equal(newBaseToken);
-      expect(await cometAsProxy.baseToken()).to.be.equal(newBaseToken);
-    });
-
     it('sets baseTokenPriceFeed and deploys Comet with new configuration', async () => {
       const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, priceFeeds } = await makeConfigurator();
 
@@ -276,23 +258,6 @@ describe('configurator', function () {
       expect(oldStoreFrontPriceFactor).to.be.not.equal(newStoreFrontPriceFactor);
       expect((await configuratorAsProxy.getConfiguration()).storeFrontPriceFactor).to.be.equal(newStoreFrontPriceFactor);
       expect(await cometAsProxy.storeFrontPriceFactor()).to.be.equal(newStoreFrontPriceFactor);
-    });
-
-    it('sets trackingIndexScale and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
-
-      const cometAsProxy = comet.attach(cometProxy.address);
-      const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-      expect((await configuratorAsProxy.getConfiguration()).trackingIndexScale).to.be.equal(await comet.trackingIndexScale());
-
-      const oldTrackingIndexScale = await comet.trackingIndexScale();
-      const newTrackingIndexScale = 100;
-      await wait(configuratorAsProxy.setTrackingIndexScale(newTrackingIndexScale));
-      await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
-
-      expect(oldTrackingIndexScale).to.be.not.equal(newTrackingIndexScale);
-      expect((await configuratorAsProxy.getConfiguration()).trackingIndexScale).to.be.equal(newTrackingIndexScale);
-      expect(await cometAsProxy.trackingIndexScale()).to.be.equal(newTrackingIndexScale);
     });
 
     it('sets baseTrackingSupplySpeed and deploys Comet with new configuration', async () => {
