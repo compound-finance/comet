@@ -172,7 +172,7 @@ export async function getConfiguration(
   let baseTokenPriceFeed = address(networkConfiguration.baseTokenPriceFeed);
   let reserveRate = percentage(networkConfiguration.reserveRate);
   let baseBorrowMin = number(networkConfiguration.borrowMin); // TODO: in token units (?)
-  let storeFrontPriceFactor = number(networkConfiguration.storeFrontPriceFactor);
+  let storeFrontPriceFactor = percentage(networkConfiguration.storeFrontPriceFactor);
   let targetReserves = number(networkConfiguration.targetReserves);
 
   let interestRateInfo = getInterestRateInfo(networkConfiguration.rates);
