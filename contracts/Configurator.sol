@@ -9,7 +9,7 @@ contract Configurator is ConfiguratorStorage {
 
     /// @notice An event emitted when a new version Comet is deployed.
     event CometDeployed(address newCometAddress); // XXX Get rid of uses of the `Comet` name
-    event AdminTransferred(address oldAdmin, address newAdmin);
+    event GovernorTransferred(address oldGovernor, address newGovernor);
 
     /// @notice An error given unauthorized method calls
     error Unauthorized();
@@ -17,36 +17,36 @@ contract Configurator is ConfiguratorStorage {
     error InvalidAddress();
 
     /// @notice Initializes the storage for Configurator
-    function initialize(address _admin, address _factory, Configuration calldata _config) public {
+    function initialize(address _governor, address _factory, Configuration calldata _config) public {
         if (version != 0) revert AlreadyInitialized();
-        if (_admin == address(0)) revert InvalidAddress();
+        if (_governor == address(0)) revert InvalidAddress();
         if (_factory == address(0)) revert InvalidAddress();
 
-        admin = _admin;
+        governor = _governor;
         factory = _factory;
         configuratorParams = _config;
         version = 1;
     }
 
     /// @notice Sets the factory for Configurator
-    /// @dev only callable by admin
+    /// @dev only callable by governor
     function setFactory(address _factory) external {
-        if (msg.sender != admin) revert Unauthorized();
+        if (msg.sender != governor) revert Unauthorized();
         factory = _factory;
     }
 
     // XXX Define other setters for setting params
-    /// @dev only callable by admin
+    /// @dev only callable by governor
     function setGovernor(address _governor) external {
-        if (msg.sender != admin) revert Unauthorized();
+        if (msg.sender != governor) revert Unauthorized();
         configuratorParams.governor = _governor;
     }
 
     // XXX What about removing an asset?
     // XXX Should we check MAX_ASSETS here as well?
-    /// @dev only callable by admin
+    /// @dev only callable by governor
     function addAsset(AssetConfig calldata asset) external {
-        if (msg.sender != admin) revert Unauthorized();
+        if (msg.sender != governor) revert Unauthorized();
         configuratorParams.assetConfigs.push(asset);
     }
 
@@ -63,12 +63,12 @@ contract Configurator is ConfiguratorStorage {
         return newComet;
     }
 
-    /// @notice Transfers the admin rights to a new address
-    /// @dev only callable by admin
-    function transferAdmin(address newAdmin) external {
-        if (msg.sender != admin) revert Unauthorized();
-        address oldAdmin = admin;
-        admin = newAdmin;
-        emit AdminTransferred(oldAdmin, newAdmin);
+    /// @notice Transfers the governor rights to a new address
+    /// @dev only callable by governor
+    function transferGovernor(address newGovernor) external {
+        if (msg.sender != governor) revert Unauthorized();
+        address oldGovernor = governor;
+        governor = newGovernor;
+        emit GovernorTransferred(oldGovernor, newGovernor);
     }
 }
