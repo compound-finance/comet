@@ -66,7 +66,7 @@ scenario(
     expectApproximately(
       await albert.getCometBaseBalance(),
       -100n * scale,
-      (scale / 1000n) // .001 units of asset
+      (scale / 1000000n) // .000001 units of asset
     );
   }
 );

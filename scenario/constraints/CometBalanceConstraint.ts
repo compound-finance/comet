@@ -137,6 +137,8 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
           const amount = parseAmount(rawAmount);
           const decimals = await asset.token.decimals();
           const baseToken = await comet.baseToken();
+          // Chai matchers (like `.to.be.at.most()`) only work for numbers and
+          // BigNumbers, so we convert from BigInt to BigNumber
           let actualBalance: BigNumber;
           let expectedBalance: BigNumber;
           if (asset.address === baseToken) {
