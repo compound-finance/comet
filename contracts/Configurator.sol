@@ -190,7 +190,6 @@ contract Configurator is ConfiguratorStorage {
         emit SetTargetReserves(oldTargetReserves, newTargetReserves);
     }
 
-    // XXX Should we check MAX_ASSETS here as well?
     /// @dev only callable by governor
     function addAsset(AssetConfig calldata assetConfig) external {
         if (msg.sender != governor) revert Unauthorized();
