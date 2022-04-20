@@ -17,6 +17,7 @@ describe('buyCollateral', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 1,
+          liquidationFactor: exp(0.85, 18),
         },
       }
     });
@@ -70,6 +71,7 @@ describe('buyCollateral', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 1,
+          liquidationFactor: exp(0.85, 18),
         },
       }
     });

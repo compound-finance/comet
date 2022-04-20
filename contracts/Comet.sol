@@ -29,6 +29,7 @@ contract Comet is CometCore {
     error BadAsset();
     error BadDecimals();
     error BadDiscount();
+    error BadLiquidationFactor();
     error BadMinimum();
     error BadPrice();
     error BorrowTooSmall();
@@ -270,6 +271,10 @@ contract Comet is CometCore {
         // Ensure collateral factors are within range
         if (assetConfig.borrowCollateralFactor >= assetConfig.liquidateCollateralFactor) revert BorrowCFTooLarge();
         if (assetConfig.liquidateCollateralFactor > MAX_COLLATERAL_FACTOR) revert LiquidateCFTooLarge();
+
+        // Ensure liquidation factor is not greater than the storefront price factor
+        // Otherwise, protocol will lose funds on liquidation
+        if (assetConfig.liquidationFactor > storeFrontPriceFactor) revert BadLiquidationFactor();
 
         unchecked {
             // Keep 4 decimals for each factor

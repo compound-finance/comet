@@ -4,7 +4,7 @@
   "baseTokenPriceFeed": "0x9211c6b3BF41A10F78539810Cf5c64e1BB78Ec60",
   "reserveRate": 0.1,
   "borrowMin": "1e6",
-  "storeFrontPriceFactor": "0.95",
+  "storeFrontPriceFactor": 0.95,
   "targetReserves": 0,
   "rates": {
     "kink": 0.80,

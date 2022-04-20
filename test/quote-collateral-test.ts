@@ -16,6 +16,7 @@ describe('quoteCollateral', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 200,
+          liquidationFactor: exp(0.75, 18),
         },
       }
     });
@@ -77,6 +78,7 @@ describe('quoteCollateral', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 9,
+          liquidationFactor: exp(0.85, 18),
         },
       }
     });
@@ -105,6 +107,7 @@ describe('quoteCollateral', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 200,
+          liquidationFactor: exp(0.75, 18),
         },
       }
     });
