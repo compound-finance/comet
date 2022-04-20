@@ -508,10 +508,15 @@ contract Comet is CometCore {
      * @return Whether the account is minimally collateralized enough to borrow
      */
     function isBorrowCollateralized(address account) public view returns (bool) {
-        uint16 assetsIn = userBasic[account].assetsIn;
+        int104 principal = userBasic[account].principal;
 
+        if (principal >= 0) {
+            return true;
+        }
+
+        uint16 assetsIn = userBasic[account].assetsIn;
         int liquidity = signedMulPrice(
-            presentValue(userBasic[account].principal),
+            presentValue(principal),
             getPrice(baseTokenPriceFeed),
             uint64(baseScale)
         );
@@ -576,10 +581,15 @@ contract Comet is CometCore {
      * @return Whether the account is minimally collateralized enough to not be liquidated
      */
     function isLiquidatable(address account) public view returns (bool) {
-        uint16 assetsIn = userBasic[account].assetsIn;
+        int104 principal = userBasic[account].principal;
 
+        if (principal >= 0) {
+            return false;
+        }
+
+        uint16 assetsIn = userBasic[account].assetsIn;
         int liquidity = signedMulPrice(
-            presentValue(userBasic[account].principal),
+            presentValue(principal),
             getPrice(baseTokenPriceFeed),
             uint64(baseScale)
         );
