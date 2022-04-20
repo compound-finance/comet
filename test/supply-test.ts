@@ -55,6 +55,36 @@ describe('supplyTo', function () {
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(120000);
   });
 
+  it.only('user supply is greater than total supply', async () => {
+    const protocol = await makeProtocol({base: 'USDC'});
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { USDC } = tokens;
+
+    await setTotalsBasic(comet, {
+      totalSupplyBase: 100,
+      baseSupplyIndex: exp(1.085, 15),
+    });
+
+    const i0 = await USDC.allocateTo(bob.address, 10);
+    const baseAsB = USDC.connect(bob);
+    const cometAsB = comet.connect(bob);
+
+    const t0 = await comet.totalsBasic();
+    const p0 = await portfolio(protocol, bob.address);
+    const a0 = await wait(baseAsB.approve(comet.address, 10));
+    const s0 = await wait(cometAsB.supplyTo(bob.address, USDC.address, 10));
+    const t1 = await comet.totalsBasic();
+    const p1 = await portfolio(protocol, bob.address)
+
+    expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(p0.external).to.be.deep.equal({USDC: 10n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(p1.internal).to.be.deep.equal({USDC: 9n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(p1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(t1.totalSupplyBase).to.be.equal(108);
+    expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(120000);
+  });
+
   it('supplies collateral from sender if the asset is collateral', async () => {
     const protocol = await makeProtocol();
     const { comet, tokens, users: [alice, bob] } = protocol;
