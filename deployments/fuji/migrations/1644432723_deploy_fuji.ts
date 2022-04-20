@@ -89,10 +89,15 @@ migration('1644432723_deploy_fuji', {
     };
   },
   enact: async (deploymentManager: DeploymentManager, contracts) => {
+    deploymentManager.putRoots(new Map(Object.entries(contracts)));
+
     console.log("You should set roots.json to:");
     console.log("");
     console.log("");
     console.log(JSON.stringify(contracts, null, 4));
     console.log("");
   },
+  enacted: async (deploymentManager: DeploymentManager) => {
+    return false; // XXX
+  }
 });

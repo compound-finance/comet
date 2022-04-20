@@ -322,7 +322,11 @@ describe('DeploymentManager', () => {
 
       let migration: Migration<null> = {
         name: '1_cool',
-        actions: {},
+        actions: {
+          prepare: async () => null,
+          enact: async () => {},
+          enacted: async () => false
+        },
       };
 
       expect(await deploymentManager.readArtifact(migration)).to.eql(undefined);
