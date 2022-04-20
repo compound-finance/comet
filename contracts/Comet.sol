@@ -778,11 +778,10 @@ contract Comet is CometCore {
      */
     function updateAssetsIn(
         address account,
-        address asset,
+        AssetInfo memory assetInfo,
         uint128 initialUserBalance,
         uint128 finalUserBalance
     ) internal {
-        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         if (initialUserBalance == 0 && finalUserBalance != 0) {
             // set bit for asset
             userBasic[account].assetsIn |= (uint16(1) << assetInfo.offset);
@@ -923,7 +922,7 @@ contract Comet is CometCore {
         totalsCollateral[asset] = totals;
         userCollateral[dst][asset].balance = dstCollateralNew;
 
-        updateAssetsIn(dst, asset, dstCollateral, dstCollateralNew);
+        updateAssetsIn(dst, assetInfo, dstCollateral, dstCollateralNew);
 
         emit SupplyCollateral(from, dst, asset, amount);
     }
@@ -1037,8 +1036,9 @@ contract Comet is CometCore {
         userCollateral[src][asset].balance = srcCollateralNew;
         userCollateral[dst][asset].balance = dstCollateralNew;
 
-        updateAssetsIn(src, asset, srcCollateral, srcCollateralNew);
-        updateAssetsIn(dst, asset, dstCollateral, dstCollateralNew);
+        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
+        updateAssetsIn(src, assetInfo, srcCollateral, srcCollateralNew);
+        updateAssetsIn(dst, assetInfo, dstCollateral, dstCollateralNew);
 
         // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
         if (!isBorrowCollateralized(src)) revert NotCollateralized();
@@ -1135,7 +1135,8 @@ contract Comet is CometCore {
         totalsCollateral[asset].totalSupplyAsset -= amount;
         userCollateral[src][asset].balance = srcCollateralNew;
 
-        updateAssetsIn(src, asset, srcCollateral, srcCollateralNew);
+        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
+        updateAssetsIn(src, assetInfo, srcCollateral, srcCollateralNew);
 
         // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
         if (!isBorrowCollateralized(src)) revert NotCollateralized();
