@@ -27,15 +27,10 @@ task('scenario', 'Runs scenario tests')
   .addOptionalParam('bases', 'Bases to run on [defaults to all]')
   .addFlag('noSpider', 'skip spider')
   .addFlag('sync', 'run synchronously')
-  .addFlag('quiet', 'set Ethers log level to OFF')
   .addOptionalParam('stall', 'milliseconds to wait until we fail for stalling', 120000, types.int)
   .addOptionalParam('workers', 'count of workers', 6, types.int)
   .setAction(async (taskArgs, env: HardhatRuntimeEnvironment) => {
     let bases: ForkSpec[] = getBasesFromTaskArgs(taskArgs.bases, env);
-
-    if (taskArgs.quiet) {
-      env.ethers.utils.Logger.setLogLevel(env.ethers.utils.Logger.levels.OFF);
-    }
 
     if (!taskArgs.noSpider) {
       await env.run('scenario:spider', taskArgs);
