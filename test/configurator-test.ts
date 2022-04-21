@@ -1,4 +1,4 @@
-import { annualize, defactor, defaultAssets, ethers, exp, expect, makeConfigurator, Numeric, truncateDecimals, wait } from './helpers';
+import { annualize, defactor, defaultAssets, ethers, exp, expect, factor, makeConfigurator, Numeric, truncateDecimals, wait } from './helpers';
 import { SimplePriceFeed__factory, SimpleTimelock__factory } from '../build/types';
 import { AssetInfoStructOutput } from '../build/types/CometHarnessInterface';
 
@@ -244,14 +244,23 @@ describe('configurator', function () {
     });
 
     it('sets storeFrontPriceFactor and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator({
+        assets: {
+          USDC: { decimals: 6, },
+          COMP: {
+            decimals: 18,
+            // This needs to be < 1e18 (default) so the StoreFrontPriceFactor can be < 1e18
+            liquidationFactor: exp(0.8, 18),
+          },
+        },
+      });
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       expect((await configuratorAsProxy.getConfiguration()).storeFrontPriceFactor).to.be.equal(await comet.storeFrontPriceFactor());
 
       const oldStoreFrontPriceFactor = await comet.storeFrontPriceFactor();
-      const newStoreFrontPriceFactor = 100;
+      const newStoreFrontPriceFactor = factor(0.95);
       await wait(configuratorAsProxy.setStoreFrontPriceFactor(newStoreFrontPriceFactor));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 

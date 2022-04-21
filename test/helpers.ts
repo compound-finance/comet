@@ -313,10 +313,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
 // Only for testing configurator. Non-configurator tests need to deploy the CometHarness instead.
 export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<ConfiguratorAndProtocol> {
-  const signers = await ethers.getSigners();
-
   const assets = opts.assets || defaultAssets();
-
 
   const {
     governor,
