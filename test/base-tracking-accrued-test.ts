@@ -2,7 +2,6 @@ import { ethers, expect, exp, fastForward, getBlock, makeProtocol } from './help
 
 describe('baseTrackingAccrued', function() {
   it('supply updates baseTrackingAccrued to 6 decimal value', async () => {
-
     const start = (await getBlock()).timestamp + 100;
 
     const {
@@ -167,13 +166,16 @@ describe('baseTrackingAccrued', function() {
   });
 
   it('increases baseTrackingAccrued on borrow', async () => {
+    const start = (await getBlock()).timestamp + 100;
+
     const {
       comet, tokens, users: [alice]
     } = await makeProtocol({
       base: 'USDC',
       trackingIndexScale: 1e15,
       baseTrackingBorrowSpeed: 1e15, // borrowSpeed=1 Comp/s per unit of borrowed base
-      baseMinForRewards: exp(.5, 6)
+      baseMinForRewards: exp(.5, 6),
+      start
     });
     const { USDC, WETH } = tokens;
 
@@ -190,8 +192,12 @@ describe('baseTrackingAccrued', function() {
     expect(userBasic1.principal).to.eq(0);
     expect(userBasic1.baseTrackingAccrued).to.eq(0);
 
+    await ethers.provider.send("evm_setAutomine", [false]);
+
     // withdraw base token
     await comet.connect(alice).withdraw(USDC.address, 1e6);
+    const firstWithdrawTime = start + 100;
+    await ethers.provider.send('evm_mine', [firstWithdrawTime]);
 
     const userBasic2 = await comet.userBasic(alice.address);
     expect(userBasic2.principal).to.eq(-1e6);
@@ -199,6 +205,8 @@ describe('baseTrackingAccrued', function() {
 
     // withdraw again
     await comet.connect(alice).withdraw(USDC.address, 1e6);
+    await ethers.provider.send('evm_mine', [firstWithdrawTime + 1]);
+    await ethers.provider.send("evm_setAutomine", [true]);
 
     const userBasic3 = await comet.userBasic(alice.address);
     expect(userBasic3.principal).to.eq(-2e6);
