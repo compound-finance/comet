@@ -483,8 +483,8 @@ contract Comet is CometCore {
      * @return The utilization rate of the base asset
      */
     function getUtilization() public view returns (uint) {
-        uint totalSupply = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint totalBorrow = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+        uint totalSupply = presentValue(baseSupplyIndex, totalSupplyBase);
+        uint totalBorrow = presentValue(baseBorrowIndex, totalBorrowBase);
         if (totalSupply == 0) {
             return 0;
         } else {
@@ -508,8 +508,8 @@ contract Comet is CometCore {
      */
     function getReserves() public view returns (int) {
         uint balance = ERC20(baseToken).balanceOf(address(this));
-        uint104 totalSupply = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrow = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+        uint104 totalSupply = presentValue(baseSupplyIndex, totalSupplyBase);
+        uint104 totalBorrow = presentValue(baseBorrowIndex, totalBorrowBase);
         return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
     }
 
@@ -894,8 +894,8 @@ contract Comet is CometCore {
 
         accrueInternal();
 
-        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+        uint104 totalSupplyBalance = presentValue(baseSupplyIndex, totalSupplyBase);
+        uint104 totalBorrowBalance = presentValue(baseBorrowIndex, totalBorrowBase);
 
         UserBasic memory dstUser = userBasic[dst];
         int104 dstBalance = presentValue(dstUser.principal);
@@ -1003,8 +1003,8 @@ contract Comet is CometCore {
     function transferBase(address src, address dst, uint104 amount) internal {
         accrueInternal();
 
-        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+        uint104 totalSupplyBalance = presentValue(baseSupplyIndex, totalSupplyBase);
+        uint104 totalBorrowBalance = presentValue(baseBorrowIndex, totalBorrowBase);
 
         UserBasic memory srcUser = userBasic[src];
         UserBasic memory dstUser = userBasic[dst];
@@ -1107,8 +1107,8 @@ contract Comet is CometCore {
     function withdrawBase(address src, address to, uint104 amount) internal {
         accrueInternal();
 
-        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+        uint104 totalSupplyBalance = presentValue(baseSupplyIndex, totalSupplyBase);
+        uint104 totalBorrowBalance = presentValue(baseBorrowIndex, totalBorrowBase);
 
         UserBasic memory srcUser = userBasic[src];
         int104 srcBalance = presentValue(srcUser.principal);
@@ -1301,7 +1301,7 @@ contract Comet is CometCore {
      **/
     function totalSupply() external view returns (uint256) {
         (uint64 baseSupplyIndex_, ) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
-        return presentValueSupply(baseSupplyIndex_, totalSupplyBase);
+        return presentValue(baseSupplyIndex_, totalSupplyBase);
     }
 
     /**
@@ -1313,7 +1313,7 @@ contract Comet is CometCore {
     function balanceOf(address account) external view returns (uint256) {
         (uint64 baseSupplyIndex_, ) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         int104 principal = userBasic[account].principal;
-        return principal > 0 ? presentValueSupply(baseSupplyIndex_, unsigned104(principal)) : 0;
+        return principal > 0 ? presentValue(baseSupplyIndex_, unsigned104(principal)) : 0;
     }
 
     /**
@@ -1325,7 +1325,7 @@ contract Comet is CometCore {
     function borrowBalanceOf(address account) external view returns (uint256) {
         (, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         int104 principal = userBasic[account].principal;
-        return principal < 0 ? presentValueBorrow(baseBorrowIndex_, unsigned104(-principal)) : 0;
+        return principal < 0 ? presentValue(baseBorrowIndex_, unsigned104(-principal)) : 0;
     }
 
     /**

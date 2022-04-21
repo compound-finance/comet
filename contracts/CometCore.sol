@@ -72,24 +72,17 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
      */
     function presentValue(int104 principalValue_) internal view returns (int104) {
         if (principalValue_ >= 0) {
-            return signed104(presentValueSupply(baseSupplyIndex, unsigned104(principalValue_)));
+            return signed104(presentValue(baseSupplyIndex, unsigned104(principalValue_)));
         } else {
-            return -signed104(presentValueBorrow(baseBorrowIndex, unsigned104(-principalValue_)));
+            return -signed104(presentValue(baseBorrowIndex, unsigned104(-principalValue_)));
         }
     }
 
     /**
-     * @dev The principal amount projected forward by the supply index
+     * @dev The principal amount projected forward by a base supply or borrow index
      */
-    function presentValueSupply(uint64 baseSupplyIndex_, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * baseSupplyIndex_ / BASE_INDEX_SCALE);
-    }
-
-    /**
-     * @dev The principal amount projected forward by the borrow index
-     */
-    function presentValueBorrow(uint64 baseBorrowIndex_, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * baseBorrowIndex_ / BASE_INDEX_SCALE);
+    function presentValue(uint64 baseIndex_, uint104 principalValue_) internal pure returns (uint104) {
+        return uint104(uint(principalValue_) * baseIndex_ / BASE_INDEX_SCALE);
     }
 
     /**
