@@ -483,12 +483,12 @@ contract Comet is CometCore {
      * @return The utilization rate of the base asset
      */
     function getUtilization() public view returns (uint) {
-        uint totalSupply = presentValue(baseSupplyIndex, totalSupplyBase);
-        uint totalBorrow = presentValue(baseBorrowIndex, totalBorrowBase);
-        if (totalSupply == 0) {
+        uint totalSupplyBalance = presentValue(baseSupplyIndex, totalSupplyBase);
+        uint totalBorrowBalance = presentValue(baseBorrowIndex, totalBorrowBase);
+        if (totalSupplyBalance == 0) {
             return 0;
         } else {
-            return totalBorrow * FACTOR_SCALE / totalSupply;
+            return totalBorrowBalance * FACTOR_SCALE / totalSupplyBalance;
         }
     }
 
@@ -508,9 +508,9 @@ contract Comet is CometCore {
      */
     function getReserves() public view returns (int) {
         uint balance = ERC20(baseToken).balanceOf(address(this));
-        uint104 totalSupply = presentValue(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrow = presentValue(baseBorrowIndex, totalBorrowBase);
-        return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
+        uint104 totalSupplyBalance = presentValue(baseSupplyIndex, totalSupplyBase);
+        uint104 totalBorrowBalance = presentValue(baseBorrowIndex, totalBorrowBase);
+        return signed256(balance) - signed104(totalSupplyBalance) + signed104(totalBorrowBalance);
     }
 
     /**
