@@ -39,7 +39,7 @@ SupplyRate = (InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlope
 #### Comet
 
 ```solidity
-function getSupplyRate() returns (uint)
+function getSupplyRate() public view returns (uint64)
 ```
 
 * `RETURNS`: The current APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 25% APR.
@@ -82,7 +82,7 @@ BorrowRate = InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeH
 #### Comet
 
 ```solidity
-function getBorrowRate() returns (uint)
+function getBorrowRate() public view returns (uint64)
 ```
 
 * `RETURNS`: The current APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `90000000000000000` indicates a 9% APR.
@@ -228,7 +228,7 @@ This function returns the amount of base asset in USD that is presently borrowab
 #### Comet
 
 ```solidity
-function getBorrowLiquidity(address account) returns (int256)
+function getBorrowLiquidity(address account) public view returns (int)
 ```
 
 * `account`: The account to examine borrow liquidity.
@@ -262,7 +262,7 @@ This function returns true if the account passed to it has non-negative liquidit
 #### Comet
 
 ```solidity
-function isBorrowCollateralized(address account) returns (bool)
+function isBorrowCollateralized(address account) public view returns (bool)
 ```
 
 * `account`: The account to examine collateralization.
@@ -343,7 +343,7 @@ This function returns true if the account passed to it has negative liquidity ba
 #### Comet
 
 ```solidity
-function isLiquidatable(address account) returns (bool)
+function isLiquidatable(address account) public view returns (bool)
 ```
 
 * `account`: The account to examine liquidatability.
@@ -457,7 +457,7 @@ This function returns the amount of protocol reserves for the base asset as an i
 #### Comet
 
 ```solidity
-function getReserves() returns (uint)
+function getReserves() public view returns (int)
 ```
 
 * `RETURNS`: The amount of base asset stored as reserves in the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
@@ -490,7 +490,7 @@ This immutable value represents the target amount of reserves of the base token.
 #### Comet
 
 ```solidity
-function targetReserves() returns (uint)
+function targetReserves() public view returns (uint)
 ```
 
 * `RETURN`: The target reserve value of the base asset as an integer, scaled up by 10 to the "decimals" integer in the base asset's contract.
@@ -523,7 +523,7 @@ In order to repay the borrows of absorbed accounts, the protocol needs to sell t
 #### Comet
 
 ```solidity
-function quoteCollateral(address asset, uint amount) returns (uint)
+function quoteCollateral(address asset, uint baseAmount) public view returns (uint)
 ```
 
 * `address`:  The address of the asset which is being queried.
@@ -844,7 +844,7 @@ This method returns the current protocol utilization of the base asset. The form
 #### Comet
 
 ```solidity
-function getUtilization() returns (uint)
+function getUtilization() public view returns (uint)
 ```
 
 * `RETURNS`: The current protocol utilization percentage as a decimal, represented by an unsigned integer, scaled up by `10 ^ 18`. E.g. `1e17 or 100000000000000000` is 10% utilization.
@@ -912,7 +912,7 @@ This method returns the current balance of a collateral asset for a specified ac
 #### Comet
 
 ```solidity
-function collateralBalanceOf(address account, address asset) returns (uint128)
+function collateralBalanceOf(address account, address asset) external view returns (uint128)
 ```
 
 * `account`: The address of the account in which to retrieve a collateral balance.
@@ -947,7 +947,7 @@ This method returns the current balance of base asset for a specified account in
 #### Comet
 
 ```solidity
-function balanceOf(address account) returns (uint256)
+function balanceOf(address account) external view returns (uint256)
 ```
 
 * `account`: The address of the account in which to retrieve the base asset balance.
@@ -981,7 +981,7 @@ This method returns the current balance of borrowed base asset for a specified a
 #### Comet
 
 ```solidity
-function borrowBalanceOf(address account) returns (uint256)
+function borrowBalanceOf(address account) external view returns (uint256)
 ```
 
 * `account`: The address of the account in which to retrieve the borrowed base asset balance.
@@ -1015,7 +1015,7 @@ This method returns the current balance of base asset for a specified account in
 #### Comet
 
 ```solidity
-function baseBalanceOf(address account) returns (int104)
+function baseBalanceOf(address account) external view returns (int104)
 ```
 
 * `account`: The address of the account in which to retrieve the base asset balance.
@@ -1149,7 +1149,7 @@ This function returns the price of an asset in USD with 8 decimal places.
 #### Comet
 
 ```solidity
-function getPrice(address priceFeed) returns (uint128)
+function getPrice(address priceFeed) public view returns (uint128)
 ```
 
 * `priceFeed`: The ERC-20 address of the Chainlink price feed contract for the asset.
