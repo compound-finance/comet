@@ -3,7 +3,7 @@ import { Worker } from 'worker_threads';
 import { ForkSpec } from '../World';
 import { Scenario } from '../Scenario';
 import { loadScenarios } from '../Loader';
-import { defaultFormats, scenarioGlob, workerCount } from './Config';
+import { defaultFormats, scenarioGlob } from './Config';
 import { showReport } from './Report';
 import { getConfig, getHardhatArguments } from './HardhatContext';
 import { ScenarioConfig } from '../types';
@@ -25,12 +25,8 @@ export interface Result {
   elapsed?: number;
   error?: Error;
   trace?: string;
-  diff?: { actual: any; expected: any };
+  diff?: { actual: any, expected: any };
   skipped?: boolean;
-}
-
-interface WorkerMessage {
-  result?: Result;
 }
 
 function filterRunning<T, U, R>(
@@ -98,7 +94,6 @@ export async function runScenario<T, U, R>(
   let assignable: Iterator<BaseScenario<T, U, R>> = runningScenarios[Symbol.iterator]();
   let done;
   let fail;
-  let hasError = false;
   let isDone = new Promise((resolve, reject) => {
     done = resolve;
     fail = reject;

@@ -74,11 +74,11 @@ export function mergeABI(abi0: ABI, abi1: ABI): ABIEntry[] {
 
   const mergedABI = [...parsedABI0, ...parsedABI1];
 
-  const entries = {}
+  const entries = {};
 
   for (const abiEntry of mergedABI) {
     // only allow one constructor or one unique entry
-    const key = abiEntry.type === "constructor" ? "constructor" : JSON.stringify(abiEntry);
+    const key = abiEntry.type === 'constructor' ? 'constructor' : JSON.stringify(abiEntry);
 
     entries[key] = abiEntry;
   }
@@ -115,7 +115,7 @@ export function asArray<A>(v: A | A[]): A[] {
     return v;
   } else {
     if (v === undefined) {
-      return []
+      return [];
     } else {
       return [v];
     }

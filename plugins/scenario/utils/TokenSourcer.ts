@@ -1,8 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import fs from 'fs';
 import { BigNumber, Contract, Event, EventFilter } from 'ethers';
 import { erc20 } from './ERC20';
-import { getStack } from '../Stack';
 
 let getMaxEntry = (args: [string, BigNumber][]) =>
   args.reduce(([a1, m], [a2, e]) => (m.gte(e) == true ? [a1, m] : [a2, e]));
@@ -104,7 +102,7 @@ async function fetchQuery(
   filter: EventFilter,
   fromBlock: number,
   toBlock: number
-): Promise<{ recentLogs?: Event[]; blocksDelta?: number; err?: Error }> {
+): Promise<{ recentLogs?: Event[], blocksDelta?: number, err?: Error }> {
   try {
     let res = await contract.queryFilter(filter, fromBlock, toBlock);
     if (res.length > 0) {
@@ -118,7 +116,7 @@ async function fetchQuery(
       return await fetchQuery(contract, filter, nextFrom, nextToBlock);
     }
   } catch (err) {
-    if (err.message.includes("query returned more")) {
+    if (err.message.includes('query returned more')) {
       let midBlock = (fromBlock + toBlock) / 2;
       return await fetchQuery(contract, filter, midBlock, toBlock);
     } else {

@@ -2,7 +2,6 @@ import { expect } from 'chai';
 import hre from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import nock from 'nock';
-import { Contract } from 'ethers';
 
 import {
   Dog__factory,
@@ -16,7 +15,6 @@ import {
 import { Cache } from '../Cache';
 import { getContractsFromAliases } from '../ContractMap';
 import { spider } from '../Spider';
-import { Address } from '../Types';
 import { RelationConfigMap } from '../RelationConfig';
 import { objectFromMap } from '../Utils';
 import { deploy } from '../Deploy';
@@ -106,7 +104,7 @@ describe('Spider', () => {
 
   it('runs valid spider', async () => {
     let cache = new Cache('test');
-    let { finn, molly, spot, proxy, finnImpl, proxyAdmin } = await setupContracts(cache, hre);
+    let { finn, molly, spot, finnImpl } = await setupContracts(cache, hre);
 
     let roots = new Map([['finn', finn.address]]);
 
@@ -130,7 +128,6 @@ describe('Spider', () => {
     };
 
     let {
-      cache: newCache,
       aliases,
       proxies,
     } = await spider(cache, 'avalanche', hre, relationConfig, roots, 0);
@@ -155,7 +152,7 @@ describe('Spider', () => {
     for (let [alias, contract] of await getContractsFromAliases(cache, aliases, proxies, hre)) {
       // Just make sure these contracts are working, too.
       let name = contract.hasOwnProperty('name') ? await contract.name() : null;
-      check[alias] = !!name ? name : contract.address;
+      check[alias] = name ? name : contract.address;
     }
     expect(check).to.eql({
       finn: 'finn',

@@ -1,10 +1,9 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { Contract } from 'ethers';
 
 import { AssetConfigStruct } from '../../build/types/Comet';
 import { ProtocolConfiguration } from './index';
-import { BigNumberish, Signature, ethers } from 'ethers';
+import { BigNumberish } from 'ethers';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
@@ -26,7 +25,7 @@ function floor(n: number): bigint {
   return BigInt(Math.floor(n));
 }
 
-function number(n: number, checkRange: boolean = true): bigint {
+function number(n: number): bigint {
   return floor(Number(n));
 }
 

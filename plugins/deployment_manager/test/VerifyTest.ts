@@ -1,11 +1,8 @@
 import hre from 'hardhat';
 import nock from 'nock';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { expect } from 'chai';
 import * as fs from 'fs';
 import * as path from 'path';
-
-import { Cache } from '../Cache';
 import { verifyContract } from '../Verify';
 import { deployBuild } from '../Deploy';
 import { buildToken, faucetTokenBuildFile, tokenArgs } from './DeployHelpers';

@@ -1,9 +1,6 @@
 import { Contract, utils } from 'ethers';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
-
 import { DeploymentManagerConfig } from './type-extensions';
 import { Address, Alias } from './Types';
-import { Cache } from './Cache';
 
 export type AliasFunction = (contract: Contract) => Promise<string>;
 export type AliasTemplateString = string;
@@ -42,7 +39,7 @@ export function getRelationConfig(
     return baseRelationConfigMap;
   }
   throw new Error(
-     `Must set \`relationConfigMap\` key of \`deploymentManager\` in Hardhat config to use spider.`
+    `Must set \`relationConfigMap\` key of \`deploymentManager\` in Hardhat config to use spider.`
   );
 }
 
@@ -92,7 +89,7 @@ export async function readField(contract: Contract, fieldKey: FieldKey): Promise
     let val = await readKey(contract, fieldKey.key);
     return asAddressArray(val, fieldKey.key);
   } else if (fieldKey.getter) {
-    return asAddressArray(await fieldKey.getter(contract), "custom function");
+    return asAddressArray(await fieldKey.getter(contract), 'custom function');
   } else {
     throw new Error(`Unknown or invalid field key ${JSON.stringify(fieldKey)}`);
   }
