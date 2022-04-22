@@ -36,7 +36,7 @@ describe('CometExt', function () {
       await comet.setBasePrincipal(user.address, -100e6); // borrow of $100 USDC
 
       const borrowBalanceOf = await comet.borrowBalanceOf(user.address);
-      expect(borrowBalanceOf).to.eq(300e6) // baseSupplyIndex = 3e15
+      expect(borrowBalanceOf).to.eq(300e6); // baseSupplyIndex = 3e15
     });
 
     it('returns 0 when principal amount is positive', async () => {

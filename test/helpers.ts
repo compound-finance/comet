@@ -6,12 +6,10 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
   CometExt,
   CometExt__factory,
-  CometHarness,
   CometHarness__factory,
   CometHarnessInterface as Comet,
   CometRewards,
   CometRewards__factory,
-  EvilToken,
   EvilToken__factory,
   FaucetToken,
   FaucetToken__factory,
@@ -60,7 +58,7 @@ export type ProtocolOpts = {
       factory?: FaucetToken__factory | EvilToken__factory;
     };
   };
-  symbol?: string,
+  symbol?: string;
   governor?: SignerWithAddress;
   pauseGuardian?: SignerWithAddress;
   extensionDelegate?: CometExt;
@@ -100,17 +98,17 @@ export type Protocol = {
 };
 
 export type ConfiguratorAndProtocol = {
-  governor: SignerWithAddress,
-  configurator: Configurator,
-  configuratorProxy: TransparentUpgradeableConfiguratorProxy,
-  proxyAdmin: CometProxyAdmin,
-  cometFactory: CometFactory,
-  comet: Comet,
-  cometProxy: TransparentUpgradeableProxy,
+  governor: SignerWithAddress;
+  configurator: Configurator;
+  configuratorProxy: TransparentUpgradeableConfiguratorProxy;
+  proxyAdmin: CometProxyAdmin;
+  cometFactory: CometFactory;
+  comet: Comet;
+  cometProxy: TransparentUpgradeableProxy;
   tokens: {
     [symbol: string]: FaucetToken;
-  },
-  users: SignerWithAddress[]
+  };
+  users: SignerWithAddress[];
 }
 
 export type RewardsOpts = {
@@ -270,7 +268,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     baseMinForRewards,
     baseBorrowMin,
     targetReserves,
-    assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], i) => {
+    assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], _i) => {
       if (symbol != base) {
         acc.push({
           asset: tokens[symbol].address,
@@ -332,7 +330,6 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   const pauseGuardian = opts.pauseGuardian || signers[1];
   const users = signers.slice(2); // guaranteed to not be governor or pause guardian
   const base = opts.base || 'USDC';
-  const reward = opts.reward || 'COMP';
   const kink = dfn(opts.kink, exp(0.8, 18));
   const perYearInterestRateBase = dfn(opts.interestRateBase, exp(0.005, 18));
   const perYearInterestRateSlopeLow = dfn(opts.interestRateSlopeLow, exp(0.1, 18));
@@ -375,7 +372,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     baseMinForRewards,
     baseBorrowMin,
     targetReserves,
-    assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], i) => {
+    assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], _i) => {
       if (symbol != base) {
         acc.push({
           asset: tokens[symbol].address,
@@ -479,11 +476,11 @@ export async function baseBalanceOf(comet: CometInterface, account: string): Pro
 
 type Portfolio = {
   internal: {
-    [symbol: string]: BigInt,
-  },
+    [symbol: string]: BigInt;
+  };
   external: {
-    [symbol: string]: BigInt,
-  }
+    [symbol: string]: BigInt;
+  };
 }
 
 export async function portfolio({ comet, base, tokens }, account): Promise<Portfolio>  {

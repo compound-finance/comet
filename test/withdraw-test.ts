@@ -7,20 +7,20 @@ describe('withdrawTo', function () {
     const { comet, tokens, users: [alice, bob] } = protocol;
     const { USDC } = tokens;
 
-    const i0 = await USDC.allocateTo(comet.address, 100e6);
-    const t0 = await setTotalsBasic(comet, {
+    const _i0 = await USDC.allocateTo(comet.address, 100e6);
+    await setTotalsBasic(comet, {
       totalSupplyBase: 100e6,
     });
 
-    const i1 = await comet.setBasePrincipal(bob.address, 100e6);
+    const _i1 = await comet.setBasePrincipal(bob.address, 100e6);
     const cometAsB = comet.connect(bob);
 
     const p0 = await portfolio(protocol, alice.address);
     const q0 = await portfolio(protocol, bob.address);
     const s0 = await wait(cometAsB.withdrawTo(alice.address, USDC.address, 100e6));
     const t1 = await comet.totalsBasic();
-    const p1 = await portfolio(protocol, alice.address)
-    const q1 = await portfolio(protocol, bob.address)
+    const p1 = await portfolio(protocol, alice.address);
+    const q1 = await portfolio(protocol, bob.address);
 
     expect(event(s0, 0)).to.be.deep.equal({
       Transfer: {
@@ -62,21 +62,21 @@ describe('withdrawTo', function () {
     const { comet, tokens, users: [alice, bob] } = protocol;
     const { COMP } = tokens;
 
-    const i0 = await COMP.allocateTo(comet.address, 8e8);
+    const _i0 = await COMP.allocateTo(comet.address, 8e8);
     const t0 = Object.assign({}, await comet.totalsCollateral(COMP.address), {
       totalSupplyAsset: 8e8,
     });
-    const b0 = await wait(comet.setTotalsCollateral(COMP.address, t0));
+    const _b0 = await wait(comet.setTotalsCollateral(COMP.address, t0));
 
-    const i1 = await comet.setCollateralBalance(bob.address, COMP.address, 8e8);
+    const _i1 = await comet.setCollateralBalance(bob.address, COMP.address, 8e8);
     const cometAsB = comet.connect(bob);
 
     const p0 = await portfolio(protocol, alice.address);
     const q0 = await portfolio(protocol, bob.address);
     const s0 = await wait(cometAsB.withdrawTo(alice.address, COMP.address, 8e8));
     const t1 = await comet.totalsCollateral(COMP.address);
-    const p1 = await portfolio(protocol, alice.address)
-    const q1 = await portfolio(protocol, bob.address)
+    const p1 = await portfolio(protocol, alice.address);
+    const q1 = await portfolio(protocol, bob.address);
 
     expect(event(s0, 0)).to.be.deep.equal({
       Transfer: {
@@ -112,7 +112,7 @@ describe('withdrawTo', function () {
     const { USDC } = tokens;
 
     await USDC.allocateTo(comet.address, 100e6);
-    const totals0 = await setTotalsBasic(comet, {
+    const _totals0 = await setTotalsBasic(comet, {
       baseSupplyIndex: 2e15,
       totalSupplyBase: 50e6, // 100e6 in present value
     });
@@ -125,8 +125,8 @@ describe('withdrawTo', function () {
 
     await wait(cometAsB.withdrawTo(alice.address, USDC.address, 100e6));
     const totals1 = await comet.totalsBasic();
-    const alice1 = await portfolio(protocol, alice.address)
-    const bob1 = await portfolio(protocol, bob.address)
+    const alice1 = await portfolio(protocol, alice.address);
+    const bob1 = await portfolio(protocol, bob.address);
 
     expect(alice0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(alice0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
@@ -145,8 +145,8 @@ describe('withdrawTo', function () {
     const { comet, tokens, users: [alice, bob] } = protocol;
     const { USDC } = tokens;
 
-    const i0 = await USDC.allocateTo(comet.address, 100e6);
-    const i1 = await comet.setBasePrincipal(bob.address, 100e6);
+    const _i0 = await USDC.allocateTo(comet.address, 100e6);
+    const _i1 = await comet.setBasePrincipal(bob.address, 100e6);
     const cometAsB = comet.connect(bob);
 
     await expect(cometAsB.withdrawTo(alice.address, USDC.address, 100e6)).to.be.reverted;
@@ -157,8 +157,8 @@ describe('withdrawTo', function () {
     const { comet, tokens, users: [alice, bob] } = protocol;
     const { COMP } = tokens;
 
-    const i0 = await COMP.allocateTo(comet.address, 8e8);
-    const i1 = await comet.setCollateralBalance(bob.address, COMP.address, 8e8);
+    const _i0 = await COMP.allocateTo(comet.address, 8e8);
+    const _i1 = await comet.setCollateralBalance(bob.address, COMP.address, 8e8);
     const cometAsB = comet.connect(bob);
 
     await expect(cometAsB.withdrawTo(alice.address, COMP.address, 8e8)).to.be.reverted;
@@ -168,7 +168,7 @@ describe('withdrawTo', function () {
     const protocol = await makeProtocol();
     const { comet, users: [alice, bob], unsupportedToken: USUP } = protocol;
 
-    const i0 = await USUP.allocateTo(comet.address, 1);
+    const _i0 = await USUP.allocateTo(comet.address, 1);
     const cometAsB = comet.connect(bob);
 
     await expect(cometAsB.withdrawTo(alice.address, USUP.address, 1)).to.be.reverted;
@@ -197,14 +197,11 @@ describe('withdrawTo', function () {
     await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
 
     let t0 = await comet.totalsBasic();
-    t0 = await setTotalsBasic(comet, {
+    await setTotalsBasic(comet, {
       baseBorrowIndex: t0.baseBorrowIndex.mul(2),
     });
 
     await comet.connect(alice).withdrawTo(bob.address, USDC.address, 1e6);
-
-    const t1 = await comet.totalsBasic();
-    const baseIndexScale = await comet.baseIndexScale();
 
     expect(await baseBalanceOf(comet, alice.address)).to.eq(BigInt(-1e6));
     expect(await USDC.balanceOf(bob.address)).to.eq(1e6);
@@ -214,21 +211,21 @@ describe('withdrawTo', function () {
 describe('withdraw', function () {
   it('withdraws to sender by default', async () => {
     const protocol = await makeProtocol({base: 'USDC'});
-    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { comet, tokens, users: [bob] } = protocol;
     const { USDC } = tokens;
 
-    const i0 = await USDC.allocateTo(comet.address, 100e6);
-    const t0 = await setTotalsBasic(comet, {
+    const _i0 = await USDC.allocateTo(comet.address, 100e6);
+    const _t0 = await setTotalsBasic(comet, {
       totalSupplyBase: 100e6,
     });
 
-    const i1 = await comet.setBasePrincipal(bob.address, 100e6);
+    const _i1 = await comet.setBasePrincipal(bob.address, 100e6);
     const cometAsB = comet.connect(bob);
 
     const q0 = await portfolio(protocol, bob.address);
-    const s0 = await wait(cometAsB.withdraw(USDC.address, 100e6));
-    const t1 = await comet.totalsBasic();
-    const q1 = await portfolio(protocol, bob.address)
+    const _s0 = await wait(cometAsB.withdraw(USDC.address, 100e6));
+    const _t1 = await comet.totalsBasic();
+    const q1 = await portfolio(protocol, bob.address);
 
     expect(q0.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(q0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
@@ -238,7 +235,7 @@ describe('withdraw', function () {
 
   it('reverts if withdraw is paused', async () => {
     const protocol = await makeProtocol({base: 'USDC'});
-    const { comet, tokens, pauseGuardian, users: [alice, bob] } = protocol;
+    const { comet, tokens, pauseGuardian, users: [bob] } = protocol;
     const { USDC } = tokens;
 
     await USDC.allocateTo(comet.address, 100e6);
@@ -252,7 +249,7 @@ describe('withdraw', function () {
   });
 
   it('reverts if withdraw amount is less than baseBorrowMin', async () => {
-    const { comet, tokens, users: [alice, bob] } = await makeProtocol({
+    const { comet, tokens, users: [alice] } = await makeProtocol({
       baseBorrowMin: exp(1,6)
     });
     const { USDC } = tokens;
@@ -263,7 +260,7 @@ describe('withdraw', function () {
   });
 
   it('reverts if base withdraw amount is not collateralzed', async () => {
-    const { comet, tokens, users: [alice, bob] } = await makeProtocol();
+    const { comet, tokens, users: [alice] } = await makeProtocol();
     const { USDC } = tokens;
 
     await expect(
@@ -393,23 +390,23 @@ describe('withdrawFrom', function () {
     const { comet, tokens, users: [alice, bob, charlie] } = protocol;
     const { COMP } = tokens;
 
-    const i0 = await COMP.allocateTo(comet.address, 7);
+    const _i0 = await COMP.allocateTo(comet.address, 7);
     const t0 = Object.assign({}, await comet.totalsCollateral(COMP.address), {
       totalSupplyAsset: 7,
     });
-    const b0 = await wait(comet.setTotalsCollateral(COMP.address, t0));
+    const _b0 = await wait(comet.setTotalsCollateral(COMP.address, t0));
 
-    const i1 = await comet.setCollateralBalance(bob.address, COMP.address, 7);
+    const _i1 = await comet.setCollateralBalance(bob.address, COMP.address, 7);
 
     const cometAsB = comet.connect(bob);
     const cometAsC = comet.connect(charlie);
 
-    const a1 = await wait(cometAsB.allow(charlie.address, true));
+    const _a1 = await wait(cometAsB.allow(charlie.address, true));
     const p0 = await portfolio(protocol, alice.address);
     const q0 = await portfolio(protocol, bob.address);
-    const s0 = await wait(cometAsC.withdrawFrom(bob.address, alice.address, COMP.address, 7));
-    const p1 = await portfolio(protocol, alice.address)
-    const q1 = await portfolio(protocol, bob.address)
+    const _s0 = await wait(cometAsC.withdrawFrom(bob.address, alice.address, COMP.address, 7));
+    const p1 = await portfolio(protocol, alice.address);
+    const q1 = await portfolio(protocol, bob.address);
 
     expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(p0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});

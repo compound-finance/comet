@@ -1,4 +1,4 @@
-import { Comet, ethers, expect, exp, makeProtocol, wait } from './helpers';
+import { Comet, expect, makeProtocol } from './helpers';
 
 describe('Pause Guardian', function () {
   it('Should pause supply', async function () {
