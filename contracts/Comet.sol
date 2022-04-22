@@ -25,13 +25,14 @@ contract Comet is CometCore {
 
     error Absurd();
     error AlreadyInitialized();
-    error BadAmount();
     error BadAsset();
     error BadDecimals();
     error BadDiscount();
+    error BadKink();
     error BadLiquidationFactor();
     error BadMinimum();
     error BadPrice();
+    error BadReserveRate();
     error BorrowTooSmall();
     error BorrowCFTooLarge();
     error InsufficientReserves();
@@ -173,7 +174,9 @@ contract Comet is CometCore {
         if (config.assetConfigs.length > MAX_ASSETS) revert TooManyAssets();
         if (config.baseMinForRewards == 0) revert BadMinimum();
         if (AggregatorV3Interface(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
-        // XXX other sanity checks? for rewards?
+        if (config.reserveRate > FACTOR_SCALE) revert BadReserveRate();
+        if (config.kink > FACTOR_SCALE) revert BadKink();
+        // XXX sanity checks for rewards?
 
         // Copy configuration
         unchecked {
@@ -187,6 +190,7 @@ contract Comet is CometCore {
             decimals = decimals_;
             baseScale = uint64(10 ** decimals_);
             trackingIndexScale = config.trackingIndexScale;
+            if (baseScale < BASE_ACCRUAL_SCALE) revert BadDecimals();
             accrualDescaleFactor = baseScale / BASE_ACCRUAL_SCALE;
 
             baseMinForRewards = config.baseMinForRewards;
