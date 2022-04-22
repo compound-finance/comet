@@ -96,16 +96,6 @@ contract CometExt is CometCore {
     }
 
     /**
-      * @notice Query the current base balance of an account
-      * @dev Note: does not update interest indices before calculating
-      * @param account The account whose balance to query
-      * @return The present day base balance of the account
-      */
-    function baseBalanceOf(address account) external view returns (int104) {
-        return presentValue(userBasic[account].principal);
-    }
-
-    /**
      * @notice Query the current collateral balance of an account
      * @param account The account whose balance to query
      * @param asset The collateral asset whi

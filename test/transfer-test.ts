@@ -1,5 +1,4 @@
-import { event, expect, exp, makeProtocol, portfolio, setTotalsBasic, wait } from './helpers';
-import { BigNumber } from "ethers";
+import { baseBalanceOf, event, expect, exp, makeProtocol, portfolio, setTotalsBasic, wait } from './helpers';
 
 describe('transfer', function () {
   it('transfers base from sender if the asset is base', async () => {
@@ -148,7 +147,7 @@ describe('transfer', function () {
 
     const t1 = await comet.totalsBasic();
 
-    expect(await comet.baseBalanceOf(alice.address)).to.eq(-100e6);
+    expect(await baseBalanceOf(comet, alice.address)).to.eq(BigInt(-100e6));
   });
 
   it('cant borrow less than the minimum', async () => {

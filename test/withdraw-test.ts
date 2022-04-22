@@ -1,6 +1,5 @@
-import { BigNumber } from "ethers";
 import { EvilToken, EvilToken__factory, FaucetToken } from '../build/types';
-import { ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, setTotalsBasic, wait } from './helpers';
+import { baseBalanceOf, ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, setTotalsBasic, wait } from './helpers';
 
 describe('withdrawTo', function () {
   it('withdraws base from sender if the asset is base', async () => {
@@ -207,7 +206,7 @@ describe('withdrawTo', function () {
     const t1 = await comet.totalsBasic();
     const baseIndexScale = await comet.baseIndexScale();
 
-    expect(await comet.baseBalanceOf(alice.address)).to.eq(-1e6);
+    expect(await baseBalanceOf(comet, alice.address)).to.eq(BigInt(-1e6));
     expect(await USDC.balanceOf(bob.address)).to.eq(1e6);
   });
 });
@@ -332,9 +331,9 @@ describe('withdraw', function () {
 
       // no USDC transferred
       expect(await USDC.balanceOf(comet.address)).to.eq(100e6);
-      expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
+      expect(await baseBalanceOf(comet, alice.address)).to.eq(0n);
       expect(await USDC.balanceOf(alice.address)).to.eq(0);
-      expect(await comet.baseBalanceOf(bob.address)).to.eq(0);
+      expect(await baseBalanceOf(comet, bob.address)).to.eq(0n);
       expect(await USDC.balanceOf(bob.address)).to.eq(0);
     });
 
@@ -379,9 +378,9 @@ describe('withdraw', function () {
 
       // no USDC transferred
       expect(await USDC.balanceOf(comet.address)).to.eq(100e6);
-      expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
+      expect(await baseBalanceOf(comet, alice.address)).to.eq(0n);
       expect(await USDC.balanceOf(alice.address)).to.eq(0);
-      expect(await comet.baseBalanceOf(bob.address)).to.eq(0);
+      expect(await baseBalanceOf(comet, bob.address)).to.eq(0n);
       expect(await USDC.balanceOf(bob.address)).to.eq(0);
     });
   });

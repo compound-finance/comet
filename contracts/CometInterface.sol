@@ -62,7 +62,6 @@ abstract contract CometInterface is CometCore, ERC20 {
     function getBorrowRate() virtual external view returns (uint64);
     function getUtilization() virtual external view returns (uint);
 
-    function baseBalanceOf(address account) virtual external view returns (int104);
     function collateralBalanceOf(address account, address asset) virtual external view returns (uint128);
     function borrowBalanceOf(address account) virtual external view returns (uint256);
     function baseTrackingAccrued(address account) virtual external view returns (uint64);

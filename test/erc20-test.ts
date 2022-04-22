@@ -1,4 +1,4 @@
-import { ethers, event, expect, makeProtocol, setTotalsBasic, wait } from './helpers';
+import { baseBalanceOf, ethers, event, expect, makeProtocol, setTotalsBasic, wait } from './helpers';
 
 describe('erc20', function () {
   it('has correct name', async () => {
@@ -69,7 +69,7 @@ describe('erc20', function () {
       users: [alice, bob],
     } = await makeProtocol();
 
-    expect(await comet.baseBalanceOf(bob.address)).to.eq(0);
+    expect(await baseBalanceOf(comet, bob.address)).to.eq(0n);
 
     await comet.setBasePrincipal(alice.address, 50e6);
     await setTotalsBasic(comet, {
@@ -78,8 +78,8 @@ describe('erc20', function () {
 
     const tx = await wait(comet.connect(alice).transfer(bob.address, 100e6));
 
-    expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
-    expect(await comet.baseBalanceOf(bob.address)).to.eq(100e6);
+    expect(await baseBalanceOf(comet, alice.address)).to.eq(0n);
+    expect(await baseBalanceOf(comet, bob.address)).to.eq(BigInt(100e6));
     expect(event(tx, 0)).to.be.deep.equal({
       Transfer: {
         from: alice.address,
@@ -103,8 +103,8 @@ describe('erc20', function () {
 
       await comet.connect(alice).transferFrom(alice.address, bob.address, 100e6)
 
-      expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
-      expect(await comet.baseBalanceOf(bob.address)).to.eq(100e6);
+      expect(await baseBalanceOf(comet, alice.address)).to.eq(0n);
+      expect(await baseBalanceOf(comet, bob.address)).to.eq(BigInt(100e6));
     });
 
     it('reverts ERC20 transferFrom without approval', async () => {
@@ -139,8 +139,8 @@ describe('erc20', function () {
       // bob can now transfer funds from alice
       await comet.connect(bob).transferFrom(alice.address, bob.address, 100e6);
 
-      expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
-      expect(await comet.baseBalanceOf(bob.address)).to.eq(100e6);
+      expect(await baseBalanceOf(comet, alice.address)).to.eq(0n);
+      expect(await baseBalanceOf(comet, bob.address)).to.eq(BigInt(100e6));
     });
 
     it('reverts ERC20 transferFrom with revoked approval', async () => {
