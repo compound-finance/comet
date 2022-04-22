@@ -55,7 +55,7 @@ describe('supplyTo', function () {
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(120000);
   });
 
-  it.only('user supply is greater than total supply', async () => {
+  it('user supply is greater than total supply', async () => {
     const protocol = await makeProtocol({base: 'USDC'});
     const { comet, tokens, users: [alice, bob] } = protocol;
     const { USDC } = tokens;
@@ -80,7 +80,7 @@ describe('supplyTo', function () {
     expect(p0.external).to.be.deep.equal({USDC: 10n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(p1.internal).to.be.deep.equal({USDC: 9n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(p1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(t1.totalSupplyBase).to.be.equal(108);
+    expect(t1.totalSupplyBase).to.be.equal(109); // This will be 108 without the fix to the rounding bug
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(120000);
   });

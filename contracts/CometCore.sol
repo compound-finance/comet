@@ -93,6 +93,31 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
     }
 
     /**
+     * @dev The positive present supply balance if positive or the negative borrow balance if negative
+     */
+    function presentValueWithPrecision(int104 principalValue_, uint scale) internal view returns (int) {
+        if (principalValue_ >= 0) {
+            return int(presentValueSupplyWithPrecision(baseSupplyIndex, unsigned104(principalValue_), scale));
+        } else {
+            return -int(presentValueBorrowWithPrecision(baseBorrowIndex, unsigned104(-principalValue_), scale));
+        }
+    }
+
+    /**
+     * @dev The principal amount projected forward by the supply index
+     */
+    function presentValueSupplyWithPrecision(uint64 baseSupplyIndex_, uint104 principalValue_, uint scale) internal pure returns (uint) {
+        return uint(principalValue_) * baseSupplyIndex_ * scale / BASE_INDEX_SCALE;
+    }
+
+    /**
+     * @dev The principal amount projected forward by the borrow index
+     */
+    function presentValueBorrowWithPrecision(uint64 baseBorrowIndex_, uint104 principalValue_, uint scale) internal pure returns (uint) {
+        return uint(principalValue_) * baseBorrowIndex_ * scale / BASE_INDEX_SCALE;
+    }
+
+    /**
      * @dev The positive principal if positive or the negative principal if negative
      */
     function principalValue(int104 presentValue_) internal view returns (int104) {
@@ -115,5 +140,30 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
      */
     function principalValueBorrow(uint64 baseBorrowIndex_, uint104 presentValue_) internal pure returns (uint104) {
         return uint104((uint(presentValue_) * BASE_INDEX_SCALE + baseBorrowIndex_ - 1) / baseBorrowIndex_);
+    }
+
+    /**
+     * @dev The positive principal if positive or the negative principal if negative
+     */
+    function principalValueWithPrecision(int presentValue_, uint scale) internal view returns (int104) {
+        if (presentValue_ >= 0) {
+            return signed104(principalValueSupplyWithPrecision(baseSupplyIndex, unsigned256(presentValue_), scale));
+        } else {
+            return -signed104(principalValueBorrowWithPrecision(baseBorrowIndex, unsigned256(-presentValue_), scale));
+        }
+    }
+
+    /**
+     * @dev The present value projected backward by the supply index (rounded down)
+     */
+    function principalValueSupplyWithPrecision(uint64 baseSupplyIndex_, uint presentValue_, uint scale) internal pure returns (uint104) {
+        return uint104((uint(presentValue_) * BASE_INDEX_SCALE) / baseSupplyIndex_ / scale);
+    }
+
+    /**
+     * @dev The present value projected backward by the borrow index (rounded up)
+     */
+    function principalValueBorrowWithPrecision(uint64 baseBorrowIndex_, uint presentValue_, uint scale) internal pure returns (uint104) {
+        return uint104((uint(presentValue_) * BASE_INDEX_SCALE + baseBorrowIndex_ - 1) / baseBorrowIndex_ / scale);
     }
 }

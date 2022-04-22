@@ -666,18 +666,18 @@ contract Comet is CometCore {
     /**
      * @dev The amounts broken into repay and supply amounts, given negative balance
      */
-    function repayAndSupplyAmount(int104 balance, uint104 amount) internal pure returns (uint104, uint104) {
-        uint104 repayAmount = balance < 0 ? min(unsigned104(-balance), amount) : 0;
-        uint104 supplyAmount = amount - repayAmount;
+    function repayAndSupplyAmount(int balance, uint amount) internal pure returns (uint, uint) {
+        uint repayAmount = balance < 0 ? min(unsigned256(-balance), amount) : 0;
+        uint supplyAmount = amount - repayAmount;
         return (repayAmount, supplyAmount);
     }
 
     /**
      * @dev The amounts broken into withdraw and borrow amounts, given positive balance
      */
-    function withdrawAndBorrowAmount(int104 balance, uint104 amount) internal pure returns (uint104, uint104) {
-        uint104 withdrawAmount = balance > 0 ? min(unsigned104(balance), amount) : 0;
-        uint104 borrowAmount = amount - withdrawAmount;
+    function withdrawAndBorrowAmount(int balance, uint amount) internal pure returns (uint, uint) {
+        uint withdrawAmount = balance > 0 ? min(unsigned256(balance), amount) : 0;
+        uint borrowAmount = amount - withdrawAmount;
         return (withdrawAmount, borrowAmount);
     }
 
@@ -898,23 +898,24 @@ contract Comet is CometCore {
 
         accrueInternal();
 
-        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+        uint scaledAmount = amount * FACTOR_SCALE;
+        uint totalSupplyBalance = presentValueSupplyWithPrecision(baseSupplyIndex, totalSupplyBase, FACTOR_SCALE);
+        uint totalBorrowBalance = presentValueBorrowWithPrecision(baseBorrowIndex, totalBorrowBase, FACTOR_SCALE);
 
         UserBasic memory dstUser = userBasic[dst];
-        int104 dstBalance = presentValue(dstUser.principal);
+        int dstBalance = presentValueWithPrecision(dstUser.principal, FACTOR_SCALE);
 
-        (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, amount);
+        (uint repayAmount, uint supplyAmount) = repayAndSupplyAmount(dstBalance, scaledAmount);
 
         totalSupplyBalance += supplyAmount;
         totalBorrowBalance -= repayAmount;
 
-        dstBalance += signed104(amount);
+        dstBalance += signed256(scaledAmount);
 
-        totalSupplyBase = principalValueSupply(baseSupplyIndex, totalSupplyBalance);
-        totalBorrowBase = principalValueBorrow(baseBorrowIndex, totalBorrowBalance);
+        totalSupplyBase = principalValueSupplyWithPrecision(baseSupplyIndex, totalSupplyBalance, FACTOR_SCALE);
+        totalBorrowBase = principalValueBorrowWithPrecision(baseBorrowIndex, totalBorrowBalance, FACTOR_SCALE);
 
-        updateBaseBalance(dst, dstUser, principalValue(dstBalance));
+        updateBaseBalance(dst, dstUser, principalValueWithPrecision(dstBalance, FACTOR_SCALE));
 
         emit Supply(from, dst, amount);
         emit Transfer(address(0), dst, amount);
@@ -1007,32 +1008,33 @@ contract Comet is CometCore {
     function transferBase(address src, address dst, uint104 amount) internal {
         accrueInternal();
 
-        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+        uint scaledAmount = amount * FACTOR_SCALE;
+        uint totalSupplyBalance = presentValueSupplyWithPrecision(baseSupplyIndex, totalSupplyBase, FACTOR_SCALE);
+        uint totalBorrowBalance = presentValueBorrowWithPrecision(baseBorrowIndex, totalBorrowBase, FACTOR_SCALE);
 
         UserBasic memory srcUser = userBasic[src];
         UserBasic memory dstUser = userBasic[dst];
-        int104 srcBalance = presentValue(srcUser.principal);
-        int104 dstBalance = presentValue(dstUser.principal);
+        int srcBalance = presentValueWithPrecision(srcUser.principal, FACTOR_SCALE);
+        int dstBalance = presentValueWithPrecision(dstUser.principal, FACTOR_SCALE);
 
-        (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcBalance, amount);
-        (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, amount);
+        (uint withdrawAmount, uint borrowAmount) = withdrawAndBorrowAmount(srcBalance, scaledAmount);
+        (uint repayAmount, uint supplyAmount) = repayAndSupplyAmount(dstBalance, scaledAmount);
 
         // Note: Instead of `totalSupplyBalance += supplyAmount - withdrawAmount` to avoid underflow errors.
         totalSupplyBalance = totalSupplyBalance + supplyAmount - withdrawAmount;
         totalBorrowBalance = totalBorrowBalance + borrowAmount - repayAmount;
 
-        srcBalance -= signed104(amount);
-        dstBalance += signed104(amount);
+        srcBalance -= signed256(scaledAmount);
+        dstBalance += signed256(scaledAmount);
 
-        totalSupplyBase = principalValueSupply(baseSupplyIndex, totalSupplyBalance);
-        totalBorrowBase = principalValueBorrow(baseBorrowIndex, totalBorrowBalance);
+        totalSupplyBase = principalValueSupplyWithPrecision(baseSupplyIndex, totalSupplyBalance, FACTOR_SCALE);
+        totalBorrowBase = principalValueBorrowWithPrecision(baseBorrowIndex, totalBorrowBalance, FACTOR_SCALE);
 
-        updateBaseBalance(src, srcUser, principalValue(srcBalance));
-        updateBaseBalance(dst, dstUser, principalValue(dstBalance));
+        updateBaseBalance(src, srcUser, principalValueWithPrecision(srcBalance, FACTOR_SCALE));
+        updateBaseBalance(dst, dstUser, principalValueWithPrecision(dstBalance, FACTOR_SCALE));
 
         if (srcBalance < 0) {
-            if (uint104(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
+            if ((uint256(-srcBalance) / FACTOR_SCALE) < baseBorrowMin) revert BorrowTooSmall();
             if (!isBorrowCollateralized(src)) revert NotCollateralized();
         }
 
@@ -1111,26 +1113,27 @@ contract Comet is CometCore {
     function withdrawBase(address src, address to, uint104 amount) internal {
         accrueInternal();
 
-        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+        uint scaledAmount = amount * FACTOR_SCALE;
+        uint totalSupplyBalance = presentValueSupplyWithPrecision(baseSupplyIndex, totalSupplyBase, FACTOR_SCALE);
+        uint totalBorrowBalance = presentValueBorrowWithPrecision(baseBorrowIndex, totalBorrowBase, FACTOR_SCALE);
 
         UserBasic memory srcUser = userBasic[src];
-        int104 srcBalance = presentValue(srcUser.principal);
+        int srcBalance = presentValueWithPrecision(srcUser.principal, FACTOR_SCALE);
 
-        (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcBalance, amount);
+        (uint withdrawAmount, uint borrowAmount) = withdrawAndBorrowAmount(srcBalance, scaledAmount);
 
         totalSupplyBalance -= withdrawAmount;
         totalBorrowBalance += borrowAmount;
 
-        srcBalance -= signed104(amount);
+        srcBalance -= signed256(scaledAmount);
 
-        totalSupplyBase = principalValueSupply(baseSupplyIndex, totalSupplyBalance);
-        totalBorrowBase = principalValueBorrow(baseBorrowIndex, totalBorrowBalance);
+        totalSupplyBase = principalValueSupplyWithPrecision(baseSupplyIndex, totalSupplyBalance, FACTOR_SCALE);
+        totalBorrowBase = principalValueBorrowWithPrecision(baseBorrowIndex, totalBorrowBalance, FACTOR_SCALE);
 
-        updateBaseBalance(src, srcUser, principalValue(srcBalance));
+        updateBaseBalance(src, srcUser, principalValueWithPrecision(srcBalance, FACTOR_SCALE));
 
         if (srcBalance < 0) {
-            if (uint104(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
+            if ((uint256(-srcBalance) / FACTOR_SCALE) < baseBorrowMin) revert BorrowTooSmall();
             if (!isBorrowCollateralized(src)) revert NotCollateralized();
         }
 
