@@ -1,12 +1,12 @@
 import * as fs from 'fs/promises';
 import * as nodepath from 'path';
 import { inspect } from 'util';
-
-import { Address, BuildFile } from './Types';
 import { fileExists, objectFromMap, objectToMap } from './Utils';
 
 export type FileSpec = string | string[] | { rel: string | string[] };
 
+// XXX type variables mistakenly used as parameter names
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function curry<A, B, C>(f: (A) => B, g: (B) => C): (A) => C {
   return (x) => g(f(x));
 }
@@ -96,7 +96,7 @@ export class Cache {
         }
       }
     }
-    throw new Error("unreachable");
+    throw new Error('unreachable');
   }
 
   private async putDisk<T>(spec: FileSpec, data: T, transformer: (T) => string) {

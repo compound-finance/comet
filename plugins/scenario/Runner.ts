@@ -7,7 +7,7 @@ export type Address = string;
 
 export type ResultFn<T, U, R> = (base: ForkSpec, scenario: Scenario<T, U, R>, err?: any) => void;
 
-export interface Config<T> {
+export interface Config {
   base: ForkSpec;
   world: World;
 }
@@ -21,15 +21,7 @@ function* combos<T>(choices: T[][]): Generator<T[]> {
   }
 }
 
-function bindFunctions(obj: any) {
-  for (let property of Object.getOwnPropertyNames(Object.getPrototypeOf(obj))) {
-    if (typeof obj[property] === 'function') {
-      obj[property] = obj[property].bind(obj);
-    }
-  }
-}
-
-async function identity<T>(ctx: T, world: World): Promise<T> {
+async function identity<T>(ctx: T, _world: World): Promise<T> {
   return ctx;
 }
 
@@ -46,10 +38,10 @@ function mapSolution<T>(s: Solution<T> | Solution<T>[] | null): Solution<T>[] {
 }
 
 export class Runner<T, U, R> {
-  config: Config<T>;
+  config: Config;
   worldSnapshot: string;
 
-  constructor(config: Config<T>) {
+  constructor(config: Config) {
     this.config = config;
   }
 

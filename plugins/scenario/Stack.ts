@@ -1,9 +1,9 @@
 
 export interface StackCall {
-  function?: string,
-  file?: string,
-  line?: number,
-  char?: number,
+  function?: string;
+  file?: string;
+  line?: number;
+  char?: number;
 }
 
 export function getStack(skipFrames: number = 1): StackCall[] {

@@ -6,8 +6,8 @@ import { BuildFile } from './Types';
 import { debug } from './Utils';
 
 type VerifyArgs =
-  | { via: 'artifacts'; address: string; constructorArguments: any }
-  | { via: 'buildfile'; contract: Contract; buildFile: BuildFile; deployArgs: any[] };
+  | { via: 'artifacts', address: string, constructorArguments: any }
+  | { via: 'buildfile', contract: Contract, buildFile: BuildFile, deployArgs: any[] };
 
 export async function verifyContract(
   verifyArgs: VerifyArgs,

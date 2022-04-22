@@ -1,6 +1,5 @@
 import { Address, Alias } from './Types';
 import { Cache } from './Cache';
-import { objectToMap } from './Utils';
 
 export type Aliases = Map<Alias, Address>;
 export type InvertedAliases = Map<Address, Alias[]>;

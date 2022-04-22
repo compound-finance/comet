@@ -11,11 +11,11 @@ import {
   readAlias,
   readField,
 } from './RelationConfig';
-import { Address, Alias, BuildFile, ContractMetadata } from './Types';
+import { Address, Alias, BuildFile } from './Types';
 import { Aliases } from './Aliases';
 import { Proxies } from './Proxies';
 import { Roots } from './Roots';
-import { asArray, cross, debug, getPrimaryContract, objectFromMap, mergeABI } from './Utils';
+import { asArray, cross, debug, getPrimaryContract, mergeABI } from './Utils';
 import { fetchAndCacheContract } from './Import';
 
 function isValidAddress(address: Address): boolean {
@@ -87,8 +87,8 @@ async function runSpider(
 
       let relationConfig = relationConfigMap[contractName] ??
         (typeof aliasTemplate === 'string' ? relationConfigMap[aliasTemplate] : undefined) ?? {
-          relations: {},
-        };
+        relations: {},
+      };
 
       // Relation Config tells us how to keep spidering from here, plus possibly
       // alternative aliases. If we don't have config, we can skip all of this.
@@ -108,7 +108,7 @@ async function runSpider(
         );
 
         if (implDiscovered.length > 0) {
-          [implAddress] = implDiscovered.map(([address, alias]) => address);
+          [implAddress] = implDiscovered.map(([address]) => address);
 
           // Recurse a single step to get implementation
           visited = await runSpider(
@@ -128,7 +128,7 @@ async function runSpider(
               `Failed to spider implementation for ${defaultAlias} at ${implAddress}`
             );
           }
-          const [proxyContractName, proxyContractMetadata] = getPrimaryContract(proxyBuildFile);
+          const [_proxyContractName, proxyContractMetadata] = getPrimaryContract(proxyBuildFile);
 
           // duplicate entries (like constructor) defer to contractMetadata.abi
           const mergedABI = mergeABI(proxyContractMetadata.abi, contractMetadata.abi);
@@ -177,7 +177,7 @@ export async function spider(
   roots: Roots,
   importRetries?: number,
   importRetryDelay?: number
-): Promise<{ cache: Cache; aliases: Aliases; proxies: Proxies }> {
+): Promise<{ cache: Cache, aliases: Aliases, proxies: Proxies }> {
   let discovered: [Address, AliasTemplate][] = [...roots.entries()].map(([alias, address]) => {
     return [address, aliasTemplateFromAlias(alias)];
   });

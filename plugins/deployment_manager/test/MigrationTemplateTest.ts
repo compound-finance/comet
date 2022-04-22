@@ -48,13 +48,13 @@ describe('MigrationTemplate', () => {
     expect(await generateMigration(cache, 'cool', 1)).to.equal('1_cool.ts');
 
     // Try to re-store
-    await expect(generateMigration(cache, 'cool', 1)).to.be.rejectedWith("Migration 1_cool.ts already exists.");
+    await expect(generateMigration(cache, 'cool', 1)).to.be.rejectedWith('Migration 1_cool.ts already exists.');
 
     // Clear the cache
     cache.clearMemory();
 
     // Try to re-store again
-    await expect(generateMigration(cache, 'cool', 1)).to.be.rejectedWith("Migration 1_cool.ts already exists.");
+    await expect(generateMigration(cache, 'cool', 1)).to.be.rejectedWith('Migration 1_cool.ts already exists.');
 
     expect(await cache.readCache({ rel: ['migrations', '1_cool.ts'] }, (x) => x)).to.equal(
       expectedTemplate

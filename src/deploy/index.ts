@@ -38,8 +38,8 @@ export interface DeployedContracts {
   comet: Comet;
   cometProxy: TransparentUpgradeableProxy | null;
   configuratorProxy: TransparentUpgradeableProxy | null;
-  timelock: SimpleTimelock,
-  governor: GovernorSimple,
+  timelock: SimpleTimelock;
+  governor: GovernorSimple;
   tokens?: ERC20[];
 }
 
