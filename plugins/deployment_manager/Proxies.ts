@@ -8,7 +8,7 @@ let proxiesSpec = { rel: 'proxies.json' };
 
 // Reads root information for given deployment
 export async function getProxies(cache: Cache): Promise<Proxies> {
-  return await cache.readMap<Alias, Address>(proxiesSpec);
+  return await cache.readMap<Address>(proxiesSpec);
 }
 
 // Stores new proxies for a given deployment in cache

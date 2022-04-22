@@ -8,7 +8,7 @@ let rootsSpec = { rel: 'roots.json' };
 
 // Reads root information for given deployment
 export async function getRoots(cache: Cache): Promise<Roots> {
-  return await cache.readMap<Alias, Address>(rootsSpec);
+  return await cache.readMap<Address>(rootsSpec);
 }
 
 // Stores new roots for a given deployment in cache

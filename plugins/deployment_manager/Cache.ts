@@ -5,9 +5,7 @@ import { fileExists, objectFromMap, objectToMap } from './Utils';
 
 export type FileSpec = string | string[] | { rel: string | string[] };
 
-// XXX type variables mistakenly used as parameter names
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function curry<A, B, C>(f: (A) => B, g: (B) => C): (A) => C {
+function compose<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C {
   return (x) => g(f(x));
 }
 
@@ -138,12 +136,12 @@ export class Cache {
     }
   }
 
-  async readMap<K, V>(spec: FileSpec): Promise<Map<string, V>> {
-    return await this.readCache(spec, curry<K, string, Map<string, V>>(parseJson, objectToMap));
+  async readMap<V>(spec: FileSpec): Promise<Map<string, V>> {
+    return await this.readCache(spec, compose<string, object, Map<string, V>>(parseJson, objectToMap));
   }
 
   async storeMap<K, V>(spec: FileSpec, map: Map<K, V>) {
-    await this.storeCache(spec, map, curry(objectFromMap, stringifyJson));
+    await this.storeCache(spec, map, compose(objectFromMap, stringifyJson));
   }
 
   clearMemory() {
