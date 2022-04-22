@@ -18,7 +18,7 @@ describe('baseTrackingAccrued', function() {
     await USDC.allocateTo(alice.address, 2e6);
     await USDC.connect(alice).approve(comet.address, 2e6);
 
-    await ethers.provider.send("evm_setAutomine", [false]);
+    await ethers.provider.send('evm_setAutomine', [false]);
 
     // supply once
     await comet.connect(alice).supply(USDC.address, 1e6);
@@ -32,7 +32,7 @@ describe('baseTrackingAccrued', function() {
     // supply again
     await comet.connect(alice).supply(USDC.address, 1e6);
     await ethers.provider.send('evm_mine', [firstSupplyTime + 1]);
-    await ethers.provider.send("evm_setAutomine", [true]);
+    await ethers.provider.send('evm_setAutomine', [true]);
 
     const userBasic2 = await comet.userBasic(alice.address);
     expect(userBasic2.principal).to.eq(2_000_000);
@@ -192,7 +192,7 @@ describe('baseTrackingAccrued', function() {
     expect(userBasic1.principal).to.eq(0);
     expect(userBasic1.baseTrackingAccrued).to.eq(0);
 
-    await ethers.provider.send("evm_setAutomine", [false]);
+    await ethers.provider.send('evm_setAutomine', [false]);
 
     // withdraw base token
     await comet.connect(alice).withdraw(USDC.address, 1e6);
@@ -206,7 +206,7 @@ describe('baseTrackingAccrued', function() {
     // withdraw again
     await comet.connect(alice).withdraw(USDC.address, 1e6);
     await ethers.provider.send('evm_mine', [firstWithdrawTime + 1]);
-    await ethers.provider.send("evm_setAutomine", [true]);
+    await ethers.provider.send('evm_setAutomine', [true]);
 
     const userBasic3 = await comet.userBasic(alice.address);
     expect(userBasic3.principal).to.eq(-2e6);

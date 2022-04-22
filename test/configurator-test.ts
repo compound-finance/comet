@@ -72,7 +72,7 @@ describe('configurator', function () {
   });
 
   it('e2e governance actions from timelock', async () => {
-    const { governor, configurator, configuratorProxy, proxyAdmin, comet, cometProxy, users: [alice] } = await makeConfigurator();
+    const { governor, configurator, configuratorProxy, proxyAdmin, cometProxy, users: [alice] } = await makeConfigurator();
 
     const TimelockFactory = (await ethers.getContractFactory(
       'SimpleTimelock'
@@ -89,9 +89,9 @@ describe('configurator', function () {
 
     // 1. SetGovernor
     // 2. DeployAndUpgradeTo
-    let setGovernorCalldata = ethers.utils.defaultAbiCoder.encode(["address"], [alice.address]);
-    let deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address"], [configuratorProxy.address, cometProxy.address]);
-    await timelock.executeTransactions([configuratorProxy.address, proxyAdmin.address], [0, 0], ["setGovernor(address)", "deployAndUpgradeTo(address,address)"], [setGovernorCalldata, deployAndUpgradeToCalldata]);
+    let setGovernorCalldata = ethers.utils.defaultAbiCoder.encode(['address'], [alice.address]);
+    let deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address'], [configuratorProxy.address, cometProxy.address]);
+    await timelock.executeTransactions([configuratorProxy.address, proxyAdmin.address], [0, 0], ['setGovernor(address)', 'deployAndUpgradeTo(address,address)'], [setGovernorCalldata, deployAndUpgradeToCalldata]);
 
     expect((await configuratorAsProxy.getConfiguration()).governor).to.be.equal(alice.address);
   });

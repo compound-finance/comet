@@ -108,8 +108,8 @@ describe('buyCollateral', function () {
     // Set reserves to -100 wei
     let t0 = await comet.totalsBasic();
     t0 = Object.assign({}, t0, {
-        totalSupplyBase: 100e6,
-        totalBorrowBase: 0n,
+      totalSupplyBase: 100e6,
+      totalBorrowBase: 0n,
     });
     await wait(comet.setTotalsBasic(t0));
 
@@ -270,7 +270,7 @@ describe('buyCollateral', function () {
 
       // 1. normal scenario, USDC base
       const normalProtocol = await makeProtocol({
-        base: "USDC",
+        base: 'USDC',
         assets: {
           USDC: baseTokenArgs,
           WETH: wethArgs,
@@ -286,7 +286,7 @@ describe('buyCollateral', function () {
 
       // 2. malicious scenario, EVIL token is base
       const evilProtocol = await makeProtocol({
-        base: "EVIL",
+        base: 'EVIL',
         assets: {
           EVIL: {
             ...baseTokenArgs,
@@ -363,7 +363,7 @@ describe('buyCollateral', function () {
 
       // perform the supplies for each protocol in the same block, so that the
       // same amount of time elapses for each when calculating interest
-      await ethers.provider.send("evm_setAutomine", [false]);
+      await ethers.provider.send('evm_setAutomine', [false]);
 
       // call supply
       await normalComet
@@ -399,7 +399,7 @@ describe('buyCollateral', function () {
 
       // !important; reenable automine
       await ethers.provider.send('evm_mine', [start + 1000]);
-      await ethers.provider.send("evm_setAutomine", [true]);
+      await ethers.provider.send('evm_setAutomine', [true]);
 
       const normalTotalsBasic = await normalComet.totalsBasic();
       const normalTotalsCollateral = await normalComet.totalsCollateral(normalWETH.address);

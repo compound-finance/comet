@@ -21,7 +21,7 @@ describe('quoteCollateral', function () {
       }
     });
     const { comet, tokens } = protocol;
-    const { USDC, COMP } = tokens;
+    const { COMP } = tokens;
 
     const baseAmount = exp(200, 6);
     const q0 = await comet.quoteCollateral(COMP.address, baseAmount);
@@ -56,7 +56,7 @@ describe('quoteCollateral', function () {
       }
     });
     const { comet, tokens } = protocol;
-    const { USDC, COMP } = tokens;
+    const { COMP } = tokens;
 
     const baseAmount = 0n;
     const q0 = await comet.quoteCollateral(COMP.address, baseAmount);
@@ -122,7 +122,7 @@ describe('quoteCollateral', function () {
       }
     });
     const { comet, tokens } = protocol;
-    const { USDC, COMP } = tokens;
+    const { COMP } = tokens;
 
     const baseAmount = exp(810, 6);
     const q0 = await comet.quoteCollateral(COMP.address, baseAmount);
@@ -153,7 +153,7 @@ describe('quoteCollateral', function () {
       }
     });
     const { comet, tokens } = protocol;
-    const { USDC, COMP } = tokens;
+    const { COMP } = tokens;
 
     const baseAmount = exp(1e15, 6); // 1 quadrillion USDC
     const q0 = await comet.quoteCollateral(COMP.address, baseAmount);
