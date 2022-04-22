@@ -20,22 +20,25 @@ describe('accrue', function () {
   it('accrue initially succeeds and has the right parameters', async () => {
     await ethers.provider.send('hardhat_reset', []); // ensure clean start...
 
+    const start = (await getBlock()).timestamp + 100;
+
     const params = {
       baseMinForRewards: 12331,
       baseTrackingSupplySpeed: 668,
       baseTrackingBorrowSpeed: 777,
+      start
     };
     const { comet } = await makeProtocol(params);
 
     const t0 = await comet.totalsBasic();
-    expect(await t0.trackingSupplyIndex).to.be.equal(0);
-    expect(await t0.trackingBorrowIndex).to.be.equal(0);
-    expect(await t0.baseSupplyIndex).to.be.equal(exp(1, 15));
-    expect(await t0.baseBorrowIndex).to.be.equal(exp(1, 15));
-    expect(await t0.totalSupplyBase).to.be.equal(0);
-    expect(await t0.totalBorrowBase).to.be.equal(0);
+    expect(t0.trackingSupplyIndex).to.be.equal(0);
+    expect(t0.trackingBorrowIndex).to.be.equal(0);
+    expect(t0.baseSupplyIndex).to.be.equal(exp(1, 15));
+    expect(t0.baseBorrowIndex).to.be.equal(exp(1, 15));
+    expect(t0.totalSupplyBase).to.be.equal(0);
+    expect(t0.totalBorrowBase).to.be.equal(0);
 
-    expect(await t0.lastAccrualTime).to.be.approximately(Date.now() / 1000, 80);
+    expect(t0.lastAccrualTime).to.equal(start);
 
     const a0 = await wait(comet.accrue());
     expect(await comet.baseMinForRewards()).to.be.equal(params.baseMinForRewards);
