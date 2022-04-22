@@ -1,10 +1,10 @@
-name: Run Prettier
+name: Run ESLint
 on:
   workflow_dispatch:
   pull_request:
 jobs:
   run-coverage:
-    name: Run Prettier
+    name: Run ESLint
     runs-on: ubuntu-latest
     env:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
@@ -22,5 +22,5 @@ jobs:
       - name: Install packages
         run: yarn install --non-interactive --frozen-lockfile && yarn build
 
-      - name: Run Prettier
-        run: yarn run prettier --check .
+      - name: Run ESLint
+        run: yarn lint
