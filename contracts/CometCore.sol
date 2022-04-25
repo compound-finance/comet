@@ -164,6 +164,6 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
      * @dev The present value projected backward by the borrow index (rounded up)
      */
     function principalValueBorrowWithPrecision(uint64 baseBorrowIndex_, uint presentValue_, uint scale) internal pure returns (uint104) {
-        return uint104((uint(presentValue_) * BASE_INDEX_SCALE + baseBorrowIndex_ - 1) / baseBorrowIndex_ / scale);
+        return uint104((uint(presentValue_) * BASE_INDEX_SCALE + (baseBorrowIndex_ * scale) - 1) / baseBorrowIndex_ / scale);
     }
 }

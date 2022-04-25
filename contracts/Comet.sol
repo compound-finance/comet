@@ -898,7 +898,7 @@ contract Comet is CometCore {
 
         accrueInternal();
 
-        uint scaledAmount = amount * FACTOR_SCALE;
+        uint scaledAmount = uint(amount) * FACTOR_SCALE;
         uint totalSupplyBalance = presentValueSupplyWithPrecision(baseSupplyIndex, totalSupplyBase, FACTOR_SCALE);
         uint totalBorrowBalance = presentValueBorrowWithPrecision(baseBorrowIndex, totalBorrowBase, FACTOR_SCALE);
 
@@ -1008,7 +1008,7 @@ contract Comet is CometCore {
     function transferBase(address src, address dst, uint104 amount) internal {
         accrueInternal();
 
-        uint scaledAmount = amount * FACTOR_SCALE;
+        uint scaledAmount = uint(amount) * FACTOR_SCALE;
         uint totalSupplyBalance = presentValueSupplyWithPrecision(baseSupplyIndex, totalSupplyBase, FACTOR_SCALE);
         uint totalBorrowBalance = presentValueBorrowWithPrecision(baseBorrowIndex, totalBorrowBase, FACTOR_SCALE);
 
@@ -1113,7 +1113,7 @@ contract Comet is CometCore {
     function withdrawBase(address src, address to, uint104 amount) internal {
         accrueInternal();
 
-        uint scaledAmount = amount * FACTOR_SCALE;
+        uint scaledAmount = uint(amount) * FACTOR_SCALE;
         uint totalSupplyBalance = presentValueSupplyWithPrecision(baseSupplyIndex, totalSupplyBase, FACTOR_SCALE);
         uint totalBorrowBalance = presentValueBorrowWithPrecision(baseBorrowIndex, totalBorrowBase, FACTOR_SCALE);
 
