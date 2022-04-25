@@ -1,6 +1,8 @@
-import { ethers, expect, exp, makeProtocol, wait, makeBulker, defaultAssets, getGasUsed } from './helpers';
+import { baseBalanceOf, ethers, expect, exp, makeProtocol, wait, makeBulker, defaultAssets, getGasUsed } from './helpers';
 import { FaucetWETH__factory } from '../build/types';
 
+// XXX Improve the "no permission" tests that should expect a custom error when
+// when https://github.com/nomiclabs/hardhat/issues/1618 gets fixed.
 describe('bulker', function () {
   it('supply base asset', async () => {
     const protocol = await makeProtocol({});
@@ -20,7 +22,7 @@ describe('bulker', function () {
     let supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address", "uint"], [alice.address, USDC.address, supplyAmount]);
     await bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_ASSET()], [supplyAssetCalldata]);
 
-    expect(await comet.baseBalanceOf(alice.address)).to.be.equal(supplyAmount);
+    expect(await baseBalanceOf(comet, alice.address)).to.be.equal(supplyAmount);
   });
 
   it('supply collateral asset', async () => {
@@ -144,8 +146,8 @@ describe('bulker', function () {
     let transferAssetCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address", "uint"], [bob.address, USDC.address, transferAmount]);
     await bulker.connect(alice).invoke([await bulker.ACTION_TRANSFER_ASSET()], [transferAssetCalldata]);
 
-    expect(await comet.baseBalanceOf(alice.address)).to.be.equal(0);
-    expect(await comet.baseBalanceOf(bob.address)).to.be.equal(transferAmount);
+    expect(await baseBalanceOf(comet, alice.address)).to.be.equal(0n);
+    expect(await baseBalanceOf(comet, bob.address)).to.be.equal(transferAmount);
   });
 
   it('transfer collateral asset', async () => {
@@ -190,7 +192,7 @@ describe('bulker', function () {
     let withdrawAssetCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address", "uint"], [alice.address, USDC.address, withdrawAmount]);
     await bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_ASSET()], [withdrawAssetCalldata]);
 
-    expect(await comet.baseBalanceOf(alice.address)).to.be.equal(0);
+    expect(await baseBalanceOf(comet, alice.address)).to.be.equal(0n);
     expect(await USDC.balanceOf(alice.address)).to.be.equal(withdrawAmount);
   });
 
@@ -288,7 +290,7 @@ describe('bulker', function () {
 
     let supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address", "uint"], [alice.address, USDC.address, 1]);
     await expect(bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_ASSET()], [supplyAssetCalldata]))
-      .to.be.revertedWith("custom error 'Unauthorized()'");
+      .to.be.reverted;
   });
 
   it('reverts on transfer asset if no permission granted to bulker', async () => {
@@ -299,7 +301,7 @@ describe('bulker', function () {
 
     let transferAssetCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address", "uint"], [bob.address, COMP.address, 1]);
     await expect(bulker.connect(alice).invoke([await bulker.ACTION_TRANSFER_ASSET()], [transferAssetCalldata]))
-      .to.be.revertedWith("custom error 'Unauthorized()'");
+      .to.be.reverted;
   });
 
   it('reverts on withdraw asset if no permission granted to bulker', async () => {
@@ -310,7 +312,7 @@ describe('bulker', function () {
 
     let withdrawAssetCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address", "uint"], [alice.address, COMP.address, 1]);
     await expect(bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_ASSET()], [withdrawAssetCalldata]))
-      .to.be.revertedWith("custom error 'Unauthorized()'");
+      .to.be.reverted;
   });
 
   it('reverts on withdraw ETH if no permission granted to bulker', async () => {
@@ -325,7 +327,7 @@ describe('bulker', function () {
 
     let withdrawEthCalldata = ethers.utils.defaultAbiCoder.encode(["address", "uint"], [alice.address, 1]);
     await expect(bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_ETH()], [withdrawEthCalldata]))
-      .to.be.revertedWith("custom error 'Unauthorized()'");
+      .to.be.reverted;
   });
 });
 
@@ -357,7 +359,7 @@ describe('bulker multiple actions', function () {
     // Alice withdraws 10 USDC through the bulker
     let withdrawAssetCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address", "uint"], [alice.address, USDC.address, borrowAmount]);
     await bulker.connect(alice).invoke(
-      [await bulker.ACTION_SUPPLY_ASSET(), await bulker.ACTION_WITHDRAW_ASSET()], 
+      [await bulker.ACTION_SUPPLY_ASSET(), await bulker.ACTION_WITHDRAW_ASSET()],
       [supplyAssetCalldata, withdrawAssetCalldata]
     );
 
@@ -383,8 +385,8 @@ describe('bulker multiple actions', function () {
     let supplyAliceEthCalldata = ethers.utils.defaultAbiCoder.encode(["address", "uint"], [alice.address, supplyAmount / 2n]);
     let supplyBobEthCalldata = ethers.utils.defaultAbiCoder.encode(["address", "uint"], [bob.address, supplyAmount / 2n]);
     await bulker.connect(alice).invoke(
-      [await bulker.ACTION_SUPPLY_ETH(), await bulker.ACTION_SUPPLY_ETH()], 
-      [supplyAliceEthCalldata, supplyBobEthCalldata], 
+      [await bulker.ACTION_SUPPLY_ETH(), await bulker.ACTION_SUPPLY_ETH()],
+      [supplyAliceEthCalldata, supplyBobEthCalldata],
       { value: supplyAmount }
     );
 
