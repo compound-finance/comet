@@ -92,7 +92,7 @@ const borrowRate = await comet.callStatic.getBorrowRate();
 
 Compound Comet accounts can supply crypto assets as collateral to borrow the base asset.
 
-Account *balances* for the base token are signed integers. An account balance greater than zero indicates the base asset is supplied and a balance less than zero indicates the base asset is borrowed.
+Account *balances* for the base token are signed integers. An account balance greater than zero indicates the base asset is supplied and a balance less than zero indicates the base asset is borrowed. *Note: Base token balances for assets with 18 decimals will start to overflow at a value of 2<sup>103</sup>/1e18=~10 trillion.*
 
 An account's *principal* is the amount of base the account was due at the time of the initial supply of base to the protocol. Global *indices* for supply and borrow are unsigned integers that increase over time. When an account interacts with the protocol, the indices are saved. An account's present balance can be calculated using the current index with the following formulae.
 
