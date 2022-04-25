@@ -451,7 +451,7 @@ contract Comet is CometCore {
         accrueInternal();
 
         UserBasic memory basic = userBasic[account];
-        updateBaseBalance(account, basic, basic.principal);
+        updateBasePrincipal(account, basic, basic.principal);
     }
 
     /**
@@ -664,21 +664,31 @@ contract Comet is CometCore {
     }
 
     /**
-     * @dev The amounts broken into repay and supply amounts, given negative balance
+     * @dev The change in principal broken into repay and supply amounts
+     * @dev Note: The assumption `newPrincipal >= oldPrincipal` MUST be true
      */
-    function repayAndSupplyAmount(int104 balance, uint104 amount) internal pure returns (uint104, uint104) {
-        uint104 repayAmount = balance < 0 ? min(unsigned104(-balance), amount) : 0;
-        uint104 supplyAmount = amount - repayAmount;
-        return (repayAmount, supplyAmount);
+    function repayAndSupplyAmount(int104 oldPrincipal, int104 newPrincipal) internal pure returns (uint104, uint104) {
+        if (newPrincipal <= 0) {
+            return (uint104(newPrincipal - oldPrincipal), 0);
+        } else if (oldPrincipal >= 0) {
+            return (0, uint104(newPrincipal - oldPrincipal));
+        } else {
+            return (uint104(-oldPrincipal), uint104(newPrincipal));
+        }
     }
 
     /**
-     * @dev The amounts broken into withdraw and borrow amounts, given positive balance
+     * @dev The change in principal broken into withdraw and borrow amounts
+     * @dev Note: The assumption `oldPrincipal >= newPrincipal` MUST be true
      */
-    function withdrawAndBorrowAmount(int104 balance, uint104 amount) internal pure returns (uint104, uint104) {
-        uint104 withdrawAmount = balance > 0 ? min(unsigned104(balance), amount) : 0;
-        uint104 borrowAmount = amount - withdrawAmount;
-        return (withdrawAmount, borrowAmount);
+    function withdrawAndBorrowAmount(int104 oldPrincipal, int104 newPrincipal) internal view returns (uint104, uint104) {
+        if (newPrincipal >= 0) {
+            return (uint104(oldPrincipal - newPrincipal), 0);
+        } else if (oldPrincipal <= 0) {
+            return (0, uint104(oldPrincipal - newPrincipal));
+        } else {
+            return (uint104(oldPrincipal), uint104(-newPrincipal));
+        }
     }
 
     /**
@@ -807,9 +817,9 @@ contract Comet is CometCore {
     }
 
     /**
-     * @dev Write updated balance to store and tracking participation
+     * @dev Write updated principal to store and tracking participation
      */
-    function updateBaseBalance(address account, UserBasic memory basic, int104 principalNew) internal {
+    function updateBasePrincipal(address account, UserBasic memory basic, int104 principalNew) internal {
         int104 principal = basic.principal;
         basic.principal = principalNew;
 
@@ -898,23 +908,17 @@ contract Comet is CometCore {
 
         accrueInternal();
 
-        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
-
         UserBasic memory dstUser = userBasic[dst];
-        int104 dstBalance = presentValue(dstUser.principal);
+        int104 dstPrincipal = dstUser.principal;
+        int104 dstBalance = presentValue(dstPrincipal) + signed104(amount);
+        int104 dstPrincipalNew = principalValue(dstBalance);
 
-        (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, amount);
+        (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstPrincipal, dstPrincipalNew);
 
-        totalSupplyBalance += supplyAmount;
-        totalBorrowBalance -= repayAmount;
+        totalSupplyBase += supplyAmount;
+        totalBorrowBase -= repayAmount;
 
-        dstBalance += signed104(amount);
-
-        totalSupplyBase = principalValueSupply(baseSupplyIndex, totalSupplyBalance);
-        totalBorrowBase = principalValueBorrow(baseBorrowIndex, totalBorrowBalance);
-
-        updateBaseBalance(dst, dstUser, principalValue(dstBalance));
+        updateBasePrincipal(dst, dstUser, dstPrincipalNew);
 
         emit Supply(from, dst, amount);
         emit Transfer(address(0), dst, amount);
@@ -1007,29 +1011,25 @@ contract Comet is CometCore {
     function transferBase(address src, address dst, uint104 amount) internal {
         accrueInternal();
 
-        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
-
         UserBasic memory srcUser = userBasic[src];
         UserBasic memory dstUser = userBasic[dst];
-        int104 srcBalance = presentValue(srcUser.principal);
-        int104 dstBalance = presentValue(dstUser.principal);
 
-        (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcBalance, amount);
-        (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstBalance, amount);
+        int104 srcPrincipal = srcUser.principal;
+        int104 dstPrincipal = dstUser.principal;
+        int104 srcBalance = presentValue(srcPrincipal) - signed104(amount);
+        int104 dstBalance = presentValue(dstPrincipal) + signed104(amount);
+        int104 srcPrincipalNew = principalValue(srcBalance);
+        int104 dstPrincipalNew = principalValue(dstBalance);
 
-        // Note: Instead of `totalSupplyBalance += supplyAmount - withdrawAmount` to avoid underflow errors.
-        totalSupplyBalance = totalSupplyBalance + supplyAmount - withdrawAmount;
-        totalBorrowBalance = totalBorrowBalance + borrowAmount - repayAmount;
+        (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcPrincipal, srcPrincipalNew);
+        (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstPrincipal, dstPrincipalNew);
 
-        srcBalance -= signed104(amount);
-        dstBalance += signed104(amount);
+        // Note: Instead of `total += addAmount - subAmount` to avoid underflow errors.
+        totalSupplyBase = totalSupplyBase + supplyAmount - withdrawAmount;
+        totalBorrowBase = totalBorrowBase + borrowAmount - repayAmount;
 
-        totalSupplyBase = principalValueSupply(baseSupplyIndex, totalSupplyBalance);
-        totalBorrowBase = principalValueBorrow(baseBorrowIndex, totalBorrowBalance);
-
-        updateBaseBalance(src, srcUser, principalValue(srcBalance));
-        updateBaseBalance(dst, dstUser, principalValue(dstBalance));
+        updateBasePrincipal(src, srcUser, srcPrincipalNew);
+        updateBasePrincipal(dst, dstUser, dstPrincipalNew);
 
         if (srcBalance < 0) {
             if (uint104(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
@@ -1111,23 +1111,17 @@ contract Comet is CometCore {
     function withdrawBase(address src, address to, uint104 amount) internal {
         accrueInternal();
 
-        uint104 totalSupplyBalance = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrowBalance = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
-
         UserBasic memory srcUser = userBasic[src];
-        int104 srcBalance = presentValue(srcUser.principal);
+        int104 srcPrincipal = srcUser.principal;
+        int104 srcBalance = presentValue(srcPrincipal) - signed104(amount);
+        int104 srcPrincipalNew = principalValue(srcBalance);
 
-        (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcBalance, amount);
+        (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcPrincipal, srcPrincipalNew);
 
-        totalSupplyBalance -= withdrawAmount;
-        totalBorrowBalance += borrowAmount;
+        totalSupplyBase -= withdrawAmount;
+        totalBorrowBase += borrowAmount;
 
-        srcBalance -= signed104(amount);
-
-        totalSupplyBase = principalValueSupply(baseSupplyIndex, totalSupplyBalance);
-        totalBorrowBase = principalValueBorrow(baseBorrowIndex, totalBorrowBalance);
-
-        updateBaseBalance(src, srcUser, principalValue(srcBalance));
+        updateBasePrincipal(src, srcUser, srcPrincipalNew);
 
         if (srcBalance < 0) {
             if (uint104(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
@@ -1215,7 +1209,7 @@ contract Comet is CometCore {
         if (newBalance < 0) {
             newBalance = 0;
         }
-        updateBaseBalance(account, accountUser, principalValue(newBalance));
+        updateBasePrincipal(account, accountUser, principalValue(newBalance));
 
         // reset assetsIn
         userBasic[account].assetsIn = 0;
