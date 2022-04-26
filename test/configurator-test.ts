@@ -1,4 +1,4 @@
-import { annualize, defactor, defaultAssets, ethers, exp, expect, factor, makeConfigurator, Numeric, truncateDecimals, wait } from './helpers';
+import { annualize, defactor, defaultAssets, ethers, event, exp, expect, factor, makeConfigurator, Numeric, truncateDecimals, wait } from './helpers';
 import { SimplePriceFeed__factory, SimpleTimelock__factory } from '../build/types';
 import { AssetInfoStructOutput } from '../build/types/CometHarnessInterface';
 
@@ -11,6 +11,18 @@ type ConfiguratorAssetConfig = {
   liquidationFactor: Numeric,
   supplyCap: Numeric,
 };
+
+function convertToEventAssetConfig(assetConfig: ConfiguratorAssetConfig) {
+  return [
+    assetConfig.asset,
+    assetConfig.priceFeed,
+    assetConfig.decimals,
+    assetConfig.borrowCollateralFactor,
+    assetConfig.liquidateCollateralFactor,
+    assetConfig.liquidationFactor,
+    assetConfig.supplyCap,
+  ];
+}
 
 // Checks that the Configurator asset config matches the Comet asset info
 function expectAssetConfigsToMatch(
@@ -77,7 +89,6 @@ describe('configurator', function () {
     await expect(configuratorAsProxy.initialize(governor.address, cometFactory.address, configuration)).to.be.revertedWith("custom error 'AlreadyInitialized()'");
   });
 
-  // XXX test events
   describe('configuration setters', function () {
     it('sets governor and deploys Comet with new configuration', async () => {
       const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, users: [alice] } = await makeConfigurator();
@@ -88,9 +99,15 @@ describe('configurator', function () {
 
       const oldGovernor = await comet.governor();
       const newGovernor = alice.address;
-      await wait(configuratorAsProxy.setGovernor(newGovernor));
+      const txn = await wait(configuratorAsProxy.setGovernor(newGovernor));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetGovernor: {
+          oldGovernor,
+          newGovernor,
+        }
+      });
       expect(oldGovernor).to.be.not.equal(newGovernor);
       expect((await configuratorAsProxy.getConfiguration()).governor).to.be.equal(newGovernor);
       expect(await cometAsProxy.governor()).to.be.equal(newGovernor);
@@ -105,9 +122,15 @@ describe('configurator', function () {
 
       const oldPauseGuardian = await comet.pauseGuardian();
       const newPauseGuardian = alice.address;
-      await wait(configuratorAsProxy.setPauseGuardian(newPauseGuardian));
+      const txn = await wait(configuratorAsProxy.setPauseGuardian(newPauseGuardian));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetPauseGuardian: {
+          oldPauseGuardian,
+          newPauseGuardian,
+        }
+      });
       expect(oldPauseGuardian).to.be.not.equal(newPauseGuardian);
       expect((await configuratorAsProxy.getConfiguration()).pauseGuardian).to.be.equal(newPauseGuardian);
       expect(await cometAsProxy.pauseGuardian()).to.be.equal(newPauseGuardian);
@@ -127,9 +150,15 @@ describe('configurator', function () {
 
       const oldPriceFeed = await comet.baseTokenPriceFeed();
       const newPriceFeed = priceFeed.address;
-      await wait(configuratorAsProxy.setBaseTokenPriceFeed(newPriceFeed));
+      const txn = await wait(configuratorAsProxy.setBaseTokenPriceFeed(newPriceFeed));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetBaseTokenPriceFeed: {
+          oldBaseTokenPriceFeed: oldPriceFeed,
+          newBaseTokenPriceFeed: newPriceFeed,
+        }
+      });
       expect(oldPriceFeed).to.be.not.equal(newPriceFeed);
       expect((await configuratorAsProxy.getConfiguration()).baseTokenPriceFeed).to.be.equal(newPriceFeed);
       expect(await cometAsProxy.baseTokenPriceFeed()).to.be.equal(newPriceFeed);
@@ -142,14 +171,20 @@ describe('configurator', function () {
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       expect((await configuratorAsProxy.getConfiguration()).extensionDelegate).to.be.equal(await comet.extensionDelegate());
 
-      const oldExtDelegate = await comet.extensionDelegate();
-      const newExtDelegate = ethers.constants.AddressZero;
-      await wait(configuratorAsProxy.setExtensionDelegate(newExtDelegate));
+      const oldExt = await comet.extensionDelegate();
+      const newExt = ethers.constants.AddressZero;
+      const txn = await wait(configuratorAsProxy.setExtensionDelegate(newExt));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
-      expect(oldExtDelegate).to.be.not.equal(newExtDelegate);
-      expect((await configuratorAsProxy.getConfiguration()).extensionDelegate).to.be.equal(newExtDelegate);
-      expect(await cometAsProxy.extensionDelegate()).to.be.equal(newExtDelegate);
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetExtensionDelegate: {
+          oldExt,
+          newExt,
+        }
+      });
+      expect(oldExt).to.be.not.equal(newExt);
+      expect((await configuratorAsProxy.getConfiguration()).extensionDelegate).to.be.equal(newExt);
+      expect(await cometAsProxy.extensionDelegate()).to.be.equal(newExt);
     });
 
     it('sets kink and deploys Comet with new configuration', async () => {
@@ -159,11 +194,17 @@ describe('configurator', function () {
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       expect((await configuratorAsProxy.getConfiguration()).kink).to.be.equal(await comet.kink());
 
-      const oldKink = await comet.kink();
-      const newKink = 100;
-      await wait(configuratorAsProxy.setKink(newKink));
+      const oldKink = (await comet.kink()).toBigInt();
+      const newKink = 100n;
+      const txn = await wait(configuratorAsProxy.setKink(newKink));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetKink: {
+          oldKink,
+          newKink,
+        }
+      });
       expect(oldKink).to.be.not.equal(newKink);
       expect((await configuratorAsProxy.getConfiguration()).kink).to.be.equal(newKink);
       expect(await cometAsProxy.kink()).to.be.equal(newKink);
@@ -177,11 +218,17 @@ describe('configurator', function () {
       expect(defactor((await configuratorAsProxy.getConfiguration()).perYearInterestRateSlopeLow))
         .to.be.approximately(annualize(await comet.perSecondInterestRateSlopeLow()), 0.00001);
 
-      const oldIRSlopeLow = (await configuratorAsProxy.getConfiguration()).perYearInterestRateSlopeLow;
+      const oldIRSlopeLow = (await configuratorAsProxy.getConfiguration()).perYearInterestRateSlopeLow.toBigInt();
       const newIRSlopeLow = exp(5.5, 18);
-      await wait(configuratorAsProxy.setPerYearInterestRateSlopeLow(newIRSlopeLow));
+      const txn = await wait(configuratorAsProxy.setPerYearInterestRateSlopeLow(newIRSlopeLow));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetPerYearInterestRateSlopeLow: {
+          oldIRSlopeLow,
+          newIRSlopeLow,
+        }
+      });
       expect(oldIRSlopeLow).to.be.not.equal(newIRSlopeLow);
       expect((await configuratorAsProxy.getConfiguration()).perYearInterestRateSlopeLow).to.be.equal(newIRSlopeLow);
       expect(annualize(await cometAsProxy.perSecondInterestRateSlopeLow()))
@@ -196,11 +243,17 @@ describe('configurator', function () {
       expect(defactor((await configuratorAsProxy.getConfiguration()).perYearInterestRateSlopeHigh))
         .to.be.approximately(annualize(await comet.perSecondInterestRateSlopeHigh()), 0.00001);
 
-      const oldIRSlopeHigh = (await configuratorAsProxy.getConfiguration()).perYearInterestRateSlopeHigh;
+      const oldIRSlopeHigh = (await configuratorAsProxy.getConfiguration()).perYearInterestRateSlopeHigh.toBigInt();
       const newIRSlopeHigh = exp(5.5, 18);
-      await wait(configuratorAsProxy.setPerYearInterestRateSlopeHigh(newIRSlopeHigh));
+      const txn = await wait(configuratorAsProxy.setPerYearInterestRateSlopeHigh(newIRSlopeHigh));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetPerYearInterestRateSlopeHigh: {
+          oldIRSlopeHigh,
+          newIRSlopeHigh,
+        }
+      });
       expect(oldIRSlopeHigh).to.be.not.equal(newIRSlopeHigh);
       expect((await configuratorAsProxy.getConfiguration()).perYearInterestRateSlopeHigh).to.be.equal(newIRSlopeHigh);
       expect(annualize(await cometAsProxy.perSecondInterestRateSlopeHigh()))
@@ -215,11 +268,17 @@ describe('configurator', function () {
       expect(defactor((await configuratorAsProxy.getConfiguration()).perYearInterestRateBase))
         .to.be.approximately(annualize(await comet.perSecondInterestRateBase()), 0.00001);
 
-      const oldIRBase = (await configuratorAsProxy.getConfiguration()).perYearInterestRateBase;
+      const oldIRBase = (await configuratorAsProxy.getConfiguration()).perYearInterestRateBase.toBigInt();
       const newIRBase = exp(5.5, 18);
-      await wait(configuratorAsProxy.setPerYearInterestRateBase(newIRBase));
+      const txn = await wait(configuratorAsProxy.setPerYearInterestRateBase(newIRBase));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetPerYearInterestRateBase: {
+          oldIRBase,
+          newIRBase,
+        }
+      });
       expect(oldIRBase).to.be.not.equal(newIRBase);
       expect((await configuratorAsProxy.getConfiguration()).perYearInterestRateBase).to.be.equal(newIRBase);
       expect(annualize(await cometAsProxy.perSecondInterestRateBase()))
@@ -233,11 +292,17 @@ describe('configurator', function () {
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       expect((await configuratorAsProxy.getConfiguration()).reserveRate).to.be.equal(await comet.reserveRate());
 
-      const oldReserveRate = await comet.reserveRate();
-      const newReserveRate = 100;
-      await wait(configuratorAsProxy.setReserveRate(newReserveRate));
+      const oldReserveRate = (await comet.reserveRate()).toBigInt();
+      const newReserveRate = 100n;
+      const txn = await wait(configuratorAsProxy.setReserveRate(newReserveRate));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetReserveRate: {
+          oldReserveRate,
+          newReserveRate,
+        }
+      });
       expect(oldReserveRate).to.be.not.equal(newReserveRate);
       expect((await configuratorAsProxy.getConfiguration()).reserveRate).to.be.equal(newReserveRate);
       expect(await cometAsProxy.reserveRate()).to.be.equal(newReserveRate);
@@ -259,11 +324,17 @@ describe('configurator', function () {
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       expect((await configuratorAsProxy.getConfiguration()).storeFrontPriceFactor).to.be.equal(await comet.storeFrontPriceFactor());
 
-      const oldStoreFrontPriceFactor = await comet.storeFrontPriceFactor();
+      const oldStoreFrontPriceFactor = (await comet.storeFrontPriceFactor()).toBigInt();
       const newStoreFrontPriceFactor = factor(0.95);
-      await wait(configuratorAsProxy.setStoreFrontPriceFactor(newStoreFrontPriceFactor));
+      const txn = await wait(configuratorAsProxy.setStoreFrontPriceFactor(newStoreFrontPriceFactor));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetStoreFrontPriceFactor: {
+          oldStoreFrontPriceFactor,
+          newStoreFrontPriceFactor,
+        }
+      });
       expect(oldStoreFrontPriceFactor).to.be.not.equal(newStoreFrontPriceFactor);
       expect((await configuratorAsProxy.getConfiguration()).storeFrontPriceFactor).to.be.equal(newStoreFrontPriceFactor);
       expect(await cometAsProxy.storeFrontPriceFactor()).to.be.equal(newStoreFrontPriceFactor);
@@ -276,11 +347,17 @@ describe('configurator', function () {
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       expect((await configuratorAsProxy.getConfiguration()).baseTrackingSupplySpeed).to.be.equal(await comet.baseTrackingSupplySpeed());
 
-      const oldSpeed = await comet.baseTrackingSupplySpeed();
-      const newSpeed = 100;
-      await wait(configuratorAsProxy.setBaseTrackingSupplySpeed(newSpeed));
+      const oldSpeed = (await comet.baseTrackingSupplySpeed()).toBigInt();
+      const newSpeed = 100n;
+      const txn = await wait(configuratorAsProxy.setBaseTrackingSupplySpeed(newSpeed));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetBaseTrackingSupplySpeed: {
+          oldBaseTrackingSupplySpeed: oldSpeed,
+          newBaseTrackingSupplySpeed: newSpeed,
+        }
+      });
       expect(oldSpeed).to.be.not.equal(newSpeed);
       expect((await configuratorAsProxy.getConfiguration()).baseTrackingSupplySpeed).to.be.equal(newSpeed);
       expect(await cometAsProxy.baseTrackingSupplySpeed()).to.be.equal(newSpeed);
@@ -293,11 +370,17 @@ describe('configurator', function () {
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       expect((await configuratorAsProxy.getConfiguration()).baseTrackingBorrowSpeed).to.be.equal(await comet.baseTrackingBorrowSpeed());
 
-      const oldSpeed = await comet.baseTrackingBorrowSpeed();
-      const newSpeed = 100;
-      await wait(configuratorAsProxy.setBaseTrackingBorrowSpeed(newSpeed));
+      const oldSpeed = (await comet.baseTrackingBorrowSpeed()).toBigInt();
+      const newSpeed = 100n;
+      const txn = await wait(configuratorAsProxy.setBaseTrackingBorrowSpeed(newSpeed));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetBaseTrackingBorrowSpeed: {
+          oldBaseTrackingBorrowSpeed: oldSpeed,
+          newBaseTrackingBorrowSpeed: newSpeed,
+        }
+      });
       expect(oldSpeed).to.be.not.equal(newSpeed);
       expect((await configuratorAsProxy.getConfiguration()).baseTrackingBorrowSpeed).to.be.equal(newSpeed);
       expect(await cometAsProxy.baseTrackingBorrowSpeed()).to.be.equal(newSpeed);
@@ -310,11 +393,17 @@ describe('configurator', function () {
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       expect((await configuratorAsProxy.getConfiguration()).baseMinForRewards).to.be.equal(await comet.baseMinForRewards());
 
-      const oldBaseMinForRewards = await comet.baseMinForRewards();
-      const newBaseMinForRewards = 100;
-      await wait(configuratorAsProxy.setBaseMinForRewards(newBaseMinForRewards));
+      const oldBaseMinForRewards = (await comet.baseMinForRewards()).toBigInt();
+      const newBaseMinForRewards = 100n;
+      const txn = await wait(configuratorAsProxy.setBaseMinForRewards(newBaseMinForRewards));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetBaseMinForRewards: {
+          oldBaseMinForRewards,
+          newBaseMinForRewards,
+        }
+      });
       expect(oldBaseMinForRewards).to.be.not.equal(newBaseMinForRewards);
       expect((await configuratorAsProxy.getConfiguration()).baseMinForRewards).to.be.equal(newBaseMinForRewards);
       expect(await cometAsProxy.baseMinForRewards()).to.be.equal(newBaseMinForRewards);
@@ -327,11 +416,17 @@ describe('configurator', function () {
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       expect((await configuratorAsProxy.getConfiguration()).baseBorrowMin).to.be.equal(await comet.baseBorrowMin());
 
-      const oldBaseBorrowMin = await comet.baseBorrowMin();
-      const newBaseBorrowMin = 100;
-      await wait(configuratorAsProxy.setBaseBorrowMin(newBaseBorrowMin));
+      const oldBaseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
+      const newBaseBorrowMin = 100n;
+      const txn = await wait(configuratorAsProxy.setBaseBorrowMin(newBaseBorrowMin));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetBaseBorrowMin: {
+          oldBaseBorrowMin,
+          newBaseBorrowMin,
+        }
+      });
       expect(oldBaseBorrowMin).to.be.not.equal(newBaseBorrowMin);
       expect((await configuratorAsProxy.getConfiguration()).baseBorrowMin).to.be.equal(newBaseBorrowMin);
       expect(await cometAsProxy.baseBorrowMin()).to.be.equal(newBaseBorrowMin);
@@ -344,11 +439,17 @@ describe('configurator', function () {
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       expect((await configuratorAsProxy.getConfiguration()).targetReserves).to.be.equal(await comet.targetReserves());
 
-      const oldTargetReserves = await comet.targetReserves();
-      const newTargetReserves = 100;
-      await wait(configuratorAsProxy.setTargetReserves(newTargetReserves));
+      const oldTargetReserves = (await comet.targetReserves()).toBigInt();
+      const newTargetReserves = 100n;
+      const txn = await wait(configuratorAsProxy.setTargetReserves(newTargetReserves));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetTargetReserves: {
+          oldTargetReserves,
+          newTargetReserves,
+        }
+      });
       expect(oldTargetReserves).to.be.not.equal(newTargetReserves);
       expect((await configuratorAsProxy.getConfiguration()).targetReserves).to.be.equal(newTargetReserves);
       expect(await cometAsProxy.targetReserves()).to.be.equal(newTargetReserves);
@@ -371,9 +472,14 @@ describe('configurator', function () {
         liquidationFactor: exp(0.95, 18),
         supplyCap: exp(1_000_000, 8),
       };
-      await wait(configuratorAsProxy.addAsset(newAssetConfig));
+      const txn = await wait(configuratorAsProxy.addAsset(newAssetConfig));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        AddAsset: {
+          assetConfig: convertToEventAssetConfig(newAssetConfig),
+        }
+      });
       expect((await configuratorAsProxy.getConfiguration()).assetConfigs.length).to.be.equal(oldNumAssets + 1);
       expect(await cometAsProxy.numAssets()).to.be.equal(oldNumAssets + 1);
       expectAssetConfigsToMatch(newAssetConfig, await cometAsProxy.getAssetInfo(oldNumAssets));
@@ -388,6 +494,7 @@ describe('configurator', function () {
       const oldNumAssets = await comet.numAssets();
       expect((await configuratorAsProxy.getConfiguration()).assetConfigs.length).to.be.equal(oldNumAssets);
 
+      const oldAssetConfig = (await configuratorAsProxy.getConfiguration()).assetConfigs[0];
       const updatedAssetConfig: ConfiguratorAssetConfig = {
         asset: COMP.address,
         priceFeed: await comet.baseTokenPriceFeed(),
@@ -397,9 +504,23 @@ describe('configurator', function () {
         liquidationFactor: exp(0.8, 18),
         supplyCap: exp(888, 18),
       };
-      await wait(configuratorAsProxy.updateAsset(updatedAssetConfig));
+      const txn = await wait(configuratorAsProxy.updateAsset(updatedAssetConfig));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        UpdateAsset: {
+          oldAssetConfig: [
+            oldAssetConfig.asset,
+            oldAssetConfig.priceFeed,
+            oldAssetConfig.decimals,
+            oldAssetConfig.borrowCollateralFactor.toBigInt(),
+            oldAssetConfig.liquidateCollateralFactor.toBigInt(),
+            oldAssetConfig.liquidationFactor.toBigInt(),
+            oldAssetConfig.supplyCap.toBigInt(),
+          ],
+          newAssetConfig: convertToEventAssetConfig(updatedAssetConfig),
+        }
+      });
       expect((await configuratorAsProxy.getConfiguration()).assetConfigs.length).to.be.equal(oldNumAssets);
       expect(await cometAsProxy.numAssets()).to.be.equal(oldNumAssets);
       expectAssetConfigsToMatch(updatedAssetConfig, await cometAsProxy.getAssetInfo(0));
@@ -416,9 +537,16 @@ describe('configurator', function () {
 
       const oldPriceFeed = (await configuratorAsProxy.getConfiguration()).assetConfigs[0].priceFeed;
       const newPriceFeed = priceFeeds['WETH'].address;
-      await wait(configuratorAsProxy.updateAssetPriceFeed(COMP.address, newPriceFeed));
+      const txn = await wait(configuratorAsProxy.updateAssetPriceFeed(COMP.address, newPriceFeed));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        UpdateAssetPriceFeed: {
+          asset: COMP.address,
+          oldPriceFeed,
+          newPriceFeed,
+        }
+      });
       expect(oldPriceFeed).to.be.not.equal(newPriceFeed);
       expect((await configuratorAsProxy.getConfiguration()).assetConfigs[0].priceFeed).to.be.equal(newPriceFeed);
       expect((await cometAsProxy.getAssetInfo(0)).priceFeed).to.be.equal(newPriceFeed);
@@ -433,11 +561,18 @@ describe('configurator', function () {
       expect(truncateDecimals((await configuratorAsProxy.getConfiguration()).assetConfigs[0].borrowCollateralFactor))
         .to.be.equal((await comet.getAssetInfo(0)).borrowCollateralFactor);
 
-      const oldBorrowCF = (await configuratorAsProxy.getConfiguration()).assetConfigs[0].borrowCollateralFactor;
+      const oldBorrowCF = (await configuratorAsProxy.getConfiguration()).assetConfigs[0].borrowCollateralFactor.toBigInt();
       const newBorrowCF = exp(0.5, 18);
-      await wait(configuratorAsProxy.updateAssetBorrowCollateralFactor(COMP.address, newBorrowCF));
+      const txn = await wait(configuratorAsProxy.updateAssetBorrowCollateralFactor(COMP.address, newBorrowCF));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        UpdateAssetBorrowCollateralFactor: {
+          asset: COMP.address,
+          oldBorrowCF,
+          newBorrowCF,
+        }
+      });
       expect(oldBorrowCF).to.be.not.equal(newBorrowCF);
       expect((await configuratorAsProxy.getConfiguration()).assetConfigs[0].borrowCollateralFactor).to.be.equal(newBorrowCF);
       expect((await cometAsProxy.getAssetInfo(0)).borrowCollateralFactor).to.be.equal(newBorrowCF);
@@ -456,11 +591,18 @@ describe('configurator', function () {
       expect((await configuratorAsProxy.getConfiguration()).assetConfigs[0].liquidateCollateralFactor)
         .to.be.equal((await comet.getAssetInfo(0)).liquidateCollateralFactor);
 
-      const oldLiquidateCF = (await configuratorAsProxy.getConfiguration()).assetConfigs[0].liquidateCollateralFactor;
+      const oldLiquidateCF = (await configuratorAsProxy.getConfiguration()).assetConfigs[0].liquidateCollateralFactor.toBigInt();
       const newLiquidateCF = exp(0.6, 18); // must be higher than borrowCF
-      await wait(configuratorAsProxy.updateAssetLiquidateCollateralFactor(COMP.address, newLiquidateCF));
+      const txn = await wait(configuratorAsProxy.updateAssetLiquidateCollateralFactor(COMP.address, newLiquidateCF));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        UpdateAssetLiquidateCollateralFactor: {
+          asset: COMP.address,
+          oldLiquidateCF,
+          newLiquidateCF,
+        }
+      });
       expect(oldLiquidateCF).to.be.not.equal(newLiquidateCF);
       expect((await configuratorAsProxy.getConfiguration()).assetConfigs[0].liquidateCollateralFactor).to.be.equal(newLiquidateCF);
       expect((await cometAsProxy.getAssetInfo(0)).liquidateCollateralFactor).to.be.equal(newLiquidateCF);
@@ -475,11 +617,18 @@ describe('configurator', function () {
       expect((await configuratorAsProxy.getConfiguration()).assetConfigs[0].liquidationFactor)
         .to.be.equal((await comet.getAssetInfo(0)).liquidationFactor);
 
-      const oldLiquidationFactor = (await configuratorAsProxy.getConfiguration()).assetConfigs[0].liquidationFactor;
+      const oldLiquidationFactor = (await configuratorAsProxy.getConfiguration()).assetConfigs[0].liquidationFactor.toBigInt();
       const newLiquidationFactor = exp(0.5, 18);
-      await wait(configuratorAsProxy.updateAssetLiquidationFactor(COMP.address, newLiquidationFactor));
+      const txn = await wait(configuratorAsProxy.updateAssetLiquidationFactor(COMP.address, newLiquidationFactor));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        UpdateAssetLiquidationFactor: {
+          asset: COMP.address,
+          oldLiquidationFactor,
+          newLiquidationFactor,
+        }
+      });
       expect(oldLiquidationFactor).to.be.not.equal(newLiquidationFactor);
       expect((await configuratorAsProxy.getConfiguration()).assetConfigs[0].liquidationFactor).to.be.equal(newLiquidationFactor);
       expect((await cometAsProxy.getAssetInfo(0)).liquidationFactor).to.be.equal(newLiquidationFactor);
@@ -494,11 +643,18 @@ describe('configurator', function () {
       expect((await configuratorAsProxy.getConfiguration()).assetConfigs[0].supplyCap)
         .to.be.equal((await comet.getAssetInfo(0)).supplyCap);
 
-      const oldSupplyCap = (await configuratorAsProxy.getConfiguration()).assetConfigs[0].supplyCap;
+      const oldSupplyCap = (await configuratorAsProxy.getConfiguration()).assetConfigs[0].supplyCap.toBigInt();
       const newSupplyCap = exp(555, 18);
-      await wait(configuratorAsProxy.updateAssetSupplyCap(COMP.address, newSupplyCap));
+      const txn = await wait(configuratorAsProxy.updateAssetSupplyCap(COMP.address, newSupplyCap));
       await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
 
+      expect(event(txn, 0)).to.be.deep.equal({
+        UpdateAssetSupplyCap: {
+          asset: COMP.address,
+          oldSupplyCap,
+          newSupplyCap,
+        }
+      });
       expect(oldSupplyCap).to.be.not.equal(newSupplyCap);
       expect((await configuratorAsProxy.getConfiguration()).assetConfigs[0].supplyCap).to.be.equal(newSupplyCap);
       expect((await cometAsProxy.getAssetInfo(0)).supplyCap).to.be.equal(newSupplyCap);

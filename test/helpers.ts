@@ -519,8 +519,27 @@ export function event(tx, index) {
   for (const k in ev.args) {
     const v = ev.args[k];
     if (isNaN(Number(k))) {
-      args[k] = v._isBigNumber ? BigInt(v) : v;
+      if (v._isBigNumber) {
+        args[k] = BigInt(v);
+      } else if (Array.isArray(v)) {
+        args[k] = convertToBigInt(v);
+      } else {
+        args[k] = v;
+      }
     }
   }
   return { [ev.event]: args };
+}
+
+// Convert all BigNumbers in an array into BigInts
+function convertToBigInt(arr) {
+  const newArr = [];
+  for (const v of arr) {
+    if (Array.isArray(v)) {
+      newArr.push(convertToBigInt(v));
+    } else {
+      newArr.push(v._isBigNumber ? BigInt(v) : v);
+    }
+  }
+  return newArr;
 }
