@@ -2,7 +2,12 @@ import { DeploymentManager } from '../../../plugins/deployment_manager/Deploymen
 import { migration } from '../../../plugins/deployment_manager/Migration';
 import { deployNetworkComet } from '../../../src/deploy/Network';
 import { exp, wait } from '../../../test/helpers';
-import { ProxyAdmin, ProxyAdmin__factory } from '../../../build/types';
+import {
+  Fauceteer,
+  Fauceteer__factory,
+  ProxyAdmin,
+  ProxyAdmin__factory
+} from '../../../build/types';
 import { Contract } from 'ethers';
 
 let cloneNetwork = 'mainnet';
@@ -25,6 +30,11 @@ migration('1644388553_deploy_kovan', {
     let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
       'vendor/proxy/transparent/ProxyAdmin.sol',
       usdcProxyAdminArgs
+    );
+
+    let fauceteer = await deploymentManager.deploy<Fauceteer, Fauceteer__factory, []>(
+      'test/Fauceteer.sol',
+      []
     );
 
     let usdcImplementation = await deploymentManager.clone(
@@ -55,8 +65,9 @@ migration('1644388553_deploy_kovan', {
         signerAddress
       )
     );
-    await wait(usdc.configureMinter(signerAddress, exp(10000, 6)));
+    await wait(usdc.configureMinter(signerAddress, exp(20000, 6)));
     await wait(usdc.mint(signerAddress, exp(10000, 6)));
+    await wait(usdc.mint(fauceteer.address, exp(10000, 6)));
 
     let wbtc = await deploymentManager.clone(
       cloneAddr.wbtc,
@@ -65,6 +76,7 @@ migration('1644388553_deploy_kovan', {
     );
     // Give signer 1000 WBTC
     await wait(wbtc.mint(signerAddress, exp(1000, 8)));
+    await wait(wbtc.mint(fauceteer.address, exp(1000, 8)));
 
     let weth = await deploymentManager.clone(
       cloneAddr.weth,
@@ -79,18 +91,21 @@ migration('1644388553_deploy_kovan', {
       [signerAddress],
       cloneNetwork
     );
+    await comp.transfer(fauceteer.address, exp(1000, 18));
 
     let uni = await deploymentManager.clone(
       cloneAddr.uni,
       [signerAddress, signerAddress, 99999999999],
       cloneNetwork
     );
+    await uni.transfer(fauceteer.address, exp(1000, 18));
 
     let link = await deploymentManager.clone(
       cloneAddr.link,
       [],
       cloneNetwork
     );
+    await link.transfer(fauceteer.address, exp(1000, 18));
 
     // Contracts referenced in `configuration.json`.
     let contracts = new Map<string, Contract>([
@@ -107,6 +122,7 @@ migration('1644388553_deploy_kovan', {
     return {
       comet: cometProxy.address,
       configurator: configuratorProxy.address,
+      fauceteer: fauceteer.address,
       usdc: usdc.address,
       wbtc: wbtc.address,
       weth: weth.address,
