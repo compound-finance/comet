@@ -2,7 +2,6 @@ import { ethers, exp, expect, fastForward } from './helpers';
 import {
   Fauceteer,
   Fauceteer__factory,
-  FaucetToken,
   FaucetToken__factory
 } from '../build/types';
 
@@ -21,7 +20,7 @@ async function makeFauceteer() {
   };
 }
 
-describe.only('Fauceteer', function () {
+describe('Fauceteer', function () {
   it('issues .01% of balance of requested asset to requester', async () => {
     const [_minter, requester] = await ethers.getSigners();
     const { fauceteer, tokens: { USDC, COMP } } = await makeFauceteer();
@@ -57,28 +56,38 @@ describe.only('Fauceteer', function () {
   });
 
   it('limits each address to one request per asset per day', async () => {
-    const [_minter, requester] = await ethers.getSigners();
-    const { fauceteer, tokens: { USDC } } = await makeFauceteer();
-    await USDC.allocateTo(fauceteer.address, exp(100, 6));
+    const [_minter, r1, r2] = await ethers.getSigners();
+    const { fauceteer, tokens: { USDC, COMP } } = await makeFauceteer();
 
-    expect(await USDC.balanceOf(requester.address)).to.eq(0);
+    await USDC.allocateTo(fauceteer.address, exp(500, 6));
+    await COMP.allocateTo(fauceteer.address, exp(500, 18));
 
-    await fauceteer.connect(requester).drip(USDC.address);
-    expect(await USDC.balanceOf(requester.address)).to.eq(10000n);
+    expect(await USDC.balanceOf(r1.address)).to.eq(0);
+    expect(await COMP.balanceOf(r1.address)).to.eq(0);
+    expect(await USDC.balanceOf(r2.address)).to.eq(0);
+    expect(await COMP.balanceOf(r2.address)).to.eq(0);
 
-    // immediate request fails
+    // first requester receives tokens
+    await fauceteer.connect(r1).drip(USDC.address);
+    expect(await USDC.balanceOf(r1.address)).to.eq(50000n);
+    await fauceteer.connect(r1).drip(COMP.address);
+    expect(await COMP.balanceOf(r1.address)).to.eq(50000000000000000n);
+
+    // repeated request fails
     await expect(
-      fauceteer.connect(requester).drip(USDC.address)
+      fauceteer.connect(r1).drip(USDC.address)
     ).to.be.revertedWith('RequestedTooFrequently()');
+    await expect(
+      fauceteer.connect(r1).drip(COMP.address)
+    ).to.be.revertedWith('RequestedTooFrequently()');
+
+    // does not prevent other requesters from receiving tokens
+    await fauceteer.connect(r2).drip(USDC.address);
+    await fauceteer.connect(r2).drip(COMP.address);
 
     // wait a day and you can request more
     await fastForward(60 * 60 * 24);
-    await fauceteer.connect(requester).drip(USDC.address);
-
-    expect(await USDC.balanceOf(requester.address)).to.eq(19999n);
-  });
-
-  it.skip('throws an error if transfer fails', async () => {
-
+    await fauceteer.connect(r1).drip(USDC.address);
+    await fauceteer.connect(r1).drip(COMP.address);
   });
 });
