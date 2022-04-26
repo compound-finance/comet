@@ -22,17 +22,27 @@ async function makeFauceteer() {
 }
 
 describe.only('Fauceteer', function () {
-  it('issues a small amount of requested token to requester', async () => {
+  it('issues .01% of balance of requested asset to requester', async () => {
     const [_minter, requester] = await ethers.getSigners();
-    const { fauceteer, tokens: { USDC } } = await makeFauceteer();
+    const { fauceteer, tokens: { USDC, COMP } } = await makeFauceteer();
     await USDC.allocateTo(fauceteer.address, exp(100, 6));
+    await COMP.allocateTo(fauceteer.address, exp(100, 18));
 
     expect(await USDC.balanceOf(requester.address)).to.eq(0);
+    expect(await COMP.balanceOf(requester.address)).to.eq(0);
 
     await fauceteer.connect(requester).drip(USDC.address);
+    await fauceteer.connect(requester).drip(COMP.address);
 
-    expect(await USDC.balanceOf(fauceteer.address)).to.eq(99990000n); // 99.99% of initial balance
-    expect(await USDC.balanceOf(requester.address)).to.eq(10000n); // .01% of initial balance
+    // fauceter maintains 99.99 units of USDC
+    expect(await USDC.balanceOf(fauceteer.address)).to.eq(99990000n);
+    // requester gets .01 units (10000 / 1e6 == .01)
+    expect(await USDC.balanceOf(requester.address)).to.eq(10000n);
+
+    // fauceter maintains 99.99% of initial COMP balance
+    expect(await COMP.balanceOf(fauceteer.address)).to.eq(99990000000000000000n);
+    // requester gets .01 units (10000000000000000 / 1e18 == .01)
+    expect(await COMP.balanceOf(requester.address)).to.eq(10000000000000000n);
   });
 
   it('throws an error if balance of asset is 0', async () => {
@@ -46,7 +56,7 @@ describe.only('Fauceteer', function () {
     ).to.be.revertedWith('BalanceTooLow()');
   });
 
-  it.only('limits each address to one request per asset per day', async () => {
+  it('limits each address to one request per asset per day', async () => {
     const [_minter, requester] = await ethers.getSigners();
     const { fauceteer, tokens: { USDC } } = await makeFauceteer();
     await USDC.allocateTo(fauceteer.address, exp(100, 6));
@@ -66,11 +76,6 @@ describe.only('Fauceteer', function () {
     await fauceteer.connect(requester).drip(USDC.address);
 
     expect(await USDC.balanceOf(requester.address)).to.eq(19999n);
-  });
-
-
-  it.skip('issues multiple assets', async () => {
-
   });
 
   it.skip('throws an error if transfer fails', async () => {

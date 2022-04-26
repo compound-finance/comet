@@ -19,9 +19,9 @@ contract Fauceteer {
 
         if (block.timestamp - lastReceived[msg.sender][token] < 1 days) revert RequestedTooFrequently();
 
+        lastReceived[msg.sender][token] = block.timestamp;
+
         bool success = ERC20(token).transfer(msg.sender, balance / 10000); // 0.01%
         if (!success) revert TransferFailed();
-
-        lastReceived[msg.sender][token] = block.timestamp;
     }
 }
