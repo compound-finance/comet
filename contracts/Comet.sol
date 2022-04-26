@@ -1184,7 +1184,8 @@ contract Comet is CometCore {
         if (!isLiquidatable(account)) revert NotLiquidatable();
 
         UserBasic memory accountUser = userBasic[account];
-        int104 oldBalance = presentValue(accountUser.principal);
+        int104 oldPrincipal = accountUser.principal;
+        int104 oldBalance = presentValue(oldPrincipal);
         uint16 assetsIn = accountUser.assetsIn;
 
         uint128 basePrice = getPrice(baseTokenPriceFeed);
@@ -1209,17 +1210,19 @@ contract Comet is CometCore {
         if (newBalance < 0) {
             newBalance = 0;
         }
-        updateBasePrincipal(account, accountUser, principalValue(newBalance));
+
+        int104 newPrincipal = principalValue(newBalance);
+        updateBasePrincipal(account, accountUser, newPrincipal);
 
         // reset assetsIn
         userBasic[account].assetsIn = 0;
 
+        (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(oldPrincipal, newPrincipal);
+
         // Reserves are decreased by increasing total supply and decreasing borrows
         //  the amount of debt repaid by reserves is `newBalance - oldBalance`
-        // Note: new balance must be non-negative due to the above thresholding
-        totalSupplyBase += principalValueSupply(baseSupplyIndex, unsigned104(newBalance));
-        // Note: old balance must be negative since the account is liquidatable
-        totalBorrowBase -= principalValueBorrow(baseBorrowIndex, unsigned104(-oldBalance));
+        totalSupplyBase += supplyAmount;
+        totalBorrowBase -= repayAmount;
     }
 
     /**
