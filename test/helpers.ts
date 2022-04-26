@@ -575,7 +575,3 @@ function convertToBigInt(arr) {
 export function getGasUsed(tx: TransactionResponseExt): bigint {
   return tx.receipt.gasUsed.mul(tx.receipt.effectiveGasPrice).toBigInt();
 }
-
-export function inCoverage() {
-  return hre['__SOLIDITY_COVERAGE_RUNNING'];
-}
