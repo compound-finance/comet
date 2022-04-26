@@ -10,13 +10,18 @@ contract Fauceteer {
 
     /* errors */
     error BalanceTooLow();
+    error RequestedTooFrequently();
     error TransferFailed();
 
-    function drip(ERC20 token) public {
-        uint balance = token.balanceOf(address(this));
+    function drip(address token) public {
+        uint balance = ERC20(token).balanceOf(address(this));
         if (balance <= 0) revert BalanceTooLow();
+
+        if (block.timestamp - lastReceived[msg.sender][token] < 1 days) revert RequestedTooFrequently();
 
         bool success = ERC20(token).transfer(msg.sender, balance / 10000); // 0.01%
         if (!success) revert TransferFailed();
+
+        lastReceived[msg.sender][token] = block.timestamp;
     }
 }
