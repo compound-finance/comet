@@ -4,6 +4,8 @@ import { expect } from 'chai';
 import { Block } from '@ethersproject/abstract-provider';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
+  Bulker,
+  Bulker__factory,
   CometExt,
   CometExt__factory,
   CometHarness,
@@ -15,6 +17,8 @@ import {
   EvilToken__factory,
   FaucetToken,
   FaucetToken__factory,
+  FaucetWETH,
+  FaucetWETH__factory,
   SimplePriceFeed,
   SimplePriceFeed__factory,
   TransparentUpgradeableProxy,
@@ -57,7 +61,7 @@ export type ProtocolOpts = {
       supplyCap?: Numeric;
       initialPrice?: number;
       priceFeedDecimals?: number;
-      factory?: FaucetToken__factory | EvilToken__factory;
+      factory?: FaucetToken__factory | EvilToken__factory | FaucetWETH__factory;
     };
   };
   symbol?: string,
@@ -116,6 +120,16 @@ export type Rewards = {
   opts: RewardsOpts;
   governor: SignerWithAddress;
   rewards: CometRewards;
+};
+
+export type BulkerOpts = {
+  comet: string;
+  weth: string;
+};
+
+export type BulkerInfo = {
+  opts: BulkerOpts;
+  bulker: Bulker;
 };
 
 export function dfn<T>(x: T | undefined | null, dflt: T): T {
@@ -450,6 +464,20 @@ export async function makeRewards(opts: RewardsOpts = {}): Promise<Rewards> {
   };
 }
 
+export async function makeBulker(opts: BulkerOpts): Promise<BulkerInfo> {
+  const comet = opts.comet;
+  const weth = opts.weth;
+
+  const BulkerFactory = (await ethers.getContractFactory('Bulker')) as Bulker__factory;
+  const bulker = await BulkerFactory.deploy(comet, weth);
+  await bulker.deployed();
+
+  return {
+    opts,
+    bulker
+  };
+}
+
 export async function setTotalsBasic(comet: CometHarnessInterface, overrides = {}): Promise<TotalsBasicStructOutput> {
   const t0 = await comet.totalsBasic();
   const t1 = Object.assign({}, t0, overrides);
@@ -542,4 +570,8 @@ function convertToBigInt(arr) {
     }
   }
   return newArr;
+}
+
+export function getGasUsed(tx: TransactionResponseExt): bigint {
+  return tx.receipt.gasUsed.mul(tx.receipt.effectiveGasPrice).toBigInt();
 }
