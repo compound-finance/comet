@@ -16,7 +16,7 @@ contract CometMath {
     error InvalidInt256();
     error NegativeNumber();
 
-    function min(uint104 a, uint104 b) internal pure returns (uint104) {
+    function min(uint a, uint b) internal pure returns (uint) {
         return a < b ? a : b;
     }
 
