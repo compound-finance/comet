@@ -290,7 +290,7 @@ describe('bulker', function () {
 
     let supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address", "uint"], [alice.address, USDC.address, 1]);
     await expect(bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_ASSET()], [supplyAssetCalldata]))
-      .to.be.reverted;
+      .to.be.reverted; // Should revert with "custom error 'Unauthorized()'"
   });
 
   it('reverts on transfer asset if no permission granted to bulker', async () => {
@@ -301,7 +301,7 @@ describe('bulker', function () {
 
     let transferAssetCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address", "uint"], [bob.address, COMP.address, 1]);
     await expect(bulker.connect(alice).invoke([await bulker.ACTION_TRANSFER_ASSET()], [transferAssetCalldata]))
-      .to.be.reverted;
+      .to.be.reverted; // Should revert with "custom error 'Unauthorized()'"
   });
 
   it('reverts on withdraw asset if no permission granted to bulker', async () => {
@@ -312,7 +312,7 @@ describe('bulker', function () {
 
     let withdrawAssetCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address", "uint"], [alice.address, COMP.address, 1]);
     await expect(bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_ASSET()], [withdrawAssetCalldata]))
-      .to.be.reverted;
+      .to.be.reverted; // Should revert with "custom error 'Unauthorized()'"
   });
 
   it('reverts on withdraw ETH if no permission granted to bulker', async () => {
@@ -327,7 +327,7 @@ describe('bulker', function () {
 
     let withdrawEthCalldata = ethers.utils.defaultAbiCoder.encode(["address", "uint"], [alice.address, 1]);
     await expect(bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_ETH()], [withdrawEthCalldata]))
-      .to.be.reverted;
+      .to.be.reverted; // Should revert with "custom error 'Unauthorized()'"
   });
 });
 
