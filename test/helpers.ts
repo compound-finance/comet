@@ -100,18 +100,12 @@ export type Protocol = {
 };
 
 export type ConfiguratorAndProtocol = {
-  governor: SignerWithAddress,
   configurator: Configurator,
   configuratorProxy: TransparentUpgradeableConfiguratorProxy,
   proxyAdmin: CometProxyAdmin,
   cometFactory: CometFactory,
-  comet: Comet,
   cometProxy: TransparentUpgradeableProxy,
-  tokens: {
-    [symbol: string]: FaucetToken;
-  },
-  users: SignerWithAddress[]
-}
+} & Protocol;
 
 export type RewardsOpts = {
   governor?: SignerWithAddress;
@@ -138,6 +132,12 @@ export function factor(f: number): bigint {
 
 export function defactor(f: bigint | BigNumber): number {
   return Number(toBigInt(f)) / 1e18;
+}
+
+// Truncates a factor to a certain number of decimals
+export function truncateDecimals(factor: bigint | BigNumber, decimals = 4) {
+  const descaleFactor = factorScale / exp(1, decimals);
+  return toBigInt(factor) / descaleFactor * descaleFactor;
 }
 
 function toBigInt(f: bigint | BigNumber): bigint {
@@ -313,40 +313,34 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
 // Only for testing configurator. Non-configurator tests need to deploy the CometHarness instead.
 export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<ConfiguratorAndProtocol> {
-  const signers = await ethers.getSigners();
-
   const assets = opts.assets || defaultAssets();
-  let priceFeeds = {};
-  for (const asset in assets) {
-    const PriceFeedFactory = (await ethers.getContractFactory(
-      'SimplePriceFeed'
-    )) as SimplePriceFeed__factory;
-    const initialPrice = exp(assets[asset].initialPrice || 1, 8);
-    const priceFeedDecimals = assets[asset].priceFeedDecimals || 8;
-    const priceFeed = await PriceFeedFactory.deploy(initialPrice, priceFeedDecimals);
-    await priceFeed.deployed();
-    priceFeeds[asset] = priceFeed;
-  }
 
-  const governor = opts.governor || signers[0];
-  const pauseGuardian = opts.pauseGuardian || signers[1];
-  const users = signers.slice(2); // guaranteed to not be governor or pause guardian
-  const base = opts.base || 'USDC';
-  const reward = opts.reward || 'COMP';
-  const kink = dfn(opts.kink, exp(0.8, 18));
+  const {
+    governor,
+    pauseGuardian,
+    extensionDelegate,
+    users,
+    base,
+    reward,
+    comet,
+    tokens,
+    unsupportedToken,
+    priceFeeds,
+  } = await makeProtocol(opts);
+
+  // Derive the rest of the Configurator configuration values
+  const kink = await comet.kink();
   const perYearInterestRateBase = dfn(opts.interestRateBase, exp(0.005, 18));
   const perYearInterestRateSlopeLow = dfn(opts.interestRateSlopeLow, exp(0.1, 18));
   const perYearInterestRateSlopeHigh = dfn(opts.interestRateSlopeHigh, exp(3, 18));
-  const reserveRate = dfn(opts.reserveRate, exp(0.1, 18));
-  const storeFrontPriceFactor = dfn(opts.storeFrontPriceFactor, ONE);
-  const trackingIndexScale = opts.trackingIndexScale || exp(1, 15);
-  const baseTrackingSupplySpeed = dfn(opts.baseTrackingSupplySpeed, trackingIndexScale);
-  const baseTrackingBorrowSpeed = dfn(opts.baseTrackingBorrowSpeed, trackingIndexScale);
-  const baseMinForRewards = dfn(opts.baseMinForRewards, exp(1, assets[base].decimals));
-  const baseBorrowMin = dfn(opts.baseBorrowMin, exp(1, assets[base].decimals));
-  const targetReserves = dfn(opts.targetReserves, 0);
-
-  const { tokens, comet, extensionDelegate } = await makeProtocol(opts);
+  const reserveRate = await comet.reserveRate();
+  const storeFrontPriceFactor = await comet.storeFrontPriceFactor();
+  const trackingIndexScale = await comet.trackingIndexScale();
+  const baseTrackingSupplySpeed = await comet.baseTrackingSupplySpeed();
+  const baseTrackingBorrowSpeed = await comet.baseTrackingBorrowSpeed();
+  const baseMinForRewards = await comet.baseMinForRewards();
+  const baseBorrowMin = await comet.baseBorrowMin();
+  const targetReserves = await comet.targetReserves();
 
   // Deploy CometFactory
   const CometFactoryFactory = (await ethers.getContractFactory('CometFactory')) as CometFactory__factory;
@@ -416,7 +410,13 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   await configuratorProxy.deployed();
 
   return {
+    opts,
     governor,
+    pauseGuardian,
+    extensionDelegate,
+    users,
+    base,
+    reward,
     proxyAdmin,
     comet,
     cometProxy,
@@ -424,7 +424,8 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     configuratorProxy,
     cometFactory,
     tokens,
-    users
+    unsupportedToken,
+    priceFeeds,
   };
 }
 
@@ -518,8 +519,27 @@ export function event(tx, index) {
   for (const k in ev.args) {
     const v = ev.args[k];
     if (isNaN(Number(k))) {
-      args[k] = v._isBigNumber ? BigInt(v) : v;
+      if (v._isBigNumber) {
+        args[k] = BigInt(v);
+      } else if (Array.isArray(v)) {
+        args[k] = convertToBigInt(v);
+      } else {
+        args[k] = v;
+      }
     }
   }
   return { [ev.event]: args };
+}
+
+// Convert all BigNumbers in an array into BigInts
+function convertToBigInt(arr) {
+  const newArr = [];
+  for (const v of arr) {
+    if (Array.isArray(v)) {
+      newArr.push(convertToBigInt(v));
+    } else {
+      newArr.push(v._isBigNumber ? BigInt(v) : v);
+    }
+  }
+  return newArr;
 }
