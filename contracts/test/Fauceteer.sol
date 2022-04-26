@@ -9,11 +9,12 @@ contract Fauceteer {
     mapping(address => mapping(address => uint)) public lastReceived;
 
     /* errors */
+    error BalanceTooLow();
     error TransferFailed();
 
     function drip(ERC20 token) public {
         uint balance = token.balanceOf(address(this));
-        // require(balance > 0, "Fauceteer is empty");
+        if (balance <= 0) revert BalanceTooLow();
 
         bool success = ERC20(token).transfer(msg.sender, balance / 10000); // 0.01%
         if (!success) revert TransferFailed();

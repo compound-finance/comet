@@ -24,7 +24,6 @@ describe.only('Fauceteer', function () {
   it('issues a small amount of requested token to requester', async () => {
     const [_minter, requester] = await ethers.getSigners();
     const { fauceteer, tokens: { USDC } } = await makeFauceteer();
-    // expect(true).to.be.true;
     await USDC.allocateTo(fauceteer.address, exp(100, 18));
 
     expect(await USDC.balanceOf(requester.address)).to.eq(0);
@@ -35,12 +34,22 @@ describe.only('Fauceteer', function () {
     expect(await USDC.balanceOf(requester.address)).to.eq(10000000000000000n); // .01% of initial balance
   });
 
-  it.skip('throws an error if transfer fails', async () => {
+  it('throws an error if balance of asset is 0', async () => {
+    const [_minter, requester] = await ethers.getSigners();
+    const { fauceteer, tokens: { USDC } } = await makeFauceteer();
+
+    expect(await USDC.balanceOf(requester.address)).to.eq(0);
+
+    await expect(
+      fauceteer.connect(requester).drip(USDC.address)
+    ).to.be.revertedWith('BalanceTooLow()');
+  });
+
+  it.skip('issues multiple assets', async () => {
 
   });
 
-
-  it.skip('throws an error if it has none of asset', async () => {
+  it.skip('throws an error if transfer fails', async () => {
 
   });
 });
