@@ -10,7 +10,7 @@ contract Configurator is ConfiguratorStorage {
     /** Custom events **/
 
     event AddAsset(AssetConfig assetConfig);
-    event CometDeployed(address newCometAddress);
+    event CometDeployed(address newComet);
     event GovernorTransferred(address oldGovernor, address newGovernor);
     event SetFactory(address oldFactory, address newFactory);
     event SetGovernor(address oldGovernor, address newGovernor);

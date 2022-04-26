@@ -40,14 +40,29 @@ function expectAssetConfigsToMatch(
 
 describe('configurator', function () {
   it('deploys Comet', async () => {
+    const { configurator, configuratorProxy } = await makeConfigurator();
+
+    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+    const txn = await wait(configuratorAsProxy.deploy()) as any;
+    const [ newCometAddress ] = txn.receipt.events.find(event => event.event === 'CometDeployed').args;
+
+    expect(event(txn, 0)).to.be.deep.equal({
+      CometDeployed: {
+        newComet: newCometAddress,
+      }
+    });
+  });
+
+  it('deploys Comet from ProxyAdmin', async () => {
     const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
 
     expect(await proxyAdmin.getProxyImplementation(cometProxy.address)).to.be.equal(comet.address);
     expect(await proxyAdmin.getProxyImplementation(configuratorProxy.address)).to.be.equal(configurator.address);
 
     await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
+    const newCometAddress = await proxyAdmin.getProxyImplementation(cometProxy.address);
 
-    expect(await proxyAdmin.getProxyImplementation(cometProxy.address)).to.not.be.equal(comet.address);
+    expect(newCometAddress).to.not.be.equal(comet.address);
   });
 
   it('reverts if deploy is called from non-governor', async () => {
