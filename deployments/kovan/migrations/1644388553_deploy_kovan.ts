@@ -76,7 +76,7 @@ migration('1644388553_deploy_kovan', {
     );
     // Give signer 1000 WBTC
     await wait(wbtc.mint(signerAddress, exp(1000, 8)));
-    await wait(wbtc.mint(fauceteer.address, exp(1000, 8)));
+    await wait(wbtc.mint(fauceteer.address, exp(10000, 8)));
 
     let weth = await deploymentManager.clone(
       cloneAddr.weth,
@@ -91,21 +91,21 @@ migration('1644388553_deploy_kovan', {
       [signerAddress],
       cloneNetwork
     );
-    await comp.transfer(fauceteer.address, exp(1000, 18));
+    await comp.transfer(fauceteer.address, exp(10000, 18));
 
     let uni = await deploymentManager.clone(
       cloneAddr.uni,
       [signerAddress, signerAddress, 99999999999],
       cloneNetwork
     );
-    await uni.transfer(fauceteer.address, exp(1000, 18));
+    await uni.transfer(fauceteer.address, exp(10000, 18));
 
     let link = await deploymentManager.clone(
       cloneAddr.link,
       [],
       cloneNetwork
     );
-    await link.transfer(fauceteer.address, exp(1000, 18));
+    await link.transfer(fauceteer.address, exp(10000, 18));
 
     // Contracts referenced in `configuration.json`.
     let contracts = new Map<string, Contract>([
