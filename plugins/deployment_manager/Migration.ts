@@ -40,10 +40,6 @@ export class Loader<T> {
 export let loader: any;
 
 export function setupLoader<T>() {
-  if (loader) {
-    return loader;
-  }
-
   loader = new Loader<T>();
 }
 
