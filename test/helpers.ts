@@ -154,6 +154,10 @@ export function truncateDecimals(factor: bigint | BigNumber, decimals = 4) {
   return toBigInt(factor) / descaleFactor * descaleFactor;
 }
 
+export function mulPrice(n: bigint, price: bigint | BigNumber, fromScale: bigint | BigNumber): bigint {
+  return n * toBigInt(price) / toBigInt(fromScale);
+}
+
 function toBigInt(f: bigint | BigNumber): bigint {
   if (typeof f === 'bigint') {
     return f;
@@ -508,10 +512,10 @@ export async function baseBalanceOf(comet: CometInterface, account: string): Pro
 
 type Portfolio = {
   internal: {
-    [symbol: string]: BigInt,
+    [symbol: string]: bigint,
   },
   external: {
-    [symbol: string]: BigInt,
+    [symbol: string]: bigint,
   }
 }
 

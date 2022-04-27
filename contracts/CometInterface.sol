@@ -18,7 +18,8 @@ abstract contract CometInterface is CometCore, ERC20 {
     event WithdrawCollateral(address indexed src, address indexed to, address indexed asset, uint256 amount);
 
     event PauseAction(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused);
-    event Absorb(address indexed absorber, address indexed borrower, uint104 debtAbsorbed);
+    event AbsorbDebt(address indexed absorber, address indexed borrower, uint104 debtAbsorbed, uint usdValue);
+    event AbsorbCollateral(address indexed absorber, address indexed borrower, address indexed asset, uint128 collateralAbsorbed, uint usdValue);
     event BuyCollateral(address indexed buyer, address indexed asset, uint baseAmount, uint collateralAmount);
 
     function allow(address manager, bool isAllowed) virtual external;

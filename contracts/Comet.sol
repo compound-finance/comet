@@ -24,7 +24,9 @@ contract Comet is CometCore {
     /// @notice Event emitted when an action is paused/unpaused
     event PauseAction(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused);
     /// @notice Event emitted when a borrow position is absorbed by the protocol
-    event Absorb(address indexed absorber, address indexed borrower, uint104 debtAbsorbed);
+    event AbsorbDebt(address indexed absorber, address indexed borrower, uint104 debtAbsorbed, uint usdValue);
+    /// @notice Event emitted when a user's collateral is absorbed by the protocol
+    event AbsorbCollateral(address indexed absorber, address indexed borrower, address indexed asset, uint128 collateralAbsorbed, uint usdValue);
     /// @notice Event emitted when a collateral asset is purchased from the protocol
     event BuyCollateral(address indexed buyer, address indexed asset, uint baseAmount, uint collateralAmount);
 
@@ -1210,6 +1212,8 @@ contract Comet is CometCore {
 
                 uint value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
                 deltaValue += mulFactor(value, assetInfo.liquidationFactor);
+
+                emit AbsorbCollateral(absorber, account, asset, seizeAmount, value);
             }
         }
 
@@ -1234,7 +1238,8 @@ contract Comet is CometCore {
         totalBorrowBase -= repayAmount;
 
         uint104 debtAbsorbed = unsigned104(newBalance - oldBalance);
-        emit Absorb(absorber, account, debtAbsorbed);
+        uint valueOfDebtAbsorbed = mulPrice(debtAbsorbed, basePrice, uint64(baseScale));
+        emit AbsorbDebt(absorber, account, debtAbsorbed, valueOfDebtAbsorbed);
     }
 
     /**
