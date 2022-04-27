@@ -1287,7 +1287,7 @@ contract Comet is CometCore {
     }
 
     /**
-     * @notice Sets the ERC20 allowance of an asset for a manager
+     * @notice Sets Comet's ERC20 allowance of an asset for a manager
      * @dev Only callable by governor
      * @dev Note: Setting the `asset` as Comet's address will allow the manager
      * to withdraw from Comet's Comet balance
