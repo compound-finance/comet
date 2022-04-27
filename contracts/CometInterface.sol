@@ -35,7 +35,7 @@ abstract contract CometInterface is CometCore, ERC20 {
     function withdrawFrom(address src, address to, address asset, uint amount) virtual external;
 
     function withdrawReserves(address to, uint amount) virtual external;
-    function allowThis(address manager, bool isAllowed) virtual external;
+    function approveThis(address manager, address asset, uint amount) virtual external;
 
     function absorb(address absorber, address[] calldata accounts) virtual external;
     function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) virtual external;
