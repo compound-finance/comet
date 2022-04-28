@@ -2,7 +2,12 @@ import { DeploymentManager } from '../../../plugins/deployment_manager/Deploymen
 import { migration } from '../../../plugins/deployment_manager/Migration';
 import { deployNetworkComet } from '../../../src/deploy/Network';
 import { exp, wait } from '../../../test/helpers';
-import { ProxyAdmin, ProxyAdmin__factory } from '../../../build/types';
+import {
+  Fauceteer,
+  Fauceteer__factory,
+  ProxyAdmin,
+  ProxyAdmin__factory
+} from '../../../build/types';
 import { Contract } from 'ethers';
 
 let cloneNetwork = 'avalanche';
@@ -22,6 +27,11 @@ migration('1644432723_deploy_fuji', {
     let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
       'vendor/proxy/transparent/ProxyAdmin.sol',
       usdcProxyAdminArgs
+    );
+
+    let fauceteer = await deploymentManager.deploy<Fauceteer, Fauceteer__factory, []>(
+      'test/Fauceteer.sol',
+      []
     );
 
     let usdcImplementation = await deploymentManager.clone(
@@ -52,14 +62,24 @@ migration('1644432723_deploy_fuji', {
         signerAddress
       )
     );
-    await wait(usdc.configureMinter(signerAddress, exp(10000, 6)));
+    await wait(usdc.configureMinter(signerAddress, exp(20000, 6)));
     await wait(usdc.mint(signerAddress, exp(10000, 6)));
+    await wait(usdc.mint(fauceteer.address, exp(10000, 6)));
 
     let wbtc = await deploymentManager.clone(cloneAddr.wbtc, [], cloneNetwork);
-    // Give signer 1000 WBTC
+    // Give signer 10000 WBTC
     await wait(
       wbtc.mint(
         signerAddress,
+        exp(10000, 8),
+        '0x0000000000000000000000000000000000000000',
+        0,
+        '0x0000000000000000000000000000000000000000000000000000000000000000'
+      )
+    );
+    await wait(
+      wbtc.mint(
+        fauceteer.address,
         exp(10000, 8),
         '0x0000000000000000000000000000000000000000',
         0,
@@ -83,6 +103,7 @@ migration('1644432723_deploy_fuji', {
     return {
       comet: cometProxy.address,
       configurator: configuratorProxy.address,
+      fauceteer: fauceteer.address,
       usdc: usdc.address,
       wbtc: wbtc.address,
       wavax: wavax.address,
