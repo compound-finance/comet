@@ -15,7 +15,6 @@ import {
   EvilToken__factory,
   FaucetToken,
   FaucetToken__factory,
-  FaucetWETH,
   FaucetWETH__factory,
   SimplePriceFeed,
   SimplePriceFeed__factory,

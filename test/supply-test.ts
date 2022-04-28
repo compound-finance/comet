@@ -57,7 +57,7 @@ describe('supplyTo', function () {
 
   it('user supply is same as total supply', async () => {
     const protocol = await makeProtocol({base: 'USDC'});
-    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { comet, tokens, users: [bob] } = protocol;
     const { USDC } = tokens;
 
     await setTotalsBasic(comet, {
@@ -65,16 +65,16 @@ describe('supplyTo', function () {
       baseSupplyIndex: exp(1.085, 15),
     });
 
-    const i0 = await USDC.allocateTo(bob.address, 10);
+    const _i0 = await USDC.allocateTo(bob.address, 10);
     const baseAsB = USDC.connect(bob);
     const cometAsB = comet.connect(bob);
 
     const t0 = await comet.totalsBasic();
     const p0 = await portfolio(protocol, bob.address);
-    const a0 = await wait(baseAsB.approve(comet.address, 10));
+    const _a0 = await wait(baseAsB.approve(comet.address, 10));
     const s0 = await wait(cometAsB.supplyTo(bob.address, USDC.address, 10));
     const t1 = await comet.totalsBasic();
-    const p1 = await portfolio(protocol, bob.address)
+    const p1 = await portfolio(protocol, bob.address);
 
     expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(p0.external).to.be.deep.equal({USDC: 10n, COMP: 0n, WETH: 0n, WBTC: 0n});
