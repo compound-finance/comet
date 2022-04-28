@@ -78,20 +78,33 @@ abstract contract CometMainInterface is CometCore {
     function baseTokenPriceFeed() virtual external view returns (address);
     function extensionDelegate() virtual external view returns (address);
 
+    /// @dev uint64
     function kink() virtual external view returns (uint);
+    /// @dev uint64
     function perSecondInterestRateSlopeLow() virtual external view returns (uint);
+    /// @dev uint64
     function perSecondInterestRateSlopeHigh() virtual external view returns (uint);
+    /// @dev uint64
     function perSecondInterestRateBase() virtual external view returns (uint);
+    /// @dev uint64
     function reserveRate() virtual external view returns (uint);
+    /// @dev uint64
     function storeFrontPriceFactor() virtual external view returns (uint);
 
+    /// @dev uint64
     function baseScale() virtual external view returns (uint);
+    /// @dev uint64
     function trackingIndexScale() virtual external view returns (uint);
 
+    /// @dev uint64
     function baseTrackingSupplySpeed() virtual external view returns (uint);
+    /// @dev uint64
     function baseTrackingBorrowSpeed() virtual external view returns (uint);
+    /// @dev uint104
     function baseMinForRewards() virtual external view returns (uint);
+    /// @dev uint104
     function baseBorrowMin() virtual external view returns (uint);
+    /// @dev uint104
     function targetReserves() virtual external view returns (uint);
 
     function numAssets() virtual external view returns (uint8);
