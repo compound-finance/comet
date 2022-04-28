@@ -1,4 +1,4 @@
-import { Comet, ethers, expect, exp, factor, defaultAssets, makeProtocol, portfolio, wait, setTotalsBasic } from './helpers';
+import { Comet, ethers, event, expect, exp, factor, defaultAssets, makeProtocol, mulPrice, portfolio, wait, setTotalsBasic } from './helpers';
 
 describe('absorb', function () {
   it('reverts if total borrows underflows', async () => {
@@ -15,7 +15,7 @@ describe('absorb', function () {
       interestRateSlopeHigh: 0,
     };
     const protocol = await makeProtocol(params);
-    const { comet, users: [absorber, underwater] } = protocol;
+    const { comet, priceFeeds, users: [absorber, underwater] } = protocol;
 
     await setTotalsBasic(comet, { totalBorrowBase: 100n });
 
@@ -60,6 +60,17 @@ describe('absorb', function () {
     expect(lU1.numAbsorbs).to.be.equal(0);
     expect(lU1.numAbsorbed).to.be.equal(0);
     expect(lU1.approxSpend).to.be.equal(0);
+
+    const usdcPrice = await priceFeeds['USDC'].price();
+    const baseScale = await comet.baseScale();
+    expect(event(a0, 0)).to.be.deep.equal({
+      AbsorbDebt: {
+        absorber: absorber.address,
+        borrower: underwater.address,
+        debtAbsorbed: 100n,
+        usdValue: mulPrice(100n, usdcPrice, baseScale),
+      }
+    });
   });
 
   it('absorbs 2 accounts and pays out the absorber', async () => {
@@ -69,7 +80,7 @@ describe('absorb', function () {
       interestRateSlopeHigh: 0,
     };
     const protocol = await makeProtocol(params);
-    const { comet, users: [absorber, underwater1, underwater2] } = protocol;
+    const { comet, priceFeeds, users: [absorber, underwater1, underwater2] } = protocol;
 
     await setTotalsBasic(comet, { totalBorrowBase: 2000n });
 
@@ -118,6 +129,25 @@ describe('absorb', function () {
     expect(lA1.numAbsorbed).to.be.equal(2);
     //expect(lA1.approxSpend).to.be.equal(459757131288n);
     expect(lA1.approxSpend).to.be.lt(a0.receipt.gasUsed.mul(a0.receipt.effectiveGasPrice));
+
+    const usdcPrice = await priceFeeds['USDC'].price();
+    const baseScale = await comet.baseScale();
+    expect(event(a0, 0)).to.be.deep.equal({
+      AbsorbDebt: {
+        absorber: absorber.address,
+        borrower: underwater1.address,
+        debtAbsorbed: 100n,
+        usdValue: mulPrice(100n, usdcPrice, baseScale),
+      }
+    });
+    expect(event(a0, 1)).to.be.deep.equal({
+      AbsorbDebt: {
+        absorber: absorber.address,
+        borrower: underwater2.address,
+        debtAbsorbed: 700n,
+        usdValue: mulPrice(700n, usdcPrice, baseScale),
+      }
+    });
   });
 
   it('absorbs 3 accounts with collateral and pays out the absorber', async () => {
@@ -127,7 +157,7 @@ describe('absorb', function () {
       interestRateSlopeHigh: 0,
     };
     const protocol = await makeProtocol(params);
-    const { comet, tokens, users: [absorber, underwater1, underwater2, underwater3] } = protocol;
+    const { comet, tokens, priceFeeds, users: [absorber, underwater1, underwater2, underwater3] } = protocol;
     const { COMP, USDC, WBTC, WETH } = tokens;
 
     await setTotalsBasic(comet, {
@@ -207,6 +237,96 @@ describe('absorb', function () {
     expect(lA1.numAbsorbed).to.be.equal(3);
     //expect(lA1.approxSpend).to.be.equal(130651238630n);
     expect(lA1.approxSpend).to.be.lt(a0.receipt.gasUsed.mul(a0.receipt.effectiveGasPrice));
+
+    const usdcPrice = await priceFeeds['USDC'].price();
+    const compPrice = await priceFeeds['COMP'].price();
+    const wbtcPrice = await priceFeeds['WBTC'].price();
+    const wethPrice = await priceFeeds['WETH'].price();
+    const baseScale = await comet.baseScale();
+    const compScale = exp(1, await COMP.decimals());
+    const wbtcScale = exp(1, await WBTC.decimals());
+    const wethScale = exp(1, await WETH.decimals());
+    // Underwater account 1
+    expect(event(a0, 0)).to.be.deep.equal({
+      AbsorbCollateral: {
+        absorber: absorber.address,
+        borrower: underwater1.address,
+        asset: COMP.address,
+        collateralAbsorbed: exp(1, 12),
+        usdValue: mulPrice(exp(1, 12), compPrice, compScale),
+      }
+    });
+    expect(event(a0, 1)).to.be.deep.equal({
+      AbsorbDebt: {
+        absorber: absorber.address,
+        borrower: underwater1.address,
+        debtAbsorbed: exp(1, 6),
+        usdValue: mulPrice(exp(1, 6), usdcPrice, baseScale),
+      }
+    });
+    // Underwater account 2
+    expect(event(a0, 2)).to.be.deep.equal({
+      AbsorbCollateral: {
+        absorber: absorber.address,
+        borrower: underwater2.address,
+        asset: COMP.address,
+        collateralAbsorbed: exp(10, 18),
+        usdValue: mulPrice(exp(10, 18), compPrice, compScale),
+      }
+    });
+    expect(event(a0, 3)).to.be.deep.equal({
+      AbsorbCollateral: {
+        absorber: absorber.address,
+        borrower: underwater2.address,
+        asset: WETH.address,
+        collateralAbsorbed: exp(1, 18),
+        usdValue: mulPrice(exp(1, 18), wethPrice, wethScale),
+      }
+    });
+    expect(event(a0, 4)).to.be.deep.equal({
+      AbsorbDebt: {
+        absorber: absorber.address,
+        borrower: underwater2.address,
+        debtAbsorbed: exp(1, 12),
+        usdValue: mulPrice(exp(1, 12), usdcPrice, baseScale),
+      }
+    });
+    // Underwater account 3
+    expect(event(a0, 5)).to.be.deep.equal({
+      AbsorbCollateral: {
+        absorber: absorber.address,
+        borrower: underwater3.address,
+        asset: COMP.address,
+        collateralAbsorbed: exp(10000, 18),
+        usdValue: mulPrice(exp(10000, 18), compPrice, compScale),
+      }
+    });
+    expect(event(a0, 6)).to.be.deep.equal({
+      AbsorbCollateral: {
+        absorber: absorber.address,
+        borrower: underwater3.address,
+        asset: WETH.address,
+        collateralAbsorbed: exp(50, 18),
+        usdValue: mulPrice(exp(50, 18), wethPrice, wethScale),
+      }
+    });
+    expect(event(a0, 7)).to.be.deep.equal({
+      AbsorbCollateral: {
+        absorber: absorber.address,
+        borrower: underwater3.address,
+        asset: WBTC.address,
+        collateralAbsorbed: exp(50, 8),
+        usdValue: mulPrice(exp(50, 8), wbtcPrice, wbtcScale),
+      }
+    });
+    expect(event(a0, 8)).to.be.deep.equal({
+      AbsorbDebt: {
+        absorber: absorber.address,
+        borrower: underwater3.address,
+        debtAbsorbed: exp(1, 18),
+        usdValue: mulPrice(exp(1, 18), usdcPrice, baseScale),
+      }
+    });
   });
 
   it('absorbs an account with more than enough collateral to still cover debt', async () => {
@@ -220,7 +340,7 @@ describe('absorb', function () {
       })
     };
     const protocol = await makeProtocol(params);
-    const { comet, tokens, users: [absorber, underwater] } = protocol;
+    const { comet, tokens, users: [absorber, underwater], priceFeeds } = protocol;
     const { COMP, USDC, WBTC, WETH } = tokens;
 
     const debt = 1n - (exp(41000, 6) + exp(3000, 6) + exp(175, 6));
@@ -273,6 +393,50 @@ describe('absorb', function () {
     expect(lA1.numAbsorbed).to.be.equal(1);
     //expect(lA1.approxSpend).to.be.equal(1672498842684n);
     expect(lA1.approxSpend).to.be.lt(a0.receipt.gasUsed.mul(a0.receipt.effectiveGasPrice));
+
+    const usdcPrice = await priceFeeds['USDC'].price();
+    const compPrice = await priceFeeds['COMP'].price();
+    const wbtcPrice = await priceFeeds['WBTC'].price();
+    const wethPrice = await priceFeeds['WETH'].price();
+    const baseScale = await comet.baseScale();
+    const compScale = exp(1, await COMP.decimals());
+    const wbtcScale = exp(1, await WBTC.decimals());
+    const wethScale = exp(1, await WETH.decimals());
+    expect(event(a0, 0)).to.be.deep.equal({
+      AbsorbCollateral: {
+        absorber: absorber.address,
+        borrower: underwater.address,
+        asset: COMP.address,
+        collateralAbsorbed: exp(1, 18),
+        usdValue: mulPrice(exp(1, 18), compPrice, compScale),
+      }
+    });
+    expect(event(a0, 1)).to.be.deep.equal({
+      AbsorbCollateral: {
+        absorber: absorber.address,
+        borrower: underwater.address,
+        asset: WETH.address,
+        collateralAbsorbed: exp(1, 18),
+        usdValue: mulPrice(exp(1, 18), wethPrice, wethScale),
+      }
+    });
+    expect(event(a0, 2)).to.be.deep.equal({
+      AbsorbCollateral: {
+        absorber: absorber.address,
+        borrower: underwater.address,
+        asset: WBTC.address,
+        collateralAbsorbed: exp(1, 8),
+        usdValue: mulPrice(exp(1, 8), wbtcPrice, wbtcScale),
+      }
+    });
+    expect(event(a0, 3)).to.be.deep.equal({
+      AbsorbDebt: {
+        absorber: absorber.address,
+        borrower: underwater.address,
+        debtAbsorbed: pU1.internal.USDC - debt,
+        usdValue: mulPrice(pU1.internal.USDC - debt, usdcPrice, baseScale),
+      }
+    });
   });
 
   it('reverts if an account is not underwater', async () => {
