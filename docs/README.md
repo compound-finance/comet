@@ -1209,22 +1209,45 @@ function getConfiguration() external view returns (Configuration memory)
 #### Solidity
 
 ```solidity
-Comet comet = Comet(0xCometAddress);
-uint price = comet.getPrice(0xAssetAddress);
+struct Configuration {
+    address governor;
+    address pauseGuardian;
+    address baseToken;
+    address baseTokenPriceFeed;
+    address extensionDelegate;
+
+    uint64 kink;
+    uint64 perYearInterestRateSlopeLow;
+    uint64 perYearInterestRateSlopeHigh;
+    uint64 perYearInterestRateBase;
+    uint64 reserveRate;
+    uint64 storeFrontPriceFactor;
+    uint64 trackingIndexScale;
+    uint64 baseTrackingSupplySpeed;
+    uint64 baseTrackingBorrowSpeed;
+    uint104 baseMinForRewards;
+    uint104 baseBorrowMin;
+    uint104 targetReserves;
+
+    AssetConfig[] assetConfigs;
+}
+
+Configurator configurator = Configurator(0xConfiguratorAddress);
+Configuration config = configurator.getConfiguration();
 ```
 
 #### Web3.js v1.5.x
 
 ```js
-const Comet = new web3.eth.Contract(abiJson, contractAddress);
-const price = await Comet.methods.getPrice(usdcAddress).call();
+const Configurator = new web3.eth.Contract(abiJson, contractAddress);
+const config = await Configurator.methods.getConfiguration().call();
 ```
 
 #### Ethers.js v5.x
 
 ```js
-const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const price = await comet.callStatic.getPrice(usdcAddress);
+const configurator = new ethers.Contract(contractAddress, abiJson, provider);
+const config = await configurator.callStatic.getConfiguration();
 ```
 
 ## Bulk Actions
@@ -1294,7 +1317,7 @@ await bulker.invoke([ 1 ], [ supplyAssetCalldata ]);
 
 Compound III is a decentralized protocol that is governed by holders and delegates of COMP. Governance allows the community to propose, vote, and implement changes through the administrative smart contract functions of the Compound III protocol. For more information on the Governor and Timelock see the original [governance](https://compound.finance/docs/governance) section.
 
-All instances of Compound III are controlled by the Timelock contract which is the same administrator of the Compound v2 protocol. The governance system has control over each *proxy*, the *Comet factory*, and the *Comet implementation*.
+All instances of Compound III are controlled by the Timelock contract which is the same administrator of the Compound v2 protocol. The governance system has control over each *proxy*, the *Configurator implementation*, the *Comet factory*, and the *Comet implementation*.
 
 Each time an immutable parameter is set via governance proposal, a new Comet implementation must be deployed by the Comet factory. If the proposal is approved by the community, the proxy will point to the new implementation upon execution.
 
