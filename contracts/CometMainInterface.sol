@@ -36,6 +36,7 @@ abstract contract CometMainInterface is CometCore {
     function withdrawTo(address to, address asset, uint amount) virtual external;
     function withdrawFrom(address src, address to, address asset, uint amount) virtual external;
 
+    function approveThis(address manager, address asset, uint amount) virtual external;
     function withdrawReserves(address to, uint amount) virtual external;
 
     function absorb(address absorber, address[] calldata accounts) virtual external;
@@ -50,6 +51,10 @@ abstract contract CometMainInterface is CometCore {
     function isLiquidatable(address account) virtual external view returns (bool);
     function getBorrowLiquidity(address account) virtual external view returns (int);
     function getLiquidationMargin(address account) virtual external view returns (int);
+
+    function totalSupply() virtual external view returns (uint256);
+    function balanceOf(address owner) virtual external view returns (uint256);
+    function borrowBalanceOf(address account) virtual external view returns (uint256);
 
     function pause(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused) virtual external;
     function isSupplyPaused() virtual external view returns (bool);
@@ -74,8 +79,10 @@ abstract contract CometMainInterface is CometCore {
     function perSecondInterestRateSlopeHigh() virtual external view returns (uint);
     function perSecondInterestRateBase() virtual external view returns (uint);
     function reserveRate() virtual external view returns (uint);
+    function storeFrontPriceFactor() virtual external view returns (uint);
 
     function baseScale() virtual external view returns (uint);
+    function trackingIndexScale() virtual external view returns (uint);
 
     function baseTrackingSupplySpeed() virtual external view returns (uint);
     function baseTrackingBorrowSpeed() virtual external view returns (uint);

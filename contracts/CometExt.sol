@@ -48,11 +48,11 @@ contract CometExt is CometExtInterface {
 
     /** External getters for internal constants **/
 
-    function baseAccrualScale() external override pure returns (uint64) { return BASE_ACCRUAL_SCALE; }
-    function baseIndexScale() external override pure returns (uint64) { return BASE_INDEX_SCALE; }
-    function factorScale() external override pure returns (uint64) { return FACTOR_SCALE; }
-    function priceScale() external override pure returns (uint64) { return PRICE_SCALE; }
-    function maxAssets() external override pure returns (uint8) { return MAX_ASSETS; }
+    function baseAccrualScale() override external pure returns (uint64) { return BASE_ACCRUAL_SCALE; }
+    function baseIndexScale() override external pure returns (uint64) { return BASE_INDEX_SCALE; }
+    function factorScale() override external pure returns (uint64) { return FACTOR_SCALE; }
+    function priceScale() override external pure returns (uint64) { return PRICE_SCALE; }
+    function maxAssets() override external pure returns (uint8) { return MAX_ASSETS; }
 
     /**
      * @notice Aggregate variables tracked for the entire market
@@ -76,7 +76,7 @@ contract CometExt is CometExtInterface {
      * @notice Get the ERC20 symbol for wrapped base token
      * @return The symbol as a string
      */
-    function symbol() external override view returns (string memory) {
+    function symbol() override external view returns (string memory) {
         uint8 i;
         for (i = 0; i < 32; i++) {
             if (symbol32[i] == 0) {
@@ -96,7 +96,7 @@ contract CometExt is CometExtInterface {
      * @param asset The collateral asset whi
      * @return The collateral balance of the account
      */
-    function collateralBalanceOf(address account, address asset) external override view returns (uint128) {
+    function collateralBalanceOf(address account, address asset) override external view returns (uint128) {
         return userCollateral[account][asset].balance;
     }
 
@@ -105,7 +105,7 @@ contract CometExt is CometExtInterface {
      * @param account The account to query
      * @return The accrued rewards, scaled by `BASE_ACCRUAL_SCALE`
      */
-    function baseTrackingAccrued(address account) external override view returns (uint64) {
+    function baseTrackingAccrued(address account) override external view returns (uint64) {
         return userBasic[account].baseTrackingAccrued;
     }
 
@@ -117,7 +117,7 @@ contract CometExt is CometExtInterface {
       * @param amount Either uint.max (to allow) or zero (to disallow)
       * @return Whether or not the approval change succeeded
       */
-    function approve(address spender, uint256 amount) external override returns (bool) {
+    function approve(address spender, uint256 amount) override external returns (bool) {
         if (amount == type(uint256).max) {
             allowInternal(msg.sender, spender, true);
         } else if (amount == 0) {
@@ -137,7 +137,7 @@ contract CometExt is CometExtInterface {
       * @param spender The address of the account which may transfer tokens
       * @return Either uint.max (spender is allowed) or zero (spender is disallowed)
       */
-    function allowance(address owner, address spender) external override view returns (uint256) {
+    function allowance(address owner, address spender) override external view returns (uint256) {
         return hasPermission(owner, spender) ? type(uint256).max : 0;
     }
 
@@ -177,7 +177,7 @@ contract CometExt is CometExtInterface {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external override {
+    ) override external {
         if (uint256(s) > MAX_VALID_ECDSA_S) revert InvalidValueS();
         // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
         if (v != 27 && v != 28) revert InvalidValueV();

@@ -79,7 +79,7 @@ contract Comet is CometMainInterface {
 
     /// @notice The fraction of actual price to charge for liquidated collateral
     /// @dev uint64
-    uint public immutable storeFrontPriceFactor;
+    uint public override immutable storeFrontPriceFactor;
 
     /// @notice The scale for base token (must be less than 18 decimals)
     /// @dev uint64
@@ -87,7 +87,7 @@ contract Comet is CometMainInterface {
 
     /// @notice The scale for reward tracking
     /// @dev uint64
-    uint public immutable trackingIndexScale;
+    uint public override immutable trackingIndexScale;
 
     /// @notice The speed at which supply rewards are tracked (in trackingIndexScale)
     /// @dev uint64
@@ -224,7 +224,7 @@ contract Comet is CometMainInterface {
      * @notice Initialize storage for the contract
      * @dev Can be used from constructor or proxy
      */
-    function initializeStorage() public override {
+    function initializeStorage() override public {
         if (lastAccrualTime != 0) revert AlreadyInitialized();
 
         // Initialize aggregates
@@ -300,7 +300,7 @@ contract Comet is CometMainInterface {
      * @param i The index of the asset info to get
      * @return The asset info object
      */
-    function getAssetInfo(uint8 i) public override view returns (AssetInfo memory) {
+    function getAssetInfo(uint8 i) override public view returns (AssetInfo memory) {
         if (i >= numAssets) revert BadAsset();
 
         uint256 word_a;
@@ -437,7 +437,7 @@ contract Comet is CometMainInterface {
     /**
      * @notice Accrue interest and rewards for an account
      **/
-    function accrueAccount(address account) public override {
+    function accrueAccount(address account) override public {
         accrueInternal();
 
         UserBasic memory basic = userBasic[account];
@@ -447,7 +447,7 @@ contract Comet is CometMainInterface {
     /**
      * @return The current per second supply rate
      */
-    function getSupplyRate() public override view returns (uint64) {
+    function getSupplyRate() override public view returns (uint64) {
         uint utilization = getUtilization();
         uint reserveScalingFactor = utilization * (FACTOR_SCALE - reserveRate) / FACTOR_SCALE;
         if (utilization <= kink) {
@@ -462,7 +462,7 @@ contract Comet is CometMainInterface {
     /**
      * @return The current per second borrow rate
      */
-    function getBorrowRate() public override view returns (uint64) {
+    function getBorrowRate() override public view returns (uint64) {
         uint utilization = getUtilization();
         if (utilization <= kink) {
             // interestRateBase + interestRateSlopeLow * utilization
@@ -476,7 +476,7 @@ contract Comet is CometMainInterface {
     /**
      * @return The utilization rate of the base asset
      */
-    function getUtilization() public override view returns (uint) {
+    function getUtilization() override public view returns (uint) {
         uint totalSupply = presentValueSupply(baseSupplyIndex, totalSupplyBase);
         uint totalBorrow = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
         if (totalSupply == 0) {
@@ -491,7 +491,7 @@ contract Comet is CometMainInterface {
      * @param priceFeed The address of a price feed
      * @return The price, scaled by `PRICE_SCALE`
      */
-    function getPrice(address priceFeed) public override view returns (uint128) {
+    function getPrice(address priceFeed) override public view returns (uint128) {
         (, int price, , , ) = AggregatorV3Interface(priceFeed).latestRoundData();
         if (price <= 0 || price > type(int128).max) revert BadPrice();
         return uint128(int128(price));
@@ -500,7 +500,7 @@ contract Comet is CometMainInterface {
     /**
      * @notice Gets the total amount of protocol reserves, denominated in the number of base tokens
      */
-    function getReserves() public override view returns (int) {
+    function getReserves() override public view returns (int) {
         uint balance = ERC20(baseToken).balanceOf(address(this));
         uint104 totalSupply = presentValueSupply(baseSupplyIndex, totalSupplyBase);
         uint104 totalBorrow = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
@@ -512,7 +512,7 @@ contract Comet is CometMainInterface {
      * @param account The address to check
      * @return Whether the account is minimally collateralized enough to borrow
      */
-    function isBorrowCollateralized(address account) public view returns (bool) {
+    function isBorrowCollateralized(address account) override public view returns (bool) {
         int104 principal = userBasic[account].principal;
 
         if (principal >= 0) {
@@ -553,7 +553,7 @@ contract Comet is CometMainInterface {
      * @param account The address to check liquidity for
      * @return The common price quantity of borrow liquidity
      */
-    function getBorrowLiquidity(address account) public override view returns (int) {
+    function getBorrowLiquidity(address account) override public view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
 
         int liquidity = signedMulPrice(
@@ -585,7 +585,7 @@ contract Comet is CometMainInterface {
      * @param account The address to check
      * @return Whether the account is minimally collateralized enough to not be liquidated
      */
-    function isLiquidatable(address account) public view returns (bool) {
+    function isLiquidatable(address account) override public view returns (bool) {
         int104 principal = userBasic[account].principal;
 
         if (principal >= 0) {
@@ -626,7 +626,7 @@ contract Comet is CometMainInterface {
      * @param account The address to check margin for
      * @return The common price quantity of liquidation margin
      */
-    function getLiquidationMargin(address account) public override view returns (int) {
+    function getLiquidationMargin(address account) override public view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
 
         int liquidity = signedMulPrice(
@@ -695,7 +695,7 @@ contract Comet is CometMainInterface {
         bool withdrawPaused,
         bool absorbPaused,
         bool buyPaused
-    ) external override {
+    ) override external {
         if (msg.sender != governor && msg.sender != pauseGuardian) revert Unauthorized();
 
         pauseFlags =
@@ -712,35 +712,35 @@ contract Comet is CometMainInterface {
     /**
      * @return Whether or not supply actions are paused
      */
-    function isSupplyPaused() public override view returns (bool) {
+    function isSupplyPaused() override public view returns (bool) {
         return toBool(pauseFlags & (uint8(1) << PAUSE_SUPPLY_OFFSET));
     }
 
     /**
      * @return Whether or not transfer actions are paused
      */
-    function isTransferPaused() public override view returns (bool) {
+    function isTransferPaused() override public view returns (bool) {
         return toBool(pauseFlags & (uint8(1) << PAUSE_TRANSFER_OFFSET));
     }
 
     /**
      * @return Whether or not withdraw actions are paused
      */
-    function isWithdrawPaused() public override view returns (bool) {
+    function isWithdrawPaused() override public view returns (bool) {
         return toBool(pauseFlags & (uint8(1) << PAUSE_WITHDRAW_OFFSET));
     }
 
     /**
      * @return Whether or not absorb actions are paused
      */
-    function isAbsorbPaused() public override view returns (bool) {
+    function isAbsorbPaused() override public view returns (bool) {
         return toBool(pauseFlags & (uint8(1) << PAUSE_ABSORB_OFFSET));
     }
 
     /**
      * @return Whether or not buy actions are paused
      */
-    function isBuyPaused() public override view returns (bool) {
+    function isBuyPaused() override public view returns (bool) {
         return toBool(pauseFlags & (uint8(1) << PAUSE_BUY_OFFSET));
     }
 
@@ -853,7 +853,7 @@ contract Comet is CometMainInterface {
      * @param asset The asset to supply
      * @param amount The quantity to supply
      */
-    function supply(address asset, uint amount) external override {
+    function supply(address asset, uint amount) override external {
         return supplyInternal(msg.sender, msg.sender, msg.sender, asset, amount);
     }
 
@@ -863,7 +863,7 @@ contract Comet is CometMainInterface {
      * @param asset The asset to supply
      * @param amount The quantity to supply
      */
-    function supplyTo(address dst, address asset, uint amount) external override {
+    function supplyTo(address dst, address asset, uint amount) override external {
         return supplyInternal(msg.sender, msg.sender, dst, asset, amount);
     }
 
@@ -874,7 +874,7 @@ contract Comet is CometMainInterface {
      * @param asset The asset to supply
      * @param amount The quantity to supply
      */
-    function supplyFrom(address from, address dst, address asset, uint amount) external override {
+    function supplyFrom(address from, address dst, address asset, uint amount) override external {
         return supplyInternal(msg.sender, from, dst, asset, amount);
     }
 
@@ -944,7 +944,7 @@ contract Comet is CometMainInterface {
      * @param amount The quantity to transfer
      * @return true
      */
-    function transfer(address dst, uint amount) external override returns (bool) {
+    function transfer(address dst, uint amount) override external returns (bool) {
         transferInternal(msg.sender, msg.sender, dst, baseToken, amount);
         return true;
     }
@@ -956,7 +956,7 @@ contract Comet is CometMainInterface {
      * @param amount The quantity to transfer
      * @return true
      */
-    function transferFrom(address src, address dst, uint amount) external override returns (bool) {
+    function transferFrom(address src, address dst, uint amount) override external returns (bool) {
         transferInternal(msg.sender, src, dst, baseToken, amount);
         return true;
     }
@@ -967,7 +967,7 @@ contract Comet is CometMainInterface {
      * @param asset The asset to transfer
      * @param amount The quantity to transfer
      */
-    function transferAsset(address dst, address asset, uint amount) external override {
+    function transferAsset(address dst, address asset, uint amount) override external {
         return transferInternal(msg.sender, msg.sender, dst, asset, amount);
     }
 
@@ -978,7 +978,7 @@ contract Comet is CometMainInterface {
      * @param asset The asset to transfer
      * @param amount The quantity to transfer
      */
-    function transferAssetFrom(address src, address dst, address asset, uint amount) external override {
+    function transferAssetFrom(address src, address dst, address asset, uint amount) override external {
         return transferInternal(msg.sender, src, dst, asset, amount);
     }
 
@@ -1058,7 +1058,7 @@ contract Comet is CometMainInterface {
      * @param asset The asset to withdraw
      * @param amount The quantity to withdraw
      */
-    function withdraw(address asset, uint amount) external override {
+    function withdraw(address asset, uint amount) override external {
         return withdrawInternal(msg.sender, msg.sender, msg.sender, asset, amount);
     }
 
@@ -1068,7 +1068,7 @@ contract Comet is CometMainInterface {
      * @param asset The asset to withdraw
      * @param amount The quantity to withdraw
      */
-    function withdrawTo(address to, address asset, uint amount) external override {
+    function withdrawTo(address to, address asset, uint amount) override external {
         return withdrawInternal(msg.sender, msg.sender, to, asset, amount);
     }
 
@@ -1079,7 +1079,7 @@ contract Comet is CometMainInterface {
      * @param asset The asset to withdraw
      * @param amount The quantity to withdraw
      */
-    function withdrawFrom(address src, address to, address asset, uint amount) external override {
+    function withdrawFrom(address src, address to, address asset, uint amount) override external {
         return withdrawInternal(msg.sender, src, to, asset, amount);
     }
 
@@ -1152,7 +1152,7 @@ contract Comet is CometMainInterface {
      * @param absorber The recipient of the incentive paid to the caller of absorb
      * @param accounts The list of underwater accounts to absorb
      */
-    function absorb(address absorber, address[] calldata accounts) external override {
+    function absorb(address absorber, address[] calldata accounts) override external {
         if (isAbsorbPaused()) revert Paused();
 
         uint startGas = gasleft();
@@ -1231,7 +1231,7 @@ contract Comet is CometMainInterface {
      * @param baseAmount The amount of base tokens used to buy the collateral
      * @param recipient The recipient address
      */
-    function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external override {
+    function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) override external {
         if (isBuyPaused()) revert Paused();
 
         accrueInternal();
@@ -1256,7 +1256,7 @@ contract Comet is CometMainInterface {
      * @param baseAmount The amount of the base asset to get the quote for
      * @return The quote in terms of the collateral asset
      */
-    function quoteCollateral(address asset, uint baseAmount) public override view returns (uint) {
+    function quoteCollateral(address asset, uint baseAmount) override public view returns (uint) {
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         uint128 assetPrice = getPrice(assetInfo.priceFeed);
         uint128 assetPriceDiscounted = uint128(mulFactor(assetPrice, storeFrontPriceFactor));
@@ -1272,7 +1272,7 @@ contract Comet is CometMainInterface {
      * @param to An address of the receiver of withdrawn reserves
      * @param amount The amount of reserves to be withdrawn from the protocol
      */
-    function withdrawReserves(address to, uint amount) external override {
+    function withdrawReserves(address to, uint amount) override external {
         if (msg.sender != governor) revert Unauthorized();
 
         accrueInternal();
@@ -1292,7 +1292,7 @@ contract Comet is CometMainInterface {
      * @param manager The account which will be allowed or disallowed
      * @param amount The amount of an asset to approve
      */
-    function approveThis(address manager, address asset, uint amount) external {
+    function approveThis(address manager, address asset, uint amount) override external {
         if (msg.sender != governor) revert Unauthorized();
 
         ERC20(asset).approve(manager, amount);
@@ -1303,7 +1303,7 @@ contract Comet is CometMainInterface {
      * @dev Note: uses updated interest indices to calculate
      * @return The supply of tokens
      **/
-    function totalSupply() external view returns (uint256) {
+    function totalSupply() override external view returns (uint256) {
         (uint64 baseSupplyIndex_, ) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         return presentValueSupply(baseSupplyIndex_, totalSupplyBase);
     }
@@ -1314,7 +1314,7 @@ contract Comet is CometMainInterface {
      * @param account The account whose balance to query
      * @return The present day base balance magnitude of the account, if positive
      */
-    function balanceOf(address account) external view returns (uint256) {
+    function balanceOf(address account) override external view returns (uint256) {
         (uint64 baseSupplyIndex_, ) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         int104 principal = userBasic[account].principal;
         return principal > 0 ? presentValueSupply(baseSupplyIndex_, unsigned104(principal)) : 0;
@@ -1326,7 +1326,7 @@ contract Comet is CometMainInterface {
      * @param account The account whose balance to query
      * @return The present day base balance magnitude of the account, if negative
      */
-    function borrowBalanceOf(address account) external view returns (uint256) {
+    function borrowBalanceOf(address account) override external view returns (uint256) {
         (, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         int104 principal = userBasic[account].principal;
         return principal < 0 ? presentValueBorrow(baseBorrowIndex_, unsigned104(-principal)) : 0;
