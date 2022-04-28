@@ -19,7 +19,6 @@ contract Comet is CometMainInterface {
     error BadDecimals();
     error BadDiscount();
     error BadKink();
-    error BadLiquidationFactor();
     error BadMinimum();
     error BadPrice();
     error BadReserveRate();
@@ -79,7 +78,7 @@ contract Comet is CometMainInterface {
 
     /// @notice The fraction of actual price to charge for liquidated collateral
     /// @dev uint64
-    uint public override immutable storeFrontPriceFactor;
+    uint public override immutable storeFrontPriceFactor; // XXX rename to storeFrontSplitFactor???
 
     /// @notice The scale for base token (must be less than 18 decimals)
     /// @dev uint64
@@ -265,10 +264,6 @@ contract Comet is CometMainInterface {
         // Ensure collateral factors are within range
         if (assetConfig.borrowCollateralFactor >= assetConfig.liquidateCollateralFactor) revert BorrowCFTooLarge();
         if (assetConfig.liquidateCollateralFactor > MAX_COLLATERAL_FACTOR) revert LiquidateCFTooLarge();
-
-        // Ensure liquidation factor is not greater than the storefront price factor
-        // Otherwise, protocol will lose funds on liquidation
-        if (assetConfig.liquidationFactor > storeFrontPriceFactor) revert BadLiquidationFactor();
 
         unchecked {
             // Keep 4 decimals for each factor
@@ -1259,7 +1254,10 @@ contract Comet is CometMainInterface {
     function quoteCollateral(address asset, uint baseAmount) override public view returns (uint) {
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         uint128 assetPrice = getPrice(assetInfo.priceFeed);
-        uint128 assetPriceDiscounted = uint128(mulFactor(assetPrice, storeFrontPriceFactor));
+        // Store front discount is derived from the collateral asset's liquidationFactor and storeFrontPriceFactor
+        // discount = storeFrontPriceFactor * (1e18 - liquidationFactor)
+        uint discountFactor = mulFactor(storeFrontPriceFactor, FACTOR_SCALE - assetInfo.liquidationFactor);
+        uint128 assetPriceDiscounted = uint128(mulFactor(assetPrice, FACTOR_SCALE - discountFactor));
         uint128 basePrice = getPrice(baseTokenPriceFeed);
         // # of collateral assets
         // = (TotalValueOfBaseAmount / DiscountedPriceOfCollateralAsset) * assetScale
