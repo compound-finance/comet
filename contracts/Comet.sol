@@ -76,9 +76,9 @@ contract Comet is CometMainInterface {
     /// @dev uint64
     uint public override immutable reserveRate;
 
-    /// @notice The fraction of actual price to charge for liquidated collateral
+    /// @notice The fraction of the liquidation penalty that goes to buyers of collateral instead of the protocol
     /// @dev uint64
-    uint public override immutable storeFrontPriceFactor; // XXX rename to storeFrontSplitFactor???
+    uint public override immutable storeFrontPriceFactor;
 
     /// @notice The scale for base token (must be less than 18 decimals)
     /// @dev uint64
