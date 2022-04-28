@@ -1298,7 +1298,7 @@ All instances of Compound III are controlled by the Timelock contract which is t
 
 Each time an immutable parameter is set via governance proposal, a new Comet implementation must be deployed by the Comet factory. If the proposal is approved by the community, the proxy will point to the new implementation upon execution.
 
-To set protocol parameters in a proposal, the Timelock must call all of the relevant set methods on the *Configurator* contract, followed by `deployAndUpgradeTo` on the *CometProxyAdmin* contract.
+To set specific protocol parameters in a proposal, the Timelock must call all of the relevant set methods on the *Configurator* contract, followed by `deployAndUpgradeTo` on the *CometProxyAdmin* contract.
 
 ### Set Comet Factory
 
@@ -1432,7 +1432,7 @@ function setReserveRate(uint64 newReserveRate) external
 
 ### Store Front Price Factor
 
-This function sets the discount rate of collateral for sale as part of the account absorbtion process. The rate is a decimal scaled up by `10 ^ 18`.
+This function sets the discount rate of collateral for sale as part of the account absorption process. The rate is a decimal scaled up by `10 ^ 18`.
 
 #### Configurator
 
@@ -1583,7 +1583,7 @@ The liquidation factor is a decimal value that is between 0 and 1 (inclusive) wh
 
 The following is an example of the liquidation factor's role in a Compound III liquidation:
 
-An underwater account has supplied $100 of WBTC as collateral. If the WBTC liquidation factor is `0.9`, the user will receive $90 of the base asset when a liquidator triggers an absorbtion of their account.
+An underwater account has supplied $100 of WBTC as collateral. If the WBTC liquidation factor is `0.9`, the user will receive $90 of the base asset when a liquidator triggers an absorption of their account.
 
 #### Configurator
 
