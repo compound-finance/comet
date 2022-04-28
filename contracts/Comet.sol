@@ -1284,15 +1284,18 @@ contract Comet is CometCore {
     }
 
     /**
-     * @notice Allow or disallow another address to withdraw from Comet's Comet balance. Only
-     * callable by governor.
+     * @notice Sets Comet's ERC20 allowance of an asset for a manager
+     * @dev Only callable by governor
+     * @dev Note: Setting the `asset` as Comet's address will allow the manager
+     * to withdraw from Comet's Comet balance
+     * @param asset The asset that the manager will gain approval of
      * @param manager The account which will be allowed or disallowed
-     * @param isAllowed_ Whether to allow or disallow
+     * @param amount The amount of an asset to approve
      */
-    function allowThis(address manager, bool isAllowed_) external {
+    function approveThis(address manager, address asset, uint amount) external {
         if (msg.sender != governor) revert Unauthorized();
 
-        isAllowed[address(this)][manager] = isAllowed_;
+        ERC20(asset).approve(manager, amount);
     }
 
     /**

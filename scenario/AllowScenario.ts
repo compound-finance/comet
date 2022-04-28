@@ -23,30 +23,3 @@ scenario('Comet#allow > allows a user to rescind authorization', {}, async ({ co
 
   expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
 });
-
-scenario('Comet#allowThis > allows governor to authorize and rescind authorization', { upgrade: true }, async ({ comet, timelock, actors }, world, context) => {
-  let allowThisCalldata = utils.defaultAbiCoder.encode(["address", "bool"], [timelock.address, true]);
-  await context.fastGovernanceExecute(
-    [comet.address],
-    [0],
-    ["allowThis(address,bool)"],
-    [allowThisCalldata]
-  );
-
-  expect(await comet.isAllowed(comet.address, timelock.address)).to.be.true;
-
-  allowThisCalldata = utils.defaultAbiCoder.encode(["address", "bool"], [timelock.address, false]);
-  await context.fastGovernanceExecute(
-    [comet.address],
-    [0],
-    ["allowThis(address,bool)"],
-    [allowThisCalldata]
-  );
-
-  expect(await comet.isAllowed(comet.address, timelock.address)).to.be.false;
-});
-
-scenario('Comet#allowThis > reverts if not called by governor', { upgrade: true }, async ({ comet,timelock, actors }) => {
-  await expect(comet.allowThis(timelock.address, true))
-    .to.be.revertedWith("custom error 'Unauthorized()'");
-});
