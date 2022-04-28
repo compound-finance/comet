@@ -9,7 +9,7 @@ let aliasesSpec = { rel: 'aliases.json' };
 
 // Read aliases
 export async function getAliases(cache: Cache): Promise<Aliases> {
-  return await cache.readMap<Alias, Address>(aliasesSpec);
+  return await cache.readMap<Address>(aliasesSpec);
 }
 
 // Stores aliases
