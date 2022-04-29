@@ -521,7 +521,7 @@ const targetReserves = await comet.callStatic.targetReserves();
 In order to repay the borrows of absorbed accounts, the protocol needs to sell the seized collateral. The *Ask Price* is the price of the asset to be sold with at a discount (configured by governance). This function uses the price returned by the protocol's price feed. The discount of the asset is derived from the `StoreFrontPriceFactor` and the asset's `LiquidationFactor` using the following formula.
 
 ```
-DiscountFactor = StoreFrontPriceFactor * (FACTOR_SCALE - Asset.LiquidationFactor)
+DiscountFactor = StoreFrontPriceFactor * (1e18 - Asset.LiquidationFactor)
 ```
 
 #### Comet
