@@ -10,7 +10,6 @@ sh certora/scripts/verifyCometTotalsAndBalances.sh base_balance_vs_totals
 sh certora/scripts/verifyCometTotalsAndBalances.sh collateral_totalSupply_LE_supplyCap
 sh certora/scripts/verifyCometTotalsAndBalances.sh total_base_token
 sh certora/scripts/verifyCometTotalsAndBalances.sh balance_change_by_allowed_only
-sh certora/scripts/verifyCometTotalsAndBalances.sh collateralized_after_operation
 sh certora/scripts/verifyAssetInfo.sh
 sh certora/scripts/verifyCometAbsorbBuyCollateral.sh
 sh certora/scripts/verifyCometExt.sh

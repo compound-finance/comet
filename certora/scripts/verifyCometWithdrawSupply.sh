@@ -6,7 +6,7 @@ fi
 certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harness/SymbolicBaseToken.sol certora/harness/SymbolicAssetTokenA.sol certora/harness/SymbolicAssetTokenB.sol certora/harness/SymbolicPriceOracleA.sol certora/harness/SymbolicPriceOracleB.sol \
     --verify CometHarness:certora/specs/cometWithdrawSupply.spec  \
     --link CometHarness:baseToken=SymbolicBaseToken CometHarness:extensionDelegate=CometExt \
-    --solc solc8.11 \
+    --solc solc8.13 \
     --cloud \
     $RULE \
     --optimistic_loop \

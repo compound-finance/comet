@@ -5,7 +5,7 @@ fi
 
 certoraRun certora/harness/CometHarnessWrappers.sol \
     --verify CometHarnessWrappers:certora/specs/assetInfo.spec  \
-    --solc solc8.11 \
+    --solc solc8.13 \
     --cloud \
     $RULE \
     --optimistic_loop \
