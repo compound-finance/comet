@@ -1,6 +1,5 @@
-import { BigNumber } from "ethers";
 import { EvilToken, EvilToken__factory, FaucetToken } from '../build/types';
-import { ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, wait } from './helpers';
+import { baseBalanceOf, ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, setTotalsBasic, wait } from './helpers';
 
 describe('withdrawTo', function () {
   it('withdraws base from sender if the asset is base', async () => {
@@ -9,10 +8,9 @@ describe('withdrawTo', function () {
     const { USDC } = tokens;
 
     const i0 = await USDC.allocateTo(comet.address, 100e6);
-    const t0 = Object.assign({}, await comet.totalsBasic(), {
+    const t0 = await setTotalsBasic(comet, {
       totalSupplyBase: 100e6,
     });
-    const b0 = await wait(comet.setTotalsBasic(t0));
 
     const i1 = await comet.setBasePrincipal(bob.address, 100e6);
     const cometAsB = comet.connect(bob);
@@ -56,8 +54,7 @@ describe('withdrawTo', function () {
     expect(q1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(t1.totalSupplyBase).to.be.equal(0n);
     expect(t1.totalBorrowBase).to.be.equal(0n);
-    // XXX disable during coverage? more ideally coverage would not modify gas costs
-    //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(80000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(100000);
   });
 
   it('withdraws collateral from sender if the asset is collateral', async () => {
@@ -106,8 +103,7 @@ describe('withdrawTo', function () {
     expect(q1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(q1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(t1.totalSupplyAsset).to.be.equal(0n);
-    // XXX disable during coverage? more ideally coverage would not modify gas costs
-    //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(60000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(80000);
   });
 
   it('calculates base principal correctly', async () => {
@@ -116,11 +112,10 @@ describe('withdrawTo', function () {
     const { USDC } = tokens;
 
     await USDC.allocateTo(comet.address, 100e6);
-    const totals0 = Object.assign({}, await comet.totalsBasic(), {
+    const totals0 = await setTotalsBasic(comet, {
       baseSupplyIndex: 2e15,
       totalSupplyBase: 50e6, // 100e6 in present value
     });
-    await wait(comet.setTotalsBasic(totals0));
 
     await comet.setBasePrincipal(bob.address, 50e6); // 100e6 in present value
     const cometAsB = comet.connect(bob);
@@ -202,20 +197,16 @@ describe('withdrawTo', function () {
     await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
 
     let t0 = await comet.totalsBasic();
-    t0 = Object.assign({}, t0, {
+    t0 = await setTotalsBasic(comet, {
       baseBorrowIndex: t0.baseBorrowIndex.mul(2),
     });
-    await comet.setTotalsBasic(t0);
 
     await comet.connect(alice).withdrawTo(bob.address, USDC.address, 1e6);
 
     const t1 = await comet.totalsBasic();
     const baseIndexScale = await comet.baseIndexScale();
 
-    const principalValue = BigNumber.from(-1e6).mul(baseIndexScale).div(t1.baseBorrowIndex);
-    const baseBalanceOf = principalValue.mul(t1.baseBorrowIndex).div(baseIndexScale);
-
-    expect(await comet.baseBalanceOf(alice.address)).to.eq(baseBalanceOf);
+    expect(await baseBalanceOf(comet, alice.address)).to.eq(BigInt(-1e6));
     expect(await USDC.balanceOf(bob.address)).to.eq(1e6);
   });
 });
@@ -227,10 +218,9 @@ describe('withdraw', function () {
     const { USDC } = tokens;
 
     const i0 = await USDC.allocateTo(comet.address, 100e6);
-    const t0 = Object.assign({}, await comet.totalsBasic(), {
+    const t0 = await setTotalsBasic(comet, {
       totalSupplyBase: 100e6,
     });
-    const b0 = await wait(comet.setTotalsBasic(t0));
 
     const i1 = await comet.setBasePrincipal(bob.address, 100e6);
     const cometAsB = comet.connect(bob);
@@ -320,7 +310,7 @@ describe('withdraw', function () {
 
       const attack = Object.assign({}, await EVIL.getAttack(), {
         attackType: ReentryAttack.TransferFrom,
-        recipient: bob.address,
+        destination: bob.address,
         asset: USDC.address,
         amount: 1e6
       });
@@ -341,9 +331,9 @@ describe('withdraw', function () {
 
       // no USDC transferred
       expect(await USDC.balanceOf(comet.address)).to.eq(100e6);
-      expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
+      expect(await baseBalanceOf(comet, alice.address)).to.eq(0n);
       expect(await USDC.balanceOf(alice.address)).to.eq(0);
-      expect(await comet.baseBalanceOf(bob.address)).to.eq(0);
+      expect(await baseBalanceOf(comet, bob.address)).to.eq(0n);
       expect(await USDC.balanceOf(bob.address)).to.eq(0);
     });
 
@@ -366,7 +356,7 @@ describe('withdraw', function () {
 
       const attack = Object.assign({}, await EVIL.getAttack(), {
         attackType: ReentryAttack.WithdrawFrom,
-        recipient: bob.address,
+        destination: bob.address,
         asset: USDC.address,
         amount: 1e6
       });
@@ -388,9 +378,9 @@ describe('withdraw', function () {
 
       // no USDC transferred
       expect(await USDC.balanceOf(comet.address)).to.eq(100e6);
-      expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
+      expect(await baseBalanceOf(comet, alice.address)).to.eq(0n);
       expect(await USDC.balanceOf(alice.address)).to.eq(0);
-      expect(await comet.baseBalanceOf(bob.address)).to.eq(0);
+      expect(await baseBalanceOf(comet, bob.address)).to.eq(0n);
       expect(await USDC.balanceOf(bob.address)).to.eq(0);
     });
   });

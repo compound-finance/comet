@@ -1,7 +1,8 @@
 import { expect } from 'chai';
-import { BigNumber } from 'ethers';
+import { BigNumber, BigNumberish } from 'ethers';
 import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
+import { GovernorSimple } from '../build/types';
 
 export function abs(x: bigint): bigint {
   return x < 0n ? -x : x;
@@ -69,6 +70,17 @@ export function optionalNumber<T>(o: object, key: string): number {
     throw new Error(`[requirement ${key} required to be number type]`);
   }
   return value;  
+}
+
+// Instantly executes some actions through the governance proposal process
+// Note: `governor` must be connected to an `admin` signer
+export async function fastGovernanceExecute(governor: GovernorSimple, targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
+  let tx = await (await governor.propose(targets, values, signatures, calldatas, 'FastExecuteProposal')).wait();
+  let event = tx.events.find(event => event.event === 'ProposalCreated');
+  let [ proposalId ] = event.args;
+
+  await governor.queue(proposalId);
+  await governor.execute(proposalId);
 }
 
 export async function getActorAddressFromName(name: string, context: CometContext): Promise<string> {

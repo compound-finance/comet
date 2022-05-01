@@ -50,7 +50,7 @@ async function getContractByAddressProxy(
 ): Promise<Contract> {
   let name;
   let { contract, abi } = await getContractByAddress(cache, accAlias, accAddress, hre, signer);
-  let nextABI = mergeABI(accABI, abi);
+  let nextABI = mergeABI(abi, accABI); // duplicate entries (like constructor) defer to accABI
   if (proxies.has(accAlias)) {
     return await getContractByAddressProxy(
       cache,

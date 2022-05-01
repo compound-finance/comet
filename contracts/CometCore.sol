@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
-pragma solidity ^0.8.11;
+pragma solidity 0.8.13;
 
 import "./CometConfiguration.sol";
 import "./CometStorage.sol";
@@ -45,6 +45,9 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
     /// @dev 365 days * 24 hours * 60 minutes * 60 seconds
     uint64 internal constant SECONDS_PER_YEAR = 31_536_000;
 
+    /// @dev The scale for base tracking accrual
+    uint64 internal constant BASE_ACCRUAL_SCALE = 1e6;
+
     /// @dev The scale for base index (depends on time/rate scales, not base token)
     uint64 internal constant BASE_INDEX_SCALE = 1e15;
 
@@ -60,12 +63,13 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
      * @param manager The manager account
      * @return Whether or not the manager has permission
      */
-    function hasPermission(address owner, address manager) internal view returns (bool) {
+    function hasPermission(address owner, address manager) public view returns (bool) {
         return owner == manager || isAllowed[owner][manager];
     }
 
     /**
      * @dev The positive present supply balance if positive or the negative borrow balance if negative
+     *  Note This will overflow at 2^103/1e18=~10 trillion for assets with 18 decimals.
      */
     function presentValue(int104 principalValue_) internal view returns (int104) {
         if (principalValue_ >= 0) {
@@ -77,6 +81,7 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
 
     /**
      * @dev The principal amount projected forward by the supply index
+     *  Note This will overflow at 2^104/1e18=~20 trillion for assets with 18 decimals.
      */
     function presentValueSupply(uint64 baseSupplyIndex_, uint104 principalValue_) internal pure returns (uint104) {
         return uint104(uint(principalValue_) * baseSupplyIndex_ / BASE_INDEX_SCALE);
@@ -84,6 +89,7 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
 
     /**
      * @dev The principal amount projected forward by the borrow index
+     *  Note This will overflow at 2^104/1e18=~20 trillion for assets with 18 decimals.
      */
     function presentValueBorrow(uint64 baseBorrowIndex_, uint104 principalValue_) internal pure returns (uint104) {
         return uint104(uint(principalValue_) * baseBorrowIndex_ / BASE_INDEX_SCALE);
@@ -101,16 +107,16 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
     }
 
     /**
-     * @dev The present value projected backward by the supply index
+     * @dev The present value projected backward by the supply index (rounded down)
      */
     function principalValueSupply(uint64 baseSupplyIndex_, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * BASE_INDEX_SCALE / baseSupplyIndex_);
+        return uint104((uint(presentValue_) * BASE_INDEX_SCALE) / baseSupplyIndex_);
     }
 
     /**
-     * @dev The present value projected backwrd by the borrow index
+     * @dev The present value projected backward by the borrow index (rounded up)
      */
     function principalValueBorrow(uint64 baseBorrowIndex_, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104(uint(presentValue_) * BASE_INDEX_SCALE / baseBorrowIndex_);
+        return uint104((uint(presentValue_) * BASE_INDEX_SCALE + baseBorrowIndex_ - 1) / baseBorrowIndex_);
     }
 }

@@ -7,6 +7,7 @@ jobs:
     name: Run coverage
     runs-on: ubuntu-latest
     env:
+      OPTIMIZER_DISABLED: true
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
@@ -23,7 +24,7 @@ jobs:
         run: yarn install --non-interactive --frozen-lockfile && yarn build
 
       - name: Run tests
-        run: yarn test:coverage
+        run: yarn cover
 
       - name: Upload the coverage reports to Coveralls
         uses: coverallsapp/github-action@master

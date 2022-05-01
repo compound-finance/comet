@@ -3,6 +3,7 @@ import { BigNumberish, Signature, ethers, ContractReceipt } from 'ethers';
 import { CometContext } from './CometContext';
 import { AddressLike, resolveAddress } from './Address';
 import { ERC20__factory } from '../../build/types';
+import { baseBalanceOf } from '../../test/helpers';
 
 const types = {
   Authorization: [
@@ -54,7 +55,7 @@ export default class CometActor {
 
   async getCometBaseBalance(): Promise<bigint> {
     let comet = await this.context.getComet();
-    return (await comet.baseBalanceOf(this.signer.address)).toBigInt();
+    return baseBalanceOf(comet, this.signer.address);
   }
 
   async sendEth(recipient: AddressLike, amount: number) {

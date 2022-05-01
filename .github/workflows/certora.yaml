@@ -64,7 +64,6 @@ jobs:
           - verifyCometTotalsAndBalances.sh collateral_totalSupply_LE_supplyCap
           - verifyCometTotalsAndBalances.sh total_base_token
           - verifyCometTotalsAndBalances.sh balance_change_by_allowed_only
-          - verifyCometTotalsAndBalances.sh collateralized_after_operation
           - verifyAssetInfo.sh
           - verifyCometAbsorbBuyCollateral.sh
           - verifyCometExt.sh

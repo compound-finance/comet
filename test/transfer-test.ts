@@ -1,5 +1,4 @@
-import { event, expect, exp, makeProtocol, portfolio, wait } from './helpers';
-import { BigNumber } from "ethers";
+import { baseBalanceOf, event, expect, exp, makeProtocol, portfolio, setTotalsBasic, wait } from './helpers';
 
 describe('transfer', function () {
   it('transfers base from sender if the asset is base', async () => {
@@ -36,8 +35,7 @@ describe('transfer', function () {
     expect(q1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyBase).to.be.equal(t0.totalSupplyBase);
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
-    // XXX disable during coverage? more ideally coverage would not modify gas costs
-    //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(80000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(90000);
   });
 
   it('transfers collateral from sender if the asset is collateral', async () => {
@@ -74,8 +72,7 @@ describe('transfer', function () {
     expect(p1.internal).to.be.deep.equal({ USDC: 0n, COMP: exp(8, 8), WETH: 0n, WBTC: 0n });
     expect(q1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyAsset).to.be.equal(t0.totalSupplyAsset);
-    // XXX disable during coverage? more ideally coverage would not modify gas costs
-    //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(50000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(95000);
   });
 
   it('calculates base principal correctly', async () => {
@@ -86,11 +83,9 @@ describe('transfer', function () {
     await comet.setBasePrincipal(bob.address, 50e6); // 100e6 in present value
     const cometAsB = comet.connect(bob);
 
-    let totals0 = await comet.totalsBasic();
-    totals0 = Object.assign({}, await comet.totalsBasic(), {
+    const totals0 = await setTotalsBasic(comet, {
       baseSupplyIndex: 2e15,
     });
-    await wait(comet.setTotalsBasic(totals0));
 
     const alice0 = await portfolio(protocol, alice.address);
     const bob0 = await portfolio(protocol, bob.address);
@@ -144,22 +139,15 @@ describe('transfer', function () {
     const baseIndexScale = await comet.baseIndexScale();
 
     let t0 = await comet.totalsBasic();
-    t0 = Object.assign({}, t0, {
+    t0 = await setTotalsBasic(comet, {
       baseBorrowIndex: t0.baseBorrowIndex.mul(2),
     });
-    await comet.setTotalsBasic(t0);
 
     await comet.connect(alice).transferAsset(bob.address, USDC.address, 100e6);
 
     const t1 = await comet.totalsBasic();
 
-    // transferBase sets principal to principalValueBorrow(-100e6)
-    const principalValue = BigNumber.from(-100e6).mul(baseIndexScale).div(t1.baseBorrowIndex);
-
-    // baseBalanceOf returns presentValueBorrow(principal)
-    const baseBalanceOf = principalValue.mul(t1.baseBorrowIndex).div(baseIndexScale);
-
-    expect(await comet.baseBalanceOf(alice.address)).to.eq(baseBalanceOf);
+    expect(await baseBalanceOf(comet, alice.address)).to.eq(BigInt(-100e6));
   });
 
   it('cant borrow less than the minimum', async () => {

@@ -1,31 +1,9 @@
 import { CometProperties, scenario } from './context/CometContext';
 import { expect } from 'chai';
 
-scenario('initializes governor correctly', {}, async ({ comet, actors }, world) => {
-  // TODO: Make this more interesting, plus the admin here isn't right for mainnet, etc.
-  expect(await comet.governor()).to.equal(actors['admin']!.address);
-});
-
-scenario('Comet#allow > allows a user to authorize a manager', { upgrade: true }, async ({ comet, actors }) => {
-  const { albert, betty } = actors;
-
-  const txn = await albert.allow(betty, true);
-
-  expect(await comet.isAllowed(albert.address, betty.address)).to.be.true;
-
-  return txn; // return txn to measure gas
-});
-
-scenario('Comet#allow > allows a user to rescind authorization', {}, async ({ comet, actors }) => {
-  const { albert, betty } = actors;
-
-  await albert.allow(betty, true);
-
-  expect(await comet.isAllowed(albert.address, betty.address)).to.be.true;
-
-  await albert.allow(betty, false);
-
-  expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
+scenario('initializes governor correctly', { migrate: true }, async ({ comet, timelock, actors }, world) => {
+  // TODO: Make this more interesting.
+  expect(await comet.governor()).to.equal(timelock.address);
 });
 
 scenario('has assets', {}, async ({ comet, actors, assets }: CometProperties, world) => {
