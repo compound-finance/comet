@@ -4,7 +4,7 @@ import { Cache } from './Cache';
 import { loadContract } from '../import/import';
 
 const DEFAULT_RETRIES = 5;
-const DEFAULT_RETRY_DELAY = 7500;
+const DEFAULT_RETRY_DELAY = 30_000;
 
 /**
  * Imports a contract from remote, e.g. Etherscan, generating local build file.
@@ -36,6 +36,9 @@ export async function importContract(
     if (retries === 0 || (e.message && e.message.includes('Contract source code not verified'))) {
       throw e;
     }
+
+    console.log(`Import failed for ${network}@${address}`);
+    console.log(`retrying in ${retryDelay / 1000}s; ${retries} retries left`);
 
     await new Promise((resolve) => setTimeout(resolve, retryDelay));
     return await importContract(network, address, retries - 1, retryDelay);

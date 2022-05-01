@@ -1,4 +1,4 @@
-import { ethers, event, expect, makeProtocol, wait } from './helpers';
+import { baseBalanceOf, ethers, event, expect, makeProtocol, setTotalsBasic, wait } from './helpers';
 
 describe('erc20', function () {
   it('has correct name', async () => {
@@ -22,11 +22,10 @@ describe('erc20', function () {
   it('has correct totalSupply', async () => {
     const { comet } = await makeProtocol();
 
-    let totalsBasic = await comet.totalsBasic();
-    totalsBasic = Object.assign({}, totalsBasic, {
-      totalSupplyBase: 100e6,
+    await setTotalsBasic(comet, {
+      baseSupplyIndex: 2e15,
+      totalSupplyBase: 50e6,
     });
-    await comet.setTotalsBasic(totalsBasic);
 
     const totalSupply = await comet.totalSupply();
 
@@ -43,10 +42,9 @@ describe('erc20', function () {
       await comet.setBasePrincipal(user.address, 100e6);
 
       let totalsBasic = await comet.totalsBasic();
-      totalsBasic = Object.assign({}, totalsBasic, {
+      await setTotalsBasic(comet, {
         baseSupplyIndex: totalsBasic.baseSupplyIndex.mul(2),
       });
-      await comet.setTotalsBasic(totalsBasic);
 
       const balanceOf = await comet.balanceOf(user.address);
       expect(balanceOf).to.eq(200e6);
@@ -71,14 +69,17 @@ describe('erc20', function () {
       users: [alice, bob],
     } = await makeProtocol();
 
-    expect(await comet.baseBalanceOf(bob.address)).to.eq(0);
+    expect(await baseBalanceOf(comet, bob.address)).to.eq(0n);
 
-    await comet.setBasePrincipal(alice.address, 100e6);
+    await comet.setBasePrincipal(alice.address, 50e6);
+    await setTotalsBasic(comet, {
+      baseSupplyIndex: 2e15,
+    });
 
     const tx = await wait(comet.connect(alice).transfer(bob.address, 100e6));
 
-    expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
-    expect(await comet.baseBalanceOf(bob.address)).to.eq(100e6);
+    expect(await baseBalanceOf(comet, alice.address)).to.eq(0n);
+    expect(await baseBalanceOf(comet, bob.address)).to.eq(BigInt(100e6));
     expect(event(tx, 0)).to.be.deep.equal({
       Transfer: {
         from: alice.address,
@@ -95,12 +96,15 @@ describe('erc20', function () {
         users: [alice, bob],
       } = await makeProtocol();
 
-      await comet.setBasePrincipal(alice.address, 100e6);
+      await comet.setBasePrincipal(alice.address, 50e6);
+      await setTotalsBasic(comet, {
+        baseSupplyIndex: 2e15,
+      });
 
       await comet.connect(alice).transferFrom(alice.address, bob.address, 100e6)
 
-      expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
-      expect(await comet.baseBalanceOf(bob.address)).to.eq(100e6);
+      expect(await baseBalanceOf(comet, alice.address)).to.eq(0n);
+      expect(await baseBalanceOf(comet, bob.address)).to.eq(BigInt(100e6));
     });
 
     it('reverts ERC20 transferFrom without approval', async () => {
@@ -135,8 +139,8 @@ describe('erc20', function () {
       // bob can now transfer funds from alice
       await comet.connect(bob).transferFrom(alice.address, bob.address, 100e6);
 
-      expect(await comet.baseBalanceOf(alice.address)).to.eq(0);
-      expect(await comet.baseBalanceOf(bob.address)).to.eq(100e6);
+      expect(await baseBalanceOf(comet, alice.address)).to.eq(0n);
+      expect(await baseBalanceOf(comet, bob.address)).to.eq(BigInt(100e6));
     });
 
     it('reverts ERC20 transferFrom with revoked approval', async () => {

@@ -14,6 +14,7 @@ describe('Migration', () => {
       enact: async (deploymentManager, y) => {
         x = [...x, y];
       },
+      enacted: async () => false
     });
     let migrations = (loader as Loader<string>).getMigrations();
     expect(Object.keys(migrations)).to.eql(['test migration']);
@@ -28,7 +29,11 @@ describe('Migration', () => {
   it('returns proper artifact file spec', async () => {
     let migration: Migration<null> = {
       name: 'test',
-      actions: {},
+      actions: {
+        prepare: async () => null,
+        enact: async () => {},
+        enacted: async () => false
+      },
     };
 
     expect(getArtifactSpec(migration)).to.eql({ rel: ['artifacts', 'test.json'] });

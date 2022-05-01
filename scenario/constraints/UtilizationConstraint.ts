@@ -1,8 +1,7 @@
-import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
+import { Constraint, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
-import { deployComet } from '../../src/deploy';
 import { optionalNumber } from '../utils';
-import { defactor, exp, factor, factorScale, ZERO } from '../../test/helpers';
+import { defactor, factor, factorScale } from '../../test/helpers';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
 
@@ -32,10 +31,6 @@ function getUtilizationConfig(requirements: object): UtilizationConfig | null {
   return {
     utilization: optionalNumber(requirements, 'utilization'),
   };
-}
-
-function floor(n: number): bigint {
-  return BigInt(Math.floor(n));
 }
 
 /*
@@ -80,14 +75,12 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
         }
 
         let expectedSupplyBase = totalSupplyBase + toSupplyBase;
-        let currentUtilization = totalBorrowBase / expectedSupplyBase;
+        let currentUtilizationFactor = (totalBorrowBase * factorScale) / expectedSupplyBase;
 
-        if (currentUtilization < utilizationFactor) {
-          toBorrowBase =
-            toBorrowBase + floor(utilization * Number(expectedSupplyBase)) - totalBorrowBase;
+        if (currentUtilizationFactor < utilizationFactor) {
+          toBorrowBase = toBorrowBase + (utilizationFactor * expectedSupplyBase / factorScale) - totalBorrowBase;
         } else {
-          toSupplyBase =
-            toSupplyBase + floor(Number(totalBorrowBase) / utilization) - expectedSupplyBase;
+          toSupplyBase = toSupplyBase + (totalBorrowBase * factorScale / utilizationFactor) - expectedSupplyBase;
         }
 
         // It's really hard to target a utilization if we don't have _any_ base token supply, since
@@ -142,6 +135,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
           await context.sourceTokens(world, collateralNeeded, collateralToken, borrowActor);
           await collateralToken.approve(borrowActor, comet);
           await comet.connect(borrowActor.signer).supply(collateralToken.address, collateralNeeded);
+
           await comet.connect(borrowActor.signer).withdraw(baseToken.address, toBorrowBase);
         }
 
@@ -155,7 +149,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
 
     if (utilization) {
       let comet = await context.getComet();
-      expect(defactor(await comet.getUtilization())).to.approximately(0.5, 0.000001);
+      expect(defactor(await comet.getUtilization())).to.approximately(utilization, 0.000001);
     }
   }
 }

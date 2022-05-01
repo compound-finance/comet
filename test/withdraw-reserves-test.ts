@@ -1,4 +1,4 @@
-import { expect, makeProtocol, wait } from './helpers';
+import { expect, makeProtocol, setTotalsBasic, wait } from './helpers';
 
 describe('withdrawReserves', function () {
   it('withdraws reserves from the protocol', async () => {
@@ -51,18 +51,35 @@ describe('withdrawReserves', function () {
       baseTokenBalance: 200,
     });
 
-    const totalsBasic = await comet.totalsBasic();
-
-    await wait(
-      comet.setTotalsBasic({
-        ...totalsBasic,
-        totalSupplyBase: 100n,
-      })
-    );
+    await setTotalsBasic(comet, {
+      baseSupplyIndex: 2e15,
+      totalSupplyBase: 50n,
+    });
 
     expect(await comet.getReserves()).to.be.equal(100);
 
     await expect(comet.connect(governor).withdrawReserves(alice.address, 101)).to.be.revertedWith(
+      "custom error 'InsufficientReserves()'"
+    );
+  });
+
+  it('reverts if negative reserves', async () => {
+    const {
+      comet,
+      governor,
+      users: [alice],
+    } = await makeProtocol({
+      baseTokenBalance: 0,
+    });
+
+    await setTotalsBasic(comet, {
+      baseSupplyIndex: 2e15,
+      totalSupplyBase: 50n,
+    });
+
+    expect(await comet.getReserves()).to.be.equal(-100);
+
+    await expect(comet.connect(governor).withdrawReserves(alice.address, 100)).to.be.revertedWith(
       "custom error 'InsufficientReserves()'"
     );
   });

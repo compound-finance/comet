@@ -8,7 +8,7 @@ import * as path from 'path';
 import { Cache } from '../Cache';
 import { verifyContract } from '../Verify';
 import { deployBuild } from '../Deploy';
-import { buildToken, faucetTokenBuildFile, tokenArgs } from './DeployTest';
+import { buildToken, faucetTokenBuildFile, tokenArgs } from './DeployHelpers';
 
 export function mockVerifySuccess(hre: HardhatRuntimeEnvironment) {
   let solcList = JSON.parse(fs.readFileSync(path.join(__dirname, './SolcList.json'), 'utf8'));

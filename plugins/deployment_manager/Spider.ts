@@ -130,9 +130,12 @@ async function runSpider(
           }
           const [proxyContractName, proxyContractMetadata] = getPrimaryContract(proxyBuildFile);
 
+          // duplicate entries (like constructor) defer to contractMetadata.abi
+          const mergedABI = mergeABI(proxyContractMetadata.abi, contractMetadata.abi);
+
           contract = new hre.ethers.Contract(
             address,
-            mergeABI(contractMetadata.abi, proxyContractMetadata.abi),
+            mergedABI,
             hre.ethers.provider
           );
         }

@@ -109,6 +109,18 @@ describe('constructor', function () {
     ).to.be.revertedWith("custom error 'BadDecimals()'");
   });
 
+  it('reverts if base token has fewer than 6 decimals', async () => {
+    await expect(
+      makeProtocol({
+        assets: {
+          USDC: {
+            decimals: 5,
+          },
+        },
+      })
+    ).to.be.revertedWith("custom error 'BadDecimals()'");
+  });
+
   it('reverts if base token has more than 18 decimals', async () => {
     await expect(
       makeProtocol({
@@ -121,10 +133,61 @@ describe('constructor', function () {
     ).to.be.revertedWith("custom error 'BadDecimals()'");
   });
 
+  it('reverts if liquidation factor is greater than storefront price factor', async () => {
+    await expect(
+      makeProtocol({
+        storeFrontPriceFactor: exp(0.9, 18),
+        assets: {
+          USDC: {},
+          COMP: {
+            initial: 1e7,
+            decimals: 18,
+            initialPrice: 1,
+            liquidationFactor: exp(0.95, 18),
+          },
+        },
+      })
+    ).to.be.revertedWith("custom error 'BadLiquidationFactor()'");
+  });
+
   it('reverts if initializeStorage is called after initialization', async () => {
     const { comet } = await makeProtocol();
     await expect(
       comet.initializeStorage()
     ).to.be.revertedWith("custom error 'AlreadyInitialized()'");
+  });
+
+  it('reverts if reserveRate is greater than FACTOR_SCALE (1e18)', async () => {
+    await expect(
+      makeProtocol({
+        reserveRate: exp(1.1,18)
+      })
+    ).to.be.revertedWith("custom error 'BadReserveRate()'");
+  });
+
+  it('reverts if kink is greater than FACTOR_SCALE (1e18)', async () => {
+    await expect(
+      makeProtocol({
+        kink: exp(1.2,18)
+      })
+    ).to.be.revertedWith("custom error 'BadKink()'");
+  });
+
+  it('is not possible to create a perSecondInterestRateSlopeLow above FACTOR_SCALE', async () => {
+    const uint64Max = BigInt(2**64) - 1n;
+
+    const { comet } = await makeProtocol({
+      interestRateSlopeLow: uint64Max
+    });
+
+    // max value of interestRateSlopeLow should result in a value less than FACTOR_SCALE
+    expect(await comet.perSecondInterestRateBase()).to.be.lt(exp(1, 18));
+
+    // exceeding the max value of interestRateSlopeLow should overflow
+    await expect(
+      makeProtocol({
+        interestRateSlopeLow: uint64Max + 1n
+      })
+    ).to.be.rejectedWith("value out-of-bounds"); // ethers.js error
   });
 });

@@ -1,4 +1,5 @@
-import { Comet, ethers, event, expect, exp, makeProtocol, portfolio, wait } from './helpers';
+import { ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, setTotalsBasic, wait } from './helpers';
+import { EvilToken, EvilToken__factory } from '../build/types';
 
 describe('supplyTo', function () {
   it('supplies base from sender if the asset is base', async () => {
@@ -51,8 +52,37 @@ describe('supplyTo', function () {
     expect(q1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(t1.totalSupplyBase).to.be.equal(t0.totalSupplyBase.add(100e6));
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
-    // XXX disable during coverage? more ideally coverage would not modify gas costs
-    //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(100000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(120000);
+  });
+
+  it('user supply is same as total supply', async () => {
+    const protocol = await makeProtocol({base: 'USDC'});
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { USDC } = tokens;
+
+    await setTotalsBasic(comet, {
+      totalSupplyBase: 100,
+      baseSupplyIndex: exp(1.085, 15),
+    });
+
+    const i0 = await USDC.allocateTo(bob.address, 10);
+    const baseAsB = USDC.connect(bob);
+    const cometAsB = comet.connect(bob);
+
+    const t0 = await comet.totalsBasic();
+    const p0 = await portfolio(protocol, bob.address);
+    const a0 = await wait(baseAsB.approve(comet.address, 10));
+    const s0 = await wait(cometAsB.supplyTo(bob.address, USDC.address, 10));
+    const t1 = await comet.totalsBasic();
+    const p1 = await portfolio(protocol, bob.address)
+
+    expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(p0.external).to.be.deep.equal({USDC: 10n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(p1.internal).to.be.deep.equal({USDC: 9n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(p1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(t1.totalSupplyBase).to.be.equal(109);
+    expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(120000);
   });
 
   it('supplies collateral from sender if the asset is collateral', async () => {
@@ -98,8 +128,7 @@ describe('supplyTo', function () {
     expect(q1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(q1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(t1.totalSupplyAsset).to.be.equal(t0.totalSupplyAsset.add(8e8));
-    // XXX disable during coverage? more ideally coverage would not modify gas costs
-    //expect(Number(s0.receipt.gasUsed)).to.be.lessThan(125000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(140000);
   });
 
   it('calculates base principal correctly', async () => {
@@ -111,11 +140,10 @@ describe('supplyTo', function () {
     const baseAsB = USDC.connect(bob);
     const cometAsB = comet.connect(bob);
 
-    let totals0 = await comet.totalsBasic();
-    totals0 = Object.assign({}, await comet.totalsBasic(), {
+    const totals0 = await setTotalsBasic(comet, {
       baseSupplyIndex: 2e15,
     });
-    await wait(comet.setTotalsBasic(totals0));
+
     const alice0 = await portfolio(protocol, alice.address);
     const bob0 = await portfolio(protocol, bob.address);
     const aliceBasic0 = await comet.userBasic(alice.address);
@@ -189,8 +217,37 @@ describe('supplyTo', function () {
     // Note: fee-tokens are not currently supported (for efficiency) and should not be added
   });
 
-  it.skip('is not broken by malicious re-entrancy', async () => {
-    // XXX
+  it('prevents exceeding the supply cap via re-entrancy', async () => {
+    const { comet, tokens, users: [alice, bob] } = await makeProtocol({
+      assets: {
+        USDC: {
+          decimals: 6
+        },
+        EVIL: {
+          decimals: 6,
+          initialPrice: 2,
+          factory: await ethers.getContractFactory('EvilToken') as EvilToken__factory,
+          supplyCap: 100e6
+        }
+      }
+    });
+    const { EVIL } = <{EVIL: EvilToken}>tokens;
+
+    const attack = Object.assign({}, await EVIL.getAttack(), {
+      attackType: ReentryAttack.SupplyFrom,
+      source: alice.address,
+      destination: bob.address,
+      asset: EVIL.address,
+      amount: 75e6,
+      maxCalls: 1
+    });
+    await EVIL.setAttack(attack);
+
+    await comet.connect(alice).allow(EVIL.address, true);
+
+    await expect(
+      comet.connect(alice).supplyTo(bob.address, EVIL.address, 75e6)
+    ).to.be.revertedWith("custom error 'SupplyCapExceeded()'");
   });
 });
 

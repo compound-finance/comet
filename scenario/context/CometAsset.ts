@@ -35,9 +35,19 @@ export default class CometAsset {
     await wait(this.token.connect(from.signer).transfer(recipientAddress, amount));
   }
 
-  async approve(from: CometActor, spender: AddressLike, amount?: number) {
+  async approve(from: CometActor, spender: AddressLike, amount?: number | bigint) {
     let spenderAddress = resolveAddress(spender)
     let finalAmount = amount ?? constants.MaxUint256;
     await wait(this.token.connect(from.signer).approve(spenderAddress, finalAmount));
+  }
+
+  async allowance(owner: AddressLike, spender: AddressLike): Promise<bigint> {
+    let ownerAddress = resolveAddress(owner)
+    let spenderAddress = resolveAddress(spender)
+    return (await this.token.allowance(ownerAddress, spenderAddress)).toBigInt();
+  }
+
+  async decimals(): Promise<number> {
+    return this.token.decimals();
   }
 }

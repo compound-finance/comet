@@ -6,19 +6,28 @@ import {
   CometExt__factory,
   CometExt,
   CometInterface,
+  CometFactory__factory,
+  CometFactory,
   FaucetToken__factory,
   FaucetToken,
-  ProxyAdmin,
-  ProxyAdmin__factory,
-  ERC20,
+  GovernorSimple,
+  GovernorSimple__factory,
   SimplePriceFeed,
   SimplePriceFeed__factory,
-  TransparentUpgradeableProxy__factory,
+  SimpleTimelock,
+  SimpleTimelock__factory,
   TransparentUpgradeableProxy,
+  TransparentUpgradeableProxy__factory,
+  Configurator,
+  Configurator__factory,
+  CometProxyAdmin,
+  CometProxyAdmin__factory,
+  TransparentUpgradeableConfiguratorProxy,
+  TransparentUpgradeableConfiguratorProxy__factory,
 } from '../../build/types';
 import { ConfigurationStruct } from '../../build/types/Comet';
 import { ExtConfigurationStruct } from '../../build/types/CometExt';
-import { BigNumberish } from 'ethers';
+import { BigNumberish, constants, utils } from 'ethers';
 export { Comet } from '../../build/types';
 import { DeployedContracts, ProtocolConfiguration } from './index';
 
@@ -60,6 +69,7 @@ export async function deployDevelopmentComet(
   configurationOverrides: ProtocolConfiguration = {}
 ): Promise<DeployedContracts> {
   const signers = await deploymentManager.hre.ethers.getSigners();
+  const admin = await signers[0].getAddress();
 
   let dai = await makeToken(deploymentManager, 1000000, 'DAI', 18, 'DAI');
   let gold = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
@@ -89,6 +99,19 @@ export async function deployDevelopmentComet(
     supplyCap: (500000e10).toString(),
   };
 
+  const governorSimple = await deploymentManager.deploy<GovernorSimple, GovernorSimple__factory, []>(
+    'test/GovernorSimple.sol',
+    []
+  );
+
+  const timelock = await deploymentManager.deploy<SimpleTimelock, SimpleTimelock__factory, [string]>(
+    'test/SimpleTimelock.sol',
+    [governorSimple.address]
+  );
+
+  // Initialize the storage of GovernorSimple
+  await governorSimple.initialize(timelock.address, [admin]);
+
   const {
     symbol,
     governor,
@@ -111,7 +134,7 @@ export async function deployDevelopmentComet(
   } = {
     ...{
       symbol: '📈BASE',
-      governor: await signers[0].getAddress(),
+      governor: timelock.address,
       pauseGuardian: await signers[1].getAddress(),
       baseToken: dai.address,
       baseTokenPriceFeed: daiPriceFeed.address,
@@ -165,15 +188,39 @@ export async function deployDevelopmentComet(
     [configuration]
   );
 
-  let proxy = null;
+  let cometProxy = null;
+  let configuratorProxy = null;
   if (deployProxy) {
-    let proxyAdminArgs: [] = [];
-    let proxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
-      'vendor/proxy/transparent/ProxyAdmin.sol',
-      proxyAdminArgs
+    const cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
+      'CometFactory.sol',
+      []
     );
 
-    proxy = await deploymentManager.deploy<
+    const configurator = await deploymentManager.deploy<Configurator, Configurator__factory, []>(
+      'Configurator.sol',
+      []
+    );
+
+    let proxyAdminArgs: [] = [];
+    let proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
+      'CometProxyAdmin.sol',
+      proxyAdminArgs
+    );
+    await proxyAdmin.transferOwnership(timelock.address);
+
+    // Configuration proxy
+    configuratorProxy = await deploymentManager.deploy<
+      TransparentUpgradeableConfiguratorProxy,
+      TransparentUpgradeableConfiguratorProxy__factory,
+      [string, string, string]
+    >('TransparentUpgradeableConfiguratorProxy.sol', [
+      configurator.address,
+      proxyAdmin.address,
+      (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data,
+    ]);
+
+    // Comet proxy
+    cometProxy = await deploymentManager.deploy<
       TransparentUpgradeableProxy,
       TransparentUpgradeableProxy__factory,
       [string, string, string]
@@ -183,12 +230,15 @@ export async function deployDevelopmentComet(
       (await comet.populateTransaction.initializeStorage()).data,
     ]);
 
-    await deploymentManager.putRoots(new Map([['comet', proxy.address]]));
+    await deploymentManager.putRoots(new Map([['comet', cometProxy.address], ['configurator', configuratorProxy.address]]));
   }
 
   return {
     comet,
-    proxy,
+    cometProxy,
+    configuratorProxy,
+    timelock,
+    governor: governorSimple,
     tokens: [dai, gold, silver],
   };
 }

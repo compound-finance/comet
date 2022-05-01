@@ -6,7 +6,7 @@ import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
 import '@typechain/hardhat';
-import 'solidity-coverage';
+import 'hardhat-cover';
 import 'hardhat-contract-sizer';
 import 'hardhat-gas-reporter';
 
@@ -98,12 +98,25 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
  */
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.11',
+    version: '0.8.13',
     settings: {
-      optimizer: {
-        enabled: true,
-        runs: 1,
+      optimizer: (
+        process.env['OPTIMIZER_DISABLED'] ? { enabled: false } : {
+          enabled: true,
+          runs: 1,
+          details: {
+            yulDetails: {
+              optimizerSteps: 'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul'
+            },
+          },
+        }
+      ),
+      outputSelection: {
+        "*": {
+          "*": ["evm.deployedBytecode.sourceMap"]
+        },
       },
+      viaIR: process.env['OPTIMIZER_DISABLED'] ? false : true,
     },
   },
 
@@ -115,7 +128,7 @@ const config: HardhatUserConfig = {
       gasPrice: 'auto',
       blockGasLimit: 12000000,
       accounts: {
-        mnemonic: 'myth like bonus scare over problem client lizard pioneer submit female collect',
+        mnemonic: MNEMONIC || 'myth like bonus scare over problem client lizard pioneer submit female collect',
       },
       // this should be default commented out and only enabled during dev to allow partial testing
       // XXX comment out by default once we've made the full contract fit

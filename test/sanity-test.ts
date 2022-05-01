@@ -15,3 +15,4 @@ describe('updateBaseBalance', function () {
     // XXX
   });
 });
+

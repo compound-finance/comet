@@ -1,7 +1,18 @@
 import * as fs from 'fs/promises';
+import { ABI, BuildFile, ContractMetadata } from './Types';
 
-import { Contract, utils } from 'ethers';
-import { ABI, Address, BuildFile, ContractMetadata } from './Types';
+type InputOrOutput = {
+  name: string;
+  type: string;
+}
+
+type ABIEntry = {
+  type: string;
+  name?: string;
+  inputs?: InputOrOutput[];
+  outputs?: InputOrOutput[];
+  stateMutability?: string;
+}
 
 export function debug(...args: any[]) {
   if (process.env['DEBUG']) {
@@ -54,11 +65,25 @@ export function getPrimaryContract(buildFile: BuildFile): [string, ContractMetad
   return [targetContract, contractMetadata];
 }
 
-export function mergeABI(abi0: ABI, abi1: ABI): ABI {
-  let parsedABI0 = typeof abi0 === 'string' ? JSON.parse(abi0) : abi0;
-  let parsedABI1 = typeof abi1 === 'string' ? JSON.parse(abi1) : abi1;
+// merge two ABIs
+// conflicting entries (like constructors) will defer to the second abi
+// ("abi1"); duplicate entries are removed
+export function mergeABI(abi0: ABI, abi1: ABI): ABIEntry[] {
+  let parsedABI0: ABIEntry[] = typeof abi0 === 'string' ? JSON.parse(abi0) : abi0;
+  let parsedABI1: ABIEntry[] = typeof abi1 === 'string' ? JSON.parse(abi1) : abi1;
 
-  return [...parsedABI0, ...parsedABI1];
+  const mergedABI = [...parsedABI0, ...parsedABI1];
+
+  const entries = {}
+
+  for (const abiEntry of mergedABI) {
+    // only allow one constructor or one unique entry
+    const key = abiEntry.type === "constructor" ? "constructor" : JSON.stringify(abiEntry);
+
+    entries[key] = abiEntry;
+  }
+
+  return Object.values(entries);
 }
 
 export function objectToMap<V>(obj: object | { [k: string]: V }): Map<string, V> {
