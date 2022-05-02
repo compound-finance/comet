@@ -126,12 +126,12 @@ contract CometHarnessGetters is Comet {
     } 
     
     // Calling baseBalanceOf (in CometExt) by delegating CometExt to reach Comet.sol storage
-    function baseBalanceOf(address account) public returns (int104) {
-        (bool success, bytes memory result) = extensionDelegate.delegatecall(
-            abi.encodeWithSignature("baseBalanceOf(address)", account));
-        require(success);
-        return abi.decode(result, (int104));
-    }
+    // function baseBalanceOf(address account) public returns (int104) {
+    //     (bool success, bytes memory result) = extensionDelegate.delegatecall(
+    //         abi.encodeWithSignature("baseBalanceOf(address)", account));
+    //     require(success);
+    //     return abi.decode(result, (int104));
+    // }
     
     // External wrapper for hasPermission
     function call_hasPermission(address owner, address manager) external view returns (bool) {

@@ -75,7 +75,7 @@ contract CometHarness is CometHarnessGetters {
     // Overriding the original updateAssetsIn to use the assetIn bitvector summarization
     function updateAssetsIn(
         address account,
-        address asset,
+        AssetInfo memory assetInfo,
         uint128 initialUserBalance,
         uint128 finalUserBalance
     ) override internal {
@@ -93,11 +93,11 @@ contract CometHarness is CometHarnessGetters {
             // skips the update
             return;
         }
-        assetInAfter = assetInStateChanges[assetInBefore][asset][flag];
+        assetInAfter = assetInStateChanges[assetInBefore][assetInfo.asset][flag];
         userBasic[account].assetsIn = assetInAfter;
         // The 2 requires are promising correlation of the two assetIn mappings, and that isInAsset retrieve the correct value.
-        require(assetInState[assetInAfter][asset] == flag);
-        require(isInAsset(assetInAfter,assetToIndex[asset]) == flag ); 
+        require(assetInState[assetInAfter][assetInfo.asset] == flag);
+        require(isInAsset(assetInAfter,assetToIndex[assetInfo.asset]) == flag ); 
     }
 
 
