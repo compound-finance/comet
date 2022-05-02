@@ -118,6 +118,9 @@ contract CometHarness is CometHarnessGetters {
         accrueWasCalled = true;
      }
 
+    function accruedInterestIndices(uint timeElapsed) override internal view returns (uint64, uint64) {
+        return (getBaseSupplyIndex(), getBaseBorrowIndex());
+    }
 
     /* Helpers: 
         A function to check if an address is registers, i.e, it has an assetInfo strcture 

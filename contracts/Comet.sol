@@ -402,7 +402,7 @@ contract Comet is CometMainInterface {
     /**
      * @dev Calculate accrued interest indices for base token supply and borrows
      **/
-    function accruedInterestIndices(uint timeElapsed) internal view returns (uint64, uint64) {
+    function accruedInterestIndices(uint timeElapsed) virtual internal view returns (uint64, uint64) {
         uint64 baseSupplyIndex_ = baseSupplyIndex;
         uint64 baseBorrowIndex_ = baseBorrowIndex;
         if (timeElapsed > 0) {
