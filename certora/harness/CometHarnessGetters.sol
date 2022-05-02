@@ -125,13 +125,10 @@ contract CometHarnessGetters is Comet {
         return accrualDescaleFactor;
     } 
     
-    // Calling baseBalanceOf (in CometExt) by delegating CometExt to reach Comet.sol storage
-    // function baseBalanceOf(address account) public returns (int104) {
-    //     (bool success, bytes memory result) = extensionDelegate.delegatecall(
-    //         abi.encodeWithSignature("baseBalanceOf(address)", account));
-    //     require(success);
-    //     return abi.decode(result, (int104));
-    // }
+    // Retrieve a user's present value from principal value
+    function baseBalanceOf(address account) external view returns (int104) {
+        return presentValue(userBasic[account].principal);
+    }
     
     // External wrapper for hasPermission
     function call_hasPermission(address owner, address manager) external view returns (bool) {
