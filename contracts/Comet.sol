@@ -224,7 +224,7 @@ contract Comet is CometMainInterface {
      * @notice Initialize storage for the contract
      * @dev Can be used from constructor or proxy
      */
-    function initializeStorage() override public {
+    function initializeStorage() override external {
         if (lastAccrualTime != 0) revert AlreadyInitialized();
 
         // Initialize aggregates
@@ -381,7 +381,7 @@ contract Comet is CometMainInterface {
     /**
      * @dev Determine index of asset that matches given address
      */
-    function getAssetInfoByAddress(address asset) internal view returns (AssetInfo memory) {
+    function getAssetInfoByAddress(address asset) override public view returns (AssetInfo memory) {
         for (uint8 i = 0; i < numAssets; i++) {
             AssetInfo memory assetInfo = getAssetInfo(i);
             if (assetInfo.asset == asset) {
@@ -437,7 +437,7 @@ contract Comet is CometMainInterface {
     /**
      * @notice Accrue interest and rewards for an account
      **/
-    function accrueAccount(address account) override public {
+    function accrueAccount(address account) override external {
         accrueInternal();
 
         UserBasic memory basic = userBasic[account];
