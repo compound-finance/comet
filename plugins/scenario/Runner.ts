@@ -84,17 +84,17 @@ export class Runner<T, U, R> {
       // create a fresh copy of context that solutions can modify
       let ctx: T = await scenario.forker(context);
 
-      // apply each solution in the combo, then check they all still hold
-      for (const solution of combo) {
-        ctx = (await solution(ctx, world)) || ctx;
-      }
-
-      for (const constraint of constraints) {
-        await constraint.check(scenario.requirements, ctx, world);
-      }
-
-      // requirements met, run the property
       try {
+        // apply each solution in the combo, then check they all still hold
+        for (const solution of combo) {
+          ctx = (await solution(ctx, world)) || ctx;
+        }
+
+        for (const constraint of constraints) {
+          await constraint.check(scenario.requirements, ctx, world);
+        }
+
+        // requirements met, run the property
         let txnReceipt = await scenario.property(await scenario.transformer(ctx), world, ctx);
         if (txnReceipt) {
           cumulativeGas += txnReceipt.cumulativeGasUsed.toNumber();
