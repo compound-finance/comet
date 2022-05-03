@@ -5,6 +5,7 @@ import CometAsset from './context/CometAsset';
 import { ProtocolConfiguration, deployComet } from '../src/deploy';
 import { GovernorSimple } from '../build/types';
 import { World } from '../plugins/scenario';
+import { exp } from '../test/helpers';
 
 export function abs(x: bigint): bigint {
   return x < 0n ? -x : x;
@@ -147,6 +148,33 @@ export async function getAssetFromName(name: string, context: CometContext): Pro
     // If name doesn't match regex, try to find the asset directly from the assets list
     return context.assets[name];
   }
+}
+
+// Returns the amount that needs to be transferred to satisfy a constraint
+export function getToTransferAmount(amount: ComparativeAmount, existingBalance: bigint, decimals: number): bigint {
+  let toTransfer = 0n;
+  switch (amount.op) {
+    case ComparisonOp.EQ:
+      toTransfer = exp(amount.val, decimals) - existingBalance;
+      break;
+    case ComparisonOp.GTE:
+      // `toTransfer` should not be negative
+      toTransfer = max(exp(amount.val, decimals) - existingBalance, 0);
+      break;
+    case ComparisonOp.LTE:
+      // `toTransfer` should not be positive
+      toTransfer = min(exp(amount.val, decimals) - existingBalance, 0);
+      break;
+    case ComparisonOp.GT:
+      toTransfer = exp(amount.val, decimals) - existingBalance + 1n;
+      break;
+    case ComparisonOp.LT:
+      toTransfer = exp(amount.val, decimals) - existingBalance - 1n;
+      break;
+    default:
+      throw new Error(`Bad amount: ${amount}`);
+  }
+  return toTransfer;
 }
 
 // `amount` should be the unit amount of an asset instead of the gwei amount
