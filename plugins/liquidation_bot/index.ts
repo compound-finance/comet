@@ -1,10 +1,11 @@
-import { BigNumber } from 'ethers';
+import { ethers, BigNumber } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { CometInterface } from '../../build/types';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 
 type Config = {
-  hre: HardhatRuntimeEnvironment
+  hre: HardhatRuntimeEnvironment;
+  loopDelay?: number;
 };
 
 type Borrower = {
@@ -35,11 +36,13 @@ async function buildInitialBorrowerMap(comet: CometInterface): Promise<BorrowerM
   const addresses = await uniqueAddresses(comet);
 
   for (const address of addresses) {
-    borrowerMap[address] = {
-      address,
-      liquidationMargin: undefined,
-      lastUpdated: undefined
-    };
+    if (address !== ethers.constants.AddressZero) {
+      borrowerMap[address] = {
+        address,
+        liquidationMargin: undefined,
+        lastUpdated: undefined
+      };
+    }
   }
 
   return borrowerMap;
@@ -52,7 +55,7 @@ function generateCandidates(borrowerMap: BorrowerMap, blockNumber: number): Borr
   });
 }
 
-async function isLiquidatable(borrower: Borrower): Promise<boolean> {
+function isLiquidatable(borrower: Borrower): boolean {
   return borrower.liquidationMargin.lt(0);
 }
 
@@ -67,8 +70,7 @@ async function updateCandidate(hre: HardhatRuntimeEnvironment, comet: CometInter
   };
 }
 
-async function main(config: Config) {
-  const { hre } = config;
+async function main({ hre, loopDelay = 5000}: Config) {
   const network = hre.network.name;
 
   const dm = new DeploymentManager(network, hre, {
@@ -83,53 +85,28 @@ async function main(config: Config) {
 
   const borrowerMap = await buildInitialBorrowerMap(comet);
 
-  // while (true) {
-  //   const startingBlockNumber = await hre.ethers.provider.getBlockNumber();
-  //   console.log(`looping; blockNumber: ${startingBlockNumber}`);
-  //   const candidates = generateCandidates(borrowerMap, startingBlockNumber);
-
-  //   console.log(`${candidates.length} candidates: `);
-  //   console.log(candidates);
-
-  //   for (const candidate of candidates) {
-  //     const updatedCandidate = await updateCandidate(hre, comet, candidate);
-  //     borrowerMap[candidate.address] = updatedCandidate;
-
-  //     if (isLiquidatable(updatedCandidate)) {
-  //       console.log("liquidatable: ");
-  //       console.log(updatedCandidate);
-  //     } else {
-  //       console.log("not liquidatable: ");
-  //       console.log(updatedCandidate);
-  //     }
-  //   }
-  // }
-
   async function loop() {
-
     const startingBlockNumber = await hre.ethers.provider.getBlockNumber();
-    console.log(`looping; blockNumber: ${startingBlockNumber}`);
+    console.log(`Generating candidates for blockNumber: ${startingBlockNumber}`);
     const candidates = generateCandidates(borrowerMap, startingBlockNumber);
 
-    console.log(`${candidates.length} candidates: `);
-    console.log(candidates);
-
     if (candidates.length == 0) {
-      console.log("no candidates; waiting X seconds");
-      // setTimeout(async () => await loop(), 10000);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log(`0 candidates found for blockNumber: ${startingBlockNumber}; waiting ${loopDelay / 1000} seconds \n`);
+      await new Promise(resolve => setTimeout(resolve, loopDelay));
       await loop();
     } else {
+      console.log(`${candidates.length} candidates found`);
       for (const candidate of candidates) {
+        console.log(`Updating candidate.address: ${candidate.address}`);
         const updatedCandidate = await updateCandidate(hre, comet, candidate);
         borrowerMap[candidate.address] = updatedCandidate;
+        console.log(`liquidationMargin: ${updatedCandidate.liquidationMargin}`);
 
         if (isLiquidatable(updatedCandidate)) {
-          console.log("liquidatable: ");
-          console.log(updatedCandidate);
+          console.log(`${updatedCandidate.address} liquidatable; attempting to absorb`);
+          // XXX add absorb function
         } else {
-          console.log("not liquidatable: ");
-          console.log(updatedCandidate);
+          console.log(`${updatedCandidate.address} not liquidatable; \n`);
         }
       }
       await loop();
