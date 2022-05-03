@@ -4,7 +4,7 @@ import CometActor from '../context/CometActor';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { baseBalanceOf, exp, factorScale } from '../../test/helpers';
-import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, max, min, upgradeComet, scaleToDecimals } from '../utils';
+import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, max, min, upgradeComet, scaleToDecimals, getToTransferAmount } from '../utils';
 import { BigNumber } from 'ethers';
 import { AssetConfigStruct, AssetInfoStructOutput } from '../../build/types/Comet';
 import { CometInterface } from '../../build/types';
@@ -130,28 +130,7 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
             const amount: ComparativeAmount = actorsByAsset[assetName][actorName];
             const cometBalance = (await comet.collateralBalanceOf(actor.address, asset.address)).toBigInt();
             const decimals = await asset.token.decimals();
-            let toTransfer = 0n;
-            switch (amount.op) {
-              case ComparisonOp.EQ:
-                toTransfer = exp(amount.val, decimals) - cometBalance;
-                break;
-              case ComparisonOp.GTE:
-                // `toTransfer` should not be negative
-                toTransfer = max(exp(amount.val, decimals) - cometBalance, 0);
-                break;
-              case ComparisonOp.LTE:
-                // `toTransfer` should not be positive
-                toTransfer = min(exp(amount.val, decimals) - cometBalance, 0);
-                break;
-              case ComparisonOp.GT:
-                toTransfer = exp(amount.val, decimals) - cometBalance + 1n;
-                break;
-              case ComparisonOp.LT:
-                toTransfer = exp(amount.val, decimals) - cometBalance - 1n;
-                break;
-              default:
-                throw new Error(`Bad amount: ${amount}`);
-            }
+            const toTransfer = getToTransferAmount(amount, cometBalance, decimals);
             if (toTransfer > 0) {
               // Case: Supply asset
               // 1. Source tokens to user
