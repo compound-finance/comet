@@ -45,20 +45,18 @@ async function buildInitialBorrowerMap(comet: CometInterface): Promise<BorrowerM
   return borrowerMap;
 }
 
-function shouldCheck(borrower: Borrower) {
-  return borrower.lastUpdated == undefined;
+// XXX generate more complex portfolio of candidates
+function generateCandidates(borrowerMap: BorrowerMap, blockNumber: number): Borrower[] {
+  return Object.values(borrowerMap).filter(borrower => {
+    return borrower.lastUpdated == undefined || blockNumber - borrower.lastUpdated > 3;
+  });
 }
 
-function generateCandidates(borrowerMap: BorrowerMap): Borrower[] {
-  return Object.values(borrowerMap).filter(borrower => shouldCheck(borrower));
+async function isLiquidatable(borrower: Borrower): Promise<boolean> {
+  return borrower.liquidationMargin.lt(0);
 }
 
-async function isLiquidatable(comet: CometInterface, borrower: Borrower): Promise<boolean> {
-  const liquidationMargin = await comet.getLiquidationMargin(borrower.address);
-  return liquidationMargin.lt(0);
-}
-
-async function updatedCandidate(hre: HardhatRuntimeEnvironment, comet: CometInterface, borrower: Borrower): Promise<Borrower> {
+async function updateCandidate(hre: HardhatRuntimeEnvironment, comet: CometInterface, borrower: Borrower): Promise<Borrower> {
   const liquidationMargin = await comet.getLiquidationMargin(borrower.address);
   const blockNumber = await hre.ethers.provider.getBlockNumber();
 
@@ -85,25 +83,60 @@ async function main(config: Config) {
 
   const borrowerMap = await buildInitialBorrowerMap(comet);
 
-  while (true) {
-    console.log("looping");
-    const candidates = generateCandidates(borrowerMap);
+  // while (true) {
+  //   const startingBlockNumber = await hre.ethers.provider.getBlockNumber();
+  //   console.log(`looping; blockNumber: ${startingBlockNumber}`);
+  //   const candidates = generateCandidates(borrowerMap, startingBlockNumber);
 
-    console.log("candidates:");
+  //   console.log(`${candidates.length} candidates: `);
+  //   console.log(candidates);
+
+  //   for (const candidate of candidates) {
+  //     const updatedCandidate = await updateCandidate(hre, comet, candidate);
+  //     borrowerMap[candidate.address] = updatedCandidate;
+
+  //     if (isLiquidatable(updatedCandidate)) {
+  //       console.log("liquidatable: ");
+  //       console.log(updatedCandidate);
+  //     } else {
+  //       console.log("not liquidatable: ");
+  //       console.log(updatedCandidate);
+  //     }
+  //   }
+  // }
+
+  async function loop() {
+
+    const startingBlockNumber = await hre.ethers.provider.getBlockNumber();
+    console.log(`looping; blockNumber: ${startingBlockNumber}`);
+    const candidates = generateCandidates(borrowerMap, startingBlockNumber);
+
+    console.log(`${candidates.length} candidates: `);
     console.log(candidates);
 
-    for (const candidate of candidates) {
-      borrowerMap[candidate.address] = await updatedCandidate(hre, comet, candidate);
+    if (candidates.length == 0) {
+      console.log("no candidates; waiting X seconds");
+      // setTimeout(async () => await loop(), 10000);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await loop();
+    } else {
+      for (const candidate of candidates) {
+        const updatedCandidate = await updateCandidate(hre, comet, candidate);
+        borrowerMap[candidate.address] = updatedCandidate;
 
-      if (await isLiquidatable(comet, candidate)) {
-        console.log("liquidatable: ");
-        console.log(candidate);
-      } else {
-        console.log("not liquidatable: ");
-        console.log(candidate);
+        if (isLiquidatable(updatedCandidate)) {
+          console.log("liquidatable: ");
+          console.log(updatedCandidate);
+        } else {
+          console.log("not liquidatable: ");
+          console.log(updatedCandidate);
+        }
       }
+      await loop();
     }
   }
+
+  await loop();
 }
 
 export default main;
