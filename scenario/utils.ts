@@ -2,7 +2,9 @@ import { expect } from 'chai';
 import { BigNumber, BigNumberish } from 'ethers';
 import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
+import { ProtocolConfiguration, deployComet } from '../src/deploy';
 import { GovernorSimple } from '../build/types';
+import { World } from '../plugins/scenario';
 
 export function abs(x: bigint): bigint {
   return x < 0n ? -x : x;
@@ -58,7 +60,7 @@ export function requireNumber<T>(o: object, key: string, err: string): number {
   if (typeof value !== 'number') {
     throw new Error(`${err} [requirement ${key} required to be number type]`);
   }
-  return value;  
+  return value;
 }
 
 export function optionalNumber<T>(o: object, key: string): number {
@@ -69,7 +71,11 @@ export function optionalNumber<T>(o: object, key: string): number {
   if (typeof value !== 'number') {
     throw new Error(`[requirement ${key} required to be number type]`);
   }
-  return value;  
+  return value;
+}
+
+export function scaleToDecimals(scale: BigNumberish): number {
+  return scale.toString().split('0').length - 1; // # of 0's in scale
 }
 
 // Instantly executes some actions through the governance proposal process
@@ -81,6 +87,31 @@ export async function fastGovernanceExecute(governor: GovernorSimple, targets: s
 
   await governor.queue(proposalId);
   await governor.execute(proposalId);
+}
+
+export async function upgradeComet(world: World, context: CometContext, configOverrides: ProtocolConfiguration): Promise<CometContext> {
+  console.log('Upgrading to modern...');
+  // TODO: Make this deployment script less ridiculous, e.g. since it redeploys tokens right now
+  let oldComet = await context.getComet();
+  let timelock = await context.getTimelock();
+  let cometConfig = { governor: timelock.address, ...configOverrides } // Use old timelock as governor
+  let { comet: newComet } = await deployComet(
+    context.deploymentManager,
+    false,
+    cometConfig
+  );
+  let initializer: string | undefined;
+  if (!oldComet.totalsBasic || (await oldComet.totalsBasic()).lastAccrualTime === 0) {
+    initializer = (await newComet.populateTransaction.initializeStorage()).data;
+  }
+
+  await context.upgradeTo(newComet, world, initializer);
+  await context.setAssets();
+  await context.spider();
+
+  console.log('Upgraded to modern...');
+
+  return context
 }
 
 export async function getActorAddressFromName(name: string, context: CometContext): Promise<string> {
