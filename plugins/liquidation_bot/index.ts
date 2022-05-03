@@ -19,16 +19,8 @@ type BorrowerMap = {
 };
 
 async function uniqueAddresses(comet: CometInterface): Promise<Set<string>> {
-  const transferFilter = comet.filters.Transfer();
-  const transferEvents = await comet.queryFilter(transferFilter);
-  const addresses = new Set<string>();
-
-  transferEvents.forEach(event => {
-    addresses.add(event.args.from);
-    addresses.add(event.args.to);
-  });
-
-  return addresses;
+  const withdrawEvents = await comet.queryFilter(comet.filters.Withdraw());
+  return new Set(withdrawEvents.map(event => event.args.src));
 }
 
 async function buildInitialBorrowerMap(comet: CometInterface): Promise<BorrowerMap> {
@@ -105,7 +97,6 @@ async function main({ hre, loopDelay = 5000}: Config) {
     if (candidates.length == 0) {
       console.log(`0 candidates found for blockNumber: ${startingBlockNumber}; waiting ${loopDelay / 1000} seconds \n`);
       await new Promise(resolve => setTimeout(resolve, loopDelay));
-      await loop();
     } else {
       console.log(`${candidates.length} candidates found`);
       for (const candidate of candidates) {
@@ -122,8 +113,9 @@ async function main({ hre, loopDelay = 5000}: Config) {
         }
         console.log("\n");
       }
-      await loop();
     }
+
+    await loop();
   }
 
   await loop();
