@@ -70,8 +70,20 @@ async function updateCandidate(hre: HardhatRuntimeEnvironment, comet: CometInter
   };
 }
 
+async function absorbAddress(comet: CometInterface, absorberAddress: string, targetAddress: string) {
+  console.log(`attempting to absorb: ${targetAddress}`);
+  try {
+    await comet.absorb(absorberAddress, [targetAddress]);
+    console.log(`successfully absorbed ${targetAddress}`);
+  } catch (e) {
+    console.log(`absorb failed: ${targetAddress}`);
+  }
+}
+
 async function main({ hre, loopDelay = 5000}: Config) {
   const network = hre.network.name;
+  const [signer] = await hre.ethers.getSigners();
+  console.log(`signer.address: ${signer.address}`);
 
   const dm = new DeploymentManager(network, hre, {
     writeCacheToDisk: false,
@@ -103,11 +115,12 @@ async function main({ hre, loopDelay = 5000}: Config) {
         console.log(`liquidationMargin: ${updatedCandidate.liquidationMargin}`);
 
         if (isLiquidatable(updatedCandidate)) {
-          console.log(`${updatedCandidate.address} liquidatable; attempting to absorb`);
-          // XXX add absorb function
+          console.log(`${updatedCandidate.address} liquidatable`);
+          await absorbAddress(comet, signer.address, updatedCandidate.address);
         } else {
-          console.log(`${updatedCandidate.address} not liquidatable; \n`);
+          console.log(`${updatedCandidate.address} not liquidatable`);
         }
+        console.log("\n");
       }
       await loop();
     }
