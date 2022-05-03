@@ -1,5 +1,5 @@
 diff --git a/contracts/Comet.sol b/contracts/Comet.sol
-index d9e8d16..80c1945 100644
+index d9e8d16..83abcfd 100644
 --- a/contracts/Comet.sol
 +++ b/contracts/Comet.sol
 @@ -240,7 +240,7 @@ contract Comet is CometMainInterface {
@@ -29,6 +29,15 @@ index d9e8d16..80c1945 100644
          for (uint8 i = 0; i < numAssets; i++) {
              AssetInfo memory assetInfo = getAssetInfo(i);
              if (assetInfo.asset == asset) {
+@@ -402,7 +402,7 @@ contract Comet is CometMainInterface {
+     /**
+      * @dev Calculate accrued interest indices for base token supply and borrows
+      **/
+-    function accruedInterestIndices(uint timeElapsed) internal view returns (uint64, uint64) {
++    function accruedInterestIndices(uint timeElapsed) virtual internal view returns (uint64, uint64) {
+         uint64 baseSupplyIndex_ = baseSupplyIndex;
+         uint64 baseBorrowIndex_ = baseBorrowIndex;
+         if (timeElapsed > 0) {
 @@ -417,7 +417,7 @@ contract Comet is CometMainInterface {
      /**
       * @dev Accrue interest (and rewards) in base token supply and borrows

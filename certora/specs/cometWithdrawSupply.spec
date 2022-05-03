@@ -122,6 +122,7 @@ rule withdraw_reserves_monotonicity(address to){
 rule supply_increase_balance(address asset, uint amount){
     env e;
     require e.msg.sender != currentContract;
+    require asset != currentContract; // addition
 
     simplifiedAssumptions();
 
@@ -159,6 +160,7 @@ rule supply_increase_balance(address asset, uint amount){
 rule withdraw_decrease_balance(address asset, uint amount){
     env e;
     require e.msg.sender != currentContract;
+    require asset != currentContract; // addition
 
     simplifiedAssumptions();
 

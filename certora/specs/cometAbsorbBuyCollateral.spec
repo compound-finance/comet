@@ -51,8 +51,9 @@ import "comet.spec"
 
 rule anti_monotonicity_of_buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
     env e;
-    require asset != _baseToken; 
-    require minAmount > 0 ; 
+    require asset != _baseToken;
+    require asset != currentContract; // addition
+    require minAmount > 0;
     
     require e.msg.sender != currentContract;
     require recipient != currentContract;

@@ -7,6 +7,7 @@ certoraRun contracts/CometExt.sol  \
     --verify CometExt:certora/specs/cometExt.spec  \
     --solc solc8.13 \
     --cloud \
+    --disable_auto_cache_key_gen \
     $RULE \
     --optimistic_loop \
     --settings -enableEqualitySaturation=false,-solver=z3,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \
