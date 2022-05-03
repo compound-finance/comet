@@ -4,8 +4,66 @@ import CometActor from '../context/CometActor';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { baseBalanceOf, exp, factorScale } from '../../test/helpers';
-import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, max, min } from '../utils';
+import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, max, min, upgradeComet, scaleToDecimals } from '../utils';
 import { BigNumber } from 'ethers';
+import { AssetConfigStruct, AssetInfoStructOutput } from '../../build/types/Comet';
+import { CometInterface } from '../../build/types';
+
+// Increases the supply cap for collateral assets that would go over the supply cap
+async function bumpSupplyCaps(world: World, context: CometContext, actorsByAsset) {
+  const comet = await context.getComet();
+
+  // Read existing asset configs
+  const assetConfigs = await getAssetConfigs(comet);
+
+  // Update supply cap in asset configs if new collateral supply will exceed the supply cap
+  let shouldUpgrade = false;
+  for (const assetName in actorsByAsset) {
+    const asset = await getAssetFromName(assetName, context)
+    let assetInfo: AssetInfoStructOutput;
+    try {
+      assetInfo = await comet.getAssetInfoByAddress(asset.address);
+    } catch (e) {
+      continue; // skip if asset is not a collateral asset
+    }
+
+    // Calculate the total amount that will be supplied by the constraint
+    let suppliedByConstraint = 0;
+    for (const actor in actorsByAsset[assetName]) {
+      suppliedByConstraint += max(actorsByAsset[assetName][actor].val, 0);
+    }
+
+    const currentTotalSupply = (await comet.totalsCollateral(asset.address)).totalSupplyAsset.toBigInt();
+    let newTotalSupply = currentTotalSupply + BigInt(Math.ceil(suppliedByConstraint)) * assetInfo.scale.toBigInt();
+    if (newTotalSupply > assetInfo.supplyCap.toBigInt()) {
+      shouldUpgrade = true;
+      assetConfigs[assetInfo.offset].supplyCap = newTotalSupply * 2n; // Heuristic: Set supply cap to be double the new total supply
+    }
+  }
+
+  // Upgrade Comet with new set of supply caps
+  if (shouldUpgrade) {
+    await upgradeComet(world, context, { assetConfigs });
+  }
+}
+
+async function getAssetConfigs(comet: CometInterface): Promise<AssetConfigStruct[]> {
+  const assetConfigs: AssetConfigStruct[] = [];
+  for (let i = 0; i < await comet.numAssets(); i++) {
+    const assetInfo = await comet.getAssetInfo(i);
+    const assetConfig: AssetConfigStruct = {
+      asset: assetInfo.asset,
+      priceFeed: assetInfo.priceFeed,
+      decimals: scaleToDecimals(assetInfo.scale),
+      borrowCollateralFactor: assetInfo.borrowCollateralFactor,
+      liquidateCollateralFactor: assetInfo.liquidateCollateralFactor,
+      liquidationFactor: assetInfo.liquidationFactor,
+      supplyCap: assetInfo.supplyCap,
+    }
+    assetConfigs.push(assetConfig);
+  }
+  return assetConfigs;
+}
 
 async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, world: World, context: CometContext) {
   const comet = await context.getComet();
@@ -61,6 +119,10 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
       const solutions = [];
       solutions.push(async function barelyMeet(context: T, world: World) {
         const comet = await context.getComet();
+
+        // First increase supply caps if necessary
+        await bumpSupplyCaps(world, context, actorsByAsset);
+
         for (const assetName in actorsByAsset) {
           const asset = await getAssetFromName(assetName, context)
           for (const actorName in actorsByAsset[assetName]) {
