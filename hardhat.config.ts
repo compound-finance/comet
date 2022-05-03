@@ -195,7 +195,7 @@ const config: HardhatUserConfig = {
   },
 
   paths: {
-    tests: './{test,plugins/deployment_manager/test}',
+    tests: './{test,plugins/deployment_manager/test,plugins/liquidation_bot/test}',
   },
 
   contractSizer: {
