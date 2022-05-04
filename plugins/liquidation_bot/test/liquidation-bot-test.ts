@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 
-describe('LiquidationBot', () => {
-  it('test', async () => {
+describe.only('LiquidationBot', () => {
+  it.only('test', async () => {
     expect(true).to.be.true;
   });
 });
