@@ -553,7 +553,7 @@ contract Comet is CometMainInterface {
      * @param account The address to check liquidity for
      * @return The common price quantity of borrow liquidity
      */
-    function getBorrowLiquidity(address account) override public view returns (int) {
+    function getBorrowLiquidity(address account) override external view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
 
         int liquidity = signedMulPrice(
@@ -626,7 +626,7 @@ contract Comet is CometMainInterface {
      * @param account The address to check margin for
      * @return The common price quantity of liquidation margin
      */
-    function getLiquidationMargin(address account) override public view returns (int) {
+    function getLiquidationMargin(address account) override external view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
 
         int liquidity = signedMulPrice(
