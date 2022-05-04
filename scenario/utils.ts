@@ -6,6 +6,8 @@ import { ProtocolConfiguration, deployComet } from '../src/deploy';
 import { GovernorSimple } from '../build/types';
 import { World } from '../plugins/scenario';
 import { exp } from '../test/helpers';
+import { AssetConfigStruct, AssetInfoStructOutput } from '../build/types/Comet';
+import { CometInterface } from '../build/types';
 
 export function abs(x: bigint): bigint {
   return x < 0n ? -x : x;
@@ -113,6 +115,55 @@ export async function upgradeComet(world: World, context: CometContext, configOv
   console.log('Upgraded to modern...');
 
   return context
+}
+
+// Increases the supply cap for collateral assets that would go over the supply cap
+export async function bumpSupplyCaps(world: World, context: CometContext, supplyAmountPerAsset: Record<string, bigint>) {
+  const comet = await context.getComet();
+
+  // Read existing asset configs
+  const assetConfigs = await getAssetConfigs(comet);
+
+  // Update supply cap in asset configs if new collateral supply will exceed the supply cap
+  let shouldUpgrade = false;
+  for (const asset in supplyAmountPerAsset) {
+    let assetInfo: AssetInfoStructOutput;
+    try {
+      assetInfo = await comet.getAssetInfoByAddress(asset);
+    } catch (e) {
+      continue; // skip if asset is not a collateral asset
+    }
+
+    const currentTotalSupply = (await comet.totalsCollateral(asset)).totalSupplyAsset.toBigInt();
+    let newTotalSupply = currentTotalSupply + supplyAmountPerAsset[asset];
+    if (newTotalSupply > assetInfo.supplyCap.toBigInt()) {
+      shouldUpgrade = true;
+      assetConfigs[assetInfo.offset].supplyCap = newTotalSupply * 2n; // Heuristic: Set supply cap to be double the new total supply
+    }
+  }
+
+  // Upgrade Comet with new set of supply caps
+  if (shouldUpgrade) {
+    await upgradeComet(world, context, { assetConfigs });
+  }
+}
+
+export async function getAssetConfigs(comet: CometInterface): Promise<AssetConfigStruct[]> {
+  const assetConfigs: AssetConfigStruct[] = [];
+  for (let i = 0; i < await comet.numAssets(); i++) {
+    const assetInfo = await comet.getAssetInfo(i);
+    const assetConfig: AssetConfigStruct = {
+      asset: assetInfo.asset,
+      priceFeed: assetInfo.priceFeed,
+      decimals: scaleToDecimals(assetInfo.scale),
+      borrowCollateralFactor: assetInfo.borrowCollateralFactor,
+      liquidateCollateralFactor: assetInfo.liquidateCollateralFactor,
+      liquidationFactor: assetInfo.liquidationFactor,
+      supplyCap: assetInfo.supplyCap,
+    }
+    assetConfigs.push(assetConfig);
+  }
+  return assetConfigs;
 }
 
 export async function getActorAddressFromName(name: string, context: CometContext): Promise<string> {

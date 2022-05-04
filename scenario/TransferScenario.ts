@@ -7,7 +7,7 @@ scenario(
   'Comet#transfer > collateral asset, enough balance',
   {
     upgrade: true,
-    tokenBalances: {
+    cometBalances: {
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
   },
@@ -15,12 +15,6 @@ scenario(
     const { albert, betty } = actors;
     const { asset: asset0Address, scale } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
-
-    expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(100n * scale.toBigInt());
-
-    // Albert supplies 100 units of collateral to Comet
-    await collateralAsset.approve(albert, comet.address);
-    await albert.supplyAsset({ asset: collateralAsset.address, amount: 100n * scale.toBigInt() })
 
     // Albert transfers 50 units of collateral to Betty
     const toTransfer = scale.toBigInt() * 50n;
@@ -37,7 +31,7 @@ scenario(
   'Comet#transfer > base asset, enough balance',
   {
     upgrade: true,
-    tokenBalances: {
+    cometBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
@@ -46,12 +40,6 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
-
-    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
-
-    // Albert supplies 100 units of collateral to Comet
-    await baseAsset.approve(albert, comet.address);
-    await albert.supplyAsset({ asset: baseAsset.address, amount: 100n * scale })
 
     // Albert transfers 50 units of collateral to Betty
     const toTransfer = scale * 50n;
