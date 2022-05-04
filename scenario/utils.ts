@@ -81,6 +81,12 @@ export function scaleToDecimals(scale: BigNumberish): number {
   return scale.toString().split('0').length - 1; // # of 0's in scale
 }
 
+export function getExpectedBaseBalance(balance: bigint, baseIndexScale: bigint, borrowOrSupplyIndex: bigint): bigint {
+  const principalValue = balance * baseIndexScale / borrowOrSupplyIndex;
+  const baseBalanceOf = principalValue * borrowOrSupplyIndex / baseIndexScale;
+  return baseBalanceOf;
+}
+
 // Instantly executes some actions through the governance proposal process
 // Note: `governor` must be connected to an `admin` signer
 export async function fastGovernanceExecute(governor: GovernorSimple, targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {

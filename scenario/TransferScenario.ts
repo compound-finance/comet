@@ -1,6 +1,6 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately } from './utils';
+import { expectApproximately, getExpectedBaseBalance } from './utils';
 
 // XXX consider creating these tests for assets0-15
 scenario(
@@ -42,11 +42,17 @@ scenario(
     const scale = (await comet.baseScale()).toBigInt();
 
     // Albert transfers 50 units of collateral to Betty
-    const toTransfer = scale * 50n;
+    const toTransfer = 50n * scale;
     const txn = await albert.transferAsset({ dst: betty.address, asset: baseAsset.address, amount: toTransfer });
 
-    expect(await comet.balanceOf(albert.address)).to.be.equal(50n * scale);
-    expect(await comet.balanceOf(betty.address)).to.be.equal(50n * scale);
+    const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
+    const baseSupplyIndex = (await comet.totalsBasic()).baseSupplyIndex.toBigInt();
+    const baseSupplied = getExpectedBaseBalance(100n * scale, baseIndexScale, baseSupplyIndex);
+    const baseTransferred = getExpectedBaseBalance(50n * scale, baseIndexScale, baseSupplyIndex);
+    const baseOfTransferrer = getExpectedBaseBalance(baseSupplied - toTransfer, baseIndexScale, baseSupplyIndex)
+
+    expect(await comet.balanceOf(albert.address)).to.be.equal(baseOfTransferrer);
+    expect(await comet.balanceOf(betty.address)).to.be.equal(baseTransferred);
 
     return txn; // return txn to measure gas
   }
