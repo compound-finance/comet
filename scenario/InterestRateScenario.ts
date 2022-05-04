@@ -166,7 +166,7 @@ scenario(
   'Comet#interestRate > when utilization is 50%',
 { utilization: 0.5, upgrade: true },
   async ({ comet, actors }, world) => {
-    expect(defactor(await comet.getUtilization())).to.be.approximately(0.5, 0.000001);
+    expect(defactor(await comet.getUtilization())).to.be.approximately(0.5, 0.00001);
 
     // Note: this is dependent on the `deployments/fuji/configuration.json` variables
     // TODO: Consider if there's a better way to test the live curve.
