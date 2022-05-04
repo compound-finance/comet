@@ -135,34 +135,6 @@ async function main({ hre, loopDelay = 5000}: Config) {
 
     lastBlock = startingBlockNumber;
   }
-
-  // async function loop() {
-  //   const startingBlockNumber = await hre.ethers.provider.getBlockNumber();
-  //   console.log(`Generating candidates for blockNumber: ${startingBlockNumber}`);
-  //   const candidates = generateCandidates(borrowerMap, startingBlockNumber);
-  //   if (candidates.length == 0) {
-  //     console.log(`0 candidates found for blockNumber: ${startingBlockNumber}; waiting ${loopDelay / 1000} seconds \n`);
-  //     await new Promise(resolve => setTimeout(resolve, loopDelay));
-  //   } else {
-  //     console.log(`${candidates.length} candidates found`);
-  //     for (const candidate of candidates) {
-  //       console.log(`Updating candidate.address: ${candidate.address}`);
-  //       const updatedCandidate = await updateCandidate(hre, comet, candidate);
-  //       borrowerMap[candidate.address] = updatedCandidate;
-  //       console.log(`liquidationMargin: ${updatedCandidate.liquidationMargin}`);
-  //       if (isLiquidatable(updatedCandidate)) {
-  //         console.log(`${updatedCandidate.address} liquidatable`);
-  //         await absorbAddress(comet, signer.address, updatedCandidate.address);
-  //       } else {
-  //         console.log(`${updatedCandidate.address} not liquidatable`);
-  //       }
-  //       console.log("\n");
-  //     }
-  //   }
-  //   await loop();
-  // }
-  // await loop();
-
 }
 
 export default main;
