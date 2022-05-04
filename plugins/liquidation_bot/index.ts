@@ -8,13 +8,13 @@ type Config = {
   loopDelay?: number;
 };
 
-type Borrower = {
+export type Borrower = {
   address: string;
   liquidationMargin: BigNumber | undefined;
   lastUpdated: number | undefined;
 };
 
-type BorrowerMap = {
+export type BorrowerMap = {
   [address: string]: Borrower;
 };
 
@@ -80,6 +80,21 @@ function isAbsorbable(borrower: Borrower): boolean {
   return borrower.liquidationMargin.lt(0);
 }
 
+export async function loop(currentBlock: number, lastBlockChecked: number, borrowerMap: BorrowerMap) {
+  // check if you've checked this block previously
+  if (currentBlock <= lastBlockChecked) {
+    return {
+      updatedBorrowerMap: borrowerMap
+    }
+  }
+
+  // attempt to absorb all absorbable accounts
+  return {
+    blockChecked: currentBlock
+
+  };
+}
+
 async function main({ hre, loopDelay = 5000}: Config) {
   const network = hre.network.name;
   const [signer] = await hre.ethers.getSigners();
@@ -94,16 +109,14 @@ async function main({ hre, loopDelay = 5000}: Config) {
   const contracts = await dm.contracts();
   const comet = contracts.get('comet') as CometInterface;
 
-  const borrowerMap = await buildInitialBorrowerMap(comet);
-  let lastBlock = 0;
+  let borrowerMap = await buildInitialBorrowerMap(comet);
+  let lastBlockChecked = 0;
 
   while (true) {
-    const startingBlockNumber = await hre.ethers.provider.getBlockNumber();
-    if (startingBlockNumber === lastBlock) {
-      console.log(`already run for block ${startingBlockNumber}; waiting ${loopDelay / 1000} seconds`);
-      await new Promise(resolve => setTimeout(resolve, loopDelay));
-      continue;
-    }
+    const currentBlock = await hre.ethers.provider.getBlockNumber();
+    const { updatedBorrowerMap } = await loop(currentBlock, lastBlockChecked, borrowerMap);
+    lastBlockChecked = currentBlock;
+    borrowerMap = updatedBorrowerMap; // XXX do atomically
 
     console.log(`running for block ${startingBlockNumber}`);
 
