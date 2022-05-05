@@ -1,7 +1,8 @@
-import { ethers, BigNumber } from 'ethers';
+import ethers, { BigNumber } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { CometInterface } from '../../build/types';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 type Config = {
   hre: HardhatRuntimeEnvironment;
@@ -62,12 +63,12 @@ async function updateCandidate(hre: HardhatRuntimeEnvironment, comet: CometInter
   };
 }
 
-async function attemptAbsorb(comet: CometInterface, absorberAddress: string, targetAddresses: string[]) {
+async function attemptAbsorb(comet: CometInterface, absorber: SignerWithAddress, targetAddresses: string[]) {
   if (targetAddresses.length === 0) {
     return [];
   }
   try {
-    await comet.absorb(absorberAddress, targetAddresses);
+    await comet.connect(absorber).absorb(absorber.address, targetAddresses);
     console.log(`successfully absorbed ${targetAddresses}`);
     return targetAddresses;
   } catch (e) {
@@ -80,18 +81,40 @@ function isAbsorbable(borrower: Borrower): boolean {
   return borrower.liquidationMargin.lt(0);
 }
 
-export async function loop(currentBlock: number, lastBlockChecked: number, borrowerMap: BorrowerMap) {
+type Props = {
+  absorber: SignerWithAddress;
+  comet: any;
+  currentBlock: number;
+  lastBlockChecked: number;
+  borrowerMap: BorrowerMap;
+};
+
+export async function loop({
+  comet,
+  absorber,
+  currentBlock,
+  lastBlockChecked,
+  borrowerMap
+}: Props) {
   // check if you've checked this block previously
-  if (currentBlock <= lastBlockChecked) {
-    return {
-      updatedBorrowerMap: borrowerMap
-    }
-  }
+  // if (currentBlock <= lastBlockChecked) {
+  //   return {
+  //     updatedBorrowerMap: borrowerMap
+  //   }
+  // }
 
-  // attempt to absorb all absorbable accounts
+  // attempt absorb
+  const absorbableBorrowers = Object.values(borrowerMap).filter(borrower => isAbsorbable(borrower));
+
+  // console.log(`${absorbableBorrowers.length} absorbable borrowers`);
+
+  const absorbedAddresses = await attemptAbsorb(
+    comet, absorber, absorbableBorrowers.map(borrower => borrower.address)
+  );
+
+  // // attempt to absorb all absorbable accounts
   return {
-    blockChecked: currentBlock
-
+    updatedBorrowerMap: borrowerMap
   };
 }
 
