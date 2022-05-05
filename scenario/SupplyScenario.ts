@@ -1,6 +1,6 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, getExpectedBaseBalance } from './utils';
+import { expectApproximately, getExpectedBaseBalance, getInterest } from './utils';
 
 // XXX consider creating these tests for assets0-15
 scenario(
@@ -78,10 +78,10 @@ scenario(
   {
     upgrade: true,
     tokenBalances: {
-      albert: { $base: 100 }
+      albert: { $base: 1000 }
     },
     cometBalances: {
-      albert: { $base: -100 } // in units of asset, not wei
+      albert: { $base: -1000 } // in units of asset, not wei
     },
   },
   async ({ comet, actors }, world, context) => {
@@ -89,15 +89,15 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
-    const precision = scale / 1_000_000n; // 1e-6 asset units of precision
+    const borrowRate = (await comet.getBorrowRate()).toBigInt();
 
-    expectApproximately(await albert.getCometBaseBalance(), -100n * scale, precision);
+    expectApproximately(await albert.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 1n) + 1n);
 
     // Albert repays 100 units of base borrow
     await baseAsset.approve(albert, comet.address);
-    const txn = await albert.supplyAsset({ asset: baseAsset.address, amount: 100n * scale });
+    const txn = await albert.supplyAsset({ asset: baseAsset.address, amount: 1000n * scale });
 
-    expectApproximately(await albert.getCometBaseBalance(), 0n, precision);
+    expectApproximately(await albert.getCometBaseBalance(), 0n, getInterest(1000n * scale, borrowRate, 3n) + 1n);
 
     return txn; // return txn to measure gas
   }
@@ -187,10 +187,10 @@ scenario(
   {
     upgrade: true,
     tokenBalances: {
-      albert: { $base: 100 }
+      albert: { $base: 1000 }
     },
     cometBalances: {
-      betty: { $base: -100 } // in units of asset, not wei
+      betty: { $base: -1000 } // in units of asset, not wei
     },
   },
   async ({ comet, actors }, world, context) => {
@@ -198,19 +198,19 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
-    const precision = scale / 1_000_000n; // 1e-6 asset units of precision
+    const borrowRate = (await comet.getBorrowRate()).toBigInt();
 
-    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
-    expectApproximately(await betty.getCometBaseBalance(), -100n * scale, precision);
+    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(1000n * scale);
+    expectApproximately(await betty.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 1n) + 1n);
 
     await baseAsset.approve(albert, comet.address);
     await albert.allow(betty, true);
 
     // Betty supplies 100 units of base from Albert to repay borrows
-    const txn = await betty.supplyAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: 100n * scale });
+    const txn = await betty.supplyAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: 1000n * scale });
 
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(0n);
-    expectApproximately(await betty.getCometBaseBalance(), 0n, precision);
+    expectApproximately(await betty.getCometBaseBalance(), 0n, getInterest(1000n * scale, borrowRate, 4n) + 2n);
 
     return txn; // return txn to measure gas
   }

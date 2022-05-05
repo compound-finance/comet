@@ -87,6 +87,10 @@ export function getExpectedBaseBalance(balance: bigint, baseIndexScale: bigint, 
   return baseBalanceOf;
 }
 
+export function getInterest(balance: bigint, rate: bigint, seconds: bigint) {
+  return balance * rate * seconds / (10n**18n);
+}
+
 // Instantly executes some actions through the governance proposal process
 // Note: `governor` must be connected to an `admin` signer
 export async function fastGovernanceExecute(governor: GovernorSimple, targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
@@ -223,7 +227,7 @@ export function getToTransferAmount(amount: ComparativeAmount, existingBalance: 
       toTransfer = exp(amount.val, decimals) - existingBalance - 1n;
       break;
     default:
-      throw new Error(`Bad amount: ${amount}`);
+      throw new Error(`Bad amount: ${JSON.stringify(amount)}`);
   }
   return toTransfer;
 }
@@ -237,16 +241,16 @@ export function parseAmount(amount): ComparativeAmount {
       return amount >= 0 ? { val: amount, op: ComparisonOp.GTE } : { val: amount, op: ComparisonOp.LTE };
     case 'string':
       return matchGroup(amount, {
-        [ComparisonOp.GTE]: />=\s*(\d+)/,
-        [ComparisonOp.GT]: />\s*(\d+)/,
-        [ComparisonOp.LTE]: /<=\s*(\d+)/,
-        [ComparisonOp.LT]: /<\s*(\d+)/,
-        [ComparisonOp.EQ]: /==\s*(\d+)/,
+        'GTE': />=\s*(\d+)/,
+        'GT': />\s*(\d+)/,
+        'LTE': /<=\s*(\d+)/,
+        'LT': /<\s*(\d+)/,
+        'EQ': /==\s*(\d+)/,
       });
     case 'object':
       return amount;
     default:
-      throw new Error(`Unrecognized amount: ${amount}`);
+      throw new Error(`Unrecognized amount: ${JSON.stringify(amount)}`);
   }
 }
 
