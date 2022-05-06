@@ -1,9 +1,9 @@
-import { hre } from 'hardhat';
+import { ethers } from 'hardhat';
 import { expect, use } from 'chai';
 import { FakeContract, smock } from '@defi-wonderland/smock';
 import { Comet } from '../../../build/types';
 import { absorbLiquidatableBorrowers } from "../index";
-import { BigNumber, ethers, EventFilter } from 'ethers';
+import { BigNumber, EventFilter } from 'ethers';
 
 use(smock.matchers);
 
@@ -38,7 +38,7 @@ async function mockComet(events = []): Promise<FakeContract<Comet>> {
 describe('Absorption Bot', () => {
   describe('absorbLiquidatableBorrowers', () => {
     it.skip('XXX', async () => {
-      const [ absorber ] = hre.ethers.provider.getSigners();
+      const [ absorber ] = await ethers.getSigners();
       const comet = await mockComet([
         mockEvent({
           src: "0x01",
@@ -52,20 +52,26 @@ describe('Absorption Bot', () => {
       expect(true).to.be.true;
     });
 
-    it.only('XXX', async () => {
-      const [ absorber ] = hre.ethers.provider.getSigners();
+    it('queries liquidationMargin for all Withdraw sources', async () => {
+      const [ absorber, user1, user2, user3 ] = await ethers.getSigners();
       const comet = await mockComet([
         mockEvent({
-          src: "0x01",
-          to: "0x02",
+          src: user1.address,
+          to: user2.address,
           amount: BigNumber.from(1000)
-        })
+        }),
+        mockEvent({
+          src: user2.address,
+          to: user3.address,
+          amount: BigNumber.from(1000)
+        }),
       ]);
 
       await absorbLiquidatableBorrowers(comet, absorber);
 
-      expect(true).to.be.true;
+      expect(comet.getLiquidationMargin).to.have.been.calledTwice;
+      expect(comet.getLiquidationMargin.atCall(0)).to.have.been.calledWith(user1.address);
+      expect(comet.getLiquidationMargin.atCall(1)).to.have.been.calledWith(user2.address);
     });
-
   });
 });
