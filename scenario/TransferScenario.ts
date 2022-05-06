@@ -59,6 +59,42 @@ scenario(
 );
 
 scenario(
+  'Comet#transfer > base asset, total and user balances are summed up properly',
+  {
+    upgrade: true,
+    cometBalances: {
+      albert: { $base: 100 }, // in units of asset, not wei
+    },
+  },
+  async ({ comet, actors }, world, context) => {
+    const { albert, betty } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const scale = (await comet.baseScale()).toBigInt();
+
+    // Cache pre-transfer balances
+    const { totalSupplyBase: oldTotalSupply, totalBorrowBase: oldTotalBorrow } = await comet.totalsBasic();
+    const oldAlbertPrincipal = (await comet.userBasic(albert.address)).principal.toBigInt();
+    const oldBettyPrincipal = (await comet.userBasic(betty.address)).principal.toBigInt();
+
+    // Albert transfers 50 units of collateral to Betty
+    const toTransfer = 50n * scale;
+    const txn = await albert.transferAsset({ dst: betty.address, asset: baseAsset.address, amount: toTransfer });
+
+    // Cache post-transfer balances
+    const { totalSupplyBase: newTotalSupply, totalBorrowBase: newTotalBorrow } = await comet.totalsBasic();
+    const newAlbertPrincipal = (await comet.userBasic(albert.address)).principal.toBigInt();
+    const newBettyPrincipal = (await comet.userBasic(betty.address)).principal.toBigInt();
+
+    // Check that global and user principals are updated by the same amoount
+    expect(newTotalSupply.toBigInt() - oldTotalSupply.toBigInt() + newTotalBorrow.toBigInt() - oldTotalBorrow.toBigInt())
+      .to.be.equal(newAlbertPrincipal - oldAlbertPrincipal + newBettyPrincipal - oldBettyPrincipal);
+
+    return txn; // return txn to measure gas
+  }
+);
+
+scenario(
   'Comet#transfer > partial withdraw / borrow base to partial repay / supply',
   {
     upgrade: true,
