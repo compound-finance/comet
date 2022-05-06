@@ -201,7 +201,7 @@ export async function deployDevelopmentComet(
 
   /* === Proxies === */
 
-  let newRoots = await deploymentManager.getRoots();
+  let updatedRoots = await deploymentManager.getRoots();
   let cometProxy = null;
   let configuratorProxy = null;
   let proxyAdmin = null;
@@ -231,7 +231,7 @@ export async function deployDevelopmentComet(
       (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data, // new time lock is set, which we don't want
     ]);
 
-    newRoots.set('configurator', configuratorProxy.address);
+    updatedRoots.set('configurator', configuratorProxy.address);
   }
 
   if (deployProxy.deployCometProxy) {
@@ -246,10 +246,10 @@ export async function deployDevelopmentComet(
       (await comet.populateTransaction.initializeStorage()).data,
     ]);
 
-    newRoots.set('comet', cometProxy.address);
+    updatedRoots.set('comet', cometProxy.address);
   }
 
-  await deploymentManager.putRoots(newRoots);
+  await deploymentManager.putRoots(updatedRoots);
   await deploymentManager.spider();
 
   return {

@@ -59,6 +59,15 @@ let relationConfigMap: RelationConfigMap = {
       }
     }
   },
+  configuratorAdmin: {
+    relations: {
+      timelock: {
+        field: async (cometAdmin) => {
+          return await cometAdmin.owner();
+        }
+      }
+    }
+  },
   timelock: {
     relations: {
       governor: {
