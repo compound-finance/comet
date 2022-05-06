@@ -86,10 +86,11 @@ scenario.only(
     const newAlbertPrincipal = (await comet.userBasic(albert.address)).principal.toBigInt();
     const newBettyPrincipal = (await comet.userBasic(betty.address)).principal.toBigInt();
 
-    // Check that global and user principals are updated by the same amoount
+    // Check that global and user principals are updated by the same amount
     const changeInTotalPrincipal = newTotalSupply.toBigInt() - oldTotalSupply.toBigInt() - (newTotalBorrow.toBigInt() - oldTotalBorrow.toBigInt());
     const changeInUserPrincipal = newAlbertPrincipal - oldAlbertPrincipal + newBettyPrincipal - oldBettyPrincipal;
-    expect(changeInTotalPrincipal).to.be.equal(changeInUserPrincipal);
+    expect(changeInTotalPrincipal).to.be.equal(changeInUserPrincipal).to;
+    expect([0n, -1n, -2n]).to.include(changeInTotalPrincipal); // these are the only acceptable values for transfer
 
     return txn; // return txn to measure gas
   }
