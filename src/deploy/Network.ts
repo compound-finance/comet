@@ -25,16 +25,17 @@ import {
   Configurator__factory,
   SimpleTimelock,
   SimpleTimelock__factory,
+  ProxyAdmin,
 } from '../../build/types';
 import { ConfigurationStruct } from '../../build/types/Comet';
 import { ExtConfigurationStruct } from '../../build/types/CometExt';
 
-import { DeployedContracts, ProtocolConfiguration } from './index';
+import { DeployedContracts, DeployProxyOption, ProtocolConfiguration } from './index';
 import { getConfiguration } from './NetworkConfiguration';
 
 export async function deployNetworkComet(
   deploymentManager: DeploymentManager,
-  deployProxy: boolean = true,
+  deployProxy: DeployProxyOption = { deployCometProxy: true, deployConfiguratorProxy: true },
   configurationOverrides: ProtocolConfiguration = {},
   contractMapOverride?: ContractMap,
 ): Promise<DeployedContracts> {
@@ -46,7 +47,7 @@ export async function deployNetworkComet(
     []
   );
 
-  const timelock = await deploymentManager.deploy<SimpleTimelock, SimpleTimelock__factory, [string]>(
+  let timelock = await deploymentManager.deploy<SimpleTimelock, SimpleTimelock__factory, [string]>(
     'test/SimpleTimelock.sol',
     [governorSimple.address]
   );
@@ -113,26 +114,37 @@ export async function deployNetworkComet(
     [configuration]
   );
 
+  const cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
+    'CometFactory.sol',
+    []
+  );
+
+  const configurator = await deploymentManager.deploy<Configurator, Configurator__factory, []>(
+    'Configurator.sol',
+    []
+  );
+
+  /* === Proxies === */
+
+  let newRoots = await deploymentManager.getRoots();
   let cometProxy = null;
   let configuratorProxy = null;
-  if (deployProxy) {
-    const cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
-      'CometFactory.sol',
-      []
-    );
+  let proxyAdmin = null;
 
-    const configurator = await deploymentManager.deploy<Configurator, Configurator__factory, []>(
-      'Configurator.sol',
-      []
-    );
-
+  if (deployProxy.deployCometProxy && deployProxy.deployConfiguratorProxy) {
     let proxyAdminArgs: [] = [];
-    let proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
+    proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
       'CometProxyAdmin.sol',
       proxyAdminArgs
     );
     await proxyAdmin.transferOwnership(timelock.address);
+  } else {
+    // We don't want to be using a new ProxyAdmin/Timelock if we are not deploying both proxies
+    proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
+    timelock = await deploymentManager.contract('timelock') as SimpleTimelock;
+  }
 
+  if (deployProxy.deployConfiguratorProxy) {
     // Configuration proxy
     configuratorProxy = await deploymentManager.deploy<
       TransparentUpgradeableConfiguratorProxy,
@@ -141,9 +153,13 @@ export async function deployNetworkComet(
     >('TransparentUpgradeableConfiguratorProxy.sol', [
       configurator.address,
       proxyAdmin.address,
-      (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data,
+      (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data, // new time lock is set, which we don't want
     ]);
 
+    newRoots.set('configurator', configuratorProxy.address);
+  }
+
+  if (deployProxy.deployCometProxy) {
     // Comet proxy
     cometProxy = await deploymentManager.deploy<
       TransparentUpgradeableProxy,
@@ -154,7 +170,12 @@ export async function deployNetworkComet(
       proxyAdmin.address,
       (await comet.populateTransaction.initializeStorage()).data,
     ]);
+
+    newRoots.set('comet', cometProxy.address);
   }
+
+  await deploymentManager.putRoots(newRoots);
+  await deploymentManager.spider();
 
   return {
     comet,

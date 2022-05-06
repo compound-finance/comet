@@ -52,7 +52,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
   async solve(requirements: R, context: T, world: World) {
     let { utilization } = getUtilizationConfig(requirements);
 
-    if (!utilization) {
+    if (utilization == null) {
       return null;
     } else {
       // utilization is target number
@@ -80,6 +80,9 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
         if (currentUtilizationFactor < utilizationFactor) {
           toBorrowBase = toBorrowBase + (utilizationFactor * expectedSupplyBase / factorScale) - totalBorrowBase;
         } else {
+          if (utilizationFactor === 0n) {
+            utilizationFactor = 1n; // to avoid dividing by 0
+          }
           toSupplyBase = toSupplyBase + (totalBorrowBase * factorScale / utilizationFactor) - expectedSupplyBase;
         }
 

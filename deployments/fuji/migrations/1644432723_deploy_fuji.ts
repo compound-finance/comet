@@ -98,7 +98,12 @@ migration('1644432723_deploy_fuji', {
       ['WAVAX', wavax],
     ]);
 
-    let { cometProxy, configuratorProxy } = await deployNetworkComet(deploymentManager, true, {}, contracts);
+    let { cometProxy, configuratorProxy } = await deployNetworkComet(
+      deploymentManager,
+      { deployCometProxy: true, deployConfiguratorProxy: true },
+      {},
+      contracts
+    );
 
     return {
       comet: cometProxy.address,

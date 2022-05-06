@@ -34,6 +34,11 @@ export interface ProtocolConfiguration {
   assetConfigs?: AssetConfigStruct[];
 }
 
+export interface DeployProxyOption {
+  deployCometProxy?: boolean;
+  deployConfiguratorProxy?: boolean;
+}
+
 export interface DeployedContracts {
   comet: Comet;
   cometProxy: TransparentUpgradeableProxy | null;
@@ -45,7 +50,7 @@ export interface DeployedContracts {
 
 export async function deployComet(
   deploymentManager: DeploymentManager,
-  deployProxy: boolean = true,
+  deployProxy: DeployProxyOption = { deployCometProxy: true, deployConfiguratorProxy: true },
   configurationOverrides: ProtocolConfiguration = {},
   contractMapOverride?: ContractMap,
 ): Promise<DeployedContracts> {

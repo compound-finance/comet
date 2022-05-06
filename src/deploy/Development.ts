@@ -24,12 +24,13 @@ import {
   CometProxyAdmin__factory,
   TransparentUpgradeableConfiguratorProxy,
   TransparentUpgradeableConfiguratorProxy__factory,
+  ProxyAdmin,
 } from '../../build/types';
 import { ConfigurationStruct } from '../../build/types/Comet';
 import { ExtConfigurationStruct } from '../../build/types/CometExt';
 import { BigNumberish, constants, utils } from 'ethers';
 export { Comet } from '../../build/types';
-import { DeployedContracts, ProtocolConfiguration } from './index';
+import { DeployedContracts, DeployProxyOption, ProtocolConfiguration } from './index';
 
 async function makeToken(
   deploymentManager: DeploymentManager,
@@ -65,7 +66,7 @@ async function makePriceFeed(
 // TODO: Support configurable assets as well?
 export async function deployDevelopmentComet(
   deploymentManager: DeploymentManager,
-  deployProxy: boolean = true,
+  deployProxy: DeployProxyOption = { deployCometProxy: true, deployConfiguratorProxy: true },
   configurationOverrides: ProtocolConfiguration = {}
 ): Promise<DeployedContracts> {
   const signers = await deploymentManager.hre.ethers.getSigners();
@@ -104,7 +105,7 @@ export async function deployDevelopmentComet(
     []
   );
 
-  const timelock = await deploymentManager.deploy<SimpleTimelock, SimpleTimelock__factory, [string]>(
+  let timelock = await deploymentManager.deploy<SimpleTimelock, SimpleTimelock__factory, [string]>(
     'test/SimpleTimelock.sol',
     [governorSimple.address]
   );
@@ -188,26 +189,37 @@ export async function deployDevelopmentComet(
     [configuration]
   );
 
+  const cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
+    'CometFactory.sol',
+    []
+  );
+
+  const configurator = await deploymentManager.deploy<Configurator, Configurator__factory, []>(
+    'Configurator.sol',
+    []
+  );
+
+  /* === Proxies === */
+
+  let newRoots = await deploymentManager.getRoots();
   let cometProxy = null;
   let configuratorProxy = null;
-  if (deployProxy) {
-    const cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
-      'CometFactory.sol',
-      []
-    );
+  let proxyAdmin = null;
 
-    const configurator = await deploymentManager.deploy<Configurator, Configurator__factory, []>(
-      'Configurator.sol',
-      []
-    );
-
+  if (deployProxy.deployCometProxy && deployProxy.deployConfiguratorProxy) {
     let proxyAdminArgs: [] = [];
-    let proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
+    proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
       'CometProxyAdmin.sol',
       proxyAdminArgs
     );
     await proxyAdmin.transferOwnership(timelock.address);
+  } else {
+    // We don't want to be using a new ProxyAdmin/Timelock if we are not deploying both proxies
+    proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
+    timelock = await deploymentManager.contract('timelock') as SimpleTimelock;
+  }
 
+  if (deployProxy.deployConfiguratorProxy) {
     // Configuration proxy
     configuratorProxy = await deploymentManager.deploy<
       TransparentUpgradeableConfiguratorProxy,
@@ -216,9 +228,13 @@ export async function deployDevelopmentComet(
     >('TransparentUpgradeableConfiguratorProxy.sol', [
       configurator.address,
       proxyAdmin.address,
-      (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data,
+      (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data, // new time lock is set, which we don't want
     ]);
 
+    newRoots.set('configurator', configuratorProxy.address);
+  }
+
+  if (deployProxy.deployCometProxy) {
     // Comet proxy
     cometProxy = await deploymentManager.deploy<
       TransparentUpgradeableProxy,
@@ -230,8 +246,11 @@ export async function deployDevelopmentComet(
       (await comet.populateTransaction.initializeStorage()).data,
     ]);
 
-    await deploymentManager.putRoots(new Map([['comet', cometProxy.address], ['configurator', configuratorProxy.address]]));
+    newRoots.set('comet', cometProxy.address);
   }
+
+  await deploymentManager.putRoots(newRoots);
+  await deploymentManager.spider();
 
   return {
     comet,
