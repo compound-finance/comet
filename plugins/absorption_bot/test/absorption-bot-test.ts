@@ -26,7 +26,7 @@ function mockEvent({ src, to, amount }: { src: string, to: string, amount: BigNu
 async function mockComet(events = []): Promise<FakeContract<Comet>> {
   const comet = await smock.fake<Comet>('Comet');
 
-  comet.queryFilter = (event: EventFilter) => {
+  comet.queryFilter = (_event: EventFilter) => {
     return new Promise<any>((resolve, _reject) => {
       resolve(events);
     });
@@ -37,21 +37,6 @@ async function mockComet(events = []): Promise<FakeContract<Comet>> {
 
 describe('Absorption Bot', () => {
   describe('absorbLiquidatableBorrowers', () => {
-    it.skip('XXX', async () => {
-      const [ absorber ] = await ethers.getSigners();
-      const comet = await mockComet([
-        mockEvent({
-          src: "0x01",
-          to: "0x02",
-          amount: BigNumber.from(1000)
-        })
-      ]);
-
-      await absorbLiquidatableBorrowers(comet, absorber);
-
-      expect(true).to.be.true;
-    });
-
     it('queries liquidationMargin for all Withdraw sources', async () => {
       const [ absorber, user1, user2, user3 ] = await ethers.getSigners();
       const comet = await mockComet([
