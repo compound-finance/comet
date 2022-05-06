@@ -5,7 +5,7 @@ import '../../plugins/scenario/type-extensions';
 import { ForkSpec } from '../../plugins/scenario/World';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-import * as types from 'hardhat/internal/core/params/argumentTypes'; // TODO harhdat argument types not from internal
+import { types } from "hardhat/config";
 
 function getBasesFromTaskArgs(givenBases: string | undefined, env: HardhatRuntimeEnvironment): ForkSpec[] {
   let bases: ForkSpec[] = env.config.scenario.bases;

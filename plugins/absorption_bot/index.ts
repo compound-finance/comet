@@ -48,7 +48,7 @@ export async function absorbLiquidatableBorrowers(comet: CometOrMock, absorber: 
   }
 }
 
-async function main({ hre, debug = true }) {
+async function main({ hre, log = true, loopDelay = 0 }) {
   const network = hre.network.name;
   const [absorber] = await hre.ethers.getSigners();
 
@@ -63,7 +63,12 @@ async function main({ hre, debug = true }) {
   const comet = contracts.get('comet') as Comet;
 
   while (true) {
-    await absorbLiquidatableBorrowers(comet, absorber, debug);
+    await absorbLiquidatableBorrowers(comet, absorber, log);
+
+    if (loopDelay) {
+      debug(log, `waiting ${loopDelay}ms`);
+      await new Promise(resolve => setTimeout(resolve, loopDelay));
+    }
   }
 }
 
