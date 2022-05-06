@@ -39,7 +39,7 @@ describe('buyCollateral', function () {
     await wait(baseAsA.approve(comet.address, exp(50, 6)));
     // Alice buys 50e6 wei USDC worth of COMP
     const txn = await wait(cometAsA.buyCollateral(COMP.address, exp(50, 18), 50e6, alice.address));
-    const p1 = await portfolio(protocol, alice.address)
+    const p1 = await portfolio(protocol, alice.address);
     const r1 = await comet.getReserves();
 
     expect(r0).to.be.equal(0n);
@@ -124,7 +124,7 @@ describe('buyCollateral', function () {
     await wait(baseAsA.approve(comet.address, exp(50, 6)));
     // Alice buys 50e6 wei USDC worth of COMP
     const txn = await wait(cometAsA.buyCollateral(COMP.address, exp(50, 18), 50e6, alice.address));
-    const p1 = await portfolio(protocol, alice.address)
+    const p1 = await portfolio(protocol, alice.address);
     const r1 = await comet.getReserves();
 
     expect(r0).to.be.equal(-100e6);

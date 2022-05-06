@@ -510,10 +510,10 @@ export async function baseBalanceOf(comet: CometInterface, account: string): Pro
 type Portfolio = {
   internal: {
     [symbol: string]: bigint;
-  },
+  };
   external: {
     [symbol: string]: bigint;
-  }
+  };
 }
 
 export async function portfolio({ comet, base, tokens }, account): Promise<Portfolio>  {
