@@ -58,7 +58,7 @@ scenario(
   }
 );
 
-scenario(
+scenario.only(
   'Comet#transfer > base asset, total and user balances are summed up properly',
   {
     upgrade: true,
@@ -87,8 +87,9 @@ scenario(
     const newBettyPrincipal = (await comet.userBasic(betty.address)).principal.toBigInt();
 
     // Check that global and user principals are updated by the same amoount
-    expect(newTotalSupply.toBigInt() - oldTotalSupply.toBigInt() + newTotalBorrow.toBigInt() - oldTotalBorrow.toBigInt())
-      .to.be.equal(newAlbertPrincipal - oldAlbertPrincipal + newBettyPrincipal - oldBettyPrincipal);
+    const changeInTotalPrincipal = newTotalSupply.toBigInt() - oldTotalSupply.toBigInt() - (newTotalBorrow.toBigInt() - oldTotalBorrow.toBigInt());
+    const changeInUserPrincipal = newAlbertPrincipal - oldAlbertPrincipal + newBettyPrincipal - oldBettyPrincipal;
+    expect(changeInTotalPrincipal).to.be.equal(changeInUserPrincipal);
 
     return txn; // return txn to measure gas
   }
