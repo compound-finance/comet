@@ -73,5 +73,36 @@ describe('Absorption Bot', () => {
       expect(comet.getLiquidationMargin.atCall(0)).to.have.been.calledWith(user1.address);
       expect(comet.getLiquidationMargin.atCall(1)).to.have.been.calledWith(user2.address);
     });
+
+    it('attempts absorb for liquidatable positions', async () => {
+      const [ absorber, solventUser, insolventUser ] = await ethers.getSigners();
+      const comet = await mockComet([
+        mockEvent({
+          src: solventUser.address,
+          to: solventUser.address,
+          amount: BigNumber.from(1000)
+        }),
+        mockEvent({
+          src: insolventUser.address,
+          to: insolventUser.address,
+          amount: BigNumber.from(1000)
+        }),
+      ]);
+
+      comet.getLiquidationMargin.whenCalledWith(solventUser.address).returns(100);
+      comet.getLiquidationMargin.whenCalledWith(insolventUser.address).returns(-100);
+
+      await absorbLiquidatableBorrowers(comet, absorber);
+
+      expect(comet.getLiquidationMargin).to.have.been.calledTwice;
+      expect(comet.getLiquidationMargin.atCall(0)).to.have.been.calledWith(solventUser.address);
+      expect(comet.getLiquidationMargin.atCall(1)).to.have.been.calledWith(insolventUser.address);
+
+      expect(comet.absorb).to.have.been.calledOnce;
+      expect(comet.absorb.atCall(0)).to.have.been.calledWith(
+        absorber.address,
+        [insolventUser.address]
+      );
+    });
   });
 });

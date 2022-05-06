@@ -45,12 +45,9 @@ async function main({ hre }) {
   const contracts = await dm.contracts();
   const comet = contracts.get('comet') as Comet;
 
-  // await absorbLiquidatableBorrowers(comet, absorber);
-
   while (true) {
     await absorbLiquidatableBorrowers(comet, absorber);
   }
-
 }
 
 export default main;
