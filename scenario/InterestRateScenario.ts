@@ -45,13 +45,13 @@ function calculateBorrowRate(
 }
 
 function calculateUtilization(
-  totalSupplyBase,
-  totalBorrowBase,
-  baseSupplyIndex,
-  baseBorrowIndex,
+  totalSupplyBase: BigNumber,
+  totalBorrowBase: BigNumber,
+  baseSupplyIndex: BigNumber,
+  baseBorrowIndex: BigNumber,
   factorScale = BigNumber.from(exp(1, 18))
 ): BigNumber {
-  if (!totalSupplyBase) {
+  if (totalSupplyBase.isZero()) {
     return BigNumber.from(0);
   } else {
     const totalSupply = totalSupplyBase.mul(baseSupplyIndex).div(factorScale);
