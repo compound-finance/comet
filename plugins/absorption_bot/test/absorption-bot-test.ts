@@ -3,7 +3,7 @@ import { expect, use } from 'chai';
 import { FakeContract, smock } from '@defi-wonderland/smock';
 import { Comet } from '../../../build/types';
 import { absorbLiquidatableBorrowers } from "../index";
-import { BigNumber, EventFilter } from 'ethers';
+import { BigNumber, Contract, EventFilter } from 'ethers';
 
 use(smock.matchers);
 
@@ -23,8 +23,9 @@ function mockEvent({ src, to, amount }: { src: string, to: string, amount: BigNu
   }
 }
 
-async function mockComet(events = []): Promise<FakeContract<Comet>> {
-  const comet = await smock.fake<Comet>('Comet');
+async function mockComet(events = []): Promise<Contract> {
+  // type as any to allow casting to Contract
+  const comet = await smock.fake('Comet') as any;
 
   comet.queryFilter = (_event: EventFilter) => {
     return new Promise<any>((resolve, _reject) => {

@@ -1,15 +1,6 @@
-import { Comet } from '../../build/types';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-import { FakeContract } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-
-/*
-Absorption Bot
-
-To run: `yarn hardhat absorption-bot --network kovan`
-*/
-
-type CometOrMock = Comet | FakeContract<Comet>;
+import { Contract } from 'ethers';
 
 function debug(shouldLog: boolean, message?, ...optionalParams) {
   if (shouldLog) {
@@ -17,7 +8,7 @@ function debug(shouldLog: boolean, message?, ...optionalParams) {
   }
 }
 
-async function attemptAbsorb(comet: CometOrMock, absorber: SignerWithAddress, targetAddresses: string[], log = false) {
+async function attemptAbsorb(comet: Contract, absorber: SignerWithAddress, targetAddresses: string[], log = false) {
   try {
     await comet.connect(absorber).absorb(absorber.address, targetAddresses);
     debug(log, `Successfully absorbed ${targetAddresses}`);
@@ -27,12 +18,12 @@ async function attemptAbsorb(comet: CometOrMock, absorber: SignerWithAddress, ta
   }
 }
 
-async function getUniqueAddresses(comet: CometOrMock): Promise<Set<string>> {
+async function getUniqueAddresses(comet: Contract): Promise<Set<string>> {
   const withdrawEvents = await comet.queryFilter(comet.filters.Withdraw());
   return new Set(withdrawEvents.map(event => event.args.src));
 }
 
-export async function absorbLiquidatableBorrowers(comet: CometOrMock, absorber: SignerWithAddress, log = false) {
+export async function absorbLiquidatableBorrowers(comet: Contract, absorber: SignerWithAddress, log = false) {
   const uniqueAddresses = await getUniqueAddresses(comet);
 
   debug(log, `${uniqueAddresses.size} unique addresses found`);
@@ -60,7 +51,7 @@ async function main({ hre, log = true, loopDelay = 0 }) {
   await dm.spider();
 
   const contracts = await dm.contracts();
-  const comet = contracts.get('comet') as Comet;
+  const comet = contracts.get('comet');
 
   while (true) {
     await absorbLiquidatableBorrowers(comet, absorber, log);
