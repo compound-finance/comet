@@ -14,7 +14,8 @@ import 'hardhat-gas-reporter';
 import './tasks/deployment_manager/task.ts';
 import './tasks/spider/task.ts';
 import './tasks/scenario/task.ts';
-import './tasks/liquidation_bot/task.ts';
+import './tasks/liquidation_bot/task.ts'; // XXX DELETE
+import './tasks/absorption_bot/task.ts';
 
 // Relation Config
 import relationConfigMap from './deployments/relations';
