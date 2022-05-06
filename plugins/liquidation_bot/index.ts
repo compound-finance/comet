@@ -103,18 +103,15 @@ export async function loop({
   //   }
   // }
 
-  // attempt absorb
   const absorbableBorrowers = Object.values(borrowerMap).filter(borrower => isAbsorbable(borrower));
 
-  // console.log(`${absorbableBorrowers.length} absorbable borrowers`);
-
+  // attempt to absorb all absorbable accounts
   const absorbedAddresses = await attemptAbsorb(
     comet, absorber, absorbableBorrowers.map(borrower => borrower.address)
   );
 
-  // // attempt to absorb all absorbable accounts
   return {
-    updatedBorrowerMap: borrowerMap
+    borrowerMap
   };
 }
 
@@ -137,39 +134,52 @@ async function main({ hre, loopDelay = 5000}: Config) {
 
   while (true) {
     const currentBlock = await hre.ethers.provider.getBlockNumber();
-    const { updatedBorrowerMap } = await loop(currentBlock, lastBlockChecked, borrowerMap);
+    const { borrowerMap: updatedBorrowerMap } = await loop({
+      absorber: signer,
+      comet,
+      currentBlock,
+      lastBlockChecked,
+      borrowerMap
+    });
     lastBlockChecked = currentBlock;
-    borrowerMap = updatedBorrowerMap; // XXX do atomically
+    borrowerMap = updatedBorrowerMap; // XXX do atomically, so you can have a listener updating the map, too
 
-    console.log(`running for block ${startingBlockNumber}`);
+    // const startingBlockNumber = await hre.ethers.provider.getBlockNumber();
+    // if (startingBlockNumber === lastBlock) {
+    //   console.log(`already run for block ${startingBlockNumber}; waiting ${loopDelay / 1000} seconds`);
+    //   await new Promise(resolve => setTimeout(resolve, loopDelay));
+    //   continue;
+    // }
 
-    // generate candidates
-    const candidates = generateCandidates(borrowerMap, startingBlockNumber);
+    // console.log(`running for block ${startingBlockNumber}`);
 
-    console.log(`updating ${candidates.length} candidates`);
+    // // generate candidates
+    // const candidates = generateCandidates(borrowerMap, startingBlockNumber);
 
-    // update candidates
-    for (const candidate of candidates) {
-      const updatedCandidate = await updateCandidate(hre, comet, candidate);
-      borrowerMap[candidate.address] = updatedCandidate;
-      console.log({address: updatedCandidate.address, liquidationMargin: updatedCandidate.liquidationMargin});
-    }
+    // console.log(`updating ${candidates.length} candidates`);
 
-    // attempt absorb
-    const absorbableBorrowers = Object.values(borrowerMap).filter(borrower => isAbsorbable(borrower));
+    // // update candidates
+    // for (const candidate of candidates) {
+    //   const updatedCandidate = await updateCandidate(hre, comet, candidate);
+    //   borrowerMap[candidate.address] = updatedCandidate;
+    //   console.log({address: updatedCandidate.address, liquidationMargin: updatedCandidate.liquidationMargin});
+    // }
 
-    console.log(`${absorbableBorrowers.length} absorbable borrowers`);
+    // // attempt absorb
+    // const absorbableBorrowers = Object.values(borrowerMap).filter(borrower => isAbsorbable(borrower));
 
-    const absorbedAddresses = await attemptAbsorb(comet, signer.address, absorbableBorrowers.map(borrower => borrower.address));
+    // console.log(`${absorbableBorrowers.length} absorbable borrowers`);
 
-    console.log(`${absorbedAddresses.length} borrowers absorbed`);
+    // const absorbedAddresses = await attemptAbsorb(comet, signer.address, absorbableBorrowers.map(borrower => borrower.address));
 
-    for (const address of absorbedAddresses) {
-      // clear info for absorbed addresses
-      borrowerMap[address] = newBorrower(address);
-    }
+    // console.log(`${absorbedAddresses.length} borrowers absorbed`);
 
-    lastBlock = startingBlockNumber;
+    // for (const address of absorbedAddresses) {
+    //   // clear info for absorbed addresses
+    //   borrowerMap[address] = newBorrower(address);
+    // }
+
+    // lastBlock = startingBlockNumber;
   }
 }
 
