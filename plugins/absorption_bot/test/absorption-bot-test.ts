@@ -1,8 +1,9 @@
+import { hre } from 'hardhat';
 import { expect, use } from 'chai';
 import { FakeContract, smock } from '@defi-wonderland/smock';
 import { Comet } from '../../../build/types';
 import { absorbLiquidatableBorrowers } from "../index";
-import { BigNumber, EventFilter } from 'ethers';
+import { BigNumber, ethers, EventFilter } from 'ethers';
 
 use(smock.matchers);
 
@@ -36,7 +37,8 @@ async function mockComet(events = []): Promise<FakeContract<Comet>> {
 
 describe('Absorption Bot', () => {
   describe('absorbLiquidatableBorrowers', () => {
-    it.only('returns unchanged borrowerMap when currentBlock <= lastBlockChecked', async () => {
+    it.skip('XXX', async () => {
+      const [ absorber ] = hre.ethers.provider.getSigners();
       const comet = await mockComet([
         mockEvent({
           src: "0x01",
@@ -45,9 +47,25 @@ describe('Absorption Bot', () => {
         })
       ]);
 
-      await absorbLiquidatableBorrowers(comet);
+      await absorbLiquidatableBorrowers(comet, absorber);
 
       expect(true).to.be.true;
     });
+
+    it.only('XXX', async () => {
+      const [ absorber ] = hre.ethers.provider.getSigners();
+      const comet = await mockComet([
+        mockEvent({
+          src: "0x01",
+          to: "0x02",
+          amount: BigNumber.from(1000)
+        })
+      ]);
+
+      await absorbLiquidatableBorrowers(comet, absorber);
+
+      expect(true).to.be.true;
+    });
+
   });
 });

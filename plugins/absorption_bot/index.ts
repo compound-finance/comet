@@ -1,6 +1,7 @@
 import { Comet } from '../../build/types';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import { FakeContract } from '@defi-wonderland/smock';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 /*
 Absorption Bot
@@ -12,13 +13,22 @@ type CometOrMock = Comet | FakeContract<Comet>;
 
 async function getUniqueAddresses(comet: CometOrMock): Promise<Set<string>> {
   const withdrawEvents = await comet.queryFilter(comet.filters.Withdraw());
-  console.log(withdrawEvents);
   return new Set(withdrawEvents.map(event => event.args.src));
 }
 
-export async function absorbLiquidatableBorrowers(comet: CometOrMock) {
+export async function absorbLiquidatableBorrowers(comet: CometOrMock, absorber: SignerWithAddress) {
   const uniqueAddresses = await getUniqueAddresses(comet);
-  console.log(uniqueAddresses);
+  for (const address of uniqueAddresses) {
+    try {
+      const liquidationMargin = await comet.getLiquidationMargin(address);
+      console.log(`${address} liquidation margin=${liquidationMargin}`)
+      if (liquidationMargin.lt(0)) {
+        await comet.connect(absorber).absorb(absorber.address, [address]);
+      }
+    } catch (error) {
+      console.log(error.message)
+    }
+  }
 }
 
 async function main({ hre }) {
@@ -35,11 +45,11 @@ async function main({ hre }) {
   const contracts = await dm.contracts();
   const comet = contracts.get('comet') as Comet;
 
-  await absorbLiquidatableBorrowers(comet);
+  // await absorbLiquidatableBorrowers(comet, absorber);
 
-  // while (true) {
-  //   absorbLiquidtableBorrowers(comet);
-  // }
+  while (true) {
+    await absorbLiquidatableBorrowers(comet, absorber);
+  }
 
 }
 
