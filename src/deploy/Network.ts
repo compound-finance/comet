@@ -131,6 +131,10 @@ export async function deployNetworkComet(
   let configuratorProxy = null;
   let proxyAdmin = null;
 
+  // If we are deploying new proxies for both Comet and Configurator, we will also deploy a new ProxyAdmin
+  // because this is most likely going to be a completely fresh deployment.
+  // Note: If this assumption is incorrect, we should probably add a third option in `DeployProxyOption` to
+  //       specify if a new CometProxyAdmin should be deployed.
   if (deployProxy.deployCometProxy && deployProxy.deployConfiguratorProxy) {
     let proxyAdminArgs: [] = [];
     proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
