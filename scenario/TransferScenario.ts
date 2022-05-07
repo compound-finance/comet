@@ -58,7 +58,7 @@ scenario(
   }
 );
 
-scenario.only(
+scenario(
   'Comet#transfer > base asset, total and user balances are summed up properly',
   {
     upgrade: true,
