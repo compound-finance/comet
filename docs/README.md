@@ -24,7 +24,7 @@ Owed interest accrues to open borrows of the base asset. Borrower interest accru
 
 ### Get Supply Rate
 
-This method returns the current supply rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the supply rate is:
+This function returns the current supply rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the supply rate is:
 
 ```
 ## If the Utilization is currently less than or equal to the Kink parameter
@@ -67,7 +67,7 @@ const supplyRate = await comet.callStatic.getSupplyRate();
 
 ### Get Borrow Rate
 
-This method returns the current borrow rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the borrow rate is:
+This function returns the current borrow rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the borrow rate is:
 
 ```
 ## If the Utilization is currently less than or equal to the Kink parameter
@@ -127,7 +127,7 @@ Balance=PrincipalBaseBorrowIndexNow [Principal<0]
 
 ### Supply
 
-The supply function transfers an asset to the protocol and adds it to the account's balance. This method can be used to **supply collateral, supply the base asset, or repay an open borrow** of the base asset.
+The supply function transfers an asset to the protocol and adds it to the account's balance. This function can be used to **supply collateral, supply the base asset, or repay an open borrow** of the base asset.
 
 If the base asset is supplied resulting in the account having a balance greater than zero, the base asset earns interest based on the current supply rate. Collateral assets that are supplied do not earn interest.
 
@@ -762,7 +762,7 @@ await comet.allowBySig('0xowner', '0xmanager', true, nonce, expiry, v, r, s);
 
 ### Account Permissions
 
-This method returns a boolean that indicates the status of an account's management address.
+This function returns a boolean that indicates the status of an account's management address.
 
 #### Comet
 
@@ -797,7 +797,7 @@ const isManager = await comet.callStatic.hasPermission('0xOwner', '0xManager');
 
 ### Transfer
 
-This method is used to transfer an asset within the protocol to another address. A manager of an account is also able to perform a transfer on behalf of the account. Account balances change but the asset does not leave the protocol contract. The transfer will fail if it would make the account liquidatable.
+This function is used to transfer an asset within the protocol to another address. A manager of an account is also able to perform a transfer on behalf of the account. Account balances change but the asset does not leave the protocol contract. The transfer will fail if it would make the account liquidatable.
 
 #### Comet
 
@@ -841,7 +841,7 @@ The Comet contract is a fully compatible ERC-20 wrapper for the base token. All 
 
 ### Get Utilization
 
-This method returns the current protocol utilization of the base asset. The formula for producing the utilization is:
+This function returns the current protocol utilization of the base asset. The formula for producing the utilization is:
 
 `Utilization = TotalBorrows / TotalSupply`
 
@@ -944,7 +944,7 @@ const [ totalSupplyAsset ] = await comet.callStatic.totalsCollateral('0xERC20Add
 
 ### Collateral Balance
 
-This method returns the current balance of a collateral asset for a specified account in the protocol.
+This function returns the current balance of a collateral asset for a specified account in the protocol.
 
 #### Comet
 
@@ -979,7 +979,7 @@ const balance = await comet.callStatic.collateralBalanceOf('0xAccount', '0xUsdcA
 
 ### Supplied Base Balance
 
-This method returns the current balance of base asset for a specified account in the protocol, including interest. If the account is presently borrowing or not supplying, it will return `0`.
+This function returns the current balance of base asset for a specified account in the protocol, including interest. If the account is presently borrowing or not supplying, it will return `0`.
 
 #### Comet
 
@@ -1013,7 +1013,7 @@ const balance = await comet.callStatic.balanceOf('0xAccount');
 
 ### Borrow Balance
 
-This method returns the current balance of borrowed base asset for a specified account in the protocol, including interest. If the account has a non-negative base asset balance, it will return `0`.
+This function returns the current balance of borrowed base asset for a specified account in the protocol, including interest. If the account has a non-negative base asset balance, it will return `0`.
 
 #### Comet
 
@@ -1047,7 +1047,7 @@ const owed = await comet.callStatic.borrowBalanceOf('0xAccount');
 
 ### Base Balance as Integer
 
-This method returns the current balance of base asset for a specified account in the protocol, including interest. If the account is currently borrowing, the return value will be negative. If the account is currently supplying the base asset, the return value will be positive.
+This function returns the current balance of base asset for a specified account in the protocol, including interest. If the account is currently borrowing, the return value will be negative. If the account is currently supplying the base asset, the return value will be positive.
 
 #### Comet
 
@@ -1126,7 +1126,7 @@ const [ principal, baseTrackingIndex, baseTrackingAccrued, assetsIn ] = await co
 
 ### Get Asset Info
 
-This method returns asset information such as the collateral factors, asset price feed address, and more. In order to create a loop to fetch information for every asset, use the `numAssets` constant, which indicates the total number of supported assets.
+This function returns asset information such as the collateral factors, asset price feed address, and more. In order to create a loop to fetch information for every asset, use the `numAssets` constant, which indicates the total number of supported assets.
 
 #### Comet
 
@@ -1179,7 +1179,7 @@ const infoObject = await comet.callStatic.getAssetInfo(0);
 
 ### Get Asset Info By Address
 
-This method returns asset information of a specific asset.
+This function returns asset information of a specific asset.
 
 #### Comet
 
@@ -1372,6 +1372,171 @@ const config = await Configurator.methods.getConfiguration().call();
 ```js
 const configurator = new ethers.Contract(contractAddress, abiJson, provider);
 const config = await configurator.callStatic.getConfiguration();
+```
+
+### Get Base Accrual Scale
+
+This function gets the scale for the base asset tracking accrual.
+
+#### Comet
+
+```solidity
+function baseAccrualScale() override external pure returns (uint64)
+```
+
+* `RETURNS`: The integer used to scale down the base accrual when calculating a decimal value.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint baseAccrualScale = comet.baseAccrualScale();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const baseAccrualScale = await comet.methods.baseAccrualScale().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const baseAccrualScale = await comet.callStatic.baseAccrualScale();
+```
+
+### Get Base Index Scale
+
+This function gets the scale for the base asset index.
+
+#### Comet
+
+```solidity
+function baseIndexScale() override external pure returns (uint64)
+```
+
+* `RETURNS`: The integer used to scale down the index when calculating a decimal value.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint baseIndexScale = comet.baseIndexScale();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const baseIndexScale = await comet.methods.baseIndexScale().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const baseIndexScale = await comet.callStatic.baseIndexScale();
+```
+
+### Get Factor Scale
+
+This function gets the scale for all protocol factors, i.e. borrow collateral factor.
+
+#### Comet
+
+```solidity
+function factorScale() override external pure returns (uint64)
+```
+
+* `RETURNS`: The integer used to scale down the factor when calculating a decimal value.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint factorScale = comet.factorScale();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const factorScale = await comet.methods.factorScale().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const factorScale = await comet.callStatic.factorScale();
+```
+
+### Get Price Scale
+
+This function gets the scale integer for USD prices in the protocol, i.e. `8 decimals = 1e8`.
+
+#### Comet
+
+```solidity
+function priceScale() override external pure returns (uint64)
+```
+
+* `RETURNS`: The integer used to scale down a price when calculating a decimal value.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint priceScale = comet.priceScale();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const priceScale = await comet.methods.priceScale().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const priceScale = await comet.callStatic.priceScale();
+```
+
+### Get Max Assets
+
+This function gets the maximum number of assets that can be simultaneously supported by Compound III.
+
+#### Comet
+
+```solidity
+function maxAssets() override external pure returns (uint8)
+```
+
+* `RETURNS`: The maximum number of assets that can be simultaneously supported by Compound III.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint maxAssets = comet.maxAssets();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const maxAssets = await comet.methods.maxAssets().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const maxAssets = await comet.callStatic.maxAssets();
 ```
 
 ## Bulk Actions
