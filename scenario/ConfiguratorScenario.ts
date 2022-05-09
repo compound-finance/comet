@@ -1,6 +1,7 @@
-import { CometContext, CometProperties, scenario } from './context/CometContext';
+import { CometProperties, scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { utils } from 'ethers';
+import { scaleToDecimals } from './utils';
 
 scenario('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, timelock, actors }, world, context) => {
   const { admin, albert } = actors;
@@ -31,7 +32,7 @@ scenario('add assets', {}, async ({ comet, configurator, proxyAdmin, timelock, a
 
   // Add new asset and deploy + upgrade
   let newAsset = await comet.getAssetInfo(0);
-  let newAssetDecimals = newAsset.scale.toString().split('0').length - 1; // # of 0's in scale
+  let newAssetDecimals = scaleToDecimals(newAsset.scale); // # of 0's in scale
   let newAssetConfig = {
     asset: newAsset.asset,
     priceFeed: newAsset.priceFeed,
@@ -44,12 +45,12 @@ scenario('add assets', {}, async ({ comet, configurator, proxyAdmin, timelock, a
   let addAssetCalldata = utils.defaultAbiCoder.encode(
     ["address", "address", "uint8", "uint64", "uint64", "uint64", "uint128"],
     [
-      newAssetConfig.asset, 
-      newAssetConfig.priceFeed, 
-      newAssetConfig.decimals, 
-      newAssetConfig.borrowCollateralFactor, 
-      newAssetConfig.liquidateCollateralFactor, 
-      newAssetConfig.liquidationFactor, 
+      newAssetConfig.asset,
+      newAssetConfig.priceFeed,
+      newAssetConfig.decimals,
+      newAssetConfig.borrowCollateralFactor,
+      newAssetConfig.liquidateCollateralFactor,
+      newAssetConfig.liquidationFactor,
       newAssetConfig.supplyCap
     ]);
   let deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
@@ -76,12 +77,12 @@ scenario('add assets', {}, async ({ comet, configurator, proxyAdmin, timelock, a
   expect(updatedCollateralAssets.map(a => a.asset)).to.have.members(updatedContextAssets);
 });
 
-// XXX Hardhat currently can't parse custom errors from external contracts. We can use `upgrade: true` and 
+// XXX Hardhat currently can't parse custom errors from external contracts. We can use `upgrade: true` and
 // have an option for the ModernConstraint to also re-deploy proxies.
 // https://github.com/NomicFoundation/hardhat/issues/1618
 scenario.skip(
-  'reverts if configurator is not called by admin', 
-  {}, 
+  'reverts if configurator is not called by admin',
+  {},
   async ({ comet, configurator, proxyAdmin, actors }, world) => {
   const { albert } = actors;
 

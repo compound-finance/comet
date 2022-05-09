@@ -1,13 +1,13 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately } from './utils';
+import { expectApproximately, getExpectedBaseBalance } from './utils';
 
 // XXX consider creating these tests for assets0-15
 scenario(
   'Comet#transfer > collateral asset, enough balance',
   {
     upgrade: true,
-    tokenBalances: {
+    cometBalances: {
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
   },
@@ -15,12 +15,6 @@ scenario(
     const { albert, betty } = actors;
     const { asset: asset0Address, scale } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
-
-    expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(100n * scale.toBigInt());
-
-    // Albert supplies 100 units of collateral to Comet
-    await collateralAsset.approve(albert, comet.address);
-    await albert.supplyAsset({ asset: collateralAsset.address, amount: 100n * scale.toBigInt() })
 
     // Albert transfers 50 units of collateral to Betty
     const toTransfer = scale.toBigInt() * 50n;
@@ -37,7 +31,7 @@ scenario(
   'Comet#transfer > base asset, enough balance',
   {
     upgrade: true,
-    tokenBalances: {
+    cometBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
@@ -47,18 +41,56 @@ scenario(
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
 
-    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
-
-    // Albert supplies 100 units of collateral to Comet
-    await baseAsset.approve(albert, comet.address);
-    await albert.supplyAsset({ asset: baseAsset.address, amount: 100n * scale })
-
     // Albert transfers 50 units of collateral to Betty
-    const toTransfer = scale * 50n;
+    const toTransfer = 50n * scale;
     const txn = await albert.transferAsset({ dst: betty.address, asset: baseAsset.address, amount: toTransfer });
 
-    expect(await comet.balanceOf(albert.address)).to.be.equal(50n * scale);
-    expect(await comet.balanceOf(betty.address)).to.be.equal(50n * scale);
+    const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
+    const baseSupplyIndex = (await comet.totalsBasic()).baseSupplyIndex.toBigInt();
+    const baseSupplied = getExpectedBaseBalance(100n * scale, baseIndexScale, baseSupplyIndex);
+    const baseTransferred = getExpectedBaseBalance(50n * scale, baseIndexScale, baseSupplyIndex);
+    const baseOfTransferrer = getExpectedBaseBalance(baseSupplied - toTransfer, baseIndexScale, baseSupplyIndex)
+
+    expect(await comet.balanceOf(albert.address)).to.be.equal(baseOfTransferrer);
+    expect(await comet.balanceOf(betty.address)).to.be.equal(baseTransferred);
+
+    return txn; // return txn to measure gas
+  }
+);
+
+scenario(
+  'Comet#transfer > base asset, total and user balances are summed up properly',
+  {
+    upgrade: true,
+    cometBalances: {
+      albert: { $base: 100 }, // in units of asset, not wei
+    },
+  },
+  async ({ comet, actors }, world, context) => {
+    const { albert, betty } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const scale = (await comet.baseScale()).toBigInt();
+
+    // Cache pre-transfer balances
+    const { totalSupplyBase: oldTotalSupply, totalBorrowBase: oldTotalBorrow } = await comet.totalsBasic();
+    const oldAlbertPrincipal = (await comet.userBasic(albert.address)).principal.toBigInt();
+    const oldBettyPrincipal = (await comet.userBasic(betty.address)).principal.toBigInt();
+
+    // Albert transfers 50 units of collateral to Betty
+    const toTransfer = 50n * scale;
+    const txn = await albert.transferAsset({ dst: betty.address, asset: baseAsset.address, amount: toTransfer });
+
+    // Cache post-transfer balances
+    const { totalSupplyBase: newTotalSupply, totalBorrowBase: newTotalBorrow } = await comet.totalsBasic();
+    const newAlbertPrincipal = (await comet.userBasic(albert.address)).principal.toBigInt();
+    const newBettyPrincipal = (await comet.userBasic(betty.address)).principal.toBigInt();
+
+    // Check that global and user principals are updated by the same amount
+    const changeInTotalPrincipal = newTotalSupply.toBigInt() - oldTotalSupply.toBigInt() - (newTotalBorrow.toBigInt() - oldTotalBorrow.toBigInt());
+    const changeInUserPrincipal = newAlbertPrincipal - oldAlbertPrincipal + newBettyPrincipal - oldBettyPrincipal;
+    expect(changeInTotalPrincipal).to.be.equal(changeInUserPrincipal).to;
+    expect([0n, -1n, -2n]).to.include(changeInTotalPrincipal); // these are the only acceptable values for transfer
 
     return txn; // return txn to measure gas
   }
