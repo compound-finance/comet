@@ -874,6 +874,39 @@ const comet = new ethers.Contract(contractAddress, abiJson, provider);
 const utilization = await comet.callStatic.getUtilization();
 ```
 
+### Total Supply
+
+The total supply of base tokens supplied to the protocol plus interest accrued to suppliers.
+
+#### Comet
+
+```solidity
+function totalSupply() override external view returns (uint256)
+```
+
+* `RETURN`: The amount of base asset scaled up by 10 to the "decimals" integer in the base asset's contract.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint256 totalSupply = comet.totalSupply();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const totalSupply = await comet.methods.totalSupply().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const totalSupply = await comet.callStatic.totalSupply();
+```
+
 ### Total Collateral
 
 The protocol tracks the current amount of collateral that all accounts have supplied. Each valid collateral asset sum is tracked in a mapping with the asset address that points to a struct.
@@ -1233,6 +1266,40 @@ const comet = new ethers.Contract(contractAddress, abiJson, provider);
 const price = await comet.callStatic.getPrice(usdcAddress);
 ```
 
+### Accrue Account
+
+This function triggers a manual accrual of interest and rewards to an account.
+
+#### Comet
+
+```solidity
+function accrueAccount(address account) override external
+```
+
+* `account`: The account in which to accrue interest and rewards.
+* `RETURN`: No return, reverts on error.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint price = comet.accrueAccount(0xAccount);
+```
+
+#### Web3.js v1.5.x
+
+```js
+const Comet = new web3.eth.Contract(abiJson, contractAddress);
+await Comet.methods.accrueAccount('0xAccount').send();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+await comet.accrueAccount('0xAccount');
+```
+
 ### Get Protocol Configuration
 
 This function returns the configuration struct passed to the configurator contract on initialization.
@@ -1244,7 +1311,7 @@ function getConfiguration() external view returns (Configuration memory)
 ```
 
 * `RETURNS`: Returns the protocol configuration.
-  * `governor`: The address of the protocol governor.
+  * `governor`: The address of the protocol Governor.
   * `pauseGuardian`: The address of the protocol pause guardian.
   * `baseToken`: The address of the protocol base token smart contract.
   * `baseTokenPriceFeed`: The address of the protocol base token price feed smart contract.
@@ -1382,7 +1449,7 @@ To set specific protocol parameters in a proposal, the Timelock must call all of
 
 ### Set Comet Factory
 
-This function sets the official contract address of the Comet factory. The only acceptable caller is the governor.
+This function sets the official contract address of the Comet factory. The only acceptable caller is the Governor.
 
 #### Configurator
 
@@ -1395,7 +1462,7 @@ function setFactory(address newFactory) external
 
 ### Set Governor
 
-This function sets the official contract address of the Compound III protocol governor for subsequent proposals.
+This function sets the official contract address of the Compound III protocol Governor for subsequent proposals.
 
 #### Configurator
 
@@ -1403,12 +1470,14 @@ This function sets the official contract address of the Compound III protocol go
 function setGovernor(address newGovernor) external
 ```
 
-* `newGovernor`: The address of the new Compound III governor.
+* `newGovernor`: The address of the new Compound III Governor.
 * `RETURN`: No return, reverts on error.
 
 ### Set Pause Guardian
 
 This function sets the official contract address of the Compound III protocol pause guardian. This address has the power to pause supply, transfer, withdraw, absorb, and the buy collateral operations within Compound III.
+
+COMP token-holders designate the Pause Guardian address, which is held by the [Community Multi-Sig](https://etherscan.io/address/0xbbf3f1421d886e9b2c5d716b5192ac998af2012c).
 
 #### Configurator
 
@@ -1418,6 +1487,89 @@ function setPauseGuardian(address newPauseGuardian) external
 
 * `newPauseGuardian`: The address of the new pause guardian.
 * `RETURN`: No return, reverts on error.
+
+### Pause Protocol Functionality
+
+This function pauses the specified protocol functionality in the event of an unforeseen vulnerability. The only addresses that are allowed to call this function are the Governor and the Pause Guardian.
+
+#### Comet
+
+```solidity
+function pause(
+    bool supplyPaused,
+    bool transferPaused,
+    bool withdrawPaused,
+    bool absorbPaused,
+    bool buyPaused
+) override external
+```
+
+* `supplyPaused`: Enables or disables all account's ability to supply assets to the protocol.
+* `transferPaused`: Enables or disables all account's ability to transfer assets within the protocol.
+* `withdrawPaused`: Enables or disables all account's ability to withdraw assets from the protocol.
+* `absorbPaused`: Enables or disables protocol absorbtions.
+* `buyPaused`: Enables or disables the protocol's ability to sell absorbed collateral.
+* `RETURN`: No return, reverts on error.
+
+### Is Supply Paused
+
+This function returns a boolean indicating whether or not the protocol supply functionality is presently paused.
+
+#### Comet
+
+```solidity
+function isSupplyPaused() override public view returns (bool)
+```
+
+* `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
+
+### Is Transfer Paused
+
+This function returns a boolean indicating whether or not the protocol transfer functionality is presently paused.
+
+#### Comet
+
+```solidity
+function isTransferPaused() override public view returns (bool)
+```
+
+* `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
+
+### Is Withdraw Paused
+
+This function returns a boolean indicating whether or not the protocol withdraw functionality is presently paused.
+
+#### Comet
+
+```solidity
+function isWithdrawPaused() override public view returns (bool)
+```
+
+* `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
+
+### Is Absorb Paused
+
+This function returns a boolean indicating whether or not the protocol absorb functionality is presently paused.
+
+#### Comet
+
+```solidity
+function isAbsorbPaused() override public view returns (bool)
+```
+
+* `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
+
+### Is Buy Paused
+
+This function returns a boolean indicating whether or not the protocol's selling of absorbed collateral functionality is presently paused.
+
+#### Comet
+
+```solidity
+function isBuyPaused() override public view returns (bool)
+```
+
+* `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
 
 ### Set Base Token Price Feed
 
@@ -1688,9 +1840,24 @@ function updateAssetSupplyCap(address asset, uint128 newSupplyCap) external
 * `newSupplyCap`: The amount of the asset as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
 * `RETURN`: No return, reverts on error.
 
+### ERC-20 Approve Manager Address
+
+This function sets the Comet contract's ERC-20 allowance of an asset for a manager address. It can only be called by the Governor.
+
+#### Comet
+
+```solidity
+function approveThis(address manager, address asset, uint amount) override external
+```
+
+* `manager`: The address of a manager account that has its allowance modified.
+* `asset`: The address of the asset's smart contract.
+* `amount`: The amount of the asset approved for the manager expressed as an integer.
+* `RETURN`: No return, reverts on error.
+
 ### Transfer Governor
 
-This function changes the address of the protocol's governor.
+This function changes the address of the protocol's Governor.
 
 #### Configurator
 
@@ -1698,12 +1865,12 @@ This function changes the address of the protocol's governor.
 function transferGovernor(address newGovernor) external
 ```
 
-* `newGovernor`: The address of the new governor of the Compound III protocol instance.
+* `newGovernor`: The address of the new Governor of the Compound III protocol instance.
 * `RETURN`: No return, reverts on error.
 
 ### Withdraw Reserves
 
-This function allows governance to withdraw base token reserves from the protocol and send them to a specified address. Only the governor address may call this function.
+This function allows governance to withdraw base token reserves from the protocol and send them to a specified address. Only the Governor address may call this function.
 
 #### Comet
 
