@@ -4,7 +4,7 @@ import CometActor from '../context/CometActor';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { baseBalanceOf, exp, factorScale } from '../../test/helpers';
-import { bumpSupplyCaps, ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, max, getToTransferAmount } from '../utils';
+import { bumpSupplyCaps, ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, max, getExpectedBaseBalance, getToTransferAmount } from '../utils';
 import { BigNumber } from 'ethers';
 import { AssetInfoStructOutput } from '../../build/types/Comet';
 
@@ -52,12 +52,6 @@ async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, world: 
   await collateralToken.approve(borrowActor, comet);
   await borrowActor.supplyAsset({ asset: collateralToken.address, amount: collateralNeeded });
   await borrowActor.withdrawAsset({ asset: baseTokenAddress, amount: toBorrowBase });
-}
-
-function getExpectedBaseBalance(balance: bigint, baseIndexScale: bigint, borrowOrSupplyIndex: bigint) {
-  const principalValue = balance * baseIndexScale / borrowOrSupplyIndex;
-  const baseBalanceOf = principalValue * borrowOrSupplyIndex / baseIndexScale;
-  return baseBalanceOf;
 }
 
 export class CometBalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
@@ -161,6 +155,7 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
             actualBalance = BigNumber.from(await comet.collateralBalanceOf(actor.address, asset.address));
             expectedBalance = BigNumber.from(exp(amount.val, decimals));
           }
+          console.log('expected balance is ', expectedBalance)
           switch (amount.op) {
             case ComparisonOp.EQ:
               expect(actualBalance).to.equal(expectedBalance);
