@@ -33,6 +33,8 @@ scenario(
   }
 );
 
+// XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
+// of testing them conditionally
 scenario(
   'Comet#supply > collateral asset',
   {
@@ -135,6 +137,8 @@ scenario(
   }
 );
 
+// XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
+// of testing them conditionally
 scenario(
   'Comet#supplyFrom > collateral asset',
   {
