@@ -1,5 +1,5 @@
 import { scenario } from './context/CometContext';
-import { expectApproximately } from './utils';
+import { expectApproximately, getExpectedBaseBalance } from './utils';
 import { defactor, expect } from '../test/helpers';
 
 scenario(
@@ -40,8 +40,12 @@ scenario(
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
 
+    const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
+    const baseSupplyIndex = (await comet.totalsBasic()).baseSupplyIndex.toBigInt();
+    const baseSupplied = getExpectedBaseBalance(100n * scale, baseIndexScale, baseSupplyIndex);
+
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
-    expect(await albert.getCometBaseBalance()).to.be.equal(100n * scale);
+    expect(await albert.getCometBaseBalance()).to.be.equal(baseSupplied);
   }
 );
 

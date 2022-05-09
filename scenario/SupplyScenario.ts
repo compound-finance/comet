@@ -1,6 +1,6 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately } from './utils';
+import { expectApproximately, getExpectedBaseBalance } from './utils';
 
 // XXX consider creating these tests for assets0-15
 scenario(
@@ -23,7 +23,11 @@ scenario(
     await baseAsset.approve(albert, comet.address);
     const txn = await albert.supplyAsset({ asset: baseAsset.address, amount: 100n * scale })
 
-    expect(await comet.balanceOf(albert.address)).to.be.equal(100n * scale);
+    const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
+    const baseSupplyIndex = (await comet.totalsBasic()).baseSupplyIndex.toBigInt();
+    const baseSupplied = getExpectedBaseBalance(100n * scale, baseIndexScale, baseSupplyIndex);
+
+    expect(await comet.balanceOf(albert.address)).to.be.equal(baseSupplied);
 
     return txn; // return txn to measure gas
   }
@@ -108,8 +112,12 @@ scenario(
     // Betty supplies 100 units of base from Albert
     const txn = await betty.supplyAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: 100n * scale });
 
+    const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
+    const baseSupplyIndex = (await comet.totalsBasic()).baseSupplyIndex.toBigInt();
+    const baseSupplied = getExpectedBaseBalance(100n * scale, baseIndexScale, baseSupplyIndex);
+
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(0n);
-    expect(await comet.balanceOf(betty.address)).to.be.equal(100n * scale);
+    expect(await comet.balanceOf(betty.address)).to.be.equal(baseSupplied);
 
     return txn; // return txn to measure gas
   }
