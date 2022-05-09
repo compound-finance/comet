@@ -127,6 +127,11 @@ export class DeploymentManager {
     await putRoots(this.cache, roots);
   }
 
+  /* Gets the existing roots. */
+  async getRoots(): Promise<Roots> {
+    return await getRoots(this.cache);
+  }
+
   /* Loads contract configuration by tracing from roots outwards, based on relationConfig. */
   async spider() {
     let relationConfigMap = getRelationConfig(this.hre.config.deploymentManager, this.deployment);
