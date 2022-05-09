@@ -45,14 +45,15 @@ abstract contract CometMainInterface is CometCore {
 
     function absorb(address absorber, address[] calldata accounts) virtual external;
     function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) virtual external;
-    function quoteCollateral(address asset, uint baseAmount) virtual external view returns (uint);
+    function quoteCollateral(address asset, uint baseAmount) virtual public view returns (uint);
 
-    function getAssetInfo(uint8 i) virtual external view returns (AssetInfo memory);
-    function getReserves() virtual external view returns (int);
-    function getPrice(address priceFeed) virtual external view returns (uint128);
+    function getAssetInfo(uint8 i) virtual public view returns (AssetInfo memory);
+    function getAssetInfoByAddress(address asset) virtual public view returns (AssetInfo memory);
+    function getReserves() virtual public view returns (int);
+    function getPrice(address priceFeed) virtual public view returns (uint128);
 
-    function isBorrowCollateralized(address account) virtual external view returns (bool);
-    function isLiquidatable(address account) virtual external view returns (bool);
+    function isBorrowCollateralized(address account) virtual public view returns (bool);
+    function isLiquidatable(address account) virtual public view returns (bool);
     function getBorrowLiquidity(address account) virtual external view returns (int);
     function getLiquidationMargin(address account) virtual external view returns (int);
 
@@ -61,16 +62,16 @@ abstract contract CometMainInterface is CometCore {
     function borrowBalanceOf(address account) virtual external view returns (uint256);
 
     function pause(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused) virtual external;
-    function isSupplyPaused() virtual external view returns (bool);
-    function isTransferPaused() virtual external view returns (bool);
-    function isWithdrawPaused() virtual external view returns (bool);
-    function isAbsorbPaused() virtual external view returns (bool);
-    function isBuyPaused() virtual external view returns (bool);
+    function isSupplyPaused() virtual public view returns (bool);
+    function isTransferPaused() virtual public view returns (bool);
+    function isWithdrawPaused() virtual public view returns (bool);
+    function isAbsorbPaused() virtual public view returns (bool);
+    function isBuyPaused() virtual public view returns (bool);
 
     function accrueAccount(address account) virtual external;
-    function getSupplyRate() virtual external view returns (uint64);
-    function getBorrowRate() virtual external view returns (uint64);
-    function getUtilization() virtual external view returns (uint);
+    function getSupplyRate() virtual public view returns (uint64);
+    function getBorrowRate() virtual public view returns (uint64);
+    function getUtilization() virtual public view returns (uint);
 
     function governor() virtual external view returns (address);
     function pauseGuardian() virtual external view returns (address);
