@@ -47,7 +47,6 @@
   },
   "devDependencies": {
     "@compound-finance/hardhat-import": "^1.0.3",
-    "@defi-wonderland/smock": "^2.0.7",
     "@nomiclabs/hardhat-ethers": "^2.0.4",
     "@nomiclabs/hardhat-etherscan": "3.0.0",
     "@nomiclabs/hardhat-waffle": "^2.0.2",
