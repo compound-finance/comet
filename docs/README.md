@@ -518,7 +518,11 @@ const targetReserves = await comet.callStatic.targetReserves();
 
 ### Ask Price
 
-In order to repay the borrows of absorbed accounts, the protocol needs to sell the seized collateral. The *Ask Price* is the price of the asset to be sold with a fixed discount (configured by governance). This function uses the price returned by the protocol's price feed.
+In order to repay the borrows of absorbed accounts, the protocol needs to sell the seized collateral. The *Ask Price* is the price of the asset to be sold at a discount (configured by governance). This function uses the price returned by the protocol's price feed. The discount of the asset is derived from the `StoreFrontPriceFactor` and the asset's `LiquidationFactor` using the following formula.
+
+```
+DiscountFactor = StoreFrontPriceFactor * (1e18 - Asset.LiquidationFactor)
+```
 
 #### Comet
 
@@ -1250,7 +1254,7 @@ function getConfiguration() external view returns (Configuration memory)
   * `perYearInterestRateSlopeHigh`: The interest rate slope high bound.
   * `perYearInterestRateBase`: The interest rate slope base.
   * `reserveRate`: The reserve rate that borrowers pay to the protocol reserves.
-  * `storeFrontPriceFactor`: The factor for calculation of the discounted collateral available for purchase upon liquidation of an account.
+  * `storeFrontPriceFactor`: The fraction of the liquidation penalty that goes to buyers of collateral instead of the protocol.
   * `trackingIndexScale`: The scale for the index tracking protocol rewards.
   * `baseTrackingSupplySpeed`: The rate for protocol awards accrued to suppliers.
   * `baseTrackingBorrowSpeed`: The rate for protocol awards accrued to borrowers.
@@ -1506,9 +1510,9 @@ function setReserveRate(uint64 newReserveRate) external
 * `param`: The reserve rate of the protocol as an APR scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 2.5% APR.
 * `RETURN`: No return, reverts on error.
 
-### Store Front Price Factor
+### Set Store Front Price Factor
 
-This function sets the discount rate of collateral for sale as part of the account absorption process. The rate is a decimal scaled up by `10 ^ 18`.
+This function sets the fraction of the liquidation penalty that goes to buyers of collateral instead of the protocol. This factor is used to calculate the discount rate of collateral for sale as part of the account absorption process. The rate is a decimal scaled up by `10 ^ 18`.
 
 #### Configurator
 

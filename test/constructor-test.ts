@@ -133,23 +133,6 @@ describe('constructor', function () {
     ).to.be.revertedWith("custom error 'BadDecimals()'");
   });
 
-  it('reverts if liquidation factor is greater than storefront price factor', async () => {
-    await expect(
-      makeProtocol({
-        storeFrontPriceFactor: exp(0.9, 18),
-        assets: {
-          USDC: {},
-          COMP: {
-            initial: 1e7,
-            decimals: 18,
-            initialPrice: 1,
-            liquidationFactor: exp(0.95, 18),
-          },
-        },
-      })
-    ).to.be.revertedWith("custom error 'BadLiquidationFactor()'");
-  });
-
   it('reverts if initializeStorage is called after initialization', async () => {
     const { comet } = await makeProtocol();
     await expect(

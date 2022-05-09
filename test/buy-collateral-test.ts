@@ -5,7 +5,7 @@ describe('buyCollateral', function () {
   it('allows buying collateral when reserves < target reserves', async () => {
     const protocol = await makeProtocol({
       base: 'USDC',
-      storeFrontPriceFactor: exp(0.9, 18),
+      storeFrontPriceFactor: exp(0.5, 18),
       targetReserves: 100,
       assets: {
         USDC: {
@@ -17,7 +17,7 @@ describe('buyCollateral', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 1,
-          liquidationFactor: exp(0.85, 18),
+          liquidationFactor: exp(0.8, 18),
         },
       }
     });
@@ -84,7 +84,7 @@ describe('buyCollateral', function () {
   it('allows buying collateral when reserves < 0 and target reserves is 0', async () => {
     const protocol = await makeProtocol({
       base: 'USDC',
-      storeFrontPriceFactor: exp(0.9, 18),
+      storeFrontPriceFactor: exp(0.5, 18),
       targetReserves: 0,
       assets: {
         USDC: {
@@ -96,7 +96,7 @@ describe('buyCollateral', function () {
           initial: 1e7,
           decimals: 18,
           initialPrice: 1,
-          liquidationFactor: exp(0.85, 18),
+          liquidationFactor: exp(0.8, 18),
         },
       }
     });
@@ -204,7 +204,9 @@ describe('buyCollateral', function () {
   });
 
   it('reverts if not enough collateral to buy', async () => {
-    const protocol = await makeProtocol({base: 'USDC', targetReserves: 100,
+    const protocol = await makeProtocol({
+      base: 'USDC',
+      targetReserves: 100,
       assets: {
         USDC: {
           initial: 1e6,
