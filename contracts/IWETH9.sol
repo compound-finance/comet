@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: XXX ADD VALID LICENSE
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
 interface IWETH9 {
