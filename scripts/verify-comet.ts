@@ -56,26 +56,26 @@ async function main() {
   let admin = await signers[0];
   
   // XXX move to command line, which requires this to be a Hardhat task since HH scripts can't take user arguments
-  let configuratorAddress = "0x62f5a823efcd2bac5df35141acccd2099cc83b72";
-  let configurator = (await ethers.getContractAt("Configurator", configuratorAddress, admin)) as Configurator;
+  let configuratorAddress = '0x62f5a823efcd2bac5df35141acccd2099cc83b72';
+  let configurator = (await ethers.getContractAt('Configurator', configuratorAddress, admin)) as Configurator;
   let config: ConfigurationStruct = await configurator.getConfiguration();
-  console.log("Latest configuration is: ", config)
+  console.log('Latest configuration is: ', config);
 
   // Deploy Comet with latest configuration
   const comet = await dm.deploy<Comet, Comet__factory, [ConfigurationStruct]>(
     'Comet.sol',
     [config]
   );
-  console.log('Comet deployed at ', comet.address)
+  console.log('Comet deployed at ', comet.address);
 
-  console.log('Waiting 1 min before verification')
+  console.log('Waiting 1 min before verification');
   await delay(60000);
 
-  console.log('Starting verification!')
+  console.log('Starting verification!');
 
   await verifyContract(comet.address, [config]);
 
-  console.log('Finished verification!')
+  console.log('Finished verification!');
 }
 
 // We recommend this pattern to be able to use async/await everywhere

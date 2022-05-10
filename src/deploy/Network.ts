@@ -1,6 +1,3 @@
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { BigNumberish, utils } from 'ethers';
-
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import {
@@ -8,11 +5,8 @@ import {
   Comet,
   CometExt__factory,
   CometExt,
-  CometInterface,
   CometFactory__factory,
   CometFactory,
-  FaucetToken__factory,
-  FaucetToken,
   GovernorSimple,
   GovernorSimple__factory,
   CometProxyAdmin,

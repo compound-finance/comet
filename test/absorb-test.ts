@@ -1,10 +1,10 @@
-import { Comet, ethers, event, expect, exp, factor, defaultAssets, makeProtocol, mulPrice, portfolio, wait, setTotalsBasic } from './helpers';
+import { event, expect, exp, factor, defaultAssets, makeProtocol, mulPrice, portfolio, wait, setTotalsBasic } from './helpers';
 
 describe('absorb', function () {
   it('reverts if total borrows underflows', async () => {
     const { comet, users: [absorber, underwater] } = await makeProtocol();
 
-    const f0 = await comet.setBasePrincipal(underwater.address, -100);
+    const _f0 = await comet.setBasePrincipal(underwater.address, -100);
     await expect(comet.absorb(absorber.address, [underwater.address])).to.be.revertedWith('code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
   });
 
@@ -102,8 +102,8 @@ describe('absorb', function () {
     const pU1_1 = await portfolio(protocol, underwater1.address);
     const pU2_1 = await portfolio(protocol, underwater2.address);
     const lA1 = await comet.liquidatorPoints(absorber.address);
-    const lU1_1 = await comet.liquidatorPoints(underwater1.address);
-    const lU2_1 = await comet.liquidatorPoints(underwater2.address);
+    const _lU1_1 = await comet.liquidatorPoints(underwater1.address);
+    const _lU2_1 = await comet.liquidatorPoints(underwater2.address);
 
     expect(r0).to.be.equal(2000);
 
@@ -158,7 +158,7 @@ describe('absorb', function () {
     };
     const protocol = await makeProtocol(params);
     const { comet, tokens, priceFeeds, users: [absorber, underwater1, underwater2, underwater3] } = protocol;
-    const { COMP, USDC, WBTC, WETH } = tokens;
+    const { COMP, WBTC, WETH } = tokens;
 
     await setTotalsBasic(comet, {
       totalBorrowBase: exp(3e15, 6),
@@ -196,9 +196,9 @@ describe('absorb', function () {
     const pU2_1 = await portfolio(protocol, underwater2.address);
     const pU3_1 = await portfolio(protocol, underwater3.address);
     const lA1 = await comet.liquidatorPoints(absorber.address);
-    const lU1_1 = await comet.liquidatorPoints(underwater1.address);
-    const lU2_1 = await comet.liquidatorPoints(underwater2.address);
-    const lU3_1 = await comet.liquidatorPoints(underwater3.address);
+    const _lU1_1 = await comet.liquidatorPoints(underwater1.address);
+    const _lU2_1 = await comet.liquidatorPoints(underwater2.address);
+    const _lU3_1 = await comet.liquidatorPoints(underwater3.address);
 
     expect(r0).to.be.equal(-exp(1e15, 6));
 
@@ -341,7 +341,7 @@ describe('absorb', function () {
     };
     const protocol = await makeProtocol(params);
     const { comet, tokens, users: [absorber, underwater], priceFeeds } = protocol;
-    const { COMP, USDC, WBTC, WETH } = tokens;
+    const { COMP, WBTC, WETH } = tokens;
 
     const debt = 1n - (exp(41000, 6) + exp(3000, 6) + exp(175, 6));
     await setTotalsBasic(comet, {
@@ -368,7 +368,7 @@ describe('absorb', function () {
     const pA1 = await portfolio(protocol, absorber.address);
     const pU1 = await portfolio(protocol, underwater.address);
     const lA1 = await comet.liquidatorPoints(absorber.address);
-    const lU1 = await comet.liquidatorPoints(underwater.address);
+    const _lU1 = await comet.liquidatorPoints(underwater.address);
 
     expect(r0).to.be.equal(-debt);
     expect(t1.totalSupplyBase).to.be.equal(1);
@@ -476,7 +476,7 @@ describe('absorb', function () {
 
     const borrowAmount = exp(4000, 6); // borrow of $4k > collateral of $3k + $175
     await comet.setBasePrincipal(underwater.address, -borrowAmount);
-    const totalsBasic = await setTotalsBasic(comet, { totalBorrowBase: borrowAmount });
+    await setTotalsBasic(comet, { totalBorrowBase: borrowAmount });
 
     const isLiquidatable = await comet.isLiquidatable(underwater.address);
 

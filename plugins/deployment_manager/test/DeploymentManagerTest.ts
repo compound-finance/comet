@@ -1,8 +1,6 @@
 import { expect } from 'chai';
 import hre from 'hardhat';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import nock from 'nock';
-import { Contract } from 'ethers';
 
 import {
   Dog__factory,
@@ -14,18 +12,13 @@ import {
 } from '../../../build/types';
 
 import { getAliases } from '../Aliases';
-import { Cache } from '../Cache';
-import { getBuildFile, getContractsFromAliases } from '../ContractMap';
+import { getBuildFile } from '../ContractMap';
 import { DeploymentManager } from '../DeploymentManager';
 import { fiatTokenBuildFile, mockImportSuccess } from './ImportTest';
 import { Migration } from '../Migration';
 import { expectedTemplate } from './MigrationTemplateTest';
 import { getProxies } from '../Proxies';
-import { RelationConfigMap } from '../RelationConfig';
 import { getRoots } from '../Roots';
-import { Address } from '../Types';
-import { objectFromMap } from '../Utils';
-import { deploy } from '../Deploy';
 import { faucetTokenBuildFile, tokenArgs } from './DeployHelpers';
 import { tempDir } from './TestHelpers';
 
@@ -213,7 +206,7 @@ describe('DeploymentManager', () => {
         baseDir: tempDir(),
       });
 
-      let { finn, molly, spot, proxy, finnImpl, proxyAdmin } = await setupContracts(
+      let { finnImpl } = await setupContracts(
         deploymentManager
       );
 
@@ -244,7 +237,7 @@ describe('DeploymentManager', () => {
       for (let [alias, contract] of await deploymentManager.contracts()) {
         // Just make sure these contracts are working, too.
         let name = contract.hasOwnProperty('name') ? await contract.name() : null;
-        check[alias] = !!name ? name : contract.address;
+        check[alias] = name ? name : contract.address;
       }
       expect(check).to.eql({
         finn: 'finn',
@@ -263,7 +256,7 @@ describe('DeploymentManager', () => {
         baseDir: tempDir(),
       });
 
-      let { finn, molly, spot, proxy, finnImpl, proxyAdmin } = await setupContracts(
+      let { finn, finnImpl } = await setupContracts(
         deploymentManager
       );
 
@@ -284,7 +277,7 @@ describe('DeploymentManager', () => {
         baseDir: tempDir(),
       });
 
-      let { finn, molly, spot, proxy, finnImpl, proxyAdmin } = await setupContracts(
+      let { finn, finnImpl } = await setupContracts(
         deploymentManager
       );
 
@@ -324,7 +317,7 @@ describe('DeploymentManager', () => {
         name: '1_cool',
         actions: {
           prepare: async () => null,
-          enact: async () => {},
+          enact: async () => { /* */ },
           enacted: async () => false
         },
       };

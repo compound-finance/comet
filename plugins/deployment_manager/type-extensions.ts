@@ -8,10 +8,10 @@ export interface DeploymentManagerConfig {
 
 declare module 'hardhat/types/config' {
   interface HardhatUserConfig {
-    deploymentManager?: DeploymentManagerConfig
+    deploymentManager?: DeploymentManagerConfig;
   }
 
   interface HardhatConfig {
-    deploymentManager?: DeploymentManagerConfig
+    deploymentManager?: DeploymentManagerConfig;
   }
 }

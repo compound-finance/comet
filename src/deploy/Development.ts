@@ -1,11 +1,9 @@
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import {
   Comet__factory,
   Comet,
   CometExt__factory,
   CometExt,
-  CometInterface,
   CometFactory__factory,
   CometFactory,
   FaucetToken__factory,
@@ -28,7 +26,6 @@ import {
 } from '../../build/types';
 import { ConfigurationStruct } from '../../build/types/Comet';
 import { ExtConfigurationStruct } from '../../build/types/CometExt';
-import { BigNumberish, constants, utils } from 'ethers';
 export { Comet } from '../../build/types';
 import { DeployedContracts, DeployProxyOption, ProtocolConfiguration } from './index';
 

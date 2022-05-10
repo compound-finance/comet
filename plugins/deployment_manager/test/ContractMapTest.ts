@@ -180,8 +180,8 @@ describe('ContractMap', () => {
             stateMutability: 'payable',
             inputs: [
               {
-                name: "TokenConstructorInput",
-                type: "address"
+                name: 'TokenConstructorInput',
+                type: 'address'
               }
             ]
           },
@@ -202,8 +202,8 @@ describe('ContractMap', () => {
             stateMutability: 'payable',
             inputs: [
               {
-                name: "TokenImplementationConstructorInput",
-                type: "address"
+                name: 'TokenImplementationConstructorInput',
+                type: 'address'
               }
             ]
           },
@@ -224,8 +224,8 @@ describe('ContractMap', () => {
             stateMutability: 'payable',
             inputs: [
               {
-                name: "TokenImplementationImplementationConstructorInput",
-                type: "address"
+                name: 'TokenImplementationImplementationConstructorInput',
+                type: 'address'
               }
             ]
           },
@@ -251,30 +251,30 @@ describe('ContractMap', () => {
 
       // builds up each contract's ABI correctly
       expect(Object.keys(contractMap.get('token').populateTransaction)).to.eql([
-         "tokenImplementationImplementationFunction()",
-         "tokenImplementationFunction()",
-         "tokenFunction()",
-         "tokenImplementationImplementationFunction",
-         "tokenImplementationFunction",
-         "tokenFunction",
+        'tokenImplementationImplementationFunction()',
+        'tokenImplementationFunction()',
+        'tokenFunction()',
+        'tokenImplementationImplementationFunction',
+        'tokenImplementationFunction',
+        'tokenFunction',
       ]);
 
       expect(Object.keys(contractMap.get('token:implementation').populateTransaction)).to.eql([
-         "tokenImplementationImplementationFunction()",
-         "tokenImplementationFunction()",
-         "tokenImplementationImplementationFunction",
-         "tokenImplementationFunction",
+        'tokenImplementationImplementationFunction()',
+        'tokenImplementationFunction()',
+        'tokenImplementationImplementationFunction',
+        'tokenImplementationFunction',
       ]);
 
       expect(Object.keys(contractMap.get('token:implementation:implementation').populateTransaction)).to.eql([
-         "tokenImplementationImplementationFunction()",
-         "tokenImplementationImplementationFunction",
+        'tokenImplementationImplementationFunction()',
+        'tokenImplementationImplementationFunction',
       ]);
 
       // but maintains each contract's correct constructor
-      expect(await contractMap.get('token').interface.deploy.inputs[0].name).to.eq("TokenConstructorInput");
-      expect(await contractMap.get('token:implementation').interface.deploy.inputs[0].name).to.eq("TokenImplementationConstructorInput");
-      expect(await contractMap.get('token:implementation:implementation').interface.deploy.inputs[0].name).to.eq("TokenImplementationImplementationConstructorInput");
+      expect(await contractMap.get('token').interface.deploy.inputs[0].name).to.eq('TokenConstructorInput');
+      expect(await contractMap.get('token:implementation').interface.deploy.inputs[0].name).to.eq('TokenImplementationConstructorInput');
+      expect(await contractMap.get('token:implementation:implementation').interface.deploy.inputs[0].name).to.eq('TokenImplementationImplementationConstructorInput');
     });
 
     it('fails when proxy not found', async () => {

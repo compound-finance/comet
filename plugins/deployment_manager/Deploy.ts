@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
 
-import { Contract, ContractFactory, Signer } from 'ethers';
+import { Contract, Signer } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import { putAlias } from './Aliases';
@@ -32,7 +32,7 @@ async function deployFromBuildFile(
   deployArgs: any[],
   hre: HardhatRuntimeEnvironment
 ): Promise<Contract> {
-  let [contractName, metadata] = getPrimaryContract(buildFile);
+  let [_contractName, metadata] = getPrimaryContract(buildFile);
   const [signer] = await hre.ethers.getSigners(); // TODO: Hmm?
   const contractFactory = new hre.ethers.ContractFactory(metadata.abi, metadata.bin, signer);
   const contract = await contractFactory.deploy(...deployArgs);

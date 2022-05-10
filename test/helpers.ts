@@ -8,16 +8,13 @@ import {
   Bulker__factory,
   CometExt,
   CometExt__factory,
-  CometHarness,
   CometHarness__factory,
   CometHarnessInterface as Comet,
   CometRewards,
   CometRewards__factory,
-  EvilToken,
   EvilToken__factory,
   FaucetToken,
   FaucetToken__factory,
-  FaucetWETH,
   FaucetWETH__factory,
   SimplePriceFeed,
   SimplePriceFeed__factory,
@@ -64,7 +61,7 @@ export type ProtocolOpts = {
       factory?: FaucetToken__factory | EvilToken__factory | FaucetWETH__factory;
     };
   };
-  symbol?: string,
+  symbol?: string;
   governor?: SignerWithAddress;
   pauseGuardian?: SignerWithAddress;
   extensionDelegate?: CometExt;
@@ -104,11 +101,11 @@ export type Protocol = {
 };
 
 export type ConfiguratorAndProtocol = {
-  configurator: Configurator,
-  configuratorProxy: TransparentUpgradeableConfiguratorProxy,
-  proxyAdmin: CometProxyAdmin,
-  cometFactory: CometFactory,
-  cometProxy: TransparentUpgradeableProxy,
+  configurator: Configurator;
+  configuratorProxy: TransparentUpgradeableConfiguratorProxy;
+  proxyAdmin: CometProxyAdmin;
+  cometFactory: CometFactory;
+  cometProxy: TransparentUpgradeableProxy;
 } & Protocol;
 
 export type RewardsOpts = {
@@ -288,7 +285,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     baseMinForRewards,
     baseBorrowMin,
     targetReserves,
-    assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], i) => {
+    assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], _i) => {
       if (symbol != base) {
         acc.push({
           asset: tokens[symbol].address,
@@ -387,7 +384,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     baseMinForRewards,
     baseBorrowMin,
     targetReserves,
-    assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], i) => {
+    assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], _i) => {
       if (symbol != base) {
         acc.push({
           asset: tokens[symbol].address,
@@ -512,11 +509,11 @@ export async function baseBalanceOf(comet: CometInterface, account: string): Pro
 
 type Portfolio = {
   internal: {
-    [symbol: string]: bigint,
-  },
+    [symbol: string]: bigint;
+  };
   external: {
-    [symbol: string]: bigint,
-  }
+    [symbol: string]: bigint;
+  };
 }
 
 export async function portfolio({ comet, base, tokens }, account): Promise<Portfolio>  {

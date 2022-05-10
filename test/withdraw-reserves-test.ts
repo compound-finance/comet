@@ -1,4 +1,4 @@
-import { expect, makeProtocol, setTotalsBasic, wait } from './helpers';
+import { expect, makeProtocol, setTotalsBasic } from './helpers';
 
 describe('withdrawReserves', function () {
   it('withdraws reserves from the protocol', async () => {

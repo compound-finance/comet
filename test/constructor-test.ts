@@ -55,8 +55,8 @@ describe('constructor', function () {
       governor: governor.address,
       pauseGuardian: pauseGuardian.address,
       extensionDelegate: extensionDelegate.address,
-      baseToken: tokens["USDC"].address,
-      baseTokenPriceFeed: priceFeeds["USDC"].address,
+      baseToken: tokens['USDC'].address,
+      baseTokenPriceFeed: priceFeeds['USDC'].address,
       kink: exp(8, 17),
       perYearInterestRateBase: exp(5, 15),
       perYearInterestRateSlopeLow: exp(1, 17),
@@ -70,9 +70,9 @@ describe('constructor', function () {
       baseBorrowMin: exp(1, 6),
       targetReserves: 0,
       assetConfigs: [{
-        asset: tokens["EVIL"].address,
-        priceFeed: priceFeeds["EVIL"].address,
-        decimals: assets["EVIL"].packedDecimals, // <-- packed decimals differ from deployed token's decimals
+        asset: tokens['EVIL'].address,
+        priceFeed: priceFeeds['EVIL'].address,
+        decimals: assets['EVIL'].packedDecimals, // <-- packed decimals differ from deployed token's decimals
         borrowCollateralFactor: ONE - 1n,
         liquidateCollateralFactor: ONE,
         liquidationFactor: ONE,
@@ -171,6 +171,6 @@ describe('constructor', function () {
       makeProtocol({
         interestRateSlopeLow: uint64Max + 1n
       })
-    ).to.be.rejectedWith("value out-of-bounds"); // ethers.js error
+    ).to.be.rejectedWith('value out-of-bounds'); // ethers.js error
   });
 });

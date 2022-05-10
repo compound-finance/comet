@@ -46,5 +46,4 @@ describe('CometExt', function () {
     );
     expect(collateralBalanceOf).to.eq(exp(5,18));
   });
-
 });
