@@ -1,4 +1,4 @@
-import { absorbLiquidatableBorrowers } from "../index";
+import { absorbLiquidatableBorrowers } from '../index';
 import { expect, exp, makeProtocol } from '../../../test/helpers';
 
 describe('Absorption Bot#absorbLiquidatableBorrowers', () => {

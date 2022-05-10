@@ -27,6 +27,7 @@ module.exports = {
       'error',
       'unix'
     ],
+    'no-constant-condition': ['error', { checkLoops: false }],
     'no-prototype-builtins': 'off',
     'no-unused-vars': 'off',
     'prefer-const': 'off',
