@@ -1244,9 +1244,8 @@ contract Comet is CometMainInterface {
         uint collateralAmount = quoteCollateral(asset, baseAmount);
         if (collateralAmount < minAmount) revert TooMuchSlippage();
 
-        // Note: Re-entrancy using a pre-transfer hook can call buyCollateral again with a
-        //       stale collateral ERC20 balance for Comet. This would be an issue if
-        //       quoteCollateral derives its discount from the collateral ERC20 balance.
+        // Note: Pre-transfer hook can re-enter buyCollateral with a stale collateral ERC20 balance.
+        //       This is a problem if quoteCollateral derives its discount from the collateral ERC20 balance.
         withdrawCollateral(address(this), recipient, asset, safe128(collateralAmount));
 
         emit BuyCollateral(msg.sender, asset, baseAmount, collateralAmount);
