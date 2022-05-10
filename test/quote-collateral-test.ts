@@ -84,7 +84,7 @@ describe('quoteCollateral', function () {
       }
     });
     const { comet, tokens } = protocol;
-    const { USDC, COMP } = tokens;
+    const { COMP } = tokens;
 
     const baseAmount = exp(200, 6);
     const q0 = await comet.quoteCollateral(COMP.address, baseAmount);
