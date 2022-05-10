@@ -1402,7 +1402,7 @@ function totalsBasic() public override view returns (TotalsBasic memory)
 * `trackingBorrowIndex`:  A global index for tracking participation of accounts that borrow the base asset.
 * `totalSupplyBase`: The total amount of base asset presently supplied to the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the base asset's contract.
 * `totalBorrowBase`: The total amount of base asset presently borrowed from the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the base asset's contract.
-* `lastAccrualTime`: The most recent time that protocol interest accrual was globally calculated. A block timestamp as seconds since the unix epoch.
+* `lastAccrualTime`: The most recent time that protocol interest accrual was globally calculated. A block timestamp as seconds since the Unix epoch.
 * `pauseFlags`: An integer that represents paused protocol functionality flags that are packed for data storage efficiency. See [Pause Protocol Functionality](#pause-protocol-functionality).
 
 #### Solidity
