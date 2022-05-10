@@ -34,7 +34,10 @@ migration<Vars>('1651257129_bulker_and_rewards', {
   enact: async (deploymentManager: DeploymentManager, contracts: Vars) => {
     // No proposal needs to be created
     // Maybe seed CometRewards with COMP rewards?
-    deploymentManager.putRoots(new Map(Object.entries(contracts)));
+    const updatedRoots = await deploymentManager.getRoots();
+    updatedRoots.set('rewards', contracts.rewards);
+    updatedRoots.set('bulker', contracts.bulker);
+    deploymentManager.putRoots(updatedRoots);
 
     console.log("You should set roots.json to:");
     console.log("");
