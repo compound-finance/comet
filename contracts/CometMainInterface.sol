@@ -58,6 +58,7 @@ abstract contract CometMainInterface is CometCore {
     function getLiquidationMargin(address account) virtual external view returns (int);
 
     function totalSupply() virtual external view returns (uint256);
+    function totalBorrow() virtual external view returns (uint256);
     function balanceOf(address owner) virtual external view returns (uint256);
     function borrowBalanceOf(address account) virtual external view returns (uint256);
 

@@ -440,6 +440,7 @@ contract Comet is CometMainInterface {
     }
 
     /**
+     * @dev Note: Does not accrue interest first
      * @return The current per second supply rate
      */
     function getSupplyRate() override public view returns (uint64) {
@@ -455,6 +456,7 @@ contract Comet is CometMainInterface {
     }
 
     /**
+     * @dev Note: Does not accrue interest first
      * @return The current per second borrow rate
      */
     function getBorrowRate() override public view returns (uint64) {
@@ -469,6 +471,7 @@ contract Comet is CometMainInterface {
     }
 
     /**
+     * @dev Note: Does not accrue interest first
      * @return The utilization rate of the base asset
      */
     function getUtilization() override public view returns (uint) {
@@ -496,9 +499,10 @@ contract Comet is CometMainInterface {
      * @notice Gets the total amount of protocol reserves, denominated in the number of base tokens
      */
     function getReserves() override public view returns (int) {
+        (uint64 baseSupplyIndex_, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         uint balance = ERC20(baseToken).balanceOf(address(this));
-        uint104 totalSupply = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrow = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+        uint104 totalSupply = presentValueSupply(baseSupplyIndex_, totalSupplyBase);
+        uint104 totalBorrow = presentValueBorrow(baseBorrowIndex_, totalBorrowBase);
         return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
     }
 
@@ -1229,8 +1233,6 @@ contract Comet is CometMainInterface {
     function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) override external {
         if (isBuyPaused()) revert Paused();
 
-        accrueInternal();
-
         int reserves = getReserves();
         if (reserves >= 0 && uint(reserves) >= targetReserves) revert NotForSale();
 
@@ -1273,8 +1275,6 @@ contract Comet is CometMainInterface {
     function withdrawReserves(address to, uint amount) override external {
         if (msg.sender != governor) revert Unauthorized();
 
-        accrueInternal();
-
         int reserves = getReserves();
         if (reserves < 0 || amount > unsigned256(reserves)) revert InsufficientReserves();
 
@@ -1304,6 +1304,16 @@ contract Comet is CometMainInterface {
     function totalSupply() override external view returns (uint256) {
         (uint64 baseSupplyIndex_, ) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         return presentValueSupply(baseSupplyIndex_, totalSupplyBase);
+    }
+
+    /**
+     * @notice Get the total amount of debt
+     * @dev Note: uses updated interest indices to calculate
+     * @return The amount of debt
+     **/
+    function totalBorrow() override external view returns (uint256) {
+        (, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
+        return presentValueBorrow(baseBorrowIndex_, totalBorrowBase);
     }
 
     /**
