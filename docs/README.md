@@ -733,7 +733,7 @@ function allowBySig(
 * `manager`: The address of an account that becomes or will no longer be the manager of the owner.
 * `isAllowed`: True to add the manager and false to remove the manager.
 * `nonce`: The contract state required to match the signature. This can be retrieved from the contract's public `userNonce` mapping.
-* `expiry`: The time at which the signature expires. A block timestamp as seconds since the unix epoch (uint).
+* `expiry`: The time at which the signature expires. A block timestamp as seconds since the Unix epoch (uint).
 * `v`: The recovery byte of the signature.
 * `r`: Half of the ECDSA signature pair.
 * `s`: Half of the ECDSA signature pair.
@@ -1374,6 +1374,58 @@ const configurator = new ethers.Contract(contractAddress, abiJson, provider);
 const config = await configurator.callStatic.getConfiguration();
 ```
 
+### Get Base Asset Market Information
+
+This function gets several of the current parameter values for the protocol market.
+
+#### Comet
+
+```solidity
+struct TotalsBasic {
+    uint64 baseSupplyIndex;
+    uint64 baseBorrowIndex;
+    uint64 trackingSupplyIndex;
+    uint64 trackingBorrowIndex;
+    uint104 totalSupplyBase;
+    uint104 totalBorrowBase;
+    uint40 lastAccrualTime;
+    uint8 pauseFlags;
+}
+
+function totalsBasic() public override view returns (TotalsBasic memory)
+```
+
+* `RETURNS`: The base asset market information as a struct called `TotalsBasic` (defined in CometStorage.sol).
+* `baseSupplyIndex`: The global base asset supply index for calculating interest accrued to suppliers.
+* `baseBorrowIndex`: The global base asset borrow index for calculating interest owed by borrowers.
+* `trackingSupplyIndex`: A global index for tracking participation of accounts that supply the base asset.
+* `trackingBorrowIndex`:  A global index for tracking participation of accounts that borrow the base asset.
+* `totalSupplyBase`: The total amount of base asset presently supplied to the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the base asset's contract.
+* `totalBorrowBase`: The total amount of base asset presently borrowed from the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the base asset's contract.
+* `lastAccrualTime`: The most recent time that protocol interest accrual was globally calculated. A block timestamp as seconds since the unix epoch.
+* `pauseFlags`: An integer that represents paused protocol functionality flags that are packed for data storage efficiency. See [Pause Protocol Functionality](#pause-protocol-functionality).
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+TotalsBasic tb = comet.totalsBasic();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const [ baseSupplyIndex, baseBorrowIndex, trackingSupplyIndex, trackingBorrowIndex, totalSupplyBase, totalBorrowBase, lastAccrualTime, pauseFlags ] = await comet.methods.totalsBasic().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const [ baseSupplyIndex, baseBorrowIndex, trackingSupplyIndex, trackingBorrowIndex, totalSupplyBase, totalBorrowBase, lastAccrualTime, pauseFlags ] = await comet.callStatic.totalsBasic();
+```
+
 ### Get Base Accrual Scale
 
 This function gets the scale for the base asset tracking accrual.
@@ -1640,7 +1692,7 @@ function setGovernor(address newGovernor) external
 
 ### Set Pause Guardian
 
-This function sets the official contract address of the Compound III protocol pause guardian. This address has the power to pause supply, transfer, withdraw, absorb, and the buy collateral operations within Compound III.
+This function sets the official contract address of the Compound III protocol pause guardian. This address has the power to pause supply, transfer, withdraw, absorb, and buy collateral operations within Compound III.
 
 COMP token-holders designate the Pause Guardian address, which is held by the [Community Multi-Sig](https://etherscan.io/address/0xbbf3f1421d886e9b2c5d716b5192ac998af2012c).
 
@@ -1669,10 +1721,10 @@ function pause(
 ) override external
 ```
 
-* `supplyPaused`: Enables or disables all account's ability to supply assets to the protocol.
+* `supplyPaused`: Enables or disables all accounts' ability to supply assets to the protocol.
 * `transferPaused`: Enables or disables all account's ability to transfer assets within the protocol.
 * `withdrawPaused`: Enables or disables all account's ability to withdraw assets from the protocol.
-* `absorbPaused`: Enables or disables protocol absorbtions.
+* `absorbPaused`: Enables or disables protocol absorptions.
 * `buyPaused`: Enables or disables the protocol's ability to sell absorbed collateral.
 * `RETURN`: No return, reverts on error.
 
