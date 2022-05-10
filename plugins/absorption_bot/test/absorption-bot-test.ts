@@ -21,7 +21,7 @@ describe('Absorption Bot#absorbLiquidatableBorrowers', () => {
     await comet.connect(underwaterBorrower).withdraw(USDC.address, exp(80, 6));
 
     // position becomes liquidatable
-    await priceFeeds['COMP'].setPrice(exp(5,7));
+    await priceFeeds['COMP'].setPrice(exp(.5,8));
 
     await absorbLiquidatableBorrowers(comet, absorber);
 
