@@ -166,7 +166,6 @@ contract Comet is CometMainInterface {
         if (AggregatorV3Interface(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
         if (config.reserveRate > FACTOR_SCALE) revert BadReserveRate();
         if (config.kink > FACTOR_SCALE) revert BadKink();
-        // XXX sanity checks for rewards?
 
         // Copy configuration
         unchecked {
@@ -1239,12 +1238,15 @@ contract Comet is CometMainInterface {
         int reserves = getReserves();
         if (reserves >= 0 && uint(reserves) >= targetReserves) revert NotForSale();
 
-        // XXX check re-entrancy
+        // Note: Re-entrancy can skip the reserves check above on a second buyCollateral call.
         doTransferIn(baseToken, msg.sender, baseAmount);
 
         uint collateralAmount = quoteCollateral(asset, baseAmount);
         if (collateralAmount < minAmount) revert TooMuchSlippage();
 
+        // Note: Re-entrancy using a pre-transfer hook can call buyCollateral again with a
+        //       stale collateral ERC20 balance for Comet. This would be an issue if
+        //       quoteCollateral derives its discount from the collateral ERC20 balance.
         withdrawCollateral(address(this), recipient, asset, safe128(collateralAmount));
 
         emit BuyCollateral(msg.sender, asset, baseAmount, collateralAmount);
