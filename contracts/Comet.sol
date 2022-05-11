@@ -18,10 +18,8 @@ contract Comet is CometMainInterface {
     error BadAsset();
     error BadDecimals();
     error BadDiscount();
-    error BadKink();
     error BadMinimum();
     error BadPrice();
-    error BadReserveRate();
     error BorrowTooSmall();
     error BorrowCFTooLarge();
     error InsufficientReserves();
@@ -56,25 +54,37 @@ contract Comet is CometMainInterface {
     /// @notice The address of the extension contract delegate
     address public override immutable extensionDelegate;
 
-    /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope (factor)
+    /// @notice The point in the supply rates separating the low interest rate slope and the high interest rate slope (factor)
     /// @dev uint64
-    uint public override immutable kink;
+    uint public override immutable supplyKink;
 
-    /// @notice Per second interest rate slope applied when utilization is below kink (factor)
+    /// @notice Per second supply interest rate slope applied when utilization is below kink (factor)
     /// @dev uint64
-    uint public override immutable perSecondInterestRateSlopeLow;
+    uint public override immutable supplyPerSecondInterestRateSlopeLow;
 
-    /// @notice Per second interest rate slope applied when utilization is above kink (factor)
+    /// @notice Per second supply interest rate slope applied when utilization is above kink (factor)
     /// @dev uint64
-    uint public override immutable perSecondInterestRateSlopeHigh;
+    uint public override immutable supplyPerSecondInterestRateSlopeHigh;
 
-    /// @notice Per second base interest rate (factor)
+    /// @notice Per second supply base interest rate (factor)
     /// @dev uint64
-    uint public override immutable perSecondInterestRateBase;
+    uint public override immutable supplyPerSecondInterestRateBase;
 
-    /// @notice The rate of total interest paid that goes into reserves (factor)
+    /// @notice The point in the borrow rate separating the low interest rate slope and the high interest rate slope (factor)
     /// @dev uint64
-    uint public override immutable reserveRate;
+    uint public override immutable borrowKink;
+
+    /// @notice Per second borrow interest rate slope applied when utilization is below kink (factor)
+    /// @dev uint64
+    uint public override immutable borrowPerSecondInterestRateSlopeLow;
+
+    /// @notice Per second borrow interest rate slope applied when utilization is above kink (factor)
+    /// @dev uint64
+    uint public override immutable borrowPerSecondInterestRateSlopeHigh;
+
+    /// @notice Per second borrow base interest rate (factor)
+    /// @dev uint64
+    uint public override immutable borrowPerSecondInterestRateBase;
 
     /// @notice The fraction of the liquidation penalty that goes to buyers of collateral instead of the protocol
     /// @dev uint64
@@ -163,8 +173,6 @@ contract Comet is CometMainInterface {
         if (config.assetConfigs.length > MAX_ASSETS) revert TooManyAssets();
         if (config.baseMinForRewards == 0) revert BadMinimum();
         if (AggregatorV3Interface(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
-        if (config.reserveRate > FACTOR_SCALE) revert BadReserveRate();
-        if (config.kink > FACTOR_SCALE) revert BadKink();
 
         // Copy configuration
         unchecked {
@@ -191,11 +199,14 @@ contract Comet is CometMainInterface {
 
         // Set interest rate model configs
         unchecked {
-            kink = config.kink;
-            perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
-            perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
-            perSecondInterestRateBase = config.perYearInterestRateBase / SECONDS_PER_YEAR;
-            reserveRate = config.reserveRate;
+            supplyKink = config.supplyKink;
+            supplyPerSecondInterestRateSlopeLow = config.supplyPerYearInterestRateSlopeLow / SECONDS_PER_YEAR;
+            supplyPerSecondInterestRateSlopeHigh = config.supplyPerYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
+            supplyPerSecondInterestRateBase = config.supplyPerYearInterestRateBase / SECONDS_PER_YEAR;
+            borrowKink = config.borrowKink;
+            borrowPerSecondInterestRateSlopeLow = config.borrowPerYearInterestRateSlopeLow / SECONDS_PER_YEAR;
+            borrowPerSecondInterestRateSlopeHigh = config.borrowPerYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
+            borrowPerSecondInterestRateBase = config.borrowPerYearInterestRateBase / SECONDS_PER_YEAR;
         }
 
         // Set asset info
@@ -440,30 +451,31 @@ contract Comet is CometMainInterface {
 
     /**
      * @dev Note: Does not accrue interest first
+     * @param utilization The utilization to check the supply rate for
      * @return The per second supply rate at `utilization`
      */
     function getSupplyRate(uint utilization) override public view returns (uint64) {
-        uint reserveScalingFactor = utilization * (FACTOR_SCALE - reserveRate) / FACTOR_SCALE;
-        if (utilization <= kink) {
-            // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
-            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization))));
+        if (utilization <= supplyKink) {
+            // interestRateBase + interestRateSlopeLow * utilization
+            return safe64(supplyPerSecondInterestRateBase + mulFactor(supplyPerSecondInterestRateSlopeLow, utilization));
         } else {
-            // (interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)) * utilization * (1 - reserveRate)
-            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)))));
+            // interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)
+            return safe64(supplyPerSecondInterestRateBase + mulFactor(supplyPerSecondInterestRateSlopeLow, supplyKink) + mulFactor(supplyPerSecondInterestRateSlopeHigh, (utilization - supplyKink)));
         }
     }
 
     /**
      * @dev Note: Does not accrue interest first
+     * @param utilization The utilization to check the borrow rate for
      * @return The per second borrow rate at `utilization`
      */
     function getBorrowRate(uint utilization) override public view returns (uint64) {
-        if (utilization <= kink) {
+        if (utilization <= borrowKink) {
             // interestRateBase + interestRateSlopeLow * utilization
-            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization));
+            return safe64(borrowPerSecondInterestRateBase + mulFactor(borrowPerSecondInterestRateSlopeLow, utilization));
         } else {
             // interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)
-            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)));
+            return safe64(borrowPerSecondInterestRateBase + mulFactor(borrowPerSecondInterestRateSlopeLow, borrowKink) + mulFactor(borrowPerSecondInterestRateSlopeHigh, (utilization - borrowKink)));
         }
     }
 
