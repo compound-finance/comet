@@ -56,9 +56,6 @@ contract Comet is CometMainInterface {
     /// @notice The address of the extension contract delegate
     address public override immutable extensionDelegate;
 
-    /// @notice The address of the extension contract delegate
-    address public immutable extensionDelegate;
-
     /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope (factor)
     /// @dev uint64
     uint public override immutable kink;
@@ -163,7 +160,7 @@ contract Comet is CometMainInterface {
         uint8 decimals_ = ERC20(config.baseToken).decimals();
         if (decimals_ > MAX_BASE_DECIMALS) revert BadDecimals();
         if (config.storeFrontPriceFactor > FACTOR_SCALE) revert BadDiscount();
-        if (config.assetConfigs.length > MAX_ASSETS) revert TooManyAssets();
+        if (config.packedAssetConfigs.length > MAX_ASSETS) revert TooManyAssets();
         if (config.baseMinForRewards == 0) revert BadMinimum();
         if (AggregatorV3Interface(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
         if (config.reserveRate > FACTOR_SCALE) revert BadReserveRate();
@@ -202,23 +199,23 @@ contract Comet is CometMainInterface {
         }
 
         // Set asset info
-        numAssets = uint8(config.assetConfigs.length);
+        numAssets = uint8(config.packedAssetConfigs.length);
 
-        (asset00_a, asset00_b) = _getPackedAsset(config.assetConfigs, 0);
-        (asset01_a, asset01_b) = _getPackedAsset(config.assetConfigs, 1);
-        (asset02_a, asset02_b) = _getPackedAsset(config.assetConfigs, 2);
-        (asset03_a, asset03_b) = _getPackedAsset(config.assetConfigs, 3);
-        (asset04_a, asset04_b) = _getPackedAsset(config.assetConfigs, 4);
-        (asset05_a, asset05_b) = _getPackedAsset(config.assetConfigs, 5);
-        (asset06_a, asset06_b) = _getPackedAsset(config.assetConfigs, 6);
-        (asset07_a, asset07_b) = _getPackedAsset(config.assetConfigs, 7);
-        (asset08_a, asset08_b) = _getPackedAsset(config.assetConfigs, 8);
-        (asset09_a, asset09_b) = _getPackedAsset(config.assetConfigs, 9);
-        (asset10_a, asset10_b) = _getPackedAsset(config.assetConfigs, 10);
-        (asset11_a, asset11_b) = _getPackedAsset(config.assetConfigs, 11);
-        (asset12_a, asset12_b) = _getPackedAsset(config.assetConfigs, 12);
-        (asset13_a, asset13_b) = _getPackedAsset(config.assetConfigs, 13);
-        (asset14_a, asset14_b) = _getPackedAsset(config.assetConfigs, 14);
+        (asset00_a, asset00_b) = _getPackedAsset(config.packedAssetConfigs, 0);
+        (asset01_a, asset01_b) = _getPackedAsset(config.packedAssetConfigs, 1);
+        (asset02_a, asset02_b) = _getPackedAsset(config.packedAssetConfigs, 2);
+        (asset03_a, asset03_b) = _getPackedAsset(config.packedAssetConfigs, 3);
+        (asset04_a, asset04_b) = _getPackedAsset(config.packedAssetConfigs, 4);
+        (asset05_a, asset05_b) = _getPackedAsset(config.packedAssetConfigs, 5);
+        (asset06_a, asset06_b) = _getPackedAsset(config.packedAssetConfigs, 6);
+        (asset07_a, asset07_b) = _getPackedAsset(config.packedAssetConfigs, 7);
+        (asset08_a, asset08_b) = _getPackedAsset(config.packedAssetConfigs, 8);
+        (asset09_a, asset09_b) = _getPackedAsset(config.packedAssetConfigs, 9);
+        (asset10_a, asset10_b) = _getPackedAsset(config.packedAssetConfigs, 10);
+        (asset11_a, asset11_b) = _getPackedAsset(config.packedAssetConfigs, 11);
+        (asset12_a, asset12_b) = _getPackedAsset(config.packedAssetConfigs, 12);
+        (asset13_a, asset13_b) = _getPackedAsset(config.packedAssetConfigs, 13);
+        (asset14_a, asset14_b) = _getPackedAsset(config.packedAssetConfigs, 14);
     }
 
     /**
