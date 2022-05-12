@@ -103,10 +103,6 @@ describe('updateAssetsIn', function () {
 
     await expect(
       comet.updateAssetsInExternal(user.address, erroneousAssetAddress, 0, 100)
-<<<<<<< HEAD
     ).to.be.revertedWith("custom error 'BadAsset()'");
-=======
-    ).to.be.revertedWith('bad asset');
->>>>>>> 4db1033 (Trim revert strings)
   });
 });

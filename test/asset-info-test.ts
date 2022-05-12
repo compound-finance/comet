@@ -57,20 +57,12 @@ describe('asset info', function () {
         },
         reward: 'ASSET1',
       })
-<<<<<<< HEAD
     ).to.be.revertedWith("custom error 'TooManyAssets()'");
-=======
-    ).to.be.revertedWith('too many assets');
->>>>>>> 4db1033 (Trim revert strings)
   });
 
   it('reverts if index is greater that numAssets', async () => {
     const { comet } = await makeProtocol();
-<<<<<<< HEAD
     await expect(comet.getAssetInfo(3)).to.be.revertedWith("custom error 'BadAsset()'");
-=======
-    await expect(comet.getAssetInfo(3)).to.be.revertedWith('bad asset');
->>>>>>> 4db1033 (Trim revert strings)
   });
 
   it('reverts if collateral factors are out of range', async () => {

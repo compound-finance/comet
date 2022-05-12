@@ -62,7 +62,6 @@ describe('configurator', function () {
     await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
     const newCometAddress = await proxyAdmin.getProxyImplementation(cometProxy.address);
 
-<<<<<<< HEAD
     expect(newCometAddress).to.not.be.equal(comet.address);
   });
 
@@ -694,7 +693,6 @@ describe('configurator', function () {
         configuratorAsProxy.connect(alice).setGovernor(alice.address)
       ).to.be.revertedWith("custom error 'Unauthorized()'");
     });
-=======
   it.skip('sets entire Configuration and deploys Comet with new configuration', async () => {
   });
 
@@ -709,9 +707,7 @@ describe('configurator', function () {
     expect(await configurator.governorParam()).to.be.equal(alice.address);
   });
 
-  it.skip('adds asset and deploys Comet with new configuration', async () => {
-  });
-
+  // XXX
   it('packs asset configs correctly', async () => {
     const { governor, configurator, proxyAdmin, comet, tokens, users: [alice] } = await makeConfigurator({
       assets: {
@@ -746,18 +742,5 @@ describe('configurator', function () {
     expect(assetInfo00.borrowCollateralFactor).to.equal(exp(0.9, 18));
     expect(assetInfo00.liquidateCollateralFactor).to.equal(exp(0.95, 18));
     expect(assetInfo00.supplyCap).to.equal(exp(1_000_000, 18));
-  });
-
-  it('reverts if deploy is called from non-governor', async () => {
-    const { configurator, proxyAdmin, users: [alice] } = await makeConfigurator();
-
-    await expect(proxyAdmin.connect(alice).deployAndUpgrade(configurator.address)).to.be.revertedWith('Ownable: caller is not the owner');
-  });
-
-  it('reverts if deploy is called directly in Configurator instead of from ProxyAdmin', async () => {
-    const { configurator, users: [alice] } = await makeConfigurator();
-
-    await expect(configurator.connect(alice).deployAndUpgrade()).to.be.revertedWith(`function selector was not recognized and there's no fallback function`);
->>>>>>> 6315557 (Add more configurator unit tests and fix asset config bug in configurator)
   });
 });

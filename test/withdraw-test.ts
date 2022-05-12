@@ -186,11 +186,7 @@ describe('withdrawTo', function () {
     await wait(comet.connect(pauseGuardian).pause(false, false, true, false, false));
     expect(await comet.isWithdrawPaused()).to.be.true;
 
-<<<<<<< HEAD
     await expect(cometAsB.withdrawTo(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
-=======
-    await expect(cometAsB.withdrawTo(alice.address, USDC.address, 1)).to.be.revertedWith('paused');
->>>>>>> 4db1033 (Trim revert strings)
   });
 
   it('borrows to withdraw if necessary/possible', async () => {
@@ -249,7 +245,6 @@ describe('withdraw', function () {
     await wait(comet.connect(pauseGuardian).pause(false, false, true, false, false));
     expect(await comet.isWithdrawPaused()).to.be.true;
 
-<<<<<<< HEAD
     await expect(cometAsB.withdraw(USDC.address, 100e6)).to.be.revertedWith("custom error 'Paused()'");
   });
 
@@ -271,9 +266,6 @@ describe('withdraw', function () {
     await expect(
       comet.connect(alice).withdraw(USDC.address, exp(1, 6))
     ).to.be.revertedWith("custom error 'NotCollateralized()'");
-=======
-    await expect(cometAsB.withdraw(USDC.address, 100e6)).to.be.revertedWith('paused');
->>>>>>> 4db1033 (Trim revert strings)
   });
 
   it('reverts if collateral withdraw amount is not collateralized', async () => {
@@ -395,7 +387,7 @@ describe('withdraw', function () {
 describe('withdrawFrom', function () {
   it('withdraws from src if specified and sender has permission', async () => {
     const protocol = await makeProtocol();
-    const { comet, cometExt, tokens, users: [alice, bob, charlie] } = protocol;
+    const { comet, tokens, users: [alice, bob, charlie] } = protocol;
     const { COMP } = tokens;
 
     const _i0 = await COMP.allocateTo(comet.address, 7);
@@ -406,7 +398,7 @@ describe('withdrawFrom', function () {
 
     const _i1 = await comet.setCollateralBalance(bob.address, COMP.address, 7);
 
-    const cometAsB = cometExt.connect(bob);
+    const cometAsB = comet.connect(bob);
     const cometAsC = comet.connect(charlie);
 
     const _a1 = await wait(cometAsB.allow(charlie.address, true));
@@ -434,20 +426,16 @@ describe('withdrawFrom', function () {
     const cometAsC = comet.connect(charlie);
 
     await expect(cometAsC.withdrawFrom(bob.address, alice.address, COMP.address, 7))
-<<<<<<< HEAD
       .to.be.revertedWith("custom error 'Unauthorized()'");
-=======
-      .to.be.revertedWith('bad auth');
->>>>>>> 4db1033 (Trim revert strings)
   });
 
   it('reverts if withdraw is paused', async () => {
     const protocol = await makeProtocol();
-    const { comet, cometExt, tokens, pauseGuardian, users: [alice, bob, charlie] } = protocol;
+    const { comet, tokens, pauseGuardian, users: [alice, bob, charlie] } = protocol;
     const { COMP } = tokens;
 
     await COMP.allocateTo(comet.address, 7);
-    const cometAsB = cometExt.connect(bob);
+    const cometAsB = comet.connect(bob);
     const cometAsC = comet.connect(charlie);
 
     // Pause withdraw
@@ -455,10 +443,6 @@ describe('withdrawFrom', function () {
     expect(await comet.isWithdrawPaused()).to.be.true;
 
     await wait(cometAsB.allow(charlie.address, true));
-<<<<<<< HEAD
     await expect(cometAsC.withdrawFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith("custom error 'Paused()'");
-=======
-    await expect(cometAsC.withdrawFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith('paused');
->>>>>>> 4db1033 (Trim revert strings)
   });
 });
