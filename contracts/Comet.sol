@@ -240,7 +240,7 @@ contract Comet is CometMainInterface {
     /**
      * @dev Checks and gets the packed asset info for storage
      */
-    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
+    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) virtual internal view returns (uint256, uint256) {
         AssetConfig memory assetConfig;
         if (i < assetConfigs.length) {
             assembly {
@@ -300,7 +300,7 @@ contract Comet is CometMainInterface {
      * @param i The index of the asset info to get
      * @return The asset info object
      */
-    function getAssetInfo(uint8 i) override public view returns (AssetInfo memory) {
+    function getAssetInfo(uint8 i) virtual override public view returns (AssetInfo memory) {
         if (i >= numAssets) revert BadAsset();
 
         uint256 word_a;
@@ -381,7 +381,7 @@ contract Comet is CometMainInterface {
     /**
      * @dev Determine index of asset that matches given address
      */
-    function getAssetInfoByAddress(address asset) internal view returns (AssetInfo memory) {
+    function getAssetInfoByAddress(address asset) virtual internal view returns (AssetInfo memory) {
         for (uint8 i = 0; i < numAssets; i++) {
             AssetInfo memory assetInfo = getAssetInfo(i);
             if (assetInfo.asset == asset) {
@@ -402,7 +402,7 @@ contract Comet is CometMainInterface {
     /**
      * @dev Calculate accrued interest indices for base token supply and borrows
      **/
-    function accruedInterestIndices(uint timeElapsed) internal view returns (uint64, uint64) {
+    function accruedInterestIndices(uint timeElapsed) virtual internal view returns (uint64, uint64) {
         uint64 baseSupplyIndex_ = baseSupplyIndex;
         uint64 baseBorrowIndex_ = baseBorrowIndex;
         if (timeElapsed > 0) {
@@ -417,7 +417,7 @@ contract Comet is CometMainInterface {
     /**
      * @dev Accrue interest (and rewards) in base token supply and borrows
      **/
-    function accrueInternal() internal {
+    function accrueInternal() virtual internal {
         uint40 now_ = getNowInternal();
         uint timeElapsed = now_ - lastAccrualTime;
         if (timeElapsed > 0) {
@@ -786,7 +786,7 @@ contract Comet is CometMainInterface {
     /**
      * @dev Whether user has a non-zero balance of an asset, given assetsIn flags
      */
-    function isInAsset(uint16 assetsIn, uint8 assetOffset) internal pure returns (bool) {
+    function isInAsset(uint16 assetsIn, uint8 assetOffset) virtual internal view returns (bool) {
         return (assetsIn & (uint16(1) << assetOffset) != 0);
     }
 
@@ -978,7 +978,7 @@ contract Comet is CometMainInterface {
      * @param asset The asset to transfer
      * @param amount The quantity to transfer
      */
-    function transferAssetFrom(address src, address dst, address asset, uint amount) override external {
+    function transferAssetFrom(address src, address dst, address asset, uint amount) virtual override external {
         return transferInternal(msg.sender, src, dst, asset, amount);
     }
 
@@ -1335,7 +1335,7 @@ contract Comet is CometMainInterface {
     /**
      * @notice Fallback to calling the extension delegate for everything else
      */
-    fallback() external payable {
+    /* fallback() external payable {
         address delegate = extensionDelegate;
         assembly {
             calldatacopy(0, 0, calldatasize())
@@ -1345,5 +1345,5 @@ contract Comet is CometMainInterface {
             case 0 { revert(0, returndatasize()) }
             default { return(0, returndatasize()) }
         }
-    }
+    } */
 }
