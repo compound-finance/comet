@@ -27,7 +27,6 @@ import "comet.spec"
         balance collateral decrease      &&
         balance Base increase       &&
         balance Base increase IFF balance collateral decrease
-         
 
     @Formula:
     {

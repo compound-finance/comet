@@ -799,6 +799,8 @@ contract Comet is CometMainInterface {
         uint128 initialUserBalance,
         uint128 finalUserBalance
     ) virtual internal {
+
+
         if (initialUserBalance == 0 && finalUserBalance != 0) {
             // set bit for asset
             userBasic[account].assetsIn |= (uint16(1) << assetInfo.offset);

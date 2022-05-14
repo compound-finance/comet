@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - certora
+      - certora-update
   # pull_request:
   #   branches:
   #     - main

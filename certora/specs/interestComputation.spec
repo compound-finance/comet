@@ -316,37 +316,6 @@ rule presentValue_G_zero(int104 presentValue){
     @Rule
 
     @Description:
-        presentValue equal principalValue implies:
-
-    @Formula:
-        presentValue == principalValue => BaseSupplyIndex == BaseIndexScale
-
-    @Notes:
-
-    @Link:
-        
-*/
-
-rule presentValue_EQ_principal(int104 presentValue){
-    env e;
-   setup(e);
-    
-    require getBaseBorrowIndex() > getBaseSupplyIndex(); 
-    int104 principalValue = call_principalValue(presentValue);
-    int104 presentValueInv = call_presentValue(principalValue);
-
-    require presentValue != 0;
-
-    assert presentValue == principalValue => 
-            (getBaseSupplyIndex() == getBaseIndexScale() && 
-            presentValueInv == presentValue);
-}
-
-
-/*
-    @Rule
-
-    @Description:
         If utilization is 0, then supplyRate is 0
 
     @Formula:
