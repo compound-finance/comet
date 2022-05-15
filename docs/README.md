@@ -228,7 +228,7 @@ This function returns the amount of base asset in USD that is presently borrowab
 #### Comet
 
 ```solidity
-function getBorrowLiquidity(address account) public view returns (int)
+function getBorrowLiquidity(address account) external view returns (int)
 ```
 
 * `account`: The account to examine borrow liquidity.
@@ -308,7 +308,7 @@ This function returns the USD value of liquidity available before the specified 
 #### Comet
 
 ```solidity
-function getLiquidationMargin(address account) public view returns (int)
+function getLiquidationMargin(address account) external view returns (int)
 ```
 
 * `account`: The account to examine liquidity available.
@@ -518,7 +518,11 @@ const targetReserves = await comet.callStatic.targetReserves();
 
 ### Ask Price
 
-In order to repay the borrows of absorbed accounts, the protocol needs to sell the seized collateral. The *Ask Price* is the price of the asset to be sold with a fixed discount (configured by governance). This function uses the price returned by the protocol's price feed.
+In order to repay the borrows of absorbed accounts, the protocol needs to sell the seized collateral. The *Ask Price* is the price of the asset to be sold at a discount (configured by governance). This function uses the price returned by the protocol's price feed. The discount of the asset is derived from the `StoreFrontPriceFactor` and the asset's `LiquidationFactor` using the following formula.
+
+```
+DiscountFactor = StoreFrontPriceFactor * (1e18 - Asset.LiquidationFactor)
+```
 
 #### Comet
 
@@ -1105,7 +1109,7 @@ struct AssetInfo {
     uint128 supplyCap;
 }
 
-function getAssetInfo(uint8 i) returns (AssetInfo memory)
+function getAssetInfo(uint8 i) public view returns (AssetInfo memory)
 ```
 
 * `i`: The index of the asset based on the order it was added to the protocol. The index begins at `0`.
@@ -1138,6 +1142,59 @@ const infoObject = await comet.methods.getAssetInfo(0).call();
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
 const infoObject = await comet.callStatic.getAssetInfo(0);
+```
+
+### Get Asset Info By Address
+
+This method returns asset information of a specific asset.
+
+#### Comet
+
+```solidity
+struct AssetInfo {
+    uint8 offset;
+    address asset;
+    address priceFeed;
+    uint64 scale;
+    uint64 borrowCollateralFactor;
+    uint64 liquidateCollateralFactor;
+    uint64 liquidationFactor;
+    uint128 supplyCap;
+}
+
+function getAssetInfoByAddress(address asset) public view returns (AssetInfo memory)
+```
+
+* `address`: The address of the asset.
+* `RETURNS`: The asset information as a struct called `AssetInfo`.
+* `offset`: The index of the asset based on the order it was added to the protocol.
+* `asset`: The address of the asset's smart contract.
+* `priceFeed`: The address of the price feed contract for this asset.
+* `scale`: An integer that equals `10 ^ x` where `x` is the amount of decimal places in the asset's smart contract.
+* `borrowCollateralFactor`: The collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
+* `liquidateCollateralFactor`: The liquidate collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
+* `liquidationFactor`: The liquidation factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
+* `supplyCap`: The supply cap of the asset as an integer scaled up by `10 ^ x` where `x` is the amount of decimal places in the asset's smart contract.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+AssetInfo info = comet.getAssetInfoByAddress(0xAsset);
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const infoObject = await comet.methods.getAssetInfoByAddress('0xAsset').call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const infoObject = await comet.callStatic.getAssetInfoByAddress('0xAsset');
 ```
 
 ### Get Price
@@ -1197,7 +1254,7 @@ function getConfiguration() external view returns (Configuration memory)
   * `perYearInterestRateSlopeHigh`: The interest rate slope high bound.
   * `perYearInterestRateBase`: The interest rate slope base.
   * `reserveRate`: The reserve rate that borrowers pay to the protocol reserves.
-  * `storeFrontPriceFactor`: The factor for calculation of the discounted collateral available for purchase upon liquidation of an account.
+  * `storeFrontPriceFactor`: The fraction of the liquidation penalty that goes to buyers of collateral instead of the protocol.
   * `trackingIndexScale`: The scale for the index tracking protocol rewards.
   * `baseTrackingSupplySpeed`: The rate for protocol awards accrued to suppliers.
   * `baseTrackingBorrowSpeed`: The rate for protocol awards accrued to borrowers.
@@ -1453,9 +1510,9 @@ function setReserveRate(uint64 newReserveRate) external
 * `param`: The reserve rate of the protocol as an APR scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 2.5% APR.
 * `RETURN`: No return, reverts on error.
 
-### Store Front Price Factor
+### Set Store Front Price Factor
 
-This function sets the discount rate of collateral for sale as part of the account absorption process. The rate is a decimal scaled up by `10 ^ 18`.
+This function sets the fraction of the liquidation penalty that goes to buyers of collateral instead of the protocol. This factor is used to calculate the discount rate of collateral for sale as part of the account absorption process. The rate is a decimal scaled up by `10 ^ 18`.
 
 #### Configurator
 

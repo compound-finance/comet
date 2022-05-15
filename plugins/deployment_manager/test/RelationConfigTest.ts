@@ -1,7 +1,6 @@
 import hre from 'hardhat';
 import { expect } from 'chai';
 
-import { Cache } from '../Cache';
 import {
   AliasTemplate,
   FieldKey,
@@ -13,7 +12,6 @@ import {
   readAlias,
   readField,
 } from '../RelationConfig';
-import { tempDir } from './TestHelpers';
 
 interface FieldKeyTest {
   name: string;
@@ -111,7 +109,7 @@ describe('RelationConfig', () => {
   });
 
   describe('readField', () => {
-    let zero = '0x0000000000000000000000000000000000000000';
+    let _zero = '0x0000000000000000000000000000000000000000';
     let one = '0x0000000000000000000000000000000000000001';
     let two = '0x0000000000000000000000000000000000000002';
     let three = '0x0000000000000000000000000000000000000003';
@@ -157,7 +155,7 @@ describe('RelationConfig', () => {
         name: 'fn call single',
         contract,
         fieldKey: {
-          getter: async (contract) => one,
+          getter: async (_contract) => one,
         },
         exp: [one],
       },
@@ -165,7 +163,7 @@ describe('RelationConfig', () => {
         name: 'fn call multi',
         contract,
         fieldKey: {
-          getter: async (contract) => [one, two],
+          getter: async (_contract) => [one, two],
         },
         exp: [one, two],
       },

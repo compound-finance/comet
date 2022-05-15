@@ -1,4 +1,4 @@
-import { Comet, ethers, expect, exp, makeProtocol, wait, ONE } from './helpers';
+import { expect, exp, makeProtocol, ONE } from './helpers';
 
 describe('asset info', function () {
   it('initializes protocol', async () => {

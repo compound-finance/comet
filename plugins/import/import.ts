@@ -9,7 +9,7 @@ import { memoizeAsync } from '../../src/memoize';
  */
 
 export async function loadContract(source: string, network: string, address: string) {
-  if (address === "0x0000000000000000000000000000000000000000") {
+  if (address === '0x0000000000000000000000000000000000000000') {
     throw new Error(`Cannot load ${source} contract for address ${address} on network ${network}. Address invalid.`);
   }
   switch (source) {
@@ -66,7 +66,7 @@ async function getEtherscanApiData(network: string, address: string, apiKey: str
 
 async function getContractCreationCode(network: string, address: string) {
   let url = `${await getEtherscanUrl(network)}/address/${address}#code`;
-  let result = <string>await get(url, {}, null);
+  let result = <string>await get(url, {});
   let regex = /<div id='verifiedbytecode2'>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
   let matches = [...result.matchAll(regex)];
   if (matches.length === 0) {

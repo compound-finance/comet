@@ -1,4 +1,4 @@
-import { Comet, ethers, expect, exp, factor, defaultAssets, fastForward, makeProtocol, portfolio, setTotalsBasic, wait, toYears } from './helpers';
+import { expect, exp, fastForward, makeProtocol, setTotalsBasic, toYears } from './helpers';
 import { BigNumber } from 'ethers';
 
 describe('total tracking index bounds', function () {

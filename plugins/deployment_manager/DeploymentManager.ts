@@ -1,8 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Contract, Signer } from 'ethers';
-
 import { Alias, Address, BuildFile } from './Types';
-
 import { Aliases, getAliases, putAlias, storeAliases } from './Aliases';
 import { Cache } from './Cache';
 import { ContractMap, getContracts } from './ContractMap';
@@ -12,7 +10,6 @@ import { Proxies, getProxies, putProxy, storeProxies } from './Proxies';
 import { getRelationConfig } from './RelationConfig';
 import { Roots, getRoots, putRoots } from './Roots';
 import { spider } from './Spider';
-import { verifyContract } from './Verify';
 import { Migration, getArtifactSpec } from './Migration';
 import { generateMigration } from './MigrationTemplate';
 
@@ -125,6 +122,11 @@ export class DeploymentManager {
   /* Stores new roots, which are the basis for spidering. */
   async putRoots(roots: Roots) {
     await putRoots(this.cache, roots);
+  }
+
+  /* Gets the existing roots. */
+  async getRoots(): Promise<Roots> {
+    return await getRoots(this.cache);
   }
 
   /* Loads contract configuration by tracing from roots outwards, based on relationConfig. */

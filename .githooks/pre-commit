@@ -12,8 +12,8 @@ STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | sed 's| |\\ |g
 # solhint
 echo "$STAGED_FILES" | egrep '\.sol$' | xargs ./node_modules/.bin/solhint --fix
 
-# prettier
-echo "$STAGED_FILES" | xargs yarn prettier
+# eslint
+echo "$STAGED_FILES" | xargs yarn lint
 
 # add back the modified/prettified files to staging
 echo "$STAGED_FILES" | xargs git add

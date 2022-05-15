@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: XXX ADD VALID LICENSE
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
 import "./CometMainInterface.sol";
@@ -19,7 +19,6 @@ contract Comet is CometMainInterface {
     error BadDecimals();
     error BadDiscount();
     error BadKink();
-    error BadLiquidationFactor();
     error BadMinimum();
     error BadPrice();
     error BadReserveRate();
@@ -77,7 +76,7 @@ contract Comet is CometMainInterface {
     /// @dev uint64
     uint public override immutable reserveRate;
 
-    /// @notice The fraction of actual price to charge for liquidated collateral
+    /// @notice The fraction of the liquidation penalty that goes to buyers of collateral instead of the protocol
     /// @dev uint64
     uint public override immutable storeFrontPriceFactor;
 
@@ -166,7 +165,6 @@ contract Comet is CometMainInterface {
         if (AggregatorV3Interface(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
         if (config.reserveRate > FACTOR_SCALE) revert BadReserveRate();
         if (config.kink > FACTOR_SCALE) revert BadKink();
-        // XXX sanity checks for rewards?
 
         // Copy configuration
         unchecked {
@@ -224,7 +222,7 @@ contract Comet is CometMainInterface {
      * @notice Initialize storage for the contract
      * @dev Can be used from constructor or proxy
      */
-    function initializeStorage() override public {
+    function initializeStorage() override external {
         if (lastAccrualTime != 0) revert AlreadyInitialized();
 
         // Initialize aggregates
@@ -265,10 +263,6 @@ contract Comet is CometMainInterface {
         // Ensure collateral factors are within range
         if (assetConfig.borrowCollateralFactor >= assetConfig.liquidateCollateralFactor) revert BorrowCFTooLarge();
         if (assetConfig.liquidateCollateralFactor > MAX_COLLATERAL_FACTOR) revert LiquidateCFTooLarge();
-
-        // Ensure liquidation factor is not greater than the storefront price factor
-        // Otherwise, protocol will lose funds on liquidation
-        if (assetConfig.liquidationFactor > storeFrontPriceFactor) revert BadLiquidationFactor();
 
         unchecked {
             // Keep 4 decimals for each factor
@@ -381,7 +375,7 @@ contract Comet is CometMainInterface {
     /**
      * @dev Determine index of asset that matches given address
      */
-    function getAssetInfoByAddress(address asset) internal view returns (AssetInfo memory) {
+    function getAssetInfoByAddress(address asset) override public view returns (AssetInfo memory) {
         for (uint8 i = 0; i < numAssets; i++) {
             AssetInfo memory assetInfo = getAssetInfo(i);
             if (assetInfo.asset == asset) {
@@ -437,7 +431,7 @@ contract Comet is CometMainInterface {
     /**
      * @notice Accrue interest and rewards for an account
      **/
-    function accrueAccount(address account) override public {
+    function accrueAccount(address account) override external {
         accrueInternal();
 
         UserBasic memory basic = userBasic[account];
@@ -445,6 +439,7 @@ contract Comet is CometMainInterface {
     }
 
     /**
+     * @dev Note: Does not accrue interest first
      * @return The current per second supply rate
      */
     function getSupplyRate() override public view returns (uint64) {
@@ -460,6 +455,7 @@ contract Comet is CometMainInterface {
     }
 
     /**
+     * @dev Note: Does not accrue interest first
      * @return The current per second borrow rate
      */
     function getBorrowRate() override public view returns (uint64) {
@@ -474,6 +470,7 @@ contract Comet is CometMainInterface {
     }
 
     /**
+     * @dev Note: Does not accrue interest first
      * @return The utilization rate of the base asset
      */
     function getUtilization() override public view returns (uint) {
@@ -501,9 +498,10 @@ contract Comet is CometMainInterface {
      * @notice Gets the total amount of protocol reserves, denominated in the number of base tokens
      */
     function getReserves() override public view returns (int) {
+        (uint64 baseSupplyIndex_, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         uint balance = ERC20(baseToken).balanceOf(address(this));
-        uint104 totalSupply = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint104 totalBorrow = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+        uint104 totalSupply = presentValueSupply(baseSupplyIndex_, totalSupplyBase);
+        uint104 totalBorrow = presentValueBorrow(baseBorrowIndex_, totalBorrowBase);
         return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
     }
 
@@ -553,7 +551,7 @@ contract Comet is CometMainInterface {
      * @param account The address to check liquidity for
      * @return The common price quantity of borrow liquidity
      */
-    function getBorrowLiquidity(address account) override public view returns (int) {
+    function getBorrowLiquidity(address account) override external view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
 
         int liquidity = signedMulPrice(
@@ -626,7 +624,7 @@ contract Comet is CometMainInterface {
      * @param account The address to check margin for
      * @return The common price quantity of liquidation margin
      */
-    function getLiquidationMargin(address account) override public view returns (int) {
+    function getLiquidationMargin(address account) override external view returns (int) {
         uint16 assetsIn = userBasic[account].assetsIn;
 
         int liquidity = signedMulPrice(
@@ -1234,17 +1232,17 @@ contract Comet is CometMainInterface {
     function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) override external {
         if (isBuyPaused()) revert Paused();
 
-        accrueInternal();
-
         int reserves = getReserves();
         if (reserves >= 0 && uint(reserves) >= targetReserves) revert NotForSale();
 
-        // XXX check re-entrancy
+        // Note: Re-entrancy can skip the reserves check above on a second buyCollateral call.
         doTransferIn(baseToken, msg.sender, baseAmount);
 
         uint collateralAmount = quoteCollateral(asset, baseAmount);
         if (collateralAmount < minAmount) revert TooMuchSlippage();
 
+        // Note: Pre-transfer hook can re-enter buyCollateral with a stale collateral ERC20 balance.
+        //       This is a problem if quoteCollateral derives its discount from the collateral ERC20 balance.
         withdrawCollateral(address(this), recipient, asset, safe128(collateralAmount));
 
         emit BuyCollateral(msg.sender, asset, baseAmount, collateralAmount);
@@ -1259,7 +1257,10 @@ contract Comet is CometMainInterface {
     function quoteCollateral(address asset, uint baseAmount) override public view returns (uint) {
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         uint128 assetPrice = getPrice(assetInfo.priceFeed);
-        uint128 assetPriceDiscounted = uint128(mulFactor(assetPrice, storeFrontPriceFactor));
+        // Store front discount is derived from the collateral asset's liquidationFactor and storeFrontPriceFactor
+        // discount = storeFrontPriceFactor * (1e18 - liquidationFactor)
+        uint discountFactor = mulFactor(storeFrontPriceFactor, FACTOR_SCALE - assetInfo.liquidationFactor);
+        uint128 assetPriceDiscounted = uint128(mulFactor(assetPrice, FACTOR_SCALE - discountFactor));
         uint128 basePrice = getPrice(baseTokenPriceFeed);
         // # of collateral assets
         // = (TotalValueOfBaseAmount / DiscountedPriceOfCollateralAsset) * assetScale
@@ -1274,8 +1275,6 @@ contract Comet is CometMainInterface {
      */
     function withdrawReserves(address to, uint amount) override external {
         if (msg.sender != governor) revert Unauthorized();
-
-        accrueInternal();
 
         int reserves = getReserves();
         if (reserves < 0 || amount > unsigned256(reserves)) revert InsufficientReserves();
@@ -1306,6 +1305,16 @@ contract Comet is CometMainInterface {
     function totalSupply() override external view returns (uint256) {
         (uint64 baseSupplyIndex_, ) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         return presentValueSupply(baseSupplyIndex_, totalSupplyBase);
+    }
+
+    /**
+     * @notice Get the total amount of debt
+     * @dev Note: uses updated interest indices to calculate
+     * @return The amount of debt
+     **/
+    function totalBorrow() override external view returns (uint256) {
+        (, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
+        return presentValueBorrow(baseBorrowIndex_, totalBorrowBase);
     }
 
     /**
