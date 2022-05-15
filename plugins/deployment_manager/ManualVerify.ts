@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
-import { Contract, ContractFactory, Signer } from 'ethers';
-import { ContractMetadata, BuildFile } from './Types';
+import { Contract } from 'ethers';
+import { BuildFile } from './Types';
 import { getPrimaryContract } from './Utils';
 import { NomicLabsHardhatPluginError } from 'hardhat/plugins';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';

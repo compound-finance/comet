@@ -1,4 +1,4 @@
-import { expect, makeProtocol, setTotalsBasic, wait } from './helpers';
+import { expect, makeProtocol, setTotalsBasic } from './helpers';
 
 describe('getReserves', function () {
   it('calculates 0 reserves', async () => {
@@ -39,8 +39,7 @@ describe('getReserves', function () {
 
   it('calculates negative reserves', async () => {
     const protocol = await makeProtocol({base: 'USDC'});
-    const { comet, tokens } = protocol;
-    const { USDC } = tokens;
+    const { comet } = protocol;
 
     // Protocol holds no USDC
 

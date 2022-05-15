@@ -10,7 +10,7 @@ describe('transfer', function () {
     } = protocol;
     const { USDC } = tokens;
 
-    const i0 = await comet.setBasePrincipal(bob.address, 100e6);
+    const _i0 = await comet.setBasePrincipal(bob.address, 100e6);
     const cometAsB = comet.connect(bob);
 
     const t0 = await comet.totalsBasic();
@@ -47,7 +47,7 @@ describe('transfer', function () {
     } = protocol;
     const { COMP } = tokens;
 
-    const i0 = await comet.setCollateralBalance(bob.address, COMP.address, 8e8);
+    const _i0 = await comet.setCollateralBalance(bob.address, COMP.address, 8e8);
     const cometAsB = comet.connect(bob);
 
     const t0 = await comet.totalsCollateral(COMP.address);
@@ -92,8 +92,8 @@ describe('transfer', function () {
 
     await wait(cometAsB.transferAsset(alice.address, USDC.address, 100e6));
     const totals1 = await comet.totalsBasic();
-    const alice1 = await portfolio(protocol, alice.address)
-    const bob1 = await portfolio(protocol, bob.address)
+    const alice1 = await portfolio(protocol, alice.address);
+    const bob1 = await portfolio(protocol, bob.address);
 
     expect(alice0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
     expect(bob0.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
@@ -136,16 +136,12 @@ describe('transfer', function () {
 
     await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
 
-    const baseIndexScale = await comet.baseIndexScale();
-
     let t0 = await comet.totalsBasic();
-    t0 = await setTotalsBasic(comet, {
+    await setTotalsBasic(comet, {
       baseBorrowIndex: t0.baseBorrowIndex.mul(2),
     });
 
     await comet.connect(alice).transferAsset(bob.address, USDC.address, 100e6);
-
-    const t1 = await comet.totalsBasic();
 
     expect(await baseBalanceOf(comet, alice.address)).to.eq(BigInt(-100e6));
   });
@@ -227,14 +223,14 @@ describe('transferFrom', function () {
     } = protocol;
     const { COMP } = tokens;
 
-    const i0 = await comet.setCollateralBalance(bob.address, COMP.address, 7);
+    const _i0 = await comet.setCollateralBalance(bob.address, COMP.address, 7);
     const cometAsB = comet.connect(bob);
     const cometAsC = comet.connect(charlie);
 
-    const a1 = await wait(cometAsB.allow(charlie.address, true));
+    const _a1 = await wait(cometAsB.allow(charlie.address, true));
     const p0 = await portfolio(protocol, alice.address);
     const q0 = await portfolio(protocol, bob.address);
-    const s0 = await wait(cometAsC.transferAssetFrom(bob.address, alice.address, COMP.address, 7));
+    const _s0 = await wait(cometAsC.transferAssetFrom(bob.address, alice.address, COMP.address, 7));
     const p1 = await portfolio(protocol, alice.address);
     const q1 = await portfolio(protocol, bob.address);
 
@@ -253,7 +249,7 @@ describe('transferFrom', function () {
     } = protocol;
     const { COMP } = tokens;
 
-    const i0 = await comet.setCollateralBalance(bob.address, COMP.address, 7);
+    const _i0 = await comet.setCollateralBalance(bob.address, COMP.address, 7);
     const cometAsC = comet.connect(charlie);
 
     await expect(

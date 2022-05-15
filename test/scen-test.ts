@@ -1,9 +1,9 @@
 /* Check basic scenario compilation */
 
-import { Runner } from '../plugins/scenario/Runner';
-import { CometContext } from '../scenario/context/CometContext';
+// import { Runner } from '../plugins/scenario/Runner';
+// import { CometContext } from '../scenario/context/CometContext';
 
-const scenarios = [];
+// const scenarios = [];
 // XXX Get this to work
 // new Runner({
 //   bases: [

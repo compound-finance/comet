@@ -1,6 +1,5 @@
 import { Address, Alias } from './Types';
 import { Cache } from './Cache';
-import { objectToMap } from './Utils';
 
 export type Aliases = Map<Alias, Address>;
 export type InvertedAliases = Map<Address, Alias[]>;
@@ -10,7 +9,7 @@ let aliasesSpec = { rel: 'aliases.json' };
 
 // Read aliases
 export async function getAliases(cache: Cache): Promise<Aliases> {
-  return await cache.readMap<Alias, Address>(aliasesSpec);
+  return await cache.readMap<Address>(aliasesSpec);
 }
 
 // Stores aliases

@@ -1,13 +1,11 @@
 import * as fs from 'fs/promises';
 import * as nodepath from 'path';
 import { inspect } from 'util';
-
-import { Address, BuildFile } from './Types';
 import { fileExists, objectFromMap, objectToMap } from './Utils';
 
 export type FileSpec = string | string[] | { rel: string | string[] };
 
-function curry<A, B, C>(f: (A) => B, g: (B) => C): (A) => C {
+function compose<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C {
   return (x) => g(f(x));
 }
 
@@ -96,7 +94,7 @@ export class Cache {
         }
       }
     }
-    throw new Error("unreachable");
+    throw new Error('unreachable');
   }
 
   private async putDisk<T>(spec: FileSpec, data: T, transformer: (T) => string) {
@@ -138,12 +136,12 @@ export class Cache {
     }
   }
 
-  async readMap<K, V>(spec: FileSpec): Promise<Map<string, V>> {
-    return await this.readCache(spec, curry<K, string, Map<string, V>>(parseJson, objectToMap));
+  async readMap<V>(spec: FileSpec): Promise<Map<string, V>> {
+    return await this.readCache(spec, compose<string, object, Map<string, V>>(parseJson, objectToMap));
   }
 
   async storeMap<K, V>(spec: FileSpec, map: Map<K, V>) {
-    await this.storeCache(spec, map, curry(objectFromMap, stringifyJson));
+    await this.storeCache(spec, map, compose(objectFromMap, stringifyJson));
   }
 
   clearMemory() {
