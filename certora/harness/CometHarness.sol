@@ -116,7 +116,7 @@ contract CometHarness is CometHarnessGetters {
     bool public accrueWasCalled;
     function accrueInternal() override internal {
         accrueWasCalled = true;
-     }
+    }
 
     function accruedInterestIndices(uint timeElapsed) override internal view returns (uint64, uint64) {
         return (getBaseSupplyIndex(), getBaseBorrowIndex());

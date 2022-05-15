@@ -53,13 +53,16 @@ methods{
         
 */
 
+// B@B - The rule at its current state should fail with a violation of offset > 15 (will not change any asset).
+// The rule at the moement pass for no good reason. When things get fixed and it fails for the mentioned reason,
+// the commented require below can be added to make the rule pass correctly
 rule check_update_UserCollateral(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance){
     uint16 _assetIn = getAssetinOfUser(account);
     call_updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
     uint16 assetIn_ = getAssetinOfUser(account);
     uint8 assetOffset_ = getAssetOffsetByAsset(asset);
     bool flagUserAsset_ = call_isInAsset(assetIn_, assetOffset_);
-    require assetOffset_ < 16;
+    require assetOffset_ < 16; // This line should be added to make the rule pass
 
     assert (initialUserBalance == 0 && finalUserBalance > 0) => flagUserAsset_, "Balance changed from 0 to non zero, yet the getter retrieve false";
     assert (initialUserBalance > 0 && finalUserBalance == 0) => !flagUserAsset_, "Balance changed from non zero to 0, yet the getter retrieve true";
