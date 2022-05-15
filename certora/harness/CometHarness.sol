@@ -42,7 +42,7 @@ contract CometHarness is CometHarnessGetters {
     }
 
     // Overriding the original getAssetInfoByAddress to work with the maps instead of looping over the array
-    function getAssetInfoByAddress(address asset) override internal view returns (AssetInfo memory){       
+    function getAssetInfoByAddress(address asset) override public view returns (AssetInfo memory){       
         AssetInfo memory assetInfo =  getAssetInfo(assetToIndex[asset]);
         // The require promises correlation of the asset values stored in assetInfo with the values retrieved form the index-asset map
         require (assetInfo.asset == asset);
