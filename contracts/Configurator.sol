@@ -193,7 +193,7 @@ contract Configurator is ConfiguratorStorage {
     /// @dev only callable by governor
     function addAsset(AssetConfig calldata assetConfig) external {
         if (msg.sender != governor) revert Unauthorized();
-        configuratorParams.assetConfigs.push(assetConfig);
+        configuratorParams.packedAssetConfigs.push(getPackedAssetConfig(assetConfig));
         emit AddAsset(assetConfig);
     }
 
@@ -202,8 +202,8 @@ contract Configurator is ConfiguratorStorage {
         if (msg.sender != governor) revert Unauthorized();
 
         uint assetIndex = getAssetIndex(newAssetConfig.asset);
-        AssetConfig memory oldAssetConfig = configuratorParams.assetConfigs[assetIndex];
-        configuratorParams.assetConfigs[assetIndex] = newAssetConfig;
+        AssetConfig memory oldAssetConfig = getUnpackedAssetConfig(configuratorParams.packedAssetConfigs[assetIndex]);
+        configuratorParams.packedAssetConfigs[assetIndex] = getPackedAssetConfig(newAssetConfig);
         emit UpdateAsset(oldAssetConfig, newAssetConfig);
     }
 
@@ -212,9 +212,11 @@ contract Configurator is ConfiguratorStorage {
         if (msg.sender != governor) revert Unauthorized();
 
         uint assetIndex = getAssetIndex(asset);
-        address oldPriceFeed = configuratorParams.assetConfigs[assetIndex].priceFeed;
-        configuratorParams.assetConfigs[assetIndex].priceFeed = newPriceFeed;
-        emit UpdateAssetPriceFeed(asset, oldPriceFeed, newPriceFeed);
+        AssetConfig memory oldAssetConfig = getUnpackedAssetConfig(configuratorParams.packedAssetConfigs[assetIndex]);
+        AssetConfig memory newAssetConfig = oldAssetConfig;
+        newAssetConfig.priceFeed = newPriceFeed;
+        configuratorParams.packedAssetConfigs[assetIndex] = getPackedAssetConfig(newAssetConfig);
+        emit UpdateAssetPriceFeed(asset, oldAssetConfig.priceFeed, newPriceFeed);
     }
 
     /// @dev only callable by governor
@@ -222,9 +224,11 @@ contract Configurator is ConfiguratorStorage {
         if (msg.sender != governor) revert Unauthorized();
 
         uint assetIndex = getAssetIndex(asset);
-        uint64 oldBorrowCF = configuratorParams.assetConfigs[assetIndex].borrowCollateralFactor;
-        configuratorParams.assetConfigs[assetIndex].borrowCollateralFactor = newBorrowCF;
-        emit UpdateAssetBorrowCollateralFactor(asset, oldBorrowCF, newBorrowCF);
+        AssetConfig memory oldAssetConfig = getUnpackedAssetConfig(configuratorParams.packedAssetConfigs[assetIndex]);
+        AssetConfig memory newAssetConfig = oldAssetConfig;
+        newAssetConfig.borrowCollateralFactor = newBorrowCF;
+        configuratorParams.packedAssetConfigs[assetIndex] = getPackedAssetConfig(newAssetConfig);
+        emit UpdateAssetBorrowCollateralFactor(asset, oldAssetConfig.borrowCollateralFactor, newBorrowCF);
     }
 
     /// @dev only callable by governor
@@ -232,9 +236,11 @@ contract Configurator is ConfiguratorStorage {
         if (msg.sender != governor) revert Unauthorized();
 
         uint assetIndex = getAssetIndex(asset);
-        uint64 oldLiquidateCF = configuratorParams.assetConfigs[assetIndex].liquidateCollateralFactor;
-        configuratorParams.assetConfigs[assetIndex].liquidateCollateralFactor = newLiquidateCF;
-        emit UpdateAssetLiquidateCollateralFactor(asset, oldLiquidateCF, newLiquidateCF);
+        AssetConfig memory oldAssetConfig = getUnpackedAssetConfig(configuratorParams.packedAssetConfigs[assetIndex]);
+        AssetConfig memory newAssetConfig = oldAssetConfig;
+        newAssetConfig.liquidateCollateralFactor = newLiquidateCF;
+        configuratorParams.packedAssetConfigs[assetIndex] = getPackedAssetConfig(newAssetConfig);
+        emit UpdateAssetLiquidateCollateralFactor(asset, oldAssetConfig.liquidateCollateralFactor, newLiquidateCF);
     }
 
     /// @dev only callable by governor
@@ -242,9 +248,11 @@ contract Configurator is ConfiguratorStorage {
         if (msg.sender != governor) revert Unauthorized();
 
         uint assetIndex = getAssetIndex(asset);
-        uint64 oldLiquidationFactor = configuratorParams.assetConfigs[assetIndex].liquidationFactor;
-        configuratorParams.assetConfigs[assetIndex].liquidationFactor = newLiquidationFactor;
-        emit UpdateAssetLiquidationFactor(asset, oldLiquidationFactor, newLiquidationFactor);
+        AssetConfig memory oldAssetConfig = getUnpackedAssetConfig(configuratorParams.packedAssetConfigs[assetIndex]);
+        AssetConfig memory newAssetConfig = oldAssetConfig;
+        newAssetConfig.liquidationFactor = newLiquidationFactor;
+        configuratorParams.packedAssetConfigs[assetIndex] = getPackedAssetConfig(newAssetConfig);
+        emit UpdateAssetLiquidationFactor(asset, oldAssetConfig.liquidationFactor, newLiquidationFactor);
     }
 
     /// @dev only callable by governor
@@ -252,17 +260,19 @@ contract Configurator is ConfiguratorStorage {
         if (msg.sender != governor) revert Unauthorized();
 
         uint assetIndex = getAssetIndex(asset);
-        uint128 oldSupplyCap = configuratorParams.assetConfigs[assetIndex].supplyCap;
-        configuratorParams.assetConfigs[assetIndex].supplyCap = newSupplyCap;
-        emit UpdateAssetSupplyCap(asset, oldSupplyCap, newSupplyCap);
+        AssetConfig memory oldAssetConfig = getUnpackedAssetConfig(configuratorParams.packedAssetConfigs[assetIndex]);
+        AssetConfig memory newAssetConfig = oldAssetConfig;
+        newAssetConfig.supplyCap = newSupplyCap;
+        configuratorParams.packedAssetConfigs[assetIndex] = getPackedAssetConfig(newAssetConfig);
+        emit UpdateAssetSupplyCap(asset, oldAssetConfig.supplyCap, newSupplyCap);
     }
 
     /// @dev Determine index of asset that matches given address
     function getAssetIndex(address asset) internal view returns (uint) {
-        AssetConfig[] memory assetConfigs = configuratorParams.assetConfigs;
-        uint numAssets = assetConfigs.length;
+        PackedAssetConfig[] memory packedAssetConfigs = configuratorParams.packedAssetConfigs;
+        uint numAssets = packedAssetConfigs.length;
         for (uint i = 0; i < numAssets; i++) {
-            if (assetConfigs[i].asset == asset) {
+            if (getUnpackedAssetConfig(packedAssetConfigs[i]).asset == asset) {
                 return i;
             }
         }
@@ -291,5 +301,86 @@ contract Configurator is ConfiguratorStorage {
         address oldGovernor = governor;
         governor = newGovernor;
         emit GovernorTransferred(oldGovernor, newGovernor);
+    }
+
+        /**
+     * @dev Checks and gets the packed asset info for storage
+     */
+    function getPackedAssetConfig(AssetConfig memory assetConfig) internal view returns (PackedAssetConfig memory) {
+        address asset = assetConfig.asset;
+        address priceFeed = assetConfig.priceFeed;
+        uint8 decimals = assetConfig.decimals;
+
+        // Short-circuit if asset is nil
+        if (asset == address(0)) {
+            return PackedAssetConfig(0, 0);
+        }
+
+        // XXX Should we add back these checks?
+        // Sanity check price feed and asset decimals
+        // require(AggregatorV3Interface(priceFeed).decimals() == priceFeedDecimals, "bad price feed decimals");
+        // require(ERC20(asset).decimals() == decimals, "asset decimals mismatch");
+
+        // // Ensure collateral factors are within range
+        // require(assetConfig.borrowCollateralFactor < assetConfig.liquidateCollateralFactor, "borrow CF must be < liquidate CF");
+        // require(assetConfig.liquidateCollateralFactor <= maxCollateralFactor, "liquidate CF too high");
+
+        // Keep 4 decimals for each factor
+        // XXX Where to define FACTOR_SCALE and make sure it matches that of Comet?
+        uint FACTOR_SCALE = 1e18;
+        uint descale = FACTOR_SCALE / 1e4;
+        uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
+        uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
+        uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
+
+        // Be nice and check descaled values are still within range
+        require(borrowCollateralFactor < liquidateCollateralFactor, "borrow CF must be < liquidate CF");
+
+        // Keep whole units of asset for supply cap
+        uint64 supplyCap = uint64(assetConfig.supplyCap / (10 ** decimals));
+
+        uint256 word_a = (uint160(asset) << 0 |
+                          uint256(borrowCollateralFactor) << 160 |
+                          uint256(liquidateCollateralFactor) << 176 |
+                          uint256(liquidationFactor) << 192);
+        uint256 word_b = (uint160(priceFeed) << 0 |
+                          uint256(decimals) << 160 |
+                          uint256(supplyCap) << 168);
+
+        return PackedAssetConfig(word_a, word_b);
+    }
+
+    /**
+     * @notice Get the i-th asset info, according to the order they were passed in originally
+     * @param packedAssetConfig The packed asset config to unpack
+     * @return The unpacked asset config object
+     */
+    function getUnpackedAssetConfig(PackedAssetConfig memory packedAssetConfig) internal view returns (AssetConfig memory) {
+        uint256 word_a = packedAssetConfig.word_a;
+        uint256 word_b = packedAssetConfig.word_b;
+
+        // XXX Where to define FACTOR_SCALE and make sure it matches that of Comet?
+        uint FACTOR_SCALE = 1e18;
+
+        address asset = address(uint160(word_a & type(uint160).max));
+        uint rescale = FACTOR_SCALE / 1e4;
+        uint64 borrowCollateralFactor = uint64(((word_a >> 160) & type(uint16).max) * rescale);
+        uint64 liquidateCollateralFactor = uint64(((word_a >> 176) & type(uint16).max) * rescale);
+        uint64 liquidationFactor = uint64(((word_a >> 192) & type(uint16).max) * rescale);
+
+        address priceFeed = address(uint160(word_b & type(uint160).max));
+        uint8 decimals_ = uint8(((word_b >> 160) & type(uint8).max));
+        uint64 scale = uint64(10 ** decimals_);
+        uint128 supplyCap = uint128(((word_b >> 168) & type(uint64).max) * scale);
+
+        return AssetConfig({
+            asset: asset,
+            priceFeed: priceFeed,
+            decimals: decimals_,
+            borrowCollateralFactor: borrowCollateralFactor,
+            liquidateCollateralFactor: liquidateCollateralFactor,
+            liquidationFactor: liquidationFactor,
+            supplyCap: supplyCap
+         });
     }
 }
