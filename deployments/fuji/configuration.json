@@ -3,37 +3,37 @@
   "baseToken": "USDC",
   "baseTokenPriceFeed": "0x7898AcCC83587C3C55116c5230C17a6Cd9C71bad",
   "reserveRate": 0.1,
-  "borrowMin": "1e6",
-  "storeFrontPriceFactor": 0.95,
-  "targetReserves": 0,
+  "borrowMin": "1000e6",
+  "storeFrontPriceFactor": 0.5,
+  "targetReserves": "5000000e6",
   "rates": {
     "kink": 0.80,
-    "slopeLow": 0.02,
+    "slopeLow": 0.04,
     "slopeHigh": 0.10,
     "base": 0.01
   },
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": 0,
-    "baseBorrowSpeed": 0,
-    "baseMinForRewards": 1
+    "baseSupplySpeed": "0.000011574074074074073e15",
+    "baseBorrowSpeed": "0.0011458333333333333e15",
+    "baseMinForRewards": "1000000e6"
   },
   "assets": {
     "WBTC.e": {
       "priceFeed": "0x31CF013A08c6Ac228C94551d535d5BAfE19c602a",
       "decimals": "8",
-      "borrowCF": 0.4,
-      "liquidateCF": 0.5,
-      "liquidationFactor": 0.9,
-      "supplyCap": "100e8"
+      "borrowCF": 0.7,
+      "liquidateCF": 0.75,
+      "liquidationFactor": 0.93,
+      "supplyCap": "35000e8"
     },
     "WAVAX": {
       "priceFeed": "0x5498BB86BC934c8D34FDA08E81D444153d0D06aD",
       "decimals": "18",
-      "borrowCF": 0.7,
-      "liquidateCF": 0.8,
-      "liquidationFactor": 0.9,
-      "supplyCap": "100e18"
+      "borrowCF": 0.82,
+      "liquidateCF": 0.85,
+      "liquidationFactor": 0.93,
+      "supplyCap": "1000000e18"
     }
   }
 }

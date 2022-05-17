@@ -7,7 +7,7 @@ scenario(
   'Comet#withdrawReserves > governor withdraw reserves',
   {
     tokenBalances: {
-      betty: { $base: 100 },
+      betty: { $base: 100000 },
     },
     upgrade: true,
   },
@@ -17,9 +17,9 @@ scenario(
     const baseToken = context.getAssetByAddress(await comet.baseToken());
     const scale = (await comet.baseScale()).toBigInt();
 
-    // Since we don't have a constraint to set Comet reserves, we'll be transferring 100 base tokens to Comet from an actor
-    // XXX however, this wouldn't work if reserves on testnet are negative
-    await betty.transferErc20(baseToken.address, comet.address, 100n * scale);
+    // Since we don't have a constraint to set Comet reserves, we'll be transferring 100K base tokens to Comet from an actor
+    // XXX however, this wouldn't work if reserves on testnet are too negative
+    await betty.transferErc20(baseToken.address, comet.address, 100000n * scale);
     const cometBaseBalance = await baseToken.balanceOf(comet.address);
 
     expect(await comet.governor()).to.equal(timelock.address);

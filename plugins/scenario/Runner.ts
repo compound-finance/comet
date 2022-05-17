@@ -127,7 +127,7 @@ export class Runner<T, U, R> {
       numSolutionSets,
       elapsed: Date.now() - startTime,
       error: err || null,
-      trace: err ? err.stack : null,
+      trace: err && err.stack ? err.stack : err,
       diff, // XXX can we move this into parent?
     };
   }
