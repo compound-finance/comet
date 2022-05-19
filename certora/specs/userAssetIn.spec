@@ -62,7 +62,6 @@ rule check_update_UserCollateral(address account, address asset, uint128 initial
     uint16 assetIn_ = getAssetinOfUser(account);
     uint8 assetOffset_ = getAssetOffsetByAsset(asset);
     bool flagUserAsset_ = call_isInAsset(assetIn_, assetOffset_);
-    require assetOffset_ < 16; // This line should be added to make the rule pass
 
     assert (initialUserBalance == 0 && finalUserBalance > 0) => flagUserAsset_, "Balance changed from 0 to non zero, yet the getter retrieve false";
     assert (initialUserBalance > 0 && finalUserBalance == 0) => !flagUserAsset_, "Balance changed from non zero to 0, yet the getter retrieve true";

@@ -36,7 +36,7 @@ methods {
     getTotalsSupplyAsset(address asset) returns (uint128) envfree  
     getAssetSupplyCapByAddress(address) returns (uint128) envfree
     baseBalanceOf(address) returns (int104) envfree
-    getReserves() returns (int) envfree
+    getReserves() returns (int)
     targetReserves() returns (uint256) envfree
     initializeStorage() 
 
@@ -209,9 +209,9 @@ rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f
 
     require !accrueWasCalled(e) ;
 
-    uint256 balance_pre = tokenBalanceOf(_baseToken,currentContract);
+    uint256 balance_pre = tokenBalanceOf(_baseToken, currentContract);
     f(e,args) ;
-    uint256 balance_post = tokenBalanceOf(_baseToken,currentContract);
+    uint256 balance_post = tokenBalanceOf(_baseToken, currentContract);
 
     assert balance_post != balance_pre => accrueWasCalled(e);
 }

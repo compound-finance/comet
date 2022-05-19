@@ -173,9 +173,9 @@ rule absorb_reserves_decrease(address absorber, address account) {
     require accounts[0] == account;
     require accounts.length == 1;
 
-    int pre = getReserves();
+    int pre = getReserves(e);
     absorb(e, absorber, accounts);
-    int post = getReserves();
+    int post = getReserves(e);
 
     assert pre >= post;
 }

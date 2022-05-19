@@ -44,9 +44,9 @@ import "comet.spec"
 rule withdraw_reserves_decreases(address to, uint amount){
     env e;
 
-    int256 before = getReserves();
+    int256 before = getReserves(e);
     withdrawReserves(e,to,amount);
-    int256 after = getReserves();
+    int256 after = getReserves(e);
 
     assert (amount > 0 && to != currentContract) => before > after;
 }
@@ -87,9 +87,9 @@ rule withdraw_reserves_monotonicity(address to){
     require to != currentContract && amount1 > 0;
 
     withdrawReserves(e,to,amount1);
-        int reserves1 = getReserves();
+        int reserves1 = getReserves(e);
     withdrawReserves(e,to,amount2) at init;
-        int reserves2 = getReserves();
+        int reserves2 = getReserves(e);
 
     assert amount2 > amount1 => reserves1 > reserves2;
 }
