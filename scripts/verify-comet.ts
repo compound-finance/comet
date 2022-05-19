@@ -8,8 +8,6 @@ import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManag
 import { Configurator } from '../build/types';
 import { ConfigurationStruct } from '../build/types/CometFactory';
 
-const delay = ms => new Promise(res => setTimeout(res, ms));
-
 async function verifyContract(address: string, constructorArguments) {
   try {
     return await hre.run('verify:verify', {
@@ -43,8 +41,6 @@ async function main() {
     verifyContracts: !isDevelopment,
     debug: true,
   });
-
-  let signers = await dm.hre.ethers.getSigners();
 
   const configurator = await dm.contract('configurator') as Configurator;
   let config: ConfigurationStruct = await configurator.getConfiguration();

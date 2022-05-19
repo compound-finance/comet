@@ -12,8 +12,6 @@ import {
 import { utils } from 'ethers';
 import { CometInterface, GovernorSimple } from '../build/types';
 
-const delay = ms => new Promise(res => setTimeout(res, ms));
-
 /**
  * Creates and queues a proposal that updates some `Comet` configuration and then deploys
  * a new version and upgrades to it.
@@ -38,8 +36,8 @@ async function main() {
   const configurator = await dm.contract('configurator') as Configurator;
   const governorAsAdmin = governor.connect(admin);
 
-  const setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(["address"], [signers[1].address]);
-  const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
+  const setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(['address'], [signers[1].address]);
+  const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, comet.address]);
   let tx = await (await governorAsAdmin.propose(
     [
       configurator.address,
@@ -50,8 +48,8 @@ async function main() {
       0,
     ],
     [
-      "setPauseGuardian(address)",
-      "deployAndUpgradeTo(address,address)",
+      'setPauseGuardian(address)',
+      'deployAndUpgradeTo(address,address)',
     ],
     [
       setPauseGuardianCalldata,
