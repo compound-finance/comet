@@ -1,6 +1,6 @@
 import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../plugins/deployment_manager/Migration';
-import { Bulker, Bulker__factory, CometRewards, CometRewards__factory, CometInterface, GovernorSimple } from '../../../build/types';
+import { Bulker, Bulker__factory, CometRewards, CometRewards__factory, CometInterface, SimpleTimelock } from '../../../build/types';
 
 interface Vars {
   bulker: string,
@@ -13,7 +13,7 @@ migration<Vars>('1651257129_bulker_and_rewards', {
 
     const comet = await deploymentManager.contract('comet') as CometInterface;
     const weth = await deploymentManager.contract('weth');
-    const governor = await deploymentManager.contract('governor') as GovernorSimple;
+    const timelock = await deploymentManager.contract('timelock') as SimpleTimelock;
 
     // Deploy new Bulker and Rewards contracts
     const newBulker = await deploymentManager.deploy<Bulker, Bulker__factory, [string, string]>(
@@ -23,7 +23,7 @@ migration<Vars>('1651257129_bulker_and_rewards', {
 
     const newRewards = await deploymentManager.deploy<CometRewards, CometRewards__factory, [string]>(
       'CometRewards.sol',
-      [governor.address]
+      [timelock.address]
     );
 
     return {

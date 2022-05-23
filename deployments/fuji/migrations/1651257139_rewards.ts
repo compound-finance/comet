@@ -1,6 +1,6 @@
 import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../plugins/deployment_manager/Migration';
-import { CometRewards, CometRewards__factory, GovernorSimple } from '../../../build/types';
+import { CometRewards, CometRewards__factory, SimpleTimelock } from '../../../build/types';
 
 interface Vars {
   rewards: string,
@@ -11,11 +11,11 @@ migration<Vars>('1651257139_rewards', {
   prepare: async (deploymentManager: DeploymentManager) => {
     await deploymentManager.hre.run('compile');
 
-    const governor = await deploymentManager.contract('governor') as GovernorSimple;
+    const timelock = await deploymentManager.contract('timelock') as SimpleTimelock;
 
     const newRewards = await deploymentManager.deploy<CometRewards, CometRewards__factory, [string]>(
       'CometRewards.sol',
-      [governor.address]
+      [timelock.address]
     );
 
     return {
