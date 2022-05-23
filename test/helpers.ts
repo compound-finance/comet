@@ -516,7 +516,7 @@ type Portfolio = {
   };
 }
 
-export async function portfolio({ comet, base, tokens }, account): Promise<Portfolio>  {
+export async function portfolio({ comet, base, tokens }, account): Promise<Portfolio> {
   const internal = { [base]: await baseBalanceOf(comet, account) };
   const external = { [base]: BigInt(await tokens[base].balanceOf(account)) };
   for (const symbol in tokens) {

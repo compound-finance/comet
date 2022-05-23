@@ -1,4 +1,4 @@
-import { defaultAssets, expect, exp, fastForward, makeProtocol, makeRewards, objectify, wait } from './helpers';
+import { defaultAssets, expect, exp, fastForward, makeProtocol, makeRewards, objectify, wait, event } from './helpers';
 
 describe('CometRewards', () => {
   describe('claim + supply', () => {
@@ -24,8 +24,17 @@ describe('CometRewards', () => {
       await fastForward(86400);
 
       expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
-      const _tx = await wait(rewards.claim(comet.address, alice.address, true));
+      const txn = await wait(rewards.claim(comet.address, alice.address, true));
       expect(await COMP.balanceOf(alice.address)).to.be.equal(exp(86400, 18));
+
+      // Note: First event is an ERC20 Transfer event
+      expect(event(txn, 1)).to.be.deep.equal({
+        RewardClaimed: {
+          recipient: alice.address,
+          token: COMP.address,
+          amount: exp(86400, 18),
+        }
+      });
     });
 
     it('can construct and claim rewards for owner with downscale', async () => {
@@ -52,8 +61,17 @@ describe('CometRewards', () => {
       await fastForward(86400);
 
       expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
-      const _tx = await wait(rewards.claim(comet.address, alice.address, true));
+      const txn = await wait(rewards.claim(comet.address, alice.address, true));
       expect(await COMP.balanceOf(alice.address)).to.be.equal(exp(86400, 5));
+
+      // Note: First event is an ERC20 Transfer event
+      expect(event(txn, 1)).to.be.deep.equal({
+        RewardClaimed: {
+          recipient: alice.address,
+          token: COMP.address,
+          amount: exp(86400, 5),
+        }
+      });
     });
 
     it('can construct and claim rewards for owner with same scale', async () => {
@@ -80,8 +98,17 @@ describe('CometRewards', () => {
       await fastForward(86400);
 
       expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
-      const _tx = await wait(rewards.claim(comet.address, alice.address, true));
+      const txn = await wait(rewards.claim(comet.address, alice.address, true));
       expect(await COMP.balanceOf(alice.address)).to.be.equal(exp(86400, 6));
+
+      // Note: First event is an ERC20 Transfer event
+      expect(event(txn, 1)).to.be.deep.equal({
+        RewardClaimed: {
+          recipient: alice.address,
+          token: COMP.address,
+          amount: exp(86400, 6),
+        }
+      });
     });
 
     it('does not overpay when claiming more than once', async () => {
@@ -455,6 +482,44 @@ describe('CometRewards', () => {
         rewards
           .connect(alice)
           ._withdrawToken(COMP.address, alice.address, 2e6)
+      ).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
+    });
+  });
+
+  describe('_transferGovernor', () => {
+    it('allows governor to transfer governor', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { COMP },
+        users: [alice],
+      } = await makeProtocol();
+      const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
+
+      const txn = await wait(rewards._transferGovernor(alice.address));
+
+      expect(await rewards.governor()).to.be.equal(alice.address);
+      expect(event(txn, 0)).to.be.deep.equal({
+        GovernorTransferred: {
+          oldGovernor: governor.address,
+          newGovernor: alice.address,
+        }
+      });
+    });
+
+    it('does not allow anyone but governor to transfer governor', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { COMP },
+        users: [alice],
+      } = await makeProtocol();
+      const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
+
+      await expect(
+        rewards
+          .connect(alice)
+          ._transferGovernor(alice.address)
       ).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
     });
   });
