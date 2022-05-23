@@ -85,7 +85,7 @@ contract CometRewards {
 
     /**
      * @notice Transfers the governor rights to a new address
-     * @param newGovernor The new address of the new governor
+     * @param newGovernor The address of the new governor
      */
     function _transferGovernor(address newGovernor) external {
         if (msg.sender != governor) revert NotPermitted(msg.sender);
