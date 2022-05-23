@@ -17,13 +17,18 @@ contract CometRewards {
     }
 
     /// @notice The governor address which controls the contract
-    address public immutable governor;
+    address public governor;
 
     /// @notice Reward token address per Comet instance
     mapping(address => RewardConfig) public rewardConfig;
 
     /// @notice Rewards claimed per Comet instance and user account
     mapping(address => mapping(address => uint)) public rewardsClaimed;
+
+    /** Custom events **/
+
+    event GovernorTransferred(address oldGovernor, address newGovernor);
+    event RewardClaimed(address indexed recipient, address indexed token, uint256 amount);
 
     /** Custom errors **/
 
@@ -79,6 +84,18 @@ contract CometRewards {
     }
 
     /**
+     * @notice Transfers the governor rights to a new address
+     * @param newGovernor The address of the new governor
+     */
+    function _transferGovernor(address newGovernor) external {
+        if (msg.sender != governor) revert NotPermitted(msg.sender);
+
+        address oldGovernor = governor;
+        governor = newGovernor;
+        emit GovernorTransferred(oldGovernor, newGovernor);
+    }
+
+    /**
      * @notice Claim rewards of token type from a comet instance to owner address
      * @param comet The protocol instance
      * @param src The owner to claim for
@@ -122,6 +139,8 @@ contract CometRewards {
             uint owed = accrued - claimed;
             rewardsClaimed[comet][src] = accrued;
             doTransferOut(config.token, to, owed);
+
+            emit RewardClaimed(to, config.token, owed);
         }
     }
 
