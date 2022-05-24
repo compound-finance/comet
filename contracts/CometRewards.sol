@@ -101,7 +101,7 @@ contract CometRewards {
     }
 
     /**
-     * @notice Calculates the amount of a reward token owed to an account.
+     * @notice Calculates the amount of a reward token owed to an account
      * @param comet The protocol instance
      * @param account The account to check rewards for
      */
