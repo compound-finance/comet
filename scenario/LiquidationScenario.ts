@@ -32,11 +32,11 @@ scenario(
   'Comet#liquidation > isLiquidatable=true for underwater position',
   {
     tokenBalances: {
-      $comet: { $base: 100 },
+      $comet: { $base: 1000 },
     },
     cometBalances: {
-      albert: { $base: -10 },
-      betty: { $base: 10 },
+      albert: { $base: -1000 },
+      betty: { $base: 1000 },
     },
   },
   async ({ comet, actors }, world) => {
@@ -103,9 +103,9 @@ scenario(
     cometBalances: {
       albert: {
         $base: -1000,
-        $asset0: .1
+        $asset0: .001
       },
-      betty: { $base: 1000 }
+      betty: { $base: 10 }
     },
     upgrade: true
   },

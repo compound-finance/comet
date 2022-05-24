@@ -148,16 +148,18 @@ async function searchLogs(
       addressContracts.set(address, code !== '0x');
     }),
   ]);
-  for (let address of Array.from(addressContracts.keys())) {
+  for (let address of addressContracts.keys()) {
     if (addressContracts.get(address)) {
       // Remove contracts from search
       balancesDict.delete(address);
     }
   }
-  let max = getMaxEntry(Array.from(balancesDict.entries()));
-  if (max[1].gte(amount)) {
-    return max[0];
-  } else {
-    return searchLogs(recentLogs, amount, tokenContract, ethers, (logOffset ?? 0) + 20);
+  let balances = Array.from(balancesDict.entries());
+  if (balances.length > 0) {
+    let max = getMaxEntry(balances);
+    if (max[1].gte(amount)) {
+      return max[0];
+    }
   }
+  return searchLogs(recentLogs, amount, tokenContract, ethers, (logOffset ?? 0) + 20);
 }
