@@ -16,6 +16,11 @@ contract CometRewards {
         bool shouldUpscale;
     }
 
+    struct RewardOwed {
+        address token;
+        uint owed;
+    }
+
     /// @notice The governor address which controls the contract
     address public governor;
 
@@ -142,6 +147,30 @@ contract CometRewards {
 
             emit RewardClaimed(to, config.token, owed);
         }
+    }
+
+    /**
+     * @notice Calculates the amount of a reward token owed to an account.
+     * @param comet The protocol instance
+     * @param account The account to check rewards for
+     */
+    function getRewardOwed(address comet, address account) external returns (RewardOwed memory) {
+        RewardConfig memory config = rewardConfig[comet];
+        if (config.token == address(0)) revert NotSupported(comet);
+
+        CometInterface(comet).accrueAccount(account);
+
+        uint claimed = rewardsClaimed[comet][account];
+        uint accrued = CometInterface(comet).baseTrackingAccrued(account);
+
+        if (config.shouldUpscale) {
+            accrued *= config.rescaleFactor;
+        } else {
+            accrued /= config.rescaleFactor;
+        }
+
+        uint owed = accrued > claimed ? accrued - claimed : 0;
+        return RewardOwed(config.token, owed);
     }
 
     /**
