@@ -101,6 +101,24 @@ contract CometRewards {
     }
 
     /**
+     * @notice Calculates the amount of a reward token owed to an account.
+     * @param comet The protocol instance
+     * @param account The account to check rewards for
+     */
+    function getRewardOwed(address comet, address account) external returns (RewardOwed memory) {
+        RewardConfig memory config = rewardConfig[comet];
+        if (config.token == address(0)) revert NotSupported(comet);
+
+        CometInterface(comet).accrueAccount(account);
+
+        uint claimed = rewardsClaimed[comet][account];
+        uint accrued = getRewardAccrued(comet, account, config);
+
+        uint owed = accrued > claimed ? accrued - claimed : 0;
+        return RewardOwed(config.token, owed);
+    }
+
+    /**
      * @notice Claim rewards of token type from a comet instance to owner address
      * @param comet The protocol instance
      * @param src The owner to claim for
@@ -134,12 +152,8 @@ contract CometRewards {
         }
 
         uint claimed = rewardsClaimed[comet][src];
-        uint accrued = CometInterface(comet).baseTrackingAccrued(src);
-        if (config.shouldUpscale) {
-            accrued *= config.rescaleFactor;
-        } else {
-            accrued /= config.rescaleFactor;
-        }
+        uint accrued = getRewardAccrued(comet, src, config);
+
         if (accrued > claimed) {
             uint owed = accrued - claimed;
             rewardsClaimed[comet][src] = accrued;
@@ -150,17 +164,9 @@ contract CometRewards {
     }
 
     /**
-     * @notice Calculates the amount of a reward token owed to an account.
-     * @param comet The protocol instance
-     * @param account The account to check rewards for
+     * @dev Calculates the reward accrued for an account on a Comet deployment
      */
-    function getRewardOwed(address comet, address account) external returns (RewardOwed memory) {
-        RewardConfig memory config = rewardConfig[comet];
-        if (config.token == address(0)) revert NotSupported(comet);
-
-        CometInterface(comet).accrueAccount(account);
-
-        uint claimed = rewardsClaimed[comet][account];
+    function getRewardAccrued(address comet, address account, RewardConfig memory config) internal view returns (uint) {
         uint accrued = CometInterface(comet).baseTrackingAccrued(account);
 
         if (config.shouldUpscale) {
@@ -168,9 +174,7 @@ contract CometRewards {
         } else {
             accrued /= config.rescaleFactor;
         }
-
-        uint owed = accrued > claimed ? accrued - claimed : 0;
-        return RewardOwed(config.token, owed);
+        return accrued;
     }
 
     /**
