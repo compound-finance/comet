@@ -39,9 +39,9 @@ migration<Vars>('1653357106_mint_to_fauceteer', {
 
     // UNI
     const UNI = contracts.get('UNI');
-    const uniDecimals = await UNI.decimals();
+    const uniTotalSupply = await UNI.totalSupply();
     console.log(`minting UNI@${UNI.address} to fauceteer@${fauceteerAddress}`);
-    await UNI.mint(fauceteerAddress, exp(100_000_000, uniDecimals)); // mint 100M UNI
+    await UNI.mint(fauceteerAddress, uniTotalSupply * .01); // UNI contract only allows minting 2% of total supply
     console.log(`UNI.balanceOf(fauceteerAddress): ${await UNI.balanceOf(fauceteerAddress)}`);
 
     // LINK
