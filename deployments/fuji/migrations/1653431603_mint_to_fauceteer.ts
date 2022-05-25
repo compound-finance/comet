@@ -44,6 +44,6 @@ migration<Vars>('1653431603_mint_to_fauceteer', {
 
   },
   enacted: async (deploymentManager: DeploymentManager) => {
-    return false;
+    return true;
   },
 });

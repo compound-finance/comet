@@ -62,20 +62,8 @@ migration('1644432723_deploy_fuji', {
         signerAddress
       )
     );
-    await wait(usdc.configureMinter(signerAddress, exp(20000, 6)));
-    await wait(usdc.mint(signerAddress, exp(10000, 6)));
 
     let wbtc = await deploymentManager.clone(cloneAddr.wbtc, [], cloneNetwork);
-    // Give signer 10000 WBTC
-    await wait(
-      wbtc.mint(
-        signerAddress,
-        exp(10000, 8),
-        '0x0000000000000000000000000000000000000000',
-        0,
-        '0x0000000000000000000000000000000000000000000000000000000000000000'
-      )
-    );
 
     let wavax = await deploymentManager.clone(cloneAddr.wavax, [], cloneNetwork);
     // Give admin 0.01 WAVAX tokens [this is a precious resource here!]
