@@ -12,6 +12,7 @@ migration<Vars>('1653357106_mint_to_fauceteer', {
     console.log(`Minting as signer: ${signerAddress}`);
 
     const contracts = await deploymentManager.contracts();
+    const timelock = contracts.get('timelock');
     const fauceteer = contracts.get('fauceteer');
     const fauceteerAddress = fauceteer.address;
 
@@ -33,9 +34,14 @@ migration<Vars>('1653357106_mint_to_fauceteer', {
     // COMP
     const COMP = contracts.get('COMP');
     const signerCompBalance = await COMP.balanceOf(signerAddress);
+
     console.log(`transferring ${signerCompBalance.div(2)} COMP@${COMP.address} to fauceteer@${fauceteerAddress}`);
     await COMP.transfer(fauceteerAddress, signerCompBalance.div(2)); // transfer half of signer's balance
     console.log(`COMP.balanceOf(fauceteerAddress): ${await COMP.balanceOf(fauceteerAddress)}`);
+
+    console.log(`transferring ${signerCompBalance.div(2)} COMP@${COMP.address} to timelock@${timelock.address}`);
+    await COMP.transfer(timelock.address, signerCompBalance.div(2)); // transfer half of signer's balance
+    console.log(`COMP.balanceOf(timelock.address): ${await COMP.balanceOf(timelock.address)}`);
 
     // UNI
     const UNI = contracts.get('UNI');
