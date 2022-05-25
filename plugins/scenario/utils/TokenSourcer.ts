@@ -60,7 +60,6 @@ async function addTokens(
   offsetBlocks?: number
 ) {
   let ethers = hre.ethers;
-  let signer = (await ethers.getSigners())[0];
   block = block ?? (await ethers.provider.getBlockNumber());
   let tokenContract = new ethers.Contract(asset, erc20, ethers.provider);
   let filter = tokenContract.filters.Transfer();
@@ -81,12 +80,8 @@ async function addTokens(
     });
     let impersonatedSigner = await ethers.getSigner(holder);
     let impersonatedProviderTokenContract = tokenContract.connect(impersonatedSigner);
-    // Give impersonated address ETH for TX
-    await signer.sendTransaction({
-      to: impersonatedSigner.address,
-      value: ethers.utils.parseEther('1.0'),
-    });
-    await impersonatedProviderTokenContract.transfer(address, amount);
+    await hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+    await impersonatedProviderTokenContract.transfer(address, amount, {gasPrice: 0});
     await hre.network.provider.request({
       method: 'hardhat_stopImpersonatingAccount',
       params: [holder],
@@ -138,22 +133,11 @@ async function searchLogs(
     toAddresses.add(log.args![1]);
   });
   let balancesDict = new Map<string, BigNumber>();
-  let addressContracts = new Map<string, boolean>();
   await Promise.all([
     ...Array.from(toAddresses).map(async (address) => {
       balancesDict.set(address, await tokenContract.balanceOf(address));
-    }),
-    ...Array.from(toAddresses).map(async (address) => {
-      let code = await ethers.provider.getCode(address);
-      addressContracts.set(address, code !== '0x');
-    }),
+    })
   ]);
-  for (let address of addressContracts.keys()) {
-    if (addressContracts.get(address)) {
-      // Remove contracts from search
-      balancesDict.delete(address);
-    }
-  }
   let balances = Array.from(balancesDict.entries());
   if (balances.length > 0) {
     let max = getMaxEntry(balances);
