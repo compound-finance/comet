@@ -37,12 +37,12 @@ migration<Vars>('1653357106_mint_to_fauceteer', {
     await COMP.transfer(fauceteerAddress, signerCompBalance.div(2)); // transfer half of signer's balance
     console.log(`COMP.balanceOf(fauceteerAddress): ${await COMP.balanceOf(fauceteerAddress)}`);
 
-    // XXX enable minting for UNI
-    // const UNI = contracts.get('UNI');
-    // const uniDecimals = await UNI.decimals();
-    // console.log(`minting UNI@${UNI.address} to fauceteer@${fauceteerAddress}`);
-    // await UNI.mint(fauceteerAddress, exp(100_000_000, uniDecimals)); // mint 100M UNI
-    // console.log(`UNI.balanceOf(fauceteerAddress): ${await UNI.balanceOf(fauceteerAddress)}`);
+    // UNI
+    const UNI = contracts.get('UNI');
+    const uniDecimals = await UNI.decimals();
+    console.log(`minting UNI@${UNI.address} to fauceteer@${fauceteerAddress}`);
+    await UNI.mint(fauceteerAddress, exp(100_000_000, uniDecimals)); // mint 100M UNI
+    console.log(`UNI.balanceOf(fauceteerAddress): ${await UNI.balanceOf(fauceteerAddress)}`);
 
     // LINK
     const LINK = contracts.get('LINK');
@@ -56,6 +56,6 @@ migration<Vars>('1653357106_mint_to_fauceteer', {
   enact: async (deploymentManager: DeploymentManager, vars: Vars) => {
   },
   enacted: async (deploymentManager: DeploymentManager) => {
-    return false;
+    return true; // XXX cannot be run independently
   },
 });
