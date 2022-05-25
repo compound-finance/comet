@@ -49,7 +49,6 @@ migration('1644432723_deploy_fuji', {
 
     await wait(await usdcProxy.changeAdmin(usdcProxyAdmin.address));
     usdc = usdcImplementation.attach(usdcProxy.address);
-    // Give signer 10,000 USDC
     await wait(
       usdc.initialize(
         'USD Coin',
