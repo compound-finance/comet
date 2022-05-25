@@ -23,7 +23,8 @@ let cloneAddr = {
 
 migration('1644388553_deploy_kovan', {
   prepare: async (deploymentManager: DeploymentManager) => {
-    let [signer] = await deploymentManager.hre.ethers.getSigners();
+    const { ethers } = deploymentManager.hre;
+    let [signer] = await ethers.getSigners();
     let signerAddress = await signer.getAddress();
 
     let usdcProxyAdminArgs: [] = [];
@@ -65,16 +66,12 @@ migration('1644388553_deploy_kovan', {
         signerAddress
       )
     );
-    await wait(usdc.configureMinter(signerAddress, exp(20000, 6)));
-    await wait(usdc.mint(signerAddress, exp(10000, 6)));
 
     let wbtc = await deploymentManager.clone(
       cloneAddr.wbtc,
       [],
       cloneNetwork
     );
-    // Give signer 1000 WBTC
-    await wait(wbtc.mint(signerAddress, exp(1000, 8)));
 
     let weth = await deploymentManager.clone(
       cloneAddr.weth,
@@ -90,9 +87,12 @@ migration('1644388553_deploy_kovan', {
       cloneNetwork
     );
 
+    const blockNumber = await ethers.provider.getBlockNumber();
+    const blockTimestamp =  (await ethers.provider.getBlock(blockNumber)).timestamp;
+
     let uni = await deploymentManager.clone(
       cloneAddr.uni,
-      [signerAddress, signerAddress, 99999999999], // XXX make this a real value to allow minting
+      [signerAddress, signerAddress, blockTimestamp + 10],
       cloneNetwork
     );
 
