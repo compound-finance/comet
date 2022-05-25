@@ -10,6 +10,7 @@ interface SourceTokenParameters {
   amount: number | bigint;
   asset: string;
   address: string;
+  blacklist: string[] | undefined;
 }
 
 /// ETH balance is used for transfer out when amount is negative
@@ -18,13 +19,14 @@ export async function sourceTokens({
   amount: amount_,
   asset,
   address,
+  blacklist,
 }: SourceTokenParameters) {
   let amount = BigNumber.from(amount_);
 
   if (amount.isNegative()) {
     await removeTokens(hre, amount.abs(), asset, address);
   } else {
-    await addTokens(hre, amount, asset, address);
+    await addTokens(hre, amount, asset, address, blacklist);
   }
 }
 
@@ -56,6 +58,7 @@ async function addTokens(
   amount: BigNumber,
   asset: string,
   address: string,
+  blacklist?: string[],
   block?: number,
   offsetBlocks?: number
 ) {
@@ -72,7 +75,7 @@ async function addTokens(
   if (err) {
     throw err;
   }
-  let holder = await searchLogs(recentLogs, amount, tokenContract, ethers);
+  let holder = await searchLogs(recentLogs, amount, tokenContract, ethers, blacklist);
   if (holder) {
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
@@ -88,7 +91,7 @@ async function addTokens(
     });
   } else {
     if ((offsetBlocks ?? 0) > 40000) throw "Error: Couldn't find sufficient tokens";
-    await addTokens(hre, amount, asset, address, block, (offsetBlocks ?? 0) + blocksDelta);
+    await addTokens(hre, amount, asset, address, blacklist, block, (offsetBlocks ?? 0) + blocksDelta);
   }
 }
 
@@ -125,7 +128,8 @@ async function searchLogs(
   amount: BigNumber,
   tokenContract: Contract,
   ethers: HardhatRuntimeEnvironment['ethers'],
-  logOffset?: number
+  blacklist?: string[],
+  logOffset?: number,
 ): Promise<string | null> {
   let toAddresses = new Set<string>();
   if ((logOffset ?? 0) >= recentLogs.length) return null;
@@ -138,6 +142,9 @@ async function searchLogs(
       balancesDict.set(address, await tokenContract.balanceOf(address));
     })
   ]);
+  for (let address of blacklist) {
+    balancesDict.delete(address);
+  }
   let balances = Array.from(balancesDict.entries());
   if (balances.length > 0) {
     let max = getMaxEntry(balances);
@@ -145,5 +152,5 @@ async function searchLogs(
       return max[0];
     }
   }
-  return searchLogs(recentLogs, amount, tokenContract, ethers, (logOffset ?? 0) + 20);
+  return searchLogs(recentLogs, amount, tokenContract, ethers, blacklist, (logOffset ?? 0) + 20);
 }
