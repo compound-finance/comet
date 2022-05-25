@@ -92,7 +92,7 @@ migration('1644388553_deploy_kovan', {
 
     let uni = await deploymentManager.clone(
       cloneAddr.uni,
-      [signerAddress, signerAddress, blockTimestamp + 10],
+      [signerAddress, signerAddress, blockTimestamp + 1000],
       cloneNetwork
     );
 
