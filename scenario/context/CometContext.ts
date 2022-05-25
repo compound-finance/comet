@@ -162,6 +162,7 @@ export class CometContext {
   ) {
     let recipientAddress = resolveAddress(recipient);
     let cometAsset = typeof asset === 'string' ? this.getAssetByAddress(asset) : asset;
+    let comet = await this.getComet();
 
     // First, try to steal from a known actor
     for (let [name, actor] of Object.entries(this.actors)) {
@@ -183,6 +184,7 @@ export class CometContext {
         amount,
         asset: cometAsset.address,
         address: recipientAddress,
+        blacklist: [comet.address],
       });
     }
   }
