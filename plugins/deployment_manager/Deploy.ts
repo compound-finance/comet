@@ -32,11 +32,14 @@ async function deployFromBuildFile(
   deployArgs: any[],
   hre: HardhatRuntimeEnvironment
 ): Promise<Contract> {
-  let [_contractName, metadata] = getPrimaryContract(buildFile);
+  let [contractName, metadata] = getPrimaryContract(buildFile);
   const [signer] = await hre.ethers.getSigners(); // TODO: Hmm?
   const contractFactory = new hre.ethers.ContractFactory(metadata.abi, metadata.bin, signer);
   const contract = await contractFactory.deploy(...deployArgs);
-  return await contract.deployed();
+  const deployed = await contract.deployed();
+  const txnCount = await signer.getTransactionCount('pending'); // XXX ethers bug not waiting for nonce?
+  debug(`Deployed ${contractName} [tx count = ${txnCount}]`);
+  return deployed;
 }
 
 async function maybeStoreCache(deployOpts: DeployOpts, contract: Contract, buildFile: BuildFile) {
@@ -85,6 +88,7 @@ export async function deploy<
   hre: HardhatRuntimeEnvironment,
   deployOpts: DeployOpts = {}
 ): Promise<C> {
+  const [signer] = await hre.ethers.getSigners(); // TODO: Hmm?
   let contractFileName = contractFile.split('/').reverse()[0];
   let contractName = contractFileName.replace('.sol', '');
   let factory = (await hre.ethers.getContractFactory(contractName)) as unknown as Factory;
@@ -114,7 +118,8 @@ export async function deploy<
 
   await maybeStoreCache(deployOpts, contract, buildFile);
 
-  debug(`Deployed ${contractName} via tx ${contract.deployTransaction?.hash}`);
+  const txnCount = await signer.getTransactionCount('pending'); // XXX ethers bug not waiting for nonce?
+  debug(`Deployed ${contractName} via tx ${contract.deployTransaction?.hash} [tx count = ${txnCount}}]`);
 
   return contract;
 }
