@@ -4,7 +4,7 @@ import { Alias, Address, BuildFile } from './Types';
 import { Aliases, getAliases, putAlias, storeAliases } from './Aliases';
 import { Cache } from './Cache';
 import { ContractMap, getContracts } from './ContractMap';
-import { Deployer, DeployOpts, deploy, deployBuild } from './Deploy';
+import { Deployer, DeployOpts, cached, cachedBuild, deploy, deployBuild } from './Deploy';
 import { fetchAndCacheContract } from './Import';
 import { Proxies, getProxies, putProxy, storeProxies } from './Proxies';
 import { getRelationConfig } from './RelationConfig';
@@ -93,6 +93,20 @@ export class DeploymentManager {
     );
   }
 
+  /* Returns a cached deployment of a contract if it exists */
+  async cached<
+    C extends Contract,
+    Factory extends Deployer<C, DeployArgs>,
+    DeployArgs extends Array<any>
+    >(contractFile: string, deployArgs: DeployArgs): Promise<C> {
+    return cached<C, Factory, DeployArgs>(contractFile, deployArgs, this.hre, this.deployOpts());
+  }
+
+  /* Returns a cached deployment from a build file, e.g. an one imported contract */
+  async cachedBuild(buildFile: BuildFile, deployArgs: any[]): Promise<Contract> {
+    return cachedBuild(buildFile, deployArgs, this.hre, this.deployOpts());
+  }
+
   /* Deploys a contract from Hardhat artifacts */
   async deploy<
     C extends Contract,
@@ -104,7 +118,7 @@ export class DeploymentManager {
 
   /* Deploys a contract from a build file, e.g. an one imported contract */
   async deployBuild(buildFile: BuildFile, deployArgs: any[]): Promise<Contract> {
-    return await deployBuild(buildFile, deployArgs, this.hre, this.deployOpts());
+    return deployBuild(buildFile, deployArgs, this.hre, this.deployOpts());
   }
 
   /* Stores a new alias, which can then be referenced via `deploymentManager.contract()` */
@@ -220,6 +234,11 @@ export class DeploymentManager {
    **/
   async readArtifact<A>(migration: Migration<A>): Promise<A> {
     return await this.cache.readCache(getArtifactSpec(migration));
+  }
+
+  async cloned<C extends Contract>(address: string, args: any[], network?: string): Promise<C> {
+    let buildFile = await this.import(address, network);
+    return await this.cachedBuild(buildFile, args) as C;
   }
 
   async clone<C extends Contract>(address: string, args: any[], network?: string): Promise<C> {

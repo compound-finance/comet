@@ -1,7 +1,7 @@
 import { Contract, Signer } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { Cache, FileSpec } from './Cache';
+import { Cache, FileSpec, FindSpec } from './Cache';
 import { ABI, Address, Alias, BuildFile } from './Types';
 import { Aliases, getAliases } from './Aliases';
 import { Proxies, getProxies } from './Proxies';
@@ -92,12 +92,21 @@ function getFileSpec(address: Address): FileSpec {
   return { rel: ['contracts', address + '.json'] };
 }
 
+function getFindSpec(): FindSpec {
+  return { rel: ['contracts'], key: p => p.match(/(0x[a-f0-9]{40}).json/)[1] };
+}
+
 export async function getBuildFile(cache: Cache, address: Address): Promise<BuildFile> {
   return await cache.readCache<BuildFile>(getFileSpec(address));
 }
 
 export async function storeBuildFile(cache: Cache, address: Address, buildFile: BuildFile) {
   await cache.storeCache(getFileSpec(address), buildFile);
+}
+
+export async function getAddressForContract(cache: Cache, contract: string) {
+  // XXX searching just by name is error-prone, but this is mainly a debugging tool
+  return cache.findCacheKey(getFindSpec(), v => v.contract === contract);
 }
 
 async function getRequiredBuildFile(

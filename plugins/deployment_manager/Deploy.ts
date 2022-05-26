@@ -6,7 +6,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import { putAlias } from './Aliases';
 import { Cache } from './Cache';
-import { storeBuildFile } from './ContractMap';
+import { getAddressForContract, storeBuildFile } from './ContractMap';
 import { Alias, BuildFile } from './Types';
 import { debug, getPrimaryContract } from './Utils';
 import { verifyContract } from './Verify';
@@ -70,6 +70,53 @@ async function getBuildFileFromArtifacts(
   };
 
   return buildFile;
+}
+
+/**
+ * Reuses a cached deployment of a contract.
+ */
+export async function cached<
+  C extends Contract,
+  _Factory extends Deployer<C, DeployArgs>,
+  DeployArgs extends Array<any>
+>(
+  contractFile: string,
+  _deployArgs: DeployArgs,
+  hre: HardhatRuntimeEnvironment,
+  deployOpts: DeployOpts = {},
+): Promise<C> {
+  const contractFileName = contractFile.split('/').reverse()[0];
+  const contractName = contractFileName.replace('.sol', '');
+
+  // Note: we accept the same args as deploy so that migrations can simply swap out
+  //  however we do NOT currently check that _deployArgs match the deployment
+  debug(`Finding ${contractName} IGNORING args`, _deployArgs);
+  let address = await getAddressForContract(deployOpts.cache, contractName);
+  debug(`Found ${contractName} at ${address}`);
+
+  return (await hre.ethers.getContractAt(contractName, address)) as C;
+}
+
+/**
+ * Reuses a cached deployment of a contract.
+ */
+export async function cachedBuild(
+  buildFile: BuildFile,
+  _deployArgs: any[],
+  hre: HardhatRuntimeEnvironment,
+  deployOpts: DeployOpts = {},
+): Promise<Contract> {
+  const [contractName, metadata] = getPrimaryContract(buildFile);
+  const [signer] = await hre.ethers.getSigners(); // TODO: Hmm?
+  const contractFactory = new hre.ethers.ContractFactory(metadata.abi, metadata.bin, signer);
+
+  // Note: we accept the same args as deploy so that migrations can simply swap out
+  //  however we do NOT currently check that _deployArgs match the deployment
+  debug(`Finding ${contractName} [build] IGNORING args`, _deployArgs);
+  let address = await getAddressForContract(deployOpts.cache, contractName);
+  debug(`Found ${contractName} [build] at ${address}`);
+
+  return contractFactory.attach(address);
 }
 
 /**
