@@ -1,9 +1,10 @@
 import * as fs from 'fs/promises';
 import * as nodepath from 'path';
 import { inspect } from 'util';
-import { fileExists, objectFromMap, objectToMap } from './Utils';
+import { fileExists, ls, objectFromMap, objectToMap } from './Utils';
 
 export type FileSpec = string | string[] | { rel: string | string[] };
+export type FindSpec = { rel: string[], key: (string) => string };
 
 function compose<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C {
   return (x) => g(f(x));
@@ -114,6 +115,15 @@ export class Cache {
       return transformer(await fs.readFile(filePath, 'utf8'));
     } else {
       return transformer(undefined);
+    }
+  }
+
+  async findCacheKey(spec: FindSpec, match: (any) => boolean): Promise<string | undefined> {
+    for (const name of await ls(this.getFilePath(spec))) {
+      const cached = await this.readCache({ rel: spec.rel.concat(name) });
+      if (match(cached)) {
+        return spec.key(name);
+      }
     }
   }
 

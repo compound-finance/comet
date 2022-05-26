@@ -33,6 +33,10 @@ export async function fileExists(path: string): Promise<boolean> {
   }
 }
 
+export async function ls(path: string): Promise<string[]> {
+  return fs.readdir(path);
+}
+
 export function getPrimaryContract(buildFile: BuildFile): [string, ContractMetadata] {
   let targetContract = buildFile.contract;
   if (!targetContract) {
