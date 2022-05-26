@@ -27,6 +27,13 @@ import { ExtConfigurationStruct } from '../../build/types/CometExt';
 import { DeployedContracts, DeployProxyOption, ProtocolConfiguration } from './index';
 import { getConfiguration } from './NetworkConfiguration';
 
+function sleepAndLog(ms: number) {
+  return new Promise((resolve) => {
+    console.log(`sleeping for ${ms}ms`);
+    setTimeout(resolve, ms);
+  });
+}
+
 export async function deployNetworkComet(
   deploymentManager: DeploymentManager,
   deployProxy: DeployProxyOption = { deployCometProxy: true, deployConfiguratorProxy: true },
@@ -41,10 +48,14 @@ export async function deployNetworkComet(
     []
   );
 
+  await sleepAndLog(1000);
+
   let timelock = await deploymentManager.deploy<SimpleTimelock, SimpleTimelock__factory, [string]>(
     'test/SimpleTimelock.sol',
     [governorSimple.address]
   );
+
+  await sleepAndLog(1000);
 
   // Initialize the storage of GovernorSimple
   await governorSimple.initialize(timelock.address, [admin]);
@@ -78,6 +89,8 @@ export async function deployNetworkComet(
   const extConfiguration = {
     symbol32: deploymentManager.hre.ethers.utils.formatBytes32String(symbol),
   };
+  await sleepAndLog(1000);
+
   const cometExt = await deploymentManager.deploy<CometExt, CometExt__factory, [ExtConfigurationStruct]>(
     'CometExt.sol',
     [extConfiguration]
@@ -103,15 +116,22 @@ export async function deployNetworkComet(
     targetReserves,
     assetConfigs,
   };
+
+  await sleepAndLog(1000);
+
   const comet = await deploymentManager.deploy<Comet, Comet__factory, [ConfigurationStruct]>(
     'Comet.sol',
     [configuration]
   );
 
+  await sleepAndLog(1000);
+
   const cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
     'CometFactory.sol',
     []
   );
+
+  await sleepAndLog(1000);
 
   const configurator = await deploymentManager.deploy<Configurator, Configurator__factory, []>(
     'Configurator.sol',
