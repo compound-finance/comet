@@ -62,11 +62,11 @@ scenario(
   'Comet#liquidation > prevents liquidation when absorb is paused',
   {
     tokenBalances: {
-      $comet: { $base: 100 },
+      $comet: { $base: 1000 },
     },
     cometBalances: {
-      albert: { $base: -10 },
-      betty: { $base: 10 }
+      albert: { $base: -1000 },
+      betty: { $base: 1000 }
     },
     pause: {
       absorbPaused: true,
@@ -98,14 +98,14 @@ scenario(
   'Comet#liquidation > allows liquidation of underwater positions',
   {
     tokenBalances: {
-      $comet: { $base: 100 },
+      $comet: { $base: 1000 },
     },
     cometBalances: {
       albert: {
-        $base: -10,
-        $asset0: .001
+        $base: -1000,
+        $asset0: .1
       },
-      betty: { $base: 10 }
+      betty: { $base: 1000 }
     },
     upgrade: true
   },

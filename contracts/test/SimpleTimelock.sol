@@ -19,6 +19,8 @@ contract SimpleTimelock {
         admin = admin_;
     }
 
+    receive() external payable {}
+
     function setAdmin(address newAdmin) public {
         if (msg.sender != address(this)) revert Unauthorized(); // call must come from Timelock itself
         admin = newAdmin;

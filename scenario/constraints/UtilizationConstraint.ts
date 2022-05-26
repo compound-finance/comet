@@ -75,10 +75,19 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
         }
 
         let expectedSupplyBase = totalSupplyBase + toSupplyBase;
+        let expectedBorrowBase = utilizationFactor * expectedSupplyBase / factorScale;
         let currentUtilizationFactor = (totalBorrowBase * factorScale) / expectedSupplyBase;
 
         if (currentUtilizationFactor < utilizationFactor) {
-          toBorrowBase = toBorrowBase + (utilizationFactor * expectedSupplyBase / factorScale) - totalBorrowBase;
+          toBorrowBase = expectedBorrowBase - totalBorrowBase;
+
+          let baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
+          if (toBorrowBase < baseBorrowMin) {
+            expectedBorrowBase = expectedBorrowBase + baseBorrowMin - toBorrowBase;
+            expectedSupplyBase = expectedBorrowBase * factorScale / utilizationFactor;
+            toBorrowBase = baseBorrowMin;
+            toSupplyBase = expectedSupplyBase - totalSupplyBase;
+          }
         } else {
           if (utilizationFactor === 0n) {
             utilizationFactor = 1n; // to avoid dividing by 0
