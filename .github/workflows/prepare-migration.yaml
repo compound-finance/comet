@@ -45,6 +45,7 @@ jobs:
         run: yarn hardhat migrate --network ${{ github.event.inputs.network }} --prepare --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ github.event.inputs.migration }}
         env:
           ETH_PK: ${{ github.event.inputs.eth_pk }}
+          DEBUG: true
 
       - uses: actions/upload-artifact@v2 # upload test results
         if: success() || failure() # run this step even if previous step failed
