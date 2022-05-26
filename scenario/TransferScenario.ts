@@ -111,7 +111,8 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
-    const borrowRate = (await comet.getBorrowRate()).toBigInt();
+    const utilization = await comet.getUtilization();
+    const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
     // XXX 100 seconds?!
     expectApproximately(await albert.getCometBaseBalance(), 1000n * scale, getInterest(1000n * scale, borrowRate, 100n) + 2n);
@@ -144,7 +145,8 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
-    const borrowRate = (await comet.getBorrowRate()).toBigInt();
+    const utilization = await comet.getUtilization();
+    const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
     // XXX 70 seconds?!
     expectApproximately(await albert.getCometBaseBalance(), 1000n * scale, getInterest(1000n * scale, borrowRate, 70n) + 2n);
@@ -178,7 +180,8 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
-    const borrowRate = (await comet.getBorrowRate()).toBigInt();
+    const utilization = await comet.getUtilization();
+    const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
     // XXX 100 seconds?!
     expectApproximately(await albert.getCometBaseBalance(), 1000n * scale, getInterest(1000n * scale, borrowRate, 100n) + 2n);
@@ -211,7 +214,8 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
-    const borrowRate = (await comet.getBorrowRate()).toBigInt();
+    const utilization = await comet.getUtilization();
+    const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
     // XXX 70 seconds?!
     expectApproximately(await albert.getCometBaseBalance(), 1000n * scale, getInterest(1000n * scale, borrowRate, 70n) + 2n);
