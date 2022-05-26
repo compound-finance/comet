@@ -43,14 +43,14 @@ export async function deployNetworkComet(
   const signers = await deploymentManager.hre.ethers.getSigners();
   const admin = await signers[0].getAddress();
 
-  const governorSimple = await deploymentManager.deploy<GovernorSimple, GovernorSimple__factory, []>(
+  const governorSimple = await deploymentManager.cached<GovernorSimple, GovernorSimple__factory, []>(
     'test/GovernorSimple.sol',
     []
   );
 
   await sleepAndLog(1000);
 
-  let timelock = await deploymentManager.deploy<SimpleTimelock, SimpleTimelock__factory, [string]>(
+  let timelock = await deploymentManager.cached<SimpleTimelock, SimpleTimelock__factory, [string]>(
     'test/SimpleTimelock.sol',
     [governorSimple.address]
   );
@@ -58,7 +58,7 @@ export async function deployNetworkComet(
   await sleepAndLog(1000);
 
   // Initialize the storage of GovernorSimple
-  await governorSimple.initialize(timelock.address, [admin]);
+  // await governorSimple.initialize(timelock.address, [admin]);
 
   const {
     symbol,
@@ -89,9 +89,10 @@ export async function deployNetworkComet(
   const extConfiguration = {
     symbol32: deploymentManager.hre.ethers.utils.formatBytes32String(symbol),
   };
+
   await sleepAndLog(1000);
 
-  const cometExt = await deploymentManager.deploy<CometExt, CometExt__factory, [ExtConfigurationStruct]>(
+  const cometExt = await deploymentManager.cached<CometExt, CometExt__factory, [ExtConfigurationStruct]>(
     'CometExt.sol',
     [extConfiguration]
   );
@@ -119,21 +120,21 @@ export async function deployNetworkComet(
 
   await sleepAndLog(1000);
 
-  const comet = await deploymentManager.deploy<Comet, Comet__factory, [ConfigurationStruct]>(
+  const comet = await deploymentManager.cached<Comet, Comet__factory, [ConfigurationStruct]>(
     'Comet.sol',
     [configuration]
   );
 
   await sleepAndLog(1000);
 
-  const cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
+  const cometFactory = await deploymentManager.cached<CometFactory, CometFactory__factory, []>(
     'CometFactory.sol',
     []
   );
 
   await sleepAndLog(1000);
 
-  const configurator = await deploymentManager.deploy<Configurator, Configurator__factory, []>(
+  const configurator = await deploymentManager.cached<Configurator, Configurator__factory, []>(
     'Configurator.sol',
     []
   );

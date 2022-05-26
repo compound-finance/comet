@@ -24,49 +24,49 @@ migration('1644432723_deploy_fuji', {
     let signerAddress = await signer.getAddress();
 
     let usdcProxyAdminArgs: [] = [];
-    let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
+    let usdcProxyAdmin = await deploymentManager.cached<ProxyAdmin, ProxyAdmin__factory, []>(
       'vendor/proxy/transparent/ProxyAdmin.sol',
       usdcProxyAdminArgs
     );
 
-    let fauceteer = await deploymentManager.deploy<Fauceteer, Fauceteer__factory, []>(
+    let fauceteer = await deploymentManager.cached<Fauceteer, Fauceteer__factory, []>(
       'test/Fauceteer.sol',
       []
     );
 
-    let usdcImplementation = await deploymentManager.clone(
+    let usdcImplementation = await deploymentManager.cloned(
       cloneAddr.usdcImplementation,
       [],
       cloneNetwork
     );
 
     let usdc;
-    let usdcProxy = await deploymentManager.clone(
+    let usdcProxy = await deploymentManager.cloned(
       cloneAddr.usdcProxy,
       [usdcImplementation.address],
       cloneNetwork
     );
 
-    await wait(await usdcProxy.changeAdmin(usdcProxyAdmin.address));
+    // await wait(await usdcProxy.changeAdmin(usdcProxyAdmin.address));
     usdc = usdcImplementation.attach(usdcProxy.address);
-    await wait(
-      usdc.initialize(
-        'USD Coin',
-        'USDC',
-        'USD',
-        6,
-        signerAddress,
-        signerAddress,
-        signerAddress,
-        signerAddress
-      )
-    );
+    // await wait(
+    //   usdc.initialize(
+    //     'USD Coin',
+    //     'USDC',
+    //     'USD',
+    //     6,
+    //     signerAddress,
+    //     signerAddress,
+    //     signerAddress,
+    //     signerAddress
+    //   )
+    // );
 
-    let wbtc = await deploymentManager.clone(cloneAddr.wbtc, [], cloneNetwork);
+    let wbtc = await deploymentManager.cloned(cloneAddr.wbtc, [], cloneNetwork);
 
-    let wavax = await deploymentManager.clone(cloneAddr.wavax, [], cloneNetwork);
+    let wavax = await deploymentManager.cloned(cloneAddr.wavax, [], cloneNetwork);
     // Give admin 0.01 WAVAX tokens [this is a precious resource here!]
-    await wait(wavax.deposit({ value: exp(0.01, 18) }));
+    // await wait(wavax.deposit({ value: exp(0.01, 18) }));
 
     // Contracts referenced in `configuration.json`.
     let contracts = new Map<string, Contract>([
