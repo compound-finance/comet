@@ -136,6 +136,7 @@ export async function deployNetworkComet(
       proxyAdminArgs
     );
     await proxyAdmin.transferOwnership(timelock.address);
+    await signers[0].getTransactionCount('pending'); // XXX ethers bug not waiting for nonce?
   } else {
     // We don't want to be using a new ProxyAdmin/Timelock if we are not deploying both proxies
     proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
