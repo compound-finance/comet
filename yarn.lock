@@ -4832,7 +4832,7 @@ hardhat-contract-sizer@^2.4.0:
 
 hardhat-cover@compound-finance/hardhat-cover:
   version "1.0.0"
-  resolved "https://codeload.github.com/compound-finance/hardhat-cover/tar.gz/b8d86dc7f259e033c598b377874ac7f23c628837"
+  resolved "https://codeload.github.com/compound-finance/hardhat-cover/tar.gz/4e312abb3552723e7ca17daef6e10a38d20f10be"
 
 hardhat-gas-reporter@^1.0.7:
   version "1.0.7"

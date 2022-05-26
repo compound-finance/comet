@@ -16,14 +16,24 @@ contract CometRewards {
         bool shouldUpscale;
     }
 
+    struct RewardOwed {
+        address token;
+        uint owed;
+    }
+
     /// @notice The governor address which controls the contract
-    address public immutable governor;
+    address public governor;
 
     /// @notice Reward token address per Comet instance
     mapping(address => RewardConfig) public rewardConfig;
 
     /// @notice Rewards claimed per Comet instance and user account
     mapping(address => mapping(address => uint)) public rewardsClaimed;
+
+    /** Custom events **/
+
+    event GovernorTransferred(address oldGovernor, address newGovernor);
+    event RewardClaimed(address indexed recipient, address indexed token, uint256 amount);
 
     /** Custom errors **/
 
@@ -79,6 +89,36 @@ contract CometRewards {
     }
 
     /**
+     * @notice Transfers the governor rights to a new address
+     * @param newGovernor The address of the new governor
+     */
+    function _transferGovernor(address newGovernor) external {
+        if (msg.sender != governor) revert NotPermitted(msg.sender);
+
+        address oldGovernor = governor;
+        governor = newGovernor;
+        emit GovernorTransferred(oldGovernor, newGovernor);
+    }
+
+    /**
+     * @notice Calculates the amount of a reward token owed to an account
+     * @param comet The protocol instance
+     * @param account The account to check rewards for
+     */
+    function getRewardOwed(address comet, address account) external returns (RewardOwed memory) {
+        RewardConfig memory config = rewardConfig[comet];
+        if (config.token == address(0)) revert NotSupported(comet);
+
+        CometInterface(comet).accrueAccount(account);
+
+        uint claimed = rewardsClaimed[comet][account];
+        uint accrued = getRewardAccrued(comet, account, config);
+
+        uint owed = accrued > claimed ? accrued - claimed : 0;
+        return RewardOwed(config.token, owed);
+    }
+
+    /**
      * @notice Claim rewards of token type from a comet instance to owner address
      * @param comet The protocol instance
      * @param src The owner to claim for
@@ -112,17 +152,29 @@ contract CometRewards {
         }
 
         uint claimed = rewardsClaimed[comet][src];
-        uint accrued = CometInterface(comet).baseTrackingAccrued(src);
+        uint accrued = getRewardAccrued(comet, src, config);
+
+        if (accrued > claimed) {
+            uint owed = accrued - claimed;
+            rewardsClaimed[comet][src] = accrued;
+            doTransferOut(config.token, to, owed);
+
+            emit RewardClaimed(to, config.token, owed);
+        }
+    }
+
+    /**
+     * @dev Calculates the reward accrued for an account on a Comet deployment
+     */
+    function getRewardAccrued(address comet, address account, RewardConfig memory config) internal view returns (uint) {
+        uint accrued = CometInterface(comet).baseTrackingAccrued(account);
+
         if (config.shouldUpscale) {
             accrued *= config.rescaleFactor;
         } else {
             accrued /= config.rescaleFactor;
         }
-        if (accrued > claimed) {
-            uint owed = accrued - claimed;
-            rewardsClaimed[comet][src] = accrued;
-            doTransferOut(config.token, to, owed);
-        }
+        return accrued;
     }
 
     /**

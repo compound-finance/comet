@@ -24,7 +24,7 @@ Owed interest accrues to open borrows of the base asset. Borrower interest accru
 
 ### Get Supply Rate
 
-This method returns the current supply rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the supply rate is:
+This function returns the current supply rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the supply rate is:
 
 ```
 ## If the Utilization is currently less than or equal to the Kink parameter
@@ -67,7 +67,7 @@ const supplyRate = await comet.callStatic.getSupplyRate();
 
 ### Get Borrow Rate
 
-This method returns the current borrow rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the borrow rate is:
+This function returns the current borrow rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the borrow rate is:
 
 ```
 ## If the Utilization is currently less than or equal to the Kink parameter
@@ -127,7 +127,7 @@ Balance=PrincipalBaseBorrowIndexNow [Principal<0]
 
 ### Supply
 
-The supply function transfers an asset to the protocol and adds it to the account's balance. This method can be used to **supply collateral, supply the base asset, or repay an open borrow** of the base asset.
+The supply function transfers an asset to the protocol and adds it to the account's balance. This function can be used to **supply collateral, supply the base asset, or repay an open borrow** of the base asset.
 
 If the base asset is supplied resulting in the account having a balance greater than zero, the base asset earns interest based on the current supply rate. Collateral assets that are supplied do not earn interest.
 
@@ -733,7 +733,7 @@ function allowBySig(
 * `manager`: The address of an account that becomes or will no longer be the manager of the owner.
 * `isAllowed`: True to add the manager and false to remove the manager.
 * `nonce`: The contract state required to match the signature. This can be retrieved from the contract's public `userNonce` mapping.
-* `expiry`: The time at which the signature expires. A block timestamp as seconds since the unix epoch (uint).
+* `expiry`: The time at which the signature expires. A block timestamp as seconds since the Unix epoch (uint).
 * `v`: The recovery byte of the signature.
 * `r`: Half of the ECDSA signature pair.
 * `s`: Half of the ECDSA signature pair.
@@ -762,7 +762,7 @@ await comet.allowBySig('0xowner', '0xmanager', true, nonce, expiry, v, r, s);
 
 ### Account Permissions
 
-This method returns a boolean that indicates the status of an account's management address.
+This function returns a boolean that indicates the status of an account's management address.
 
 #### Comet
 
@@ -797,7 +797,7 @@ const isManager = await comet.callStatic.hasPermission('0xOwner', '0xManager');
 
 ### Transfer
 
-This method is used to transfer an asset within the protocol to another address. A manager of an account is also able to perform a transfer on behalf of the account. Account balances change but the asset does not leave the protocol contract. The transfer will fail if it would make the account liquidatable.
+This function is used to transfer an asset within the protocol to another address. A manager of an account is also able to perform a transfer on behalf of the account. Account balances change but the asset does not leave the protocol contract. The transfer will fail if it would make the account liquidatable.
 
 #### Comet
 
@@ -841,7 +841,7 @@ The Comet contract is a fully compatible ERC-20 wrapper for the base token. All 
 
 ### Get Utilization
 
-This method returns the current protocol utilization of the base asset. The formula for producing the utilization is:
+This function returns the current protocol utilization of the base asset. The formula for producing the utilization is:
 
 `Utilization = TotalBorrows / TotalSupply`
 
@@ -872,6 +872,39 @@ const utilization = await comet.methods.getUtilization().call();
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
 const utilization = await comet.callStatic.getUtilization();
+```
+
+### Total Supply
+
+The total supply of base tokens supplied to the protocol plus interest accrued to suppliers.
+
+#### Comet
+
+```solidity
+function totalSupply() override external view returns (uint256)
+```
+
+* `RETURN`: The amount of base asset scaled up by 10 to the "decimals" integer in the base asset's contract.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint256 totalSupply = comet.totalSupply();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const totalSupply = await comet.methods.totalSupply().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const totalSupply = await comet.callStatic.totalSupply();
 ```
 
 ### Total Collateral
@@ -911,7 +944,7 @@ const [ totalSupplyAsset ] = await comet.callStatic.totalsCollateral('0xERC20Add
 
 ### Collateral Balance
 
-This method returns the current balance of a collateral asset for a specified account in the protocol.
+This function returns the current balance of a collateral asset for a specified account in the protocol.
 
 #### Comet
 
@@ -946,7 +979,7 @@ const balance = await comet.callStatic.collateralBalanceOf('0xAccount', '0xUsdcA
 
 ### Supplied Base Balance
 
-This method returns the current balance of base asset for a specified account in the protocol, including interest. If the account is presently borrowing or not supplying, it will return `0`.
+This function returns the current balance of base asset for a specified account in the protocol, including interest. If the account is presently borrowing or not supplying, it will return `0`.
 
 #### Comet
 
@@ -980,7 +1013,7 @@ const balance = await comet.callStatic.balanceOf('0xAccount');
 
 ### Borrow Balance
 
-This method returns the current balance of borrowed base asset for a specified account in the protocol, including interest. If the account has a non-negative base asset balance, it will return `0`.
+This function returns the current balance of borrowed base asset for a specified account in the protocol, including interest. If the account has a non-negative base asset balance, it will return `0`.
 
 #### Comet
 
@@ -1014,7 +1047,7 @@ const owed = await comet.callStatic.borrowBalanceOf('0xAccount');
 
 ### Base Balance as Integer
 
-This method returns the current balance of base asset for a specified account in the protocol, including interest. If the account is currently borrowing, the return value will be negative. If the account is currently supplying the base asset, the return value will be positive.
+This function returns the current balance of base asset for a specified account in the protocol, including interest. If the account is currently borrowing, the return value will be negative. If the account is currently supplying the base asset, the return value will be positive.
 
 #### Comet
 
@@ -1093,7 +1126,7 @@ const [ principal, baseTrackingIndex, baseTrackingAccrued, assetsIn ] = await co
 
 ### Get Asset Info
 
-This method returns asset information such as the collateral factors, asset price feed address, and more. In order to create a loop to fetch information for every asset, use the `numAssets` constant, which indicates the total number of supported assets.
+This function returns asset information such as the collateral factors, asset price feed address, and more. In order to create a loop to fetch information for every asset, use the `numAssets` constant, which indicates the total number of supported assets.
 
 #### Comet
 
@@ -1146,7 +1179,7 @@ const infoObject = await comet.callStatic.getAssetInfo(0);
 
 ### Get Asset Info By Address
 
-This method returns asset information of a specific asset.
+This function returns asset information of a specific asset.
 
 #### Comet
 
@@ -1233,6 +1266,40 @@ const comet = new ethers.Contract(contractAddress, abiJson, provider);
 const price = await comet.callStatic.getPrice(usdcAddress);
 ```
 
+### Accrue Account
+
+This function triggers a manual accrual of interest and rewards to an account.
+
+#### Comet
+
+```solidity
+function accrueAccount(address account) override external
+```
+
+* `account`: The account in which to accrue interest and rewards.
+* `RETURN`: No return, reverts on error.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint price = comet.accrueAccount(0xAccount);
+```
+
+#### Web3.js v1.5.x
+
+```js
+const Comet = new web3.eth.Contract(abiJson, contractAddress);
+await Comet.methods.accrueAccount('0xAccount').send();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+await comet.accrueAccount('0xAccount');
+```
+
 ### Get Protocol Configuration
 
 This function returns the configuration struct passed to the configurator contract on initialization.
@@ -1244,7 +1311,7 @@ function getConfiguration() external view returns (Configuration memory)
 ```
 
 * `RETURNS`: Returns the protocol configuration.
-  * `governor`: The address of the protocol governor.
+  * `governor`: The address of the protocol Governor.
   * `pauseGuardian`: The address of the protocol pause guardian.
   * `baseToken`: The address of the protocol base token smart contract.
   * `baseTokenPriceFeed`: The address of the protocol base token price feed smart contract.
@@ -1305,6 +1372,223 @@ const config = await Configurator.methods.getConfiguration().call();
 ```js
 const configurator = new ethers.Contract(contractAddress, abiJson, provider);
 const config = await configurator.callStatic.getConfiguration();
+```
+
+### Get Base Asset Market Information
+
+This function gets several of the current parameter values for the protocol market.
+
+#### Comet
+
+```solidity
+struct TotalsBasic {
+    uint64 baseSupplyIndex;
+    uint64 baseBorrowIndex;
+    uint64 trackingSupplyIndex;
+    uint64 trackingBorrowIndex;
+    uint104 totalSupplyBase;
+    uint104 totalBorrowBase;
+    uint40 lastAccrualTime;
+    uint8 pauseFlags;
+}
+
+function totalsBasic() public override view returns (TotalsBasic memory)
+```
+
+* `RETURNS`: The base asset market information as a struct called `TotalsBasic` (defined in CometStorage.sol).
+* `baseSupplyIndex`: The global base asset supply index for calculating interest accrued to suppliers.
+* `baseBorrowIndex`: The global base asset borrow index for calculating interest owed by borrowers.
+* `trackingSupplyIndex`: A global index for tracking participation of accounts that supply the base asset.
+* `trackingBorrowIndex`:  A global index for tracking participation of accounts that borrow the base asset.
+* `totalSupplyBase`: The total amount of base asset presently supplied to the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the base asset's contract.
+* `totalBorrowBase`: The total amount of base asset presently borrowed from the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the base asset's contract.
+* `lastAccrualTime`: The most recent time that protocol interest accrual was globally calculated. A block timestamp as seconds since the Unix epoch.
+* `pauseFlags`: An integer that represents paused protocol functionality flags that are packed for data storage efficiency. See [Pause Protocol Functionality](#pause-protocol-functionality).
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+TotalsBasic tb = comet.totalsBasic();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const [ baseSupplyIndex, baseBorrowIndex, trackingSupplyIndex, trackingBorrowIndex, totalSupplyBase, totalBorrowBase, lastAccrualTime, pauseFlags ] = await comet.methods.totalsBasic().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const [ baseSupplyIndex, baseBorrowIndex, trackingSupplyIndex, trackingBorrowIndex, totalSupplyBase, totalBorrowBase, lastAccrualTime, pauseFlags ] = await comet.callStatic.totalsBasic();
+```
+
+### Get Base Accrual Scale
+
+This function gets the scale for the base asset tracking accrual.
+
+#### Comet
+
+```solidity
+function baseAccrualScale() override external pure returns (uint64)
+```
+
+* `RETURNS`: The integer used to scale down the base accrual when calculating a decimal value.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint baseAccrualScale = comet.baseAccrualScale();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const baseAccrualScale = await comet.methods.baseAccrualScale().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const baseAccrualScale = await comet.callStatic.baseAccrualScale();
+```
+
+### Get Base Index Scale
+
+This function gets the scale for the base asset index.
+
+#### Comet
+
+```solidity
+function baseIndexScale() override external pure returns (uint64)
+```
+
+* `RETURNS`: The integer used to scale down the index when calculating a decimal value.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint baseIndexScale = comet.baseIndexScale();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const baseIndexScale = await comet.methods.baseIndexScale().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const baseIndexScale = await comet.callStatic.baseIndexScale();
+```
+
+### Get Factor Scale
+
+This function gets the scale for all protocol factors, i.e. borrow collateral factor.
+
+#### Comet
+
+```solidity
+function factorScale() override external pure returns (uint64)
+```
+
+* `RETURNS`: The integer used to scale down the factor when calculating a decimal value.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint factorScale = comet.factorScale();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const factorScale = await comet.methods.factorScale().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const factorScale = await comet.callStatic.factorScale();
+```
+
+### Get Price Scale
+
+This function gets the scale integer for USD prices in the protocol, i.e. `8 decimals = 1e8`.
+
+#### Comet
+
+```solidity
+function priceScale() override external pure returns (uint64)
+```
+
+* `RETURNS`: The integer used to scale down a price when calculating a decimal value.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint priceScale = comet.priceScale();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const priceScale = await comet.methods.priceScale().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const priceScale = await comet.callStatic.priceScale();
+```
+
+### Get Max Assets
+
+This function gets the maximum number of assets that can be simultaneously supported by Compound III.
+
+#### Comet
+
+```solidity
+function maxAssets() override external pure returns (uint8)
+```
+
+* `RETURNS`: The maximum number of assets that can be simultaneously supported by Compound III.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint maxAssets = comet.maxAssets();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const maxAssets = await comet.methods.maxAssets().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const maxAssets = await comet.callStatic.maxAssets();
 ```
 
 ## Bulk Actions
@@ -1382,7 +1666,7 @@ To set specific protocol parameters in a proposal, the Timelock must call all of
 
 ### Set Comet Factory
 
-This function sets the official contract address of the Comet factory. The only acceptable caller is the governor.
+This function sets the official contract address of the Comet factory. The only acceptable caller is the Governor.
 
 #### Configurator
 
@@ -1395,7 +1679,7 @@ function setFactory(address newFactory) external
 
 ### Set Governor
 
-This function sets the official contract address of the Compound III protocol governor for subsequent proposals.
+This function sets the official contract address of the Compound III protocol Governor for subsequent proposals.
 
 #### Configurator
 
@@ -1403,12 +1687,14 @@ This function sets the official contract address of the Compound III protocol go
 function setGovernor(address newGovernor) external
 ```
 
-* `newGovernor`: The address of the new Compound III governor.
+* `newGovernor`: The address of the new Compound III Governor.
 * `RETURN`: No return, reverts on error.
 
 ### Set Pause Guardian
 
-This function sets the official contract address of the Compound III protocol pause guardian. This address has the power to pause supply, transfer, withdraw, absorb, and the buy collateral operations within Compound III.
+This function sets the official contract address of the Compound III protocol pause guardian. This address has the power to pause supply, transfer, withdraw, absorb, and buy collateral operations within Compound III.
+
+COMP token-holders designate the Pause Guardian address, which is held by the [Community Multi-Sig](https://etherscan.io/address/0xbbf3f1421d886e9b2c5d716b5192ac998af2012c).
 
 #### Configurator
 
@@ -1418,6 +1704,89 @@ function setPauseGuardian(address newPauseGuardian) external
 
 * `newPauseGuardian`: The address of the new pause guardian.
 * `RETURN`: No return, reverts on error.
+
+### Pause Protocol Functionality
+
+This function pauses the specified protocol functionality in the event of an unforeseen vulnerability. The only addresses that are allowed to call this function are the Governor and the Pause Guardian.
+
+#### Comet
+
+```solidity
+function pause(
+    bool supplyPaused,
+    bool transferPaused,
+    bool withdrawPaused,
+    bool absorbPaused,
+    bool buyPaused
+) override external
+```
+
+* `supplyPaused`: Enables or disables all accounts' ability to supply assets to the protocol.
+* `transferPaused`: Enables or disables all account's ability to transfer assets within the protocol.
+* `withdrawPaused`: Enables or disables all account's ability to withdraw assets from the protocol.
+* `absorbPaused`: Enables or disables protocol absorptions.
+* `buyPaused`: Enables or disables the protocol's ability to sell absorbed collateral.
+* `RETURN`: No return, reverts on error.
+
+### Is Supply Paused
+
+This function returns a boolean indicating whether or not the protocol supply functionality is presently paused.
+
+#### Comet
+
+```solidity
+function isSupplyPaused() override public view returns (bool)
+```
+
+* `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
+
+### Is Transfer Paused
+
+This function returns a boolean indicating whether or not the protocol transfer functionality is presently paused.
+
+#### Comet
+
+```solidity
+function isTransferPaused() override public view returns (bool)
+```
+
+* `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
+
+### Is Withdraw Paused
+
+This function returns a boolean indicating whether or not the protocol withdraw functionality is presently paused.
+
+#### Comet
+
+```solidity
+function isWithdrawPaused() override public view returns (bool)
+```
+
+* `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
+
+### Is Absorb Paused
+
+This function returns a boolean indicating whether or not the protocol absorb functionality is presently paused.
+
+#### Comet
+
+```solidity
+function isAbsorbPaused() override public view returns (bool)
+```
+
+* `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
+
+### Is Buy Paused
+
+This function returns a boolean indicating whether or not the protocol's selling of absorbed collateral functionality is presently paused.
+
+#### Comet
+
+```solidity
+function isBuyPaused() override public view returns (bool)
+```
+
+* `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
 
 ### Set Base Token Price Feed
 
@@ -1688,9 +2057,24 @@ function updateAssetSupplyCap(address asset, uint128 newSupplyCap) external
 * `newSupplyCap`: The amount of the asset as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
 * `RETURN`: No return, reverts on error.
 
+### ERC-20 Approve Manager Address
+
+This function sets the Comet contract's ERC-20 allowance of an asset for a manager address. It can only be called by the Governor.
+
+#### Comet
+
+```solidity
+function approveThis(address manager, address asset, uint amount) override external
+```
+
+* `manager`: The address of a manager account that has its allowance modified.
+* `asset`: The address of the asset's smart contract.
+* `amount`: The amount of the asset approved for the manager expressed as an integer.
+* `RETURN`: No return, reverts on error.
+
 ### Transfer Governor
 
-This function changes the address of the protocol's governor.
+This function changes the address of the protocol's Governor.
 
 #### Configurator
 
@@ -1698,12 +2082,12 @@ This function changes the address of the protocol's governor.
 function transferGovernor(address newGovernor) external
 ```
 
-* `newGovernor`: The address of the new governor of the Compound III protocol instance.
+* `newGovernor`: The address of the new Governor of the Compound III protocol instance.
 * `RETURN`: No return, reverts on error.
 
 ### Withdraw Reserves
 
-This function allows governance to withdraw base token reserves from the protocol and send them to a specified address. Only the governor address may call this function.
+This function allows governance to withdraw base token reserves from the protocol and send them to a specified address. Only the Governor address may call this function.
 
 #### Comet
 

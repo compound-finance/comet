@@ -54,10 +54,10 @@ scenario(
   {
     upgrade: true,
     tokenBalances: {
-      albert: { $base: 100 }, // in units of asset, not wei
+      albert: { $base: 1000 }, // in units of asset, not wei
     },
     cometBalances: {
-      albert: { $base: -100 }, // in units of asset, not wei
+      albert: { $base: -1000 }, // in units of asset, not wei
     },
   },
   async ({ comet, actors }, _world, context) => {
@@ -66,10 +66,10 @@ scenario(
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
 
-    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
+    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(1000n * scale);
     expectApproximately(
       await albert.getCometBaseBalance(),
-      -100n * scale,
+      -1000n * scale,
       (scale / 1000000n) // .000001 units of asset
     );
   }

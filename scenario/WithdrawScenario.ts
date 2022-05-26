@@ -66,10 +66,10 @@ scenario(
   {
     upgrade: true,
     tokenBalances: {
-      $comet: { $base: 100 }, // in units of asset, not wei
+      $comet: { $base: 1000 }, // in units of asset, not wei
     },
     cometBalances: {
-      albert: { $asset0: 100 } // in units of asset, not wei
+      albert: { $asset0: 3000 } // in units of asset, not wei
     },
   },
   async ({ comet, actors }, world, context) => {
@@ -83,10 +83,10 @@ scenario(
     expect(await comet.balanceOf(albert.address)).to.be.equal(0n);
 
     // Albert borrows 1 unit of base from Comet
-    const txn = await albert.withdrawAsset({ asset: baseAsset.address, amount: 1n * scale });
+    const txn = await albert.withdrawAsset({ asset: baseAsset.address, amount: 1000n * scale });
 
-    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(1n * scale);
-    expectApproximately(await albert.getCometBaseBalance(), -1n * scale, precision);
+    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(1000n * scale);
+    expectApproximately(await albert.getCometBaseBalance(), -1000n * scale, precision);
 
     return txn; // return txn to measure gas
   }
@@ -130,7 +130,7 @@ scenario(
   {
     upgrade: true,
     cometBalances: {
-      albert: { $asset0: 100 }, // in units of asset, not wei
+      albert: { $asset0: 1000 }, // in units of asset, not wei
     },
   },
   async ({ comet, actors }, world, context) => {
@@ -140,14 +140,14 @@ scenario(
     const scale = scaleBN.toBigInt();
 
     expect(await collateralAsset.balanceOf(betty.address)).to.be.equal(0n);
-    expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(100n * scale);
+    expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(1000n * scale);
 
     await albert.allow(betty, true);
 
-    // Betty withdraws 100 units of collateral from Albert
-    const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: 100n * scale })
+    // Betty withdraws 1000 units of collateral from Albert
+    const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: 1000n * scale })
 
-    expect(await collateralAsset.balanceOf(betty.address)).to.be.equal(100n * scale);
+    expect(await collateralAsset.balanceOf(betty.address)).to.be.equal(1000n * scale);
     expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
 
     return txn; // return txn to measure gas
@@ -159,10 +159,10 @@ scenario(
   {
     upgrade: true,
     tokenBalances: {
-      $comet: { $base: 100 }, // in units of asset, not wei
+      $comet: { $base: 1000 }, // in units of asset, not wei
     },
     cometBalances: {
-      albert: { $asset0: 100 } // in units of asset, not wei
+      albert: { $asset0: 3000 } // in units of asset, not wei
     },
   },
   async ({ comet, actors }, world, context) => {
@@ -178,10 +178,10 @@ scenario(
     await albert.allow(betty, true);
 
     // Betty borrows 1 unit of base using Albert's account
-    const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: 1n * scale });
+    const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: 1000n * scale });
 
-    expect(await baseAsset.balanceOf(betty.address)).to.be.equal(1n * scale);
-    expectApproximately(await albert.getCometBaseBalance(), -1n * scale, precision);
+    expect(await baseAsset.balanceOf(betty.address)).to.be.equal(1000n * scale);
+    expectApproximately(await albert.getCometBaseBalance(), -1000n * scale, precision);
 
     return txn; // return txn to measure gas
   }
@@ -284,7 +284,7 @@ scenario(
     await expect(
       albert.withdrawAsset({
         asset: baseAsset.address,
-        amount: 100n * scale,
+        amount: 1000n * scale,
       })
     ).to.be.revertedWith("custom error 'NotCollateralized()'");
   }
@@ -295,7 +295,7 @@ scenario(
   {
     upgrade: true,
     cometBalances: {
-      albert: { $base: -100, $asset0: 100 }, // in units of asset, not wei
+      albert: { $base: -1000, $asset0: 1000 }, // in units of asset, not wei
     },
   },
   async ({ comet, actors }, world, context) => {
@@ -307,7 +307,7 @@ scenario(
     await expect(
       albert.withdrawAsset({
         asset: collateralAsset.address,
-        amount: 100n * scale
+        amount: 1000n * scale
       })
     ).to.be.revertedWith("custom error 'NotCollateralized()'");
   }
