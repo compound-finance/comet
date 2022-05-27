@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "description": "",
   "main": "dist/index.js",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": "./dist/index.js",
     "./*": "./dist/*.js"
@@ -11,8 +13,12 @@
   "types": "./dist/index.d.ts",
   "typesVersions": {
     "*": {
-      "dist/index.d.ts": [ "dist/index.d.ts" ],
-      "*": [ "dist/*" ]
+      "dist/index.d.ts": [
+        "dist/index.d.ts"
+      ],
+      "*": [
+        "dist/*"
+      ]
     }
   },
   "scripts": {
@@ -35,6 +41,7 @@
   "author": "Compound Finance",
   "license": "UNLICENSED",
   "dependencies": {
+    "@ethersproject/experimental": "^5.6.2",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "jest-diff": "^27.4.2"

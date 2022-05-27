@@ -9,6 +9,7 @@ import {
   ProxyAdmin__factory
 } from '../../../build/types';
 import { Contract } from 'ethers';
+import { NonceManager } from "@ethersproject/experimental";
 
 let cloneNetwork = 'mainnet';
 let cloneAddr = {
@@ -26,6 +27,8 @@ migration('1644388553_deploy_kovan', {
     const { ethers } = deploymentManager.hre;
     let [signer] = await ethers.getSigners();
     let signerAddress = await signer.getAddress();
+    const managedSigner = new NonceManager(signer);
+    deploymentManager.signer = managedSigner;
 
     let usdcProxyAdminArgs: [] = [];
     let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
