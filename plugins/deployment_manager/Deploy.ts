@@ -34,7 +34,8 @@ async function deployFromBuildFile(
   deployOpts: DeployOpts = {}
 ): Promise<Contract> {
   let [contractName, metadata] = getPrimaryContract(buildFile);
-  const signer = deployOpts.connect;
+  const [ethersSigner] = await hre.ethers.getSigners();
+  const signer = deployOpts.connect ?? ethersSigner;
   const contractFactory = new hre.ethers.ContractFactory(metadata.abi, metadata.bin, signer);
   const contract = await contractFactory.deploy(...deployArgs);
   const deployed = await contract.deployed();
