@@ -34,11 +34,9 @@ async function deployFromBuildFile(
   deployOpts: DeployOpts = {}
 ): Promise<Contract> {
   let [contractName, metadata] = getPrimaryContract(buildFile);
-  const signer = deployOpts.connect;
+  const [ethersSigner] = await hre.ethers.getSigners();
+  const signer = deployOpts.connect ?? ethersSigner;
   let contractFactory = new hre.ethers.ContractFactory(metadata.abi, metadata.bin, signer);
-  if (signer) {
-    contractFactory = contractFactory.connect(signer);
-  }
   const contract = await contractFactory.deploy(...deployArgs);
   const deployed = await contract.deployed();
   const txnCount = await signer.getTransactionCount('pending'); // XXX ethers bug not waiting for nonce?
