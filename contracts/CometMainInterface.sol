@@ -70,8 +70,8 @@ abstract contract CometMainInterface is CometCore {
     function isBuyPaused() virtual public view returns (bool);
 
     function accrueAccount(address account) virtual external;
-    function getSupplyRate() virtual public view returns (uint64);
-    function getBorrowRate() virtual public view returns (uint64);
+    function getSupplyRate(uint utilization) virtual public view returns (uint64);
+    function getBorrowRate(uint utilization) virtual public view returns (uint64);
     function getUtilization() virtual public view returns (uint);
 
     function governor() virtual external view returns (address);

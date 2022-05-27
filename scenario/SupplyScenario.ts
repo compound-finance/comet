@@ -89,7 +89,8 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
-    const borrowRate = (await comet.getBorrowRate()).toBigInt();
+    const utilization = await comet.getUtilization();
+    const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
     expectApproximately(await albert.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 1n) + 1n);
 
@@ -198,7 +199,8 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
-    const borrowRate = (await comet.getBorrowRate()).toBigInt();
+    const utilization = await comet.getUtilization();
+    const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(1000n * scale);
     expectApproximately(await betty.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 1n) + 1n);

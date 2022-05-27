@@ -400,8 +400,9 @@ contract Comet is CometMainInterface {
         uint64 baseSupplyIndex_ = baseSupplyIndex;
         uint64 baseBorrowIndex_ = baseBorrowIndex;
         if (timeElapsed > 0) {
-            uint supplyRate = getSupplyRate();
-            uint borrowRate = getBorrowRate();
+            uint utilization = getUtilization();
+            uint supplyRate = getSupplyRate(utilization);
+            uint borrowRate = getBorrowRate(utilization);
             baseSupplyIndex_ += safe64(mulFactor(baseSupplyIndex_, supplyRate * timeElapsed));
             baseBorrowIndex_ += safe64(mulFactor(baseBorrowIndex_, borrowRate * timeElapsed));
         }
@@ -440,10 +441,9 @@ contract Comet is CometMainInterface {
 
     /**
      * @dev Note: Does not accrue interest first
-     * @return The current per second supply rate
+     * @return The per second supply rate at `utilization`
      */
-    function getSupplyRate() override public view returns (uint64) {
-        uint utilization = getUtilization();
+    function getSupplyRate(uint utilization) override public view returns (uint64) {
         uint reserveScalingFactor = utilization * (FACTOR_SCALE - reserveRate) / FACTOR_SCALE;
         if (utilization <= kink) {
             // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
@@ -456,10 +456,9 @@ contract Comet is CometMainInterface {
 
     /**
      * @dev Note: Does not accrue interest first
-     * @return The current per second borrow rate
+     * @return The per second borrow rate at `utilization`
      */
-    function getBorrowRate() override public view returns (uint64) {
-        uint utilization = getUtilization();
+    function getBorrowRate(uint utilization) override public view returns (uint64) {
         if (utilization <= kink) {
             // interestRateBase + interestRateSlopeLow * utilization
             return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization));
