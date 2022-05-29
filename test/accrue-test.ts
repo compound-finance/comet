@@ -100,10 +100,11 @@ describe('accrue', function () {
       totalBorrowBase: 11000n,
     });
 
-    const supplyRate = await comet.getSupplyRate();
+    const utilization = await comet.getUtilization();
+    const supplyRate = await comet.getSupplyRate(utilization);
     expect(supplyRate).to.be.equal(19549086756);
 
-    const borrowRate = await comet.getBorrowRate();
+    const borrowRate = await comet.getBorrowRate(utilization);
     expect(borrowRate).to.be.equal(21721207507);
 
     await ethers.provider.send('evm_setAutomine', [false]);
@@ -139,10 +140,11 @@ describe('accrue', function () {
       totalBorrowBase: exp(13000, 6),
     });
 
-    const supplyRate = await comet.getSupplyRate();
+    const utilization = await comet.getUtilization();
+    const supplyRate = await comet.getSupplyRate(utilization);
     expect(supplyRate).to.be.equal(12474082097);
 
-    const borrowRate = await comet.getBorrowRate();
+    const borrowRate = await comet.getBorrowRate(utilization);
     expect(borrowRate).to.be.equal(14926252082);
 
     await ethers.provider.send('evm_setAutomine', [false]);
@@ -185,8 +187,9 @@ describe('accrue', function () {
     await expect(wait(comet.accrue())).to.be.revertedWith("custom error 'InvalidUInt64()'");
     const t2 = await comet.totalsBasic();
 
-    const supplyRate = await comet.getSupplyRate();
-    const borrowRate = await comet.getBorrowRate();
+    const utilization = await comet.getUtilization();
+    const supplyRate = await comet.getSupplyRate(utilization);
+    const borrowRate = await comet.getBorrowRate(utilization);
     const timeElapsed = t2.lastAccrualTime - t0.lastAccrualTime;
     expect(timeElapsed).to.be.equal(0);
 
