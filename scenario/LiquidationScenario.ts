@@ -14,7 +14,8 @@ async function timeUntilUnderwater({comet, actor, fudgeFactor = 0n}: {comet: Com
   const liquidationMargin = (await comet.getLiquidationMargin(actor.address)).toBigInt();
   const baseBalance = await actor.getCometBaseBalance();
   const basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
-  const borrowRate = (await comet.getBorrowRate()).toBigInt();
+  const utilization = await comet.getUtilization();
+  const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
   const baseScale = (await comet.baseScale()).toBigInt();
   const factorScale = (await comet.factorScale()).toBigInt();
 
@@ -32,12 +33,13 @@ scenario(
   'Comet#liquidation > isLiquidatable=true for underwater position',
   {
     tokenBalances: {
-      $comet: { $base: 100 },
+      $comet: { $base: 10000 },
     },
     cometBalances: {
-      albert: { $base: -10 },
-      betty: { $base: 10 },
+      albert: { $base: -1000 },
+      betty: { $base: 1000 },
     },
+    upgrade: true
   },
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;

@@ -24,10 +24,10 @@ Owed interest accrues to open borrows of the base asset. Borrower interest accru
 
 ### Get Supply Rate
 
-This function returns the current supply rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the supply rate is:
+This function returns the supply rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the supply rate is:
 
 ```
-## If the Utilization is currently less than or equal to the Kink parameter
+## If the Utilization is less than or equal to the Kink parameter
 
 SupplyRate = (InterestRateBase + InterestRateSlopeLow * Utilization) * Utilization * (1 - ReserveRate)
 
@@ -39,38 +39,39 @@ SupplyRate = (InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlope
 #### Comet
 
 ```solidity
-function getSupplyRate() public view returns (uint64)
+function getSupplyRate(uint utilization) public view returns (uint64)
 ```
 
-* `RETURNS`: The current APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 25% APR.
+* `utilization`: The utilization at which to calculate the rate.
+* `RETURNS`: The APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 25% APR.
 
 #### Solidity
 
 ```solidity
 Comet comet = Comet(0xCometAddress);
-uint supplyRate = comet.getSupplyRate(); // example: 250000000000000000 (25%)
+uint supplyRate = comet.getSupplyRate(0.8e18); // example: 250000000000000000 (25%)
 ```
 
 #### Web3.js v1.5.x
 
 ```js
 const comet = new web3.eth.Contract(abiJson, contractAddress);
-const supplyRate = await comet.methods.getSupplyRate().call();
+const supplyRate = await comet.methods.getSupplyRate(0.8e18).call();
 ```
 
 #### Ethers.js v5.x
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const supplyRate = await comet.callStatic.getSupplyRate();
+const supplyRate = await comet.callStatic.getSupplyRate(0.8e18);
 ```
 
 ### Get Borrow Rate
 
-This function returns the current borrow rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the borrow rate is:
+This function returns the borrow rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the borrow rate is:
 
 ```
-## If the Utilization is currently less than or equal to the Kink parameter
+## If the Utilization is less than or equal to the Kink parameter
 
 BorrowRate = InterestRateBase + InterestRateSlopeLow * Utilization
 
@@ -82,30 +83,31 @@ BorrowRate = InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeH
 #### Comet
 
 ```solidity
-function getBorrowRate() public view returns (uint64)
+function getBorrowRate(uint utilization) public view returns (uint64)
 ```
 
-* `RETURNS`: The current APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `90000000000000000` indicates a 9% APR.
+* `utilization`: The utilization at which to calculate the rate.
+* `RETURNS`: The APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `90000000000000000` indicates a 9% APR.
 
 #### Solidity
 
 ```solidity
 Comet comet = Comet(0xCometAddress);
-uint borrowRate = comet.getBorrowRate(); // example: 9000000000000000000 (9%)
+uint borrowRate = comet.getBorrowRate(0.8e18); // example: 9000000000000000000 (9%)
 ```
 
 #### Web3.js v1.5.x
 
 ```js
 const comet = new web3.eth.Contract(abiJson, contractAddress);
-const borrowRate = await comet.methods.getBorrowRate().call();
+const borrowRate = await comet.methods.getBorrowRate(0.8e18).call();
 ```
 
 #### Ethers.js v5.x
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const borrowRate = await comet.callStatic.getBorrowRate();
+const borrowRate = await comet.callStatic.getBorrowRate(0.8e18);
 ```
 
 ## Collateral & Borrowing

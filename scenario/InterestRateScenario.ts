@@ -75,7 +75,7 @@ scenario(
     const expectedUtilization = calculateUtilization(totalSupplyBase, totalBorrowBase, baseSupplyIndex, baseBorrowIndex);
 
     expect(defactor(actualUtilization)).to.be.approximately(defactor(expectedUtilization), 0.00001);
-    expect(await comet.getSupplyRate()).to.equal(
+    expect(await comet.getSupplyRate(actualUtilization)).to.equal(
       calculateSupplyRate(
         actualUtilization,
         kink,
@@ -85,7 +85,7 @@ scenario(
         reserveRate
       )
     );
-    expect(await comet.getBorrowRate()).to.equal(
+    expect(await comet.getBorrowRate(actualUtilization)).to.equal(
       calculateBorrowRate(
         actualUtilization,
         kink,
@@ -111,9 +111,10 @@ scenario(
     utilization: 0.5,
   },
   async ({ comet, actors }) => {
-    expect(defactor(await comet.getUtilization())).to.be.approximately(0.5, 0.00001);
-    expect(annualize(await comet.getSupplyRate())).to.be.approximately(0.0135, 0.001);
-    expect(annualize(await comet.getBorrowRate())).to.be.approximately(0.03, 0.001);
+    const utilization = await comet.getUtilization();
+    expect(defactor(utilization)).to.be.approximately(0.5, 0.00001);
+    expect(annualize(await comet.getSupplyRate(utilization))).to.be.approximately(0.0135, 0.001);
+    expect(annualize(await comet.getBorrowRate(utilization))).to.be.approximately(0.03, 0.001);
   }
 );
 
@@ -131,9 +132,10 @@ scenario(
     utilization: 0.85,
   },
   async ({ comet, actors }) => {
-    expect(defactor(await comet.getUtilization())).to.be.approximately(0.85, 0.00001);
-    expect(annualize(await comet.getSupplyRate())).to.be.approximately(0.0421, 0.001);
-    expect(annualize(await comet.getBorrowRate())).to.be.approximately(0.055, 0.001);
+    const utilization = await comet.getUtilization();
+    expect(defactor(utilization)).to.be.approximately(0.85, 0.00001);
+    expect(annualize(await comet.getSupplyRate(utilization))).to.be.approximately(0.0421, 0.001);
+    expect(annualize(await comet.getBorrowRate(utilization))).to.be.approximately(0.055, 0.001);
   }
 );
 
@@ -160,7 +162,7 @@ scenario(
     const expectedUtilization = calculateUtilization(totalSupplyBase, totalBorrowBase, baseSupplyIndex, baseBorrowIndex);
 
     expect(defactor(actualUtilization)).to.be.approximately(defactor(expectedUtilization), 0.00001);
-    expect(await comet.getSupplyRate()).to.equal(
+    expect(await comet.getSupplyRate(actualUtilization)).to.equal(
       calculateSupplyRate(
         actualUtilization,
         kink,
@@ -170,7 +172,7 @@ scenario(
         reserveRate
       )
     );
-    expect(await comet.getBorrowRate()).to.equal(
+    expect(await comet.getBorrowRate(actualUtilization)).to.equal(
       calculateBorrowRate(
         actualUtilization,
         kink,
@@ -188,7 +190,8 @@ scenario.skip(
   'Comet#interestRate > when utilization is 50%',
 { utilization: 0.5, upgrade: true },
   async ({ comet, actors }, world) => {
-    expect(defactor(await comet.getUtilization())).to.be.approximately(0.5, 0.00001);
+    const utilization = await comet.getUtilization();
+    expect(defactor(utilization)).to.be.approximately(0.5, 0.00001);
 
     // Note: this is dependent on the `deployments/fuji/configuration.json` variables
     // TODO: Consider if there's a better way to test the live curve.
@@ -197,12 +200,12 @@ scenario.skip(
       // utilization = 50%
       // ( 1% + 2% * 50% ) * 50% * (100% - 10%)
       // ( 1% + 1% ) * 50% * 90% -> 1% * 90% = 0.9%
-      expect(annualize(await comet.getSupplyRate())).to.be.approximately(0.009, 0.001);
+      expect(annualize(await comet.getSupplyRate(utilization))).to.be.approximately(0.009, 0.001);
 
       // interestRateBase + interestRateSlopeLow * utilization
       // utilization = 50%
       // ( 1% + 2% * 50% )
-      expect(annualize(await comet.getBorrowRate())).to.be.approximately(0.02, 0.001);
+      expect(annualize(await comet.getBorrowRate(utilization))).to.be.approximately(0.02, 0.001);
     }
   }
 );

@@ -37,8 +37,8 @@ describe('interest rates', function () {
     await wait(comet.setTotalsBasic(totals));
 
     const utilization = await comet.getUtilization();
-    const supplyRate = await comet.getSupplyRate();
-    const borrowRate = await comet.getBorrowRate();
+    const supplyRate = await comet.getSupplyRate(utilization);
+    const borrowRate = await comet.getBorrowRate(utilization);
 
     // totalBorrowBase / totalSupplyBase
     // = 10 / 100 = 0.1
@@ -75,8 +75,8 @@ describe('interest rates', function () {
     await wait(comet.setTotalsBasic(totals));
 
     const utilization = await comet.getUtilization();
-    const supplyRate = await comet.getSupplyRate();
-    const borrowRate = await comet.getBorrowRate();
+    const supplyRate = await comet.getSupplyRate(utilization);
+    const borrowRate = await comet.getBorrowRate(utilization);
 
     // totalBorrowBase / totalSupplyBase
     // = 90 / 100 = 0.9
@@ -113,8 +113,8 @@ describe('interest rates', function () {
     await wait(comet.setTotalsBasic(totals));
 
     const utilization = await comet.getUtilization();
-    const supplyRate = await comet.getSupplyRate();
-    const borrowRate = await comet.getBorrowRate();
+    const supplyRate = await comet.getSupplyRate(utilization);
+    const borrowRate = await comet.getBorrowRate(utilization);
 
     // totalBorrowBase / totalSupplyBase
     // = 10 / 100 = 0.1
@@ -151,8 +151,8 @@ describe('interest rates', function () {
     await wait(comet.setTotalsBasic(totals));
 
     const utilization = await comet.getUtilization();
-    const supplyRate = await comet.getSupplyRate();
-    const borrowRate = await comet.getBorrowRate();
+    const supplyRate = await comet.getSupplyRate(utilization);
+    const borrowRate = await comet.getBorrowRate(utilization);
 
     // totalBorrowBase / totalSupplyBase
     // = 0 / 100 = 0
