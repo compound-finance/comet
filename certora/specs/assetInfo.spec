@@ -75,7 +75,7 @@ rule reversibility_of_packing(uint8 i, address assetArg, address priceFeedArg, u
     uint8 offset_; address asset_; address priceFeed_; uint64 scale_; uint64 borrowCollateralFactor_; uint64 liquidateCollateralFactor_; uint64 liquidationFactor_; uint128 supplyCap_;
     offset_, asset_, priceFeed_, scale_, borrowCollateralFactor_, liquidateCollateralFactor_, liquidationFactor_, supplyCap_ = getAssetInfo(i);
     require word_a == getAsset00_a() && word_b == getAsset00_b(); // assumption that assetXX_a, assetXX_b are being loaded with correct value
-    if (assetArg == 0 ){
+    if (assetArg == 0){
         assert (asset_ == assetArg, "asset is non-zero");
         assert (priceFeed_ == 0, "price feed is non-zero");
         assert (scale_ == 10^0, "scale is not 1");

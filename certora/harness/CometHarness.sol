@@ -115,10 +115,22 @@ contract CometHarness is CometHarnessGetters {
     // many properties of accrue are proven in interestComputation.spec
     bool public accrueWasCalled;
     function accrueInternal() override internal {
-        accrueWasCalled = true;
+        bool accrued = accrueWasCalled;
+        // This if statement is purely here to overcome compiler optimization.
+        // The optimization removes the unused local assignment above.
+        if (accrued) {
+            uint x = 1 + 2;
+            uint y = x + 3;
+        }
     }
 
     function accruedInterestIndices(uint timeElapsed) override internal view returns (uint64, uint64) {
+        bool accrued = accrueWasCalled;
+        // This if statement is purely here to overcome compiler optimization.
+        // The optimization removes the unused local assignment above.
+        if(accrued) {
+            return (getBaseSupplyIndex(), getBaseBorrowIndex());
+        }
         return (getBaseSupplyIndex(), getBaseBorrowIndex());
     }
 
