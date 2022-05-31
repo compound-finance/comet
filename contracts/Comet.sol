@@ -988,6 +988,10 @@ contract Comet is CometMainInterface {
         if (src == dst) revert NoSelfTransfer();
 
         if (asset == baseToken) {
+            accrueInternal();
+            if (amount == type(uint256).max) {
+                amount = balanceOf(src); // transfer max
+            }
             return transferBase(src, dst, safe104(amount));
         } else {
             return transferCollateral(src, dst, asset, safe128(amount));
@@ -998,8 +1002,6 @@ contract Comet is CometMainInterface {
      * @dev Transfer an amount of base asset from src to dst, borrowing if possible/necessary
      */
     function transferBase(address src, address dst, uint104 amount) internal {
-        accrueInternal();
-
         UserBasic memory srcUser = userBasic[src];
         UserBasic memory dstUser = userBasic[dst];
 
@@ -1088,6 +1090,10 @@ contract Comet is CometMainInterface {
         if (!hasPermission(src, operator)) revert Unauthorized();
 
         if (asset == baseToken) {
+            accrueInternal();
+            if (amount == type(uint256).max) {
+                amount = balanceOf(src); // withdraw max
+            }
             return withdrawBase(src, to, safe104(amount));
         } else {
             return withdrawCollateral(src, to, asset, safe128(amount));
@@ -1098,8 +1104,6 @@ contract Comet is CometMainInterface {
      * @dev Withdraw an amount of base asset from src to `to`, borrowing if possible/necessary
      */
     function withdrawBase(address src, address to, uint104 amount) internal {
-        accrueInternal();
-
         UserBasic memory srcUser = userBasic[src];
         int104 srcPrincipal = srcUser.principal;
         int104 srcBalance = presentValue(srcPrincipal) - signed104(amount);
@@ -1322,7 +1326,7 @@ contract Comet is CometMainInterface {
      * @param account The account whose balance to query
      * @return The present day base balance magnitude of the account, if positive
      */
-    function balanceOf(address account) override external view returns (uint256) {
+    function balanceOf(address account) override public view returns (uint256) {
         (uint64 baseSupplyIndex_, ) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         int104 principal = userBasic[account].principal;
         return principal > 0 ? presentValueSupply(baseSupplyIndex_, unsigned104(principal)) : 0;
