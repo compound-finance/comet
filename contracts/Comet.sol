@@ -988,9 +988,8 @@ contract Comet is CometMainInterface {
         if (src == dst) revert NoSelfTransfer();
 
         if (asset == baseToken) {
-            accrueInternal();
             if (amount == type(uint256).max) {
-                amount = balanceOf(src); // transfer max
+                amount = balanceOf(src); // balanceOf will calculate the accrued balance
             }
             return transferBase(src, dst, safe104(amount));
         } else {
@@ -1002,6 +1001,8 @@ contract Comet is CometMainInterface {
      * @dev Transfer an amount of base asset from src to dst, borrowing if possible/necessary
      */
     function transferBase(address src, address dst, uint104 amount) internal {
+        accrueInternal();
+
         UserBasic memory srcUser = userBasic[src];
         UserBasic memory dstUser = userBasic[dst];
 
@@ -1090,9 +1091,8 @@ contract Comet is CometMainInterface {
         if (!hasPermission(src, operator)) revert Unauthorized();
 
         if (asset == baseToken) {
-            accrueInternal();
             if (amount == type(uint256).max) {
-                amount = balanceOf(src); // withdraw max
+                amount = balanceOf(src); // balanceOf will calculate the accrued balance
             }
             return withdrawBase(src, to, safe104(amount));
         } else {
@@ -1104,6 +1104,8 @@ contract Comet is CometMainInterface {
      * @dev Withdraw an amount of base asset from src to `to`, borrowing if possible/necessary
      */
     function withdrawBase(address src, address to, uint104 amount) internal {
+        accrueInternal();
+
         UserBasic memory srcUser = userBasic[src];
         int104 srcPrincipal = srcUser.principal;
         int104 srcBalance = presentValue(srcPrincipal) - signed104(amount);
