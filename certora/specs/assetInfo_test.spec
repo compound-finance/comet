@@ -96,3 +96,16 @@ rule reversibility_of_packing(uint8 i, address assetArg, address priceFeedArg, u
         assert (supplyCap_ == supplyCapArg, "supply got packed/unpacked wrongfully");
     }
 }
+
+rule test_rule() {
+    uint8 offset_; address asset_; address priceFeed_; uint64 scale_; uint64 borrowCollateralFactor_; uint64 liquidateCollateralFactor_; uint64 liquidationFactor_; uint128 supplyCap_;
+    offset_, asset_, priceFeed_, scale_, borrowCollateralFactor_, liquidateCollateralFactor_, liquidationFactor_, supplyCap_ = test();
+    assert (asset_ == 0, "asset is non-zero");
+    assert (priceFeed_ == 0, "price feed is non-zero");
+    assert (scale_ == 10^0, "scale is not 1");
+    assert (borrowCollateralFactor_ == 0, "borrow Collateral Factor is non-zero");
+    assert (liquidateCollateralFactor_ == 0, "liquidate Collateral Factor is non-zero");
+    assert (liquidationFactor_ == 0, "liquidation Factor is non-zero");
+    assert (supplyCap_ == 0, "supply cap is non-zero");
+    assert false;
+}
