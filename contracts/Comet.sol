@@ -981,6 +981,7 @@ contract Comet is CometMainInterface {
 
     /**
      * @dev Transfer either collateral or base asset, depending on the asset, if operator is allowed
+     * @dev Note: Specifying an `amount` of uint256.max will transfer all of `src`'s accrued base balance
      */
     function transferInternal(address operator, address src, address dst, address asset, uint amount) internal {
         if (isTransferPaused()) revert Paused();
@@ -989,7 +990,7 @@ contract Comet is CometMainInterface {
 
         if (asset == baseToken) {
             if (amount == type(uint256).max) {
-                amount = balanceOf(src); // balanceOf will calculate the accrued balance
+                amount = balanceOf(src);
             }
             return transferBase(src, dst, safe104(amount));
         } else {
@@ -1085,6 +1086,7 @@ contract Comet is CometMainInterface {
 
     /**
      * @dev Withdraw either collateral or base asset, depending on the asset, if operator is allowed
+     * @dev Note: Specifying an `amount` of uint256.max will withdraw all of `src`'s accrued base balance
      */
     function withdrawInternal(address operator, address src, address to, address asset, uint amount) internal {
         if (isWithdrawPaused()) revert Paused();
@@ -1092,7 +1094,7 @@ contract Comet is CometMainInterface {
 
         if (asset == baseToken) {
             if (amount == type(uint256).max) {
-                amount = balanceOf(src); // balanceOf will calculate the accrued balance
+                amount = balanceOf(src);
             }
             return withdrawBase(src, to, safe104(amount));
         } else {
