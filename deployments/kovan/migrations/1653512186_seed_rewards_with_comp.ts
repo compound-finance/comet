@@ -5,7 +5,7 @@ import { migration } from '../../../plugins/deployment_manager/Migration';
 
 interface Vars { };
 
-migration<Vars>('1653512186_seed-rewards-with-comp', {
+migration<Vars>('1653512186_seed_rewards_with_comp', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
   },
