@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { Contract, Signer, providers } from 'ethers';
+import { Contract, providers } from 'ethers';
 import { Alias, Address, BuildFile } from './Types';
 import { Aliases, getAliases, putAlias, storeAliases } from './Aliases';
 import { Cache } from './Cache';
