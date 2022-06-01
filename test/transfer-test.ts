@@ -79,7 +79,7 @@ describe('transfer', function () {
     expect(b1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyBase).to.be.equal(t0.totalSupplyBase.sub(1));
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
-    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(90000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(105000);
   });
 
 

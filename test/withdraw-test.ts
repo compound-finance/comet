@@ -114,7 +114,7 @@ describe('withdrawTo', function () {
     expect(b1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyBase).to.be.equal(0n);
     expect(t1.totalBorrowBase).to.be.equal(exp(50, 6));
-    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(100000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(110000);
   });
 
   it('withdraws collateral from sender if the asset is collateral', async () => {
