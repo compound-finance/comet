@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { Contract, Signer } from 'ethers';
+import { Contract, Signer, providers } from 'ethers';
 import { Alias, Address, BuildFile } from './Types';
 import { Aliases, getAliases, putAlias, storeAliases } from './Aliases';
 import { Cache } from './Cache';
@@ -13,6 +13,7 @@ import { spider } from './Spider';
 import { Migration, getArtifactSpec } from './Migration';
 import { generateMigration } from './MigrationTemplate';
 import { NonceManager } from '@ethersproject/experimental';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 interface DeploymentManagerConfig {
   baseDir?: string;
@@ -33,7 +34,7 @@ export class DeploymentManager {
   config: DeploymentManagerConfig;
   cache: Cache;
   contractsCache: ContractMap | null;
-  _signer: Signer | null; // Used by deployer and contracts
+  _signer: SignerWithAddress | null; // Used by deployer and contracts
 
   constructor(
     deployment: string,
@@ -50,12 +51,13 @@ export class DeploymentManager {
     this._signer = null; // TODO: connect
   }
 
-  async getSigner() {
+  async getSigner(): Promise<SignerWithAddress> {
     if (this._signer) {
       return this._signer;
     }
-    let [signer] = await this.hre.ethers.getSigners();
-    this._signer = new NonceManager(signer); // combine with SignerWithAddress
+    const [signer] = await this.hre.ethers.getSigners();
+    const managedSigner = new NonceManager(signer) as unknown as providers.JsonRpcSigner;
+    this._signer = await SignerWithAddress.create(managedSigner);
   }
 
   private debug(...args: any[]) {
