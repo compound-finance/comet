@@ -801,7 +801,7 @@ const isManager = await comet.callStatic.hasPermission('0xOwner', '0xManager');
 
 This function is used to transfer an asset within the protocol to another address. A manager of an account is also able to perform a transfer on behalf of the account. Account balances change but the asset does not leave the protocol contract. The transfer will fail if it would make the account liquidatable.
 
-There are two variants of the transfer function: `transfer` and `transferAsset`. The former conforms to the ERC20 standard and transfers the base asset, while the latter requires specifying a specific asset to transfer.
+There are two variants of the transfer function: `transfer` and `transferAsset`. The former conforms to the ERC-20 standard and transfers the base asset, while the latter requires specifying a specific asset to transfer.
 
 #### Comet
 
