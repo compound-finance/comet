@@ -11,6 +11,9 @@ migration<Vars>('1653512197_seed_rewards_with_comp', {
     return {};
   },
   enact: async (deploymentManager: DeploymentManager, vars: Vars) => {
+    /*
+    XXX enable once COMP (or another reward token) is added for Fuji
+
     let [signer] = await deploymentManager.hre.ethers.getSigners();
 
     const timelock = await deploymentManager.contract('timelock') as SimpleTimelock;
@@ -67,6 +70,8 @@ migration<Vars>('1653512197_seed_rewards_with_comp', {
     // console.log("COMP balance of Timelock: ", await COMP.balanceOf(timelock.address));
     // console.log("COMP balance of CometRewards: ", await COMP.balanceOf(rewards.address));
     // console.log("RewardConfig: ", await rewards.rewardConfig(comet.address));
+
+    */
   },
   enacted: async (deploymentManager: DeploymentManager) => {
     return false;
