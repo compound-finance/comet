@@ -28,7 +28,7 @@ migration<Vars>('1651257139_rewards', {
     //  NB: there is/won't be COMP on fuji/avalanche
     const updatedRoots = await deploymentManager.getRoots();
     updatedRoots.set('rewards', contracts.rewards);
-    deploymentManager.putRoots(updatedRoots);
+    await deploymentManager.putRoots(updatedRoots);
 
     console.log("You should set roots.json to:");
     console.log("");

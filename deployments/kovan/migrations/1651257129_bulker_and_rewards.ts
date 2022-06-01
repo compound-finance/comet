@@ -37,7 +37,7 @@ migration<Vars>('1651257129_bulker_and_rewards', {
     const updatedRoots = await deploymentManager.getRoots();
     updatedRoots.set('rewards', contracts.rewards);
     updatedRoots.set('bulker', contracts.bulker);
-    deploymentManager.putRoots(updatedRoots);
+    await deploymentManager.putRoots(updatedRoots);
 
     console.log("You should set roots.json to:");
     console.log("");
