@@ -58,6 +58,7 @@ export class DeploymentManager {
     const [signer] = await this.hre.ethers.getSigners();
     const managedSigner = new NonceManager(signer) as unknown as providers.JsonRpcSigner;
     this._signer = await SignerWithAddress.create(managedSigner);
+    return this._signer;
   }
 
   private debug(...args: any[]) {
