@@ -169,7 +169,9 @@ export class CometContext {
       let actorBalance = await cometAsset.balanceOf(actor);
       if (actorBalance > amount) {
         this.debug(`Source Tokens: stealing from actor ${name}`);
-        await cometAsset.transfer(actor, amount, recipientAddress);
+        // make gas fee 0 so we can source from contract addresses as well as EOAs
+        await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+        await cometAsset.transfer(actor, amount, recipientAddress, {gasPrice: 0});
         return;
       }
     }
