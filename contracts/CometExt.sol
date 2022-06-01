@@ -125,7 +125,6 @@ contract CometExt is CometExtInterface {
         } else {
             revert BadAmount();
         }
-        emit Approval(msg.sender, spender, amount);
         return true;
     }
 
@@ -155,6 +154,7 @@ contract CometExt is CometExtInterface {
      */
     function allowInternal(address owner, address manager, bool isAllowed_) internal {
         isAllowed[owner][manager] = isAllowed_;
+        emit Approval(owner, manager, isAllowed_ ? type(uint256).max : 0);
     }
 
     /**
