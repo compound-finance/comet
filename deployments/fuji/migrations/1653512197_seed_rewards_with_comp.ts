@@ -5,6 +5,7 @@ import { migration } from '../../../plugins/deployment_manager/Migration';
 
 interface Vars { };
 
+// XXX COMP doesn't exist on Fuji (yet?). Modify this script with a different reward token.
 migration<Vars>('1653512197_seed_rewards_with_comp', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
