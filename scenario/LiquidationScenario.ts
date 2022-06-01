@@ -91,7 +91,7 @@ scenario(
     await betty.withdrawAsset({asset: baseToken, amount: baseBorrowMin}); // force accrue
 
     await expect(
-      comet.absorb(betty.address, [albert.address])
+      betty.absorb({absorber: betty.address, accounts: [albert.address]})
     ).to.be.revertedWith("custom error 'Paused()'");
   }
 );
@@ -124,7 +124,7 @@ scenario(
 
     const lp0 = await comet.liquidatorPoints(betty.address);
 
-    await comet.absorb(betty.address, [albert.address]);
+    await betty.absorb({absorber: betty.address, accounts: [albert.address]});
 
     const lp1 = await comet.liquidatorPoints(betty.address);
 
@@ -179,7 +179,7 @@ scenario.skip(
       })
     );
 
-    await comet.absorb(betty.address, [albert.address]);
+    await betty.absorb({absorber: betty.address, accounts: [albert.address]});
 
     const txReceipt = await admin.withdrawAssetFrom({
       src: comet.address,
