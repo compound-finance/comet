@@ -12,6 +12,7 @@ import { Roots, getRoots, putRoots } from './Roots';
 import { spider } from './Spider';
 import { Migration, getArtifactSpec } from './Migration';
 import { generateMigration } from './MigrationTemplate';
+import { NonceManager } from '@ethersproject/experimental';
 
 interface DeploymentManagerConfig {
   baseDir?: string;
@@ -31,8 +32,8 @@ export class DeploymentManager {
   hre: HardhatRuntimeEnvironment;
   config: DeploymentManagerConfig;
   cache: Cache;
-  signer: Signer | null; // Used by deployer and contracts
   contractsCache: ContractMap | null;
+  _signer: Signer | null; // Used by deployer and contracts
 
   constructor(
     deployment: string,
@@ -46,7 +47,15 @@ export class DeploymentManager {
     this.cache = new Cache(deployment, config.writeCacheToDisk ?? false, config.baseDir);
 
     this.contractsCache = null;
-    this.signer = null; // TODO: connect
+    this._signer = null; // TODO: connect
+  }
+
+  async getSigner() {
+    if (this._signer) {
+      return this._signer;
+    }
+    let [signer] = await this.hre.ethers.getSigners();
+    this._signer = new NonceManager(signer); // combine with SignerWithAddress
   }
 
   private debug(...args: any[]) {
@@ -59,11 +68,11 @@ export class DeploymentManager {
     }
   }
 
-  private deployOpts(): DeployOpts {
+  private async deployOpts(): Promise<DeployOpts> {
     return {
       verify: this.config.verifyContracts,
       cache: this.cache,
-      connect: this.signer,
+      connect: await this.getSigner(),
     };
   }
 
@@ -99,12 +108,12 @@ export class DeploymentManager {
     Factory extends Deployer<C, DeployArgs>,
     DeployArgs extends Array<any>
   >(contractFile: string, deployArgs: DeployArgs): Promise<C> {
-    return deploy<C, Factory, DeployArgs>(contractFile, deployArgs, this.hre, this.deployOpts());
+    return deploy<C, Factory, DeployArgs>(contractFile, deployArgs, this.hre, await this.deployOpts());
   }
 
   /* Deploys a contract from a build file, e.g. an one imported contract */
   async deployBuild(buildFile: BuildFile, deployArgs: any[]): Promise<Contract> {
-    return await deployBuild(buildFile, deployArgs, this.hre, this.deployOpts());
+    return await deployBuild(buildFile, deployArgs, this.hre, await this.deployOpts());
   }
 
   /* Stores a new alias, which can then be referenced via `deploymentManager.contract()` */
@@ -171,7 +180,7 @@ export class DeploymentManager {
       return this.contractsCache;
     } else {
       // TODO: When else do we need to clear the contracts cache
-      this.contractsCache = await getContracts(this.cache, this.hre, this.signer);
+      this.contractsCache = await getContracts(this.cache, this.hre, await this.getSigner());
       return this.contractsCache;
     }
   }
