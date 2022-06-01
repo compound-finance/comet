@@ -67,7 +67,7 @@ export async function deployDevelopmentComet(
   configurationOverrides: ProtocolConfiguration = {}
 ): Promise<DeployedContracts> {
   const signers = await deploymentManager.hre.ethers.getSigners();
-  const admin = await signers[0].getAddress();
+  const admin = (await deploymentManager.getSigner()).address;
 
   let dai = await makeToken(deploymentManager, 1000000, 'DAI', 18, 'DAI');
   let gold = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');

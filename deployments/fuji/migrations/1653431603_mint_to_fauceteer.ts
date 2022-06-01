@@ -6,8 +6,8 @@ interface Vars {};
 
 migration<Vars>('1653431603_mint_to_fauceteer', {
   prepare: async (deploymentManager: DeploymentManager) => {
-    const [signer] = await deploymentManager.hre.ethers.getSigners();
-    const signerAddress = await signer.getAddress();
+    const signer = await deploymentManager.getSigner();
+    const signerAddress = signer.address;
 
     console.log(`Minting as signer: ${signerAddress}`);
 

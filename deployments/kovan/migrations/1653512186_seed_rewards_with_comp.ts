@@ -10,7 +10,7 @@ migration<Vars>('1653512186_seed_rewards_with_comp', {
     return {};
   },
   enact: async (deploymentManager: DeploymentManager, vars: Vars) => {
-    let [signer] = await deploymentManager.hre.ethers.getSigners();
+    const signer = await deploymentManager.getSigner();
 
     const timelock = await deploymentManager.contract('timelock') as SimpleTimelock;
     const governor = await deploymentManager.contract('governor') as GovernorSimple;

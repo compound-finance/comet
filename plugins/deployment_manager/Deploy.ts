@@ -30,15 +30,15 @@ export interface DeployOpts {
 async function deployFromBuildFile(
   buildFile: BuildFile,
   deployArgs: any[],
-  hre: HardhatRuntimeEnvironment
+  hre: HardhatRuntimeEnvironment,
+  deployOpts: DeployOpts = {}
 ): Promise<Contract> {
   let [contractName, metadata] = getPrimaryContract(buildFile);
-  const [signer] = await hre.ethers.getSigners(); // TODO: Hmm?
+  const signer = deployOpts.connect;
   const contractFactory = new hre.ethers.ContractFactory(metadata.abi, metadata.bin, signer);
   const contract = await contractFactory.deploy(...deployArgs);
   const deployed = await contract.deployed();
-  const txnCount = await signer.getTransactionCount('pending'); // XXX ethers bug not waiting for nonce?
-  debug(`Deployed ${contractName} [tx count = ${txnCount}]`);
+  debug(`Deployed ${contractName}`);
   return deployed;
 }
 
@@ -88,7 +88,6 @@ export async function deploy<
   hre: HardhatRuntimeEnvironment,
   deployOpts: DeployOpts = {}
 ): Promise<C> {
-  const [signer] = await hre.ethers.getSigners(); // TODO: Hmm?
   let contractFileName = contractFile.split('/').reverse()[0];
   let contractName = contractFileName.replace('.sol', '');
   let factory = (await hre.ethers.getContractFactory(contractName)) as unknown as Factory;
@@ -118,8 +117,7 @@ export async function deploy<
 
   await maybeStoreCache(deployOpts, contract, buildFile);
 
-  const txnCount = await signer.getTransactionCount('pending'); // XXX ethers bug not waiting for nonce?
-  debug(`Deployed ${contractName} via tx ${contract.deployTransaction?.hash} [tx count = ${txnCount}}]`);
+  debug(`Deployed ${contractName} via tx ${contract.deployTransaction?.hash}`);
 
   return contract;
 }
@@ -133,7 +131,7 @@ export async function deployBuild(
   hre: HardhatRuntimeEnvironment,
   deployOpts: DeployOpts = {}
 ): Promise<Contract> {
-  let contract = await deployFromBuildFile(buildFile, deployArgs, hre);
+  let contract = await deployFromBuildFile(buildFile, deployArgs, hre, deployOpts);
 
   if (deployOpts.verify) {
     // We need to do manual verification here, since this is coming

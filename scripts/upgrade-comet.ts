@@ -28,7 +28,7 @@ async function main() {
   });
 
   let signers = await dm.hre.ethers.getSigners();
-  let admin = await signers[0];
+  let admin = await dm.getSigner();
 
   const governor = await dm.contract('governor') as GovernorSimple;
   const proxyAdmin = await dm.contract('cometAdmin') as ProxyAdmin;

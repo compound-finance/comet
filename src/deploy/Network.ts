@@ -34,7 +34,7 @@ export async function deployNetworkComet(
   contractMapOverride?: ContractMap,
 ): Promise<DeployedContracts> {
   const signers = await deploymentManager.hre.ethers.getSigners();
-  const admin = await signers[0].getAddress();
+  const admin = (await deploymentManager.getSigner()).address;
 
   const governorSimple = await deploymentManager.deploy<GovernorSimple, GovernorSimple__factory, []>(
     'test/GovernorSimple.sol',
