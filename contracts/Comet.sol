@@ -981,6 +981,7 @@ contract Comet is CometMainInterface {
 
     /**
      * @dev Transfer either collateral or base asset, depending on the asset, if operator is allowed
+     * @dev Note: Specifying an `amount` of uint256.max will transfer all of `src`'s accrued base balance
      */
     function transferInternal(address operator, address src, address dst, address asset, uint amount) internal {
         if (isTransferPaused()) revert Paused();
@@ -988,6 +989,9 @@ contract Comet is CometMainInterface {
         if (src == dst) revert NoSelfTransfer();
 
         if (asset == baseToken) {
+            if (amount == type(uint256).max) {
+                amount = balanceOf(src);
+            }
             return transferBase(src, dst, safe104(amount));
         } else {
             return transferCollateral(src, dst, asset, safe128(amount));
@@ -1082,12 +1086,16 @@ contract Comet is CometMainInterface {
 
     /**
      * @dev Withdraw either collateral or base asset, depending on the asset, if operator is allowed
+     * @dev Note: Specifying an `amount` of uint256.max will withdraw all of `src`'s accrued base balance
      */
     function withdrawInternal(address operator, address src, address to, address asset, uint amount) internal {
         if (isWithdrawPaused()) revert Paused();
         if (!hasPermission(src, operator)) revert Unauthorized();
 
         if (asset == baseToken) {
+            if (amount == type(uint256).max) {
+                amount = balanceOf(src);
+            }
             return withdrawBase(src, to, safe104(amount));
         } else {
             return withdrawCollateral(src, to, asset, safe128(amount));
@@ -1322,7 +1330,7 @@ contract Comet is CometMainInterface {
      * @param account The account whose balance to query
      * @return The present day base balance magnitude of the account, if positive
      */
-    function balanceOf(address account) override external view returns (uint256) {
+    function balanceOf(address account) override public view returns (uint256) {
         (uint64 baseSupplyIndex_, ) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         int104 principal = userBasic[account].principal;
         return principal > 0 ? presentValueSupply(baseSupplyIndex_, unsigned104(principal)) : 0;

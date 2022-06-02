@@ -1,9 +1,9 @@
 import { EvilToken, EvilToken__factory, FaucetToken } from '../build/types';
-import { baseBalanceOf, ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, setTotalsBasic, wait } from './helpers';
+import { baseBalanceOf, ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, setTotalsBasic, wait, fastForward } from './helpers';
 
 describe('withdrawTo', function () {
   it('withdraws base from sender if the asset is base', async () => {
-    const protocol = await makeProtocol({base: 'USDC'});
+    const protocol = await makeProtocol({ base: 'USDC' });
     const { comet, tokens, users: [alice, bob] } = protocol;
     const { USDC } = tokens;
 
@@ -44,17 +44,77 @@ describe('withdrawTo', function () {
       }
     });
 
-    expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q0.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p1.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(p0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(p0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(q0.internal).to.be.deep.equal({ USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(q0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(p1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(p1.external).to.be.deep.equal({ USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(q1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(q1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyBase).to.be.equal(0n);
     expect(t1.totalBorrowBase).to.be.equal(0n);
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(100000);
+  });
+
+  it('withdraws max base balance (including accrued) from sender if the asset is base', async () => {
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { USDC } = tokens;
+
+    await USDC.allocateTo(comet.address, 110e6);
+    await setTotalsBasic(comet, {
+      totalSupplyBase: 100e6,
+      totalBorrowBase: 50e6, // non-zero borrow to accrue interest
+    });
+    await comet.setBasePrincipal(bob.address, 100e6);
+    const cometAsB = comet.connect(bob);
+
+    // Fast forward to accrue some interest
+    await fastForward(86400);
+    await ethers.provider.send('evm_mine', []);
+
+    const a0 = await portfolio(protocol, alice.address);
+    const b0 = await portfolio(protocol, bob.address);
+    const bobAccruedBalance = (await comet.callStatic.balanceOf(bob.address)).toBigInt();
+    const s0 = await wait(cometAsB.withdrawTo(alice.address, USDC.address, ethers.constants.MaxUint256));
+    const t1 = await comet.totalsBasic();
+    const a1 = await portfolio(protocol, alice.address);
+    const b1 = await portfolio(protocol, bob.address);
+
+    expect(event(s0, 0)).to.be.deep.equal({
+      Transfer: {
+        from: comet.address,
+        to: alice.address,
+        amount: bobAccruedBalance,
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      Withdraw: {
+        src: bob.address,
+        to: alice.address,
+        amount: bobAccruedBalance,
+      }
+    });
+    expect(event(s0, 2)).to.be.deep.equal({
+      Transfer: {
+        from: bob.address,
+        to: ethers.constants.AddressZero,
+        amount: bobAccruedBalance,
+      }
+    });
+
+    expect(a0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(a0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(b0.internal).to.be.deep.equal({ USDC: bobAccruedBalance, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(b0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(a1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(a1.external).to.be.deep.equal({ USDC: bobAccruedBalance, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(b1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(b1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(t1.totalSupplyBase).to.be.equal(0n);
+    expect(t1.totalBorrowBase).to.be.equal(exp(50, 6));
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(110000);
   });
 
   it('withdraws collateral from sender if the asset is collateral', async () => {
@@ -94,20 +154,20 @@ describe('withdrawTo', function () {
       }
     });
 
-    expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q0.internal).to.be.deep.equal({USDC: 0n, COMP: exp(8, 8), WETH: 0n, WBTC: 0n});
-    expect(q0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p1.external).to.be.deep.equal({USDC: 0n, COMP: exp(8, 8), WETH: 0n, WBTC: 0n});
-    expect(q1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(p0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(p0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(q0.internal).to.be.deep.equal({ USDC: 0n, COMP: exp(8, 8), WETH: 0n, WBTC: 0n });
+    expect(q0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(p1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(p1.external).to.be.deep.equal({ USDC: 0n, COMP: exp(8, 8), WETH: 0n, WBTC: 0n });
+    expect(q1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(q1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyAsset).to.be.equal(0n);
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(80000);
   });
 
   it('calculates base principal correctly', async () => {
-    const protocol = await makeProtocol({base: 'USDC'});
+    const protocol = await makeProtocol({ base: 'USDC' });
     const { comet, tokens, users: [alice, bob] } = protocol;
     const { USDC } = tokens;
 
@@ -128,20 +188,20 @@ describe('withdrawTo', function () {
     const alice1 = await portfolio(protocol, alice.address);
     const bob1 = await portfolio(protocol, bob.address);
 
-    expect(alice0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(alice0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(bob0.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(bob0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(alice1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(alice1.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(bob1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(bob1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(alice0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(alice0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(bob0.internal).to.be.deep.equal({ USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(bob0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(alice1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(alice1.external).to.be.deep.equal({ USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(bob1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(bob1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(totals1.totalSupplyBase).to.be.equal(0n);
     expect(totals1.totalBorrowBase).to.be.equal(0n);
   });
 
   it('reverts if withdrawing base exceeds the total supply', async () => {
-    const protocol = await makeProtocol({base: 'USDC'});
+    const protocol = await makeProtocol({ base: 'USDC' });
     const { comet, tokens, users: [alice, bob] } = protocol;
     const { USDC } = tokens;
 
@@ -153,7 +213,7 @@ describe('withdrawTo', function () {
   });
 
   it('reverts if withdrawing collateral exceeds the total supply', async () => {
-    const protocol = await makeProtocol({base: 'USDC'});
+    const protocol = await makeProtocol({ base: 'USDC' });
     const { comet, tokens, users: [alice, bob] } = protocol;
     const { COMP } = tokens;
 
@@ -175,7 +235,7 @@ describe('withdrawTo', function () {
   });
 
   it('reverts if withdraw is paused', async () => {
-    const protocol = await makeProtocol({base: 'USDC'});
+    const protocol = await makeProtocol({ base: 'USDC' });
     const { comet, tokens, pauseGuardian, users: [alice, bob] } = protocol;
     const { USDC } = tokens;
 
@@ -194,7 +254,7 @@ describe('withdrawTo', function () {
     const { WETH, USDC } = tokens;
 
     await USDC.allocateTo(comet.address, 1e6);
-    await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
+    await comet.setCollateralBalance(alice.address, WETH.address, exp(1, 18));
 
     let t0 = await comet.totalsBasic();
     await setTotalsBasic(comet, {
@@ -210,7 +270,7 @@ describe('withdrawTo', function () {
 
 describe('withdraw', function () {
   it('withdraws to sender by default', async () => {
-    const protocol = await makeProtocol({base: 'USDC'});
+    const protocol = await makeProtocol({ base: 'USDC' });
     const { comet, tokens, users: [bob] } = protocol;
     const { USDC } = tokens;
 
@@ -227,14 +287,14 @@ describe('withdraw', function () {
     const _t1 = await comet.totalsBasic();
     const q1 = await portfolio(protocol, bob.address);
 
-    expect(q0.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q1.external).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(q0.internal).to.be.deep.equal({ USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(q0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(q1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(q1.external).to.be.deep.equal({ USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n });
   });
 
   it('reverts if withdraw is paused', async () => {
-    const protocol = await makeProtocol({base: 'USDC'});
+    const protocol = await makeProtocol({ base: 'USDC' });
     const { comet, tokens, pauseGuardian, users: [bob] } = protocol;
     const { USDC } = tokens;
 
@@ -250,7 +310,7 @@ describe('withdraw', function () {
 
   it('reverts if withdraw amount is less than baseBorrowMin', async () => {
     const { comet, tokens, users: [alice] } = await makeProtocol({
-      baseBorrowMin: exp(1,6)
+      baseBorrowMin: exp(1, 6)
     });
     const { USDC } = tokens;
 
@@ -273,13 +333,13 @@ describe('withdraw', function () {
     const { WETH } = tokens;
 
     const totalsCollateral = Object.assign({}, await comet.totalsCollateral(WETH.address), {
-      totalSupplyAsset: exp(1,18),
+      totalSupplyAsset: exp(1, 18),
     });
     await wait(comet.setTotalsCollateral(WETH.address, totalsCollateral));
 
     // user has a borrow, but with collateral to cover
     await comet.setBasePrincipal(alice.address, -100e6);
-    await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
+    await comet.setCollateralBalance(alice.address, WETH.address, exp(1, 18));
 
     // reverts if withdraw would leave borrow uncollateralized
     await expect(
@@ -287,7 +347,7 @@ describe('withdraw', function () {
     ).to.be.revertedWith("custom error 'NotCollateralized()'");
   });
 
-  describe('reentrancy', function() {
+  describe('reentrancy', function () {
     it('is not broken by malicious reentrancy transferFrom', async () => {
       const { comet, tokens, users: [alice, bob] } = await makeProtocol({
         assets: {
@@ -301,7 +361,7 @@ describe('withdraw', function () {
           }
         }
       });
-      const { USDC, EVIL } = <{USDC: FaucetToken, EVIL: EvilToken}>tokens;
+      const { USDC, EVIL } = <{ USDC: FaucetToken, EVIL: EvilToken }>tokens;
 
       await USDC.allocateTo(comet.address, 100e6);
 
@@ -318,7 +378,7 @@ describe('withdraw', function () {
       });
       await comet.setTotalsCollateral(EVIL.address, totalsCollateral);
 
-      await comet.setCollateralBalance(alice.address, EVIL.address, exp(1,6));
+      await comet.setCollateralBalance(alice.address, EVIL.address, exp(1, 6));
       await comet.connect(alice).allow(EVIL.address, true);
 
       // in callback, EVIL token calls transferFrom(alice.address, bob.address, 1e6)
@@ -347,7 +407,7 @@ describe('withdraw', function () {
           }
         }
       });
-      const { USDC, EVIL } = <{USDC: FaucetToken, EVIL: EvilToken}>tokens;
+      const { USDC, EVIL } = <{ USDC: FaucetToken, EVIL: EvilToken }>tokens;
 
       await USDC.allocateTo(comet.address, 100e6);
 
@@ -364,7 +424,7 @@ describe('withdraw', function () {
       });
       await comet.setTotalsCollateral(EVIL.address, totalsCollateral);
 
-      await comet.setCollateralBalance(alice.address, EVIL.address, exp(1,6));
+      await comet.setCollateralBalance(alice.address, EVIL.address, exp(1, 6));
 
       await comet.connect(alice).allow(EVIL.address, true);
 
@@ -408,14 +468,14 @@ describe('withdrawFrom', function () {
     const p1 = await portfolio(protocol, alice.address);
     const q1 = await portfolio(protocol, bob.address);
 
-    expect(p0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q0.internal).to.be.deep.equal({USDC: 0n, COMP: 7n, WETH: 0n, WBTC: 0n});
-    expect(q0.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(p1.external).to.be.deep.equal({USDC: 0n, COMP: 7n, WETH: 0n, WBTC: 0n});
-    expect(q1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(q1.external).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(p0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(p0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(q0.internal).to.be.deep.equal({ USDC: 0n, COMP: 7n, WETH: 0n, WBTC: 0n });
+    expect(q0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(p1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(p1.external).to.be.deep.equal({ USDC: 0n, COMP: 7n, WETH: 0n, WBTC: 0n });
+    expect(q1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(q1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
   });
 
   it('reverts if src is specified and sender does not have permission', async () => {
