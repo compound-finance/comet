@@ -34,7 +34,7 @@ export class DeploymentManager {
   config: DeploymentManagerConfig;
   cache: Cache;
   contractsCache: ContractMap | null;
-  _signer: SignerWithAddress | null; // Used by deployer and contracts
+  _signers: SignerWithAddress[];
 
   constructor(
     deployment: string,
@@ -48,17 +48,23 @@ export class DeploymentManager {
     this.cache = new Cache(deployment, config.writeCacheToDisk ?? false, config.baseDir);
 
     this.contractsCache = null;
-    this._signer = null; // TODO: connect
+    this._signers = [];
+  }
+
+  async getSigners(): Promise<SignerWithAddress[]> {
+    if (this._signers.length > 0) {
+      return this._signers;
+    }
+    const signers = await this.hre.ethers.getSigners();
+    this._signers = await Promise.all(signers.map(async (signer) => {
+      const managedSigner = new NonceManager(signer) as unknown as providers.JsonRpcSigner;
+      return await SignerWithAddress.create(managedSigner);
+    }));
+    return this._signers;
   }
 
   async getSigner(): Promise<SignerWithAddress> {
-    if (this._signer) {
-      return this._signer;
-    }
-    const [signer] = await this.hre.ethers.getSigners();
-    const managedSigner = new NonceManager(signer) as unknown as providers.JsonRpcSigner;
-    this._signer = await SignerWithAddress.create(managedSigner);
-    return this._signer;
+    return (await this.getSigners())[0];
   }
 
   private debug(...args: any[]) {
