@@ -1287,6 +1287,8 @@ contract Comet is CometMainInterface {
         if (reserves < 0 || amount > unsigned256(reserves)) revert InsufficientReserves();
 
         doTransferOut(baseToken, to, amount);
+
+        emit WithdrawReserves(to, amount);
     }
 
     /**
