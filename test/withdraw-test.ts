@@ -57,6 +57,36 @@ describe('withdrawTo', function () {
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(100000);
   });
 
+  it('does not emit Transfer for 0 burn', async () => {
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { USDC, WETH } = tokens;
+
+    await USDC.allocateTo(comet.address, 110e6);
+    await setTotalsBasic(comet, {
+      totalSupplyBase: 100e6,
+    });
+    await comet.setCollateralBalance(bob.address, WETH.address, exp(1, 18));
+    const cometAsB = comet.connect(bob);
+
+    const s0 = await wait(cometAsB.withdrawTo(alice.address, USDC.address, exp(1, 6)));
+    expect(s0.receipt['events'].length).to.be.equal(2);
+    expect(event(s0, 0)).to.be.deep.equal({
+      Transfer: {
+        from: comet.address,
+        to: alice.address,
+        amount: exp(1, 6),
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      Withdraw: {
+        src: bob.address,
+        to: alice.address,
+        amount: exp(1, 6),
+      }
+    });
+  });
+
   it('withdraws max base balance (including accrued) from sender if the asset is base', async () => {
     const protocol = await makeProtocol({ base: 'USDC' });
     const { comet, tokens, users: [alice, bob] } = protocol;
@@ -117,34 +147,56 @@ describe('withdrawTo', function () {
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(110000);
   });
 
-  it('does not emit Transfer for 0 burn', async () => {
+  it('withdraw max base should withdraw 0 if user has a borrow position', async () => {
     const protocol = await makeProtocol({ base: 'USDC' });
     const { comet, tokens, users: [alice, bob] } = protocol;
     const { USDC, WETH } = tokens;
 
-    await USDC.allocateTo(comet.address, 110e6);
-    await setTotalsBasic(comet, {
-      totalSupplyBase: 100e6,
-    });
+    await comet.setBasePrincipal(bob.address, -100e6);
     await comet.setCollateralBalance(bob.address, WETH.address, exp(1, 18));
     const cometAsB = comet.connect(bob);
 
-    const s0 = await wait(cometAsB.withdrawTo(alice.address, USDC.address, exp(1, 6)));
-    expect(s0.receipt['events'].length).to.be.equal(2);
+    const t0 = await comet.totalsBasic();
+    const a0 = await portfolio(protocol, alice.address);
+    const b0 = await portfolio(protocol, bob.address);
+    const s0 = await wait(cometAsB.withdrawTo(alice.address, USDC.address, ethers.constants.MaxUint256));
+    const t1 = await comet.totalsBasic();
+    const a1 = await portfolio(protocol, alice.address);
+    const b1 = await portfolio(protocol, bob.address);
+
     expect(event(s0, 0)).to.be.deep.equal({
       Transfer: {
         from: comet.address,
         to: alice.address,
-        amount: exp(1, 6),
+        amount: 0n,
       }
     });
     expect(event(s0, 1)).to.be.deep.equal({
       Withdraw: {
         src: bob.address,
         to: alice.address,
-        amount: exp(1, 6),
+        amount: 0n,
       }
     });
+    expect(event(s0, 2)).to.be.deep.equal({
+      Transfer: {
+        from: bob.address,
+        to: ethers.constants.AddressZero,
+        amount: 0n,
+      }
+    });
+
+    expect(a0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(a0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(b0.internal).to.be.deep.equal({ USDC: exp(-100, 6), COMP: 0n, WETH: exp(1, 18), WBTC: 0n });
+    expect(b0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(a1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(a1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(b1.internal).to.be.deep.equal({ USDC: exp(-100, 6), COMP: 0n, WETH: exp(1, 18), WBTC: 0n });
+    expect(b1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(t1.totalSupplyBase).to.be.equal(t0.totalSupplyBase);
+    expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(110000);
   });
 
   it('withdraws collateral from sender if the asset is collateral', async () => {
