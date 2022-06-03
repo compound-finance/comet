@@ -24,6 +24,13 @@ describe('transfer', function () {
     expect(event(s0, 0)).to.be.deep.equal({
       Transfer: {
         from: bob.address,
+        to: ethers.constants.AddressZero,
+        amount: BigInt(100e6),
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      Transfer: {
+        from: ethers.constants.AddressZero,
         to: alice.address,
         amount: BigInt(100e6),
       }
@@ -64,11 +71,19 @@ describe('transfer', function () {
     const a1 = await portfolio(protocol, alice.address);
     const b1 = await portfolio(protocol, bob.address);
 
+    // additional 1 wei burned, amount to clear bob gets alice to same balance - 1
     expect(event(s0, 0)).to.be.deep.equal({
       Transfer: {
         from: bob.address,
-        to: alice.address,
+        to: ethers.constants.AddressZero,
         amount: bobAccruedBalance,
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      Transfer: {
+        from: ethers.constants.AddressZero,
+        to: alice.address,
+        amount: bobAccruedBalance - 1n,
       }
     });
 
