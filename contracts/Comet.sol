@@ -910,7 +910,7 @@ contract Comet is CometMainInterface {
         updateBasePrincipal(dst, dstUser, dstPrincipalNew);
 
         emit Supply(from, dst, amount);
-        emit Transfer(address(0), dst, amount);
+        emit Transfer(address(0), dst, supplyAmount);
     }
 
     /**
@@ -1029,7 +1029,12 @@ contract Comet is CometMainInterface {
             if (!isBorrowCollateralized(src)) revert NotCollateralized();
         }
 
-        emit Transfer(src, dst, amount);
+        if (supplyAmount > 0) {
+            emit Transfer(address(0), dst, supplyAmount);
+        }
+        if (withdrawAmount > 0) {
+            emit Transfer(src, address(0), withdrawAmount);
+        }
     }
 
     /**
@@ -1128,7 +1133,7 @@ contract Comet is CometMainInterface {
         doTransferOut(baseToken, to, amount);
 
         emit Withdraw(src, to, amount);
-        emit Transfer(src, address(0), amount);
+        emit Transfer(src, address(0), withdrawAmount);
     }
 
     /**
