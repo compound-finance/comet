@@ -27,8 +27,7 @@ async function main() {
     debug: true,
   });
 
-  let signers = await dm.hre.ethers.getSigners();
-  let admin = await signers[0];
+  const [admin, newPauseGuardian] = await dm.getSigners();
 
   const governor = await dm.contract('governor') as GovernorSimple;
   const proxyAdmin = await dm.contract('cometAdmin') as ProxyAdmin;
@@ -36,7 +35,7 @@ async function main() {
   const configurator = await dm.contract('configurator') as Configurator;
   const governorAsAdmin = governor.connect(admin);
 
-  const setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(['address'], [signers[1].address]);
+  const setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(['address'], [newPauseGuardian.address]);
   const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, comet.address]);
   let tx = await (await governorAsAdmin.propose(
     [

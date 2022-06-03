@@ -20,8 +20,8 @@ let cloneAddr = {
 
 migration('1644432723_deploy_fuji', {
   prepare: async (deploymentManager: DeploymentManager) => {
-    let [signer] = await deploymentManager.hre.ethers.getSigners();
-    let signerAddress = await signer.getAddress();
+    let signer = await deploymentManager.getSigner();
+    let signerAddress = signer.address;
 
     let usdcProxyAdminArgs: [] = [];
     let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(

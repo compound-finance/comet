@@ -14,7 +14,7 @@ migration<Vars>('1653512197_seed_rewards_with_comp', {
     /*
     XXX enable once COMP (or another reward token) is added for Fuji
 
-    let [signer] = await deploymentManager.hre.ethers.getSigners();
+    let signer = await deploymentManager.getSigner();
 
     const timelock = await deploymentManager.contract('timelock') as SimpleTimelock;
     const governor = await deploymentManager.contract('governor') as GovernorSimple;

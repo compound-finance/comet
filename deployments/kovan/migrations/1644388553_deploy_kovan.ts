@@ -24,8 +24,8 @@ let cloneAddr = {
 migration('1644388553_deploy_kovan', {
   prepare: async (deploymentManager: DeploymentManager) => {
     const { ethers } = deploymentManager.hre;
-    let [signer] = await ethers.getSigners();
-    let signerAddress = await signer.getAddress();
+    let signer = await deploymentManager.getSigner();
+    let signerAddress = signer.address;
 
     let usdcProxyAdminArgs: [] = [];
     let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
