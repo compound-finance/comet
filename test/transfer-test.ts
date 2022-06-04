@@ -45,6 +45,29 @@ describe('transfer', function () {
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(90000);
   });
 
+  it('does not emit Transfer if 0 mint/burn', async () => {
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const {
+      comet,
+      tokens,
+      users: [alice, bob],
+    } = protocol;
+    const { USDC, WETH } = tokens;
+
+    await comet.setCollateralBalance(bob.address, WETH.address, exp(1, 18));
+    await comet.setBasePrincipal(alice.address, -100e6);
+    await setTotalsBasic(comet, {
+      totalSupplyBase: 100e6,
+      totalBorrowBase: 100e6,
+    });
+
+    const cometAsB = comet.connect(bob);
+
+    const s0 = await wait(cometAsB.transferAsset(alice.address, USDC.address, 100e6));
+
+    expect(s0.receipt['events'].length).to.be.equal(0);
+  });
+
   it('transfers max base balance (including accrued) from sender if the asset is base', async () => {
     const protocol = await makeProtocol({ base: 'USDC' });
     const { comet, tokens, users: [alice, bob] } = protocol;
@@ -96,7 +119,6 @@ describe('transfer', function () {
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(105000);
   });
-
 
   it('transfers collateral from sender if the asset is collateral', async () => {
     const protocol = await makeProtocol();
