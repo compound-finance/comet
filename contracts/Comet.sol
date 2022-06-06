@@ -546,38 +546,6 @@ contract Comet is CometMainInterface {
     }
 
     /**
-     * @notice Calculate the amount of borrow liquidity for account
-     * @param account The address to check liquidity for
-     * @return The common price quantity of borrow liquidity
-     */
-    function getBorrowLiquidity(address account) override external view returns (int) {
-        uint16 assetsIn = userBasic[account].assetsIn;
-
-        int liquidity = signedMulPrice(
-            presentValue(userBasic[account].principal),
-            getPrice(baseTokenPriceFeed),
-            uint64(baseScale)
-        );
-
-        for (uint8 i = 0; i < numAssets; i++) {
-            if (isInAsset(assetsIn, i)) {
-                AssetInfo memory asset = getAssetInfo(i);
-                uint newAmount = mulPrice(
-                    userCollateral[account][asset.asset].balance,
-                    getPrice(asset.priceFeed),
-                    asset.scale
-                );
-                liquidity += signed256(mulFactor(
-                    newAmount,
-                    asset.borrowCollateralFactor
-                ));
-            }
-        }
-
-        return liquidity;
-    }
-
-    /**
      * @notice Check whether an account has enough collateral to not be liquidated
      * @param account The address to check
      * @return Whether the account is minimally collateralized enough to not be liquidated

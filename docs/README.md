@@ -223,40 +223,6 @@ const comet = new ethers.Contract(contractAddress, abiJson, provider);
 await comet.withdraw(usdcAddress, 100000000);
 ```
 
-### Get Borrow Liquidity
-
-This function returns the amount of base asset in USD that is presently borrowable by an account as an integer scaled up by `10 ^ 8`. If the returned value is negative, the account is not allowed to borrow any more from the protocol until more collateral is supplied or there is repayment such that the account's borrow liquidity becomes positive. A negative borrow liquidity does not necessarily imply that the account is presently liquidatable (see *[isLiquidatable](#liquidatable-accounts)* function).
-
-#### Comet
-
-```solidity
-function getBorrowLiquidity(address account) external view returns (int)
-```
-
-* `account`: The account to examine borrow liquidity.
-* `RETURNS`: Returns the current borrow liquidity of the account in USD as an integer scaled up by `10 ^ 8`.
-
-#### Solidity
-
-```solidity
-Comet comet = Comet(0xCometAddress);
-int borrowLiquidity = comet.getBorrowLiquidity(0xAccount);
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const borrowLiquidity = await comet.methods.getBorrowLiquidity('0xAccount').call();
-```
-
-#### Ethers.js v5.x
-
-```js
-const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const borrowLiquidity = await comet.callStatic.getBorrowLiquidity('0xAccount');
-```
-
 ### Borrow Collateralization
 
 This function returns true if the account passed to it has non-negative liquidity based on the borrow collateral factors. This function returns false if an account does not have sufficient liquidity to increase its borrow position. A return value of false does not necessarily imply that the account is presently liquidatable (see *[isLiquidatable](#liquidatable-accounts)* function).
