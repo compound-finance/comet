@@ -354,6 +354,22 @@ describe('supplyTo', function () {
     await expect(cometAsB.supplyTo(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
   });
 
+  it('reverts if supply max for a collateral asset', async () => {
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { COMP } = tokens;
+
+    await COMP.allocateTo(bob.address, 100e6);
+    const baseAsB = COMP.connect(bob);
+    const cometAsB = comet.connect(bob);
+
+    const t0 = await comet.totalsBasic();
+    const a0 = await portfolio(protocol, alice.address);
+    const b0 = await portfolio(protocol, bob.address);
+    await wait(baseAsB.approve(COMP.address, 100e6));
+    await expect(cometAsB.supplyTo(alice.address, COMP.address, ethers.constants.MaxUint256)).to.be.revertedWith("custom error 'InvalidUInt128()'");
+  });
+
   it.skip('supplies the correct amount in a fee-like situation', async () => {
     // Note: fee-tokens are not currently supported (for efficiency) and should not be added
   });
