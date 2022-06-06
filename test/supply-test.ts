@@ -223,7 +223,6 @@ describe('supplyTo', function () {
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(120000);
   });
 
-
   it('supplies collateral from sender if the asset is collateral', async () => {
     const protocol = await makeProtocol();
     const { comet, tokens, users: [alice, bob] } = protocol;
@@ -363,9 +362,6 @@ describe('supplyTo', function () {
     const baseAsB = COMP.connect(bob);
     const cometAsB = comet.connect(bob);
 
-    const t0 = await comet.totalsBasic();
-    const a0 = await portfolio(protocol, alice.address);
-    const b0 = await portfolio(protocol, bob.address);
     await wait(baseAsB.approve(COMP.address, 100e6));
     await expect(cometAsB.supplyTo(alice.address, COMP.address, ethers.constants.MaxUint256)).to.be.revertedWith("custom error 'InvalidUInt128()'");
   });
