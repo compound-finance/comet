@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Compound III is an EVM compatible protocol that enables supplying of crypto assets as collateral in order to borrow the *base asset*. Accounts can also earn interest by supplying the base asset to the protocol.
+Compound III is an EVM compatible protocol that enables supplying of crypto assets as collateral in order to borrow the _base asset_. Accounts can also earn interest by supplying the base asset to the protocol.
 
 The initial deployment of Compound III is on Ethereum and the base asset is USDC.
 
@@ -42,8 +42,8 @@ SupplyRate = (InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlope
 function getSupplyRate(uint utilization) public view returns (uint64)
 ```
 
-* `utilization`: The utilization at which to calculate the rate.
-* `RETURNS`: The APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 25% APR.
+- `utilization`: The utilization at which to calculate the rate.
+- `RETURNS`: The APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 25% APR.
 
 #### Solidity
 
@@ -86,8 +86,8 @@ BorrowRate = InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeH
 function getBorrowRate(uint utilization) public view returns (uint64)
 ```
 
-* `utilization`: The utilization at which to calculate the rate.
-* `RETURNS`: The APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `90000000000000000` indicates a 9% APR.
+- `utilization`: The utilization at which to calculate the rate.
+- `RETURNS`: The APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `90000000000000000` indicates a 9% APR.
 
 #### Solidity
 
@@ -114,13 +114,13 @@ const borrowRate = await comet.callStatic.getBorrowRate(0.8e18);
 
 Compound III accounts can supply crypto assets as collateral in order to borrow the base asset. Limits on borrowing are bound by the borrow collateral factors.
 
-The borrow collateral factors are percentages which represent the USD value of a supplied collateral that can be borrowed in the base asset. If the borrow collateral factor for WBTC is 85%, an account can borrow up to 85% of the USD value of its supplied WBTC in the base asset. Collateral factors can be fetched using the *[Get Asset Info](#get-asset-info)* function.
+The borrow collateral factors are percentages which represent the USD value of a supplied collateral that can be borrowed in the base asset. If the borrow collateral factor for WBTC is 85%, an account can borrow up to 85% of the USD value of its supplied WBTC in the base asset. Collateral factors can be fetched using the _[Get Asset Info](#get-asset-info)_ function.
 
 If a borrowing account subsequently no longer meets the borrow collateral factor requirements, it cannot increase the size of its borrow. An account can restore its ability to increase its borrow by repaying the borrow or supplying more collateral.
 
-Account *balances* for the base token are signed integers. An account balance greater than zero indicates the base asset is supplied and a balance less than zero indicates the base asset is borrowed. *Note: Base token balances for assets with 18 decimals will start to overflow at a value of 2<sup>103</sup>/1e18=~10 trillion.*
+Account _balances_ for the base token are signed integers. An account balance greater than zero indicates the base asset is supplied and a balance less than zero indicates the base asset is borrowed. _Note: Base token balances for assets with 18 decimals will start to overflow at a value of 2<sup>103</sup>/1e18=~10 trillion._
 
-Global *indices* for supply and borrow are unsigned integers that increase over time. When an account interacts with the protocol, the indices are saved. An account's present balance can be calculated using the current index with the following formulas that implement the indices.
+Global _indices_ for supply and borrow are unsigned integers that increase over time. When an account interacts with the protocol, the indices are saved. An account's present balance can be calculated using the current index with the following formulas that implement the indices.
 
 ```
 Balance=PrincipalBaseSupplyIndexNow [Principal0]
@@ -151,11 +151,11 @@ function supplyTo(address dst, address asset, uint amount)
 function supplyFrom(address from, address dst, address asset, uint amount)
 ```
 
-* `asset`: The address of the asset's smart contract.
-* `amount`: The amount of the asset to supply to Compound III expressed as an integer.
-* `dst`: The address that is credited with the supplied asset within the protocol.
-* `from`: The address to supply from. This account must first use the Allow method in order to allow the sender to transfer its tokens prior to calling Supply.
-* `RETURN`: No return, reverts on error.
+- `asset`: The address of the asset's smart contract.
+- `amount`: The amount of the asset to supply to Compound III expressed as an integer. A value of `MaxUint256` will repay all of the `dst`'s base borrow balance.
+- `dst`: The address that is credited with the supplied asset within the protocol.
+- `from`: The address to supply from. This account must first use the Allow method in order to allow the sender to transfer its tokens prior to calling Supply.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -180,7 +180,7 @@ await comet.supply(usdcAddress, 1000000);
 
 ### Withdraw
 
-The withdraw method is used to **withdraw collateral** that is not currently supporting an open borrow. Withdraw is **also used to borrow the base asset** from the protocol if there is sufficient collateral for the account. It can also be called from an allowed manager address. To check an account's present ability to increase its borrow size, see the *[Get Borrow Liquidity](#get-borrow-liquidity)* function.
+The withdraw method is used to **withdraw collateral** that is not currently supporting an open borrow. Withdraw is **also used to borrow the base asset** from the protocol if there is sufficient collateral for the account. It can also be called from an allowed manager address. To check an account's present ability to increase its borrow size, see the _[Get Borrow Liquidity](#get-borrow-liquidity)_ function.
 
 #### Comet
 
@@ -196,11 +196,11 @@ function withdrawTo(address to, address asset, uint amount)
 function withdrawFrom(address src, address to, address asset, uint amount)
 ```
 
-* `asset`: The address of the asset that is being withdrawn or borrowed in the transaction.
-* `amount`: The amount of the asset to withdraw or borrow. A value of `MaxUint256` will withdraw all of the `src`'s base balance.
-* `to`: The address to send the withdrawn or borrowed asset.
-* `src`: The address of the account to withdraw or borrow on behalf of. The `withdrawFrom` method can only be called by an allowed manager.
-* `RETURN`: No return, reverts on error.
+- `asset`: The address of the asset that is being withdrawn or borrowed in the transaction.
+- `amount`: The amount of the asset to withdraw or borrow. A value of `MaxUint256` will withdraw all of the `src`'s base balance.
+- `to`: The address to send the withdrawn or borrowed asset.
+- `src`: The address of the account to withdraw or borrow on behalf of. The `withdrawFrom` method can only be called by an allowed manager.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -225,7 +225,7 @@ await comet.withdraw(usdcAddress, 100000000);
 
 ### Get Borrow Liquidity
 
-This function returns the amount of base asset in USD that is presently borrowable by an account as an integer scaled up by `10 ^ 8`. If the returned value is negative, the account is not allowed to borrow any more from the protocol until more collateral is supplied or there is repayment such that the account's borrow liquidity becomes positive. A negative borrow liquidity does not necessarily imply that the account is presently liquidatable (see *[isLiquidatable](#liquidatable-accounts)* function).
+This function returns the amount of base asset in USD that is presently borrowable by an account as an integer scaled up by `10 ^ 8`. If the returned value is negative, the account is not allowed to borrow any more from the protocol until more collateral is supplied or there is repayment such that the account's borrow liquidity becomes positive. A negative borrow liquidity does not necessarily imply that the account is presently liquidatable (see _[isLiquidatable](#liquidatable-accounts)_ function).
 
 #### Comet
 
@@ -233,8 +233,8 @@ This function returns the amount of base asset in USD that is presently borrowab
 function getBorrowLiquidity(address account) external view returns (int)
 ```
 
-* `account`: The account to examine borrow liquidity.
-* `RETURNS`: Returns the current borrow liquidity of the account in USD as an integer scaled up by `10 ^ 8`.
+- `account`: The account to examine borrow liquidity.
+- `RETURNS`: Returns the current borrow liquidity of the account in USD as an integer scaled up by `10 ^ 8`.
 
 #### Solidity
 
@@ -259,7 +259,7 @@ const borrowLiquidity = await comet.callStatic.getBorrowLiquidity('0xAccount');
 
 ### Borrow Collateralization
 
-This function returns true if the account passed to it has non-negative liquidity based on the borrow collateral factors. This function returns false if an account does not have sufficient liquidity to increase its borrow position. A return value of false does not necessarily imply that the account is presently liquidatable (see *[isLiquidatable](#liquidatable-accounts)* function).
+This function returns true if the account passed to it has non-negative liquidity based on the borrow collateral factors. This function returns false if an account does not have sufficient liquidity to increase its borrow position. A return value of false does not necessarily imply that the account is presently liquidatable (see _[isLiquidatable](#liquidatable-accounts)_ function).
 
 #### Comet
 
@@ -267,8 +267,8 @@ This function returns true if the account passed to it has non-negative liquidit
 function isBorrowCollateralized(address account) public view returns (bool)
 ```
 
-* `account`: The account to examine collateralization.
-* `RETURNS`: Returns true if the account has enough liquidity for borrowing.
+- `account`: The account to examine collateralization.
+- `RETURNS`: Returns true if the account has enough liquidity for borrowing.
 
 #### Solidity
 
@@ -293,15 +293,15 @@ const isCollateralized = await comet.callStatic.isBorrowCollateralized('0xAccoun
 
 ## Liquidation
 
-Compound III borrowers need to consider the *borrow collateral factors* and the *liquidation collateral factors* in order to keep their account healthy and avoid liquidation.
+Compound III borrowers need to consider the _borrow collateral factors_ and the _liquidation collateral factors_ in order to keep their account healthy and avoid liquidation.
 
 The liquidation collateral factors are strictly greater than the borrow collateral factors. If a borrower violates the liquidation collateral factor requirements, their account is subject to liquidation. Examples of instances where this occurs are described below.
 
-Collateral factors are stored as integers that represent decimal values scaled up by `10 ^ 18` in the Comet smart contract. For example, a value of `950000000000000000` represents a 95% collateral factor. Borrow and liquidation collateral factors can be fetched using the *[Get Asset Info](#get-asset-info)* function.
+Collateral factors are stored as integers that represent decimal values scaled up by `10 ^ 18` in the Comet smart contract. For example, a value of `950000000000000000` represents a 95% collateral factor. Borrow and liquidation collateral factors can be fetched using the _[Get Asset Info](#get-asset-info)_ function.
 
 An account is subject to liquidation if its borrowed amount exceeds the limits set by the liquidation collateral factors. The three instances where this can occur are when borrower interest owed accrues beyond the limit, when the USD value of the collateral drops below supporting the open borrow, or when the USD value of the borrowed asset increases too much. If an underwater account violates the borrow collateral factors, but does not violate the liquidation collateral factors, it is not yet subject to liquidation.
 
-Liquidation is the absorption of an underwater account into the protocol, triggered by the *[absorb](#absorb)* function. The protocol seizes all of the account's collateral and repays its open borrow. The protocol can then attempt to sell some or all of the collateral to recover any reserves that covered liquidation. If any excess collateral is seized, the protocol will pay the excess back to the account in the base asset.
+Liquidation is the absorption of an underwater account into the protocol, triggered by the _[absorb](#absorb)_ function. The protocol seizes all of the account's collateral and repays its open borrow. The protocol can then attempt to sell some or all of the collateral to recover any reserves that covered liquidation. If any excess collateral is seized, the protocol will pay the excess back to the account in the base asset.
 
 ### Account Liquidation Margin
 
@@ -313,9 +313,8 @@ This function returns the USD value of liquidity available before the specified 
 function getLiquidationMargin(address account) external view returns (int)
 ```
 
-* `account`: The account to examine liquidity available.
-* `RETURNS`: Returns an integer of the current liquidity available to the account in USD as an integer scaled up by `10 ^ 8`.
-
+- `account`: The account to examine liquidity available.
+- `RETURNS`: Returns an integer of the current liquidity available to the account in USD as an integer scaled up by `10 ^ 8`.
 
 #### Solidity
 
@@ -348,8 +347,8 @@ This function returns true if the account passed to it has negative liquidity ba
 function isLiquidatable(address account) public view returns (bool)
 ```
 
-* `account`: The account to examine liquidatability.
-* `RETURNS`: Returns true if the account is presently able to be liquidated.
+- `account`: The account to examine liquidatability.
+- `RETURNS`: Returns true if the account is presently able to be liquidated.
 
 #### Solidity
 
@@ -382,9 +381,9 @@ This function can be called by any address to liquidate an underwater account. I
 function absorb(address absorber, address[] calldata accounts)
 ```
 
-* `absorber`:  The account that is issued liquidator points during successful execution.
-* `accounts`:  An array of underwater accounts that are to be liquidated.
-* `RETURN`: No return, reverts on error.
+- `absorber`: The account that is issued liquidator points during successful execution.
+- `accounts`: An array of underwater accounts that are to be liquidated.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -397,21 +396,21 @@ comet.absorb(0xMyAddress, [ 0xUnderwaterAddress ]);
 
 ```js
 const comet = new web3.eth.Contract(abiJson, contractAddress);
-await comet.methods.absorb('0xMyAddress', [ '0xUnderwaterAddress' ]).send();
+await comet.methods.absorb('0xMyAddress', ['0xUnderwaterAddress']).send();
 ```
 
 #### Ethers.js v5.x
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-await comet.absorb('0xMyAddress', [ '0xUnderwaterAddress' ]);
+await comet.absorb('0xMyAddress', ['0xUnderwaterAddress']);
 ```
 
 ### Buy Collateral
 
 This function allows any account to buy collateral from the protocol, at a discount from the Price Feed's price, using base tokens. A minimum collateral amount should be specified to indicate the maximum slippage acceptable for the buyer.
 
-This function can be used after an account has been liquidated and there is collateral available to be purchased. Doing so increases protocol reserves. The amount of collateral available can be found by calling the *[Collateral Balance](#collateral-balance)* function. The price of the collateral can be determined by using the *[quoteCollateral](#ask-price)* function.
+This function can be used after an account has been liquidated and there is collateral available to be purchased. Doing so increases protocol reserves. The amount of collateral available can be found by calling the _[Collateral Balance](#collateral-balance)_ function. The price of the collateral can be determined by using the _[quoteCollateral](#ask-price)_ function.
 
 #### Comet
 
@@ -419,11 +418,11 @@ This function can be used after an account has been liquidated and there is coll
 function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) external
 ```
 
-* `asset`: The address of the collateral asset.
-* `minAmount`: The minimum amount of collateral tokens that are to be received by the buyer, scaled up by 10 to the "decimals" integer in the collateral asset's contract.
-* `baseAmount`: The amount of base tokens used to buy collateral scaled up by 10 to the "decimals" integer in the base asset's contract.
-* `recipient`: The address that receives the purchased collateral.
-* `RETURN`: No return, reverts on error.
+- `asset`: The address of the collateral asset.
+- `minAmount`: The minimum amount of collateral tokens that are to be received by the buyer, scaled up by 10 to the "decimals" integer in the collateral asset's contract.
+- `baseAmount`: The amount of base tokens used to buy collateral scaled up by 10 to the "decimals" integer in the base asset's contract.
+- `recipient`: The address that receives the purchased collateral.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -462,7 +461,7 @@ This function returns the amount of protocol reserves for the base asset as an i
 function getReserves() public view returns (int)
 ```
 
-* `RETURNS`: The amount of base asset stored as reserves in the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
+- `RETURNS`: The amount of base asset stored as reserves in the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
 
 #### Solidity
 
@@ -487,7 +486,7 @@ const reserves = await comet.callStatic.getReserves();
 
 ### Target Reserves
 
-This immutable value represents the target amount of reserves of the base token. If the protocol holds greater than or equal to this amount of reserves, the *[buyCollateral](#buy-collateral)* function can no longer be successfully called.
+This immutable value represents the target amount of reserves of the base token. If the protocol holds greater than or equal to this amount of reserves, the _[buyCollateral](#buy-collateral)_ function can no longer be successfully called.
 
 #### Comet
 
@@ -495,7 +494,7 @@ This immutable value represents the target amount of reserves of the base token.
 function targetReserves() public view returns (uint)
 ```
 
-* `RETURN`: The target reserve value of the base asset as an integer, scaled up by 10 to the "decimals" integer in the base asset's contract.
+- `RETURN`: The target reserve value of the base asset as an integer, scaled up by 10 to the "decimals" integer in the base asset's contract.
 
 #### Solidity
 
@@ -520,7 +519,7 @@ const targetReserves = await comet.callStatic.targetReserves();
 
 ### Ask Price
 
-In order to repay the borrows of absorbed accounts, the protocol needs to sell the seized collateral. The *Ask Price* is the price of the asset to be sold at a discount (configured by governance). This function uses the price returned by the protocol's price feed. The discount of the asset is derived from the `StoreFrontPriceFactor` and the asset's `LiquidationFactor` using the following formula.
+In order to repay the borrows of absorbed accounts, the protocol needs to sell the seized collateral. The _Ask Price_ is the price of the asset to be sold at a discount (configured by governance). This function uses the price returned by the protocol's price feed. The discount of the asset is derived from the `StoreFrontPriceFactor` and the asset's `LiquidationFactor` using the following formula.
 
 ```
 DiscountFactor = StoreFrontPriceFactor * (1e18 - Asset.LiquidationFactor)
@@ -532,9 +531,9 @@ DiscountFactor = StoreFrontPriceFactor * (1e18 - Asset.LiquidationFactor)
 function quoteCollateral(address asset, uint baseAmount) public view returns (uint)
 ```
 
-* `address`:  The address of the asset which is being queried.
-* `amount`:  The amount of the asset to be sold.
-* `RETURN`: No return, reverts on error.
+- `address`: The address of the asset which is being queried.
+- `amount`: The amount of the asset to be sold.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -567,11 +566,11 @@ The protocol keeps track of the successful executions of absorb by tallying liqu
 mapping(address => LiquidatorPoints) public liquidatorPoints;
 ```
 
-* `address`:  The address of the liquidator account.
-* `RETURN`: A struct containing the stored data pertaining to the liquidator account.
-* `numAbsorbs`: A Solidity `uint32` of the number of times absorb was successfully called.
-* `numAbsorbed`: A Solidity `uint64` of the number of accounts successfully absorbed by the protocol as a result of the liquidators call to the absorb function.
-* `approxSpend`: A Solidity `uint128` of the sum of all gas spent by the liquidator that has called the absorb function.
+- `address`: The address of the liquidator account.
+- `RETURN`: A struct containing the stored data pertaining to the liquidator account.
+- `numAbsorbs`: A Solidity `uint32` of the number of times absorb was successfully called.
+- `numAbsorbed`: A Solidity `uint64` of the number of accounts successfully absorbed by the protocol as a result of the liquidators call to the absorb function.
+- `approxSpend`: A Solidity `uint128` of the sum of all gas spent by the liquidator that has called the absorb function.
 
 #### Solidity
 
@@ -584,14 +583,18 @@ LiquidatorPoints pointsData = comet.liquidatorPoints(0xLiquidatorAddress);
 
 ```js
 const comet = new web3.eth.Contract(abiJson, contractAddress);
-const [ numAbsorbs, numAbsorbed, approxSpend ] = await comet.methods.liquidatorPoints('0xLiquidatorAddress').call();
+const [numAbsorbs, numAbsorbed, approxSpend] = await comet.methods
+  .liquidatorPoints('0xLiquidatorAddress')
+  .call();
 ```
 
 #### Ethers.js v5.x
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const [ numAbsorbs, numAbsorbed, approxSpend ] = await comet.callStatic.liquidatorPoints('0xLiquidatorAddress');
+const [numAbsorbs, numAbsorbed, approxSpend] = await comet.callStatic.liquidatorPoints(
+  '0xLiquidatorAddress'
+);
 ```
 
 ## Protocol Rewards
@@ -608,7 +611,7 @@ The reward accrual is tracked in the Comet contract and rewards can be claimed b
 function baseTrackingAccrued(address account) external view returns (uint64);
 ```
 
-* `RETURNS`: Returns the amount of reward token accrued based on usage of the base asset within the protocol for the specified account, scaled up by `10 ^ 6`.
+- `RETURNS`: Returns the amount of reward token accrued based on usage of the base asset within the protocol for the specified account, scaled up by `10 ^ 6`.
 
 #### Solidity
 
@@ -645,11 +648,11 @@ function claim(address comet, address src, bool shouldAccrue) external
 function claimTo(address comet, address src, address to, bool shouldAccrue) external
 ```
 
-* `comet`: The address of the Comet contract.
-* `src`: The account in which to claim rewards.
-* `to`: The account in which to transfer the claimed rewards.
-* `shouldAccrue`: If true, the protocol will account for the rewards owed to the account as of the current block before transferring.
-* `RETURN`: No return, reverts on error.
+- `comet`: The address of the Comet contract.
+- `src`: The account in which to claim rewards.
+- `to`: The account in which to transfer the claimed rewards.
+- `shouldAccrue`: If true, the protocol will account for the rewards owed to the account as of the current block before transferring.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -674,7 +677,7 @@ await rewards.claim(cometAddress, accountAddress, true);
 
 ## Account Management
 
-In addition to self-management, Compound III accounts can enable other addresses to have write permissions for their account. Account managers can withdraw or transfer collateral within the protocol on behalf of another account. This is possible only after an account has enabled permissions by using the *[allow](#allow)* function.
+In addition to self-management, Compound III accounts can enable other addresses to have write permissions for their account. Account managers can withdraw or transfer collateral within the protocol on behalf of another account. This is possible only after an account has enabled permissions by using the _[allow](#allow)_ function.
 
 ### Allow
 
@@ -686,10 +689,10 @@ Allow or disallow another address to withdraw or transfer on behalf of the sende
 function allow(address manager, bool isAllowed)
 ```
 
-* `msg.sender`: The address of an account to allow or disallow a manager for.
-* `manager`: The address of an account that becomes or will no longer be the manager of the owner.
-* `isAllowed`: True to add the manager and false to remove the manager.
-* `RETURN`: No return, reverts on error.
+- `msg.sender`: The address of an account to allow or disallow a manager for.
+- `manager`: The address of an account that becomes or will no longer be the manager of the owner.
+- `isAllowed`: True to add the manager and false to remove the manager.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -731,15 +734,15 @@ function allowBySig(
 ) external
 ```
 
-* `owner`: The address of an account to allow or disallow a manager for. The signatory must be the owner address.
-* `manager`: The address of an account that becomes or will no longer be the manager of the owner.
-* `isAllowed`: True to add the manager and false to remove the manager.
-* `nonce`: The contract state required to match the signature. This can be retrieved from the contract's public `userNonce` mapping.
-* `expiry`: The time at which the signature expires. A block timestamp as seconds since the Unix epoch (uint).
-* `v`: The recovery byte of the signature.
-* `r`: Half of the ECDSA signature pair.
-* `s`: Half of the ECDSA signature pair.
-* `RETURN`: No return, reverts on error.
+- `owner`: The address of an account to allow or disallow a manager for. The signatory must be the owner address.
+- `manager`: The address of an account that becomes or will no longer be the manager of the owner.
+- `isAllowed`: True to add the manager and false to remove the manager.
+- `nonce`: The contract state required to match the signature. This can be retrieved from the contract's public `userNonce` mapping.
+- `expiry`: The time at which the signature expires. A block timestamp as seconds since the Unix epoch (uint).
+- `v`: The recovery byte of the signature.
+- `r`: Half of the ECDSA signature pair.
+- `s`: Half of the ECDSA signature pair.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -772,9 +775,9 @@ This function returns a boolean that indicates the status of an account's manage
 function hasPermission(address owner, address manager) public view returns (bool)
 ```
 
-* `owner`: The address of an account that can be managed by another.
-* `manager`: The address of the account that can have manager permissions over another.
-* `RETURNS`: Returns true if the `manager` address is presently a manager of the `owner` address.
+- `owner`: The address of an account that can be managed by another.
+- `manager`: The address of the account that can have manager permissions over another.
+- `RETURNS`: Returns true if the `manager` address is presently a manager of the `owner` address.
 
 #### Solidity
 
@@ -821,11 +824,11 @@ function transferAsset(address dst, address asset, uint amount)
 function transferAssetFrom(address src, address dst, address asset, uint amount)
 ```
 
-* `dst`: The address of an account that is the receiver in the transaction.
-* `src`: The address of an account that is the sender of the asset in the transaction. This transfer method can only be called by an allowed manager.
-* `asset`: The ERC-20 address of the asset that is being sent in the transaction.
-* `amount`: The amount of the asset to transfer. A value of `MaxUint256` will transfer all of the `src`'s base balance.
-* `RETURN`: No return, reverts on error.
+- `dst`: The address of an account that is the receiver in the transaction.
+- `src`: The address of an account that is the sender of the asset in the transaction. This transfer method can only be called by an allowed manager.
+- `asset`: The ERC-20 address of the asset that is being sent in the transaction.
+- `amount`: The amount of the asset to transfer. A value of `MaxUint256` will transfer all of the `src`'s base balance.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -866,7 +869,7 @@ This function returns the current protocol utilization of the base asset. The fo
 function getUtilization() public view returns (uint)
 ```
 
-* `RETURNS`: The current protocol utilization percentage as a decimal, represented by an unsigned integer, scaled up by `10 ^ 18`. E.g. `1e17 or 100000000000000000` is 10% utilization.
+- `RETURNS`: The current protocol utilization percentage as a decimal, represented by an unsigned integer, scaled up by `10 ^ 18`. E.g. `1e17 or 100000000000000000` is 10% utilization.
 
 #### Solidity
 
@@ -899,7 +902,7 @@ The total supply of base tokens supplied to the protocol plus interest accrued t
 function totalSupply() override external view returns (uint256)
 ```
 
-* `RETURN`: The amount of base asset scaled up by 10 to the "decimals" integer in the base asset's contract.
+- `RETURN`: The amount of base asset scaled up by 10 to the "decimals" integer in the base asset's contract.
 
 #### Solidity
 
@@ -932,9 +935,9 @@ The protocol tracks the current amount of collateral that all accounts have supp
 mapping(address => TotalsCollateral) public totalsCollateral;
 ```
 
-* `address`:  The address of the collateral asset's contract.
-* `RETURN`: A struct containing the stored data pertaining to the sum of the collateral in the protocol.
-* `totalSupplyAsset`: A Solidity `uint128` of the sum of the collateral asset stored in the protocol, scaled up by 10 to the "decimals" integer in the asset's contract.
+- `address`: The address of the collateral asset's contract.
+- `RETURN`: A struct containing the stored data pertaining to the sum of the collateral in the protocol.
+- `totalSupplyAsset`: A Solidity `uint128` of the sum of the collateral asset stored in the protocol, scaled up by 10 to the "decimals" integer in the asset's contract.
 
 #### Solidity
 
@@ -947,14 +950,14 @@ TotalsCollateral totalsCollateral = comet.totalsCollateral(0xERC20Address);
 
 ```js
 const comet = new web3.eth.Contract(abiJson, contractAddress);
-const [ totalSupplyAsset ] = await comet.methods.totalsCollateral('0xERC20Address').call();
+const [totalSupplyAsset] = await comet.methods.totalsCollateral('0xERC20Address').call();
 ```
 
 #### Ethers.js v5.x
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const [ totalSupplyAsset ] = await comet.callStatic.totalsCollateral('0xERC20Address');
+const [totalSupplyAsset] = await comet.callStatic.totalsCollateral('0xERC20Address');
 ```
 
 ### Collateral Balance
@@ -967,9 +970,9 @@ This function returns the current balance of a collateral asset for a specified 
 function collateralBalanceOf(address account, address asset) external view returns (uint128)
 ```
 
-* `account`: The address of the account in which to retrieve a collateral balance.
-* `asset`: The address of the collateral asset smart contract.
-* `RETURNS`: The balance of the collateral asset in the protocol for the specified account as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
+- `account`: The address of the account in which to retrieve a collateral balance.
+- `asset`: The address of the collateral asset smart contract.
+- `RETURNS`: The balance of the collateral asset in the protocol for the specified account as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
 
 #### Solidity
 
@@ -1002,8 +1005,8 @@ This function returns the current balance of base asset for a specified account 
 function balanceOf(address account) external view returns (uint256)
 ```
 
-* `account`: The address of the account in which to retrieve the base asset balance.
-* `RETURNS`: The balance of the base asset, including interest, in the protocol for the specified account as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
+- `account`: The address of the account in which to retrieve the base asset balance.
+- `RETURNS`: The balance of the base asset, including interest, in the protocol for the specified account as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
 
 #### Solidity
 
@@ -1036,8 +1039,8 @@ This function returns the current balance of borrowed base asset for a specified
 function borrowBalanceOf(address account) external view returns (uint256)
 ```
 
-* `account`: The address of the account in which to retrieve the borrowed base asset balance.
-* `RETURNS`: The balance of the base asset, including interest, borrowed by the specified account as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
+- `account`: The address of the account in which to retrieve the borrowed base asset balance.
+- `RETURNS`: The balance of the base asset, including interest, borrowed by the specified account as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
 
 #### Solidity
 
@@ -1070,8 +1073,8 @@ This function returns the current balance of base asset for a specified account 
 function baseBalanceOf(address account) external view returns (int104)
 ```
 
-* `account`: The address of the account in which to retrieve the base asset balance.
-* `RETURNS`: The balance of the base asset, including interest, that the specified account is due as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
+- `account`: The address of the account in which to retrieve the base asset balance.
+- `RETURNS`: The balance of the base asset, including interest, that the specified account is due as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
 
 #### Solidity
 
@@ -1111,12 +1114,12 @@ struct UserBasic {
 mapping(address => UserBasic) public userBasic;
 ```
 
-* `address`:  The address of the account that has used the protocol.
-* `RETURN`: A struct containing the stored data pertaining to the account.
-* `principal`: A Solidity `int104` of the amount of base asset that the account has supplied (greater than zero) or owes (less than zero) to the protocol.
-* `baseTrackingIndex`: A Solidity `uint64` of the index of the account.
-* `baseTrackingAccrued`: A Solidity `uint64` of the interest that the account has accrued.
-* `assetsIn`: A Solidity `uint16` that tracks which assets the account has supplied as collateral. This storage implementation is for internal purposes and enables gas savings.
+- `address`: The address of the account that has used the protocol.
+- `RETURN`: A struct containing the stored data pertaining to the account.
+- `principal`: A Solidity `int104` of the amount of base asset that the account has supplied (greater than zero) or owes (less than zero) to the protocol.
+- `baseTrackingIndex`: A Solidity `uint64` of the index of the account.
+- `baseTrackingAccrued`: A Solidity `uint64` of the interest that the account has accrued.
+- `assetsIn`: A Solidity `uint16` that tracks which assets the account has supplied as collateral. This storage implementation is for internal purposes and enables gas savings.
 
 #### Solidity
 
@@ -1129,14 +1132,17 @@ UserBasic userBasic = comet.userBasic(0xAccount);
 
 ```js
 const comet = new web3.eth.Contract(abiJson, contractAddress);
-const [ principal, baseTrackingIndex, baseTrackingAccrued, assetsIn ] = await comet.methods.userBasic('0xAccount').call();
+const [principal, baseTrackingIndex, baseTrackingAccrued, assetsIn] = await comet.methods
+  .userBasic('0xAccount')
+  .call();
 ```
 
 #### Ethers.js v5.x
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const [ principal, baseTrackingIndex, baseTrackingAccrued, assetsIn ] = await comet.callStatic.userBasic('0xAccount');
+const [principal, baseTrackingIndex, baseTrackingAccrued, assetsIn] =
+  await comet.callStatic.userBasic('0xAccount');
 ```
 
 ### Get Asset Info
@@ -1160,16 +1166,16 @@ struct AssetInfo {
 function getAssetInfo(uint8 i) public view returns (AssetInfo memory)
 ```
 
-* `i`: The index of the asset based on the order it was added to the protocol. The index begins at `0`.
-* `RETURNS`: The asset information as a struct called `AssetInfo`.
-* `offset`: The index of the asset based on the order it was added to the protocol.
-* `asset`: The address of the asset's smart contract.
-* `priceFeed`: The address of the price feed contract for this asset.
-* `scale`: An integer that equals `10 ^ x` where `x` is the amount of decimal places in the asset's smart contract.
-* `borrowCollateralFactor`: The collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
-* `liquidateCollateralFactor`: The liquidate collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
-* `liquidationFactor`: The liquidation factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
-* `supplyCap`: The supply cap of the asset as an integer scaled up by `10 ^ x` where `x` is the amount of decimal places in the asset's smart contract.
+- `i`: The index of the asset based on the order it was added to the protocol. The index begins at `0`.
+- `RETURNS`: The asset information as a struct called `AssetInfo`.
+- `offset`: The index of the asset based on the order it was added to the protocol.
+- `asset`: The address of the asset's smart contract.
+- `priceFeed`: The address of the price feed contract for this asset.
+- `scale`: An integer that equals `10 ^ x` where `x` is the amount of decimal places in the asset's smart contract.
+- `borrowCollateralFactor`: The collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
+- `liquidateCollateralFactor`: The liquidate collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
+- `liquidationFactor`: The liquidation factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
+- `supplyCap`: The supply cap of the asset as an integer scaled up by `10 ^ x` where `x` is the amount of decimal places in the asset's smart contract.
 
 #### Solidity
 
@@ -1213,16 +1219,16 @@ struct AssetInfo {
 function getAssetInfoByAddress(address asset) public view returns (AssetInfo memory)
 ```
 
-* `address`: The address of the asset.
-* `RETURNS`: The asset information as a struct called `AssetInfo`.
-* `offset`: The index of the asset based on the order it was added to the protocol.
-* `asset`: The address of the asset's smart contract.
-* `priceFeed`: The address of the price feed contract for this asset.
-* `scale`: An integer that equals `10 ^ x` where `x` is the amount of decimal places in the asset's smart contract.
-* `borrowCollateralFactor`: The collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
-* `liquidateCollateralFactor`: The liquidate collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
-* `liquidationFactor`: The liquidation factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
-* `supplyCap`: The supply cap of the asset as an integer scaled up by `10 ^ x` where `x` is the amount of decimal places in the asset's smart contract.
+- `address`: The address of the asset.
+- `RETURNS`: The asset information as a struct called `AssetInfo`.
+- `offset`: The index of the asset based on the order it was added to the protocol.
+- `asset`: The address of the asset's smart contract.
+- `priceFeed`: The address of the price feed contract for this asset.
+- `scale`: An integer that equals `10 ^ x` where `x` is the amount of decimal places in the asset's smart contract.
+- `borrowCollateralFactor`: The collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
+- `liquidateCollateralFactor`: The liquidate collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
+- `liquidationFactor`: The liquidation factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
+- `supplyCap`: The supply cap of the asset as an integer scaled up by `10 ^ x` where `x` is the amount of decimal places in the asset's smart contract.
 
 #### Solidity
 
@@ -1257,8 +1263,8 @@ This function returns the price of an asset in USD with 8 decimal places.
 function getPrice(address priceFeed) public view returns (uint128)
 ```
 
-* `priceFeed`: The ERC-20 address of the Chainlink price feed contract for the asset.
-* `RETURNS`: Returns the USD price with 8 decimal places as an unsigned integer scaled up by `10 ^ 8`. E.g. `500000000000` means that the asset's price is $5000 USD.
+- `priceFeed`: The ERC-20 address of the Chainlink price feed contract for the asset.
+- `RETURNS`: Returns the USD price with 8 decimal places as an unsigned integer scaled up by `10 ^ 8`. E.g. `500000000000` means that the asset's price is $5000 USD.
 
 #### Solidity
 
@@ -1291,8 +1297,8 @@ This function triggers a manual accrual of interest and rewards to an account.
 function accrueAccount(address account) override external
 ```
 
-* `account`: The account in which to accrue interest and rewards.
-* `RETURN`: No return, reverts on error.
+- `account`: The account in which to accrue interest and rewards.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -1325,25 +1331,25 @@ This function returns the configuration struct passed to the configurator contra
 function getConfiguration() external view returns (Configuration memory)
 ```
 
-* `RETURNS`: Returns the protocol configuration.
-  * `governor`: The address of the protocol Governor.
-  * `pauseGuardian`: The address of the protocol pause guardian.
-  * `baseToken`: The address of the protocol base token smart contract.
-  * `baseTokenPriceFeed`: The address of the protocol base token price feed smart contract.
-  * `extensionDelegate`: The address of the delegate of extra methods that did not fit in Comet.sol (CometExt.sol).
-  * `kink`: The interest rate utilization curve kink.
-  * `perYearInterestRateSlopeLow`: The interest rate slope low bound.
-  * `perYearInterestRateSlopeHigh`: The interest rate slope high bound.
-  * `perYearInterestRateBase`: The interest rate slope base.
-  * `reserveRate`: The reserve rate that borrowers pay to the protocol reserves.
-  * `storeFrontPriceFactor`: The fraction of the liquidation penalty that goes to buyers of collateral instead of the protocol.
-  * `trackingIndexScale`: The scale for the index tracking protocol rewards.
-  * `baseTrackingSupplySpeed`: The rate for protocol awards accrued to suppliers.
-  * `baseTrackingBorrowSpeed`: The rate for protocol awards accrued to borrowers.
-  * `baseMinForRewards`: The minimum amount of base asset supplied to the protocol in order for accounts to accrue rewards.
-  * `baseBorrowMin`: The minimum allowed borrow size.
-  * `targetReserves`: The amount of reserves allowed before absorbed collateral is no longer sold by the protocol.
-  * `assetConfigs`: An array of all supported asset configurations.
+- `RETURNS`: Returns the protocol configuration.
+  - `governor`: The address of the protocol Governor.
+  - `pauseGuardian`: The address of the protocol pause guardian.
+  - `baseToken`: The address of the protocol base token smart contract.
+  - `baseTokenPriceFeed`: The address of the protocol base token price feed smart contract.
+  - `extensionDelegate`: The address of the delegate of extra methods that did not fit in Comet.sol (CometExt.sol).
+  - `kink`: The interest rate utilization curve kink.
+  - `perYearInterestRateSlopeLow`: The interest rate slope low bound.
+  - `perYearInterestRateSlopeHigh`: The interest rate slope high bound.
+  - `perYearInterestRateBase`: The interest rate slope base.
+  - `reserveRate`: The reserve rate that borrowers pay to the protocol reserves.
+  - `storeFrontPriceFactor`: The fraction of the liquidation penalty that goes to buyers of collateral instead of the protocol.
+  - `trackingIndexScale`: The scale for the index tracking protocol rewards.
+  - `baseTrackingSupplySpeed`: The rate for protocol awards accrued to suppliers.
+  - `baseTrackingBorrowSpeed`: The rate for protocol awards accrued to borrowers.
+  - `baseMinForRewards`: The minimum amount of base asset supplied to the protocol in order for accounts to accrue rewards.
+  - `baseBorrowMin`: The minimum allowed borrow size.
+  - `targetReserves`: The amount of reserves allowed before absorbed collateral is no longer sold by the protocol.
+  - `assetConfigs`: An array of all supported asset configurations.
 
 #### Solidity
 
@@ -1410,15 +1416,15 @@ struct TotalsBasic {
 function totalsBasic() public override view returns (TotalsBasic memory)
 ```
 
-* `RETURNS`: The base asset market information as a struct called `TotalsBasic` (defined in CometStorage.sol).
-* `baseSupplyIndex`: The global base asset supply index for calculating interest accrued to suppliers.
-* `baseBorrowIndex`: The global base asset borrow index for calculating interest owed by borrowers.
-* `trackingSupplyIndex`: A global index for tracking participation of accounts that supply the base asset.
-* `trackingBorrowIndex`:  A global index for tracking participation of accounts that borrow the base asset.
-* `totalSupplyBase`: The total amount of base asset presently supplied to the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the base asset's contract.
-* `totalBorrowBase`: The total amount of base asset presently borrowed from the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the base asset's contract.
-* `lastAccrualTime`: The most recent time that protocol interest accrual was globally calculated. A block timestamp as seconds since the Unix epoch.
-* `pauseFlags`: An integer that represents paused protocol functionality flags that are packed for data storage efficiency. See [Pause Protocol Functionality](#pause-protocol-functionality).
+- `RETURNS`: The base asset market information as a struct called `TotalsBasic` (defined in CometStorage.sol).
+- `baseSupplyIndex`: The global base asset supply index for calculating interest accrued to suppliers.
+- `baseBorrowIndex`: The global base asset borrow index for calculating interest owed by borrowers.
+- `trackingSupplyIndex`: A global index for tracking participation of accounts that supply the base asset.
+- `trackingBorrowIndex`: A global index for tracking participation of accounts that borrow the base asset.
+- `totalSupplyBase`: The total amount of base asset presently supplied to the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the base asset's contract.
+- `totalBorrowBase`: The total amount of base asset presently borrowed from the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the base asset's contract.
+- `lastAccrualTime`: The most recent time that protocol interest accrual was globally calculated. A block timestamp as seconds since the Unix epoch.
+- `pauseFlags`: An integer that represents paused protocol functionality flags that are packed for data storage efficiency. See [Pause Protocol Functionality](#pause-protocol-functionality).
 
 #### Solidity
 
@@ -1431,14 +1437,32 @@ TotalsBasic tb = comet.totalsBasic();
 
 ```js
 const comet = new web3.eth.Contract(abiJson, contractAddress);
-const [ baseSupplyIndex, baseBorrowIndex, trackingSupplyIndex, trackingBorrowIndex, totalSupplyBase, totalBorrowBase, lastAccrualTime, pauseFlags ] = await comet.methods.totalsBasic().call();
+const [
+  baseSupplyIndex,
+  baseBorrowIndex,
+  trackingSupplyIndex,
+  trackingBorrowIndex,
+  totalSupplyBase,
+  totalBorrowBase,
+  lastAccrualTime,
+  pauseFlags,
+] = await comet.methods.totalsBasic().call();
 ```
 
 #### Ethers.js v5.x
 
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const [ baseSupplyIndex, baseBorrowIndex, trackingSupplyIndex, trackingBorrowIndex, totalSupplyBase, totalBorrowBase, lastAccrualTime, pauseFlags ] = await comet.callStatic.totalsBasic();
+const [
+  baseSupplyIndex,
+  baseBorrowIndex,
+  trackingSupplyIndex,
+  trackingBorrowIndex,
+  totalSupplyBase,
+  totalBorrowBase,
+  lastAccrualTime,
+  pauseFlags,
+] = await comet.callStatic.totalsBasic();
 ```
 
 ### Get Base Accrual Scale
@@ -1451,7 +1475,7 @@ This function gets the scale for the base asset tracking accrual.
 function baseAccrualScale() override external pure returns (uint64)
 ```
 
-* `RETURNS`: The integer used to scale down the base accrual when calculating a decimal value.
+- `RETURNS`: The integer used to scale down the base accrual when calculating a decimal value.
 
 #### Solidity
 
@@ -1484,7 +1508,7 @@ This function gets the scale for the base asset index.
 function baseIndexScale() override external pure returns (uint64)
 ```
 
-* `RETURNS`: The integer used to scale down the index when calculating a decimal value.
+- `RETURNS`: The integer used to scale down the index when calculating a decimal value.
 
 #### Solidity
 
@@ -1517,7 +1541,7 @@ This function gets the scale for all protocol factors, i.e. borrow collateral fa
 function factorScale() override external pure returns (uint64)
 ```
 
-* `RETURNS`: The integer used to scale down the factor when calculating a decimal value.
+- `RETURNS`: The integer used to scale down the factor when calculating a decimal value.
 
 #### Solidity
 
@@ -1550,7 +1574,7 @@ This function gets the scale integer for USD prices in the protocol, i.e. `8 dec
 function priceScale() override external pure returns (uint64)
 ```
 
-* `RETURNS`: The integer used to scale down a price when calculating a decimal value.
+- `RETURNS`: The integer used to scale down a price when calculating a decimal value.
 
 #### Solidity
 
@@ -1583,7 +1607,7 @@ This function gets the maximum number of assets that can be simultaneously suppo
 function maxAssets() override external pure returns (uint8)
 ```
 
-* `RETURNS`: The maximum number of assets that can be simultaneously supported by Compound III.
+- `RETURNS`: The maximum number of assets that can be simultaneously supported by Compound III.
 
 #### Solidity
 
@@ -1608,12 +1632,13 @@ const maxAssets = await comet.callStatic.maxAssets();
 
 ## Bulk Actions
 
-The Compound III codebase contains the source code of an external contract called *Bulker* that is designed to allow multiple Comet functions to be called in a single transaction.
+The Compound III codebase contains the source code of an external contract called _Bulker_ that is designed to allow multiple Comet functions to be called in a single transaction.
 
 Use cases of the Bulker contract include but are not limited to:
-  * Supplying of a collateral asset and borrowing of the base asset.
-  * Supplying or withdrawing of the native EVM token (like Ether) directly.
-  * Transferring or withdrawing of the base asset without leaving dust in the account.
+
+- Supplying of a collateral asset and borrowing of the base asset.
+- Supplying or withdrawing of the native EVM token (like Ether) directly.
+- Transferring or withdrawing of the base asset without leaving dust in the account.
 
 ### Invoke
 
@@ -1631,16 +1656,16 @@ uint public constant ACTION_WITHDRAW_ETH = 5;
 function invoke(uint[] calldata actions, bytes[] calldata data) external payable
 ```
 
-* `actions`: An array of integers that correspond to the actions defined in the contract constructor.
-* `data`: An array of calldatas for each action to be called in the invoke transaction.
-  * Supply Asset, Withdraw Asset, Transfer Asset
-    * `to`: The destination address, within or external to the protocol.
-    * `asset`: The address of the ERC-20 asset contract.
-    * `amount`: The amount of the asset as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
-  * Supply ETH, Withdraw ETH (or equivalent native chain token)
-    * `to`: The destination address, within or external to the protocol.
-    * `amount`: The amount of the native token as an unsigned integer scaled up by 10 to the number of decimals of precision of the native EVM token.
-* `RETURN`: No return, reverts on error.
+- `actions`: An array of integers that correspond to the actions defined in the contract constructor.
+- `data`: An array of calldatas for each action to be called in the invoke transaction.
+  - Supply Asset, Withdraw Asset, Transfer Asset
+    - `to`: The destination address, within or external to the protocol.
+    - `asset`: The address of the ERC-20 asset contract.
+    - `amount`: The amount of the asset as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
+  - Supply ETH, Withdraw ETH (or equivalent native chain token)
+    - `to`: The destination address, within or external to the protocol.
+    - `amount`: The amount of the native token as an unsigned integer scaled up by 10 to the number of decimals of precision of the native EVM token.
+- `RETURN`: No return, reverts on error.
 
 #### Solidity
 
@@ -1656,8 +1681,11 @@ bulker.invoke([ 1 ], [ supplyAssetCalldata ]);
 ```js
 const Bulker = new web3.eth.Contract(abiJson, contractAddress);
 // ERC-20 `approve` the bulker. Then Comet `allow` the bulker to be a manager before calling `invoke`.
-const supplyAssetCalldata = web3.eth.abi.encodeParameters(['address', 'address', 'uint'], ['0xAccount', '0xAsset', amount]);
-await Bulker.methods.invoke([ 1 ], [ supplyAssetCalldata ]).send();
+const supplyAssetCalldata = web3.eth.abi.encodeParameters(
+  ['address', 'address', 'uint'],
+  ['0xAccount', '0xAsset', amount]
+);
+await Bulker.methods.invoke([1], [supplyAssetCalldata]).send();
 ```
 
 #### Ethers.js v5.x
@@ -1665,19 +1693,22 @@ await Bulker.methods.invoke([ 1 ], [ supplyAssetCalldata ]).send();
 ```js
 const bulker = new ethers.Contract(contractAddress, abiJson, provider);
 // ERC-20 `approve` the bulker. Then Comet `allow` the bulker to be a manager before calling `invoke`.
-const supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], ['0xAccount', '0xAsset', amount]);
-await bulker.invoke([ 1 ], [ supplyAssetCalldata ]);
+const supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(
+  ['address', 'address', 'uint'],
+  ['0xAccount', '0xAsset', amount]
+);
+await bulker.invoke([1], [supplyAssetCalldata]);
 ```
 
 ## Governance
 
 Compound III is a decentralized protocol that is governed by holders and delegates of COMP. Governance allows the community to propose, vote, and implement changes through the administrative smart contract functions of the Compound III protocol. For more information on the Governor and Timelock see the original [governance](https://compound.finance/docs/governance) section.
 
-All instances of Compound III are controlled by the Timelock contract which is the same administrator of the Compound v2 protocol. The governance system has control over each *proxy*, the *Configurator implementation*, the *Comet factory*, and the *Comet implementation*.
+All instances of Compound III are controlled by the Timelock contract which is the same administrator of the Compound v2 protocol. The governance system has control over each _proxy_, the _Configurator implementation_, the _Comet factory_, and the _Comet implementation_.
 
 Each time an immutable parameter is set via governance proposal, a new Comet implementation must be deployed by the Comet factory. If the proposal is approved by the community, the proxy will point to the new implementation upon execution.
 
-To set specific protocol parameters in a proposal, the Timelock must call all of the relevant set methods on the *Configurator* contract, followed by `deployAndUpgradeTo` on the *CometProxyAdmin* contract.
+To set specific protocol parameters in a proposal, the Timelock must call all of the relevant set methods on the _Configurator_ contract, followed by `deployAndUpgradeTo` on the _CometProxyAdmin_ contract.
 
 ### Set Comet Factory
 
@@ -1689,8 +1720,8 @@ This function sets the official contract address of the Comet factory. The only 
 function setFactory(address newFactory) external
 ```
 
-* `newFactory`: The address of the new Comet contract factory.
-* `RETURN`: No return, reverts on error.
+- `newFactory`: The address of the new Comet contract factory.
+- `RETURN`: No return, reverts on error.
 
 ### Set Governor
 
@@ -1702,8 +1733,8 @@ This function sets the official contract address of the Compound III protocol Go
 function setGovernor(address newGovernor) external
 ```
 
-* `newGovernor`: The address of the new Compound III Governor.
-* `RETURN`: No return, reverts on error.
+- `newGovernor`: The address of the new Compound III Governor.
+- `RETURN`: No return, reverts on error.
 
 ### Set Pause Guardian
 
@@ -1717,8 +1748,8 @@ COMP token-holders designate the Pause Guardian address, which is held by the [C
 function setPauseGuardian(address newPauseGuardian) external
 ```
 
-* `newPauseGuardian`: The address of the new pause guardian.
-* `RETURN`: No return, reverts on error.
+- `newPauseGuardian`: The address of the new pause guardian.
+- `RETURN`: No return, reverts on error.
 
 ### Pause Protocol Functionality
 
@@ -1736,12 +1767,12 @@ function pause(
 ) override external
 ```
 
-* `supplyPaused`: Enables or disables all accounts' ability to supply assets to the protocol.
-* `transferPaused`: Enables or disables all account's ability to transfer assets within the protocol.
-* `withdrawPaused`: Enables or disables all account's ability to withdraw assets from the protocol.
-* `absorbPaused`: Enables or disables protocol absorptions.
-* `buyPaused`: Enables or disables the protocol's ability to sell absorbed collateral.
-* `RETURN`: No return, reverts on error.
+- `supplyPaused`: Enables or disables all accounts' ability to supply assets to the protocol.
+- `transferPaused`: Enables or disables all account's ability to transfer assets within the protocol.
+- `withdrawPaused`: Enables or disables all account's ability to withdraw assets from the protocol.
+- `absorbPaused`: Enables or disables protocol absorptions.
+- `buyPaused`: Enables or disables the protocol's ability to sell absorbed collateral.
+- `RETURN`: No return, reverts on error.
 
 ### Is Supply Paused
 
@@ -1753,7 +1784,7 @@ This function returns a boolean indicating whether or not the protocol supply fu
 function isSupplyPaused() override public view returns (bool)
 ```
 
-* `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
+- `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
 
 ### Is Transfer Paused
 
@@ -1765,7 +1796,7 @@ This function returns a boolean indicating whether or not the protocol transfer 
 function isTransferPaused() override public view returns (bool)
 ```
 
-* `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
+- `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
 
 ### Is Withdraw Paused
 
@@ -1777,7 +1808,7 @@ This function returns a boolean indicating whether or not the protocol withdraw 
 function isWithdrawPaused() override public view returns (bool)
 ```
 
-* `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
+- `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
 
 ### Is Absorb Paused
 
@@ -1789,7 +1820,7 @@ This function returns a boolean indicating whether or not the protocol absorb fu
 function isAbsorbPaused() override public view returns (bool)
 ```
 
-* `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
+- `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
 
 ### Is Buy Paused
 
@@ -1801,7 +1832,7 @@ This function returns a boolean indicating whether or not the protocol's selling
 function isBuyPaused() override public view returns (bool)
 ```
 
-* `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
+- `RETURN`: A boolean value of whether or not the protocol functionality is presently paused.
 
 ### Set Base Token Price Feed
 
@@ -1813,8 +1844,8 @@ This function sets the official contract address of the price feed of the protoc
 function setBaseTokenPriceFeed(address newBaseTokenPriceFeed) external
 ```
 
-* `newBaseTokenPriceFeed`: The address of the new price feed contract.
-* `RETURN`: No return, reverts on error.
+- `newBaseTokenPriceFeed`: The address of the new price feed contract.
+- `RETURN`: No return, reverts on error.
 
 ### Set Extension Delegate
 
@@ -1826,8 +1857,8 @@ This function sets the official contract address of the protocol's Comet extensi
 function setExtensionDelegate(address newExtensionDelegate) external
 ```
 
-* `newExtensionDelegate`: The address of the new extension delegate contract.
-* `RETURN`: No return, reverts on error.
+- `newExtensionDelegate`: The address of the new extension delegate contract.
+- `RETURN`: No return, reverts on error.
 
 ### Set Kink
 
@@ -1839,8 +1870,8 @@ This function sets the interest rate utilization curve kink for the Compound III
 function setKink(uint64 newKink) external
 ```
 
-* `newKink`: The new kink parameter.
-* `RETURN`: No return, reverts on error.
+- `newKink`: The new kink parameter.
+- `RETURN`: No return, reverts on error.
 
 ### Set Interest Rate Slope (Low)
 
@@ -1852,8 +1883,8 @@ This function sets the interest rate slope low bound in the approximate amount o
 function setPerYearInterestRateSlopeLow(uint64 newSlope) external
 ```
 
-* `newSlope`: The slope low bound as an unsigned integer.
-* `RETURN`: No return, reverts on error.
+- `newSlope`: The slope low bound as an unsigned integer.
+- `RETURN`: No return, reverts on error.
 
 ### Set Interest Rate Slope (High)
 
@@ -1865,8 +1896,8 @@ This function sets the interest rate slope high bound in the approximate amount 
 function setPerYearInterestRateSlopeHigh(uint64 newSlope) external
 ```
 
-* `newSlope`: The slope high bound as an unsigned integer.
-* `RETURN`: No return, reverts on error.
+- `newSlope`: The slope high bound as an unsigned integer.
+- `RETURN`: No return, reverts on error.
 
 ### Set Interest Rate Slope (Base)
 
@@ -1878,8 +1909,8 @@ This function sets the interest rate slope base in the approximate amount of sec
 function setPerYearInterestRateBase(uint64 newBase) external
 ```
 
-* `newSlope`: The slope base as an unsigned integer.
-* `RETURN`: No return, reverts on error.
+- `newSlope`: The slope base as an unsigned integer.
+- `RETURN`: No return, reverts on error.
 
 ### Set Reserve Rate
 
@@ -1891,8 +1922,8 @@ This function sets the rate that reserves accumulate within the protocol as an A
 function setReserveRate(uint64 newReserveRate) external
 ```
 
-* `param`: The reserve rate of the protocol as an APR scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 2.5% APR.
-* `RETURN`: No return, reverts on error.
+- `param`: The reserve rate of the protocol as an APR scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 2.5% APR.
+- `RETURN`: No return, reverts on error.
 
 ### Set Store Front Price Factor
 
@@ -1904,8 +1935,8 @@ This function sets the fraction of the liquidation penalty that goes to buyers o
 function setStoreFrontPriceFactor(uint64 newStoreFrontPriceFactor) external
 ```
 
-* `newStoreFrontPriceFactor`: The new price factor as an unsigned integer expressed as a decimal scaled up by `10 ^ 18`.
-* `RETURN`: No return, reverts on error.
+- `newStoreFrontPriceFactor`: The new price factor as an unsigned integer expressed as a decimal scaled up by `10 ^ 18`.
+- `RETURN`: No return, reverts on error.
 
 ### Set Base Tracking Supply Speed
 
@@ -1917,8 +1948,8 @@ This function sets the rate at which base asset supplier accounts accrue rewards
 function setBaseTrackingSupplySpeed(uint64 newBaseTrackingSupplySpeed) external
 ```
 
-* `newBaseTrackingSupplySpeed`: The rate as an APR expressed as a decimal scaled up by `10 ^ 18`.
-* `RETURN`: No return, reverts on error.
+- `newBaseTrackingSupplySpeed`: The rate as an APR expressed as a decimal scaled up by `10 ^ 18`.
+- `RETURN`: No return, reverts on error.
 
 ### Set Base Tracking Borrow Speed
 
@@ -1930,8 +1961,8 @@ This function sets the rate at which base asset borrower accounts accrue rewards
 function setBaseTrackingBorrowSpeed(uint64 newBaseTrackingBorrowSpeed) external
 ```
 
-* `newBaseTrackingBorrowSpeed`: The rate as an APR expressed as a decimal scaled up by `10 ^ 18`.
-* `RETURN`: No return, reverts on error.
+- `newBaseTrackingBorrowSpeed`: The rate as an APR expressed as a decimal scaled up by `10 ^ 18`.
+- `RETURN`: No return, reverts on error.
 
 ### Set Base Minimum For Rewards
 
@@ -1943,8 +1974,8 @@ This function sets the minimum amount of base asset supplied to the protocol in 
 function setBaseMinForRewards(uint104 newBaseMinForRewards) external
 ```
 
-* `newBaseMinForRewards`: The amount of base asset scaled up by 10 to the "decimals" integer in the base asset's contract.
-* `RETURN`: No return, reverts on error.
+- `newBaseMinForRewards`: The amount of base asset scaled up by 10 to the "decimals" integer in the base asset's contract.
+- `RETURN`: No return, reverts on error.
 
 ### Set Borrow Minimum
 
@@ -1956,8 +1987,8 @@ This function sets the minimum amount of base token that is allowed to be borrow
 function setBaseBorrowMin(uint104 newBaseBorrowMin) external
 ```
 
-* `setBaseBorrowMin`: The minimum borrow as an unsigned integer scaled up by 10 to the "decimals" integer in the base asset's contract.
-* `RETURN`: No return, reverts on error.
+- `setBaseBorrowMin`: The minimum borrow as an unsigned integer scaled up by 10 to the "decimals" integer in the base asset's contract.
+- `RETURN`: No return, reverts on error.
 
 ### Set Target Reserves
 
@@ -1969,8 +2000,8 @@ This function sets the target reserves amount. Once the protocol reaches this am
 function setTargetReserves(uint104 newTargetReserves) external
 ```
 
-* `newTargetReserves`: The amount of reserves of base asset as an unsigned integer scaled up by 10 to the "decimals" integer in the base asset's contract.
-* `RETURN`: No return, reverts on error.
+- `newTargetReserves`: The amount of reserves of base asset as an unsigned integer scaled up by 10 to the "decimals" integer in the base asset's contract.
+- `RETURN`: No return, reverts on error.
 
 ### Add a New Asset
 
@@ -1982,8 +2013,8 @@ This function adds an asset to the protocol through governance.
 function addAsset(AssetConfig calldata assetConfig) external
 ```
 
-* `assetConfig`: The configuration that is added to the array of protocol asset configurations.
-* `RETURN`: No return, reverts on error.
+- `assetConfig`: The configuration that is added to the array of protocol asset configurations.
+- `RETURN`: No return, reverts on error.
 
 ### Update an Existing Asset
 
@@ -1995,8 +2026,8 @@ This function modifies an existing asset's configuration parameters.
 function updateAsset(AssetConfig calldata newAssetConfig) external
 ```
 
-* `newAssetConfig`: The configuration that is modified in the array of protocol asset configurations. All parameters are overwritten.
-* `RETURN`: No return, reverts on error.
+- `newAssetConfig`: The configuration that is modified in the array of protocol asset configurations. All parameters are overwritten.
+- `RETURN`: No return, reverts on error.
 
 ### Update Asset Price Feed
 
@@ -2008,9 +2039,9 @@ This function updates the price feed contract address for a specific asset.
 function updateAssetPriceFeed(address asset, address newPriceFeed) external
 ```
 
-* `asset`: The address of the underlying asset smart contract.
-* `newPriceFeed`: The address of the new price feed smart contract.
-* `RETURN`: No return, reverts on error.
+- `asset`: The address of the underlying asset smart contract.
+- `newPriceFeed`: The address of the new price feed smart contract.
+- `RETURN`: No return, reverts on error.
 
 ### Update Borrow Collateral Factor
 
@@ -2022,9 +2053,9 @@ This function updates the borrow collateral factor for an asset in the protocol.
 function updateAssetBorrowCollateralFactor(address asset, uint64 newBorrowCF) external
 ```
 
-* `asset`: The address of the underlying asset smart contract.
-* `newBorrowCF`: The collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
-* `RETURN`: No return, reverts on error.
+- `asset`: The address of the underlying asset smart contract.
+- `newBorrowCF`: The collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
+- `RETURN`: No return, reverts on error.
 
 ### Update Liquidation Collateral Factor
 
@@ -2035,9 +2066,10 @@ This function updates the liquidation collateral factor for an asset in the prot
 ```solidity
 function updateAssetLiquidateCollateralFactor(address asset, uint64 newLiquidateCF) external
 ```
-* `asset`: The address of the underlying asset smart contract.
-* `newLiquidateCF`: The collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
-* `RETURN`: No return, reverts on error.
+
+- `asset`: The address of the underlying asset smart contract.
+- `newLiquidateCF`: The collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
+- `RETURN`: No return, reverts on error.
 
 ### Update Liquidation Factor
 
@@ -2054,9 +2086,10 @@ An underwater account has supplied $100 of WBTC as collateral. If the WBTC liqui
 ```solidity
 function updateAssetLiquidationFactor(address asset, uint64 newLiquidationFactor) external
 ```
-* `asset`: The address of the underlying asset smart contract.
-* `newLiquidationFactor`: The factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
-* `RETURN`: No return, reverts on error.
+
+- `asset`: The address of the underlying asset smart contract.
+- `newLiquidationFactor`: The factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
+- `RETURN`: No return, reverts on error.
 
 ### Set Asset Supply Cap
 
@@ -2068,9 +2101,9 @@ This function sets the maximum amount of an asset that can be supplied to the pr
 function updateAssetSupplyCap(address asset, uint128 newSupplyCap) external
 ```
 
-* `asset`: The address of the underlying asset smart contract.
-* `newSupplyCap`: The amount of the asset as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
-* `RETURN`: No return, reverts on error.
+- `asset`: The address of the underlying asset smart contract.
+- `newSupplyCap`: The amount of the asset as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
+- `RETURN`: No return, reverts on error.
 
 ### ERC-20 Approve Manager Address
 
@@ -2082,10 +2115,10 @@ This function sets the Comet contract's ERC-20 allowance of an asset for a manag
 function approveThis(address manager, address asset, uint amount) override external
 ```
 
-* `manager`: The address of a manager account that has its allowance modified.
-* `asset`: The address of the asset's smart contract.
-* `amount`: The amount of the asset approved for the manager expressed as an integer.
-* `RETURN`: No return, reverts on error.
+- `manager`: The address of a manager account that has its allowance modified.
+- `asset`: The address of the asset's smart contract.
+- `amount`: The amount of the asset approved for the manager expressed as an integer.
+- `RETURN`: No return, reverts on error.
 
 ### Transfer Governor
 
@@ -2097,8 +2130,8 @@ This function changes the address of the protocol's Governor.
 function transferGovernor(address newGovernor) external
 ```
 
-* `newGovernor`: The address of the new Governor of the Compound III protocol instance.
-* `RETURN`: No return, reverts on error.
+- `newGovernor`: The address of the new Governor of the Compound III protocol instance.
+- `RETURN`: No return, reverts on error.
 
 ### Withdraw Reserves
 
@@ -2110,6 +2143,6 @@ This function allows governance to withdraw base token reserves from the protoco
 function withdrawReserves(address to, uint amount) external
 ```
 
-* `to`: The address of the recipient of the base asset tokens.
-* `amount`: The amount of the base asset to send scaled up by 10 to the "decimals" integer in the base asset's contract.
-* `RETURN`: No return, reverts on error.
+- `to`: The address of the recipient of the base asset tokens.
+- `amount`: The amount of the base asset to send scaled up by 10 to the "decimals" integer in the base asset's contract.
+- `RETURN`: No return, reverts on error.
