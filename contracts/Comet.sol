@@ -877,12 +877,16 @@ contract Comet is CometMainInterface {
 
     /**
      * @dev Supply either collateral or base asset, depending on the asset, if operator is allowed
+     * @dev Note: Specifying an `amount` of uint256.max will repay all of `dst`'s accrued base borrow balance
      */
     function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal {
         if (isSupplyPaused()) revert Paused();
         if (!hasPermission(from, operator)) revert Unauthorized();
 
         if (asset == baseToken) {
+            if (amount == type(uint256).max) {
+                amount = borrowBalanceOf(dst);
+            }
             return supplyBase(from, dst, safe104(amount));
         } else {
             return supplyCollateral(from, dst, asset, safe128(amount));
@@ -1356,7 +1360,7 @@ contract Comet is CometMainInterface {
      * @param account The account whose balance to query
      * @return The present day base balance magnitude of the account, if negative
      */
-    function borrowBalanceOf(address account) override external view returns (uint256) {
+    function borrowBalanceOf(address account) override public view returns (uint256) {
         (, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         int104 principal = userBasic[account].principal;
         return principal < 0 ? presentValueBorrow(baseBorrowIndex_, unsigned104(-principal)) : 0;
