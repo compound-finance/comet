@@ -117,6 +117,36 @@ describe('withdrawTo', function () {
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(110000);
   });
 
+  it('does not emit Transfer for 0 burn', async () => {
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { USDC, WETH } = tokens;
+
+    await USDC.allocateTo(comet.address, 110e6);
+    await setTotalsBasic(comet, {
+      totalSupplyBase: 100e6,
+    });
+    await comet.setCollateralBalance(bob.address, WETH.address, exp(1, 18));
+    const cometAsB = comet.connect(bob);
+
+    const s0 = await wait(cometAsB.withdrawTo(alice.address, USDC.address, exp(1, 6)));
+    expect(s0.receipt['events'].length).to.be.equal(2);
+    expect(event(s0, 0)).to.be.deep.equal({
+      Transfer: {
+        from: comet.address,
+        to: alice.address,
+        amount: exp(1, 6),
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      Withdraw: {
+        src: bob.address,
+        to: alice.address,
+        amount: exp(1, 6),
+      }
+    });
+  });
+
   it('withdraws collateral from sender if the asset is collateral', async () => {
     const protocol = await makeProtocol();
     const { comet, tokens, users: [alice, bob] } = protocol;

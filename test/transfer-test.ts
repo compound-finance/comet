@@ -24,6 +24,13 @@ describe('transfer', function () {
     expect(event(s0, 0)).to.be.deep.equal({
       Transfer: {
         from: bob.address,
+        to: ethers.constants.AddressZero,
+        amount: BigInt(100e6),
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      Transfer: {
+        from: ethers.constants.AddressZero,
         to: alice.address,
         amount: BigInt(100e6),
       }
@@ -36,6 +43,29 @@ describe('transfer', function () {
     expect(t1.totalSupplyBase).to.be.equal(t0.totalSupplyBase);
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(90000);
+  });
+
+  it('does not emit Transfer if 0 mint/burn', async () => {
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const {
+      comet,
+      tokens,
+      users: [alice, bob],
+    } = protocol;
+    const { USDC, WETH } = tokens;
+
+    await comet.setCollateralBalance(bob.address, WETH.address, exp(1, 18));
+    await comet.setBasePrincipal(alice.address, -100e6);
+    await setTotalsBasic(comet, {
+      totalSupplyBase: 100e6,
+      totalBorrowBase: 100e6,
+    });
+
+    const cometAsB = comet.connect(bob);
+
+    const s0 = await wait(cometAsB.transferAsset(alice.address, USDC.address, 100e6));
+
+    expect(s0.receipt['events'].length).to.be.equal(0);
   });
 
   it('transfers max base balance (including accrued) from sender if the asset is base', async () => {
@@ -64,11 +94,19 @@ describe('transfer', function () {
     const a1 = await portfolio(protocol, alice.address);
     const b1 = await portfolio(protocol, bob.address);
 
+    // additional 1 wei burned, amount to clear bob gets alice to same balance - 1
     expect(event(s0, 0)).to.be.deep.equal({
       Transfer: {
         from: bob.address,
-        to: alice.address,
+        to: ethers.constants.AddressZero,
         amount: bobAccruedBalance,
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      Transfer: {
+        from: ethers.constants.AddressZero,
+        to: alice.address,
+        amount: bobAccruedBalance - 1n,
       }
     });
 
@@ -81,7 +119,6 @@ describe('transfer', function () {
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(105000);
   });
-
 
   it('transfers collateral from sender if the asset is collateral', async () => {
     const protocol = await makeProtocol();
