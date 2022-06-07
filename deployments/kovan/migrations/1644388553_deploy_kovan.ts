@@ -23,8 +23,9 @@ let cloneAddr = {
 
 migration('1644388553_deploy_kovan', {
   prepare: async (deploymentManager: DeploymentManager) => {
-    let [signer] = await deploymentManager.hre.ethers.getSigners();
-    let signerAddress = await signer.getAddress();
+    const { ethers } = deploymentManager.hre;
+    let signer = await deploymentManager.getSigner();
+    let signerAddress = signer.address;
 
     let usdcProxyAdminArgs: [] = [];
     let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
@@ -65,18 +66,12 @@ migration('1644388553_deploy_kovan', {
         signerAddress
       )
     );
-    await wait(usdc.configureMinter(signerAddress, exp(20000, 6)));
-    await wait(usdc.mint(signerAddress, exp(10000, 6)));
-    await wait(usdc.mint(fauceteer.address, exp(10000, 6)));
 
     let wbtc = await deploymentManager.clone(
       cloneAddr.wbtc,
       [],
       cloneNetwork
     );
-    // Give signer 1000 WBTC
-    await wait(wbtc.mint(signerAddress, exp(1000, 8)));
-    await wait(wbtc.mint(fauceteer.address, exp(10000, 8)));
 
     let weth = await deploymentManager.clone(
       cloneAddr.weth,
@@ -91,21 +86,21 @@ migration('1644388553_deploy_kovan', {
       [signerAddress],
       cloneNetwork
     );
-    await wait(comp.transfer(fauceteer.address, exp(10000, 18)));
+
+    const blockNumber = await ethers.provider.getBlockNumber();
+    const blockTimestamp =  (await ethers.provider.getBlock(blockNumber)).timestamp;
 
     let uni = await deploymentManager.clone(
       cloneAddr.uni,
-      [signerAddress, signerAddress, 99999999999],
+      [signerAddress, signerAddress, blockTimestamp + 100],
       cloneNetwork
     );
-    await wait(uni.transfer(fauceteer.address, exp(10000, 18)));
 
     let link = await deploymentManager.clone(
       cloneAddr.link,
       [],
       cloneNetwork
     );
-    await wait(link.transfer(fauceteer.address, exp(10000, 18)));
 
     // Contracts referenced in `configuration.json`.
     let contracts = new Map<string, Contract>([

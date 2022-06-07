@@ -66,8 +66,7 @@ export async function deployDevelopmentComet(
   deployProxy: DeployProxyOption = { deployCometProxy: true, deployConfiguratorProxy: true },
   configurationOverrides: ProtocolConfiguration = {}
 ): Promise<DeployedContracts> {
-  const signers = await deploymentManager.hre.ethers.getSigners();
-  const admin = await signers[0].getAddress();
+  const [admin, pauseGuardianSigner] = await deploymentManager.getSigners();
 
   let dai = await makeToken(deploymentManager, 1000000, 'DAI', 18, 'DAI');
   let gold = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
@@ -108,7 +107,7 @@ export async function deployDevelopmentComet(
   );
 
   // Initialize the storage of GovernorSimple
-  await governorSimple.initialize(timelock.address, [admin]);
+  await governorSimple.initialize(timelock.address, [admin.address]);
 
   const {
     symbol,
@@ -133,7 +132,7 @@ export async function deployDevelopmentComet(
     ...{
       symbol: '📈BASE',
       governor: timelock.address,
-      pauseGuardian: await signers[1].getAddress(),
+      pauseGuardian: pauseGuardianSigner.address,
       baseToken: dai.address,
       baseTokenPriceFeed: daiPriceFeed.address,
       kink: (0.8e18).toString(),

@@ -33,8 +33,7 @@ export async function deployNetworkComet(
   configurationOverrides: ProtocolConfiguration = {},
   contractMapOverride?: ContractMap,
 ): Promise<DeployedContracts> {
-  const signers = await deploymentManager.hre.ethers.getSigners();
-  const admin = await signers[0].getAddress();
+  const admin = await deploymentManager.getSigner();
 
   const governorSimple = await deploymentManager.deploy<GovernorSimple, GovernorSimple__factory, []>(
     'test/GovernorSimple.sol',
@@ -47,7 +46,7 @@ export async function deployNetworkComet(
   );
 
   // Initialize the storage of GovernorSimple
-  await governorSimple.initialize(timelock.address, [admin]);
+  await governorSimple.initialize(timelock.address, [admin.address]);
 
   const {
     symbol,
