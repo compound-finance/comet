@@ -269,41 +269,6 @@ An account is subject to liquidation if its borrowed amount exceeds the limits s
 
 Liquidation is the absorption of an underwater account into the protocol, triggered by the *[absorb](#absorb)* function. The protocol seizes all of the account's collateral and repays its open borrow. The protocol can then attempt to sell some or all of the collateral to recover any reserves that covered liquidation. If any excess collateral is seized, the protocol will pay the excess back to the account in the base asset.
 
-### Account Liquidation Margin
-
-This function returns the USD value of liquidity available before the specified account becomes liquidatable. If the returned integer is less than zero, the account is presently liquidatable.
-
-#### Comet
-
-```solidity
-function getLiquidationMargin(address account) external view returns (int)
-```
-
-* `account`: The account to examine liquidity available.
-* `RETURNS`: Returns an integer of the current liquidity available to the account in USD as an integer scaled up by `10 ^ 8`.
-
-
-#### Solidity
-
-```solidity
-Comet comet = Comet(0xCometAddress);
-int liquidity = comet.getLiquidationMargin(0xAccount);
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const liquidity = await comet.methods.getLiquidationMargin('0xAccount').call();
-```
-
-#### Ethers.js v5.x
-
-```js
-const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const liquidity = await comet.callStatic.getLiquidationMargin('0xAccount');
-```
-
 ### Liquidatable Accounts
 
 This function returns true if the account passed to it has negative liquidity based on the liquidation collateral factor. A return value of true indicates that the account is presently liquidatable.
