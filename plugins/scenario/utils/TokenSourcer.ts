@@ -84,7 +84,7 @@ async function addTokens(
     let impersonatedSigner = await ethers.getSigner(holder);
     let impersonatedProviderTokenContract = tokenContract.connect(impersonatedSigner);
     await hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
-    await impersonatedProviderTokenContract.transfer(address, amount, {gasPrice: 0});
+    await impersonatedProviderTokenContract.transfer(address, amount, { gasPrice: 0 });
     await hre.network.provider.request({
       method: 'hardhat_stopImpersonatingAccount',
       params: [holder],
@@ -131,14 +131,15 @@ async function searchLogs(
   blacklist?: string[],
   logOffset?: number,
 ): Promise<string | null> {
-  let toAddresses = new Set<string>();
+  let addresses = new Set<string>();
   if ((logOffset ?? 0) >= recentLogs.length) return null;
   recentLogs.slice(logOffset ?? 0, (logOffset ?? 0) + 20).map((log) => {
-    toAddresses.add(log.args![1]);
+    addresses.add(log.args![0]);
+    addresses.add(log.args![1]);
   });
   let balancesDict = new Map<string, BigNumber>();
   await Promise.all([
-    ...Array.from(toAddresses).map(async (address) => {
+    ...Array.from(addresses).map(async (address) => {
       balancesDict.set(address, await tokenContract.balanceOf(address));
     })
   ]);
