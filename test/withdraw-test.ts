@@ -164,6 +164,7 @@ describe('withdrawTo', function () {
     const a1 = await portfolio(protocol, alice.address);
     const b1 = await portfolio(protocol, bob.address);
 
+    expect(s0.receipt['events'].length).to.be.equal(2);
     expect(event(s0, 0)).to.be.deep.equal({
       Transfer: {
         from: comet.address,
@@ -175,13 +176,6 @@ describe('withdrawTo', function () {
       Withdraw: {
         src: bob.address,
         to: alice.address,
-        amount: 0n,
-      }
-    });
-    expect(event(s0, 2)).to.be.deep.equal({
-      Transfer: {
-        from: bob.address,
-        to: ethers.constants.AddressZero,
         amount: 0n,
       }
     });
@@ -329,6 +323,17 @@ describe('withdrawTo', function () {
     expect(await comet.isWithdrawPaused()).to.be.true;
 
     await expect(cometAsB.withdrawTo(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
+  });
+
+  it('reverts if withdraw max for a collateral asset', async () => {
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { COMP } = tokens;
+
+    await COMP.allocateTo(bob.address, 100e6);
+    const cometAsB = comet.connect(bob);
+
+    await expect(cometAsB.withdrawTo(alice.address, COMP.address, ethers.constants.MaxUint256)).to.be.revertedWith("custom error 'InvalidUInt128()'");
   });
 
   it('borrows to withdraw if necessary/possible', async () => {

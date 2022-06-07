@@ -137,14 +137,7 @@ describe('transfer', function () {
     const a1 = await portfolio(protocol, alice.address);
     const b1 = await portfolio(protocol, bob.address);
 
-    expect(event(s0, 0)).to.be.deep.equal({
-      Transfer: {
-        from: bob.address,
-        to: alice.address,
-        amount: 0n,
-      }
-    });
-
+    expect(s0.receipt['events'].length).to.be.equal(0);
     expect(a0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(b0.internal).to.be.deep.equal({ USDC: exp(-100, 6), COMP: 0n, WETH: exp(1, 18), WBTC: 0n });
     expect(a1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
@@ -244,6 +237,17 @@ describe('transfer', function () {
     expect(await comet.isTransferPaused()).to.be.true;
 
     await expect(cometAsB.transferAsset(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
+  });
+
+  it('reverts if transfer max for a collateral asset', async () => {
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { COMP } = tokens;
+
+    await COMP.allocateTo(bob.address, 100e6);
+    const cometAsB = comet.connect(bob);
+
+    await expect(cometAsB.transferAsset(alice.address, COMP.address, ethers.constants.MaxUint256)).to.be.revertedWith("custom error 'InvalidUInt128()'");
   });
 
   it('borrows base if collateralized', async () => {
