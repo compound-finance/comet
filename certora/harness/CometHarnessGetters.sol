@@ -59,10 +59,20 @@ contract CometHarnessGetters is Comet {
     }
 
     // Retrieves the offset of an asset in the array/bitvector
+    // getAssetInfoByAddress to work with the maps instead of looping over the array
+    mapping (address => uint8) public assetToIndex;
+    function getAssetInfoByAddress(address asset) override public view returns (AssetInfo memory){       
+        AssetInfo memory assetInfo =  getAssetInfo(assetToIndex[asset]);
+        // The require promises correlation of the asset values stored in assetInfo with the values retrieved form the index-asset map
+        require (assetInfo.asset == asset);
+        return assetInfo;
+    }
+
     function getAssetOffsetByAsset(address asset) external view returns (uint8 offset) {
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         return assetInfo.offset;
     }
+
 
     // Retrieves the scale of an asset
     function getAssetScaleByAsset(address asset) external view returns (uint64 offset) {
