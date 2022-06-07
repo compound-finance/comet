@@ -55,6 +55,39 @@ describe('supplyTo', function () {
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(120000);
   });
 
+  it('does not emit Transfer for 0 mint', async () => {
+    const protocol = await makeProtocol({base: 'USDC'});
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { USDC } = tokens;
+
+    await USDC.allocateTo(bob.address, 100e6);
+    await comet.setBasePrincipal(alice.address, -100e6);
+    await setTotalsBasic(comet, {
+      totalBorrowBase: 100e6,
+    });
+
+    const baseAsB = USDC.connect(bob);
+    const cometAsB = comet.connect(bob);
+
+    const _a0 = await wait(baseAsB.approve(comet.address, 100e6));
+    const s0 = await wait(cometAsB.supplyTo(alice.address, USDC.address, 100e6));
+    expect(s0.receipt['events'].length).to.be.equal(2);
+    expect(event(s0, 0)).to.be.deep.equal({
+      Transfer: {
+        from: bob.address,
+        to: comet.address,
+        amount: BigInt(100e6),
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      Supply: {
+        from: bob.address,
+        dst: alice.address,
+        amount: BigInt(100e6),
+      }
+    });
+  });
+
   it('user supply is same as total supply', async () => {
     const protocol = await makeProtocol({base: 'USDC'});
     const { comet, tokens, users: [bob] } = protocol;

@@ -1,4 +1,4 @@
-import { ethers, expect, makeProtocol } from './helpers';
+import { ethers, event, expect, makeProtocol, wait } from './helpers';
 
 describe('allow', function () {
   it('isAllowed defaults to false', async () => {
@@ -16,10 +16,16 @@ describe('allow', function () {
     const userAddress = user.address;
     const managerAddress = manager.address;
 
-    const tx = await comet.connect(user).allow(managerAddress, true);
-    await tx.wait();
+    const tx = await wait(comet.connect(user).allow(managerAddress, true));
 
     expect(await comet.isAllowed(userAddress, managerAddress)).to.be.true;
+    expect(event(tx, 0)).to.be.deep.equal({
+      Approval: {
+        owner: userAddress,
+        spender: managerAddress,
+        amount: ethers.constants.MaxUint256.toBigInt(),
+      }
+    });
   });
 
   it('allows a user to rescind authorization', async () => {
@@ -28,15 +34,20 @@ describe('allow', function () {
     const userAddress = user.address;
     const managerAddress = manager.address;
 
-    const authorizeTx = await comet.connect(user).allow(managerAddress, true);
-    await authorizeTx.wait();
+    const _authorizeTx = await wait(comet.connect(user).allow(managerAddress, true));
 
     expect(await comet.isAllowed(userAddress, managerAddress)).to.be.true;
 
-    const rescindTx = await comet.connect(user).allow(managerAddress, false);
-    await rescindTx.wait();
+    const rescindTx = await wait(comet.connect(user).allow(managerAddress, false));
 
     expect(await comet.isAllowed(userAddress, managerAddress)).to.be.false;
+    expect(event(rescindTx, 0)).to.be.deep.equal({
+      Approval: {
+        owner: userAddress,
+        spender: managerAddress,
+        amount: 0n,
+      }
+    });
   });
 });
 

@@ -83,6 +83,13 @@ describe('erc20', function () {
     expect(event(tx, 0)).to.be.deep.equal({
       Transfer: {
         from: alice.address,
+        to: ethers.constants.AddressZero,
+        amount: BigInt(100e6),
+      }
+    });
+    expect(event(tx, 1)).to.be.deep.equal({
+      Transfer: {
+        from: ethers.constants.AddressZero,
         to: bob.address,
         amount: BigInt(100e6),
       }

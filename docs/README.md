@@ -197,7 +197,7 @@ function withdrawFrom(address src, address to, address asset, uint amount)
 ```
 
 * `asset`: The address of the asset that is being withdrawn or borrowed in the transaction.
-* `amount`: The amount of the asset to withdraw or borrow.
+* `amount`: The amount of the asset to withdraw or borrow. A value of `MaxUint256` will withdraw all of the `src`'s base balance.
 * `to`: The address to send the withdrawn or borrowed asset.
 * `src`: The address of the account to withdraw or borrow on behalf of. The `withdrawFrom` method can only be called by an allowed manager.
 * `RETURN`: No return, reverts on error.
@@ -801,17 +801,30 @@ const isManager = await comet.callStatic.hasPermission('0xOwner', '0xManager');
 
 This function is used to transfer an asset within the protocol to another address. A manager of an account is also able to perform a transfer on behalf of the account. Account balances change but the asset does not leave the protocol contract. The transfer will fail if it would make the account liquidatable.
 
+There are two variants of the transfer function: `transfer` and `transferAsset`. The former conforms to the ERC-20 standard and transfers the base asset, while the latter requires specifying a specific asset to transfer.
+
 #### Comet
 
 ```solidity
-function transferCollateral(address dst, address asset, uint amount)
-function transferCollateralFrom(address src, address dst, address asset, uint amount)
+function transfer(address dst, uint amount)
+```
+
+```solidity
+function transferFrom(address src, address dst, uint amount)
+```
+
+```solidity
+function transferAsset(address dst, address asset, uint amount)
+```
+
+```solidity
+function transferAssetFrom(address src, address dst, address asset, uint amount)
 ```
 
 * `dst`: The address of an account that is the receiver in the transaction.
 * `src`: The address of an account that is the sender of the asset in the transaction. This transfer method can only be called by an allowed manager.
 * `asset`: The ERC-20 address of the asset that is being sent in the transaction.
-* `amount`: The amount of the asset to transfer.
+* `amount`: The amount of the asset to transfer. A value of `MaxUint256` will transfer all of the `src`'s base balance.
 * `RETURN`: No return, reverts on error.
 
 #### Solidity

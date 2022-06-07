@@ -17,14 +17,20 @@ abstract contract CometMainInterface is CometCore {
     event TransferCollateral(address indexed from, address indexed to, address indexed asset, uint256 amount);
     event WithdrawCollateral(address indexed src, address indexed to, address indexed asset, uint256 amount);
 
-    /// @notice Event emitted when an action is paused/unpaused
-    event PauseAction(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused);
     /// @notice Event emitted when a borrow position is absorbed by the protocol
     event AbsorbDebt(address indexed absorber, address indexed borrower, uint104 debtAbsorbed, uint usdValue);
+
     /// @notice Event emitted when a user's collateral is absorbed by the protocol
     event AbsorbCollateral(address indexed absorber, address indexed borrower, address indexed asset, uint128 collateralAbsorbed, uint usdValue);
+
     /// @notice Event emitted when a collateral asset is purchased from the protocol
     event BuyCollateral(address indexed buyer, address indexed asset, uint baseAmount, uint collateralAmount);
+
+    /// @notice Event emitted when an action is paused/unpaused
+    event PauseAction(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused);
+
+    /// @notice Event emitted when reserves are withdrawn by the governor
+    event WithdrawReserves(address indexed to, uint amount);
 
     function supply(address asset, uint amount) virtual external;
     function supplyTo(address dst, address asset, uint amount) virtual external;

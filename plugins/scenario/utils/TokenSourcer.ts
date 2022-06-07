@@ -10,6 +10,7 @@ interface SourceTokenParameters {
   amount: number | bigint;
   asset: string;
   address: string;
+  blacklist: string[] | undefined;
 }
 
 /// ETH balance is used for transfer out when amount is negative
@@ -18,13 +19,14 @@ export async function sourceTokens({
   amount: amount_,
   asset,
   address,
+  blacklist,
 }: SourceTokenParameters) {
   let amount = BigNumber.from(amount_);
 
   if (amount.isNegative()) {
     await removeTokens(hre, amount.abs(), asset, address);
   } else {
-    await addTokens(hre, amount, asset, address);
+    await addTokens(hre, amount, asset, address, blacklist);
   }
 }
 
@@ -56,11 +58,11 @@ async function addTokens(
   amount: BigNumber,
   asset: string,
   address: string,
+  blacklist?: string[],
   block?: number,
   offsetBlocks?: number
 ) {
   let ethers = hre.ethers;
-  let signer = (await ethers.getSigners())[0];
   block = block ?? (await ethers.provider.getBlockNumber());
   let tokenContract = new ethers.Contract(asset, erc20, ethers.provider);
   let filter = tokenContract.filters.Transfer();
@@ -73,7 +75,7 @@ async function addTokens(
   if (err) {
     throw err;
   }
-  let holder = await searchLogs(recentLogs, amount, tokenContract, ethers);
+  let holder = await searchLogs(recentLogs, amount, tokenContract, ethers, blacklist);
   if (holder) {
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
@@ -81,19 +83,15 @@ async function addTokens(
     });
     let impersonatedSigner = await ethers.getSigner(holder);
     let impersonatedProviderTokenContract = tokenContract.connect(impersonatedSigner);
-    // Give impersonated address ETH for TX
-    await signer.sendTransaction({
-      to: impersonatedSigner.address,
-      value: ethers.utils.parseEther('1.0'),
-    });
-    await impersonatedProviderTokenContract.transfer(address, amount);
+    await hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+    await impersonatedProviderTokenContract.transfer(address, amount, {gasPrice: 0});
     await hre.network.provider.request({
       method: 'hardhat_stopImpersonatingAccount',
       params: [holder],
     });
   } else {
     if ((offsetBlocks ?? 0) > 40000) throw "Error: Couldn't find sufficient tokens";
-    await addTokens(hre, amount, asset, address, block, (offsetBlocks ?? 0) + blocksDelta);
+    await addTokens(hre, amount, asset, address, blacklist, block, (offsetBlocks ?? 0) + blocksDelta);
   }
 }
 
@@ -130,7 +128,8 @@ async function searchLogs(
   amount: BigNumber,
   tokenContract: Contract,
   ethers: HardhatRuntimeEnvironment['ethers'],
-  logOffset?: number
+  blacklist?: string[],
+  logOffset?: number,
 ): Promise<string | null> {
   let toAddresses = new Set<string>();
   if ((logOffset ?? 0) >= recentLogs.length) return null;
@@ -138,26 +137,20 @@ async function searchLogs(
     toAddresses.add(log.args![1]);
   });
   let balancesDict = new Map<string, BigNumber>();
-  let addressContracts = new Map<string, boolean>();
   await Promise.all([
     ...Array.from(toAddresses).map(async (address) => {
       balancesDict.set(address, await tokenContract.balanceOf(address));
-    }),
-    ...Array.from(toAddresses).map(async (address) => {
-      let code = await ethers.provider.getCode(address);
-      addressContracts.set(address, code !== '0x');
-    }),
+    })
   ]);
-  for (let address of Array.from(addressContracts.keys())) {
-    if (addressContracts.get(address)) {
-      // Remove contracts from search
-      balancesDict.delete(address);
+  for (let address of blacklist) {
+    balancesDict.delete(address);
+  }
+  let balances = Array.from(balancesDict.entries());
+  if (balances.length > 0) {
+    let max = getMaxEntry(balances);
+    if (max[1].gte(amount)) {
+      return max[0];
     }
   }
-  let max = getMaxEntry(Array.from(balancesDict.entries()));
-  if (max[1].gte(amount)) {
-    return max[0];
-  } else {
-    return searchLogs(recentLogs, amount, tokenContract, ethers, (logOffset ?? 0) + 20);
-  }
+  return searchLogs(recentLogs, amount, tokenContract, ethers, blacklist, (logOffset ?? 0) + 20);
 }

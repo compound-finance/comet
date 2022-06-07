@@ -14,7 +14,7 @@ function calculateSupplyRate(
   factorScale = BigNumber.from(exp(1, 18))
 ): BigNumber {
   const reserveScalingFactor = utilization.mul(factorScale.sub(reserveRate)).div(factorScale);
-  if (utilization <= kink) {
+  if (utilization.lte(kink)) {
     const interestRateWithoutBase = interestRateSlopeLow.mul(utilization).div(factorScale);
     const interestRateWithoutReserveScaling = interestRateBase.add(interestRateWithoutBase);
     return interestRateWithoutReserveScaling.mul(reserveScalingFactor).div(factorScale);
@@ -126,7 +126,7 @@ scenario(
       perYearInterestRateBase: (0.005e18).toString(), // 0.5% per year
       perYearInterestRateSlopeLow: (0.05e18).toString(),
       perYearInterestRateSlopeHigh: (0.2e18).toString(),
-      reserveRate: (0.1e18).toString(), // 1%,
+      reserveRate: (0.1e18).toString(), // 10%,
       kink: (0.8e18).toString(), // 80%
     },
     utilization: 0.85,
@@ -147,7 +147,7 @@ scenario(
       // TODO: Read types directly from Solidity?
       perYearInterestRateBase: { type: FuzzType.UINT64 },
       reserveRate: { type: FuzzType.UINT64, max: (1e18).toString() /* 100% */ },
-      kink: (8e17).toString(), // 80%
+      kink: (0.80e18).toString(), // 80%
     }
   },
   async ({ comet, actors }) => {

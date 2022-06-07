@@ -61,10 +61,8 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
 
         let baseToken = context.getAssetByAddress(await comet.baseToken());
         let utilizationFactor = factor(utilization);
-        let { totalSupplyBase: totalSupplyBaseBN, totalBorrowBase: totalBorrowBaseBN } =
-          await comet.totalsBasic();
-        let totalSupplyBase = totalSupplyBaseBN.toBigInt();
-        let totalBorrowBase = totalBorrowBaseBN.toBigInt();
+        let totalSupplyBase = (await comet.totalSupply()).toBigInt();
+        let totalBorrowBase = (await comet.totalBorrow()).toBigInt();
 
         let toBorrowBase: bigint = 0n;
         let toSupplyBase: bigint = 0n;
