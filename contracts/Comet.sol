@@ -546,38 +546,6 @@ contract Comet is CometMainInterface {
     }
 
     /**
-     * @notice Calculate the amount of borrow liquidity for account
-     * @param account The address to check liquidity for
-     * @return The common price quantity of borrow liquidity
-     */
-    function getBorrowLiquidity(address account) override external view returns (int) {
-        uint16 assetsIn = userBasic[account].assetsIn;
-
-        int liquidity = signedMulPrice(
-            presentValue(userBasic[account].principal),
-            getPrice(baseTokenPriceFeed),
-            uint64(baseScale)
-        );
-
-        for (uint8 i = 0; i < numAssets; i++) {
-            if (isInAsset(assetsIn, i)) {
-                AssetInfo memory asset = getAssetInfo(i);
-                uint newAmount = mulPrice(
-                    userCollateral[account][asset.asset].balance,
-                    getPrice(asset.priceFeed),
-                    asset.scale
-                );
-                liquidity += signed256(mulFactor(
-                    newAmount,
-                    asset.borrowCollateralFactor
-                ));
-            }
-        }
-
-        return liquidity;
-    }
-
-    /**
      * @notice Check whether an account has enough collateral to not be liquidated
      * @param account The address to check
      * @return Whether the account is minimally collateralized enough to not be liquidated
@@ -877,12 +845,16 @@ contract Comet is CometMainInterface {
 
     /**
      * @dev Supply either collateral or base asset, depending on the asset, if operator is allowed
+     * @dev Note: Specifying an `amount` of uint256.max will repay all of `dst`'s accrued base borrow balance
      */
     function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal {
         if (isSupplyPaused()) revert Paused();
         if (!hasPermission(from, operator)) revert Unauthorized();
 
         if (asset == baseToken) {
+            if (amount == type(uint256).max) {
+                amount = borrowBalanceOf(dst);
+            }
             return supplyBase(from, dst, safe104(amount));
         } else {
             return supplyCollateral(from, dst, asset, safe128(amount));
@@ -1356,7 +1328,7 @@ contract Comet is CometMainInterface {
      * @param account The account whose balance to query
      * @return The present day base balance magnitude of the account, if negative
      */
-    function borrowBalanceOf(address account) override external view returns (uint256) {
+    function borrowBalanceOf(address account) override public view returns (uint256) {
         (, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         int104 principal = userBasic[account].principal;
         return principal < 0 ? presentValueBorrow(baseBorrowIndex_, unsigned104(-principal)) : 0;
