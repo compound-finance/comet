@@ -6,6 +6,7 @@
 import hre from 'hardhat';
 import { deployComet } from '../src/deploy';
 import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
+import { Bulker, Bulker__factory, Comet, WETH9 } from '../build/types';
 
 async function main() {
   await hre.run('compile');
@@ -15,7 +16,16 @@ async function main() {
     verifyContracts: !isDevelopment,
     debug: true,
   });
-  await deployComet(dm);
+
+  const comet = await dm.contract('comet') as Comet;
+  const weth = await dm.contract('weth') as WETH9;
+
+  const bulker = await dm.deploy<Bulker, Bulker__factory, [string, string]>(
+    'Bulker.sol',
+    [comet.address, weth.address]
+  );
+
+  console.log(bulker.address)
   await dm.spider();
 }
 
