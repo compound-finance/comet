@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import "./CometInterface.sol";
 import "./IWETH9.sol";
 import "./ERC20.sol";
+import "@uniswap/lib/contracts/libraries/TransferHelper.sol";
 
 interface ISwapRouter {
     struct ExactInputSingleParams {
@@ -153,8 +154,11 @@ contract Bulker {
         CometInterface(comet).withdrawFrom(msg.sender, address(this), baseToken, amount);
         address pool = address(0xC9A07C2371113fc7C63e357382456d49A60bE329);
         address dai = address(0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa);
-        ERC20(baseToken).approve(pool, amount);
+        address router = address(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+        // ERC20(baseToken).approve(pool, amount);
 
+        // TransferHelper.safeTransferFrom(baseToken, msg.sender, address(this), amount);
+        TransferHelper.safeApprove(baseToken, router, amount);
 
         // Naively set amountOutMinimum to 0. In production, use an oracle or other data source to choose a safer value for amountOutMinimum.
         // We also set the sqrtPriceLimitx96 to be 0 to ensure we swap our exact input amount.
@@ -166,12 +170,13 @@ contract Bulker {
             deadline: block.timestamp,
             amountIn: amount,
             amountOutMinimum: 0,
-            sqrtPriceLimitX96: type(uint160).max
+            sqrtPriceLimitX96: 0
         });
 
         uint amountOut = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564).exactInputSingle(
             params
         );
+        // TODO should it be 'to' instead of 'msg.sender'?
         ERC20(0xC9A07C2371113fc7C63e357382456d49A60bE329).transfer(msg.sender, amountOut);
     }
 

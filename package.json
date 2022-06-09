@@ -41,6 +41,7 @@
   "author": "Compound Finance",
   "license": "UNLICENSED",
   "dependencies": {
+    "@uniswap/lib": "^4.0.1-alpha",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "jest-diff": "^27.4.2"
