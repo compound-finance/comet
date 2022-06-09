@@ -166,6 +166,7 @@ contract Bulker {
             tokenIn: baseToken,
             tokenOut: dai,
             fee: 500,
+            // TODO maybe put 'to' instead of msg.sender and delete last transfer?
             recipient: msg.sender,
             deadline: block.timestamp,
             amountIn: amount,
