@@ -53,6 +53,9 @@ methods{
         
 */
 
+// B@B - The rule at its current state should fail with a violation of offset > 15 (will not change any asset).
+// The rule at the moement pass for no good reason. When things get fixed and it fails for the mentioned reason,
+// the commented require below can be added to make the rule pass correctly
 rule check_update_UserCollateral(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance){
     uint16 _assetIn = getAssetinOfUser(account);
     call_updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);

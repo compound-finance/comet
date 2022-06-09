@@ -36,7 +36,7 @@ methods {
     getTotalsSupplyAsset(address asset) returns (uint128) envfree  
     getAssetSupplyCapByAddress(address) returns (uint128) envfree
     baseBalanceOf(address) returns (int104) envfree
-    getReserves() returns (int) envfree
+    getReserves() returns (int)
     targetReserves() returns (uint256) envfree
     initializeStorage() 
 
@@ -49,6 +49,7 @@ methods {
     assetToIndex(address) returns (uint8) envfree
     indexToAsset(uint8) returns (address) envfree
     tokenBalanceOf(address, address) returns uint256 envfree 
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -119,7 +120,7 @@ methods {
 //
 
     // Summarization of the user principal - the ghost tracks the sum of principals across all users
-    ghost mathint sumUserBasicPrincipal  {
+    ghost mathint sumUserBasicPrincipal {
         init_state axiom sumUserBasicPrincipal==0; 
     }
 
@@ -138,6 +139,13 @@ methods {
     // A hook updating an asset's total balance on every write to storage
     hook Sstore userCollateral[KEY address account][KEY address t].balance  uint128 balance (uint128 old_balance) STORAGE {
         sumBalancePerAsset[t] = sumBalancePerAsset[t] - old_balance + balance;
+    }
+    // global ghost variable to track accrueWasCalled
+    ghost bool accrueWasCalledGhost;
+
+    // A hook updating the accrueWasCalled flag
+    hook Sload bool new_val accrueWasCalled STORAGE {
+        accrueWasCalledGhost = true;
     }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -206,14 +214,14 @@ rule assetIn_initialized_with_balance(method f, address user, address asset)
 rule balance_change_vs_accrue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
     env e;
     calldataarg args;
+    
+    accrueWasCalledGhost = false;
 
-    require !accrueWasCalled(e) ;
+    uint256 balance_pre = tokenBalanceOf(_baseToken, currentContract);
+    f(e,args);
+    uint256 balance_post = tokenBalanceOf(_baseToken, currentContract);
 
-    uint256 balance_pre = tokenBalanceOf(_baseToken,currentContract);
-    f(e,args) ;
-    uint256 balance_post = tokenBalanceOf(_baseToken,currentContract);
-
-    assert balance_post != balance_pre => accrueWasCalled(e);
+    assert balance_post != balance_pre => accrueWasCalledGhost;
 }
 
 /*

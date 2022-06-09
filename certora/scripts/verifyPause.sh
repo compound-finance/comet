@@ -5,8 +5,9 @@ fi
 
 certoraRun certora/harness/CometHarnessGetters.sol \
     --verify CometHarnessGetters:certora/specs/pause.spec  \
-    --solc solc8.11 \
+    --solc solc8.13 \
     --cloud \
+    --disable_auto_cache_key_gen \
     $RULE \
     --optimistic_loop \
     --settings -useBitVectorTheory \

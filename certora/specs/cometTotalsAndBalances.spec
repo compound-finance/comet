@@ -54,7 +54,7 @@ invariant total_collateral_per_asset(address asset)
 */
 
 invariant total_asset_collateral_vs_asset_balance(address asset) 
-    asset != _baseToken => 
+    (asset != _baseToken && asset != currentContract) => 
         (getTotalsSupplyAsset(asset)  <= tokenBalanceOf(asset, currentContract) ) 
     filtered { f-> !similarFunctions(f) && !f.isView }
     {

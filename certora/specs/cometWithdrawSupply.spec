@@ -44,9 +44,9 @@ import "comet.spec"
 rule withdraw_reserves_decreases(address to, uint amount){
     env e;
 
-    int256 before = getReserves();
+    int256 before = getReserves(e);
     withdrawReserves(e,to,amount);
-    int256 after = getReserves();
+    int256 after = getReserves(e);
 
     assert (amount > 0 && to != currentContract) => before > after;
 }
@@ -87,9 +87,9 @@ rule withdraw_reserves_monotonicity(address to){
     require to != currentContract && amount1 > 0;
 
     withdrawReserves(e,to,amount1);
-        int reserves1 = getReserves();
+        int reserves1 = getReserves(e);
     withdrawReserves(e,to,amount2) at init;
-        int reserves2 = getReserves();
+        int reserves2 = getReserves(e);
 
     assert amount2 > amount1 => reserves1 > reserves2;
 }
@@ -122,6 +122,7 @@ rule withdraw_reserves_monotonicity(address to){
 rule supply_increase_balance(address asset, uint amount){
     env e;
     require e.msg.sender != currentContract;
+    require asset != currentContract; // addition
 
     simplifiedAssumptions();
 
@@ -159,14 +160,16 @@ rule supply_increase_balance(address asset, uint amount){
 rule withdraw_decrease_balance(address asset, uint amount){
     env e;
     require e.msg.sender != currentContract;
+    require asset != currentContract; // addition
 
     simplifiedAssumptions();
 
     uint balance1 = tokenBalanceOf(asset, currentContract);
+    uint balance_user = balanceOf(e, e.msg.sender);
     withdraw(e, asset, amount);
     uint balance2 = tokenBalanceOf(asset, currentContract);
-    
-    assert balance1 - balance2 == amount;
+
+    assert amount != max_uint256 ? balance1 - balance2 == amount : balance1 - balance2 == balance_user;
 }
 
 /*

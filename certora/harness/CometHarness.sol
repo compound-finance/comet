@@ -28,7 +28,6 @@ contract CometHarness is CometHarnessGetters {
     // 2. The asset of each index,
     // 3. The AssetInfo of at each index
 
-    mapping (address => uint8) public assetToIndex;
     mapping (uint8 => address) public indexToAsset;
     mapping (uint8 => AssetInfo) public assetInfoMap;
 
@@ -42,7 +41,7 @@ contract CometHarness is CometHarnessGetters {
     }
 
     // Overriding the original getAssetInfoByAddress to work with the maps instead of looping over the array
-    function getAssetInfoByAddress(address asset) override internal view returns (AssetInfo memory){       
+    function getAssetInfoByAddress(address asset) override public view returns (AssetInfo memory){       
         AssetInfo memory assetInfo =  getAssetInfo(assetToIndex[asset]);
         // The require promises correlation of the asset values stored in assetInfo with the values retrieved form the index-asset map
         require (assetInfo.asset == asset);
@@ -75,7 +74,7 @@ contract CometHarness is CometHarnessGetters {
     // Overriding the original updateAssetsIn to use the assetIn bitvector summarization
     function updateAssetsIn(
         address account,
-        address asset,
+        AssetInfo memory assetInfo,
         uint128 initialUserBalance,
         uint128 finalUserBalance
     ) override internal {
@@ -93,11 +92,11 @@ contract CometHarness is CometHarnessGetters {
             // skips the update
             return;
         }
-        assetInAfter = assetInStateChanges[assetInBefore][asset][flag];
+        assetInAfter = assetInStateChanges[assetInBefore][assetInfo.asset][flag];
         userBasic[account].assetsIn = assetInAfter;
         // The 2 requires are promising correlation of the two assetIn mappings, and that isInAsset retrieve the correct value.
-        require(assetInState[assetInAfter][asset] == flag);
-        require(isInAsset(assetInAfter,assetToIndex[asset]) == flag ); 
+        require(assetInState[assetInAfter][assetInfo.asset] == flag);
+        require(isInAsset(assetInAfter,assetToIndex[assetInfo.asset]) == flag ); 
     }
 
 
@@ -115,9 +114,24 @@ contract CometHarness is CometHarnessGetters {
     // many properties of accrue are proven in interestComputation.spec
     bool public accrueWasCalled;
     function accrueInternal() override internal {
-        accrueWasCalled = true;
-     }
+        bool accrued = accrueWasCalled;
+        // This if statement is purely here to overcome compiler optimization.
+        // The optimization removes the unused local assignment above.
+        if (accrued) {
+            uint x = 1 + 2;
+            uint y = x + 3;
+        }
+    }
 
+    function accruedInterestIndices(uint timeElapsed) override internal view returns (uint64, uint64) {
+        bool accrued = accrueWasCalled;
+        // This if statement is purely here to overcome compiler optimization.
+        // The optimization removes the unused local assignment above.
+        if(accrued) {
+            return (getBaseSupplyIndex(), getBaseBorrowIndex());
+        }
+        return (getBaseSupplyIndex(), getBaseBorrowIndex());
+    }
 
     /* Helpers: 
         A function to check if an address is registers, i.e, it has an assetInfo strcture 

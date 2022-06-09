@@ -296,7 +296,7 @@ contract Comet is CometMainInterface {
      */
     function getAssetInfo(uint8 i) override public view returns (AssetInfo memory) {
         if (i >= numAssets) revert BadAsset();
-
+        
         uint256 word_a;
         uint256 word_b;
 

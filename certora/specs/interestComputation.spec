@@ -113,10 +113,10 @@ rule supplyRate_vs_utilization(){
     setup(e1);
 
     uint   utilization_1 = getUtilization(e1);
-    uint64 supplyRate_1 = getSupplyRate(e1);
+    uint64 supplyRate_1 = getSupplyRate(e1, utilization_1);
 
     uint utilization_2 = getUtilization(e2);
-    uint64 supplyRate_2 = getSupplyRate(e2);
+    uint64 supplyRate_2 = getSupplyRate(e2, utilization_2);
 
     assert utilization_2 > utilization_1 => supplyRate_2 >= supplyRate_1;
 }
@@ -138,7 +138,8 @@ rule supplyRate_vs_utilization(){
 rule utilization_zero(){
     env e;
     setup(e);
-    uint64 borrowRate = getBorrowRate(e);
+    uint utilization = getUtilization(e);
+    uint64 borrowRate = getBorrowRate(e, utilization);
     assert getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase() ;
 }
 
@@ -316,37 +317,6 @@ rule presentValue_G_zero(int104 presentValue){
     @Rule
 
     @Description:
-        presentValue equal principalValue implies:
-
-    @Formula:
-        presentValue == principalValue => BaseSupplyIndex == BaseIndexScale
-
-    @Notes:
-
-    @Link:
-        
-*/
-
-rule presentValue_EQ_principal(int104 presentValue){
-    env e;
-   setup(e);
-    
-    require getBaseBorrowIndex() > getBaseSupplyIndex(); 
-    int104 principalValue = call_principalValue(presentValue);
-    int104 presentValueInv = call_presentValue(principalValue);
-
-    require presentValue != 0;
-
-    assert presentValue == principalValue => 
-            (getBaseSupplyIndex() == getBaseIndexScale() && 
-            presentValueInv == presentValue);
-}
-
-
-/*
-    @Rule
-
-    @Description:
         If utilization is 0, then supplyRate is 0
 
     @Formula:
@@ -360,7 +330,8 @@ rule presentValue_EQ_principal(int104 presentValue){
 
 rule utilization_zero_supplyRate_zero(){
     env e;
-    assert getUtilization(e) == 0 => getSupplyRate(e) == 0;
+    uint utilization = getUtilization(e);
+    assert utilization == 0 => getSupplyRate(e, utilization) == 0;
 }
 
 
@@ -385,8 +356,8 @@ rule utilization_zero_supplyRate_zero(){
 
 rule getSupplyRate_revert_characteristic(){
     env e;
-    getSupplyRate@withrevert(e);
+    uint utilization = getUtilization(e);
+    getSupplyRate@withrevert(e, utilization);
     bool isRevert = lastReverted;
-
     assert (reserveRate(e) > getFactorScale()) => isRevert;
 }

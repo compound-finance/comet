@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - certora
+      - certora-update
   # pull_request:
   #   branches:
   #     - main
@@ -36,9 +36,9 @@ jobs:
         
       - name: Install solc
         run: |
-          wget https://github.com/ethereum/solidity/releases/download/v0.8.11/solc-static-linux
+          wget https://github.com/ethereum/solidity/releases/download/v0.8.13/solc-static-linux
           chmod +x solc-static-linux
-          sudo mv solc-static-linux /usr/local/bin/solc8.11
+          sudo mv solc-static-linux /usr/local/bin/solc8.13
       
       - name: Verify rule ${{ matrix.rule }}
         run: |
@@ -54,9 +54,13 @@ jobs:
       matrix:
         rule:
           - verifyComet.sh assetIn_initialized_with_balance
+          - verifyComet.sh usage_registered_assets_only
+          - verifyAssetInfo.sh
+          - verifyCometWithdrawSupply.sh
+          - verifyPause.sh
+          - verifyUserAssetIn.sh
           - verifyComet.sh balance_change_vs_accrue
           - verifyComet.sh balance_change_vs_registered
-          - verifyComet.sh usage_registered_assets_only
           - verifyComet.sh verify_transferAsset
           - verifyCometTotalsAndBalances.sh total_collateral_per_asset
           - verifyCometTotalsAndBalances.sh total_asset_collateral_vs_asset_balance
@@ -64,12 +68,8 @@ jobs:
           - verifyCometTotalsAndBalances.sh collateral_totalSupply_LE_supplyCap
           - verifyCometTotalsAndBalances.sh total_base_token
           - verifyCometTotalsAndBalances.sh balance_change_by_allowed_only
-          - verifyAssetInfo.sh
           - verifyCometAbsorbBuyCollateral.sh
           - verifyCometExt.sh
-          - verifyCometWithdrawSupply.sh
           - verifyGovernance.sh
           - verifyInterestComputation.sh
-          - verifyPause.sh
           - verifyPauseGuardians.sh
-          - verifyUserAssetIn.sh

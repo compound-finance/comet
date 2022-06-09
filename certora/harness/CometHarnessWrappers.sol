@@ -20,7 +20,8 @@ contract CometHarnessWrappers is CometHarnessGetters {
 
     // External wrapper for updateAssetsIn. Calls the original function not the summarized implementation
     function call_updateAssetsIn(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance) external {
-        super.updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
+        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
+        super.updateAssetsIn(account, assetInfo, initialUserBalance, finalUserBalance);
     }
 
     // External wrapper for _getPackedAsset. Takes as args all fields of assetConfig since structs aren't stable at the moment. Calls the original function not the summarized implementation.

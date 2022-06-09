@@ -27,7 +27,6 @@ import "comet.spec"
         balance collateral decrease      &&
         balance Base increase       &&
         balance Base increase IFF balance collateral decrease
-         
 
     @Formula:
     {
@@ -51,8 +50,9 @@ import "comet.spec"
 
 rule anti_monotonicity_of_buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
     env e;
-    require asset != _baseToken; 
-    require minAmount > 0 ; 
+    require asset != _baseToken;
+    require asset != currentContract; // addition
+    require minAmount > 0;
     
     require e.msg.sender != currentContract;
     require recipient != currentContract;
@@ -173,9 +173,9 @@ rule absorb_reserves_decrease(address absorber, address account) {
     require accounts[0] == account;
     require accounts.length == 1;
 
-    int pre = getReserves();
+    int pre = getReserves(e);
     absorb(e, absorber, accounts);
-    int post = getReserves();
+    int post = getReserves(e);
 
     assert pre >= post;
 }

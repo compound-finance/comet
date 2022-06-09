@@ -6,8 +6,9 @@ fi
 certoraRun certora/harness/CometHarnessWrappers.sol certora/harness/SymbolicPriceOracleA.sol certora/harness/SymbolicPriceOracleB.sol \
     --verify CometHarnessWrappers:certora/specs/interestComputation.spec \
     --link CometHarnessWrappers:baseTokenPriceFeed=SymbolicPriceOracleA \
-    --solc solc8.11 \
+    --solc solc8.13 \
     --cloud \
+    --disable_auto_cache_key_gen \
     $RULE \
     --optimistic_loop \
     --settings -enableEqualitySaturation=false \
