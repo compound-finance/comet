@@ -7,7 +7,7 @@ export type Address = string;
 
 export type ResultFn<T, U, R> = (base: ForkSpec, scenario: Scenario<T, U, R>, err?: any) => void;
 
-export interface Config<T> {
+export interface Config {
   base: ForkSpec;
   world: World;
 }
@@ -21,15 +21,7 @@ function* combos<T>(choices: T[][]): Generator<T[]> {
   }
 }
 
-function bindFunctions(obj: any) {
-  for (let property of Object.getOwnPropertyNames(Object.getPrototypeOf(obj))) {
-    if (typeof obj[property] === 'function') {
-      obj[property] = obj[property].bind(obj);
-    }
-  }
-}
-
-async function identity<T>(ctx: T, world: World): Promise<T> {
+async function identity<T>(ctx: T, _world: World): Promise<T> {
   return ctx;
 }
 
@@ -46,10 +38,10 @@ function mapSolution<T>(s: Solution<T> | Solution<T>[] | null): Solution<T>[] {
 }
 
 export class Runner<T, U, R> {
-  config: Config<T>;
+  config: Config;
   worldSnapshot: string;
 
-  constructor(config: Config<T>) {
+  constructor(config: Config) {
     this.config = config;
   }
 
@@ -84,17 +76,17 @@ export class Runner<T, U, R> {
       // create a fresh copy of context that solutions can modify
       let ctx: T = await scenario.forker(context);
 
-      // apply each solution in the combo, then check they all still hold
-      for (const solution of combo) {
-        ctx = (await solution(ctx, world)) || ctx;
-      }
-
-      for (const constraint of constraints) {
-        await constraint.check(scenario.requirements, ctx, world);
-      }
-
-      // requirements met, run the property
       try {
+        // apply each solution in the combo, then check they all still hold
+        for (const solution of combo) {
+          ctx = (await solution(ctx, world)) || ctx;
+        }
+
+        for (const constraint of constraints) {
+          await constraint.check(scenario.requirements, ctx, world);
+        }
+
+        // requirements met, run the property
         let txnReceipt = await scenario.property(await scenario.transformer(ctx), world, ctx);
         if (txnReceipt) {
           cumulativeGas += txnReceipt.cumulativeGasUsed.toNumber();
@@ -135,7 +127,7 @@ export class Runner<T, U, R> {
       numSolutionSets,
       elapsed: Date.now() - startTime,
       error: err || null,
-      trace: err ? err.stack : null,
+      trace: err && err.stack ? err.stack : err,
       diff, // XXX can we move this into parent?
     };
   }

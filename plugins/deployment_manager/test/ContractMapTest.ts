@@ -8,7 +8,7 @@ import { tempDir } from './TestHelpers';
 import { Cache } from '../Cache';
 import { getContracts, getContractsFromAliases, storeBuildFile } from '../ContractMap';
 import { deploy } from '../Deploy';
-import { faucetTokenBuildFile, tokenArgs } from './DeployTest';
+import { faucetTokenBuildFile, tokenArgs } from './DeployHelpers';
 import { objectFromMap } from '../Utils';
 import { BuildFile } from '../Types';
 
@@ -94,7 +94,6 @@ describe('ContractMap', () => {
         '0x0000000000000000000000000000000000000000'
       );
       expect(Object.keys(await contractMap.get('token').populateTransaction)).to.eql([
-        'cool()',
         'allocateTo(address,uint256)',
         'allowance(address,address)',
         'approve(address,uint256)',
@@ -105,7 +104,7 @@ describe('ContractMap', () => {
         'totalSupply()',
         'transfer(address,uint256)',
         'transferFrom(address,address,uint256)',
-        'cool',
+        'cool()',
         'allocateTo',
         'allowance',
         'approve',
@@ -116,6 +115,7 @@ describe('ContractMap', () => {
         'totalSupply',
         'transfer',
         'transferFrom',
+        'cool',
       ]);
 
       // With double proxy
@@ -141,7 +141,7 @@ describe('ContractMap', () => {
         '0x0000000000000000000000000000000000000000'
       );
       expect(Object.keys(await contractMap.get('token').populateTransaction)).to.eql([
-        'cool()',
+        'cooler()',
         'allocateTo(address,uint256)',
         'allowance(address,address)',
         'approve(address,uint256)',
@@ -152,8 +152,8 @@ describe('ContractMap', () => {
         'totalSupply()',
         'transfer(address,uint256)',
         'transferFrom(address,address,uint256)',
-        'cooler()',
-        'cool',
+        'cool()',
+        'cooler',
         'allocateTo',
         'allowance',
         'approve',
@@ -164,8 +164,117 @@ describe('ContractMap', () => {
         'totalSupply',
         'transfer',
         'transferFrom',
-        'cooler',
+        'cool',
       ]);
+    });
+
+    it('retains the contract\'s constructor when building contract with proxy', async () => {
+      let cache = new Cache('test', false, tempDir());
+
+      await storeBuildFile(
+        cache,
+        '0x0000000000000000000000000000000000000000',
+        updateBuildFileABI(faucetTokenBuildFile, [
+          {
+            type: 'constructor',
+            stateMutability: 'payable',
+            inputs: [
+              {
+                name: 'TokenConstructorInput',
+                type: 'address'
+              }
+            ]
+          },
+          {
+            name: 'tokenFunction',
+            type: 'function',
+            stateMutability: 'view'
+          }
+        ])
+      );
+
+      await storeBuildFile(
+        cache,
+        '0x0000000000000000000000000000000000000001',
+        updateBuildFileABI(faucetTokenBuildFile, [
+          {
+            type: 'constructor',
+            stateMutability: 'payable',
+            inputs: [
+              {
+                name: 'TokenImplementationConstructorInput',
+                type: 'address'
+              }
+            ]
+          },
+          {
+            name: 'tokenImplementationFunction',
+            type: 'function',
+            stateMutability: 'view'
+          }
+        ])
+      );
+
+      await storeBuildFile(
+        cache,
+        '0x0000000000000000000000000000000000000002',
+        updateBuildFileABI(faucetTokenBuildFile, [
+          {
+            type: 'constructor',
+            stateMutability: 'payable',
+            inputs: [
+              {
+                name: 'TokenImplementationImplementationConstructorInput',
+                type: 'address'
+              }
+            ]
+          },
+          {
+            name: 'tokenImplementationImplementationFunction',
+            type: 'function',
+            stateMutability: 'view'
+          }
+        ])
+      );
+
+      let aliases = new Map([
+        ['token', '0x0000000000000000000000000000000000000000'],
+        ['token:implementation', '0x0000000000000000000000000000000000000001'],
+        ['token:implementation:implementation', '0x0000000000000000000000000000000000000002']
+      ]);
+      let proxies = new Map([
+        ['token', '0x0000000000000000000000000000000000000001'],
+        ['token:implementation', '0x0000000000000000000000000000000000000002'],
+      ]);
+
+      let contractMap = await getContractsFromAliases(cache, aliases, proxies, hre);
+
+      // builds up each contract's ABI correctly
+      expect(Object.keys(contractMap.get('token').populateTransaction)).to.eql([
+        'tokenImplementationImplementationFunction()',
+        'tokenImplementationFunction()',
+        'tokenFunction()',
+        'tokenImplementationImplementationFunction',
+        'tokenImplementationFunction',
+        'tokenFunction',
+      ]);
+
+      expect(Object.keys(contractMap.get('token:implementation').populateTransaction)).to.eql([
+        'tokenImplementationImplementationFunction()',
+        'tokenImplementationFunction()',
+        'tokenImplementationImplementationFunction',
+        'tokenImplementationFunction',
+      ]);
+
+      expect(Object.keys(contractMap.get('token:implementation:implementation').populateTransaction)).to.eql([
+        'tokenImplementationImplementationFunction()',
+        'tokenImplementationImplementationFunction',
+      ]);
+
+      // but maintains each contract's correct constructor
+      expect(await contractMap.get('token').interface.deploy.inputs[0].name).to.eq('TokenConstructorInput');
+      expect(await contractMap.get('token:implementation').interface.deploy.inputs[0].name).to.eq('TokenImplementationConstructorInput');
+      expect(await contractMap.get('token:implementation:implementation').interface.deploy.inputs[0].name).to.eq('TokenImplementationImplementationConstructorInput');
     });
 
     it('fails when proxy not found', async () => {

@@ -8,16 +8,18 @@ rectangle ConfiguratorImpl
 rectangle CometFactory
 rectangle CometProxy
 rectangle CometImpl
+rectangle Bulker
 
-GovSimple --> Timelock
+GovSimple --> Timelock : admin
 Timelock --> ProxyAdmin : admin
 Timelock ~~> ConfiguratorImpl : governor
 Timelock ~~> CometImpl : governor
-ProxyAdmin --> ConfiguratorProxy
-ProxyAdmin --> CometProxy
+ProxyAdmin --> ConfiguratorProxy : admin
+ProxyAdmin --> CometProxy : admin
 ConfiguratorProxy --> ConfiguratorImpl : impl
 ConfiguratorImpl --> CometFactory
 CometFactory ..> CometImpl : makes
 CometProxy --> CometImpl : impl
+Bulker --> CometProxy
 
 @enduml

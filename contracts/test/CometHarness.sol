@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: XXX ADD VALID LICENSE
-pragma solidity ^0.8.11;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity 0.8.13;
 
 import "../Comet.sol";
 
@@ -41,7 +41,8 @@ contract CometHarness is Comet {
     function setCollateralBalance(address account, address asset, uint128 balance) external {
         uint128 oldBalance = userCollateral[account][asset].balance;
         userCollateral[account][asset].balance = balance;
-        updateAssetsIn(account, asset, oldBalance, balance);
+        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
+        updateAssetsIn(account, assetInfo, oldBalance, balance);
     }
 
     function updateAssetsInExternal(
@@ -50,7 +51,8 @@ contract CometHarness is Comet {
         uint128 initialUserBalance,
         uint128 finalUserBalance
     ) external {
-        updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
+        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
+        updateAssetsIn(account, assetInfo, initialUserBalance, finalUserBalance);
     }
 
     function getAssetList(address account) external view returns (address[] memory result) {

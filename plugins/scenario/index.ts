@@ -3,13 +3,7 @@ import { getLoader } from './Loader';
 export { Constraint, Initializer, Property, Scenario, Solution, Transformer } from './Scenario';
 export { ForkSpec, World } from './World';
 
-type ScenarioFn<T, U> = (
-  name: string,
-  requirements: object,
-  property: Property<T, U>
-) => Promise<void>;
-
-interface ScenarioBuilder<T, U, R> {
+export interface ScenarioBuilder<T, U, R> {
   (name: string, requirements: R, property: Property<T, U>): void;
   only: (name: string, requirements: R, property: Property<T, U>) => void;
   skip: (name: string, requirements: R, property: Property<T, U>) => void;

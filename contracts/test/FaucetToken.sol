@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: XXX
-pragma solidity ^0.8.11;
+pragma solidity 0.8.13;
 
 /**
  * @title Standard ERC20 token
@@ -25,13 +25,16 @@ contract StandardToken {
     }
 
     function transfer(address dst, uint256 amount) external virtual returns (bool) {
+        require(amount <= balanceOf[msg.sender], "ERC20: transfer amount exceeds balance");
         balanceOf[msg.sender] = balanceOf[msg.sender] - amount;
         balanceOf[dst] = balanceOf[dst] + amount;
         emit Transfer(msg.sender, dst, amount);
         return true;
     }
 
-    function transferFrom(address src, address dst, uint256 amount) external returns (bool) {
+    function transferFrom(address src, address dst, uint256 amount) external virtual returns (bool) {
+        require(amount <= allowance[src][msg.sender], "ERC20: transfer amount exceeds allowance");
+        require(amount <= balanceOf[src], "ERC20: transfer amount exceeds balance");
         allowance[src][msg.sender] = allowance[src][msg.sender] - amount;
         balanceOf[src] = balanceOf[src] - amount;
         balanceOf[dst] = balanceOf[dst] + amount;

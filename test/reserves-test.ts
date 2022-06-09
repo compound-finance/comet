@@ -1,4 +1,4 @@
-import { expect, makeProtocol, wait } from './helpers';
+import { expect, makeProtocol, setTotalsBasic } from './helpers';
 
 describe('getReserves', function () {
   it('calculates 0 reserves', async () => {
@@ -7,12 +7,12 @@ describe('getReserves', function () {
     const { USDC } = tokens;
     await USDC.allocateTo(comet.address, 100);
 
-    const t0 = await comet.totalsBasic();
-    const t1 = Object.assign({}, t0, {
-        totalSupplyBase: 100n,
-        totalBorrowBase: 0n,
+    await setTotalsBasic(comet, {
+      baseSupplyIndex: 4e15,
+      baseBorrowIndex: 3e15,
+      totalSupplyBase: 25n,
+      totalBorrowBase: 0n,
     });
-    await wait(comet.setTotalsBasic(t1));
 
     const reserves = await comet.getReserves();
 
@@ -25,12 +25,12 @@ describe('getReserves', function () {
     const { USDC } = tokens;
     await USDC.allocateTo(comet.address, 100);
 
-    const t0 = await comet.totalsBasic();
-    const t1 = Object.assign({}, t0, {
-        totalSupplyBase: 100n,
-        totalBorrowBase: 50n,
+    await setTotalsBasic(comet, {
+      baseSupplyIndex: 2e15,
+      baseBorrowIndex: 5e15,
+      totalSupplyBase: 50n,
+      totalBorrowBase: 10n,
     });
-    await wait(comet.setTotalsBasic(t1));
 
     const reserves = await comet.getReserves();
 
@@ -39,17 +39,16 @@ describe('getReserves', function () {
 
   it('calculates negative reserves', async () => {
     const protocol = await makeProtocol({base: 'USDC'});
-    const { comet, tokens } = protocol;
-    const { USDC } = tokens;
+    const { comet } = protocol;
 
     // Protocol holds no USDC
 
-    const t0 = await comet.totalsBasic();
-    const t1 = Object.assign({}, t0, {
-        totalSupplyBase: 100n,
-        totalBorrowBase: 0n,
+    await setTotalsBasic(comet, {
+      baseSupplyIndex: 2e15,
+      baseBorrowIndex: 3e15,
+      totalSupplyBase: 50n,
+      totalBorrowBase: 0n,
     });
-    await wait(comet.setTotalsBasic(t1));
 
     const reserves = await comet.getReserves();
 

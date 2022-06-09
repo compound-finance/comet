@@ -1,9 +1,14 @@
 import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../plugins/deployment_manager/Migration';
 import { deployNetworkComet } from '../../../src/deploy/Network';
-import { DeployedContracts } from '../../../src/deploy/index';
 import { exp, wait } from '../../../test/helpers';
-import { ProxyAdmin, ProxyAdmin__factory } from '../../../build/types';
+import {
+  Fauceteer,
+  Fauceteer__factory,
+  ProxyAdmin,
+  ProxyAdmin__factory
+} from '../../../build/types';
+import { Contract } from 'ethers';
 
 let cloneNetwork = 'avalanche';
 let cloneAddr = {
@@ -15,13 +20,18 @@ let cloneAddr = {
 
 migration('1644432723_deploy_fuji', {
   prepare: async (deploymentManager: DeploymentManager) => {
-    let [signer] = await deploymentManager.hre.ethers.getSigners();
-    let signerAddress = await signer.getAddress();
+    let signer = await deploymentManager.getSigner();
+    let signerAddress = signer.address;
 
     let usdcProxyAdminArgs: [] = [];
     let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
       'vendor/proxy/transparent/ProxyAdmin.sol',
       usdcProxyAdminArgs
+    );
+
+    let fauceteer = await deploymentManager.deploy<Fauceteer, Fauceteer__factory, []>(
+      'test/Fauceteer.sol',
+      []
     );
 
     let usdcImplementation = await deploymentManager.clone(
@@ -39,7 +49,6 @@ migration('1644432723_deploy_fuji', {
 
     await wait(await usdcProxy.changeAdmin(usdcProxyAdmin.address));
     usdc = usdcImplementation.attach(usdcProxy.address);
-    // Give signer 10,000 USDC
     await wait(
       usdc.initialize(
         'USD Coin',
@@ -52,46 +61,46 @@ migration('1644432723_deploy_fuji', {
         signerAddress
       )
     );
-    await wait(usdc.configureMinter(signerAddress, exp(10000, 6)));
-    await wait(
-      usdc.mint(
-        signerAddress,
-        exp(10000, 6),
-        '0x0000000000000000000000000000000000000000',
-        0,
-        '0x0000000000000000000000000000000000000000000000000000000000000000'
-      )
-    );
 
     let wbtc = await deploymentManager.clone(cloneAddr.wbtc, [], cloneNetwork);
-    // Give signer 1000 WBTC
-    await wait(wbtc.mint(signerAddress, exp(1000, 8)));
 
     let wavax = await deploymentManager.clone(cloneAddr.wavax, [], cloneNetwork);
     // Give admin 0.01 WAVAX tokens [this is a precious resource here!]
     await wait(wavax.deposit({ value: exp(0.01, 18) }));
 
     // Contracts referenced in `configuration.json`.
-    let contracts = new Map([
+    let contracts = new Map<string, Contract>([
       ['USDC', usdc],
       ['WBTC.e', wbtc],
       ['WAVAX', wavax],
     ]);
 
-    let { comet, proxy } = await deployNetworkComet(deploymentManager, true, {}, contracts);
+    let { cometProxy, configuratorProxy } = await deployNetworkComet(
+      deploymentManager,
+      { deployCometProxy: true, deployConfiguratorProxy: true },
+      {},
+      contracts
+    );
 
     return {
-      comet: proxy.address,
+      comet: cometProxy.address,
+      configurator: configuratorProxy.address,
+      fauceteer: fauceteer.address,
       usdc: usdc.address,
       wbtc: wbtc.address,
       wavax: wavax.address,
     };
   },
   enact: async (deploymentManager: DeploymentManager, contracts) => {
+    deploymentManager.putRoots(new Map(Object.entries(contracts)));
+
     console.log("You should set roots.json to:");
     console.log("");
     console.log("");
     console.log(JSON.stringify(contracts, null, 4));
     console.log("");
   },
+  enacted: async (deploymentManager: DeploymentManager) => {
+    return false; // XXX
+  }
 });

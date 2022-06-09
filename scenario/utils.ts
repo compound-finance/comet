@@ -1,7 +1,13 @@
 import { expect } from 'chai';
-import { BigNumber } from 'ethers';
+import { BigNumber, BigNumberish, utils } from 'ethers';
 import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
+import { ProtocolConfiguration, deployComet } from '../src/deploy';
+import { GovernorSimple } from '../build/types';
+import { World } from '../plugins/scenario';
+import { exp } from '../test/helpers';
+import { AssetConfigStruct, AssetInfoStructOutput } from '../build/types/Comet';
+import { CometInterface } from '../build/types';
 
 export function abs(x: bigint): bigint {
   return x < 0n ? -x : x;
@@ -57,7 +63,7 @@ export function requireNumber<T>(o: object, key: string, err: string): number {
   if (typeof value !== 'number') {
     throw new Error(`${err} [requirement ${key} required to be number type]`);
   }
-  return value;  
+  return value;
 }
 
 export function optionalNumber<T>(o: object, key: string): number {
@@ -68,7 +74,100 @@ export function optionalNumber<T>(o: object, key: string): number {
   if (typeof value !== 'number') {
     throw new Error(`[requirement ${key} required to be number type]`);
   }
-  return value;  
+  return value;
+}
+
+export function scaleToDecimals(scale: BigNumberish): number {
+  return scale.toString().split('0').length - 1; // # of 0's in scale
+}
+
+export function getExpectedBaseBalance(balance: bigint, baseIndexScale: bigint, borrowOrSupplyIndex: bigint): bigint {
+  const principalValue = balance * baseIndexScale / borrowOrSupplyIndex;
+  const baseBalanceOf = principalValue * borrowOrSupplyIndex / baseIndexScale;
+  return baseBalanceOf;
+}
+
+export function getInterest(balance: bigint, rate: bigint, seconds: bigint) {
+  return balance * rate * seconds / (10n**18n);
+}
+
+// Instantly executes some actions through the governance proposal process
+// Note: `governor` must be connected to an `admin` signer
+export async function fastGovernanceExecute(governor: GovernorSimple, targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
+  let tx = await (await governor.propose(targets, values, signatures, calldatas, 'FastExecuteProposal')).wait();
+  let event = tx.events.find(event => event.event === 'ProposalCreated');
+  let [ proposalId ] = event.args;
+
+  await governor.queue(proposalId);
+  await governor.execute(proposalId);
+}
+
+export async function upgradeComet(world: World, context: CometContext, configOverrides: ProtocolConfiguration): Promise<CometContext> {
+  console.log('Upgrading to modern...');
+  // TODO: Make this deployment script less ridiculous, e.g. since it redeploys tokens right now
+  let oldComet = await context.getComet();
+  let timelock = await context.getTimelock();
+  let cometConfig = { governor: timelock.address, ...configOverrides } // Use old timelock as governor
+  let { comet: newComet } = await deployComet(
+    context.deploymentManager,
+    // Deploy a new configurator proxy to set the proper CometConfiguration storage values
+    { deployCometProxy: false, deployConfiguratorProxy: true },
+    cometConfig
+  );
+  let initializer: string | undefined;
+  if (!oldComet.totalsBasic || (await oldComet.totalsBasic()).lastAccrualTime === 0) {
+    initializer = (await newComet.populateTransaction.initializeStorage()).data;
+  }
+
+  await context.upgradeTo(newComet, world, initializer);
+  await context.setAssets();
+  await context.spider();
+
+  console.log('Upgraded to modern...');
+
+  return context
+}
+
+// Increases the supply cap for collateral assets that would go over the supply cap
+export async function bumpSupplyCaps(world: World, context: CometContext, supplyAmountPerAsset: Record<string, bigint>) {
+  const comet = await context.getComet();
+  const configurator = await context.getConfigurator();
+  const proxyAdmin = await context.getCometAdmin();
+
+  // Update supply cap in asset configs if new collateral supply will exceed the supply cap
+  let shouldUpgrade = false;
+  const newSupplyCaps: Record<string, bigint> = {};
+  for (const asset in supplyAmountPerAsset) {
+    let assetInfo: AssetInfoStructOutput;
+    try {
+      assetInfo = await comet.getAssetInfoByAddress(asset);
+    } catch (e) {
+      continue; // skip if asset is not a collateral asset
+    }
+
+    const currentTotalSupply = (await comet.totalsCollateral(asset)).totalSupplyAsset.toBigInt();
+    let newTotalSupply = currentTotalSupply + supplyAmountPerAsset[asset];
+    if (newTotalSupply > assetInfo.supplyCap.toBigInt()) {
+      shouldUpgrade = true;
+      newSupplyCaps[asset] = newTotalSupply * 2n;
+    }
+  }
+
+  // Set new supply caps in Configurator and do a deployAndUpgradeTo
+  if (shouldUpgrade) {
+    const [targets, values, signatures, calldata] = [[], [], [], []];
+    for (const asset in newSupplyCaps) {
+      targets.push(configurator.address);
+      values.push(0);
+      signatures.push('updateAssetSupplyCap(address,uint128)');
+      calldata.push(utils.defaultAbiCoder.encode(['address', 'uint128'], [asset, newSupplyCaps[asset]]))
+    }
+    targets.push(proxyAdmin.address);
+    values.push(0);
+    signatures.push('deployAndUpgradeTo(address,address)');
+    calldata.push(utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, comet.address]));
+    await context.fastGovernanceExecute(targets, values, signatures, calldata);
+  }
 }
 
 export async function getActorAddressFromName(name: string, context: CometContext): Promise<string> {
@@ -106,6 +205,33 @@ export async function getAssetFromName(name: string, context: CometContext): Pro
   }
 }
 
+// Returns the amount that needs to be transferred to satisfy a constraint
+export function getToTransferAmount(amount: ComparativeAmount, existingBalance: bigint, decimals: number): bigint {
+  let toTransfer = 0n;
+  switch (amount.op) {
+    case ComparisonOp.EQ:
+      toTransfer = exp(amount.val, decimals) - existingBalance;
+      break;
+    case ComparisonOp.GTE:
+      // `toTransfer` should not be negative
+      toTransfer = max(exp(amount.val, decimals) - existingBalance, 0);
+      break;
+    case ComparisonOp.LTE:
+      // `toTransfer` should not be positive
+      toTransfer = min(exp(amount.val, decimals) - existingBalance, 0);
+      break;
+    case ComparisonOp.GT:
+      toTransfer = exp(amount.val, decimals) - existingBalance + 1n;
+      break;
+    case ComparisonOp.LT:
+      toTransfer = exp(amount.val, decimals) - existingBalance - 1n;
+      break;
+    default:
+      throw new Error(`Bad amount: ${JSON.stringify(amount)}`);
+  }
+  return toTransfer;
+}
+
 // `amount` should be the unit amount of an asset instead of the gwei amount
 export function parseAmount(amount): ComparativeAmount {
   switch (typeof amount) {
@@ -115,16 +241,16 @@ export function parseAmount(amount): ComparativeAmount {
       return amount >= 0 ? { val: amount, op: ComparisonOp.GTE } : { val: amount, op: ComparisonOp.LTE };
     case 'string':
       return matchGroup(amount, {
-        [ComparisonOp.GTE]: />=\s*(\d+)/,
-        [ComparisonOp.GT]: />\s*(\d+)/,
-        [ComparisonOp.LTE]: /<=\s*(\d+)/,
-        [ComparisonOp.LT]: /<\s*(\d+)/,
-        [ComparisonOp.EQ]: /==\s*(\d+)/,
+        'GTE': />=\s*(\d+)/,
+        'GT': />\s*(\d+)/,
+        'LTE': /<=\s*(\d+)/,
+        'LT': /<\s*(\d+)/,
+        'EQ': /==\s*(\d+)/,
       });
     case 'object':
       return amount;
     default:
-      throw new Error(`Unrecognized amount: ${amount}`);
+      throw new Error(`Unrecognized amount: ${JSON.stringify(amount)}`);
   }
 }
 

@@ -3,9 +3,8 @@ import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migr
 import '../../plugins/deployment_manager/type-extensions';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-import * as types from 'hardhat/internal/core/params/argumentTypes'; // TODO harhdat argument types not from internal
+// import * as types from 'hardhat/internal/core/params/argumentTypes'; TODO harhdat argument types not from internal
 import * as path from 'path';
-import * as fs from 'fs/promises';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
 
 // TODO: Don't depend on scenario's hreForBase
@@ -90,6 +89,7 @@ task('migrate', 'Runs migration')
         debug: true,
         verifyContracts: true,
       });
+      await dm.spider();
       let migrationsGlob = path.join('deployments', network, 'migrations', '**.ts');
       let migrations = await loadMigrations(migrationsGlob);
 

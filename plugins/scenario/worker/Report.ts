@@ -2,14 +2,14 @@ import { Result } from './Parent';
 import { diff as showDiff } from 'jest-diff';
 import * as fs from 'fs/promises';
 
-export interface ConsoleFormatOptions {};
+export interface ConsoleFormatOptions {}
 export interface JsonFormatOptions {
   output?: string;
-};
+}
 
 export type FormatConfig = {
-  console?: ConsoleFormatOptions,
-  json?: JsonFormatOptions
+  console?: ConsoleFormatOptions;
+  json?: JsonFormatOptions;
 }
 
 export function pluralize(n, singular, plural = null) {
@@ -20,7 +20,7 @@ export function pluralize(n, singular, plural = null) {
   }
 }
 
-async function showReportConsole(results: Result[], consoleOptions: ConsoleFormatOptions, startTime: number, endTime: number) {
+async function showReportConsole(results: Result[], _consoleOptions: ConsoleFormatOptions, _startTime: number, _endTime: number) {
   let testCount = 0;
   let succCount = 0;
   let errCount = 0;
@@ -31,7 +31,7 @@ async function showReportConsole(results: Result[], consoleOptions: ConsoleForma
     scenario: string;
     error: Error;
     trace?: string;
-    diff?: { actual: any; expected: any };
+    diff?: { actual: any, expected: any };
   }[] = [];
 
   for (let { base, scenario, elapsed, error, trace, diff, skipped } of results) {
@@ -67,32 +67,32 @@ async function showReportConsole(results: Result[], consoleOptions: ConsoleForma
 }
 
 interface JsonTestResult {
-  title: string,
-  fullTitle: string,
-  file: string,
-  gasUsed: number,
-  numSolutionSets: number,
-  duration: number,
-  currentRetry: number,
-  err: any
-};
+  title: string;
+  fullTitle: string;
+  file: string;
+  gasUsed: number;
+  numSolutionSets: number;
+  duration: number;
+  currentRetry: number;
+  err: any;
+}
 
 interface JsonSuiteResult {
   stats: {
-    suites: number,
-    tests: number,
-    passes: number,
-    pending: number,
-    failures: number,
-    start: string,
-    end: string,
-    duration: number
-  },
-  tests: JsonTestResult[],
-  pending: JsonTestResult[],
-  failures: JsonTestResult[],
-  passes: JsonTestResult[],
-};
+    suites: number;
+    tests: number;
+    passes: number;
+    pending: number;
+    failures: number;
+    start: string;
+    end: string;
+    duration: number;
+  };
+  tests: JsonTestResult[];
+  pending: JsonTestResult[];
+  failures: JsonTestResult[];
+  passes: JsonTestResult[];
+}
 
 async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions, startTime: number, endTime: number) {
   // TODO: Accept options, etc.
@@ -141,7 +141,7 @@ async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions,
     pending,
     failures,
     passes,
-  }
+  };
 
   let result = JSON.stringify(suiteResult, null, 4);
 

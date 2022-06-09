@@ -10,6 +10,15 @@
         }
       }
     },
+    "canonical-weth/contracts/WETH9.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:gnosis/canonical-weth.git",
+          "commit": "0dd1ea3e295eef916d0c6223ec63141137d22d67",
+          "path": "contracts/WETH9.sol"
+        }
+      }
+    },
     "utils/Address.sol": {
       "source": {
         "git": {

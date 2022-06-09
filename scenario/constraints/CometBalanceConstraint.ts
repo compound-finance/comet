@@ -1,10 +1,33 @@
-import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
+import { Constraint, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import CometActor from '../context/CometActor';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
-import { exp, factorScale } from '../../test/helpers';
-import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, max, min } from '../utils';
+import { baseBalanceOf, exp, factorScale } from '../../test/helpers';
+import { bumpSupplyCaps, ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, max, getExpectedBaseBalance, getToTransferAmount } from '../utils';
+import { BigNumber } from 'ethers';
+import { AssetInfoStructOutput } from '../../build/types/Comet';
+
+async function getSupplyAmountPerAsset(context: CometContext, actorsByAsset): Promise<Record<string, bigint>> {
+  const comet = await context.getComet();
+
+  let supplyAmountPerAsset = {};
+  for (const assetName in actorsByAsset) {
+    const asset = await getAssetFromName(assetName, context)
+    let supplyAmount = 0;
+    for (const actorName in actorsByAsset[assetName]) {
+      supplyAmount += max(actorsByAsset[assetName][actorName].val, 0);
+    }
+    let assetInfo: AssetInfoStructOutput;
+    try {
+      assetInfo = await comet.getAssetInfoByAddress(asset.address);
+    } catch (e) {
+      continue; // skip if asset is not a collateral asset
+    }
+    supplyAmountPerAsset[asset.address] = BigInt(Math.ceil(supplyAmount)) * assetInfo.scale.toBigInt();
+  }
+  return supplyAmountPerAsset;
+}
 
 async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, world: World, context: CometContext) {
   const comet = await context.getComet();
@@ -31,12 +54,6 @@ async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, world: 
   await borrowActor.withdrawAsset({ asset: baseTokenAddress, amount: toBorrowBase });
 }
 
-function getExpectedBaseBalance(balance: bigint, baseIndexScale: bigint, borrowOrSupplyIndex: bigint) {
-  const principalValue = balance * baseIndexScale / borrowOrSupplyIndex;
-  const baseBalanceOf = principalValue * borrowOrSupplyIndex / baseIndexScale;
-  return baseBalanceOf;
-}
-
 export class CometBalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, initialContext: T, initialWorld: World) {
     const assetsByActor = requirements.cometBalances;
@@ -60,6 +77,11 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
       const solutions = [];
       solutions.push(async function barelyMeet(context: T, world: World) {
         const comet = await context.getComet();
+
+        // First increase supply caps if necessary
+        const supplyAmountPerAsset = await getSupplyAmountPerAsset(context, actorsByAsset);
+        await bumpSupplyCaps(world, context, supplyAmountPerAsset);
+
         for (const assetName in actorsByAsset) {
           const asset = await getAssetFromName(assetName, context)
           for (const actorName in actorsByAsset[assetName]) {
@@ -67,28 +89,7 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
             const amount: ComparativeAmount = actorsByAsset[assetName][actorName];
             const cometBalance = (await comet.collateralBalanceOf(actor.address, asset.address)).toBigInt();
             const decimals = await asset.token.decimals();
-            let toTransfer = 0n;
-            switch (amount.op) {
-              case ComparisonOp.EQ:
-                toTransfer = exp(amount.val, decimals) - cometBalance;
-                break;
-              case ComparisonOp.GTE:
-                // `toTransfer` should not be negative
-                toTransfer = max(exp(amount.val, decimals) - cometBalance, 0);
-                break;
-              case ComparisonOp.LTE:
-                // `toTransfer` should not be positive        
-                toTransfer = min(exp(amount.val, decimals) - cometBalance, 0);
-                break;
-              case ComparisonOp.GT:
-                toTransfer = exp(amount.val, decimals) - cometBalance + 1n;
-                break;
-              case ComparisonOp.LT:
-                toTransfer = exp(amount.val, decimals) - cometBalance - 1n;
-                break;
-              default:
-                throw new Error(`Bad amount: ${amount}`);
-            }
+            const toTransfer = getToTransferAmount(amount, cometBalance, decimals);
             if (toTransfer > 0) {
               // Case: Supply asset
               // 1. Source tokens to user
@@ -136,10 +137,12 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
           const amount = parseAmount(rawAmount);
           const decimals = await asset.token.decimals();
           const baseToken = await comet.baseToken();
-          let actualBalance;
-          let expectedBalance;
+          // Chai matchers (like `.to.be.at.most()`) only work for numbers and
+          // BigNumbers, so we convert from BigInt to BigNumber
+          let actualBalance: BigNumber;
+          let expectedBalance: BigNumber;
           if (asset.address === baseToken) {
-            actualBalance = await comet.baseBalanceOf(actor.address);
+            actualBalance = BigNumber.from(await baseBalanceOf(comet, actor.address));
             const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
             let baseIndex;
             if (amount.val >= 0) {
@@ -147,11 +150,12 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
             } else {
               baseIndex = (await comet.totalsBasic()).baseBorrowIndex.toBigInt();
             }
-            expectedBalance = getExpectedBaseBalance(exp(amount.val, decimals), baseIndexScale, baseIndex);
+            expectedBalance = BigNumber.from(getExpectedBaseBalance(exp(amount.val, decimals), baseIndexScale, baseIndex));
           } else {
-            actualBalance = await comet.collateralBalanceOf(actor.address, asset.address);
-            expectedBalance = exp(amount.val, decimals);
+            actualBalance = BigNumber.from(await comet.collateralBalanceOf(actor.address, asset.address));
+            expectedBalance = BigNumber.from(exp(amount.val, decimals));
           }
+          console.log('expected balance is ', expectedBalance)
           switch (amount.op) {
             case ComparisonOp.EQ:
               expect(actualBalance).to.equal(expectedBalance);
@@ -159,7 +163,7 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
             case ComparisonOp.GTE:
               expect(actualBalance).to.be.at.least(expectedBalance);
               break;
-            case ComparisonOp.LTE:        
+            case ComparisonOp.LTE:
               expect(actualBalance).to.be.at.most(expectedBalance);
               break;
             case ComparisonOp.GT:

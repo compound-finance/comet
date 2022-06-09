@@ -4,6 +4,8 @@ import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentMa
 import {
   Comet,
   ERC20,
+  GovernorSimple,
+  SimpleTimelock,
   TransparentUpgradeableProxy,
 } from '../../build/types';
 import { AssetConfigStruct } from '../../build/types/Comet';
@@ -32,15 +34,23 @@ export interface ProtocolConfiguration {
   assetConfigs?: AssetConfigStruct[];
 }
 
+export interface DeployProxyOption {
+  deployCometProxy?: boolean;
+  deployConfiguratorProxy?: boolean;
+}
+
 export interface DeployedContracts {
   comet: Comet;
-  proxy: TransparentUpgradeableProxy | null;
+  cometProxy: TransparentUpgradeableProxy | null;
+  configuratorProxy: TransparentUpgradeableProxy | null;
+  timelock: SimpleTimelock;
+  governor: GovernorSimple;
   tokens?: ERC20[];
 }
 
 export async function deployComet(
   deploymentManager: DeploymentManager,
-  deployProxy: boolean = true,
+  deployProxy: DeployProxyOption = { deployCometProxy: true, deployConfiguratorProxy: true },
   configurationOverrides: ProtocolConfiguration = {},
   contractMapOverride?: ContractMap,
 ): Promise<DeployedContracts> {

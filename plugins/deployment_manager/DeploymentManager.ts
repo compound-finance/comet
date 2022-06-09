@@ -1,8 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { Contract, Signer } from 'ethers';
-
+import { Contract, providers } from 'ethers';
 import { Alias, Address, BuildFile } from './Types';
-
 import { Aliases, getAliases, putAlias, storeAliases } from './Aliases';
 import { Cache } from './Cache';
 import { ContractMap, getContracts } from './ContractMap';
@@ -12,9 +10,10 @@ import { Proxies, getProxies, putProxy, storeProxies } from './Proxies';
 import { getRelationConfig } from './RelationConfig';
 import { Roots, getRoots, putRoots } from './Roots';
 import { spider } from './Spider';
-import { verifyContract } from './Verify';
 import { Migration, getArtifactSpec } from './Migration';
 import { generateMigration } from './MigrationTemplate';
+import { NonceManager } from '@ethersproject/experimental';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 interface DeploymentManagerConfig {
   baseDir?: string;
@@ -34,8 +33,8 @@ export class DeploymentManager {
   hre: HardhatRuntimeEnvironment;
   config: DeploymentManagerConfig;
   cache: Cache;
-  signer: Signer | null; // Used by deployer and contracts
   contractsCache: ContractMap | null;
+  _signers: SignerWithAddress[];
 
   constructor(
     deployment: string,
@@ -49,7 +48,23 @@ export class DeploymentManager {
     this.cache = new Cache(deployment, config.writeCacheToDisk ?? false, config.baseDir);
 
     this.contractsCache = null;
-    this.signer = null; // TODO: connect
+    this._signers = [];
+  }
+
+  async getSigners(): Promise<SignerWithAddress[]> {
+    if (this._signers.length > 0) {
+      return this._signers;
+    }
+    const signers = await this.hre.ethers.getSigners();
+    this._signers = await Promise.all(signers.map(async (signer) => {
+      const managedSigner = new NonceManager(signer) as unknown as providers.JsonRpcSigner;
+      return await SignerWithAddress.create(managedSigner);
+    }));
+    return this._signers;
+  }
+
+  async getSigner(): Promise<SignerWithAddress> {
+    return (await this.getSigners())[0];
   }
 
   private debug(...args: any[]) {
@@ -62,11 +77,11 @@ export class DeploymentManager {
     }
   }
 
-  private deployOpts(): DeployOpts {
+  private async deployOpts(): Promise<DeployOpts> {
     return {
       verify: this.config.verifyContracts,
       cache: this.cache,
-      connect: this.signer,
+      connect: await this.getSigner(),
     };
   }
 
@@ -102,12 +117,12 @@ export class DeploymentManager {
     Factory extends Deployer<C, DeployArgs>,
     DeployArgs extends Array<any>
   >(contractFile: string, deployArgs: DeployArgs): Promise<C> {
-    return deploy<C, Factory, DeployArgs>(contractFile, deployArgs, this.hre, this.deployOpts());
+    return deploy<C, Factory, DeployArgs>(contractFile, deployArgs, this.hre, await this.deployOpts());
   }
 
   /* Deploys a contract from a build file, e.g. an one imported contract */
   async deployBuild(buildFile: BuildFile, deployArgs: any[]): Promise<Contract> {
-    return await deployBuild(buildFile, deployArgs, this.hre, this.deployOpts());
+    return await deployBuild(buildFile, deployArgs, this.hre, await this.deployOpts());
   }
 
   /* Stores a new alias, which can then be referenced via `deploymentManager.contract()` */
@@ -125,6 +140,11 @@ export class DeploymentManager {
   /* Stores new roots, which are the basis for spidering. */
   async putRoots(roots: Roots) {
     await putRoots(this.cache, roots);
+  }
+
+  /* Gets the existing roots. */
+  async getRoots(): Promise<Roots> {
+    return await getRoots(this.cache);
   }
 
   /* Loads contract configuration by tracing from roots outwards, based on relationConfig. */
@@ -169,7 +189,7 @@ export class DeploymentManager {
       return this.contractsCache;
     } else {
       // TODO: When else do we need to clear the contracts cache
-      this.contractsCache = await getContracts(this.cache, this.hre, this.signer);
+      this.contractsCache = await getContracts(this.cache, this.hre, await this.getSigner());
       return this.contractsCache;
     }
   }
@@ -223,6 +243,10 @@ export class DeploymentManager {
   async clone<C extends Contract>(address: string, args: any[], network?: string): Promise<C> {
     let buildFile = await this.import(address, network);
     return await this.deployBuild(buildFile, args) as C;
+  }
+
+  network(): string {
+    return getNetwork(this.deployment);
   }
 
   static fork(d: DeploymentManager): DeploymentManager {

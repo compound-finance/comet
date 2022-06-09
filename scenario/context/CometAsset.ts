@@ -1,4 +1,4 @@
-import { BigNumberish, Contract, Signer } from 'ethers';
+import { BigNumberish, Contract, Overrides, Signer } from 'ethers';
 import { ERC20 } from '../../build/types';
 import CometActor from './CometActor';
 import { AddressLike, resolveAddress } from './Address';
@@ -29,15 +29,25 @@ export default class CometAsset {
     return (await this.token.balanceOf(address)).toBigInt();
   }
 
-  async transfer(from: CometActor, amount: number | bigint, recipient: CometAsset | string) {
+  async transfer(from: CometActor, amount: number | bigint, recipient: CometAsset | string, overrides: Overrides = {}) {
     let recipientAddress = typeof(recipient) === 'string' ? recipient : recipient.address;
 
-    await wait(this.token.connect(from.signer).transfer(recipientAddress, amount));
+    await wait(this.token.connect(from.signer).transfer(recipientAddress, amount, overrides));
   }
 
-  async approve(from: CometActor, spender: AddressLike, amount?: number) {
+  async approve(from: CometActor, spender: AddressLike, amount?: number | bigint) {
     let spenderAddress = resolveAddress(spender)
     let finalAmount = amount ?? constants.MaxUint256;
     await wait(this.token.connect(from.signer).approve(spenderAddress, finalAmount));
+  }
+
+  async allowance(owner: AddressLike, spender: AddressLike): Promise<bigint> {
+    let ownerAddress = resolveAddress(owner)
+    let spenderAddress = resolveAddress(spender)
+    return (await this.token.allowance(ownerAddress, spenderAddress)).toBigInt();
+  }
+
+  async decimals(): Promise<number> {
+    return this.token.decimals();
   }
 }

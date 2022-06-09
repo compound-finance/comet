@@ -48,9 +48,8 @@ async function getContractByAddressProxy(
   accAlias: string,
   accAddress: Address
 ): Promise<Contract> {
-  let name;
-  let { contract, abi } = await getContractByAddress(cache, accAlias, accAddress, hre, signer);
-  let nextABI = mergeABI(accABI, abi);
+  let { abi } = await getContractByAddress(cache, accAlias, accAddress, hre, signer);
+  let nextABI = mergeABI(abi, accABI); // duplicate entries (like constructor) defer to accABI
   if (proxies.has(accAlias)) {
     return await getContractByAddressProxy(
       cache,
@@ -75,12 +74,12 @@ async function getContractByAddress(
   hre: HardhatRuntimeEnvironment,
   signer: Signer,
   implBuildFile?: BuildFile
-): Promise<{ name: string; contract: Contract; abi: ABI }> {
+): Promise<{ name: string, contract: Contract, abi: ABI }> {
   let buildFile = await getRequiredBuildFile(cache, address, alias);
   let [contractName, metadata] = getPrimaryContract(buildFile);
   let abi;
   if (implBuildFile) {
-    let [implContractName, implMetadata] = getPrimaryContract(implBuildFile);
+    let [_implContractName, implMetadata] = getPrimaryContract(implBuildFile);
     abi = implMetadata.abi;
   } else {
     abi = metadata.abi;

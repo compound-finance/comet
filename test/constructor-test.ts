@@ -55,8 +55,8 @@ describe('constructor', function () {
       governor: governor.address,
       pauseGuardian: pauseGuardian.address,
       extensionDelegate: extensionDelegate.address,
-      baseToken: tokens["USDC"].address,
-      baseTokenPriceFeed: priceFeeds["USDC"].address,
+      baseToken: tokens['USDC'].address,
+      baseTokenPriceFeed: priceFeeds['USDC'].address,
       kink: exp(8, 17),
       perYearInterestRateBase: exp(5, 15),
       perYearInterestRateSlopeLow: exp(1, 17),
@@ -70,9 +70,9 @@ describe('constructor', function () {
       baseBorrowMin: exp(1, 6),
       targetReserves: 0,
       assetConfigs: [{
-        asset: tokens["EVIL"].address,
-        priceFeed: priceFeeds["EVIL"].address,
-        decimals: assets["EVIL"].packedDecimals, // <-- packed decimals differ from deployed token's decimals
+        asset: tokens['EVIL'].address,
+        priceFeed: priceFeeds['EVIL'].address,
+        decimals: assets['EVIL'].packedDecimals, // <-- packed decimals differ from deployed token's decimals
         borrowCollateralFactor: ONE - 1n,
         liquidateCollateralFactor: ONE,
         liquidationFactor: ONE,
@@ -109,6 +109,18 @@ describe('constructor', function () {
     ).to.be.revertedWith("custom error 'BadDecimals()'");
   });
 
+  it('reverts if base token has fewer than 6 decimals', async () => {
+    await expect(
+      makeProtocol({
+        assets: {
+          USDC: {
+            decimals: 5,
+          },
+        },
+      })
+    ).to.be.revertedWith("custom error 'BadDecimals()'");
+  });
+
   it('reverts if base token has more than 18 decimals', async () => {
     await expect(
       makeProtocol({
@@ -126,5 +138,39 @@ describe('constructor', function () {
     await expect(
       comet.initializeStorage()
     ).to.be.revertedWith("custom error 'AlreadyInitialized()'");
+  });
+
+  it('reverts if reserveRate is greater than FACTOR_SCALE (1e18)', async () => {
+    await expect(
+      makeProtocol({
+        reserveRate: exp(1.1,18)
+      })
+    ).to.be.revertedWith("custom error 'BadReserveRate()'");
+  });
+
+  it('reverts if kink is greater than FACTOR_SCALE (1e18)', async () => {
+    await expect(
+      makeProtocol({
+        kink: exp(1.2,18)
+      })
+    ).to.be.revertedWith("custom error 'BadKink()'");
+  });
+
+  it('is not possible to create a perSecondInterestRateSlopeLow above FACTOR_SCALE', async () => {
+    const uint64Max = BigInt(2**64) - 1n;
+
+    const { comet } = await makeProtocol({
+      interestRateSlopeLow: uint64Max
+    });
+
+    // max value of interestRateSlopeLow should result in a value less than FACTOR_SCALE
+    expect(await comet.perSecondInterestRateBase()).to.be.lt(exp(1, 18));
+
+    // exceeding the max value of interestRateSlopeLow should overflow
+    await expect(
+      makeProtocol({
+        interestRateSlopeLow: uint64Max + 1n
+      })
+    ).to.be.rejectedWith('value out-of-bounds'); // ethers.js error
   });
 });

@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { BigNumber } from 'ethers';
 import { exp } from '../../test/helpers';
-import { ComparativeAmount, ComparisonOp, getActorAddressFromName, getAssetFromName, parseAmount, max, min } from '../utils';
+import { ComparativeAmount, ComparisonOp, getActorAddressFromName, getAssetFromName, parseAmount, max, min, getToTransferAmount } from '../utils';
 
 export class TokenBalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, initialContext: T, initialWorld: World) {
@@ -35,28 +35,7 @@ export class TokenBalanceConstraint<T extends CometContext, R extends Requiremen
             const amount: ComparativeAmount = actorsByAsset[assetName][actorName];
             const balance = await asset.balanceOf(actor);
             const decimals = await asset.token.decimals();
-            let toTransfer = 0n;
-            switch (amount.op) {
-              case ComparisonOp.EQ:
-                toTransfer = exp(amount.val, decimals) - balance;
-                break;
-              case ComparisonOp.GTE:
-                // `toTransfer` should not be negative
-                toTransfer = max(exp(amount.val, decimals) - balance, 0);
-                break;
-              case ComparisonOp.LTE:
-                // `toTransfer` should not be positive        
-                toTransfer = min(exp(amount.val, decimals) - balance, 0);
-                break;
-              case ComparisonOp.GT:
-                toTransfer = exp(amount.val, decimals) - balance + 1n;
-                break;
-              case ComparisonOp.LT:
-                toTransfer = exp(amount.val, decimals) - balance - 1n;
-                break;
-              default:
-                throw new Error(`Bad amount: ${amount}`);
-            }
+            const toTransfer = getToTransferAmount(amount, balance, decimals);
             await context.sourceTokens(world, toTransfer, asset.address, actor);
           }
         }
@@ -83,7 +62,7 @@ export class TokenBalanceConstraint<T extends CometContext, R extends Requiremen
             case ComparisonOp.GTE:
               expect(balance).to.be.at.least(exp(amount.val, decimals));
               break;
-            case ComparisonOp.LTE:        
+            case ComparisonOp.LTE:
               expect(balance).to.be.at.most(exp(amount.val, decimals));
               break;
             case ComparisonOp.GT:

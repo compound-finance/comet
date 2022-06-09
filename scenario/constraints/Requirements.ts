@@ -7,4 +7,5 @@ export interface Requirements {
     pause?: object, // XXX Pause constraint
     remoteToken?: object, // XXX Remote token constraint
     utilization?: number, // Utilization constraint
+    migrate?: boolean, // XXX Migration constraint
 };

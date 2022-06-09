@@ -1,10 +1,9 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { Contract } from 'ethers';
 
 import { AssetConfigStruct } from '../../build/types/Comet';
 import { ProtocolConfiguration } from './index';
-import { BigNumberish, Signature, ethers } from 'ethers';
+import { BigNumberish } from 'ethers';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
@@ -26,7 +25,7 @@ function floor(n: number): bigint {
   return BigInt(Math.floor(n));
 }
 
-function number(n: number, checkRange: boolean = true): bigint {
+function number(n: number): bigint {
   return floor(Number(n));
 }
 
@@ -67,8 +66,8 @@ interface NetworkAssetConfiguration {
 
 interface NetworkConfiguration {
   symbol: string;
-  governor: string;
-  pauseGuardian: string;
+  governor?: string;
+  pauseGuardian?: string;
   baseToken: string;
   baseTokenPriceFeed: string;
   reserveRate: number;
@@ -152,7 +151,7 @@ export async function hasNetworkConfiguration(network: string): Promise<boolean>
   return await fileExists(configurationFile);
 }
 
-async function loadNetworkConfiguration(network: string): Promise<NetworkConfiguration> {
+export async function loadNetworkConfiguration(network: string): Promise<NetworkConfiguration> {
   let configurationFile = getNetworkConfigurationFilePath(network);
   let configurationJson = await fs.readFile(configurationFile, 'utf8');
   return JSON.parse(configurationJson) as NetworkConfiguration;
@@ -170,11 +169,9 @@ export async function getConfiguration(
   let symbol = networkConfiguration.symbol;
   let baseToken = getContractAddress(networkConfiguration.baseToken, contractMap);
   let baseTokenPriceFeed = address(networkConfiguration.baseTokenPriceFeed);
-  let governor = address(networkConfiguration.governor);
-  let pauseGuardian = address(networkConfiguration.pauseGuardian);
   let reserveRate = percentage(networkConfiguration.reserveRate);
   let baseBorrowMin = number(networkConfiguration.borrowMin); // TODO: in token units (?)
-  let storeFrontPriceFactor = number(networkConfiguration.storeFrontPriceFactor);
+  let storeFrontPriceFactor = percentage(networkConfiguration.storeFrontPriceFactor);
   let targetReserves = number(networkConfiguration.targetReserves);
 
   let interestRateInfo = getInterestRateInfo(networkConfiguration.rates);
@@ -184,8 +181,12 @@ export async function getConfiguration(
 
   return {
     symbol,
-    governor,
-    pauseGuardian,
+    ...(networkConfiguration.governor && {
+      governor: address(networkConfiguration.governor)
+    }),
+    ...(networkConfiguration.pauseGuardian && {
+      pauseGuardian: address(networkConfiguration.pauseGuardian)
+    }),
     baseToken,
     baseTokenPriceFeed,
     ...interestRateInfo,

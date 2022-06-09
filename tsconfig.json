@@ -1,16 +1,18 @@
 {
-    "compilerOptions": {
-      "target": "es2021",
-      "module": "commonjs",
-      "esModuleInterop": true,
-      "outDir": "dist",
-      "moduleResolution": "node"
-    },
-    "include": ["./scripts", "./test", "./tasks"],
-    "files": [
-      "./hardhat.config.ts",
-      "node_modules/@nomiclabs/hardhat-ethers/internal/type-extensions.d.ts",
-      "node_modules/@nomiclabs/hardhat-waffle/dist/src/type-extensions.d.ts",
-      "node_modules/@typechain/hardhat/dist/type-extensions.d.ts"
-    ]
-  }
+  "compilerOptions": {
+    "target": "es2021",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "outDir": "dist",
+    "moduleResolution": "node",
+    "declaration": true
+  },
+  "include": ["./scripts", "./test", "./tasks"],
+  "files": [
+    "./index.ts",
+    "./hardhat.config.ts",
+    "node_modules/@nomiclabs/hardhat-ethers/internal/type-extensions.d.ts",
+    "node_modules/@nomiclabs/hardhat-waffle/dist/src/type-extensions.d.ts",
+    "node_modules/@typechain/hardhat/dist/type-extensions.d.ts"
+  ]
+}
