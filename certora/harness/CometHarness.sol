@@ -28,7 +28,6 @@ contract CometHarness is CometHarnessGetters {
     // 2. The asset of each index,
     // 3. The AssetInfo of at each index
 
-    mapping (address => uint8) public assetToIndex;
     mapping (uint8 => address) public indexToAsset;
     mapping (uint8 => AssetInfo) public assetInfoMap;
 

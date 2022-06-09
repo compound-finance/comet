@@ -165,10 +165,11 @@ rule withdraw_decrease_balance(address asset, uint amount){
     simplifiedAssumptions();
 
     uint balance1 = tokenBalanceOf(asset, currentContract);
+    uint balance_user = balanceOf(e, e.msg.sender);
     withdraw(e, asset, amount);
     uint balance2 = tokenBalanceOf(asset, currentContract);
-    
-    assert balance1 - balance2 == amount;
+
+    assert amount != max_uint256 ? balance1 - balance2 == amount : balance1 - balance2 == balance_user;
 }
 
 /*
