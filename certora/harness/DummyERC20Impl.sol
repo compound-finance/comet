@@ -36,7 +36,11 @@ contract DummyERC20Impl  {
      * Returns a boolean value indicating whether the operation succeeded.
      */
     function transfer(address recipient, uint256 amount) external returns (bool) {
+<<<<<<< HEAD
+        balances[msg.sender] = balances[msg.sender] - amount;
+=======
         balances[msg.sender] = balances[msg.sender]- amount;
+>>>>>>> upstream/certora
         balances[recipient] = balances[recipient] + amount;
         return true;
     }

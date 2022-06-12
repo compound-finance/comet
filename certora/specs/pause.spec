@@ -63,7 +63,7 @@ rule ability_to_update_flags(bool supplyPaused, bool transferPaused, bool withdr
             transferPaused = isTransferPaused() &&
             withdrawPaused = isWithdrawPaused() &&
             absorbPaused = isAbsorbPaused() &&
-            buyPaused = isBuyPaused() )
+            buyPaused = isBuyPaused() )        
         }
 
     @Note:

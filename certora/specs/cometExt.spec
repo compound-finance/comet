@@ -60,14 +60,14 @@ invariant allowance_only_zero_or_max(address owner, address spender)
         Trying to approve an allowance which is not 0 or max_uint should fail
 
     @Formula:
-        {
+        { 
             0 < amount < max_uint256
         }
-
+        
         < approve(spender, amount) >
 
         {
-            lastReverted
+            lastReverted 
         }
 
     @Notes:
@@ -91,13 +91,13 @@ rule approve_fails_on_invalid_allowance(address spender, uint256 amount) {
         Allowance changes for non msg.sender only as a result of allowBySig()
 
     @Formula:
-        {
-            allowanceBefore = allowance[owner][spender]
+        { 
+            allowanceBefore = allowance[owner][spender] 
         }
 
         < call any function >
-
-        {
+        
+        { 
             allowanceAfter = allowance[owner][spender] &&
             allowanceBefore != allowanceAfter => f.selector == approve || f.selector == allow || f.selector == allowBySig
         }
@@ -113,14 +113,14 @@ rule valid_allowance_changes(method f, address owner, address spender) {
     uint256 allowanceBefore = allowance(owner, spender);
     f(e, args);
     uint256 allowanceAfter = allowance(owner, spender);
-
-    assert allowanceAfter != allowanceBefore =>
-        f.selector == approve(address, uint256).selector ||
+    
+    assert allowanceAfter != allowanceBefore => 
+        f.selector == approve(address, uint256).selector || 
         f.selector == allow(address, bool).selector ||
         f.selector == allowBySig(address, address, bool, uint256, uint256, uint8, bytes32, bytes32).selector;
-
+    
     // only allowBySig may change allowance for another address (which is not msg.sender)
-    assert allowanceAfter != allowanceBefore && owner != e.msg.sender =>
+    assert allowanceAfter != allowanceBefore && owner != e.msg.sender => 
         f.selector == allowBySig(address, address, bool, uint256, uint256, uint8, bytes32, bytes32).selector;
 }
 
@@ -132,13 +132,13 @@ rule valid_allowance_changes(method f, address owner, address spender) {
         Approve with a valid amount (0 or max_uint256) succeeds
 
     @Formula:
-        {
-            amount = 0 ||
+        { 
+            amount = 0 || 
             amount = max_uint256
         }
-
+        
         < approve(spender, amount) >
-
+        
         {
             !lastReverted
         }

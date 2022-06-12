@@ -1,0 +1,75 @@
+name: certora
+
+on:
+  push:
+    branches:
+      - main
+      - certora
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Check key
+        env:
+          CERTORAKEY: ${{ secrets.CERTORAKEY }}
+        run: echo "key length" ${#CERTORAKEY}
+
+      - name: Install python
+        uses: actions/setup-python@v2
+        with: { python-version: 3.6, cache: 'pip' }
+
+      - name: Install java
+        uses: actions/setup-java@v1
+        with: { java-version: "11", java-package: jre }
+
+      - name: Install certora
+        run: pip install certora-cli
+        
+      - name: Install solc
+        run: |
+          wget https://github.com/ethereum/solidity/releases/download/v0.8.13/solc-static-linux
+          chmod +x solc-static-linux
+          sudo mv solc-static-linux /usr/local/bin/solc8.13
+      
+      - name: Verify rule ${{ matrix.rule }}
+        run: |
+          sh certora/applyHarness.sh
+          echo "key length" ${#CERTORAKEY}
+          sh certora/scripts/${{ matrix.rule }}
+        env:
+          CERTORAKEY: ${{ secrets.CERTORAKEY }}
+          
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        rule:
+          - verifyComet.sh assetIn_initialized_with_balance
+          - verifyComet.sh usage_registered_assets_only
+          - verifyAssetInfo.sh
+          - verifyCometWithdrawSupply.sh
+          - verifyPause.sh
+          - verifyUserAssetIn.sh
+          - verifyComet.sh balance_change_vs_accrue
+          - verifyComet.sh balance_change_vs_registered
+          - verifyComet.sh verify_transferAsset
+          - verifyCometTotalsAndBalances.sh total_collateral_per_asset
+          - verifyCometTotalsAndBalances.sh total_asset_collateral_vs_asset_balance
+          - verifyCometTotalsAndBalances.sh base_balance_vs_totals
+          - verifyCometTotalsAndBalances.sh collateral_totalSupply_LE_supplyCap
+          - verifyCometTotalsAndBalances.sh total_base_token
+          - verifyCometTotalsAndBalances.sh balance_change_by_allowed_only
+          - verifyCometAbsorbBuyCollateral.sh
+          - verifyCometExt.sh
+          - verifyGovernance.sh
+          - verifyInterestComputation.sh
+          - verifyPauseGuardians.sh

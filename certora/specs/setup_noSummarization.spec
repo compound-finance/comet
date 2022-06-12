@@ -3,7 +3,7 @@
     smart contract using the Certora prover. For more information,
 	visit: https://www.certora.com/
 
-    This file is a base file included in other spec files run without summarization or simplifications.
+    This file is a base file included in other spec files run without summarization or simplifications. 
 */
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -60,7 +60,7 @@ methods{
     // All of these functinos are calling the internal function withdrawInternal with some input args from the user and some predefined args.
     // WithdrawFrom is the most general out of the 3, in such way that by passing specific value to withdrawFrom, one can simulate a call to the other 2 withdraw functions,
     // Therefore it's enough to check correctness of withdrawFrom, given that we allow arbitrary input values when calling the function
-    definition similarFunctions(method f) returns bool =
+    definition similarFunctions(method f) returns bool =    
                 f.selector == withdraw(address,uint256).selector ||
                 f.selector == withdrawTo(address,address,uint).selector ||
                 f.selector == transferAsset(address,address,uint).selector ||

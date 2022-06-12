@@ -36,7 +36,7 @@ methods{
         {
             _assetIn = getAssetinOfUser(account)
         }
-
+        
         updateAssetsIn(account, asset, initialUserBalance, finalUserBalance)
 
         {
@@ -48,11 +48,14 @@ methods{
         }
 
     @Note:
-
+        
     @Link:
-
+        
 */
 
+// B@B - The rule at its current state should fail with a violation of offset > 15 (will not change any asset).
+// The rule at the moement pass for no good reason. When things get fixed and it fails for the mentioned reason,
+// the commented require below can be added to make the rule pass correctly
 rule check_update_UserCollateral(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance){
     uint16 _assetIn = getAssetinOfUser(account);
     call_updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
@@ -71,7 +74,7 @@ rule check_update_UserCollateral(address account, address asset, uint128 initial
         Update assetIn changes a single bit - it's impossible that 2 distinct asset bits will be change at the same call to update
 
     @Formula:
-    {
+    {          
         _flagUserAsset1 = isInAsset(userBasic[user].assetsIn, assetOffset1) &&
         _flagUserAsset2 = isInAsset(userBasic[user].assetsIn, assetOffset2) &&
         assetOffset1 != assetOffset2
@@ -81,13 +84,13 @@ rule check_update_UserCollateral(address account, address asset, uint128 initial
 
     {
         isInAsset(userBasic[user].assetsIn, assetOffset1) = _flagUserAsset1  ||
-        isInAsset(userBasic[user].assetsIn, assetOffset2) = _flagUserAsset2
-    }
+        isInAsset(userBasic[user].assetsIn, assetOffset2) = _flagUserAsset2 
+    }    
 
     @Note:
 
     @Link:
-
+        
 */
 
 rule update_changes_single_bit(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance){
@@ -96,10 +99,10 @@ rule update_changes_single_bit(address account, address asset, uint128 initialUs
     uint8 assetOffset2;
     bool _flagUserAsset1 = call_isInAsset(_assetIn, assetOffset1);
     bool _flagUserAsset2 = call_isInAsset(_assetIn, assetOffset2);
-
+    
     require assetOffset1 != assetOffset2;
     call_updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
-
+    
     uint16 assetIn_ = getAssetinOfUser(account);
     bool flagUserAsset1_ = call_isInAsset(assetIn_, assetOffset1);
     bool flagUserAsset2_ = call_isInAsset(assetIn_, assetOffset2);
@@ -122,12 +125,12 @@ rule update_changes_single_bit(address account, address asset, uint128 initialUs
         updateAssetsIn(account, asset, initialUserBalance, finalUserBalance)
 
     {
-         userBasic[other].assetsIn != assetIn
+         userBasic[other].assetsIn != assetIn 
     }
     @Note:
-
+        
     @Link:
-
+        
 */
 
 rule update_changes_single_user_assetIn(address account1, address asset1, uint128 initialUserBalance, uint128 finalUserBalance){

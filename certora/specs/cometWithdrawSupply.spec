@@ -4,10 +4,10 @@
 	visit: https://www.certora.com/
 
     This file is run with scripts/verifyCometWithdrawAndSupply.sh
-    On a version with summarization ans some simplifications:
+    On a version with summarization ans some simplifications: 
     CometHarness.sol and setup_cometSummarization.spec
 
-    This files contains rules related to withdraw and supply functions
+    This files contains rules related to withdraw and supply functions 
 
 */
 import "comet.spec"
@@ -30,23 +30,23 @@ import "comet.spec"
     }
 
     withdrawReserves(to,amount)
-
+    
     {
-        amount > 0 => getReserves() < before
+        amount > 0 => getReserves() < before 
     }
 
     @Notes:
 
     @Link:
-
+    
 */
 
 rule withdraw_reserves_decreases(address to, uint amount){
     env e;
 
-    int256 before = getReserves();
+    int256 before = getReserves(e);
     withdrawReserves(e,to,amount);
-    int256 after = getReserves();
+    int256 after = getReserves(e);
 
     assert (amount > 0 && to != currentContract) => before > after;
 }
@@ -60,13 +60,13 @@ rule withdraw_reserves_decreases(address to, uint amount){
 
     @Formula:
     {
-
+        
     }
-
+     
     withdrawReserves(x); r1 = getReserves()
-    ~
+    ~ 
     withdrawReserves(y); r2 = getReserves()
-
+    
     {
         x > y => r1 > r2
     }
@@ -87,9 +87,9 @@ rule withdraw_reserves_monotonicity(address to){
     require to != currentContract && amount1 > 0;
 
     withdrawReserves(e,to,amount1);
-        int reserves1 = getReserves();
+        int reserves1 = getReserves(e);
     withdrawReserves(e,to,amount2) at init;
-        int reserves2 = getReserves();
+        int reserves2 = getReserves(e);
 
     assert amount2 > amount1 => reserves1 > reserves2;
 }
@@ -99,15 +99,15 @@ rule withdraw_reserves_monotonicity(address to){
     @Rule
 
     @Description:
-        integrity of supply - balance increased by supply amount
+        integrity of supply - balance increased by supply amount 
 
     @Formula:
     {
         balance1 = tokenBalanceOf(asset, currentContract)
     }
-
+    
     supply(asset, amount)
-
+    
     {
         tokenBalanceOf(asset, currentContract) - balance1 == amount
     }
@@ -122,13 +122,14 @@ rule withdraw_reserves_monotonicity(address to){
 rule supply_increase_balance(address asset, uint amount){
     env e;
     require e.msg.sender != currentContract;
+    require asset != currentContract; // addition
 
     simplifiedAssumptions();
 
     uint balance1 = tokenBalanceOf(asset, currentContract);
     supply(e, asset, amount);
     uint balance2 = tokenBalanceOf(asset, currentContract);
-
+    
     assert balance2 - balance1 == amount;
 }
 
@@ -143,9 +144,9 @@ rule supply_increase_balance(address asset, uint amount){
     {
         b = tokenBalanceOf(asset, currentContract)
     }
-
+    
     withdraw(asset, amount)
-
+    
     {
         b - tokenBalanceOf(asset, currentContract) = amount
     }
@@ -159,14 +160,16 @@ rule supply_increase_balance(address asset, uint amount){
 rule withdraw_decrease_balance(address asset, uint amount){
     env e;
     require e.msg.sender != currentContract;
+    require asset != currentContract; // addition
 
     simplifiedAssumptions();
 
     uint balance1 = tokenBalanceOf(asset, currentContract);
+    uint balance_user = balanceOf(e, e.msg.sender);
     withdraw(e, asset, amount);
     uint balance2 = tokenBalanceOf(asset, currentContract);
 
-    assert balance1 - balance2 == amount;
+    assert amount != max_uint256 ? balance1 - balance2 == amount : balance1 - balance2 == balance_user;
 }
 
 /*
@@ -176,13 +179,13 @@ rule withdraw_decrease_balance(address asset, uint amount){
         Splitting a withdraw to two step result in the same outcome
     @Formula:
     {
-
+        
     }
-
+    
     withdraw(Base, x); withdraw(Base, y) ; base1 := baseBalanceOf(e.msg.sender)
     ~
     withdraw(_baseToken, x + y); base2 := baseBalanceOf(e.msg.sender)
-
+    
     {
         base1 = base2
     }
@@ -196,7 +199,7 @@ rule withdraw_decrease_balance(address asset, uint amount){
 rule additivity_of_withdraw( uint x, uint y){
     env e;
     storage init = lastStorage;
-
+    
     simplifiedAssumptions();
     require x + y < 2^255;
 

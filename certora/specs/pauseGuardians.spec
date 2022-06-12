@@ -74,7 +74,7 @@ rule check_pauseSupply_functionality(method f, env e) filtered {f -> all_public_
         }
 
         < call any transfer function >
-
+        
         {
             flagTransfer => revert
         }
@@ -88,7 +88,7 @@ rule check_pauseSupply_functionality(method f, env e) filtered {f -> all_public_
 
 rule check_pauseTransfer_functionality(method f, env e) filtered {f -> all_public_transfer_methods(f)} {
     bool flagTransfer = get_transfer_paused(); // summarization
-
+    
     calldataarg args;
     bool reverted_transfer;
     if (f.selector == transferAsset(address, address, uint).selector) {
@@ -101,7 +101,7 @@ rule check_pauseTransfer_functionality(method f, env e) filtered {f -> all_publi
         f@withrevert(e, args);
         reverted_transfer = lastReverted;
     }
-
+    
     assert flagTransfer => reverted_transfer;
 }
 
@@ -118,7 +118,7 @@ rule check_pauseTransfer_functionality(method f, env e) filtered {f -> all_publi
         }
 
         < call any withdraw function >
-
+        
         {
             flagWithdraw => revert
         }
@@ -135,7 +135,7 @@ rule check_pauseWithdraw_functionality(method f, env e) filtered {f -> all_publi
 
     calldataarg args;
     bool reverted_withdraw;
-
+    
     if (f.selector == withdraw(address, uint).selector) {
         withdraw@withrevert(e, args);
         reverted_withdraw = lastReverted;
@@ -166,7 +166,7 @@ rule check_pauseWithdraw_functionality(method f, env e) filtered {f -> all_publi
         }
 
         < call any absorb function >
-
+        
         {
             flagAbsorb => revert
         }
@@ -182,7 +182,7 @@ rule check_pauseAbsorb_functionality(method f, env e) filtered {f -> all_public_
 
     calldataarg args;
     bool reverted_absorb;
-
+    
     if (f.selector == absorb(address, address[]).selector) {
         absorb@withrevert(e, args);
         reverted_absorb = lastReverted;
@@ -207,7 +207,7 @@ rule check_pauseAbsorb_functionality(method f, env e) filtered {f -> all_public_
         }
 
         < call any buy function >
-
+        
         {
             flagBuy => revert
         }
@@ -223,7 +223,7 @@ rule check_pauseBuy_functionality(method f, env e) filtered {f -> all_public_buy
 
     calldataarg args;
     bool reverted_buy;
-
+    
     if (f.selector == buyCollateral(address, uint, uint, address).selector) {
         buyCollateral@withrevert(e, args);
         reverted_buy = lastReverted;

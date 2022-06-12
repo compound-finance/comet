@@ -11,7 +11,7 @@
 */
 
 import "setup_noSummarization.spec"
-
+ 
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////////   Methods Declarations   ////////////////////////////
@@ -64,12 +64,12 @@ function setup(env e){
         baseBorrowIndex monotonic
 
      @Formula:
-        {
+        {   
             supply_index = getBaseSupplyIndex() &&
             borrow_index = getBaseBorrowIndex() &&
         }
             accrueInternal();
-        {
+        { 
             getBaseSupplyIndex() >= supply_index &&
             getBaseBorrowIndex() >= borrow_index
         }
@@ -78,7 +78,7 @@ function setup(env e){
     @Notes:
 
     @Link:
-
+        
 */
 
 rule supplyIndex_borrowIndex_monotonic(){
@@ -105,7 +105,7 @@ rule supplyIndex_borrowIndex_monotonic(){
     @Notes:
 
     @Link:
-
+        
 */
 
 rule supplyRate_vs_utilization(){
@@ -113,10 +113,10 @@ rule supplyRate_vs_utilization(){
     setup(e1);
 
     uint   utilization_1 = getUtilization(e1);
-    uint64 supplyRate_1 = getSupplyRate(e1);
+    uint64 supplyRate_1 = getSupplyRate(e1, utilization_1);
 
     uint utilization_2 = getUtilization(e2);
-    uint64 supplyRate_2 = getSupplyRate(e2);
+    uint64 supplyRate_2 = getSupplyRate(e2, utilization_2);
 
     assert utilization_2 > utilization_1 => supplyRate_2 >= supplyRate_1;
 }
@@ -128,17 +128,18 @@ rule supplyRate_vs_utilization(){
         When utilization is 0, borrow rate equals to the base borrow rate.
 
     @Formula:
-        utilization(t) = 0 =>  getBorrowRate(t) = perSecondInterestRateBase()
+        utilization(t) = 0 =>  getBorrowRate(t) = perSecondInterestRateBase() 
     @Notes:
 
     @Link:
-
+        
 */
 
 rule utilization_zero(){
     env e;
     setup(e);
-    uint64 borrowRate = getBorrowRate(e);
+    uint utilization = getUtilization(e);
+    uint64 borrowRate = getBorrowRate(e, utilization);
     assert getUtilization(e) == 0 => borrowRate == perSecondInterestRateBase() ;
 }
 
@@ -155,7 +156,7 @@ rule utilization_zero(){
     @Notes:
 
     @Link:
-
+        
 */
 
 rule borrowBase_vs_utilization(){
@@ -171,16 +172,16 @@ rule borrowBase_vs_utilization(){
         A liquidatable user cannot turn un-liquidatable unless the price ratio of the collateral changed.
 
     @Formula:
-
+     
         t2 > t1 && !isLiquidatable(t1,account) && isLiquidatable(t1,account) =>
            ( getPrice(t1,priceFeedBase) !=  getPrice(t2,priceFeedBase) ||
              getPrice(e1,priceFeedAsset) != getPrice(e2,priceFeedAsset) )
 
-    @Notes:
+    @Notes: 
         This is without calling any functions, just due to change in time that result a change in price.
 
     @Link:
-
+        
 */
 
 rule isLiquidatable_false_should_not_change(address account){
@@ -199,7 +200,7 @@ rule isLiquidatable_false_should_not_change(address account){
     uint priceAsset1 = getPrice(e1,priceFeedAsset);
     uint priceAsset2 = getPrice(e2,priceFeedAsset);
 
-    assert isLiquidatable(e2,account) =>
+    assert isLiquidatable(e2,account) => 
                 priceAsset1 != priceAsset2 || priceBase1 != priceBase2 ;
 }
 
@@ -215,7 +216,7 @@ rule isLiquidatable_false_should_not_change(address account){
     @Notes:
 
     @Link:
-
+        
 */
 
 rule isCol_implies_not_isLiq(address account){
@@ -238,18 +239,18 @@ rule isCol_implies_not_isLiq(address account){
         BaseBorrowIndex() >= BaseIndexScale();
 
 
-    @Notes:
+    @Notes: 
         Proved to be used in other rules.
 
     @Link:
-
+        
 */
 
 rule supplyIndex_borrowIndex_GE_getBaseIndexScale(){
     env e;
     require getBaseSupplyIndex() >= getBaseIndexScale() &&
         getBaseBorrowIndex() >= getBaseIndexScale();
-
+    
     call_accrueInternal(e);
 
     assert getBaseSupplyIndex() >= getBaseIndexScale() &&
@@ -265,13 +266,13 @@ rule supplyIndex_borrowIndex_GE_getBaseIndexScale(){
     @Formula:
         principalValue = principalValue(presentValue) =>
            (presentValue >= 0 => presentValue >= principalValue &&
-            presentValue < 0 => presentValue <= principalValue )
+            presentValue < 0 => presentValue <= principalValue ) 
 
-    @Notes:
-        The absolute presentValue is GE to the absolute principalValue
+    @Notes: 
+        The absolute presentValue is GE to the absolute principalValue 
 
     @Link:
-
+        
 */
 
 rule absolute_presentValue_GE_principal(int104 presentValue){
@@ -291,7 +292,7 @@ rule absolute_presentValue_GE_principal(int104 presentValue){
         presentValue is positive iff principalValue is positive
 
     @Formula:
-        ( principalValue = principalValue(presentValue) &&
+        ( principalValue = principalValue(presentValue) && 
           presentValue = presentValue(principalValue) )
             =>
         ( presentValue > 0 <=> principalValue > 0 )
@@ -299,7 +300,7 @@ rule absolute_presentValue_GE_principal(int104 presentValue){
     @Notes:
 
     @Link:
-
+        
 */
 
 rule presentValue_G_zero(int104 presentValue){
@@ -307,39 +308,8 @@ rule presentValue_G_zero(int104 presentValue){
     setup(e);
     int104 principalValue = call_principalValue(presentValue);
     int104 presentValue_ = call_presentValue(principalValue);
-    assert presentValue_ == presentValue =>
+    assert presentValue_ == presentValue => 
     ( presentValue > 0 <=> principalValue > 0);
-}
-
-
-/*
-    @Rule
-
-    @Description:
-        presentValue equal principalValue implies:
-
-    @Formula:
-        presentValue == principalValue => BaseSupplyIndex == BaseIndexScale
-
-    @Notes:
-
-    @Link:
-
-*/
-
-rule presentValue_EQ_principal(int104 presentValue){
-    env e;
-   setup(e);
-
-    require getBaseBorrowIndex() > getBaseSupplyIndex();
-    int104 principalValue = call_principalValue(presentValue);
-    int104 presentValueInv = call_presentValue(principalValue);
-
-    require presentValue != 0;
-
-    assert presentValue == principalValue =>
-            (getBaseSupplyIndex() == getBaseIndexScale() &&
-            presentValueInv == presentValue);
 }
 
 
@@ -355,12 +325,13 @@ rule presentValue_EQ_principal(int104 presentValue){
     @Notes:
 
     @Link:
-
+        
 */
 
 rule utilization_zero_supplyRate_zero(){
     env e;
-    assert getUtilization(e) == 0 => getSupplyRate(e) == 0;
+    uint utilization = getUtilization(e);
+    assert utilization == 0 => getSupplyRate(e, utilization) == 0;
 }
 
 
@@ -373,20 +344,20 @@ rule utilization_zero_supplyRate_zero(){
     @Formula:
         { }
             getSupplyRate()
-        {
-            reserveRate > FACTOR_SCALE => lastReverted
+        { 
+            reserveRate > FACTOR_SCALE => lastReverted 
         }
 
     @Notes:
 
     @Link:
-
+        
 */
 
 rule getSupplyRate_revert_characteristic(){
     env e;
-    getSupplyRate@withrevert(e);
+    uint utilization = getUtilization(e);
+    getSupplyRate@withrevert(e, utilization);
     bool isRevert = lastReverted;
-
     assert (reserveRate(e) > getFactorScale()) => isRevert;
 }

@@ -3,7 +3,7 @@
     smart contract using the Certora prover. For more information,
 	visit: https://www.certora.com/
 
-    This file is a base file included in other spec files run with summarization and simplifications.
+    This file is a base file included in other spec files run with summarization and simplifications. 
 */
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -13,7 +13,7 @@
 
 methods{
 
-    getUserPrincipal(address) returns (int104) envfree
+    getUserPrincipal(address) returns (int104) envfree 
 
     ////////////////////////////////////////////////////////////////////////////////
     //////////////////////////   Pause Summarizations   ////////////////////////////
@@ -34,16 +34,16 @@ methods{
     ////////////////////////////////////////////////////////////////////////////////
     //
     // All summarized functions return their input value in order to simplify the computational complexity
-    // These summarization are under approximations, they are assuming that BaseSupplyIndex and BaseBorrowIndex are at the base index scale
+    // These summarization are under approximations, they are assuming that BaseSupplyIndex and BaseBorrowIndex are at the base index scale   
 
     getPrincipal(int104 x) returns (int104) envfree => identityInt(x);
-    presentValueSupply(uint64 index, uint104 x) returns (uint104) envfree => identity(x);
-    presentValueBorrow(uint64 index, uint104 x) returns (uint104) envfree => identity(x);
+    presentValueSupply(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
+    presentValueBorrow(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
     principalValue(int104 x) returns (int104) envfree => identityInt(x);
-    principalValueSupply(uint64 index, uint104 x) returns (uint104) envfree => identity(x);
-    principalValueBorrow(uint64 index, uint104 x) returns (uint104) envfree => identity(x);
+    principalValueSupply(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
+    principalValueBorrow(uint64 index, uint104 x) returns (uint104) envfree => identity(x); 
 
-    // Another simplification assuming the price is always 1
+    // Another simplification assuming the price is always 1 
     getPrice(address priceFeed) returns (uint128) => ALWAYS(1)
 
 }
@@ -58,7 +58,7 @@ methods{
     // All of these functinos are calling the internal function withdrawInternal with some input args from the user and some predefined args.
     // WithdrawFrom is the most general out of the 3, in such way that by passing specific value to withdrawFrom, one can simulate a call to the other 2 withdraw functions,
     // Therefore it's enough to check correctness of withdrawFrom, given that we allow arbitrary input values when calling the function
-    definition similarFunctions(method f) returns bool =
+    definition similarFunctions(method f) returns bool =    
                 f.selector == withdraw(address,uint256).selector ||
                 f.selector == withdrawTo(address,address,uint).selector ||
                 f.selector == transferAsset(address,address,uint).selector ||
@@ -77,19 +77,19 @@ methods{
 
     // A definition of all supply functions in the contract
     definition all_public_supply_methods(method f) returns bool =
-        f.selector == supply(address, uint).selector ||
-        f.selector == supplyTo(address, address, uint).selector ||
+        f.selector == supply(address, uint).selector || 
+        f.selector == supplyTo(address, address, uint).selector || 
         f.selector == supplyFrom(address, address, address, uint).selector;
 
     // A definition of all supply functions in the contract
     definition all_public_transfer_methods(method f) returns bool =
-        f.selector == transferAsset(address, address, uint).selector ||
+        f.selector == transferAsset(address, address, uint).selector || 
         f.selector == transferAssetFrom(address, address, address, uint).selector;
 
     // A definition of all withdraw functions in the contract
     definition all_public_withdraw_methods(method f) returns bool =
-        f.selector == withdraw(address, uint).selector ||
-        f.selector == withdrawTo(address, address, uint).selector ||
+        f.selector == withdraw(address, uint).selector || 
+        f.selector == withdrawTo(address, address, uint).selector || 
         f.selector == withdrawFrom(address, address, address, uint).selector;
 
     // A definition of all absorb functions in the contract
@@ -139,7 +139,7 @@ methods{
         withdraw_paused_ghost = withdrawPaused;
         absorb_paused_ghost = absorbPaused;
         buy_paused_ghost = buyPaused;
-
+        
         return true;
     }
 

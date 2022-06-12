@@ -4,11 +4,11 @@
 	visit: https://www.certora.com/
 
     This file is run with scripts/verifyCometAbsorbBuyCollateral.sh
-    On a version with summarization ans some simplifications:
+    On a version with summarization ans some simplifications: 
     CometHarness.sol and setup_cometSummarization.spec
 
     This file contains properties regarding the two function related to liquidation:
-    absorb and buyCollateral
+    absorb and buyCollateral 
 
 */
 
@@ -28,15 +28,14 @@ import "comet.spec"
         balance Base increase       &&
         balance Base increase IFF balance collateral decrease
 
-
     @Formula:
     {
         balanceAssetBefore = tokenBalanceOf(asset, currentContract)
         balanceBaseBefore = tokenBalanceOf(_baseToken, currentContract)
     }
-
+    
     buyCollateral(asset, minAmount, baseAmount, recipient)
-
+    
     {
         tokenBalanceOf(asset, currentContract) <= balanceAssetBefore        &&
         balanceBaseBefore <= tokenBalanceOf(_baseToken, currentContract)    &&
@@ -52,11 +51,12 @@ import "comet.spec"
 rule anti_monotonicity_of_buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) {
     env e;
     require asset != _baseToken;
-    require minAmount > 0 ;
-
+    require asset != currentContract; // addition
+    require minAmount > 0;
+    
     require e.msg.sender != currentContract;
     require recipient != currentContract;
-
+    
     uint256 balanceAssetBefore = tokenBalanceOf(asset, currentContract);
     uint256 balanceBaseBefore = tokenBalanceOf(_baseToken, currentContract);
     buyCollateral(e, asset, minAmount, baseAmount, recipient);
@@ -80,9 +80,9 @@ rule anti_monotonicity_of_buyCollateral(address asset, uint minAmount, uint base
         max = getUserCollateralBalance(currentContract, asset)
         balanceAssetBefore = tokenBalanceOf(asset, currentContract)
     }
-
+    
     buyCollateral(asset, minAmount, baseAmount, recipient)
-
+    
     {
         tokenBalanceOf(asset, currentContract) >= balanceAssetBefore - max
     }
@@ -95,7 +95,7 @@ rule anti_monotonicity_of_buyCollateral(address asset, uint minAmount, uint base
 
 rule buyCollateral_max(address asset, uint minAmount, uint baseAmount, address recipient) {
     env e;
-    require asset != _baseToken;
+    require asset != _baseToken; 
     require e.msg.sender != currentContract;
     require recipient != currentContract;
 
@@ -119,10 +119,10 @@ rule buyCollateral_max(address asset, uint minAmount, uint baseAmount, address r
     }
         absorb@withrevert(absorber, accounts)
     {
-        lastReverted
+        lastReverted   
     }
 
-    @Notes:
+    @Notes: 
         need loop_iter=2 for this rule
 
     @Link:
@@ -138,7 +138,7 @@ rule cannot_absorb_same_account(address absorber, address account) {
 
     absorb@withrevert(e, absorber, accounts);
 
-    assert lastReverted;
+    assert lastReverted; 
 }
 
 
@@ -154,7 +154,7 @@ rule cannot_absorb_same_account(address absorber, address account) {
     }
 
     absorb(absorber, accounts)
-
+    
     {
         getReserves() <= pre
     }
@@ -173,9 +173,9 @@ rule absorb_reserves_decrease(address absorber, address account) {
     require accounts[0] == account;
     require accounts.length == 1;
 
-    int pre = getReserves();
+    int pre = getReserves(e);
     absorb(e, absorber, accounts);
-    int post = getReserves();
+    int post = getReserves(e);
 
     assert pre >= post;
 }
@@ -192,9 +192,9 @@ rule absorb_reserves_decrease(address absorber, address account) {
         balanceBefore = getUserCollateralBalance(this, asset)
         borrowBefore = getTotalBorrowBase()
     }
-
+    
     absorb()
-
+    
     {
         getUserCollateralBalance(this, asset) > balanceBefore => getTotalBorrowBase() < borrowBefore
     }
@@ -202,7 +202,7 @@ rule absorb_reserves_decrease(address absorber, address account) {
     @Notes:
 
     @Link:
-
+    
 */
 
 rule anti_monotonicity_of_absorb(address absorber, address account) {
@@ -212,9 +212,9 @@ rule anti_monotonicity_of_absorb(address absorber, address account) {
 
     require accounts[0] == account;
     require account != currentContract;
-
+    
     address asset;
-
+   
     uint256 balanceBefore = getUserCollateralBalance(currentContract, asset);
     uint104 borrowBefore = getTotalBorrowBase();
 
@@ -222,8 +222,8 @@ rule anti_monotonicity_of_absorb(address absorber, address account) {
 
     uint256 balanceAfter = getUserCollateralBalance(currentContract, asset);
     uint104 borrowAfter = getTotalBorrowBase();
-    assert balanceAfter > balanceBefore => borrowAfter < borrowBefore ;
-
+    assert balanceAfter > balanceBefore => borrowAfter < borrowBefore ; 
+    
 }
 
 
@@ -235,13 +235,13 @@ rule anti_monotonicity_of_absorb(address absorber, address account) {
 
     @Formula:
     {
-
+       
     }
-    absorb(absorber, accounts);
+    absorb(absorber, accounts); 
     absorb@withrevert(absorber, accounts)
-
+    
     {
-        lastReverted
+        lastReverted 
     }
 
     @Notes:
@@ -260,5 +260,5 @@ rule cannot_double_absorb(address absorber, address account) {
     absorb(e, absorber, accounts);
     absorb@withrevert(e, absorber, accounts);
 
-    assert lastReverted;
+    assert lastReverted; 
 }

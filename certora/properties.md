@@ -49,10 +49,17 @@ Symbols:
 | 28 | `totalBaseToken` | IN PROGRESS | 🕝 | on simplified assumptions | - |
 | 29 | `base_balance_vs_totals` | IN PROGRESS | 👷 | on simplified assumptions | breaks |
 | 30 | `Collateral_totalSupply_LE_supplyCap` | DONE | ✅ | using the summarization of getAssetInfo | - |
+<<<<<<< HEAD
+| 31  | `borrow_then_collateralized` | IN PROGRESS | 🕝 | - | - | 
+| |**High level updates** |
+| 32 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | - | - |
+| 33 | `balance_change_vs_accrue` | IN PROGRESS | 👷 | fails (withdrawReserves -? buyCollateral - ok) | Follow fix? | 
+=======
 | 31  | `borrow_then_collateralized` | IN PROGRESS | 🕝 | - | - |
 | |**High level updates** |
 | 32 | `assetIn_Initialized_With_Balance` | IN PROGRESS | 👷 | - | - |
 | 33 | `balance_change_vs_accrue` | IN PROGRESS | 👷 | fails (withdrawReserves -? buyCollateral - ok) | Follow fix? |
+>>>>>>> upstream/certora
 | | **BuyCollateral** |
 | 34 | `antiMonotonicityOfBuyCollateral` | DONE | ✅ | - | - |
 | 35 | `buyCollateralMax` | DONE | ✅ | - | - |
@@ -71,7 +78,11 @@ Symbols:
 | 44 | `no_reserves_zero_balance` | DONE | ✅ | on simplified assumptions | - |
 | 45 | `withdraw_more_reserves` | FAIL | ❌ | - | FOLLOW FIX |
 |    | **General**
+<<<<<<< HEAD
+| 46 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷 | - | - | 
+=======
 | 46 | `verify_isBorrowCollateralized` | IN PROGRESS | 👷 | - | - |
+>>>>>>> upstream/certora
 | 47 | `usage_registered_assets_only` | DONE | ✅ | - | - |
 | 48 | `balance_change_vs_registered` | DONE | ✅ | - | - |
 |    | **CometExt**
@@ -84,6 +95,46 @@ Symbols:
 
 ## Interest Computation
 
+<<<<<<< HEAD
+1. `supplyIndex_borrowIndex_GE_baseIndexScale` - 
+2. `supplyIndex_borrowIndex_monotonic` - 
+3. `supplyIndex_borrowIndex_rise_with_time` - 
+4. `borrowBase_vs_utilization` - 
+5. `utilization_zero` - 
+6. `isLiquiditable_false_should_not_change` - 
+7. `presentValue_GE_principal` - 
+8. `presentValue_G_zero` - 
+9. `presentValue_EQ_principal` - 
+10. `supplyRate_vs_utilization` - 
+11. `utilization_zero_supplyRate_zero` - 
+12. `getSupplyRate_revert_characteristic` - 
+13. `isCol_implies_not_isLiq` - 
+
+
+## Flags
+1. `check_flag_updates` - 
+2. `check_flag_getters` - 
+3. `check_pauseSupply_functionality` - 
+4. `check_pauseTransfer_functionality` - 
+5. `check_pauseWithdraw_functionality` - 
+6. `check_pauseAbsorb_functionality` - 
+7. `check_pauseBuy_functionality` - 
+8. `check_update_UserCollateral` - 
+9. `update_changes_single_bit` - 
+10. `update_changes_single_user_assetIn` - 
+
+
+## Asset Info
+1. `reversibility_of_packing` - 
+
+## High level totals and balances
+1. `totalCollateralPerAsset` - 
+2. `totalCollateralPerAssetVsAssetBalance` - 
+3. `totalBaseToken` - 
+4. `base_balance_vs_totals` - 
+5. `Collateral_totalSupply_LE_supplyCap` - 
+6. `borrow_then_collateralized` - 
+=======
 1. `supplyIndex_borrowIndex_GE_baseIndexScale` -
 2. `supplyIndex_borrowIndex_monotonic` -
 3. `supplyIndex_borrowIndex_rise_with_time` -
@@ -122,6 +173,7 @@ Symbols:
 4. `base_balance_vs_totals` -
 5. `Collateral_totalSupply_LE_supplyCap` -
 6. `borrow_then_collateralized` -
+>>>>>>> upstream/certora
 
 
 
@@ -163,6 +215,16 @@ Symbols:
 - Finish open rules
 - Reentrancy - callbacks from erc20
  - Run with less simplifications
+<<<<<<< HEAD
+    - BaseSupplyIndex != BaseBorrowIndex 
+    - one multiply 2 of the other 
+
+- ✅ solidity flag `viaIR: true` 
+
+-  Review rules and study coverage by injecting bugs  
+
+## Assumptions on Interest computation 
+=======
     - BaseSupplyIndex != BaseBorrowIndex
     - one multiply 2 of the other
 
@@ -171,6 +233,7 @@ Symbols:
 -  Review rules and study coverage by injecting bugs
 
 ## Assumptions on Interest computation
+>>>>>>> upstream/certora
 
 
 P1 := getTotalBaseSupplyIndex() >= baseIndexScale() && getTotalBaseBorrowIndex() >= baseIndexScale()
@@ -184,7 +247,11 @@ p4 := reserveRate(e) > 0
 
 - V - require needed to pass
 
+<<<<<<< HEAD
+- X - not needed 
+=======
 - X - not needed
+>>>>>>> upstream/certora
 
 | Rule | P1 | P2 | P3 | P4 |
 |----- | --- | -- | -- | -- |
@@ -205,7 +272,11 @@ p4 := reserveRate(e) > 0
 
 
 
+<<<<<<< HEAD
+## Properties regarding interest computation: 
+=======
 ## Properties regarding interest computation:
+>>>>>>> upstream/certora
 
 1. `borrowBase_vs_utilization` When no base is borrowed utilization should equal zero ( ✅ ) - Gadi
 
@@ -213,7 +284,11 @@ p4 := reserveRate(e) > 0
 
 3. `isLiquiditable_false_should_not_change` - computation of isLiquidatable on the same state changes from false to true only due to price change or accrue ( 👷 ) - Gadi
 
+<<<<<<< HEAD
+4. `isLiquiditable_true_should_not_change` - computation of isLiquidatable on the same state changes from true to false only due to price change, supplying more collateral, or supply more base ( 👷 ) - Gadi 
+=======
 4. `isLiquiditable_true_should_not_change` - computation of isLiquidatable on the same state changes from true to false only due to price change, supplying more collateral, or supply more base ( 👷 ) - Gadi
+>>>>>>> upstream/certora
 
 ## Properties regarding variable evolution
 
@@ -248,7 +323,11 @@ p4 := reserveRate(e) > 0
 
 2. `update_changes_single_bit` - update assetIn changes a single bit - it's impossible that 2 distinct asset bits will be change at the same call to update ( 🕝 ) - Michael
 
+<<<<<<< HEAD
+3. `update_changes_single_user_assetIn` - update assetIn changes the assetIn of a single user - no other users are affected by update. ( ✅ ) - Michael 
+=======
 3. `update_changes_single_user_assetIn` - update assetIn changes the assetIn of a single user - no other users are affected by update. ( ✅ ) - Michael
+>>>>>>> upstream/certora
 
 
 
@@ -265,18 +344,30 @@ p4 := reserveRate(e) > 0
 
 3. totalCollateralPerAsset ( ✅ ) - Nurit
 The sum of collateral per asset over all users is equal to total collateral of asset
+<<<<<<< HEAD
+```CVL 
+    sum(userCollateral[u][asset].balance) == totalsCollateral[asset].totalSupplyAsset
+```
+4. antiMonotonicityOfBuyCollateral ( 👷 ) - Nurit
+On buyCollateral system's balanace in base should increase iff system's balance in asset decreased 
+=======
 ```CVL
     sum(userCollateral[u][asset].balance) == totalsCollateral[asset].totalSupplyAsset
 ```
 4. antiMonotonicityOfBuyCollateral ( 👷 ) - Nurit
 On buyCollateral system's balanace in base should increase iff system's balance in asset decreased
+>>>>>>> upstream/certora
 
 5. Basebalance_vs_totals( 👷 ) - Gadi
 
 6. no_reserves_zero_balance ( 👷 ) - Gadi
 
 7. The sum of collateral per asset over all users is equal to total collateral of asset:
+<<<<<<< HEAD
+```CVL 
+=======
 ```CVL
+>>>>>>> upstream/certora
 sum(userCollateral[u][asset].balance) == totalsCollateral[asset].totalSupplyAsset
 ```
 
@@ -290,7 +381,11 @@ sum(userBasic[u].principal) == totalsBasic.totalSupplyBase - totalsBasic.totalBo
 totalsCollateral[asset].totalSupplyAsset == asset.balanceOf(this)
 ```
 *In reality it can break in case of external transfer directly to the contract.
+<<<<<<< HEAD
+ 
+=======
 
+>>>>>>> upstream/certora
 10. TotalSupplyBase vs. external balance (base):
 ```CVL
 totalsBasic.totalSupplyBase - totalsBasic.totalBorrowBase <= base.balanceOf(this)
@@ -298,12 +393,20 @@ totalsBasic.totalSupplyBase - totalsBasic.totalBorrowBase <= base.balanceOf(this
 *It will be fine by the Compound team if we switch `==` with `<=`. can break with external transfer to the contract.
 
 11. `Collateral_totalSupply_LE_supplyCap` - Max totalSupplyAsset (collateral)*: - ( ✅ ) Michael
+<<<<<<< HEAD
+    ```CVL 
+=======
     ```CVL
+>>>>>>> upstream/certora
         totalsCollateral[asset].totalSupplyAsset <= getAssetInfo().supplyCap
     ```
 *This property can break in reality since a governor is able to change the config. In this case a governor can determine a supplycap smaller than current supply in the system.
 
+<<<<<<< HEAD
+## simplified Assumptions regarding comet*: 
+=======
 ## simplified Assumptions regarding comet*:
+>>>>>>> upstream/certora
 
 - baseSupplyIndex and baseBorrowIndex at baseIndexScale
 
@@ -322,14 +425,22 @@ needs delegate call.
     1. ```CVL
         userBasic.principal < 0 => UserCollateral.balance != 0
         ```
+<<<<<<< HEAD
+    
+=======
 
+>>>>>>> upstream/certora
     2. On the borrowing block the collateral must be greater or equal to the borrow value.
     ```CVL
     collateral >= borrow
     ```
 
 
+<<<<<<< HEAD
+## work in progress 
+=======
 ## work in progress
+>>>>>>> upstream/certora
 
 1. Can always withdraw all collateral (assuming no debt) - low priority:
 ```CVL
@@ -351,7 +462,11 @@ withdrawBase(getBorrowLiquidity()/priceFeed) will work always
 
 14. Accrual time not in the future - `LastAccrualTime <= now` - Michael
 
+<<<<<<< HEAD
+15. If a liquidity provider and a borrower are entering and exiting the system at the same time the LP should be eligible for the whole asset(no amount stays locked in the system)* - Gadi. </br> 
+=======
 15. If a liquidity provider and a borrower are entering and exiting the system at the same time the LP should be eligible for the whole asset(no amount stays locked in the system)* - Gadi. </br>
+>>>>>>> upstream/certora
 *This is a special case of summary of balances (base). It should be checked if the wholesome property is too heavy on the tool. </br>
 **It also happen only when the percentage goes to reserve is 0.
 
@@ -376,7 +491,11 @@ absorb(user A);absorb(user B) ~ absorb([A,B])
 22. Preserved total assets of users: </br>
 assuming 1:1 price between all tokens on the same timestamp*:
 ```CVL
+<<<<<<< HEAD
+sumExternalTokens() := sum(for all token: token.balanceOf(User) ) //including 
+=======
 sumExternalTokens() := sum(for all token: token.balanceOf(User) ) //including
+>>>>>>> upstream/certora
 
 basesumAllInternal() := sum(for all assets: userCollateral[u][asset].balance) +userBasic[user].principal
 
@@ -390,7 +509,11 @@ op
 
 23. If the `getBorrowLiquidity` is positive, then the `getLiquidationMargin` is positive:
 ```CVL
+<<<<<<< HEAD
+getBorrowLiquidity > 0 => getLiquidationMargin > 0 
+=======
 getBorrowLiquidity > 0 => getLiquidationMargin > 0
+>>>>>>> upstream/certora
 ```
 
 24. If `isLiquidatable` then `getLiquidationMargin` is negative and `getBorrowLiquidity` is negative

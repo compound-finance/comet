@@ -4,8 +4,14 @@ then
 fi
 
 certoraRun certora/harness/CometHarnessGetters.sol --verify CometHarnessGetters:certora/specs/pauseGuardians.spec  \
+<<<<<<< HEAD
+    --solc solc8.13 \
+    --cloud \
+    --disable_auto_cache_key_gen \
+=======
     --solc solc8.11 \
     --cloud \
+>>>>>>> upstream/certora
     $RULE \
     --optimistic_loop \
     --settings -enableEqualitySaturation=false,-multiAssertCheck,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \

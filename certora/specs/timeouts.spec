@@ -1,7 +1,7 @@
 import "setup_noSummarization.spec"
 import "erc20.spec"
 
-using SymbolicBaseToken as _baseToken
+using SymbolicBaseToken as _baseToken 
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////////   Methods Declarations   ////////////////////////////
@@ -47,7 +47,7 @@ function simplifiedAssumptions() {
 /////////////////////////////////   Properties   ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
-//  @Complete Run:
+//  @Complete Run: 
 
 
 /*
@@ -63,7 +63,7 @@ function simplifiedAssumptions() {
         }
 
         < call any function >
-
+        
         {
             presentValue2 = presentValue(principal)
             presentValue1 == presentValue2
@@ -72,12 +72,12 @@ function simplifiedAssumptions() {
     @Notes:
 
     @Link:
-
+        
 */
 
 rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f) && !f.isView }{
     env e; calldataarg args;
-    simplifiedAssumptions();
+    simplifiedAssumptions();  
 
     require getlastAccrualTime() == call_getNowInternal(e); // don't call accrue
 
@@ -85,7 +85,7 @@ rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f
     int104 presentValue1 = call_presentValue(principal);
     f(e,args);
     int104 presentValue2 = call_presentValue(principal);
-
+    
     assert presentValue1 == presentValue2;
 }
 
@@ -102,16 +102,16 @@ rule only_accrue_change_presentValue(method f)filtered { f-> !similarFunctions(f
 
     withdrawReserves(amount);
     accrueInternal();
-
+    
     {
         Reserves() >= 0
     }
 
-    @Notes:
+    @Notes: 
         Found bug - Accrue should be called prior to withdrawReserves() - FIXED
 
     @Link:
-
+        
 */
 rule withdraw_more_reserves(address to , uint amount){
     env e;
@@ -132,7 +132,7 @@ rule withdraw_more_reserves(address to , uint amount){
         baseBorrowIndex increase with time
 
     @Formula:
-        {
+        {   
             supply_index = getBaseSupplyIndex() &&
             borrow_index = getBaseBorrowIndex() &&
             lastUpdated = getlastAccrualTime()
@@ -144,7 +144,7 @@ rule withdraw_more_reserves(address to , uint amount){
     @Notes:
 
     @Link:
-
+        
 */
 
 rule supplyIndex_borrowIndex_rise_with_time(){
@@ -157,7 +157,7 @@ rule supplyIndex_borrowIndex_rise_with_time(){
     uint64 base_supply_index_2 = getBaseSupplyIndex();
     uint64 base_borrow_index_2 = getBaseBorrowIndex();
 
-    assert call_getNowInternal(e) > lastUpdated =>
+    assert call_getNowInternal(e) > lastUpdated => 
                 (base_supply_index_2 > base_supply_index_1 &&
-                base_borrow_index_2 > base_borrow_index_1);
+                base_borrow_index_2 > base_borrow_index_1); 
 }

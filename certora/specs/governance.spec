@@ -24,7 +24,7 @@ methods {
 //
 
 // The set of all functions that require special permissions
-definition governedFunctions(method f) returns bool =
+definition governedFunctions(method f) returns bool =    
     f.selector == pause(bool, bool, bool, bool, bool).selector ||
     f.selector == withdrawReserves(address, uint).selector;
 
@@ -45,13 +45,13 @@ definition governorOrPauseGuardian(address a) returns bool =
         pause() and withdrawReserves() may be called only by governor or by pauseGuardian (pause)
 
     @Formula:
-        {
+        { 
 
         }
-
+        
         < call to pause() or withdrawReserves() >
-
-        {
+        
+        { 
             !lastReverted => msg.sender = governor || msg.sender = pauseGuardian
         }
 
@@ -70,7 +70,7 @@ rule governorIntegrity(method f) filtered { f -> governedFunctions(f)  }
     address pauseGuardian = pauseGuardian();
     invoke f(e, args);
 
-    assert  !lastReverted =>
+    assert  !lastReverted => 
         f.selector == pause(bool, bool, bool, bool, bool).selector && governorOrPauseGuardian(e.msg.sender) ||
         f.selector == withdrawReserves(address, uint).selector && e.msg.sender == governor;
 }
