@@ -9,11 +9,7 @@ import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/Aggregat
 
 /**
  * @title Certora's comet summarization contract
-<<<<<<< HEAD
  * @notice A contract that holds summarizations and simplifications of methods and components of comet 
-=======
- * @notice A contract that holds summarizations and simplifications of methods and components of comet
->>>>>>> upstream/certora
  * @author Certora
  */
 contract CometHarness is CometHarnessGetters {
@@ -25,21 +21,13 @@ contract CometHarness is CometHarnessGetters {
 ////////////////////////////////////////////////////////////////////////////////
 //
     // Safe summarization of assetInfo according to properties proven in assetInfo.spec
-<<<<<<< HEAD
     // under the assumption that the constructor is called with unique assets 
-=======
-    // under the assumption that the constructor is called with unique assets
->>>>>>> upstream/certora
 
     // Summarization of the assetConfigs array into maps that save:
     // 1. The index of each asset,
     // 2. The asset of each index,
     // 3. The AssetInfo of at each index
 
-<<<<<<< HEAD
-=======
-    mapping (address => uint8) public assetToIndex;
->>>>>>> upstream/certora
     mapping (uint8 => address) public indexToAsset;
     mapping (uint8 => AssetInfo) public assetInfoMap;
 
@@ -53,11 +41,7 @@ contract CometHarness is CometHarnessGetters {
     }
 
     // Overriding the original getAssetInfoByAddress to work with the maps instead of looping over the array
-<<<<<<< HEAD
     function getAssetInfoByAddress(address asset) override public view returns (AssetInfo memory){       
-=======
-    function getAssetInfoByAddress(address asset) override internal view returns (AssetInfo memory){
->>>>>>> upstream/certora
         AssetInfo memory assetInfo =  getAssetInfo(assetToIndex[asset]);
         // The require promises correlation of the asset values stored in assetInfo with the values retrieved form the index-asset map
         require (assetInfo.asset == asset);
@@ -69,21 +53,13 @@ contract CometHarness is CometHarnessGetters {
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////////   user collateral asset   ///////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-<<<<<<< HEAD
 // 
-=======
-//
->>>>>>> upstream/certora
     /// Safe summarization of assetInfo according to properties proven in userCollateralAsset.spec
     // Summarization for assetIn bitvector. Saves assetIn info into maps:
     // 1. Given a bitvector and an asset determine if the bit is on or off (boolean)
     // 2. Given a bitvector, an asset and a boolean value that specify the supposed value of a specific asset, directs to the new bitvector that is formed.
     mapping (uint16 => mapping (address => bool)) assetInState;
-<<<<<<< HEAD
     mapping (uint16 => mapping (address => mapping (bool => uint16))) assetInStateChanges; 
-=======
-    mapping (uint16 => mapping (address => mapping (bool => uint16))) assetInStateChanges;
->>>>>>> upstream/certora
 
     // Overriding the original isInAsset to retrieve values from the assetInState mapping
     function isInAsset(uint16 assetsIn, uint8 assetOffset) override internal view returns (bool) {
@@ -98,11 +74,7 @@ contract CometHarness is CometHarnessGetters {
     // Overriding the original updateAssetsIn to use the assetIn bitvector summarization
     function updateAssetsIn(
         address account,
-<<<<<<< HEAD
         AssetInfo memory assetInfo,
-=======
-        address asset,
->>>>>>> upstream/certora
         uint128 initialUserBalance,
         uint128 finalUserBalance
     ) override internal {
@@ -120,19 +92,11 @@ contract CometHarness is CometHarnessGetters {
             // skips the update
             return;
         }
-<<<<<<< HEAD
         assetInAfter = assetInStateChanges[assetInBefore][assetInfo.asset][flag];
         userBasic[account].assetsIn = assetInAfter;
         // The 2 requires are promising correlation of the two assetIn mappings, and that isInAsset retrieve the correct value.
         require(assetInState[assetInAfter][assetInfo.asset] == flag);
         require(isInAsset(assetInAfter,assetToIndex[assetInfo.asset]) == flag ); 
-=======
-        assetInAfter = assetInStateChanges[assetInBefore][asset][flag];
-        userBasic[account].assetsIn = assetInAfter;
-        // The 2 requires are promising correlation of the two assetIn mappings, and that isInAsset retrieve the correct value.
-        require(assetInState[assetInAfter][asset] == flag);
-        require(isInAsset(assetInAfter,assetToIndex[asset]) == flag );
->>>>>>> upstream/certora
     }
 
 
@@ -146,7 +110,6 @@ contract CometHarness is CometHarnessGetters {
 
     /*********** Simplification ***********/
     /* under approximation (not taking into account all possible cases) */
-<<<<<<< HEAD
     //This is equiveleant to assuming that accure has been called on the current timestamp 
     // many properties of accrue are proven in interestComputation.spec
     bool public accrueWasCalled;
@@ -173,19 +136,6 @@ contract CometHarness is CometHarnessGetters {
     /* Helpers: 
         A function to check if an address is registers, i.e, it has an assetInfo strcture 
     */  
-=======
-    //This is equiveleant to assuming that accure has been called on the current timestamp
-    // many properties of accrue are proven in interestComputation.spec
-    bool public accrueWasCalled;
-    function accrueInternal() override internal {
-        accrueWasCalled = true;
-     }
-
-
-    /* Helpers:
-        A function to check if an address is registers, i.e, it has an assetInfo strcture
-    */
->>>>>>> upstream/certora
     function isRegisterdAsAsset(address token) view external returns (bool) {
         return getAssetInfoByAddress(token).asset == token;
     }
