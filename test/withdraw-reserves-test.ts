@@ -1,8 +1,8 @@
-import { expect, makeProtocol, setTotalsBasic, wait } from './helpers';
+import { event, expect, makeProtocol, setTotalsBasic, wait } from './helpers';
 
 describe('withdrawReserves', function () {
   it('withdraws reserves from the protocol', async () => {
-    const tokenBalance = 1000;
+    const tokenBalance = 1000n;
     const {
       comet,
       tokens: { USDC },
@@ -13,9 +13,25 @@ describe('withdrawReserves', function () {
     });
 
     expect(await USDC.balanceOf(alice.address)).to.be.equal(0);
-    await comet.connect(governor).withdrawReserves(alice.address, tokenBalance);
+
+    const tx = await wait(comet.connect(governor).withdrawReserves(alice.address, tokenBalance));
+
     expect(await USDC.balanceOf(alice.address)).to.equal(tokenBalance);
     expect(await USDC.balanceOf(comet.address)).to.equal(0);
+
+    expect(event(tx, 0)).to.be.deep.equal({
+      Transfer: {
+        from: comet.address,
+        to: alice.address,
+        amount: tokenBalance,
+      }
+    });
+    expect(event(tx, 1)).to.be.deep.equal({
+      WithdrawReserves: {
+        to: alice.address,
+        amount: tokenBalance,
+      }
+    });
   });
 
   it('reverts if called not by governor', async () => {

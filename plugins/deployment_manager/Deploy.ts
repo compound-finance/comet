@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
 
-import { Contract, ContractFactory, Signer } from 'ethers';
+import { Contract, Signer } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import { putAlias } from './Aliases';
@@ -30,13 +30,17 @@ export interface DeployOpts {
 async function deployFromBuildFile(
   buildFile: BuildFile,
   deployArgs: any[],
-  hre: HardhatRuntimeEnvironment
+  hre: HardhatRuntimeEnvironment,
+  deployOpts: DeployOpts = {}
 ): Promise<Contract> {
   let [contractName, metadata] = getPrimaryContract(buildFile);
-  const [signer] = await hre.ethers.getSigners(); // TODO: Hmm?
+  const [ethersSigner] = await hre.ethers.getSigners();
+  const signer = deployOpts.connect ?? ethersSigner;
   const contractFactory = new hre.ethers.ContractFactory(metadata.abi, metadata.bin, signer);
   const contract = await contractFactory.deploy(...deployArgs);
-  return await contract.deployed();
+  const deployed = await contract.deployed();
+  debug(`Deployed ${contractName}`);
+  return deployed;
 }
 
 async function maybeStoreCache(deployOpts: DeployOpts, contract: Contract, buildFile: BuildFile) {
@@ -128,7 +132,7 @@ export async function deployBuild(
   hre: HardhatRuntimeEnvironment,
   deployOpts: DeployOpts = {}
 ): Promise<Contract> {
-  let contract = await deployFromBuildFile(buildFile, deployArgs, hre);
+  let contract = await deployFromBuildFile(buildFile, deployArgs, hre, deployOpts);
 
   if (deployOpts.verify) {
     // We need to do manual verification here, since this is coming

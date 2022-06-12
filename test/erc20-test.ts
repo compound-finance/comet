@@ -4,13 +4,13 @@ describe('erc20', function () {
   it('has correct name', async () => {
     const { comet } = await makeProtocol();
 
-    expect(await comet.name()).to.be.equal("Compound Comet");
+    expect(await comet.name()).to.be.equal('Compound Comet');
   });
 
   it('has correct symbol', async () => {
     const { comet } = await makeProtocol();
 
-    expect(await comet.symbol()).to.be.equal("📈BASE");
+    expect(await comet.symbol()).to.be.equal('📈BASE');
   });
 
   it('has correct decimals', async () => {
@@ -83,6 +83,13 @@ describe('erc20', function () {
     expect(event(tx, 0)).to.be.deep.equal({
       Transfer: {
         from: alice.address,
+        to: ethers.constants.AddressZero,
+        amount: BigInt(100e6),
+      }
+    });
+    expect(event(tx, 1)).to.be.deep.equal({
+      Transfer: {
+        from: ethers.constants.AddressZero,
         to: bob.address,
         amount: BigInt(100e6),
       }
@@ -101,7 +108,7 @@ describe('erc20', function () {
         baseSupplyIndex: 2e15,
       });
 
-      await comet.connect(alice).transferFrom(alice.address, bob.address, 100e6)
+      await comet.connect(alice).transferFrom(alice.address, bob.address, 100e6);
 
       expect(await baseBalanceOf(comet, alice.address)).to.eq(0n);
       expect(await baseBalanceOf(comet, bob.address)).to.eq(BigInt(100e6));

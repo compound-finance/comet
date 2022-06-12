@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: XXX ADD VALID LICENSE
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
 /**
@@ -18,6 +18,8 @@ contract SimpleTimelock {
     constructor(address admin_) {
         admin = admin_;
     }
+
+    receive() external payable {}
 
     function setAdmin(address newAdmin) public {
         if (msg.sender != address(this)) revert Unauthorized(); // call must come from Timelock itself

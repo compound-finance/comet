@@ -4,10 +4,12 @@
     "module": "commonjs",
     "esModuleInterop": true,
     "outDir": "dist",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "declaration": true
   },
   "include": ["./scripts", "./test", "./tasks"],
   "files": [
+    "./index.ts",
     "./hardhat.config.ts",
     "node_modules/@nomiclabs/hardhat-ethers/internal/type-extensions.d.ts",
     "node_modules/@nomiclabs/hardhat-waffle/dist/src/type-extensions.d.ts",

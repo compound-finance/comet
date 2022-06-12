@@ -3,13 +3,13 @@ import { SimplePriceFeed__factory, SimpleTimelock__factory } from '../build/type
 import { AssetInfoStructOutput } from '../build/types/CometHarnessInterface';
 
 type ConfiguratorAssetConfig = {
-  asset: string,
-  priceFeed: string,
-  decimals: Numeric,
-  borrowCollateralFactor: Numeric,
-  liquidateCollateralFactor: Numeric,
-  liquidationFactor: Numeric,
-  supplyCap: Numeric,
+  asset: string;
+  priceFeed: string;
+  decimals: Numeric;
+  borrowCollateralFactor: Numeric;
+  liquidateCollateralFactor: Numeric;
+  liquidationFactor: Numeric;
+  supplyCap: Numeric;
 };
 
 function convertToEventAssetConfig(assetConfig: ConfiguratorAssetConfig) {
@@ -72,7 +72,7 @@ describe('configurator', function () {
   });
 
   it('e2e governance actions from timelock', async () => {
-    const { governor, configurator, configuratorProxy, proxyAdmin, comet, cometProxy, users: [alice] } = await makeConfigurator();
+    const { governor, configurator, configuratorProxy, proxyAdmin, cometProxy, users: [alice] } = await makeConfigurator();
 
     const TimelockFactory = (await ethers.getContractFactory(
       'SimpleTimelock'
@@ -89,9 +89,9 @@ describe('configurator', function () {
 
     // 1. SetGovernor
     // 2. DeployAndUpgradeTo
-    let setGovernorCalldata = ethers.utils.defaultAbiCoder.encode(["address"], [alice.address]);
-    let deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address"], [configuratorProxy.address, cometProxy.address]);
-    await timelock.executeTransactions([configuratorProxy.address, proxyAdmin.address], [0, 0], ["setGovernor(address)", "deployAndUpgradeTo(address,address)"], [setGovernorCalldata, deployAndUpgradeToCalldata]);
+    let setGovernorCalldata = ethers.utils.defaultAbiCoder.encode(['address'], [alice.address]);
+    let deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address'], [configuratorProxy.address, cometProxy.address]);
+    await timelock.executeTransactions([configuratorProxy.address, proxyAdmin.address], [0, 0], ['setGovernor(address)', 'deployAndUpgradeTo(address,address)'], [setGovernorCalldata, deployAndUpgradeToCalldata]);
 
     expect((await configuratorAsProxy.getConfiguration()).governor).to.be.equal(alice.address);
   });
@@ -152,7 +152,7 @@ describe('configurator', function () {
     });
 
     it('sets baseTokenPriceFeed and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, priceFeeds } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
 
       const cometAsProxy = comet.attach(cometProxy.address);
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
@@ -501,7 +501,7 @@ describe('configurator', function () {
     });
 
     it('updates asset and deploys Comet with new configuration', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, tokens, unsupportedToken } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, tokens } = await makeConfigurator();
       const { COMP } = tokens;
 
       const cometAsProxy = comet.attach(cometProxy.address);

@@ -8,7 +8,6 @@ import { HardhatConfig, HardhatArguments, createContext } from './HardhatContext
 import { ScenarioConfig } from '../types';
 import { SimpleWorker } from './SimpleWorker';
 import hreForBase from '../utils/hreForBase';
-import { Result } from './Parent';
 import { pluralize } from './Report';
 
 interface Message {
@@ -48,7 +47,7 @@ function postMessage(worker: SimpleWorker | undefined, message: any) {
   }
 }
 
-export async function run<T, U, R>({ scenarioConfig, bases, config, worker }: WorkerData) {
+export async function run<T, U, R>({ bases, config, worker }: WorkerData) {
   let scenarios: { [name: string]: Scenario<T, U, R> };
   let runners = {};
 

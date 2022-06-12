@@ -1,4 +1,4 @@
-import { baseBalanceOf, event, expect, exp, makeProtocol, portfolio, setTotalsBasic, wait } from './helpers';
+import { baseBalanceOf, ethers, event, expect, exp, makeProtocol, portfolio, setTotalsBasic, wait, fastForward } from './helpers';
 
 describe('transfer', function () {
   it('transfers base from sender if the asset is base', async () => {
@@ -10,7 +10,7 @@ describe('transfer', function () {
     } = protocol;
     const { USDC } = tokens;
 
-    const i0 = await comet.setBasePrincipal(bob.address, 100e6);
+    const _i0 = await comet.setBasePrincipal(bob.address, 100e6);
     const cometAsB = comet.connect(bob);
 
     const t0 = await comet.totalsBasic();
@@ -24,6 +24,13 @@ describe('transfer', function () {
     expect(event(s0, 0)).to.be.deep.equal({
       Transfer: {
         from: bob.address,
+        to: ethers.constants.AddressZero,
+        amount: BigInt(100e6),
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      Transfer: {
+        from: ethers.constants.AddressZero,
         to: alice.address,
         amount: BigInt(100e6),
       }
@@ -38,6 +45,81 @@ describe('transfer', function () {
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(90000);
   });
 
+  it('does not emit Transfer if 0 mint/burn', async () => {
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const {
+      comet,
+      tokens,
+      users: [alice, bob],
+    } = protocol;
+    const { USDC, WETH } = tokens;
+
+    await comet.setCollateralBalance(bob.address, WETH.address, exp(1, 18));
+    await comet.setBasePrincipal(alice.address, -100e6);
+    await setTotalsBasic(comet, {
+      totalSupplyBase: 100e6,
+      totalBorrowBase: 100e6,
+    });
+
+    const cometAsB = comet.connect(bob);
+
+    const s0 = await wait(cometAsB.transferAsset(alice.address, USDC.address, 100e6));
+
+    expect(s0.receipt['events'].length).to.be.equal(0);
+  });
+
+  it('transfers max base balance (including accrued) from sender if the asset is base', async () => {
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { USDC } = tokens;
+
+    await USDC.allocateTo(comet.address, 100e6);
+    await setTotalsBasic(comet, {
+      totalSupplyBase: 100e6,
+      totalBorrowBase: 50e6, // non-zero borrow to accrue interest
+    });
+    await comet.setBasePrincipal(bob.address, 100e6);
+    const cometAsB = comet.connect(bob);
+
+    // Fast forward to accrue some interest
+    await fastForward(86400);
+    await ethers.provider.send('evm_mine', []);
+
+    const t0 = await comet.totalsBasic();
+    const a0 = await portfolio(protocol, alice.address);
+    const b0 = await portfolio(protocol, bob.address);
+    const bobAccruedBalance = (await comet.callStatic.balanceOf(bob.address)).toBigInt();
+    const s0 = await wait(cometAsB.transferAsset(alice.address, USDC.address, ethers.constants.MaxUint256));
+    const t1 = await comet.totalsBasic();
+    const a1 = await portfolio(protocol, alice.address);
+    const b1 = await portfolio(protocol, bob.address);
+
+    // additional 1 wei burned, amount to clear bob gets alice to same balance - 1
+    expect(event(s0, 0)).to.be.deep.equal({
+      Transfer: {
+        from: bob.address,
+        to: ethers.constants.AddressZero,
+        amount: bobAccruedBalance,
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      Transfer: {
+        from: ethers.constants.AddressZero,
+        to: alice.address,
+        amount: bobAccruedBalance - 1n,
+      }
+    });
+
+    // Hitting the rounding down behavior in this specific case (which is favorable to the protocol)
+    expect(a0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(b0.internal).to.be.deep.equal({ USDC: bobAccruedBalance, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(a1.internal).to.be.deep.equal({ USDC: bobAccruedBalance - 1n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(b1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(t1.totalSupplyBase).to.be.equal(t0.totalSupplyBase.sub(1));
+    expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(105000);
+  });
+
   it('transfers collateral from sender if the asset is collateral', async () => {
     const protocol = await makeProtocol();
     const {
@@ -47,7 +129,7 @@ describe('transfer', function () {
     } = protocol;
     const { COMP } = tokens;
 
-    const i0 = await comet.setCollateralBalance(bob.address, COMP.address, 8e8);
+    const _i0 = await comet.setCollateralBalance(bob.address, COMP.address, 8e8);
     const cometAsB = comet.connect(bob);
 
     const t0 = await comet.totalsCollateral(COMP.address);
@@ -76,7 +158,7 @@ describe('transfer', function () {
   });
 
   it('calculates base principal correctly', async () => {
-    const protocol = await makeProtocol({base: 'USDC'});
+    const protocol = await makeProtocol({ base: 'USDC' });
     const { comet, tokens, users: [alice, bob] } = protocol;
     const { USDC } = tokens;
 
@@ -92,13 +174,13 @@ describe('transfer', function () {
 
     await wait(cometAsB.transferAsset(alice.address, USDC.address, 100e6));
     const totals1 = await comet.totalsBasic();
-    const alice1 = await portfolio(protocol, alice.address)
-    const bob1 = await portfolio(protocol, bob.address)
+    const alice1 = await portfolio(protocol, alice.address);
+    const bob1 = await portfolio(protocol, bob.address);
 
-    expect(alice0.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(bob0.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(alice1.internal).to.be.deep.equal({USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n});
-    expect(bob1.internal).to.be.deep.equal({USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n});
+    expect(alice0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(bob0.internal).to.be.deep.equal({ USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(alice1.internal).to.be.deep.equal({ USDC: exp(100, 6), COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(bob1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(totals1.totalSupplyBase).to.be.equal(totals0.totalSupplyBase);
     expect(totals1.totalBorrowBase).to.be.equal(totals0.totalBorrowBase);
   });
@@ -117,7 +199,7 @@ describe('transfer', function () {
   });
 
   it('reverts if transfer is paused', async () => {
-    const protocol = await makeProtocol({base: 'USDC'});
+    const protocol = await makeProtocol({ base: 'USDC' });
     const { comet, tokens, pauseGuardian, users: [alice, bob] } = protocol;
     const { USDC } = tokens;
 
@@ -131,21 +213,17 @@ describe('transfer', function () {
   });
 
   it('borrows base if collateralized', async () => {
-    const { comet, tokens, users: [alice, bob]} = await makeProtocol();
+    const { comet, tokens, users: [alice, bob] } = await makeProtocol();
     const { WETH, USDC } = tokens;
 
-    await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
-
-    const baseIndexScale = await comet.baseIndexScale();
+    await comet.setCollateralBalance(alice.address, WETH.address, exp(1, 18));
 
     let t0 = await comet.totalsBasic();
-    t0 = await setTotalsBasic(comet, {
+    await setTotalsBasic(comet, {
       baseBorrowIndex: t0.baseBorrowIndex.mul(2),
     });
 
     await comet.connect(alice).transferAsset(bob.address, USDC.address, 100e6);
-
-    const t1 = await comet.totalsBasic();
 
     expect(await baseBalanceOf(comet, alice.address)).to.eq(BigInt(-100e6));
   });
@@ -194,7 +272,7 @@ describe('transfer', function () {
   });
 
   it('reverts if transferring base results in an under collateralized borrow', async () => {
-    const { comet, tokens, users: [alice, bob]} = await makeProtocol();
+    const { comet, tokens, users: [alice, bob] } = await makeProtocol();
     const { USDC } = tokens;
 
     await expect(
@@ -203,16 +281,16 @@ describe('transfer', function () {
   });
 
   it('reverts if transferring collateral results in an under collateralized borrow', async () => {
-    const { comet, tokens, users: [alice, bob]} = await makeProtocol();
+    const { comet, tokens, users: [alice, bob] } = await makeProtocol();
     const { WETH } = tokens;
 
     // user has a borrow, but with collateral to cover
     await comet.setBasePrincipal(alice.address, -100e6);
-    await comet.setCollateralBalance(alice.address, WETH.address, exp(1,18));
+    await comet.setCollateralBalance(alice.address, WETH.address, exp(1, 18));
 
     // reverts if transfer would leave the borrow uncollateralized
     await expect(
-      comet.connect(alice).transferAsset(bob.address, WETH.address, exp(1,18))
+      comet.connect(alice).transferAsset(bob.address, WETH.address, exp(1, 18))
     ).to.be.revertedWith("custom error 'NotCollateralized()'");
   });
 });
@@ -227,14 +305,14 @@ describe('transferFrom', function () {
     } = protocol;
     const { COMP } = tokens;
 
-    const i0 = await comet.setCollateralBalance(bob.address, COMP.address, 7);
+    const _i0 = await comet.setCollateralBalance(bob.address, COMP.address, 7);
     const cometAsB = comet.connect(bob);
     const cometAsC = comet.connect(charlie);
 
-    const a1 = await wait(cometAsB.allow(charlie.address, true));
+    const _a1 = await wait(cometAsB.allow(charlie.address, true));
     const p0 = await portfolio(protocol, alice.address);
     const q0 = await portfolio(protocol, bob.address);
-    const s0 = await wait(cometAsC.transferAssetFrom(bob.address, alice.address, COMP.address, 7));
+    const _s0 = await wait(cometAsC.transferAssetFrom(bob.address, alice.address, COMP.address, 7));
     const p1 = await portfolio(protocol, alice.address);
     const q1 = await portfolio(protocol, bob.address);
 
@@ -253,7 +331,7 @@ describe('transferFrom', function () {
     } = protocol;
     const { COMP } = tokens;
 
-    const i0 = await comet.setCollateralBalance(bob.address, COMP.address, 7);
+    const _i0 = await comet.setCollateralBalance(bob.address, COMP.address, 7);
     const cometAsC = comet.connect(charlie);
 
     await expect(

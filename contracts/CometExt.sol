@@ -1,13 +1,9 @@
-// SPDX-License-Identifier: XXX ADD VALID LICENSE
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
-import "./CometCore.sol";
+import "./CometExtInterface.sol";
 
-contract CometExt is CometCore {
-    /** Custom events **/
-
-    event Approval(address indexed owner, address indexed spender, uint256 amount);
-
+contract CometExt is CometExtInterface {
     /** Custom errors **/
 
     error BadAmount();
@@ -16,15 +12,14 @@ contract CometExt is CometCore {
     error InvalidValueS();
     error InvalidValueV();
     error SignatureExpired();
-    error Unauthorized();
 
     /** Public constants **/
 
     /// @notice The name of this contract
-    string public constant name = "Compound Comet";
+    string public override constant name = "Compound Comet";
 
     /// @notice The major version of this contract
-    string public constant version = "0";
+    string public override constant version = "0";
 
     /** Internal constants **/
 
@@ -53,16 +48,16 @@ contract CometExt is CometCore {
 
     /** External getters for internal constants **/
 
-    function baseAccrualScale() external pure returns (uint64) { return BASE_ACCRUAL_SCALE; }
-    function baseIndexScale() external pure returns (uint64) { return BASE_INDEX_SCALE; }
-    function factorScale() external pure returns (uint64) { return FACTOR_SCALE; }
-    function priceScale() external pure returns (uint64) { return PRICE_SCALE; }
-    function maxAssets() external pure returns (uint8) { return MAX_ASSETS; }
+    function baseAccrualScale() override external pure returns (uint64) { return BASE_ACCRUAL_SCALE; }
+    function baseIndexScale() override external pure returns (uint64) { return BASE_INDEX_SCALE; }
+    function factorScale() override external pure returns (uint64) { return FACTOR_SCALE; }
+    function priceScale() override external pure returns (uint64) { return PRICE_SCALE; }
+    function maxAssets() override external pure returns (uint8) { return MAX_ASSETS; }
 
     /**
      * @notice Aggregate variables tracked for the entire market
      **/
-    function totalsBasic() public view returns (TotalsBasic memory) {
+    function totalsBasic() public override view returns (TotalsBasic memory) {
         return TotalsBasic({
             baseSupplyIndex: baseSupplyIndex,
             baseBorrowIndex: baseBorrowIndex,
@@ -81,7 +76,7 @@ contract CometExt is CometCore {
      * @notice Get the ERC20 symbol for wrapped base token
      * @return The symbol as a string
      */
-    function symbol() external view returns (string memory) {
+    function symbol() override external view returns (string memory) {
         uint8 i;
         for (i = 0; i < 32; i++) {
             if (symbol32[i] == 0) {
@@ -101,7 +96,7 @@ contract CometExt is CometCore {
      * @param asset The collateral asset whi
      * @return The collateral balance of the account
      */
-    function collateralBalanceOf(address account, address asset) external view returns (uint128) {
+    function collateralBalanceOf(address account, address asset) override external view returns (uint128) {
         return userCollateral[account][asset].balance;
     }
 
@@ -110,7 +105,7 @@ contract CometExt is CometCore {
      * @param account The account to query
      * @return The accrued rewards, scaled by `BASE_ACCRUAL_SCALE`
      */
-    function baseTrackingAccrued(address account) external view returns (uint64) {
+    function baseTrackingAccrued(address account) override external view returns (uint64) {
         return userBasic[account].baseTrackingAccrued;
     }
 
@@ -122,7 +117,7 @@ contract CometExt is CometCore {
       * @param amount Either uint.max (to allow) or zero (to disallow)
       * @return Whether or not the approval change succeeded
       */
-    function approve(address spender, uint256 amount) external returns (bool) {
+    function approve(address spender, uint256 amount) override external returns (bool) {
         if (amount == type(uint256).max) {
             allowInternal(msg.sender, spender, true);
         } else if (amount == 0) {
@@ -130,7 +125,6 @@ contract CometExt is CometCore {
         } else {
             revert BadAmount();
         }
-        emit Approval(msg.sender, spender, amount);
         return true;
     }
 
@@ -142,7 +136,7 @@ contract CometExt is CometCore {
       * @param spender The address of the account which may transfer tokens
       * @return Either uint.max (spender is allowed) or zero (spender is disallowed)
       */
-    function allowance(address owner, address spender) external view returns (uint256) {
+    function allowance(address owner, address spender) override external view returns (uint256) {
         return hasPermission(owner, spender) ? type(uint256).max : 0;
     }
 
@@ -151,7 +145,7 @@ contract CometExt is CometCore {
      * @param manager The account which will be allowed or disallowed
      * @param isAllowed_ Whether to allow or disallow
      */
-    function allow(address manager, bool isAllowed_) external {
+    function allow(address manager, bool isAllowed_) override external {
         allowInternal(msg.sender, manager, isAllowed_);
     }
 
@@ -160,6 +154,7 @@ contract CometExt is CometCore {
      */
     function allowInternal(address owner, address manager, bool isAllowed_) internal {
         isAllowed[owner][manager] = isAllowed_;
+        emit Approval(owner, manager, isAllowed_ ? type(uint256).max : 0);
     }
 
     /**
@@ -182,7 +177,7 @@ contract CometExt is CometCore {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external {
+    ) override external {
         if (uint256(s) > MAX_VALID_ECDSA_S) revert InvalidValueS();
         // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
         if (v != 27 && v != 28) revert InvalidValueV();

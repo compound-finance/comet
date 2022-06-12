@@ -3,16 +3,10 @@
 //
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
-import hre, { ethers } from 'hardhat';
+import hre from 'hardhat';
 import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
-import {
-  Comet__factory,
-  Comet,
-  Configurator,
-} from '../build/types';
+import { Configurator } from '../build/types';
 import { ConfigurationStruct } from '../build/types/CometFactory';
-
-const delay = ms => new Promise(res => setTimeout(res, ms));
 
 async function verifyContract(address: string, constructorArguments) {
   try {
@@ -34,12 +28,8 @@ async function verifyContract(address: string, constructorArguments) {
 }
 
 /**
- * Deploys the latest version of `Comet` and verifies it on Etherscan. 
- * 
- * This gets around the issue of Etherscan not being able to verify contracts deployed by another contract 
- * (e.g. `CometFactory`) by deploying another contract with the exact same bytecode via an EOA and verifying 
- * that instead.
- * 
+ * Verifies an unverified version of `Comet` on Etherscan.
+ *
  * Note: The Comet source code in this repo MUST match the Comet deployed on-chain. If not, verification will
  * fail.
  */
@@ -52,30 +42,16 @@ async function main() {
     debug: true,
   });
 
-  let signers = await dm.hre.ethers.getSigners();
-  let admin = await signers[0];
-  
-  // XXX move to command line, which requires this to be a Hardhat task since HH scripts can't take user arguments
-  let configuratorAddress = "0x62f5a823efcd2bac5df35141acccd2099cc83b72";
-  let configurator = (await ethers.getContractAt("Configurator", configuratorAddress, admin)) as Configurator;
+  const configurator = await dm.contract('configurator') as Configurator;
   let config: ConfigurationStruct = await configurator.getConfiguration();
-  console.log("Latest configuration is: ", config)
+  console.log('Latest configuration is: ', config);
+  console.log('Starting verification!');
 
-  // Deploy Comet with latest configuration
-  const comet = await dm.deploy<Comet, Comet__factory, [ConfigurationStruct]>(
-    'Comet.sol',
-    [config]
-  );
-  console.log('Comet deployed at ', comet.address)
+  // XXX move to command line, which requires this to be a Hardhat task since HH scripts can't take user arguments
+  const cometAddress = '0x3F6Faa0Bd3506F8C7d5f2D50cD364d47290D23Fc';
+  await verifyContract(cometAddress, [config]);
 
-  console.log('Waiting 1 min before verification')
-  await delay(60000);
-
-  console.log('Starting verification!')
-
-  await verifyContract(comet.address, [config]);
-
-  console.log('Finished verification!')
+  console.log('Finished verification!');
 }
 
 // We recommend this pattern to be able to use async/await everywhere

@@ -1,4 +1,5 @@
-import { defaultAssets, ethers, expect, exp, fastForward, makeProtocol, makeRewards, objectify, wait } from './helpers';
+import { ethers } from 'hardhat';
+import { defaultAssets, expect, exp, fastForward, makeProtocol, makeRewards, objectify, wait, event } from './helpers';
 
 describe('CometRewards', () => {
   describe('claim + supply', () => {
@@ -24,8 +25,17 @@ describe('CometRewards', () => {
       await fastForward(86400);
 
       expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
-      const tx = await wait(rewards.claim(comet.address, alice.address, true));
+      const txn = await wait(rewards.claim(comet.address, alice.address, true));
       expect(await COMP.balanceOf(alice.address)).to.be.equal(exp(86400, 18));
+
+      // Note: First event is an ERC20 Transfer event
+      expect(event(txn, 1)).to.be.deep.equal({
+        RewardClaimed: {
+          recipient: alice.address,
+          token: COMP.address,
+          amount: exp(86400, 18),
+        }
+      });
     });
 
     it('can construct and claim rewards for owner with downscale', async () => {
@@ -52,8 +62,17 @@ describe('CometRewards', () => {
       await fastForward(86400);
 
       expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
-      const tx = await wait(rewards.claim(comet.address, alice.address, true));
+      const txn = await wait(rewards.claim(comet.address, alice.address, true));
       expect(await COMP.balanceOf(alice.address)).to.be.equal(exp(86400, 5));
+
+      // Note: First event is an ERC20 Transfer event
+      expect(event(txn, 1)).to.be.deep.equal({
+        RewardClaimed: {
+          recipient: alice.address,
+          token: COMP.address,
+          amount: exp(86400, 5),
+        }
+      });
     });
 
     it('can construct and claim rewards for owner with same scale', async () => {
@@ -80,8 +99,17 @@ describe('CometRewards', () => {
       await fastForward(86400);
 
       expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
-      const tx = await wait(rewards.claim(comet.address, alice.address, true));
+      const txn = await wait(rewards.claim(comet.address, alice.address, true));
       expect(await COMP.balanceOf(alice.address)).to.be.equal(exp(86400, 6));
+
+      // Note: First event is an ERC20 Transfer event
+      expect(event(txn, 1)).to.be.deep.equal({
+        RewardClaimed: {
+          recipient: alice.address,
+          token: COMP.address,
+          amount: exp(86400, 6),
+        }
+      });
     });
 
     it('does not overpay when claiming more than once', async () => {
@@ -106,8 +134,8 @@ describe('CometRewards', () => {
       await fastForward(86400);
 
       expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
-      const tx0 = await wait(rewards.claim(comet.address, alice.address, true));
-      const tx1 = await wait(rewards.claim(comet.address, alice.address, false));
+      const _tx0 = await wait(rewards.claim(comet.address, alice.address, true));
+      const _tx1 = await wait(rewards.claim(comet.address, alice.address, false));
       expect(await COMP.balanceOf(alice.address)).to.be.equal(exp(86400, 18));
     });
 
@@ -146,7 +174,7 @@ describe('CometRewards', () => {
       await expect(
         rewards
           .claim(comet.address, alice.address, true)
-      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+      ).to.be.revertedWith('ERC20: transfer amount exceeds balance');
     });
   });
 
@@ -179,7 +207,7 @@ describe('CometRewards', () => {
       expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
       expect(await USDC.balanceOf(alice.address)).to.be.equal(10e6);
       expect(await comet.borrowBalanceOf(alice.address)).to.be.equal(10e6);
-      const tx = await wait(rewards.connect(bob).claimTo(comet.address, alice.address, bob.address, true));
+      const _tx = await wait(rewards.connect(bob).claimTo(comet.address, alice.address, bob.address, true));
       expect(await COMP.balanceOf(bob.address)).to.be.equal(exp(86400 * 2, 18));
     });
 
@@ -214,7 +242,7 @@ describe('CometRewards', () => {
       expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
       expect(await USDC.balanceOf(alice.address)).to.be.equal(10e6);
       expect(await comet.borrowBalanceOf(alice.address)).to.be.equal(10e6);
-      const tx = await wait(rewards.connect(bob).claimTo(comet.address, alice.address, bob.address, true));
+      const _tx = await wait(rewards.connect(bob).claimTo(comet.address, alice.address, bob.address, true));
       expect(await COMP.balanceOf(bob.address)).to.be.equal(exp(86400 * 2, 5));
     });
 
@@ -249,7 +277,7 @@ describe('CometRewards', () => {
       expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
       expect(await USDC.balanceOf(alice.address)).to.be.equal(10e6);
       expect(await comet.borrowBalanceOf(alice.address)).to.be.equal(10e6);
-      const tx = await wait(rewards.connect(bob).claimTo(comet.address, alice.address, bob.address, true));
+      const _tx = await wait(rewards.connect(bob).claimTo(comet.address, alice.address, bob.address, true));
       expect(await COMP.balanceOf(bob.address)).to.be.equal(exp(86400 * 2, 6));
     });
 
@@ -281,8 +309,8 @@ describe('CometRewards', () => {
       expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
       expect(await USDC.balanceOf(alice.address)).to.be.equal(10e6);
       expect(await comet.borrowBalanceOf(alice.address)).to.be.equal(10e6);
-      const tx0 = await wait(rewards.connect(bob).claimTo(comet.address, alice.address, bob.address, true));
-      const tx1 = await wait(rewards.connect(bob).claimTo(comet.address, alice.address, bob.address, false));
+      const _tx0 = await wait(rewards.connect(bob).claimTo(comet.address, alice.address, bob.address, true));
+      const _tx1 = await wait(rewards.connect(bob).claimTo(comet.address, alice.address, bob.address, false));
       expect(await COMP.balanceOf(bob.address)).to.be.equal(exp(86400 * 2, 18));
     });
 
@@ -327,14 +355,14 @@ describe('CometRewards', () => {
         rewards
           .connect(bob)
           .claimTo(comet.address, alice.address, bob.address, true)
-      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+      ).to.be.revertedWith('ERC20: transfer amount exceeds balance');
     });
 
     it('fails if caller is not permitted to claim rewards for owner', async () => {
       const {
         comet,
         governor,
-        tokens: { USDC, COMP, WBTC },
+        tokens: { COMP },
         users: [alice],
       } = await makeProtocol({
         baseMinForRewards: exp(10, 6),
@@ -346,7 +374,151 @@ describe('CometRewards', () => {
           .claimTo(comet.address, alice.address, governor.address, true)
       ).to.be.revertedWith(`custom error 'NotPermitted("${governor.address}")'`);
     });
-});
+  });
+
+  describe('getRewardOwed', () => {
+    it('can construct and calculate rewards for owner with upscale', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { USDC, COMP },
+        users: [alice],
+      } = await makeProtocol({
+        baseMinForRewards: 10e6,
+      });
+      const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
+
+      // allocate and approve transfers
+      await COMP.allocateTo(rewards.address, exp(86400, 18));
+      await USDC.allocateTo(alice.address, 10e6);
+      await USDC.connect(alice).approve(comet.address, 10e6);
+
+      // supply once
+      await comet.connect(alice).supply(USDC.address, 10e6);
+
+      await fastForward(86400);
+      await ethers.provider.send('evm_mine', []);
+
+      expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
+
+      const { token, owed } = await rewards.callStatic.getRewardOwed(comet.address, alice.address);
+
+      expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
+      expect(token).to.be.equal(COMP.address);
+      expect(owed).to.be.equal(exp(86400, 18));
+    });
+
+    it('can construct and calculate rewards for owner with downscale', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { USDC, COMP },
+        users: [alice],
+      } = await makeProtocol({
+        assets: defaultAssets({}, {
+          COMP: { decimals: 5 }
+        })
+      });
+      const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
+
+      // allocate and approve transfers
+      await COMP.allocateTo(rewards.address, exp(86400, 5));
+      await USDC.allocateTo(alice.address, 10e6);
+      await USDC.connect(alice).approve(comet.address, 10e6);
+
+      // supply once
+      await comet.connect(alice).supply(USDC.address, 10e6);
+
+      await fastForward(86400);
+      await ethers.provider.send('evm_mine', []);
+
+      expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
+
+      const { token, owed } = await rewards.callStatic.getRewardOwed(comet.address, alice.address);
+
+      expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
+      expect(token).to.be.equal(COMP.address);
+      expect(owed).to.be.equal(exp(86400, 5));
+    });
+
+    it('can construct and calculate rewards for owner with same scale', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { USDC, COMP },
+        users: [alice],
+      } = await makeProtocol({
+        assets: defaultAssets({}, {
+          COMP: { decimals: 6 }
+        })
+      });
+      const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
+
+      // allocate and approve transfers
+      await COMP.allocateTo(rewards.address, exp(86400, 6));
+      await USDC.allocateTo(alice.address, 10e6);
+      await USDC.connect(alice).approve(comet.address, 10e6);
+
+      // supply once
+      await comet.connect(alice).supply(USDC.address, 10e6);
+
+      await fastForward(86400);
+      await ethers.provider.send('evm_mine', []);
+
+      expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
+
+      const { token, owed } = await rewards.callStatic.getRewardOwed(comet.address, alice.address);
+
+      expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
+      expect(token).to.be.equal(COMP.address);
+      expect(owed).to.be.equal(exp(86400, 6));
+    });
+
+    it('returns 0 owed if user already claimed', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { USDC, COMP },
+        users: [alice],
+      } = await makeProtocol({
+        baseMinForRewards: 10e6,
+      });
+      const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
+
+      // allocate and approve transfers
+      await COMP.allocateTo(rewards.address, exp(864000, 18));
+      await USDC.allocateTo(alice.address, 10e6);
+      await USDC.connect(alice).approve(comet.address, 10e6);
+
+      // supply once
+      await comet.connect(alice).supply(USDC.address, 10e6);
+
+      await fastForward(86400);
+
+      expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
+
+      const _tx0 = await wait(rewards.claim(comet.address, alice.address, true));
+      const { token, owed } = await rewards.callStatic.getRewardOwed(comet.address, alice.address);
+
+      expect(await COMP.balanceOf(alice.address)).to.be.equal(exp(86400, 18));
+      expect(token).to.be.equal(COMP.address);
+      expect(owed).to.be.equal(0);
+    });
+
+    it('fails if comet instance is not configured', async () => {
+      const {
+        comet,
+        governor,
+        users: [alice],
+      } = await makeProtocol();
+      const { rewards } = await makeRewards({ governor, configs: [] });
+
+      await expect(
+        rewards
+          .getRewardOwed(comet.address, alice.address)
+      ).to.be.revertedWith(`custom error 'NotSupported("${comet.address}")`);
+    });
+  });
 
   describe('_setRewardsConfig', () => {
     it('allows governor to set rewards token with upscale', async () => {
@@ -433,9 +605,9 @@ describe('CometRewards', () => {
       const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
 
       // allocate
-      const a0 = await COMP.allocateTo(rewards.address, 2e6);
+      const _a0 = await COMP.allocateTo(rewards.address, 2e6);
 
-      const tx = await wait(rewards._withdrawToken(COMP.address, alice.address, 2e6));
+      const _tx = await wait(rewards._withdrawToken(COMP.address, alice.address, 2e6));
       expect(await COMP.balanceOf(alice.address)).to.be.equal(2e6);
     });
 
@@ -449,12 +621,50 @@ describe('CometRewards', () => {
       const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
 
       // allocate
-      const a0 = await COMP.allocateTo(rewards.address, 2e6);
+      const _a0 = await COMP.allocateTo(rewards.address, 2e6);
 
       await expect(
         rewards
           .connect(alice)
           ._withdrawToken(COMP.address, alice.address, 2e6)
+      ).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
+    });
+  });
+
+  describe('_transferGovernor', () => {
+    it('allows governor to transfer governor', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { COMP },
+        users: [alice],
+      } = await makeProtocol();
+      const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
+
+      const txn = await wait(rewards._transferGovernor(alice.address));
+
+      expect(await rewards.governor()).to.be.equal(alice.address);
+      expect(event(txn, 0)).to.be.deep.equal({
+        GovernorTransferred: {
+          oldGovernor: governor.address,
+          newGovernor: alice.address,
+        }
+      });
+    });
+
+    it('does not allow anyone but governor to transfer governor', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { COMP },
+        users: [alice],
+      } = await makeProtocol();
+      const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
+
+      await expect(
+        rewards
+          .connect(alice)
+          ._transferGovernor(alice.address)
       ).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
     });
   });

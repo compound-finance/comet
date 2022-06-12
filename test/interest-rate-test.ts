@@ -1,5 +1,4 @@
-import { BigNumber } from 'ethers';
-import { Comet, ethers, expect, exp, makeProtocol, wait } from './helpers';
+import { expect, exp, makeProtocol, wait } from './helpers';
 
 // Interest rate calculations can be checked with this Google Sheet:
 // https://docs.google.com/spreadsheets/d/1G3BWcFPEQYnH-IrHHye5oA0oFIP0Jyj7pybdpMuDOuI
@@ -38,8 +37,8 @@ describe('interest rates', function () {
     await wait(comet.setTotalsBasic(totals));
 
     const utilization = await comet.getUtilization();
-    const supplyRate = await comet.getSupplyRate();
-    const borrowRate = await comet.getBorrowRate();
+    const supplyRate = await comet.getSupplyRate(utilization);
+    const borrowRate = await comet.getBorrowRate(utilization);
 
     // totalBorrowBase / totalSupplyBase
     // = 10 / 100 = 0.1
@@ -76,8 +75,8 @@ describe('interest rates', function () {
     await wait(comet.setTotalsBasic(totals));
 
     const utilization = await comet.getUtilization();
-    const supplyRate = await comet.getSupplyRate();
-    const borrowRate = await comet.getBorrowRate();
+    const supplyRate = await comet.getSupplyRate(utilization);
+    const borrowRate = await comet.getBorrowRate(utilization);
 
     // totalBorrowBase / totalSupplyBase
     // = 90 / 100 = 0.9
@@ -114,8 +113,8 @@ describe('interest rates', function () {
     await wait(comet.setTotalsBasic(totals));
 
     const utilization = await comet.getUtilization();
-    const supplyRate = await comet.getSupplyRate();
-    const borrowRate = await comet.getBorrowRate();
+    const supplyRate = await comet.getSupplyRate(utilization);
+    const borrowRate = await comet.getBorrowRate(utilization);
 
     // totalBorrowBase / totalSupplyBase
     // = 10 / 100 = 0.1
@@ -152,8 +151,8 @@ describe('interest rates', function () {
     await wait(comet.setTotalsBasic(totals));
 
     const utilization = await comet.getUtilization();
-    const supplyRate = await comet.getSupplyRate();
-    const borrowRate = await comet.getBorrowRate();
+    const supplyRate = await comet.getSupplyRate(utilization);
+    const borrowRate = await comet.getBorrowRate(utilization);
 
     // totalBorrowBase / totalSupplyBase
     // = 0 / 100 = 0

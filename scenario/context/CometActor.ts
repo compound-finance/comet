@@ -66,6 +66,11 @@ export default class CometActor {
     await tx.wait();
   }
 
+  async transferErc20(tokenAddress: string, dst: string, amount: bigint): Promise<ContractReceipt> {
+    let erc20 = ERC20__factory.connect(tokenAddress, this.signer);
+    return await (await erc20.transfer(dst, amount)).wait();
+  }
+
   async allow(manager: CometActor, isAllowed: boolean): Promise<ContractReceipt> {
     let comet = await this.context.getComet();
     return await (await comet.connect(this.signer).allow(manager.address, isAllowed)).wait();
@@ -114,6 +119,11 @@ export default class CometActor {
   async withdrawAssetFrom({ src, dst, asset, amount }): Promise<ContractReceipt> {
     let comet = await this.context.getComet();
     return await (await comet.connect(this.signer).withdrawFrom(src, dst, asset, amount)).wait();
+  }
+
+  async absorb({ absorber, accounts }): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).absorb(absorber, accounts)).wait();
   }
 
   async signAuthorization({

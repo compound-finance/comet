@@ -1,6 +1,6 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately } from './utils';
+import { expectApproximately, getExpectedBaseBalance, getInterest } from './utils';
 
 // XXX consider creating these tests for assets0-15
 scenario(
@@ -23,12 +23,18 @@ scenario(
     await baseAsset.approve(albert, comet.address);
     const txn = await albert.supplyAsset({ asset: baseAsset.address, amount: 100n * scale })
 
-    expect(await comet.balanceOf(albert.address)).to.be.equal(100n * scale);
+    const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
+    const baseSupplyIndex = (await comet.totalsBasic()).baseSupplyIndex.toBigInt();
+    const baseSupplied = getExpectedBaseBalance(100n * scale, baseIndexScale, baseSupplyIndex);
+
+    expect(await comet.balanceOf(albert.address)).to.be.equal(baseSupplied);
 
     return txn; // return txn to measure gas
   }
 );
 
+// XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
+// of testing them conditionally
 scenario(
   'Comet#supply > collateral asset',
   {
@@ -39,19 +45,31 @@ scenario(
   },
   async ({ comet, actors }, world, context) => {
     const { albert } = actors;
-    const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
+    const { asset: asset0Address, scale: scaleBN, supplyCap } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
     const scale = scaleBN.toBigInt();
+    const toSupply = 100n * scale;
 
-    expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
+    expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupply);
 
-    // Albert supplies 100 units of collateral to Comet
     await collateralAsset.approve(albert, comet.address);
-    const txn = await albert.supplyAsset({ asset: collateralAsset.address, amount: 100n * scale })
 
-    expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(100n * scale);
+    const totalCollateralSupply = (await comet.totalsCollateral(collateralAsset.address)).totalSupplyAsset.toBigInt();
+    if (totalCollateralSupply + toSupply > supplyCap.toBigInt()) {
+      await expect(
+        albert.supplyAsset({
+          asset: collateralAsset.address,
+          amount: 100n * scale,
+        })
+      ).to.be.revertedWith("custom error 'SupplyCapExceeded()'");
+    } else {
+      // Albert supplies 100 units of collateral to Comet
+      const txn = await albert.supplyAsset({ asset: collateralAsset.address, amount: toSupply })
 
-    return txn; // return txn to measure gas
+      expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupply);
+
+      return txn; // return txn to measure gas
+    }
   }
 );
 
@@ -60,10 +78,10 @@ scenario(
   {
     upgrade: true,
     tokenBalances: {
-      albert: { $base: 100 }
+      albert: { $base: 1000 }
     },
     cometBalances: {
-      albert: { $base: -100 } // in units of asset, not wei
+      albert: { $base: -1000 } // in units of asset, not wei
     },
   },
   async ({ comet, actors }, world, context) => {
@@ -71,15 +89,17 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
-    const precision = scale / 1_000_000n; // 1e-6 asset units of precision
+    const utilization = await comet.getUtilization();
+    const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
-    expectApproximately(await albert.getCometBaseBalance(), -100n * scale, precision);
+    expectApproximately(await albert.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 1n) + 1n);
 
     // Albert repays 100 units of base borrow
     await baseAsset.approve(albert, comet.address);
-    const txn = await albert.supplyAsset({ asset: baseAsset.address, amount: 100n * scale });
+    const txn = await albert.supplyAsset({ asset: baseAsset.address, amount: 1000n * scale });
 
-    expectApproximately(await albert.getCometBaseBalance(), 0n, precision);
+    // XXX all these timings are crazy
+    expectApproximately(await albert.getCometBaseBalance(), 0n, getInterest(1000n * scale, borrowRate, 4n) + 2n);
 
     return txn; // return txn to measure gas
   }
@@ -108,13 +128,19 @@ scenario(
     // Betty supplies 100 units of base from Albert
     const txn = await betty.supplyAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: 100n * scale });
 
+    const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
+    const baseSupplyIndex = (await comet.totalsBasic()).baseSupplyIndex.toBigInt();
+    const baseSupplied = getExpectedBaseBalance(100n * scale, baseIndexScale, baseSupplyIndex);
+
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(0n);
-    expect(await comet.balanceOf(betty.address)).to.be.equal(100n * scale);
+    expect(await comet.balanceOf(betty.address)).to.be.equal(baseSupplied);
 
     return txn; // return txn to measure gas
   }
 );
 
+// XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
+// of testing them conditionally
 scenario(
   'Comet#supplyFrom > collateral asset',
   {
@@ -125,23 +151,36 @@ scenario(
   },
   async ({ comet, actors }, world, context) => {
     const { albert, betty } = actors;
-    const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
+    const { asset: asset0Address, scale: scaleBN, supplyCap } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
     const scale = scaleBN.toBigInt();
+    const toSupply = 100n * scale;
 
-    expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
+    expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupply);
     expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(0n);
 
     await collateralAsset.approve(albert, comet.address);
     await albert.allow(betty, true);
 
-    // Betty supplies 100 units of collateral from Albert
-    const txn = await betty.supplyAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: 100n * scale });
+    const totalCollateralSupply = (await comet.totalsCollateral(collateralAsset.address)).totalSupplyAsset.toBigInt();
+    if (totalCollateralSupply + toSupply > supplyCap.toBigInt()) {
+      await expect(
+        betty.supplyAssetFrom({
+          src: albert.address,
+          dst: betty.address,
+          asset: collateralAsset.address,
+          amount: toSupply,
+        })
+      ).to.be.revertedWith("custom error 'SupplyCapExceeded()'");
+    } else {
+      // Betty supplies 100 units of collateral from Albert
+      const txn = await betty.supplyAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: toSupply });
 
-    expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(0n);
-    expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(100n * scale);
+      expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(0n);
+      expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(toSupply);
 
-    return txn; // return txn to measure gas
+      return txn; // return txn to measure gas
+    }
   }
 );
 
@@ -150,10 +189,10 @@ scenario(
   {
     upgrade: true,
     tokenBalances: {
-      albert: { $base: 100 }
+      albert: { $base: 1000 }
     },
     cometBalances: {
-      betty: { $base: -100 } // in units of asset, not wei
+      betty: { $base: -1000 } // in units of asset, not wei
     },
   },
   async ({ comet, actors }, world, context) => {
@@ -161,19 +200,21 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
-    const precision = scale / 1_000_000n; // 1e-6 asset units of precision
+    const utilization = await comet.getUtilization();
+    const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
-    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
-    expectApproximately(await betty.getCometBaseBalance(), -100n * scale, precision);
+    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(1000n * scale);
+    expectApproximately(await betty.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 1n) + 1n);
 
     await baseAsset.approve(albert, comet.address);
     await albert.allow(betty, true);
 
     // Betty supplies 100 units of base from Albert to repay borrows
-    const txn = await betty.supplyAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: 100n * scale });
+    const txn = await betty.supplyAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: 1000n * scale });
 
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(0n);
-    expectApproximately(await betty.getCometBaseBalance(), 0n, precision);
+    // XXX all these timings are crazy
+    expectApproximately(await betty.getCometBaseBalance(), 0n, getInterest(1000n * scale, borrowRate, 8n) + 2n);
 
     return txn; // return txn to measure gas
   }

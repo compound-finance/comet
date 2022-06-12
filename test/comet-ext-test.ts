@@ -31,22 +31,6 @@ describe('CometExt', function () {
     expect(priceScale).to.eq(exp(1, 8));
   });
 
-  describe('borrowBalanceOf', function () {
-    it('returns borrow amount (when principal amount is negative)', async () => {
-      await comet.setBasePrincipal(user.address, -100e6); // borrow of $100 USDC
-
-      const borrowBalanceOf = await comet.borrowBalanceOf(user.address);
-      expect(borrowBalanceOf).to.eq(300e6) // baseSupplyIndex = 3e15
-    });
-
-    it('returns 0 when principal amount is positive', async () => {
-      await comet.setBasePrincipal(user.address, 100e6);
-
-      const borrowBalanceOf = await comet.borrowBalanceOf(user.address);
-      expect(borrowBalanceOf).to.eq(0);
-    });
-  });
-
   it('returns collateralBalance (in units of the collateral asset)', async () => {
     const { WETH } = tokens;
 
@@ -62,5 +46,4 @@ describe('CometExt', function () {
     );
     expect(collateralBalanceOf).to.eq(exp(5,18));
   });
-
 });

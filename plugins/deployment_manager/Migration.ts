@@ -1,13 +1,12 @@
 import fg from 'fast-glob';
 import * as path from 'path';
-
 import { DeploymentManager } from './DeploymentManager';
 import { FileSpec } from './Cache';
 
 interface Action<T> {
-  prepare: (DeploymentManager) => Promise<T>;
-  enact: (DeploymentManager, T) => Promise<void>;
-  enacted: (DeploymentManager) => Promise<boolean>;
+  prepare: (dm: DeploymentManager) => Promise<T>;
+  enact: (dm: DeploymentManager, t: T) => Promise<void>;
+  enacted: (dm: DeploymentManager) => Promise<boolean>;
 }
 
 export interface Migration<T> {
@@ -40,10 +39,6 @@ export class Loader<T> {
 export let loader: any;
 
 export function setupLoader<T>() {
-  if (loader) {
-    return loader;
-  }
-
   loader = new Loader<T>();
 }
 

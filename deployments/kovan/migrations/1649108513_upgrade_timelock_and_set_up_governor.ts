@@ -14,7 +14,7 @@ migration<Vars>('1649108513_upgrade_timelock_and_set_up_governor', {
   prepare: async (deploymentManager: DeploymentManager) => {
     await deploymentManager.hre.run('compile');
 
-    let [signer] = await deploymentManager.hre.ethers.getSigners();
+    let signer = await deploymentManager.getSigner();
 
     // Deploy new Timelock and Governor contracts
     const newGovernor = await deploymentManager.deploy<GovernorSimple, GovernorSimple__factory, []>(
@@ -36,7 +36,7 @@ migration<Vars>('1649108513_upgrade_timelock_and_set_up_governor', {
     };
   },
   enact: async (deploymentManager: DeploymentManager, contracts: Vars) => {
-    let [signer] = await deploymentManager.hre.ethers.getSigners();
+    let signer = await deploymentManager.getSigner();
 
     const newTimelock = contracts.timelock;
     const newGovernor = contracts.governor;

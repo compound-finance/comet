@@ -2,25 +2,30 @@ import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { utils } from 'ethers';
 
+// XXX we could use a Comet reserves constraint here
 scenario(
   'Comet#withdrawReserves > governor withdraw reserves',
   {
     tokenBalances: {
-      $comet: { $base: 100 },
+      betty: { $base: 100000 },
     },
     upgrade: true,
   },
   async ({ comet, timelock, actors }, world, context) => {
-    const { albert } = actors;
+    const { albert, betty } = actors;
 
     const baseToken = context.getAssetByAddress(await comet.baseToken());
     const scale = (await comet.baseScale()).toBigInt();
 
-    expect(await baseToken.balanceOf(comet.address)).to.equal(100n * scale);
+    // Since we don't have a constraint to set Comet reserves, we'll be transferring 100K base tokens to Comet from an actor
+    // XXX however, this wouldn't work if reserves on testnet are too negative
+    await betty.transferErc20(baseToken.address, comet.address, 100000n * scale);
+    const cometBaseBalance = await baseToken.balanceOf(comet.address);
 
     expect(await comet.governor()).to.equal(timelock.address);
 
-    let withdrawReservesCalldata = utils.defaultAbiCoder.encode(["address", "uint256"], [albert.address, 10n * scale]);
+    const toWithdrawAmount = 10n * scale;
+    let withdrawReservesCalldata = utils.defaultAbiCoder.encode(["address", "uint256"], [albert.address, toWithdrawAmount]);
     const txn = await context.fastGovernanceExecute(
       [comet.address],
       [0],
@@ -28,8 +33,8 @@ scenario(
       [withdrawReservesCalldata]
     );
 
-    expect(await baseToken.balanceOf(comet.address)).to.equal(90n * scale);
-    expect(await baseToken.balanceOf(albert.address)).to.equal(10n * scale);
+    expect(await baseToken.balanceOf(comet.address)).to.equal(cometBaseBalance - toWithdrawAmount);
+    expect(await baseToken.balanceOf(albert.address)).to.equal(toWithdrawAmount);
 
     return txn; // return txn to measure gas
   }

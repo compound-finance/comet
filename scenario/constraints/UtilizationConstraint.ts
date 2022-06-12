@@ -1,6 +1,6 @@
 import { Constraint, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
-import { optionalNumber } from '../utils';
+import { bumpSupplyCaps, optionalNumber } from '../utils';
 import { defactor, factor, factorScale } from '../../test/helpers';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
@@ -52,7 +52,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
   async solve(requirements: R, context: T, world: World) {
     let { utilization } = getUtilizationConfig(requirements);
 
-    if (!utilization) {
+    if (utilization == null) {
       return null;
     } else {
       // utilization is target number
@@ -61,10 +61,8 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
 
         let baseToken = context.getAssetByAddress(await comet.baseToken());
         let utilizationFactor = factor(utilization);
-        let { totalSupplyBase: totalSupplyBaseBN, totalBorrowBase: totalBorrowBaseBN } =
-          await comet.totalsBasic();
-        let totalSupplyBase = totalSupplyBaseBN.toBigInt();
-        let totalBorrowBase = totalBorrowBaseBN.toBigInt();
+        let totalSupplyBase = (await comet.totalSupply()).toBigInt();
+        let totalBorrowBase = (await comet.totalBorrow()).toBigInt();
 
         let toBorrowBase: bigint = 0n;
         let toSupplyBase: bigint = 0n;
@@ -75,11 +73,23 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
         }
 
         let expectedSupplyBase = totalSupplyBase + toSupplyBase;
+        let expectedBorrowBase = utilizationFactor * expectedSupplyBase / factorScale;
         let currentUtilizationFactor = (totalBorrowBase * factorScale) / expectedSupplyBase;
 
         if (currentUtilizationFactor < utilizationFactor) {
-          toBorrowBase = toBorrowBase + (utilizationFactor * expectedSupplyBase / factorScale) - totalBorrowBase;
+          toBorrowBase = expectedBorrowBase - totalBorrowBase;
+
+          let baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
+          if (toBorrowBase < baseBorrowMin) {
+            expectedBorrowBase = expectedBorrowBase + baseBorrowMin - toBorrowBase;
+            expectedSupplyBase = expectedBorrowBase * factorScale / utilizationFactor;
+            toBorrowBase = baseBorrowMin;
+            toSupplyBase = expectedSupplyBase - totalSupplyBase;
+          }
         } else {
+          if (utilizationFactor === 0n) {
+            utilizationFactor = 1n; // to avoid dividing by 0
+          }
           toSupplyBase = toSupplyBase + (totalBorrowBase * factorScale / utilizationFactor) - expectedSupplyBase;
         }
 
@@ -134,8 +144,10 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
 
           await context.sourceTokens(world, collateralNeeded, collateralToken, borrowActor);
           await collateralToken.approve(borrowActor, comet);
+          await bumpSupplyCaps(world, context, { [collateralToken.address]: collateralNeeded })
           await comet.connect(borrowActor.signer).supply(collateralToken.address, collateralNeeded);
 
+          // XXX will also need to make sure there are enough base tokens in the protocol to withdraw
           await comet.connect(borrowActor.signer).withdraw(baseToken.address, toBorrowBase);
         }
 
@@ -149,7 +161,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
 
     if (utilization) {
       let comet = await context.getComet();
-      expect(defactor(await comet.getUtilization())).to.approximately(utilization, 0.000001);
+      expect(defactor(await comet.getUtilization())).to.approximately(utilization, 0.00001);
     }
   }
 }
