@@ -21,10 +21,17 @@ So the idea is to run a general spec and make sure that failures are as expected
 for each token that interests us. E.g., add specific rules for a pausable token, for a token with a blacklist feature,
 etc.
 
+<<<<<<< HEAD
 ## USDC 
 
 USDC is pausable and has blacklist features. Hence, the Certora prover finds counterexamples
 to several rules. 
+=======
+## USDC
+
+USDC is pausable and has blacklist features. Hence, the Certora prover finds counterexamples
+to several rules.
+>>>>>>> upstream/certora
 
 For example, we test that a transfer fails only when the amount is too high or the recipient is 0.
 But, with USDC a transfer might fail when the token state is paused or the recipient is blacklisted.
@@ -38,5 +45,8 @@ in Certora prover finds the correct counterexample.
 
 Sushi has a mint function, which changes total supply, hence the rule for no changes to total supply fails
 on this function.
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> upstream/certora

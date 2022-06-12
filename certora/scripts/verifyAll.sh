@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 patch -p1 ./contracts/Comet.sol ./certora/certora_modifications.patch
 sh certora/scripts/verifyComet.sh assetIn_initialized_with_balance
 sh certora/scripts/verifyComet.sh usage_registered_assets_only
@@ -20,3 +21,18 @@ sh certora/scripts/verifyGovernance.sh
 sh certora/scripts/verifyInterestComputation.sh
 sh certora/scripts/verifyPauseGuardians.sh
 patch -p1 -R ./contracts/Comet.sol ./certora/certora_modifications.patch 
+=======
+patch -p1 ./contracts/Comet.sol ./certora/scripts/certora_modifications.patch
+./certora/scripts/verifyAssetInfo.sh
+./certora/scripts/verifyComet.sh
+./certora/scripts/verifyCometAbsorbBuyCollateral.sh
+./certora/scripts/verifyCometExt.sh
+./certora/scripts/verifyCometTotalsAndBalances.sh
+./certora/scripts/verifyCometWithdrawSupply.sh
+./certora/scripts/verifyGovernance.sh
+./certora/scripts/verifyInterestComputation.sh
+./certora/scripts/verifyPause.sh
+./certora/scripts/verifyPauseGuardians.sh
+./certora/scripts/verifyUserAssetIn.sh
+patch -p1 -R ./contracts/Comet.sol ./certora/scripts/certora_modifications.patch
+>>>>>>> upstream/certora
