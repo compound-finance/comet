@@ -16,11 +16,7 @@ contract CometHarnessGetters is Comet {
     // Retrieves a user's balance of specific asset
     function getUserCollateralBalance(address user, address asset) public view returns (uint128) {
         return userCollateral[user][asset].balance;
-<<<<<<< HEAD
     } 
-=======
-    }
->>>>>>> upstream/certora
 
     // Retrieves the value of pauseFlags from CometStorage
     function getPauseFlags() public view returns (uint8) {
@@ -63,7 +59,6 @@ contract CometHarnessGetters is Comet {
     }
 
     // Retrieves the offset of an asset in the array/bitvector
-<<<<<<< HEAD
     // getAssetInfoByAddress to work with the maps instead of looping over the array
     mapping (address => uint8) public assetToIndex;
     function getAssetInfoByAddress(address asset) virtual override public view returns (AssetInfo memory){       
@@ -73,17 +68,11 @@ contract CometHarnessGetters is Comet {
         return assetInfo;
     }
 
-=======
->>>>>>> upstream/certora
     function getAssetOffsetByAsset(address asset) external view returns (uint8 offset) {
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         return assetInfo.offset;
     }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> upstream/certora
     // Retrieves the scale of an asset
     function getAssetScaleByAsset(address asset) external view returns (uint64 offset) {
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
@@ -99,32 +88,20 @@ contract CometHarnessGetters is Comet {
     function getAssetSupplyCapByAddress(address asset) external view returns (uint128){
          AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         return assetInfo.supplyCap;
-<<<<<<< HEAD
         
-=======
-
->>>>>>> upstream/certora
     }
 
     // Retrieves the liquidateCollateralFactor of an asset
     function getLiquidateCollateralFactor(address asset) public view returns (uint64)  {
         AssetInfo memory assetInfo = super.getAssetInfoByAddress(asset);
         return assetInfo.liquidateCollateralFactor;
-<<<<<<< HEAD
     }    
-=======
-    }
->>>>>>> upstream/certora
 
     // Retrieves the borrowCollateralFactor of an asset
     function getBorrowCollateralFactor(address asset) public view returns (uint64)  {
         AssetInfo memory assetInfo = super.getAssetInfoByAddress(asset);
         return assetInfo.borrowCollateralFactor;
-<<<<<<< HEAD
     }    
-=======
-    }
->>>>>>> upstream/certora
 
     // Retrieves a user's ERC20 token's balance
     function tokenBalanceOf(address token, address user) external view returns(uint256) {
@@ -140,11 +117,7 @@ contract CometHarnessGetters is Comet {
     function getFactorScale() external pure returns (uint64) {
         return FACTOR_SCALE;
     }
-<<<<<<< HEAD
     
-=======
-
->>>>>>> upstream/certora
 
     // Retrieve asset00_a
     function getAsset00_a() external view returns (uint256){
@@ -159,7 +132,6 @@ contract CometHarnessGetters is Comet {
     // Retrieve getAccrualDescaleFactor
     function getAccrualDescaleFactor() external view returns (uint256) {
         return accrualDescaleFactor;
-<<<<<<< HEAD
     } 
     
     // Retrieve a user's present value from principal value
@@ -167,25 +139,9 @@ contract CometHarnessGetters is Comet {
         return presentValue(userBasic[account].principal);
     }
     
-=======
-    }
-
-    // Calling baseBalanceOf (in CometExt) by delegating CometExt to reach Comet.sol storage
-    function baseBalanceOf(address account) public returns (int104) {
-        (bool success, bytes memory result) = extensionDelegate.delegatecall(
-            abi.encodeWithSignature("baseBalanceOf(address)", account));
-        require(success);
-        return abi.decode(result, (int104));
-    }
-
->>>>>>> upstream/certora
     // External wrapper for hasPermission
     function call_hasPermission(address owner, address manager) external view returns (bool) {
         return hasPermission(owner, manager);
     }
 
 }
-<<<<<<< HEAD
-
-=======
->>>>>>> upstream/certora

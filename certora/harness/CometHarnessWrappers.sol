@@ -20,21 +20,13 @@ contract CometHarnessWrappers is CometHarnessGetters {
 
     // External wrapper for updateAssetsIn. Calls the original function not the summarized implementation
     function call_updateAssetsIn(address account, address asset, uint128 initialUserBalance, uint128 finalUserBalance) external {
-<<<<<<< HEAD
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         super.updateAssetsIn(account, assetInfo, initialUserBalance, finalUserBalance);
-=======
-        super.updateAssetsIn(account, asset, initialUserBalance, finalUserBalance);
->>>>>>> upstream/certora
     }
 
     // External wrapper for _getPackedAsset. Takes as args all fields of assetConfig since structs aren't stable at the moment. Calls the original function not the summarized implementation.
     function call_getPackedAsset(uint8 i, address assetArg, address priceFeedArg, uint8 decimalsArg, uint64 borrowCollateralFactorArg, uint64 liquidateCollateralFactorArg, uint64 liquidationFactorArg, uint128 supplyCapArg) public view returns (uint256, uint256) {
-<<<<<<< HEAD
         AssetConfig memory assetConfigInst = AssetConfig({        
-=======
-        AssetConfig memory assetConfigInst = AssetConfig({
->>>>>>> upstream/certora
         asset: assetArg,
         priceFeed: priceFeedArg,
         decimals: decimalsArg,
