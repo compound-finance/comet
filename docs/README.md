@@ -152,7 +152,7 @@ function supplyFrom(address from, address dst, address asset, uint amount)
 ```
 
 * `asset`: The address of the asset's smart contract.
-* `amount`: The amount of the asset to supply to Compound III expressed as an integer.
+* `amount`: The amount of the asset to supply to Compound III expressed as an integer. A value of `MaxUint256` will repay all of the `dst`'s base borrow balance.
 * `dst`: The address that is credited with the supplied asset within the protocol.
 * `from`: The address to supply from. This account must first use the Allow method in order to allow the sender to transfer its tokens prior to calling Supply.
 * `RETURN`: No return, reverts on error.
@@ -223,40 +223,6 @@ const comet = new ethers.Contract(contractAddress, abiJson, provider);
 await comet.withdraw(usdcAddress, 100000000);
 ```
 
-### Get Borrow Liquidity
-
-This function returns the amount of base asset in USD that is presently borrowable by an account as an integer scaled up by `10 ^ 8`. If the returned value is negative, the account is not allowed to borrow any more from the protocol until more collateral is supplied or there is repayment such that the account's borrow liquidity becomes positive. A negative borrow liquidity does not necessarily imply that the account is presently liquidatable (see *[isLiquidatable](#liquidatable-accounts)* function).
-
-#### Comet
-
-```solidity
-function getBorrowLiquidity(address account) external view returns (int)
-```
-
-* `account`: The account to examine borrow liquidity.
-* `RETURNS`: Returns the current borrow liquidity of the account in USD as an integer scaled up by `10 ^ 8`.
-
-#### Solidity
-
-```solidity
-Comet comet = Comet(0xCometAddress);
-int borrowLiquidity = comet.getBorrowLiquidity(0xAccount);
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const borrowLiquidity = await comet.methods.getBorrowLiquidity('0xAccount').call();
-```
-
-#### Ethers.js v5.x
-
-```js
-const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const borrowLiquidity = await comet.callStatic.getBorrowLiquidity('0xAccount');
-```
-
 ### Borrow Collateralization
 
 This function returns true if the account passed to it has non-negative liquidity based on the borrow collateral factors. This function returns false if an account does not have sufficient liquidity to increase its borrow position. A return value of false does not necessarily imply that the account is presently liquidatable (see *[isLiquidatable](#liquidatable-accounts)* function).
@@ -302,41 +268,6 @@ Collateral factors are stored as integers that represent decimal values scaled u
 An account is subject to liquidation if its borrowed amount exceeds the limits set by the liquidation collateral factors. The three instances where this can occur are when borrower interest owed accrues beyond the limit, when the USD value of the collateral drops below supporting the open borrow, or when the USD value of the borrowed asset increases too much. If an underwater account violates the borrow collateral factors, but does not violate the liquidation collateral factors, it is not yet subject to liquidation.
 
 Liquidation is the absorption of an underwater account into the protocol, triggered by the *[absorb](#absorb)* function. The protocol seizes all of the account's collateral and repays its open borrow. The protocol can then attempt to sell some or all of the collateral to recover any reserves that covered liquidation. If any excess collateral is seized, the protocol will pay the excess back to the account in the base asset.
-
-### Account Liquidation Margin
-
-This function returns the USD value of liquidity available before the specified account becomes liquidatable. If the returned integer is less than zero, the account is presently liquidatable.
-
-#### Comet
-
-```solidity
-function getLiquidationMargin(address account) external view returns (int)
-```
-
-* `account`: The account to examine liquidity available.
-* `RETURNS`: Returns an integer of the current liquidity available to the account in USD as an integer scaled up by `10 ^ 8`.
-
-
-#### Solidity
-
-```solidity
-Comet comet = Comet(0xCometAddress);
-int liquidity = comet.getLiquidationMargin(0xAccount);
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const liquidity = await comet.methods.getLiquidationMargin('0xAccount').call();
-```
-
-#### Ethers.js v5.x
-
-```js
-const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const liquidity = await comet.callStatic.getLiquidationMargin('0xAccount');
-```
 
 ### Liquidatable Accounts
 
