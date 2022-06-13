@@ -35,7 +35,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-       # See: https://github.com/actions/cache/blob/main/examples.md#node---yarn
+      # See: https://github.com/actions/cache/blob/main/examples.md#node---yarn
       - name: Get Yarn cache directory
         id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(yarn cache dir)"
@@ -47,24 +47,24 @@ jobs:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
           key: ${{ runner.os }}-yarn-${{ matrix.node-version }}-${{ hashFiles('**/yarn.lock') }}
 
-       # `--prefer-offline` gives cache priority
+      # `--prefer-offline` gives cache priority
       - name: Install packages
         run: yarn install --non-interactive --prefer-offline --frozen-lockfile
 
-      # - name: Compile
-      #   run: yarn hardhat compile
+      - name: Compile
+        run: yarn hardhat compile
 
-      # - name: Check types
-      #   run: yarn tsc
+      - name: Check types
+        run: yarn tsc
 
-      # - name: Run Prepare Migration
-      #   run: yarn hardhat migrate --network ${{ github.event.inputs.network }} --prepare --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ github.event.inputs.migration }}
-      #   env:
-      #     ETH_PK: ${{ github.event.inputs.eth_pk }}
-      #     DEBUG: true
+      - name: Run Prepare Migration
+        run: yarn hardhat migrate --network ${{ github.event.inputs.network }} --prepare --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ github.event.inputs.migration }}
+        env:
+          ETH_PK: ${{ github.event.inputs.eth_pk }}
+          DEBUG: true
 
-      # - uses: actions/upload-artifact@v2 # upload test results
-      #   if: success() || failure() # run this step even if previous step failed
-      #   with:
-      #     name: ${{ github.event.inputs.network }}-${{ github.event.inputs.migration }}
-      #     path: deployments/${{ github.event.inputs.network }}/artifacts/${{ github.event.inputs.migration }}.json
+      - uses: actions/upload-artifact@v2 # upload test results
+        if: success() || failure() # run this step even if previous step failed
+        with:
+          name: ${{ github.event.inputs.network }}-${{ github.event.inputs.migration }}
+          path: deployments/${{ github.event.inputs.network }}/artifacts/${{ github.event.inputs.migration }}.json
