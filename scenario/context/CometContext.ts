@@ -164,7 +164,22 @@ export class CometContext {
     let cometAsset = typeof asset === 'string' ? this.getAssetByAddress(asset) : asset;
     let comet = await this.getComet();
 
-    // First, try to steal from a known actor
+    // First, try to source from Fauceteer
+    const contracts = await this.deploymentManager.contracts();
+    const fauceteer = contracts.get('fauceteer');
+    const fauceteerBalance = fauceteer ? await cometAsset.balanceOf(fauceteer.address) : 0;
+
+    if (fauceteerBalance > amount) {
+      this.debug(`Source Tokens: stealing from fauceteer`);
+      const fauceteerSigner = await world.impersonateAddress(fauceteer.address);
+      const fauceteerActor = await buildActor('fauceteerActor', fauceteerSigner, this);
+      // make gas fee 0 so we can source from contract addresses as well as EOAs
+      await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+      await cometAsset.transfer(fauceteerActor, amount, recipientAddress, {gasPrice: 0});
+      return;
+    }
+
+    // Second, try to steal from a known actor
     for (let [name, actor] of Object.entries(this.actors)) {
       let actorBalance = await cometAsset.balanceOf(actor);
       if (actorBalance > amount) {
@@ -176,6 +191,7 @@ export class CometContext {
       }
     }
 
+    // Third, source from Etherscan (expensive, in terms of Etherscan API limits)
     if (!world.isRemoteFork()) {
       throw new Error('Tokens cannot be sourced from Etherscan for development. Actors did not have sufficient assets.');
     } else {
