@@ -127,10 +127,11 @@ rule supply_increase_balance(address asset, uint amount){
     simplifiedAssumptions();
 
     uint balance1 = tokenBalanceOf(asset, currentContract);
+    uint debt_user = borrowBalanceOf(e, e.msg.sender);
     supply(e, asset, amount);
     uint balance2 = tokenBalanceOf(asset, currentContract);
     
-    assert balance2 - balance1 == amount;
+    assert amount != max_uint256 ? balance2 - balance1 == amount : balance2 - balance1 == debt_user;
 }
 
 
