@@ -18,7 +18,6 @@ on:
         description: Ethereum Private Key
       etherscan_key:
         required: false
-        default: ${{ secrets.ETHERSCAN_KEY }}
         description: Optional etherscan key
 jobs:
   prepare_migration:
@@ -28,7 +27,7 @@ jobs:
       matrix:
         node-version: [16.x]
     env:
-      ETHERSCAN_KEY: ${{ github.event.inputs.etherscan_key }}
+      ETHERSCAN_KEY: ${{ github.event.inputs.etherscan_key }} || ${{ secrets.ETHERSCAN_KEY }}
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
     steps:
