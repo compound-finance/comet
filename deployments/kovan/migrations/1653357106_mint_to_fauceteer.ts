@@ -28,7 +28,7 @@ migration<Vars>('1653357106_mint_to_fauceteer', {
     const WBTC = contracts.get('WBTC');
     const wbtcDecimals = await WBTC.decimals();
     console.log(`minting WBTC@${WBTC.address} to fauceteer${fauceteerAddress}`);
-    await wait(WBTC.mint(fauceteerAddress, exp(100_000_000, wbtcDecimals))); // mint 100M WBTC
+    await wait(WBTC.mint(fauceteerAddress, exp(20, wbtcDecimals))); // mint 20 WBTC
     console.log(`WBTC.balanceOf(fauceteerAddress): ${await WBTC.balanceOf(fauceteerAddress)}`);
 
     // COMP
@@ -53,8 +53,8 @@ migration<Vars>('1653357106_mint_to_fauceteer', {
     // LINK
     const LINK = contracts.get('LINK');
     const signerLinkBalance = await LINK.balanceOf(signerAddress);
-    console.log(`transferring ${signerLinkBalance.div(2)} LINK@${LINK.address} to fauceteer@${fauceteerAddress}`);
-    await LINK.transfer(fauceteerAddress, signerLinkBalance.div(2)); // transfer half of signer's balance
+    console.log(`transferring ${signerLinkBalance.div(100)} LINK@${LINK.address} to fauceteer@${fauceteerAddress}`);
+    await LINK.transfer(fauceteerAddress, signerLinkBalance.div(100)); // transfer 1% of total supply
     console.log(`LINK.balanceOf(fauceteerAddress): ${await LINK.balanceOf(fauceteerAddress)}`);
 
     return {};
