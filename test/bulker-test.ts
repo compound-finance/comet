@@ -382,7 +382,7 @@ describe('bulker', function () {
       const protocol = await makeProtocol({});
       const { comet, governor, tokens: { USDC, WETH }, users: [alice] } = protocol;
       const bulkerInfo = await makeBulker({ admin: governor, comet: comet.address, weth: WETH.address });
-      const { bulker } = bulkerInfo;;
+      const { bulker } = bulkerInfo;
 
       // Alice sweeps tokens
       await expect(bulker.connect(alice).sweepToken(USDC.address))
@@ -393,7 +393,7 @@ describe('bulker', function () {
       const protocol = await makeProtocol({});
       const { comet, governor, tokens: { WETH }, users: [alice] } = protocol;
       const bulkerInfo = await makeBulker({ admin: governor, comet: comet.address, weth: WETH.address });
-      const { bulker } = bulkerInfo;;
+      const { bulker } = bulkerInfo;
 
       // Alice sweeps ETH
       await expect(bulker.connect(alice).sweepEth())
