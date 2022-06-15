@@ -544,6 +544,7 @@ export async function wait(
 }
 
 export function event(tx, index) {
+  console.log('All events = ', tx.receipt.events[1].topics);
   const ev = tx.receipt.events[index], args = {};
   for (const k in ev.args) {
     const v = ev.args[k];

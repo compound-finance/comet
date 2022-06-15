@@ -1117,12 +1117,16 @@ contract Comet is CometMainInterface {
         for (uint i = 0; i < accounts.length; i++) {
             absorbInternal(absorber, accounts[i]);
         }
-        uint gasUsed = startGas - gasleft();
 
         LiquidatorPoints memory points = liquidatorPoints[absorber];
         points.numAbsorbs++;
         points.numAbsorbed += safe64(accounts.length);
+
+        uint gasUsed = startGas - gasleft();
         points.approxSpend += safe128(gasUsed * block.basefee);
+
+        emit CheckGasPrices(block.basefee, tx.gasprice, gasUsed);
+
         liquidatorPoints[absorber] = points;
     }
 
