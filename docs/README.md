@@ -93,7 +93,7 @@ function getBorrowRate(uint utilization) public view returns (uint64)
 
 ```solidity
 Comet comet = Comet(0xCometAddress);
-uint borrowRate = comet.getBorrowRate(0.8e18); // example: 9000000000000000000 (9%)
+uint borrowRate = comet.getBorrowRate(0.8e18); // example: 90000000000000000 (9%)
 ```
 
 #### Web3.js v1.5.x
