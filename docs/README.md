@@ -2047,7 +2047,9 @@ function updateAssetSupplyCap(address asset, uint128 newSupplyCap) external
 
 This function sets the Comet contract's ERC-20 allowance of an asset for a manager address. It can only be called by the Governor.
 
-In the event of a governance attack in which an attacker has supreme voting weight, the attacker could create a proposal that leverages this function to give themselves management privledges over any account and freely transfer tokens out of Compound III.
+In the event of a governance attack, an attacker could create a proposal that leverages this function to give themselves permissions to freely transfer all ERC-20 tokens out of the Comet contract.
+
+Hypothetically, the attacker would need to either acquire supreme voting weight or add a malicious step in an otherwise innocuous and popular proposal and the community would fail to detect before approving.
 
 #### Comet
 
