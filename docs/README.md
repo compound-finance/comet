@@ -180,7 +180,9 @@ await comet.supply(usdcAddress, 1000000);
 
 ### Withdraw
 
-The withdraw method is used to **withdraw collateral** that is not currently supporting an open borrow. Withdraw is **also used to borrow the base asset** from the protocol if there is sufficient collateral for the account. It can also be called from an allowed manager address. To check an account's present ability to increase its borrow size, see the *[Get Borrow Liquidity](#get-borrow-liquidity)* function.
+The withdraw method is used to **withdraw collateral** that is not currently supporting an open borrow. Withdraw is **also used to borrow the base asset** from the protocol if there is sufficient collateral for the account. It can also be called from an allowed manager address. 
+
+Compound III implements a minimum borrow size which can be found as `baseBorrowMin` in the [protocol configuration](#get-protocol-configuration). A withdraw transaction to borrow that is less than the minimum borrow size will revert.
 
 #### Comet
 
@@ -529,7 +531,7 @@ const [ numAbsorbs, numAbsorbed, approxSpend ] = await comet.callStatic.liquidat
 
 Compound III has a built-in system for tracking rewards for accounts that use the protocol. The full history of accrual of rewards are tracked for suppliers and borrowers of the base asset. The rewards can be any ERC-20 token.
 
-### Reward Accrual
+### Reward Accrual Tracking
 
 The reward accrual is tracked in the Comet contract and rewards can be claimed by users from an external Comet Rewards contract. Rewards are accounted for with up to 6 decimals of precision.
 
@@ -560,6 +562,44 @@ const accrued = await comet.methods.baseTrackingAccrued('0xAccount').call();
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
 const accrued = await comet.callStatic.baseTrackingAccrued('0xAccount');
+```
+
+### Get Reward Accrued
+
+The amount of reward token accrued but not yet claimed for an account can be fetched from the external Comet Rewards contract.
+
+#### Comet Rewards
+
+```solidity
+struct RewardOwed {
+    address token;
+    uint owed;
+}
+
+function getRewardOwed(address comet, address account) external returns (RewardOwed memory)
+```
+
+* `RETURNS`: Returns the amount of reward token accrued but not yet claimed, scaled up by 10 to the "decimals" integer in the reward token's contract.
+
+#### Solidity
+
+```solidity
+CometRewards rewards = CometRewards(0xRewardsAddress);
+RewardOwed reward = rewards.getRewardOwed(0xCometAddress, 0xAccount);
+```
+
+#### Web3.js v1.5.x
+
+```js
+const rewards = new web3.eth.Contract(abiJson, contractAddress);
+const [ tokenAddress, amtOwed ] = await rewards.methods.getRewardOwed(cometAddress, accountAddress).call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const rewards = new ethers.Contract(contractAddress, abiJson, provider);
+const [ tokenAddress, amtOwed ] = await rewards.callStatic.getRewardOwed(cometAddress, accountAddress);
 ```
 
 ### Claim Rewards
@@ -2006,6 +2046,8 @@ function updateAssetSupplyCap(address asset, uint128 newSupplyCap) external
 ### ERC-20 Approve Manager Address
 
 This function sets the Comet contract's ERC-20 allowance of an asset for a manager address. It can only be called by the Governor.
+
+In the event of a governance attack in which an attacker has supreme voting weight, the attacker could create a proposal that leverages this function to give themselves management privledges over any account and freely transfer tokens out of Compound III.
 
 #### Comet
 
