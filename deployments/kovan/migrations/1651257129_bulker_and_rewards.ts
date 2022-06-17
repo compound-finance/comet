@@ -16,9 +16,9 @@ migration<Vars>('1651257129_bulker_and_rewards', {
     const timelock = await deploymentManager.contract('timelock') as SimpleTimelock;
 
     // Deploy new Bulker and Rewards contracts
-    const newBulker = await deploymentManager.deploy<Bulker, Bulker__factory, [string, string]>(
+    const newBulker = await deploymentManager.deploy<Bulker, Bulker__factory, [string, string, string]>(
       'Bulker.sol',
-      [comet.address, weth.address]
+      [timelock.address, comet.address, weth.address]
     );
 
     const newRewards = await deploymentManager.deploy<CometRewards, CometRewards__factory, [string]>(
