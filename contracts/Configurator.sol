@@ -10,13 +10,13 @@ contract Configurator is ConfiguratorStorage {
     /** Custom events **/
 
     event AddAsset(AssetConfig assetConfig);
-    event CometDeployed(address newComet);
-    event GovernorTransferred(address oldGovernor, address newGovernor);
-    event SetFactory(address oldFactory, address newFactory);
-    event SetGovernor(address oldGovernor, address newGovernor);
-    event SetPauseGuardian(address oldPauseGuardian, address newPauseGuardian);
-    event SetBaseTokenPriceFeed(address oldBaseTokenPriceFeed, address newBaseTokenPriceFeed);
-    event SetExtensionDelegate(address oldExt, address newExt);
+    event CometDeployed(address indexed newComet);
+    event GovernorTransferred(address indexed oldGovernor, address indexed newGovernor);
+    event SetFactory(address indexed oldFactory, address indexed newFactory);
+    event SetGovernor(address indexed oldGovernor, address indexed newGovernor);
+    event SetPauseGuardian(address indexed oldPauseGuardian, address indexed newPauseGuardian);
+    event SetBaseTokenPriceFeed(address indexed oldBaseTokenPriceFeed, address indexed newBaseTokenPriceFeed);
+    event SetExtensionDelegate(address indexed oldExt, address indexed newExt);
     event SetKink(uint64 oldKink, uint64 newKink);
     event SetPerYearInterestRateSlopeLow(uint64 oldIRSlopeLow, uint64 newIRSlopeLow);
     event SetPerYearInterestRateSlopeHigh(uint64 oldIRSlopeHigh, uint64 newIRSlopeHigh);
