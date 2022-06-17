@@ -473,12 +473,12 @@ contract Comet is CometMainInterface {
      * @return The utilization rate of the base asset
      */
     function getUtilization() override public view returns (uint) {
-        uint totalSupply = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint totalBorrow = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
-        if (totalSupply == 0) {
+        uint totalSupply_ = presentValueSupply(baseSupplyIndex, totalSupplyBase);
+        uint totalBorrow_ = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+        if (totalSupply_ == 0) {
             return 0;
         } else {
-            return totalBorrow * FACTOR_SCALE / totalSupply;
+            return totalBorrow_ * FACTOR_SCALE / totalSupply_;
         }
     }
 
@@ -499,9 +499,9 @@ contract Comet is CometMainInterface {
     function getReserves() override public view returns (int) {
         (uint64 baseSupplyIndex_, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         uint balance = ERC20(baseToken).balanceOf(address(this));
-        uint104 totalSupply = presentValueSupply(baseSupplyIndex_, totalSupplyBase);
-        uint104 totalBorrow = presentValueBorrow(baseBorrowIndex_, totalBorrowBase);
-        return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
+        uint104 totalSupply_ = presentValueSupply(baseSupplyIndex_, totalSupplyBase);
+        uint104 totalBorrow_ = presentValueBorrow(baseBorrowIndex_, totalBorrowBase);
+        return signed256(balance) - signed104(totalSupply_) + signed104(totalBorrow_);
     }
 
     /**
@@ -604,7 +604,7 @@ contract Comet is CometMainInterface {
      * @dev The change in principal broken into withdraw and borrow amounts
      * @dev Note: The assumption `oldPrincipal >= newPrincipal` MUST be true
      */
-    function withdrawAndBorrowAmount(int104 oldPrincipal, int104 newPrincipal) internal view returns (uint104, uint104) {
+    function withdrawAndBorrowAmount(int104 oldPrincipal, int104 newPrincipal) internal pure returns (uint104, uint104) {
         if (newPrincipal >= 0) {
             return (uint104(oldPrincipal - newPrincipal), 0);
         } else if (oldPrincipal <= 0) {
