@@ -261,10 +261,11 @@ contract Configurator is ConfiguratorStorage {
     function getAssetIndex(address asset) internal view returns (uint) {
         AssetConfig[] memory assetConfigs = configuratorParams.assetConfigs;
         uint numAssets = assetConfigs.length;
-        for (uint i = 0; i < numAssets; i++) {
+        for (uint i = 0; i < numAssets; ) {
             if (assetConfigs[i].asset == asset) {
                 return i;
             }
+            unchecked { ++i; }
         }
         revert AssetDoesNotExist();
     }

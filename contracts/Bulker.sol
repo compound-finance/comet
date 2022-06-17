@@ -61,7 +61,7 @@ contract Bulker {
                 (address to, uint amount) = abi.decode(data[i], (address, uint));
                 withdrawEthTo(to, amount);
             }
-            unchecked { i++; }
+            unchecked { ++i; }
         }
 
         // Refund unused ETH back to msg.sender

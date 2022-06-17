@@ -381,7 +381,7 @@ contract Comet is CometMainInterface {
             if (assetInfo.asset == asset) {
                 return assetInfo;
             }
-            unchecked { i++; }
+            unchecked { ++i; }
         }
         revert BadAsset();
     }
@@ -539,7 +539,7 @@ contract Comet is CometMainInterface {
                     asset.borrowCollateralFactor
                 ));
             }
-            unchecked { i++; }
+            unchecked { ++i; }
         }
 
         return liquidity >= 0;
@@ -581,7 +581,7 @@ contract Comet is CometMainInterface {
                     asset.liquidateCollateralFactor
                 ));
             }
-            unchecked { i++; }
+            unchecked { ++i; }
         }
 
         return liquidity < 0;
@@ -1120,7 +1120,7 @@ contract Comet is CometMainInterface {
         uint numAccounts = accounts.length;
         for (uint i = 0; i < numAccounts; ) {
             absorbInternal(absorber, accounts[i]);
-            unchecked { i++; }
+            unchecked { ++i; }
         }
         uint gasUsed = startGas - gasleft();
 
@@ -1158,7 +1158,7 @@ contract Comet is CometMainInterface {
 
                 emit AbsorbCollateral(absorber, account, asset, seizeAmount, value);
             }
-            unchecked { i++; }
+            unchecked { ++i; }
         }
 
         uint104 deltaBalance = safe104(divPrice(deltaValue, basePrice, uint64(baseScale)));
@@ -1312,9 +1312,10 @@ contract Comet is CometMainInterface {
      * @notice Fallback to calling the extension delegate for everything else
      */
     fallback() external payable {
+        address delegate = extensionDelegate;
         assembly {
             calldatacopy(0, 0, calldatasize())
-            let result := delegatecall(gas(), extensionDelegate, 0, calldatasize(), 0, 0)
+            let result := delegatecall(gas(), delegate, 0, calldatasize(), 0, 0)
             returndatacopy(0, 0, returndatasize())
             switch result
             case 0 { revert(0, returndatasize()) }
