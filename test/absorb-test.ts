@@ -1,6 +1,6 @@
 import { event, expect, exp, factor, defaultAssets, makeProtocol, mulPrice, portfolio, wait, setTotalsBasic } from './helpers';
 
-describe.only('absorb', function () {
+describe('absorb', function () {
   it('reverts if total borrows underflows', async () => {
     const { comet, users: [absorber, underwater] } = await makeProtocol();
 
@@ -8,7 +8,7 @@ describe.only('absorb', function () {
     await expect(comet.absorb(absorber.address, [underwater.address])).to.be.revertedWith('code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
   });
 
-  it.only('absorbs 1 account and pays out the absorber', async () => {
+  it('absorbs 1 account and pays out the absorber', async () => {
     const params = {
       interestRateBase: 0,
       interestRateSlopeLow: 0,
@@ -55,7 +55,6 @@ describe.only('absorb', function () {
     expect(lA1.numAbsorbs).to.be.equal(1);
     expect(lA1.numAbsorbed).to.be.equal(1);
     //expect(lA1.approxSpend).to.be.equal(1672498842684n);
-    // console.log('Receipt = ', a0.receipt);
     expect(lA1.approxSpend).to.be.lt(a0.receipt.gasUsed.mul(a0.receipt.effectiveGasPrice));
 
     expect(lU1.numAbsorbs).to.be.equal(0);
@@ -64,10 +63,6 @@ describe.only('absorb', function () {
 
     const usdcPrice = await priceFeeds['USDC'].price();
     const baseScale = await comet.baseScale();
-    console.log('Receipt = ', a0.receipt);
-    console.log('event = ', event(a0, 1));
-    console.log('Effective gas price = ', a0.receipt.effectiveGasPrice);
-    console.log('Gas used = ', a0.receipt.gasUsed);
     expect(event(a0, 0)).to.be.deep.equal({
       AbsorbDebt: {
         absorber: absorber.address,

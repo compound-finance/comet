@@ -23,8 +23,6 @@ abstract contract CometMainInterface is CometCore {
     /// @notice Event emitted when a user's collateral is absorbed by the protocol
     event AbsorbCollateral(address indexed absorber, address indexed borrower, address indexed asset, uint128 collateralAbsorbed, uint usdValue);
 
-    event CheckGasPrices(uint256 blockGasPrice, uint256 trxGasPrice, uint256 gasUsed);
-
     /// @notice Event emitted when a collateral asset is purchased from the protocol
     event BuyCollateral(address indexed buyer, address indexed asset, uint baseAmount, uint collateralAmount);
 
