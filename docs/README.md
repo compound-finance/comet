@@ -36,12 +36,12 @@ SupplyRate = (InterestRateBase + InterestRateSlopeLow * Utilization) * Utilizati
 SupplyRate = (InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeHigh * (Utilization - Kink)) * Utilization * (1 - ReserveRate)
 ```
 
-To calculate the Compound III Supply APR as a percentage, pass the current utilization to this function, and divide the result by `10 ^ 18` and multiply by the approximate number of seconds in one year.
+To calculate the Compound III supply APR as a percentage, pass the current utilization to this function, and divide the result by `10 ^ 18` and multiply by the approximate number of seconds in one year.
 
 ```
 Seconds Per Year = 60 * 60 * 24 * 365
-utilization = getUtilization()
-Supply Rate = getSupplyRate(utilization)
+Utilization = getUtilization()
+Supply Rate = getSupplyRate(Utilization)
 Supply APR = Supply Rate / (10 ^ 18) * Seconds Per Year
 ```
 
@@ -52,7 +52,7 @@ function getSupplyRate(uint utilization) public view returns (uint64)
 ```
 
 * `utilization`: The utilization at which to calculate the rate.
-* `RETURNS`: The APR, per second, as a percentage scaled up by `10 ^ 18`. E.g. `31710000000` indicates, roughly, a 1% APR.
+* `RETURNS`: The supply APR, per second, as a percentage scaled up by `10 ^ 18`. E.g. `31710000000` indicates, roughly, a 1% APR.
 
 #### Solidity
 
@@ -89,12 +89,12 @@ BorrowRate = InterestRateBase + InterestRateSlopeLow * Utilization
 BorrowRate = InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeHigh * (Utilization - Kink)
 ```
 
-To calculate the Compound III Borrow APR as a percentage, pass the current utilization to this function, and divide the result by `10 ^ 18` and multiply by the approximate number of seconds in one year.
+To calculate the Compound III borrow APR as a percentage, pass the current utilization to this function, and divide the result by `10 ^ 18` and multiply by the approximate number of seconds in one year.
 
 ```
 Seconds Per Year = 60 * 60 * 24 * 365
-utilization = getUtilization()
-Borrow Rate = getBorrowRate(utilization)
+Utilization = getUtilization()
+Borrow Rate = getBorrowRate(Utilization)
 Borrow APR = Borrow Rate / (10 ^ 18) * Seconds Per Year
 ```
 
@@ -105,7 +105,7 @@ function getBorrowRate(uint utilization) public view returns (uint64)
 ```
 
 * `utilization`: The utilization at which to calculate the rate.
-* `RETURNS`: The APR, per second, as a percentage scaled up by `10 ^ 18`. E.g. `31710000000` indicates, roughly, a 1% APR.
+* `RETURNS`: The borrow APR, per second, as a percentage scaled up by `10 ^ 18`. E.g. `31710000000` indicates, roughly, a 1% APR.
 
 #### Solidity
 
