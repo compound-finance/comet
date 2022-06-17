@@ -24,7 +24,7 @@ Owed interest accrues to open borrows of the base asset. Borrower interest accru
 
 ### Get Supply Rate
 
-This function returns the supply rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the supply rate is:
+This function returns the supply rate, as an APR, per second, scaled up by `10 ^ 18`. The formula for producing the supply rate is:
 
 ```
 ## If the Utilization is less than or equal to the Kink parameter
@@ -36,6 +36,15 @@ SupplyRate = (InterestRateBase + InterestRateSlopeLow * Utilization) * Utilizati
 SupplyRate = (InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeHigh * (Utilization - Kink)) * Utilization * (1 - ReserveRate)
 ```
 
+To calculate the Compound III Supply APR as a percentage, pass the current utilization to this function, and divide the result by `10 ^ 18` and multiply by the approximate number of seconds in one year.
+
+```
+Seconds Per Year = 60 * 60 * 24 * 365
+utilization = getUtilization()
+Supply Rate = getSupplyRate(utilization)
+Supply APR = Supply Rate / (10 ^ 18) * Seconds Per Year
+```
+
 #### Comet
 
 ```solidity
@@ -43,13 +52,13 @@ function getSupplyRate(uint utilization) public view returns (uint64)
 ```
 
 * `utilization`: The utilization at which to calculate the rate.
-* `RETURNS`: The APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 25% APR.
+* `RETURNS`: The APR, per second, as a percentage scaled up by `10 ^ 18`. E.g. `31710000000` indicates, roughly, a 1% APR.
 
 #### Solidity
 
 ```solidity
 Comet comet = Comet(0xCometAddress);
-uint supplyRate = comet.getSupplyRate(0.8e18); // example: 250000000000000000 (25%)
+uint supplyRate = comet.getSupplyRate(0.8e18);
 ```
 
 #### Web3.js v1.5.x
@@ -68,7 +77,7 @@ const supplyRate = await comet.callStatic.getSupplyRate(0.8e18);
 
 ### Get Borrow Rate
 
-This function returns the borrow rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the borrow rate is:
+This function returns the borrow rate, as an APR, per second, scaled up by `10 ^ 18`. The formula for producing the borrow rate is:
 
 ```
 ## If the Utilization is less than or equal to the Kink parameter
@@ -80,6 +89,15 @@ BorrowRate = InterestRateBase + InterestRateSlopeLow * Utilization
 BorrowRate = InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeHigh * (Utilization - Kink)
 ```
 
+To calculate the Compound III Borrow APR as a percentage, pass the current utilization to this function, and divide the result by `10 ^ 18` and multiply by the approximate number of seconds in one year.
+
+```
+Seconds Per Year = 60 * 60 * 24 * 365
+utilization = getUtilization()
+Borrow Rate = getBorrowRate(utilization)
+Borrow APR = Borrow Rate / (10 ^ 18) * Seconds Per Year
+```
+
 #### Comet
 
 ```solidity
@@ -87,13 +105,13 @@ function getBorrowRate(uint utilization) public view returns (uint64)
 ```
 
 * `utilization`: The utilization at which to calculate the rate.
-* `RETURNS`: The APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `90000000000000000` indicates a 9% APR.
+* `RETURNS`: The APR, per second, as a percentage scaled up by `10 ^ 18`. E.g. `31710000000` indicates, roughly, a 1% APR.
 
 #### Solidity
 
 ```solidity
 Comet comet = Comet(0xCometAddress);
-uint borrowRate = comet.getBorrowRate(0.8e18); // example: 9000000000000000000 (9%)
+uint borrowRate = comet.getBorrowRate(0.8e18);
 ```
 
 #### Web3.js v1.5.x
