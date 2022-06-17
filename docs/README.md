@@ -180,9 +180,9 @@ await comet.supply(usdcAddress, 1000000);
 
 ### Withdraw
 
-The withdraw method is used to **withdraw collateral** that is not currently supporting an open borrow. Withdraw is **also used to borrow the base asset** from the protocol if there is sufficient collateral for the account. It can also be called from an allowed manager address. 
+The withdraw method is used to **withdraw collateral** that is not currently supporting an open borrow. Withdraw is **also used to borrow the base asset** from the protocol if the account has supplied sufficient collateral. It can also be called from an allowed manager address.
 
-Compound III implements a minimum borrow size which can be found as `baseBorrowMin` in the [protocol configuration](#get-protocol-configuration). A withdraw transaction to borrow that is less than the minimum borrow size will revert.
+Compound III implements a minimum borrow position size which can be found as `baseBorrowMin` in the [protocol configuration](#get-protocol-configuration). When opening a new borrow, an account's initial withdraw to borrow transaction must be greater than the minimum required or it will revert. Subsequent borrows can be of any size as long as the account's total borrow size is greater than the minimum requirement.
 
 #### Comet
 
