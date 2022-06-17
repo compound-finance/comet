@@ -986,6 +986,8 @@ contract Comet is CometMainInterface {
      * @dev Transfer an amount of collateral asset from src to dst
      */
     function transferCollateral(address src, address dst, address asset, uint128 amount) internal {
+        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
+
         uint128 srcCollateral = userCollateral[src][asset].balance;
         uint128 dstCollateral = userCollateral[dst][asset].balance;
         uint128 srcCollateralNew = srcCollateral - amount;
@@ -994,7 +996,6 @@ contract Comet is CometMainInterface {
         userCollateral[src][asset].balance = srcCollateralNew;
         userCollateral[dst][asset].balance = dstCollateralNew;
 
-        AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         updateAssetsIn(src, assetInfo, srcCollateral, srcCollateralNew);
         updateAssetsIn(dst, assetInfo, dstCollateral, dstCollateralNew);
 
