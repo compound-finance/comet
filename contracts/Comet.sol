@@ -419,12 +419,10 @@ contract Comet is CometMainInterface {
         if (timeElapsed > 0) {
             (baseSupplyIndex, baseBorrowIndex) = accruedInterestIndices(timeElapsed);
             if (totalSupplyBase >= baseMinForRewards) {
-                uint supplySpeed = baseTrackingSupplySpeed;
-                trackingSupplyIndex += safe64(divBaseWei(supplySpeed * timeElapsed, totalSupplyBase));
+                trackingSupplyIndex += safe64(divBaseWei(baseTrackingSupplySpeed * timeElapsed, totalSupplyBase));
             }
             if (totalBorrowBase >= baseMinForRewards) {
-                uint borrowSpeed = baseTrackingBorrowSpeed;
-                trackingBorrowIndex += safe64(divBaseWei(borrowSpeed * timeElapsed, totalBorrowBase));
+                trackingBorrowIndex += safe64(divBaseWei(baseTrackingBorrowSpeed * timeElapsed, totalBorrowBase));
             }
             lastAccrualTime = now_;
         }
@@ -1313,10 +1311,9 @@ contract Comet is CometMainInterface {
      * @notice Fallback to calling the extension delegate for everything else
      */
     fallback() external payable {
-        address delegate = extensionDelegate;
         assembly {
             calldatacopy(0, 0, calldatasize())
-            let result := delegatecall(gas(), delegate, 0, calldatasize(), 0, 0)
+            let result := delegatecall(gas(), extensionDelegate, 0, calldatasize(), 0, 0)
             returndatacopy(0, 0, returndatasize())
             switch result
             case 0 { revert(0, returndatasize()) }
