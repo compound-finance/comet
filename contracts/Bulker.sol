@@ -41,7 +41,8 @@ contract Bulker {
         if (actions.length != data.length) revert InvalidArgument();
 
         uint unusedEth = msg.value;
-        for (uint i = 0; i < actions.length; ) {
+        uint numActions = actions.length;
+        for (uint i = 0; i < numActions; ) {
             uint action = actions[i];
             if (action == ACTION_SUPPLY_ASSET) {
                 (address to, address asset, uint amount) = abi.decode(data[i], (address, address, uint));
