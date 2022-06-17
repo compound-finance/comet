@@ -346,7 +346,7 @@ describe('bulker', function () {
       const oldGovBalance = await USDC.balanceOf(governor.address);
 
       // Governor sweeps tokens
-      await bulker.connect(governor).sweepToken(USDC.address);
+      await bulker.connect(governor).sweepToken(governor.address, USDC.address);
 
       const newBulkerBalance = await USDC.balanceOf(bulker.address);
       const newGovBalance = await USDC.balanceOf(governor.address);
@@ -369,7 +369,7 @@ describe('bulker', function () {
       const oldGovBalance = await ethers.provider.getBalance(governor.address);
 
       // Governor sweeps ETH
-      const txn = await wait(bulker.connect(governor).sweepEth());
+      const txn = await wait(bulker.connect(governor).sweepEth(governor.address));
 
       const newBulkerBalance = await ethers.provider.getBalance(bulker.address);
       const newGovBalance = await ethers.provider.getBalance(governor.address);
@@ -385,7 +385,7 @@ describe('bulker', function () {
       const { bulker } = bulkerInfo;
 
       // Alice sweeps tokens
-      await expect(bulker.connect(alice).sweepToken(USDC.address))
+      await expect(bulker.connect(alice).sweepToken(governor.address, USDC.address))
         .to.be.revertedWith("custom error 'Unauthorized()'");
     });
 
@@ -396,7 +396,7 @@ describe('bulker', function () {
       const { bulker } = bulkerInfo;
 
       // Alice sweeps ETH
-      await expect(bulker.connect(alice).sweepEth())
+      await expect(bulker.connect(alice).sweepEth(governor.address))
         .to.be.revertedWith("custom error 'Unauthorized()'");
     });
   });

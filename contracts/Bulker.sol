@@ -38,23 +38,25 @@ contract Bulker {
 
     /**
      * @notice A public function to sweep accidental ERC-20 transfers to this contract. Tokens are sent to admin (Timelock)
-     * @param token The address of the ERC-20 token to sweep
+     * @param recipient The address that will receive the swept funds
+     * @param asset The address of the ERC-20 token to sweep
      */
-    function sweepToken(ERC20 token) external {
+    function sweepToken(address recipient, ERC20 asset) external {
         if (msg.sender != admin) revert Unauthorized();
 
-        uint256 balance = token.balanceOf(address(this));
-        token.transfer(admin, balance);
+        uint256 balance = asset.balanceOf(address(this));
+        asset.transfer(recipient, balance);
     }
 
     /**
      * @notice A public function to sweep accidental ETH transfers to this contract. Tokens are sent to admin (Timelock)
+     * @param recipient The address that will receive the swept funds
      */
-    function sweepEth() external {
+    function sweepEth(address recipient) external {
         if (msg.sender != admin) revert Unauthorized();
 
         uint256 balance = address(this).balance;
-        (bool success, ) = admin.call{ value: balance }("");
+        (bool success, ) = recipient.call{ value: balance }("");
         if (!success) revert FailedToSendEther();
     }
 
