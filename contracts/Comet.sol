@@ -266,7 +266,7 @@ contract Comet is CometMainInterface {
 
         unchecked {
             // Keep 4 decimals for each factor
-            uint descale = FACTOR_SCALE / 1e4;
+            uint64 descale = FACTOR_SCALE / 1e4;
             uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
             uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
             uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
@@ -350,7 +350,7 @@ contract Comet is CometMainInterface {
         }
 
         address asset = address(uint160(word_a & type(uint160).max));
-        uint rescale = FACTOR_SCALE / 1e4;
+        uint64 rescale = FACTOR_SCALE / 1e4;
         uint64 borrowCollateralFactor = uint64(((word_a >> 160) & type(uint16).max) * rescale);
         uint64 liquidateCollateralFactor = uint64(((word_a >> 176) & type(uint16).max) * rescale);
         uint64 liquidationFactor = uint64(((word_a >> 192) & type(uint16).max) * rescale);
@@ -401,8 +401,8 @@ contract Comet is CometMainInterface {
         uint64 baseBorrowIndex_ = baseBorrowIndex;
         if (timeElapsed > 0) {
             uint utilization = getUtilization();
-            uint supplyRate = getSupplyRate(utilization);
-            uint borrowRate = getBorrowRate(utilization);
+            uint64 supplyRate = getSupplyRate(utilization);
+            uint64 borrowRate = getBorrowRate(utilization);
             baseSupplyIndex_ += safe64(mulFactor(baseSupplyIndex_, supplyRate * timeElapsed));
             baseBorrowIndex_ += safe64(mulFactor(baseBorrowIndex_, borrowRate * timeElapsed));
         }
@@ -414,7 +414,7 @@ contract Comet is CometMainInterface {
      **/
     function accrueInternal() internal {
         uint40 now_ = getNowInternal();
-        uint timeElapsed = now_ - lastAccrualTime;
+        uint40 timeElapsed = now_ - lastAccrualTime;
         if (timeElapsed > 0) {
             (baseSupplyIndex, baseBorrowIndex) = accruedInterestIndices(timeElapsed);
             if (totalSupplyBase >= baseMinForRewards) {
@@ -473,12 +473,12 @@ contract Comet is CometMainInterface {
      * @return The utilization rate of the base asset
      */
     function getUtilization() override public view returns (uint) {
-        uint totalSupply_ = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint totalBorrow_ = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+        uint104 totalSupply_ = presentValueSupply(baseSupplyIndex, totalSupplyBase);
+        uint104 totalBorrow_ = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
         if (totalSupply_ == 0) {
             return 0;
         } else {
-            return totalBorrow_ * FACTOR_SCALE / totalSupply_;
+            return uint256(totalBorrow_) * FACTOR_SCALE / totalSupply_;
         }
     }
 
@@ -749,10 +749,10 @@ contract Comet is CometMainInterface {
         basic.principal = principalNew;
 
         if (principal >= 0) {
-            uint indexDelta = trackingSupplyIndex - basic.baseTrackingIndex;
+            uint indexDelta = uint256(trackingSupplyIndex - basic.baseTrackingIndex);
             basic.baseTrackingAccrued += safe64(uint104(principal) * indexDelta / trackingIndexScale / accrualDescaleFactor);
         } else {
-            uint indexDelta = trackingBorrowIndex - basic.baseTrackingIndex;
+            uint indexDelta = uint256(trackingBorrowIndex - basic.baseTrackingIndex);
             basic.baseTrackingAccrued += safe64(uint104(-principal) * indexDelta / trackingIndexScale / accrualDescaleFactor);
         }
 
