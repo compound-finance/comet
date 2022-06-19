@@ -1175,9 +1175,9 @@ contract Comet is CometMainInterface {
         totalSupplyBase += supplyAmount;
         totalBorrowBase -= repayAmount;
 
-        uint104 debtAbsorbed = unsigned104(newBalance - oldBalance);
-        uint valueOfDebtAbsorbed = mulPrice(debtAbsorbed, basePrice, uint64(baseScale));
-        emit AbsorbDebt(absorber, account, debtAbsorbed, valueOfDebtAbsorbed);
+        uint104 basePaidOut = unsigned104(newBalance - oldBalance);
+        uint valueOfBasePaidOut = mulPrice(basePaidOut, basePrice, uint64(baseScale));
+        emit AbsorbDebt(absorber, account, basePaidOut, valueOfBasePaidOut);
     }
 
     /**
