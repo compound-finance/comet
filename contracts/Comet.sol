@@ -1119,6 +1119,10 @@ contract Comet is CometMainInterface {
         }
         uint gasUsed = startGas - gasleft();
 
+        // Note: liquidator points are an imperfect tool for governance,
+        //  to be used while evaluating strategies for incentivizing absorption.
+        // Using gas price instead of base fee would more accurately reflect spend,
+        //  but is also subject to abuse if refunds were to be given automatically.
         LiquidatorPoints memory points = liquidatorPoints[absorber];
         points.numAbsorbs++;
         points.numAbsorbed += safe64(accounts.length);
