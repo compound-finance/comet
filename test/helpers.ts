@@ -456,7 +456,7 @@ export async function makeRewards(opts: RewardsOpts = {}): Promise<Rewards> {
   await rewards.deployed();
 
   for (const [comet, token] of configs) {
-    await wait(rewards._setRewardConfig(comet.address, token.address));
+    await wait(rewards.setRewardConfig(comet.address, token.address));
   }
 
   return {
