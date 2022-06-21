@@ -18,7 +18,7 @@ abstract contract CometMainInterface is CometCore {
     event WithdrawCollateral(address indexed src, address indexed to, address indexed asset, uint256 amount);
 
     /// @notice Event emitted when a borrow position is absorbed by the protocol
-    event AbsorbDebt(address indexed absorber, address indexed borrower, uint104 debtAbsorbed, uint usdValue);
+    event AbsorbDebt(address indexed absorber, address indexed borrower, uint104 basePaidOut, uint usdValue);
 
     /// @notice Event emitted when a user's collateral is absorbed by the protocol
     event AbsorbCollateral(address indexed absorber, address indexed borrower, address indexed asset, uint128 collateralAbsorbed, uint usdValue);
