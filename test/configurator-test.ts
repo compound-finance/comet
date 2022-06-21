@@ -105,7 +105,7 @@ describe('configurator', function () {
   });
 
   it('reverts if initializing the implementation contract', async () => {
-    const { governor, configurator, configuratorProxy, cometFactory } = await makeConfigurator();
+    const { governor, configurator, cometFactory } = await makeConfigurator();
 
     let configuration = await configurator.getConfiguration();
     await expect(configurator.initialize(governor.address, cometFactory.address, configuration)).to.be.revertedWith("custom error 'AlreadyInitialized()'");
