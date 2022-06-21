@@ -44,7 +44,7 @@ describe('configurator', function () {
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     const txn = await wait(configuratorAsProxy.deploy()) as any;
-    const [ newCometAddress ] = txn.receipt.events.find(event => event.event === 'CometDeployed').args;
+    const [newCometAddress] = txn.receipt.events.find(event => event.event === 'CometDeployed').args;
 
     expect(event(txn, 0)).to.be.deep.equal({
       CometDeployed: {
@@ -102,6 +102,13 @@ describe('configurator', function () {
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     let configuration = await configuratorAsProxy.getConfiguration();
     await expect(configuratorAsProxy.initialize(governor.address, cometFactory.address, configuration)).to.be.revertedWith("custom error 'AlreadyInitialized()'");
+  });
+
+  it('reverts if initializing the implementation contract', async () => {
+    const { governor, configurator, configuratorProxy, cometFactory } = await makeConfigurator();
+
+    let configuration = await configurator.getConfiguration();
+    await expect(configurator.initialize(governor.address, cometFactory.address, configuration)).to.be.revertedWith("custom error 'AlreadyInitialized()'");
   });
 
   describe('configuration setters', function () {
