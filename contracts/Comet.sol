@@ -201,21 +201,21 @@ contract Comet is CometMainInterface {
         // Set asset info
         numAssets = uint8(config.assetConfigs.length);
 
-        (asset00_a, asset00_b) = _getPackedAsset(config.assetConfigs, 0);
-        (asset01_a, asset01_b) = _getPackedAsset(config.assetConfigs, 1);
-        (asset02_a, asset02_b) = _getPackedAsset(config.assetConfigs, 2);
-        (asset03_a, asset03_b) = _getPackedAsset(config.assetConfigs, 3);
-        (asset04_a, asset04_b) = _getPackedAsset(config.assetConfigs, 4);
-        (asset05_a, asset05_b) = _getPackedAsset(config.assetConfigs, 5);
-        (asset06_a, asset06_b) = _getPackedAsset(config.assetConfigs, 6);
-        (asset07_a, asset07_b) = _getPackedAsset(config.assetConfigs, 7);
-        (asset08_a, asset08_b) = _getPackedAsset(config.assetConfigs, 8);
-        (asset09_a, asset09_b) = _getPackedAsset(config.assetConfigs, 9);
-        (asset10_a, asset10_b) = _getPackedAsset(config.assetConfigs, 10);
-        (asset11_a, asset11_b) = _getPackedAsset(config.assetConfigs, 11);
-        (asset12_a, asset12_b) = _getPackedAsset(config.assetConfigs, 12);
-        (asset13_a, asset13_b) = _getPackedAsset(config.assetConfigs, 13);
-        (asset14_a, asset14_b) = _getPackedAsset(config.assetConfigs, 14);
+        (asset00_a, asset00_b) = getPackedAssetInternal(config.assetConfigs, 0);
+        (asset01_a, asset01_b) = getPackedAssetInternal(config.assetConfigs, 1);
+        (asset02_a, asset02_b) = getPackedAssetInternal(config.assetConfigs, 2);
+        (asset03_a, asset03_b) = getPackedAssetInternal(config.assetConfigs, 3);
+        (asset04_a, asset04_b) = getPackedAssetInternal(config.assetConfigs, 4);
+        (asset05_a, asset05_b) = getPackedAssetInternal(config.assetConfigs, 5);
+        (asset06_a, asset06_b) = getPackedAssetInternal(config.assetConfigs, 6);
+        (asset07_a, asset07_b) = getPackedAssetInternal(config.assetConfigs, 7);
+        (asset08_a, asset08_b) = getPackedAssetInternal(config.assetConfigs, 8);
+        (asset09_a, asset09_b) = getPackedAssetInternal(config.assetConfigs, 9);
+        (asset10_a, asset10_b) = getPackedAssetInternal(config.assetConfigs, 10);
+        (asset11_a, asset11_b) = getPackedAssetInternal(config.assetConfigs, 11);
+        (asset12_a, asset12_b) = getPackedAssetInternal(config.assetConfigs, 12);
+        (asset13_a, asset13_b) = getPackedAssetInternal(config.assetConfigs, 13);
+        (asset14_a, asset14_b) = getPackedAssetInternal(config.assetConfigs, 14);
     }
 
     /**
@@ -238,7 +238,7 @@ contract Comet is CometMainInterface {
     /**
      * @dev Checks and gets the packed asset info for storage
      */
-    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
+    function getPackedAssetInternal(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
         AssetConfig memory assetConfig;
         if (i < assetConfigs.length) {
             assembly {
