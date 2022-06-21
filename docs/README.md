@@ -24,7 +24,7 @@ Owed interest accrues to open borrows of the base asset. Borrower interest accru
 
 ### Get Supply Rate
 
-This function returns the supply rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the supply rate is:
+This function returns the per second supply rate as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the supply rate is:
 
 ```
 ## If the Utilization is less than or equal to the Kink parameter
@@ -36,6 +36,15 @@ SupplyRate = (InterestRateBase + InterestRateSlopeLow * Utilization) * Utilizati
 SupplyRate = (InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeHigh * (Utilization - Kink)) * Utilization * (1 - ReserveRate)
 ```
 
+To calculate the Compound III supply APR as a percentage, pass the current utilization to this function, and divide the result by `10 ^ 18` and multiply by the approximate number of seconds in one year and scale up by 100.
+
+```
+Seconds Per Year = 60 * 60 * 24 * 365
+Utilization = getUtilization()
+Supply Rate = getSupplyRate(Utilization)
+Supply APR = Supply Rate / (10 ^ 18) * Seconds Per Year * 100
+```
+
 #### Comet
 
 ```solidity
@@ -43,13 +52,13 @@ function getSupplyRate(uint utilization) public view returns (uint64)
 ```
 
 * `utilization`: The utilization at which to calculate the rate.
-* `RETURNS`: The APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 25% APR.
+* `RETURNS`: The per second supply rate as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `317100000` indicates, roughly, a 1% APR.
 
 #### Solidity
 
 ```solidity
 Comet comet = Comet(0xCometAddress);
-uint supplyRate = comet.getSupplyRate(0.8e18); // example: 250000000000000000 (25%)
+uint supplyRate = comet.getSupplyRate(0.8e18);
 ```
 
 #### Web3.js v1.5.x
@@ -68,7 +77,7 @@ const supplyRate = await comet.callStatic.getSupplyRate(0.8e18);
 
 ### Get Borrow Rate
 
-This function returns the borrow rate APR as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the borrow rate is:
+This function returns the per second borrow rate as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the borrow rate is:
 
 ```
 ## If the Utilization is less than or equal to the Kink parameter
@@ -80,6 +89,15 @@ BorrowRate = InterestRateBase + InterestRateSlopeLow * Utilization
 BorrowRate = InterestRateBase + InterestRateSlopeLow * Kink + InterestRateSlopeHigh * (Utilization - Kink)
 ```
 
+To calculate the Compound III borrow APR as a percentage, pass the current utilization to this function, and divide the result by `10 ^ 18` and multiply by the approximate number of seconds in one year and scale up by 100.
+
+```
+Seconds Per Year = 60 * 60 * 24 * 365
+Utilization = getUtilization()
+Borrow Rate = getBorrowRate(Utilization)
+Borrow APR = Borrow Rate / (10 ^ 18) * Seconds Per Year * 100
+```
+
 #### Comet
 
 ```solidity
@@ -87,13 +105,13 @@ function getBorrowRate(uint utilization) public view returns (uint64)
 ```
 
 * `utilization`: The utilization at which to calculate the rate.
-* `RETURNS`: The APR as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `90000000000000000` indicates a 9% APR.
+* `RETURNS`: The per second borrow rate as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `317100000` indicates, roughly, a 1% APR.
 
 #### Solidity
 
 ```solidity
 Comet comet = Comet(0xCometAddress);
-uint borrowRate = comet.getBorrowRate(0.8e18); // example: 90000000000000000 (9%)
+uint borrowRate = comet.getBorrowRate(0.8e18);
 ```
 
 #### Web3.js v1.5.x
@@ -180,7 +198,9 @@ await comet.supply(usdcAddress, 1000000);
 
 ### Withdraw
 
-The withdraw method is used to **withdraw collateral** that is not currently supporting an open borrow. Withdraw is **also used to borrow the base asset** from the protocol if there is sufficient collateral for the account. It can also be called from an allowed manager address. To check an account's present ability to increase its borrow size, see the *[Get Borrow Liquidity](#get-borrow-liquidity)* function.
+The withdraw method is used to **withdraw collateral** that is not currently supporting an open borrow. Withdraw is **also used to borrow the base asset** from the protocol if the account has supplied sufficient collateral. It can also be called from an allowed manager address.
+
+Compound III implements a minimum borrow position size which can be found as `baseBorrowMin` in the [protocol configuration](#get-protocol-configuration). A withdraw transaction to borrow that results in the account's borrow size being less than the `baseBorrowMin` will revert.
 
 #### Comet
 
@@ -529,7 +549,7 @@ const [ numAbsorbs, numAbsorbed, approxSpend ] = await comet.callStatic.liquidat
 
 Compound III has a built-in system for tracking rewards for accounts that use the protocol. The full history of accrual of rewards are tracked for suppliers and borrowers of the base asset. The rewards can be any ERC-20 token.
 
-### Reward Accrual
+### Reward Accrual Tracking
 
 The reward accrual is tracked in the Comet contract and rewards can be claimed by users from an external Comet Rewards contract. Rewards are accounted for with up to 6 decimals of precision.
 
@@ -560,6 +580,44 @@ const accrued = await comet.methods.baseTrackingAccrued('0xAccount').call();
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
 const accrued = await comet.callStatic.baseTrackingAccrued('0xAccount');
+```
+
+### Get Reward Accrued
+
+The amount of reward token accrued but not yet claimed for an account can be fetched from the external Comet Rewards contract.
+
+#### Comet Rewards
+
+```solidity
+struct RewardOwed {
+    address token;
+    uint owed;
+}
+
+function getRewardOwed(address comet, address account) external returns (RewardOwed memory)
+```
+
+* `RETURNS`: Returns the amount of reward token accrued but not yet claimed, scaled up by 10 to the "decimals" integer in the reward token's contract.
+
+#### Solidity
+
+```solidity
+CometRewards rewards = CometRewards(0xRewardsAddress);
+RewardOwed reward = rewards.getRewardOwed(0xCometAddress, 0xAccount);
+```
+
+#### Web3.js v1.5.x
+
+```js
+const rewards = new web3.eth.Contract(abiJson, contractAddress);
+const [ tokenAddress, amtOwed ] = await rewards.methods.getRewardOwed(cometAddress, accountAddress).call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const rewards = new ethers.Contract(contractAddress, abiJson, provider);
+const [ tokenAddress, amtOwed ] = await rewards.callStatic.getRewardOwed(cometAddress, accountAddress);
 ```
 
 ### Claim Rewards
@@ -2006,6 +2064,10 @@ function updateAssetSupplyCap(address asset, uint128 newSupplyCap) external
 ### ERC-20 Approve Manager Address
 
 This function sets the Comet contract's ERC-20 allowance of an asset for a manager address. It can only be called by the Governor.
+
+In the event of a governance attack, an attacker could create a proposal that leverages this function to give themselves permissions to freely transfer all ERC-20 tokens out of the Comet contract.
+
+Hypothetically, the attacker would need to either acquire supreme voting weight or add a malicious step in an otherwise innocuous and popular proposal and the community would fail to detect before approving.
 
 #### Comet
 
