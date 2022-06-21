@@ -37,6 +37,7 @@ contract CometRewards {
 
     /** Custom errors **/
 
+    error AlreadyConfigured(address);
     error InvalidUInt64(uint);
     error NotPermitted(address);
     error NotSupported(address);
@@ -57,6 +58,7 @@ contract CometRewards {
      */
     function _setRewardConfig(address comet, address token) external {
         if (msg.sender != governor) revert NotPermitted(msg.sender);
+        if (rewardConfig[comet].token != address(0)) revert AlreadyConfigured(comet);
 
         uint64 accrualScale = CometInterface(comet).baseAccrualScale();
         uint8 tokenDecimals = ERC20(token).decimals();
