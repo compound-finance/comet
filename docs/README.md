@@ -52,7 +52,7 @@ function getSupplyRate(uint utilization) public view returns (uint64)
 ```
 
 * `utilization`: The utilization at which to calculate the rate.
-* `RETURNS`: The supply APR, per second, as a decimal scaled up by `10 ^ 18`. E.g. `317100000` indicates, roughly, a 1% APR.
+* `RETURNS`: The per second supply rate as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `317100000` indicates, roughly, a 1% APR.
 
 #### Solidity
 
@@ -77,7 +77,7 @@ const supplyRate = await comet.callStatic.getSupplyRate(0.8e18);
 
 ### Get Borrow Rate
 
-This function returns the borrow rate, as an APR, per second, scaled up by `10 ^ 18`. The formula for producing the borrow rate is:
+This function returns the per second borrow rate as the decimal representation of a percentage scaled up by `10 ^ 18`. The formula for producing the borrow rate is:
 
 ```
 ## If the Utilization is less than or equal to the Kink parameter
@@ -105,7 +105,7 @@ function getBorrowRate(uint utilization) public view returns (uint64)
 ```
 
 * `utilization`: The utilization at which to calculate the rate.
-* `RETURNS`: The borrow APR, per second, as a decimal scaled up by `10 ^ 18`. E.g. `317100000` indicates, roughly, a 1% APR.
+* `RETURNS`: The per second borrow rate as the decimal representation of a percentage scaled up by `10 ^ 18`. E.g. `317100000` indicates, roughly, a 1% APR.
 
 #### Solidity
 
