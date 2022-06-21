@@ -139,6 +139,20 @@ describe('CometRewards', () => {
       expect(await COMP.balanceOf(alice.address)).to.be.equal(exp(86400, 18));
     });
 
+    it('fails if comet instance is already configured', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { COMP },
+      } = await makeProtocol({
+        baseMinForRewards: 10e6,
+      });
+      const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
+      await expect(
+        rewards._setRewardConfig(comet.address, COMP.address)
+      ).to.be.revertedWith(`custom error 'AlreadyConfigured("${comet.address}")`);
+    });
+
     it('fails if comet instance is not configured', async () => {
       const {
         comet,
