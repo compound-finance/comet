@@ -2,12 +2,14 @@
 pragma solidity 0.8.13;
 
 import "./CometInterface.sol";
+import "./ERC20.sol";
 import "./IWETH9.sol";
 
 contract Bulker {
     /** General configuration constants **/
-    address payable public immutable weth;
+    address public immutable admin;
     address public immutable comet;
+    address payable public immutable weth;
     address public immutable baseToken;
 
     /** Actions **/
@@ -20,8 +22,10 @@ contract Bulker {
     /** Custom errors **/
     error InvalidArgument();
     error FailedToSendEther();
+    error Unauthorized();
 
-    constructor(address comet_, address payable weth_) {
+    constructor(address admin_, address comet_, address payable weth_) {
+        admin = admin_;
         comet = comet_;
         weth = weth_;
         baseToken = CometInterface(comet_).baseToken();
@@ -31,6 +35,30 @@ contract Bulker {
      * @notice Fallback for receiving ether. Needed for ACTION_WITHDRAW_ETH.
      */
     receive() external payable {}
+
+    /**
+     * @notice A public function to sweep accidental ERC-20 transfers to this contract. Tokens are sent to admin (Timelock)
+     * @param recipient The address that will receive the swept funds
+     * @param asset The address of the ERC-20 token to sweep
+     */
+    function sweepToken(address recipient, ERC20 asset) external {
+        if (msg.sender != admin) revert Unauthorized();
+
+        uint256 balance = asset.balanceOf(address(this));
+        asset.transfer(recipient, balance);
+    }
+
+    /**
+     * @notice A public function to sweep accidental ETH transfers to this contract. Tokens are sent to admin (Timelock)
+     * @param recipient The address that will receive the swept funds
+     */
+    function sweepEth(address recipient) external {
+        if (msg.sender != admin) revert Unauthorized();
+
+        uint256 balance = address(this).balance;
+        (bool success, ) = recipient.call{ value: balance }("");
+        if (!success) revert FailedToSendEther();
+    }
 
     /**
      * @notice Executes a list of actions in order
@@ -90,7 +118,6 @@ contract Bulker {
      * @notice Transfers an asset to a user in Comet
      */
     function transferTo(address to, address asset, uint amount) internal {
-        amount = getAmount(asset, amount);
         CometInterface(comet).transferAssetFrom(msg.sender, to, asset, amount);
     }
 
@@ -98,7 +125,6 @@ contract Bulker {
      * @notice Withdraws an asset to a user in Comet
      */
     function withdrawTo(address to, address asset, uint amount) internal {
-        amount = getAmount(asset, amount);
         CometInterface(comet).withdrawFrom(msg.sender, to, asset, amount);
     }
 
@@ -106,24 +132,9 @@ contract Bulker {
      * @notice Withdraws WETH from Comet to a user after unwrapping it to ETH
      */
     function withdrawEthTo(address to, uint amount) internal {
-        amount = getAmount(weth, amount);
         CometInterface(comet).withdrawFrom(msg.sender, address(this), weth, amount);
         IWETH9(weth).withdraw(amount);
         (bool success, ) = to.call{ value: amount }("");
         if (!success) revert FailedToSendEther();
-    }
-
-    /**
-     * @notice Handles the max transfer/withdraw case so that no dust is left in the protocol.
-     */
-    function getAmount(address asset, uint amount) internal view returns (uint) {
-        if (amount == type(uint256).max) {
-            if (asset == baseToken) {
-                return CometInterface(comet).balanceOf(msg.sender);
-            } else {
-                return CometInterface(comet).collateralBalanceOf(msg.sender, asset);
-            }
-        }
-        return amount;
     }
 }

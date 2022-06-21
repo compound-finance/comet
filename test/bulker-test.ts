@@ -329,6 +329,77 @@ describe('bulker', function () {
     await expect(bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_ETH()], [withdrawEthCalldata]))
       .to.be.reverted; // Should revert with "custom error 'Unauthorized()'"
   });
+
+  describe('admin functions', function () {
+    it('sweep ERC20 token', async () => {
+      const protocol = await makeProtocol({});
+      const { comet, governor, tokens: { USDC, WETH }, users: [alice] } = protocol;
+      const bulkerInfo = await makeBulker({ admin: governor, comet: comet.address, weth: WETH.address });
+      const { bulker } = bulkerInfo;
+
+      // Alice "accidentally" sends 10 USDC to the Bulker
+      const transferAmount = exp(10, 6);
+      await USDC.allocateTo(alice.address, transferAmount);
+      await USDC.connect(alice).transfer(bulker.address, transferAmount);
+
+      const oldBulkerBalance = await USDC.balanceOf(bulker.address);
+      const oldGovBalance = await USDC.balanceOf(governor.address);
+
+      // Governor sweeps tokens
+      await bulker.connect(governor).sweepToken(governor.address, USDC.address);
+
+      const newBulkerBalance = await USDC.balanceOf(bulker.address);
+      const newGovBalance = await USDC.balanceOf(governor.address);
+
+      expect(newBulkerBalance.sub(oldBulkerBalance)).to.be.equal(-transferAmount);
+      expect(newGovBalance.sub(oldGovBalance)).to.be.equal(transferAmount);
+    });
+
+    it('sweep ETH', async () => {
+      const protocol = await makeProtocol({});
+      const { comet, governor, tokens: { WETH }, users: [alice] } = protocol;
+      const bulkerInfo = await makeBulker({ admin: governor, comet: comet.address, weth: WETH.address });
+      const { bulker } = bulkerInfo;
+
+      // Alice "accidentally" sends 1 ETH to the Bulker
+      const transferAmount = exp(1, 18);
+      await alice.sendTransaction({ to: bulker.address, value: transferAmount });
+
+      const oldBulkerBalance = await ethers.provider.getBalance(bulker.address);
+      const oldGovBalance = await ethers.provider.getBalance(governor.address);
+
+      // Governor sweeps ETH
+      const txn = await wait(bulker.connect(governor).sweepEth(governor.address));
+
+      const newBulkerBalance = await ethers.provider.getBalance(bulker.address);
+      const newGovBalance = await ethers.provider.getBalance(governor.address);
+
+      expect(newBulkerBalance.sub(oldBulkerBalance)).to.be.equal(-transferAmount);
+      expect(newGovBalance.sub(oldGovBalance)).to.be.equal(transferAmount - getGasUsed(txn));
+    });
+
+    it('reverts if sweepToken is called by non-admin', async () => {
+      const protocol = await makeProtocol({});
+      const { comet, governor, tokens: { USDC, WETH }, users: [alice] } = protocol;
+      const bulkerInfo = await makeBulker({ admin: governor, comet: comet.address, weth: WETH.address });
+      const { bulker } = bulkerInfo;
+
+      // Alice sweeps tokens
+      await expect(bulker.connect(alice).sweepToken(governor.address, USDC.address))
+        .to.be.revertedWith("custom error 'Unauthorized()'");
+    });
+
+    it('reverts if sweepEth is called by non-admin', async () => {
+      const protocol = await makeProtocol({});
+      const { comet, governor, tokens: { WETH }, users: [alice] } = protocol;
+      const bulkerInfo = await makeBulker({ admin: governor, comet: comet.address, weth: WETH.address });
+      const { bulker } = bulkerInfo;
+
+      // Alice sweeps ETH
+      await expect(bulker.connect(alice).sweepEth(governor.address))
+        .to.be.revertedWith("custom error 'Unauthorized()'");
+    });
+  });
 });
 
 describe('bulker multiple actions', function () {
