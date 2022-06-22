@@ -10,10 +10,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-
       - uses: actions/setup-python@v4
         with:
           python-version: '3.x'
@@ -22,4 +18,4 @@ jobs:
         run: pip install slither-analyzer
 
       - name: Slither analysis
-        run: slither-check-upgradeability contracts/Configurator.sol Configurator --proxy-filename contracts/TransparentUpgradeableConfiguratorProxy.sol --proxy TransparentUpgradeableConfiguratorProxy
+        run: slither-check-upgradeability contracts/Configurator.sol Configurator --proxy-filename contracts/TransparentUpgradeableConfiguratorProxy.sol --proxy-name TransparentUpgradeableConfiguratorProxy
