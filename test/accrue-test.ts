@@ -233,3 +233,19 @@ describe('accrue', function () {
     await ethers.provider.send('hardhat_reset', []); // dont break downstream tests...
   });
 });
+
+describe('accrueAccount', function () {
+  it('has no effect when called on an address with no protocol activity', async () => {
+    const { comet, users: [unusedAccount] } = await makeProtocol();
+
+    const userBasic0 = await comet.userBasic(unusedAccount.address);
+    await comet.accrueAccount(unusedAccount.address);
+    const userBasic1 = await comet.userBasic(unusedAccount.address);
+
+    expect(userBasic0).to.deep.equal(userBasic1);
+    expect(userBasic1.principal).to.eq(0);
+    expect(userBasic1.baseTrackingIndex).to.eq(0);
+    expect(userBasic1.baseTrackingAccrued).to.eq(0);
+    expect(userBasic1.assetsIn).to.eq(0);
+  });
+});
