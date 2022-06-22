@@ -169,7 +169,7 @@ contract CometRewards {
      * @dev Calculates the reward accrued for an account on a Comet deployment
      */
     function getRewardAccrued(address comet, address account, RewardConfig memory config) internal view returns (uint) {
-        uint256 accrued = uint256(CometInterface(comet).baseTrackingAccrued(account));
+        uint accrued = CometInterface(comet).baseTrackingAccrued(account);
 
         if (config.shouldUpscale) {
             accrued *= config.rescaleFactor;

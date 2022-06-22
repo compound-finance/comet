@@ -266,7 +266,7 @@ contract Comet is CometMainInterface {
 
         unchecked {
             // Keep 4 decimals for each factor
-            uint256 descale = uint256(FACTOR_SCALE) / 1e4;
+            uint64 descale = FACTOR_SCALE / 1e4;
             uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
             uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
             uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
@@ -350,7 +350,7 @@ contract Comet is CometMainInterface {
         }
 
         address asset = address(uint160(word_a & type(uint160).max));
-        uint256 rescale = uint256(FACTOR_SCALE) / 1e4;
+        uint64 rescale = FACTOR_SCALE / 1e4;
         uint64 borrowCollateralFactor = uint64(((word_a >> 160) & type(uint16).max) * rescale);
         uint64 liquidateCollateralFactor = uint64(((word_a >> 176) & type(uint16).max) * rescale);
         uint64 liquidationFactor = uint64(((word_a >> 192) & type(uint16).max) * rescale);
@@ -400,9 +400,9 @@ contract Comet is CometMainInterface {
         uint64 baseSupplyIndex_ = baseSupplyIndex;
         uint64 baseBorrowIndex_ = baseBorrowIndex;
         if (timeElapsed > 0) {
-            uint256 utilization = getUtilization();
-            uint256 supplyRate = uint256(getSupplyRate(utilization));
-            uint256 borrowRate = uint256(getBorrowRate(utilization));
+            uint utilization = getUtilization();
+            uint supplyRate = getSupplyRate(utilization);
+            uint borrowRate = getBorrowRate(utilization);
             baseSupplyIndex_ += safe64(mulFactor(baseSupplyIndex_, supplyRate * timeElapsed));
             baseBorrowIndex_ += safe64(mulFactor(baseBorrowIndex_, borrowRate * timeElapsed));
         }
@@ -414,15 +414,15 @@ contract Comet is CometMainInterface {
      **/
     function accrueInternal() internal {
         uint40 now_ = getNowInternal();
-        uint256 timeElapsed = uint256(now_ - lastAccrualTime);
+        uint timeElapsed = uint256(now_ - lastAccrualTime);
         if (timeElapsed > 0) {
             (baseSupplyIndex, baseBorrowIndex) = accruedInterestIndices(timeElapsed);
             if (totalSupplyBase >= baseMinForRewards) {
-                uint256 supplySpeed = baseTrackingSupplySpeed;
+                uint supplySpeed = baseTrackingSupplySpeed;
                 trackingSupplyIndex += safe64(divBaseWei(supplySpeed * timeElapsed, totalSupplyBase));
             }
             if (totalBorrowBase >= baseMinForRewards) {
-                uint256 borrowSpeed = baseTrackingBorrowSpeed;
+                uint borrowSpeed = baseTrackingBorrowSpeed;
                 trackingBorrowIndex += safe64(divBaseWei(borrowSpeed * timeElapsed, totalBorrowBase));
             }
             lastAccrualTime = now_;
@@ -473,8 +473,8 @@ contract Comet is CometMainInterface {
      * @return The utilization rate of the base asset
      */
     function getUtilization() override public view returns (uint) {
-        uint256 totalSupply_ = uint256(presentValueSupply(baseSupplyIndex, totalSupplyBase));
-        uint256 totalBorrow_ = uint256(presentValueBorrow(baseBorrowIndex, totalBorrowBase));
+        uint totalSupply_ = presentValueSupply(baseSupplyIndex, totalSupplyBase);
+        uint totalBorrow_ = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
         if (totalSupply_ == 0) {
             return 0;
         } else {
@@ -749,10 +749,10 @@ contract Comet is CometMainInterface {
         basic.principal = principalNew;
 
         if (principal >= 0) {
-            uint256 indexDelta = uint256(trackingSupplyIndex - basic.baseTrackingIndex);
+            uint indexDelta = uint256(trackingSupplyIndex - basic.baseTrackingIndex);
             basic.baseTrackingAccrued += safe64(uint104(principal) * indexDelta / trackingIndexScale / accrualDescaleFactor);
         } else {
-            uint256 indexDelta = uint256(trackingBorrowIndex - basic.baseTrackingIndex);
+            uint indexDelta = uint256(trackingBorrowIndex - basic.baseTrackingIndex);
             basic.baseTrackingAccrued += safe64(uint104(-principal) * indexDelta / trackingIndexScale / accrualDescaleFactor);
         }
 
