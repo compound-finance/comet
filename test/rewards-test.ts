@@ -149,7 +149,7 @@ describe('CometRewards', () => {
       });
       const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
       await expect(
-        rewards._setRewardConfig(comet.address, COMP.address)
+        rewards.setRewardConfig(comet.address, COMP.address)
       ).to.be.revertedWith(`custom error 'AlreadyConfigured("${comet.address}")`);
     });
 
