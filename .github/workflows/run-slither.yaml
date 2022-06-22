@@ -18,11 +18,14 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install packages
-        run: pip install slither-analyzer
-
       - name: Install solc
         run: sudo add-apt-repository ppa:ethereum/ethereum;sudo add-apt-repository ppa:ethereum/ethereum-dev;sudo apt-get update;sudo apt-get install solc
+
+      - name: Install packages
+        run: pip install slither-analyzer solc-select
+
+      - name: Switch to solidity version
+        run: solc-select use 0.8.13
 
       - name: Slither analysis
         run: slither-check-upgradeability contracts/Configurator.sol Configurator --proxy-filename contracts/TransparentUpgradeableConfiguratorProxy.sol --proxy-name TransparentUpgradeableConfiguratorProxy
