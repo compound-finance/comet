@@ -1,0 +1,22 @@
+name: 'Run slither'
+on:
+  workflow_dispatch:
+  pull_request:
+jobs:
+  gas_profiler:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '16'
+          cache: 'pip'
+
+      - name: Install packages
+        run: pip install slither-analyzer
+
+      - name: Slither analysis
+        run: slither-check-upgradeability contracts/Configurator.sol Configurator --proxy-filename contracts/TransparentUpgradeableConfiguratorProxy.sol --proxy TransparentUpgradeableConfiguratorProxy
