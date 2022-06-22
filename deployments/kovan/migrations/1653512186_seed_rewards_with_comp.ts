@@ -44,7 +44,7 @@ migration<Vars>('1653512186_seed_rewards_with_comp', {
         0,
       ],
       [
-        "_setRewardConfig(address,address)",
+        "setRewardConfig(address,address)",
         "transfer(address,uint256)",
       ],
       [
