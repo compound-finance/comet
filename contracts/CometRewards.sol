@@ -37,6 +37,7 @@ contract CometRewards {
 
     /** Custom errors **/
 
+    error AlreadyConfigured(address);
     error InvalidUInt64(uint);
     error NotPermitted(address);
     error NotSupported(address);
@@ -55,8 +56,9 @@ contract CometRewards {
      * @param comet The protocol instance
      * @param token The reward token address
      */
-    function _setRewardConfig(address comet, address token) external {
+    function setRewardConfig(address comet, address token) external {
         if (msg.sender != governor) revert NotPermitted(msg.sender);
+        if (rewardConfig[comet].token != address(0)) revert AlreadyConfigured(comet);
 
         uint64 accrualScale = CometInterface(comet).baseAccrualScale();
         uint8 tokenDecimals = ERC20(token).decimals();
@@ -82,7 +84,7 @@ contract CometRewards {
      * @param to Where to send the tokens
      * @param amount The number of tokens to withdraw
      */
-    function _withdrawToken(address token, address to, uint amount) external {
+    function withdrawToken(address token, address to, uint amount) external {
         if (msg.sender != governor) revert NotPermitted(msg.sender);
 
         doTransferOut(token, to, amount);
@@ -92,7 +94,7 @@ contract CometRewards {
      * @notice Transfers the governor rights to a new address
      * @param newGovernor The address of the new governor
      */
-    function _transferGovernor(address newGovernor) external {
+    function transferGovernor(address newGovernor) external {
         if (msg.sender != governor) revert NotPermitted(msg.sender);
 
         address oldGovernor = governor;

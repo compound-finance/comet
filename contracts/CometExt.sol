@@ -95,7 +95,7 @@ contract CometExt is CometExtInterface {
     /**
      * @notice Query the current collateral balance of an account
      * @param account The account whose balance to query
-     * @param asset The collateral asset whi
+     * @param asset The collateral asset to check the balance for
      * @return The collateral balance of the account
      */
     function collateralBalanceOf(address account, address asset) override external view returns (uint128) {

@@ -139,6 +139,20 @@ describe('CometRewards', () => {
       expect(await COMP.balanceOf(alice.address)).to.be.equal(exp(86400, 18));
     });
 
+    it('fails if comet instance is already configured', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { COMP },
+      } = await makeProtocol({
+        baseMinForRewards: 10e6,
+      });
+      const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
+      await expect(
+        rewards._setRewardConfig(comet.address, COMP.address)
+      ).to.be.revertedWith(`custom error 'AlreadyConfigured("${comet.address}")`);
+    });
+
     it('fails if comet instance is not configured', async () => {
       const {
         comet,
@@ -520,7 +534,7 @@ describe('CometRewards', () => {
     });
   });
 
-  describe('_setRewardsConfig', () => {
+  describe('setRewardsConfig', () => {
     it('allows governor to set rewards token with upscale', async () => {
       const {
         comet,
@@ -587,14 +601,14 @@ describe('CometRewards', () => {
       await expect(
         rewards
           .connect(alice)
-          ._setRewardConfig(comet.address, COMP.address)
+          .setRewardConfig(comet.address, COMP.address)
       ).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
     });
 
     // XXX multiple configs
   });
 
-  describe('_withdrawToken', () => {
+  describe('withdrawToken', () => {
     it('allows governor to withdraw funds added', async () => {
       const {
         comet,
@@ -607,7 +621,7 @@ describe('CometRewards', () => {
       // allocate
       const _a0 = await COMP.allocateTo(rewards.address, 2e6);
 
-      const _tx = await wait(rewards._withdrawToken(COMP.address, alice.address, 2e6));
+      const _tx = await wait(rewards.withdrawToken(COMP.address, alice.address, 2e6));
       expect(await COMP.balanceOf(alice.address)).to.be.equal(2e6);
     });
 
@@ -626,12 +640,12 @@ describe('CometRewards', () => {
       await expect(
         rewards
           .connect(alice)
-          ._withdrawToken(COMP.address, alice.address, 2e6)
+          .withdrawToken(COMP.address, alice.address, 2e6)
       ).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
     });
   });
 
-  describe('_transferGovernor', () => {
+  describe('transferGovernor', () => {
     it('allows governor to transfer governor', async () => {
       const {
         comet,
@@ -641,7 +655,7 @@ describe('CometRewards', () => {
       } = await makeProtocol();
       const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
 
-      const txn = await wait(rewards._transferGovernor(alice.address));
+      const txn = await wait(rewards.transferGovernor(alice.address));
 
       expect(await rewards.governor()).to.be.equal(alice.address);
       expect(event(txn, 0)).to.be.deep.equal({
@@ -664,7 +678,7 @@ describe('CometRewards', () => {
       await expect(
         rewards
           .connect(alice)
-          ._transferGovernor(alice.address)
+          .transferGovernor(alice.address)
       ).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
     });
   });
