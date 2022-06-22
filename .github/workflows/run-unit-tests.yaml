@@ -30,6 +30,9 @@ jobs:
       - name: Run tests
         run: yarn test
 
+      - name: Slither analysis
+        run: slither-check-upgradeability contracts/Configurator.sol Configurator --proxy-filename contracts/TransparentUpgradeableConfiguratorProxy.sol --proxy TransparentUpgradeableConfiguratorProxy
+
       - uses: actions/upload-artifact@v2  # upload test results
         if: success() || failure()        # run this step even if previous step failed
         with:

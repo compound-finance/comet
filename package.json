@@ -43,7 +43,8 @@
   "dependencies": {
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
-    "jest-diff": "^27.4.2"
+    "jest-diff": "^27.4.2",
+    "slither": "^0.2.2"
   },
   "devDependencies": {
     "@compound-finance/hardhat-import": "^1.0.3",
