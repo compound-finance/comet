@@ -88,7 +88,7 @@ export function getExpectedBaseBalance(balance: bigint, baseIndexScale: bigint, 
 }
 
 export function getInterest(balance: bigint, rate: bigint, seconds: bigint) {
-  return balance * rate * seconds / (10n**18n);
+  return balance * rate * seconds / (10n ** 18n);
 }
 
 // Instantly executes some actions through the governance proposal process
@@ -96,10 +96,11 @@ export function getInterest(balance: bigint, rate: bigint, seconds: bigint) {
 export async function fastGovernanceExecute(governor: GovernorSimple, targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
   let tx = await (await governor.propose(targets, values, signatures, calldatas, 'FastExecuteProposal')).wait();
   let event = tx.events.find(event => event.event === 'ProposalCreated');
-  let [ proposalId ] = event.args;
+  let [proposalId] = event.args;
 
   await governor.queue(proposalId);
-  await governor.execute(proposalId);
+  const txn = await (await governor.execute(proposalId)).wait();
+  console.log('events ', txn.events)
 }
 
 export async function upgradeComet(world: World, context: CometContext, configOverrides: ProtocolConfiguration): Promise<CometContext> {
