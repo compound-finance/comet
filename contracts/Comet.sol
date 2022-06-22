@@ -1129,7 +1129,7 @@ contract Comet is CometMainInterface {
         //  but is also subject to abuse if refunds were to be given automatically.
         LiquidatorPoints memory points = liquidatorPoints[absorber];
         points.numAbsorbs++;
-        points.numAbsorbed += safe64(numAccounts);
+        points.numAbsorbed += safe64(accounts.length);
         points.approxSpend += safe128(gasUsed * block.basefee);
         liquidatorPoints[absorber] = points;
     }

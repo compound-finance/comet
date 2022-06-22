@@ -87,7 +87,7 @@ contract CometExt is CometExtInterface {
         bytes memory symbol_ = new bytes(i);
         for (uint8 j = 0; j < i; ) {
             symbol_[j] = symbol32[j];
-            unchecked { ++j; }
+            unchecked { j++; }
         }
         return string(symbol_);
     }
