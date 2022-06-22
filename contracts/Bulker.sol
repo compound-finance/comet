@@ -69,8 +69,7 @@ contract Bulker {
         if (actions.length != data.length) revert InvalidArgument();
 
         uint unusedEth = msg.value;
-        uint numActions = actions.length;
-        for (uint i = 0; i < numActions; ) {
+        for (uint i = 0; i < actions.length; ) {
             uint action = actions[i];
             if (action == ACTION_SUPPLY_ASSET) {
                 (address to, address asset, uint amount) = abi.decode(data[i], (address, address, uint));
@@ -89,7 +88,7 @@ contract Bulker {
                 (address to, uint amount) = abi.decode(data[i], (address, uint));
                 withdrawEthTo(to, amount);
             }
-            unchecked { ++i; }
+            unchecked { i++; }
         }
 
         // Refund unused ETH back to msg.sender

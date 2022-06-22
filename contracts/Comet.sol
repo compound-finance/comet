@@ -381,7 +381,7 @@ contract Comet is CometMainInterface {
             if (assetInfo.asset == asset) {
                 return assetInfo;
             }
-            unchecked { ++i; }
+            unchecked { i++; }
         }
         revert BadAsset();
     }
@@ -539,7 +539,7 @@ contract Comet is CometMainInterface {
                     asset.borrowCollateralFactor
                 ));
             }
-            unchecked { ++i; }
+            unchecked { i++; }
         }
 
         return liquidity >= 0;
@@ -581,7 +581,7 @@ contract Comet is CometMainInterface {
                     asset.liquidateCollateralFactor
                 ));
             }
-            unchecked { ++i; }
+            unchecked { i++; }
         }
 
         return liquidity < 0;
@@ -1117,10 +1117,9 @@ contract Comet is CometMainInterface {
         uint startGas = gasleft();
         accrueInternal();
 
-        uint numAccounts = accounts.length;
-        for (uint i = 0; i < numAccounts; ) {
+        for (uint i = 0; i < accounts.length; ) {
             absorbInternal(absorber, accounts[i]);
-            unchecked { ++i; }
+            unchecked { i++; }
         }
         uint gasUsed = startGas - gasleft();
 
@@ -1162,7 +1161,7 @@ contract Comet is CometMainInterface {
 
                 emit AbsorbCollateral(absorber, account, asset, seizeAmount, value);
             }
-            unchecked { ++i; }
+            unchecked { i++; }
         }
 
         uint104 deltaBalance = safe104(divPrice(deltaValue, basePrice, uint64(baseScale)));

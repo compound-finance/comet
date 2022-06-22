@@ -265,7 +265,7 @@ contract Configurator is ConfiguratorStorage {
             if (assetConfigs[i].asset == asset) {
                 return i;
             }
-            unchecked { ++i; }
+            unchecked { i++; }
         }
         revert AssetDoesNotExist();
     }
