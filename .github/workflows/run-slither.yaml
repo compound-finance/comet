@@ -22,7 +22,7 @@ jobs:
         run: pip install slither-analyzer
 
       - name: Install solc
-        run: npm install -g solc
+        run: sudo add-apt-repository ppa:ethereum/ethereum;sudo add-apt-repository ppa:ethereum/ethereum-dev;sudo apt-get update;sudo apt-get install solc
 
       - name: Slither analysis
         run: slither-check-upgradeability contracts/Configurator.sol Configurator --proxy-filename contracts/TransparentUpgradeableConfiguratorProxy.sol --proxy-name TransparentUpgradeableConfiguratorProxy
