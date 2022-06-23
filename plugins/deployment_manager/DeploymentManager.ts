@@ -3,8 +3,8 @@ import { Contract, providers } from 'ethers';
 import { Alias, Address, BuildFile } from './Types';
 import { Aliases, getAliases, putAlias, storeAliases } from './Aliases';
 import { Cache } from './Cache';
-import { ContractMap, getContracts } from './ContractMap';
-import { Deployer, DeployOpts, deploy, deployBuild } from './Deploy';
+import { ContractMap, getContracts, storeBuildFile } from './ContractMap';
+import { Deployer, DeployOpts, deploy, deployBuild, getBuildFileFromArtifacts } from './Deploy';
 import { fetchAndCacheContract } from './Import';
 import { Proxies, getProxies, putProxy, storeProxies } from './Proxies';
 import { getRelationConfig } from './RelationConfig';
@@ -131,6 +131,20 @@ export class DeploymentManager {
     this.invalidateContractsCache();
   }
 
+  /* Stores a new alias, which can then be referenced via `deploymentManager.contract()` */
+  async putBuild(contractFile: string, address: Address) {
+    const contractFileName = contractFile.split('/').reverse()[0];
+    const contractName = contractFileName.replace('.sol', '');
+    const buildFile = await getBuildFileFromArtifacts(contractFile, contractFileName);
+    if (!buildFile.contract) {
+      // This is just to make it clear which contract was deployed, when reading the build file
+      buildFile.contract = contractName;
+    }
+    await storeBuildFile(this.cache, address, buildFile);
+    this.invalidateContractsCache();
+  }
+
+
   /* Stores a new proxy, which dictates the ABI available for that contract in `deploymentManager.contract()` */
   async putProxy(alias: Alias, address: Address) {
     await putProxy(this.cache, alias, address);
@@ -186,9 +200,12 @@ export class DeploymentManager {
    **/
   async contracts(): Promise<ContractMap> {
     if (this.contractsCache !== null) {
+      console.log('non-empty contractsCache')
       return this.contractsCache;
     } else {
       // TODO: When else do we need to clear the contracts cache
+      console.log('empty contractsCache')
+
       this.contractsCache = await getContracts(this.cache, this.hre, await this.getSigner());
       return this.contractsCache;
     }

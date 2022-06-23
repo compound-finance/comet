@@ -53,7 +53,7 @@ async function maybeStoreCache(deployOpts: DeployOpts, contract: Contract, build
   }
 }
 
-async function getBuildFileFromArtifacts(
+export async function getBuildFileFromArtifacts(
   contractFile: string,
   contractFileName: string
 ): Promise<BuildFile> {

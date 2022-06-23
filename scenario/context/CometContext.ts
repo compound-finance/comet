@@ -175,7 +175,7 @@ export class CometContext {
       const fauceteerActor = await buildActor('fauceteerActor', fauceteerSigner, this);
       // make gas fee 0 so we can source from contract addresses as well as EOAs
       await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
-      await cometAsset.transfer(fauceteerActor, amount, recipientAddress, {gasPrice: 0});
+      await cometAsset.transfer(fauceteerActor, amount, recipientAddress, { gasPrice: 0 });
       return;
     }
 
@@ -186,7 +186,7 @@ export class CometContext {
         this.debug(`Source Tokens: stealing from actor ${name}`);
         // make gas fee 0 so we can source from contract addresses as well as EOAs
         await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
-        await cometAsset.transfer(actor, amount, recipientAddress, {gasPrice: 0});
+        await cometAsset.transfer(actor, amount, recipientAddress, { gasPrice: 0 });
         return;
       }
     }
@@ -224,12 +224,27 @@ export class CometContext {
     })));
   }
 
+  async getContract<T extends Contract>(name: string, thing?: string): Promise<T> {
+    let contracts = await this.deploymentManager.contracts();
+    let contract: T = contracts.get(name) as T;
+    if (!contract) {
+      throw new Error(`No such contract ${name}, found: ${JSON.stringify([...contracts.keys()])}`);
+    }
+    if (thing) {
+      return await this.deploymentManager.hre.ethers.getContractAt(thing, contract.address) as T;
+    } else {
+      return contract;
+    }
+    return contract;
+  }
+
   // Instantly executes some actions through the governance proposal process
   async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
     let admin = this.actors['admin'];
     let governor = (await this.getGovernor()).connect(admin.signer);
     await fastGovernanceExecute(governor, targets, values, signatures, calldatas);
   }
+
 }
 
 async function getContextProperties(context: CometContext): Promise<CometProperties> {

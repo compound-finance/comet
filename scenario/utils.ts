@@ -100,7 +100,7 @@ export async function fastGovernanceExecute(governor: GovernorSimple, targets: s
 
   await governor.queue(proposalId);
   const txn = await (await governor.execute(proposalId)).wait();
-  console.log('events ', txn.events)
+  // console.log('events ', txn.events)
 }
 
 export async function upgradeComet(world: World, context: CometContext, configOverrides: ProtocolConfiguration): Promise<CometContext> {
