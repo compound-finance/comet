@@ -3,8 +3,8 @@ on:
   workflow_dispatch:
   pull_request:
 jobs:
-  gas_profiler:
-    name: Unit tests
+  slither_analyzer:
+    name: Slither analyzer
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -27,5 +27,5 @@ jobs:
       - name: Switch to solidity version
         run: solc-select install 0.8.13;solc-select use 0.8.13
 
-      - name: Slither analysis
+      - name: Function clash analysis
         run: yarn slither:fn-clashes &> tmp_res; cat tmp_res | grep 'Function id collision found' && exit 1

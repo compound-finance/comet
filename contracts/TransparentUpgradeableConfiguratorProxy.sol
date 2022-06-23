@@ -18,5 +18,4 @@ contract TransparentUpgradeableConfiguratorProxy is TransparentUpgradeableProxy 
      * @dev Overrides the TransparentUpgradeableProxy's _beforeFallback so admin can call the implementation.
      */
     function _beforeFallback() internal virtual override {}
-
 }

@@ -27,9 +27,6 @@ jobs:
       - name: Check types
         run: yarn tsc
 
-      - name: Slither analysis
-        run: slither-check-upgradeability contracts/Configurator.sol Configurator --proxy-filename contracts/TransparentUpgradeableConfiguratorProxy.sol --proxy TransparentUpgradeableConfiguratorProxy
-
       - name: Run tests
         run: yarn test
 
