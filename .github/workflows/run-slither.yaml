@@ -28,4 +28,4 @@ jobs:
         run: solc-select install 0.8.13;solc-select use 0.8.13
 
       - name: Slither analysis
-        run: yarn slither:fn-clashes &> tmp_res; cat tmp_res | grep 'Function id collision found' && exit 1 || rm -rf tmp_res
+        run: yarn slither:fn-clashes &> tmp_res; cat tmp_res | grep 'Function id collision found' && exit 1

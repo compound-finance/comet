@@ -292,8 +292,4 @@ contract Configurator is ConfiguratorStorage {
         governor = newGovernor;
         emit GovernorTransferred(oldGovernor, newGovernor);
     }
-
-    function tgeo() public {
-        // ...
-    }
 }

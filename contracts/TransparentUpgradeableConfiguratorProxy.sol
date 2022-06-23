@@ -19,7 +19,4 @@ contract TransparentUpgradeableConfiguratorProxy is TransparentUpgradeableProxy 
      */
     function _beforeFallback() internal virtual override {}
 
-    function gsf() public {
-        // ...
-    }
 }
