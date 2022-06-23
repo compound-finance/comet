@@ -1115,7 +1115,6 @@ contract Comet is CometMainInterface {
 
         uint startGas = gasleft();
         accrueInternal();
-
         for (uint i = 0; i < accounts.length; ) {
             absorbInternal(absorber, accounts[i]);
             unchecked { i++; }
