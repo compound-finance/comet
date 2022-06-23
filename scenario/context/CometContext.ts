@@ -228,7 +228,8 @@ export class CometContext {
   async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
     const dmSigner = await this.deploymentManager.getSigner();
     let governor = (await this.getGovernor()).connect(dmSigner);
-    console.log(`dmSigner: ${dmSigner}`);
+    console.log(`dmSigner:`);
+    console.log(dmSigner);
     console.log(await governor.admins(0))
     await fastGovernanceExecute(governor, targets, values, signatures, calldatas);
   }
