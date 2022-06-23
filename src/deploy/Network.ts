@@ -13,8 +13,8 @@ import {
   CometProxyAdmin__factory,
   TransparentUpgradeableProxy,
   TransparentUpgradeableProxy__factory,
-  TransparentUpgradeableConfiguratorProxy,
-  TransparentUpgradeableConfiguratorProxy__factory,
+  ConfiguratorProxy,
+  ConfiguratorProxy__factory,
   Configurator,
   Configurator__factory,
   SimpleTimelock,
@@ -144,10 +144,10 @@ export async function deployNetworkComet(
   if (deployProxy.deployConfiguratorProxy) {
     // Configuration proxy
     configuratorProxy = await deploymentManager.deploy<
-      TransparentUpgradeableConfiguratorProxy,
-      TransparentUpgradeableConfiguratorProxy__factory,
+      ConfiguratorProxy,
+      ConfiguratorProxy__factory,
       [string, string, string]
-    >('TransparentUpgradeableConfiguratorProxy.sol', [
+    >('ConfiguratorProxy.sol', [
       configurator.address,
       proxyAdmin.address,
       (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data, // new time lock is set, which we don't want
