@@ -98,7 +98,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
  */
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.13',
+    version: '0.8.15',
     settings: {
       optimizer: (
         process.env['OPTIMIZER_DISABLED'] ? { enabled: false } : {
