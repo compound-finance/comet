@@ -2,7 +2,7 @@ import { CometProperties, scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { constants, utils } from 'ethers';
 import { scaleToDecimals } from './utils';
-import { CometModified, CometModified__factory, CometModifiedFactory, CometModifiedFactory__factory } from '../build/types';
+import { CometModified__factory, CometModifiedFactory, CometModifiedFactory__factory } from '../build/types';
 import { ConfigurationStruct } from '../build/types/CometModified';
 
 scenario.only('upgrade Comet implementation', {}, async ({ comet, configurator, proxyAdmin, timelock, actors }, world, context) => {
@@ -50,7 +50,9 @@ scenario.only('upgrade Comet implementation', {}, async ({ comet, configurator, 
   console.log('new factory ', await configurator.factory())
   // await dm.spider();
 
-  const modifiedComet = await dm.contract('comet');
+  const CometModified = await dm.hre.ethers.getContractFactory('CometModified');
+  const modifiedComet = CometModified.attach(comet.address).connect(comet.signer);
+  console.log('xxxx', modifiedComet.initialize)
   console.log('new comet ', await modifiedComet.address)
 
   console.log('before lp ', await modifiedComet.liquidatorPoints(constants.AddressZero))
