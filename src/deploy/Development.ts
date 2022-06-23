@@ -20,8 +20,8 @@ import {
   Configurator__factory,
   CometProxyAdmin,
   CometProxyAdmin__factory,
-  TransparentUpgradeableConfiguratorProxy,
-  TransparentUpgradeableConfiguratorProxy__factory,
+  ConfiguratorProxy,
+  ConfiguratorProxy__factory,
   ProxyAdmin,
 } from '../../build/types';
 import { ConfigurationStruct } from '../../build/types/Comet';
@@ -222,10 +222,10 @@ export async function deployDevelopmentComet(
   if (deployProxy.deployConfiguratorProxy) {
     // Configuration proxy
     configuratorProxy = await deploymentManager.deploy<
-      TransparentUpgradeableConfiguratorProxy,
-      TransparentUpgradeableConfiguratorProxy__factory,
+      ConfiguratorProxy,
+      ConfiguratorProxy__factory,
       [string, string, string]
-    >('TransparentUpgradeableConfiguratorProxy.sol', [
+    >('ConfiguratorProxy.sol', [
       configurator.address,
       proxyAdmin.address,
       (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data, // new time lock is set, which we don't want

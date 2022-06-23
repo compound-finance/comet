@@ -6,7 +6,7 @@ import "./vendor/proxy/transparent/TransparentUpgradeableProxy.sol";
 /**
  * @dev A TransparentUpgradeableProxy that allows its admin to call its implementation.
  */
-contract TransparentUpgradeableConfiguratorProxy is TransparentUpgradeableProxy {
+contract ConfiguratorProxy is TransparentUpgradeableProxy {
     /**
      * @dev Initializes an upgradeable proxy managed by `_admin`, backed by the implementation at `_logic`, and
      * optionally initialized with `_data` as explained in {UpgradeableProxy-constructor}.

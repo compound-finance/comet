@@ -20,8 +20,8 @@ import {
   SimplePriceFeed__factory,
   TransparentUpgradeableProxy,
   TransparentUpgradeableProxy__factory,
-  TransparentUpgradeableConfiguratorProxy,
-  TransparentUpgradeableConfiguratorProxy__factory,
+  ConfiguratorProxy,
+  ConfiguratorProxy__factory,
   CometProxyAdmin,
   CometProxyAdmin__factory,
   CometFactory,
@@ -102,7 +102,7 @@ export type Protocol = {
 
 export type ConfiguratorAndProtocol = {
   configurator: Configurator;
-  configuratorProxy: TransparentUpgradeableConfiguratorProxy;
+  configuratorProxy: ConfiguratorProxy;
   proxyAdmin: CometProxyAdmin;
   cometFactory: CometFactory;
   cometProxy: TransparentUpgradeableProxy;
@@ -408,7 +408,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
 
   // Deploy Configurator proxy
   const initializeCalldata = (await configurator.populateTransaction.initialize(governor.address, cometFactory.address, configuration)).data;
-  const ConfiguratorProxy = (await ethers.getContractFactory('TransparentUpgradeableConfiguratorProxy')) as TransparentUpgradeableConfiguratorProxy__factory;
+  const ConfiguratorProxy = (await ethers.getContractFactory('ConfiguratorProxy')) as ConfiguratorProxy__factory;
   const configuratorProxy = await ConfiguratorProxy.deploy(
     configurator.address,
     proxyAdmin.address,
