@@ -118,7 +118,7 @@ contract Comet is CometMainInterface {
     /// @notice Factor to divide by when accruing rewards in order to preserve 6 decimals (i.e. baseScale / 1e6)
     uint internal immutable accrualDescaleFactor;
 
-    /**  Collateral asset configuration (packed) **/
+    /** Collateral asset configuration (packed) **/
 
     uint256 internal immutable asset00_a;
     uint256 internal immutable asset00_b;

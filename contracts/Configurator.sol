@@ -42,26 +42,36 @@ contract Configurator is ConfiguratorStorage {
     error InvalidAddress();
     error Unauthorized();
 
-    /// @notice Constructs a new Configurator instance
+    /**
+     * @notice Constructs a new Configurator instance
+     **/
     constructor() {
         // Set a high version to prevent the implementation contract from being initialized
         version = type(uint256).max;
     }
 
-    /// @notice Initializes the storage for Configurator
-    function initialize(address _governor, address _factory, Configuration calldata _config) public {
+    /**
+     * @notice Initializes the storage for Configurator
+     * @dev Note: All params can be updated by the governor except `baseToken` and `trackingIndexScale`
+     * @param governor_ The address of the governor
+     * @param factory_ The address of the Comet factory
+     * @param configuratorParams_ Config passed to new instances of Comet on construction
+     **/
+    function initialize(address governor_, address factory_, Configuration calldata configuratorParams_) public {
         if (version != 0) revert AlreadyInitialized();
-        if (_governor == address(0)) revert InvalidAddress();
-        if (_factory == address(0)) revert InvalidAddress();
+        if (governor_ == address(0)) revert InvalidAddress();
+        if (factory_ == address(0)) revert InvalidAddress();
 
-        governor = _governor;
-        factory = _factory;
-        configuratorParams = _config;
+        governor = governor_;
+        factory = factory_;
+        configuratorParams = configuratorParams_;
         version = 1;
     }
 
-    /// @notice Sets the factory for Configurator
-    /// @dev only callable by governor
+    /**
+     * @notice Sets the factory for Configurator
+     * @dev Note: Only callable by governor
+     **/
     function setFactory(address newFactory) external {
         if (msg.sender != governor) revert Unauthorized();
         address oldFactory = factory;
@@ -69,14 +79,8 @@ contract Configurator is ConfiguratorStorage {
         emit SetFactory(oldFactory, newFactory);
     }
 
-    /** Setters for Comet-related configuration **/
-    /**
-    * The following configuration parameters do not have setters:
-    *   - BaseToken
-    *   - TrackingIndexScale
-    */
+    /** Governance setters for Comet-related configuration **/
 
-    /// @dev only callable by governor
     function setGovernor(address newGovernor) external {
         if (msg.sender != governor) revert Unauthorized();
         address oldGovernor = configuratorParams.governor;
@@ -84,7 +88,6 @@ contract Configurator is ConfiguratorStorage {
         emit SetGovernor(oldGovernor, newGovernor);
     }
 
-    /// @dev only callable by governor
     function setPauseGuardian(address newPauseGuardian) external {
         if (msg.sender != governor) revert Unauthorized();
         address oldPauseGuardian = configuratorParams.pauseGuardian;
@@ -92,7 +95,6 @@ contract Configurator is ConfiguratorStorage {
         emit SetPauseGuardian(oldPauseGuardian, newPauseGuardian);
     }
 
-    /// @dev only callable by governor
     function setBaseTokenPriceFeed(address newBaseTokenPriceFeed) external {
         if (msg.sender != governor) revert Unauthorized();
         address oldBaseTokenPriceFeed = configuratorParams.baseTokenPriceFeed;
@@ -100,7 +102,6 @@ contract Configurator is ConfiguratorStorage {
         emit SetBaseTokenPriceFeed(oldBaseTokenPriceFeed, newBaseTokenPriceFeed);
     }
 
-    /// @dev only callable by governor
     function setExtensionDelegate(address newExtensionDelegate) external {
         if (msg.sender != governor) revert Unauthorized();
         address oldExtensionDelegate = configuratorParams.extensionDelegate;
@@ -108,7 +109,6 @@ contract Configurator is ConfiguratorStorage {
         emit SetExtensionDelegate(oldExtensionDelegate, newExtensionDelegate);
     }
 
-    /// @dev only callable by governor
     function setKink(uint64 newKink) external {
         if (msg.sender != governor) revert Unauthorized();
         uint64 oldKink = configuratorParams.kink;
@@ -116,7 +116,6 @@ contract Configurator is ConfiguratorStorage {
         emit SetKink(oldKink, newKink);
     }
 
-    /// @dev only callable by governor
     function setPerYearInterestRateSlopeLow(uint64 newSlope) external {
         if (msg.sender != governor) revert Unauthorized();
         uint64 oldSlope = configuratorParams.perYearInterestRateSlopeLow;
@@ -124,7 +123,6 @@ contract Configurator is ConfiguratorStorage {
         emit SetPerYearInterestRateSlopeLow(oldSlope, newSlope);
     }
 
-    /// @dev only callable by governor
     function setPerYearInterestRateSlopeHigh(uint64 newSlope) external {
         if (msg.sender != governor) revert Unauthorized();
         uint64 oldSlope = configuratorParams.perYearInterestRateSlopeHigh;
@@ -132,7 +130,6 @@ contract Configurator is ConfiguratorStorage {
         emit SetPerYearInterestRateSlopeHigh(oldSlope, newSlope);
     }
 
-    /// @dev only callable by governor
     function setPerYearInterestRateBase(uint64 newBase) external {
         if (msg.sender != governor) revert Unauthorized();
         uint64 oldBase = configuratorParams.perYearInterestRateBase;
@@ -140,7 +137,6 @@ contract Configurator is ConfiguratorStorage {
         emit SetPerYearInterestRateBase(oldBase, newBase);
     }
 
-    /// @dev only callable by governor
     function setReserveRate(uint64 newReserveRate) external {
         if (msg.sender != governor) revert Unauthorized();
         uint64 oldReserveRate = configuratorParams.reserveRate;
@@ -148,7 +144,6 @@ contract Configurator is ConfiguratorStorage {
         emit SetReserveRate(oldReserveRate, newReserveRate);
     }
 
-    /// @dev only callable by governor
     function setStoreFrontPriceFactor(uint64 newStoreFrontPriceFactor) external {
         if (msg.sender != governor) revert Unauthorized();
         uint64 oldStoreFrontPriceFactor = configuratorParams.storeFrontPriceFactor;
@@ -156,7 +151,6 @@ contract Configurator is ConfiguratorStorage {
         emit SetStoreFrontPriceFactor(oldStoreFrontPriceFactor, newStoreFrontPriceFactor);
     }
 
-    /// @dev only callable by governor
     function setBaseTrackingSupplySpeed(uint64 newBaseTrackingSupplySpeed) external {
         if (msg.sender != governor) revert Unauthorized();
         uint64 oldBaseTrackingSupplySpeed = configuratorParams.baseTrackingSupplySpeed;
@@ -164,7 +158,6 @@ contract Configurator is ConfiguratorStorage {
         emit SetBaseTrackingSupplySpeed(oldBaseTrackingSupplySpeed, newBaseTrackingSupplySpeed);
     }
 
-    /// @dev only callable by governor
     function setBaseTrackingBorrowSpeed(uint64 newBaseTrackingBorrowSpeed) external {
         if (msg.sender != governor) revert Unauthorized();
         uint64 oldBaseTrackingBorrowSpeed = configuratorParams.baseTrackingBorrowSpeed;
@@ -172,7 +165,6 @@ contract Configurator is ConfiguratorStorage {
         emit SetBaseTrackingBorrowSpeed(oldBaseTrackingBorrowSpeed, newBaseTrackingBorrowSpeed);
     }
 
-    /// @dev only callable by governor
     function setBaseMinForRewards(uint104 newBaseMinForRewards) external {
         if (msg.sender != governor) revert Unauthorized();
         uint104 oldBaseMinForRewards = configuratorParams.baseMinForRewards;
@@ -180,7 +172,6 @@ contract Configurator is ConfiguratorStorage {
         emit SetBaseMinForRewards(oldBaseMinForRewards, newBaseMinForRewards);
     }
 
-    /// @dev only callable by governor
     function setBaseBorrowMin(uint104 newBaseBorrowMin) external {
         if (msg.sender != governor) revert Unauthorized();
         uint104 oldBaseBorrowMin = configuratorParams.baseBorrowMin;
@@ -188,7 +179,6 @@ contract Configurator is ConfiguratorStorage {
         emit SetBaseBorrowMin(oldBaseBorrowMin, newBaseBorrowMin);
     }
 
-    /// @dev only callable by governor
     function setTargetReserves(uint104 newTargetReserves) external {
         if (msg.sender != governor) revert Unauthorized();
         uint104 oldTargetReserves = configuratorParams.targetReserves;
@@ -196,14 +186,12 @@ contract Configurator is ConfiguratorStorage {
         emit SetTargetReserves(oldTargetReserves, newTargetReserves);
     }
 
-    /// @dev only callable by governor
     function addAsset(AssetConfig calldata assetConfig) external {
         if (msg.sender != governor) revert Unauthorized();
         configuratorParams.assetConfigs.push(assetConfig);
         emit AddAsset(assetConfig);
     }
 
-    /// @dev only callable by governor
     function updateAsset(AssetConfig calldata newAssetConfig) external {
         if (msg.sender != governor) revert Unauthorized();
 
@@ -213,7 +201,6 @@ contract Configurator is ConfiguratorStorage {
         emit UpdateAsset(oldAssetConfig, newAssetConfig);
     }
 
-    /// @dev only callable by governor
     function updateAssetPriceFeed(address asset, address newPriceFeed) external {
         if (msg.sender != governor) revert Unauthorized();
 
@@ -223,7 +210,6 @@ contract Configurator is ConfiguratorStorage {
         emit UpdateAssetPriceFeed(asset, oldPriceFeed, newPriceFeed);
     }
 
-    /// @dev only callable by governor
     function updateAssetBorrowCollateralFactor(address asset, uint64 newBorrowCF) external {
         if (msg.sender != governor) revert Unauthorized();
 
@@ -233,7 +219,6 @@ contract Configurator is ConfiguratorStorage {
         emit UpdateAssetBorrowCollateralFactor(asset, oldBorrowCF, newBorrowCF);
     }
 
-    /// @dev only callable by governor
     function updateAssetLiquidateCollateralFactor(address asset, uint64 newLiquidateCF) external {
         if (msg.sender != governor) revert Unauthorized();
 
@@ -243,7 +228,6 @@ contract Configurator is ConfiguratorStorage {
         emit UpdateAssetLiquidateCollateralFactor(asset, oldLiquidateCF, newLiquidateCF);
     }
 
-    /// @dev only callable by governor
     function updateAssetLiquidationFactor(address asset, uint64 newLiquidationFactor) external {
         if (msg.sender != governor) revert Unauthorized();
 
@@ -253,7 +237,6 @@ contract Configurator is ConfiguratorStorage {
         emit UpdateAssetLiquidationFactor(asset, oldLiquidationFactor, newLiquidationFactor);
     }
 
-    /// @dev only callable by governor
     function updateAssetSupplyCap(address asset, uint128 newSupplyCap) external {
         if (msg.sender != governor) revert Unauthorized();
 
@@ -263,7 +246,11 @@ contract Configurator is ConfiguratorStorage {
         emit UpdateAssetSupplyCap(asset, oldSupplyCap, newSupplyCap);
     }
 
-    /// @dev Determine index of asset that matches given address
+    /** Other helpers **/
+
+    /**
+     * @dev Determine index of asset that matches given address
+     */
     function getAssetIndex(address asset) internal view returns (uint) {
         AssetConfig[] memory assetConfigs = configuratorParams.assetConfigs;
         uint numAssets = assetConfigs.length;
@@ -276,23 +263,26 @@ contract Configurator is ConfiguratorStorage {
         revert AssetDoesNotExist();
     }
 
-    /** End of setters for Comet-related configuration **/
-
-    /// @notice Gets the configuration params
+    /**
+     * @return The currently configured params
+     **/
     function getConfiguration() external view returns (Configuration memory) {
         return configuratorParams;
     }
 
-    /// @notice Deploy a new version of the Comet implementation.
-    /// @dev callable by anyone
+    /**
+     * @notice Deploy a new version of the Comet implementation.
+     * @dev Note: Callable by anyone
+     */
     function deploy() external returns (address) {
         address newComet = CometFactory(factory).clone(configuratorParams);
         emit CometDeployed(newComet);
         return newComet;
     }
 
-    /// @notice Transfers the governor rights to a new address
-    /// @dev only callable by governor
+    /**
+     * @notice Transfers the governor rights to a new address
+     */
     function transferGovernor(address newGovernor) external {
         if (msg.sender != governor) revert Unauthorized();
         address oldGovernor = governor;
