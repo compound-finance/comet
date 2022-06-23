@@ -226,7 +226,10 @@ export class CometContext {
 
   // Instantly executes some actions through the governance proposal process
   async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
-    let governor = (await this.getGovernor()).connect(await this.deploymentManager.getSigner());
+    const dmSigner = await this.deploymentManager.getSigner();
+    let governor = (await this.getGovernor()).connect(dmSigner);
+    console.log(`dmSigner: ${dmSigner}`);
+    console.log(await governor.admins(0))
     await fastGovernanceExecute(governor, targets, values, signatures, calldatas);
   }
 }
