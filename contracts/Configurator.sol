@@ -42,6 +42,12 @@ contract Configurator is ConfiguratorStorage {
     error InvalidAddress();
     error Unauthorized();
 
+    /// @notice Constructs a new Configurator instance
+    constructor() {
+        // Set a high version to prevent the implementation contract from being initialized
+        version = type(uint256).max;
+    }
+
     /// @notice Initializes the storage for Configurator
     function initialize(address _governor, address _factory, Configuration calldata _config) public {
         if (version != 0) revert AlreadyInitialized();
