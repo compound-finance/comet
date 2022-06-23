@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.13;
+pragma solidity 0.8.15;
 
 import "./CometExtInterface.sol";
 
@@ -78,14 +78,16 @@ contract CometExt is CometExtInterface {
      */
     function symbol() override external view returns (string memory) {
         uint8 i;
-        for (i = 0; i < 32; i++) {
+        for (i = 0; i < 32; ) {
             if (symbol32[i] == 0) {
                 break;
             }
+            unchecked { i++; }
         }
         bytes memory symbol_ = new bytes(i);
-        for (uint8 j = 0; j < i; j++) {
+        for (uint8 j = 0; j < i; ) {
             symbol_[j] = symbol32[j];
+            unchecked { j++; }
         }
         return string(symbol_);
     }

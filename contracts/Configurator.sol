@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.13;
+pragma solidity 0.8.15;
 
 import "./CometFactory.sol";
 import "./CometConfiguration.sol";
@@ -41,6 +41,12 @@ contract Configurator is ConfiguratorStorage {
     error AssetDoesNotExist();
     error InvalidAddress();
     error Unauthorized();
+
+    /// @notice Constructs a new Configurator instance
+    constructor() {
+        // Set a high version to prevent the implementation contract from being initialized
+        version = type(uint256).max;
+    }
 
     /// @notice Initializes the storage for Configurator
     function initialize(address _governor, address _factory, Configuration calldata _config) public {
@@ -261,10 +267,11 @@ contract Configurator is ConfiguratorStorage {
     function getAssetIndex(address asset) internal view returns (uint) {
         AssetConfig[] memory assetConfigs = configuratorParams.assetConfigs;
         uint numAssets = assetConfigs.length;
-        for (uint i = 0; i < numAssets; i++) {
+        for (uint i = 0; i < numAssets; ) {
             if (assetConfigs[i].asset == asset) {
                 return i;
             }
+            unchecked { i++; }
         }
         revert AssetDoesNotExist();
     }
