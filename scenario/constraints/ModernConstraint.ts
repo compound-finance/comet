@@ -1,18 +1,23 @@
 import { Constraint, World } from '../../plugins/scenario';
-import { CometContext } from '../context/CometContext';
-import { ProtocolConfiguration } from '../../src/deploy';
+import { CometContext, getActors } from '../context/CometContext';
+import { deployComet, ProtocolConfiguration } from '../../src/deploy';
 import { getFuzzedRequirements } from './Fuzzing';
 import { Requirements } from './Requirements';
 import { upgradeComet } from '../utils';
 
 interface ModernConfig {
-  upgrade: boolean;
+  // Toggle true to upgrade Comet
+  upgrade: boolean; // XXX maybe rename to upgrade Comet?
+  // Toggle true to upgrade all contracts
+  upgradeAll: boolean;
+  // Comet config overrides to use for the new deployment
   cometConfig: ProtocolConfiguration;
 }
 
 function getModernConfigs(requirements: Requirements): ModernConfig[] | null {
   let fuzzedConfigs = getFuzzedRequirements(requirements).map((r) => ({
     upgrade: r.upgrade,
+    upgradeAll: r.upgradeAll,
     cometConfig: r.cometConfig,
   }));
 
@@ -30,9 +35,21 @@ export class ModernConstraint<T extends CometContext, R extends Requirements> im
       modernConfigs.map((c) => c.cometConfig)
     );
     for (let config of modernConfigs) {
-      if (config.upgrade) {
-        solutions.push(async function solution(context: T): Promise<T> {
-          return await upgradeComet(world, context, config.cometConfig) as T; // It's been modified
+      if (config.upgradeAll) {
+        solutions.push(async function solution(ctx: T): Promise<T> {
+          const deploymentManager = ctx.deploymentManager;
+          await deployComet(
+            deploymentManager,
+            { deployCometProxy: false, deployConfiguratorProxy: true },
+            config.cometConfig
+          );
+          await deploymentManager.spider();
+          ctx.actors = await getActors(ctx, world);
+          return ctx;
+        });
+      } else if (config.upgrade) {
+        solutions.push(async function solution(ctx: T): Promise<T> {
+          return await upgradeComet(world, ctx, config.cometConfig) as T; // It's been modified
         });
       }
     }

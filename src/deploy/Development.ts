@@ -23,6 +23,7 @@ import {
   ConfiguratorProxy,
   ConfiguratorProxy__factory,
   ProxyAdmin,
+  CometInterface,
 } from '../../build/types';
 import { ConfigurationStruct } from '../../build/types/Comet';
 import { ExtConfigurationStruct } from '../../build/types/CometExt';
@@ -219,21 +220,6 @@ export async function deployDevelopmentComet(
     timelock = await deploymentManager.contract('timelock') as SimpleTimelock;
   }
 
-  if (deployProxy.deployConfiguratorProxy) {
-    // Configuration proxy
-    configuratorProxy = await deploymentManager.deploy<
-      ConfiguratorProxy,
-      ConfiguratorProxy__factory,
-      [string, string, string]
-    >('ConfiguratorProxy.sol', [
-      configurator.address,
-      proxyAdmin.address,
-      (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data, // new time lock is set, which we don't want
-    ]);
-
-    updatedRoots.set('configurator', configuratorProxy.address);
-  }
-
   if (deployProxy.deployCometProxy) {
     // Comet proxy
     cometProxy = await deploymentManager.deploy<
@@ -247,6 +233,26 @@ export async function deployDevelopmentComet(
     ]);
 
     updatedRoots.set('comet', cometProxy.address);
+  }
+
+  if (deployProxy.deployConfiguratorProxy) {
+    // Use the existing Comet proxy if a new one was not deployed
+    if (cometProxy === null) {
+      // XXX This, along with Spider aliases, may need to be redesigned to support multiple Comet deployments
+      cometProxy = await deploymentManager.contract('comet') as CometInterface;
+    }
+    // Configuration proxy
+    configuratorProxy = await deploymentManager.deploy<
+      ConfiguratorProxy,
+      ConfiguratorProxy__factory,
+      [string, string, string]
+    >('ConfiguratorProxy.sol', [
+      configurator.address,
+      proxyAdmin.address,
+      (await configurator.populateTransaction.initialize(timelock.address, cometProxy.address, cometFactory.address, configuration)).data, // new time lock is set, which we don't want
+    ]);
+
+    updatedRoots.set('configurator', configuratorProxy.address);
   }
 
   await deploymentManager.putRoots(updatedRoots);
