@@ -1,4 +1,4 @@
-import { BytesLike, Signer, Contract, utils, BigNumberish } from 'ethers';
+import { BytesLike, Signer, Contract, utils, BigNumberish, providers } from 'ethers';
 import { ForkSpec, World, buildScenarioFn } from '../../plugins/scenario';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
@@ -20,6 +20,7 @@ import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { Requirements } from '../constraints/Requirements';
 import { fastGovernanceExecute } from '../utils';
+import { NonceManager } from '@ethersproject/experimental';
 
 type ActorMap = { [name: string]: CometActor };
 type AssetMap = { [name: string]: CometAsset };
@@ -240,8 +241,17 @@ export class CometContext {
 
   // Instantly executes some actions through the governance proposal process
   async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
-    let admin = this.actors['admin'];
+    let admin = this.actors['signer'];
+    // const managedSigner = new NonceManager(admin.signer) as unknown as providers.JsonRpcSigner;
+    // const adminSigner = await SignerWithAddress.create(managedSigner);
+    // XXX THIS NEEDS TO BE SIGNER TO BE ACCOUNTED FOR PROPERLY
+    console.log('equals? ', admin.signer === await this.deploymentManager.getSigner())
+    // console.log('admin signer ', admin.signer)
+    // console.log('dm signer ', await this.deploymentManager.getSigner())
+
     let governor = (await this.getGovernor()).connect(admin.signer);
+    // const dmSigner = await this.deploymentManager.getSigner();
+    // const governor = (await this.getGovernor()).connect(dmSigner);
     await fastGovernanceExecute(governor, targets, values, signatures, calldatas);
   }
 
@@ -266,6 +276,7 @@ async function buildActor(name: string, signer: SignerWithAddress, context: Come
 }
 
 const getInitialContext = async (world: World): Promise<CometContext> => {
+  console.log('start context')
   let deploymentManager = new DeploymentManager(world.base.name, world.hre, { debug: true });
 
   // TODO: `thing` allows loading the named contract using a particular ABI
@@ -295,7 +306,8 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   let comet = await context.getComet();
   let governor = await context.getGovernor();
 
-  let signers = await world.hre.ethers.getSigners();
+  console.log('context get signers')
+  let signers = await deploymentManager.getSigners();
 
   let [localAdminSigner, localPauseGuardianSigner, albertSigner, bettySigner, charlesSigner] =
     signers;
@@ -303,9 +315,10 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
 
   let adminAddress = await governor.admins(0); // any admin will do
   let pauseGuardianAddress = await comet.pauseGuardian();
-  adminSigner = await world.impersonateAddress(adminAddress);
-  pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
+  adminSigner = await getNonceManagedSigner(await world.impersonateAddress(adminAddress));
+  pauseGuardianSigner = await getNonceManagedSigner(await world.impersonateAddress(pauseGuardianAddress));
 
+  console.log('equals? ', localAdminSigner === await deploymentManager.getSigner())
   context.actors = {
     admin: await buildActor('admin', adminSigner, context),
     pauseGuardian: await buildActor('pauseGuardian', pauseGuardianSigner, context),
@@ -317,8 +330,15 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
 
   await context.setAssets();
 
+  console.log('finish context')
+
   return context;
 };
+
+async function getNonceManagedSigner(signer: SignerWithAddress): Promise<SignerWithAddress> {
+  const managedSigner = new NonceManager(signer) as unknown as providers.JsonRpcSigner;
+  return await SignerWithAddress.create(managedSigner);
+}
 
 async function forkContext(c: CometContext): Promise<CometContext> {
   let context = new CometContext(DeploymentManager.fork(c.deploymentManager), c.remoteToken);

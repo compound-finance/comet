@@ -94,6 +94,8 @@ export async function deploy<
   let factory = (await hre.ethers.getContractFactory(contractName)) as unknown as Factory;
   if (deployOpts.connect) {
     factory = factory.connect(deployOpts.connect);
+  } else {
+    console.log('deploy called while not using managed signer!')
   }
 
   debug(`Deploying ${contractName} with args`, deployArgs);

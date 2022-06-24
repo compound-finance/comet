@@ -72,9 +72,14 @@ export class Runner<T, U, R> {
     const baseSolutions: Solution<T>[][] = [[identity]];
 
     let cumulativeGas = 0;
+    let i = 0;
     for (const combo of combos(baseSolutions.concat(solutionChoices))) {
+      console.log(base, i)
+      i++
       // create a fresh copy of context that solutions can modify
+      console.log('start fork')
       let ctx: T = await scenario.forker(context);
+      console.log('finish fork')
 
       try {
         // apply each solution in the combo, then check they all still hold
@@ -82,18 +87,25 @@ export class Runner<T, U, R> {
           ctx = (await solution(ctx, world)) || ctx;
         }
 
+        console.log('applied solutions')
+
         for (const constraint of constraints) {
           await constraint.check(scenario.requirements, ctx, world);
         }
 
+        console.log('applied checks')
+
         // requirements met, run the property
         let txnReceipt = await scenario.property(await scenario.transformer(ctx), world, ctx);
+
+        console.log('ran property')
         if (txnReceipt) {
           cumulativeGas += txnReceipt.cumulativeGasUsed.toNumber();
         }
         numSolutionSets++;
       } catch (e) {
         // TODO: Include the specific solution (set of states) that failed in the result
+        console.log(e)
         return this.generateResult(base, scenario, startTime, 0, ++numSolutionSets, e);
       } finally {
         contextSnapshot = await world._revertAndSnapshot(contextSnapshot);

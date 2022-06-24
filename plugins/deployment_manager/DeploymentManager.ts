@@ -52,9 +52,12 @@ export class DeploymentManager {
   }
 
   async getSigners(): Promise<SignerWithAddress[]> {
+    console.log('getting signers')
     if (this._signers.length > 0) {
+      console.log('not constructing signers')
       return this._signers;
     }
+    console.log('constructing signers again')
     const signers = await this.hre.ethers.getSigners();
     this._signers = await Promise.all(signers.map(async (signer) => {
       const managedSigner = new NonceManager(signer) as unknown as providers.JsonRpcSigner;
@@ -200,12 +203,9 @@ export class DeploymentManager {
    **/
   async contracts(): Promise<ContractMap> {
     if (this.contractsCache !== null) {
-      console.log('non-empty contractsCache')
       return this.contractsCache;
     } else {
       // TODO: When else do we need to clear the contracts cache
-      console.log('empty contractsCache')
-
       this.contractsCache = await getContracts(this.cache, this.hre, await this.getSigner());
       return this.contractsCache;
     }

@@ -99,7 +99,7 @@ export async function fastGovernanceExecute(governor: GovernorSimple, targets: s
   let [proposalId] = event.args;
 
   await governor.queue(proposalId);
-  const txn = await (await governor.execute(proposalId)).wait();
+  await governor.execute(proposalId);
   // console.log('events ', txn.events)
 }
 
