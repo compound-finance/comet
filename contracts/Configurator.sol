@@ -52,7 +52,7 @@ contract Configurator is ConfiguratorStorage {
 
     /**
      * @notice Initializes the storage for Configurator
-     * @dev Note: All params can be updated by the governor except `baseToken` and `trackingIndexScale`
+     * @dev Note: All params can be updated by the governor except for `baseToken` and `trackingIndexScale`
      * @param governor_ The address of the governor
      * @param cometProxy_ The address of the Comet proxy to store the factory and configuration for
      * @param factory_ The address of the Comet factory
@@ -76,6 +76,7 @@ contract Configurator is ConfiguratorStorage {
      **/
     function setFactory(address cometProxy, address newFactory) external {
         if (msg.sender != governor) revert Unauthorized();
+
         address oldFactory = factory[cometProxy];
         factory[cometProxy] = newFactory;
         emit SetFactory(oldFactory, newFactory);
@@ -85,6 +86,7 @@ contract Configurator is ConfiguratorStorage {
 
     function setGovernor(address cometProxy, address newGovernor) external {
         if (msg.sender != governor) revert Unauthorized();
+
         address oldGovernor = configuratorParams[cometProxy].governor;
         configuratorParams[cometProxy].governor = newGovernor;
         emit SetGovernor(oldGovernor, newGovernor);
@@ -92,6 +94,7 @@ contract Configurator is ConfiguratorStorage {
 
     function setPauseGuardian(address cometProxy, address newPauseGuardian) external {
         if (msg.sender != governor) revert Unauthorized();
+
         address oldPauseGuardian = configuratorParams[cometProxy].pauseGuardian;
         configuratorParams[cometProxy].pauseGuardian = newPauseGuardian;
         emit SetPauseGuardian(oldPauseGuardian, newPauseGuardian);
@@ -99,6 +102,7 @@ contract Configurator is ConfiguratorStorage {
 
     function setBaseTokenPriceFeed(address cometProxy, address newBaseTokenPriceFeed) external {
         if (msg.sender != governor) revert Unauthorized();
+
         address oldBaseTokenPriceFeed = configuratorParams[cometProxy].baseTokenPriceFeed;
         configuratorParams[cometProxy].baseTokenPriceFeed = newBaseTokenPriceFeed;
         emit SetBaseTokenPriceFeed(oldBaseTokenPriceFeed, newBaseTokenPriceFeed);
@@ -106,6 +110,7 @@ contract Configurator is ConfiguratorStorage {
 
     function setExtensionDelegate(address cometProxy, address newExtensionDelegate) external {
         if (msg.sender != governor) revert Unauthorized();
+
         address oldExtensionDelegate = configuratorParams[cometProxy].extensionDelegate;
         configuratorParams[cometProxy].extensionDelegate = newExtensionDelegate;
         emit SetExtensionDelegate(oldExtensionDelegate, newExtensionDelegate);
@@ -113,6 +118,7 @@ contract Configurator is ConfiguratorStorage {
 
     function setKink(address cometProxy, uint64 newKink) external {
         if (msg.sender != governor) revert Unauthorized();
+
         uint64 oldKink = configuratorParams[cometProxy].kink;
         configuratorParams[cometProxy].kink = newKink;
         emit SetKink(oldKink, newKink);
@@ -120,6 +126,7 @@ contract Configurator is ConfiguratorStorage {
 
     function setPerYearInterestRateSlopeLow(address cometProxy, uint64 newSlope) external {
         if (msg.sender != governor) revert Unauthorized();
+
         uint64 oldSlope = configuratorParams[cometProxy].perYearInterestRateSlopeLow;
         configuratorParams[cometProxy].perYearInterestRateSlopeLow = newSlope;
         emit SetPerYearInterestRateSlopeLow(oldSlope, newSlope);
@@ -127,6 +134,7 @@ contract Configurator is ConfiguratorStorage {
 
     function setPerYearInterestRateSlopeHigh(address cometProxy, uint64 newSlope) external {
         if (msg.sender != governor) revert Unauthorized();
+
         uint64 oldSlope = configuratorParams[cometProxy].perYearInterestRateSlopeHigh;
         configuratorParams[cometProxy].perYearInterestRateSlopeHigh = newSlope;
         emit SetPerYearInterestRateSlopeHigh(oldSlope, newSlope);
@@ -134,6 +142,7 @@ contract Configurator is ConfiguratorStorage {
 
     function setPerYearInterestRateBase(address cometProxy, uint64 newBase) external {
         if (msg.sender != governor) revert Unauthorized();
+
         uint64 oldBase = configuratorParams[cometProxy].perYearInterestRateBase;
         configuratorParams[cometProxy].perYearInterestRateBase = newBase;
         emit SetPerYearInterestRateBase(oldBase, newBase);
@@ -141,6 +150,7 @@ contract Configurator is ConfiguratorStorage {
 
     function setReserveRate(address cometProxy, uint64 newReserveRate) external {
         if (msg.sender != governor) revert Unauthorized();
+
         uint64 oldReserveRate = configuratorParams[cometProxy].reserveRate;
         configuratorParams[cometProxy].reserveRate = newReserveRate;
         emit SetReserveRate(oldReserveRate, newReserveRate);
@@ -148,6 +158,7 @@ contract Configurator is ConfiguratorStorage {
 
     function setStoreFrontPriceFactor(address cometProxy, uint64 newStoreFrontPriceFactor) external {
         if (msg.sender != governor) revert Unauthorized();
+
         uint64 oldStoreFrontPriceFactor = configuratorParams[cometProxy].storeFrontPriceFactor;
         configuratorParams[cometProxy].storeFrontPriceFactor = newStoreFrontPriceFactor;
         emit SetStoreFrontPriceFactor(oldStoreFrontPriceFactor, newStoreFrontPriceFactor);
@@ -155,6 +166,7 @@ contract Configurator is ConfiguratorStorage {
 
     function setBaseTrackingSupplySpeed(address cometProxy, uint64 newBaseTrackingSupplySpeed) external {
         if (msg.sender != governor) revert Unauthorized();
+
         uint64 oldBaseTrackingSupplySpeed = configuratorParams[cometProxy].baseTrackingSupplySpeed;
         configuratorParams[cometProxy].baseTrackingSupplySpeed = newBaseTrackingSupplySpeed;
         emit SetBaseTrackingSupplySpeed(oldBaseTrackingSupplySpeed, newBaseTrackingSupplySpeed);
@@ -162,6 +174,7 @@ contract Configurator is ConfiguratorStorage {
 
     function setBaseTrackingBorrowSpeed(address cometProxy, uint64 newBaseTrackingBorrowSpeed) external {
         if (msg.sender != governor) revert Unauthorized();
+
         uint64 oldBaseTrackingBorrowSpeed = configuratorParams[cometProxy].baseTrackingBorrowSpeed;
         configuratorParams[cometProxy].baseTrackingBorrowSpeed = newBaseTrackingBorrowSpeed;
         emit SetBaseTrackingBorrowSpeed(oldBaseTrackingBorrowSpeed, newBaseTrackingBorrowSpeed);
@@ -169,6 +182,7 @@ contract Configurator is ConfiguratorStorage {
 
     function setBaseMinForRewards(address cometProxy, uint104 newBaseMinForRewards) external {
         if (msg.sender != governor) revert Unauthorized();
+
         uint104 oldBaseMinForRewards = configuratorParams[cometProxy].baseMinForRewards;
         configuratorParams[cometProxy].baseMinForRewards = newBaseMinForRewards;
         emit SetBaseMinForRewards(oldBaseMinForRewards, newBaseMinForRewards);
@@ -176,6 +190,7 @@ contract Configurator is ConfiguratorStorage {
 
     function setBaseBorrowMin(address cometProxy, uint104 newBaseBorrowMin) external {
         if (msg.sender != governor) revert Unauthorized();
+
         uint104 oldBaseBorrowMin = configuratorParams[cometProxy].baseBorrowMin;
         configuratorParams[cometProxy].baseBorrowMin = newBaseBorrowMin;
         emit SetBaseBorrowMin(oldBaseBorrowMin, newBaseBorrowMin);
@@ -183,6 +198,7 @@ contract Configurator is ConfiguratorStorage {
 
     function setTargetReserves(address cometProxy, uint104 newTargetReserves) external {
         if (msg.sender != governor) revert Unauthorized();
+
         uint104 oldTargetReserves = configuratorParams[cometProxy].targetReserves;
         configuratorParams[cometProxy].targetReserves = newTargetReserves;
         emit SetTargetReserves(oldTargetReserves, newTargetReserves);
@@ -190,6 +206,7 @@ contract Configurator is ConfiguratorStorage {
 
     function addAsset(address cometProxy, AssetConfig calldata assetConfig) external {
         if (msg.sender != governor) revert Unauthorized();
+
         configuratorParams[cometProxy].assetConfigs.push(assetConfig);
         emit AddAsset(assetConfig);
     }
@@ -273,7 +290,7 @@ contract Configurator is ConfiguratorStorage {
     }
 
     /**
-     * @notice Deploy a new Comet implementation using the factory and Configuration for that Comet proxy.
+     * @notice Deploy a new Comet implementation using the factory and Configuration for that Comet proxy
      * @dev Note: Callable by anyone
      */
     function deploy(address cometProxy) external returns (address) {
