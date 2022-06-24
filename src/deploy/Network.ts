@@ -163,7 +163,6 @@ export async function deployNetworkComet(
       // XXX This, along with Spider aliases, may need to be redesigned to support multiple Comet deployments
       cometProxy = await deploymentManager.contract('comet') as CometInterface;
     }
-    console.log('network.ts comet address ', cometProxy.address)
     // Configuration proxy
     configuratorProxy = await deploymentManager.deploy<
       ConfiguratorProxy,
