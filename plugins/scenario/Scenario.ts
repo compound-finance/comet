@@ -19,7 +19,7 @@ export interface Constraint<T, R> {
 export type Property<T, U> = (properties: U, world: World, context: T) => Promise<any>;
 export type Initializer<T> = (world: World) => Promise<T>;
 export type Transformer<T, U> = (context: T) => Promise<U>;
-export type Forker<T> = (T) => Promise<T>;
+export type Forker<T> = (T, world: World) => Promise<T>;
 
 export type ScenarioFlags = null | 'only' | 'skip';
 

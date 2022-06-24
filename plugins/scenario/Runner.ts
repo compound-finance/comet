@@ -74,7 +74,7 @@ export class Runner<T, U, R> {
     let cumulativeGas = 0;
     for (const combo of combos(baseSolutions.concat(solutionChoices))) {
       // create a fresh copy of context that solutions can modify
-      let ctx: T = await scenario.forker(context);
+      let ctx: T = await scenario.forker(context, world);
 
       try {
         // apply each solution in the combo, then check they all still hold

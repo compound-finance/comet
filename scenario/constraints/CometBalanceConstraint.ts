@@ -97,7 +97,7 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
               // 2. Supply tokens to Comet
               // Note: but will interest rates cause supply/borrow to not exactly match the desired amount?
               await asset.approve(actor, comet.address);
-              await actor.supplyAsset({asset: asset.address, amount: toTransfer})
+              await actor.supplyAsset({ asset: asset.address, amount: toTransfer })
             } else if (toTransfer < 0) {
               const toWithdraw = -toTransfer;
               const baseToken = await context.getAssetByAddress(await comet.baseToken());
@@ -128,8 +128,8 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
 
   async check(requirements: R, context: T, world: World) {
     const assetsByActor = requirements.cometBalances;
-    const comet = await context.getComet();
     if (assetsByActor) {
+      const comet = await context.getComet();
       for (const [actorName, assets] of Object.entries(assetsByActor)) {
         for (const [assetName, rawAmount] of Object.entries(assets)) {
           const actor = context.actors[actorName];
