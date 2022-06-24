@@ -35,7 +35,7 @@ async function main() {
   const configurator = await dm.contract('configurator') as Configurator;
   const governorAsAdmin = governor.connect(admin);
 
-  const setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(['address'], [newPauseGuardian.address]);
+  const setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address'], [comet.address, newPauseGuardian.address]);
   const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, comet.address]);
   let tx = await (await governorAsAdmin.propose(
     [
@@ -47,7 +47,7 @@ async function main() {
       0,
     ],
     [
-      'setPauseGuardian(address)',
+      'setPauseGuardian(address,address)',
       'deployAndUpgradeTo(address,address)',
     ],
     [
@@ -57,7 +57,7 @@ async function main() {
     'Update the Pause Guardian')
   ).wait();
   let event = tx.events.find(event => event.event === 'ProposalCreated');
-  let [ proposalId ] = event.args;
+  let [proposalId] = event.args;
 
   await governorAsAdmin.queue(proposalId);
 
