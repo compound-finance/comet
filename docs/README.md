@@ -547,7 +547,7 @@ const [ numAbsorbs, numAbsorbed, approxSpend ] = await comet.callStatic.liquidat
 
 ## Protocol Rewards
 
-Compound III has a built-in system for tracking rewards for accounts that use the protocol. The full history of accrual of rewards are tracked for suppliers and borrowers of the base asset. The rewards can be any ERC-20 token.
+Compound III has a built-in system for tracking rewards for accounts that use the protocol. The full history of accrual of rewards are tracked for suppliers and borrowers of the base asset. The rewards can be any ERC-20 token. In order for rewards to accrue to Compound III accounts, the configuration's `baseMinForRewards` threshold for total supply of the base asset must be met.
 
 ### Reward Accrual Tracking
 
@@ -911,6 +911,39 @@ const comet = new ethers.Contract(contractAddress, abiJson, provider);
 const totalSupply = await comet.callStatic.totalSupply();
 ```
 
+### Total Borrow
+
+The total amount of base tokens that are currently borrowed from the protocol plus interest accrued to all borrows.
+
+#### Comet
+
+```solidity
+function totalBorrow() virtual external view returns (uint256)
+```
+
+* `RETURN`: The amount of base asset scaled up by 10 to the "decimals" integer in the base asset's contract.
+
+#### Solidity
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint256 totalBorrow = comet.totalBorrow();
+```
+
+#### Web3.js v1.5.x
+
+```js
+const comet = new web3.eth.Contract(abiJson, contractAddress);
+const totalBorrow = await comet.methods.totalBorrow().call();
+```
+
+#### Ethers.js v5.x
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const totalBorrow = await comet.callStatic.totalBorrow();
+```
+
 ### Total Collateral
 
 The protocol tracks the current amount of collateral that all accounts have supplied. Each valid collateral asset sum is tracked in a mapping with the asset address that points to a struct.
@@ -918,6 +951,11 @@ The protocol tracks the current amount of collateral that all accounts have supp
 #### Comet
 
 ```solidity
+struct TotalsCollateral {
+    uint128 totalSupplyAsset;
+    uint128 _reserved;
+}
+
 mapping(address => TotalsCollateral) public totalsCollateral;
 ```
 
@@ -1311,6 +1349,29 @@ This function returns the configuration struct passed to the configurator contra
 #### Configurator
 
 ```solidity
+struct Configuration {
+    address governor;
+    address pauseGuardian;
+    address baseToken;
+    address baseTokenPriceFeed;
+    address extensionDelegate;
+
+    uint64 kink;
+    uint64 perYearInterestRateSlopeLow;
+    uint64 perYearInterestRateSlopeHigh;
+    uint64 perYearInterestRateBase;
+    uint64 reserveRate;
+    uint64 storeFrontPriceFactor;
+    uint64 trackingIndexScale;
+    uint64 baseTrackingSupplySpeed;
+    uint64 baseTrackingBorrowSpeed;
+    uint104 baseMinForRewards;
+    uint104 baseBorrowMin;
+    uint104 targetReserves;
+
+    AssetConfig[] assetConfigs;
+}
+
 function getConfiguration() external view returns (Configuration memory)
 ```
 
@@ -1337,29 +1398,6 @@ function getConfiguration() external view returns (Configuration memory)
 #### Solidity
 
 ```solidity
-struct Configuration {
-    address governor;
-    address pauseGuardian;
-    address baseToken;
-    address baseTokenPriceFeed;
-    address extensionDelegate;
-
-    uint64 kink;
-    uint64 perYearInterestRateSlopeLow;
-    uint64 perYearInterestRateSlopeHigh;
-    uint64 perYearInterestRateBase;
-    uint64 reserveRate;
-    uint64 storeFrontPriceFactor;
-    uint64 trackingIndexScale;
-    uint64 baseTrackingSupplySpeed;
-    uint64 baseTrackingBorrowSpeed;
-    uint104 baseMinForRewards;
-    uint104 baseBorrowMin;
-    uint104 targetReserves;
-
-    AssetConfig[] assetConfigs;
-}
-
 Configurator configurator = Configurator(0xConfiguratorAddress);
 Configuration config = configurator.getConfiguration();
 ```
