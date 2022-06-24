@@ -78,7 +78,7 @@ export class Runner<T, U, R> {
       i++
       // create a fresh copy of context that solutions can modify
       console.log('start fork')
-      let ctx: T = await scenario.forker(context);
+      let ctx: T = await scenario.forker(context, world);
       console.log('finish fork')
 
       try {

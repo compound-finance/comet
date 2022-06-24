@@ -241,7 +241,7 @@ export class CometContext {
 
   // Instantly executes some actions through the governance proposal process
   async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
-    let admin = this.actors['signer'];
+    let admin = this.actors['admin'];
     // const managedSigner = new NonceManager(admin.signer) as unknown as providers.JsonRpcSigner;
     // const adminSigner = await SignerWithAddress.create(managedSigner);
     // XXX THIS NEEDS TO BE SIGNER TO BE ACCOUNTED FOR PROPERLY
@@ -303,30 +303,10 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   await deploymentManager.spider();
 
   let context = new CometContext(deploymentManager, undefined);
-  let comet = await context.getComet();
-  let governor = await context.getGovernor();
 
   console.log('context get signers')
-  let signers = await deploymentManager.getSigners();
 
-  let [localAdminSigner, localPauseGuardianSigner, albertSigner, bettySigner, charlesSigner] =
-    signers;
-  let adminSigner, pauseGuardianSigner;
-
-  let adminAddress = await governor.admins(0); // any admin will do
-  let pauseGuardianAddress = await comet.pauseGuardian();
-  adminSigner = await getNonceManagedSigner(await world.impersonateAddress(adminAddress));
-  pauseGuardianSigner = await getNonceManagedSigner(await world.impersonateAddress(pauseGuardianAddress));
-
-  console.log('equals? ', localAdminSigner === await deploymentManager.getSigner())
-  context.actors = {
-    admin: await buildActor('admin', adminSigner, context),
-    pauseGuardian: await buildActor('pauseGuardian', pauseGuardianSigner, context),
-    albert: await buildActor('albert', albertSigner, context),
-    betty: await buildActor('betty', bettySigner, context),
-    charles: await buildActor('charles', charlesSigner, context),
-    signer: await buildActor('signer', localAdminSigner, context),
-  };
+  context.actors = await getActors(context, world);
 
   await context.setAssets();
 
@@ -335,14 +315,39 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   return context;
 };
 
-async function getNonceManagedSigner(signer: SignerWithAddress): Promise<SignerWithAddress> {
-  const managedSigner = new NonceManager(signer) as unknown as providers.JsonRpcSigner;
-  return await SignerWithAddress.create(managedSigner);
+async function getActors(context: CometContext, world: World) {
+  let dm = context.deploymentManager;
+  let signers = await dm.getSigners();
+
+  let comet = await context.getComet();
+  let governor = await context.getGovernor();
+
+  let [localAdminSigner, localPauseGuardianSigner, albertSigner, bettySigner, charlesSigner] =
+    signers;
+  let adminSigner, pauseGuardianSigner;
+
+  let adminAddress = await governor.admins(0); // any admin will do
+  let pauseGuardianAddress = await comet.pauseGuardian();
+  let useLocalAdminSigner = adminAddress === await localAdminSigner.getAddress();
+  let useLocalPauseGuardianSigner = pauseGuardianAddress === await localPauseGuardianSigner.getAddress();
+  adminSigner = useLocalAdminSigner ? localAdminSigner : await world.impersonateAddress(adminAddress);
+  pauseGuardianSigner = useLocalPauseGuardianSigner ? localPauseGuardianSigner : await world.impersonateAddress(pauseGuardianAddress);
+  return {
+    admin: await buildActor('admin', adminSigner, context),
+    pauseGuardian: await buildActor('pauseGuardian', pauseGuardianSigner, context),
+    albert: await buildActor('albert', albertSigner, context),
+    betty: await buildActor('betty', bettySigner, context),
+    charles: await buildActor('charles', charlesSigner, context),
+    signer: await buildActor('signer', localAdminSigner, context),
+  };
 }
 
-async function forkContext(c: CometContext): Promise<CometContext> {
+// XXX we are forking context, so the nonce managers are now different between intialize context and actually running the scenario
+async function forkContext(c: CometContext, w: World): Promise<CometContext> {
   let context = new CometContext(DeploymentManager.fork(c.deploymentManager), c.remoteToken);
-  context.actors = Object.fromEntries(Object.entries(c.actors).map(([name, actor]) => [name, CometActor.fork(actor, context)]));
+  // We reconstruct the actors using the new context and deployment manager
+  context.actors = await getActors(context, w);
+  // context.actors = Object.fromEntries(Object.entries(c.actors).map(([name, actor]) => [name, CometActor.fork(actor, context)]));
   context.assets = Object.fromEntries(Object.entries(c.assets).map(([name, asset]) => [name, CometAsset.fork(asset)]));
 
   return context;
