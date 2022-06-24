@@ -344,6 +344,20 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     priceFeeds,
   } = await makeProtocol(opts);
 
+  // Deploy ProxyAdmin
+  const ProxyAdmin = (await ethers.getContractFactory('CometProxyAdmin')) as CometProxyAdmin__factory;
+  const proxyAdmin = await ProxyAdmin.connect(governor).deploy();
+  await proxyAdmin.deployed();
+
+  // Deploy Comet proxy
+  const CometProxy = (await ethers.getContractFactory('TransparentUpgradeableProxy')) as TransparentUpgradeableProxy__factory;
+  const cometProxy = await CometProxy.deploy(
+    comet.address,
+    proxyAdmin.address,
+    (await comet.populateTransaction.initializeStorage()).data,
+  );
+  await cometProxy.deployed();
+
   // Derive the rest of the Configurator configuration values
   const kink = await comet.kink();
   const perYearInterestRateBase = dfn(opts.interestRateBase, exp(0.005, 18));
@@ -401,27 +415,13 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     }, []),
   };
 
-  // Deploy ProxyAdmin
-  const ProxyAdmin = (await ethers.getContractFactory('CometProxyAdmin')) as CometProxyAdmin__factory;
-  const proxyAdmin = await ProxyAdmin.connect(governor).deploy();
-  await proxyAdmin.deployed();
-
   // Deploy Configurator proxy
-  const initializeCalldata = (await configurator.populateTransaction.initialize(governor.address, cometFactory.address, configuration)).data;
+  const initializeCalldata = (await configurator.populateTransaction.initialize(governor.address, cometProxy.address, cometFactory.address, configuration)).data;
   const ConfiguratorProxy = (await ethers.getContractFactory('ConfiguratorProxy')) as ConfiguratorProxy__factory;
   const configuratorProxy = await ConfiguratorProxy.deploy(
     configurator.address,
     proxyAdmin.address,
     initializeCalldata,
-  );
-  await configuratorProxy.deployed();
-
-  // Deploy Comet proxy
-  const CometProxy = (await ethers.getContractFactory('TransparentUpgradeableProxy')) as TransparentUpgradeableProxy__factory;
-  const cometProxy = await CometProxy.deploy(
-    comet.address,
-    proxyAdmin.address,
-    (await comet.populateTransaction.initializeStorage()).data,
   );
   await configuratorProxy.deployed();
 
