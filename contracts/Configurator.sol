@@ -54,17 +54,19 @@ contract Configurator is ConfiguratorStorage {
      * @notice Initializes the storage for Configurator
      * @dev Note: All params can be updated by the governor except `baseToken` and `trackingIndexScale`
      * @param governor_ The address of the governor
+     * @param cometProxy_ The address of the Comet proxy to store the factory and configuration for
      * @param factory_ The address of the Comet factory
      * @param configuratorParams_ Config passed to new instances of Comet on construction
      **/
-    function initialize(address governor_, address factory_, Configuration calldata configuratorParams_) public {
+    function initialize(address governor_, address cometProxy_, address factory_, Configuration calldata configuratorParams_) public {
         if (version != 0) revert AlreadyInitialized();
         if (governor_ == address(0)) revert InvalidAddress();
+        if (cometProxy_ == address(0)) revert InvalidAddress();
         if (factory_ == address(0)) revert InvalidAddress();
 
         governor = governor_;
-        factory = factory_;
-        configuratorParams = configuratorParams_;
+        factory[cometProxy_] = factory_;
+        configuratorParams[cometProxy_] = configuratorParams_;
         version = 1;
     }
 
@@ -72,177 +74,177 @@ contract Configurator is ConfiguratorStorage {
      * @notice Sets the factory for Configurator
      * @dev Note: Only callable by governor
      **/
-    function setFactory(address newFactory) external {
+    function setFactory(address cometProxy, address newFactory) external {
         if (msg.sender != governor) revert Unauthorized();
-        address oldFactory = factory;
-        factory = newFactory;
+        address oldFactory = factory[cometProxy];
+        factory[cometProxy] = newFactory;
         emit SetFactory(oldFactory, newFactory);
     }
 
     /** Governance setters for Comet-related configuration **/
 
-    function setGovernor(address newGovernor) external {
+    function setGovernor(address cometProxy, address newGovernor) external {
         if (msg.sender != governor) revert Unauthorized();
-        address oldGovernor = configuratorParams.governor;
-        configuratorParams.governor = newGovernor;
+        address oldGovernor = configuratorParams[cometProxy].governor;
+        configuratorParams[cometProxy].governor = newGovernor;
         emit SetGovernor(oldGovernor, newGovernor);
     }
 
-    function setPauseGuardian(address newPauseGuardian) external {
+    function setPauseGuardian(address cometProxy, address newPauseGuardian) external {
         if (msg.sender != governor) revert Unauthorized();
-        address oldPauseGuardian = configuratorParams.pauseGuardian;
-        configuratorParams.pauseGuardian = newPauseGuardian;
+        address oldPauseGuardian = configuratorParams[cometProxy].pauseGuardian;
+        configuratorParams[cometProxy].pauseGuardian = newPauseGuardian;
         emit SetPauseGuardian(oldPauseGuardian, newPauseGuardian);
     }
 
-    function setBaseTokenPriceFeed(address newBaseTokenPriceFeed) external {
+    function setBaseTokenPriceFeed(address cometProxy, address newBaseTokenPriceFeed) external {
         if (msg.sender != governor) revert Unauthorized();
-        address oldBaseTokenPriceFeed = configuratorParams.baseTokenPriceFeed;
-        configuratorParams.baseTokenPriceFeed = newBaseTokenPriceFeed;
+        address oldBaseTokenPriceFeed = configuratorParams[cometProxy].baseTokenPriceFeed;
+        configuratorParams[cometProxy].baseTokenPriceFeed = newBaseTokenPriceFeed;
         emit SetBaseTokenPriceFeed(oldBaseTokenPriceFeed, newBaseTokenPriceFeed);
     }
 
-    function setExtensionDelegate(address newExtensionDelegate) external {
+    function setExtensionDelegate(address cometProxy, address newExtensionDelegate) external {
         if (msg.sender != governor) revert Unauthorized();
-        address oldExtensionDelegate = configuratorParams.extensionDelegate;
-        configuratorParams.extensionDelegate = newExtensionDelegate;
+        address oldExtensionDelegate = configuratorParams[cometProxy].extensionDelegate;
+        configuratorParams[cometProxy].extensionDelegate = newExtensionDelegate;
         emit SetExtensionDelegate(oldExtensionDelegate, newExtensionDelegate);
     }
 
-    function setKink(uint64 newKink) external {
+    function setKink(address cometProxy, uint64 newKink) external {
         if (msg.sender != governor) revert Unauthorized();
-        uint64 oldKink = configuratorParams.kink;
-        configuratorParams.kink = newKink;
+        uint64 oldKink = configuratorParams[cometProxy].kink;
+        configuratorParams[cometProxy].kink = newKink;
         emit SetKink(oldKink, newKink);
     }
 
-    function setPerYearInterestRateSlopeLow(uint64 newSlope) external {
+    function setPerYearInterestRateSlopeLow(address cometProxy, uint64 newSlope) external {
         if (msg.sender != governor) revert Unauthorized();
-        uint64 oldSlope = configuratorParams.perYearInterestRateSlopeLow;
-        configuratorParams.perYearInterestRateSlopeLow = newSlope;
+        uint64 oldSlope = configuratorParams[cometProxy].perYearInterestRateSlopeLow;
+        configuratorParams[cometProxy].perYearInterestRateSlopeLow = newSlope;
         emit SetPerYearInterestRateSlopeLow(oldSlope, newSlope);
     }
 
-    function setPerYearInterestRateSlopeHigh(uint64 newSlope) external {
+    function setPerYearInterestRateSlopeHigh(address cometProxy, uint64 newSlope) external {
         if (msg.sender != governor) revert Unauthorized();
-        uint64 oldSlope = configuratorParams.perYearInterestRateSlopeHigh;
-        configuratorParams.perYearInterestRateSlopeHigh = newSlope;
+        uint64 oldSlope = configuratorParams[cometProxy].perYearInterestRateSlopeHigh;
+        configuratorParams[cometProxy].perYearInterestRateSlopeHigh = newSlope;
         emit SetPerYearInterestRateSlopeHigh(oldSlope, newSlope);
     }
 
-    function setPerYearInterestRateBase(uint64 newBase) external {
+    function setPerYearInterestRateBase(address cometProxy, uint64 newBase) external {
         if (msg.sender != governor) revert Unauthorized();
-        uint64 oldBase = configuratorParams.perYearInterestRateBase;
-        configuratorParams.perYearInterestRateBase = newBase;
+        uint64 oldBase = configuratorParams[cometProxy].perYearInterestRateBase;
+        configuratorParams[cometProxy].perYearInterestRateBase = newBase;
         emit SetPerYearInterestRateBase(oldBase, newBase);
     }
 
-    function setReserveRate(uint64 newReserveRate) external {
+    function setReserveRate(address cometProxy, uint64 newReserveRate) external {
         if (msg.sender != governor) revert Unauthorized();
-        uint64 oldReserveRate = configuratorParams.reserveRate;
-        configuratorParams.reserveRate = newReserveRate;
+        uint64 oldReserveRate = configuratorParams[cometProxy].reserveRate;
+        configuratorParams[cometProxy].reserveRate = newReserveRate;
         emit SetReserveRate(oldReserveRate, newReserveRate);
     }
 
-    function setStoreFrontPriceFactor(uint64 newStoreFrontPriceFactor) external {
+    function setStoreFrontPriceFactor(address cometProxy, uint64 newStoreFrontPriceFactor) external {
         if (msg.sender != governor) revert Unauthorized();
-        uint64 oldStoreFrontPriceFactor = configuratorParams.storeFrontPriceFactor;
-        configuratorParams.storeFrontPriceFactor = newStoreFrontPriceFactor;
+        uint64 oldStoreFrontPriceFactor = configuratorParams[cometProxy].storeFrontPriceFactor;
+        configuratorParams[cometProxy].storeFrontPriceFactor = newStoreFrontPriceFactor;
         emit SetStoreFrontPriceFactor(oldStoreFrontPriceFactor, newStoreFrontPriceFactor);
     }
 
-    function setBaseTrackingSupplySpeed(uint64 newBaseTrackingSupplySpeed) external {
+    function setBaseTrackingSupplySpeed(address cometProxy, uint64 newBaseTrackingSupplySpeed) external {
         if (msg.sender != governor) revert Unauthorized();
-        uint64 oldBaseTrackingSupplySpeed = configuratorParams.baseTrackingSupplySpeed;
-        configuratorParams.baseTrackingSupplySpeed = newBaseTrackingSupplySpeed;
+        uint64 oldBaseTrackingSupplySpeed = configuratorParams[cometProxy].baseTrackingSupplySpeed;
+        configuratorParams[cometProxy].baseTrackingSupplySpeed = newBaseTrackingSupplySpeed;
         emit SetBaseTrackingSupplySpeed(oldBaseTrackingSupplySpeed, newBaseTrackingSupplySpeed);
     }
 
-    function setBaseTrackingBorrowSpeed(uint64 newBaseTrackingBorrowSpeed) external {
+    function setBaseTrackingBorrowSpeed(address cometProxy, uint64 newBaseTrackingBorrowSpeed) external {
         if (msg.sender != governor) revert Unauthorized();
-        uint64 oldBaseTrackingBorrowSpeed = configuratorParams.baseTrackingBorrowSpeed;
-        configuratorParams.baseTrackingBorrowSpeed = newBaseTrackingBorrowSpeed;
+        uint64 oldBaseTrackingBorrowSpeed = configuratorParams[cometProxy].baseTrackingBorrowSpeed;
+        configuratorParams[cometProxy].baseTrackingBorrowSpeed = newBaseTrackingBorrowSpeed;
         emit SetBaseTrackingBorrowSpeed(oldBaseTrackingBorrowSpeed, newBaseTrackingBorrowSpeed);
     }
 
-    function setBaseMinForRewards(uint104 newBaseMinForRewards) external {
+    function setBaseMinForRewards(address cometProxy, uint104 newBaseMinForRewards) external {
         if (msg.sender != governor) revert Unauthorized();
-        uint104 oldBaseMinForRewards = configuratorParams.baseMinForRewards;
-        configuratorParams.baseMinForRewards = newBaseMinForRewards;
+        uint104 oldBaseMinForRewards = configuratorParams[cometProxy].baseMinForRewards;
+        configuratorParams[cometProxy].baseMinForRewards = newBaseMinForRewards;
         emit SetBaseMinForRewards(oldBaseMinForRewards, newBaseMinForRewards);
     }
 
-    function setBaseBorrowMin(uint104 newBaseBorrowMin) external {
+    function setBaseBorrowMin(address cometProxy, uint104 newBaseBorrowMin) external {
         if (msg.sender != governor) revert Unauthorized();
-        uint104 oldBaseBorrowMin = configuratorParams.baseBorrowMin;
-        configuratorParams.baseBorrowMin = newBaseBorrowMin;
+        uint104 oldBaseBorrowMin = configuratorParams[cometProxy].baseBorrowMin;
+        configuratorParams[cometProxy].baseBorrowMin = newBaseBorrowMin;
         emit SetBaseBorrowMin(oldBaseBorrowMin, newBaseBorrowMin);
     }
 
-    function setTargetReserves(uint104 newTargetReserves) external {
+    function setTargetReserves(address cometProxy, uint104 newTargetReserves) external {
         if (msg.sender != governor) revert Unauthorized();
-        uint104 oldTargetReserves = configuratorParams.targetReserves;
-        configuratorParams.targetReserves = newTargetReserves;
+        uint104 oldTargetReserves = configuratorParams[cometProxy].targetReserves;
+        configuratorParams[cometProxy].targetReserves = newTargetReserves;
         emit SetTargetReserves(oldTargetReserves, newTargetReserves);
     }
 
-    function addAsset(AssetConfig calldata assetConfig) external {
+    function addAsset(address cometProxy, AssetConfig calldata assetConfig) external {
         if (msg.sender != governor) revert Unauthorized();
-        configuratorParams.assetConfigs.push(assetConfig);
+        configuratorParams[cometProxy].assetConfigs.push(assetConfig);
         emit AddAsset(assetConfig);
     }
 
-    function updateAsset(AssetConfig calldata newAssetConfig) external {
+    function updateAsset(address cometProxy, AssetConfig calldata newAssetConfig) external {
         if (msg.sender != governor) revert Unauthorized();
 
-        uint assetIndex = getAssetIndex(newAssetConfig.asset);
-        AssetConfig memory oldAssetConfig = configuratorParams.assetConfigs[assetIndex];
-        configuratorParams.assetConfigs[assetIndex] = newAssetConfig;
+        uint assetIndex = getAssetIndex(cometProxy, newAssetConfig.asset);
+        AssetConfig memory oldAssetConfig = configuratorParams[cometProxy].assetConfigs[assetIndex];
+        configuratorParams[cometProxy].assetConfigs[assetIndex] = newAssetConfig;
         emit UpdateAsset(oldAssetConfig, newAssetConfig);
     }
 
-    function updateAssetPriceFeed(address asset, address newPriceFeed) external {
+    function updateAssetPriceFeed(address cometProxy, address asset, address newPriceFeed) external {
         if (msg.sender != governor) revert Unauthorized();
 
-        uint assetIndex = getAssetIndex(asset);
-        address oldPriceFeed = configuratorParams.assetConfigs[assetIndex].priceFeed;
-        configuratorParams.assetConfigs[assetIndex].priceFeed = newPriceFeed;
+        uint assetIndex = getAssetIndex(cometProxy, asset);
+        address oldPriceFeed = configuratorParams[cometProxy].assetConfigs[assetIndex].priceFeed;
+        configuratorParams[cometProxy].assetConfigs[assetIndex].priceFeed = newPriceFeed;
         emit UpdateAssetPriceFeed(asset, oldPriceFeed, newPriceFeed);
     }
 
-    function updateAssetBorrowCollateralFactor(address asset, uint64 newBorrowCF) external {
+    function updateAssetBorrowCollateralFactor(address cometProxy, address asset, uint64 newBorrowCF) external {
         if (msg.sender != governor) revert Unauthorized();
 
-        uint assetIndex = getAssetIndex(asset);
-        uint64 oldBorrowCF = configuratorParams.assetConfigs[assetIndex].borrowCollateralFactor;
-        configuratorParams.assetConfigs[assetIndex].borrowCollateralFactor = newBorrowCF;
+        uint assetIndex = getAssetIndex(cometProxy, asset);
+        uint64 oldBorrowCF = configuratorParams[cometProxy].assetConfigs[assetIndex].borrowCollateralFactor;
+        configuratorParams[cometProxy].assetConfigs[assetIndex].borrowCollateralFactor = newBorrowCF;
         emit UpdateAssetBorrowCollateralFactor(asset, oldBorrowCF, newBorrowCF);
     }
 
-    function updateAssetLiquidateCollateralFactor(address asset, uint64 newLiquidateCF) external {
+    function updateAssetLiquidateCollateralFactor(address cometProxy, address asset, uint64 newLiquidateCF) external {
         if (msg.sender != governor) revert Unauthorized();
 
-        uint assetIndex = getAssetIndex(asset);
-        uint64 oldLiquidateCF = configuratorParams.assetConfigs[assetIndex].liquidateCollateralFactor;
-        configuratorParams.assetConfigs[assetIndex].liquidateCollateralFactor = newLiquidateCF;
+        uint assetIndex = getAssetIndex(cometProxy, asset);
+        uint64 oldLiquidateCF = configuratorParams[cometProxy].assetConfigs[assetIndex].liquidateCollateralFactor;
+        configuratorParams[cometProxy].assetConfigs[assetIndex].liquidateCollateralFactor = newLiquidateCF;
         emit UpdateAssetLiquidateCollateralFactor(asset, oldLiquidateCF, newLiquidateCF);
     }
 
-    function updateAssetLiquidationFactor(address asset, uint64 newLiquidationFactor) external {
+    function updateAssetLiquidationFactor(address cometProxy, address asset, uint64 newLiquidationFactor) external {
         if (msg.sender != governor) revert Unauthorized();
 
-        uint assetIndex = getAssetIndex(asset);
-        uint64 oldLiquidationFactor = configuratorParams.assetConfigs[assetIndex].liquidationFactor;
-        configuratorParams.assetConfigs[assetIndex].liquidationFactor = newLiquidationFactor;
+        uint assetIndex = getAssetIndex(cometProxy, asset);
+        uint64 oldLiquidationFactor = configuratorParams[cometProxy].assetConfigs[assetIndex].liquidationFactor;
+        configuratorParams[cometProxy].assetConfigs[assetIndex].liquidationFactor = newLiquidationFactor;
         emit UpdateAssetLiquidationFactor(asset, oldLiquidationFactor, newLiquidationFactor);
     }
 
-    function updateAssetSupplyCap(address asset, uint128 newSupplyCap) external {
+    function updateAssetSupplyCap(address cometProxy, address asset, uint128 newSupplyCap) external {
         if (msg.sender != governor) revert Unauthorized();
 
-        uint assetIndex = getAssetIndex(asset);
-        uint128 oldSupplyCap = configuratorParams.assetConfigs[assetIndex].supplyCap;
-        configuratorParams.assetConfigs[assetIndex].supplyCap = newSupplyCap;
+        uint assetIndex = getAssetIndex(cometProxy, asset);
+        uint128 oldSupplyCap = configuratorParams[cometProxy].assetConfigs[assetIndex].supplyCap;
+        configuratorParams[cometProxy].assetConfigs[assetIndex].supplyCap = newSupplyCap;
         emit UpdateAssetSupplyCap(asset, oldSupplyCap, newSupplyCap);
     }
 
@@ -251,8 +253,8 @@ contract Configurator is ConfiguratorStorage {
     /**
      * @dev Determine index of asset that matches given address
      */
-    function getAssetIndex(address asset) internal view returns (uint) {
-        AssetConfig[] memory assetConfigs = configuratorParams.assetConfigs;
+    function getAssetIndex(address cometProxy, address asset) internal view returns (uint) {
+        AssetConfig[] memory assetConfigs = configuratorParams[cometProxy].assetConfigs;
         uint numAssets = assetConfigs.length;
         for (uint i = 0; i < numAssets; ) {
             if (assetConfigs[i].asset == asset) {
@@ -264,18 +266,18 @@ contract Configurator is ConfiguratorStorage {
     }
 
     /**
-     * @return The currently configured params
+     * @return The currently configured params for a Comet proxy
      **/
-    function getConfiguration() external view returns (Configuration memory) {
-        return configuratorParams;
+    function getConfiguration(address cometProxy) external view returns (Configuration memory) {
+        return configuratorParams[cometProxy];
     }
 
     /**
-     * @notice Deploy a new version of the Comet implementation.
+     * @notice Deploy a new Comet implementation using the factory and Configuration for that Comet proxy.
      * @dev Note: Callable by anyone
      */
-    function deploy() external returns (address) {
-        address newComet = CometFactory(factory).clone(configuratorParams);
+    function deploy(address cometProxy) external returns (address) {
+        address newComet = CometFactory(factory[cometProxy]).clone(configuratorParams[cometProxy]);
         emit CometDeployed(newComet);
         return newComet;
     }
