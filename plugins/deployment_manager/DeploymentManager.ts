@@ -3,8 +3,8 @@ import { Contract, providers } from 'ethers';
 import { Alias, Address, BuildFile } from './Types';
 import { Aliases, getAliases, putAlias, storeAliases } from './Aliases';
 import { Cache } from './Cache';
-import { ContractMap, getContracts, storeBuildFile } from './ContractMap';
-import { Deployer, DeployOpts, deploy, deployBuild, getBuildFileFromArtifacts } from './Deploy';
+import { ContractMap, getContracts } from './ContractMap';
+import { Deployer, DeployOpts, deploy, deployBuild } from './Deploy';
 import { fetchAndCacheContract } from './Import';
 import { Proxies, getProxies, putProxy, storeProxies } from './Proxies';
 import { getRelationConfig } from './RelationConfig';
@@ -52,12 +52,9 @@ export class DeploymentManager {
   }
 
   async getSigners(): Promise<SignerWithAddress[]> {
-    console.log('getting signers')
     if (this._signers.length > 0) {
-      console.log('not constructing signers')
       return this._signers;
     }
-    console.log('constructing signers again')
     const signers = await this.hre.ethers.getSigners();
     this._signers = await Promise.all(signers.map(async (signer) => {
       const managedSigner = new NonceManager(signer) as unknown as providers.JsonRpcSigner;
@@ -133,20 +130,6 @@ export class DeploymentManager {
     await putAlias(this.cache, alias, address);
     this.invalidateContractsCache();
   }
-
-  /* Stores a new alias, which can then be referenced via `deploymentManager.contract()` */
-  async putBuild(contractFile: string, address: Address) {
-    const contractFileName = contractFile.split('/').reverse()[0];
-    const contractName = contractFileName.replace('.sol', '');
-    const buildFile = await getBuildFileFromArtifacts(contractFile, contractFileName);
-    if (!buildFile.contract) {
-      // This is just to make it clear which contract was deployed, when reading the build file
-      buildFile.contract = contractName;
-    }
-    await storeBuildFile(this.cache, address, buildFile);
-    this.invalidateContractsCache();
-  }
-
 
   /* Stores a new proxy, which dictates the ABI available for that contract in `deploymentManager.contract()` */
   async putProxy(alias: Alias, address: Address) {

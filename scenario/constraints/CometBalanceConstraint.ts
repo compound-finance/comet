@@ -130,7 +130,6 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
     const assetsByActor = requirements.cometBalances;
     if (assetsByActor) {
       const comet = await context.getComet();
-      console.log('IN CHECK')
       for (const [actorName, assets] of Object.entries(assetsByActor)) {
         for (const [assetName, rawAmount] of Object.entries(assets)) {
           const actor = context.actors[actorName];

@@ -53,7 +53,7 @@ async function maybeStoreCache(deployOpts: DeployOpts, contract: Contract, build
   }
 }
 
-export async function getBuildFileFromArtifacts(
+async function getBuildFileFromArtifacts(
   contractFile: string,
   contractFileName: string
 ): Promise<BuildFile> {
@@ -94,8 +94,6 @@ export async function deploy<
   let factory = (await hre.ethers.getContractFactory(contractName)) as unknown as Factory;
   if (deployOpts.connect) {
     factory = factory.connect(deployOpts.connect);
-  } else {
-    console.log('deploy called while not using managed signer!')
   }
 
   debug(`Deploying ${contractName} with args`, deployArgs);

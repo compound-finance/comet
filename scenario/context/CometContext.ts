@@ -225,33 +225,10 @@ export class CometContext {
     })));
   }
 
-  async getContract<T extends Contract>(name: string, thing?: string): Promise<T> {
-    let contracts = await this.deploymentManager.contracts();
-    let contract: T = contracts.get(name) as T;
-    if (!contract) {
-      throw new Error(`No such contract ${name}, found: ${JSON.stringify([...contracts.keys()])}`);
-    }
-    if (thing) {
-      return await this.deploymentManager.hre.ethers.getContractAt(thing, contract.address) as T;
-    } else {
-      return contract;
-    }
-    return contract;
-  }
-
   // Instantly executes some actions through the governance proposal process
   async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
     let admin = this.actors['admin'];
-    // const managedSigner = new NonceManager(admin.signer) as unknown as providers.JsonRpcSigner;
-    // const adminSigner = await SignerWithAddress.create(managedSigner);
-    // XXX THIS NEEDS TO BE SIGNER TO BE ACCOUNTED FOR PROPERLY
-    console.log('equals? ', admin.signer === await this.deploymentManager.getSigner())
-    // console.log('admin signer ', admin.signer)
-    // console.log('dm signer ', await this.deploymentManager.getSigner())
-
     let governor = (await this.getGovernor()).connect(admin.signer);
-    // const dmSigner = await this.deploymentManager.getSigner();
-    // const governor = (await this.getGovernor()).connect(dmSigner);
     await fastGovernanceExecute(governor, targets, values, signatures, calldatas);
   }
 
@@ -278,23 +255,6 @@ async function buildActor(name: string, signer: SignerWithAddress, context: Come
 const getInitialContext = async (world: World): Promise<CometContext> => {
   console.log('start context')
   let deploymentManager = new DeploymentManager(world.base.name, world.hre, { debug: true });
-
-  // TODO: `thing` allows loading the named contract using a particular ABI
-  //  we use it for now to supply a full interface across delegates
-  //  we can replace with an automatic union proxy interface that can recover the full interface through spider
-  async function getContract<T extends Contract>(name: string, thing?: string): Promise<T> {
-    let contracts = await deploymentManager.contracts();
-    let contract: T = contracts.get(name) as T;
-    if (!contract) {
-      throw new Error(`No such contract ${name} for base ${world.base.name}, found: ${JSON.stringify([...contracts.keys()])}`);
-    }
-    if (thing) {
-      return await deploymentManager.hre.ethers.getContractAt(thing, contract.address) as T;
-    } else {
-      return contract;
-    }
-    return contract;
-  }
 
   if (!world.isRemoteFork()) {
     await deployComet(deploymentManager);
