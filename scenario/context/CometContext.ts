@@ -1,4 +1,4 @@
-import { BytesLike, Signer, Contract, utils, BigNumberish, providers } from 'ethers';
+import { BytesLike, Signer, Contract, utils, BigNumberish } from 'ethers';
 import { ForkSpec, World, buildScenarioFn } from '../../plugins/scenario';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
@@ -20,7 +20,6 @@ import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { Requirements } from '../constraints/Requirements';
 import { fastGovernanceExecute } from '../utils';
-import { NonceManager } from '@ethersproject/experimental';
 
 type ActorMap = { [name: string]: CometActor };
 type AssetMap = { [name: string]: CometAsset };
@@ -231,7 +230,6 @@ export class CometContext {
     let governor = (await this.getGovernor()).connect(admin.signer);
     await fastGovernanceExecute(governor, targets, values, signatures, calldatas);
   }
-
 }
 
 async function getContextProperties(context: CometContext): Promise<CometProperties> {
@@ -247,33 +245,6 @@ async function getContextProperties(context: CometContext): Promise<CometPropert
     governor: await context.getGovernor(),
   }
 }
-
-async function buildActor(name: string, signer: SignerWithAddress, context: CometContext) {
-  return new CometActor(name, signer, await signer.getAddress(), context);
-}
-
-const getInitialContext = async (world: World): Promise<CometContext> => {
-  console.log('start context')
-  let deploymentManager = new DeploymentManager(world.base.name, world.hre, { debug: true });
-
-  if (!world.isRemoteFork()) {
-    await deployComet(deploymentManager);
-  }
-
-  await deploymentManager.spider();
-
-  let context = new CometContext(deploymentManager, undefined);
-
-  console.log('context get signers')
-
-  context.actors = await getActors(context, world);
-
-  await context.setAssets();
-
-  console.log('finish context')
-
-  return context;
-};
 
 async function getActors(context: CometContext, world: World) {
   let dm = context.deploymentManager;
@@ -302,12 +273,31 @@ async function getActors(context: CometContext, world: World) {
   };
 }
 
-// XXX we are forking context, so the nonce managers are now different between intialize context and actually running the scenario
+async function buildActor(name: string, signer: SignerWithAddress, context: CometContext) {
+  return new CometActor(name, signer, await signer.getAddress(), context);
+}
+
+const getInitialContext = async (world: World): Promise<CometContext> => {
+  let deploymentManager = new DeploymentManager(world.base.name, world.hre, { debug: true });
+
+  if (!world.isRemoteFork()) {
+    await deployComet(deploymentManager);
+  }
+
+  await deploymentManager.spider();
+
+  let context = new CometContext(deploymentManager, undefined);
+  context.actors = await getActors(context, world);
+  await context.setAssets();
+
+  return context;
+};
+
 async function forkContext(c: CometContext, w: World): Promise<CometContext> {
   let context = new CometContext(DeploymentManager.fork(c.deploymentManager), c.remoteToken);
-  // We reconstruct the actors using the new context and deployment manager
+  // We need to reconstruct the actors using the new deployment manager. Otherwise,
+  // the new actors will be using the old NonceManagers from the old deployment manager.
   context.actors = await getActors(context, w);
-  // context.actors = Object.fromEntries(Object.entries(c.actors).map(([name, actor]) => [name, CometActor.fork(actor, context)]));
   context.assets = Object.fromEntries(Object.entries(c.assets).map(([name, asset]) => [name, CometAsset.fork(asset)]));
 
   return context;
