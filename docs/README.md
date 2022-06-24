@@ -61,13 +61,6 @@ Comet comet = Comet(0xCometAddress);
 uint supplyRate = comet.getSupplyRate(0.8e18);
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const supplyRate = await comet.methods.getSupplyRate(0.8e18).call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -112,13 +105,6 @@ function getBorrowRate(uint utilization) public view returns (uint64)
 ```solidity
 Comet comet = Comet(0xCometAddress);
 uint borrowRate = comet.getBorrowRate(0.8e18);
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const borrowRate = await comet.methods.getBorrowRate(0.8e18).call();
 ```
 
 #### Ethers.js v5.x
@@ -182,13 +168,6 @@ Comet comet = Comet(0xCometAddress);
 comet.supply(0xERC20Address, 1000000);
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-await comet.methods.supply(usdcAddress, 1000000).send();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -229,13 +208,6 @@ Comet comet = Comet(0xCometAddress);
 comet.withdraw(0xwbtcAddress, 100000000);
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-await comet.methods.withdraw(usdcAddress, 100000000).send();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -261,13 +233,6 @@ function isBorrowCollateralized(address account) public view returns (bool)
 ```solidity
 Comet comet = Comet(0xCometAddress);
 bool isCollateralized = comet.isBorrowCollateralized(0xAccount);
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const isCollateralized = await comet.methods.isBorrowCollateralized('0xAccount').call();
 ```
 
 #### Ethers.js v5.x
@@ -309,13 +274,6 @@ Comet comet = Comet(0xCometAddress);
 bool isLiquidatable = comet.isLiquidatable(0xAccount);
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const isLiquidatable = await comet.methods.isLiquidatable('0xAccount').call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -342,13 +300,6 @@ function absorb(address absorber, address[] calldata accounts)
 ```solidity
 Comet comet = Comet(0xCometAddress);
 comet.absorb(0xMyAddress, [ 0xUnderwaterAddress ]);
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-await comet.methods.absorb('0xMyAddress', [ '0xUnderwaterAddress' ]).send();
 ```
 
 #### Ethers.js v5.x
@@ -383,13 +334,6 @@ Comet comet = Comet(0xCometAddress);
 comet.buyCollateral(0xAssetAddress, 5e18, 5e18, 0xRecipient);
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-await comet.methods.buyCollateral('0xAssetAddress', 5e18, 5e18, '0xRecipient').send();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -422,13 +366,6 @@ Comet comet = Comet(0xCometAddress);
 uint reserves = comet.getReserves();
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const reserves = await comet.methods.getReserves().call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -453,13 +390,6 @@ function targetReserves() public view returns (uint)
 ```solidity
 Comet comet = Comet(0xCometAddress);
 uint targetReserves = comet.targetReserves();
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const targetReserves = await comet.methods.targetReserves().call();
 ```
 
 #### Ethers.js v5.x
@@ -494,13 +424,6 @@ Comet comet = Comet(0xCometAddress);
 uint askPrice = comet.quoteCollateral(0xERC20Address, 10000000000);
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const askPrice = await comet.methods.quoteCollateral('0xERC20Address', 1000000).call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -529,13 +452,6 @@ mapping(address => LiquidatorPoints) public liquidatorPoints;
 ```solidity
 Comet comet = Comet(0xCometAddress);
 LiquidatorPoints pointsData = comet.liquidatorPoints(0xLiquidatorAddress);
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const [ numAbsorbs, numAbsorbed, approxSpend ] = await comet.methods.liquidatorPoints('0xLiquidatorAddress').call();
 ```
 
 #### Ethers.js v5.x
@@ -568,13 +484,6 @@ Comet comet = Comet(0xCometAddress);
 uint64 accrued = comet.baseTrackingAccrued(0xAccount);
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const accrued = await comet.methods.baseTrackingAccrued('0xAccount').call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -604,13 +513,6 @@ function getRewardOwed(address comet, address account) external returns (RewardO
 ```solidity
 CometRewards rewards = CometRewards(0xRewardsAddress);
 RewardOwed reward = rewards.getRewardOwed(0xCometAddress, 0xAccount);
-```
-
-#### Web3.js v1.5.x
-
-```js
-const rewards = new web3.eth.Contract(abiJson, contractAddress);
-const [ tokenAddress, amtOwed ] = await rewards.methods.getRewardOwed(cometAddress, accountAddress).call();
 ```
 
 #### Ethers.js v5.x
@@ -647,13 +549,6 @@ CometRewards rewards = CometRewards(0xRewardsAddress);
 rewards.claim(0xCometAddress, 0xAccount, true);
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const rewards = new web3.eth.Contract(abiJson, contractAddress);
-await rewards.methods.claim(cometAddress, accountAddress, true).send();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -685,13 +580,6 @@ function allow(address manager, bool isAllowed)
 ```solidity
 Comet comet = Comet(0xCometAddress);
 comet.allow(0xmanager, true);
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-await comet.methods.allow(managerAddress, false).send();
 ```
 
 #### Ethers.js v5.x
@@ -737,13 +625,6 @@ Comet comet = Comet(0xCometAddress);
 comet.allowBySig(0xowner, 0xmanager, true, nonce, expiry, v, r, s);
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-await comet.methods.allowBySig('0xowner', '0xmanager', true, nonce, expiry, v, r, s).send();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -770,13 +651,6 @@ function hasPermission(address owner, address manager) public view returns (bool
 ```solidity
 Comet comet = Comet(0xCometAddress);
 bool isManager = comet.hasPermission(0xOwner, 0xManager);
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const isManager = await comet.methods.hasPermission('0xOwner', '0xManager').call();
 ```
 
 #### Ethers.js v5.x
@@ -823,13 +697,6 @@ Comet comet = Comet(0xCometAddress);
 comet.transfer(0xreceiver, 0xwbtcAddress, 100000000);
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-await comet.methods.transfer(receiverAddress, usdcAddress, 100000000).send();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -864,13 +731,6 @@ Comet comet = Comet(0xCometAddress);
 uint utilization = comet.getUtilization(); // example: 10000000000000000 (1%)
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const utilization = await comet.methods.getUtilization().call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -897,13 +757,6 @@ Comet comet = Comet(0xCometAddress);
 uint256 totalSupply = comet.totalSupply();
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const totalSupply = await comet.methods.totalSupply().call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -928,13 +781,6 @@ function totalBorrow() virtual external view returns (uint256)
 ```solidity
 Comet comet = Comet(0xCometAddress);
 uint256 totalBorrow = comet.totalBorrow();
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const totalBorrow = await comet.methods.totalBorrow().call();
 ```
 
 #### Ethers.js v5.x
@@ -970,13 +816,6 @@ Comet comet = Comet(0xCometAddress);
 TotalsCollateral totalsCollateral = comet.totalsCollateral(0xERC20Address);
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const [ totalSupplyAsset ] = await comet.methods.totalsCollateral('0xERC20Address').call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -1003,13 +842,6 @@ function collateralBalanceOf(address account, address asset) external view retur
 ```solidity
 Comet comet = Comet(0xCometAddress);
 uint balance = comet.collateralBalanceOf(0xAccount, 0xUsdcAddress);
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const balance = await comet.methods.collateralBalanceOf('0xAccount', '0xUsdcAddress').call();
 ```
 
 #### Ethers.js v5.x
@@ -1039,13 +871,6 @@ Comet comet = Comet(0xCometAddress);
 uint balance = comet.balanceOf(0xAccount);
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const balance = await comet.methods.balanceOf('0xAccount').call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -1073,13 +898,6 @@ Comet comet = Comet(0xCometAddress);
 uint owed = comet.borrowBalanceOf(0xAccount);
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const owed = await comet.methods.borrowBalanceOf('0xAccount').call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -1105,13 +923,6 @@ function baseBalanceOf(address account) external view returns (int104)
 ```solidity
 Comet comet = Comet(0xCometAddress);
 uint baseBalance = comet.baseBalanceOf(0xAccount);
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const baseBalance = await comet.methods.baseBalanceOf('0xAccount').call();
 ```
 
 #### Ethers.js v5.x
@@ -1150,13 +961,6 @@ mapping(address => UserBasic) public userBasic;
 ```solidity
 Comet comet = Comet(0xCometAddress);
 UserBasic userBasic = comet.userBasic(0xAccount);
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const [ principal, baseTrackingIndex, baseTrackingAccrued, assetsIn ] = await comet.methods.userBasic('0xAccount').call();
 ```
 
 #### Ethers.js v5.x
@@ -1205,13 +1009,6 @@ Comet comet = Comet(0xCometAddress);
 AssetInfo info = comet.getAssetInfo(0);
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const infoObject = await comet.methods.getAssetInfo(0).call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -1258,13 +1055,6 @@ Comet comet = Comet(0xCometAddress);
 AssetInfo info = comet.getAssetInfoByAddress(0xAsset);
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const infoObject = await comet.methods.getAssetInfoByAddress('0xAsset').call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -1294,13 +1084,6 @@ Comet comet = Comet(0xCometAddress);
 uint price = comet.getPrice(0xAssetAddress);
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const Comet = new web3.eth.Contract(abiJson, contractAddress);
-const price = await Comet.methods.getPrice(usdcAddress).call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -1326,13 +1109,6 @@ function accrueAccount(address account) override external
 ```solidity
 Comet comet = Comet(0xCometAddress);
 uint price = comet.accrueAccount(0xAccount);
-```
-
-#### Web3.js v1.5.x
-
-```js
-const Comet = new web3.eth.Contract(abiJson, contractAddress);
-await Comet.methods.accrueAccount('0xAccount').send();
 ```
 
 #### Ethers.js v5.x
@@ -1402,13 +1178,6 @@ Configurator configurator = Configurator(0xConfiguratorAddress);
 Configuration config = configurator.getConfiguration();
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const Configurator = new web3.eth.Contract(abiJson, contractAddress);
-const config = await Configurator.methods.getConfiguration().call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -1454,13 +1223,6 @@ Comet comet = Comet(0xCometAddress);
 TotalsBasic tb = comet.totalsBasic();
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const [ baseSupplyIndex, baseBorrowIndex, trackingSupplyIndex, trackingBorrowIndex, totalSupplyBase, totalBorrowBase, lastAccrualTime, pauseFlags ] = await comet.methods.totalsBasic().call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -1485,13 +1247,6 @@ function baseAccrualScale() override external pure returns (uint64)
 ```solidity
 Comet comet = Comet(0xCometAddress);
 uint baseAccrualScale = comet.baseAccrualScale();
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const baseAccrualScale = await comet.methods.baseAccrualScale().call();
 ```
 
 #### Ethers.js v5.x
@@ -1520,13 +1275,6 @@ Comet comet = Comet(0xCometAddress);
 uint baseIndexScale = comet.baseIndexScale();
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const baseIndexScale = await comet.methods.baseIndexScale().call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -1551,13 +1299,6 @@ function factorScale() override external pure returns (uint64)
 ```solidity
 Comet comet = Comet(0xCometAddress);
 uint factorScale = comet.factorScale();
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const factorScale = await comet.methods.factorScale().call();
 ```
 
 #### Ethers.js v5.x
@@ -1586,13 +1327,6 @@ Comet comet = Comet(0xCometAddress);
 uint priceScale = comet.priceScale();
 ```
 
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const priceScale = await comet.methods.priceScale().call();
-```
-
 #### Ethers.js v5.x
 
 ```js
@@ -1617,13 +1351,6 @@ function maxAssets() override external pure returns (uint8)
 ```solidity
 Comet comet = Comet(0xCometAddress);
 uint maxAssets = comet.maxAssets();
-```
-
-#### Web3.js v1.5.x
-
-```js
-const comet = new web3.eth.Contract(abiJson, contractAddress);
-const maxAssets = await comet.methods.maxAssets().call();
 ```
 
 #### Ethers.js v5.x
@@ -1676,15 +1403,6 @@ Bulker bulker = Bulker(0xBulkerAddress);
 // ERC-20 `approve` the bulker. Then Comet `allow` the bulker to be a manager before calling `invoke`.
 bytes memory supplyAssetCalldata = (abi.encode('0xAccount', '0xAsset', amount);
 bulker.invoke([ 1 ], [ supplyAssetCalldata ]);
-```
-
-#### Web3.js v1.5.x
-
-```js
-const Bulker = new web3.eth.Contract(abiJson, contractAddress);
-// ERC-20 `approve` the bulker. Then Comet `allow` the bulker to be a manager before calling `invoke`.
-const supplyAssetCalldata = web3.eth.abi.encodeParameters(['address', 'address', 'uint'], ['0xAccount', '0xAsset', amount]);
-await Bulker.methods.invoke([ 1 ], [ supplyAssetCalldata ]).send();
 ```
 
 #### Ethers.js v5.x
