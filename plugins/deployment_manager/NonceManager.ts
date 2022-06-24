@@ -1,0 +1,23 @@
+import { NonceManager } from "@ethersproject/experimental";
+import { TypedDataDomain, TypedDataField, TypedDataSigner } from "@ethersproject/abstract-signer";
+import { _TypedDataEncoder } from "@ethersproject/hash";
+import { providers } from 'ethers';
+
+// NonceManager does not implement `_signTypedData`, which is needed for the EIP-712 functions
+export class ExtendedNonceManager extends NonceManager implements TypedDataSigner {
+    async _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string> {
+        const provider = this.provider as providers.JsonRpcProvider;
+
+        // Populate any ENS names (in-place)
+        const populated = await _TypedDataEncoder.resolveNames(domain, types, value, (name: string) => {
+            return provider.resolveName(name);
+        });
+
+        const address = await this.getAddress();
+
+        return await provider.send("eth_signTypedData_v4", [
+            address.toLowerCase(),
+            JSON.stringify(_TypedDataEncoder.getPayload(populated.domain, types, populated.value))
+        ]);
+    }
+}

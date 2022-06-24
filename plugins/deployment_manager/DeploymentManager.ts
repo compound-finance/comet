@@ -12,7 +12,7 @@ import { Roots, getRoots, putRoots } from './Roots';
 import { spider } from './Spider';
 import { Migration, getArtifactSpec } from './Migration';
 import { generateMigration } from './MigrationTemplate';
-import { NonceManager } from '@ethersproject/experimental';
+import { ExtendedNonceManager } from './NonceManager';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 interface DeploymentManagerConfig {
@@ -57,7 +57,7 @@ export class DeploymentManager {
     }
     const signers = await this.hre.ethers.getSigners();
     this._signers = await Promise.all(signers.map(async (signer) => {
-      const managedSigner = new NonceManager(signer) as unknown as providers.JsonRpcSigner;
+      const managedSigner = new ExtendedNonceManager(signer) as unknown as providers.JsonRpcSigner;
       return await SignerWithAddress.create(managedSigner);
     }));
     return this._signers;

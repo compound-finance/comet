@@ -53,6 +53,7 @@ scenario('upgrade Comet implementation and call new function', {}, async ({ come
   const CometModified = await dm.hre.ethers.getContractFactory('CometModified');
   const modifiedComet = CometModified.attach(comet.address).connect(await dm.getSigner());
 
-  // Call new function on Comet
+  // Call new functions on Comet
+  await modifiedComet.initialize(constants.AddressZero);
   expect(await modifiedComet.newFunction()).to.be.equal(101n);
 });
