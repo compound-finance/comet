@@ -3,26 +3,26 @@ import { expect } from 'chai';
 import { utils } from 'ethers';
 import { scaleToDecimals } from './utils';
 
-scenario('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, timelock, actors }, world, context) => {
+scenario('upgrade governor', { upgradeAll: true }, async ({ comet, configurator, proxyAdmin, timelock, actors }, world, context) => {
   const { admin, albert } = actors;
 
   expect(await comet.governor()).to.equal(timelock.address);
-  expect((await configurator.getConfiguration()).governor).to.equal(timelock.address);
+  expect((await configurator.getConfiguration(comet.address)).governor).to.equal(timelock.address);
 
-  let setGovernorCalldata = utils.defaultAbiCoder.encode(["address"], [albert.address]);
+  let setGovernorCalldata = utils.defaultAbiCoder.encode(["address", "address"], [comet.address, albert.address]);
   let deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
   await context.fastGovernanceExecute(
     [configurator.address, proxyAdmin.address],
     [0, 0],
-    ["setGovernor(address)", "deployAndUpgradeTo(address,address)"],
+    ["setGovernor(address,address)", "deployAndUpgradeTo(address,address)"],
     [setGovernorCalldata, deployAndUpgradeToCalldata]
   );
 
   expect(await comet.governor()).to.equal(albert.address);
-  expect((await configurator.getConfiguration()).governor).to.be.equal(albert.address);
+  expect((await configurator.getConfiguration(comet.address)).governor).to.be.equal(albert.address);
 });
 
-scenario('add assets', {}, async ({ comet, configurator, proxyAdmin, timelock, actors, assets }: CometProperties, world, context) => {
+scenario('add assets', { upgradeAll: true }, async ({ comet, configurator, proxyAdmin }: CometProperties, world, context) => {
   let numAssets = await comet.numAssets();
   let collateralAssets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
   let contextAssets =
@@ -43,21 +43,24 @@ scenario('add assets', {}, async ({ comet, configurator, proxyAdmin, timelock, a
     supplyCap: (1000000e8).toString(),
   };
   let addAssetCalldata = utils.defaultAbiCoder.encode(
-    ["address", "address", "uint8", "uint64", "uint64", "uint64", "uint128"],
+    ["address", "tuple(address,address,uint8,uint64,uint64,uint64,uint128)"],
     [
-      newAssetConfig.asset,
-      newAssetConfig.priceFeed,
-      newAssetConfig.decimals,
-      newAssetConfig.borrowCollateralFactor,
-      newAssetConfig.liquidateCollateralFactor,
-      newAssetConfig.liquidationFactor,
-      newAssetConfig.supplyCap
+      comet.address,
+      [
+        newAssetConfig.asset,
+        newAssetConfig.priceFeed,
+        newAssetConfig.decimals,
+        newAssetConfig.borrowCollateralFactor,
+        newAssetConfig.liquidateCollateralFactor,
+        newAssetConfig.liquidationFactor,
+        newAssetConfig.supplyCap
+      ]
     ]);
   let deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
   await context.fastGovernanceExecute(
     [configurator.address],
     [0],
-    ["addAsset((address,address,uint8,uint64,uint64,uint64,uint128))"],
+    ["addAsset(address,(address,address,uint8,uint64,uint64,uint64,uint128))"],
     [addAssetCalldata]
   );
   await context.fastGovernanceExecute(
@@ -84,12 +87,12 @@ scenario.skip(
   'reverts if configurator is not called by admin',
   {},
   async ({ comet, configurator, proxyAdmin, actors }, world) => {
-  const { albert } = actors;
+    const { albert } = actors;
 
-  await expect(configurator.connect(albert.signer).setGovernor(albert.address)).to.be.revertedWith(
-    'Unauthorized'
-  );
-});
+    await expect(configurator.connect(albert.signer).setGovernor(comet.address, albert.address)).to.be.revertedWith(
+      'Unauthorized'
+    );
+  });
 
 scenario.skip('reverts if proxy is not upgraded by ProxyAdmin', {}, async ({ comet, proxyAdmin, actors }, world) => {
   // XXX

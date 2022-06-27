@@ -5,7 +5,7 @@
 // Runtime Environment's members available in the global scope.
 import hre from 'hardhat';
 import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
-import { Configurator } from '../build/types';
+import { CometInterface, Configurator } from '../build/types';
 import { ConfigurationStruct } from '../build/types/CometFactory';
 
 async function verifyContract(address: string, constructorArguments) {
@@ -42,8 +42,9 @@ async function main() {
     debug: true,
   });
 
+  const comet = await dm.contract('comet') as CometInterface;
   const configurator = await dm.contract('configurator') as Configurator;
-  let config: ConfigurationStruct = await configurator.getConfiguration();
+  let config: ConfigurationStruct = await configurator.getConfiguration(comet.address);
   console.log('Latest configuration is: ', config);
   console.log('Starting verification!');
 

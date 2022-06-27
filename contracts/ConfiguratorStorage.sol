@@ -13,16 +13,15 @@ contract ConfiguratorStorage is CometConfiguration {
     /// checked in the initializer function.
     uint public version;
 
-    /// @notice Configuration settings used to deploy new Comet instances
-    /// by the configurator
+    /// @notice Mapping of Comet proxy addresses to their Configuration settings
     /// @dev This needs to be internal to avoid a `CompilerError: Stack too deep
     /// when compiling inline assembly` error that is caused by the default
     /// getters created for public variables.
-    Configuration internal configuratorParams; // XXX can create a public getter for this
+    mapping(address => Configuration) internal configuratorParams;
 
     /// @notice The governor of the protocol
     address public governor;
 
-    /// @notice Address for the Comet factory contract
-    address public factory;
+    /// @notice Mapping of Comet proxy addresses to their Comet factory contracts
+    mapping(address => address) public factory;
 }
