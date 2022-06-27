@@ -87,8 +87,8 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
       accounts: ETH_PK
         ? [ETH_PK]
         : {
-            mnemonic: MNEMONIC,
-          },
+          mnemonic: MNEMONIC,
+        },
     };
   }
 }
@@ -130,9 +130,6 @@ const config: HardhatUserConfig = {
       accounts: {
         mnemonic: MNEMONIC || 'myth like bonus scare over problem client lizard pioneer submit female collect',
       },
-      // this should be default commented out and only enabled during dev to allow partial testing
-      // XXX comment out by default once we've made the full contract fit
-      allowUnlimitedContractSize: true,
     },
   },
 
