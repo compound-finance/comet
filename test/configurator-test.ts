@@ -45,7 +45,7 @@ function convertToEventConfiguration(configuration: ConfigurationStructOutput) {
     configuration.baseBorrowMin.toBigInt(),
     configuration.targetReserves.toBigInt(),
     [] // leave asset configs empty for simplicity
-  ]
+  ];
 }
 
 // Checks that the Configurator asset config matches the Comet asset info
@@ -68,10 +68,11 @@ describe('configurator', function () {
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     const txn = await wait(configuratorAsProxy.deploy(cometProxy.address)) as any;
-    const [newCometAddress] = txn.receipt.events.find(event => event.event === 'CometDeployed').args;
+    const [, newCometAddress] = txn.receipt.events.find(event => event.event === 'CometDeployed').args;
 
     expect(event(txn, 0)).to.be.deep.equal({
       CometDeployed: {
+        cometProxy: cometProxy.address,
         newComet: newCometAddress,
       }
     });
@@ -121,23 +122,21 @@ describe('configurator', function () {
   });
 
   it('reverts if initialized more than once', async () => {
-    const { governor, configurator, configuratorProxy, cometProxy } = await makeConfigurator();
+    const { governor, configurator, configuratorProxy } = await makeConfigurator();
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-    let configuration = await configuratorAsProxy.getConfiguration(cometProxy.address);
     await expect(configuratorAsProxy.initialize(governor.address)).to.be.revertedWith("custom error 'AlreadyInitialized()'");
   });
 
   it('reverts if initializing the implementation contract', async () => {
-    const { governor, configurator, cometProxy } = await makeConfigurator();
+    const { governor, configurator } = await makeConfigurator();
 
-    let configuration = await configurator.getConfiguration(cometProxy.address);
     await expect(configurator.initialize(governor.address)).to.be.revertedWith("custom error 'AlreadyInitialized()'");
   });
 
   describe('configuration setters', function () {
     it('sets factory and deploys Comet using new factory', async () => {
-      const { configurator, configuratorProxy, proxyAdmin, cometFactory, cometProxy, users: [alice] } = await makeConfigurator();
+      const { configurator, configuratorProxy, proxyAdmin, cometFactory, cometProxy } = await makeConfigurator();
 
       // Deploy modified CometFactory
       const CometModifiedFactoryFactory = (await ethers.getContractFactory('CometModifiedFactory')) as CometModifiedFactory__factory;
@@ -152,6 +151,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetFactory: {
+          cometProxy: cometProxy.address,
           oldFactory,
           newFactory,
         }
@@ -169,13 +169,14 @@ describe('configurator', function () {
 
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       const newCometProxyAddress = ethers.constants.AddressZero;
-      const oldConfiguration = await configuratorAsProxy.getConfiguration(newCometProxyAddress)
+      const oldConfiguration = await configuratorAsProxy.getConfiguration(newCometProxyAddress);
       const newConfiguration = { ...oldConfiguration, governor: proxyAdmin.address } as ConfigurationStructOutput;
 
       const txn = await wait(configuratorAsProxy.setConfiguration(newCometProxyAddress, newConfiguration));
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetConfiguration: {
+          cometProxy: newCometProxyAddress,
           oldConfiguration: convertToEventConfiguration(oldConfiguration),
           newConfiguration: convertToEventConfiguration(newConfiguration),
         }
@@ -209,6 +210,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetGovernor: {
+          cometProxy: cometProxy.address,
           oldGovernor,
           newGovernor,
         }
@@ -232,6 +234,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetPauseGuardian: {
+          cometProxy: cometProxy.address,
           oldPauseGuardian,
           newPauseGuardian,
         }
@@ -260,6 +263,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetBaseTokenPriceFeed: {
+          cometProxy: cometProxy.address,
           oldBaseTokenPriceFeed: oldPriceFeed,
           newBaseTokenPriceFeed: newPriceFeed,
         }
@@ -283,6 +287,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetExtensionDelegate: {
+          cometProxy: cometProxy.address,
           oldExt,
           newExt,
         }
@@ -306,6 +311,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetKink: {
+          cometProxy: cometProxy.address,
           oldKink,
           newKink,
         }
@@ -330,6 +336,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetPerYearInterestRateSlopeLow: {
+          cometProxy: cometProxy.address,
           oldIRSlopeLow,
           newIRSlopeLow,
         }
@@ -355,6 +362,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetPerYearInterestRateSlopeHigh: {
+          cometProxy: cometProxy.address,
           oldIRSlopeHigh,
           newIRSlopeHigh,
         }
@@ -380,6 +388,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetPerYearInterestRateBase: {
+          cometProxy: cometProxy.address,
           oldIRBase,
           newIRBase,
         }
@@ -404,6 +413,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetReserveRate: {
+          cometProxy: cometProxy.address,
           oldReserveRate,
           newReserveRate,
         }
@@ -436,6 +446,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetStoreFrontPriceFactor: {
+          cometProxy: cometProxy.address,
           oldStoreFrontPriceFactor,
           newStoreFrontPriceFactor,
         }
@@ -459,6 +470,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetBaseTrackingSupplySpeed: {
+          cometProxy: cometProxy.address,
           oldBaseTrackingSupplySpeed: oldSpeed,
           newBaseTrackingSupplySpeed: newSpeed,
         }
@@ -482,6 +494,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetBaseTrackingBorrowSpeed: {
+          cometProxy: cometProxy.address,
           oldBaseTrackingBorrowSpeed: oldSpeed,
           newBaseTrackingBorrowSpeed: newSpeed,
         }
@@ -505,6 +518,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetBaseMinForRewards: {
+          cometProxy: cometProxy.address,
           oldBaseMinForRewards,
           newBaseMinForRewards,
         }
@@ -528,6 +542,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetBaseBorrowMin: {
+          cometProxy: cometProxy.address,
           oldBaseBorrowMin,
           newBaseBorrowMin,
         }
@@ -551,6 +566,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         SetTargetReserves: {
+          cometProxy: cometProxy.address,
           oldTargetReserves,
           newTargetReserves,
         }
@@ -582,6 +598,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         AddAsset: {
+          cometProxy: cometProxy.address,
           assetConfig: convertToEventAssetConfig(newAssetConfig),
         }
       });
@@ -614,6 +631,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         UpdateAsset: {
+          cometProxy: cometProxy.address,
           oldAssetConfig: [
             oldAssetConfig.asset,
             oldAssetConfig.priceFeed,
@@ -647,6 +665,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         UpdateAssetPriceFeed: {
+          cometProxy: cometProxy.address,
           asset: COMP.address,
           oldPriceFeed,
           newPriceFeed,
@@ -673,6 +692,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         UpdateAssetBorrowCollateralFactor: {
+          cometProxy: cometProxy.address,
           asset: COMP.address,
           oldBorrowCF,
           newBorrowCF,
@@ -703,6 +723,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         UpdateAssetLiquidateCollateralFactor: {
+          cometProxy: cometProxy.address,
           asset: COMP.address,
           oldLiquidateCF,
           newLiquidateCF,
@@ -729,6 +750,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         UpdateAssetLiquidationFactor: {
+          cometProxy: cometProxy.address,
           asset: COMP.address,
           oldLiquidationFactor,
           newLiquidationFactor,
@@ -755,6 +777,7 @@ describe('configurator', function () {
 
       expect(event(txn, 0)).to.be.deep.equal({
         UpdateAssetSupplyCap: {
+          cometProxy: cometProxy.address,
           asset: COMP.address,
           oldSupplyCap,
           newSupplyCap,

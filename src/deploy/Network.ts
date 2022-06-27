@@ -183,8 +183,8 @@ export async function deployNetworkComet(
       [configuratorProxy.address, configuratorProxy.address],
       [0, 0],
       [
-        "setFactory(address,address)",
-        "setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))",
+        'setFactory(address,address)',
+        'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
       ],
       [setFactoryCalldata, setConfigurationCalldata]
     );

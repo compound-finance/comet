@@ -9,33 +9,32 @@ contract Configurator is ConfiguratorStorage {
 
     /** Custom events **/
 
-    // XXX Add cometProxy address to events
-    event AddAsset(AssetConfig assetConfig);
-    event CometDeployed(address indexed newComet);
+    event AddAsset(address indexed cometProxy, AssetConfig assetConfig);
+    event CometDeployed(address indexed cometProxy, address indexed newComet);
     event GovernorTransferred(address indexed oldGovernor, address indexed newGovernor);
-    event SetFactory(address indexed oldFactory, address indexed newFactory);
-    event SetGovernor(address indexed oldGovernor, address indexed newGovernor);
-    event SetConfiguration(Configuration oldConfiguration, Configuration newConfiguration);
-    event SetPauseGuardian(address indexed oldPauseGuardian, address indexed newPauseGuardian);
-    event SetBaseTokenPriceFeed(address indexed oldBaseTokenPriceFeed, address indexed newBaseTokenPriceFeed);
-    event SetExtensionDelegate(address indexed oldExt, address indexed newExt);
-    event SetKink(uint64 oldKink, uint64 newKink);
-    event SetPerYearInterestRateSlopeLow(uint64 oldIRSlopeLow, uint64 newIRSlopeLow);
-    event SetPerYearInterestRateSlopeHigh(uint64 oldIRSlopeHigh, uint64 newIRSlopeHigh);
-    event SetPerYearInterestRateBase(uint64 oldIRBase, uint64 newIRBase);
-    event SetReserveRate(uint64 oldReserveRate, uint64 newReserveRate);
-    event SetStoreFrontPriceFactor(uint64 oldStoreFrontPriceFactor, uint64 newStoreFrontPriceFactor);
-    event SetBaseTrackingSupplySpeed(uint64 oldBaseTrackingSupplySpeed, uint64 newBaseTrackingSupplySpeed);
-    event SetBaseTrackingBorrowSpeed(uint64 oldBaseTrackingBorrowSpeed, uint64 newBaseTrackingBorrowSpeed);
-    event SetBaseMinForRewards(uint104 oldBaseMinForRewards, uint104 newBaseMinForRewards);
-    event SetBaseBorrowMin(uint104 oldBaseBorrowMin, uint104 newBaseBorrowMin);
-    event SetTargetReserves(uint104 oldTargetReserves, uint104 newTargetReserves);
-    event UpdateAsset(AssetConfig oldAssetConfig, AssetConfig newAssetConfig);
-    event UpdateAssetPriceFeed(address indexed asset, address oldPriceFeed, address newPriceFeed);
-    event UpdateAssetBorrowCollateralFactor(address indexed asset, uint64 oldBorrowCF, uint64 newBorrowCF);
-    event UpdateAssetLiquidateCollateralFactor(address indexed asset, uint64 oldLiquidateCF, uint64 newLiquidateCF);
-    event UpdateAssetLiquidationFactor(address indexed asset, uint64 oldLiquidationFactor, uint64 newLiquidationFactor);
-    event UpdateAssetSupplyCap(address indexed asset, uint128 oldSupplyCap, uint128 newSupplyCap);
+    event SetFactory(address indexed cometProxy, address indexed oldFactory, address indexed newFactory);
+    event SetGovernor(address indexed cometProxy, address indexed oldGovernor, address indexed newGovernor);
+    event SetConfiguration(address indexed cometProxy, Configuration oldConfiguration, Configuration newConfiguration);
+    event SetPauseGuardian(address indexed cometProxy, address indexed oldPauseGuardian, address indexed newPauseGuardian);
+    event SetBaseTokenPriceFeed(address indexed cometProxy, address indexed oldBaseTokenPriceFeed, address indexed newBaseTokenPriceFeed);
+    event SetExtensionDelegate(address indexed cometProxy, address indexed oldExt, address indexed newExt);
+    event SetKink(address indexed cometProxy, uint64 oldKink, uint64 newKink);
+    event SetPerYearInterestRateSlopeLow(address indexed cometProxy, uint64 oldIRSlopeLow, uint64 newIRSlopeLow);
+    event SetPerYearInterestRateSlopeHigh(address indexed cometProxy, uint64 oldIRSlopeHigh, uint64 newIRSlopeHigh);
+    event SetPerYearInterestRateBase(address indexed cometProxy, uint64 oldIRBase, uint64 newIRBase);
+    event SetReserveRate(address indexed cometProxy, uint64 oldReserveRate, uint64 newReserveRate);
+    event SetStoreFrontPriceFactor(address indexed cometProxy, uint64 oldStoreFrontPriceFactor, uint64 newStoreFrontPriceFactor);
+    event SetBaseTrackingSupplySpeed(address indexed cometProxy, uint64 oldBaseTrackingSupplySpeed, uint64 newBaseTrackingSupplySpeed);
+    event SetBaseTrackingBorrowSpeed(address indexed cometProxy, uint64 oldBaseTrackingBorrowSpeed, uint64 newBaseTrackingBorrowSpeed);
+    event SetBaseMinForRewards(address indexed cometProxy, uint104 oldBaseMinForRewards, uint104 newBaseMinForRewards);
+    event SetBaseBorrowMin(address indexed cometProxy, uint104 oldBaseBorrowMin, uint104 newBaseBorrowMin);
+    event SetTargetReserves(address indexed cometProxy, uint104 oldTargetReserves, uint104 newTargetReserves);
+    event UpdateAsset(address indexed cometProxy, AssetConfig oldAssetConfig, AssetConfig newAssetConfig);
+    event UpdateAssetPriceFeed(address indexed cometProxy, address indexed asset, address oldPriceFeed, address newPriceFeed);
+    event UpdateAssetBorrowCollateralFactor(address indexed cometProxy, address indexed asset, uint64 oldBorrowCF, uint64 newBorrowCF);
+    event UpdateAssetLiquidateCollateralFactor(address indexed cometProxy, address indexed asset, uint64 oldLiquidateCF, uint64 newLiquidateCF);
+    event UpdateAssetLiquidationFactor(address indexed cometProxy, address indexed asset, uint64 oldLiquidationFactor, uint64 newLiquidationFactor);
+    event UpdateAssetSupplyCap(address indexed cometProxy, address indexed asset, uint128 oldSupplyCap, uint128 newSupplyCap);
 
     /** Custom errors **/
 
@@ -74,7 +73,7 @@ contract Configurator is ConfiguratorStorage {
 
         address oldFactory = factory[cometProxy];
         factory[cometProxy] = newFactory;
-        emit SetFactory(oldFactory, newFactory);
+        emit SetFactory(cometProxy, oldFactory, newFactory);
     }
 
     /**
@@ -87,7 +86,7 @@ contract Configurator is ConfiguratorStorage {
         if (oldConfiguration.governor != address(0)) revert ConfigurationAlreadyExists();
 
         configuratorParams[cometProxy] = newConfiguration;
-        emit SetConfiguration(oldConfiguration, newConfiguration);
+        emit SetConfiguration(cometProxy, oldConfiguration, newConfiguration);
     }
 
     /** Governance setters for Comet-related configuration **/
@@ -97,7 +96,7 @@ contract Configurator is ConfiguratorStorage {
 
         address oldGovernor = configuratorParams[cometProxy].governor;
         configuratorParams[cometProxy].governor = newGovernor;
-        emit SetGovernor(oldGovernor, newGovernor);
+        emit SetGovernor(cometProxy, oldGovernor, newGovernor);
     }
 
     function setPauseGuardian(address cometProxy, address newPauseGuardian) external {
@@ -105,7 +104,7 @@ contract Configurator is ConfiguratorStorage {
 
         address oldPauseGuardian = configuratorParams[cometProxy].pauseGuardian;
         configuratorParams[cometProxy].pauseGuardian = newPauseGuardian;
-        emit SetPauseGuardian(oldPauseGuardian, newPauseGuardian);
+        emit SetPauseGuardian(cometProxy, oldPauseGuardian, newPauseGuardian);
     }
 
     function setBaseTokenPriceFeed(address cometProxy, address newBaseTokenPriceFeed) external {
@@ -113,7 +112,7 @@ contract Configurator is ConfiguratorStorage {
 
         address oldBaseTokenPriceFeed = configuratorParams[cometProxy].baseTokenPriceFeed;
         configuratorParams[cometProxy].baseTokenPriceFeed = newBaseTokenPriceFeed;
-        emit SetBaseTokenPriceFeed(oldBaseTokenPriceFeed, newBaseTokenPriceFeed);
+        emit SetBaseTokenPriceFeed(cometProxy, oldBaseTokenPriceFeed, newBaseTokenPriceFeed);
     }
 
     function setExtensionDelegate(address cometProxy, address newExtensionDelegate) external {
@@ -121,7 +120,7 @@ contract Configurator is ConfiguratorStorage {
 
         address oldExtensionDelegate = configuratorParams[cometProxy].extensionDelegate;
         configuratorParams[cometProxy].extensionDelegate = newExtensionDelegate;
-        emit SetExtensionDelegate(oldExtensionDelegate, newExtensionDelegate);
+        emit SetExtensionDelegate(cometProxy, oldExtensionDelegate, newExtensionDelegate);
     }
 
     function setKink(address cometProxy, uint64 newKink) external {
@@ -129,7 +128,7 @@ contract Configurator is ConfiguratorStorage {
 
         uint64 oldKink = configuratorParams[cometProxy].kink;
         configuratorParams[cometProxy].kink = newKink;
-        emit SetKink(oldKink, newKink);
+        emit SetKink(cometProxy, oldKink, newKink);
     }
 
     function setPerYearInterestRateSlopeLow(address cometProxy, uint64 newSlope) external {
@@ -137,7 +136,7 @@ contract Configurator is ConfiguratorStorage {
 
         uint64 oldSlope = configuratorParams[cometProxy].perYearInterestRateSlopeLow;
         configuratorParams[cometProxy].perYearInterestRateSlopeLow = newSlope;
-        emit SetPerYearInterestRateSlopeLow(oldSlope, newSlope);
+        emit SetPerYearInterestRateSlopeLow(cometProxy, oldSlope, newSlope);
     }
 
     function setPerYearInterestRateSlopeHigh(address cometProxy, uint64 newSlope) external {
@@ -145,7 +144,7 @@ contract Configurator is ConfiguratorStorage {
 
         uint64 oldSlope = configuratorParams[cometProxy].perYearInterestRateSlopeHigh;
         configuratorParams[cometProxy].perYearInterestRateSlopeHigh = newSlope;
-        emit SetPerYearInterestRateSlopeHigh(oldSlope, newSlope);
+        emit SetPerYearInterestRateSlopeHigh(cometProxy, oldSlope, newSlope);
     }
 
     function setPerYearInterestRateBase(address cometProxy, uint64 newBase) external {
@@ -153,7 +152,7 @@ contract Configurator is ConfiguratorStorage {
 
         uint64 oldBase = configuratorParams[cometProxy].perYearInterestRateBase;
         configuratorParams[cometProxy].perYearInterestRateBase = newBase;
-        emit SetPerYearInterestRateBase(oldBase, newBase);
+        emit SetPerYearInterestRateBase(cometProxy, oldBase, newBase);
     }
 
     function setReserveRate(address cometProxy, uint64 newReserveRate) external {
@@ -161,7 +160,7 @@ contract Configurator is ConfiguratorStorage {
 
         uint64 oldReserveRate = configuratorParams[cometProxy].reserveRate;
         configuratorParams[cometProxy].reserveRate = newReserveRate;
-        emit SetReserveRate(oldReserveRate, newReserveRate);
+        emit SetReserveRate(cometProxy, oldReserveRate, newReserveRate);
     }
 
     function setStoreFrontPriceFactor(address cometProxy, uint64 newStoreFrontPriceFactor) external {
@@ -169,7 +168,7 @@ contract Configurator is ConfiguratorStorage {
 
         uint64 oldStoreFrontPriceFactor = configuratorParams[cometProxy].storeFrontPriceFactor;
         configuratorParams[cometProxy].storeFrontPriceFactor = newStoreFrontPriceFactor;
-        emit SetStoreFrontPriceFactor(oldStoreFrontPriceFactor, newStoreFrontPriceFactor);
+        emit SetStoreFrontPriceFactor(cometProxy, oldStoreFrontPriceFactor, newStoreFrontPriceFactor);
     }
 
     function setBaseTrackingSupplySpeed(address cometProxy, uint64 newBaseTrackingSupplySpeed) external {
@@ -177,7 +176,7 @@ contract Configurator is ConfiguratorStorage {
 
         uint64 oldBaseTrackingSupplySpeed = configuratorParams[cometProxy].baseTrackingSupplySpeed;
         configuratorParams[cometProxy].baseTrackingSupplySpeed = newBaseTrackingSupplySpeed;
-        emit SetBaseTrackingSupplySpeed(oldBaseTrackingSupplySpeed, newBaseTrackingSupplySpeed);
+        emit SetBaseTrackingSupplySpeed(cometProxy, oldBaseTrackingSupplySpeed, newBaseTrackingSupplySpeed);
     }
 
     function setBaseTrackingBorrowSpeed(address cometProxy, uint64 newBaseTrackingBorrowSpeed) external {
@@ -185,7 +184,7 @@ contract Configurator is ConfiguratorStorage {
 
         uint64 oldBaseTrackingBorrowSpeed = configuratorParams[cometProxy].baseTrackingBorrowSpeed;
         configuratorParams[cometProxy].baseTrackingBorrowSpeed = newBaseTrackingBorrowSpeed;
-        emit SetBaseTrackingBorrowSpeed(oldBaseTrackingBorrowSpeed, newBaseTrackingBorrowSpeed);
+        emit SetBaseTrackingBorrowSpeed(cometProxy, oldBaseTrackingBorrowSpeed, newBaseTrackingBorrowSpeed);
     }
 
     function setBaseMinForRewards(address cometProxy, uint104 newBaseMinForRewards) external {
@@ -193,7 +192,7 @@ contract Configurator is ConfiguratorStorage {
 
         uint104 oldBaseMinForRewards = configuratorParams[cometProxy].baseMinForRewards;
         configuratorParams[cometProxy].baseMinForRewards = newBaseMinForRewards;
-        emit SetBaseMinForRewards(oldBaseMinForRewards, newBaseMinForRewards);
+        emit SetBaseMinForRewards(cometProxy, oldBaseMinForRewards, newBaseMinForRewards);
     }
 
     function setBaseBorrowMin(address cometProxy, uint104 newBaseBorrowMin) external {
@@ -201,7 +200,7 @@ contract Configurator is ConfiguratorStorage {
 
         uint104 oldBaseBorrowMin = configuratorParams[cometProxy].baseBorrowMin;
         configuratorParams[cometProxy].baseBorrowMin = newBaseBorrowMin;
-        emit SetBaseBorrowMin(oldBaseBorrowMin, newBaseBorrowMin);
+        emit SetBaseBorrowMin(cometProxy, oldBaseBorrowMin, newBaseBorrowMin);
     }
 
     function setTargetReserves(address cometProxy, uint104 newTargetReserves) external {
@@ -209,14 +208,14 @@ contract Configurator is ConfiguratorStorage {
 
         uint104 oldTargetReserves = configuratorParams[cometProxy].targetReserves;
         configuratorParams[cometProxy].targetReserves = newTargetReserves;
-        emit SetTargetReserves(oldTargetReserves, newTargetReserves);
+        emit SetTargetReserves(cometProxy, oldTargetReserves, newTargetReserves);
     }
 
     function addAsset(address cometProxy, AssetConfig calldata assetConfig) external {
         if (msg.sender != governor) revert Unauthorized();
 
         configuratorParams[cometProxy].assetConfigs.push(assetConfig);
-        emit AddAsset(assetConfig);
+        emit AddAsset(cometProxy, assetConfig);
     }
 
     function updateAsset(address cometProxy, AssetConfig calldata newAssetConfig) external {
@@ -225,7 +224,7 @@ contract Configurator is ConfiguratorStorage {
         uint assetIndex = getAssetIndex(cometProxy, newAssetConfig.asset);
         AssetConfig memory oldAssetConfig = configuratorParams[cometProxy].assetConfigs[assetIndex];
         configuratorParams[cometProxy].assetConfigs[assetIndex] = newAssetConfig;
-        emit UpdateAsset(oldAssetConfig, newAssetConfig);
+        emit UpdateAsset(cometProxy, oldAssetConfig, newAssetConfig);
     }
 
     function updateAssetPriceFeed(address cometProxy, address asset, address newPriceFeed) external {
@@ -234,7 +233,7 @@ contract Configurator is ConfiguratorStorage {
         uint assetIndex = getAssetIndex(cometProxy, asset);
         address oldPriceFeed = configuratorParams[cometProxy].assetConfigs[assetIndex].priceFeed;
         configuratorParams[cometProxy].assetConfigs[assetIndex].priceFeed = newPriceFeed;
-        emit UpdateAssetPriceFeed(asset, oldPriceFeed, newPriceFeed);
+        emit UpdateAssetPriceFeed(cometProxy, asset, oldPriceFeed, newPriceFeed);
     }
 
     function updateAssetBorrowCollateralFactor(address cometProxy, address asset, uint64 newBorrowCF) external {
@@ -243,7 +242,7 @@ contract Configurator is ConfiguratorStorage {
         uint assetIndex = getAssetIndex(cometProxy, asset);
         uint64 oldBorrowCF = configuratorParams[cometProxy].assetConfigs[assetIndex].borrowCollateralFactor;
         configuratorParams[cometProxy].assetConfigs[assetIndex].borrowCollateralFactor = newBorrowCF;
-        emit UpdateAssetBorrowCollateralFactor(asset, oldBorrowCF, newBorrowCF);
+        emit UpdateAssetBorrowCollateralFactor(cometProxy, asset, oldBorrowCF, newBorrowCF);
     }
 
     function updateAssetLiquidateCollateralFactor(address cometProxy, address asset, uint64 newLiquidateCF) external {
@@ -252,7 +251,7 @@ contract Configurator is ConfiguratorStorage {
         uint assetIndex = getAssetIndex(cometProxy, asset);
         uint64 oldLiquidateCF = configuratorParams[cometProxy].assetConfigs[assetIndex].liquidateCollateralFactor;
         configuratorParams[cometProxy].assetConfigs[assetIndex].liquidateCollateralFactor = newLiquidateCF;
-        emit UpdateAssetLiquidateCollateralFactor(asset, oldLiquidateCF, newLiquidateCF);
+        emit UpdateAssetLiquidateCollateralFactor(cometProxy, asset, oldLiquidateCF, newLiquidateCF);
     }
 
     function updateAssetLiquidationFactor(address cometProxy, address asset, uint64 newLiquidationFactor) external {
@@ -261,7 +260,7 @@ contract Configurator is ConfiguratorStorage {
         uint assetIndex = getAssetIndex(cometProxy, asset);
         uint64 oldLiquidationFactor = configuratorParams[cometProxy].assetConfigs[assetIndex].liquidationFactor;
         configuratorParams[cometProxy].assetConfigs[assetIndex].liquidationFactor = newLiquidationFactor;
-        emit UpdateAssetLiquidationFactor(asset, oldLiquidationFactor, newLiquidationFactor);
+        emit UpdateAssetLiquidationFactor(cometProxy, asset, oldLiquidationFactor, newLiquidationFactor);
     }
 
     function updateAssetSupplyCap(address cometProxy, address asset, uint128 newSupplyCap) external {
@@ -270,7 +269,7 @@ contract Configurator is ConfiguratorStorage {
         uint assetIndex = getAssetIndex(cometProxy, asset);
         uint128 oldSupplyCap = configuratorParams[cometProxy].assetConfigs[assetIndex].supplyCap;
         configuratorParams[cometProxy].assetConfigs[assetIndex].supplyCap = newSupplyCap;
-        emit UpdateAssetSupplyCap(asset, oldSupplyCap, newSupplyCap);
+        emit UpdateAssetSupplyCap(cometProxy, asset, oldSupplyCap, newSupplyCap);
     }
 
     /** Other helpers **/
@@ -303,7 +302,7 @@ contract Configurator is ConfiguratorStorage {
      */
     function deploy(address cometProxy) external returns (address) {
         address newComet = CometFactory(factory[cometProxy]).clone(configuratorParams[cometProxy]);
-        emit CometDeployed(newComet);
+        emit CometDeployed(cometProxy, newComet);
         return newComet;
     }
 
