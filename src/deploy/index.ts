@@ -58,7 +58,7 @@ export async function deployComet(
   deploymentManager: DeploymentManager,
   deployProxy: DeployProxyOption = { deployCometProxy: true, deployConfiguratorProxy: true },
   configurationOverrides: ProtocolConfiguration = {},
-  optionalParams?: DeployCometOptionalParams
+  optionalParams: DeployCometOptionalParams = {},
 ): Promise<DeployedContracts> {
   // If we have a `configuration.json` for the network, use it.
   // Otherwise, we do a "development"-style deploy, which deploys fake tokens, etc, and generally
