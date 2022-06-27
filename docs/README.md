@@ -196,13 +196,13 @@ const utilization = await comet.callStatic.getUtilization();
 
 ## Collateral & Borrowing
 
-Users can add collateral assets to their account using the [supply](#supply) function. Collateral can only be added if the market is below its [supplyCap](#get-asset-info-by-address), which limits the protocol's risk exposure to collateral assets.
+Users can add collateral assets to their account using the *[supply](#supply)* function. Collateral can only be added if the market is below its *[supplyCap](#get-asset-info-by-address)*, which limits the protocol's risk exposure to collateral assets.
 
-Each collateral asset increases the user's borrowing capacity, based on the asset's [borrowCollateralFactor](#get-asset-info-by-address). The borrowing collateral factors are percentages that represent the portion of collateral value that can be borrowed.
+Each collateral asset increases the user's borrowing capacity, based on the asset's *[borrowCollateralFactor](#get-asset-info-by-address)*. The borrowing collateral factors are percentages that represent the portion of collateral value that can be borrowed.
 
 For instance, if the borrow collateral factor for WBTC is 85%, an account can borrow up to 85% of the USD value of its supplied WBTC in the base asset. Collateral factors can be fetched using the *[Get Asset Info By Address](#get-asset-info-by-address)* function.
 
-The base asset can be borrowed using the [withdraw](#withdraw) function; the resulting borrow balance must meet the borrowing collateral factor requirements. If a borrowing account subsequently fails to meet the borrow collateral factor requirements, it cannot borrow additional assets until it supplies more collateral, or reduces its borrow balance using the supply function.
+The base asset can be borrowed using the *[withdraw](#withdraw)* function; the resulting borrow balance must meet the borrowing collateral factor requirements. If a borrowing account subsequently fails to meet the borrow collateral factor requirements, it cannot borrow additional assets until it supplies more collateral, or reduces its borrow balance using the supply function.
 
 Account *balances* for the base token are signed integers. An account balance greater than zero indicates the base asset is supplied and a balance less than zero indicates the base asset is borrowed. *Note: Base token balances for assets with 18 decimals will start to overflow at a value of 2<sup>103</sup>/1e18=~10 trillion.*
 
