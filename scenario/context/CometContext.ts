@@ -246,7 +246,7 @@ async function getContextProperties(context: CometContext): Promise<CometPropert
   }
 }
 
-async function getActors(context: CometContext, world: World) {
+export async function getActors(context: CometContext, world: World) {
   let dm = context.deploymentManager;
   let signers = await dm.getSigners();
 
