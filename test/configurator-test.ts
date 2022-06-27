@@ -1,6 +1,7 @@
 import { annualize, defactor, defaultAssets, ethers, event, exp, expect, factor, makeConfigurator, Numeric, truncateDecimals, wait } from './helpers';
-import { SimplePriceFeed__factory, SimpleTimelock__factory } from '../build/types';
+import { CometModifiedFactory__factory, SimplePriceFeed__factory, SimpleTimelock__factory } from '../build/types';
 import { AssetInfoStructOutput } from '../build/types/CometHarnessInterface';
+import { ConfigurationStructOutput } from '../build/types/Configurator';
 
 type ConfiguratorAssetConfig = {
   asset: string;
@@ -22,6 +23,29 @@ function convertToEventAssetConfig(assetConfig: ConfiguratorAssetConfig) {
     assetConfig.liquidationFactor,
     assetConfig.supplyCap,
   ];
+}
+
+function convertToEventConfiguration(configuration: ConfigurationStructOutput) {
+  return [
+    configuration.governor,
+    configuration.pauseGuardian,
+    configuration.baseToken,
+    configuration.baseTokenPriceFeed,
+    configuration.extensionDelegate,
+    configuration.kink.toBigInt(),
+    configuration.perYearInterestRateSlopeLow.toBigInt(),
+    configuration.perYearInterestRateSlopeHigh.toBigInt(),
+    configuration.perYearInterestRateBase.toBigInt(),
+    configuration.reserveRate.toBigInt(),
+    configuration.storeFrontPriceFactor.toBigInt(),
+    configuration.trackingIndexScale.toBigInt(),
+    configuration.baseTrackingSupplySpeed.toBigInt(),
+    configuration.baseTrackingBorrowSpeed.toBigInt(),
+    configuration.baseMinForRewards.toBigInt(),
+    configuration.baseBorrowMin.toBigInt(),
+    configuration.targetReserves.toBigInt(),
+    [] // leave asset configs empty for simplicity
+  ]
 }
 
 // Checks that the Configurator asset config matches the Comet asset info
@@ -97,21 +121,80 @@ describe('configurator', function () {
   });
 
   it('reverts if initialized more than once', async () => {
-    const { governor, configurator, configuratorProxy, cometFactory, cometProxy } = await makeConfigurator();
+    const { governor, configurator, configuratorProxy, cometProxy } = await makeConfigurator();
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     let configuration = await configuratorAsProxy.getConfiguration(cometProxy.address);
-    await expect(configuratorAsProxy.initialize(governor.address, cometProxy.address, cometFactory.address, configuration)).to.be.revertedWith("custom error 'AlreadyInitialized()'");
+    await expect(configuratorAsProxy.initialize(governor.address)).to.be.revertedWith("custom error 'AlreadyInitialized()'");
   });
 
   it('reverts if initializing the implementation contract', async () => {
-    const { governor, configurator, cometFactory, cometProxy } = await makeConfigurator();
+    const { governor, configurator, cometProxy } = await makeConfigurator();
 
     let configuration = await configurator.getConfiguration(cometProxy.address);
-    await expect(configurator.initialize(governor.address, cometProxy.address, cometFactory.address, configuration)).to.be.revertedWith("custom error 'AlreadyInitialized()'");
+    await expect(configurator.initialize(governor.address)).to.be.revertedWith("custom error 'AlreadyInitialized()'");
   });
 
   describe('configuration setters', function () {
+    it('sets factory and deploys Comet using new factory', async () => {
+      const { configurator, configuratorProxy, proxyAdmin, cometFactory, cometProxy, users: [alice] } = await makeConfigurator();
+
+      // Deploy modified CometFactory
+      const CometModifiedFactoryFactory = (await ethers.getContractFactory('CometModifiedFactory')) as CometModifiedFactory__factory;
+      const cometModifiedFactory = await CometModifiedFactoryFactory.deploy();
+      await cometModifiedFactory.deployed();
+      const oldFactory = cometFactory.address;
+      const newFactory = cometModifiedFactory.address;
+
+      const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+      const txn = await wait(configuratorAsProxy.setFactory(cometProxy.address, cometModifiedFactory.address));
+      await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
+
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetFactory: {
+          oldFactory,
+          newFactory,
+        }
+      });
+      expect(oldFactory).to.be.not.equal(newFactory);
+      expect(await configuratorAsProxy.factory(cometProxy.address)).to.be.equal(newFactory);
+      // Call new function on Comet
+      const CometModified = await ethers.getContractFactory('CometModified');
+      const modifiedCometAsProxy = CometModified.attach(cometProxy.address);
+      expect(await modifiedCometAsProxy.newFunction()).to.be.equal(101n);
+    });
+
+    it('sets Configuration for a new Comet proxy', async () => {
+      const { configurator, configuratorProxy, proxyAdmin } = await makeConfigurator();
+
+      const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+      const newCometProxyAddress = ethers.constants.AddressZero;
+      const oldConfiguration = await configuratorAsProxy.getConfiguration(newCometProxyAddress)
+      const newConfiguration = { ...oldConfiguration, governor: proxyAdmin.address } as ConfigurationStructOutput;
+
+      const txn = await wait(configuratorAsProxy.setConfiguration(newCometProxyAddress, newConfiguration));
+
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetConfiguration: {
+          oldConfiguration: convertToEventConfiguration(oldConfiguration),
+          newConfiguration: convertToEventConfiguration(newConfiguration),
+        }
+      });
+      expect(oldConfiguration).to.be.not.equal(newConfiguration);
+      expect((await configuratorAsProxy.getConfiguration(newCometProxyAddress)).governor).to.be.equal(newConfiguration.governor);
+    });
+
+    it('reverts when setting Configuration for a Comet proxy with an existing configuration', async () => {
+      const { configurator, configuratorProxy, cometProxy } = await makeConfigurator();
+
+      const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+      const configuration = await configuratorAsProxy.getConfiguration(cometProxy.address);
+
+      await expect(
+        configuratorAsProxy.setConfiguration(cometProxy.address, configuration)
+      ).to.be.revertedWith("custom error 'ConfigurationAlreadyExists()'");
+    });
+
     it('sets governor and deploys Comet with new configuration', async () => {
       const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, users: [alice] } = await makeConfigurator();
 

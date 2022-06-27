@@ -9,11 +9,13 @@ contract Configurator is ConfiguratorStorage {
 
     /** Custom events **/
 
+    // XXX Add cometProxy address to events
     event AddAsset(AssetConfig assetConfig);
     event CometDeployed(address indexed newComet);
     event GovernorTransferred(address indexed oldGovernor, address indexed newGovernor);
     event SetFactory(address indexed oldFactory, address indexed newFactory);
     event SetGovernor(address indexed oldGovernor, address indexed newGovernor);
+    event SetConfiguration(Configuration oldConfiguration, Configuration newConfiguration);
     event SetPauseGuardian(address indexed oldPauseGuardian, address indexed newPauseGuardian);
     event SetBaseTokenPriceFeed(address indexed oldBaseTokenPriceFeed, address indexed newBaseTokenPriceFeed);
     event SetExtensionDelegate(address indexed oldExt, address indexed newExt);
@@ -39,6 +41,7 @@ contract Configurator is ConfiguratorStorage {
 
     error AlreadyInitialized();
     error AssetDoesNotExist();
+    error ConfigurationAlreadyExists();
     error InvalidAddress();
     error Unauthorized();
 
@@ -52,26 +55,18 @@ contract Configurator is ConfiguratorStorage {
 
     /**
      * @notice Initializes the storage for Configurator
-     * @dev Note: All params can be updated by the governor except for `baseToken` and `trackingIndexScale`
      * @param governor_ The address of the governor
-     * @param cometProxy_ The address of the Comet proxy to store the factory and configuration for
-     * @param factory_ The address of the Comet factory
-     * @param configuratorParams_ Config passed to new instances of Comet on construction
      **/
-    function initialize(address governor_, address cometProxy_, address factory_, Configuration calldata configuratorParams_) public {
+    function initialize(address governor_) public {
         if (version != 0) revert AlreadyInitialized();
         if (governor_ == address(0)) revert InvalidAddress();
-        if (cometProxy_ == address(0)) revert InvalidAddress();
-        if (factory_ == address(0)) revert InvalidAddress();
 
         governor = governor_;
-        factory[cometProxy_] = factory_;
-        configuratorParams[cometProxy_] = configuratorParams_;
         version = 1;
     }
 
     /**
-     * @notice Sets the factory for Configurator
+     * @notice Sets the factory for a Comet proxy
      * @dev Note: Only callable by governor
      **/
     function setFactory(address cometProxy, address newFactory) external {
@@ -80,6 +75,19 @@ contract Configurator is ConfiguratorStorage {
         address oldFactory = factory[cometProxy];
         factory[cometProxy] = newFactory;
         emit SetFactory(oldFactory, newFactory);
+    }
+
+    /**
+     * @notice Sets the entire Configuration for a Comet proxy
+     * @dev Note: All params can later be updated by the governor except for `baseToken` and `trackingIndexScale`
+     **/
+    function setConfiguration(address cometProxy, Configuration calldata newConfiguration) external {
+        if (msg.sender != governor) revert Unauthorized();
+        Configuration memory oldConfiguration = configuratorParams[cometProxy];
+        if (oldConfiguration.governor != address(0)) revert ConfigurationAlreadyExists();
+
+        configuratorParams[cometProxy] = newConfiguration;
+        emit SetConfiguration(oldConfiguration, newConfiguration);
     }
 
     /** Governance setters for Comet-related configuration **/

@@ -416,7 +416,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   };
 
   // Deploy Configurator proxy
-  const initializeCalldata = (await configurator.populateTransaction.initialize(governor.address, cometProxy.address, cometFactory.address, configuration)).data;
+  const initializeCalldata = (await configurator.populateTransaction.initialize(governor.address)).data;
   const ConfiguratorProxy = (await ethers.getContractFactory('ConfiguratorProxy')) as ConfiguratorProxy__factory;
   const configuratorProxy = await ConfiguratorProxy.deploy(
     configurator.address,
@@ -424,6 +424,11 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     initializeCalldata,
   );
   await configuratorProxy.deployed();
+
+  // Set the initial factory and configuration for Comet in Configurator
+  const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+  await configuratorAsProxy.setConfiguration(cometProxy.address, configuration);
+  await configuratorAsProxy.setFactory(cometProxy.address, cometFactory.address);
 
   return {
     opts,
