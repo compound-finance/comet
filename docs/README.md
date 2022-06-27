@@ -573,100 +573,6 @@ await comet.buyCollateral('0xAssetAddress', 5e18, 5e18, '0xRecipient');
 </p>
 </details>
 
-## Reserves
-
-Reserves are a portion of historical interest set aside as cash which can be withdrawn or transferred through the protocol's governance. A portion of borrower interest accrues into the protocol, determined by the reserve factor. The Compound III account [liquidation](#liquidation) process uses and also adds to protocol reserves.
-
-There is an immutable value in the Comet contract that represents a target reserve value. Once the contract has reached the level of target reserves, liquidators are not able to buy collateral from the protocol.
-
-### Get Reserves
-
-This function returns the amount of protocol reserves for the base asset as an integer.
-
-#### Comet
-
-```solidity
-function getReserves() public view returns (int)
-```
-
-* `RETURNS`: The amount of base asset stored as reserves in the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
-
-<details>
-<summary>
-<b>
-Solidity
-</b>
-</summary>
-<p>
-
-```solidity
-Comet comet = Comet(0xCometAddress);
-uint reserves = comet.getReserves();
-```
-
-</p>
-</details>
-
-<details>
-<summary>
-<b>
-Ethers.js v5.x
-</b>
-</summary>
-<p>
-
-```js
-const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const reserves = await comet.callStatic.getReserves();
-```
-
-</p>
-</details>
-
-### Target Reserves
-
-This immutable value represents the target amount of reserves of the base token. If the protocol holds greater than or equal to this amount of reserves, the *[buyCollateral](#buy-collateral)* function can no longer be successfully called.
-
-#### Comet
-
-```solidity
-function targetReserves() public view returns (uint)
-```
-
-* `RETURN`: The target reserve value of the base asset as an integer, scaled up by 10 to the "decimals" integer in the base asset's contract.
-
-<details>
-<summary>
-<b>
-Solidity
-</b>
-</summary>
-<p>
-
-```solidity
-Comet comet = Comet(0xCometAddress);
-uint targetReserves = comet.targetReserves();
-```
-
-</p>
-</details>
-
-<details>
-<summary>
-<b>
-Ethers.js v5.x
-</b>
-</summary>
-<p>
-
-```js
-const comet = new ethers.Contract(contractAddress, abiJson, provider);
-const targetReserves = await comet.callStatic.targetReserves();
-```
-
-</p>
-</details>
-
 ### Ask Price
 
 In order to repay the borrows of absorbed accounts, the protocol needs to sell the seized collateral. The *Ask Price* is the price of the asset to be sold at a discount (configured by governance). This function uses the price returned by the protocol's price feed. The discount of the asset is derived from the `StoreFrontPriceFactor` and the asset's `LiquidationFactor` using the following formula.
@@ -760,6 +666,100 @@ Ethers.js v5.x
 ```js
 const comet = new ethers.Contract(contractAddress, abiJson, provider);
 const [ numAbsorbs, numAbsorbed, approxSpend ] = await comet.callStatic.liquidatorPoints('0xLiquidatorAddress');
+```
+
+</p>
+</details>
+
+## Reserves
+
+Reserves are a portion of historical interest set aside as cash which can be withdrawn or transferred through the protocol's governance. A portion of borrower interest accrues into the protocol, determined by the reserve factor. The Compound III account [liquidation](#liquidation) process uses and also adds to protocol reserves.
+
+There is an immutable value in the Comet contract that represents a target reserve value. Once the contract has reached the level of target reserves, liquidators are not able to buy collateral from the protocol.
+
+### Get Reserves
+
+This function returns the amount of protocol reserves for the base asset as an integer.
+
+#### Comet
+
+```solidity
+function getReserves() public view returns (int)
+```
+
+* `RETURNS`: The amount of base asset stored as reserves in the protocol as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
+
+<details>
+<summary>
+<b>
+Solidity
+</b>
+</summary>
+<p>
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint reserves = comet.getReserves();
+```
+
+</p>
+</details>
+
+<details>
+<summary>
+<b>
+Ethers.js v5.x
+</b>
+</summary>
+<p>
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const reserves = await comet.callStatic.getReserves();
+```
+
+</p>
+</details>
+
+### Target Reserves
+
+This immutable value represents the target amount of reserves of the base token. If the protocol holds greater than or equal to this amount of reserves, the *[buyCollateral](#buy-collateral)* function can no longer be successfully called.
+
+#### Comet
+
+```solidity
+function targetReserves() public view returns (uint)
+```
+
+* `RETURN`: The target reserve value of the base asset as an integer, scaled up by 10 to the "decimals" integer in the base asset's contract.
+
+<details>
+<summary>
+<b>
+Solidity
+</b>
+</summary>
+<p>
+
+```solidity
+Comet comet = Comet(0xCometAddress);
+uint targetReserves = comet.targetReserves();
+```
+
+</p>
+</details>
+
+<details>
+<summary>
+<b>
+Ethers.js v5.x
+</b>
+</summary>
+<p>
+
+```js
+const comet = new ethers.Contract(contractAddress, abiJson, provider);
+const targetReserves = await comet.callStatic.targetReserves();
 ```
 
 </p>
