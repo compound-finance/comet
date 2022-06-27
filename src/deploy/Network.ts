@@ -28,14 +28,18 @@ import { ExtConfigurationStruct } from '../../build/types/CometExt';
 import { DeployedContracts, DeployProxyOption, ProtocolConfiguration } from './index';
 import { getConfiguration } from './NetworkConfiguration';
 import { extractCalldata, fastGovernanceExecute } from '../utils';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 export async function deployNetworkComet(
   deploymentManager: DeploymentManager,
   deployProxy: DeployProxyOption = { deployCometProxy: true, deployConfiguratorProxy: true },
   configurationOverrides: ProtocolConfiguration = {},
   contractMapOverride?: ContractMap,
+  adminSigner?: SignerWithAddress,
 ): Promise<DeployedContracts> {
-  const admin = await deploymentManager.getSigner();
+  if (adminSigner == null) {
+    adminSigner = await deploymentManager.getSigner();
+  }
 
   let governorSimple = await deploymentManager.deploy<GovernorSimple, GovernorSimple__factory, []>(
     'test/GovernorSimple.sol',
@@ -48,7 +52,7 @@ export async function deployNetworkComet(
   );
 
   // Initialize the storage of GovernorSimple
-  await governorSimple.initialize(timelock.address, [admin.address]);
+  await governorSimple.initialize(timelock.address, [adminSigner.address]);
 
   const {
     symbol,
@@ -179,7 +183,7 @@ export async function deployNetworkComet(
     const setFactoryCalldata = extractCalldata((await configurator.populateTransaction.setFactory(cometProxy.address, cometFactory.address)).data);
     const setConfigurationCalldata = extractCalldata((await configurator.populateTransaction.setConfiguration(cometProxy.address, configuration)).data);
     await fastGovernanceExecute(
-      governorSimple.connect(admin),
+      governorSimple.connect(adminSigner),
       [configuratorProxy.address, configuratorProxy.address],
       [0, 0],
       [

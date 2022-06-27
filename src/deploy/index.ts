@@ -12,6 +12,7 @@ import { AssetConfigStruct } from '../../build/types/Comet';
 import { BigNumberish } from 'ethers';
 import { deployNetworkComet } from './Network';
 import { deployDevelopmentComet } from './Development';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 export interface ProtocolConfiguration {
   symbol?: string;
@@ -39,6 +40,11 @@ export interface DeployProxyOption {
   deployConfiguratorProxy?: boolean;
 }
 
+interface DeployCometOptionalParams {
+  contractMapOverride?: ContractMap;
+  adminSigner?: SignerWithAddress;
+}
+
 export interface DeployedContracts {
   comet: Comet;
   cometProxy: TransparentUpgradeableProxy | null;
@@ -52,13 +58,13 @@ export async function deployComet(
   deploymentManager: DeploymentManager,
   deployProxy: DeployProxyOption = { deployCometProxy: true, deployConfiguratorProxy: true },
   configurationOverrides: ProtocolConfiguration = {},
-  contractMapOverride?: ContractMap,
+  optionalParams?: DeployCometOptionalParams
 ): Promise<DeployedContracts> {
   // If we have a `configuration.json` for the network, use it.
   // Otherwise, we do a "development"-style deploy, which deploys fake tokens, etc, and generally
   // provides less value than a full-fledged test-net or mainnet fork.
   if (await hasNetworkConfiguration(deploymentManager.deployment)) {
-    return await deployNetworkComet(deploymentManager, deployProxy, configurationOverrides, contractMapOverride);
+    return await deployNetworkComet(deploymentManager, deployProxy, configurationOverrides, optionalParams.contractMapOverride, optionalParams.adminSigner);
   } else {
     return await deployDevelopmentComet(deploymentManager, deployProxy, configurationOverrides);
   }

@@ -377,7 +377,7 @@ scenario(
   {
     upgrade: true,
     pause: {
-        supplyPaused: true,
+      supplyPaused: true,
     },
   },
   async ({ comet, actors }) => {
