@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { expectApproximately, getExpectedBaseBalance, getInterest } from './utils';
 
 // XXX consider creating these tests for assets0-15
-scenario(
+scenario.only(
   'Comet#supply > base asset',
   {
     upgrade: true,
@@ -12,6 +12,7 @@ scenario(
     },
   },
   async ({ comet, actors }, world, context) => {
+    console.log('starting scenario')
     const { albert } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -377,7 +378,7 @@ scenario(
   {
     upgrade: true,
     pause: {
-        supplyPaused: true,
+      supplyPaused: true,
     },
   },
   async ({ comet, actors }) => {

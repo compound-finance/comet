@@ -126,6 +126,8 @@ export async function deployNetworkComet(
   let configuratorProxy = null;
   let proxyAdmin = null;
 
+  console.log('in deploy')
+
   // If we are deploying new proxies for both Comet and Configurator, we will also deploy a new ProxyAdmin
   // because this is most likely going to be a completely fresh deployment.
   // Note: If this assumption is incorrect, we should probably add a third option in `DeployProxyOption` to
@@ -178,6 +180,9 @@ export async function deployNetworkComet(
     // Set the initial factory and configuration for Comet in Configurator
     const setFactoryCalldata = extractCalldata((await configurator.populateTransaction.setFactory(cometProxy.address, cometFactory.address)).data);
     const setConfigurationCalldata = extractCalldata((await configurator.populateTransaction.setConfiguration(cometProxy.address, configuration)).data);
+    console.log('admin in Network.ts is ', admin.address)
+    console.log('admin from gov simple is ', await governorSimple.admins(0))
+    console.log('governorSimple addr is ', governorSimple.address)
     await fastGovernanceExecute(
       governorSimple.connect(admin),
       [configuratorProxy.address, configuratorProxy.address],
