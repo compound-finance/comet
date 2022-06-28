@@ -32,7 +32,7 @@ contract CometRewards {
 
     /** Custom events **/
 
-    event GovernorTransferred(address oldGovernor, address newGovernor);
+    event GovernorTransferred(address indexed oldGovernor, address indexed newGovernor);
     event RewardClaimed(address indexed recipient, address indexed token, uint256 amount);
 
     /** Custom errors **/
