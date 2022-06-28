@@ -1692,7 +1692,7 @@ await comet.accrueAccount('0xAccount');
 
 ### Get Protocol Configuration
 
-This function returns the configuration struct passed to the configurator contract on initialization.
+This function returns the configuration struct stored for a specific instance of Comet in the configurator contract.
 
 #### Configurator
 
@@ -1720,9 +1720,10 @@ struct Configuration {
     AssetConfig[] assetConfigs;
 }
 
-function getConfiguration() external view returns (Configuration memory)
+function getConfiguration(address cometProxy) external view returns (Configuration memory)
 ```
 
+* `cometProxy`: The address of the Comet proxy to get the configuration for.
 * `RETURNS`: Returns the protocol configuration.
   * `governor`: The address of the protocol Governor.
   * `pauseGuardian`: The address of the protocol pause guardian.
@@ -1753,7 +1754,7 @@ Solidity
 
 ```solidity
 Configurator configurator = Configurator(0xConfiguratorAddress);
-Configuration config = configurator.getConfiguration();
+Configuration config = configurator.getConfiguration(0xCometProxy);
 ```
 
 </p>
@@ -1769,7 +1770,7 @@ Ethers.js v5.x
 
 ```js
 const configurator = new ethers.Contract(contractAddress, abiJson, provider);
-const config = await configurator.callStatic.getConfiguration();
+const config = await configurator.callStatic.getConfiguration(0xCometProxy);
 ```
 
 </p>
@@ -2147,9 +2148,10 @@ This function sets the official contract address of the Comet factory. The only 
 #### Configurator
 
 ```solidity
-function setFactory(address newFactory) external
+function setFactory(address cometProxy, address newFactory) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `newFactory`: The address of the new Comet contract factory.
 * `RETURN`: No return, reverts on error.
 
@@ -2160,9 +2162,10 @@ This function sets the official contract address of the Compound III protocol Go
 #### Configurator
 
 ```solidity
-function setGovernor(address newGovernor) external
+function setGovernor(address cometProxy, address newGovernor) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `newGovernor`: The address of the new Compound III Governor.
 * `RETURN`: No return, reverts on error.
 
@@ -2175,9 +2178,10 @@ COMP token-holders designate the Pause Guardian address, which is held by the [C
 #### Configurator
 
 ```solidity
-function setPauseGuardian(address newPauseGuardian) external
+function setPauseGuardian(address cometProxy, address newPauseGuardian) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `newPauseGuardian`: The address of the new pause guardian.
 * `RETURN`: No return, reverts on error.
 
@@ -2271,9 +2275,10 @@ This function sets the official contract address of the price feed of the protoc
 #### Configurator
 
 ```solidity
-function setBaseTokenPriceFeed(address newBaseTokenPriceFeed) external
+function setBaseTokenPriceFeed(address cometProxy, address newBaseTokenPriceFeed) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `newBaseTokenPriceFeed`: The address of the new price feed contract.
 * `RETURN`: No return, reverts on error.
 
@@ -2284,9 +2289,10 @@ This function sets the official contract address of the protocol's Comet extensi
 #### Configurator
 
 ```solidity
-function setExtensionDelegate(address newExtensionDelegate) external
+function setExtensionDelegate(address cometProxy, address newExtensionDelegate) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `newExtensionDelegate`: The address of the new extension delegate contract.
 * `RETURN`: No return, reverts on error.
 
@@ -2297,9 +2303,10 @@ This function sets the interest rate utilization curve kink for the Compound III
 #### Configurator
 
 ```solidity
-function setKink(uint64 newKink) external
+function setKink(address cometProxy, uint64 newKink) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `newKink`: The new kink parameter.
 * `RETURN`: No return, reverts on error.
 
@@ -2310,9 +2317,10 @@ This function sets the interest rate slope low bound in the approximate amount o
 #### Configurator
 
 ```solidity
-function setPerYearInterestRateSlopeLow(uint64 newSlope) external
+function setPerYearInterestRateSlopeLow(address cometProxy, uint64 newSlope) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `newSlope`: The slope low bound as an unsigned integer.
 * `RETURN`: No return, reverts on error.
 
@@ -2323,9 +2331,10 @@ This function sets the interest rate slope high bound in the approximate amount 
 #### Configurator
 
 ```solidity
-function setPerYearInterestRateSlopeHigh(uint64 newSlope) external
+function setPerYearInterestRateSlopeHigh(address cometProxy, uint64 newSlope) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `newSlope`: The slope high bound as an unsigned integer.
 * `RETURN`: No return, reverts on error.
 
@@ -2336,9 +2345,10 @@ This function sets the interest rate slope base in the approximate amount of sec
 #### Configurator
 
 ```solidity
-function setPerYearInterestRateBase(uint64 newBase) external
+function setPerYearInterestRateBase(address cometProxy, uint64 newBase) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `newSlope`: The slope base as an unsigned integer.
 * `RETURN`: No return, reverts on error.
 
@@ -2349,10 +2359,11 @@ This function sets the rate that reserves accumulate within the protocol as an A
 #### Configurator
 
 ```solidity
-function setReserveRate(uint64 newReserveRate) external
+function setReserveRate(address cometProxy, uint64 newReserveRate) external
 ```
 
-* `param`: The reserve rate of the protocol as an APR scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 2.5% APR.
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
+* `newReserveRate`: The reserve rate of the protocol as an APR scaled up by `10 ^ 18`. E.g. `250000000000000000` indicates a 2.5% APR.
 * `RETURN`: No return, reverts on error.
 
 ### Set Store Front Price Factor
@@ -2362,9 +2373,10 @@ This function sets the fraction of the liquidation penalty that goes to buyers o
 #### Configurator
 
 ```solidity
-function setStoreFrontPriceFactor(uint64 newStoreFrontPriceFactor) external
+function setStoreFrontPriceFactor(address cometProxy, uint64 newStoreFrontPriceFactor) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `newStoreFrontPriceFactor`: The new price factor as an unsigned integer expressed as a decimal scaled up by `10 ^ 18`.
 * `RETURN`: No return, reverts on error.
 
@@ -2375,9 +2387,10 @@ This function sets the rate at which base asset supplier accounts accrue rewards
 #### Configurator
 
 ```solidity
-function setBaseTrackingSupplySpeed(uint64 newBaseTrackingSupplySpeed) external
+function setBaseTrackingSupplySpeed(address cometProxy, uint64 newBaseTrackingSupplySpeed) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `newBaseTrackingSupplySpeed`: The rate as an APR expressed as a decimal scaled up by `10 ^ 18`.
 * `RETURN`: No return, reverts on error.
 
@@ -2388,9 +2401,10 @@ This function sets the rate at which base asset borrower accounts accrue rewards
 #### Configurator
 
 ```solidity
-function setBaseTrackingBorrowSpeed(uint64 newBaseTrackingBorrowSpeed) external
+function setBaseTrackingBorrowSpeed(address cometProxy, uint64 newBaseTrackingBorrowSpeed) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `newBaseTrackingBorrowSpeed`: The rate as an APR expressed as a decimal scaled up by `10 ^ 18`.
 * `RETURN`: No return, reverts on error.
 
@@ -2401,9 +2415,10 @@ This function sets the minimum amount of base asset supplied to the protocol in 
 #### Configurator
 
 ```solidity
-function setBaseMinForRewards(uint104 newBaseMinForRewards) external
+function setBaseMinForRewards(address cometProxy, uint104 newBaseMinForRewards) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `newBaseMinForRewards`: The amount of base asset scaled up by 10 to the "decimals" integer in the base asset's contract.
 * `RETURN`: No return, reverts on error.
 
@@ -2414,9 +2429,10 @@ This function sets the minimum amount of base token that is allowed to be borrow
 #### Configurator
 
 ```solidity
-function setBaseBorrowMin(uint104 newBaseBorrowMin) external
+function setBaseBorrowMin(address cometProxy, uint104 newBaseBorrowMin) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `setBaseBorrowMin`: The minimum borrow as an unsigned integer scaled up by 10 to the "decimals" integer in the base asset's contract.
 * `RETURN`: No return, reverts on error.
 
@@ -2427,9 +2443,10 @@ This function sets the target reserves amount. Once the protocol reaches this am
 #### Configurator
 
 ```solidity
-function setTargetReserves(uint104 newTargetReserves) external
+function setTargetReserves(address cometProxy, uint104 newTargetReserves) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `newTargetReserves`: The amount of reserves of base asset as an unsigned integer scaled up by 10 to the "decimals" integer in the base asset's contract.
 * `RETURN`: No return, reverts on error.
 
@@ -2440,9 +2457,10 @@ This function adds an asset to the protocol through governance.
 #### Configurator
 
 ```solidity
-function addAsset(AssetConfig calldata assetConfig) external
+function addAsset(address cometProxy, AssetConfig calldata assetConfig) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `assetConfig`: The configuration that is added to the array of protocol asset configurations.
 * `RETURN`: No return, reverts on error.
 
@@ -2453,9 +2471,10 @@ This function modifies an existing asset's configuration parameters.
 #### Configurator
 
 ```solidity
-function updateAsset(AssetConfig calldata newAssetConfig) external
+function updateAsset(address cometProxy, AssetConfig calldata newAssetConfig) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `newAssetConfig`: The configuration that is modified in the array of protocol asset configurations. All parameters are overwritten.
 * `RETURN`: No return, reverts on error.
 
@@ -2466,9 +2485,10 @@ This function updates the price feed contract address for a specific asset.
 #### Configurator
 
 ```solidity
-function updateAssetPriceFeed(address asset, address newPriceFeed) external
+function updateAssetPriceFeed(address cometProxy, address asset, address newPriceFeed) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `asset`: The address of the underlying asset smart contract.
 * `newPriceFeed`: The address of the new price feed smart contract.
 * `RETURN`: No return, reverts on error.
@@ -2480,9 +2500,10 @@ This function updates the borrow collateral factor for an asset in the protocol.
 #### Configurator
 
 ```solidity
-function updateAssetBorrowCollateralFactor(address asset, uint64 newBorrowCF) external
+function updateAssetBorrowCollateralFactor(address cometProxy, address asset, uint64 newBorrowCF) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `asset`: The address of the underlying asset smart contract.
 * `newBorrowCF`: The collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
 * `RETURN`: No return, reverts on error.
@@ -2494,8 +2515,10 @@ This function updates the liquidation collateral factor for an asset in the prot
 #### Configurator
 
 ```solidity
-function updateAssetLiquidateCollateralFactor(address asset, uint64 newLiquidateCF) external
+function updateAssetLiquidateCollateralFactor(address cometProxy, address asset, uint64 newLiquidateCF) external
 ```
+
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `asset`: The address of the underlying asset smart contract.
 * `newLiquidateCF`: The collateral factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
 * `RETURN`: No return, reverts on error.
@@ -2513,8 +2536,10 @@ An underwater account has supplied $100 of WBTC as collateral. If the WBTC liqui
 #### Configurator
 
 ```solidity
-function updateAssetLiquidationFactor(address asset, uint64 newLiquidationFactor) external
+function updateAssetLiquidationFactor(address cometProxy, address asset, uint64 newLiquidationFactor) external
 ```
+
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `asset`: The address of the underlying asset smart contract.
 * `newLiquidationFactor`: The factor as an integer that represents the decimal value scaled up by `10 ^ 18`.
 * `RETURN`: No return, reverts on error.
@@ -2526,9 +2551,10 @@ This function sets the maximum amount of an asset that can be supplied to the pr
 #### Configurator
 
 ```solidity
-function updateAssetSupplyCap(address asset, uint128 newSupplyCap) external
+function updateAssetSupplyCap(address cometProxy, address asset, uint128 newSupplyCap) external
 ```
 
+* `cometProxy`: The address of the Comet proxy to set the configuration for.
 * `asset`: The address of the underlying asset smart contract.
 * `newSupplyCap`: The amount of the asset as an unsigned integer scaled up by 10 to the "decimals" integer in the asset's contract.
 * `RETURN`: No return, reverts on error.
@@ -2554,7 +2580,7 @@ function approveThis(address manager, address asset, uint amount) override exter
 
 ### Transfer Governor
 
-This function changes the address of the protocol's Governor.
+This function changes the address of the Configurator's Governor.
 
 #### Configurator
 
@@ -2562,7 +2588,7 @@ This function changes the address of the protocol's Governor.
 function transferGovernor(address newGovernor) external
 ```
 
-* `newGovernor`: The address of the new Governor of the Compound III protocol instance.
+* `newGovernor`: The address of the new Governor for Configurator.
 * `RETURN`: No return, reverts on error.
 
 ### Withdraw Reserves
