@@ -13,7 +13,6 @@ contract ConfiguratorProxy is TransparentUpgradeableProxy {
      */
     constructor(address _logic, address _admin, bytes memory _data) payable TransparentUpgradeableProxy(_logic, _admin, _data) {}
 
-    // XXX triple check!
     /**
      * @dev Overrides the TransparentUpgradeableProxy's _beforeFallback so admin can call the implementation.
      */

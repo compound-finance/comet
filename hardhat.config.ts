@@ -87,8 +87,8 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
       accounts: ETH_PK
         ? [ETH_PK]
         : {
-            mnemonic: MNEMONIC,
-          },
+          mnemonic: MNEMONIC,
+        },
     };
   }
 }
