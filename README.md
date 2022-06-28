@@ -54,14 +54,49 @@ An example deployment command looks like:
 
 `yarn deploy --network fuji`
 
+## Comet protocol contracts
+
+**[Comet.sol](https://github.com/compound-finance/comet/blob/main/contracts/Comet.sol)** - Contract that inherits `CometMainInterface.sol` and is the implementation for most of Comet's core functionalities. A small set of functions that do not fit within this contract are implemented in `CometExt.sol` instead, which Comet `DELEGATECALL`s to for unrecognized function signatures.
+
+**[CometExt.sol](https://github.com/compound-finance/comet/blob/main/contracts/CometExt.sol)** - Contract that inherits `CometExtInterface.sol` and is the implementation for extra functions that do not fit within `Comet.sol`, such as `approve`.
+
+**[CometInterface.sol](https://github.com/compound-finance/comet/blob/main/contracts/CometInterface.sol)** - Abstract contract that inherits `CometMainInterface.sol` and `CometExtInterface.sol`. This interface contains all the functions and events for `Comet.sol` and `CometExt.sol` and is ERC-20 compatible.
+
+**[CometMainInterface.sol](https://github.com/compound-finance/comet/blob/main/contracts/CometMainInterface.sol)** - Abstract contract that inherits `CometCore.sol` and contains all the functions and events for `Comet.sol`.
+
+**[CometExtInterface.sol](https://github.com/compound-finance/comet/blob/main/contracts/CometExtInterface.sol)** - Abstract contract that inherits `CometCore.sol` and contains all the functions and events for `CometExt.sol`.
+
+**[CometCore.sol](https://github.com/compound-finance/comet/blob/main/contracts/CometCore.sol)** - Abstract contract that inherits `CometStorage.sol`, `CometConfiguration.sol`, and `CometMath.sol`. This contracts contains functions and constants that are shared between `Comet.sol` and `CometExt.sol`.
+
+**[CometStorage.sol](https://github.com/compound-finance/comet/blob/main/contracts/CometStorage.sol)** - Contract that defines the storage variables used for the Comet protocol.
+
+**[CometConfiguration.sol](https://github.com/compound-finance/comet/blob/main/contracts/CometConfiguration.sol)** - Contract that defines the configuration structs passed into the constructors for `Comet.sol` and `CometExt.sol`.
+
+**[CometMath.sol](https://github.com/compound-finance/comet/blob/main/contracts/CometMath.sol)** - Contract that defines math functions that are used throughout the Comet codebase.
+
+**[CometFactory.sol](https://github.com/compound-finance/comet/blob/main/contracts/CometFactory.sol)** - Contract that inherits `CometConfiguration.sol` and is used to deploy new versions of `Comet.sol`. This contract will mainly be called by the Configurator during the governance upgrade process.
+
+## Configurator contracts
+
+**[Configurator.sol](https://github.com/compound-finance/comet/blob/main/contracts/Configurator.sol)** - Contract that inherits `ConfiguratorStorage.sol`. This contract manages Comet's configurations and deploys new implementations of Comet.
+
+**[ConfiguratorStorage.sol](https://github.com/compound-finance/comet/blob/main/contracts/ConfiguratorStorage.sol)** - Contract that inherits `CometConfiguration.sol` and defines the storage variables for `Configurator.sol`.
+
+## Supplementary contracts
+
+**[Bulker.sol](https://github.com/compound-finance/comet/blob/main/contracts/Bulker.sol)** - Contract that allows multiple Comet functions to be called in a single transaction.
+
+**[CometRewards.sol](https://github.com/compound-finance/comet/blob/main/contracts/CometRewards.sol)** - Contract that allows Comet users to claim rewards based on their protocol participation.
+
 ## Vendor contracts
 
 Third-party contracts (e.g. OZ proxies) live under `contracts/vendor`.
 
 There are currently two Comet-related contracts that extend directly from the vendor contracts. The contracts are:
 
-1. **ConfiguratorProxy**: This contract extends OZ's `TransparentUpgradeableProxy`. We override the `_beforeFallback` function so that the proxy's admin can directly call the implementation. We only need this feature for the Configurator's proxy.
-2. **CometProxyAdmin**: This contract extends OZ's `ProxyAdmin`. We created a new function called `deployAndUpgradeTo`, which calls `Configurator.deploy()` and upgrades Comet proxy's implementation to this newly deployed Comet contract. This function is needed so we can pass the address of the new Comet to the `Proxy.upgrade()` call in one transaction.
+**[ConfiguratorProxy.sol](https://github.com/compound-finance/comet/blob/main/contracts/ConfiguratorProxy.sol)** - This contract inherits OZ's `TransparentUpgradeableProxy.sol`. We override the `_beforeFallback` function so that the proxy's admin can directly call the implementation. We only need this feature for the Configurator's proxy.
+
+**[CometProxyAdmin.sol](https://github.com/compound-finance/comet/blob/main/contracts/CometProxyAdmin.sol)** - This contract inherits OZ's `ProxyAdmin.sol`. We created a new function called `deployAndUpgradeTo`, which calls `Configurator.deploy(0xCometProxy)` and upgrades Comet proxy's implementation to this newly deployed Comet contract. This function is needed so we can pass the address of the new Comet to the `Proxy.upgrade()` call in one transaction.
 
 ## Usage
 
@@ -183,10 +218,10 @@ For more information, see [SCENARIO.md](./SCENARIO.md).
 
 1. in the Webb3 repo, run `rm -rf deployments` to clear out the previous deploy artifacts
 2. in `scripts/crawl.sh`, update the `DEPLOYMENTS` variable to point to the
-artifact with your latest deployed roots (will be the artifact generated by the `Run Spider` Action)
-2. `npm run build`
+   artifact with your latest deployed roots (will be the artifact generated by the `Run Spider` Action)
+3. `npm run build`
 
 #### Other considerations
 
 - make sure that the deploying address has at least 2 units of the chain's
-native asset (i.e. 2 ETH for Kovan, 2 AVAX for Fuji)
+  native asset (i.e. 2 ETH for Kovan, 2 AVAX for Fuji)
