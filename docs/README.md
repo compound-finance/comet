@@ -673,9 +673,9 @@ const [ numAbsorbs, numAbsorbed, approxSpend ] = await comet.callStatic.liquidat
 
 ## Reserves
 
-Reserves are a portion of historical interest set aside as cash which can be withdrawn or transferred through the protocol's governance. A portion of borrower interest accrues into the protocol, determined by the reserve factor. The Compound III account [liquidation](#liquidation) process uses and also adds to protocol reserves.
+Reserves are a balance of the base asset, stored internally in the protocol, which automatically protect users from bad debt. Reserves can also be withdrawn or used through the governance process.
 
-There is an immutable value in the Comet contract that represents a target reserve value. Once the contract has reached the level of target reserves, liquidators are not able to buy collateral from the protocol.
+Reserves are generated in two ways: the difference in interest paid by borrowers, and earned by suppliers of the base asset, accrue as reserves into the protocol. Second, the [liquidation](#liquidation) process uses, and can add to, protocol reserves based on the [target reserve](#target-reserves) level set by governance.
 
 ### Get Reserves
 
