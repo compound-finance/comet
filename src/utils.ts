@@ -8,8 +8,8 @@ export async function fastGovernanceExecute(governor: GovernorSimple, targets: s
   let event = tx.events.find(event => event.event === 'ProposalCreated');
   let [proposalId] = event.args;
 
-  await governor.queue(proposalId);
-  await governor.execute(proposalId);
+  await (await governor.queue(proposalId)).wait();
+  await (await governor.execute(proposalId)).wait();
 }
 
 export function extractCalldata(txnData: string): string {
