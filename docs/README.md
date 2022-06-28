@@ -1692,8 +1692,7 @@ await comet.accrueAccount('0xAccount');
 
 ### Get Protocol Configuration
 
-This function returns the configuration struct stored for a specific instance of Comet
-in the *Configurator* contract.
+This function returns the configuration struct stored for a specific instance of Comet in the *Configurator* contract.
 
 #### Configurator
 
@@ -2581,7 +2580,7 @@ function approveThis(address manager, address asset, uint amount) override exter
 
 ### Transfer Governor
 
-This function changes the address of the *Configurator*'s Governor.
+This function changes the address of the Configurator's Governor.
 
 #### Configurator
 
