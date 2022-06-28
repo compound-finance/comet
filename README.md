@@ -166,6 +166,7 @@ For more information, see [SCENARIO.md](./SCENARIO.md).
 8. run `1653357106_mint_to_fauceteer` migration, `prepare` step
 9. run `1653512186_seed_rewards_with_comp`, `prepare` step
 10. run `1653512186_seed_rewards_with_comp`, `enact` step
+11. execute the proposal from step 10
 
 #### Fuji
 
