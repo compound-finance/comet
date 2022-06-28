@@ -160,11 +160,13 @@ For more information, see [SCENARIO.md](./SCENARIO.md).
 2. update `deployments/kovan/roots.json` with the new roots from step 1
 3. run `1649108513_upgrade_timelock_and_set_up_governor` migration, `prepare` step
 4. run `1649108513_upgrade_timelock_and_set_up_governor` migration, `enact` step
-5. find the proposal ID step 4; manually execute the proposal via the newly-deployed Governor
+5. find the proposal ID step from 4; manually execute the proposal via the newly-deployed Governor
 6. run `1651257129_bulker_and_rewards` migration, `prepare` step
 7. update `deployments/kovan/roots.json` with the rewards and bulker roots from step 6
 8. run `1653357106_mint_to_fauceteer` migration, `prepare` step
-9. run `1653512186_seed_rewards_with_comp`, `enact` step
+9. run `1653512186_seed_rewards_with_comp`, `prepare` step
+10. run `1653512186_seed_rewards_with_comp`, `enact` step
+11. execute the proposal from step 10
 
 #### Fuji
 
@@ -172,7 +174,7 @@ For more information, see [SCENARIO.md](./SCENARIO.md).
 2. update `deployments/fuji/roots.json` with new roots from step 1
 3. run `1649117302_upgrade_timelock_and_set_up_governor`, `prepare` step
 4. run `1649117302_upgrade_timelock_and_set_up_governor`, `enact` step
-5. find the proposal ID step 4; manually execute the proposal via the newly-deployed Governor
+5. find the proposal ID step from 4; manually execute the proposal via the newly-deployed Governor
 6. run `1651257139_rewards`, `prepare` step
 7. update `deployments/fuji/roots.json` with new rewards root from step 6
 8. run `1653431603_mint_to_fauceteer`, `prepare` step

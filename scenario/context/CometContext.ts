@@ -196,6 +196,8 @@ export class CometContext {
       throw new Error('Tokens cannot be sourced from Etherscan for development. Actors did not have sufficient assets.');
     } else {
       this.debug('Source Tokens: sourcing from Etherscan...');
+      this.debug(`Asset: ${cometAsset.address}`);
+      this.debug(`Amount: ${amount}`)
       // TODO: Note, this never gets called right now since all tokens are faucet tokens we've created.
       await sourceTokens({
         hre: this.deploymentManager.hre,
