@@ -1692,7 +1692,7 @@ await comet.accrueAccount('0xAccount');
 
 ### Get Protocol Configuration
 
-This function returns the configuration struct stored for a specific instance of Comet in the *Configurator* contract.
+This function returns the configuration struct stored for a specific instance of Comet in the configurator contract.
 
 #### Configurator
 
