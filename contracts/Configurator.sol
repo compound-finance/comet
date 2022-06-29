@@ -83,7 +83,7 @@ contract Configurator is ConfiguratorStorage {
     function setConfiguration(address cometProxy, Configuration calldata newConfiguration) external {
         if (msg.sender != governor) revert Unauthorized();
         Configuration memory oldConfiguration = configuratorParams[cometProxy];
-        if (oldConfiguration.governor != address(0)) revert ConfigurationAlreadyExists();
+        if (oldConfiguration.baseToken != address(0)) revert ConfigurationAlreadyExists();
 
         configuratorParams[cometProxy] = newConfiguration;
         emit SetConfiguration(cometProxy, oldConfiguration, newConfiguration);
