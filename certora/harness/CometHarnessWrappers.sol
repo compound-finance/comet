@@ -37,7 +37,7 @@ contract CometHarnessWrappers is CometHarnessGetters {
         });
         AssetConfig[] memory assetConfigs = new AssetConfig[](1);
         assetConfigs[0] = assetConfigInst;
-        return super._getPackedAsset(assetConfigs, i);
+        return super.getPackedAssetInternal(assetConfigs, i);
     }
 
     // External wrapper for principalValue from CometCore

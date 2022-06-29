@@ -87,8 +87,8 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
       accounts: ETH_PK
         ? [ETH_PK]
         : {
-            mnemonic: MNEMONIC,
-          },
+          mnemonic: MNEMONIC,
+        },
     };
   }
 }
@@ -98,7 +98,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
  */
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.13',
+    version: '0.8.15',
     settings: {
       optimizer: (
         process.env['OPTIMIZER_DISABLED'] ? { enabled: false } : {

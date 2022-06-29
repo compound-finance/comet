@@ -5,7 +5,7 @@ fi
 
 certoraRun contracts/CometExt.sol  \
     --verify CometExt:certora/specs/cometExt.spec  \
-    --solc solc8.13 \
+    --solc solc8.15 \
     --cloud \
     --disable_auto_cache_key_gen \
     $RULE \

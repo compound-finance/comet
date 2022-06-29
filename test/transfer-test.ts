@@ -120,6 +120,33 @@ describe('transfer', function () {
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(105000);
   });
 
+  it('transfer max base should transfer 0 if user has a borrow position', async () => {
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { USDC, WETH } = tokens;
+
+    await comet.setBasePrincipal(bob.address, -100e6);
+    await comet.setCollateralBalance(bob.address, WETH.address, exp(1, 18));
+    const cometAsB = comet.connect(bob);
+
+    const t0 = await comet.totalsBasic();
+    const a0 = await portfolio(protocol, alice.address);
+    const b0 = await portfolio(protocol, bob.address);
+    const s0 = await wait(cometAsB.transferAsset(alice.address, USDC.address, ethers.constants.MaxUint256));
+    const t1 = await comet.totalsBasic();
+    const a1 = await portfolio(protocol, alice.address);
+    const b1 = await portfolio(protocol, bob.address);
+
+    expect(s0.receipt['events'].length).to.be.equal(0);
+    expect(a0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(b0.internal).to.be.deep.equal({ USDC: exp(-100, 6), COMP: 0n, WETH: exp(1, 18), WBTC: 0n });
+    expect(a1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
+    expect(b1.internal).to.be.deep.equal({ USDC: exp(-100, 6), COMP: 0n, WETH: exp(1, 18), WBTC: 0n });
+    expect(t1.totalSupplyBase).to.be.equal(t0.totalSupplyBase);
+    expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(105000);
+  });
+
   it('transfers collateral from sender if the asset is collateral', async () => {
     const protocol = await makeProtocol();
     const {
@@ -210,6 +237,17 @@ describe('transfer', function () {
     expect(await comet.isTransferPaused()).to.be.true;
 
     await expect(cometAsB.transferAsset(alice.address, USDC.address, 1)).to.be.revertedWith("custom error 'Paused()'");
+  });
+
+  it('reverts if transfer max for a collateral asset', async () => {
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { COMP } = tokens;
+
+    await COMP.allocateTo(bob.address, 100e6);
+    const cometAsB = comet.connect(bob);
+
+    await expect(cometAsB.transferAsset(alice.address, COMP.address, ethers.constants.MaxUint256)).to.be.revertedWith("custom error 'InvalidUInt128()'");
   });
 
   it('borrows base if collateralized', async () => {

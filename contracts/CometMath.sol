@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.13;
+pragma solidity 0.8.15;
 
 /**
  * @title Compound's Comet Math Contract
@@ -15,10 +15,6 @@ contract CometMath {
     error InvalidInt104();
     error InvalidInt256();
     error NegativeNumber();
-
-    function min(uint104 a, uint104 b) internal pure returns (uint104) {
-        return a < b ? a : b;
-    }
 
     function safe64(uint n) internal pure returns (uint64) {
         if (n > type(uint64).max) revert InvalidUInt64();

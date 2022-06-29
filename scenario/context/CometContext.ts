@@ -164,22 +164,40 @@ export class CometContext {
     let cometAsset = typeof asset === 'string' ? this.getAssetByAddress(asset) : asset;
     let comet = await this.getComet();
 
-    // First, try to steal from a known actor
+    // First, try to source from Fauceteer
+    const contracts = await this.deploymentManager.contracts();
+    const fauceteer = contracts.get('fauceteer');
+    const fauceteerBalance = fauceteer ? await cometAsset.balanceOf(fauceteer.address) : 0;
+
+    if (fauceteerBalance > amount) {
+      this.debug(`Source Tokens: stealing from fauceteer`);
+      const fauceteerSigner = await world.impersonateAddress(fauceteer.address);
+      const fauceteerActor = await buildActor('fauceteerActor', fauceteerSigner, this);
+      // make gas fee 0 so we can source from contract addresses as well as EOAs
+      await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+      await cometAsset.transfer(fauceteerActor, amount, recipientAddress, { gasPrice: 0 });
+      return;
+    }
+
+    // Second, try to steal from a known actor
     for (let [name, actor] of Object.entries(this.actors)) {
       let actorBalance = await cometAsset.balanceOf(actor);
       if (actorBalance > amount) {
         this.debug(`Source Tokens: stealing from actor ${name}`);
         // make gas fee 0 so we can source from contract addresses as well as EOAs
         await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
-        await cometAsset.transfer(actor, amount, recipientAddress, {gasPrice: 0});
+        await cometAsset.transfer(actor, amount, recipientAddress, { gasPrice: 0 });
         return;
       }
     }
 
+    // Third, source from Etherscan (expensive, in terms of Etherscan API limits)
     if (!world.isRemoteFork()) {
       throw new Error('Tokens cannot be sourced from Etherscan for development. Actors did not have sufficient assets.');
     } else {
       this.debug('Source Tokens: sourcing from Etherscan...');
+      this.debug(`Asset: ${cometAsset.address}`);
+      this.debug(`Amount: ${amount}`)
       // TODO: Note, this never gets called right now since all tokens are faucet tokens we've created.
       await sourceTokens({
         hre: this.deploymentManager.hre,
@@ -230,29 +248,39 @@ async function getContextProperties(context: CometContext): Promise<CometPropert
   }
 }
 
+export async function getActors(context: CometContext, world: World) {
+  let dm = context.deploymentManager;
+  let signers = await dm.getSigners();
+
+  let comet = await context.getComet();
+  let governor = await context.getGovernor();
+
+  let [localAdminSigner, localPauseGuardianSigner, albertSigner, bettySigner, charlesSigner] =
+    signers;
+  let adminSigner, pauseGuardianSigner;
+
+  let adminAddress = await governor.admins(0); // any admin will do
+  let pauseGuardianAddress = await comet.pauseGuardian();
+  let useLocalAdminSigner = adminAddress === await localAdminSigner.getAddress();
+  let useLocalPauseGuardianSigner = pauseGuardianAddress === await localPauseGuardianSigner.getAddress();
+  adminSigner = useLocalAdminSigner ? localAdminSigner : await world.impersonateAddress(adminAddress);
+  pauseGuardianSigner = useLocalPauseGuardianSigner ? localPauseGuardianSigner : await world.impersonateAddress(pauseGuardianAddress);
+  return {
+    admin: await buildActor('admin', adminSigner, context),
+    pauseGuardian: await buildActor('pauseGuardian', pauseGuardianSigner, context),
+    albert: await buildActor('albert', albertSigner, context),
+    betty: await buildActor('betty', bettySigner, context),
+    charles: await buildActor('charles', charlesSigner, context),
+    signer: await buildActor('signer', localAdminSigner, context),
+  };
+}
+
 async function buildActor(name: string, signer: SignerWithAddress, context: CometContext) {
   return new CometActor(name, signer, await signer.getAddress(), context);
 }
 
 const getInitialContext = async (world: World): Promise<CometContext> => {
   let deploymentManager = new DeploymentManager(world.base.name, world.hre, { debug: true });
-
-  // TODO: `thing` allows loading the named contract using a particular ABI
-  //  we use it for now to supply a full interface across delegates
-  //  we can replace with an automatic union proxy interface that can recover the full interface through spider
-  async function getContract<T extends Contract>(name: string, thing?: string): Promise<T> {
-    let contracts = await deploymentManager.contracts();
-    let contract: T = contracts.get(name) as T;
-    if (!contract) {
-      throw new Error(`No such contract ${name} for base ${world.base.name}, found: ${JSON.stringify([...contracts.keys()])}`);
-    }
-    if (thing) {
-      return await deploymentManager.hre.ethers.getContractAt(thing, contract.address) as T;
-    } else {
-      return contract;
-    }
-    return contract;
-  }
 
   if (!world.isRemoteFork()) {
     await deployComet(deploymentManager);
@@ -261,37 +289,17 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   await deploymentManager.spider();
 
   let context = new CometContext(deploymentManager, undefined);
-  let comet = await context.getComet();
-  let governor = await context.getGovernor();
-
-  let signers = await world.hre.ethers.getSigners();
-
-  let [localAdminSigner, localPauseGuardianSigner, albertSigner, bettySigner, charlesSigner] =
-    signers;
-  let adminSigner, pauseGuardianSigner;
-
-  let adminAddress = await governor.admins(0); // any admin will do
-  let pauseGuardianAddress = await comet.pauseGuardian();
-  adminSigner = await world.impersonateAddress(adminAddress);
-  pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
-
-  context.actors = {
-    admin: await buildActor('admin', adminSigner, context),
-    pauseGuardian: await buildActor('pauseGuardian', pauseGuardianSigner, context),
-    albert: await buildActor('albert', albertSigner, context),
-    betty: await buildActor('betty', bettySigner, context),
-    charles: await buildActor('charles', charlesSigner, context),
-    signer: await buildActor('signer', localAdminSigner, context),
-  };
-
+  context.actors = await getActors(context, world);
   await context.setAssets();
 
   return context;
 };
 
-async function forkContext(c: CometContext): Promise<CometContext> {
+async function forkContext(c: CometContext, w: World): Promise<CometContext> {
   let context = new CometContext(DeploymentManager.fork(c.deploymentManager), c.remoteToken);
-  context.actors = Object.fromEntries(Object.entries(c.actors).map(([name, actor]) => [name, CometActor.fork(actor, context)]));
+  // We need to reconstruct the actors using the new deployment manager. Otherwise,
+  // the new actors will be using the old NonceManagers from the old deployment manager.
+  context.actors = await getActors(context, w);
   context.assets = Object.fromEntries(Object.entries(c.assets).map(([name, asset]) => [name, CometAsset.fork(asset)]));
 
   return context;

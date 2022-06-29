@@ -6,7 +6,7 @@ fi
 certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harness/SymbolicBaseToken.sol certora/harness/ERC20WithCallBack.sol certora/harness/SymbolicAssetTokenB.sol certora/harness/SymbolicPriceOracleA.sol certora/harness/SymbolicPriceOracleB.sol \
     --verify CometHarness:certora/specs/cometAbsorbBuyCollateral.spec \
     --link CometHarness:baseToken=SymbolicBaseToken CometHarness:extensionDelegate=CometExt ERC20WithCallBack:comet=CometHarness \
-    --solc solc8.13 \
+    --solc solc8.15 \
     --staging jtoman/comet-recursion \
     $RULE \
     --optimistic_loop \

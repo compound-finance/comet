@@ -5,7 +5,7 @@ fi
 
 certoraRun certora/harness/CometHarnessWrappers.sol \
     --verify CometHarnessWrappers:certora/specs/userAssetIn.spec  \
-    --solc solc8.13 \
+    --solc solc8.15 \
     --cloud \
     --disable_auto_cache_key_gen \
     $RULE \

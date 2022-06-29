@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: XXX
-pragma solidity 0.8.13;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity 0.8.15;
 
 import "./../ERC20.sol";
 import "./../Comet.sol";

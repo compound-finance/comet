@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.13;
+pragma solidity 0.8.15;
 
 import "./CometMainInterface.sol";
 import "./ERC20.sol";
@@ -118,7 +118,7 @@ contract Comet is CometMainInterface {
     /// @notice Factor to divide by when accruing rewards in order to preserve 6 decimals (i.e. baseScale / 1e6)
     uint internal immutable accrualDescaleFactor;
 
-    /**  Collateral asset configuration (packed) **/
+    /** Collateral asset configuration (packed) **/
 
     uint256 internal immutable asset00_a;
     uint256 internal immutable asset00_b;
@@ -201,21 +201,21 @@ contract Comet is CometMainInterface {
         // Set asset info
         numAssets = uint8(config.assetConfigs.length);
 
-        (asset00_a, asset00_b) = _getPackedAsset(config.assetConfigs, 0);
-        (asset01_a, asset01_b) = _getPackedAsset(config.assetConfigs, 1);
-        (asset02_a, asset02_b) = _getPackedAsset(config.assetConfigs, 2);
-        (asset03_a, asset03_b) = _getPackedAsset(config.assetConfigs, 3);
-        (asset04_a, asset04_b) = _getPackedAsset(config.assetConfigs, 4);
-        (asset05_a, asset05_b) = _getPackedAsset(config.assetConfigs, 5);
-        (asset06_a, asset06_b) = _getPackedAsset(config.assetConfigs, 6);
-        (asset07_a, asset07_b) = _getPackedAsset(config.assetConfigs, 7);
-        (asset08_a, asset08_b) = _getPackedAsset(config.assetConfigs, 8);
-        (asset09_a, asset09_b) = _getPackedAsset(config.assetConfigs, 9);
-        (asset10_a, asset10_b) = _getPackedAsset(config.assetConfigs, 10);
-        (asset11_a, asset11_b) = _getPackedAsset(config.assetConfigs, 11);
-        (asset12_a, asset12_b) = _getPackedAsset(config.assetConfigs, 12);
-        (asset13_a, asset13_b) = _getPackedAsset(config.assetConfigs, 13);
-        (asset14_a, asset14_b) = _getPackedAsset(config.assetConfigs, 14);
+        (asset00_a, asset00_b) = getPackedAssetInternal(config.assetConfigs, 0);
+        (asset01_a, asset01_b) = getPackedAssetInternal(config.assetConfigs, 1);
+        (asset02_a, asset02_b) = getPackedAssetInternal(config.assetConfigs, 2);
+        (asset03_a, asset03_b) = getPackedAssetInternal(config.assetConfigs, 3);
+        (asset04_a, asset04_b) = getPackedAssetInternal(config.assetConfigs, 4);
+        (asset05_a, asset05_b) = getPackedAssetInternal(config.assetConfigs, 5);
+        (asset06_a, asset06_b) = getPackedAssetInternal(config.assetConfigs, 6);
+        (asset07_a, asset07_b) = getPackedAssetInternal(config.assetConfigs, 7);
+        (asset08_a, asset08_b) = getPackedAssetInternal(config.assetConfigs, 8);
+        (asset09_a, asset09_b) = getPackedAssetInternal(config.assetConfigs, 9);
+        (asset10_a, asset10_b) = getPackedAssetInternal(config.assetConfigs, 10);
+        (asset11_a, asset11_b) = getPackedAssetInternal(config.assetConfigs, 11);
+        (asset12_a, asset12_b) = getPackedAssetInternal(config.assetConfigs, 12);
+        (asset13_a, asset13_b) = getPackedAssetInternal(config.assetConfigs, 13);
+        (asset14_a, asset14_b) = getPackedAssetInternal(config.assetConfigs, 14);
     }
 
     /**
@@ -238,7 +238,7 @@ contract Comet is CometMainInterface {
     /**
      * @dev Checks and gets the packed asset info for storage
      */
-    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
+    function getPackedAssetInternal(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
         AssetConfig memory assetConfig;
         if (i < assetConfigs.length) {
             assembly {
@@ -266,7 +266,7 @@ contract Comet is CometMainInterface {
 
         unchecked {
             // Keep 4 decimals for each factor
-            uint descale = FACTOR_SCALE / 1e4;
+            uint64 descale = FACTOR_SCALE / 1e4;
             uint16 borrowCollateralFactor = uint16(assetConfig.borrowCollateralFactor / descale);
             uint16 liquidateCollateralFactor = uint16(assetConfig.liquidateCollateralFactor / descale);
             uint16 liquidationFactor = uint16(assetConfig.liquidationFactor / descale);
@@ -296,7 +296,7 @@ contract Comet is CometMainInterface {
      */
     function getAssetInfo(uint8 i) override public view returns (AssetInfo memory) {
         if (i >= numAssets) revert BadAsset();
-        
+
         uint256 word_a;
         uint256 word_b;
 
@@ -350,7 +350,7 @@ contract Comet is CometMainInterface {
         }
 
         address asset = address(uint160(word_a & type(uint160).max));
-        uint rescale = FACTOR_SCALE / 1e4;
+        uint64 rescale = FACTOR_SCALE / 1e4;
         uint64 borrowCollateralFactor = uint64(((word_a >> 160) & type(uint16).max) * rescale);
         uint64 liquidateCollateralFactor = uint64(((word_a >> 176) & type(uint16).max) * rescale);
         uint64 liquidationFactor = uint64(((word_a >> 192) & type(uint16).max) * rescale);
@@ -376,11 +376,12 @@ contract Comet is CometMainInterface {
      * @dev Determine index of asset that matches given address
      */
     function getAssetInfoByAddress(address asset) override public view returns (AssetInfo memory) {
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets; ) {
             AssetInfo memory assetInfo = getAssetInfo(i);
             if (assetInfo.asset == asset) {
                 return assetInfo;
             }
+            unchecked { i++; }
         }
         revert BadAsset();
     }
@@ -414,16 +415,14 @@ contract Comet is CometMainInterface {
      **/
     function accrueInternal() internal {
         uint40 now_ = getNowInternal();
-        uint timeElapsed = now_ - lastAccrualTime;
+        uint timeElapsed = uint256(now_ - lastAccrualTime);
         if (timeElapsed > 0) {
             (baseSupplyIndex, baseBorrowIndex) = accruedInterestIndices(timeElapsed);
             if (totalSupplyBase >= baseMinForRewards) {
-                uint supplySpeed = baseTrackingSupplySpeed;
-                trackingSupplyIndex += safe64(divBaseWei(supplySpeed * timeElapsed, totalSupplyBase));
+                trackingSupplyIndex += safe64(divBaseWei(baseTrackingSupplySpeed * timeElapsed, totalSupplyBase));
             }
             if (totalBorrowBase >= baseMinForRewards) {
-                uint borrowSpeed = baseTrackingBorrowSpeed;
-                trackingBorrowIndex += safe64(divBaseWei(borrowSpeed * timeElapsed, totalBorrowBase));
+                trackingBorrowIndex += safe64(divBaseWei(baseTrackingBorrowSpeed * timeElapsed, totalBorrowBase));
             }
             lastAccrualTime = now_;
         }
@@ -473,12 +472,12 @@ contract Comet is CometMainInterface {
      * @return The utilization rate of the base asset
      */
     function getUtilization() override public view returns (uint) {
-        uint totalSupply = presentValueSupply(baseSupplyIndex, totalSupplyBase);
-        uint totalBorrow = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
-        if (totalSupply == 0) {
+        uint totalSupply_ = presentValueSupply(baseSupplyIndex, totalSupplyBase);
+        uint totalBorrow_ = presentValueBorrow(baseBorrowIndex, totalBorrowBase);
+        if (totalSupply_ == 0) {
             return 0;
         } else {
-            return totalBorrow * FACTOR_SCALE / totalSupply;
+            return totalBorrow_ * FACTOR_SCALE / totalSupply_;
         }
     }
 
@@ -499,9 +498,9 @@ contract Comet is CometMainInterface {
     function getReserves() override public view returns (int) {
         (uint64 baseSupplyIndex_, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         uint balance = ERC20(baseToken).balanceOf(address(this));
-        uint104 totalSupply = presentValueSupply(baseSupplyIndex_, totalSupplyBase);
-        uint104 totalBorrow = presentValueBorrow(baseBorrowIndex_, totalBorrowBase);
-        return signed256(balance) - signed104(totalSupply) + signed104(totalBorrow);
+        uint104 totalSupply_ = presentValueSupply(baseSupplyIndex_, totalSupplyBase);
+        uint104 totalBorrow_ = presentValueBorrow(baseBorrowIndex_, totalBorrowBase);
+        return signed256(balance) - signed104(totalSupply_) + signed104(totalBorrow_);
     }
 
     /**
@@ -523,7 +522,7 @@ contract Comet is CometMainInterface {
             uint64(baseScale)
         );
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets; ) {
             if (isInAsset(assetsIn, i)) {
                 if (liquidity >= 0) {
                     return true;
@@ -540,6 +539,7 @@ contract Comet is CometMainInterface {
                     asset.borrowCollateralFactor
                 ));
             }
+            unchecked { i++; }
         }
 
         return liquidity >= 0;
@@ -564,7 +564,7 @@ contract Comet is CometMainInterface {
             uint64(baseScale)
         );
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets; ) {
             if (isInAsset(assetsIn, i)) {
                 if (liquidity >= 0) {
                     return false;
@@ -581,6 +581,7 @@ contract Comet is CometMainInterface {
                     asset.liquidateCollateralFactor
                 ));
             }
+            unchecked { i++; }
         }
 
         return liquidity < 0;
@@ -604,7 +605,7 @@ contract Comet is CometMainInterface {
      * @dev The change in principal broken into withdraw and borrow amounts
      * @dev Note: The assumption `oldPrincipal >= newPrincipal` MUST be true
      */
-    function withdrawAndBorrowAmount(int104 oldPrincipal, int104 newPrincipal) internal view returns (uint104, uint104) {
+    function withdrawAndBorrowAmount(int104 oldPrincipal, int104 newPrincipal) internal pure returns (uint104, uint104) {
         if (newPrincipal >= 0) {
             return (uint104(oldPrincipal - newPrincipal), 0);
         } else if (oldPrincipal <= 0) {
@@ -749,10 +750,10 @@ contract Comet is CometMainInterface {
         basic.principal = principalNew;
 
         if (principal >= 0) {
-            uint indexDelta = trackingSupplyIndex - basic.baseTrackingIndex;
+            uint indexDelta = uint256(trackingSupplyIndex - basic.baseTrackingIndex);
             basic.baseTrackingAccrued += safe64(uint104(principal) * indexDelta / trackingIndexScale / accrualDescaleFactor);
         } else {
-            uint indexDelta = trackingBorrowIndex - basic.baseTrackingIndex;
+            uint indexDelta = uint256(trackingBorrowIndex - basic.baseTrackingIndex);
             basic.baseTrackingAccrued += safe64(uint104(-principal) * indexDelta / trackingIndexScale / accrualDescaleFactor);
         }
 
@@ -1114,11 +1115,16 @@ contract Comet is CometMainInterface {
 
         uint startGas = gasleft();
         accrueInternal();
-        for (uint i = 0; i < accounts.length; i++) {
+        for (uint i = 0; i < accounts.length; ) {
             absorbInternal(absorber, accounts[i]);
+            unchecked { i++; }
         }
         uint gasUsed = startGas - gasleft();
 
+        // Note: liquidator points are an imperfect tool for governance,
+        //  to be used while evaluating strategies for incentivizing absorption.
+        // Using gas price instead of base fee would more accurately reflect spend,
+        //  but is also subject to abuse if refunds were to be given automatically.
         LiquidatorPoints memory points = liquidatorPoints[absorber];
         points.numAbsorbs++;
         points.numAbsorbed += safe64(accounts.length);
@@ -1140,7 +1146,7 @@ contract Comet is CometMainInterface {
         uint128 basePrice = getPrice(baseTokenPriceFeed);
         uint deltaValue = 0;
 
-        for (uint8 i = 0; i < numAssets; i++) {
+        for (uint8 i = 0; i < numAssets; ) {
             if (isInAsset(assetsIn, i)) {
                 AssetInfo memory assetInfo = getAssetInfo(i);
                 address asset = assetInfo.asset;
@@ -1153,6 +1159,7 @@ contract Comet is CometMainInterface {
 
                 emit AbsorbCollateral(absorber, account, asset, seizeAmount, value);
             }
+            unchecked { i++; }
         }
 
         uint104 deltaBalance = safe104(divPrice(deltaValue, basePrice, uint64(baseScale)));
@@ -1175,9 +1182,9 @@ contract Comet is CometMainInterface {
         totalSupplyBase += supplyAmount;
         totalBorrowBase -= repayAmount;
 
-        uint104 debtAbsorbed = unsigned104(newBalance - oldBalance);
-        uint valueOfDebtAbsorbed = mulPrice(debtAbsorbed, basePrice, uint64(baseScale));
-        emit AbsorbDebt(absorber, account, debtAbsorbed, valueOfDebtAbsorbed);
+        uint104 basePaidOut = unsigned104(newBalance - oldBalance);
+        uint valueOfBasePaidOut = mulPrice(basePaidOut, basePrice, uint64(baseScale));
+        emit AbsorbDebt(absorber, account, basePaidOut, valueOfBasePaidOut);
     }
 
     /**

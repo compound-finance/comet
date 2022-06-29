@@ -20,14 +20,16 @@ import {
   Configurator__factory,
   CometProxyAdmin,
   CometProxyAdmin__factory,
-  TransparentUpgradeableConfiguratorProxy,
-  TransparentUpgradeableConfiguratorProxy__factory,
+  ConfiguratorProxy,
+  ConfiguratorProxy__factory,
   ProxyAdmin,
+  CometInterface,
 } from '../../build/types';
 import { ConfigurationStruct } from '../../build/types/Comet';
 import { ExtConfigurationStruct } from '../../build/types/CometExt';
 export { Comet } from '../../build/types';
 import { DeployedContracts, DeployProxyOption, ProtocolConfiguration } from './index';
+import { extractCalldata, fastGovernanceExecute } from '../utils';
 
 async function makeToken(
   deploymentManager: DeploymentManager,
@@ -96,7 +98,7 @@ export async function deployDevelopmentComet(
     supplyCap: (500000e10).toString(),
   };
 
-  const governorSimple = await deploymentManager.deploy<GovernorSimple, GovernorSimple__factory, []>(
+  let governorSimple = await deploymentManager.deploy<GovernorSimple, GovernorSimple__factory, []>(
     'test/GovernorSimple.sol',
     []
   );
@@ -214,24 +216,10 @@ export async function deployDevelopmentComet(
     );
     await proxyAdmin.transferOwnership(timelock.address);
   } else {
-    // We don't want to be using a new ProxyAdmin/Timelock if we are not deploying both proxies
+    // We don't want to be using a new ProxyAdmin/Timelock/Governor if we are not deploying both proxies
     proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
     timelock = await deploymentManager.contract('timelock') as SimpleTimelock;
-  }
-
-  if (deployProxy.deployConfiguratorProxy) {
-    // Configuration proxy
-    configuratorProxy = await deploymentManager.deploy<
-      TransparentUpgradeableConfiguratorProxy,
-      TransparentUpgradeableConfiguratorProxy__factory,
-      [string, string, string]
-    >('TransparentUpgradeableConfiguratorProxy.sol', [
-      configurator.address,
-      proxyAdmin.address,
-      (await configurator.populateTransaction.initialize(timelock.address, cometFactory.address, configuration)).data, // new time lock is set, which we don't want
-    ]);
-
-    updatedRoots.set('configurator', configuratorProxy.address);
+    governorSimple = await deploymentManager.contract('governor') as GovernorSimple;
   }
 
   if (deployProxy.deployCometProxy) {
@@ -247,6 +235,39 @@ export async function deployDevelopmentComet(
     ]);
 
     updatedRoots.set('comet', cometProxy.address);
+  } else {
+    // Use the existing Comet proxy if a new one is not deployed
+    // XXX This, along with Spider aliases, may need to be redesigned to support multiple Comet deployments
+    cometProxy = await deploymentManager.contract('comet') as CometInterface;
+  }
+
+  if (deployProxy.deployConfiguratorProxy) {
+    // Configuration proxy
+    configuratorProxy = await deploymentManager.deploy<
+      ConfiguratorProxy,
+      ConfiguratorProxy__factory,
+      [string, string, string]
+    >('ConfiguratorProxy.sol', [
+      configurator.address,
+      proxyAdmin.address,
+      (await configurator.populateTransaction.initialize(timelock.address)).data,
+    ]);
+
+    // Set the initial factory and configuration for Comet in Configurator
+    const setFactoryCalldata = extractCalldata((await configurator.populateTransaction.setFactory(cometProxy.address, cometFactory.address)).data);
+    const setConfigurationCalldata = extractCalldata((await configurator.populateTransaction.setConfiguration(cometProxy.address, configuration)).data);
+    await fastGovernanceExecute(
+      governorSimple.connect(admin),
+      [configuratorProxy.address, configuratorProxy.address],
+      [0, 0],
+      [
+        'setFactory(address,address)',
+        'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
+      ],
+      [setFactoryCalldata, setConfigurationCalldata]
+    );
+
+    updatedRoots.set('configurator', configuratorProxy.address);
   }
 
   await deploymentManager.putRoots(updatedRoots);

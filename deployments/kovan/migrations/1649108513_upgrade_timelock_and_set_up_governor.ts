@@ -53,7 +53,7 @@ migration<Vars>('1649108513_upgrade_timelock_and_set_up_governor', {
     // 4. Set admin of Configurator to be the new Timelock.
     const transferProxyAdminOwnership = ethers.utils.defaultAbiCoder.encode(["address"], [newTimelock.address]);
     const transferConfiguratorAdminCalldata = ethers.utils.defaultAbiCoder.encode(["address"], [newTimelock.address]);
-    const setGovernorCalldata = ethers.utils.defaultAbiCoder.encode(["address"], [newTimelock.address]);
+    const setGovernorCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address"], [comet.address, newTimelock.address]);
     const deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
     const oldGovernorAsAdmin = oldGovernor.connect(signer);
 
@@ -67,7 +67,7 @@ migration<Vars>('1649108513_upgrade_timelock_and_set_up_governor', {
       ],
       [0, 0, 0, 0],
       [
-        "setGovernor(address)",
+        "setGovernor(address,address)",
         "deployAndUpgradeTo(address,address)",
         "transferOwnership(address)",
         "transferAdmin(address)",
@@ -81,7 +81,7 @@ migration<Vars>('1649108513_upgrade_timelock_and_set_up_governor', {
       'Upgrade Timelock and Governor')
     ).wait();
     let event = tx.events.find(event => event.event === 'ProposalCreated');
-    let [ proposalId ] = event.args;
+    let [proposalId] = event.args;
 
     await oldGovernorAsAdmin.queue(proposalId);
 
