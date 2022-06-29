@@ -6,7 +6,7 @@
 certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harness/SymbolicBaseToken.sol certora/harness/SymbolicAssetTokenA.sol certora/harness/SymbolicAssetTokenB.sol certora/harness/SymbolicPriceOracleA.sol certora/harness/SymbolicPriceOracleB.sol \
     --verify CometHarness:certora/specs/comet.spec \
     --link CometHarness:baseToken=SymbolicBaseToken CometHarness:extensionDelegate=CometExt \
-    --solc solc8.13 \
+    --solc solc8.15 \
     --cloud \
     --disable_auto_cache_key_gen \
     --rule $1 \

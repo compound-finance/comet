@@ -103,7 +103,7 @@ contract CometHarness is CometHarnessGetters {
     // Over-approximation of _getPackedAsset to retrieve arbitrary values. The values are being tracked in global variables
     uint256 nonDet1;
     uint256 nonDet2;
-    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal override view returns (uint256, uint256) {
+    function getPackedAssetInternal(AssetConfig[] memory assetConfigs, uint i) internal override view returns (uint256, uint256) {
         return (nonDet1,nonDet2);
     }
 

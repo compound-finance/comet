@@ -1,35 +1,38 @@
 diff --git a/contracts/Comet.sol b/contracts/Comet.sol
-index 42f5553..6155d79 100644
+index 799b53c..5046aab 100644
 --- a/contracts/Comet.sol
 +++ b/contracts/Comet.sol
 @@ -238,7 +238,7 @@ contract Comet is CometMainInterface {
      /**
       * @dev Checks and gets the packed asset info for storage
       */
--    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
-+    function _getPackedAsset(AssetConfig[] memory assetConfigs, uint i) virtual internal view returns (uint256, uint256) {
+-    function getPackedAssetInternal(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
++    function getPackedAssetInternal(AssetConfig[] memory assetConfigs, uint i) virtual internal view returns (uint256, uint256) {
          AssetConfig memory assetConfig;
          if (i < assetConfigs.length) {
              assembly {
-@@ -294,7 +294,7 @@ contract Comet is CometMainInterface {
+@@ -294,9 +294,9 @@ contract Comet is CometMainInterface {
       * @param i The index of the asset info to get
       * @return The asset info object
       */
 -    function getAssetInfo(uint8 i) override public view returns (AssetInfo memory) {
 +    function getAssetInfo(uint8 i) virtual override public view returns (AssetInfo memory) {
          if (i >= numAssets) revert BadAsset();
- 
+-
++        
          uint256 word_a;
+         uint256 word_b;
+ 
 @@ -375,7 +375,7 @@ contract Comet is CometMainInterface {
      /**
       * @dev Determine index of asset that matches given address
       */
 -    function getAssetInfoByAddress(address asset) override public view returns (AssetInfo memory) {
 +    function getAssetInfoByAddress(address asset) virtual override public view returns (AssetInfo memory) {
-         for (uint8 i = 0; i < numAssets; i++) {
+         for (uint8 i = 0; i < numAssets; ) {
              AssetInfo memory assetInfo = getAssetInfo(i);
              if (assetInfo.asset == asset) {
-@@ -396,7 +396,7 @@ contract Comet is CometMainInterface {
+@@ -397,7 +397,7 @@ contract Comet is CometMainInterface {
      /**
       * @dev Calculate accrued interest indices for base token supply and borrows
       **/
@@ -38,16 +41,16 @@ index 42f5553..6155d79 100644
          uint64 baseSupplyIndex_ = baseSupplyIndex;
          uint64 baseBorrowIndex_ = baseBorrowIndex;
          if (timeElapsed > 0) {
-@@ -411,7 +411,7 @@ contract Comet is CometMainInterface {
+@@ -413,7 +413,7 @@ contract Comet is CometMainInterface {
      /**
       * @dev Accrue interest (and rewards) in base token supply and borrows
       **/
 -    function accrueInternal() internal {
 +    function accrueInternal() virtual internal {
          uint40 now_ = getNowInternal();
-         uint timeElapsed = now_ - lastAccrualTime;
+         uint timeElapsed = uint256(now_ - lastAccrualTime);
          if (timeElapsed > 0) {
-@@ -784,7 +784,7 @@ contract Comet is CometMainInterface {
+@@ -720,7 +720,7 @@ contract Comet is CometMainInterface {
      /**
       * @dev Whether user has a non-zero balance of an asset, given assetsIn flags
       */
@@ -56,7 +59,7 @@ index 42f5553..6155d79 100644
          return (assetsIn & (uint16(1) << assetOffset) != 0);
      }
  
-@@ -796,7 +796,7 @@ contract Comet is CometMainInterface {
+@@ -732,7 +732,7 @@ contract Comet is CometMainInterface {
          AssetInfo memory assetInfo,
          uint128 initialUserBalance,
          uint128 finalUserBalance
@@ -65,7 +68,7 @@ index 42f5553..6155d79 100644
          if (initialUserBalance == 0 && finalUserBalance != 0) {
              // set bit for asset
              userBasic[account].assetsIn |= (uint16(1) << assetInfo.offset);
-@@ -976,7 +976,7 @@ contract Comet is CometMainInterface {
+@@ -919,7 +919,7 @@ contract Comet is CometMainInterface {
       * @param asset The asset to transfer
       * @param amount The quantity to transfer
       */
@@ -74,7 +77,7 @@ index 42f5553..6155d79 100644
          return transferInternal(msg.sender, src, dst, asset, amount);
      }
  
-@@ -1344,7 +1344,7 @@ contract Comet is CometMainInterface {
+@@ -1312,7 +1312,7 @@ contract Comet is CometMainInterface {
      /**
       * @notice Fallback to calling the extension delegate for everything else
       */
@@ -83,7 +86,7 @@ index 42f5553..6155d79 100644
          address delegate = extensionDelegate;
          assembly {
              calldatacopy(0, 0, calldatasize())
-@@ -1354,5 +1354,5 @@ contract Comet is CometMainInterface {
+@@ -1322,5 +1322,5 @@ contract Comet is CometMainInterface {
              case 0 { revert(0, returndatasize()) }
              default { return(0, returndatasize()) }
          }
