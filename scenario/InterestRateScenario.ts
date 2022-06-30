@@ -4,29 +4,7 @@ import { annualize, defactor, exp, factor } from '../test/helpers';
 import { BigNumber } from 'ethers';
 import { FuzzType } from './constraints/Fuzzing';
 
-function calculateSupplyRate(
-  utilization: BigNumber,
-  kink: BigNumber,
-  interestRateBase: BigNumber,
-  interestRateSlopeLow: BigNumber,
-  interestRateSlopeHigh: BigNumber,
-  reserveRate: BigNumber,
-  factorScale = BigNumber.from(exp(1, 18))
-): BigNumber {
-  const reserveScalingFactor = utilization.mul(factorScale.sub(reserveRate)).div(factorScale);
-  if (utilization.lte(kink)) {
-    const interestRateWithoutBase = interestRateSlopeLow.mul(utilization).div(factorScale);
-    const interestRateWithoutReserveScaling = interestRateBase.add(interestRateWithoutBase);
-    return interestRateWithoutReserveScaling.mul(reserveScalingFactor).div(factorScale);
-  } else {
-    const rateSlopeLow = interestRateSlopeLow.mul(kink).div(factorScale);
-    const rateSlopeHigh = interestRateSlopeHigh.mul(utilization.sub(kink)).div(factorScale);
-    const interestRateWithoutReserveScaling = interestRateBase.add(rateSlopeLow).add(rateSlopeHigh);
-    return interestRateWithoutReserveScaling.mul(reserveScalingFactor).div(factorScale);
-  }
-}
-
-function calculateBorrowRate(
+function calculateInterestRate(
   utilization: BigNumber,
   kink: BigNumber,
   interestRateBase: BigNumber,
@@ -65,33 +43,35 @@ scenario(
   { upgrade: true },
   async ({ comet, actors }) => {
     let { totalSupplyBase, totalBorrowBase, baseSupplyIndex, baseBorrowIndex } = await comet.totalsBasic();
-    const kink = await comet.kink();
-    const perSecondInterestRateBase = await comet.perSecondInterestRateBase();
-    const perSecondInterestRateSlopeLow = await comet.perSecondInterestRateSlopeLow();
-    const perSecondInterestRateSlopeHigh = await comet.perSecondInterestRateSlopeHigh();
-    const reserveRate = await comet.reserveRate();
+    const supplyKink = await comet.supplyKink();
+    const supplyPerSecondInterestRateBase = await comet.supplyPerSecondInterestRateBase();
+    const supplyPerSecondInterestRateSlopeLow = await comet.supplyPerSecondInterestRateSlopeLow();
+    const supplyPerSecondInterestRateSlopeHigh = await comet.supplyPerSecondInterestRateSlopeHigh();
+    const borrowKink = await comet.borrowKink();
+    const borrowPerSecondInterestRateBase = await comet.borrowPerSecondInterestRateBase();
+    const borrowPerSecondInterestRateSlopeLow = await comet.borrowPerSecondInterestRateSlopeLow();
+    const borrowPerSecondInterestRateSlopeHigh = await comet.borrowPerSecondInterestRateSlopeHigh();
 
     const actualUtilization = await comet.getUtilization();
     const expectedUtilization = calculateUtilization(totalSupplyBase, totalBorrowBase, baseSupplyIndex, baseBorrowIndex);
 
     expect(defactor(actualUtilization)).to.be.approximately(defactor(expectedUtilization), 0.00001);
     expect(await comet.getSupplyRate(actualUtilization)).to.equal(
-      calculateSupplyRate(
+      calculateInterestRate(
         actualUtilization,
-        kink,
-        perSecondInterestRateBase,
-        perSecondInterestRateSlopeLow,
-        perSecondInterestRateSlopeHigh,
-        reserveRate
+        supplyKink,
+        supplyPerSecondInterestRateBase,
+        supplyPerSecondInterestRateSlopeLow,
+        supplyPerSecondInterestRateSlopeHigh
       )
     );
     expect(await comet.getBorrowRate(actualUtilization)).to.equal(
-      calculateBorrowRate(
+      calculateInterestRate(
         actualUtilization,
-        kink,
-        perSecondInterestRateBase,
-        perSecondInterestRateSlopeLow,
-        perSecondInterestRateSlopeHigh
+        borrowKink,
+        borrowPerSecondInterestRateBase,
+        borrowPerSecondInterestRateSlopeLow,
+        borrowPerSecondInterestRateSlopeHigh
       )
     );
   }
@@ -102,19 +82,22 @@ scenario(
   {
     upgrade: true,
     cometConfig: {
-      perYearInterestRateBase: (0.005e18).toString(), // 0.5% per year
-      perYearInterestRateSlopeLow: (0.05e18).toString(),
-      perYearInterestRateSlopeHigh: (0.2e18).toString(),
-      reserveRate: (0.1e18).toString(), // 1%,
-      kink: (0.8e18).toString(), // 80%
+      supplyKink: exp(0.8, 18),
+      supplyPerYearInterestRateBase: exp(0, 18),
+      supplyPerYearInterestRateSlopeLow: exp(0.04, 18),
+      supplyPerYearInterestRateSlopeHigh: exp(0.4, 18),
+      borrowKink: exp(0.8, 18),
+      borrowPerYearInterestRateBase: exp(0.01, 18),
+      borrowPerYearInterestRateSlopeLow: exp(0.05, 18),
+      borrowPerYearInterestRateSlopeHigh: exp(0.3, 18),
     },
     utilization: 0.5,
   },
   async ({ comet, actors }) => {
     const utilization = await comet.getUtilization();
     expect(defactor(utilization)).to.be.approximately(0.5, 0.00001);
-    expect(annualize(await comet.getSupplyRate(utilization))).to.be.approximately(0.0135, 0.001);
-    expect(annualize(await comet.getBorrowRate(utilization))).to.be.approximately(0.03, 0.001);
+    expect(annualize(await comet.getSupplyRate(utilization))).to.be.approximately(0.02, 0.001);
+    expect(annualize(await comet.getBorrowRate(utilization))).to.be.approximately(0.035, 0.001);
   }
 );
 
@@ -123,19 +106,22 @@ scenario(
   {
     upgrade: true,
     cometConfig: {
-      perYearInterestRateBase: (0.005e18).toString(), // 0.5% per year
-      perYearInterestRateSlopeLow: (0.05e18).toString(),
-      perYearInterestRateSlopeHigh: (0.2e18).toString(),
-      reserveRate: (0.1e18).toString(), // 10%,
-      kink: (0.8e18).toString(), // 80%
+      supplyKink: exp(0.8, 18),
+      supplyPerYearInterestRateBase: exp(0, 18),
+      supplyPerYearInterestRateSlopeLow: exp(0.04, 18),
+      supplyPerYearInterestRateSlopeHigh: exp(0.4, 18),
+      borrowKink: exp(0.8, 18),
+      borrowPerYearInterestRateBase: exp(0.01, 18),
+      borrowPerYearInterestRateSlopeLow: exp(0.05, 18),
+      borrowPerYearInterestRateSlopeHigh: exp(0.3, 18),
     },
     utilization: 0.85,
   },
   async ({ comet, actors }) => {
     const utilization = await comet.getUtilization();
     expect(defactor(utilization)).to.be.approximately(0.85, 0.00001);
-    expect(annualize(await comet.getSupplyRate(utilization))).to.be.approximately(0.0421, 0.001);
-    expect(annualize(await comet.getBorrowRate(utilization))).to.be.approximately(0.055, 0.001);
+    expect(annualize(await comet.getSupplyRate(utilization))).to.be.approximately(0.052, 0.001);
+    expect(annualize(await comet.getBorrowRate(utilization))).to.be.approximately(0.065, 0.001);
   }
 );
 
@@ -145,40 +131,42 @@ scenario(
     upgrade: true,
     cometConfig: {
       // TODO: Read types directly from Solidity?
-      perYearInterestRateBase: { type: FuzzType.UINT64 },
-      reserveRate: { type: FuzzType.UINT64, max: (1e18).toString() /* 100% */ },
-      kink: (0.80e18).toString(), // 80%
+      supplyPerYearInterestRateBase: { type: FuzzType.UINT64 },
+      borrowPerYearInterestRateBase: { type: FuzzType.UINT64, max: (1e18).toString() /* 100% */ },
     }
   },
   async ({ comet, actors }) => {
     let { totalSupplyBase, totalBorrowBase, baseSupplyIndex, baseBorrowIndex } = await comet.totalsBasic();
-    const kink = await comet.kink();
-    const perSecondInterestRateBase = await comet.perSecondInterestRateBase();
-    const perSecondInterestRateSlopeLow = await comet.perSecondInterestRateSlopeLow();
-    const perSecondInterestRateSlopeHigh = await comet.perSecondInterestRateSlopeHigh();
-    const reserveRate = await comet.reserveRate();
+    const supplyKink = await comet.supplyKink();
+    const supplyPerSecondInterestRateBase = await comet.supplyPerSecondInterestRateBase();
+    const supplyPerSecondInterestRateSlopeLow = await comet.supplyPerSecondInterestRateSlopeLow();
+    const supplyPerSecondInterestRateSlopeHigh = await comet.supplyPerSecondInterestRateSlopeHigh();
+    const borrowKink = await comet.borrowKink();
+    const borrowPerSecondInterestRateBase = await comet.borrowPerSecondInterestRateBase();
+    const borrowPerSecondInterestRateSlopeLow = await comet.borrowPerSecondInterestRateSlopeLow();
+    const borrowPerSecondInterestRateSlopeHigh = await comet.borrowPerSecondInterestRateSlopeHigh();
+
 
     const actualUtilization = await comet.getUtilization();
     const expectedUtilization = calculateUtilization(totalSupplyBase, totalBorrowBase, baseSupplyIndex, baseBorrowIndex);
 
     expect(defactor(actualUtilization)).to.be.approximately(defactor(expectedUtilization), 0.00001);
     expect(await comet.getSupplyRate(actualUtilization)).to.equal(
-      calculateSupplyRate(
+      calculateInterestRate(
         actualUtilization,
-        kink,
-        perSecondInterestRateBase,
-        perSecondInterestRateSlopeLow,
-        perSecondInterestRateSlopeHigh,
-        reserveRate
+        supplyKink,
+        supplyPerSecondInterestRateBase,
+        supplyPerSecondInterestRateSlopeLow,
+        supplyPerSecondInterestRateSlopeHigh
       )
     );
     expect(await comet.getBorrowRate(actualUtilization)).to.equal(
-      calculateBorrowRate(
+      calculateInterestRate(
         actualUtilization,
-        kink,
-        perSecondInterestRateBase,
-        perSecondInterestRateSlopeLow,
-        perSecondInterestRateSlopeHigh
+        borrowKink,
+        borrowPerSecondInterestRateBase,
+        borrowPerSecondInterestRateSlopeLow,
+        borrowPerSecondInterestRateSlopeHigh
       )
     );
   }
@@ -188,7 +176,7 @@ scenario(
 // XXX this test seems too fickle
 scenario.skip(
   'Comet#interestRate > when utilization is 50%',
-{ utilization: 0.5, upgrade: true },
+  { utilization: 0.5, upgrade: true },
   async ({ comet, actors }, world) => {
     const utilization = await comet.getUtilization();
     expect(defactor(utilization)).to.be.approximately(0.5, 0.00001);
