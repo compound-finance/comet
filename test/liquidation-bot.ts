@@ -1,26 +1,17 @@
 import { event, expect, exp, factor, defaultAssets, makeProtocol, mulPrice, portfolio, wait, setTotalsBasic } from './helpers';
 
-// describe.only('Liquidation bot', function () {
-//   it('runs a test', async () => {
-//     const { comet, users: [alice, bob] } = await makeProtocol();
-//
-//     expect(true).to.be.true;
-//   });
-// });
-
-
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
+  CometExt,
+  CometExt__factory,
   CometHarness,
   CometHarness__factory,
+  CometHarnessInterface,
+  CometHarnessInterface__factory,
   Liquidator,
   Liquidator__factory
 } from '../build/types';
-
-
-// import { DAI, USDC, WETH9, swapRouter, uniswapv3factory } from "../scripts/address";
-// import { Liquidator, CometDummy } from "../typechain";
 
 // mainnet
 export const USDC_WHALE = "0xA929022c9107643515F5c777cE9a910F0D1e490C";
@@ -37,9 +28,73 @@ export const WETH9 = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 export const swapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 export const uniswapv3factory = "0x1F98431c8aD98523631AE4a59f267346ea31F984";
 
+const USDC_USD_PRICE_FEED = "0x8fffffd4afb6115b954bd326cbe7b4ba576818f6";
+
+async function makeProtocolAlt() {
+  const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
+  const symbol32 = ethers.utils.formatBytes32String('📈BASE');
+  const extensionDelegate = await CometExtFactory.deploy({ symbol32 });
+  await extensionDelegate.deployed();
+
+  const CometFactory = (await ethers.getContractFactory('CometHarness')) as CometHarness__factory;
+  const config = {
+    governor: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    pauseGuardian: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+    extensionDelegate: extensionDelegate.address,
+    baseToken: USDC,
+    baseTokenPriceFeed: USDC_USD_PRICE_FEED,
+    kink: 800000000000000000n,
+    perYearInterestRateBase: 5000000000000000n,
+    perYearInterestRateSlopeLow: 100000000000000000n,
+    perYearInterestRateSlopeHigh: 3000000000000000000n,
+    reserveRate: 100000000000000000n,
+    storeFrontPriceFactor: 1000000000000000000n,
+    trackingIndexScale: 1000000000000000n,
+    baseTrackingSupplySpeed: 1000000000000000n,
+    baseTrackingBorrowSpeed: 1000000000000000n,
+    baseMinForRewards: 1000000n,
+    baseBorrowMin: 1000000n,
+    targetReserves: 0,
+    assetConfigs: [
+      {
+        asset: DAI,
+        priceFeed: "0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9",
+        decimals: 18,
+        borrowCollateralFactor: 999999999999999999n,
+        liquidateCollateralFactor: 1000000000000000000n,
+        liquidationFactor: 1000000000000000000n,
+        supplyCap: 100000000000000000000n
+      },
+      // {
+      //   asset: '0x162700d1613DfEC978032A909DE02643bC55df1A',
+      //   priceFeed: '0xD5724171C2b7f0AA717a324626050BD05767e2C6',
+      //   decimals: 18,
+      //   borrowCollateralFactor: 999999999999999999n,
+      //   liquidateCollateralFactor: 1000000000000000000n,
+      //   liquidationFactor: 1000000000000000000n,
+      //   supplyCap: 100000000000000000000n
+      // },
+      // {
+      //   asset: '0x67aD6EA566BA6B0fC52e97Bc25CE46120fdAc04c',
+      //   priceFeed: '0x70eE76691Bdd9696552AF8d4fd634b3cF79DD529',
+      //   decimals: 8,
+      //   borrowCollateralFactor: 999999999999999999n,
+      //   liquidateCollateralFactor: 1000000000000000000n,
+      //   liquidationFactor: 1000000000000000000n,
+      //   supplyCap: 10000000000n
+      // }
+    ]
+  };
+
+  const comet = await CometFactory.deploy(config);
+  await comet.deployed();
+  console.log(`comet.address: ${comet.address}`);
+  const cometHarnessInterface = await ethers.getContractAt('CometHarnessInterface', comet.address) as CometHarnessInterface;
+  return cometHarnessInterface;
+}
 
 describe.only("Liquidator", function () {
-  let comet: CometHarness;
+  let comet: CometHarnessInterface;
   let liquidator: Liquidator;
 
   let owner: SignerWithAddress;
@@ -49,12 +104,8 @@ describe.only("Liquidator", function () {
   before(async () => {
     [owner, addr1, ...addrs] = await ethers.getSigners();
     // Deploy comet
-
-    // const CometFactory = (await ethers.getContractFactory('CometHarness')) as CometHarness__factory;
-    // const Comet = await ethers.getContractFactory("CometDummy");
-    // comet = await CometFactory.deploy(ethers.utils.getAddress(USDC));
-    // await comet.deployed();
-    const { comet, users: [alice, bob] } = await makeProtocol();
+    // const { comet, users: [alice, bob] } = await makeProtocol();
+    comet = await makeProtocolAlt();
 
     // Deploy liquidator
     const Liquidator = await ethers.getContractFactory("Liquidator") as Liquidator__factory;
@@ -71,10 +122,19 @@ describe.only("Liquidator", function () {
     expect(await liquidator.swapRouter()).to.equal(swapRouter);
   });
 
-  it("Should execute flash swap", async () => {
+  it.only("Should execute flash swap", async () => {
+  // Set underwater account
+    await setTotalsBasic(comet, {
+      baseBorrowIndex: 2e15,
+      baseSupplyIndex: 2e15,
+      totalSupplyBase: 20000000000000n,
+      totalBorrowBase: 20000000000000n
+    });
+    await comet.setBasePrincipal(addr1.address, -(exp(1, 6)));
+
     const tx = await liquidator.initFlash({
       // XXX add accounts
-      accounts: [],
+      accounts: [addr1.address],
       pairToken: ethers.utils.getAddress(DAI),
       poolFee: 500,
       reversedPair: false,
