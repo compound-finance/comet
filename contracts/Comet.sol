@@ -822,7 +822,7 @@ contract Comet is CometMainInterface {
 
         if (asset == baseToken) {
             if (amount == type(uint256).max) {
-                amount = borrowBalanceOf(dst);
+                amount = presentValueBorrow(baseBorrowIndex, uint104(borrowBalanceOf(dst)));
             }
             return supplyBase(from, dst, safe104(amount));
         } else {
@@ -882,23 +882,26 @@ contract Comet is CometMainInterface {
     /**
      * @notice ERC20 transfer an amount of base token to dst
      * @param dst The recipient address
-     * @param amount The quantity to transfer
+     * @param amount The quantity to transfer (principal)
      * @return true
      */
     function transfer(address dst, uint amount) override external returns (bool) {
-        transferInternal(msg.sender, msg.sender, dst, baseToken, amount);
-        return true;
+        return transferFrom(msg.sender, dst, amount);
     }
 
     /**
      * @notice ERC20 transfer an amount of base token from src to dst, if allowed
      * @param src The sender address
      * @param dst The recipient address
-     * @param amount The quantity to transfer
+     * @param amount The quantity to transfer (principal)
      * @return true
      */
-    function transferFrom(address src, address dst, uint amount) override external returns (bool) {
-        transferInternal(msg.sender, src, dst, baseToken, amount);
+    function transferFrom(address src, address dst, uint amount) override public returns (bool) {
+        if (isTransferPaused()) revert Paused();
+        if (!hasPermission(src, msg.sender)) revert Unauthorized();
+        if (src == dst) revert NoSelfTransfer();
+
+        transferBase(src, dst, safe104(amount));
         return true;
     }
 
@@ -934,7 +937,7 @@ contract Comet is CometMainInterface {
 
         if (asset == baseToken) {
             if (amount == type(uint256).max) {
-                amount = balanceOf(src);
+                amount = presentValueSupply(baseSupplyIndex, uint104(balanceOf(src)));
             }
             return transferBase(src, dst, safe104(amount));
         } else {
@@ -1044,7 +1047,7 @@ contract Comet is CometMainInterface {
 
         if (asset == baseToken) {
             if (amount == type(uint256).max) {
-                amount = balanceOf(src);
+                amount = presentValueSupply(baseSupplyIndex, uint104(balanceOf(src)));
             }
             return withdrawBase(src, to, safe104(amount));
         } else {
@@ -1267,46 +1270,38 @@ contract Comet is CometMainInterface {
 
     /**
      * @notice Get the total number of tokens in circulation
-     * @dev Note: uses updated interest indices to calculate
-     * @return The supply of tokens
+     * @return The supply of tokens (principal)
      **/
     function totalSupply() override external view returns (uint256) {
-        (uint64 baseSupplyIndex_, ) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
-        return presentValueSupply(baseSupplyIndex_, totalSupplyBase);
+        return totalSupplyBase;
     }
 
     /**
      * @notice Get the total amount of debt
-     * @dev Note: uses updated interest indices to calculate
-     * @return The amount of debt
+     * @return The amount of debt (principal)
      **/
     function totalBorrow() override external view returns (uint256) {
-        (, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
-        return presentValueBorrow(baseBorrowIndex_, totalBorrowBase);
+        return totalBorrowBase;
     }
 
     /**
-     * @notice Query the current positive base balance of an account or zero
-     * @dev Note: uses updated interest indices to calculate
+     * @notice Query the current positive base principal of an account or zero
      * @param account The account whose balance to query
-     * @return The present day base balance magnitude of the account, if positive
+     * @return The base principal magnitude of the account, if positive
      */
     function balanceOf(address account) override public view returns (uint256) {
-        (uint64 baseSupplyIndex_, ) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         int104 principal = userBasic[account].principal;
-        return principal > 0 ? presentValueSupply(baseSupplyIndex_, unsigned104(principal)) : 0;
+        return principal > 0 ? uint104(principal) : 0;
     }
 
     /**
      * @notice Query the current negative base balance of an account or zero
-     * @dev Note: uses updated interest indices to calculate
      * @param account The account whose balance to query
-     * @return The present day base balance magnitude of the account, if negative
+     * @return The base principal magnitude of the account, if negative
      */
     function borrowBalanceOf(address account) override public view returns (uint256) {
-        (, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         int104 principal = userBasic[account].principal;
-        return principal < 0 ? presentValueBorrow(baseBorrowIndex_, unsigned104(-principal)) : 0;
+        return principal < 0 ? uint104(-principal) : 0;
     }
 
     /**
