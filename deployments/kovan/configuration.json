@@ -2,15 +2,18 @@
   "symbol": "📈USDC",
   "baseToken": "USDC",
   "baseTokenPriceFeed": "0x9211c6b3BF41A10F78539810Cf5c64e1BB78Ec60",
-  "reserveRate": 0.1,
   "borrowMin": "1000e6",
   "storeFrontPriceFactor": 0.5,
   "targetReserves": "5000000e6",
   "rates": {
-    "kink": 0.80,
-    "slopeLow": 0.04,
-    "slopeHigh": 0.10,
-    "base": 0.01
+    "supplyKink": 0.8,
+    "supplySlopeLow": 0.04,
+    "supplySlopeHigh": 0.4,
+    "supplyBase": 0,
+    "borrowKink": 0.8,
+    "borrowSlopeLow": 0.05,
+    "borrowSlopeHigh": 0.3,
+    "borrowBase": 0.01
   },
   "tracking": {
     "indexScale": "1e15",
@@ -55,7 +58,7 @@
       "priceFeed": "0x396c5E36DD0a0F5a5D33dae44368D4193f69a1F0",
       "decimals": "18",
       "borrowCF": 0.75,
-      "liquidateCF": 0.80,
+      "liquidateCF": 0.8,
       "liquidationFactor": 0.92,
       "supplyCap": "50000000e18"
     }
