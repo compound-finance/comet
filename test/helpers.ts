@@ -29,7 +29,6 @@ import {
   Configurator,
   Configurator__factory,
   CometHarnessInterface,
-  CometInterface,
 } from '../build/types';
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
