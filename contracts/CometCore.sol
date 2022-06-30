@@ -71,7 +71,7 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
      * @dev The positive present supply balance if positive or the negative borrow balance if negative
      *  Note This will overflow at 2^103/1e18=~10 trillion for assets with 18 decimals.
      */
-    function presentValue(int104 principalValue_) public view returns (int104) {
+    function presentValue(int104 principalValue_) internal view returns (int104) {
         if (principalValue_ >= 0) {
             return signed104(presentValueSupply(baseSupplyIndex, unsigned104(principalValue_)));
         } else {

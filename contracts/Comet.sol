@@ -822,7 +822,7 @@ contract Comet is CometMainInterface {
 
         if (asset == baseToken) {
             if (amount == type(uint256).max) {
-                amount = presentValueBorrow(baseBorrowIndex, uint104(borrowBalanceOf(dst)));
+                amount = presentBorrowBalanceOf(dst);
             }
             return supplyBase(from, dst, safe104(amount));
         } else {
@@ -937,7 +937,7 @@ contract Comet is CometMainInterface {
 
         if (asset == baseToken) {
             if (amount == type(uint256).max) {
-                amount = presentValueSupply(baseSupplyIndex, uint104(balanceOf(src)));
+                amount = presentBalanceOf(src);
             }
             return transferBase(src, dst, safe104(amount));
         } else {
@@ -1047,7 +1047,7 @@ contract Comet is CometMainInterface {
 
         if (asset == baseToken) {
             if (amount == type(uint256).max) {
-                amount = presentValueSupply(baseSupplyIndex, uint104(balanceOf(src)));
+                amount = presentBalanceOf(src);
             }
             return withdrawBase(src, to, safe104(amount));
         } else {
@@ -1273,15 +1273,28 @@ contract Comet is CometMainInterface {
      * @return The supply of tokens (principal)
      **/
     function totalSupply() override external view returns (uint256) {
-        return totalSupplyBase;
+        (uint64 baseSupplyIndex_, ) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
+        return presentValueSupply(baseSupplyIndex_, totalSupplyBase);
     }
 
     /**
-     * @notice Get the total amount of debt
-     * @return The amount of debt (principal)
+     * @notice Get the total present value of base in circulation
+     * @dev Note: uses updated interest indices to calculate
+     * @return The present value of tokens
      **/
-    function totalBorrow() override external view returns (uint256) {
-        return totalBorrowBase;
+    function presentTotalSupply() override external view returns (uint256) {
+        (uint64 baseSupplyIndex_, ) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
+        return presentValueSupply(baseSupplyIndex_, totalSupplyBase);
+    }
+
+    /**
+     * @notice Get the total present value of debt
+     * @dev Note: uses updated interest indices to calculate
+     * @return The present value of debt
+     **/
+    function presentTotalBorrow() override external view returns (uint256) {
+        (, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
+        return presentValueBorrow(baseBorrowIndex_, totalBorrowBase);
     }
 
     /**
@@ -1291,17 +1304,31 @@ contract Comet is CometMainInterface {
      */
     function balanceOf(address account) override public view returns (uint256) {
         int104 principal = userBasic[account].principal;
-        return principal > 0 ? uint104(principal) : 0;
+        return principal > 0 ? unsigned104(principal) : 0;
+    }
+
+    /**
+     * @notice Query the current positive base balance of an account or zero
+     * @dev Note: uses updated interest indices to calculate
+     * @param account The account whose balance to query
+     * @return The present day base balance magnitude of the account, if positive
+     */
+    function presentBalanceOf(address account) override public view returns (uint256) {
+        (uint64 baseSupplyIndex_, ) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
+        int104 principal = userBasic[account].principal;
+        return principal > 0 ? presentValueSupply(baseSupplyIndex_, unsigned104(principal)) : 0;
     }
 
     /**
      * @notice Query the current negative base balance of an account or zero
+     * @dev Note: uses updated interest indices to calculate
      * @param account The account whose balance to query
-     * @return The base principal magnitude of the account, if negative
+     * @return The present day base balance magnitude of the account, if negative
      */
-    function borrowBalanceOf(address account) override public view returns (uint256) {
+    function presentBorrowBalanceOf(address account) override public view returns (uint256) {
+        (, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         int104 principal = userBasic[account].principal;
-        return principal < 0 ? uint104(-principal) : 0;
+        return principal < 0 ? presentValueBorrow(baseBorrowIndex_, unsigned104(-principal)) : 0;
     }
 
     /**
