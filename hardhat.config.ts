@@ -122,18 +122,25 @@ const config: HardhatUserConfig = {
 
   networks: {
     hardhat: {
-      chainId: 1337,
-      loggingEnabled: !!process.env['LOGGING'],
-      gas: 12000000,
-      gasPrice: 'auto',
-      blockGasLimit: 12000000,
-      accounts: {
-        mnemonic: MNEMONIC || 'myth like bonus scare over problem client lizard pioneer submit female collect',
-      },
-      // this should be default commented out and only enabled during dev to allow partial testing
-      // XXX comment out by default once we've made the full contract fit
-      allowUnlimitedContractSize: true,
-    },
+      forking: {
+        url: `https://mainnet.infura.io/v3/${INFURA_KEY}`
+      }
+    }
+
+    // hardhat: {
+    //   chainId: 1337,
+    //   loggingEnabled: !!process.env['LOGGING'],
+    //   gas: 12000000,
+    //   gasPrice: 'auto',
+    //   blockGasLimit: 12000000,
+    //   accounts: {
+    //     mnemonic: MNEMONIC || 'myth like bonus scare over problem client lizard pioneer submit female collect',
+    //   },
+    //   // this should be default commented out and only enabled during dev to allow partial testing
+    //   // XXX comment out by default once we've made the full contract fit
+    //   allowUnlimitedContractSize: true,
+    // },
+
   },
 
   // See https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#multiple-api-keys-and-alternative-block-explorers
@@ -212,6 +219,6 @@ const config: HardhatUserConfig = {
   },
 };
 
-setupDefaultNetworkProviders(config);
+// setupDefaultNetworkProviders(config);
 
 export default config;
