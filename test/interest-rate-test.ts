@@ -9,8 +9,6 @@ const MINIMUM_PRECISION_WEI = 1e8; // 1e8 wei of precision
 const SECONDS_PER_YEAR = 31_536_000;
 
 function assertInterestRatesMatch(expectedRate, actualRate, precision = MINIMUM_PRECISION_WEI) {
-  console.log('expected ', expectedRate)
-  console.log('actual ', actualRate)
   expect((actualRate.sub(expectedRate)).abs()).lte(precision);
 }
 
