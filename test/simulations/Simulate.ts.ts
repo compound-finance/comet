@@ -1,4 +1,4 @@
-import { Actor } from "./Actor";
+import { Actor } from "./actors/Actor";
 import { Market } from "./Market";
 import { World } from "./World";
 
