@@ -67,11 +67,14 @@ export type ProtocolOpts = {
   extensionDelegate?: CometExt;
   base?: string;
   reward?: string;
-  kink?: Numeric;
-  interestRateBase?: Numeric;
-  interestRateSlopeLow?: Numeric;
-  interestRateSlopeHigh?: Numeric;
-  reserveRate?: Numeric;
+  supplyKink?: Numeric;
+  supplyInterestRateBase?: Numeric;
+  supplyInterestRateSlopeLow?: Numeric;
+  supplyInterestRateSlopeHigh?: Numeric;
+  borrowKink?: Numeric;
+  borrowInterestRateBase?: Numeric;
+  borrowInterestRateSlopeLow?: Numeric;
+  borrowInterestRateSlopeHigh?: Numeric;
   storeFrontPriceFactor?: Numeric;
   trackingIndexScale?: Numeric;
   baseTrackingSupplySpeed?: Numeric;
@@ -232,11 +235,14 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const users = signers.slice(2); // guaranteed to not be governor or pause guardian
   const base = opts.base || 'USDC';
   const reward = opts.reward || 'COMP';
-  const kink = dfn(opts.kink, exp(0.8, 18));
-  const perYearInterestRateBase = dfn(opts.interestRateBase, exp(0.005, 18));
-  const perYearInterestRateSlopeLow = dfn(opts.interestRateSlopeLow, exp(0.1, 18));
-  const perYearInterestRateSlopeHigh = dfn(opts.interestRateSlopeHigh, exp(3, 18));
-  const reserveRate = dfn(opts.reserveRate, exp(0.1, 18));
+  const supplyKink = dfn(opts.supplyKink, exp(0.8, 18));
+  const supplyPerYearInterestRateBase = dfn(opts.supplyInterestRateBase, exp(0.0, 18));
+  const supplyPerYearInterestRateSlopeLow = dfn(opts.supplyInterestRateSlopeLow, exp(0.05, 18));
+  const supplyPerYearInterestRateSlopeHigh = dfn(opts.supplyInterestRateSlopeHigh, exp(2, 18));
+  const borrowKink = dfn(opts.borrowKink, exp(0.8, 18));
+  const borrowPerYearInterestRateBase = dfn(opts.borrowInterestRateBase, exp(0.005, 18));
+  const borrowPerYearInterestRateSlopeLow = dfn(opts.borrowInterestRateSlopeLow, exp(0.1, 18));
+  const borrowPerYearInterestRateSlopeHigh = dfn(opts.borrowInterestRateSlopeHigh, exp(3, 18));
   const storeFrontPriceFactor = dfn(opts.storeFrontPriceFactor, ONE);
   const trackingIndexScale = opts.trackingIndexScale || exp(1, 15);
   const baseTrackingSupplySpeed = dfn(opts.baseTrackingSupplySpeed, trackingIndexScale);
@@ -274,11 +280,14 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     extensionDelegate: extensionDelegate.address,
     baseToken: tokens[base].address,
     baseTokenPriceFeed: priceFeeds[base].address,
-    kink,
-    perYearInterestRateBase,
-    perYearInterestRateSlopeLow,
-    perYearInterestRateSlopeHigh,
-    reserveRate,
+    supplyKink,
+    supplyPerYearInterestRateBase,
+    supplyPerYearInterestRateSlopeLow,
+    supplyPerYearInterestRateSlopeHigh,
+    borrowKink,
+    borrowPerYearInterestRateBase,
+    borrowPerYearInterestRateSlopeLow,
+    borrowPerYearInterestRateSlopeHigh,
     storeFrontPriceFactor,
     trackingIndexScale,
     baseTrackingSupplySpeed,
@@ -359,11 +368,14 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   await cometProxy.deployed();
 
   // Derive the rest of the Configurator configuration values
-  const kink = await comet.kink();
-  const perYearInterestRateBase = dfn(opts.interestRateBase, exp(0.005, 18));
-  const perYearInterestRateSlopeLow = dfn(opts.interestRateSlopeLow, exp(0.1, 18));
-  const perYearInterestRateSlopeHigh = dfn(opts.interestRateSlopeHigh, exp(3, 18));
-  const reserveRate = await comet.reserveRate();
+  const supplyKink = dfn(opts.supplyKink, exp(0.8, 18));
+  const supplyPerYearInterestRateBase = dfn(opts.supplyInterestRateBase, exp(0.0, 18));
+  const supplyPerYearInterestRateSlopeLow = dfn(opts.supplyInterestRateSlopeLow, exp(0.05, 18));
+  const supplyPerYearInterestRateSlopeHigh = dfn(opts.supplyInterestRateSlopeHigh, exp(2, 18));
+  const borrowKink = dfn(opts.borrowKink, exp(0.8, 18));
+  const borrowPerYearInterestRateBase = dfn(opts.borrowInterestRateBase, exp(0.005, 18));
+  const borrowPerYearInterestRateSlopeLow = dfn(opts.borrowInterestRateSlopeLow, exp(0.1, 18));
+  const borrowPerYearInterestRateSlopeHigh = dfn(opts.borrowInterestRateSlopeHigh, exp(3, 18));
   const storeFrontPriceFactor = await comet.storeFrontPriceFactor();
   const trackingIndexScale = await comet.trackingIndexScale();
   const baseTrackingSupplySpeed = await comet.baseTrackingSupplySpeed();
@@ -387,11 +399,14 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     extensionDelegate: extensionDelegate.address,
     baseToken: tokens[base].address,
     baseTokenPriceFeed: priceFeeds[base].address,
-    kink,
-    perYearInterestRateBase,
-    perYearInterestRateSlopeLow,
-    perYearInterestRateSlopeHigh,
-    reserveRate,
+    supplyKink,
+    supplyPerYearInterestRateBase,
+    supplyPerYearInterestRateSlopeLow,
+    supplyPerYearInterestRateSlopeHigh,
+    borrowKink,
+    borrowPerYearInterestRateBase,
+    borrowPerYearInterestRateSlopeLow,
+    borrowPerYearInterestRateSlopeHigh,
     storeFrontPriceFactor,
     trackingIndexScale,
     baseTrackingSupplySpeed,
@@ -510,7 +525,7 @@ export function objectify(arrayObject) {
   return obj;
 }
 
-export async function baseBalanceOf(comet: CometInterface, account: string): Promise<bigint> {
+export async function baseBalanceOf(comet: CometHarnessInterface, account: string): Promise<bigint> {
   const balanceOf = await comet.balanceOf(account);
   const borrowBalanceOf = await comet.borrowBalanceOf(account);
   return balanceOf.sub(borrowBalanceOf).toBigInt();
