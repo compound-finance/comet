@@ -118,11 +118,15 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     /// @param params The parameters necessary for flash and the callback, passed in as FlashParams
     /// @notice Calls the pools flash function with data needed in `uniswapV3FlashCallback`
     function initFlash(FlashParams memory params) external {
+        console.log("initFlash called");
         // Absorb Comet underwater accounts
         comet.absorb(address(this), params.accounts);
 
+        console.log("absorb finished");
+
         uint256 baseAmount = 0;
         uint8 numAssets = comet.numAssets();
+        console.log("numAssets %", numAssets);
         uint256[] memory assetBaseAmounts = new uint256[](numAssets);
         address[] memory cometAssets = new address[](numAssets);
         for (uint8 i = 0; i < numAssets; i++) {
@@ -134,12 +138,21 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             baseAmount += assetBaseAmount;
         }
 
+
         address poolToken0 = params.reversedPair ? comet.baseToken(): params.pairToken;
         address poolToken1 = params.reversedPair ? params.pairToken : comet.baseToken();
 
         PoolAddress.PoolKey memory poolKey =
             PoolAddress.PoolKey({token0: poolToken0, token1: poolToken1, fee: params.poolFee});
         IUniswapV3Pool pool = IUniswapV3Pool(PoolAddress.computeAddress(factory, poolKey));
+
+        console.log("baseAmount: %", baseAmount);
+        console.log("params.poolFee: %", params.poolFee);
+        console.log("poolToken0 %", poolToken0);
+        console.log("poolToken1 %", poolToken1);
+        console.log("Pool address(pool): %s", address(pool));
+
+        console.log("address(factory): %s", address(factory));
 
         // recipient of borrowed amounts
         // amount of token0 requested to borrow, 0 for non reversed pair
@@ -150,11 +163,11 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         // recipient of flash should be THIS contract
         pool.flash(
             address(this),
-            params.reversedPair ? baseAmount : 0,
-            params.reversedPair ? 0 : baseAmount,
+            0,
+            0,
             abi.encode(
                 FlashCallbackData({
-                    amount: baseAmount,
+                    amount: 5000000,
                     payer: msg.sender,
                     poolKey: poolKey,
                     assets: cometAssets,
