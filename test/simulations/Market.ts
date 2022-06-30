@@ -1,5 +1,5 @@
-import { CometHarnessInterface, FaucetToken } from "../../build/types";
-import { defactor, exp, mulPrice, Protocol } from "../helpers";
+import { CometHarnessInterface, FaucetToken } from '../../build/types';
+import { defactor, exp, mulPrice, Protocol } from '../helpers';
 
 export type Rates = {
   utilization: number;
@@ -21,7 +21,7 @@ export class Market {
     this.protocol = protocol;
     this.comet = protocol.comet;
     this.baseAsset = this.protocol.tokens['USDC'];
-    this.collateralAsset = this.protocol.tokens['WETH']
+    this.collateralAsset = this.protocol.tokens['WETH'];
     this.rewardAsset = this.protocol.tokens['COMP'];
     // params
   }

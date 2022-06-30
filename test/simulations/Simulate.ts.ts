@@ -1,6 +1,6 @@
-import { Actor } from "./actors/Actor";
-import { Market } from "./Market";
-import { World } from "./World";
+import { Actor } from './actors/Actor';
+import { Market } from './Market';
+import { World } from './World';
 
 /* Randomize array in-place using Durstenfeld shuffle algorithm */
 function shuffle(arr) {
@@ -14,7 +14,7 @@ async function snapshot(world: World, market: Market) {
   return {
     world: await world.prevailingRates(),
     market: { ...(await market.currentRates()), ...(await market.currentTvl()) },
-  }
+  };
 }
 
 export async function simulate(world: World, market: Market, actors: Actor[], runs: number) {

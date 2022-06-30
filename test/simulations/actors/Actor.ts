@@ -1,9 +1,9 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumberish } from "ethers";
-import { FaucetToken } from "../../../build/types";
-import { exp, wait } from "../../helpers";
-import { Market } from "../Market";
-import { World } from "../World";
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { BigNumberish } from 'ethers';
+import { FaucetToken } from '../../../build/types';
+import { wait } from '../../helpers';
+import { Market } from '../Market';
+import { World } from '../World';
 
 export abstract class Actor {
   signer: SignerWithAddress;

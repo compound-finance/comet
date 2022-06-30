@@ -1,10 +1,10 @@
-import { exp, min } from "../../helpers";
-import { Actor } from "./Actor";
-import { Market } from "../Market";
-import { World } from "../World";
+import { exp, min } from '../../helpers';
+import { Actor } from './Actor';
+import { Market } from '../Market';
+import { World } from '../World';
 
 export class Supplier extends Actor {
-  async act(world: World, market: Market, t: number) {
+  async act(world: World, market: Market, _t: number) {
     await this.updateDesiredRates(world);
     const rates = await market.currentRates();
 
