@@ -57,9 +57,9 @@ describe.only('run simulation', function () {
     }
 
     // Seed market with initial supply and borrow positions
-    const initialialSupplier = actors[0];
+    const initialSupplier = actors[0];
     const initialBorrower = actors[numSuppliers];
-    await initialialSupplier.supply(market, market.baseAsset, exp(10_000_000, 6));
+    await initialSupplier.supply(market, market.baseAsset, exp(10_000_000, 6));
     await initialBorrower.borrow(market, market.baseAsset, exp(8_000_000, 6));
 
     const snapshots = await simulate(world, market, actors.slice(2), 20);
