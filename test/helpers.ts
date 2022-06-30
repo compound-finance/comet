@@ -141,6 +141,9 @@ export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
   return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
 }
 
+export const max = (...args) => args.reduce((m, e) => e > m ? e : m);
+export const min = (...args) => args.reduce((m, e) => e < m ? e : m);
+
 export function factor(f: number): bigint {
   return exp(f, factorDecimals);
 }

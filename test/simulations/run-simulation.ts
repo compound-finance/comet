@@ -6,8 +6,9 @@ import { simulate } from './Simulate.ts';
 import { World } from './World';
 import { Borrower } from './actors/Borrower';
 
+// XXX doesn't have to be under the unit test directory. can be a standalone script
 describe.only('run simulation', function () {
-  it('simulation with multiple actors', async () => {
+  it('simulation with 15 actors', async () => {
     const params = {
       interestRateBase: exp(0.005, 18),
       interestRateSlopeLow: exp(0.3, 18),
@@ -39,11 +40,13 @@ describe.only('run simulation', function () {
     const world = new World();
     const market = new Market(protocol);
     let actors: Actor[] = [];
+    let numSuppliers = 10;
+    let numBorrowers = 5;
     // XXX alternative: we can manually create each actor to provide them with different params
     // For now, let's keep it simple: ~10 suppliers and ~5 borrowers
-    for (let i = 0; i < 15; i++) { // XXX input should take # of actors
+    for (let i = 0; i < numSuppliers + numBorrowers; i++) { // XXX input should take # of actors
       let actor;
-      if (i <= 10) actor = new Supplier(users[i]);
+      if (i < numSuppliers) actor = new Supplier(users[i]);
       else actor = new Borrower(users[i]);
       actors.push(actor);
       // Seed actor with base
@@ -54,12 +57,14 @@ describe.only('run simulation', function () {
     }
 
     // Seed market with initial supply and borrow positions
-    // Alice (supplier) and Bob (borrower) will not act for the rest of the simulation
-    const [alice, bob] = actors;
-    await alice.supply(market, market.baseAsset, exp(10_000_000, 6));
-    await bob.borrow(market, market.baseAsset, exp(8_000_000, 6));
+    const initialialSupplier = actors[0];
+    const initialBorrower = actors[numSuppliers];
+    await initialialSupplier.supply(market, market.baseAsset, exp(10_000_000, 6));
+    await initialBorrower.borrow(market, market.baseAsset, exp(8_000_000, 6));
 
     const snapshots = await simulate(world, market, actors.slice(2), 20);
     snapshots.forEach(s => console.log(s));
+
+    // XXX add some data visualization for the snapshots
   });
 });
