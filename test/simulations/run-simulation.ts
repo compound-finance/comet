@@ -9,10 +9,16 @@ import { Borrower } from './actors/Borrower';
 // XXX doesn't have to be under the unit test directory. can be a standalone script
 describe.only('run simulation', function () {
   it('simulation with 15 actors', async () => {
+    // XXX we should toggle the IR params to see which combination gives the highest equilibrium utilization and total supply
     const params = {
-      interestRateBase: exp(0.005, 18),
-      interestRateSlopeLow: exp(0.3, 18),
-      interestRateSlopeHigh: exp(3, 18),
+      supplyKink: exp(0.8, 18),
+      supplyInterestRateBase: exp(0, 18),
+      supplyInterestRateSlopeLow: exp(0.04, 18),
+      supplyInterestRateSlopeHigh: exp(0.4, 18),
+      borrowKink: exp(0.8, 18),
+      borrowInterestRateBase: exp(0.01, 18),
+      borrowInterestRateSlopeLow: exp(0.05, 18),
+      borrowInterestRateSlopeHigh: exp(0.3, 18),
       baseTrackingBorrowSpeed: exp(0.005092592593, 15), // 440 COMP/day
       baseBorrowMin: 0n,
       assets: {
