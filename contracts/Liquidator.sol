@@ -97,29 +97,36 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             uint256 assetBalanceAfter = ERC20(asset).balanceOf(address(this));
             console.log("uniswapV3FlashCallback 3.5");
             uint256 collateralAmount = assetBalanceAfter - assetBalanceBefore;
+            console.log("collateralAmount: %s", collateralAmount);
             console.log("uniswapV3FlashCallback 3.6");
+
+            TransferHelper.safeApprove(asset, address(swapRouter), collateralAmount);
+
             uint256 amountOut =
                 swapRouter.exactInputSingle(
                     ISwapRouter.ExactInputSingleParams({
                         tokenIn: asset,
                         tokenOut: comet.baseToken(),
-                        fee: poolFee,
+                        fee: 100,
                         recipient: address(this),
                         deadline: block.timestamp,
                         amountIn: collateralAmount,
                         // XXX is baseAmount a good value to pass here?
-                        amountOutMinimum: baseAmount,
+                        amountOutMinimum: 0,
                         sqrtPriceLimitX96: 0
                     })
                 );
             console.log("uniswapV3FlashCallback 3.7");
+            console.log("amountOut: %s", amountOut);
             totalAmountOut += amountOut;
         }
         console.log("uniswapV3FlashCallback 4");
 
         uint256 fee = decoded.reversedPair? fee0 : fee1;
+        console.log("fee: %s", fee);
 
         console.log("uniswapV3FlashCallback 5");
+        console.log("totalAmountOut: %s", totalAmountOut);
 
         payback(decoded.amount, fee, comet.baseToken(), totalAmountOut, decoded.payer);
     }
@@ -131,7 +138,14 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         uint256 amountOut,
         address payer
     ) internal {
+        console.log("payback fee: %", fee);
+        console.log("amount: %s", amount);
+        console.log("amountOut: %s", amountOut);
+        console.log("payer: %s", payer);
+        console.log("token: %s", token);
         uint256 amountOwed = LowGasSafeMath.add(amount, fee);
+
+        console.log("amountOwed: %s", amountOwed);
 
         TransferHelper.safeApprove(token, address(this), amountOwed);
 
@@ -140,6 +154,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         // if profitable, pay profits to payer
         if (amountOut > amountOwed) {
             uint256 profit = LowGasSafeMath.sub(amountOut, amountOwed);
+
+            console.log("profit: %s", profit);
 
             TransferHelper.safeApprove(token, address(this), profit);
             pay(token, address(this), payer, profit);
@@ -164,11 +180,23 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             // console.log("quotePrice: %s", quotePrice);
             uint256 collateralBalance = comet.collateralBalanceOf(address(comet), asset);
             // console.log("collateralBalance: %s", collateralBalance);
-            uint256 assetBaseAmount = comet.collateralBalanceOf(address(comet), asset) * quotePrice / 1e30; // PRICE_SCALE + 1e12
+            /*
+                quoteCollateral = amount of DAI you get for 1 USDC
+                collateralBalance = Comet's balance of DAI
+                price = amount of USDC required to buy all DAI
+
+                1 / quotePrice = x / collateralBalance
+                (1 / quotePrice) * collateralBalance = x
+            */
+            // uint256 assetBaseAmount = comet.collateralBalanceOf(address(comet), asset) * quotePrice / 1e30; // PRICE_SCALE + 1e12
             // console.log("assetBaseAmount: %s", assetBaseAmount);
+            uint256 assetBaseAmount = ((1e6 * 1e18 / quotePrice) * collateralBalance) / 1e18;
+            console.log("assetBaseAmount: %s", assetBaseAmount);
             assetBaseAmounts[i] = assetBaseAmount;
             baseAmount += assetBaseAmount;
         }
+
+        console.log("baseAmount: %s", baseAmount);
 
         address poolToken0 = params.reversedPair ? comet.baseToken(): params.pairToken;
         address poolToken1 = params.reversedPair ? params.pairToken : comet.baseToken();

@@ -1098,6 +1098,8 @@ contract Comet is CometMainInterface {
         console.log("withdrawCollateral 0");
         uint128 srcCollateral = userCollateral[src][asset].balance;
         console.log("withdrawCollateral 1");
+        console.log("srcCollateral: %s", srcCollateral);
+        console.log("amount: %s", amount);
         uint128 srcCollateralNew = srcCollateral - amount;
 
         console.log("withdrawCollateral 2");
