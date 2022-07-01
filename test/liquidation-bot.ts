@@ -1,6 +1,6 @@
 import { event, expect, exp, factor, defaultAssets, makeProtocol, mulPrice, portfolio, wait, setTotalsBasic } from './helpers';
 
-import { ethers } from "hardhat";
+import hre, { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   CometExt,
@@ -13,7 +13,11 @@ import {
   Liquidator__factory
 } from '../build/types';
 
+import daiAbi from './dai-abi';
+
 // mainnet
+// export const DAI_WHALE = "0x6b175474e89094c44da98b954eedeac495271d0f";
+export const DAI_WHALE = "0x7a8edc710ddeadddb0b539de83f3a306a621e823";
 export const USDC_WHALE = "0xA929022c9107643515F5c777cE9a910F0D1e490C";
 export const WETH_WHALE = "0x0F4ee9631f4be0a63756515141281A3E2B293Bbe";
 export const WBTC = "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599";
@@ -54,7 +58,7 @@ async function makeProtocolAlt() {
     baseTrackingBorrowSpeed: 1000000000000000n,
     baseMinForRewards: 1000000n,
     baseBorrowMin: 1000000n,
-    targetReserves: 0,
+    targetReserves: 1000000000000000000n,
     assetConfigs: [
       {
         asset: DAI,
@@ -130,7 +134,30 @@ describe.only("Liquidator", function () {
       totalSupplyBase: 20000000000000n,
       totalBorrowBase: 20000000000000n
     });
-    await comet.setBasePrincipal(addr1.address, -(exp(1, 6)));
+
+    await comet.setCollateralBalance(addr1.address, DAI, exp(100, 18));
+    await comet.setBasePrincipal(addr1.address, -(exp(200, 6)));
+
+    await hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [DAI_WHALE],
+    });
+    let daiWhaleSigner = await ethers.getSigner(DAI_WHALE);
+
+    const mockDai = new ethers.Contract(DAI, daiAbi, owner);
+
+    console.log(`await mockDai.balanceOf(DAI_WHALE): ${await mockDai.balanceOf(DAI_WHALE)}`);
+    console.log(`await mockDai.balanceOf(comet.address): ${await mockDai.balanceOf(comet.address)}`);
+    // await mockDai.mint(comet.address, 1234567);
+    await mockDai.connect(daiWhaleSigner).transfer(comet.address, 100000000000000000000n);
+
+    console.log(`await mockDai.balanceOf(DAI_WHALE): ${await mockDai.balanceOf(DAI_WHALE)}`);
+    console.log(`await mockDai.balanceOf(comet.address): ${await mockDai.balanceOf(comet.address)}`);
+
+    // const filter = mockDai.filters.Transfer(ethers.constants.AddressZero);
+    // console.log(
+    //   await mockDai.queryFilter(filter, 14900000)
+    // );
 
     const tx = await liquidator.initFlash({
       // XXX add accounts
@@ -140,6 +167,6 @@ describe.only("Liquidator", function () {
       reversedPair: false,
     });
 
-    expect(tx.hash).to.be.not.null;
+    // expect(tx.hash).to.be.not.null;
   });
 });
