@@ -67,7 +67,7 @@ async function makeProtocolAlt() {
         decimals: 18,
         borrowCollateralFactor: 999999999999999999n,
         liquidateCollateralFactor: 1000000000000000000n,
-        liquidationFactor: 1000000000000000000n,
+        liquidationFactor: 900000000000000000n,
         supplyCap: 1000000000000000000000000n
       },
       // {
@@ -139,9 +139,10 @@ describe.only("Liquidator", function () {
     console.log(`owner.address: ${owner.address}`);
     console.log(`liquidator.address: ${liquidator.address}`);
 
-
     const mockDai = new ethers.Contract(DAI, daiAbi, owner);
     const mockUSDC = new ethers.Contract(USDC, usdcAbi, owner);
+
+    console.log(`mockUsdc.balanceOf(liquidator.address): ${await mockUSDC.balanceOf(liquidator.address)}`);
 
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
@@ -163,8 +164,10 @@ describe.only("Liquidator", function () {
     // await comet.setCollateralBalance(addr1.address, DAI, exp(120, 18));
     await mockDai.connect(daiWhaleSigner).transfer(addr1.address, 200000000000000000000n);
     await mockDai.connect(addr1).approve(comet.address, 120000000000000000000n);
-    await comet.connect(addr1).supply(DAI, 120000000000000000000n);
+    await comet.connect(addr1).supply(DAI, 120000000000000000000n); //
     await comet.setBasePrincipal(addr1.address, -(exp(200, 6)));
+
+    console.log(`BEFORE mockUSDC.balanceOf(owner.address): ${await mockUSDC.balanceOf(owner.address)}`);
 
     const tx = await liquidator.connect(owner).initFlash({
       // XXX add accounts
@@ -174,6 +177,8 @@ describe.only("Liquidator", function () {
       reversedPair: false,
     });
 
-    // expect(tx.hash).to.be.not.null;
+    console.log(`AFTER mockUSDC.balanceOf(owner.address): ${await mockUSDC.balanceOf(owner.address)}`);
+
+    expect(tx.hash).to.be.not.null;
   });
 });
