@@ -14,6 +14,7 @@ import {
 } from '../build/types';
 
 import daiAbi from './dai-abi';
+import usdcAbi from './usdc-abi';
 
 // mainnet
 // export const DAI_WHALE = "0x6b175474e89094c44da98b954eedeac495271d0f";
@@ -67,7 +68,7 @@ async function makeProtocolAlt() {
         borrowCollateralFactor: 999999999999999999n,
         liquidateCollateralFactor: 1000000000000000000n,
         liquidationFactor: 1000000000000000000n,
-        supplyCap: 100000000000000000000n
+        supplyCap: 1000000000000000000000000n
       },
       // {
       //   asset: '0x162700d1613DfEC978032A909DE02643bC55df1A',
@@ -135,8 +136,12 @@ describe.only("Liquidator", function () {
       totalBorrowBase: 20000000000000n
     });
 
-    await comet.setCollateralBalance(addr1.address, DAI, exp(100, 18));
-    await comet.setBasePrincipal(addr1.address, -(exp(200, 6)));
+    console.log(`owner.address: ${owner.address}`);
+    console.log(`liquidator.address: ${liquidator.address}`);
+
+
+    const mockDai = new ethers.Contract(DAI, daiAbi, owner);
+    const mockUSDC = new ethers.Contract(USDC, usdcAbi, owner);
 
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
@@ -144,22 +149,24 @@ describe.only("Liquidator", function () {
     });
     let daiWhaleSigner = await ethers.getSigner(DAI_WHALE);
 
-    const mockDai = new ethers.Contract(DAI, daiAbi, owner);
+    await hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [USDC_WHALE],
+    });
+    let usdcWhaleSigner = await ethers.getSigner(USDC_WHALE);
 
-    console.log(`await mockDai.balanceOf(DAI_WHALE): ${await mockDai.balanceOf(DAI_WHALE)}`);
-    console.log(`await mockDai.balanceOf(comet.address): ${await mockDai.balanceOf(comet.address)}`);
-    // await mockDai.mint(comet.address, 1234567);
-    await mockDai.connect(daiWhaleSigner).transfer(comet.address, 100000000000000000000n);
+    await mockDai.connect(daiWhaleSigner).transfer(comet.address, 200000000000000000000n);
+    await mockUSDC.connect(usdcWhaleSigner).transfer(owner.address, 300000000n); // 300e6
 
-    console.log(`await mockDai.balanceOf(DAI_WHALE): ${await mockDai.balanceOf(DAI_WHALE)}`);
-    console.log(`await mockDai.balanceOf(comet.address): ${await mockDai.balanceOf(comet.address)}`);
+    console.log("transferring dai to addr1");
+    console.log(`await mockDai.balanceOf(daiWhaleSigner.address): ${await mockDai.balanceOf(daiWhaleSigner.address)}`);
+    // await comet.setCollateralBalance(addr1.address, DAI, exp(120, 18));
+    await mockDai.connect(daiWhaleSigner).transfer(addr1.address, 200000000000000000000n);
+    await mockDai.connect(addr1).approve(comet.address, 120000000000000000000n);
+    await comet.connect(addr1).supply(DAI, 120000000000000000000n);
+    await comet.setBasePrincipal(addr1.address, -(exp(200, 6)));
 
-    // const filter = mockDai.filters.Transfer(ethers.constants.AddressZero);
-    // console.log(
-    //   await mockDai.queryFilter(filter, 14900000)
-    // );
-
-    const tx = await liquidator.initFlash({
+    const tx = await liquidator.connect(owner).initFlash({
       // XXX add accounts
       accounts: [addr1.address],
       pairToken: ethers.utils.getAddress(DAI),
