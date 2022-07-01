@@ -5,6 +5,9 @@ import "./CometMainInterface.sol";
 import "./ERC20.sol";
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
+/* DELETE */
+import "hardhat/console.sol";
+
 /**
  * @title Compound's Comet Contract
  * @notice An efficient monolithic money market protocol
@@ -1196,21 +1199,34 @@ contract Comet is CometMainInterface {
      * @param recipient The recipient address
      */
     function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) override external {
+        console.log("buyCollateral 0");
         if (isBuyPaused()) revert Paused();
+        console.log("buyCollateral 1");
 
         int reserves = getReserves();
+
+        console.log("reserves:");
+        console.logInt(reserves);
+
+        console.log("targetReserves:");
+        console.log(targetReserves);
+
         if (reserves >= 0 && uint(reserves) >= targetReserves) revert NotForSale();
 
+        console.log("buyCollateral 2");
         // Note: Re-entrancy can skip the reserves check above on a second buyCollateral call.
         doTransferIn(baseToken, msg.sender, baseAmount);
 
+        console.log("buyCollateral 3");
         uint collateralAmount = quoteCollateral(asset, baseAmount);
         if (collateralAmount < minAmount) revert TooMuchSlippage();
 
+        console.log("buyCollateral 4");
         // Note: Pre-transfer hook can re-enter buyCollateral with a stale collateral ERC20 balance.
         //       This is a problem if quoteCollateral derives its discount from the collateral ERC20 balance.
         withdrawCollateral(address(this), recipient, asset, safe128(collateralAmount));
 
+        console.log("buyCollateral 5");
         emit BuyCollateral(msg.sender, asset, baseAmount, collateralAmount);
     }
 
