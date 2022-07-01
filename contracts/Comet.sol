@@ -589,7 +589,6 @@ contract Comet is CometMainInterface {
 
     /**
      * @dev The change in principal broken into repay and supply amounts
-     * @dev Note: The assumption `newPrincipal >= oldPrincipal` MUST be true
      */
     function repayAndSupplyAmount(int104 oldPrincipal, int104 newPrincipal) internal pure returns (uint104, uint104) {
         // If the new principal is less than the old principal, then no amount has been repaid or supplied.
@@ -606,7 +605,6 @@ contract Comet is CometMainInterface {
 
     /**
      * @dev The change in principal broken into withdraw and borrow amounts
-     * @dev Note: The assumption `oldPrincipal >= newPrincipal` MUST be true
      */
     function withdrawAndBorrowAmount(int104 oldPrincipal, int104 newPrincipal) internal pure returns (uint104, uint104) {
         // If the new principal is greater than the old principal, then no amount has been withdrawn or borrowed.
