@@ -54,42 +54,50 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         uint256 fee1,
         bytes calldata data
     ) external override {
-        console.log("Inside flashback");
         FlashCallbackData memory decoded = abi.decode(data, (FlashCallbackData));
 
-        console.log("decoded:");
-        console.log(decoded.amount);
+        address token0 = decoded.poolKey.token0;
+        address token1 = decoded.poolKey.token1;
 
-        console.log(0);
+        console.log("token0: %s", token0);
+        console.log("token1: %s", token1);
+
+        // TransferHelper.safeApprove(token0, address(swapRouter), decoded.amount0);
+        // TransferHelper.safeApprove(token1, address(swapRouter), decoded.amount);
+
+        console.log("uniswapV3FlashCallback 0");
 
         CallbackValidation.verifyCallback(factory, decoded.poolKey);
 
-        console.log(1);
+        console.log("uniswapV3FlashCallback 1");
 
         address[] memory assets = decoded.assets;
 
-        console.log(2);
+        console.log("uniswapV3FlashCallback 2");
 
         uint256 totalAmountOut = 0;
         for (uint i = 0; i < assets.length; i++) {
-            console.log(3);
+            console.log("uniswapV3FlashCallback 3");
             address asset = assets[i];
             uint256 baseAmount = decoded.baseAmounts[i];
             console.log("baseAmount: %s", baseAmount);
 
-            console.log("3.1");
+            // XXX approve everything all at once
+            ERC20(comet.baseToken()).approve(address(comet), baseAmount);
+
+            console.log("uniswapV3FlashCallback 3.1");
             // XXX Figure out fee for all asset pools
             uint24 poolFee = 500;
 
-            console.log("3.2");
+            console.log("uniswapV3FlashCallback 3.2");
             uint256 assetBalanceBefore = ERC20(asset).balanceOf(address(this));
-            console.log("3.3");
+            console.log("uniswapV3FlashCallback 3.3");
             comet.buyCollateral(asset, 0, baseAmount, address(this));
-            console.log("3.4");
+            console.log("uniswapV3FlashCallback 3.4");
             uint256 assetBalanceAfter = ERC20(asset).balanceOf(address(this));
-            console.log("3.5");
+            console.log("uniswapV3FlashCallback 3.5");
             uint256 collateralAmount = assetBalanceAfter - assetBalanceBefore;
-            console.log("3.6");
+            console.log("uniswapV3FlashCallback 3.6");
             uint256 amountOut =
                 swapRouter.exactInputSingle(
                     ISwapRouter.ExactInputSingleParams({
@@ -104,14 +112,14 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
                         sqrtPriceLimitX96: 0
                     })
                 );
-            console.log("3.7");
+            console.log("uniswapV3FlashCallback 3.7");
             totalAmountOut += amountOut;
         }
-        console.log(4);
+        console.log("uniswapV3FlashCallback 4");
 
         uint256 fee = decoded.reversedPair? fee0 : fee1;
 
-        console.log(5);
+        console.log("uniswapV3FlashCallback 5");
 
         payback(decoded.amount, fee, comet.baseToken(), totalAmountOut, decoded.payer);
     }
@@ -144,26 +152,23 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         // Absorb Comet underwater accounts
         comet.absorb(address(this), params.accounts);
 
-
         uint256 baseAmount = 0;
         uint8 numAssets = comet.numAssets();
         uint256[] memory assetBaseAmounts = new uint256[](numAssets);
         address[] memory cometAssets = new address[](numAssets);
         for (uint8 i = 0; i < numAssets; i++) {
             address asset = comet.getAssetInfo(i).asset;
-            console.log("asset: %s", asset);
+            // console.log("asset: %s", asset);
             cometAssets[i] = asset;
             uint256 quotePrice = comet.quoteCollateral(asset, 1 * comet.baseScale());
-            console.log("quotePrice: %s", quotePrice);
+            // console.log("quotePrice: %s", quotePrice);
             uint256 collateralBalance = comet.collateralBalanceOf(address(comet), asset);
-            console.log("collateralBalance: %s", collateralBalance);
-            // XXX this calculation is probably incorrect
-            uint256 assetBaseAmount = comet.collateralBalanceOf(address(comet), asset) * quotePrice;
-            console.log("assetBaseAmount: %s", assetBaseAmount);
+            // console.log("collateralBalance: %s", collateralBalance);
+            uint256 assetBaseAmount = comet.collateralBalanceOf(address(comet), asset) * quotePrice / 1e30; // PRICE_SCALE + 1e12
+            // console.log("assetBaseAmount: %s", assetBaseAmount);
             assetBaseAmounts[i] = assetBaseAmount;
             baseAmount += assetBaseAmount;
         }
-
 
         address poolToken0 = params.reversedPair ? comet.baseToken(): params.pairToken;
         address poolToken1 = params.reversedPair ? params.pairToken : comet.baseToken();
@@ -181,11 +186,11 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         // recipient of flash should be THIS contract
         pool.flash(
             address(this),
-            10,
-            10,
+            0,
+            baseAmount,
             abi.encode(
                 FlashCallbackData({
-                    amount: 5000000,
+                    amount: baseAmount,
                     payer: msg.sender,
                     poolKey: poolKey,
                     assets: cometAssets,

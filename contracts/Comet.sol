@@ -1091,20 +1091,31 @@ contract Comet is CometMainInterface {
      * @dev Withdraw an amount of collateral asset from src to `to`
      */
     function withdrawCollateral(address src, address to, address asset, uint128 amount) internal {
+        console.log("withdrawCollateral 0");
         uint128 srcCollateral = userCollateral[src][asset].balance;
+        console.log("withdrawCollateral 1");
         uint128 srcCollateralNew = srcCollateral - amount;
 
+        console.log("withdrawCollateral 2");
+        console.log("asset: %s", asset);
+        console.log("totalsCollateral[asset].totalSupplyAsset:");
+        console.log(totalsCollateral[asset].totalSupplyAsset);
+        console.log("amount: %s", amount);
         totalsCollateral[asset].totalSupplyAsset -= amount;
         userCollateral[src][asset].balance = srcCollateralNew;
 
+        console.log("withdrawCollateral 3");
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         updateAssetsIn(src, assetInfo, srcCollateral, srcCollateralNew);
 
+        console.log("withdrawCollateral 4");
         // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
         if (!isBorrowCollateralized(src)) revert NotCollateralized();
 
+        console.log("withdrawCollateral 5");
         doTransferOut(asset, to, amount);
 
+        console.log("withdrawCollateral 6");
         emit WithdrawCollateral(src, to, asset, amount);
     }
 
@@ -1205,15 +1216,16 @@ contract Comet is CometMainInterface {
 
         int reserves = getReserves();
 
-        console.log("reserves:");
-        console.logInt(reserves);
-
-        console.log("targetReserves:");
-        console.log(targetReserves);
-
         if (reserves >= 0 && uint(reserves) >= targetReserves) revert NotForSale();
 
         console.log("buyCollateral 2");
+
+        console.log("baseToken: %s", baseToken);
+        console.log("msg.sender: %s", msg.sender);
+        console.log("baseAmount: %s", baseAmount);
+        console.log("baseToken.balanceOf(msg.sender): %s");
+        console.log(ERC20(baseToken).balanceOf(msg.sender));
+
         // Note: Re-entrancy can skip the reserves check above on a second buyCollateral call.
         doTransferIn(baseToken, msg.sender, baseAmount);
 
