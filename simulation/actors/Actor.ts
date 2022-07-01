@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumberish } from 'ethers';
-import { FaucetToken } from '../../../build/types';
-import { wait } from '../../helpers';
+import { FaucetToken } from '../../build/types';
+import { wait } from '../../test/helpers';
 import { Market } from '../Market';
 import { World } from '../World';
 

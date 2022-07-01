@@ -1,4 +1,4 @@
-import { exp, min } from '../../helpers';
+import { exp, min } from '../../test/helpers';
 import { Actor } from './Actor';
 import { Market } from '../Market';
 import { World } from '../World';

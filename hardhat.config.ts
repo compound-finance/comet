@@ -191,7 +191,6 @@ const config: HardhatUserConfig = {
         output: 'test-results.json',
       },
     },
-    timeout: 100_000, // default is 40,000
   },
 
   paths: {

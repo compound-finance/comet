@@ -1,5 +1,5 @@
-import { CometHarnessInterface, FaucetToken } from '../../build/types';
-import { defactor, exp, mulPrice, Protocol } from '../helpers';
+import { CometHarnessInterface, FaucetToken } from '../build/types';
+import { defactor, exp, mulPrice, Protocol } from '../test/helpers';
 
 export type Rates = {
   utilization: number;

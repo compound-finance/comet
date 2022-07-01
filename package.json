@@ -32,6 +32,7 @@
     "lint-contracts": "solhint 'contracts/**/*.sol'",
     "lint-contracts:fix": "solhint --fix 'contracts/**/*.sol'",
     "scenario": "hardhat scenario",
+    "simulation": "npx hardhat run ./scripts/run-ir-model-simulation.ts",
     "spider": "hardhat spider",
     "test": "hardhat test",
     "test:coverage": "hardhat cover --no-compile",
