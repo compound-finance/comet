@@ -9,19 +9,19 @@ import "./CometCore.sol";
  * @author Compound
  */
 abstract contract CometMainInterface is CometCore {
-    event Supply(address indexed from, address indexed dst, uint256 amount);
-    event Transfer(address indexed from, address indexed to, uint256 amount);
-    event Withdraw(address indexed src, address indexed to, uint256 amount);
+    event Supply(address indexed from, address indexed dst, uint amount);
+    event Transfer(address indexed from, address indexed to, uint amount);
+    event Withdraw(address indexed src, address indexed to, uint amount);
 
-    event SupplyCollateral(address indexed from, address indexed dst, address indexed asset, uint256 amount);
-    event TransferCollateral(address indexed from, address indexed to, address indexed asset, uint256 amount);
-    event WithdrawCollateral(address indexed src, address indexed to, address indexed asset, uint256 amount);
+    event SupplyCollateral(address indexed from, address indexed dst, address indexed asset, uint amount);
+    event TransferCollateral(address indexed from, address indexed to, address indexed asset, uint amount);
+    event WithdrawCollateral(address indexed src, address indexed to, address indexed asset, uint amount);
 
     /// @notice Event emitted when a borrow position is absorbed by the protocol
-    event AbsorbDebt(address indexed absorber, address indexed borrower, uint104 basePaidOut, uint usdValue);
+    event AbsorbDebt(address indexed absorber, address indexed borrower, uint basePaidOut, uint usdValue);
 
     /// @notice Event emitted when a user's collateral is absorbed by the protocol
-    event AbsorbCollateral(address indexed absorber, address indexed borrower, address indexed asset, uint128 collateralAbsorbed, uint usdValue);
+    event AbsorbCollateral(address indexed absorber, address indexed borrower, address indexed asset, uint collateralAbsorbed, uint usdValue);
 
     /// @notice Event emitted when a collateral asset is purchased from the protocol
     event BuyCollateral(address indexed buyer, address indexed asset, uint baseAmount, uint collateralAmount);

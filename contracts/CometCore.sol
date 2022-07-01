@@ -69,54 +69,53 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
 
     /**
      * @dev The positive present supply balance if positive or the negative borrow balance if negative
-     *  Note This will overflow at 2^103/1e18=~10 trillion for assets with 18 decimals.
      */
-    function presentValue(int104 principalValue_) internal view returns (int104) {
+    function presentValue(int104 principalValue_) internal view returns (int256) {
         if (principalValue_ >= 0) {
-            return signed104(presentValueSupply(baseSupplyIndex, unsigned104(principalValue_)));
+            return signed256(presentValueSupply(baseSupplyIndex, unsigned104(principalValue_)));
         } else {
-            return -signed104(presentValueBorrow(baseBorrowIndex, unsigned104(-principalValue_)));
+            return -signed256(presentValueBorrow(baseBorrowIndex, unsigned104(-principalValue_)));
         }
     }
 
     /**
      * @dev The principal amount projected forward by the supply index
-     *  Note This will overflow at 2^104/1e18=~20 trillion for assets with 18 decimals.
      */
-    function presentValueSupply(uint64 baseSupplyIndex_, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * baseSupplyIndex_ / BASE_INDEX_SCALE);
+    function presentValueSupply(uint64 baseSupplyIndex_, uint104 principalValue_) internal pure returns (uint256) {
+        return uint256(principalValue_) * baseSupplyIndex_ / BASE_INDEX_SCALE;
     }
 
     /**
      * @dev The principal amount projected forward by the borrow index
-     *  Note This will overflow at 2^104/1e18=~20 trillion for assets with 18 decimals.
      */
-    function presentValueBorrow(uint64 baseBorrowIndex_, uint104 principalValue_) internal pure returns (uint104) {
-        return uint104(uint(principalValue_) * baseBorrowIndex_ / BASE_INDEX_SCALE);
+    function presentValueBorrow(uint64 baseBorrowIndex_, uint104 principalValue_) internal pure returns (uint256) {
+        return uint256(principalValue_) * baseBorrowIndex_ / BASE_INDEX_SCALE;
     }
 
     /**
      * @dev The positive principal if positive or the negative principal if negative
      */
-    function principalValue(int104 presentValue_) internal view returns (int104) {
+    function principalValue(int256 presentValue_) internal view returns (int104) {
         if (presentValue_ >= 0) {
-            return signed104(principalValueSupply(baseSupplyIndex, unsigned104(presentValue_)));
+            return signed104(principalValueSupply(baseSupplyIndex, unsigned256(presentValue_)));
         } else {
-            return -signed104(principalValueBorrow(baseBorrowIndex, unsigned104(-presentValue_)));
+            return -signed104(principalValueBorrow(baseBorrowIndex, unsigned256(-presentValue_)));
         }
     }
 
     /**
      * @dev The present value projected backward by the supply index (rounded down)
+     *  Note: This will overflow (revert) at 2^104/1e18=~20 trillion principal for assets with 18 decimals.
      */
-    function principalValueSupply(uint64 baseSupplyIndex_, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104((uint(presentValue_) * BASE_INDEX_SCALE) / baseSupplyIndex_);
+    function principalValueSupply(uint64 baseSupplyIndex_, uint256 presentValue_) internal pure returns (uint104) {
+        return safe104((presentValue_ * BASE_INDEX_SCALE) / baseSupplyIndex_);
     }
 
     /**
      * @dev The present value projected backward by the borrow index (rounded up)
+     *  Note: This will overflow (revert) at 2^104/1e18=~20 trillion principal for assets with 18 decimals.
      */
-    function principalValueBorrow(uint64 baseBorrowIndex_, uint104 presentValue_) internal pure returns (uint104) {
-        return uint104((uint(presentValue_) * BASE_INDEX_SCALE + baseBorrowIndex_ - 1) / baseBorrowIndex_);
+    function principalValueBorrow(uint64 baseBorrowIndex_, uint256 presentValue_) internal pure returns (uint104) {
+        return safe104((presentValue_ * BASE_INDEX_SCALE + baseBorrowIndex_ - 1) / baseBorrowIndex_);
     }
 }
