@@ -5,7 +5,6 @@ import "./CometMainInterface.sol";
 import "./ERC20.sol";
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-/* DELETE */
 import "hardhat/console.sol";
 
 /**
@@ -1107,33 +1106,20 @@ contract Comet is CometMainInterface {
      * @dev Withdraw an amount of collateral asset from src to `to`
      */
     function withdrawCollateral(address src, address to, address asset, uint128 amount) internal {
-        console.log("withdrawCollateral 0");
         uint128 srcCollateral = userCollateral[src][asset].balance;
-        console.log("withdrawCollateral 1");
-        console.log("srcCollateral: %s", srcCollateral);
-        console.log("amount: %s", amount);
         uint128 srcCollateralNew = srcCollateral - amount;
 
-        console.log("withdrawCollateral 2");
-        console.log("asset: %s", asset);
-        console.log("totalsCollateral[asset].totalSupplyAsset:");
-        console.log(totalsCollateral[asset].totalSupplyAsset);
-        console.log("amount: %s", amount);
         totalsCollateral[asset].totalSupplyAsset -= amount;
         userCollateral[src][asset].balance = srcCollateralNew;
 
-        console.log("withdrawCollateral 3");
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         updateAssetsIn(src, assetInfo, srcCollateral, srcCollateralNew);
 
-        console.log("withdrawCollateral 4");
         // Note: no accrue interest, BorrowCF < LiquidationCF covers small changes
         if (!isBorrowCollateralized(src)) revert NotCollateralized();
 
-        console.log("withdrawCollateral 5");
         doTransferOut(asset, to, amount);
 
-        console.log("withdrawCollateral 6");
         emit WithdrawCollateral(src, to, asset, amount);
     }
 
@@ -1228,35 +1214,21 @@ contract Comet is CometMainInterface {
      * @param recipient The recipient address
      */
     function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) override external {
-        console.log("buyCollateral 0");
         if (isBuyPaused()) revert Paused();
-        console.log("buyCollateral 1");
 
         int reserves = getReserves();
-
         if (reserves >= 0 && uint(reserves) >= targetReserves) revert NotForSale();
-
-        console.log("buyCollateral 2");
-
-        console.log("baseToken: %s", baseToken);
-        console.log("msg.sender: %s", msg.sender);
-        console.log("baseAmount: %s", baseAmount);
-        console.log("baseToken.balanceOf(msg.sender): %s");
-        console.log(ERC20(baseToken).balanceOf(msg.sender));
 
         // Note: Re-entrancy can skip the reserves check above on a second buyCollateral call.
         doTransferIn(baseToken, msg.sender, baseAmount);
 
-        console.log("buyCollateral 3");
         uint collateralAmount = quoteCollateral(asset, baseAmount);
         if (collateralAmount < minAmount) revert TooMuchSlippage();
 
-        console.log("buyCollateral 4");
         // Note: Pre-transfer hook can re-enter buyCollateral with a stale collateral ERC20 balance.
         //       This is a problem if quoteCollateral derives its discount from the collateral ERC20 balance.
         withdrawCollateral(address(this), recipient, asset, safe128(collateralAmount));
 
-        console.log("buyCollateral 5");
         emit BuyCollateral(msg.sender, asset, baseAmount, collateralAmount);
     }
 

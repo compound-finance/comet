@@ -55,50 +55,26 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         bytes calldata data
     ) external override {
         FlashCallbackData memory decoded = abi.decode(data, (FlashCallbackData));
-
-        address token0 = decoded.poolKey.token0;
-        address token1 = decoded.poolKey.token1;
-
-        console.log("token0: %s", token0);
-        console.log("token1: %s", token1);
-
-        // TransferHelper.safeApprove(token0, address(swapRouter), decoded.amount0);
-        // TransferHelper.safeApprove(token1, address(swapRouter), decoded.amount);
-
-        console.log("uniswapV3FlashCallback 0");
-
         CallbackValidation.verifyCallback(factory, decoded.poolKey);
-
-        console.log("uniswapV3FlashCallback 1");
 
         address[] memory assets = decoded.assets;
 
-        console.log("uniswapV3FlashCallback 2");
-
         uint256 totalAmountOut = 0;
         for (uint i = 0; i < assets.length; i++) {
-            console.log("uniswapV3FlashCallback 3");
             address asset = assets[i];
             uint256 baseAmount = decoded.baseAmounts[i];
-            console.log("baseAmount: %s", baseAmount);
 
-            // XXX approve everything all at once
+            // XXX approve everything all at once?
+            // XXX safeApprove here as well?
             ERC20(comet.baseToken()).approve(address(comet), baseAmount);
 
-            console.log("uniswapV3FlashCallback 3.1");
             // XXX Figure out fee for all asset pools
             uint24 poolFee = 500;
 
-            console.log("uniswapV3FlashCallback 3.2");
             uint256 assetBalanceBefore = ERC20(asset).balanceOf(address(this));
-            console.log("uniswapV3FlashCallback 3.3");
             comet.buyCollateral(asset, 0, baseAmount, address(this));
-            console.log("uniswapV3FlashCallback 3.4");
             uint256 assetBalanceAfter = ERC20(asset).balanceOf(address(this));
-            console.log("uniswapV3FlashCallback 3.5");
             uint256 collateralAmount = assetBalanceAfter - assetBalanceBefore;
-            console.log("collateralAmount: %s", collateralAmount);
-            console.log("uniswapV3FlashCallback 3.6");
 
             TransferHelper.safeApprove(asset, address(swapRouter), collateralAmount);
 
@@ -112,22 +88,14 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
                         deadline: block.timestamp,
                         amountIn: collateralAmount,
                         // XXX is baseAmount a good value to pass here?
-                        amountOutMinimum: 0,
+                        amountOutMinimum: baseAmount,
                         sqrtPriceLimitX96: 0
                     })
                 );
-            console.log("uniswapV3FlashCallback 3.7");
-            console.log("amountOut: %s", amountOut);
             totalAmountOut += amountOut;
         }
-        console.log("uniswapV3FlashCallback 4");
 
         uint256 fee = decoded.reversedPair? fee0 : fee1;
-        console.log("fee: %s", fee);
-
-        console.log("uniswapV3FlashCallback 5");
-        console.log("totalAmountOut: %s", totalAmountOut);
-
         payback(decoded.amount, fee, comet.baseToken(), totalAmountOut, decoded.payer);
     }
 
@@ -138,15 +106,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         uint256 amountOut,
         address payer
     ) internal {
-        console.log("payback fee: %", fee);
-        console.log("amount: %s", amount);
-        console.log("amountOut: %s", amountOut);
-        console.log("payer: %s", payer);
-        console.log("token: %s", token);
         uint256 amountOwed = LowGasSafeMath.add(amount, fee);
-
-        console.log("amountOwed: %s", amountOwed);
-
         TransferHelper.safeApprove(token, address(this), amountOwed);
 
         if (amountOwed > 0) pay(token, address(this), msg.sender, amountOwed);
@@ -154,9 +114,6 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         // if profitable, pay profits to payer
         if (amountOut > amountOwed) {
             uint256 profit = LowGasSafeMath.sub(amountOut, amountOwed);
-
-            console.log("profit: %s", profit);
-
             TransferHelper.safeApprove(token, address(this), profit);
             pay(token, address(this), payer, profit);
         }
@@ -191,12 +148,9 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             // uint256 assetBaseAmount = comet.collateralBalanceOf(address(comet), asset) * quotePrice / 1e30; // PRICE_SCALE + 1e12
             // console.log("assetBaseAmount: %s", assetBaseAmount);
             uint256 assetBaseAmount = ((1e6 * 1e18 / quotePrice) * collateralBalance) / 1e18;
-            console.log("assetBaseAmount: %s", assetBaseAmount);
             assetBaseAmounts[i] = assetBaseAmount;
             baseAmount += assetBaseAmount;
         }
-
-        console.log("baseAmount: %s", baseAmount);
 
         address poolToken0 = params.reversedPair ? comet.baseToken(): params.pairToken;
         address poolToken1 = params.reversedPair ? params.pairToken : comet.baseToken();
