@@ -39,14 +39,33 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     ISwapRouter public immutable swapRouter;
     CometInterface public immutable comet;
 
+    uint24 public constant defaultPoolFee = 500;
+    mapping(address => uint24) public poolFees;
+
     constructor(
         ISwapRouter _swapRouter,
         CometInterface _comet,
         address _factory,
-        address _WETH9
+        address _WETH9,
+        address[] memory _assets,
+        uint24[] memory _poolFees
     ) PeripheryImmutableState(_factory, _WETH9) {
+        require(_assets.length == _poolFees.length, "Wrong input");
+
         swapRouter = _swapRouter;
         comet = _comet;
+
+        // Set the desirable pool fees for assets
+        for (uint i = 0; i < _assets.length; i++) {
+            address asset = _assets[i];
+            uint24 poolFee = _poolFees[i];
+            poolFees[asset] = poolFee;
+        }
+    }
+
+    function getPoolFee(address asset) internal returns(uint24) {
+        uint24 poolFee = poolFees[asset];
+        return poolFee == 0 ? defaultPoolFee : poolFee;
     }
 
     function uniswapV3FlashCallback(
@@ -65,16 +84,15 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             uint256 baseAmount = decoded.baseAmounts[i];
 
             // XXX approve everything all at once?
-            // XXX safeApprove here as well?
-            ERC20(comet.baseToken()).approve(address(comet), baseAmount);
+            TransferHelper.safeApprove(comet.baseToken(), address(comet), baseAmount);
 
             // XXX Figure out fee for all asset pools
-            uint24 poolFee = 500;
+            uint24 poolFee = getPoolFee(asset);
 
-            uint256 assetBalanceBefore = ERC20(asset).balanceOf(address(this));
+            // XXX Replace 0 with more meaningful value here
+            // XXX if buyCollateral returns collateral amount after change in Comet, no need to check balance
             comet.buyCollateral(asset, 0, baseAmount, address(this));
-            uint256 assetBalanceAfter = ERC20(asset).balanceOf(address(this));
-            uint256 collateralAmount = assetBalanceAfter - assetBalanceBefore;
+            uint256 collateralAmount = ERC20(asset).balanceOf(address(this));
 
             TransferHelper.safeApprove(asset, address(swapRouter), collateralAmount);
 
@@ -83,7 +101,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
                     ISwapRouter.ExactInputSingleParams({
                         tokenIn: asset,
                         tokenOut: comet.baseToken(),
-                        fee: 100,
+                        fee: poolFee,
                         recipient: address(this),
                         deadline: block.timestamp,
                         amountIn: collateralAmount,
@@ -168,8 +186,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         // recipient of flash should be THIS contract
         pool.flash(
             address(this),
-            0,
-            baseAmount,
+            params.reversedPair ? baseAmount : 0,
+            params.reversedPair ? 0 : baseAmount,
             abi.encode(
                 FlashCallbackData({
                     amount: baseAmount,
