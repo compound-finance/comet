@@ -118,7 +118,9 @@ describe.only("Liquidator", function () {
       ethers.utils.getAddress(swapRouter),
       ethers.utils.getAddress(comet.address),
       ethers.utils.getAddress(uniswapv3factory),
-      ethers.utils.getAddress(WETH9)
+      ethers.utils.getAddress(WETH9),
+      [ethers.utils.getAddress(DAI)],
+      [100]
     );
     await liquidator.deployed();
   });
@@ -127,7 +129,7 @@ describe.only("Liquidator", function () {
     expect(await liquidator.swapRouter()).to.equal(swapRouter);
   });
 
-  it.only("Should execute flash swap", async () => {
+  it.only("Should execute DAI flash swap", async () => {
   // Set underwater account
     await setTotalsBasic(comet, {
       baseBorrowIndex: 2e15,
