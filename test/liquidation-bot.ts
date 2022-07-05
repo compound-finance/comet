@@ -1,6 +1,7 @@
 import { event, expect, exp, factor, defaultAssets, makeProtocol, mulPrice, portfolio, wait, setTotalsBasic } from './helpers';
 
 import hre, { ethers } from "hardhat";
+import { HttpNetworkConfig } from 'hardhat/types/config';
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   CometExt,
@@ -107,6 +108,19 @@ describe.only("Liquidator", function () {
   let addrs: SignerWithAddress[];
 
   before(async () => {
+    const mainnetConfig = hre.config.networks.mainnet as HttpNetworkConfig;
+    // fork from mainnet to make use of real Uniswap pools
+    await ethers.provider.send(
+      "hardhat_reset",
+      [
+        {
+          forking: {
+            jsonRpcUrl: mainnetConfig.url,
+          },
+        },
+      ],
+    );
+
     [owner, addr1, ...addrs] = await ethers.getSigners();
     // Deploy comet
     // const { comet, users: [alice, bob] } = await makeProtocol();
@@ -125,11 +139,16 @@ describe.only("Liquidator", function () {
     await liquidator.deployed();
   });
 
+  after(async () => {
+    // reset to blank hardhat network
+    await ethers.provider.send('hardhat_reset', []);
+  });
+
   it("Should init liquidator", async function () {
     expect(await liquidator.swapRouter()).to.equal(swapRouter);
   });
 
-  it.only("Should execute DAI flash swap", async () => {
+  it("Should execute DAI flash swap", async () => {
   // Set underwater account
     await setTotalsBasic(comet, {
       baseBorrowIndex: 2e15,
