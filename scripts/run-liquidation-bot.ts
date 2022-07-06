@@ -37,7 +37,7 @@ async function getUniqueAddresses(comet: CometInterface): Promise<Set<string>> {
   return new Set(withdrawEvents.map(event => event.args.src));
 }
 
-export async function absorbLiquidatableBorrowers(
+export async function liquidateUnderwaterBorrowers(
   comet: CometInterface,
   liquidator: Liquidator,
   signer: SignerWithAddress
@@ -85,7 +85,7 @@ async function main() {
 
     if (currentBlockNumber !== lastBlockNumber) {
       lastBlockNumber = currentBlockNumber;
-      await absorbLiquidatableBorrowers(
+      await liquidateUnderwaterBorrowers(
         comet,
         liquidator,
         signer
