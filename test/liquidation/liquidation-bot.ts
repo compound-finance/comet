@@ -1,4 +1,4 @@
-import { event, expect, exp, factor, defaultAssets, makeProtocol, mulPrice, portfolio, wait, setTotalsBasic } from './helpers';
+import { event, expect, exp, setTotalsBasic } from '../helpers';
 
 import { HttpNetworkConfig } from 'hardhat/types/config';
 import hre, { ethers } from 'hardhat';
@@ -12,16 +12,19 @@ import {
   CometHarnessInterface__factory,
   Liquidator,
   Liquidator__factory
-} from '../build/types';
+} from '../../build/types';
 
 import daiAbi from './dai-abi';
 import usdcAbi from './usdc-abi';
+// import wethAbi from './weth-abi';
+import compAbi from './comp-abi';
 
 // mainnet
 // export const DAI_WHALE = "0x6b175474e89094c44da98b954eedeac495271d0f";
 export const DAI_WHALE = '0x7a8edc710ddeadddb0b539de83f3a306a621e823';
 export const USDC_WHALE = '0xA929022c9107643515F5c777cE9a910F0D1e490C';
 export const WETH_WHALE = '0x0F4ee9631f4be0a63756515141281A3E2B293Bbe';
+export const COMP_WHALE = '0x73af3bcf944a6559933396c1577b257e2054d935';
 export const WBTC = '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599';
 export const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
 export const USDT = '0xdac17f958d2ee523a2206206994597c13d831ec7';
@@ -35,13 +38,13 @@ export const swapRouter = '0xE592427A0AEce92De3Edee1F18E0157C05861564';
 export const uniswapv3factory = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
 
 // Chainlink mainnet price feeds
-const DAI_USDC_PRICE_FEED = '0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9';
-const USDC_USD_PRICE_FEED = '0x8fffffd4afb6115b954bd326cbe7b4ba576818f6';
-const ETH_USDC_PRICE_FEED = '0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419';
-const WBTC_USDC_PRICE_FEED = '0xf4030086522a5beea4988f8ca5b36dbc97bee88c';
-const COMP_USDC_PRICE_FEED = '0xdbd020caef83efd542f4de03e3cf0c28a4428bd5';
-const LINK_USDC_PRICE_FEED = '0x2c1d072e956affc0d435cb7ac38ef18d24d9127c';
-const UNI_USDC_PRICE_FEED = '0x553303d460ee0afb37edff9be42922d8ff63220e';
+export const DAI_USDC_PRICE_FEED = '0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9';
+export const USDC_USD_PRICE_FEED = '0x8fffffd4afb6115b954bd326cbe7b4ba576818f6';
+export const ETH_USDC_PRICE_FEED = '0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419';
+export const WBTC_USDC_PRICE_FEED = '0xf4030086522a5beea4988f8ca5b36dbc97bee88c';
+export const COMP_USDC_PRICE_FEED = '0xdbd020caef83efd542f4de03e3cf0c28a4428bd5';
+export const LINK_USDC_PRICE_FEED = '0x2c1d072e956affc0d435cb7ac38ef18d24d9127c';
+export const UNI_USDC_PRICE_FEED = '0x553303d460ee0afb37edff9be42922d8ff63220e';
 
 async function makeProtocolAlt() {
   const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
@@ -235,4 +238,5 @@ describe.only('Liquidator', function () {
 
     expect(tx.hash).to.be.not.null;
   });
+
 });
