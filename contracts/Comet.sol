@@ -484,10 +484,10 @@ contract Comet is CometMainInterface {
      * @param priceFeed The address of a price feed
      * @return The price, scaled by `PRICE_SCALE`
      */
-    function getPrice(address priceFeed) override public view returns (uint128) {
+    function getPrice(address priceFeed) override public view returns (uint256) {
         (, int price, , , ) = AggregatorV3Interface(priceFeed).latestRoundData();
-        if (price <= 0 || price > type(int128).max) revert BadPrice();
-        return uint128(int128(price));
+        if (price <= 0) revert BadPrice();
+        return uint256(price);
     }
 
     /**
@@ -697,15 +697,15 @@ contract Comet is CometMainInterface {
     /**
      * @dev Multiply a `fromScale` quantity by a price, returning a common price quantity
      */
-    function mulPrice(uint n, uint128 price, uint64 fromScale) internal pure returns (uint) {
+    function mulPrice(uint n, uint price, uint64 fromScale) internal pure returns (uint) {
         return n * price / fromScale;
     }
 
     /**
      * @dev Multiply a signed `fromScale` quantity by a price, returning a common price quantity
      */
-    function signedMulPrice(int n, uint128 price, uint64 fromScale) internal pure returns (int) {
-        return n * signed256(price) / signed256(fromScale);
+    function signedMulPrice(int n, uint price, uint64 fromScale) internal pure returns (int) {
+        return n * signed256(price) / int256(uint256(fromScale));
     }
 
     /**
@@ -1141,7 +1141,7 @@ contract Comet is CometMainInterface {
         int256 oldBalance = presentValue(oldPrincipal);
         uint16 assetsIn = accountUser.assetsIn;
 
-        uint128 basePrice = getPrice(baseTokenPriceFeed);
+        uint256 basePrice = getPrice(baseTokenPriceFeed);
         uint256 deltaValue = 0;
 
         for (uint8 i = 0; i < numAssets; ) {
@@ -1220,12 +1220,12 @@ contract Comet is CometMainInterface {
      */
     function quoteCollateral(address asset, uint baseAmount) override public view returns (uint) {
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
-        uint128 assetPrice = getPrice(assetInfo.priceFeed);
+        uint256 assetPrice = getPrice(assetInfo.priceFeed);
         // Store front discount is derived from the collateral asset's liquidationFactor and storeFrontPriceFactor
         // discount = storeFrontPriceFactor * (1e18 - liquidationFactor)
-        uint discountFactor = mulFactor(storeFrontPriceFactor, FACTOR_SCALE - assetInfo.liquidationFactor);
-        uint128 assetPriceDiscounted = uint128(mulFactor(assetPrice, FACTOR_SCALE - discountFactor));
-        uint128 basePrice = getPrice(baseTokenPriceFeed);
+        uint256 discountFactor = mulFactor(storeFrontPriceFactor, FACTOR_SCALE - assetInfo.liquidationFactor);
+        uint256 assetPriceDiscounted = mulFactor(assetPrice, FACTOR_SCALE - discountFactor);
+        uint256 basePrice = getPrice(baseTokenPriceFeed);
         // # of collateral assets
         // = (TotalValueOfBaseAmount / DiscountedPriceOfCollateralAsset) * assetScale
         // = ((basePrice * baseAmount / baseScale) / assetPriceDiscounted) * assetScale
