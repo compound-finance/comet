@@ -202,6 +202,8 @@ For more information, see [SCENARIO.md](./SCENARIO.md).
 9. run `1653512186_seed_rewards_with_comp`, `prepare` step
 10. run `1653512186_seed_rewards_with_comp`, `enact` step
 11. execute the proposal from step 10
+12. run `1657124918_deploy_liquidator`, `prepare` step (optional)
+13. update `deployments/kovan/root.json` with liquidator root from step 12 (optional)
 
 #### Fuji
 
