@@ -1,8 +1,8 @@
-import { event, expect, exp, factor, defaultAssets, makeProtocol, mulPrice, portfolio, wait, setTotalsBasic } from './helpers';
+import { event, expect, exp, setTotalsBasic } from '../helpers';
 
-import hre, { ethers } from "hardhat";
+import hre, { ethers } from 'hardhat';
 import { HttpNetworkConfig } from 'hardhat/types/config';
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
   CometExt,
   CometExt__factory,
@@ -12,29 +12,39 @@ import {
   CometHarnessInterface__factory,
   Liquidator,
   Liquidator__factory
-} from '../build/types';
+} from '../../build/types';
 
 import daiAbi from './dai-abi';
 import usdcAbi from './usdc-abi';
+// import wethAbi from './weth-abi';
+import compAbi from './comp-abi';
 
 // mainnet
 // export const DAI_WHALE = "0x6b175474e89094c44da98b954eedeac495271d0f";
-export const DAI_WHALE = "0x7a8edc710ddeadddb0b539de83f3a306a621e823";
-export const USDC_WHALE = "0xA929022c9107643515F5c777cE9a910F0D1e490C";
-export const WETH_WHALE = "0x0F4ee9631f4be0a63756515141281A3E2B293Bbe";
-export const WBTC = "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599";
-export const USDC = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
-export const USDT = "0xdac17f958d2ee523a2206206994597c13d831ec7";
-export const COMP = "0xc00e94cb662c3520282e6f5717214004a7f26888";
-export const LINK = "0x514910771AF9Ca656af840dff83E8264EcF986CA";
-export const DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
-export const UNI = "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984";
-export const WETH9 = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+export const DAI_WHALE = '0x7a8edc710ddeadddb0b539de83f3a306a621e823';
+export const USDC_WHALE = '0xA929022c9107643515F5c777cE9a910F0D1e490C';
+export const WETH_WHALE = '0x0F4ee9631f4be0a63756515141281A3E2B293Bbe';
+export const COMP_WHALE = '0x73af3bcf944a6559933396c1577b257e2054d935';
+export const WBTC = '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599';
+export const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+export const USDT = '0xdac17f958d2ee523a2206206994597c13d831ec7';
+export const COMP = '0xc00e94cb662c3520282e6f5717214004a7f26888';
+export const LINK = '0x514910771AF9Ca656af840dff83E8264EcF986CA';
+export const DAI = '0x6B175474E89094C44Da98b954EedeAC495271d0F';
+export const UNI = '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984';
+export const WETH9 = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
 
-export const swapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
-export const uniswapv3factory = "0x1F98431c8aD98523631AE4a59f267346ea31F984";
+export const swapRouter = '0xE592427A0AEce92De3Edee1F18E0157C05861564';
+export const uniswapv3factory = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
 
-const USDC_USD_PRICE_FEED = "0x8fffffd4afb6115b954bd326cbe7b4ba576818f6";
+// Chainlink mainnet price feeds
+export const DAI_USDC_PRICE_FEED = '0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9';
+export const USDC_USD_PRICE_FEED = '0x8fffffd4afb6115b954bd326cbe7b4ba576818f6';
+export const ETH_USDC_PRICE_FEED = '0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419';
+export const WBTC_USDC_PRICE_FEED = '0xf4030086522a5beea4988f8ca5b36dbc97bee88c';
+export const COMP_USDC_PRICE_FEED = '0xdbd020caef83efd542f4de03e3cf0c28a4428bd5';
+export const LINK_USDC_PRICE_FEED = '0x2c1d072e956affc0d435cb7ac38ef18d24d9127c';
+export const UNI_USDC_PRICE_FEED = '0x553303d460ee0afb37edff9be42922d8ff63220e';
 
 async function makeProtocolAlt() {
   const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
@@ -64,31 +74,58 @@ async function makeProtocolAlt() {
     assetConfigs: [
       {
         asset: DAI,
-        priceFeed: "0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9",
+        priceFeed: DAI_USDC_PRICE_FEED,
         decimals: 18,
         borrowCollateralFactor: 999999999999999999n,
         liquidateCollateralFactor: 1000000000000000000n,
         liquidationFactor: 900000000000000000n,
         supplyCap: 1000000000000000000000000n
       },
-      // {
-      //   asset: '0x162700d1613DfEC978032A909DE02643bC55df1A',
-      //   priceFeed: '0xD5724171C2b7f0AA717a324626050BD05767e2C6',
-      //   decimals: 18,
-      //   borrowCollateralFactor: 999999999999999999n,
-      //   liquidateCollateralFactor: 1000000000000000000n,
-      //   liquidationFactor: 1000000000000000000n,
-      //   supplyCap: 100000000000000000000n
-      // },
-      // {
-      //   asset: '0x67aD6EA566BA6B0fC52e97Bc25CE46120fdAc04c',
-      //   priceFeed: '0x70eE76691Bdd9696552AF8d4fd634b3cF79DD529',
-      //   decimals: 8,
-      //   borrowCollateralFactor: 999999999999999999n,
-      //   liquidateCollateralFactor: 1000000000000000000n,
-      //   liquidationFactor: 1000000000000000000n,
-      //   supplyCap: 10000000000n
-      // }
+      {
+        asset: COMP,
+        priceFeed: COMP_USDC_PRICE_FEED,
+        decimals: 18,
+        borrowCollateralFactor: 999999999999999999n,
+        liquidateCollateralFactor: 1000000000000000000n,
+        liquidationFactor: 900000000000000000n,
+        supplyCap: 100000000000000000000n
+      },
+      {
+        asset: WBTC,
+        priceFeed: WBTC_USDC_PRICE_FEED,
+        decimals: 8,
+        borrowCollateralFactor: 999999999999999999n,
+        liquidateCollateralFactor: 1000000000000000000n,
+        liquidationFactor: 900000000000000000n,
+        supplyCap: 1000000000000000000000000n
+      },
+      {
+        asset: WETH9,
+        priceFeed: ETH_USDC_PRICE_FEED,
+        decimals: 18,
+        borrowCollateralFactor: 999999999999999999n,
+        liquidateCollateralFactor: 1000000000000000000n,
+        liquidationFactor: 900000000000000000n,
+        supplyCap: 1000000000000000000000000n
+      },
+      {
+        asset: LINK,
+        priceFeed: LINK_USDC_PRICE_FEED,
+        decimals: 18,
+        borrowCollateralFactor: 999999999999999999n,
+        liquidateCollateralFactor: 1000000000000000000n,
+        liquidationFactor: 900000000000000000n,
+        supplyCap: 1000000000000000000000000n
+      },
+      {
+        asset: UNI,
+        priceFeed: UNI_USDC_PRICE_FEED,
+        decimals: 18,
+        borrowCollateralFactor: 999999999999999999n,
+        liquidateCollateralFactor: 1000000000000000000n,
+        liquidationFactor: 900000000000000000n,
+        supplyCap: 1000000000000000000000000n
+      },
     ]
   };
 
@@ -99,7 +136,7 @@ async function makeProtocolAlt() {
   return cometHarnessInterface;
 }
 
-describe.only("Liquidator", function () {
+describe.only('Liquidator', function () {
   let comet: CometHarnessInterface;
   let liquidator: Liquidator;
 
@@ -123,18 +160,17 @@ describe.only("Liquidator", function () {
 
     [owner, addr1, ...addrs] = await ethers.getSigners();
     // Deploy comet
-    // const { comet, users: [alice, bob] } = await makeProtocol();
     comet = await makeProtocolAlt();
 
     // Deploy liquidator
-    const Liquidator = await ethers.getContractFactory("Liquidator") as Liquidator__factory;
+    const Liquidator = await ethers.getContractFactory('Liquidator') as Liquidator__factory;
     liquidator = await Liquidator.deploy(
       ethers.utils.getAddress(swapRouter),
       ethers.utils.getAddress(comet.address),
       ethers.utils.getAddress(uniswapv3factory),
       ethers.utils.getAddress(WETH9),
-      [ethers.utils.getAddress(DAI)],
-      [100]
+      [ethers.utils.getAddress(DAI), ethers.utils.getAddress(COMP)],
+      [100, 500]
     );
     await liquidator.deployed();
   });
@@ -144,11 +180,11 @@ describe.only("Liquidator", function () {
     await ethers.provider.send('hardhat_reset', []);
   });
 
-  it("Should init liquidator", async function () {
+  it('Should init liquidator', async function () {
     expect(await liquidator.swapRouter()).to.equal(swapRouter);
   });
 
-  it("Should execute DAI flash swap", async () => {
+  it('Should execute DAI flash swap', async () => {
   // Set underwater account
     await setTotalsBasic(comet, {
       baseBorrowIndex: 2e15,
@@ -180,7 +216,7 @@ describe.only("Liquidator", function () {
     await mockDai.connect(daiWhaleSigner).transfer(comet.address, 200000000000000000000n);
     await mockUSDC.connect(usdcWhaleSigner).transfer(owner.address, 300000000n); // 300e6
 
-    console.log("transferring dai to addr1");
+    console.log('transferring dai to addr1');
     console.log(`await mockDai.balanceOf(daiWhaleSigner.address): ${await mockDai.balanceOf(daiWhaleSigner.address)}`);
     // await comet.setCollateralBalance(addr1.address, DAI, exp(120, 18));
     await mockDai.connect(daiWhaleSigner).transfer(addr1.address, 200000000000000000000n);
@@ -202,4 +238,5 @@ describe.only("Liquidator", function () {
 
     expect(tx.hash).to.be.not.null;
   });
+
 });

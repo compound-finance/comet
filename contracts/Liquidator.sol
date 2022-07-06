@@ -63,7 +63,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         }
     }
 
-    function getPoolFee(address asset) internal returns(uint24) {
+    function getPoolFee(address asset) internal view returns(uint24) {
         uint24 poolFee = poolFees[asset];
         return poolFee == 0 ? defaultPoolFee : poolFee;
     }
@@ -83,10 +83,11 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             address asset = assets[i];
             uint256 baseAmount = decoded.baseAmounts[i];
 
+            if (baseAmount == 0) continue;
+
             // XXX approve everything all at once?
             TransferHelper.safeApprove(comet.baseToken(), address(comet), baseAmount);
 
-            // XXX Figure out fee for all asset pools
             uint24 poolFee = getPoolFee(asset);
 
             // XXX Replace 0 with more meaningful value here
@@ -137,24 +138,17 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         }
     }
 
-    /// @param params The parameters necessary for flash and the callback, passed in as FlashParams
-    /// @notice Calls the pools flash function with data needed in `uniswapV3FlashCallback`
-    function initFlash(FlashParams memory params) external {
-        // Absorb Comet underwater accounts
-        comet.absorb(address(this), params.accounts);
-
-        uint256 baseAmount = 0;
+    function calculateTotalBaseAmount() internal view returns (uint256, uint256[] memory, address[] memory) {
+        uint256 totalBaseAmount = 0;
         uint8 numAssets = comet.numAssets();
         uint256[] memory assetBaseAmounts = new uint256[](numAssets);
         address[] memory cometAssets = new address[](numAssets);
         for (uint8 i = 0; i < numAssets; i++) {
             address asset = comet.getAssetInfo(i).asset;
-            // console.log("asset: %s", asset);
             cometAssets[i] = asset;
-            uint256 quotePrice = comet.quoteCollateral(asset, 1 * comet.baseScale());
-            // console.log("quotePrice: %s", quotePrice);
             uint256 collateralBalance = comet.collateralBalanceOf(address(comet), asset);
-            // console.log("collateralBalance: %s", collateralBalance);
+            uint256 quotePrice = comet.quoteCollateral(asset, 1 * comet.baseScale());
+
             /*
                 quoteCollateral = amount of DAI you get for 1 USDC
                 collateralBalance = Comet's balance of DAI
@@ -167,8 +161,19 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             // console.log("assetBaseAmount: %s", assetBaseAmount);
             uint256 assetBaseAmount = ((1e6 * 1e18 / quotePrice) * collateralBalance) / 1e18;
             assetBaseAmounts[i] = assetBaseAmount;
-            baseAmount += assetBaseAmount;
+            totalBaseAmount += assetBaseAmount;
         }
+
+        return (totalBaseAmount, assetBaseAmounts, cometAssets);
+    }
+
+    /// @param params The parameters necessary for flash and the callback, passed in as FlashParams
+    /// @notice Calls the pools flash function with data needed in `uniswapV3FlashCallback`
+    function initFlash(FlashParams memory params) external {
+        // Absorb Comet underwater accounts
+        comet.absorb(address(this), params.accounts);
+
+        (uint256 totalBaseAmount, uint256[] memory assetBaseAmounts, address[] memory cometAssets) = calculateTotalBaseAmount();
 
         address poolToken0 = params.reversedPair ? comet.baseToken(): params.pairToken;
         address poolToken1 = params.reversedPair ? params.pairToken : comet.baseToken();
@@ -186,11 +191,11 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         // recipient of flash should be THIS contract
         pool.flash(
             address(this),
-            params.reversedPair ? baseAmount : 0,
-            params.reversedPair ? 0 : baseAmount,
+            params.reversedPair ? totalBaseAmount : 0,
+            params.reversedPair ? 0 : totalBaseAmount,
             abi.encode(
                 FlashCallbackData({
-                    amount: baseAmount,
+                    amount: totalBaseAmount,
                     payer: msg.sender,
                     poolKey: poolKey,
                     assets: cometAssets,
