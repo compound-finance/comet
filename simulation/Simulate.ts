@@ -10,21 +10,40 @@ function shuffle(arr) {
   }
 }
 
-async function snapshot(world: World, market: Market) {
+async function snapshot(world: World, market: Market, round: number) {
   return {
     world: await world.prevailingRates(),
     market: { ...(await market.currentRates()), ...(await market.currentTvl()) },
+    round,
   };
 }
 
-export async function simulate(world: World, market: Market, actors: Actor[], runs: number) {
-  const snapshots = [await snapshot(world, market)];
-  for (let t = 0; t < runs; t++) {
+function hasMarketChanged(oldMarket, currentMarket) {
+  if (oldMarket !== null &&
+    oldMarket.market.totalSupply === currentMarket.market.totalSupply &&
+    oldMarket.market.totalBorrow === currentMarket.market.totalBorrow) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
+export async function simulate(world: World, market: Market, actors: Actor[], maxRounds: number) {
+  const snapshots = [await snapshot(world, market, 0)];
+  let lastRoundSnapshot = null;
+  for (let t = 0; t < maxRounds; t++) {
+    // Exit early if the market has not changed since the beginning of the last round
+    const currentRoundSnapshot = await snapshot(world, market, t);
+    if (!hasMarketChanged(lastRoundSnapshot, currentRoundSnapshot)) {
+      return snapshots;
+    }
+    lastRoundSnapshot = currentRoundSnapshot;
+
     // XXX can change world state in between runs, such as prevailing rates, market sentiment, etc.
     shuffle(actors);
     for (const actor of actors) {
       await actor.act(world, market, t);
-      snapshots.push(await snapshot(world, market));
+      snapshots.push(await snapshot(world, market, t));
     }
   }
   return snapshots;

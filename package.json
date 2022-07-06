@@ -28,7 +28,7 @@
     "cover": "hardhat cover && npx istanbul report --include coverage.json html lcov",
     "deploy": "npx hardhat run ./scripts/deploy-comet.ts",
     "gas": "REPORT_GAS=true yarn test",
-    "lint": "eslint 'plugins/**/*' 'scripts/**/*' 'src/**/*' 'tasks/**/*' 'test/**/*' ",
+    "lint": "eslint 'plugins/**/*' 'scripts/**/*' 'simulation/**/*' 'src/**/*' 'tasks/**/*' 'test/**/*' ",
     "lint-contracts": "solhint 'contracts/**/*.sol'",
     "lint-contracts:fix": "solhint --fix 'contracts/**/*.sol'",
     "scenario": "hardhat scenario",

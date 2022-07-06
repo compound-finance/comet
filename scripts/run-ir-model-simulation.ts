@@ -3,10 +3,10 @@
 //
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
-import { runSimulation } from '../simulation/index';
+import { run } from '../simulation/index';
 
 async function main() {
-  await runSimulation();
+  await run();
 }
 
 // We recommend this pattern to be able to use async/await everywhere
