@@ -26,7 +26,7 @@ import {
   WETH9,
   ETH_USDC_PRICE_FEED,
   UNISWAP_V3_FACTORY
-} from "./addresses";
+} from './addresses';
 import daiAbi from './dai-abi';
 import usdcAbi from './usdc-abi';
 
@@ -177,14 +177,14 @@ export default async function makeLiquidatableProtocol() {
     comet: cometHarnessInterface,
     liquidator,
     users: [signer, underwaterUser]
-  }
+  };
 }
 
 export async function forkMainnet() {
   const mainnetConfig = hre.config.networks.mainnet as HttpNetworkConfig;
   // fork from mainnet to make use of real Uniswap pools
   await ethers.provider.send(
-    "hardhat_reset",
+    'hardhat_reset',
     [
       {
         forking: {

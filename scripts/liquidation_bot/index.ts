@@ -9,7 +9,7 @@ import liquidateUnderwaterBorrowers from './liquidateUnderwaterBorrowers';
 const loopDelay = 5000;
 
 async function main() {
-  console.log("main called");
+  console.log('main called');
 
   const dm = new DeploymentManager(hre.network.name, hre, {
     writeCacheToDisk: false,
