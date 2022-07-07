@@ -1,5 +1,5 @@
 import { expect  } from '../helpers';
-import { liquidateUnderwaterBorrowers } from "../../scripts/liquidation_bot/run-liquidation-bot";
+import liquidateUnderwaterBorrowers from "../../scripts/liquidation_bot/liquidateUnderwaterBorrowers";
 import makeLiquidatableProtocol, { forkMainnet, resetHardhatNetwork } from './makeLiquidatableProtocol';
 
 describe('Liquidation Bot', function () {

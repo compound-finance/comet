@@ -4,7 +4,7 @@ import {
   CometInterface,
   Liquidator
 } from '../../build/types';
-import { liquidateUnderwaterBorrowers } from './run-liquidation-bot';
+import liquidateUnderwaterBorrowers from './liquidateUnderwaterBorrowers';
 
 const loopDelay = 5000;
 
