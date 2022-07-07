@@ -1,15 +1,28 @@
-import hre, { ethers } from 'hardhat';
-import { event, expect, exp, setTotalsBasic } from '../helpers';
-import { liquidateUnderwaterBorrowers } from "../../scripts/run-liquidation-bot";
-import { HttpNetworkConfig } from 'hardhat/types/config';
+import { expect  } from '../helpers';
+import { liquidateUnderwaterBorrowers } from "../../scripts/liquidation_bot/run-liquidation-bot";
 import makeLiquidatableProtocol, { forkMainnet, resetHardhatNetwork } from './makeLiquidatableProtocol';
 
-describe.only('Liquidation Bot', function () {
+describe('Liquidation Bot', function () {
   before(forkMainnet);
   after(resetHardhatNetwork);
 
   it('sets up the test', async function () {
-    const { comet, liquidator } = await makeLiquidatableProtocol();
-    expect(true).to.be.true;
+    const { comet, liquidator, users: [signer, underwater] } = await makeLiquidatableProtocol();
+    expect(await comet.isLiquidatable(underwater.address)).to.be.true;
+  });
+
+  describe('liquidateUnderwaterBorrowers', function () {
+    it('liquidates underwater borrowers', async function () {
+      const { comet, liquidator, users: [signer, underwater] } = await makeLiquidatableProtocol();
+      expect(await comet.isLiquidatable(underwater.address)).to.be.true;
+
+      await liquidateUnderwaterBorrowers(
+        comet,
+        liquidator,
+        signer
+      );
+
+      expect(await comet.isLiquidatable(underwater.address)).to.be.false;
+    });
   });
 });
