@@ -1,4 +1,5 @@
-import { ethers } from 'hardhat';
+import hre, { ethers } from 'hardhat';
+import { HttpNetworkConfig } from 'hardhat/types/config';
 import {
   CometExt__factory,
   CometHarness__factory,
@@ -26,6 +27,9 @@ import {
 } from "./addresses";
 
 export default async function makeLiquidatableProtocol() {
+  //
+
+  // build Comet
   const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
   const symbol32 = ethers.utils.formatBytes32String('📈BASE');
   const extensionDelegate = await CometExtFactory.deploy({ symbol32 });
@@ -112,6 +116,7 @@ export default async function makeLiquidatableProtocol() {
   await comet.deployed();
   const cometHarnessInterface = await ethers.getContractAt('CometHarnessInterface', comet.address) as CometHarnessInterface;
 
+  // build Liquidator
   const Liquidator = await ethers.getContractFactory('Liquidator') as Liquidator__factory;
   const liquidator = await Liquidator.deploy(
     ethers.utils.getAddress(SWAP_ROUTER),
@@ -123,10 +128,30 @@ export default async function makeLiquidatableProtocol() {
   );
   await liquidator.deployed();
 
-
+  // create underwater user
 
   return {
     comet: cometHarnessInterface,
     liquidator
   }
+}
+
+export async function forkMainnet() {
+  const mainnetConfig = hre.config.networks.mainnet as HttpNetworkConfig;
+  // fork from mainnet to make use of real Uniswap pools
+  await ethers.provider.send(
+    "hardhat_reset",
+    [
+      {
+        forking: {
+          jsonRpcUrl: mainnetConfig.url,
+        },
+      },
+    ],
+  );
+}
+
+export async function resetHardhatNetwork() {
+  // reset to blank hardhat network
+  await ethers.provider.send('hardhat_reset', []);
 }
