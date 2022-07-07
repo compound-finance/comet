@@ -1,2 +1,3 @@
-contracts/vendor/*
 contracts/test/*
+contracts/vendor/*
+contracts/liquidator/vendor/*
