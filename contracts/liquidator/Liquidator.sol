@@ -11,10 +11,8 @@ import "./vendor/@uniswap/v3-periphery/contracts/libraries/CallbackValidation.so
 import "./vendor/@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import "./vendor/@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
-import "./CometInterface.sol";
-import "./ERC20.sol";
-
-import "hardhat/console.sol";
+import "../CometInterface.sol";
+import "../ERC20.sol";
 
 contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, PeripheryPayments {
     struct FlashParams {
