@@ -26,3 +26,4 @@ typechain/
 test-results.json
 scenario-results.json
 
+simulation/charts

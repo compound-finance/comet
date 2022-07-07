@@ -1,10 +1,11 @@
-import { exp, makeProtocol, wait } from '../test/helpers';
+import { defactor, exp, makeProtocol, wait } from '../test/helpers';
 import { Supplier } from './actors/Supplier';
 import { Actor } from './actors/Actor';
 import { Market } from './Market';
 import { simulate } from './Simulate';
 import { World } from './World';
 import { Borrower } from './actors/Borrower';
+import { createChart, SimulationResults } from './Chart';
 
 const interestRateParams = {
   supplyKink: exp(0.8, 18),
@@ -71,52 +72,75 @@ export async function runSimulation(irParams) {
 
   const snapshots = await simulate(world, market, actors.slice(2), 50);
   return snapshots;
-
-  // XXX add some data visualization for the snapshots
 }
 
 // Runs the simulation multiple times, each time adjusting a single IR parameter from the default
 // set of parameters
 export async function run() {
   const supplySlopeLowParams = [
+    { ...interestRateParams, supplyInterestRateSlopeLow: exp(0.025, 18) },
     { ...interestRateParams, supplyInterestRateSlopeLow: exp(0.03, 18) },
     { ...interestRateParams, supplyInterestRateSlopeLow: exp(0.035, 18) },
     { ...interestRateParams, supplyInterestRateSlopeLow: exp(0.04, 18) },
+    { ...interestRateParams, supplyInterestRateSlopeLow: exp(0.045, 18) },
   ];
   const borrowSlopeLow = [
+    { ...interestRateParams, borrowInterestRateSlopeLow: exp(0.035, 18) },
     { ...interestRateParams, borrowInterestRateSlopeLow: exp(0.04, 18) },
     { ...interestRateParams, borrowInterestRateSlopeLow: exp(0.045, 18) },
     { ...interestRateParams, borrowInterestRateSlopeLow: exp(0.05, 18) },
+    { ...interestRateParams, borrowInterestRateSlopeLow: exp(0.055, 18) },
   ];
   const borrowBase = [
     { ...interestRateParams, borrowInterestRateBase: exp(0.0, 18) },
     { ...interestRateParams, borrowInterestRateBase: exp(0.005, 18) },
     { ...interestRateParams, borrowInterestRateBase: exp(0.01, 18) },
+    { ...interestRateParams, borrowInterestRateBase: exp(0.015, 18) },
+    { ...interestRateParams, borrowInterestRateBase: exp(0.02, 18) },
   ];
   // const custom = [
   //   { ...interestRateParams, supplyInterestRateSlopeLow: exp(0.035, 18), borrowInterestRateSlopeLow: exp(0.09, 18) },
   // ];
 
   console.log('===== Adjusting supply rate slope low =====');
+  let simResults: SimulationResults = {};
   for (let params of supplySlopeLowParams) {
     const snapshot = (await runSimulation(params)).slice(-1)[0];
     console.log('Equilibrium for supply slope low: ', params.supplyInterestRateSlopeLow);
     console.log(snapshot);
+    simResults[`SupplyLow @ ${defactor(params.supplyInterestRateSlopeLow)}`] = {
+      utilization: snapshot.market.utilization,
+      totalSupply: Number(snapshot.market.totalSupply / exp(1, 6)),
+    }
   }
+  await createChart(simResults, 'Supply rate slope low');
 
   console.log('===== Adjusting borrow rate slope low =====');
+  simResults = {};
   for (let params of borrowSlopeLow) {
     const snapshot = (await runSimulation(params)).slice(-1)[0];
     console.log('Equilibrium for borrow slope low: ', params.borrowInterestRateSlopeLow);
     console.log(snapshot);
+    simResults[`SupplyLow @ ${defactor(params.borrowInterestRateSlopeLow)}`] = {
+      utilization: snapshot.market.utilization,
+      totalSupply: Number(snapshot.market.totalSupply / exp(1, 6)),
+    }
   }
+  await createChart(simResults, 'Borrow rate slope low');
 
   console.log('===== Adjusting borrow rate base =====');
+  simResults = {};
   for (let params of borrowBase) {
     const snapshot = (await runSimulation(params)).slice(-1)[0];
     console.log('Equilibrium for borrow base: ', params.borrowInterestRateBase);
     console.log(snapshot);
+    simResults[`SupplyLow @ ${defactor(params.borrowInterestRateBase)}`] = {
+      utilization: snapshot.market.utilization,
+      totalSupply: Number(snapshot.market.totalSupply / exp(1, 6)),
+    }
   }
+  await createChart(simResults, 'Borrow rate base');
+
 
   // console.log('===== Custom adjustments =====')
   // for (let params of custom) {
@@ -124,6 +148,4 @@ export async function run() {
   //   console.log('Equilibrium for custom: ')
   //   console.log(snapshot)
   // }
-
-  // XXX output some CSV with these
 }

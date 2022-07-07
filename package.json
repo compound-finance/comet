@@ -61,6 +61,8 @@
     "@typescript-eslint/eslint-plugin": "^5.18.0",
     "@typescript-eslint/parser": "^5.18.0",
     "chalk": "^5.0.0",
+    "chart.js": "^3.8.0",
+    "chartjs-node-canvas": "^4.1.6",
     "dotenv": "^10.0.0",
     "eslint": "^8.12.0",
     "ethereum-waffle": "^3.4.0",
