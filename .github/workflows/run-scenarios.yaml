@@ -10,6 +10,9 @@ jobs:
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16.x]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -17,7 +20,7 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           cache: 'yarn'
-          node-version: '16'
+          node-version: ${{ matrix.node-version }}
 
       - name: Cache Deployments
         uses: actions/cache@v2
@@ -34,8 +37,21 @@ jobs:
             !deployments/**/migrations/*
           key: deployments-v4
 
+      # See: https://github.com/actions/cache/blob/main/examples.md#node---yarn
+      - name: Get Yarn cache directory
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - name: Use Yarn cache
+        uses: actions/cache@v2
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ matrix.node-version }}-${{ hashFiles('**/yarn.lock') }}
+
+      # `--prefer-offline` gives cache priority
       - name: Install packages
-        run: yarn install --non-interactive --frozen-lockfile && yarn build
+        run: yarn install --non-interactive --prefer-offline --frozen-lockfile && yarn build
 
       - name: Compile
         run: npx hardhat compile
