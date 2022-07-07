@@ -20,8 +20,8 @@ import {
   SimplePriceFeed__factory,
   TransparentUpgradeableProxy,
   TransparentUpgradeableProxy__factory,
-  TransparentUpgradeableConfiguratorProxy,
-  TransparentUpgradeableConfiguratorProxy__factory,
+  ConfiguratorProxy,
+  ConfiguratorProxy__factory,
   CometProxyAdmin,
   CometProxyAdmin__factory,
   CometFactory,
@@ -102,7 +102,7 @@ export type Protocol = {
 
 export type ConfiguratorAndProtocol = {
   configurator: Configurator;
-  configuratorProxy: TransparentUpgradeableConfiguratorProxy;
+  configuratorProxy: ConfiguratorProxy;
   proxyAdmin: CometProxyAdmin;
   cometFactory: CometFactory;
   cometProxy: TransparentUpgradeableProxy;
@@ -344,6 +344,20 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     priceFeeds,
   } = await makeProtocol(opts);
 
+  // Deploy ProxyAdmin
+  const ProxyAdmin = (await ethers.getContractFactory('CometProxyAdmin')) as CometProxyAdmin__factory;
+  const proxyAdmin = await ProxyAdmin.connect(governor).deploy();
+  await proxyAdmin.deployed();
+
+  // Deploy Comet proxy
+  const CometProxy = (await ethers.getContractFactory('TransparentUpgradeableProxy')) as TransparentUpgradeableProxy__factory;
+  const cometProxy = await CometProxy.deploy(
+    comet.address,
+    proxyAdmin.address,
+    (await comet.populateTransaction.initializeStorage()).data,
+  );
+  await cometProxy.deployed();
+
   // Derive the rest of the Configurator configuration values
   const kink = await comet.kink();
   const perYearInterestRateBase = dfn(opts.interestRateBase, exp(0.005, 18));
@@ -401,14 +415,9 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     }, []),
   };
 
-  // Deploy ProxyAdmin
-  const ProxyAdmin = (await ethers.getContractFactory('CometProxyAdmin')) as CometProxyAdmin__factory;
-  const proxyAdmin = await ProxyAdmin.connect(governor).deploy();
-  await proxyAdmin.deployed();
-
   // Deploy Configurator proxy
-  const initializeCalldata = (await configurator.populateTransaction.initialize(governor.address, cometFactory.address, configuration)).data;
-  const ConfiguratorProxy = (await ethers.getContractFactory('TransparentUpgradeableConfiguratorProxy')) as TransparentUpgradeableConfiguratorProxy__factory;
+  const initializeCalldata = (await configurator.populateTransaction.initialize(governor.address)).data;
+  const ConfiguratorProxy = (await ethers.getContractFactory('ConfiguratorProxy')) as ConfiguratorProxy__factory;
   const configuratorProxy = await ConfiguratorProxy.deploy(
     configurator.address,
     proxyAdmin.address,
@@ -416,14 +425,10 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   );
   await configuratorProxy.deployed();
 
-  // Deploy Comet proxy
-  const CometProxy = (await ethers.getContractFactory('TransparentUpgradeableProxy')) as TransparentUpgradeableProxy__factory;
-  const cometProxy = await CometProxy.deploy(
-    comet.address,
-    proxyAdmin.address,
-    (await comet.populateTransaction.initializeStorage()).data,
-  );
-  await configuratorProxy.deployed();
+  // Set the initial factory and configuration for Comet in Configurator
+  const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+  await configuratorAsProxy.setConfiguration(cometProxy.address, configuration);
+  await configuratorAsProxy.setFactory(cometProxy.address, cometFactory.address);
 
   return {
     opts,

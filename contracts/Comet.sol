@@ -118,7 +118,7 @@ contract Comet is CometMainInterface {
     /// @notice Factor to divide by when accruing rewards in order to preserve 6 decimals (i.e. baseScale / 1e6)
     uint internal immutable accrualDescaleFactor;
 
-    /**  Collateral asset configuration (packed) **/
+    /** Collateral asset configuration (packed) **/
 
     uint256 internal immutable asset00_a;
     uint256 internal immutable asset00_b;
@@ -589,9 +589,11 @@ contract Comet is CometMainInterface {
 
     /**
      * @dev The change in principal broken into repay and supply amounts
-     * @dev Note: The assumption `newPrincipal >= oldPrincipal` MUST be true
      */
     function repayAndSupplyAmount(int104 oldPrincipal, int104 newPrincipal) internal pure returns (uint104, uint104) {
+        // If the new principal is less than the old principal, then no amount has been repaid or supplied
+        if (newPrincipal < oldPrincipal) return (0, 0);
+
         if (newPrincipal <= 0) {
             return (uint104(newPrincipal - oldPrincipal), 0);
         } else if (oldPrincipal >= 0) {
@@ -603,9 +605,11 @@ contract Comet is CometMainInterface {
 
     /**
      * @dev The change in principal broken into withdraw and borrow amounts
-     * @dev Note: The assumption `oldPrincipal >= newPrincipal` MUST be true
      */
     function withdrawAndBorrowAmount(int104 oldPrincipal, int104 newPrincipal) internal pure returns (uint104, uint104) {
+        // If the new principal is greater than the old principal, then no amount has been withdrawn or borrowed
+        if (newPrincipal > oldPrincipal) return (0, 0);
+
         if (newPrincipal >= 0) {
             return (uint104(oldPrincipal - newPrincipal), 0);
         } else if (oldPrincipal <= 0) {
