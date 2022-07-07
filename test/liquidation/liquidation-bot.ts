@@ -2,14 +2,16 @@ import { expect } from '../helpers';
 import { ethers } from 'hardhat';
 import makeLiquidatableProtocol, { forkMainnet, resetHardhatNetwork } from './makeLiquidatableProtocol';
 import { DAI } from './addresses';
+import { SWAP_ROUTER } from './addresses';
 
 describe('Liquidator', function () {
   before(forkMainnet);
   after(resetHardhatNetwork);
 
-  // it('Should init liquidator', async function () {
-  //   expect(await liquidator.swapRouter()).to.equal(swapRouter);
-  // });
+  it('Should init liquidator', async function () {
+    const { liquidator } = await makeLiquidatableProtocol();
+    expect(await liquidator.swapRouter()).to.equal(SWAP_ROUTER);
+  });
 
   it('Should execute DAI flash swap', async () => {
     const { comet, liquidator, users: [owner, underwater] } = await makeLiquidatableProtocol();
