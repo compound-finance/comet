@@ -15,7 +15,7 @@ migration<Vars>('1657124918_deploy_liquidator', {
     const comet = await deploymentManager.contract('comet') as CometInterface;
 
     const liquidator = await deploymentManager.deploy(
-      'Liquidator.sol',
+      'liquidator/Liquidator.sol',
       [
         swapRouter,
         comet.address,
