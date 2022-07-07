@@ -5,8 +5,6 @@ import "./CometMainInterface.sol";
 import "./ERC20.sol";
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title Compound's Comet Contract
  * @notice An efficient monolithic money market protocol
