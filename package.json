@@ -36,7 +36,7 @@
     "test": "hardhat test",
     "test:coverage": "hardhat cover --no-compile",
     "audit:vendor": "vendoza contracts/vendor/manifest.json",
-    "liquidation-bot": "hardhat run scripts/run-liquidation-bot.ts"
+    "liquidation-bot": "hardhat run scripts/liquidation_bot/index.ts"
   },
   "keywords": [],
   "author": "Compound Finance",
