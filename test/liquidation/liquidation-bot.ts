@@ -148,7 +148,7 @@ describe.only('Liquidator', function () {
     const mainnetConfig = hre.config.networks.mainnet as HttpNetworkConfig;
     // fork from mainnet to make use of real Uniswap pools
     await ethers.provider.send(
-      "hardhat_reset",
+      'hardhat_reset',
       [
         {
           forking: {

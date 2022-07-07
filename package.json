@@ -37,7 +37,7 @@
     "test:coverage": "hardhat cover --no-compile",
     "audit:vendor": "vendoza contracts/vendor/manifest.json",
     "slither:fn-clashes": "slither-check-upgradeability contracts/Configurator.sol Configurator --proxy-filename contracts/ConfiguratorProxy.sol --proxy-name ConfiguratorProxy",
-    "liquidation-bot": "hardhat run scripts/run-liquidation-bot.ts"
+    "liquidation-bot": "hardhat run scripts/liquidation_bot/index.ts"
   },
   "keywords": [],
   "author": "Compound Finance",
