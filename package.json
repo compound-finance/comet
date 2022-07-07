@@ -36,7 +36,7 @@
     "test": "hardhat test",
     "test:coverage": "hardhat cover --no-compile",
     "audit:vendor": "vendoza contracts/vendor/manifest.json",
-    "slither:fn-clashes": "slither-check-upgradeability contracts/Configurator.sol Configurator --proxy-filename contracts/TransparentUpgradeableConfiguratorProxy.sol --proxy-name TransparentUpgradeableConfiguratorProxy"
+    "slither:fn-clashes": "slither-check-upgradeability contracts/Configurator.sol Configurator --proxy-filename contracts/ConfiguratorProxy.sol --proxy-name ConfiguratorProxy"
   },
   "keywords": [],
   "author": "Compound Finance",
