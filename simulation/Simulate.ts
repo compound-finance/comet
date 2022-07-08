@@ -11,9 +11,12 @@ function shuffle(arr) {
 }
 
 async function snapshot(world: World, market: Market, round: number) {
+  const rates = await market.currentRates();
+  const tvl = await market.currentTvl();
+  const protocolProfit = Number(tvl.totalBorrow) * rates.borrowRate - Number(tvl.totalSupply) * rates.supplyRate;
   return {
     world: await world.prevailingRates(),
-    market: { ...(await market.currentRates()), ...(await market.currentTvl()) },
+    market: { ...(await market.currentRates()), ...(await market.currentTvl()), annualProfit: protocolProfit },
     round,
   };
 }

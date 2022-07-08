@@ -7,9 +7,11 @@ export interface SimulationResults {
   [label: string]: {
     utilization: number,
     totalSupply: number,
+    annualProfit: number,
   }
 };
 
+// XXX try to convey profitability as well
 function createData(simResults: SimulationResults) {
   const colors = [
     'rgba(255, 99, 132, 0.85)',
