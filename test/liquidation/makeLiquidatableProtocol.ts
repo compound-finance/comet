@@ -176,7 +176,11 @@ export default async function makeLiquidatableProtocol() {
   return {
     comet: cometHarnessInterface,
     liquidator,
-    users: [signer, underwaterUser]
+    users: [signer, underwaterUser],
+    assets: {
+      dai: mockDai,
+      usdc: mockUSDC
+    }
   };
 }
 
