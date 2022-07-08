@@ -193,6 +193,45 @@ describe('supplyTo', function () {
     });
   });
 
+  // This is an edge-case that can occur when a user supplies 0 base.
+  // When `amount=0` in `supplyBase`, `dstPrincipalNew = principalValue(presentValue(dstPrincipal))`
+  // In some cases, `dstPrincipalNew` can actually be less than `dstPrincipal` due to the fact
+  // that the principal value and present value functions round down. This breaks our assumption
+  // in `repayAndSupplyAmount` that `newPrincipal >= oldPrincipal` MUST be true. In the old code,
+  // this would cause `supplyAmount` to be an extremely large number (uint104(-1)), which would
+  // later cause an overflow during an addition operation. The new code now explicitly checks
+  // this assumption and sets both `repayAmount` and `supplyAmount` to 0 if the assumption is
+  // violated.
+  it('supplies 0 and does not revert when dstPrincipalNew < dstPrincipal', async () => {
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const { comet, tokens, users: [alice] } = protocol;
+    const { USDC } = tokens;
+
+    await comet.setBasePrincipal(alice.address, 99999992291226);
+    await setTotalsBasic(comet, {
+      totalSupplyBase: 699999944771920,
+      baseSupplyIndex: 1000000131467072,
+    });
+
+    const s0 = await wait(comet.connect(alice).supply(USDC.address, 0));
+
+    expect(s0.receipt['events'].length).to.be.equal(2);
+    expect(event(s0, 0)).to.be.deep.equal({
+      Transfer: {
+        from: alice.address,
+        to: comet.address,
+        amount: BigInt(0),
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      Supply: {
+        from: alice.address,
+        dst: alice.address,
+        amount: BigInt(0),
+      }
+    });
+  });
+
   it('user supply is same as total supply', async () => {
     const protocol = await makeProtocol({ base: 'USDC' });
     const { comet, tokens, users: [bob] } = protocol;

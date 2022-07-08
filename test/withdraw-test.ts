@@ -193,6 +193,46 @@ describe('withdrawTo', function () {
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(110000);
   });
 
+  // This demonstrates a weird quirk of the present value/principal value rounding down math.
+  it('withdraws 0 but Comet Transfer event amount is 1', async () => {
+    const protocol = await makeProtocol({ base: 'USDC' });
+    const { comet, tokens, users: [alice] } = protocol;
+    const { USDC } = tokens;
+
+    await comet.setBasePrincipal(alice.address, 99999992291226);
+    await setTotalsBasic(comet, {
+      totalSupplyBase: 699999944771920,
+      baseSupplyIndex: 1000000131467072,
+    });
+
+    const s0 = await wait(comet.connect(alice).withdraw(USDC.address, 0));
+
+    expect(s0.receipt['events'].length).to.be.equal(3);
+    expect(event(s0, 0)).to.be.deep.equal({
+      Transfer: {
+        from: comet.address,
+        to: alice.address,
+        amount: 0n,
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      Withdraw: {
+        src: alice.address,
+        to: alice.address,
+        amount: 0n,
+      }
+    });
+    // Weird quirk of round down behavior where `withdrawAmount` is 1 even though
+    // `amount` is 0. So no base leaves Comet (which is expected)
+    expect(event(s0, 2)).to.be.deep.equal({
+      Transfer: {
+        from: alice.address,
+        to: ethers.constants.AddressZero,
+        amount: 1n,
+      }
+    });
+  });
+
   it('withdraws collateral from sender if the asset is collateral', async () => {
     const protocol = await makeProtocol();
     const { comet, tokens, users: [alice, bob] } = protocol;
