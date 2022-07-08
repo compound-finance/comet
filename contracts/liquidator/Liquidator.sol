@@ -34,6 +34,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     using LowGasSafeMath for uint256;
     using LowGasSafeMath for int256;
 
+    uint256 public constant QUOTE_PRICE_SCALE = 1e6;
+
     ISwapRouter public immutable swapRouter;
     CometInterface public immutable comet;
 
@@ -125,7 +127,6 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     ) internal {
         uint256 amountOwed = LowGasSafeMath.add(amount, fee);
         TransferHelper.safeApprove(token, address(this), amountOwed);
-
         if (amountOwed > 0) pay(token, address(this), msg.sender, amountOwed);
 
         // if profitable, pay profits to payer
@@ -145,19 +146,19 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             address asset = comet.getAssetInfo(i).asset;
             cometAssets[i] = asset;
             uint256 collateralBalance = comet.collateralBalanceOf(address(comet), asset);
-            uint256 quotePrice = comet.quoteCollateral(asset, 1 * comet.baseScale());
 
+            if (collateralBalance == 0) continue;
+
+            uint256 quotePrice = comet.quoteCollateral(asset, QUOTE_PRICE_SCALE * comet.baseScale());
+            uint256 assetBaseAmount = comet.baseScale() * QUOTE_PRICE_SCALE * collateralBalance / quotePrice;
             /*
-                quoteCollateral = amount of DAI you get for 1 USDC
-                collateralBalance = Comet's balance of DAI
-                price = amount of USDC required to buy all DAI
+                quoteCollateral = amount of asset you get for 1 USDC
+                collateralBalance = Comet's balance of asset
+                price = amount of USDC required to buy the whole asset
 
                 1 / quotePrice = x / collateralBalance
                 (1 / quotePrice) * collateralBalance = x
             */
-            // uint256 assetBaseAmount = comet.collateralBalanceOf(address(comet), asset) * quotePrice / 1e30; // PRICE_SCALE + 1e12
-            // console.log("assetBaseAmount: %s", assetBaseAmount);
-            uint256 assetBaseAmount = ((1e6 * 1e18 / quotePrice) * collateralBalance) / 1e18;
             assetBaseAmounts[i] = assetBaseAmount;
             totalBaseAmount += assetBaseAmount;
         }
