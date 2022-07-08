@@ -3,6 +3,10 @@ import { ChartConfiguration } from 'chart.js';
 import * as fs from 'fs/promises';
 import * as nodepath from 'path';
 
+const RED = 'rgba(237, 105, 104, 0.85)';
+const YELLOW = 'rgba(247, 213, 100, 0.85)';
+const GREEN = 'rgba(194, 213, 100, 0.85)';
+
 export interface SimulationResults {
   [label: string]: {
     utilization: number,
@@ -11,35 +15,39 @@ export interface SimulationResults {
   }
 };
 
-// XXX try to convey profitability as well
+function getProfitibilityColor(profitability: number, neutralRange: number) {
+  if (profitability > neutralRange) {
+    return GREEN;
+  } else if (profitability < -neutralRange) {
+    return RED;
+  } else {
+    return YELLOW;
+  }
+}
+
 function createData(simResults: SimulationResults) {
-  const colors = [
-    'rgba(255, 99, 132, 0.85)',
-    'rgba(54, 162, 235, 0.85)',
-    'rgba(255, 206, 86, 0.85)',
-    'rgba(75, 192, 192, 0.85)',
-    'rgba(153, 102, 255, 0.85)',
-    'rgba(255, 159, 64, 0.85)'
-  ];
-  const datasets = Object.keys(simResults).map((label, i) => {
-    return {
-      label,
-      data: [{
-        x: simResults[label].totalSupply,
-        y: simResults[label].utilization
-      }],
-      pointRadius: 5,
-      backgroundColor: [colors[i]]
-    }
+  const labels = [];
+  const dataObject = { data: [], pointRadius: 5, backgroundColor: [] };
+  Object.keys(simResults).map((label, i) => {
+    labels.push(label);
+    dataObject.data.push({
+      x: simResults[label].totalSupply,
+      y: simResults[label].utilization
+    });
+    dataObject.backgroundColor.push(getProfitibilityColor(simResults[label].annualProfit, 500_000));
   });
-  return { datasets };
+  return { datasets: [dataObject], labels };
 }
 
 export async function createChart(simResults: SimulationResults, title?: string): Promise<void> {
-  const width = 800;
-  const height = 600;
-  const data = createData(simResults);
+  const width = 900;
+  const height = 700;
 
+  const totalSupplies = Object.values(simResults).map(result => result.totalSupply);
+  const minTotalSupply = Math.min(...totalSupplies);
+  const maxTotalSupply = Math.max(...totalSupplies);
+
+  const data = createData(simResults);
   const configuration: ChartConfiguration = {
     type: 'scatter',
     data,
@@ -47,19 +55,53 @@ export async function createChart(simResults: SimulationResults, title?: string)
       plugins: {
         title: {
           display: title !== undefined,
-          text: title ? title : ''
+          text: title ? title : '',
+          font: {
+            size: 20
+          }
         },
         legend: {
-          position: 'right'
-        }
-      },
+          position: 'right',
+          labels: {
+            generateLabels: function (chart) {
+              var data = chart.data;
+              return [{
+                text: 'Profitable',
+                fillStyle: GREEN,
+              }, {
+                text: 'Neutral (±500K)',
+                fillStyle: YELLOW,
+              }, {
+                text: 'Unprofitable',
+                fillStyle: RED,
+              }];
+            }
+          }
+        },
+        datalabels: {
+          align: 'top',
+          formatter: function (value, context) {
+            return context.chart.data.labels[context.dataIndex];
+          },
+          font: {
+            weight: 'bold'
+          }
+        },
+      } as any,
       scales: {
         x: {
           type: 'linear',
           position: 'bottom',
+          min: Math.floor((minTotalSupply - 50) / 50) * 50,
+          max: Math.ceil((maxTotalSupply + 50) / 50) * 50,
           title: {
             display: true,
-            text: 'Total Supply (M)'
+            text: 'Total Supply (M)',
+            font: {
+              weight: 'bold',
+              size: 16
+            },
+            padding: 6
           }
         },
         y: {
@@ -68,7 +110,12 @@ export async function createChart(simResults: SimulationResults, title?: string)
           max: 0.85,
           title: {
             display: true,
-            text: 'Utilization'
+            text: 'Utilization',
+            font: {
+              weight: 'bold',
+              size: 16
+            },
+            padding: 6
           }
         }
       }
@@ -88,7 +135,11 @@ export async function createChart(simResults: SimulationResults, title?: string)
     ChartJS.defaults.responsive = true;
     ChartJS.defaults.maintainAspectRatio = false;
   };
-  const chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height, chartCallback });
+  const chartJSNodeCanvas = new ChartJSNodeCanvas({
+    width, height, chartCallback, plugins: {
+      requireLegacy: ['chartjs-plugin-datalabels']
+    }
+  });
   const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
   const fileName = title ? `${title}.png` : 'chart.png';
   const path = nodepath.join(process.cwd(), 'simulation', 'charts', fileName);
