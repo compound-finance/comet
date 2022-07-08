@@ -108,57 +108,57 @@ export async function run() {
 
   console.log('===== Adjusting supply rate slope low =====');
   let simResults: SimulationResults = {};
-  // for (let params of supplySlopeLowParams) {
-  //   const snapshot = (await runSimulation(params)).slice(-1)[0];
-  //   console.log('Equilibrium for supply slope low: ', params.supplyInterestRateSlopeLow);
-  //   console.log(snapshot);
-  //   simResults[`SupplySlopeLow@${defactor(params.supplyInterestRateSlopeLow)}`] = {
-  //     utilization: snapshot.market.utilization,
-  //     totalSupply: Number(snapshot.market.totalSupply) / 1_000_000,
-  //     annualProfit: snapshot.market.annualProfit,
-  //   }
-  // }
-  // await createChart(simResults, 'Supply Rate Slope Low Adjustments');
+  for (let params of supplySlopeLowParams) {
+    const snapshot = (await runSimulation(params)).slice(-1)[0];
+    console.log('Equilibrium for supply slope low: ', params.supplyInterestRateSlopeLow);
+    console.log(snapshot);
+    simResults[`SupplySlopeLow@${defactor(params.supplyInterestRateSlopeLow)}`] = {
+      utilization: snapshot.market.utilization,
+      totalSupply: Number(snapshot.market.totalSupply) / 1_000_000,
+      annualProfit: snapshot.market.annualProfit,
+    };
+  }
+  await createChart(simResults, 'Supply Rate Slope Low Adjustments');
 
-  // console.log('===== Adjusting borrow rate slope low =====');
-  // simResults = {};
-  // for (let params of borrowSlopeLow) {
-  //   const snapshot = (await runSimulation(params)).slice(-1)[0];
-  //   console.log('Equilibrium for borrow slope low: ', params.borrowInterestRateSlopeLow);
-  //   console.log(snapshot);
-  //   simResults[`SlopeLow@${defactor(params.borrowInterestRateSlopeLow)}`] = {
-  //     utilization: snapshot.market.utilization,
-  //     totalSupply: Number(snapshot.market.totalSupply / exp(1, 6)),
-  //     annualProfit: snapshot.market.annualProfit,
-  //   }
-  // }
-  // await createChart(simResults, 'Borrow Rate Slope Low Adjustments');
+  console.log('===== Adjusting borrow rate slope low =====');
+  simResults = {};
+  for (let params of borrowSlopeLow) {
+    const snapshot = (await runSimulation(params)).slice(-1)[0];
+    console.log('Equilibrium for borrow slope low: ', params.borrowInterestRateSlopeLow);
+    console.log(snapshot);
+    simResults[`SlopeLow@${defactor(params.borrowInterestRateSlopeLow)}`] = {
+      utilization: snapshot.market.utilization,
+      totalSupply: Number(snapshot.market.totalSupply / exp(1, 6)),
+      annualProfit: snapshot.market.annualProfit,
+    };
+  }
+  await createChart(simResults, 'Borrow Rate Slope Low Adjustments');
 
-  // console.log('===== Adjusting borrow rate base =====');
-  // simResults = {};
-  // for (let params of borrowBase) {
-  //   const snapshot = (await runSimulation(params)).slice(-1)[0];
-  //   console.log('Equilibrium for borrow base: ', params.borrowInterestRateBase);
-  //   console.log(snapshot);
-  //   simResults[`Base@${defactor(params.borrowInterestRateBase)}`] = {
-  //     utilization: snapshot.market.utilization,
-  //     totalSupply: Number(snapshot.market.totalSupply / exp(1, 6)),
-  //     annualProfit: snapshot.market.annualProfit,
-  //   }
-  // }
-  // await createChart(simResults, 'Borrow Rate Base Adjustments');
+  console.log('===== Adjusting borrow rate base =====');
+  simResults = {};
+  for (let params of borrowBase) {
+    const snapshot = (await runSimulation(params)).slice(-1)[0];
+    console.log('Equilibrium for borrow base: ', params.borrowInterestRateBase);
+    console.log(snapshot);
+    simResults[`Base@${defactor(params.borrowInterestRateBase)}`] = {
+      utilization: snapshot.market.utilization,
+      totalSupply: Number(snapshot.market.totalSupply / exp(1, 6)),
+      annualProfit: snapshot.market.annualProfit,
+    };
+  }
+  await createChart(simResults, 'Borrow Rate Base Adjustments');
 
-  console.log('===== Custom adjustments =====')
+  console.log('===== Custom adjustments =====');
   simResults = {};
   for (let label of Object.keys(custom)) {
     const snapshot = (await runSimulation(custom[label])).slice(-1)[0];
-    console.log('Equilibrium for custom: ')
-    console.log(snapshot)
+    console.log('Equilibrium for custom: ');
+    console.log(snapshot);
     simResults[`${label}`] = {
       utilization: snapshot.market.utilization,
       totalSupply: Number(snapshot.market.totalSupply / exp(1, 6)),
       annualProfit: snapshot.market.annualProfit,
-    }
+    };
   }
   await createChart(simResults, 'Custom Models');
 }

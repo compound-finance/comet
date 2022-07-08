@@ -9,11 +9,11 @@ const GREEN = 'rgba(194, 213, 100, 0.85)';
 
 export interface SimulationResults {
   [label: string]: {
-    utilization: number,
-    totalSupply: number,
-    annualProfit: number,
-  }
-};
+    utilization: number;
+    totalSupply: number;
+    annualProfit: number;
+  };
+}
 
 function getProfitibilityColor(profitability: number, neutralRange: number) {
   if (profitability > neutralRange) {
@@ -28,7 +28,7 @@ function getProfitibilityColor(profitability: number, neutralRange: number) {
 function createData(simResults: SimulationResults) {
   const labels = [];
   const dataObject = { data: [], pointRadius: 5, backgroundColor: [] };
-  Object.keys(simResults).map((label, i) => {
+  Object.keys(simResults).map(label => {
     labels.push(label);
     dataObject.data.push({
       x: simResults[label].totalSupply,
@@ -63,8 +63,7 @@ export async function createChart(simResults: SimulationResults, title?: string)
         legend: {
           position: 'right',
           labels: {
-            generateLabels: function (chart) {
-              var data = chart.data;
+            generateLabels: function (_chart) {
               return [{
                 text: 'Profitable',
                 fillStyle: GREEN,
@@ -80,7 +79,7 @@ export async function createChart(simResults: SimulationResults, title?: string)
         },
         datalabels: {
           align: 'top',
-          formatter: function (value, context) {
+          formatter: function (_value, context) {
             return context.chart.data.labels[context.dataIndex];
           },
           font: {
