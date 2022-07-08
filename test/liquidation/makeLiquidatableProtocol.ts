@@ -145,7 +145,8 @@ export default async function makeLiquidatableProtocol() {
       ethers.utils.getAddress(WBTC),
       ethers.utils.getAddress(UNI),
     ],
-    [100, 500, 3000, 3000]
+    [100, 500, 3000, 3000],
+    [false, false, false, false]
   );
   await liquidator.deployed();
 
@@ -188,11 +189,6 @@ export default async function makeLiquidatableProtocol() {
   });
   let uniWhaleSigner = await ethers.getSigner(UNI_WHALE);
 
-  // transfer DAI to Comet, so the protocol can sell them
-  // await mockDai.connect(daiWhaleSigner).transfer(comet.address, 200000000000000000000n);
-  // transfer USDC to comet, so it has money to pay out withdraw to underwater user
-  // await mockUSDC.connect(usdcWhaleSigner).transfer(comet.address, 300000000n); // 300e6
-  // transfer USDC to signer, so it has money to purchase collateral (is this still necessary?)
   await mockUSDC.connect(usdcWhaleSigner).transfer(signer.address, 300000000n); // 300e6
   // transfer DAI to underwater user (is this still necessary?)
   await mockDai.connect(daiWhaleSigner).transfer(underwaterUser.address, 200000000000000000000n);
@@ -202,14 +198,6 @@ export default async function makeLiquidatableProtocol() {
   await mockWBTC.connect(wbtcWhaleSigner).transfer(underwaterUser.address, 200000000n);
   // transfer UNI to underwater user
   await mockUNI.connect(uniWhaleSigner).transfer(underwaterUser.address, 200000000000000000000n);
-  // // underwater user approves Comet
-  // await mockDai.connect(underwaterUser).approve(comet.address, 120000000000000000000n);
-  // // underwater user supplies DAI to Comet
-  // await comet.connect(underwaterUser).supply(DAI, 120000000000000000000n); //
-  // // user borrows (required to ensure there is a Withdraw event for the user)
-  // await comet.connect(underwaterUser).withdraw(USDC, 10e6);
-  // // artificially put in an underwater borrow position
-  // await comet.setBasePrincipal(underwaterUser.address, -(exp(200, 6)));
 
   return {
     comet: cometHarnessInterface,

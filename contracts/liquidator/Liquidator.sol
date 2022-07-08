@@ -38,9 +38,11 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
     ISwapRouter public immutable swapRouter;
     CometInterface public immutable comet;
+    address public immutable weth;
 
     uint24 public constant defaultPoolFee = 500;
     mapping(address => uint24) public poolFees;
+    mapping(address => bool) public isLowLiquidity;
 
     constructor(
         ISwapRouter _swapRouter,
@@ -48,24 +50,69 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         address _factory,
         address _WETH9,
         address[] memory _assets,
-        uint24[] memory _poolFees
+        uint24[] memory _poolFees,
+        bool[] memory _lowLiquidity
     ) PeripheryImmutableState(_factory, _WETH9) {
         require(_assets.length == _poolFees.length, "Wrong input");
+        require(_assets.length == _lowLiquidity.length, "Wrong input");
 
         swapRouter = _swapRouter;
         comet = _comet;
+        weth = _WETH9;
 
         // Set the desirable pool fees for assets
         for (uint i = 0; i < _assets.length; i++) {
             address asset = _assets[i];
             uint24 poolFee = _poolFees[i];
             poolFees[asset] = poolFee;
+            isLowLiquidity[asset] = _lowLiquidity[i];
         }
     }
 
     function getPoolFee(address asset) internal view returns(uint24) {
         uint24 poolFee = poolFees[asset];
         return poolFee == 0 ? defaultPoolFee : poolFee;
+    }
+
+    function swapCollateral(address asset) internal returns (uint256) {
+        uint256 swapAmount = ERC20(asset).balanceOf(address(this));
+        uint24 poolFee = getPoolFee(asset);
+        address swapToken = asset;
+
+        TransferHelper.safeApprove(asset, address(swapRouter), swapAmount);
+        if (isLowLiquidity[asset]) {
+            swapAmount = swapRouter.exactInputSingle(
+                ISwapRouter.ExactInputSingleParams({
+                    tokenIn: asset,
+                    tokenOut: weth,
+                    fee: poolFee,
+                    recipient: address(this),
+                    deadline: block.timestamp,
+                    amountIn: swapAmount,
+                    amountOutMinimum: 0,
+                    sqrtPriceLimitX96: 0
+                })
+            );
+            swapToken = weth;
+            poolFee = getPoolFee(weth);
+
+            TransferHelper.safeApprove(weth, address(swapRouter), swapAmount);
+        }
+
+        uint256 amountOut = swapRouter.exactInputSingle(
+            ISwapRouter.ExactInputSingleParams({
+                tokenIn: swapToken,
+                tokenOut: comet.baseToken(),
+                fee: poolFee,
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: swapAmount,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            })
+        );
+
+        return amountOut;
     }
 
     function uniswapV3FlashCallback(
