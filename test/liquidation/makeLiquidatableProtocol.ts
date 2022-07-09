@@ -10,11 +10,13 @@ import {
 import {
   COMP,
   COMP_USDC_PRICE_FEED,
+  COMP_WHALE,
   DAI,
   DAI_USDC_PRICE_FEED,
   DAI_WHALE,
   LINK,
   LINK_USDC_PRICE_FEED,
+  LINK_WHALE,
   SWAP_ROUTER,
   UNI,
   UNI_USDC_PRICE_FEED,
@@ -35,6 +37,8 @@ import usdcAbi from './usdc-abi';
 import wethAbi from './weth-abi';
 import wbtcAbi from './wbtc-abi';
 import uniAbi from './uni-abi';
+import compAbi from './comp-abi';
+import linkAbi from './link-abi';
 
 export default async function makeLiquidatableProtocol() {
   // build Comet
@@ -144,9 +148,11 @@ export default async function makeLiquidatableProtocol() {
       ethers.utils.getAddress(WETH9),
       ethers.utils.getAddress(WBTC),
       ethers.utils.getAddress(UNI),
+      ethers.utils.getAddress(COMP),
+      ethers.utils.getAddress(LINK),
     ],
-    [100, 500, 3000, 3000],
-    [false, false, false, false]
+    [100, 500, 3000, 3000, 3000, 3000],
+    [false, false, false, false, true, true]
   );
   await liquidator.deployed();
 
@@ -158,6 +164,8 @@ export default async function makeLiquidatableProtocol() {
   const mockWETH = new ethers.Contract(WETH9, wethAbi, signer);
   const mockWBTC = new ethers.Contract(WBTC, wbtcAbi, signer);
   const mockUNI = new ethers.Contract(UNI, uniAbi, signer);
+  const mockCOMP = new ethers.Contract(COMP, compAbi, signer);
+  const mockLINK = new ethers.Contract(LINK, linkAbi, signer);
 
   await hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
@@ -189,6 +197,18 @@ export default async function makeLiquidatableProtocol() {
   });
   let uniWhaleSigner = await ethers.getSigner(UNI_WHALE);
 
+  await hre.network.provider.request({
+    method: 'hardhat_impersonateAccount',
+    params: [COMP_WHALE],
+  });
+  let compWhaleSigner = await ethers.getSigner(COMP_WHALE);
+
+  await hre.network.provider.request({
+    method: 'hardhat_impersonateAccount',
+    params: [LINK_WHALE],
+  });
+  let linkWhaleSigner = await ethers.getSigner(LINK_WHALE);
+
   await mockUSDC.connect(usdcWhaleSigner).transfer(signer.address, 300000000n); // 300e6
   // transfer DAI to underwater user (is this still necessary?)
   await mockDai.connect(daiWhaleSigner).transfer(underwaterUser.address, 200000000000000000000n);
@@ -198,6 +218,10 @@ export default async function makeLiquidatableProtocol() {
   await mockWBTC.connect(wbtcWhaleSigner).transfer(underwaterUser.address, 200000000n);
   // transfer UNI to underwater user
   await mockUNI.connect(uniWhaleSigner).transfer(underwaterUser.address, 200000000000000000000n);
+  // transfer COMP to underwater user
+  await mockCOMP.connect(compWhaleSigner).transfer(underwaterUser.address, 200000000000000000000n);
+  // transfer LINK to underwater user
+  await mockLINK.connect(linkWhaleSigner).transfer(underwaterUser.address, 200000000000000000000n);
 
   return {
     comet: cometHarnessInterface,
@@ -208,7 +232,9 @@ export default async function makeLiquidatableProtocol() {
       usdc: mockUSDC,
       weth: mockWETH,
       wbtc: mockWBTC,
-      uni: mockUNI
+      uni: mockUNI,
+      comp: mockCOMP,
+      link: mockLINK
     }
   };
 }

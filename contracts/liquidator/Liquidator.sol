@@ -135,29 +135,10 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             // XXX approve everything all at once?
             TransferHelper.safeApprove(comet.baseToken(), address(comet), baseAmount);
 
-            uint24 poolFee = getPoolFee(asset);
-
             // XXX Replace 0 with more meaningful value here
             // XXX if buyCollateral returns collateral amount after change in Comet, no need to check balance
             comet.buyCollateral(asset, 0, baseAmount, address(this));
-            uint256 collateralAmount = ERC20(asset).balanceOf(address(this));
-
-            TransferHelper.safeApprove(asset, address(swapRouter), collateralAmount);
-
-            uint256 amountOut =
-                swapRouter.exactInputSingle(
-                    ISwapRouter.ExactInputSingleParams({
-                        tokenIn: asset,
-                        tokenOut: comet.baseToken(),
-                        fee: poolFee,
-                        recipient: address(this),
-                        deadline: block.timestamp,
-                        amountIn: collateralAmount,
-                        // XXX is baseAmount a good value to pass here?
-                        amountOutMinimum: baseAmount,
-                        sqrtPriceLimitX96: 0
-                    })
-                );
+            uint256 amountOut = swapCollateral(asset);
             totalAmountOut += amountOut;
         }
 
