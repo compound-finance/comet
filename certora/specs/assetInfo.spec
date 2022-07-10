@@ -94,5 +94,5 @@ rule reversibility_of_packing(uint8 i, address assetArg, address priceFeedArg, u
         assert (liquidateCollateralFactor_ == liquidateCollateralFactorArg, "liquidation collateral factor got packed/unpacked wrongfully");
         assert (liquidationFactor_ == liquidationFactorArg, "liquidation factor got packed/unpacked wrongfully");
         assert (supplyCap_ == supplyCapArg, "supply got packed/unpacked wrongfully");
-    }
+    } 
 }
