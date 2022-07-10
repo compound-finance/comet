@@ -69,8 +69,7 @@ methods{
     @Link:
         https://vaas-stg.certora.com/output/44289/440b2480ee47ade7c8c8/?anonymousKey=00dccb7618aa762ec6c95274cae99909a5f75c7b
 */
-
-/*
+ 
 rule reversibility_of_packing(uint8 i, address assetArg, address priceFeedArg, uint8 decimalsArg, uint64 borrowCollateralFactorArg, uint64 liquidateCollateralFactorArg, uint64 liquidationFactorArg, uint128 supplyCapArg){
     require i == 0; // checking for the 1st asset only, assuming that the retrieval of the correct asset in _getAssetConfig being done correctly
     uint256 word_a; uint256 word_b;
@@ -97,4 +96,3 @@ rule reversibility_of_packing(uint8 i, address assetArg, address priceFeedArg, u
         assert (supplyCap_ == supplyCapArg, "supply got packed/unpacked wrongfully");
     }
 }
-*/
