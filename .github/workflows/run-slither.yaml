@@ -1,0 +1,31 @@
+name: 'Run slither'
+on:
+  workflow_dispatch:
+  pull_request:
+jobs:
+  slither_analyzer:
+    name: Slither analyzer
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install solc
+        run: sudo add-apt-repository ppa:ethereum/ethereum;sudo add-apt-repository ppa:ethereum/ethereum-dev;sudo apt-get update;sudo apt-get install solc
+
+      - name: Install packages
+        run: pip install slither-analyzer solc-select
+
+      - name: Switch to solidity version
+        run: solc-select install 0.8.15;solc-select use 0.8.15
+
+      - name: Function clash analysis
+        run: yarn slither:fn-clashes &> tmp_res; cat tmp_res | grep 'Function id collision found' && exit 1 || exit 0
