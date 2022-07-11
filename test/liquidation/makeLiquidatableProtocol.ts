@@ -1,5 +1,5 @@
 import hre, { ethers } from 'hardhat';
-import { exp, setTotalsBasic } from '../helpers';
+import { setTotalsBasic } from '../helpers';
 import { HttpNetworkConfig } from 'hardhat/types/config';
 import {
   CometExt__factory,

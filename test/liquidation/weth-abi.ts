@@ -211,4 +211,4 @@ export default [
     }],
     'name': 'Withdrawal',
     'type': 'event'
-  }]
+  }];
