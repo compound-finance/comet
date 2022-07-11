@@ -1,9 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.15;
-pragma abicoder v2;
 
 import "./vendor/@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3FlashCallback.sol";
-import "./vendor/@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol";
 import "./vendor/@uniswap/v3-periphery/contracts/base/PeripheryPayments.sol";
 import "./vendor/@uniswap/v3-periphery/contracts/base/PeripheryImmutableState.sol";
 import "./vendor/@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol";
@@ -30,9 +28,6 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         uint256[] baseAmounts;
         bool reversedPair;
     }
-
-    using LowGasSafeMath for uint256;
-    using LowGasSafeMath for int256;
 
     uint256 public constant QUOTE_PRICE_SCALE = 1e6;
 
@@ -153,13 +148,13 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         uint256 amountOut,
         address payer
     ) internal {
-        uint256 amountOwed = LowGasSafeMath.add(amount, fee);
+        uint256 amountOwed = amount + fee;
         TransferHelper.safeApprove(token, address(this), amountOwed);
         if (amountOwed > 0) pay(token, address(this), msg.sender, amountOwed);
 
         // if profitable, pay profits to payer
         if (amountOut > amountOwed) {
-            uint256 profit = LowGasSafeMath.sub(amountOut, amountOwed);
+            uint256 profit = amountOut - amountOwed;
             TransferHelper.safeApprove(token, address(this), profit);
             pay(token, address(this), payer, profit);
         }
@@ -179,14 +174,6 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
             uint256 quotePrice = comet.quoteCollateral(asset, QUOTE_PRICE_SCALE * comet.baseScale());
             uint256 assetBaseAmount = comet.baseScale() * QUOTE_PRICE_SCALE * collateralBalance / quotePrice;
-            /*
-                quoteCollateral = amount of asset you get for 1 * QUOTE_PRICE_SCALE USDC
-                collateralBalance = Comet's balance of asset
-                price = amount of USDC required to buy the whole asset
-
-                1 / quotePrice = x / collateralBalance
-                (1 / quotePrice) * collateralBalance = x
-            */
             assetBaseAmounts[i] = assetBaseAmount;
             totalBaseAmount += assetBaseAmount;
         }
