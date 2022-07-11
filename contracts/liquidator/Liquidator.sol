@@ -1,6 +1,5 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.15;
-pragma abicoder v2;
 
 import "./vendor/@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3FlashCallback.sol";
 import "./vendor/@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol";
