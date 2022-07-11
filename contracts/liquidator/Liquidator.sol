@@ -13,6 +13,7 @@ import "../CometInterface.sol";
 import "../ERC20.sol";
 
 contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, PeripheryPayments {
+    // @notice Initial fflash loan parameters
     struct FlashParams {
         address[] accounts;
         address pairToken;
@@ -30,15 +31,26 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     }
 
     uint256 public constant QUOTE_PRICE_SCALE = 1e6;
+    uint24 public constant DEFAULT_POOL_FEE = 500;
 
     ISwapRouter public immutable swapRouter;
     CometInterface public immutable comet;
     address public immutable weth;
 
-    uint24 public constant defaultPoolFee = 500;
+    // Uniswap pool properties
     mapping(address => uint24) public poolFees;
     mapping(address => bool) public isLowLiquidity;
 
+    /**
+     * @notice Construct a new liquidator instance
+     * @param _swapRouter The Uniswap V3 Swap router address
+     * @param _comet The Compound V3 Comet instance address
+     * @param _factory The Uniswap V3 pools factory instance address
+     * @param _WETH9 The WETH address
+     * @param _assets The suported collateral assets
+     * @param _poolFees The Uniswap V3 pool fee used to locate the pool address
+     * @param _lowLiquidity The array that specifies if asset has low liquidity asset-USDC(base token) pool
+     **/
     constructor(
         ISwapRouter _swapRouter,
         CometInterface _comet,
@@ -55,7 +67,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         comet = _comet;
         weth = _WETH9;
 
-        // Set the desirable pool fees for assets
+        // Set the desirable pool fees and liquidity checks for assets
         for (uint i = 0; i < _assets.length; i++) {
             address asset = _assets[i];
             uint24 poolFee = _poolFees[i];
@@ -64,18 +76,27 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         }
     }
 
+    /**
+     * @dev Returns specified or default fee for the Uniswap pool
+     */
     function getPoolFee(address asset) internal view returns(uint24) {
         uint24 poolFee = poolFees[asset];
-        return poolFee == 0 ? defaultPoolFee : poolFee;
+        return poolFee == 0 ? DEFAULT_POOL_FEE : poolFee;
     }
 
+    /**
+     * @dev Swaps the given asset to USDC(base token) using Uniswap pools
+     */
     function swapCollateral(address asset) internal returns (uint256) {
         uint256 swapAmount = ERC20(asset).balanceOf(address(this));
+        // Safety check, make sure residue balance in protocol is ignored
         if (swapAmount == 0) return 0;
+
         uint24 poolFee = getPoolFee(asset);
         address swapToken = asset;
 
         TransferHelper.safeApprove(asset, address(swapRouter), swapAmount);
+        // For low liquidity asset, swap it to ETH first
         if (isLowLiquidity[asset]) {
             swapAmount = swapRouter.exactInputSingle(
                 ISwapRouter.ExactInputSingleParams({
@@ -95,6 +116,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             TransferHelper.safeApprove(weth, address(swapRouter), swapAmount);
         }
 
+        // Swap asset or received ETH to base asset
         uint256 amountOut = swapRouter.exactInputSingle(
             ISwapRouter.ExactInputSingleParams({
                 tokenIn: swapToken,
@@ -111,16 +133,24 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         return amountOut;
     }
 
+    /**
+     * @notice Uniswap flashloan callback
+     * @param fee0 The fee for borrowing token0 from pool
+     * @param fee1 The fee for borrowing token1 from pool
+     * @param data The encoded data passed from loan initiation function
+     */
     function uniswapV3FlashCallback(
         uint256 fee0,
         uint256 fee1,
         bytes calldata data
     ) external override {
+        // Verify uniswap callback, recommended security measure
         FlashCallbackData memory decoded = abi.decode(data, (FlashCallbackData));
         CallbackValidation.verifyCallback(factory, decoded.poolKey);
 
         address[] memory assets = decoded.assets;
 
+        // Allow Comet protocol to withdraw USDC(base token) for collateral purchase
         TransferHelper.safeApprove(comet.baseToken(), address(comet), decoded.amount);
 
         uint256 totalAmountOut = 0;
@@ -138,9 +168,18 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         }
 
         uint256 fee = decoded.reversedPair? fee0 : fee1;
+        // Payback flashloan to Uniswap pool and profit to the caller
         payback(decoded.amount, fee, comet.baseToken(), totalAmountOut, decoded.payer);
     }
 
+    /**
+     * @dev Returns loan to Uniswap pool and sends USDC (base token) profit to caller
+     * @param amount The loan amount that need to be repaid
+     * @param fee The fee for taking the loan
+     * @param token The base token whch was borrowed for successful liquidation
+     * @param amountOut The total amount of base token received after liquidation
+     * @param payer The caller address of liquidation bot
+     */
     function payback(
         uint256 amount,
         uint256 fee,
@@ -150,9 +189,10 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     ) internal {
         uint256 amountOwed = amount + fee;
         TransferHelper.safeApprove(token, address(this), amountOwed);
+        // Repay the loan
         if (amountOwed > 0) pay(token, address(this), msg.sender, amountOwed);
 
-        // if profitable, pay profits to payer
+        // if profitable, pay profits to the caller
         if (amountOut > amountOwed) {
             uint256 profit = amountOut - amountOwed;
             TransferHelper.safeApprove(token, address(this), profit);
@@ -160,6 +200,9 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         }
     }
 
+    /**
+     * @dev Calculates the total amount of base asset needed to buy all the discounted collateral from the protocol
+     */
     function calculateTotalBaseAmount() internal view returns (uint256, uint256[] memory, address[] memory) {
         uint256 totalBaseAmount = 0;
         uint8 numAssets = comet.numAssets();
@@ -181,8 +224,10 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         return (totalBaseAmount, assetBaseAmounts, cometAssets);
     }
 
-    /// @param params The parameters necessary for flash and the callback, passed in as FlashParams
-    /// @notice Calls the pools flash function with data needed in `uniswapV3FlashCallback`
+    /**
+     * @notice Calls the pools flash function with data needed in `uniswapV3FlashCallback`
+     * @param params The parameters necessary for flash and the callback, passed in as FlashParams
+     */
     function initFlash(FlashParams memory params) external {
         // Absorb Comet underwater accounts
         comet.absorb(address(this), params.accounts);
@@ -192,6 +237,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         address poolToken0 = params.reversedPair ? comet.baseToken(): params.pairToken;
         address poolToken1 = params.reversedPair ? params.pairToken : comet.baseToken();
 
+        // Find the desired Uniswap pool to borrow base token from, for ex DAI-USDC
         PoolAddress.PoolKey memory poolKey =
             PoolAddress.PoolKey({token0: poolToken0, token1: poolToken1, fee: params.poolFee});
         IUniswapV3Pool pool = IUniswapV3Pool(PoolAddress.computeAddress(factory, poolKey));
