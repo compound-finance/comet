@@ -1,8 +1,13 @@
-// mainnet
+// mainnet asset whales
 export const DAI_WHALE = '0x7a8edc710ddeadddb0b539de83f3a306a621e823';
 export const USDC_WHALE = '0xA929022c9107643515F5c777cE9a910F0D1e490C';
 export const WETH_WHALE = '0x0F4ee9631f4be0a63756515141281A3E2B293Bbe';
 export const COMP_WHALE = '0x73af3bcf944a6559933396c1577b257e2054d935';
+export const WBTC_WHALE = '0x602d9abd5671d24026e2ca473903ff2a9a957407';
+export const UNI_WHALE = '0x7D325A9C8F10758188641FE91cFD902499edC782';
+export const LINK_WHALE = '0x6262998ced04146fa42253a5c0af90ca02dfd2a3';
+
+// mainnet assets
 export const WBTC = '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599';
 export const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
 export const USDT = '0xdac17f958d2ee523a2206206994597c13d831ec7';
@@ -12,6 +17,7 @@ export const DAI = '0x6B175474E89094C44Da98b954EedeAC495271d0F';
 export const UNI = '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984';
 export const WETH9 = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
 
+// Uniwap V3 contracts
 export const SWAP_ROUTER = '0xE592427A0AEce92De3Edee1F18E0157C05861564';
 export const UNISWAP_V3_FACTORY = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
 
