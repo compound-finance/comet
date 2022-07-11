@@ -1,4 +1,4 @@
-//SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
 import "./vendor/@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3FlashCallback.sol";
@@ -12,8 +12,12 @@ import "./vendor/@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "../CometInterface.sol";
 import "../ERC20.sol";
 
+/**
+ * @title Compound's Liquidator Contract
+ * @author Compound
+ */
 contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, PeripheryPayments {
-    // @notice Initial fflash loan parameters
+    /** Structs needed for Uniswap flash swap **/
     struct FlashParams {
         address[] accounts;
         address pairToken;
@@ -30,14 +34,24 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         bool reversedPair;
     }
 
+    /** Liquidator configuration constants **/
+
+    /// @notice The scale for asset price calculations
     uint256 public constant QUOTE_PRICE_SCALE = 1e6;
+
+    /// @notice Uniswap standard pool fee, used if custom fee is not specified for the pool
     uint24 public constant DEFAULT_POOL_FEE = 500;
 
+    /// @notice Uniswap router used for token exchange
     ISwapRouter public immutable swapRouter;
+
+    /// @notice Compound Comet protocol
     CometInterface public immutable comet;
+
+    /// @notice The address of WETH asset
     address public immutable weth;
 
-    // Uniswap pool properties
+    /** Uniswap pools properties **/
     mapping(address => uint24) public poolFees;
     mapping(address => bool) public isLowLiquidity;
 
@@ -189,10 +203,11 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     ) internal {
         uint256 amountOwed = amount + fee;
         TransferHelper.safeApprove(token, address(this), amountOwed);
+
         // Repay the loan
         if (amountOwed > 0) pay(token, address(this), msg.sender, amountOwed);
 
-        // if profitable, pay profits to the caller
+        // If profitable, pay profits to the caller
         if (amountOut > amountOwed) {
             uint256 profit = amountOut - amountOwed;
             TransferHelper.safeApprove(token, address(this), profit);
@@ -215,6 +230,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
             if (collateralBalance == 0) continue;
 
+            // Find the price in asset needed to base QUOTE_PRICE_SCALE of USDC(base token) of collateral
             uint256 quotePrice = comet.quoteCollateral(asset, QUOTE_PRICE_SCALE * comet.baseScale());
             uint256 assetBaseAmount = comet.baseScale() * QUOTE_PRICE_SCALE * collateralBalance / quotePrice;
             assetBaseAmounts[i] = assetBaseAmount;
