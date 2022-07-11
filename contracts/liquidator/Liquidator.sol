@@ -71,6 +71,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
     function swapCollateral(address asset) internal returns (uint256) {
         uint256 swapAmount = ERC20(asset).balanceOf(address(this));
+        if (swapAmount == 0) return 0;
         uint24 poolFee = getPoolFee(asset);
         address swapToken = asset;
 
@@ -120,15 +121,14 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
         address[] memory assets = decoded.assets;
 
+        TransferHelper.safeApprove(comet.baseToken(), address(comet), decoded.amount);
+
         uint256 totalAmountOut = 0;
         for (uint i = 0; i < assets.length; i++) {
             address asset = assets[i];
             uint256 baseAmount = decoded.baseAmounts[i];
 
             if (baseAmount == 0) continue;
-
-            // XXX approve everything all at once?
-            TransferHelper.safeApprove(comet.baseToken(), address(comet), baseAmount);
 
             // XXX Replace 0 with more meaningful value here
             // XXX if buyCollateral returns collateral amount after change in Comet, no need to check balance
