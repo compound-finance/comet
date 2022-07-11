@@ -19,7 +19,7 @@ describe('Liquidator', function () {
     // underwater user approves Comet
     await dai.connect(underwater).approve(comet.address, 120000000000000000000n);
     // underwater user supplies DAI to Comet
-    await comet.connect(underwater).supply(dai.address, 120000000000000000000n); //
+    await comet.connect(underwater).supply(dai.address, 120000000000000000000n);
     // artificially put in an underwater borrow position
     await comet.setBasePrincipal(underwater.address, -(exp(200, 6)));
 
@@ -41,7 +41,7 @@ describe('Liquidator', function () {
   it('Should execute WETH flash swap with profit', async () => {
     const { comet, liquidator, users: [owner, underwater], assets: { usdc, weth } } = await makeLiquidatableProtocol();
     await weth.connect(underwater).approve(comet.address, 120000000000000000000n);
-    await comet.connect(underwater).supply(weth.address, 120000000000000000000n); //
+    await comet.connect(underwater).supply(weth.address, 120000000000000000000n);
     await comet.setBasePrincipal(underwater.address, -(exp(4000, 6)));
 
     const beforeUSDCBalance = await usdc.balanceOf(owner.address);
@@ -81,7 +81,7 @@ describe('Liquidator', function () {
   it('Should execute UNI flash swap with profit', async () => {
     const { comet, liquidator, users: [owner, underwater], assets: { usdc, uni } } = await makeLiquidatableProtocol();
     await uni.connect(underwater).approve(comet.address, exp(120, 18));
-    await comet.connect(underwater).supply(uni.address, exp(120, 18)); //
+    await comet.connect(underwater).supply(uni.address, exp(120, 18));
     await comet.setBasePrincipal(underwater.address, -(exp(40000, 6)));
 
     const beforeUSDCBalance = await usdc.balanceOf(owner.address);
@@ -101,7 +101,7 @@ describe('Liquidator', function () {
   it('Should execute COMP flash swap with profit', async () => {
     const { comet, liquidator, users: [owner, underwater], assets: { usdc, comp } } = await makeLiquidatableProtocol();
     await comp.connect(underwater).approve(comet.address, exp(12, 18));
-    await comet.connect(underwater).supply(comp.address, exp(12, 18)); //
+    await comet.connect(underwater).supply(comp.address, exp(12, 18));
     await comet.setBasePrincipal(underwater.address, -(exp(40000, 6)));
 
     const beforeUSDCBalance = await usdc.balanceOf(owner.address);
@@ -121,7 +121,7 @@ describe('Liquidator', function () {
   it('Should execute LINK flash swap with profit', async () => {
     const { comet, liquidator, users: [owner, underwater], assets: { usdc, link } } = await makeLiquidatableProtocol();
     await link.connect(underwater).approve(comet.address, exp(12, 18));
-    await comet.connect(underwater).supply(link.address, exp(12, 18)); //
+    await comet.connect(underwater).supply(link.address, exp(12, 18));
     await comet.setBasePrincipal(underwater.address, -(exp(4000, 6)));
 
     const beforeUSDCBalance = await usdc.balanceOf(owner.address);
@@ -136,34 +136,5 @@ describe('Liquidator', function () {
     const profit = afterUSDCBalance - beforeUSDCBalance;
     expect(tx.hash).to.be.not.null;
     expect(profit).to.be.greaterThan(0);
-  });
-
-  it('Successful execution should increase base token balance of liquidating user', async () => {
-    const {
-      comet,
-      liquidator,
-      users: [owner, underwater],
-      assets: { dai, usdc }
-    } = await makeLiquidatableProtocol();
-
-    // underwater user approves Comet
-    await dai.connect(underwater).approve(comet.address, 120000000000000000000n);
-    // underwater user supplies DAI to Comet
-    await comet.connect(underwater).supply(dai.address, 120000000000000000000n); //
-    // artificially put in an underwater borrow position
-    await comet.setBasePrincipal(underwater.address, -(exp(200, 6)));
-
-    const baseBalanceBefore = await usdc.balanceOf(owner.address);
-
-    await liquidator.connect(owner).initFlash({
-      accounts: [underwater.address],
-      pairToken: ethers.utils.getAddress(DAI),
-      poolFee: 500,
-      reversedPair: false,
-    });
-
-    const baseBalanceAfter = await usdc.balanceOf(owner.address);
-
-    expect(baseBalanceAfter.toNumber()).to.be.greaterThan(baseBalanceBefore.toNumber());
   });
 });
