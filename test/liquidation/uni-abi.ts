@@ -5,6 +5,16 @@ export default [
         'internalType': 'address',
         'name': 'account',
         'type': 'address'
+      },
+      {
+        'internalType': 'address',
+        'name': 'minter_',
+        'type': 'address'
+      },
+      {
+        'internalType': 'uint256',
+        'name': 'mintingAllowedAfter_',
+        'type': 'uint256'
       }
     ],
     'payable': false,
@@ -90,6 +100,25 @@ export default [
     'anonymous': false,
     'inputs': [
       {
+        'indexed': false,
+        'internalType': 'address',
+        'name': 'minter',
+        'type': 'address'
+      },
+      {
+        'indexed': false,
+        'internalType': 'address',
+        'name': 'newMinter',
+        'type': 'address'
+      }
+    ],
+    'name': 'MinterChanged',
+    'type': 'event'
+  },
+  {
+    'anonymous': false,
+    'inputs': [
+      {
         'indexed': true,
         'internalType': 'address',
         'name': 'from',
@@ -130,6 +159,21 @@ export default [
     'constant': true,
     'inputs': [],
     'name': 'DOMAIN_TYPEHASH',
+    'outputs': [
+      {
+        'internalType': 'bytes32',
+        'name': '',
+        'type': 'bytes32'
+      }
+    ],
+    'payable': false,
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'constant': true,
+    'inputs': [],
+    'name': 'PERMIT_TYPEHASH',
     'outputs': [
       {
         'internalType': 'bytes32',
@@ -386,6 +430,86 @@ export default [
   {
     'constant': true,
     'inputs': [],
+    'name': 'minimumTimeBetweenMints',
+    'outputs': [
+      {
+        'internalType': 'uint32',
+        'name': '',
+        'type': 'uint32'
+      }
+    ],
+    'payable': false,
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'constant': false,
+    'inputs': [
+      {
+        'internalType': 'address',
+        'name': 'dst',
+        'type': 'address'
+      },
+      {
+        'internalType': 'uint256',
+        'name': 'rawAmount',
+        'type': 'uint256'
+      }
+    ],
+    'name': 'mint',
+    'outputs': [],
+    'payable': false,
+    'stateMutability': 'nonpayable',
+    'type': 'function'
+  },
+  {
+    'constant': true,
+    'inputs': [],
+    'name': 'mintCap',
+    'outputs': [
+      {
+        'internalType': 'uint8',
+        'name': '',
+        'type': 'uint8'
+      }
+    ],
+    'payable': false,
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'constant': true,
+    'inputs': [],
+    'name': 'minter',
+    'outputs': [
+      {
+        'internalType': 'address',
+        'name': '',
+        'type': 'address'
+      }
+    ],
+    'payable': false,
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'constant': true,
+    'inputs': [],
+    'name': 'mintingAllowedAfter',
+    'outputs': [
+      {
+        'internalType': 'uint256',
+        'name': '',
+        'type': 'uint256'
+      }
+    ],
+    'payable': false,
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'constant': true,
+    'inputs': [],
     'name': 'name',
     'outputs': [
       {
@@ -438,6 +562,66 @@ export default [
     ],
     'payable': false,
     'stateMutability': 'view',
+    'type': 'function'
+  },
+  {
+    'constant': false,
+    'inputs': [
+      {
+        'internalType': 'address',
+        'name': 'owner',
+        'type': 'address'
+      },
+      {
+        'internalType': 'address',
+        'name': 'spender',
+        'type': 'address'
+      },
+      {
+        'internalType': 'uint256',
+        'name': 'rawAmount',
+        'type': 'uint256'
+      },
+      {
+        'internalType': 'uint256',
+        'name': 'deadline',
+        'type': 'uint256'
+      },
+      {
+        'internalType': 'uint8',
+        'name': 'v',
+        'type': 'uint8'
+      },
+      {
+        'internalType': 'bytes32',
+        'name': 'r',
+        'type': 'bytes32'
+      },
+      {
+        'internalType': 'bytes32',
+        'name': 's',
+        'type': 'bytes32'
+      }
+    ],
+    'name': 'permit',
+    'outputs': [],
+    'payable': false,
+    'stateMutability': 'nonpayable',
+    'type': 'function'
+  },
+  {
+    'constant': false,
+    'inputs': [
+      {
+        'internalType': 'address',
+        'name': 'minter_',
+        'type': 'address'
+      }
+    ],
+    'name': 'setMinter',
+    'outputs': [],
+    'payable': false,
+    'stateMutability': 'nonpayable',
     'type': 'function'
   },
   {
@@ -528,4 +712,3 @@ export default [
     'type': 'function'
   }
 ];
-
