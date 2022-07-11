@@ -22,7 +22,8 @@ migration<Vars>('1657124918_deploy_liquidator', {
         uniswapv3factory,
         weth9,
         [], // XXX add assets
-        []  // XXX add poolFees
+        [],  // XXX add poolFees
+        []  // XXX add lowLiquidity
       ]
     );
 

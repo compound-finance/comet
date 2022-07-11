@@ -171,43 +171,43 @@ export default async function makeLiquidatableProtocol() {
     method: 'hardhat_impersonateAccount',
     params: [DAI_WHALE],
   });
-  let daiWhaleSigner = await ethers.getSigner(DAI_WHALE);
+  const daiWhaleSigner = await ethers.getSigner(DAI_WHALE);
 
   await hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
     params: [USDC_WHALE],
   });
-  let usdcWhaleSigner = await ethers.getSigner(USDC_WHALE);
+  const usdcWhaleSigner = await ethers.getSigner(USDC_WHALE);
 
   await hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
     params: [WETH_WHALE],
   });
-  let wethWhaleSigner = await ethers.getSigner(WETH_WHALE);
+  const wethWhaleSigner = await ethers.getSigner(WETH_WHALE);
 
   await hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
     params: [WBTC_WHALE],
   });
-  let wbtcWhaleSigner = await ethers.getSigner(WBTC_WHALE);
+  const wbtcWhaleSigner = await ethers.getSigner(WBTC_WHALE);
 
   await hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
     params: [UNI_WHALE],
   });
-  let uniWhaleSigner = await ethers.getSigner(UNI_WHALE);
+  const uniWhaleSigner = await ethers.getSigner(UNI_WHALE);
 
   await hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
     params: [COMP_WHALE],
   });
-  let compWhaleSigner = await ethers.getSigner(COMP_WHALE);
+  const compWhaleSigner = await ethers.getSigner(COMP_WHALE);
 
   await hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
     params: [LINK_WHALE],
   });
-  let linkWhaleSigner = await ethers.getSigner(LINK_WHALE);
+  const linkWhaleSigner = await ethers.getSigner(LINK_WHALE);
 
   await mockUSDC.connect(usdcWhaleSigner).transfer(signer.address, 300000000n); // 300e6
   // transfer DAI to underwater user (is this still necessary?)
@@ -235,6 +235,15 @@ export default async function makeLiquidatableProtocol() {
       uni: mockUNI,
       comp: mockCOMP,
       link: mockLINK
+    },
+    whales: {
+      daiWhale: daiWhaleSigner,
+      usdcWhale: usdcWhaleSigner,
+      wethWhale: wethWhaleSigner,
+      wbtcWhale: wbtcWhaleSigner,
+      uniWhale: uniWhaleSigner,
+      compWhale: compWhaleSigner,
+      linkWhale: linkWhaleSigner,
     }
   };
 }
