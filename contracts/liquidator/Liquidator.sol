@@ -174,14 +174,6 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
             uint256 quotePrice = comet.quoteCollateral(asset, QUOTE_PRICE_SCALE * comet.baseScale());
             uint256 assetBaseAmount = comet.baseScale() * QUOTE_PRICE_SCALE * collateralBalance / quotePrice;
-            /*
-                quoteCollateral = amount of asset you get for 1 * QUOTE_PRICE_SCALE USDC
-                collateralBalance = Comet's balance of asset
-                price = amount of USDC required to buy the whole asset
-
-                1 / quotePrice = x / collateralBalance
-                (1 / quotePrice) * collateralBalance = x
-            */
             assetBaseAmounts[i] = assetBaseAmount;
             totalBaseAmount += assetBaseAmount;
         }
