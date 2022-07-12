@@ -17,6 +17,10 @@ import "../ERC20.sol";
  * @author Compound
  */
 contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, PeripheryPayments {
+    /** Events **/
+    event Absorb(address indexed initiator, address[] accounts);
+    event Pay(address token, address indexed payer, address indexed recipient, uint256 value);
+
     /** Structs needed for Uniswap flash swap **/
     struct FlashParams {
         address[] accounts;
@@ -174,7 +178,6 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
             if (baseAmount == 0) continue;
 
-            // XXX Replace 0 with more meaningful value here
             // XXX if buyCollateral returns collateral amount after change in Comet, no need to check balance
             comet.buyCollateral(asset, 0, baseAmount, address(this));
             uint256 amountOut = swapCollateral(asset);
@@ -205,13 +208,17 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         TransferHelper.safeApprove(token, address(this), amountOwed);
 
         // Repay the loan
-        if (amountOwed > 0) pay(token, address(this), msg.sender, amountOwed);
+        if (amountOwed > 0) {
+            pay(token, address(this), msg.sender, amountOwed);
+            emit Pay(token, address(this), msg.sender, amountOwed);
+        }
 
         // If profitable, pay profits to the caller
         if (amountOut > amountOwed) {
             uint256 profit = amountOut - amountOwed;
             TransferHelper.safeApprove(token, address(this), profit);
             pay(token, address(this), payer, profit);
+            emit Pay(token, address(this), payer, profit);
         }
     }
 
@@ -247,6 +254,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     function initFlash(FlashParams memory params) external {
         // Absorb Comet underwater accounts
         comet.absorb(address(this), params.accounts);
+        emit Absorb(msg.sender, params.accounts);
 
         (uint256 totalBaseAmount, uint256[] memory assetBaseAmounts, address[] memory cometAssets) = calculateTotalBaseAmount();
 
