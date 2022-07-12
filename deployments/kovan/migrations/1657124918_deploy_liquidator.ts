@@ -21,9 +21,8 @@ migration<Vars>('1657124918_deploy_liquidator', {
         comet.address,
         uniswapv3factory,
         weth9,
-        [], // XXX add assets
-        [],  // XXX add poolFees
-        []  // XXX add lowLiquidity
+        10 * 1e6,
+        [], // add asset configs
       ]
     );
 
