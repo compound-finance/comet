@@ -31,6 +31,7 @@ const {
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
   INFURA_KEY,
+  POLYGONSCAN_KEY,
   MNEMONIC = '',
   REPORT_GAS = 'false',
 } = process.env;
@@ -45,6 +46,7 @@ function throwIfMissing(envVariable, msg: string) {
 throwIfMissing(ETHERSCAN_KEY, 'Missing required environment variable: ETHERSCAN_KEY');
 throwIfMissing(SNOWTRACE_KEY, 'Missing required environment variable: SNOWTRACE_KEY');
 throwIfMissing(INFURA_KEY, 'Missing required environment variable: INFURA_KEY');
+throwIfMissing(POLYGONSCAN_KEY, 'Missing required environment variable: POLYGONSCAN_KEY');
 
 // Networks
 interface NetworkConfig {
@@ -70,6 +72,16 @@ const networkConfigs: NetworkConfig[] = [
     network: 'fuji',
     chainId: 43113,
     url: 'https://api.avax-test.network/ext/bc/C/rpc',
+  },
+  {
+    network: 'polygon',
+    chainId: 137,
+    url: 'https://polygon-rpc.com/',
+  },
+  {
+    network: 'mumbai',
+    chainId: 80001,
+    url: 'https://rpc-mumbai.maticvigil.com',
   },
 ];
 
@@ -148,6 +160,9 @@ const config: HardhatUserConfig = {
       // Avalanche
       avalanche: SNOWTRACE_KEY,
       avalancheFujiTestnet: SNOWTRACE_KEY,
+      // Polygon
+      polygonMumbai: POLYGONSCAN_KEY,
+      polygon: POLYGONSCAN_KEY,
     },
   },
 
