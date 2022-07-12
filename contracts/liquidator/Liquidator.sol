@@ -191,7 +191,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             totalAmountOut += amountOut;
         }
 
-        // We borrow only 1 asset, so oe of fees will be 0
+        // We borrow only 1 asset, so one of fees will be 0
         uint256 fee = fee0 + fee1;
         // Payback flashloan to Uniswap pool and profit to the caller
         payback(decoded.amount, fee, comet.baseToken(), totalAmountOut, decoded.payer);
