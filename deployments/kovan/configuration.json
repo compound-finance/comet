@@ -7,13 +7,13 @@
   "targetReserves": "5000000e6",
   "rates": {
     "supplyKink": 0.8,
-    "supplySlopeLow": 0.04,
+    "supplySlopeLow": 0.0325,
     "supplySlopeHigh": 0.4,
     "supplyBase": 0,
     "borrowKink": 0.8,
-    "borrowSlopeLow": 0.05,
-    "borrowSlopeHigh": 0.3,
-    "borrowBase": 0.01
+    "borrowSlopeLow": 0.035,
+    "borrowSlopeHigh": 0.25,
+    "borrowBase": 0.015
   },
   "tracking": {
     "indexScale": "1e15",
