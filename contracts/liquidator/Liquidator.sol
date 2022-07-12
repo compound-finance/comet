@@ -48,6 +48,9 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     /// @notice Compound Comet protocol
     CometInterface public immutable comet;
 
+    /// @notice Minimum available amount for liquidation in USDC (base token)
+    uint256 public immutable liquidationThreshold;
+
     /// @notice The address of WETH asset
     address public immutable weth;
 
@@ -70,6 +73,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         CometInterface _comet,
         address _factory,
         address _WETH9,
+        uint256 _liquidationThreshold,
         address[] memory _assets,
         uint24[] memory _poolFees,
         bool[] memory _lowLiquidity
@@ -80,6 +84,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         swapRouter = _swapRouter;
         comet = _comet;
         weth = _WETH9;
+        liquidationThreshold = _liquidationThreshold;
+
 
         // Set the desirable pool fees and liquidity checks for assets
         for (uint i = 0; i < _assets.length; i++) {
@@ -233,6 +239,10 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             // Find the price in asset needed to base QUOTE_PRICE_SCALE of USDC(base token) of collateral
             uint256 quotePrice = comet.quoteCollateral(asset, QUOTE_PRICE_SCALE * comet.baseScale());
             uint256 assetBaseAmount = comet.baseScale() * QUOTE_PRICE_SCALE * collateralBalance / quotePrice;
+
+            // Liquidate only positions with adequate gains, no need to collect residue from protocol
+            if (assetBaseAmount < liquidationThreshold) continue;
+
             assetBaseAmounts[i] = assetBaseAmount;
             totalBaseAmount += assetBaseAmount;
         }
