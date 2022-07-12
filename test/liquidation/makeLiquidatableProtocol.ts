@@ -145,15 +145,13 @@ export default async function makeLiquidatableProtocol() {
     ethers.utils.getAddress(WETH9),
     10 * 1e6, // min viable liquidation is for 10 USDC (base token) of collateral
     [
-      ethers.utils.getAddress(DAI),
-      ethers.utils.getAddress(WETH9),
-      ethers.utils.getAddress(WBTC),
-      ethers.utils.getAddress(UNI),
-      ethers.utils.getAddress(COMP),
-      ethers.utils.getAddress(LINK),
-    ],
-    [100, 500, 3000, 3000, 3000, 3000],
-    [false, false, false, false, true, true]
+      {asset: ethers.utils.getAddress(DAI), fee: 100, isLowLiquidity: false},
+      {asset: ethers.utils.getAddress(WETH9), fee: 500, isLowLiquidity: false},
+      {asset: ethers.utils.getAddress(WBTC), fee: 3000, isLowLiquidity: false},
+      {asset: ethers.utils.getAddress(UNI), fee: 3000, isLowLiquidity: false},
+      {asset: ethers.utils.getAddress(COMP), fee: 3000, isLowLiquidity: true},
+      {asset: ethers.utils.getAddress(LINK), fee: 3000, isLowLiquidity: true}
+    ]
   );
   await liquidator.deployed();
 
@@ -258,6 +256,7 @@ export async function forkMainnet() {
       {
         forking: {
           jsonRpcUrl: mainnetConfig.url,
+          blockNumber: 15125532
         },
       },
     ],
