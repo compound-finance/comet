@@ -1,4 +1,4 @@
-import { expect, exp } from '../helpers';
+import { event, expect, exp, wait } from '../helpers';
 import { ethers } from 'hardhat';
 import makeLiquidatableProtocol, { forkMainnet, resetHardhatNetwork } from './makeLiquidatableProtocol';
 import { DAI } from './addresses';
@@ -24,18 +24,24 @@ describe('Liquidator', function () {
     await comet.setBasePrincipal(underwater.address, -(exp(200, 6)));
 
     const beforeUSDCBalance = await usdc.balanceOf(owner.address);
-    const tx = await liquidator.connect(owner).initFlash({
+    const tx = await wait(liquidator.connect(owner).initFlash({
       accounts: [underwater.address],
       pairToken: ethers.utils.getAddress(dai.address),
       poolFee: 500,
       reversedPair: false,
-    });
+    }));
 
     expect(tx.hash).to.be.not.null;
     const afterUSDCBalance = await usdc.balanceOf(owner.address);
     const profit = afterUSDCBalance - beforeUSDCBalance;
     expect(tx.hash).to.be.not.null;
     expect(profit).to.be.greaterThan(0);
+    expect(event(tx, 2)).to.deep.equal({
+      Absorb: {
+        initiator: owner.address,
+        accounts: [ underwater.address ]
+      }
+    });
   });
 
   it('Should execute WETH flash swap with profit', async () => {
@@ -45,17 +51,23 @@ describe('Liquidator', function () {
     await comet.setBasePrincipal(underwater.address, -(exp(4000, 6)));
 
     const beforeUSDCBalance = await usdc.balanceOf(owner.address);
-    const tx = await liquidator.connect(owner).initFlash({
+    const tx = await wait(liquidator.connect(owner).initFlash({
       accounts: [underwater.address],
       pairToken: ethers.utils.getAddress(DAI),
       poolFee: 500,
       reversedPair: false,
-    });
+    }));
 
     const afterUSDCBalance = await usdc.balanceOf(owner.address);
     const profit = afterUSDCBalance - beforeUSDCBalance;
     expect(tx.hash).to.be.not.null;
     expect(profit).to.be.greaterThan(0);
+    expect(event(tx, 2)).to.deep.equal({
+      Absorb: {
+        initiator: owner.address,
+        accounts: [ underwater.address ]
+      }
+    });
   });
 
   it('Should execute WBTC flash swap with profit', async () => {
@@ -65,17 +77,23 @@ describe('Liquidator', function () {
     await comet.setBasePrincipal(underwater.address, -(exp(40000, 6)));
 
     const beforeUSDCBalance = await usdc.balanceOf(owner.address);
-    const tx = await liquidator.connect(owner).initFlash({
+    const tx = await wait(liquidator.connect(owner).initFlash({
       accounts: [underwater.address],
       pairToken: ethers.utils.getAddress(DAI),
       poolFee: 500,
       reversedPair: false,
-    });
+    }));
 
     const afterUSDCBalance = await usdc.balanceOf(owner.address);
     const profit = afterUSDCBalance - beforeUSDCBalance;
     expect(tx.hash).to.be.not.null;
     expect(profit).to.be.greaterThan(0);
+    expect(event(tx, 2)).to.deep.equal({
+      Absorb: {
+        initiator: owner.address,
+        accounts: [ underwater.address ]
+      }
+    });
   });
 
   it('Should execute UNI flash swap with profit', async () => {
@@ -85,17 +103,23 @@ describe('Liquidator', function () {
     await comet.setBasePrincipal(underwater.address, -(exp(40000, 6)));
 
     const beforeUSDCBalance = await usdc.balanceOf(owner.address);
-    const tx = await liquidator.connect(owner).initFlash({
+    const tx = await wait(liquidator.connect(owner).initFlash({
       accounts: [underwater.address],
       pairToken: ethers.utils.getAddress(DAI),
       poolFee: 500,
       reversedPair: false,
-    });
+    }));
 
     const afterUSDCBalance = await usdc.balanceOf(owner.address);
     const profit = afterUSDCBalance - beforeUSDCBalance;
     expect(tx.hash).to.be.not.null;
     expect(profit).to.be.greaterThan(0);
+    expect(event(tx, 2)).to.deep.equal({
+      Absorb: {
+        initiator: owner.address,
+        accounts: [ underwater.address ]
+      }
+    });
   });
 
   it('Should execute COMP flash swap with profit', async () => {
@@ -105,17 +129,23 @@ describe('Liquidator', function () {
     await comet.setBasePrincipal(underwater.address, -(exp(40000, 6)));
 
     const beforeUSDCBalance = await usdc.balanceOf(owner.address);
-    const tx = await liquidator.connect(owner).initFlash({
+    const tx = await wait(liquidator.connect(owner).initFlash({
       accounts: [underwater.address],
       pairToken: ethers.utils.getAddress(DAI),
       poolFee: 500,
       reversedPair: false,
-    });
+    }));
 
     const afterUSDCBalance = await usdc.balanceOf(owner.address);
     const profit = afterUSDCBalance - beforeUSDCBalance;
     expect(tx.hash).to.be.not.null;
     expect(profit).to.be.greaterThan(0);
+    expect(event(tx, 2)).to.deep.equal({
+      Absorb: {
+        initiator: owner.address,
+        accounts: [ underwater.address ]
+      }
+    });
   });
 
   it('Should execute LINK flash swap with profit', async () => {
@@ -125,16 +155,22 @@ describe('Liquidator', function () {
     await comet.setBasePrincipal(underwater.address, -(exp(4000, 6)));
 
     const beforeUSDCBalance = await usdc.balanceOf(owner.address);
-    const tx = await liquidator.connect(owner).initFlash({
+    const tx = await wait(liquidator.connect(owner).initFlash({
       accounts: [underwater.address],
       pairToken: ethers.utils.getAddress(DAI),
       poolFee: 500,
       reversedPair: false,
-    });
+    }));
 
     const afterUSDCBalance = await usdc.balanceOf(owner.address);
     const profit = afterUSDCBalance - beforeUSDCBalance;
     expect(tx.hash).to.be.not.null;
     expect(profit).to.be.greaterThan(0);
+    expect(event(tx, 2)).to.deep.equal({
+      Absorb: {
+        initiator: owner.address,
+        accounts: [ underwater.address ]
+      }
+    });
   });
 });
