@@ -8,6 +8,7 @@ on:
         options:
           - fuji
           - kovan
+          - mumbai
       migration:
         description: Migration Name
         required: true
@@ -24,6 +25,7 @@ jobs:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
+      POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
