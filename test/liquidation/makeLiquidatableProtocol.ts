@@ -145,7 +145,7 @@ export default async function makeLiquidatableProtocol() {
     ethers.utils.getAddress(WETH9),
     10 * 1e6, // min viable liquidation is for 10 USDC (base token) of collateral
     [
-      {asset: ethers.utils.getAddress(DAI), fee: 100, isLowLiquidity: false},
+      {asset: ethers.utils.getAddress(DAI), fee: 500, isLowLiquidity: false},
       {asset: ethers.utils.getAddress(WETH9), fee: 500, isLowLiquidity: false},
       {asset: ethers.utils.getAddress(WBTC), fee: 3000, isLowLiquidity: false},
       {asset: ethers.utils.getAddress(UNI), fee: 3000, isLowLiquidity: false},
