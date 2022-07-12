@@ -17,6 +17,11 @@ import "../ERC20.sol";
  * @author Compound
  */
 contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, PeripheryPayments {
+    /** Events **/
+    event Absorb(address indexed initiator, address[] accounts);
+    event Pay(address token, address indexed payer, address indexed recipient, uint256 value);
+    event Swap(address tokenIn, address tokenOut, uint24 fee, uint256 amountIn);
+
     /** Structs needed for Uniswap flash swap **/
     struct FlashParams {
         address[] accounts;
@@ -109,9 +114,12 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         uint24 poolFee = getPoolFee(asset);
         address swapToken = asset;
 
+        address baseToken = comet.baseToken();
+
         TransferHelper.safeApprove(asset, address(swapRouter), swapAmount);
         // For low liquidity asset, swap it to ETH first
         if (isLowLiquidity[asset]) {
+            emit Swap(asset, weth, poolFee, swapAmount);
             swapAmount = swapRouter.exactInputSingle(
                 ISwapRouter.ExactInputSingleParams({
                     tokenIn: asset,
@@ -134,7 +142,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         uint256 amountOut = swapRouter.exactInputSingle(
             ISwapRouter.ExactInputSingleParams({
                 tokenIn: swapToken,
-                tokenOut: comet.baseToken(),
+                tokenOut: baseToken,
                 fee: poolFee,
                 recipient: address(this),
                 deadline: block.timestamp,
@@ -143,6 +151,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
                 sqrtPriceLimitX96: 0
             })
         );
+        emit Swap(swapToken, baseToken, poolFee, swapAmount);
 
         return amountOut;
     }
@@ -174,7 +183,6 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
             if (baseAmount == 0) continue;
 
-            // XXX Replace 0 with more meaningful value here
             // XXX if buyCollateral returns collateral amount after change in Comet, no need to check balance
             comet.buyCollateral(asset, 0, baseAmount, address(this));
             uint256 amountOut = swapCollateral(asset);
@@ -205,13 +213,17 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         TransferHelper.safeApprove(token, address(this), amountOwed);
 
         // Repay the loan
-        if (amountOwed > 0) pay(token, address(this), msg.sender, amountOwed);
+        if (amountOwed > 0) {
+            pay(token, address(this), msg.sender, amountOwed);
+            emit Pay(token, address(this), msg.sender, amountOwed);
+        }
 
         // If profitable, pay profits to the caller
         if (amountOut > amountOwed) {
             uint256 profit = amountOut - amountOwed;
             TransferHelper.safeApprove(token, address(this), profit);
             pay(token, address(this), payer, profit);
+            emit Pay(token, address(this), payer, profit);
         }
     }
 
@@ -247,6 +259,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     function initFlash(FlashParams memory params) external {
         // Absorb Comet underwater accounts
         comet.absorb(address(this), params.accounts);
+        emit Absorb(msg.sender, params.accounts);
 
         (uint256 totalBaseAmount, uint256[] memory assetBaseAmounts, address[] memory cometAssets) = calculateTotalBaseAmount();
 
