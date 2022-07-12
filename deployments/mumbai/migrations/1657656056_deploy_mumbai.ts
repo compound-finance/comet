@@ -15,8 +15,8 @@ let cloneAddr = {
   usdcImplementation: '0xdd9185db084f5c4fff3b4f70e7ba62123b812226',
   usdcProxy: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
   wbtc: '0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6',
+  weth: '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619',
   wmatic: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
-  comp: '0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c',
 };
 
 migration('1657656056_deploy_mumbai', {
@@ -64,7 +64,7 @@ migration('1657656056_deploy_mumbai', {
     );
 
     let wbtc = await deploymentManager.clone(cloneAddr.wbtc, [], cloneNetwork);
-    let comp = await deploymentManager.clone(cloneAddr.comp, [], cloneNetwork);
+    let weth = await deploymentManager.clone(cloneAddr.weth, [], cloneNetwork);
 
     let wmatic = await deploymentManager.clone(cloneAddr.wmatic, [], cloneNetwork);
     // Give admin 0.01 WMATIC tokens [this is a precious resource here!]
@@ -74,8 +74,8 @@ migration('1657656056_deploy_mumbai', {
     let contracts = new Map<string, Contract>([
       ['USDC', usdc],
       ['WBTC', wbtc],
+      ['WETH', weth],
       ['WMATIC', wmatic],
-      ['COMP', comp],
     ]);
 
     let { cometProxy, configuratorProxy } = await deployNetworkComet(
@@ -91,8 +91,8 @@ migration('1657656056_deploy_mumbai', {
       fauceteer: fauceteer.address,
       usdc: usdc.address,
       wbtc: wbtc.address,
+      weth: weth.address,
       wmatic: wmatic.address,
-      comp: comp.address,
     };
   },
   enact: async (deploymentManager: DeploymentManager, contracts) => {
