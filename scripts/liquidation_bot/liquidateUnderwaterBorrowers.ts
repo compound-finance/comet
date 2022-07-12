@@ -7,8 +7,7 @@ import {
 // XXX this is Kovan-specific
 const daiPool = {
   tokenAddress: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-  poolFee: 100,
-  reversedPair: false
+  poolFee: 100
 };
 
 async function attemptLiquidation(
@@ -20,8 +19,7 @@ async function attemptLiquidation(
     await liquidator.connect(signer).initFlash({
       accounts: targetAddresses,
       pairToken: daiPool.tokenAddress,
-      poolFee: daiPool.poolFee,
-      reversedPair: daiPool.reversedPair
+      poolFee: daiPool.poolFee
     });
     console.log(`Successfully liquidated ${targetAddresses}`);
   } catch (e) {

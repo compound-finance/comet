@@ -22,7 +22,6 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         address[] accounts;
         address pairToken;
         uint24 poolFee;
-        bool reversedPair;
     }
 
     struct FlashCallbackData {
@@ -31,7 +30,6 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         PoolAddress.PoolKey poolKey;
         address[] assets;
         uint256[] baseAmounts;
-        bool reversedPair;
     }
 
     struct UniswapPoolConfig {
@@ -193,7 +191,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             totalAmountOut += amountOut;
         }
 
-        uint256 fee = decoded.reversedPair? fee0 : fee1;
+        // We borrow only 1 asset, so oe of fees will be 0
+        uint256 fee = fee0 + fee1;
         // Payback flashloan to Uniswap pool and profit to the caller
         payback(decoded.amount, fee, comet.baseToken(), totalAmountOut, decoded.payer);
     }
@@ -266,8 +265,11 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
         (uint256 totalBaseAmount, uint256[] memory assetBaseAmounts, address[] memory cometAssets) = calculateTotalBaseAmount();
 
-        address poolToken0 = params.reversedPair ? comet.baseToken(): params.pairToken;
-        address poolToken1 = params.reversedPair ? params.pairToken : comet.baseToken();
+        address poolToken0 = params.pairToken;
+        address poolToken1 = comet.baseToken();
+        bool reversedPair = poolToken0 > poolToken1;
+        // Use Uniswap approach to determining order of tokens https://github.com/Uniswap/v3-periphery/blob/main/contracts/libraries/PoolAddress.sol#L20-L27
+        if (reversedPair) (poolToken0, poolToken1) = (poolToken1, poolToken0);
 
         // Find the desired Uniswap pool to borrow base token from, for ex DAI-USDC
         PoolAddress.PoolKey memory poolKey =
@@ -283,16 +285,15 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         // recipient of flash should be THIS contract
         pool.flash(
             address(this),
-            params.reversedPair ? totalBaseAmount : 0,
-            params.reversedPair ? 0 : totalBaseAmount,
+            reversedPair ? totalBaseAmount : 0,
+            reversedPair ? 0 : totalBaseAmount,
             abi.encode(
                 FlashCallbackData({
                     amount: totalBaseAmount,
                     payer: msg.sender,
                     poolKey: poolKey,
                     assets: cometAssets,
-                    baseAmounts: assetBaseAmounts,
-                    reversedPair: params.reversedPair
+                    baseAmounts: assetBaseAmounts
                 })
             )
         );

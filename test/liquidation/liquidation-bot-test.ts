@@ -28,7 +28,6 @@ describe('Liquidator', function () {
       accounts: [underwater.address],
       pairToken: ethers.utils.getAddress(dai.address),
       poolFee: 100,
-      reversedPair: false,
     });
 
     expect(tx.hash).to.be.not.null;
@@ -48,8 +47,7 @@ describe('Liquidator', function () {
     const tx = await liquidator.connect(owner).initFlash({
       accounts: [underwater.address],
       pairToken: ethers.utils.getAddress(DAI),
-      poolFee: 100,
-      reversedPair: false,
+      poolFee: 100
     });
 
     const afterUSDCBalance = await usdc.balanceOf(owner.address);
@@ -68,8 +66,7 @@ describe('Liquidator', function () {
     const tx = await liquidator.connect(owner).initFlash({
       accounts: [underwater.address],
       pairToken: ethers.utils.getAddress(DAI),
-      poolFee: 100,
-      reversedPair: false,
+      poolFee: 100
     });
 
     const afterUSDCBalance = await usdc.balanceOf(owner.address);
@@ -89,7 +86,6 @@ describe('Liquidator', function () {
       accounts: [underwater.address],
       pairToken: ethers.utils.getAddress(DAI),
       poolFee: 100,
-      reversedPair: false,
     });
 
     const afterUSDCBalance = await usdc.balanceOf(owner.address);
@@ -109,7 +105,6 @@ describe('Liquidator', function () {
       accounts: [underwater.address],
       pairToken: ethers.utils.getAddress(DAI),
       poolFee: 100,
-      reversedPair: false,
     });
 
     const afterUSDCBalance = await usdc.balanceOf(owner.address);
@@ -128,8 +123,7 @@ describe('Liquidator', function () {
     const tx = await liquidator.connect(owner).initFlash({
       accounts: [underwater.address],
       pairToken: ethers.utils.getAddress(DAI),
-      poolFee: 100,
-      reversedPair: false,
+      poolFee: 100
     });
 
     const afterUSDCBalance = await usdc.balanceOf(owner.address);
