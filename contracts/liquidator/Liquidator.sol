@@ -20,6 +20,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     /** Events **/
     event Absorb(address indexed initiator, address[] accounts);
     event Pay(address token, address indexed payer, address indexed recipient, uint256 value);
+    event Swap(address tokenIn, address tokenOut, uint24 fee, uint256 amountIn);
 
     /** Structs needed for Uniswap flash swap **/
     struct FlashParams {
@@ -113,9 +114,12 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         uint24 poolFee = getPoolFee(asset);
         address swapToken = asset;
 
+        address baseToken = comet.baseToken();
+
         TransferHelper.safeApprove(asset, address(swapRouter), swapAmount);
         // For low liquidity asset, swap it to ETH first
         if (isLowLiquidity[asset]) {
+            emit Swap(asset, weth, poolFee, swapAmount);
             swapAmount = swapRouter.exactInputSingle(
                 ISwapRouter.ExactInputSingleParams({
                     tokenIn: asset,
@@ -138,7 +142,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         uint256 amountOut = swapRouter.exactInputSingle(
             ISwapRouter.ExactInputSingleParams({
                 tokenIn: swapToken,
-                tokenOut: comet.baseToken(),
+                tokenOut: baseToken,
                 fee: poolFee,
                 recipient: address(this),
                 deadline: block.timestamp,
@@ -147,6 +151,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
                 sqrtPriceLimitX96: 0
             })
         );
+        emit Swap(swapToken, baseToken, poolFee, swapAmount);
 
         return amountOut;
     }
