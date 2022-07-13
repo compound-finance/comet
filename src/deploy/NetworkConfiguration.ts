@@ -42,10 +42,14 @@ function percentage(n: number, checkRange: boolean = true): bigint {
 }
 
 interface NetworkRateConfiguration {
-  kink: number;
-  slopeLow: number;
-  slopeHigh: number;
-  base: number;
+  supplyKink: number;
+  supplySlopeLow: number;
+  supplySlopeHigh: number;
+  supplyBase: number;
+  borrowKink: number;
+  borrowSlopeLow: number;
+  borrowSlopeHigh: number;
+  borrowBase: number;
 }
 
 interface NetworkTrackingConfiguration {
@@ -70,7 +74,6 @@ interface NetworkConfiguration {
   pauseGuardian?: string;
   baseToken: string;
   baseTokenPriceFeed: string;
-  reserveRate: number;
   borrowMin: number;
   storeFrontPriceFactor: number;
   targetReserves: number;
@@ -80,10 +83,14 @@ interface NetworkConfiguration {
 }
 
 interface InterestRateInfo {
-  kink: BigNumberish;
-  perYearInterestRateSlopeLow: BigNumberish;
-  perYearInterestRateSlopeHigh: BigNumberish;
-  perYearInterestRateBase: BigNumberish;
+  supplyKink: BigNumberish;
+  supplyPerYearInterestRateBase: BigNumberish;
+  supplyPerYearInterestRateSlopeLow: BigNumberish;
+  supplyPerYearInterestRateSlopeHigh: BigNumberish;
+  borrowKink: BigNumberish;
+  borrowPerYearInterestRateBase: BigNumberish;
+  borrowPerYearInterestRateSlopeLow: BigNumberish;
+  borrowPerYearInterestRateSlopeHigh: BigNumberish;
 }
 
 interface TrackingInfo {
@@ -107,10 +114,14 @@ function getContractAddress(contractName: string, contractMap: ContractMap): str
 
 function getInterestRateInfo(rates: NetworkRateConfiguration): InterestRateInfo {
   return {
-    kink: percentage(rates.kink),
-    perYearInterestRateSlopeLow: percentage(rates.slopeLow),
-    perYearInterestRateSlopeHigh: percentage(rates.slopeHigh),
-    perYearInterestRateBase: percentage(rates.base),
+    supplyKink: percentage(rates.supplyKink),
+    supplyPerYearInterestRateSlopeLow: percentage(rates.supplySlopeLow),
+    supplyPerYearInterestRateSlopeHigh: percentage(rates.supplySlopeHigh),
+    supplyPerYearInterestRateBase: percentage(rates.supplyBase),
+    borrowKink: percentage(rates.borrowKink),
+    borrowPerYearInterestRateSlopeLow: percentage(rates.borrowSlopeLow),
+    borrowPerYearInterestRateSlopeHigh: percentage(rates.borrowSlopeHigh),
+    borrowPerYearInterestRateBase: percentage(rates.borrowBase),
   };
 }
 
@@ -169,7 +180,6 @@ export async function getConfiguration(
   let symbol = networkConfiguration.symbol;
   let baseToken = getContractAddress(networkConfiguration.baseToken, contractMap);
   let baseTokenPriceFeed = address(networkConfiguration.baseTokenPriceFeed);
-  let reserveRate = percentage(networkConfiguration.reserveRate);
   let baseBorrowMin = number(networkConfiguration.borrowMin); // TODO: in token units (?)
   let storeFrontPriceFactor = percentage(networkConfiguration.storeFrontPriceFactor);
   let targetReserves = number(networkConfiguration.targetReserves);
@@ -190,7 +200,6 @@ export async function getConfiguration(
     baseToken,
     baseTokenPriceFeed,
     ...interestRateInfo,
-    reserveRate,
     storeFrontPriceFactor,
     ...trackingInfo,
     baseBorrowMin,

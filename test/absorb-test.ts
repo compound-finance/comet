@@ -10,9 +10,12 @@ describe('absorb', function () {
 
   it('absorbs 1 account and pays out the absorber', async () => {
     const params = {
-      interestRateBase: 0,
-      interestRateSlopeLow: 0,
-      interestRateSlopeHigh: 0,
+      supplyInterestRateBase: 0,
+      supplyInterestRateSlopeLow: 0,
+      supplyInterestRateSlopeHigh: 0,
+      borrowInterestRateBase: 0,
+      borrowInterestRateSlopeLow: 0,
+      borrowInterestRateSlopeHigh: 0,
     };
     const protocol = await makeProtocol(params);
     const { comet, priceFeeds, users: [absorber, underwater] } = protocol;
@@ -75,9 +78,12 @@ describe('absorb', function () {
 
   it('absorbs 2 accounts and pays out the absorber', async () => {
     const params = {
-      interestRateBase: 0,
-      interestRateSlopeLow: 0,
-      interestRateSlopeHigh: 0,
+      supplyInterestRateBase: 0,
+      supplyInterestRateSlopeLow: 0,
+      supplyInterestRateSlopeHigh: 0,
+      borrowInterestRateBase: 0,
+      borrowInterestRateSlopeLow: 0,
+      borrowInterestRateSlopeHigh: 0,
     };
     const protocol = await makeProtocol(params);
     const { comet, priceFeeds, users: [absorber, underwater1, underwater2] } = protocol;
@@ -152,9 +158,12 @@ describe('absorb', function () {
 
   it('absorbs 3 accounts with collateral and pays out the absorber', async () => {
     const params = {
-      interestRateBase: 0,
-      interestRateSlopeLow: 0,
-      interestRateSlopeHigh: 0,
+      supplyInterestRateBase: 0,
+      supplyInterestRateSlopeLow: 0,
+      supplyInterestRateSlopeHigh: 0,
+      borrowInterestRateBase: 0,
+      borrowInterestRateSlopeLow: 0,
+      borrowInterestRateSlopeHigh: 0,
     };
     const protocol = await makeProtocol(params);
     const { comet, tokens, priceFeeds, users: [absorber, underwater1, underwater2, underwater3] } = protocol;
@@ -331,9 +340,12 @@ describe('absorb', function () {
 
   it('absorbs an account with more than enough collateral to still cover debt', async () => {
     const params = {
-      interestRateBase: 0,
-      interestRateSlopeLow: 0,
-      interestRateSlopeHigh: 0,
+      supplyInterestRateBase: 0,
+      supplyInterestRateSlopeLow: 0,
+      supplyInterestRateSlopeHigh: 0,
+      borrowInterestRateBase: 0,
+      borrowInterestRateSlopeLow: 0,
+      borrowInterestRateSlopeHigh: 0,
       assets: defaultAssets({
         borrowCF: factor(1 / 2),
         liquidateCF: factor(2 / 3),

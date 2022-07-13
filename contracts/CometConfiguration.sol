@@ -17,11 +17,14 @@ contract CometConfiguration {
         address baseTokenPriceFeed;
         address extensionDelegate;
 
-        uint64 kink;
-        uint64 perYearInterestRateSlopeLow;
-        uint64 perYearInterestRateSlopeHigh;
-        uint64 perYearInterestRateBase;
-        uint64 reserveRate;
+        uint64 supplyKink;
+        uint64 supplyPerYearInterestRateSlopeLow;
+        uint64 supplyPerYearInterestRateSlopeHigh;
+        uint64 supplyPerYearInterestRateBase;
+        uint64 borrowKink;
+        uint64 borrowPerYearInterestRateSlopeLow;
+        uint64 borrowPerYearInterestRateSlopeHigh;
+        uint64 borrowPerYearInterestRateBase;
         uint64 storeFrontPriceFactor;
         uint64 trackingIndexScale;
         uint64 baseTrackingSupplySpeed;
