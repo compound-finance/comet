@@ -8,6 +8,7 @@ on:
         options:
           - fuji
           - kovan
+          - goerli
           - mumbai
       migration:
         description: Migration Name
