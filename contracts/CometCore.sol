@@ -72,9 +72,9 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
      */
     function presentValue(int104 principalValue_) internal view returns (int256) {
         if (principalValue_ >= 0) {
-            return signed256(presentValueSupply(baseSupplyIndex, unsigned104(principalValue_)));
+            return signed256(presentValueSupply(baseSupplyIndex, uint104(principalValue_)));
         } else {
-            return -signed256(presentValueBorrow(baseBorrowIndex, unsigned104(-principalValue_)));
+            return -signed256(presentValueBorrow(baseBorrowIndex, uint104(-principalValue_)));
         }
     }
 
@@ -97,9 +97,9 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
      */
     function principalValue(int256 presentValue_) internal view returns (int104) {
         if (presentValue_ >= 0) {
-            return signed104(principalValueSupply(baseSupplyIndex, unsigned256(presentValue_)));
+            return signed104(principalValueSupply(baseSupplyIndex, uint256(presentValue_)));
         } else {
-            return -signed104(principalValueBorrow(baseBorrowIndex, unsigned256(-presentValue_)));
+            return -signed104(principalValueBorrow(baseBorrowIndex, uint256(-presentValue_)));
         }
     }
 
