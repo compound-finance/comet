@@ -195,6 +195,11 @@ const config: HardhatUserConfig = {
         chainId: 43113,
         url: 'https://api.avax-test.network/ext/bc/C/rpc',
       },
+      {
+        name: 'goerli',
+        chainId: 5,
+        url: getDefaultProviderURL('goerli'),
+      }
     ],
   },
 

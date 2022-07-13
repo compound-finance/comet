@@ -3,8 +3,8 @@ import { migration } from '../../../plugins/deployment_manager/Migration';
 import { SimpleTimelock, SimpleTimelock__factory, GovernorSimple, GovernorSimple__factory } from '../../../build/types';
 
 interface Vars {
-  timelock: SimpleTimelock,
-  governor: GovernorSimple,
+  timelock: string;
+  governor: string;
 };
 
 migration<Vars>('1657722214_deploy_simple_governance', {
@@ -28,8 +28,8 @@ migration<Vars>('1657722214_deploy_simple_governance', {
     await newGovernor.initialize(newTimelock.address, [signer.address]);
 
     return {
-      timelock: newTimelock,
-      governor: newGovernor
+      timelock: newTimelock.address,
+      governor: newGovernor.address
     };
   },
   enact: async (deploymentManager: DeploymentManager, vars: Vars) => {
