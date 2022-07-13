@@ -199,6 +199,11 @@ const config: HardhatUserConfig = {
         name: 'goerli',
         chainId: 5,
         url: getDefaultProviderURL('goerli'),
+      },
+      {
+        name: 'mumbai',
+        chainId: 80001,
+        url: 'https://rpc-mumbai.maticvigil.com',
       }
     ],
   },
