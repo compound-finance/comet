@@ -206,11 +206,13 @@ The base asset can be borrowed using the *[withdraw](#withdraw)* function; the r
 
 Account *balances* for the base token are signed integers. An account balance greater than zero indicates the base asset is supplied and a balance less than zero indicates the base asset is borrowed. *Note: Base token balances for assets with 18 decimals will start to overflow at a value of 2<sup>103</sup>/1e18=~10 trillion.*
 
-Global *indices* for supply and borrow are unsigned integers that increase over time. When an account interacts with the protocol, the indices are saved. An account's present balance can be calculated using the current index with the following formulas that implement the indices.
+Account balances are stored internally in Comet as *principal* values (also signed integers). The principal value, also referred to as the day-zero balance, is what an account balance at *T<sub>0</sub>* would have to be for it to be equal to the account balance today after accruing interest.
+
+Global *indices* for supply and borrow are unsigned integers that increase over time to account for the interest accrued on each side. When an account interacts with the protocol, the indices are updated and saved. An account's present balance can be calculated using the current index with the following formulas.
 
 ```
-Balance=PrincipalBaseSupplyIndexNow [Principal0]
-Balance=PrincipalBaseBorrowIndexNow [Principal<0]
+Balance=Principal * BaseSupplyIndex [Principal>0]
+Balance=Principal * BaseBorrowIndex [Principal<0]
 ```
 
 ### Supply
