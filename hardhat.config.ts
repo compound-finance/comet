@@ -76,12 +76,12 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'polygon',
     chainId: 137,
-    url: 'https://polygon-rpc.com/',
+    url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
   },
   {
     network: 'mumbai',
     chainId: 80001,
-    url: 'https://rpc-mumbai.maticvigil.com',
+    url: `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`,
   },
 ];
 
@@ -203,7 +203,7 @@ const config: HardhatUserConfig = {
       {
         name: 'mumbai',
         chainId: 80001,
-        url: 'https://rpc-mumbai.maticvigil.com',
+        url: `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`,
       }
     ],
   },
