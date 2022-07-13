@@ -52,8 +52,11 @@ migration('1657656056_deploy_mumbai', {
       [],
       cloneNetwork
     );
-    
+
     let wbtc = await deploymentManager.clone(cloneAddr.wbtc, [wbtcImplementation.address], cloneNetwork);
+    wbtc = wbtcImplementation.attach(wbtc.address);
+    await wait(wbtc.initialize('Wrapped Bitcoin', 'WBTC', 8, signerAddress));
+
     let weth = await deploymentManager.clone(cloneAddr.weth, [signerAddress], cloneNetwork);
 
     let wmatic = await deploymentManager.clone(cloneAddr.wmatic, [], cloneNetwork);
