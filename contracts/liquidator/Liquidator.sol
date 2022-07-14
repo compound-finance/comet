@@ -13,14 +13,15 @@ import "../CometInterface.sol";
 import "../ERC20.sol";
 
 /**
- * @title Compound's Liquidator Contract
+ * @title Compound's Example Liquidator Contract
+ * @notice An example of liquidation bot, a starting point for further improvements
  * @author Compound
  */
 contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, PeripheryPayments {
     /** Events **/
     event Absorb(address indexed initiator, address[] accounts);
-    event Pay(address token, address indexed payer, address indexed recipient, uint256 value);
-    event Swap(address tokenIn, address tokenOut, uint24 fee, uint256 amountIn);
+    event Pay(address indexed token, address indexed payer, address indexed recipient, uint256 value);
+    event Swap(address indexed tokenIn, address indexed tokenOut, uint24 fee, uint256 amountIn);
 
     /** Structs needed for Uniswap flash swap **/
     struct FlashParams {
@@ -31,7 +32,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
     struct FlashCallbackData {
         uint256 amount;
-        address payer;
+        address recipient;
         PoolAddress.PoolKey poolKey;
         address[] assets;
         uint256[] baseAmounts;
@@ -63,11 +64,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     /// @notice The address of WETH asset
     address public immutable weth;
 
+    /// @notice The Uniswap asset pool configurations
     UniswapPoolConfig[] public poolConfigs;
-
-    /** Uniswap pools properties **/
-    mapping(address => uint24) public poolFees;
-    mapping(address => bool) public isLowLiquidity;
 
     /**
      * @notice Construct a new liquidator instance
@@ -75,6 +73,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
      * @param _comet The Compound V3 Comet instance address
      * @param _factory The Uniswap V3 pools factory instance address
      * @param _WETH9 The WETH address
+     * @param _liquidationThreshold The min size of asset liquidations measured in base token
      * @param _poolConfigs The configurations of Uniswap asset pools
      **/
     constructor(
@@ -89,7 +88,6 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         comet = _comet;
         weth = _WETH9;
         liquidationThreshold = _liquidationThreshold;
-
         poolConfigs = _poolConfigs;
     }
 
@@ -106,14 +104,14 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
         // If asset is not found, proceed with default pool config
         return UniswapPoolConfig({
-            fee: 500,
+            fee: DEFAULT_POOL_FEE,
             asset: asset,
             isLowLiquidity: false
         });
     }
 
     /**
-     * @dev Swaps the given asset to USDC(base token) using Uniswap pools
+     * @dev Swaps the given asset to USDC (base token) using Uniswap pools
      */
     function swapCollateral(address asset) internal returns (uint256) {
         uint256 swapAmount = ERC20(asset).balanceOf(address(this));
@@ -183,7 +181,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
         address[] memory assets = decoded.assets;
 
-        // Allow Comet protocol to withdraw USDC(base token) for collateral purchase
+        // Allow Comet protocol to withdraw USDC (base token) for collateral purchase
         TransferHelper.safeApprove(comet.baseToken(), address(comet), decoded.amount);
 
         uint256 totalAmountOut = 0;
@@ -202,23 +200,23 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         // We borrow only 1 asset, so one of fees will be 0
         uint256 fee = fee0 + fee1;
         // Payback flashloan to Uniswap pool and profit to the caller
-        payback(decoded.amount, fee, comet.baseToken(), totalAmountOut, decoded.payer);
+        payback(decoded.amount, fee, comet.baseToken(), totalAmountOut, decoded.recipient);
     }
 
     /**
      * @dev Returns loan to Uniswap pool and sends USDC (base token) profit to caller
      * @param amount The loan amount that need to be repaid
      * @param fee The fee for taking the loan
-     * @param token The base token whch was borrowed for successful liquidation
+     * @param token The base token which was borrowed for successful liquidation
      * @param amountOut The total amount of base token received after liquidation
-     * @param payer The caller address of liquidation bot
+     * @param recipient The caller address of liquidation bot
      */
     function payback(
         uint256 amount,
         uint256 fee,
         address token,
         uint256 amountOut,
-        address payer
+        address recipient
     ) internal {
         uint256 amountOwed = amount + fee;
         TransferHelper.safeApprove(token, address(this), amountOwed);
@@ -233,8 +231,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         if (amountOut > amountOwed) {
             uint256 profit = amountOut - amountOwed;
             TransferHelper.safeApprove(token, address(this), profit);
-            pay(token, address(this), payer, profit);
-            emit Pay(token, address(this), payer, profit);
+            pay(token, address(this), recipient, profit);
+            emit Pay(token, address(this), recipient, profit);
         }
     }
 
@@ -253,11 +251,11 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
             if (collateralBalance == 0) continue;
 
-            // Find the price in asset needed to base QUOTE_PRICE_SCALE of USDC(base token) of collateral
+            // Find the price in asset needed to base QUOTE_PRICE_SCALE of USDC (base token) of collateral
             uint256 quotePrice = comet.quoteCollateral(asset, QUOTE_PRICE_SCALE * comet.baseScale());
             uint256 assetBaseAmount = comet.baseScale() * QUOTE_PRICE_SCALE * collateralBalance / quotePrice;
 
-            // Liquidate only positions with adequate gains, no need to collect residue from protocol
+            // Liquidate only positions with adequate size, no need to collect residue from protocol
             if (assetBaseAmount < liquidationThreshold) continue;
 
             assetBaseAmounts[i] = assetBaseAmount;
@@ -303,7 +301,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             abi.encode(
                 FlashCallbackData({
                     amount: totalBaseAmount,
-                    payer: msg.sender,
+                    recipient: msg.sender,
                     poolKey: poolKey,
                     assets: cometAssets,
                     baseAmounts: assetBaseAmounts
