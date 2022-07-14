@@ -19,6 +19,7 @@ import './tasks/scenario/task.ts';
 import relationConfigMap from './deployments/relations';
 import fujiRelationConfigMap from './deployments/fuji/relations';
 import kovanRelationConfigMap from './deployments/kovan/relations';
+import mumbaiRelationConfigMap from './deployments/mumbai/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -176,6 +177,7 @@ const config: HardhatUserConfig = {
     networks: {
       fuji: fujiRelationConfigMap,
       kovan: kovanRelationConfigMap,
+      mumbai: mumbaiRelationConfigMap
     },
   },
 
