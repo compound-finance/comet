@@ -52,27 +52,21 @@ export async function deployNetworkComet(
   /* === Deploy Contracts === */
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.governor)) {
-    console.log('deploying governor')
     governorSimple = await deploymentManager.deploy<GovernorSimple, GovernorSimple__factory, []>(
       'test/GovernorSimple.sol',
       []
     );
   } else {
     governorSimple = await deploymentManager.contract('governor') as GovernorSimple;
-    console.log('NOT deploying governor')
   }
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.timelock)) {
-    console.log('deploying timelock')
-
     timelock = await deploymentManager.deploy<SimpleTimelock, SimpleTimelock__factory, [string]>(
       'test/SimpleTimelock.sol',
       [governorSimple.address]
     );
   } else {
     timelock = await deploymentManager.contract('timelock') as SimpleTimelock;
-    console.log('NOT deploying timelock')
-
   }
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.governor)) {
@@ -81,8 +75,6 @@ export async function deployNetworkComet(
   }
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxyAdmin)) {
-    console.log('deploying proxy admin')
-
     let proxyAdminArgs: [] = [];
     proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
       'CometProxyAdmin.sol',
@@ -123,8 +115,6 @@ export async function deployNetworkComet(
   };
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometExt)) {
-    console.log('deploying ext')
-
     const extConfiguration = {
       symbol32: deploymentManager.hre.ethers.utils.formatBytes32String(symbol),
     };
@@ -161,8 +151,6 @@ export async function deployNetworkComet(
   };
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.comet)) {
-    console.log('deploying comet')
-
     comet = await deploymentManager.deploy<Comet, Comet__factory, [ConfigurationStruct]>(
       'Comet.sol',
       [configuration]
@@ -181,8 +169,6 @@ export async function deployNetworkComet(
   }
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.configurator)) {
-    console.log('deploying configurator')
-
     configurator = await deploymentManager.deploy<Configurator, Configurator__factory, []>(
       'Configurator.sol',
       []
@@ -214,8 +200,6 @@ export async function deployNetworkComet(
   }
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.configuratorProxy)) {
-    console.log('deploying configurator proxy')
-
     // Configuration proxy
     configuratorProxy = await deploymentManager.deploy<
       ConfiguratorProxy,
