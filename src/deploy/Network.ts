@@ -180,6 +180,17 @@ export async function deployNetworkComet(
     proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
   }
 
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxyAdmin)) {
+    let proxyAdminArgs: [] = [];
+    proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
+      'CometProxyAdmin.sol',
+      proxyAdminArgs
+    );
+    await proxyAdmin.transferOwnership(governor);
+  } else {
+    proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
+  }
+
   let updatedRoots = await deploymentManager.getRoots();
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxy)) {
     // Comet proxy
