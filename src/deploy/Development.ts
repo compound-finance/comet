@@ -285,6 +285,11 @@ export async function deployDevelopmentComet(
     // Set the initial factory and configuration for Comet in Configurator
     const setFactoryCalldata = extractCalldata((await configurator.populateTransaction.setFactory(cometProxy.address, cometFactory.address)).data);
     const setConfigurationCalldata = extractCalldata((await configurator.populateTransaction.setConfiguration(cometProxy.address, configuration)).data);
+    // XXX THIS WOULDN'T WORK ON MAINNET WITH NO GOVERNORSIMPLE!!!
+    // think about how this should be adapted for mainnet. would probably be through an actual proposal...
+    // Configurator deployed first.
+    // Comet Proxy is deployed with no implementation?... so that configurator can deploy the impl?
+    // or Comet Proxy deployed with implementation
     await fastGovernanceExecute(
       governorSimple.connect(admin),
       [configuratorProxy.address, configuratorProxy.address],

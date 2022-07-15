@@ -160,7 +160,14 @@ export async function deployNetworkComet(
     configurator = await deploymentManager.contract('configurator:implementation') as Configurator;
   }
 
-  /* === Proxies === */
+  if (contractsToDeploy.all || contractsToDeploy.cometFactory) {
+    cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
+      'CometFactory.sol',
+      []
+    );
+  } else {
+    // XXX need to handle the fact that there can be multiple Comet factories
+  }
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxyAdmin)) {
     let proxyAdminArgs: [] = [];
