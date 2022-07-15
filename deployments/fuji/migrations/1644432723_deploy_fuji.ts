@@ -77,7 +77,7 @@ migration('1644432723_deploy_fuji', {
 
     let { cometProxy, configuratorProxy } = await deployNetworkComet(
       deploymentManager,
-      { deployCometProxy: true, deployConfiguratorProxy: true },
+      {},
       {},
       contracts
     );

@@ -40,8 +40,7 @@ export class ModernConstraint<T extends CometContext, R extends Requirements> im
           const deploymentManager = ctx.deploymentManager;
           await deployComet(
             deploymentManager,
-            { deployCometProxy: true, deployConfiguratorProxy: true },
-            config.cometConfig
+            { configurationOverrides: config.cometConfig },
           );
           await deploymentManager.spider();
           ctx.actors = await getActors(ctx, world);

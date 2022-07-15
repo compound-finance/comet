@@ -38,12 +38,22 @@ export interface ProtocolConfiguration {
   assetConfigs?: AssetConfigStruct[];
 }
 
-export interface DeployProxyOption {
-  deployCometProxy?: boolean;
-  deployConfiguratorProxy?: boolean;
+export interface ContractsToDeploy {
+  all?: boolean;
+  cometProxy?: boolean;
+  configuratorProxy?: boolean;
+  cometProxyAdmin?: boolean;
+  timelock?: boolean;
+  governor?: boolean;
+  cometExt?: boolean;
+  comet?: boolean;
+  configurator?: boolean;
+  cometFactory?: boolean;
 }
 
 interface DeployCometOptionalParams {
+  contractsToDeploy?: ContractsToDeploy;
+  configurationOverrides?: ProtocolConfiguration;
   contractMapOverride?: ContractMap;
   adminSigner?: SignerWithAddress;
 }
@@ -59,16 +69,14 @@ export interface DeployedContracts {
 
 export async function deployComet(
   deploymentManager: DeploymentManager,
-  deployProxy: DeployProxyOption = { deployCometProxy: true, deployConfiguratorProxy: true },
-  configurationOverrides: ProtocolConfiguration = {},
   optionalParams: DeployCometOptionalParams = {},
 ): Promise<DeployedContracts> {
   // If we have a `configuration.json` for the network, use it.
   // Otherwise, we do a "development"-style deploy, which deploys fake tokens, etc, and generally
   // provides less value than a full-fledged test-net or mainnet fork.
   if (await hasNetworkConfiguration(deploymentManager.deployment)) {
-    return await deployNetworkComet(deploymentManager, deployProxy, configurationOverrides, optionalParams.contractMapOverride, optionalParams.adminSigner);
+    return await deployNetworkComet(deploymentManager, optionalParams.contractsToDeploy, optionalParams.configurationOverrides, optionalParams.contractMapOverride, optionalParams.adminSigner);
   } else {
-    return await deployDevelopmentComet(deploymentManager, deployProxy, configurationOverrides);
+    return await deployDevelopmentComet(deploymentManager, optionalParams.contractsToDeploy, optionalParams.configurationOverrides);
   }
 }

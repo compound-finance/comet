@@ -111,9 +111,17 @@ export async function upgradeComet(world: World, context: CometContext, configOv
   let { comet: newComet } = await deployComet(
     context.deploymentManager,
     // Deploy a new configurator proxy to set the proper CometConfiguration storage values
-    { deployCometProxy: false, deployConfiguratorProxy: true },
-    cometConfig,
-    { adminSigner: context.actors['admin'].signer }
+    {
+      contractsToDeploy: {
+        configuratorProxy: true,
+        configurator: true,
+        comet: true,
+        cometExt: true,
+        cometFactory: true
+      },
+      configurationOverrides: cometConfig,
+      adminSigner: context.actors['admin'].signer
+    }
   );
   let initializer: string | undefined;
   if (!oldComet.totalsBasic || (await oldComet.totalsBasic()).lastAccrualTime === 0) {

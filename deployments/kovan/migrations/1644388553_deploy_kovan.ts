@@ -88,7 +88,7 @@ migration('1644388553_deploy_kovan', {
     );
 
     const blockNumber = await ethers.provider.getBlockNumber();
-    const blockTimestamp =  (await ethers.provider.getBlock(blockNumber)).timestamp;
+    const blockTimestamp = (await ethers.provider.getBlock(blockNumber)).timestamp;
 
     let uni = await deploymentManager.clone(
       cloneAddr.uni,
@@ -114,7 +114,7 @@ migration('1644388553_deploy_kovan', {
 
     let { cometProxy, configuratorProxy } = await deployNetworkComet(
       deploymentManager,
-      { deployCometProxy: true, deployConfiguratorProxy: true },
+      {},
       {},
       contracts
     );
