@@ -74,17 +74,6 @@ export async function deployNetworkComet(
     await governorSimple.initialize(timelock.address, [adminSigner.address]);
   }
 
-  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxyAdmin)) {
-    let proxyAdminArgs: [] = [];
-    proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
-      'CometProxyAdmin.sol',
-      proxyAdminArgs
-    );
-    await proxyAdmin.transferOwnership(timelock.address);
-  } else {
-    proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
-  }
-
   const {
     symbol,
     governor,
@@ -179,6 +168,17 @@ export async function deployNetworkComet(
 
   /* === Proxies === */
 
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxyAdmin)) {
+    let proxyAdminArgs: [] = [];
+    proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
+      'CometProxyAdmin.sol',
+      proxyAdminArgs
+    );
+    await proxyAdmin.transferOwnership(governor);
+  } else {
+    proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
+  }
+
   let updatedRoots = await deploymentManager.getRoots();
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxy)) {
     // Comet proxy
@@ -208,7 +208,7 @@ export async function deployNetworkComet(
     >('ConfiguratorProxy.sol', [
       configurator.address,
       proxyAdmin.address,
-      (await configurator.populateTransaction.initialize(timelock.address)).data,
+      (await configurator.populateTransaction.initialize(governor)).data,
     ]);
 
     // Set the initial factory and configuration for Comet in Configurator
