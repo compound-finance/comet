@@ -52,7 +52,6 @@ export async function deployNetworkComet(
     );
   } else {
     governorSimple = await deploymentManager.contract('governor') as GovernorSimple;
-    console.log('NOT deploying governor')
   }
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.timelock)) {
@@ -62,8 +61,6 @@ export async function deployNetworkComet(
     );
   } else {
     timelock = await deploymentManager.contract('timelock') as SimpleTimelock;
-    console.log('NOT deploying timelock')
-
   }
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.governor)) {
