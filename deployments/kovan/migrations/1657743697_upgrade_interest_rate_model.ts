@@ -1,118 +1,95 @@
 import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../plugins/deployment_manager/Migration';
-import { getConfiguration } from '../../../src/deploy/NetworkConfiguration';
-import { CometInterface, Configurator, Configurator__factory, CometFactory, CometFactory__factory, ProxyAdmin, GovernorSimple } from '../../../build/types';
-import { utils } from 'ethers';
-import { extractCalldata } from '../../../src/utils';
-import { ConfigurationStruct } from '../../../build/types/Configurator';
+import { CometInterface, Configurator, ProxyAdmin, GovernorSimple } from '../../../build/types';
+import { Contract, utils } from 'ethers';
+import { deployComet } from '../../../src/deploy';
 
 interface Vars {
-  configurator: string,
-  cometFactory: string,
+  newConfiguratorProxy: string,
 };
 
 migration<Vars>('1657743697_upgrade_interest_rate_model', {
   prepare: async (deploymentManager: DeploymentManager) => {
     await deploymentManager.hre.run('compile');
 
-    // Deploy new Configurator and CometFactory contracts
-    const newConfigurator = await deploymentManager.deploy<Configurator, Configurator__factory, []>(
-      'Configurator.sol',
-      []
+    // Contracts referenced in `configuration.json`.
+    const contractOverrides = new Map<string, Contract>([
+      ['USDC', await deploymentManager.contract('USDC')],
+      ['WBTC', await deploymentManager.contract('WBTC')],
+      ['WETH', await deploymentManager.contract('WETH')],
+      ['COMP', await deploymentManager.contract('COMP')],
+      ['UNI', await deploymentManager.contract('UNI')],
+      ['LINK', await deploymentManager.contract('LINK')],
+    ]);
+
+    // Deploy new Configurator proxy + implementation and CometFactory
+    // Note: We deploy a new Configurator proxy to so we can modify the storage layout
+    // without having to keep old storage variables and append new variables at the end.
+    // This is okay because this is only on testnet.
+    const { configuratorProxy } = await deployComet(
+      deploymentManager,
+      {
+        contractsToDeploy: {
+          configurator: true,
+          configuratorProxy: true,
+          cometFactory: true
+        },
+        contractMapOverride: contractOverrides
+      }
     );
 
-    const newCometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
-      'CometFactory.sol',
-      []
-    );
+    console.log('New Configurator proxy deployed at: ', configuratorProxy.address);
 
     return {
-      configurator: newConfigurator.address,
-      cometFactory: newCometFactory.address,
+      newConfiguratorProxy: configuratorProxy.address,
     };
   },
   enact: async (deploymentManager: DeploymentManager, contracts: Vars) => {
-    let signer = await deploymentManager.getSigner();
+    const signer = await deploymentManager.getSigner();
 
-    const newConfigurator = contracts.configurator;
-    const newCometFactory = contracts.cometFactory;
-
+    const comet = await deploymentManager.contract('comet') as CometInterface;
     const governor = await deploymentManager.contract('governor') as GovernorSimple;
     const proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
     const configurator = await deploymentManager.contract('configurator') as Configurator;
-    const comet = await deploymentManager.contract('comet') as CometInterface;
+    const newConfigurator = configurator.attach(contracts.newConfiguratorProxy);
 
-    const configuration = await getNewConfiguration(configurator, comet, deploymentManager);
-    console.log('configuration is ')
-    console.log(configuration)
-
-    // Execute a governance proposal to:
-    // 1. Upgrade Configurator proxy's implementation to the new Configurator
-    // 2. Set the new factory address for Comet in Configurator
-    // 3. Set the new Configuration (with new IR model params) for Comet in Configurator
-    // 4. Deploy and upgrade to the new implementation of Comet
-    const upgradeConfiguratorCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, newConfigurator]);
-    const setFactoryCalldata = utils.defaultAbiCoder.encode(["address", "address"], [comet.address, newCometFactory]);
-    const setConfigurationCalldata = extractCalldata((await configurator.populateTransaction.setConfiguration(comet.address, configuration)).data);
-    const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
-
+    // DeployAndUpgradeTo new implementation of Comet:
+    // 1. Deploy and upgrade to new implementation of Comet.
+    const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [newConfigurator.address, comet.address]);
     const governorAsAdmin = governor.connect(signer);
-    const tx = await (await governorAsAdmin.propose(
-      [proxyAdmin.address, configurator.address, configurator.address, proxyAdmin.address],
-      [0, 0, 0, 0],
-      [
-        "upgrade(address,address)",
-        "setFactory(address,address)",
-        "setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))",
-        "deployAndUpgradeTo(address,address)"
-      ],
-      [
-        upgradeConfiguratorCalldata,
-        setFactoryCalldata,
-        setConfigurationCalldata,
-        deployAndUpgradeToCalldata
-      ],
-      'Upgrade Configurator and Comet to have new interest model'
-    )
+    let tx = await (await governorAsAdmin.propose(
+      [proxyAdmin.address],
+      [0],
+      ["deployAndUpgradeTo(address,address)"],
+      [deployAndUpgradeToCalldata],
+      'Upgrade to Comet with new interest rate model')
     ).wait();
+    let event = tx.events.find(event => event.event === 'ProposalCreated');
+    let [proposalId] = event.args;
 
-    const event = tx.events.find(event => event.event === 'ProposalCreated');
-    const [proposalId] = event.args;
     await governorAsAdmin.queue(proposalId);
 
     console.log(`Created proposal ${proposalId} and queued it. Proposal still needs to be executed.`);
 
-    // XXX don't need to spider since proposal is not executed
-    console.log("No root.json changes. Re-spidering...");
-    await deploymentManager.spider();
+    // Update roots
+    const updatedRoots = await deploymentManager.getRoots();
+    updatedRoots.set('configurator', newConfigurator.address);
+    await deploymentManager.putRoots(updatedRoots);
+
+    // Log out new states to manually verify (helpful to verify via simulation)
+    // await governorAsAdmin.execute(proposalId);
+
+    // console.log('New configurator address ', newConfigurator.address);
+    // console.log('Getting new configuration for Comet ', comet.address);
+    // console.log('New Configuration: ', await newConfigurator.getConfiguration(comet.address));
+
+    // const Comet = await ethers.getContractFactory("Comet");
+    // const cometNew = await Comet.attach(comet.address).connect(signer);
+    // console.log("Comet supply, borrow kink: ");
+    // console.log(await cometNew.supplyKink());
+    // console.log(await cometNew.borrowKink());
   },
   enacted: async (deploymentManager: DeploymentManager) => {
     return false; // XXX
   },
 });
-
-async function getNewConfiguration(configurator: Configurator, comet: CometInterface, dm: DeploymentManager): Promise<ConfigurationStruct> {
-  const onChainConfiguration = await configurator.getConfiguration(comet.address);
-  const {
-    supplyKink,
-    supplyPerYearInterestRateSlopeLow,
-    supplyPerYearInterestRateSlopeHigh,
-    supplyPerYearInterestRateBase,
-    borrowKink,
-    borrowPerYearInterestRateSlopeLow,
-    borrowPerYearInterestRateSlopeHigh,
-    borrowPerYearInterestRateBase,
-  } = await getConfiguration(dm.deployment, dm.hre);
-
-  return {
-    supplyKink,
-    supplyPerYearInterestRateSlopeLow,
-    supplyPerYearInterestRateSlopeHigh,
-    supplyPerYearInterestRateBase,
-    borrowKink,
-    borrowPerYearInterestRateSlopeLow,
-    borrowPerYearInterestRateSlopeHigh,
-    borrowPerYearInterestRateBase,
-    ...onChainConfiguration
-  }
-}
