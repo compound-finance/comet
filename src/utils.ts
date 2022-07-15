@@ -16,3 +16,10 @@ export function extractCalldata(txnData: string): string {
   // Remove the first 4 bytes (function selector) of the transaction data
   return '0x' + txnData.slice(10);
 }
+
+export function shouldDeploy(deployAll: boolean, deployContract: boolean): boolean {
+  if (deployContract !== undefined) {
+    return deployContract;
+  }
+  return deployAll;
+}

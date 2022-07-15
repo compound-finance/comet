@@ -29,7 +29,7 @@ import { ConfigurationStruct } from '../../build/types/Comet';
 import { ExtConfigurationStruct } from '../../build/types/CometExt';
 export { Comet } from '../../build/types';
 import { DeployedContracts, ContractsToDeploy, ProtocolConfiguration } from './index';
-import { extractCalldata, fastGovernanceExecute } from '../utils';
+import { extractCalldata, fastGovernanceExecute, shouldDeploy } from '../utils';
 
 async function makeToken(
   deploymentManager: DeploymentManager,
@@ -108,7 +108,7 @@ export async function deployDevelopmentComet(
 
   /* === Deploy Contracts === */
 
-  if (contractsToDeploy.all || contractsToDeploy.governor) {
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.governor)) {
     governorSimple = await deploymentManager.deploy<GovernorSimple, GovernorSimple__factory, []>(
       'test/GovernorSimple.sol',
       []
@@ -117,7 +117,7 @@ export async function deployDevelopmentComet(
     governorSimple = await deploymentManager.contract('governor') as GovernorSimple;
   }
 
-  if (contractsToDeploy.all || contractsToDeploy.timelock) {
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.timelock)) {
     timelock = await deploymentManager.deploy<SimpleTimelock, SimpleTimelock__factory, [string]>(
       'test/SimpleTimelock.sol',
       [governorSimple.address]
@@ -126,12 +126,12 @@ export async function deployDevelopmentComet(
     timelock = await deploymentManager.contract('timelock') as SimpleTimelock;
   }
 
-  if (contractsToDeploy.all || contractsToDeploy.governor) {
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.governor)) {
     // Initialize the storage of GovernorSimple
     await governorSimple.initialize(timelock.address, [admin.address]);
   }
 
-  if (contractsToDeploy.all || contractsToDeploy.cometProxyAdmin) {
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxyAdmin)) {
     let proxyAdminArgs: [] = [];
     proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
       'CometProxyAdmin.sol',
@@ -191,7 +191,7 @@ export async function deployDevelopmentComet(
     ...configurationOverrides,
   };
 
-  if (contractsToDeploy.all || contractsToDeploy.cometExt) {
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometExt)) {
     const extConfiguration = {
       symbol32: deploymentManager.hre.ethers.utils.formatBytes32String(symbol),
     };
@@ -227,7 +227,7 @@ export async function deployDevelopmentComet(
     assetConfigs,
   };
 
-  if (contractsToDeploy.all || contractsToDeploy.comet) {
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.comet)) {
     comet = await deploymentManager.deploy<Comet, Comet__factory, [ConfigurationStruct]>(
       'Comet.sol',
       [configuration]
@@ -236,7 +236,7 @@ export async function deployDevelopmentComet(
     comet = await deploymentManager.contract('comet:implementation') as CometInterface;
   }
 
-  if (contractsToDeploy.all || contractsToDeploy.cometFactory) {
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometFactory)) {
     cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
       'CometFactory.sol',
       []
@@ -245,7 +245,7 @@ export async function deployDevelopmentComet(
     // XXX need to handle the fact that there can be multiple Comet factories
   }
 
-  if (contractsToDeploy.all || contractsToDeploy.configurator) {
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.configurator)) {
     configurator = await deploymentManager.deploy<Configurator, Configurator__factory, []>(
       'Configurator.sol',
       []
@@ -257,7 +257,7 @@ export async function deployDevelopmentComet(
   /* === Proxies === */
 
   let updatedRoots = await deploymentManager.getRoots();
-  if (contractsToDeploy.all || contractsToDeploy.cometProxy) {
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxy)) {
     // Comet proxy
     cometProxy = await deploymentManager.deploy<
       TransparentUpgradeableProxy,
@@ -276,7 +276,7 @@ export async function deployDevelopmentComet(
     cometProxy = await deploymentManager.contract('comet') as CometInterface;
   }
 
-  if (contractsToDeploy.all || contractsToDeploy.configuratorProxy) {
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.configuratorProxy)) {
     // Configuration proxy
     configuratorProxy = await deploymentManager.deploy<
       ConfiguratorProxy,
@@ -291,11 +291,6 @@ export async function deployDevelopmentComet(
     // Set the initial factory and configuration for Comet in Configurator
     const setFactoryCalldata = extractCalldata((await configurator.populateTransaction.setFactory(cometProxy.address, cometFactory.address)).data);
     const setConfigurationCalldata = extractCalldata((await configurator.populateTransaction.setConfiguration(cometProxy.address, configuration)).data);
-    // XXX THIS WOULDN'T WORK ON MAINNET WITH NO GOVERNORSIMPLE!!!
-    // think about how this should be adapted for mainnet. would probably be through an actual proposal...
-    // Configurator deployed first.
-    // Comet Proxy is deployed with no implementation?... so that configurator can deploy the impl?
-    // or Comet Proxy deployed with implementation
     await fastGovernanceExecute(
       governorSimple.connect(admin),
       [configuratorProxy.address, configuratorProxy.address],

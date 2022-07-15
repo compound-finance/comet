@@ -38,6 +38,10 @@ export interface ProtocolConfiguration {
   assetConfigs?: AssetConfigStruct[];
 }
 
+// Specific contracts take precedence over `all`, which allows for expressions
+// such as:
+// { all: true, timelock: false }
+// which will deploy all contracts other than Timelock
 export interface ContractsToDeploy {
   all?: boolean;
   cometProxy?: boolean;
