@@ -114,7 +114,7 @@ migration('1644388553_deploy_kovan', {
 
     let { cometProxy, configuratorProxy } = await deployNetworkComet(
       deploymentManager,
-      {},
+      { all: true },
       {},
       contracts
     );
