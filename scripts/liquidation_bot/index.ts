@@ -13,7 +13,7 @@ async function main() {
   const liquidatorAddress = process.env.LIQUIDATOR_ADDRESS;
 
   if (!liquidatorAddress) {
-    throw new Error("missing required env variable: LIQUIDATOR_ADDRESS");
+    throw new Error('missing required env variable: LIQUIDATOR_ADDRESS');
   }
 
   const dm = new DeploymentManager(hre.network.name, hre, {
