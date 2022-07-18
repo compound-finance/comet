@@ -39,7 +39,6 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     }
 
     struct UniswapPoolConfig {
-        address asset;
         bool isLowLiquidity;
         uint24 fee;
     }
@@ -65,7 +64,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     address public immutable weth;
 
     /// @notice The Uniswap asset pool configurations
-    UniswapPoolConfig[] public poolConfigs;
+    mapping(address => UniswapPoolConfig) public poolConfigs;
 
     /**
      * @notice Construct a new liquidator instance
@@ -74,7 +73,9 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
      * @param _factory The Uniswap V3 pools factory instance address
      * @param _WETH9 The WETH address
      * @param _liquidationThreshold The min size of asset liquidations measured in base token
-     * @param _poolConfigs The configurations of Uniswap asset pools
+     * @param _assets The list of assets for pool configs
+     * @param _lowLiquidityPools The list of boolean indicators if pool is low liquidity and requires ETH swap
+     * @param _poolFees The list of given poolFees for assets
      **/
     constructor(
         ISwapRouter _swapRouter,
@@ -82,32 +83,39 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         address _factory,
         address _WETH9,
         uint256 _liquidationThreshold,
-        UniswapPoolConfig[] memory _poolConfigs
+        address[] memory _assets,
+        bool[] memory _lowLiquidityPools,
+        uint24[] memory _poolFees
     ) PeripheryImmutableState(_factory, _WETH9) {
+        require(_assets.length == _lowLiquidityPools.length, "Wrong data");
+        require(_assets.length == _poolFees.length, "Wrong data");
+
         swapRouter = _swapRouter;
         comet = _comet;
         weth = _WETH9;
         liquidationThreshold = _liquidationThreshold;
-        poolConfigs = _poolConfigs;
+
+        for (uint8 i = 0; i < _assets.length; i++) {
+            address asset = _assets[i];
+            bool lowLiquidity = _lowLiquidityPools[i];
+            uint24 poolFee = _poolFees[i];
+            poolConfigs[asset] = UniswapPoolConfig({isLowLiquidity: lowLiquidity, fee: poolFee});
+        }
     }
 
     /**
      * @dev Returns Uniswap pool config for given asset
      */
     function getPoolConfigForAsset(address asset) internal view returns(UniswapPoolConfig memory) {
-        for (uint8 i = 0; i < poolConfigs.length; i++) {
-            UniswapPoolConfig memory poolConfig = poolConfigs[i];
-            if (poolConfig.asset == asset) {
-                return poolConfig;
-            }
+        UniswapPoolConfig memory config = poolConfigs[asset];
+        if (config.fee == 0) {
+            // If asset is not found, proceed with default pool config
+            return UniswapPoolConfig({
+                fee: DEFAULT_POOL_FEE,
+                isLowLiquidity: false
+            });
         }
-
-        // If asset is not found, proceed with default pool config
-        return UniswapPoolConfig({
-            fee: DEFAULT_POOL_FEE,
-            asset: asset,
-            isLowLiquidity: false
-        });
+        return config;
     }
 
     /**

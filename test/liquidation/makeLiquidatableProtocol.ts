@@ -146,15 +146,10 @@ export default async function makeLiquidatableProtocol() {
     ethers.utils.getAddress(comet.address),
     ethers.utils.getAddress(UNISWAP_V3_FACTORY),
     ethers.utils.getAddress(WETH9),
-    10 * 1e6, // min viable liquidation is for 10 USDC (base token) of collateral
-    [
-      {asset: ethers.utils.getAddress(DAI), fee: 500, isLowLiquidity: false},
-      {asset: ethers.utils.getAddress(WETH9), fee: 500, isLowLiquidity: false},
-      {asset: ethers.utils.getAddress(WBTC), fee: 3000, isLowLiquidity: false},
-      {asset: ethers.utils.getAddress(UNI), fee: 3000, isLowLiquidity: false},
-      {asset: ethers.utils.getAddress(COMP), fee: 3000, isLowLiquidity: true},
-      {asset: ethers.utils.getAddress(LINK), fee: 3000, isLowLiquidity: true}
-    ]
+    10 * 1e6, // min viable liquidation is for 10 USDC (base token) of collateral,
+    [ethers.utils.getAddress(DAI), ethers.utils.getAddress(WETH9), ethers.utils.getAddress(WBTC), ethers.utils.getAddress(UNI), ethers.utils.getAddress(COMP), ethers.utils.getAddress(LINK)],
+    [false, false, false, false, true, true],
+    [500, 500, 3000, 3000, 3000, 3000]
   );
   await liquidator.deployed();
 
