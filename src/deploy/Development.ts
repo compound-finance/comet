@@ -65,15 +65,9 @@ async function makePriceFeed(
 // TODO: Support configurable assets as well?
 export async function deployDevelopmentComet(
   deploymentManager: DeploymentManager,
-  contractsToDeploy?: ContractsToDeploy,
-  configurationOverrides?: ProtocolConfiguration
+  contractsToDeploy: ContractsToDeploy = { all: true },
+  configurationOverrides: ProtocolConfiguration = {},
 ): Promise<DeployedContracts> {
-  if (contractsToDeploy == null) {
-    contractsToDeploy = { all: true };
-  }
-  if (configurationOverrides == null) {
-    configurationOverrides = {};
-  }
   const [admin, pauseGuardianSigner] = await deploymentManager.getSigners();
 
   let dai = await makeToken(deploymentManager, 1000000, 'DAI', 18, 'DAI');

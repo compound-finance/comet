@@ -32,17 +32,11 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 export async function deployNetworkComet(
   deploymentManager: DeploymentManager,
-  contractsToDeploy?: ContractsToDeploy,
-  configurationOverrides?: ProtocolConfiguration,
+  contractsToDeploy: ContractsToDeploy = { all: true },
+  configurationOverrides: ProtocolConfiguration = {},
   contractMapOverride?: ContractMap,
   adminSigner?: SignerWithAddress,
 ): Promise<DeployedContracts> {
-  if (contractsToDeploy == null) {
-    contractsToDeploy = { all: true };
-  }
-  if (configurationOverrides == null) {
-    configurationOverrides = {};
-  }
   if (adminSigner == null) {
     adminSigner = await deploymentManager.getSigner();
   }
