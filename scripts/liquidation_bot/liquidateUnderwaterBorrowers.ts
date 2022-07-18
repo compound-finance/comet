@@ -4,7 +4,6 @@ import {
   Liquidator
 } from '../../build/types';
 
-// XXX this is Kovan-specific
 const daiPool = {
   tokenAddress: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
   poolFee: 100
