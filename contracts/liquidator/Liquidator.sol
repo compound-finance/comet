@@ -95,6 +95,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         weth = _WETH9;
         liquidationThreshold = _liquidationThreshold;
 
+        // Set pool configs for all given assets
         for (uint8 i = 0; i < _assets.length; i++) {
             address asset = _assets[i];
             bool lowLiquidity = _lowLiquidityPools[i];
@@ -108,8 +109,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
      */
     function getPoolConfigForAsset(address asset) internal view returns(UniswapPoolConfig memory) {
         UniswapPoolConfig memory config = poolConfigs[asset];
+        // If asset is not found, proceed with default pool config
         if (config.fee == 0) {
-            // If asset is not found, proceed with default pool config
             return UniswapPoolConfig({
                 fee: DEFAULT_POOL_FEE,
                 isLowLiquidity: false
