@@ -1,4 +1,4 @@
-# Liquidation bot for Compound III
+# Liquidation bot
 
 ## Introduction
 
