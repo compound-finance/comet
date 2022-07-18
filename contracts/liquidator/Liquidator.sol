@@ -47,7 +47,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     /** Liquidator configuration constants **/
 
     /// @notice The scale for asset price calculations
-    uint256 public constant QUOTE_PRICE_SCALE = 1e6;
+    uint256 public constant QUOTE_PRICE_SCALE = 1e18;
 
     /// @notice Uniswap standard pool fee, used if custom fee is not specified for the pool
     uint24 public constant DEFAULT_POOL_FEE = 500;
