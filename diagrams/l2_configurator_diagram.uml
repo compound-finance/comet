@@ -1,7 +1,7 @@
 @startuml
 
 rectangle "L1" {
-  rectangle GovSimple
+  rectangle Governor
   rectangle Timelock
 }
 
@@ -15,7 +15,7 @@ rectangle "L2" {
   rectangle Bulker
 }
 
-GovSimple --> Timelock : admin
+Governor --> Timelock : admin
 Timelock --> L2ProxyAdmin : admin
 Timelock ~~> ConfiguratorImpl : governor
 Timelock ~~> CometImpl : governor
