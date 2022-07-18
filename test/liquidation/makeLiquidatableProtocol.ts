@@ -54,11 +54,14 @@ export default async function makeLiquidatableProtocol() {
     extensionDelegate: extensionDelegate.address,
     baseToken: USDC,
     baseTokenPriceFeed: USDC_USD_PRICE_FEED,
-    kink: 800000000000000000n,
-    perYearInterestRateBase: 5000000000000000n,
-    perYearInterestRateSlopeLow: 100000000000000000n,
-    perYearInterestRateSlopeHigh: 3000000000000000000n,
-    reserveRate: 100000000000000000n,
+    supplyKink: 800000000000000000n, // .8e18
+    supplyPerYearInterestRateBase: 0n,
+    supplyPerYearInterestRateSlopeLow: 50000000000000000n, // .05e18
+    supplyPerYearInterestRateSlopeHigh: 2000000000000000000n, // 2e18
+    borrowKink: 800000000000000000n, // .8e18
+    borrowPerYearInterestRateBase: 5000000000000000n, // .005e18
+    borrowPerYearInterestRateSlopeLow: 100000000000000000n, // .1e18
+    borrowPerYearInterestRateSlopeHigh: 3000000000000000000n, // 3e18
     storeFrontPriceFactor: 1000000000000000000n,
     trackingIndexScale: 1000000000000000n,
     baseTrackingSupplySpeed: 1000000000000000n,
