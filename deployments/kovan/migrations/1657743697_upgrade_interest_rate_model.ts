@@ -5,7 +5,7 @@ import { Contract, utils } from 'ethers';
 import { deployComet } from '../../../src/deploy';
 
 interface Vars {
-  newConfiguratorProxy: string,
+  configurator: string,
 };
 
 migration<Vars>('1657743697_upgrade_interest_rate_model', {
@@ -41,7 +41,7 @@ migration<Vars>('1657743697_upgrade_interest_rate_model', {
     console.log('New Configurator proxy deployed at: ', configuratorProxy.address);
 
     return {
-      newConfiguratorProxy: configuratorProxy.address,
+      configurator: configuratorProxy.address,
     };
   },
   enact: async (deploymentManager: DeploymentManager, contracts: Vars) => {
@@ -51,7 +51,7 @@ migration<Vars>('1657743697_upgrade_interest_rate_model', {
     const governor = await deploymentManager.contract('governor') as GovernorSimple;
     const proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
     const configurator = await deploymentManager.contract('configurator') as Configurator;
-    const newConfigurator = configurator.attach(contracts.newConfiguratorProxy);
+    const newConfigurator = configurator.attach(contracts.configurator);
 
     // DeployAndUpgradeTo new implementation of Comet:
     // 1. Deploy and upgrade to new implementation of Comet.
@@ -71,10 +71,11 @@ migration<Vars>('1657743697_upgrade_interest_rate_model', {
 
     console.log(`Created proposal ${proposalId} and queued it. Proposal still needs to be executed.`);
 
-    // Update roots
-    const updatedRoots = await deploymentManager.getRoots();
-    updatedRoots.set('configurator', newConfigurator.address);
-    await deploymentManager.putRoots(updatedRoots);
+    console.log("After proposal has been executed, you should update `configurator` in roots.json to:");
+    console.log("");
+    console.log("");
+    console.log(JSON.stringify(contracts, null, 4));
+    console.log("");
 
     // Log out new states to manually verify (helpful to verify via simulation)
     // await governorAsAdmin.execute(proposalId);
