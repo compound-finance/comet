@@ -54,14 +54,14 @@ export default async function makeLiquidatableProtocol() {
     extensionDelegate: extensionDelegate.address,
     baseToken: USDC,
     baseTokenPriceFeed: USDC_USD_PRICE_FEED,
-    supplyKink: exp(0.8, 18), // .8e18
+    supplyKink: exp(0.8, 18),
     supplyPerYearInterestRateBase: 0n,
-    supplyPerYearInterestRateSlopeLow: exp(0.5, 18), // .05e18
-    supplyPerYearInterestRateSlopeHigh: exp(2, 18), // 2e18
-    borrowKink: exp(0.8, 18), // .8e18
-    borrowPerYearInterestRateBase: exp(5, 15), // .005e18
-    borrowPerYearInterestRateSlopeLow: exp(0.1, 18), // .1e18
-    borrowPerYearInterestRateSlopeHigh: exp(3, 18), // 3e18
+    supplyPerYearInterestRateSlopeLow: exp(0.5, 18),
+    supplyPerYearInterestRateSlopeHigh: exp(2, 18),
+    borrowKink: exp(0.8, 18),
+    borrowPerYearInterestRateBase: exp(5, 15),
+    borrowPerYearInterestRateSlopeLow: exp(0.1, 18),
+    borrowPerYearInterestRateSlopeHigh: exp(3, 18),
     storeFrontPriceFactor: exp(1, 18),
     trackingIndexScale: exp(1, 15),
     baseTrackingSupplySpeed: exp(1, 15),
@@ -135,8 +135,8 @@ export default async function makeLiquidatableProtocol() {
   await setTotalsBasic(cometHarnessInterface, {
     baseBorrowIndex: 2e15,
     baseSupplyIndex: 2e15,
-    totalSupplyBase: 20000000000000n,
-    totalBorrowBase: 20000000000000n
+    totalSupplyBase: 2e13,
+    totalBorrowBase: 2e13
   });
 
   // build Liquidator
@@ -146,8 +146,15 @@ export default async function makeLiquidatableProtocol() {
     ethers.utils.getAddress(comet.address),
     ethers.utils.getAddress(UNISWAP_V3_FACTORY),
     ethers.utils.getAddress(WETH9),
-    10 * 1e6, // min viable liquidation is for 10 USDC (base token) of collateral,
-    [ethers.utils.getAddress(DAI), ethers.utils.getAddress(WETH9), ethers.utils.getAddress(WBTC), ethers.utils.getAddress(UNI), ethers.utils.getAddress(COMP), ethers.utils.getAddress(LINK)],
+    10e6, // min viable liquidation is for 10 USDC (base token) of collateral,
+    [
+      ethers.utils.getAddress(DAI),
+      ethers.utils.getAddress(WETH9),
+      ethers.utils.getAddress(WBTC),
+      ethers.utils.getAddress(UNI),
+      ethers.utils.getAddress(COMP),
+      ethers.utils.getAddress(LINK)
+    ],
     [false, false, false, false, true, true],
     [500, 500, 3000, 3000, 3000, 3000]
   );
@@ -206,19 +213,19 @@ export default async function makeLiquidatableProtocol() {
   });
   const linkWhaleSigner = await ethers.getSigner(LINK_WHALE);
 
-  await mockUSDC.connect(usdcWhaleSigner).transfer(signer.address, 300000000n); // 300e6
-  // transfer DAI to underwater user (is this still necessary?)
-  await mockDai.connect(daiWhaleSigner).transfer(underwaterUser.address, 200000000000000000000n);
+  await mockUSDC.connect(usdcWhaleSigner).transfer(signer.address, exp(300, 6));
+  // transfer DAI to underwater user
+  await mockDai.connect(daiWhaleSigner).transfer(underwaterUser.address, exp(200, 18));
   // transfer WETH to underwater user
-  await mockWETH.connect(wethWhaleSigner).transfer(underwaterUser.address, 200000000000000000000n);
+  await mockWETH.connect(wethWhaleSigner).transfer(underwaterUser.address, exp(200, 18));
   // transfer WBTC to underwater user
-  await mockWBTC.connect(wbtcWhaleSigner).transfer(underwaterUser.address, 200000000n);
+  await mockWBTC.connect(wbtcWhaleSigner).transfer(underwaterUser.address, exp(2, 8));
   // transfer UNI to underwater user
-  await mockUNI.connect(uniWhaleSigner).transfer(underwaterUser.address, 200000000000000000000n);
+  await mockUNI.connect(uniWhaleSigner).transfer(underwaterUser.address, exp(200, 18));
   // transfer COMP to underwater user
-  await mockCOMP.connect(compWhaleSigner).transfer(underwaterUser.address, 200000000000000000000n);
+  await mockCOMP.connect(compWhaleSigner).transfer(underwaterUser.address, exp(200, 18));
   // transfer LINK to underwater user
-  await mockLINK.connect(linkWhaleSigner).transfer(underwaterUser.address, 200000000000000000000n);
+  await mockLINK.connect(linkWhaleSigner).transfer(underwaterUser.address, exp(200, 18));
 
   return {
     comet: cometHarnessInterface,
