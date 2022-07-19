@@ -5,10 +5,17 @@ import {
   Liquidator
 } from '../../build/types';
 import liquidateUnderwaterBorrowers from './liquidateUnderwaterBorrowers';
+import liquidatorAbi from './liquidator-abi';
 
 const loopDelay = 5000;
 
 async function main() {
+  const liquidatorAddress = process.env.LIQUIDATOR_ADDRESS;
+
+  if (!liquidatorAddress) {
+    throw new Error('missing required env variable: LIQUIDATOR_ADDRESS');
+  }
+
   const dm = new DeploymentManager(hre.network.name, hre, {
     writeCacheToDisk: false,
     debug: true,
@@ -19,7 +26,12 @@ async function main() {
   const signer = await dm.getSigner();
   const contracts = await dm.contracts();
   const comet = contracts.get('comet') as CometInterface;
-  const liquidator = contracts.get('liquidator') as Liquidator;
+
+  const liquidator = new hre.ethers.Contract(
+    liquidatorAddress,
+    liquidatorAbi,
+    signer
+  ) as Liquidator;
 
   let lastBlockNumber: number;
 
