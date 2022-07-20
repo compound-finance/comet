@@ -15,6 +15,8 @@ export function getEtherscanApiUrl(network: string): string {
     mainnet: 'api.etherscan.io',
     fuji: 'api-testnet.snowtrace.io',
     avalanche: 'api.snowtrace.io',
+    mumbai: 'api-mumbai.polygonscan.com',
+    polygon: 'api.polygonscan.com',
   }[network];
 
   if (!host) {
@@ -33,6 +35,8 @@ export function getEtherscanUrl(network: string): string {
     mainnet: 'etherscan.io',
     fuji: 'testnet.snowtrace.io',
     avalanche: 'snowtrace.io',
+    mumbai: 'mumbai.polygonscan.com',
+    polygon: 'polygonscan.com',
   }[network];
 
   if (!host) {
@@ -51,6 +55,8 @@ export function getEtherscanApiKey(network: string): string {
     mainnet: process.env.ETHERSCAN_KEY,
     fuji: process.env.SNOWTRACE_KEY,
     avalanche: process.env.SNOWTRACE_KEY,
+    mumbai: process.env.POLYGONSCAN_KEY,
+    polygon: process.env.POLYGONSCAN_KEY,
   }[network];
 
   if (!apiKey) {

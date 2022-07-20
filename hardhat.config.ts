@@ -19,6 +19,7 @@ import './tasks/scenario/task.ts';
 import relationConfigMap from './deployments/relations';
 import fujiRelationConfigMap from './deployments/fuji/relations';
 import kovanRelationConfigMap from './deployments/kovan/relations';
+import mumbaiRelationConfigMap from './deployments/mumbai/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -31,6 +32,7 @@ const {
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
   INFURA_KEY,
+  POLYGONSCAN_KEY,
   MNEMONIC = '',
   REPORT_GAS = 'false',
 } = process.env;
@@ -45,6 +47,7 @@ function throwIfMissing(envVariable, msg: string) {
 throwIfMissing(ETHERSCAN_KEY, 'Missing required environment variable: ETHERSCAN_KEY');
 throwIfMissing(SNOWTRACE_KEY, 'Missing required environment variable: SNOWTRACE_KEY');
 throwIfMissing(INFURA_KEY, 'Missing required environment variable: INFURA_KEY');
+throwIfMissing(POLYGONSCAN_KEY, 'Missing required environment variable: POLYGONSCAN_KEY');
 
 // Networks
 interface NetworkConfig {
@@ -70,6 +73,16 @@ const networkConfigs: NetworkConfig[] = [
     network: 'fuji',
     chainId: 43113,
     url: 'https://api.avax-test.network/ext/bc/C/rpc',
+  },
+  {
+    network: 'polygon',
+    chainId: 137,
+    url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
+    network: 'mumbai',
+    chainId: 80001,
+    url: `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`,
   },
 ];
 
@@ -148,6 +161,9 @@ const config: HardhatUserConfig = {
       // Avalanche
       avalanche: SNOWTRACE_KEY,
       avalancheFujiTestnet: SNOWTRACE_KEY,
+      // Polygon
+      polygonMumbai: POLYGONSCAN_KEY,
+      polygon: POLYGONSCAN_KEY,
     },
   },
 
@@ -161,6 +177,7 @@ const config: HardhatUserConfig = {
     networks: {
       fuji: fujiRelationConfigMap,
       kovan: kovanRelationConfigMap,
+      mumbai: mumbaiRelationConfigMap
     },
   },
 
@@ -180,6 +197,16 @@ const config: HardhatUserConfig = {
         chainId: 43113,
         url: 'https://api.avax-test.network/ext/bc/C/rpc',
       },
+      {
+        name: 'goerli',
+        chainId: 5,
+        url: getDefaultProviderURL('goerli'),
+      },
+      {
+        name: 'mumbai',
+        chainId: 80001,
+        url: `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`,
+      }
     ],
   },
 
