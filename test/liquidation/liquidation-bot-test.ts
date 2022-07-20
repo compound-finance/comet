@@ -17,9 +17,9 @@ describe('Liquidator', function () {
   it('Should execute DAI flash swap with profit', async () => {
     const { comet, liquidator, users: [owner, underwater], assets: { dai, usdc } } = await makeLiquidatableProtocol();
     // underwater user approves Comet
-    await dai.connect(underwater).approve(comet.address, 120000000000000000000n);
+    await dai.connect(underwater).approve(comet.address, exp(120, 18));
     // underwater user supplies DAI to Comet
-    await comet.connect(underwater).supply(dai.address, 120000000000000000000n);
+    await comet.connect(underwater).supply(dai.address, exp(120, 18));
     // artificially put in an underwater borrow position
     await comet.setBasePrincipal(underwater.address, -(exp(200, 6)));
 
@@ -46,8 +46,8 @@ describe('Liquidator', function () {
 
   it('Should execute WETH flash swap with profit', async () => {
     const { comet, liquidator, users: [owner, underwater], assets: { usdc, weth } } = await makeLiquidatableProtocol();
-    await weth.connect(underwater).approve(comet.address, 120000000000000000000n);
-    await comet.connect(underwater).supply(weth.address, 120000000000000000000n);
+    await weth.connect(underwater).approve(comet.address, exp(120, 18));
+    await comet.connect(underwater).supply(weth.address, exp(120, 18));
     await comet.setBasePrincipal(underwater.address, -(exp(4000, 6)));
 
     const beforeUSDCBalance = await usdc.balanceOf(owner.address);
@@ -71,8 +71,8 @@ describe('Liquidator', function () {
 
   it('Should execute WBTC flash swap with profit', async () => {
     const { comet, liquidator, users: [owner, underwater], assets: { usdc, wbtc } } = await makeLiquidatableProtocol();
-    await wbtc.connect(underwater).approve(comet.address, 200000000n);
-    await comet.connect(underwater).supply(wbtc.address, 200000000n);
+    await wbtc.connect(underwater).approve(comet.address, exp(2, 8));
+    await comet.connect(underwater).supply(wbtc.address, exp(2, 8));
     await comet.setBasePrincipal(underwater.address, -(exp(40000, 6)));
 
     const beforeUSDCBalance = await usdc.balanceOf(owner.address);
