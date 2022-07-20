@@ -5,7 +5,6 @@ import {
   Liquidator
 } from '../../build/types';
 import liquidateUnderwaterBorrowers from './liquidateUnderwaterBorrowers';
-import liquidatorAbi from './liquidator-abi';
 
 const loopDelay = 5000;
 
@@ -27,9 +26,13 @@ async function main() {
   const contracts = await dm.contracts();
   const comet = contracts.get('comet') as CometInterface;
 
-  const liquidator = new hre.ethers.Contract(
+  if (!comet) {
+    throw new Error(`no deployed Comet found for network: ${hre.network.name}`);
+  }
+
+  const liquidator = await hre.ethers.getContractAt(
+    'Liquidator',
     liquidatorAddress,
-    liquidatorAbi,
     signer
   ) as Liquidator;
 
