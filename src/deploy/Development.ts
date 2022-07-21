@@ -302,7 +302,6 @@ export async function deployDevelopmentComet(
   }
 
   await deploymentManager.putRoots(updatedRoots);
-  await deploymentManager.spider();
 
   return {
     comet,

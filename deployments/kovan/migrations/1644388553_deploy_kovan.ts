@@ -23,6 +23,8 @@ let cloneAddr = {
 
 migration('1644388553_deploy_kovan', {
   prepare: async (deploymentManager: DeploymentManager) => {
+    deploymentManager.shouldLazilyVerifyContracts(true);
+
     const { ethers } = deploymentManager.hre;
     let signer = await deploymentManager.getSigner();
     let signerAddress = signer.address;
@@ -118,6 +120,9 @@ migration('1644388553_deploy_kovan', {
       {},
       contracts
     );
+
+    // Verify contracts after all contracts have been deployed
+    await deploymentManager.verifyContracts();
 
     return {
       comet: cometProxy.address,

@@ -14,6 +14,8 @@ import { Migration, getArtifactSpec } from './Migration';
 import { generateMigration } from './MigrationTemplate';
 import { ExtendedNonceManager } from './NonceManager';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { deleteVerifyArgs, getVerifyArgs } from './VerifyArgs';
+import { verifyContract } from './Verify';
 
 interface DeploymentManagerConfig {
   baseDir?: string;
@@ -21,6 +23,7 @@ interface DeploymentManagerConfig {
   importRetryDelay?: number;
   writeCacheToDisk?: boolean;
   verifyContracts?: boolean;
+  lazyVerify?: boolean;
   debug?: boolean;
 }
 
@@ -80,6 +83,7 @@ export class DeploymentManager {
   private async deployOpts(): Promise<DeployOpts> {
     return {
       verify: this.config.verifyContracts,
+      lazyVerify: this.config.lazyVerify,
       cache: this.cache,
       connect: await this.getSigner(),
     };
@@ -123,6 +127,21 @@ export class DeploymentManager {
   /* Deploys a contract from a build file, e.g. an one imported contract */
   async deployBuild(buildFile: BuildFile, deployArgs: any[]): Promise<Contract> {
     return await deployBuild(buildFile, deployArgs, this.hre, await this.deployOpts());
+  }
+
+  /* Verifies contracts using the verify arguments stored in cache */
+  async verifyContracts() {
+    let verifyArgs = await getVerifyArgs(this.cache);
+    for (const address of verifyArgs.keys()) {
+      await verifyContract(
+        verifyArgs.get(address),
+        this.hre,
+        (await this.deployOpts()).raiseOnVerificationFailure
+      );
+
+      // Clear from cache after successfully verifying
+      await deleteVerifyArgs(this.cache, address);
+    }
   }
 
   /* Stores a new alias, which can then be referenced via `deploymentManager.contract()` */
@@ -212,6 +231,11 @@ export class DeploymentManager {
   /* Changes configuration of verifying contracts on deployment */
   shouldVerifyContracts(verifyContracts: boolean) {
     this.config.verifyContracts = verifyContracts;
+  }
+
+  /* Changes configuration of lazily verifying contracts on deployment */
+  shouldLazilyVerifyContracts(lazilyVerifyContracts: boolean) {
+    this.config.lazyVerify = lazilyVerifyContracts;
   }
 
   /* Changes configuration of writing cache to disk, or not. */

@@ -5,7 +5,7 @@ import { manualVerifyContract } from './ManualVerify';
 import { BuildFile } from './Types';
 import { debug } from './Utils';
 
-type VerifyArgs =
+export type VerifyArgs =
   | { via: 'artifacts', address: string, constructorArguments: any }
   | { via: 'buildfile', contract: Contract, buildFile: BuildFile, deployArgs: any[] };
 

@@ -21,6 +21,10 @@ import { getProxies } from '../Proxies';
 import { getRoots } from '../Roots';
 import { faucetTokenBuildFile, tokenArgs } from './DeployHelpers';
 import { tempDir } from './TestHelpers';
+import { VerifyArgs } from '../Verify';
+import { getVerifyArgs, putVerifyArgs } from '../VerifyArgs';
+import { mockVerifySuccess } from './VerifyTest';
+import { objectFromMap } from '../Utils';
 
 export interface TestContracts {
   finn: Dog;
@@ -132,6 +136,35 @@ describe('DeploymentManager', () => {
       });
       let token = await deploymentManager.deployBuild(faucetTokenBuildFile, tokenArgs);
       expect(await token.symbol()).to.equal('TEST');
+    });
+  });
+
+  describe('verifyContracts', () => {
+    it('should verify contracts succesfully', async () => {
+      let deploymentManager = new DeploymentManager('test', hre, {
+        importRetries: 0,
+        writeCacheToDisk: true,
+        baseDir: tempDir(),
+      });
+      let verifyArgs: VerifyArgs = {
+        via: 'artifacts',
+        address: '0x0000000000000000000000000000000000000000',
+        constructorArguments: []
+      };
+      await putVerifyArgs(
+        deploymentManager.cache,
+        '0x0000000000000000000000000000000000000000',
+        verifyArgs
+      );
+      expect(objectFromMap(await getVerifyArgs(deploymentManager.cache))).to.eql({
+        '0x0000000000000000000000000000000000000000': verifyArgs
+      });
+
+      mockVerifySuccess(hre);
+      await deploymentManager.verifyContracts();
+
+      // VerifyArgs cache should be cleared upon successful verification
+      expect(objectFromMap(await getVerifyArgs(deploymentManager.cache))).to.eql({});
     });
   });
 

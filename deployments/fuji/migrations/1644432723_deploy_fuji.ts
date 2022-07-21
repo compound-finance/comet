@@ -20,6 +20,8 @@ let cloneAddr = {
 
 migration('1644432723_deploy_fuji', {
   prepare: async (deploymentManager: DeploymentManager) => {
+    deploymentManager.shouldLazilyVerifyContracts(true);
+
     let signer = await deploymentManager.getSigner();
     let signerAddress = signer.address;
 
@@ -81,6 +83,9 @@ migration('1644432723_deploy_fuji', {
       {},
       contracts
     );
+
+    // Verify contracts after all contracts have been deployed
+    await deploymentManager.verifyContracts();
 
     return {
       comet: cometProxy.address,
