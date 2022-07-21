@@ -23,3 +23,9 @@ export async function putVerifyArgs(cache: Cache, address: Address, verifyArgs: 
   verifyArgsMap.set(address, verifyArgs);
   await storeVerifyArgs(cache, verifyArgsMap);
 }
+
+export async function deleteVerifyArgs(cache: Cache, address: Address) {
+  let verifyArgsMap = await getVerifyArgs(cache);
+  verifyArgsMap.delete(address);
+  await storeVerifyArgs(cache, verifyArgsMap);
+}

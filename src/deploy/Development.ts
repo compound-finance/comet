@@ -1,4 +1,3 @@
-import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import {
   Comet__factory,
@@ -7,18 +6,22 @@ import {
   CometExt,
   CometFactory__factory,
   CometFactory,
+  FaucetToken__factory,
+  FaucetToken,
   GovernorSimple,
   GovernorSimple__factory,
-  CometProxyAdmin,
-  CometProxyAdmin__factory,
-  TransparentUpgradeableProxy,
-  TransparentUpgradeableProxy__factory,
-  ConfiguratorProxy,
-  ConfiguratorProxy__factory,
-  Configurator,
-  Configurator__factory,
+  SimplePriceFeed,
+  SimplePriceFeed__factory,
   SimpleTimelock,
   SimpleTimelock__factory,
+  TransparentUpgradeableProxy,
+  TransparentUpgradeableProxy__factory,
+  Configurator,
+  Configurator__factory,
+  CometProxyAdmin,
+  CometProxyAdmin__factory,
+  ConfiguratorProxy,
+  ConfiguratorProxy__factory,
   ProxyAdmin,
   CometInterface,
   CometRewards,
@@ -26,25 +29,77 @@ import {
 } from '../../build/types';
 import { ConfigurationStruct } from '../../build/types/Comet';
 import { ExtConfigurationStruct } from '../../build/types/CometExt';
-
-import { ContractsToDeploy, DeployedContracts, ProtocolConfiguration } from './index';
-import { getConfiguration } from './NetworkConfiguration';
+export { Comet } from '../../build/types';
+import { DeployedContracts, ContractsToDeploy, ProtocolConfiguration } from './index';
 import { shouldDeploy } from '../utils';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { wait } from '../../test/helpers';
-import { debug } from '../../plugins/deployment_manager/Utils';
 
-export async function deployNetworkComet(
+async function makeToken(
+  deploymentManager: DeploymentManager,
+  amount: number,
+  name: string,
+  decimals: number,
+  symbol: string
+): Promise<FaucetToken> {
+  return await deploymentManager.deploy<
+    FaucetToken,
+    FaucetToken__factory,
+    [string, string, number, string]
+  >('test/FaucetToken.sol', [
+    (BigInt(amount) * 10n ** BigInt(decimals)).toString(),
+    name,
+    decimals,
+    symbol,
+  ]);
+}
+
+async function makePriceFeed(
+  deploymentManager: DeploymentManager,
+  initialPrice: number,
+  decimals: number
+): Promise<SimplePriceFeed> {
+  return await deploymentManager.deploy<
+    SimplePriceFeed,
+    SimplePriceFeed__factory,
+    [number, number]
+  >('test/SimplePriceFeed.sol', [initialPrice * 1e8, decimals]);
+}
+
+// TODO: Support configurable assets as well?
+export async function deployDevelopmentComet(
   deploymentManager: DeploymentManager,
   contractsToDeploy: ContractsToDeploy = { all: true },
   configurationOverrides: ProtocolConfiguration = {},
-  contractMapOverride?: ContractMap,
-  adminSigner_?: SignerWithAddress,
 ): Promise<DeployedContracts> {
-  let adminSigner: SignerWithAddress = adminSigner_;
-  if (adminSigner == null) {
-    adminSigner = await deploymentManager.getSigner();
-  }
+  const [admin, pauseGuardianSigner] = await deploymentManager.getSigners();
+
+  let dai = await makeToken(deploymentManager, 1000000, 'DAI', 18, 'DAI');
+  let gold = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
+  let silver = await makeToken(deploymentManager, 3000000, 'SILVER', 10, 'SILVER');
+
+  let daiPriceFeed = await makePriceFeed(deploymentManager, 1, 8);
+  let goldPriceFeed = await makePriceFeed(deploymentManager, 0.5, 8);
+  let silverPriceFeed = await makePriceFeed(deploymentManager, 0.05, 8);
+
+  let assetConfig0 = {
+    asset: gold.address,
+    priceFeed: goldPriceFeed.address,
+    decimals: (8).toString(),
+    borrowCollateralFactor: (0.9e18).toString(),
+    liquidateCollateralFactor: (1e18).toString(),
+    liquidationFactor: (0.95e18).toString(),
+    supplyCap: (1000000e8).toString(),
+  };
+
+  let assetConfig1 = {
+    asset: silver.address,
+    priceFeed: silverPriceFeed.address,
+    decimals: (10).toString(),
+    borrowCollateralFactor: (0.4e18).toString(),
+    liquidateCollateralFactor: (0.5e18).toString(),
+    liquidationFactor: (0.9e18).toString(),
+    supplyCap: (500000e10).toString(),
+  };
 
   let governorSimple, timelock, proxyAdmin, cometExt, cometProxy, configuratorProxy, comet, configurator, cometFactory, rewards;
 
@@ -70,10 +125,7 @@ export async function deployNetworkComet(
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.governor)) {
     // Initialize the storage of GovernorSimple
-    debug(`Initializing GovSimple`);
-    await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(governorSimple.connect(signer_).initialize(timelock.address, [adminSigner.address]))
-    );
+    await wait(governorSimple.initialize(timelock.address, [admin.address]));
   }
 
   const {
@@ -99,9 +151,30 @@ export async function deployNetworkComet(
     targetReserves,
     assetConfigs,
   } = {
-    governor: timelock.address,
-    pauseGuardian: timelock.address,
-    ...await getConfiguration(deploymentManager, contractMapOverride, configurationOverrides),
+    ...{
+      symbol: '📈BASE',
+      governor: timelock.address,
+      pauseGuardian: pauseGuardianSigner.address,
+      baseToken: dai.address,
+      baseTokenPriceFeed: daiPriceFeed.address,
+      supplyKink: (0.8e18).toString(),
+      supplyPerYearInterestRateBase: (0.0e18).toString(),
+      supplyPerYearInterestRateSlopeLow: (0.05e18).toString(),
+      supplyPerYearInterestRateSlopeHigh: (2e18).toString(),
+      borrowKink: (0.8e18).toString(),
+      borrowPerYearInterestRateBase: (0.005e18).toString(),
+      borrowPerYearInterestRateSlopeLow: (0.1e18).toString(),
+      borrowPerYearInterestRateSlopeHigh: (3e18).toString(),
+      storeFrontPriceFactor: (0.95e18).toString(),
+      trackingIndexScale: (1e15).toString(), // XXX add 'exp' to scen framework?
+      baseTrackingSupplySpeed: 0, // XXX
+      baseTrackingBorrowSpeed: 0, // XXX
+      baseMinForRewards: 1, // XXX
+      baseBorrowMin: (1e18).toString(),
+      targetReserves: 0, // XXX
+      assetConfigs: [assetConfig0, assetConfig1],
+    },
+    ...configurationOverrides,
   };
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometExt)) {
@@ -176,16 +249,15 @@ export async function deployNetworkComet(
     rewards = await deploymentManager.contract('rewards') as CometRewards;
   }
 
+  /* === Proxies === */
+
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxyAdmin)) {
     let proxyAdminArgs: [] = [];
     proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
       'CometProxyAdmin.sol',
       proxyAdminArgs
     );
-    debug(`Transferring ownership of ProxyAdmin to ${governor}`);
-    await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(proxyAdmin.connect(signer_).transferOwnership(governor))
-    );
+    await wait(proxyAdmin.transferOwnership(governor));
   } else {
     proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
   }
@@ -219,25 +291,16 @@ export async function deployNetworkComet(
     >('ConfiguratorProxy.sol', [
       configurator.address,
       proxyAdmin.address,
-      (await configurator.populateTransaction.initialize(adminSigner.address)).data,
+      (await configurator.populateTransaction.initialize(admin.address)).data,
     ]);
 
     // Set the initial factory and configuration for Comet in Configurator
-    const configuratorAsProxy = (configurator as Configurator).attach(configuratorProxy.address);
-    debug(`Setting factory in Configurator`);
-    await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(configuratorAsProxy.connect(adminSigner_ ?? signer_).setFactory(cometProxy.address, cometFactory.address))
-    );
-    debug(`Setting configuration in Configurator`);
-    await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(configuratorAsProxy.connect(adminSigner_ ?? signer_).setConfiguration(cometProxy.address, configuration))
-    );
+    const configuratorAsProxy = (configurator as Configurator).attach(configuratorProxy.address).connect(admin);
+    await wait(configuratorAsProxy.setFactory(cometProxy.address, cometFactory.address));
+    await wait(configuratorAsProxy.setConfiguration(cometProxy.address, configuration));
 
     // Transfer ownership of Configurator
-    debug(`Transferring ownership in Configurator`);
-    await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(configuratorAsProxy.connect(adminSigner_ ?? signer_).transferGovernor(governor))
-    );
+    await wait(configuratorAsProxy.transferGovernor(governor));
 
     updatedRoots.set('configurator', configuratorProxy.address);
   } else {
@@ -252,6 +315,7 @@ export async function deployNetworkComet(
     configuratorProxy,
     timelock,
     governor: governorSimple,
-    rewards
+    rewards,
+    tokens: [dai, gold, silver],
   };
 }

@@ -15,7 +15,7 @@ import { generateMigration } from './MigrationTemplate';
 import { ExtendedNonceManager } from './NonceManager';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { asyncCallWithTimeout, debug } from './Utils';
-import { getVerifyArgs } from './VerifyArgs';
+import { deleteVerifyArgs, getVerifyArgs } from './VerifyArgs';
 import { verifyContract } from './Verify';
 
 interface DeploymentManagerConfig {
@@ -161,12 +161,15 @@ export class DeploymentManager {
   // XXX Should remove from cache once verified
   async verifyContracts() {
     let verifyArgs = await getVerifyArgs(this.cache);
-    for (const args of verifyArgs.values()) {
+    for (const address of verifyArgs.keys()) {
       await verifyContract(
-        args,
+        verifyArgs.get(address),
         this.hre,
         (await this.deployOpts()).raiseOnVerificationFailure
       );
+
+      // Clear from cache after successfully verifying
+      await deleteVerifyArgs(this.cache, address);
     }
   }
 
