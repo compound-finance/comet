@@ -158,7 +158,7 @@ export class DeploymentManager {
     }
   }
 
-  // XXX Should remove from cache once verified
+  /* Verifies contracts using the verify arguments stored in cache */
   async verifyContracts() {
     let verifyArgs = await getVerifyArgs(this.cache);
     for (const address of verifyArgs.keys()) {
