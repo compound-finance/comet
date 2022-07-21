@@ -1,0 +1,329 @@
+{
+  "strict": true,
+  "files": {
+    "@openzeppelin/contracts/token/ERC20/IERC20.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:OpenZeppelin/openzeppelin-contracts.git",
+          "commit": "a035b235b4f2c9af4ba88edc4447f02e37f8d124",
+          "path": "contracts/token/ERC20/IERC20.sol"
+        }
+      }
+    },
+    "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-core.git",
+          "commit": "8f3e4645a08850d2335ead3d1a8d0c64fa44f222",
+          "path": "contracts/interfaces/IUniswapV3Pool.sol"
+        }
+      }
+    },
+    "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3FlashCallback.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-core.git",
+          "commit": "8f3e4645a08850d2335ead3d1a8d0c64fa44f222",
+          "path": "contracts/interfaces/callback/IUniswapV3FlashCallback.sol"
+        }
+      }
+    },
+    "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-core.git",
+          "commit": "8f3e4645a08850d2335ead3d1a8d0c64fa44f222",
+          "path": "contracts/interfaces/callback/IUniswapV3SwapCallback.sol"
+        }
+      }
+    },
+    "@uniswap/v3-core/contracts/interfaces/pool/IUniswapV3PoolActions.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-core.git",
+          "commit": "8f3e4645a08850d2335ead3d1a8d0c64fa44f222",
+          "path": "contracts/interfaces/pool/IUniswapV3PoolActions.sol"
+        }
+      }
+    },
+    "@uniswap/v3-core/contracts/interfaces/pool/IUniswapV3PoolDerivedState.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-core.git",
+          "commit": "8f3e4645a08850d2335ead3d1a8d0c64fa44f222",
+          "path": "contracts/interfaces/pool/IUniswapV3PoolDerivedState.sol"
+        }
+      }
+    },
+    "@uniswap/v3-core/contracts/interfaces/pool/IUniswapV3PoolEvents.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-core.git",
+          "commit": "8f3e4645a08850d2335ead3d1a8d0c64fa44f222",
+          "path": "contracts/interfaces/pool/IUniswapV3PoolEvents.sol"
+        }
+      }
+    },
+    "@uniswap/v3-core/contracts/interfaces/pool/IUniswapV3PoolImmutables.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-core.git",
+          "commit": "8f3e4645a08850d2335ead3d1a8d0c64fa44f222",
+          "path": "contracts/interfaces/pool/IUniswapV3PoolImmutables.sol"
+        }
+      }
+    },
+    "@uniswap/v3-core/contracts/interfaces/pool/IUniswapV3PoolOwnerActions.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-core.git",
+          "commit": "8f3e4645a08850d2335ead3d1a8d0c64fa44f222",
+          "path": "contracts/interfaces/pool/IUniswapV3PoolOwnerActions.sol"
+        }
+      }
+    },
+    "@uniswap/v3-core/contracts/interfaces/pool/IUniswapV3PoolState.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-core.git",
+          "commit": "8f3e4645a08850d2335ead3d1a8d0c64fa44f222",
+          "path": "contracts/interfaces/pool/IUniswapV3PoolState.sol"
+        }
+      }
+    },
+    "@uniswap/v3-periphery/contracts/base/PeripheryImmutableState.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-periphery.git",
+          "commit": "22a7ead071fff53f00d9ddc13434f285f4ed5c7d",
+          "path": "contracts/base/PeripheryImmutableState.sol"
+        }
+      },
+      "patches": [
+        {
+          "oldStart": 1,
+          "oldLines": 6,
+          "newStart": 1,
+          "newLines": 6,
+          "lines": [
+            " // SPDX-License-Identifier: GPL-2.0-or-later",
+            "-pragma solidity 0.8.15;",
+            "+pragma solidity =0.7.6;",
+            " ",
+            " import '../interfaces/IPeripheryImmutableState.sol';",
+            " ",
+            " /// @title Immutable state"
+          ]
+        }
+      ]
+    },
+    "@uniswap/v3-periphery/contracts/base/PeripheryPayments.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-periphery.git",
+          "commit": "22a7ead071fff53f00d9ddc13434f285f4ed5c7d",
+          "path": "contracts/base/PeripheryPayments.sol"
+        }
+      },
+      "patches": [
+        {
+          "oldStart": 1,
+          "oldLines": 8,
+          "newStart": 1,
+          "newLines": 8,
+          "lines": [
+            " // SPDX-License-Identifier: GPL-2.0-or-later",
+            " pragma solidity >=0.7.5;",
+            " ",
+            "-import '../../../../@openzeppelin/contracts/token/ERC20/IERC20.sol';",
+            "+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';",
+            " ",
+            " import '../interfaces/IPeripheryPayments.sol';",
+            " import '../interfaces/external/IWETH9.sol';",
+            " "
+          ]
+        }
+      ]
+    },
+    "@uniswap/v3-periphery/contracts/interfaces/IPeripheryImmutableState.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-periphery.git",
+          "commit": "22a7ead071fff53f00d9ddc13434f285f4ed5c7d",
+          "path": "contracts/interfaces/IPeripheryImmutableState.sol"
+        }
+      }
+    },
+    "@uniswap/v3-periphery/contracts/interfaces/IPeripheryPayments.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-periphery.git",
+          "commit": "22a7ead071fff53f00d9ddc13434f285f4ed5c7d",
+          "path": "contracts/interfaces/IPeripheryPayments.sol"
+        }
+      }
+    },
+    "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-periphery.git",
+          "commit": "22a7ead071fff53f00d9ddc13434f285f4ed5c7d",
+          "path": "contracts/interfaces/ISwapRouter.sol"
+        }
+      },
+      "patches": [
+        {
+          "oldStart": 1,
+          "oldLines": 9,
+          "newStart": 1,
+          "newLines": 9,
+          "lines": [
+            " // SPDX-License-Identifier: GPL-2.0-or-later",
+            " pragma solidity >=0.7.5;",
+            " pragma abicoder v2;",
+            " ",
+            "-import '../../../v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';",
+            "+import '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';",
+            " ",
+            " /// @title Router token swapping functionality",
+            " /// @notice Functions for swapping tokens via Uniswap V3",
+            " interface ISwapRouter is IUniswapV3SwapCallback {"
+          ]
+        }
+      ]
+    },
+    "@uniswap/v3-periphery/contracts/libraries/CallbackValidation.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-periphery.git",
+          "commit": "22a7ead071fff53f00d9ddc13434f285f4ed5c7d",
+          "path": "contracts/libraries/CallbackValidation.sol"
+        }
+      },
+      "patches": [
+        {
+          "oldStart": 1,
+          "oldLines": 8,
+          "newStart": 1,
+          "newLines": 8,
+          "lines": [
+            " // SPDX-License-Identifier: GPL-2.0-or-later",
+            "-pragma solidity 0.8.15;",
+            "+pragma solidity =0.7.6;",
+            " ",
+            "-import '../../../v3-core/contracts/interfaces/IUniswapV3Pool.sol';",
+            "+import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';",
+            " import './PoolAddress.sol';",
+            " ",
+            " /// @notice Provides validation for callbacks from Uniswap V3 Pools",
+            " library CallbackValidation {"
+          ]
+        }
+      ]
+    },
+    "@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-periphery.git",
+          "commit": "22a7ead071fff53f00d9ddc13434f285f4ed5c7d",
+          "path": "contracts/libraries/PoolAddress.sol"
+        }
+      },
+      "patches": [
+        {
+          "oldStart": 32,
+          "oldLines": 19,
+          "newStart": 32,
+          "newLines": 17,
+          "lines": [
+            "     /// @return pool The contract address of the V3 pool",
+            "     function computeAddress(address factory, PoolKey memory key) internal pure returns (address pool) {",
+            "         require(key.token0 < key.token1);",
+            "         pool = address(",
+            "-            uint160(",
+            "-                uint256(",
+            "-                    keccak256(",
+            "-                        abi.encodePacked(",
+            "-                            hex'ff',",
+            "-                            factory,",
+            "-                            keccak256(abi.encode(key.token0, key.token1, key.fee)),",
+            "-                            POOL_INIT_CODE_HASH",
+            "-                        )",
+            "+            uint256(",
+            "+                keccak256(",
+            "+                    abi.encodePacked(",
+            "+                        hex'ff',",
+            "+                        factory,",
+            "+                        keccak256(abi.encode(key.token0, key.token1, key.fee)),",
+            "\\ No newline at end of file",
+            "+                        POOL_INIT_CODE_HASH",
+            "                     )",
+            "                 )",
+            "             )",
+            "         );",
+            "     }",
+            "-}",
+            "+}"
+          ]
+        }
+      ]
+    },
+    "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-periphery.git",
+          "commit": "22a7ead071fff53f00d9ddc13434f285f4ed5c7d",
+          "path": "contracts/libraries/TransferHelper.sol"
+        }
+      },
+      "patches": [
+        {
+          "oldStart": 1,
+          "oldLines": 8,
+          "newStart": 1,
+          "newLines": 8,
+          "lines": [
+            " // SPDX-License-Identifier: GPL-2.0-or-later",
+            " pragma solidity >=0.6.0;",
+            " ",
+            "-import '../../../../@openzeppelin/contracts/token/ERC20/IERC20.sol';",
+            "+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';",
+            " ",
+            " library TransferHelper {",
+            "     /// @notice Transfers tokens from the targeted address to the given destination",
+            "     /// @notice Errors with 'STF' if transfer fails"
+          ]
+        }
+      ]
+    },
+    "@uniswap/v3-periphery/contracts/interfaces/external/IWETH9.sol": {
+      "source": {
+        "git": {
+          "repo": "git@github.com:Uniswap/v3-periphery.git",
+          "commit": "22a7ead071fff53f00d9ddc13434f285f4ed5c7d",
+          "path": "contracts/interfaces/external/IWETH9.sol"
+        }
+      },
+      "patches": [
+        {
+          "oldStart": 1,
+          "oldLines": 8,
+          "newStart": 1,
+          "newLines": 8,
+          "lines": [
+            " // SPDX-License-Identifier: GPL-2.0-or-later",
+            "-pragma solidity 0.8.15;",
+            "+pragma solidity =0.7.6;",
+            " ",
+            "-import '../../../../../@openzeppelin/contracts/token/ERC20/IERC20.sol';",
+            "+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';",
+            " ",
+            " /// @title Interface for WETH9",
+            " interface IWETH9 is IERC20 {",
+            "     /// @notice Deposit ether to get wrapped ether"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,2 +1,4 @@
-contracts/vendor/*
 contracts/test/*
+contracts/vendor/*
+contracts/liquidator/vendor/*
+contracts/liquidator/README.md
