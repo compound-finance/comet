@@ -5,8 +5,6 @@ import { VerifyArgs } from './Verify';
 export type VerifyArgsMap = Map<Address, VerifyArgs>;
 export type InvertedAliases = Map<Address, Alias[]>;
 
-// XXX add unit tests
-
 // File to store verification metadata in, e.g. `$pwd/deployments/deployment/verify/args.json`
 let verificationSpec = { rel: ['verify', 'args.json'] };
 
@@ -20,7 +18,7 @@ export async function storeVerifyArgs(cache: Cache, verifyArgsMap: VerifyArgsMap
   await cache.storeMap<Address, VerifyArgs>(verificationSpec, verifyArgsMap);
 }
 
-export async function putVerifyArgs(cache: Cache, verifyArgs: VerifyArgs, address: Address) {
+export async function putVerifyArgs(cache: Cache, address: Address, verifyArgs: VerifyArgs) {
   let verifyArgsMap = await getVerifyArgs(cache);
   verifyArgsMap.set(address, verifyArgs);
   await storeVerifyArgs(cache, verifyArgsMap);
