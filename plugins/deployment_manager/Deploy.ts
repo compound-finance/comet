@@ -5,11 +5,12 @@ import { Contract, Signer } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import { putAlias } from './Aliases';
+import { putVerifyArgs } from './VerifyArgs';
 import { Cache } from './Cache';
 import { storeBuildFile } from './ContractMap';
-import { Alias, BuildFile } from './Types';
+import { Address, Alias, BuildFile } from './Types';
 import { debug, getPrimaryContract } from './Utils';
-import { verifyContract } from './Verify';
+import { VerifyArgs, verifyContract } from './Verify';
 
 export abstract class Deployer<Contract, DeployArgs extends Array<any>> {
   abstract connect(signer: Signer): this;
@@ -21,6 +22,7 @@ export interface DeployOpts {
   overwrite?: boolean; // should we overwrite existing contract link
   connect?: Signer; // signer for the returned contract
   verify?: boolean; // verify contract on etherscan
+  lazyVerify?: boolean; // delay verification: can prevent flakiness of deployments
   raiseOnVerificationFailure?: boolean; // if verification is considered critical
   cache?: Cache; // caches the build file, if included
   alias?: Alias; // set an alias for the contract and store in cache
@@ -111,9 +113,17 @@ export async function deploy<
     buildFile.contract = contractName;
   }
 
-  if (deployOpts.verify) {
+  let verifyArgs: VerifyArgs = {
+    via: 'artifacts',
+    address: contract.address,
+    constructorArguments: deployArgs,
+  }
+  if (deployOpts.lazyVerify) {
+    // Cache params for verification
+    await putVerifyArgs(deployOpts.cache, verifyArgs, contract.address);
+  } else if (deployOpts.verify) {
     await verifyContract(
-      { via: 'artifacts', address: contract.address, constructorArguments: deployArgs },
+      verifyArgs,
       hre,
       deployOpts.raiseOnVerificationFailure
     );
@@ -133,13 +143,24 @@ export async function deployBuild(
   hre: HardhatRuntimeEnvironment,
   deployOpts: DeployOpts = {}
 ): Promise<Contract> {
+  debug(`Deploying ${Object.keys(buildFile.contracts)} with args`, deployArgs);
+
   let contract = await deployFromBuildFile(buildFile, deployArgs, hre, deployOpts);
 
-  if (deployOpts.verify) {
+  let verifyArgs: VerifyArgs = {
+    via: 'buildfile',
+    contract,
+    buildFile,
+    deployArgs
+  };
+  if (deployOpts.lazyVerify) {
+    // Cache params for verification
+    await putVerifyArgs(deployOpts.cache, verifyArgs, contract.address);
+  } else if (deployOpts.verify) {
     // We need to do manual verification here, since this is coming
     // from a build file, not from hardhat's own compilation.
     await verifyContract(
-      { via: 'buildfile', contract, buildFile, deployArgs },
+      verifyArgs,
       hre,
       deployOpts.raiseOnVerificationFailure
     );

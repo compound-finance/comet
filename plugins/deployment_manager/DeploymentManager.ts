@@ -15,6 +15,8 @@ import { generateMigration } from './MigrationTemplate';
 import { ExtendedNonceManager } from './NonceManager';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { asyncCallWithTimeout, debug } from './Utils';
+import { getVerifyArgs } from './VerifyArgs';
+import { verifyContract } from './Verify';
 
 interface DeploymentManagerConfig {
   baseDir?: string;
@@ -22,6 +24,7 @@ interface DeploymentManagerConfig {
   importRetryDelay?: number;
   writeCacheToDisk?: boolean;
   verifyContracts?: boolean;
+  lazyVerify?: boolean;
   debug?: boolean;
 }
 
@@ -81,6 +84,7 @@ export class DeploymentManager {
   private async deployOpts(): Promise<DeployOpts> {
     return {
       verify: this.config.verifyContracts,
+      lazyVerify: this.config.lazyVerify,
       cache: this.cache,
       connect: await this.getSigner(),
     };
@@ -151,6 +155,18 @@ export class DeploymentManager {
         throw new Error(`Missing deploy function in ${deployScript}.`);
       }
       await deploy(this);
+    }
+  }
+
+  // XXX Should remove from cache once verified
+  async verifyContracts() {
+    let verifyArgs = await getVerifyArgs(this.cache);
+    for (const args of verifyArgs.values()) {
+      await verifyContract(
+        args,
+        this.hre,
+        (await this.deployOpts()).raiseOnVerificationFailure
+      );
     }
   }
 
@@ -241,6 +257,11 @@ export class DeploymentManager {
   /* Changes configuration of verifying contracts on deployment */
   shouldVerifyContracts(verifyContracts: boolean) {
     this.config.verifyContracts = verifyContracts;
+  }
+
+  /* Changes configuration of lazily verifying contracts on deployment */
+  shouldLazilyVerifyContracts(lazilyVerifyContracts: boolean) {
+    this.config.lazyVerify = lazilyVerifyContracts;
   }
 
   /* Changes configuration of writing cache to disk, or not. */
