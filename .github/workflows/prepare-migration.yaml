@@ -8,14 +8,14 @@ on:
         options:
           - fuji
           - kovan
-      migration:
-        description: Migration Name
-        required: true
-      simulate:
-        type: boolean
-        description: Simulate
-      eth_pk:
-        description: Ethereum Private Key
+      # migration:
+      #   description: Migration Name
+      #   required: true
+      # simulate:
+      #   type: boolean
+      #   description: Simulate
+      # eth_pk:
+      #   description: Ethereum Private Key
 jobs:
   prepare_migration:
     name: Prepare Migration
@@ -32,20 +32,30 @@ jobs:
         with:
           node-version: '16'
 
-      - name: Install packages
-        run: yarn install --non-interactive --frozen-lockfile
+      # - name: Install packages
+      #   run: yarn install --non-interactive --frozen-lockfile
 
-      - name: Compile
-        run: yarn hardhat compile
+      # - name: Compile
+      #   run: yarn hardhat compile
 
-      - name: Check types
-        run: yarn tsc
+      # - name: Check types
+      #   run: yarn tsc
 
-      - name: Run Prepare Migration
-        run: yarn hardhat migrate --network ${{ github.event.inputs.network }} --prepare --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ github.event.inputs.migration }}
-        env:
-          ETH_PK: ${{ github.event.inputs.eth_pk }}
-          DEBUG: true
+      # - name: Run migration
+      #   run: yarn hardhat migrate --network ${{ github.event.inputs.network }} --prepare --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ github.event.inputs.migration }}
+      #   env:
+      #     ETH_PK: ${{ github.event.inputs.eth_pk }}
+      #     DEBUG: true
+
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          git add deployments
+          echo hello > testing-xxx # XXX
+          git add testing-xxx # XXX
+          git commit -m "Modified deployments from GitHub Actions"
+          git push origin
 
       - uses: actions/upload-artifact@v2 # upload test results
         if: success() || failure() # run this step even if previous step failed
