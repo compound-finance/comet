@@ -1,7 +1,7 @@
 import { CometProperties, scenario } from './context/CometContext';
 import { expect } from 'chai';
 
-scenario('initializes governor correctly', { migrate: true }, async ({ comet, timelock, actors }, world) => {
+scenario('initializes governor correctly', {}, async ({ comet, timelock, actors }, world) => {
   // TODO: Make this more interesting.
   expect(await comet.governor()).to.equal(timelock.address);
 });

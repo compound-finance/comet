@@ -15,12 +15,10 @@ migration<Vars>('${timestamp}_${name}', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
   },
+
   enact: async (deploymentManager: DeploymentManager, vars: Vars) => {
 
-  },
-  enacted: async (deploymentManager: DeploymentManager) => {
-    return false;
-  },
+  }
 });\n`;
 }
 

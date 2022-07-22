@@ -1,12 +1,10 @@
-import fg from 'fast-glob';
-import * as path from 'path';
+import { join } from 'path';
 import { DeploymentManager } from './DeploymentManager';
 import { FileSpec } from './Cache';
 
 interface Action<T> {
   prepare: (dm: DeploymentManager) => Promise<T>;
   enact: (dm: DeploymentManager, t: T) => Promise<void>;
-  enacted: (dm: DeploymentManager) => Promise<boolean>;
 }
 
 export interface Migration<T> {
@@ -50,16 +48,12 @@ export function getLoader<T>(): Loader<T> {
   return <Loader<T>>loader;
 }
 
-export async function loadMigrations<T>(glob: string): Promise<{ [name: string]: Migration<T> }> {
+export async function loadMigrations<T>(paths: string[]): Promise<{ [name: string]: Migration<T> }> {
   setupLoader<T>();
 
-  const entries = await fg(glob); // Grab all potential migration files
-
-  for (let entry of entries) {
-    let entryPath = path.join(process.cwd(), entry);
-
+  for (let path of paths) {
     /* Import scenario file */
-    await import(entryPath);
+    await import(join(process.cwd(), path));
     /* Import complete */
   }
 

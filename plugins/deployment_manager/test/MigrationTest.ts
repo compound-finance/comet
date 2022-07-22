@@ -14,8 +14,7 @@ describe('Migration', () => {
       },
       enact: async (_deploymentManager, y) => {
         x = [...x, y];
-      },
-      enacted: async () => false
+      }
     });
     let dm = new DeploymentManager('TEST', hre);
     let migrations = (loader as Loader<string>).getMigrations();
@@ -33,8 +32,7 @@ describe('Migration', () => {
       name: 'test',
       actions: {
         prepare: async () => null,
-        enact: async () => { /* */ },
-        enacted: async () => false
+        enact: async () => { /* */ }
       },
     };
 

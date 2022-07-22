@@ -17,12 +17,10 @@ migration<Vars>('1_cool', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
   },
+
   enact: async (deploymentManager: DeploymentManager, vars: Vars) => {
 
-  },
-  enacted: async (deploymentManager: DeploymentManager) => {
-    return false;
-  },
+  }
 });
 `;
 
