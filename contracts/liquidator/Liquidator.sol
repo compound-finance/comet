@@ -200,7 +200,6 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
             if (baseAmount == 0) continue;
 
-            // XXX if buyCollateral returns collateral amount after change in Comet, no need to check balance
             comet.buyCollateral(asset, 0, baseAmount, address(this));
             uint256 amountOut = swapCollateral(asset);
             totalAmountOut += amountOut;
