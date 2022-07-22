@@ -1,43 +1,43 @@
 import hre from 'hardhat';
 import { expect } from 'chai';
-import { Loader, Migration, getArtifactSpec, loader, migration, setupLoader } from '../Migration';
+import { getArtifactSpec, loadMigrations, migration } from '../Migration';
 import { DeploymentManager } from '../../deployment_manager/DeploymentManager';
 
 describe('Migration', () => {
   it('test a simple migration', async () => {
-    setupLoader();
     let x = [];
-    migration('test migration', {
+    let m = migration('test migration', {
       prepare: async (_deploymentManager) => {
         x = [...x, 'step 1'];
         return 'step 2';
       },
       enact: async (_deploymentManager, y) => {
         x = [...x, y];
-      },
-      enacted: async () => false
+      }
     });
     let dm = new DeploymentManager('TEST', hre);
-    let migrations = (loader as Loader<string>).getMigrations();
-    expect(Object.keys(migrations)).to.eql(['test migration']);
-    let [m] = Object.values(migrations);
+    expect(m.name).to.eql('test migration');
     expect(x).to.eql([]);
-    let v: string = await m.actions.prepare(dm);
+    let v = await m.actions.prepare(dm);
     expect(x).to.eql(['step 1']);
     await m.actions.enact(dm, v);
     expect(x).to.eql(['step 1', 'step 2']);
   });
 
-  it('returns proper artifact file spec', async () => {
-    let migration: Migration<null> = {
-      name: 'test',
-      actions: {
-        prepare: async () => null,
-        enact: async () => { /* */ },
-        enacted: async () => false
-      },
-    };
+  it('loads a simple migration', async () => {
+    let [m] = await loadMigrations([`${__dirname}/migration.ts`]);
+    let dm = new DeploymentManager('TEST', hre);
+    expect(m.name).to.eql('test migration');
+    expect(await m.actions.prepare(dm)).to.eql(['step 1']);
+    expect(await m.actions.enact(dm, [])).to.eql(undefined);
+  });
 
-    expect(getArtifactSpec(migration)).to.eql({ rel: ['artifacts', 'test.json'] });
+  it('returns proper artifact file spec', async () => {
+    let m = migration('test', {
+      prepare: async () => null,
+      enact: async () => { /* */ }
+    });
+
+    expect(getArtifactSpec(m)).to.eql({ rel: ['artifacts', 'test.json'] });
   });
 });

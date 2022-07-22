@@ -1,0 +1,53 @@
+name: 'Deploy Market'
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        type: choice
+        description: Network
+        options:
+          - fuji
+          - kovan
+      simulate:
+        type: boolean
+        description: Simulate
+      eth_pk:
+        description: Ethereum Private Key
+jobs:
+  deploy_market:
+    name: Deploy Market
+    runs-on: ubuntu-latest
+    env:
+      ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
+      SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
+      INFURA_KEY: ${{ secrets.INFURA_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install packages
+        run: yarn install --non-interactive --frozen-lockfile
+
+      - name: Compile
+        run: yarn hardhat compile
+
+      - name: Check types
+        run: yarn tsc
+
+      - name: Run Deploy
+        run: yarn hardhat deploy --network ${{ github.event.inputs.network }} ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }}
+        env:
+          ETH_PK: ${{ github.event.inputs.eth_pk }}
+          DEBUG: true
+
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          git add deployments/\*/roots.json
+          git commit -m "Modified deployment roots from GitHub Actions"
+          git push origin
