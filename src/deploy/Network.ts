@@ -160,7 +160,25 @@ export async function deployNetworkComet(
     configurator = await deploymentManager.contract('configurator:implementation') as Configurator;
   }
 
-  /* === Proxies === */
+  if (contractsToDeploy.all || contractsToDeploy.cometFactory) {
+    cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
+      'CometFactory.sol',
+      []
+    );
+  } else {
+    // XXX need to handle the fact that there can be multiple Comet factories
+  }
+
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxyAdmin)) {
+    let proxyAdminArgs: [] = [];
+    proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
+      'CometProxyAdmin.sol',
+      proxyAdminArgs
+    );
+    await proxyAdmin.transferOwnership(governor);
+  } else {
+    proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
+  }
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxyAdmin)) {
     let proxyAdminArgs: [] = [];
@@ -208,6 +226,8 @@ export async function deployNetworkComet(
     // Set the initial factory and configuration for Comet in Configurator
     const setFactoryCalldata = extractCalldata((await configurator.populateTransaction.setFactory(cometProxy.address, cometFactory.address)).data);
     const setConfigurationCalldata = extractCalldata((await configurator.populateTransaction.setConfiguration(cometProxy.address, configuration)).data);
+    // XXX This wouldn't work on mainnet!
+    // Think about how this should be adapted for mainnet. Would probably be through an actual proposal...
     await fastGovernanceExecute(
       governorSimple.connect(adminSigner),
       [configuratorProxy.address, configuratorProxy.address],
