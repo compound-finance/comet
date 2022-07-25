@@ -29,7 +29,8 @@ import { ConfigurationStruct } from '../../build/types/Comet';
 import { ExtConfigurationStruct } from '../../build/types/CometExt';
 export { Comet } from '../../build/types';
 import { DeployedContracts, ContractsToDeploy, ProtocolConfiguration } from './index';
-import { extractCalldata, fastGovernanceExecute, shouldDeploy } from '../utils';
+import { shouldDeploy } from '../utils';
+import { wait } from '../../test/helpers';
 
 async function makeToken(
   deploymentManager: DeploymentManager,
@@ -122,7 +123,7 @@ export async function deployDevelopmentComet(
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.governor)) {
     // Initialize the storage of GovernorSimple
-    await governorSimple.initialize(timelock.address, [admin.address]);
+    await wait(governorSimple.initialize(timelock.address, [admin.address]));
   }
 
   const {
@@ -245,7 +246,7 @@ export async function deployDevelopmentComet(
       'CometProxyAdmin.sol',
       proxyAdminArgs
     );
-    await proxyAdmin.transferOwnership(governor);
+    await wait(proxyAdmin.transferOwnership(governor));
   } else {
     proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
   }
@@ -279,22 +280,16 @@ export async function deployDevelopmentComet(
     >('ConfiguratorProxy.sol', [
       configurator.address,
       proxyAdmin.address,
-      (await configurator.populateTransaction.initialize(governor)).data,
+      (await configurator.populateTransaction.initialize(admin.address)).data,
     ]);
 
     // Set the initial factory and configuration for Comet in Configurator
-    const setFactoryCalldata = extractCalldata((await configurator.populateTransaction.setFactory(cometProxy.address, cometFactory.address)).data);
-    const setConfigurationCalldata = extractCalldata((await configurator.populateTransaction.setConfiguration(cometProxy.address, configuration)).data);
-    await fastGovernanceExecute(
-      governorSimple.connect(admin),
-      [configuratorProxy.address, configuratorProxy.address],
-      [0, 0],
-      [
-        'setFactory(address,address)',
-        'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
-      ],
-      [setFactoryCalldata, setConfigurationCalldata]
-    );
+    const configuratorAsProxy = (configurator as Configurator).attach(configuratorProxy.address).connect(admin);
+    await wait(configuratorAsProxy.setFactory(cometProxy.address, cometFactory.address));
+    await wait(configuratorAsProxy.setConfiguration(cometProxy.address, configuration));
+
+    // Transfer ownership of Configurator
+    await wait(configuratorAsProxy.transferGovernor(governor));
 
     updatedRoots.set('configurator', configuratorProxy.address);
   } else {

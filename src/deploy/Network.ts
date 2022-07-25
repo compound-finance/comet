@@ -27,8 +27,9 @@ import { ExtConfigurationStruct } from '../../build/types/CometExt';
 
 import { ContractsToDeploy, DeployedContracts, ProtocolConfiguration } from './index';
 import { getConfiguration } from './NetworkConfiguration';
-import { extractCalldata, fastGovernanceExecute, shouldDeploy } from '../utils';
+import { shouldDeploy } from '../utils';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { wait } from '../../test/helpers';
 
 export async function deployNetworkComet(
   deploymentManager: DeploymentManager,
@@ -65,7 +66,7 @@ export async function deployNetworkComet(
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.governor)) {
     // Initialize the storage of GovernorSimple
-    await governorSimple.initialize(timelock.address, [adminSigner.address]);
+    await wait(governorSimple.initialize(timelock.address, [adminSigner.address]));
   }
 
   const {
@@ -175,18 +176,7 @@ export async function deployNetworkComet(
       'CometProxyAdmin.sol',
       proxyAdminArgs
     );
-    await proxyAdmin.transferOwnership(governor);
-  } else {
-    proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
-  }
-
-  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxyAdmin)) {
-    let proxyAdminArgs: [] = [];
-    proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
-      'CometProxyAdmin.sol',
-      proxyAdminArgs
-    );
-    await proxyAdmin.transferOwnership(governor);
+    await wait(proxyAdmin.transferOwnership(governor));
   } else {
     proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
   }
@@ -220,24 +210,16 @@ export async function deployNetworkComet(
     >('ConfiguratorProxy.sol', [
       configurator.address,
       proxyAdmin.address,
-      (await configurator.populateTransaction.initialize(governor)).data,
+      (await configurator.populateTransaction.initialize(adminSigner.address)).data,
     ]);
 
     // Set the initial factory and configuration for Comet in Configurator
-    const setFactoryCalldata = extractCalldata((await configurator.populateTransaction.setFactory(cometProxy.address, cometFactory.address)).data);
-    const setConfigurationCalldata = extractCalldata((await configurator.populateTransaction.setConfiguration(cometProxy.address, configuration)).data);
-    // XXX This wouldn't work on mainnet!
-    // Think about how this should be adapted for mainnet. Would probably be through an actual proposal...
-    await fastGovernanceExecute(
-      governorSimple.connect(adminSigner),
-      [configuratorProxy.address, configuratorProxy.address],
-      [0, 0],
-      [
-        'setFactory(address,address)',
-        'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
-      ],
-      [setFactoryCalldata, setConfigurationCalldata]
-    );
+    const configuratorAsProxy = (configurator as Configurator).attach(configuratorProxy.address).connect(adminSigner);
+    await wait(configuratorAsProxy.setFactory(cometProxy.address, cometFactory.address));
+    await wait(configuratorAsProxy.setConfiguration(cometProxy.address, configuration));
+
+    // Transfer ownership of Configurator
+    await wait(configuratorAsProxy.transferGovernor(governor));
 
     updatedRoots.set('configurator', configuratorProxy.address);
   } else {
