@@ -20,6 +20,9 @@ jobs:
   prepare_migration:
     name: Prepare Migration
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16.x]
     env:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
@@ -30,10 +33,23 @@ jobs:
 
       - uses: actions/setup-node@v2
         with:
-          node-version: '16'
+          node-version: ${{ matrix.node-version }}
 
+      # See: https://github.com/actions/cache/blob/main/examples.md#node---yarn
+      - name: Get Yarn cache directory
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - name: Use Yarn cache
+        uses: actions/cache@v2
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ matrix.node-version }}-${{ hashFiles('**/yarn.lock') }}
+
+      # `--prefer-offline` gives cache priority
       - name: Install packages
-        run: yarn install --non-interactive --frozen-lockfile
+        run: yarn install --non-interactive --prefer-offline --frozen-lockfile
 
       - name: Compile
         run: yarn hardhat compile
