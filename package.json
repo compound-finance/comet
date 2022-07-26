@@ -1,14 +1,17 @@
 {
-  "name": "compound-protocol-v2.5",
+  "name": "compound-iii",
   "version": "0.1.0",
   "description": "",
   "main": "dist/index.js",
   "files": [
-    "dist"
+    "dist",
+    "deployments/**/roots.json"
   ],
   "exports": {
-    ".": "./dist/index.js",
-    "./*": "./dist/*.js"
+    ".":  "./dist/index.js",
+    "./*": "./dist/*.js",
+    "./kovan/roots.json": "./deployments/kovan/roots.json",
+    "./fuji/roots.json": "./deployments/fuji/roots.json"
   },
   "types": "./dist/index.d.ts",
   "typesVersions": {
@@ -23,7 +26,6 @@
   },
   "scripts": {
     "build": "hardhat compile",
-    "prepare": "hardhat compile && tsc",
     "clean": "hardhat clean && rm -rf build/ cache/ coverage* dist/",
     "cover": "hardhat cover && npx istanbul report --include coverage.json html lcov",
     "deploy": "npx hardhat run ./scripts/deploy-comet.ts",
