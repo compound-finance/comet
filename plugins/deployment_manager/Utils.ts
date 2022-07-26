@@ -121,3 +121,24 @@ export function asArray<A>(v: A | A[]): A[] {
     }
   }
 }
+
+/**
+ * Call an async function with a maximum time limit (in milliseconds) for the timeout
+ * @param asyncPromise an async promise to resolve
+ * @param timeLimit time limit before timeout in milliseconds. Default is 2 min
+ */
+export async function asyncCallWithTimeout(asyncPromise: Promise<any>, timeLimit: number = 120_000) {
+  let timeoutHandle;
+
+  const timeoutPromise = new Promise((_resolve, reject) => {
+    timeoutHandle = setTimeout(
+      () => reject(new Error('Async call timeout limit reached')),
+      timeLimit
+    );
+  });
+
+  return Promise.race([asyncPromise, timeoutPromise]).then(result => {
+    clearTimeout(timeoutHandle);
+    return result;
+  })
+}

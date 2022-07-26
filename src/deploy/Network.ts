@@ -30,6 +30,7 @@ import { getConfiguration } from './NetworkConfiguration';
 import { shouldDeploy } from '../utils';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { wait } from '../../test/helpers';
+import { debug } from '../../plugins/deployment_manager/Utils';
 
 export async function deployNetworkComet(
   deploymentManager: DeploymentManager,
@@ -66,7 +67,10 @@ export async function deployNetworkComet(
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.governor)) {
     // Initialize the storage of GovernorSimple
-    await wait(governorSimple.initialize(timelock.address, [adminSigner.address]));
+    debug(`Initializing GovSimple`);
+    await deploymentManager.asyncCallWithRetry(
+      (signer_) => wait(governorSimple.connect(signer_).initialize(timelock.address, [adminSigner.address]))
+    );
   }
 
   const {
@@ -176,7 +180,10 @@ export async function deployNetworkComet(
       'CometProxyAdmin.sol',
       proxyAdminArgs
     );
-    await wait(proxyAdmin.transferOwnership(governor));
+    debug(`Transferring ownership of ProxyAdmin to ${governor}`);
+    await deploymentManager.asyncCallWithRetry(
+      (signer_) => wait(proxyAdmin.connect(signer_).transferOwnership(governor))
+    );
   } else {
     proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
   }
@@ -215,11 +222,20 @@ export async function deployNetworkComet(
 
     // Set the initial factory and configuration for Comet in Configurator
     const configuratorAsProxy = (configurator as Configurator).attach(configuratorProxy.address).connect(adminSigner);
-    await wait(configuratorAsProxy.setFactory(cometProxy.address, cometFactory.address));
-    await wait(configuratorAsProxy.setConfiguration(cometProxy.address, configuration));
+    debug(`Setting factory in Configurator`);
+    await deploymentManager.asyncCallWithRetry(
+      (signer_) => wait(configuratorAsProxy.connect(signer_).setFactory(cometProxy.address, cometFactory.address))
+    );
+    debug(`Setting configuration in Configurator`);
+    await deploymentManager.asyncCallWithRetry(
+      (signer_) => wait(configuratorAsProxy.connect(signer_).setConfiguration(cometProxy.address, configuration))
+    );
 
     // Transfer ownership of Configurator
-    await wait(configuratorAsProxy.transferGovernor(governor));
+    debug(`Transferring ownership in Configurator`);
+    await deploymentManager.asyncCallWithRetry(
+      (signer_) => wait(configuratorAsProxy.connect(signer_).transferGovernor(governor))
+    );
 
     updatedRoots.set('configurator', configuratorProxy.address);
   } else {
