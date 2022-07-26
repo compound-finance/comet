@@ -67,7 +67,4 @@ migration<Vars>('1653512186_seed_rewards_with_comp', {
     // console.log("COMP balance of CometRewards: ", await COMP.balanceOf(rewards.address));
     // console.log("RewardConfig: ", await rewards.rewardConfig(comet.address));
   },
-  enacted: async (deploymentManager: DeploymentManager) => {
-    return false;
-  },
 });

@@ -26,26 +26,26 @@ migration<Vars>('1651257129_bulker_and_rewards', {
       [timelock.address]
     );
 
-    return {
+    const newRoots = {
       bulker: newBulker.address,
       rewards: newRewards.address,
     };
-  },
-  enact: async (deploymentManager: DeploymentManager, contracts: Vars) => {
+
     // No proposal needs to be created
     // Maybe seed CometRewards with COMP rewards?
     const updatedRoots = await deploymentManager.getRoots();
-    updatedRoots.set('rewards', contracts.rewards);
-    updatedRoots.set('bulker', contracts.bulker);
+    updatedRoots.set('rewards', newRoots.bulker);
+    updatedRoots.set('bulker', newRoots.rewards);
     await deploymentManager.putRoots(updatedRoots);
 
-    console.log("You should set roots.json to:");
+    console.log("The following addresses have been added to roots.json:");
     console.log("");
     console.log("");
-    console.log(JSON.stringify(contracts, null, 4));
+    console.log(JSON.stringify(newRoots, null, 4));
     console.log("");
+
+    return newRoots;
   },
-  enacted: async (deploymentManager: DeploymentManager) => {
-    return false; // XXX
+  enact: async (deploymentManager: DeploymentManager, contracts: Vars) => {
   },
 });
