@@ -140,5 +140,5 @@ export async function asyncCallWithTimeout(asyncPromise: Promise<any>, timeLimit
   return Promise.race([asyncPromise, timeoutPromise]).then(result => {
     clearTimeout(timeoutHandle);
     return result;
-  })
+  });
 }
