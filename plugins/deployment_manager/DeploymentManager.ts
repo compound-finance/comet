@@ -265,7 +265,7 @@ export class DeploymentManager {
       if (retries === 0) throw e;
       // XXX to be extra safe, we can also get the signer transaction count and figure out the next nonce
       this._signers = [];
-      return await this.asyncCallWithRetry(fn, retries);
+      return await this.asyncCallWithRetry(fn, retries, timeLimit);
     }
   }
 

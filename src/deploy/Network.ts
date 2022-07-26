@@ -37,8 +37,9 @@ export async function deployNetworkComet(
   contractsToDeploy: ContractsToDeploy = { all: true },
   configurationOverrides: ProtocolConfiguration = {},
   contractMapOverride?: ContractMap,
-  adminSigner?: SignerWithAddress,
+  adminSigner_?: SignerWithAddress,
 ): Promise<DeployedContracts> {
+  let adminSigner: SignerWithAddress = adminSigner_;
   if (adminSigner == null) {
     adminSigner = await deploymentManager.getSigner();
   }
@@ -221,20 +222,20 @@ export async function deployNetworkComet(
     ]);
 
     // Set the initial factory and configuration for Comet in Configurator
-    const configuratorAsProxy = (configurator as Configurator).attach(configuratorProxy.address).connect(adminSigner);
+    const configuratorAsProxy = (configurator as Configurator).attach(configuratorProxy.address);
     debug(`Setting factory in Configurator`);
     await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(configuratorAsProxy.connect(signer_).setFactory(cometProxy.address, cometFactory.address))
+      (signer_) => wait(configuratorAsProxy.connect(adminSigner_ ?? signer_).setFactory(cometProxy.address, cometFactory.address))
     );
     debug(`Setting configuration in Configurator`);
     await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(configuratorAsProxy.connect(signer_).setConfiguration(cometProxy.address, configuration))
+      (signer_) => wait(configuratorAsProxy.connect(adminSigner_ ?? signer_).setConfiguration(cometProxy.address, configuration))
     );
 
     // Transfer ownership of Configurator
     debug(`Transferring ownership in Configurator`);
     await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(configuratorAsProxy.connect(signer_).transferGovernor(governor))
+      (signer_) => wait(configuratorAsProxy.connect(adminSigner_ ?? signer_).transferGovernor(governor))
     );
 
     updatedRoots.set('configurator', configuratorProxy.address);
