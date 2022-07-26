@@ -187,9 +187,29 @@ Scenarios are high-level property and ad-hoc tests for the Comet protocol. To ru
 
 For more information, see [SCENARIO.md](./SCENARIO.md).
 
+### Migrations
+
+XXX explain/get to
+ deploying a new root contract?
+  deployments/${network}/${instance}/deploy/XXX
+ otherwise
+  deployments/${network}/${instance}/change/XXX
+
+Open PR, run `migration-script` workflow through CI
+ will commit `deployments/` diffs to branch
+  wait for governance/execution
+   merge PR with any new/modified roots
+
+New deployment?
+ copy `deploy/` scripts from existing instance
+  ignore proposals
+   run, same as above
+
 ### Deploying to testnets
 
 #### Kovan
+
+XXX simplify to above
 
 1. run `1644388553_deploy_kovan` migration, `prepare` step
 2. update `deployments/kovan/roots.json` with the new roots from step 1

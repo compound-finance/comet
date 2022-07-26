@@ -9,18 +9,12 @@ export function migrationTemplate({ timestamp, name }: MigrationTemplateVars): s
   return `import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../plugins/deployment_manager/Migration';
 
-interface Vars {};
-
-migration<Vars>('${timestamp}_${name}', {
-  prepare: async (deploymentManager: DeploymentManager) => {
-    return {};
-  },
-  enact: async (deploymentManager: DeploymentManager, vars: Vars) => {
-
-  },
-  enacted: async (deploymentManager: DeploymentManager) => {
-    return false;
-  },
+migration('${timestamp}_${name}', {
+  run: async (deploymentManager: DeploymentManager) => {
+    // Do stuff here (e.g. deploy, propose, ...)
+    // If adding a new contract root, should be a 'deploy' script
+    // Otherwise, should be a 'change' script
+  }
 });\n`;
 }
 

@@ -303,36 +303,4 @@ describe('DeploymentManager', () => {
       ).to.equal(expectedTemplate);
     });
   });
-
-  describe('storeArtifact & readArtifact', () => {
-    it('should store and retrieve a given artifact', async () => {
-      let baseDir = tempDir();
-      let deploymentManager = new DeploymentManager('test', hre, {
-        importRetries: 0,
-        writeCacheToDisk: true,
-        baseDir,
-      });
-
-      let migration: Migration<null> = {
-        name: '1_cool',
-        actions: {
-          prepare: async () => null,
-          enact: async () => { /* */ },
-          enacted: async () => false
-        },
-      };
-
-      expect(await deploymentManager.readArtifact(migration)).to.eql(undefined);
-
-      expect(await deploymentManager.storeArtifact(migration, { dog: 'cool' })).to.eql(
-        `${baseDir}/test/artifacts/1_cool.json`
-      );
-
-      expect(await deploymentManager.readArtifact(migration)).to.eql({ dog: 'cool' });
-
-      deploymentManager.cache.clearMemory();
-
-      expect(await deploymentManager.readArtifact(migration)).to.eql({ dog: 'cool' });
-    });
-  });
 });

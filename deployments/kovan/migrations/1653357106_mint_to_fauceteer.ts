@@ -2,10 +2,8 @@ import { DeploymentManager } from '../../../plugins/deployment_manager/Deploymen
 import { migration } from '../../../plugins/deployment_manager/Migration';
 import { exp, wait } from '../../../test/helpers';
 
-interface Vars {};
-
-migration<Vars>('1653357106_mint_to_fauceteer', {
-  prepare: async (deploymentManager: DeploymentManager) => {
+migration('1653357106_mint_to_fauceteer', {
+  run: async (deploymentManager: DeploymentManager) => {
     const signer = await deploymentManager.getSigner();
     const signerAddress = signer.address;
 
@@ -56,12 +54,5 @@ migration<Vars>('1653357106_mint_to_fauceteer', {
     console.log(`transferring ${signerLinkBalance.div(100)} LINK@${LINK.address} to fauceteer@${fauceteerAddress}`);
     await LINK.transfer(fauceteerAddress, signerLinkBalance.div(100)); // transfer 1% of total supply
     console.log(`LINK.balanceOf(fauceteerAddress): ${await LINK.balanceOf(fauceteerAddress)}`);
-
-    return {};
-  },
-  enact: async (deploymentManager: DeploymentManager, vars: Vars) => {
-  },
-  enacted: async (deploymentManager: DeploymentManager) => {
-    return true; // XXX cannot be run independently
-  },
+  }
 });
