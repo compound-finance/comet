@@ -22,7 +22,13 @@ let cloneAddr = {
   link: '0x514910771af9ca656af840dff83e8264ecf986ca',
 };
 
-migration('1644388553_deploy_kovan', {
+interface Vars {
+  comet: string,
+  configurator: string,
+  fauceteer: string,
+};
+
+migration<Vars>('1644388553_deploy_kovan', {
   prepare: async (deploymentManager: DeploymentManager) => {
     const { ethers } = deploymentManager.hre;
     let signer = await deploymentManager.getSigner();
@@ -129,28 +135,22 @@ migration('1644388553_deploy_kovan', {
       contracts
     );
 
-    return {
+    let newRoots = {
       comet: cometProxy.address,
       configurator: configuratorProxy.address,
       fauceteer: fauceteer.address,
-      usdc: usdc.address,
-      wbtc: wbtc.address,
-      weth: weth.address,
-      comp: comp.address,
-      uni: uni.address,
-      link: link.address,
     };
-  },
-  enact: async (deploymentManager: DeploymentManager, contracts) => {
-    deploymentManager.putRoots(new Map(Object.entries(contracts)));
 
-    console.log("You should set roots.json to:");
+    deploymentManager.putRoots(new Map(Object.entries(newRoots)));
+
+    console.log("Roots.json have been set to:");
     console.log("");
     console.log("");
-    console.log(JSON.stringify(contracts, null, 4));
+    console.log(JSON.stringify(newRoots, null, 4));
     console.log("");
+
+    return newRoots;
   },
-  enacted: async (deploymentManager: DeploymentManager) => {
-    return false; // XXX
-  }
+  enact: async (deploymentManager: DeploymentManager, contracts: Vars) => {
+  },
 });

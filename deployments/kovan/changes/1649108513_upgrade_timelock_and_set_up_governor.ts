@@ -99,7 +99,4 @@ migration<Vars>('1649108513_upgrade_timelock_and_set_up_governor', {
     // console.log("Configurator's Admin: ", await configurator.callStatic.admin());
     // console.log("Comet's Admin: ", await comet.governor());
   },
-  enacted: async (deploymentManager: DeploymentManager) => {
-    return false; // XXX
-  }
 });
