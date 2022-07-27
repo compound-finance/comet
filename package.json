@@ -21,6 +21,12 @@
       ],
       "*": [
         "dist/*"
+      ],
+      "kovan/roots.json": [
+        "deployments/kovan/roots.json"
+      ],
+      "fuji/roots.json": [
+        "deployments/fuji/roots.json"
       ]
     }
   },
