@@ -272,7 +272,6 @@ async function seedRewardsWithComp(deploymentManager: DeploymentManager) {
   const transferCompCalldata = ethers.utils.defaultAbiCoder.encode(["address", "uint"], [rewards.address, timelockCompBalance.div(2)]);
 
   // Create a new proposal and queue it up. Execution can be done manually or in a third step.
-  // XXX txn.events is undefined...
   const txn = await deploymentManager.asyncCallWithRetry(
     async (signer_) => (await governor.connect(signer_).propose(
       [
