@@ -31,7 +31,8 @@ jobs:
             !deployments/**/roots.json
             !deployments/**/relations.ts
             !deployments/**/configuration.json
-            !deployments/**/migrations/*
+            !deployments/**/deploys/*
+            !deployments/**/changes/*
           key: deployments-v4
 
       - name: Install packages

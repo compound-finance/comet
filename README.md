@@ -205,6 +205,8 @@ New deployment?
   ignore proposals
    run, same as above
 
+For more information, see [MIGRATIONS.md](./MIGRATIONS.md).
+
 ### Deploying to testnets
 
 #### Kovan

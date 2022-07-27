@@ -229,8 +229,8 @@ export class DeploymentManager {
 
   /* Generates a new migration file, e.g. `deployments/test/migrations/1644385406_my_new_migration.ts`
    **/
-  async generateMigration(name: string, timestamp?: number): Promise<string> {
-    return await generateMigration(this.cache, name, timestamp);
+  async generateMigration(name: string, deploy?: boolean, timestamp?: number): Promise<string> {
+    return await generateMigration(this.cache, name, deploy, timestamp);
   }
 
   /* Stores artifact from a migration, e.g. `deployments/test/artifacts/1644385406_my_new_migration.json`

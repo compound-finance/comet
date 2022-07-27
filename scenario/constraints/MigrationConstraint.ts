@@ -10,7 +10,7 @@ import { existsSync } from 'fs';
 async function getMigrations<T>(context: CometContext, requirements: Requirements): Promise<Migration<T>[]> {
   // TODO: make this configurable from cli params/env var?
   const deployment = context.deploymentManager.deployment; // XXX should become per instance
-  const output = execSync(`git diff --numstat main | grep 'deployments/${deployment}/migrations/.*.ts' | awk '{ print $3 }'`);
+  const output = execSync(`git diff --numstat main | grep 'deployments/${deployment}/{deploys,changes}/.*.ts' | awk '{ print $3 }'`);
   const modified = output.toString().split('\n').filter(existsSync);
   return Object.values(await loadMigrations(modified));
 }

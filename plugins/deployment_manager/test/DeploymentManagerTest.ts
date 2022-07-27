@@ -296,10 +296,10 @@ describe('DeploymentManager', () => {
         baseDir: tempDir(),
       });
 
-      expect(await deploymentManager.generateMigration('cool', 1)).to.equal('1_cool.ts');
+      expect(await deploymentManager.generateMigration('cool', false, 1)).to.equal('1_cool.ts');
 
       expect(
-        await deploymentManager.cache.readCache({ rel: ['migrations', '1_cool.ts'] })
+        await deploymentManager.cache.readCache({ rel: ['changes', '1_cool.ts'] })
       ).to.equal(expectedTemplate);
     });
   });
@@ -317,8 +317,7 @@ describe('DeploymentManager', () => {
         name: '1_cool',
         actions: {
           prepare: async () => null,
-          enact: async () => { /* */ },
-          enacted: async () => false
+          enact: async () => { /* */ }
         },
       };
 

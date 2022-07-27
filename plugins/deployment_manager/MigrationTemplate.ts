@@ -33,11 +33,12 @@ function now(): number {
 export async function generateMigration(
   cache: Cache,
   name: string,
-  timestamp?: number
+  deploy?: boolean,
+  timestamp?: number,
 ): Promise<string> {
   let templateVars: MigrationTemplateVars = { name, timestamp: timestamp ?? now() };
   let migrationFileName = migrationName(templateVars);
-  let migrationFileSpec = { rel: ['migrations', migrationFileName] };
+  let migrationFileSpec = { rel: [deploy ? 'deploys' : 'changes', migrationFileName] };
 
   if (await cache.readCache(migrationFileSpec, (x) => x) !== undefined) {
     throw new Error(`Migration ${migrationFileName} already exists.`);

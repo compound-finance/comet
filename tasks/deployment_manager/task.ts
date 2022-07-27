@@ -54,26 +54,28 @@ async function runMigration<T>(
 
 task('gen:migration', 'Generates a new migration')
   .addPositionalParam('name', 'name of the migration')
-  .setAction(async ({ name }, env: HardhatRuntimeEnvironment) => {
+  .addFlag('deploy', 'creates a `deploy` migration [default is a `change`]')
+  .setAction(async ({ name, deploy }, env: HardhatRuntimeEnvironment) => {
     let network = env.network.name;
     let dm = new DeploymentManager(network, env, {
       writeCacheToDisk: true,
       debug: true,
       verifyContracts: true,
     });
-    let file = await dm.generateMigration(name);
+    let file = await dm.generateMigration(name, deploy);
     console.log(`Generated migration ${file}`);
   });
 
 task('migrate', 'Runs migration')
   .addPositionalParam('migration', 'name of migration')
+  .addFlag('deploy', 'runs a `deploy` migration [default is a `change`]') // TODO: names could work differently and not be redundant
   .addFlag('prepare', 'runs preparation [defaults to true if enact not specified]')
   .addFlag('enact', 'enacts migration [implies prepare]')
   .addFlag('simulate', 'only simulates the blockchain effects')
   .addFlag('overwrite', 'overwrites artifact if exists, fails otherwise')
   .setAction(
     async (
-      { migration: migrationName, prepare, enact, simulate, overwrite },
+      { migration: migrationName, deploy, prepare, enact, simulate, overwrite },
       env: HardhatRuntimeEnvironment
     ) => {
       let theEnv: HardhatRuntimeEnvironment = env;
@@ -88,7 +90,8 @@ task('migrate', 'Runs migration')
       });
       await dm.spider();
 
-      let migrationPath = `deployments/${network}/migrations/${migrationName}.ts`;
+      let migrationDir = deploy ? 'deploys' : 'changes';
+      let migrationPath = `deployments/${network}/${migrationDir}/${migrationName}.ts`;
       let migrations = await loadMigrations([migrationPath]);
       let migration = migrations[migrationName];
       if (!migration) {

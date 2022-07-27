@@ -1,20 +1,35 @@
 
 # Migrations
 
-Migrations are simple scripts which deploy or modify contracts. The goal of migration scripts is to make sure that users can see potential changes that are run prior to creating a governance proposal. This is a "nothing up my sleeve" approach to governance preparation (as in, the magician rolls up his sleeves to show there's nothing there-- so the developer deploys scripts from GitHub to show which code was deployed or run).
+Migrations are simple scripts which deploy or modify contracts.
+The goal of migration scripts is to make sure that users can see potential changes that are run prior to creating a governance proposal.
+This is a "nothing up my sleeve" approach to governance preparation (as in, the magician rolls up his sleeves to show there's nothing there -- so the developer deploys scripts from GitHub to show which code was deployed or run).
+
+Migrations are stored as either `deploys` or `changes`.
+Deploy migrations are used to bootstrap the set of root contracts in `roots.json`.
+Change migrations are used to make any other types of changes, including updating existing roots.
 
 ## Creating a Migration
 
-To create a new migration, run:
+To create a new (change) migration, run:
 
 ```sh
-yarn hardhat gen:migration --network kovan my_migration
+yarn hardhat gen:migration --network kovan my_change
 ```
 
-This will create a new file, such as `deployments/kovan/migrations/164443237_my_migration.ts` with a base migration script. There are currently two steps to a migration script, but this is likely to change soon:
+This will create a new file, such as `deployments/kovan/changes/164443237_my_change.ts` with a base migration script.
+There are currently two steps to a migration script:
 
  1. Prepare: steps used to create artifacts, such as new on-chain contracts. The output from this step is stored (e.g. "NewCometImplementation: 0x...")
  2. Enact: steps used to make these artifacts current, such as upgrading the proxy to the address from the previous step.
+
+To create a new deploy migration, run:
+
+```sh
+yarn hardhat gen:migration --deploy --network kovan my_deploy
+```
+
+This will create a new file as above, but at a path like `deployments/kovan/deploy/164443237_my_deploy.ts`.
 
 ## Running a Migration Locally
 
@@ -44,8 +59,11 @@ yarn hardhat migrate --network kovan --prepare --simulate 164443237_my_migration
 
 ## Running a Migration in GitHub
 
-The preferred way to run a migration is in GitHub, via manual workflow dispatch. The goal of this approach is that it's clear to everyone the exact code that ran, which affords less opportunity for "I'm looking at <CODE X>, but what was deployed was actually <CODE Y>." Look at "Prepare Migration" and "Enact Migration" dispatches in GitHub Actions in this repo (or any fork).
+The preferred way to run a migration is in GitHub, via manual workflow dispatch.
+The goal of this approach is that it's clear to everyone the exact code that ran, which affords less opportunity for "I'm looking at <CODE X>, but what was deployed was actually <CODE Y>."
+Look at "Prepare Migration" and "Enact Migration" dispatches in GitHub Actions in this repo (or any fork).
 
 ## Migration Artifacts
 
-After preparation, a migration stores some artifacts under `deployments/kovan/artifacts/164443237_my_migration.json`. These will be loaded and can be referenced in the enact step of that migration.
+After preparation, a migration stores some artifacts under `deployments/kovan/artifacts/164443237_my_migration.json`.
+These will be loaded and can be referenced in the enact step of that migration.
