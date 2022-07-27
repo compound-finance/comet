@@ -254,7 +254,7 @@ export class DeploymentManager {
    * @param retries the number of times to retry the function. Default is 5 retries
    * @param timeLimit time limit before timeout in milliseconds
    */
-  async asyncCallWithRetry(fn: (signer: SignerWithAddress) => Promise<any>, retries: number = 5, timeLimit?: number) {
+  async asyncCallWithRetry(fn: (signer: SignerWithAddress) => Promise<any>, retries: number = 5, timeLimit?: number): Promise<any> {
     const signer = await this.getSigner();
     try {
       return await asyncCallWithTimeout(fn(signer), timeLimit);
