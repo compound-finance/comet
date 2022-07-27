@@ -24,6 +24,8 @@ import {
   ConfiguratorProxy__factory,
   ProxyAdmin,
   CometInterface,
+  CometRewards,
+  CometRewards__factory,
 } from '../../build/types';
 import { ConfigurationStruct } from '../../build/types/Comet';
 import { ExtConfigurationStruct } from '../../build/types/CometExt';
@@ -99,7 +101,7 @@ export async function deployDevelopmentComet(
     supplyCap: (500000e10).toString(),
   };
 
-  let governorSimple, timelock, proxyAdmin, cometExt, cometProxy, configuratorProxy, comet, configurator, cometFactory;
+  let governorSimple, timelock, proxyAdmin, cometExt, cometProxy, configuratorProxy, comet, configurator, cometFactory, rewards;
 
   /* === Deploy Contracts === */
 
@@ -238,6 +240,15 @@ export async function deployDevelopmentComet(
     configurator = await deploymentManager.contract('configurator:implementation') as Configurator;
   }
 
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.rewards)) {
+    rewards = await deploymentManager.deploy<CometRewards, CometRewards__factory, [string]>(
+      'CometRewards.sol',
+      [timelock.address]
+    );
+  } else {
+    rewards = await deploymentManager.contract('rewards') as CometRewards;
+  }
+
   /* === Proxies === */
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxyAdmin)) {
@@ -305,6 +316,7 @@ export async function deployDevelopmentComet(
     configuratorProxy,
     timelock,
     governor: governorSimple,
+    rewards,
     tokens: [dai, gold, silver],
   };
 }
