@@ -10,8 +10,7 @@
   "exports": {
     ".":  "./dist/index.js",
     "./*": "./dist/*.js",
-    "./kovan/roots.json": "./deployments/kovan/roots.json",
-    "./fuji/roots.json": "./deployments/fuji/roots.json"
+    "./deployments/*.json": "./deployments/*.json"
   },
   "types": "./dist/index.d.ts",
   "typesVersions": {
@@ -22,11 +21,8 @@
       "*": [
         "dist/*"
       ],
-      "kovan/roots.json": [
-        "deployments/kovan/roots.json"
-      ],
-      "fuji/roots.json": [
-        "deployments/fuji/roots.json"
+      "deployments/*": [
+        "deployments/*"
       ]
     }
   },
