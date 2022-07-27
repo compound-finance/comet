@@ -5,10 +5,15 @@ import { exp, wait } from '../../../test/helpers';
 import {
   Bulker,
   Bulker__factory,
+  CometInterface,
+  CometRewards,
+  ERC20,
   Fauceteer,
   Fauceteer__factory,
+  GovernorSimple,
   ProxyAdmin,
-  ProxyAdmin__factory
+  ProxyAdmin__factory,
+  SimpleTimelock
 } from '../../../build/types';
 import { Contract } from 'ethers';
 import { debug } from '../../../plugins/deployment_manager/Utils';
@@ -34,136 +39,276 @@ interface Vars {
 
 migration<Vars>('1644388553_deploy_kovan', {
   prepare: async (deploymentManager: DeploymentManager) => {
-    const { ethers } = deploymentManager.hre;
-    let signer = await deploymentManager.getSigner();
-    let signerAddress = signer.address;
 
-    let usdcProxyAdminArgs: [] = [];
-    let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
-      'vendor/proxy/transparent/ProxyAdmin.sol',
-      usdcProxyAdminArgs
-    );
-
-    let fauceteer = await deploymentManager.deploy<Fauceteer, Fauceteer__factory, []>(
-      'test/Fauceteer.sol',
-      []
-    );
-
-    let usdcImplementation = await deploymentManager.clone(
-      cloneAddr.usdcImplementation,
-      [],
-      cloneNetwork
-    );
-
-    let usdc;
-    let usdcProxy = await deploymentManager.clone(
-      cloneAddr.usdcProxy,
-      [usdcImplementation.address],
-      cloneNetwork
-    );
-
-    debug(`Changing admin of USDC proxy to ${usdcProxyAdmin.address}`);
-    await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(usdcProxy.connect(signer_).changeAdmin(usdcProxyAdmin.address))
-    )
-    usdc = usdcImplementation.attach(usdcProxy.address);
-    // Give signer 10,000 USDC
-    debug(`Initializing USDC`);
-    await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(
-        usdc.connect(signer_).initialize(
-          'USD Coin',
-          'USDC',
-          'USD',
-          6,
-          signerAddress,
-          signerAddress,
-          signerAddress,
-          signerAddress
-        )
-      )
-    );
-
-    let wbtc = await deploymentManager.clone(
-      cloneAddr.wbtc,
-      [],
-      cloneNetwork
-    );
-
-    let weth = await deploymentManager.clone(
-      cloneAddr.weth,
-      [],
-      cloneNetwork
-    );
-    // Give admin 0.01 WETH tokens [this is a precious resource here!]
-    debug(`Minting some WETH`);
-    await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(weth.connect(signer_).deposit({ value: exp(0.01, 18) }))
-    );
-
-    let comp = await deploymentManager.clone(
-      cloneAddr.comp,
-      [signerAddress],
-      cloneNetwork
-    );
-
-    const blockNumber = await ethers.provider.getBlockNumber();
-    const blockTimestamp = (await ethers.provider.getBlock(blockNumber)).timestamp;
-
-    let uni = await deploymentManager.clone(
-      cloneAddr.uni,
-      [signerAddress, signerAddress, blockTimestamp + 100],
-      cloneNetwork
-    );
-
-    let link = await deploymentManager.clone(
-      cloneAddr.link,
-      [],
-      cloneNetwork
-    );
-
-    // Contracts referenced in `configuration.json`.
-    let contracts = new Map<string, Contract>([
-      ['USDC', usdc],
-      ['WBTC', wbtc],
-      ['WETH', weth],
-      ['COMP', comp],
-      ['UNI', uni],
-      ['LINK', link],
-    ]);
-
-    // Deploy all Comet-related contracts
-    let { cometProxy, configuratorProxy, timelock, rewards } = await deployNetworkComet(
-      deploymentManager,
-      { all: true },
-      {},
-      contracts
-    );
-
-    // Deploy Bulker
-    const bulker = await deploymentManager.deploy<Bulker, Bulker__factory, [string, string, string]>(
-      'Bulker.sol',
-      [timelock.address, cometProxy.address, weth.address]
-    );
-
-    let newRoots = {
-      comet: cometProxy.address,
-      configurator: configuratorProxy.address,
-      fauceteer: fauceteer.address,
-      rewards: rewards.address,
-      bulker: bulker.address
-    };
+    const newRoots = await deployContracts(deploymentManager);
 
     deploymentManager.putRoots(new Map(Object.entries(newRoots)));
 
-    console.log("Roots.json have been set to:");
-    console.log("");
-    console.log("");
-    console.log(JSON.stringify(newRoots, null, 4));
-    console.log("");
+    debug("Roots.json have been set to:");
+    debug("");
+    debug("");
+    debug(JSON.stringify(newRoots, null, 4));
+    debug("");
+
+    // We have to re-spider to get the new deployments
+    await deploymentManager.spider();
+
+    await mintToFauceteer(deploymentManager);
+
+    await seedRewardsWithComp(deploymentManager);
 
     return newRoots;
   },
   enact: async (deploymentManager: DeploymentManager, contracts: Vars) => {
   },
 });
+
+async function deployContracts(deploymentManager: DeploymentManager): Promise<Vars> {
+  const { ethers } = deploymentManager.hre;
+  let signer = await deploymentManager.getSigner();
+  let signerAddress = signer.address;
+
+  let usdcProxyAdminArgs: [] = [];
+  let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
+    'vendor/proxy/transparent/ProxyAdmin.sol',
+    usdcProxyAdminArgs
+  );
+
+  let fauceteer = await deploymentManager.deploy<Fauceteer, Fauceteer__factory, []>(
+    'test/Fauceteer.sol',
+    []
+  );
+
+  let usdcImplementation = await deploymentManager.clone(
+    cloneAddr.usdcImplementation,
+    [],
+    cloneNetwork
+  );
+
+  let usdc;
+  let usdcProxy = await deploymentManager.clone(
+    cloneAddr.usdcProxy,
+    [usdcImplementation.address],
+    cloneNetwork
+  );
+
+  debug(`Changing admin of USDC proxy to ${usdcProxyAdmin.address}`);
+  await deploymentManager.asyncCallWithRetry(
+    (signer_) => wait(usdcProxy.connect(signer_).changeAdmin(usdcProxyAdmin.address))
+  )
+  usdc = usdcImplementation.attach(usdcProxy.address);
+  // Give signer 10,000 USDC
+  debug(`Initializing USDC`);
+  await deploymentManager.asyncCallWithRetry(
+    (signer_) => wait(
+      usdc.connect(signer_).initialize(
+        'USD Coin',
+        'USDC',
+        'USD',
+        6,
+        signerAddress,
+        signerAddress,
+        signerAddress,
+        signerAddress
+      )
+    )
+  );
+
+  let wbtc = await deploymentManager.clone(
+    cloneAddr.wbtc,
+    [],
+    cloneNetwork
+  );
+
+  let weth = await deploymentManager.clone(
+    cloneAddr.weth,
+    [],
+    cloneNetwork
+  );
+  // Give admin 0.01 WETH tokens [this is a precious resource here!]
+  debug(`Minting some WETH`);
+  await deploymentManager.asyncCallWithRetry(
+    (signer_) => wait(weth.connect(signer_).deposit({ value: exp(0.01, 18) }))
+  );
+
+  let comp = await deploymentManager.clone(
+    cloneAddr.comp,
+    [signerAddress],
+    cloneNetwork
+  );
+
+  const blockNumber = await ethers.provider.getBlockNumber();
+  const blockTimestamp = (await ethers.provider.getBlock(blockNumber)).timestamp;
+
+  let uni = await deploymentManager.clone(
+    cloneAddr.uni,
+    [signerAddress, signerAddress, blockTimestamp + 100],
+    cloneNetwork
+  );
+
+  let link = await deploymentManager.clone(
+    cloneAddr.link,
+    [],
+    cloneNetwork
+  );
+
+  // Contracts referenced in `configuration.json`.
+  let contracts = new Map<string, Contract>([
+    ['USDC', usdc],
+    ['WBTC', wbtc],
+    ['WETH', weth],
+    ['COMP', comp],
+    ['UNI', uni],
+    ['LINK', link],
+  ]);
+
+  // Deploy all Comet-related contracts
+  let { cometProxy, configuratorProxy, timelock, rewards } = await deployNetworkComet(
+    deploymentManager,
+    { all: true },
+    {},
+    contracts
+  );
+
+  // Deploy Bulker
+  const bulker = await deploymentManager.deploy<Bulker, Bulker__factory, [string, string, string]>(
+    'Bulker.sol',
+    [timelock.address, cometProxy.address, weth.address]
+  );
+
+  return {
+    comet: cometProxy.address,
+    configurator: configuratorProxy.address,
+    fauceteer: fauceteer.address,
+    rewards: rewards.address,
+    bulker: bulker.address
+  };
+}
+
+async function mintToFauceteer(deploymentManager: DeploymentManager) {
+  const signer = await deploymentManager.getSigner();
+  const signerAddress = signer.address;
+
+  debug(`Minting as signer: ${signerAddress}`);
+
+  const contracts = await deploymentManager.contracts();
+  const timelock = contracts.get('timelock');
+  const fauceteer = contracts.get('fauceteer');
+  const fauceteerAddress = fauceteer.address;
+
+  // USDC
+  const USDC = contracts.get('USDC');
+  const usdcDecimals = await USDC.decimals();
+  debug(`minting USDC@${USDC.address} to fauceteer@${fauceteerAddress}`);
+  await deploymentManager.asyncCallWithRetry(
+    (signer_) => wait(USDC.connect(signer_).configureMinter(signerAddress, exp(100_000_000, usdcDecimals))) // mint 100M USDC
+  );
+  await deploymentManager.asyncCallWithRetry(
+    (signer_) => wait(USDC.connect(signer_).mint(fauceteerAddress, exp(100_000_000, usdcDecimals)))
+  );
+  debug(`USDC.balanceOf(fauceteerAddress): ${await USDC.balanceOf(fauceteerAddress)}`);
+
+  // WBTC
+  const WBTC = contracts.get('WBTC');
+  const wbtcDecimals = await WBTC.decimals();
+  debug(`minting WBTC@${WBTC.address} to fauceteer${fauceteerAddress}`);
+  await deploymentManager.asyncCallWithRetry(
+    (signer_) => wait(WBTC.connect(signer_).mint(fauceteerAddress, exp(20, wbtcDecimals))) // mint 20 WBTC
+  );
+  debug(`WBTC.balanceOf(fauceteerAddress): ${await WBTC.balanceOf(fauceteerAddress)}`);
+
+  // COMP
+  const COMP = contracts.get('COMP');
+  const signerCompBalance = await COMP.balanceOf(signerAddress);
+
+  debug(`transferring ${signerCompBalance.div(2)} COMP@${COMP.address} to fauceteer@${fauceteerAddress}`);
+  await deploymentManager.asyncCallWithRetry(
+    (signer_) => wait(COMP.connect(signer_).transfer(fauceteerAddress, signerCompBalance.div(2))) // transfer half of signer's balance
+  );
+  debug(`COMP.balanceOf(fauceteerAddress): ${await COMP.balanceOf(fauceteerAddress)}`);
+
+  debug(`transferring ${signerCompBalance.div(2)} COMP@${COMP.address} to timelock@${timelock.address}`);
+  await deploymentManager.asyncCallWithRetry(
+    (signer_) => wait(COMP.connect(signer_).transfer(timelock.address, signerCompBalance.div(2))) // transfer half of signer's balance
+  );
+  debug(`COMP.balanceOf(timelock.address): ${await COMP.balanceOf(timelock.address)}`);
+
+  // UNI
+  const UNI = contracts.get('UNI');
+  const uniTotalSupply = await UNI.totalSupply();
+  debug(`minting UNI@${UNI.address} to fauceteer@${fauceteerAddress}`);
+  await deploymentManager.asyncCallWithRetry(
+    (signer_) => wait(UNI.connect(signer_).mint(fauceteerAddress, uniTotalSupply.div(1e2))) // mint 1% of total supply (UNI contract only allows minting 2% of total supply)
+  );
+  debug(`UNI.balanceOf(fauceteerAddress): ${await UNI.balanceOf(fauceteerAddress)}`);
+
+  // LINK
+  const LINK = contracts.get('LINK');
+  const signerLinkBalance = await LINK.balanceOf(signerAddress);
+  debug(`transferring ${signerLinkBalance.div(100)} LINK@${LINK.address} to fauceteer@${fauceteerAddress}`);
+  await deploymentManager.asyncCallWithRetry(
+    (signer_) => wait(LINK.connect(signer_).transfer(fauceteerAddress, signerLinkBalance.div(100))) // transfer 1% of total supply
+  );
+  debug(`LINK.balanceOf(fauceteerAddress): ${await LINK.balanceOf(fauceteerAddress)}`);
+}
+
+async function seedRewardsWithComp(deploymentManager: DeploymentManager) {
+  const { ethers } = deploymentManager.hre;
+
+  const timelock = await deploymentManager.contract('timelock') as SimpleTimelock;
+  const governor = await deploymentManager.contract('governor') as GovernorSimple;
+  const comet = await deploymentManager.contract('comet') as CometInterface;
+  const rewards = await deploymentManager.contract('rewards') as CometRewards;
+  const COMP = await deploymentManager.contract('COMP') as ERC20;
+
+  const timelockCompBalance = await COMP.balanceOf(timelock.address);
+  debug(`COMP balance of Timelock: ${timelockCompBalance}`);
+
+  // Steps:
+  // 1. Set reward config in CometRewards.
+  // 2. Send half of the Timelock's COMP to CometRewards.
+  const setRewardConfigCalldata = ethers.utils.defaultAbiCoder.encode(["address", "address"], [comet.address, COMP.address]);
+  const transferCompCalldata = ethers.utils.defaultAbiCoder.encode(["address", "uint"], [rewards.address, timelockCompBalance.div(2)]);
+
+  // Create a new proposal and queue it up. Execution can be done manually or in a third step.
+  // XXX txn.events is undefined...
+  const txn = await deploymentManager.asyncCallWithRetry(
+    async (signer_) => (await governor.connect(signer_).propose(
+      [
+        rewards.address,
+        COMP.address,
+      ],
+      [
+        0,
+        0,
+      ],
+      [
+        "setRewardConfig(address,address)",
+        "transfer(address,uint256)",
+      ],
+      [
+        setRewardConfigCalldata,
+        transferCompCalldata,
+      ],
+      'Set RewardConfig and transfer COMP to CometRewards')
+    ).wait()
+  );
+
+  const event = txn.events.find(event => event.event === 'ProposalCreated');
+  const [proposalId] = event.args;
+
+  await deploymentManager.asyncCallWithRetry(
+    (signer_) => wait(governor.connect(signer_).queue(proposalId))
+  );
+
+  debug(`Created proposal ${proposalId} and queued it. Proposal still needs to be executed.`);
+
+  await deploymentManager.asyncCallWithRetry(
+    (signer_) => wait(governor.connect(signer_).execute(proposalId))
+  );
+
+  // Log out new states to manually verify (helpful to verify via simulation)
+  debug("COMP balance of Timelock: ", await COMP.balanceOf(timelock.address));
+  debug("COMP balance of CometRewards: ", await COMP.balanceOf(rewards.address));
+  debug("RewardConfig: ", await rewards.rewardConfig(comet.address));
+}
