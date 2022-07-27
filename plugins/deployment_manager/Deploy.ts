@@ -37,6 +37,7 @@ async function deployFromBuildFile(
   const [ethersSigner] = await hre.ethers.getSigners();
   const signer = deployOpts.connect ?? ethersSigner;
   const contractFactory = new hre.ethers.ContractFactory(metadata.abi, metadata.bin, signer);
+  debug(`Deploying ${Object.keys(buildFile.contracts)} with args`, deployArgs);
   const contract = await contractFactory.deploy(...deployArgs);
   const deployed = await contract.deployed();
   debug(`Deployed ${contractName}`);
@@ -101,6 +102,8 @@ export async function deploy<
   let contract = await factory.deploy(...deployArgs);
   await contract.deployed();
 
+  debug(`Deployed ${contractName} via tx ${contract.deployTransaction?.hash}`);
+
   let buildFile = await getBuildFileFromArtifacts(contractFile, contractFileName);
 
   if (!buildFile.contract) {
@@ -117,8 +120,6 @@ export async function deploy<
   }
 
   await maybeStoreCache(deployOpts, contract, buildFile);
-
-  debug(`Deployed ${contractName} via tx ${contract.deployTransaction?.hash}`);
 
   return contract;
 }

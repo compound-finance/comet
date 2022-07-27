@@ -14,6 +14,7 @@ import { Migration, getArtifactSpec } from './Migration';
 import { generateMigration } from './MigrationTemplate';
 import { ExtendedNonceManager } from './NonceManager';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { asyncCallWithTimeout, debug } from './Utils';
 
 interface DeploymentManagerConfig {
   baseDir?: string;
@@ -116,13 +117,19 @@ export class DeploymentManager {
     C extends Contract,
     Factory extends Deployer<C, DeployArgs>,
     DeployArgs extends Array<any>
-  >(contractFile: string, deployArgs: DeployArgs): Promise<C> {
-    return deploy<C, Factory, DeployArgs>(contractFile, deployArgs, this.hre, await this.deployOpts());
+  >(contractFile: string, deployArgs: DeployArgs, retries?: number): Promise<C> {
+    return await this.asyncCallWithRetry(
+      async () => deploy<C, Factory, DeployArgs>(contractFile, deployArgs, this.hre, await this.deployOpts()),
+      retries
+    );
   }
 
   /* Deploys a contract from a build file, e.g. an one imported contract */
-  async deployBuild(buildFile: BuildFile, deployArgs: any[]): Promise<Contract> {
-    return await deployBuild(buildFile, deployArgs, this.hre, await this.deployOpts());
+  async deployBuild(buildFile: BuildFile, deployArgs: any[], retries?: number): Promise<Contract> {
+    return await this.asyncCallWithRetry(
+      async () => deployBuild(buildFile, deployArgs, this.hre, await this.deployOpts()),
+      retries
+    );
   }
 
   /* Stores a new alias, which can then be referenced via `deploymentManager.contract()` */
@@ -240,9 +247,31 @@ export class DeploymentManager {
     return await this.cache.readCache(getArtifactSpec(migration));
   }
 
-  async clone<C extends Contract>(address: string, args: any[], network?: string): Promise<C> {
+  /**
+   * Call an async function with a given amount of retries
+   * @param fn an async function that takes a signer as an argument. The function takes a signer
+   * because a new instance of a signer needs to be used on each retry
+   * @param retries the number of times to retry the function. Default is 5 retries
+   * @param timeLimit time limit before timeout in milliseconds
+   */
+  async asyncCallWithRetry(fn: (signer: SignerWithAddress) => Promise<any>, retries: number = 5, timeLimit?: number) {
+    const signer = await this.getSigner();
+    try {
+      return await asyncCallWithTimeout(fn(signer), timeLimit);
+    } catch (e) {
+      retries -= 1;
+      debug(`Retrying with retries left: ${retries}`);
+      debug(`Error is ${e}`);
+      if (retries === 0) throw e;
+      // XXX to be extra safe, we can also get the signer transaction count and figure out the next nonce
+      this._signers = [];
+      return await this.asyncCallWithRetry(fn, retries, timeLimit);
+    }
+  }
+
+  async clone<C extends Contract>(address: string, args: any[], network?: string, retries?: number): Promise<C> {
     let buildFile = await this.import(address, network);
-    return await this.deployBuild(buildFile, args) as C;
+    return await this.deployBuild(buildFile, args, retries) as C;
   }
 
   network(): string {

@@ -9,6 +9,7 @@ import {
   ProxyAdmin__factory
 } from '../../../build/types';
 import { Contract } from 'ethers';
+import { debug } from '../../../plugins/deployment_manager/Utils';
 
 let cloneNetwork = 'mainnet';
 let cloneAddr = {
@@ -51,19 +52,25 @@ migration('1644388553_deploy_kovan', {
       cloneNetwork
     );
 
-    await wait(await usdcProxy.changeAdmin(usdcProxyAdmin.address));
+    debug(`Changing admin of USDC proxy to ${usdcProxyAdmin.address}`);
+    await deploymentManager.asyncCallWithRetry(
+      (signer_) => wait(usdcProxy.connect(signer_).changeAdmin(usdcProxyAdmin.address))
+    )
     usdc = usdcImplementation.attach(usdcProxy.address);
     // Give signer 10,000 USDC
-    await wait(
-      usdc.initialize(
-        'USD Coin',
-        'USDC',
-        'USD',
-        6,
-        signerAddress,
-        signerAddress,
-        signerAddress,
-        signerAddress
+    debug(`Initializing USDC`);
+    await deploymentManager.asyncCallWithRetry(
+      (signer_) => wait(
+        usdc.connect(signer_).initialize(
+          'USD Coin',
+          'USDC',
+          'USD',
+          6,
+          signerAddress,
+          signerAddress,
+          signerAddress,
+          signerAddress
+        )
       )
     );
 
@@ -79,7 +86,10 @@ migration('1644388553_deploy_kovan', {
       cloneNetwork
     );
     // Give admin 0.01 WETH tokens [this is a precious resource here!]
-    await wait(weth.deposit({ value: exp(0.01, 18) }));
+    debug(`Minting some WETH`);
+    await deploymentManager.asyncCallWithRetry(
+      (signer_) => wait(weth.connect(signer_).deposit({ value: exp(0.01, 18) }))
+    );
 
     let comp = await deploymentManager.clone(
       cloneAddr.comp,
