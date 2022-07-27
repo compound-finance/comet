@@ -60,6 +60,7 @@ migration<Vars>('1644388553_deploy_kovan', {
     return newRoots;
   },
   enact: async (deploymentManager: DeploymentManager, contracts: Vars) => {
+    // No governance changes
   },
 });
 
