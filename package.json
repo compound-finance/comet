@@ -10,7 +10,7 @@
   "exports": {
     ".":  "./dist/index.js",
     "./*": "./dist/*.js",
-    "./deployments/*.json": "./deployments/*.json"
+    "./deployments/*": "./deployments/*"
   },
   "types": "./dist/index.d.ts",
   "typesVersions": {
