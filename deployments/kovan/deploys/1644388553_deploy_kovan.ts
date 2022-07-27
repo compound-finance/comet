@@ -3,6 +3,8 @@ import { migration } from '../../../plugins/deployment_manager/Migration';
 import { deployNetworkComet } from '../../../src/deploy/Network';
 import { exp, wait } from '../../../test/helpers';
 import {
+  Bulker,
+  Bulker__factory,
   Fauceteer,
   Fauceteer__factory,
   ProxyAdmin,
@@ -26,6 +28,8 @@ interface Vars {
   comet: string,
   configurator: string,
   fauceteer: string,
+  rewards: string,
+  bulker: string
 };
 
 migration<Vars>('1644388553_deploy_kovan', {
@@ -128,17 +132,26 @@ migration<Vars>('1644388553_deploy_kovan', {
       ['LINK', link],
     ]);
 
-    let { cometProxy, configuratorProxy } = await deployNetworkComet(
+    // Deploy all Comet-related contracts
+    let { cometProxy, configuratorProxy, timelock, rewards } = await deployNetworkComet(
       deploymentManager,
       { all: true },
       {},
       contracts
     );
 
+    // Deploy Bulker
+    const bulker = await deploymentManager.deploy<Bulker, Bulker__factory, [string, string, string]>(
+      'Bulker.sol',
+      [timelock.address, cometProxy.address, weth.address]
+    );
+
     let newRoots = {
       comet: cometProxy.address,
       configurator: configuratorProxy.address,
       fauceteer: fauceteer.address,
+      rewards: rewards.address,
+      bulker: bulker.address
     };
 
     deploymentManager.putRoots(new Map(Object.entries(newRoots)));
