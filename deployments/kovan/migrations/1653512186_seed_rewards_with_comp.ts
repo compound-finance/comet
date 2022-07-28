@@ -60,14 +60,14 @@ migration<Vars>('1653512186_seed_rewards_with_comp', {
 
     debug(`Created proposal ${proposalId} and queued it. Proposal still needs to be executed.`);
 
-    await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(governor.connect(signer_).execute(proposalId))
-    );
+    // await deploymentManager.asyncCallWithRetry(
+    //   (signer_) => wait(governor.connect(signer_).execute(proposalId))
+    // );
 
-    // Log out new states to manually verify (helpful to verify via simulation)
-    debug("COMP balance of Timelock: ", await COMP.balanceOf(timelock.address));
-    debug("COMP balance of CometRewards: ", await COMP.balanceOf(rewards.address));
-    debug("RewardConfig: ", await rewards.rewardConfig(comet.address));
+    // // Log out new states to manually verify (helpful to verify via simulation)
+    // debug("COMP balance of Timelock: ", await COMP.balanceOf(timelock.address));
+    // debug("COMP balance of CometRewards: ", await COMP.balanceOf(rewards.address));
+    // debug("RewardConfig: ", await rewards.rewardConfig(comet.address));
   },
   enacted: async (deploymentManager: DeploymentManager) => {
     return false;

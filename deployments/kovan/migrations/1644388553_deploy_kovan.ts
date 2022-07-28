@@ -48,8 +48,9 @@ migration<Vars>('1644388553_deploy_kovan', {
     // We have to re-spider to get the new deployments
     await deploymentManager.spider();
 
-    // Wait 100 seconds so we can mint UNI
-    await new Promise(r => setTimeout(r, 100_000));
+    // Wait 30 seconds so we can mint UNI
+    debug("Waiting 30s before minting tokens...")
+    await new Promise(r => setTimeout(r, 30_000));
 
     await mintToFauceteer(deploymentManager);
 
@@ -77,6 +78,15 @@ async function deployContracts(deploymentManager: DeploymentManager): Promise<Va
   let fauceteer = await deploymentManager.deploy<Fauceteer, Fauceteer__factory, []>(
     'test/Fauceteer.sol',
     []
+  );
+
+  const blockNumber = await ethers.provider.getBlockNumber();
+  const blockTimestamp = (await ethers.provider.getBlock(blockNumber)).timestamp;
+
+  let uni = await deploymentManager.clone(
+    cloneAddr.uni,
+    [signerAddress, signerAddress, blockTimestamp + 60],
+    cloneNetwork
   );
 
   let usdcImplementation = await deploymentManager.clone(
@@ -134,15 +144,6 @@ async function deployContracts(deploymentManager: DeploymentManager): Promise<Va
   let comp = await deploymentManager.clone(
     cloneAddr.comp,
     [signerAddress],
-    cloneNetwork
-  );
-
-  const blockNumber = await ethers.provider.getBlockNumber();
-  const blockTimestamp = (await ethers.provider.getBlock(blockNumber)).timestamp;
-
-  let uni = await deploymentManager.clone(
-    cloneAddr.uni,
-    [signerAddress, signerAddress, blockTimestamp + 100],
     cloneNetwork
   );
 
