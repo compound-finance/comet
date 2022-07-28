@@ -48,6 +48,9 @@ migration<Vars>('1644388553_deploy_kovan', {
     // We have to re-spider to get the new deployments
     await deploymentManager.spider();
 
+    // Wait 100 seconds so we can mint UNI
+    await new Promise(r => setTimeout(r, 100_000));
+
     await mintToFauceteer(deploymentManager);
 
     return newRoots;

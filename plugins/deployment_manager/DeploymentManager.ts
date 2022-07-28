@@ -261,7 +261,7 @@ export class DeploymentManager {
     } catch (e) {
       retries -= 1;
       debug(`Retrying with retries left: ${retries}`);
-      debug(`Error is ${e}`);
+      debug('Error is: ', e);
       if (retries === 0) throw e;
       // XXX to be extra safe, we can also get the signer transaction count and figure out the next nonce
       this._signers = [];
