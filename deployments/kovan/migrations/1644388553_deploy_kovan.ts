@@ -55,6 +55,9 @@ migration<Vars>('1644388553_deploy_kovan', {
   enact: async (deploymentManager: DeploymentManager, contracts: Vars) => {
     // No governance changes
   },
+  enacted: async (deploymentManager: DeploymentManager) => {
+    return false;
+  },
 });
 
 async function deployContracts(deploymentManager: DeploymentManager): Promise<Vars> {
