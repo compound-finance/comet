@@ -6,7 +6,6 @@ import { expectApproximately, getExpectedBaseBalance, getInterest } from './util
 scenario(
   'Comet#supply > base asset',
   {
-    upgrade: true,
     tokenBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
@@ -38,7 +37,6 @@ scenario(
 scenario(
   'Comet#supply > collateral asset',
   {
-    upgrade: true,
     tokenBalances: {
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
@@ -76,7 +74,6 @@ scenario(
 scenario(
   'Comet#supply > repay borrow',
   {
-    upgrade: true,
     tokenBalances: {
       albert: { $base: 1000 }
     },
@@ -108,7 +105,6 @@ scenario(
 scenario(
   'Comet#supplyFrom > base asset',
   {
-    upgrade: true,
     tokenBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
@@ -144,7 +140,6 @@ scenario(
 scenario(
   'Comet#supplyFrom > collateral asset',
   {
-    upgrade: true,
     tokenBalances: {
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
@@ -187,7 +182,6 @@ scenario(
 scenario(
   'Comet#supplyFrom > repay borrow',
   {
-    upgrade: true,
     tokenBalances: {
       albert: { $base: 1000 }
     },
@@ -223,7 +217,6 @@ scenario(
 scenario(
   'Comet#supply reverts if not enough ERC20 approval',
   {
-    upgrade: true,
     tokenBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
@@ -246,7 +239,6 @@ scenario(
 scenario(
   'Comet#supplyFrom reverts if not enough ERC20 approval',
   {
-    upgrade: true,
     tokenBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
@@ -274,7 +266,6 @@ scenario(
 scenario(
   'Comet#supply reverts if not enough ERC20 balance',
   {
-    upgrade: true,
     tokenBalances: {
       albert: { $base: 10 }, // in units of asset, not wei
     },
@@ -298,7 +289,6 @@ scenario(
 scenario(
   'Comet#supplyFrom reverts if not enough ERC20 balance',
   {
-    upgrade: true,
     tokenBalances: {
       albert: { $base: 10 }, // in units of asset, not wei
     },
@@ -325,7 +315,6 @@ scenario(
 scenario(
   'Comet#supplyFrom reverts if operator not given permission',
   {
-    upgrade: true,
     tokenBalances: {
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
@@ -351,7 +340,6 @@ scenario(
 scenario(
   'Comet#supply reverts when supply is paused',
   {
-    upgrade: true,
     pause: {
       supplyPaused: true,
     },
@@ -375,7 +363,6 @@ scenario(
 scenario(
   'Comet#supplyFrom reverts when supply is paused',
   {
-    upgrade: true,
     pause: {
       supplyPaused: true,
     },
@@ -400,9 +387,7 @@ scenario(
 
 scenario(
   'Comet#supply reverts if asset is not supported',
-  {
-    upgrade: true,
-  },
+  {},
   async ({ comet, actors }, world, context) => {
     // XXX requires deploying an unsupported asset (maybe via remote token constraint)
   }

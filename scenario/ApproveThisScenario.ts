@@ -2,7 +2,7 @@ import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { constants, utils } from 'ethers';
 
-scenario('Comet#approveThis > allows governor to authorize and rescind authorization for Comet ERC20', { upgrade: true }, async ({ comet, timelock, actors }, world, context) => {
+scenario('Comet#approveThis > allows governor to authorize and rescind authorization for Comet ERC20', {}, async ({ comet, timelock, actors }, world, context) => {
   let approveThisCalldata = utils.defaultAbiCoder.encode(["address", "address", "uint256"], [timelock.address, comet.address, constants.MaxUint256]);
   await context.fastGovernanceExecute(
     [comet.address],
@@ -24,7 +24,7 @@ scenario('Comet#approveThis > allows governor to authorize and rescind authoriza
   expect(await comet.isAllowed(comet.address, timelock.address)).to.be.false;
 });
 
-scenario('Comet#approveThis > allows governor to authorize and rescind authorization for non-Comet ERC20', { upgrade: true }, async ({ comet, timelock, actors }, world, context) => {
+scenario('Comet#approveThis > allows governor to authorize and rescind authorization for non-Comet ERC20', {}, async ({ comet, timelock, actors }, world, context) => {
   const baseTokenAddress = await comet.baseToken();
   const baseToken = context.getAssetByAddress(baseTokenAddress);
 
@@ -50,7 +50,7 @@ scenario('Comet#approveThis > allows governor to authorize and rescind authoriza
   expect(await baseToken.allowance(comet.address, timelock.address)).to.be.equal(0n);
 });
 
-scenario('Comet#approveThis > reverts if not called by governor', { upgrade: true }, async ({ comet, timelock, actors }) => {
+scenario('Comet#approveThis > reverts if not called by governor', {}, async ({ comet, timelock, actors }) => {
   await expect(comet.approveThis(timelock.address, comet.address, constants.MaxUint256))
     .to.be.revertedWith("custom error 'Unauthorized()'");
 });

@@ -3,7 +3,7 @@ import { expect } from 'chai';
 
 scenario(
   'Comet#allowBySig > allows a user to authorize a manager by signature',
-  { upgrade: true },
+  {},
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
@@ -37,7 +37,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig > fails if owner argument is altered',
-  { upgrade: true },
+  {},
   async ({ comet, actors }, world) => {
     const { albert, betty, charles } = actors;
 
@@ -69,7 +69,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig > fails if manager argument is altered',
-  { upgrade: true },
+  {},
   async ({ comet, actors }, world) => {
     const { albert, betty, charles } = actors;
 
@@ -101,7 +101,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig > fails if isAllowed argument is altered',
-  { upgrade: true },
+  {},
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
@@ -133,7 +133,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig > fails if nonce argument is altered',
-  { upgrade: true },
+  {},
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
@@ -165,7 +165,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig > fails if expiry argument is altered',
-  { upgrade: true },
+  {},
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
@@ -197,7 +197,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig fails if signature contains invalid nonce',
-  { upgrade: true },
+  {},
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
@@ -230,7 +230,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig rejects a repeated message',
-  { upgrade: true },
+  {},
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
@@ -273,7 +273,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig fails for invalid expiry',
-  { upgrade: true },
+  {},
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
@@ -305,7 +305,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig fails if v not in {27,28}',
-  { upgrade: true },
+  {},
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
@@ -339,7 +339,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig fails if s is too high',
-  { upgrade: true },
+  {},
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 

@@ -40,7 +40,7 @@ function calculateUtilization(
 
 scenario(
   'Comet#interestRate > rates using on-chain configuration constants',
-  { upgrade: true },
+  {},
   async ({ comet, actors }) => {
     let { totalSupplyBase, totalBorrowBase, baseSupplyIndex, baseBorrowIndex } = await comet.totalsBasic();
     const supplyKink = await comet.supplyKink();
@@ -80,7 +80,6 @@ scenario(
 scenario(
   'Comet#interestRate > below kink rates using hypothetical configuration constants',
   {
-    upgrade: true,
     cometConfig: {
       supplyKink: exp(0.8, 18),
       supplyPerYearInterestRateBase: exp(0, 18),
@@ -104,7 +103,6 @@ scenario(
 scenario(
   'Comet#interestRate > above kink rates using hypothetical configuration constants',
   {
-    upgrade: true,
     cometConfig: {
       supplyKink: exp(0.8, 18),
       supplyPerYearInterestRateBase: exp(0, 18),
@@ -128,7 +126,6 @@ scenario(
 scenario(
   'Comet#interestRate > rates using fuzzed configuration constants',
   {
-    upgrade: true,
     cometConfig: {
       // TODO: Read types directly from Solidity?
       supplyPerYearInterestRateBase: { type: FuzzType.UINT64 },
@@ -176,7 +173,7 @@ scenario(
 // XXX this test seems too fickle
 scenario.skip(
   'Comet#interestRate > when utilization is 50%',
-  { utilization: 0.5, upgrade: true },
+  { utilization: 0.5 },
   async ({ comet, actors }, world) => {
     const utilization = await comet.getUtilization();
     expect(defactor(utilization)).to.be.approximately(0.5, 0.00001);

@@ -4,7 +4,7 @@ import { utils } from 'ethers';
 import { scaleToDecimals } from './utils';
 
 scenario('upgrade governor', { upgradeAll: true }, async ({ comet, configurator, proxyAdmin, timelock, actors }, world, context) => {
-  const { admin, albert } = actors;
+  const { albert } = actors;
 
   expect(await comet.governor()).to.equal(timelock.address);
   expect((await configurator.getConfiguration(comet.address)).governor).to.equal(timelock.address);
