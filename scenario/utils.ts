@@ -122,7 +122,7 @@ export async function upgradeComet(world: World, context: CometContext, configOv
         cometFactory: true
       },
       configurationOverrides: cometConfig,
-      adminSigner: context.actors['admin'].signer
+      adminSigner: context.actors['signer'].signer
     }
   );
   let initializer: string | undefined;
