@@ -2,7 +2,7 @@ import { CometProperties, scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { scaleToDecimals, setNextBaseFeeToZero } from './utils';
 
-scenario('upgrade governor', { upgradeAll: true }, async ({ comet, configurator, proxyAdmin, timelock, actors }, world, context) => {
+scenario('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, timelock, actors }, world, context) => {
   const { admin, albert } = actors;
 
   expect(await comet.governor()).to.equal(timelock.address);
@@ -17,7 +17,7 @@ scenario('upgrade governor', { upgradeAll: true }, async ({ comet, configurator,
   expect((await configurator.getConfiguration(comet.address)).governor).to.be.equal(albert.address);
 });
 
-scenario('add assets', { upgradeAll: true }, async ({ comet, configurator, proxyAdmin, actors }: CometProperties, world, context) => {
+scenario('add assets', {}, async ({ comet, configurator, proxyAdmin, actors }: CometProperties, world, context) => {
   const { admin } = actors;
   let numAssets = await comet.numAssets();
   const collateralAssets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
