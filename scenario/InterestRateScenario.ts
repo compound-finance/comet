@@ -80,6 +80,7 @@ scenario(
 scenario(
   'Comet#interestRate > below kink rates using hypothetical configuration constants',
   {
+    upgrade: true,
     cometConfig: {
       supplyKink: exp(0.8, 18),
       supplyPerYearInterestRateBase: exp(0, 18),
@@ -103,6 +104,7 @@ scenario(
 scenario(
   'Comet#interestRate > above kink rates using hypothetical configuration constants',
   {
+    upgrade: true,
     cometConfig: {
       supplyKink: exp(0.8, 18),
       supplyPerYearInterestRateBase: exp(0, 18),
@@ -126,6 +128,7 @@ scenario(
 scenario(
   'Comet#interestRate > rates using fuzzed configuration constants',
   {
+    upgrade: true,
     cometConfig: {
       // TODO: Read types directly from Solidity?
       supplyPerYearInterestRateBase: { type: FuzzType.UINT64 },

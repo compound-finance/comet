@@ -35,9 +35,14 @@ scenario(
   }
 );
 
+// XXX These revert scenarios need to set `upgrade: true` because Hardhat fails to
+// recognize custom errors received in fallback functions that originate from external
+// artifacts. For example, CometExt is an external artifact here unless we redeploy it
+// using the ModernConstraint.
+// Related: https://github.com/NomicFoundation/hardhat/issues/1875
 scenario(
   'Comet#allowBySig > fails if owner argument is altered',
-  {},
+  { upgrade: true },
   async ({ comet, actors }, world) => {
     const { albert, betty, charles } = actors;
 
@@ -69,7 +74,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig > fails if manager argument is altered',
-  {},
+  { upgrade: true },
   async ({ comet, actors }, world) => {
     const { albert, betty, charles } = actors;
 
@@ -101,7 +106,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig > fails if isAllowed argument is altered',
-  {},
+  { upgrade: true },
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
@@ -133,7 +138,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig > fails if nonce argument is altered',
-  {},
+  { upgrade: true },
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
@@ -165,7 +170,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig > fails if expiry argument is altered',
-  {},
+  { upgrade: true },
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
@@ -197,7 +202,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig fails if signature contains invalid nonce',
-  {},
+  { upgrade: true },
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
@@ -230,7 +235,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig rejects a repeated message',
-  {},
+  { upgrade: true },
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
@@ -273,7 +278,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig fails for invalid expiry',
-  {},
+  { upgrade: true },
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
@@ -305,7 +310,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig fails if v not in {27,28}',
-  {},
+  { upgrade: true },
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
@@ -339,7 +344,7 @@ scenario(
 
 scenario(
   'Comet#allowBySig fails if s is too high',
-  {},
+  { upgrade: true },
   async ({ comet, actors }, world) => {
     const { albert, betty } = actors;
 
