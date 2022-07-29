@@ -1,6 +1,5 @@
-import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
+import { Constraint, Solution, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
-import { Contract } from 'ethers';
 import { Requirements } from './Requirements';
 import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
 import { modifiedPaths } from '../utils';
@@ -37,29 +36,31 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
     let solutions: Solution<T>[] = [];
 
     for (let migrationList of subsets(await getMigrations(context, requirements))) {
-      solutions.push(async function (context: T): Promise<T> {
+      solutions.push(async function (ctx: T, wld: World): Promise<T> {
         // ensure that signer is a governor of the timelock before attempting to run migrations
         // XXX why?
-        const { admin, signer } = context.actors;
-        const governor = await context.getGovernor();
-        await governor.connect(admin.signer).addAdmin(signer.address);
+        const { signer } = ctx.actors;
+        const governor = await ctx.getGovernor();
+        const adminAddress = await governor.admins(0);
+        const adminSigner = await wld.impersonateAddress(adminAddress);
+        await governor.connect(adminSigner).addAdmin(signer.address);
 
         migrationList.sort((a, b) => a.name.localeCompare(b.name))
         debug(`Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);
         for (let migration of migrationList) {
           debug(`Preparing migration ${migration.name}`);
-          let artifact = await migration.actions.prepare(context.deploymentManager);
+          let artifact = await migration.actions.prepare(ctx.deploymentManager);
           debug(`Prepared migration ${migration.name}.\n  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
           // XXX enact will take the 'gov' deployment manager instead of the 'local' one
           debug(`Enacting migration ${migration.name}`);
-          await migration.actions.enact(context.deploymentManager, artifact);
+          await migration.actions.enact(ctx.deploymentManager, artifact);
           debug(`Enacted migration ${migration.name}`);
         }
         debug(`Spidering...`);
-        await context.deploymentManager.spider();
+        await ctx.deploymentManager.spider();
         debug(`Complete`);
 
-        return context;
+        return ctx;
       });
     }
 
