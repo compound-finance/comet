@@ -25,7 +25,7 @@ scenario(
 
     const toWithdrawAmount = 10n * scale;
     await setNextBaseFeeToZero(world);
-    const txn = await admin.withdrawReserves(albert, toWithdrawAmount, { gasPrice: 0 });
+    const txn = await admin.withdrawReserves(albert.address, toWithdrawAmount, { gasPrice: 0 });
 
     expect(await baseToken.balanceOf(comet.address)).to.equal(cometBaseBalance - toWithdrawAmount);
     expect(await baseToken.balanceOf(albert.address)).to.equal(toWithdrawAmount);
@@ -43,7 +43,7 @@ scenario(
   },
   async ({ actors }) => {
     const { albert } = actors;
-    await expect(albert.withdrawReserves(albert, 10)).to.be.revertedWith(
+    await expect(albert.withdrawReserves(albert.address, 10)).to.be.revertedWith(
       "custom error 'Unauthorized()'"
     );
   }
@@ -62,7 +62,7 @@ scenario(
     const scale = (await comet.baseScale()).toBigInt();
 
     await setNextBaseFeeToZero(world);
-    await expect(admin.withdrawReserves(albert, 101n * scale, { gasPrice: 0 }))
+    await expect(admin.withdrawReserves(albert.address, 101n * scale, { gasPrice: 0 }))
       .to.be.revertedWith("custom error 'InsufficientReserves()'");
   }
 );

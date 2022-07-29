@@ -169,9 +169,9 @@ export default class CometActor {
 
   /* ===== Admin-only functions ===== */
 
-  async withdrawReserves(to: CometActor, amount: BigNumberish, overrides?: Overrides): Promise<ContractReceipt> {
+  async withdrawReserves(to: string, amount: BigNumberish, overrides?: Overrides): Promise<ContractReceipt> {
     let comet = await this.context.getComet();
-    return await (await comet.connect(this.signer).withdrawReserves(to.address, amount, { ...overrides })).wait();
+    return await (await comet.connect(this.signer).withdrawReserves(to, amount, { ...overrides })).wait();
   }
 
   async pause({
@@ -188,5 +188,10 @@ export default class CometActor {
         .connect(this.signer)
         .pause(supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused, { ...overrides })
     ).wait();
+  }
+
+  async approveThis(manager: string, asset: string, amount: BigNumberish, overrides?: Overrides): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).approveThis(manager, asset, amount, { ...overrides })).wait();
   }
 }
