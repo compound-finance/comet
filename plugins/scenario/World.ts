@@ -7,6 +7,7 @@ export type ForkSpec = {
   blockNumber?: number;
   allocation?: number;
   chainId?: number;
+  baseTokenFauceteer?: string;
 };
 
 export class World {
