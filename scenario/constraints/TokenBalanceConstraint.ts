@@ -38,8 +38,10 @@ export class TokenBalanceConstraint<T extends CometContext, R extends Requiremen
             const decimals = await asset.token.decimals();
             const toTransfer = getToTransferAmount(amount, balance, decimals);
             if (toTransfer < 0) {
+              // Send extra balance to the other address
+              const leftoverHolderAddress = '0x0000000000000000000000000000000000000001';
               await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
-              await asset.transfer(cometActor, abs(toTransfer), '0x0000000000000000000000000000000000000001', { gasPrice: 0 });
+              await asset.transfer(cometActor, abs(toTransfer), leftoverHolderAddress, { gasPrice: 0 });
             } else {
               await context.sourceTokens(world, toTransfer, asset.address, actor);
             }

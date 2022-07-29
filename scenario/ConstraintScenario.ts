@@ -54,7 +54,7 @@ scenario(
   {
     upgrade: true,
     tokenBalances: {
-      albert: { $base: 1000 }, // in units of asset, not wei
+      albert: { $base: ' == 1000' }, // in units of asset, not wei
     },
     cometBalances: {
       albert: { $base: -1000 }, // in units of asset, not wei

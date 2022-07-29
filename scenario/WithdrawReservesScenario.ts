@@ -7,7 +7,8 @@ scenario(
   'Comet#withdrawReserves > governor withdraw reserves',
   {
     tokenBalances: {
-      betty: { $base: 100000 },
+      betty: { $base: '== 100000' },
+      albert: { $base: '== 0' },
     },
     upgrade: true,
   },
