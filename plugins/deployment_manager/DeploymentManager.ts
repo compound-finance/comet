@@ -254,14 +254,14 @@ export class DeploymentManager {
    * @param retries the number of times to retry the function. Default is 5 retries
    * @param timeLimit time limit before timeout in milliseconds
    */
-  async asyncCallWithRetry(fn: (signer: SignerWithAddress) => Promise<any>, retries: number = 5, timeLimit?: number) {
+  async asyncCallWithRetry(fn: (signer: SignerWithAddress) => Promise<any>, retries: number = 5, timeLimit?: number): Promise<any> {
     const signer = await this.getSigner();
     try {
       return await asyncCallWithTimeout(fn(signer), timeLimit);
     } catch (e) {
       retries -= 1;
       debug(`Retrying with retries left: ${retries}`);
-      debug(`Error is ${e}`);
+      debug('Error is: ', e);
       if (retries === 0) throw e;
       // XXX to be extra safe, we can also get the signer transaction count and figure out the next nonce
       this._signers = [];
