@@ -194,4 +194,9 @@ export default class CometActor {
     let comet = await this.context.getComet();
     return await (await comet.connect(this.signer).approveThis(manager, asset, amount, { ...overrides })).wait();
   }
+
+  async deployAndUpgradeTo(configuratorProxy: string, cometProxy: string, overrides?: Overrides): Promise<ContractReceipt> {
+    let proxyAdmin = await this.context.getCometAdmin();
+    return await (await proxyAdmin.connect(this.signer).deployAndUpgradeTo(configuratorProxy, cometProxy, { ...overrides })).wait();
+  }
 }

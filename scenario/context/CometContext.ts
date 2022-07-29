@@ -73,8 +73,8 @@ export class CometContext {
     return await this.deploymentManager.contract('comet:implementation') as Comet;
   }
 
-  async getCometAdmin(): Promise<ProxyAdmin> {
-    return await this.deploymentManager.contract('cometAdmin') as ProxyAdmin;
+  async getCometAdmin(): Promise<CometProxyAdmin> {
+    return await this.deploymentManager.contract('cometAdmin') as CometProxyAdmin;
   }
 
   async getConfigurator(): Promise<Configurator> {
