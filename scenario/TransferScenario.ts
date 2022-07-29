@@ -6,7 +6,6 @@ import { expectApproximately, getExpectedBaseBalance, getInterest } from './util
 scenario(
   'Comet#transfer > collateral asset, enough balance',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
@@ -30,7 +29,6 @@ scenario(
 scenario(
   'Comet#transfer > base asset, enough balance',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
@@ -61,7 +59,6 @@ scenario(
 scenario(
   'Comet#transfer > base asset, total and user balances are summed up properly',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
@@ -99,7 +96,6 @@ scenario(
 scenario(
   'Comet#transfer > partial withdraw / borrow base to partial repay / supply',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 1000, $asset0: 5000 }, // in units of asset, not wei
       betty: { $base: -1000 },
@@ -133,7 +129,6 @@ scenario(
 scenario(
   'Comet#transferFrom > withdraw to repay',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 1000, $asset0: 50 }, // in units of asset, not wei
       betty: { $base: -1000 },
@@ -168,7 +163,6 @@ scenario(
 scenario(
   'Comet#transfer base reverts if undercollateralized',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 1000, $asset0: 0.000001 }, // in units of asset, not wei
       betty: { $base: -1000 },
@@ -202,7 +196,6 @@ scenario(
 scenario(
   'Comet#transferFrom base reverts if undercollateralized',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 1000, $asset0: 0.000001 }, // in units of asset, not wei
       betty: { $base: -1000 },
@@ -239,7 +232,6 @@ scenario(
 scenario(
   'Comet#transfer collateral reverts if undercollateralized',
   {
-    upgrade: true,
     // XXX we should probably have a price constraint?
     cometBalances: {
       albert: { $base: -1000, $asset0: '== 3000' }, // in units of asset, not wei
@@ -265,7 +257,6 @@ scenario(
 scenario(
   'Comet#transferFrom collateral reverts if undercollateralized',
   {
-    upgrade: true,
     // XXX we should probably have a price constraint?
     cometBalances: {
       albert: { $base: -1000, $asset0: '== 3000' }, // in units of asset, not wei
@@ -294,9 +285,7 @@ scenario(
 
 scenario(
   'Comet#transfer disallows self-transfer of base',
-  {
-    upgrade: true,
-  },
+  {},
   async ({ comet, actors }) => {
     const { albert } = actors;
 
@@ -314,9 +303,7 @@ scenario(
 
 scenario(
   'Comet#transfer disallows self-transfer of collateral',
-  {
-    upgrade: true,
-  },
+  {},
   async ({ comet, actors }) => {
     const { albert } = actors;
 
@@ -334,9 +321,7 @@ scenario(
 
 scenario(
   'Comet#transferFrom disallows self-transfer of base',
-  {
-    upgrade: true,
-  },
+  {},
   async ({ comet, actors }) => {
     const { albert, betty } = actors;
 
@@ -357,9 +342,7 @@ scenario(
 
 scenario(
   'Comet#transferFrom disallows self-transfer of collateral',
-  {
-    upgrade: true,
-  },
+  {},
   async ({ comet, actors }) => {
     const { albert, betty } = actors;
 
@@ -380,9 +363,7 @@ scenario(
 
 scenario(
   'Comet#transferFrom reverts if operator not given permission',
-  {
-    upgrade: true,
-  },
+  {},
   async ({ comet, actors }, world, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
@@ -403,7 +384,6 @@ scenario(
 scenario(
   'Comet#transfer reverts when transfer is paused',
   {
-    upgrade: true,
     pause: {
       transferPaused: true,
     },
@@ -428,7 +408,6 @@ scenario(
 scenario(
   'Comet#transferFrom reverts when transfer is paused',
   {
-    upgrade: true,
     pause: {
       transferPaused: true,
     },
@@ -454,7 +433,6 @@ scenario(
 scenario(
   'Comet#transfer reverts if borrow is less than minimum borrow',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 0, $asset0: 100 }
     }
