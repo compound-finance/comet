@@ -8,6 +8,7 @@ export type ForkSpec = {
   allocation?: number;
   chainId?: number;
   baseTokenFauceteer?: string;
+  deployNewComet?: boolean;
 };
 
 export class World {

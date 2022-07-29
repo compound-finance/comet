@@ -283,7 +283,7 @@ async function buildActor(name: string, signer: SignerWithAddress, context: Come
 const getInitialContext = async (world: World): Promise<CometContext> => {
   let deploymentManager = new DeploymentManager(world.base.name, world.hre, { debug: true });
 
-  if (!world.isRemoteFork()) {
+  if (!world.isRemoteFork() || world.base.deployNewComet) {
     await deployComet(deploymentManager);
   }
 

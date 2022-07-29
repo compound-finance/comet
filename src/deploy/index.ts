@@ -13,6 +13,7 @@ import { AssetConfigStruct } from '../../build/types/Comet';
 import { BigNumberish } from 'ethers';
 import { deployNetworkComet } from './Network';
 import { deployDevelopmentComet } from './Development';
+import { deployMainnetForkComet } from './MainnetFork';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 export interface ProtocolConfiguration {
@@ -83,6 +84,8 @@ export async function deployComet(
   // provides less value than a full-fledged test-net or mainnet fork.
   if (await hasNetworkConfiguration(deploymentManager.deployment)) {
     return await deployNetworkComet(deploymentManager, optionalParams.contractsToDeploy, optionalParams.configurationOverrides, optionalParams.contractMapOverride, optionalParams.adminSigner);
+  } else if (deploymentManager.deployment == 'mainnet') {
+    return await deployMainnetForkComet(deploymentManager, optionalParams.contractsToDeploy, optionalParams.configurationOverrides);
   } else {
     return await deployDevelopmentComet(deploymentManager, optionalParams.contractsToDeploy, optionalParams.configurationOverrides);
   }
