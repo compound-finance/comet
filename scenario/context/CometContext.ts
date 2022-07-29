@@ -166,12 +166,13 @@ export class CometContext {
 
     // First, try to source from Fauceteer
     const contracts = await this.deploymentManager.contracts();
-    const fauceteer = contracts.get('fauceteer');
-    const fauceteerBalance = fauceteer ? await cometAsset.balanceOf(fauceteer.address) : 0;
+    const fauceteerContract = contracts.get('fauceteer');
+    const fauceteerAddress = fauceteerContract ? fauceteerContract.address : world.base.baseTokenFauceteer;
+    const fauceteerBalance = fauceteerAddress ? await cometAsset.balanceOf(fauceteerAddress) : 0;
 
-    if (fauceteerBalance > amount) {
+    if (fauceteerAddress && fauceteerBalance > amount) {
       this.debug(`Source Tokens: stealing from fauceteer`);
-      const fauceteerSigner = await world.impersonateAddress(fauceteer.address);
+      const fauceteerSigner = await world.impersonateAddress(fauceteerAddress);
       const fauceteerActor = await buildActor('fauceteerActor', fauceteerSigner, this);
       // make gas fee 0 so we can source from contract addresses as well as EOAs
       await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
