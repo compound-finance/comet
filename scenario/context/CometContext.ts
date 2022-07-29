@@ -10,6 +10,7 @@ import {
   UtilizationConstraint,
   CometBalanceConstraint,
   MigrationConstraint,
+  ProposalConstraint,
 } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
@@ -283,7 +284,19 @@ const getInitialContext = async (world: World): Promise<CometContext> => {
   let deploymentManager = new DeploymentManager(world.base.name, world.hre, { debug: true });
 
   if (!world.isRemoteFork()) {
+    // XXX try to move to `deployments/development` and follow same code path
     await deployComet(deploymentManager);
+  } else {
+    // XXX if this is idempotent we can just always deploy, and do the same for dev
+    //  as is, won't handle cases where the deploy script adds roots or partial redeploys
+    // if there are no roots, deploy
+    const roots = await deploymentManager.getRoots();
+    if (roots.size == 0) {
+      // XXX wrap? returns and writes roots?
+      const deployment = deploymentManager.deployment; // XXX should become per instance
+      const { default: deploy } = await import(`../../deployments/${deployment}/deploy.ts`);
+      await deploy(deploymentManager); // XXX
+    }
   }
 
   await deploymentManager.spider();
@@ -307,6 +320,7 @@ async function forkContext(c: CometContext, w: World): Promise<CometContext> {
 
 export const constraints = [
   new MigrationConstraint(),
+  new ProposalConstraint(),
   new ModernConstraint(),
   new PauseConstraint(),
   new CometBalanceConstraint(),

@@ -1,4 +1,6 @@
 import { expect } from 'chai';
+import { execSync } from 'child_process';
+import { existsSync } from 'fs';
 import { BigNumber, BigNumberish, utils } from 'ethers';
 import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
@@ -269,4 +271,11 @@ function matchGroup(str, patterns): ComparativeAmount {
     if (match) return { val: match[1], op: ComparisonOp[k] };
   }
   throw new Error(`No match for ${str} in ${patterns}`);
+}
+
+export async function modifiedPaths(pattern: RegExp, against: string = 'origin/main'): Promise<string[]> {
+  const output = execSync(`git diff --numstat $(git merge-base ${against} HEAD)`);
+  const paths = output.toString().split('\n').map(l => l.split(/\s+/)[2]);
+  const modified = paths.filter(p => pattern.test(p) && existsSync(p));
+  return modified;
 }

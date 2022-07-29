@@ -1,15 +1,15 @@
-import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
-import { migration } from '../../../plugins/deployment_manager/Migration';
-import { deployNetworkComet } from '../../../src/deploy/Network';
-import { exp, wait } from '../../../test/helpers';
+import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
+import { migration } from '../../plugins/deployment_manager/Migration';
+import { deployNetworkComet } from '../../src/deploy/Network';
+import { exp, wait } from '../../test/helpers';
 import {
   Fauceteer,
   Fauceteer__factory,
   ProxyAdmin,
   ProxyAdmin__factory
-} from '../../../build/types';
+} from '../../build/types';
 import { Contract } from 'ethers';
-import { debug } from '../../../plugins/deployment_manager/Utils';
+import { debug } from '../../plugins/deployment_manager/Utils';
 
 let cloneNetwork = 'avalanche';
 let cloneAddr = {
@@ -28,33 +28,23 @@ interface Vars {
   bulker?: string
 };
 
-migration<Vars>('1644432723_deploy_fuji', {
-  prepare: async (deploymentManager: DeploymentManager) => {
+export default async function deploy(deploymentManager: DeploymentManager) {
+  const newRoots = await deployContracts(deploymentManager);
+  deploymentManager.putRoots(new Map(Object.entries(newRoots)));
 
-    const newRoots = await deployContracts(deploymentManager);
+  debug("Roots.json have been set to:");
+  debug("");
+  debug("");
+  debug(JSON.stringify(newRoots, null, 4));
+  debug("");
 
-    deploymentManager.putRoots(new Map(Object.entries(newRoots)));
+  // We have to re-spider to get the new deployments
+  await deploymentManager.spider();
 
-    debug("Roots.json have been set to:");
-    debug("");
-    debug("");
-    debug(JSON.stringify(newRoots, null, 4));
-    debug("");
+  await mintToFauceteer(deploymentManager);
 
-    // We have to re-spider to get the new deployments
-    await deploymentManager.spider();
-
-    await mintToFauceteer(deploymentManager);
-
-    return newRoots;
-  },
-  enact: async (deploymentManager: DeploymentManager, contracts: Vars) => {
-    // No governance changes
-  },
-  enacted: async (deploymentManager: DeploymentManager) => {
-    return false; // XXX
-  }
-});
+  return newRoots;
+}
 
 
 async function deployContracts(deploymentManager: DeploymentManager): Promise<Vars> {

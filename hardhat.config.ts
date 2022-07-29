@@ -31,7 +31,7 @@ const {
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
   INFURA_KEY,
-  MNEMONIC = '',
+  MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
 } = process.env;
 
@@ -84,11 +84,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
       url: netConfig.url || getDefaultProviderURL(netConfig.network),
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
-      accounts: ETH_PK
-        ? [ETH_PK]
-        : {
-          mnemonic: MNEMONIC,
-        },
+      accounts: ETH_PK ? [ETH_PK] : { mnemonic: MNEMONIC },
     };
   }
 }
@@ -127,9 +123,7 @@ const config: HardhatUserConfig = {
       gas: 12000000,
       gasPrice: 'auto',
       blockGasLimit: 12000000,
-      accounts: {
-        mnemonic: MNEMONIC || 'myth like bonus scare over problem client lizard pioneer submit female collect',
-      },
+      accounts: ETH_PK ? [{ privateKey: ETH_PK, balance: (10n ** 36n).toString() }] : { mnemonic: MNEMONIC },
       // this should be default commented out and only enabled during dev to allow partial testing
       // XXX comment out by default once we've made the full contract fit
       allowUnlimitedContractSize: true,

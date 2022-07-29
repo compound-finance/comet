@@ -1,7 +1,7 @@
-import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
-import { migration } from '../../../plugins/deployment_manager/Migration';
-import { deployNetworkComet } from '../../../src/deploy/Network';
-import { exp, wait } from '../../../test/helpers';
+import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
+import { migration } from '../../plugins/deployment_manager/Migration';
+import { deployNetworkComet } from '../../src/deploy/Network';
+import { exp, wait } from '../../test/helpers';
 import {
   Bulker,
   Bulker__factory,
@@ -9,9 +9,9 @@ import {
   Fauceteer__factory,
   ProxyAdmin,
   ProxyAdmin__factory,
-} from '../../../build/types';
+} from '../../build/types';
 import { Contract } from 'ethers';
-import { debug } from '../../../plugins/deployment_manager/Utils';
+import { debug } from '../../plugins/deployment_manager/Utils';
 
 let cloneNetwork = 'mainnet';
 let cloneAddr = {
@@ -32,37 +32,27 @@ interface Vars {
   bulker: string
 };
 
-migration<Vars>('1644388553_deploy_kovan', {
-  prepare: async (deploymentManager: DeploymentManager) => {
+export default async function deploy(deploymentManager: DeploymentManager) {
+  const newRoots = await deployContracts(deploymentManager);
+  deploymentManager.putRoots(new Map(Object.entries(newRoots)));
 
-    const newRoots = await deployContracts(deploymentManager);
+  debug("Roots.json have been set to:");
+  debug("");
+  debug("");
+  debug(JSON.stringify(newRoots, null, 4));
+  debug("");
 
-    deploymentManager.putRoots(new Map(Object.entries(newRoots)));
+  // We have to re-spider to get the new deployments
+  await deploymentManager.spider();
 
-    debug("Roots.json have been set to:");
-    debug("");
-    debug("");
-    debug(JSON.stringify(newRoots, null, 4));
-    debug("");
+  // Wait 45 seconds so we have a buffer before minting UNI
+  debug("Waiting 45s before minting tokens...")
+  await new Promise(r => setTimeout(r, 45_000));
 
-    // We have to re-spider to get the new deployments
-    await deploymentManager.spider();
+  await mintToFauceteer(deploymentManager);
 
-    // Wait 45 seconds so we have a buffer before minting UNI
-    debug("Waiting 45s before minting tokens...")
-    await new Promise(r => setTimeout(r, 45_000));
-
-    await mintToFauceteer(deploymentManager);
-
-    return newRoots;
-  },
-  enact: async (deploymentManager: DeploymentManager, contracts: Vars) => {
-    // No governance changes
-  },
-  enacted: async (deploymentManager: DeploymentManager) => {
-    return false;
-  },
-});
+  return newRoots;
+}
 
 async function deployContracts(deploymentManager: DeploymentManager): Promise<Vars> {
   const { ethers } = deploymentManager.hre;

@@ -318,7 +318,6 @@ describe('DeploymentManager', () => {
         actions: {
           prepare: async () => null,
           enact: async () => { /* */ },
-          enacted: async () => false
         },
       };
 

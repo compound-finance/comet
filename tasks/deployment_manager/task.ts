@@ -1,10 +1,7 @@
 import { task } from 'hardhat/config';
 import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
-import '../../plugins/deployment_manager/type-extensions';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-// import * as types from 'hardhat/internal/core/params/argumentTypes'; TODO harhdat argument types not from internal
-import * as path from 'path';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
 
 // TODO: Don't depend on scenario's hreForBase
@@ -44,16 +41,37 @@ async function runMigration<T>(
   }
 
   if (enact) {
-    if (artifact === undefined) {
-      throw new Error(
-        'No artifact found for migration. Please run --prepare first, or specify both --prepare and --enact'
-      );
-    }
     console.log('Running enactment step with artifact...', artifact);
     await migration.actions.enact(deploymentManager, artifact);
     console.log('Enactment complete');
   }
 }
+
+task('deploy', 'Deploys market')
+  .addFlag('simulate', 'only simulates the blockchain effects')
+  .setAction(
+    async ({ simulate }, env: HardhatRuntimeEnvironment) => {
+      let maybeForkEnv: HardhatRuntimeEnvironment = env;
+      if (simulate) {
+        maybeForkEnv = getBase(env);
+      }
+      const network = env.network.name;
+      const dm = new DeploymentManager(network, maybeForkEnv, {
+        writeCacheToDisk: !simulate, // Don't write to disk when simulating
+        debug: true,
+        verifyContracts: true,
+      });
+      await dm.spider();
+
+      // XXX wrap?
+      const deployment = dm.deployment; // XXX should become per instance
+      const { default: deploy } = await import(`../../deployments/${deployment}/deploy.ts`);
+      if (!deploy) {
+        throw new Error(`Missing deploy function for ${deployment}.`);
+      }
+      await deploy(dm);
+    }
+  );
 
 task('gen:migration', 'Generates a new migration')
   .addPositionalParam('name', 'name of the migration')
@@ -90,16 +108,11 @@ task('migrate', 'Runs migration')
         verifyContracts: true,
       });
       await dm.spider();
-      let migrationsGlob = path.join('deployments', network, 'migrations', '**.ts');
-      let migrations = await loadMigrations(migrationsGlob);
 
-      let migration = migrations[migrationName];
+      let migrationPath = `${__dirname}/../../deployments/${network}/migrations/${migrationName}.ts`;
+      let [migration] = await loadMigrations([migrationPath]);
       if (!migration) {
-        throw new Error(
-          `Unknown migration for network ${network}: \`${migrationName}\`. Known migrations: ${JSON.stringify(
-            Object.keys(migrations)
-          )}`
-        );
+        throw new Error(`Unknown migration for network ${network}: \`${migrationName}\`.`);
       }
       if (!prepare && !enact) {
         prepare = true;
