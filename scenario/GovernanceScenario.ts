@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { constants, utils } from 'ethers';
 import { CometModifiedFactory, CometModifiedFactory__factory } from '../build/types';
 
-scenario('upgrade Comet implementation and initialize', { upgradeAll: true }, async ({ comet, configurator, proxyAdmin }, world, context) => {
+scenario.skip('upgrade Comet implementation and initialize', { upgradeAll: true }, async ({ comet, configurator, proxyAdmin }, world, context) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
   expect((await comet.liquidatorPoints(constants.AddressZero)).numAbsorbs).to.be.equal(0);
 
@@ -32,7 +32,7 @@ scenario('upgrade Comet implementation and initialize', { upgradeAll: true }, as
   expect((await comet.liquidatorPoints(constants.AddressZero)).numAbsorbs).to.be.equal(2 ** 32 - 1);
 });
 
-scenario('upgrade Comet implementation and call new function', { upgradeAll: true }, async ({ comet, configurator, proxyAdmin, timelock, actors }, world, context) => {
+scenario.skip('upgrade Comet implementation and call new function', { upgradeAll: true }, async ({ comet, configurator, proxyAdmin, timelock, actors }, world, context) => {
   // Deploy new version of Comet Factory
   const dm = context.deploymentManager;
   const cometModifiedFactory = await dm.deploy<CometModifiedFactory, CometModifiedFactory__factory, []>(
