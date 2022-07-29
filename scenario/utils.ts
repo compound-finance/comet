@@ -93,6 +93,10 @@ export function getInterest(balance: bigint, rate: bigint, seconds: bigint) {
   return balance * rate * seconds / (10n ** 18n);
 }
 
+export async function setNextBaseFeeToZero(world: World) {
+  await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+}
+
 // Instantly executes some actions through the governance proposal process
 // Note: `governor` must be connected to an `admin` signer
 export async function fastGovernanceExecute(governor: GovernorSimple, targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {

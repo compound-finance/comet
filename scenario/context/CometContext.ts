@@ -20,7 +20,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { Requirements } from '../constraints/Requirements';
-import { fastGovernanceExecute } from '../utils';
+import { fastGovernanceExecute, setNextBaseFeeToZero } from '../utils';
 
 type ActorMap = { [name: string]: CometActor };
 type AssetMap = { [name: string]: CometAsset };
@@ -100,7 +100,7 @@ export class CometContext {
     let pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
 
     // Set gas fee to 0 in case admin is a contract address (e.g. Timelock)
-    await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+    await setNextBaseFeeToZero(world);
     if (data) {
       await (await proxyAdmin.connect(adminSigner).upgradeAndCall(comet.address, newComet.address, data, { gasPrice: 0 })).wait();
     } else {
@@ -164,7 +164,7 @@ export class CometContext {
       const fauceteerSigner = await world.impersonateAddress(fauceteer.address);
       const fauceteerActor = await buildActor('fauceteerActor', fauceteerSigner, this);
       // make gas fee 0 so we can source from contract addresses as well as EOAs
-      await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+      await setNextBaseFeeToZero(world);
       await cometAsset.transfer(fauceteerActor, amount, recipientAddress, { gasPrice: 0 });
       return;
     }
@@ -175,7 +175,7 @@ export class CometContext {
       if (actorBalance > amount) {
         this.debug(`Source Tokens: stealing from actor ${name}`);
         // make gas fee 0 so we can source from contract addresses as well as EOAs
-        await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+        await setNextBaseFeeToZero(world);
         await cometAsset.transfer(actor, amount, recipientAddress, { gasPrice: 0 });
         return;
       }

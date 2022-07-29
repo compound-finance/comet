@@ -1,5 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumberish, Signature, ethers, ContractReceipt } from 'ethers';
+import { BigNumberish, Signature, ethers, ContractReceipt, Overrides } from 'ethers';
 import { CometContext } from './CometContext';
 import { AddressLike, resolveAddress } from './Address';
 import { ERC20__factory } from '../../build/types';
@@ -82,12 +82,13 @@ export default class CometActor {
     withdrawPaused = false,
     absorbPaused = false,
     buyPaused = false,
-  }): Promise<ContractReceipt> {
+  }, overrides?: Overrides
+  ): Promise<ContractReceipt> {
     let comet = await this.context.getComet();
     return await (
       await comet
         .connect(this.signer)
-        .pause(supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused)
+        .pause(supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused, { ...overrides })
     ).wait();
   }
 
