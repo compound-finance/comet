@@ -1,10 +1,10 @@
-import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
+import { Constraint, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { BigNumber } from 'ethers';
 import { exp } from '../../test/helpers';
-import { ComparativeAmount, ComparisonOp, getActorAddressFromName, getAssetFromName, parseAmount, max, min, getToTransferAmount } from '../utils';
+import { ComparativeAmount, ComparisonOp, getActorAddressFromName, getAssetFromName, parseAmount, getToTransferAmount, abs } from '../utils';
 
 export class TokenBalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, initialContext: T, initialWorld: World) {
@@ -29,14 +29,20 @@ export class TokenBalanceConstraint<T extends CometContext, R extends Requiremen
       const solutions = [];
       solutions.push(async function barelyMeet(context: T, world: World) {
         for (const assetName in actorsByAsset) {
-          const asset = await getAssetFromName(assetName, context)
+          const asset = await getAssetFromName(assetName, context);
           for (const actorName in actorsByAsset[assetName]) {
+            const cometActor = context.actors[actorName];
             const actor = await getActorAddressFromName(actorName, context);
             const amount: ComparativeAmount = actorsByAsset[assetName][actorName];
             const balance = await asset.balanceOf(actor);
             const decimals = await asset.token.decimals();
             const toTransfer = getToTransferAmount(amount, balance, decimals);
-            await context.sourceTokens(world, toTransfer, asset.address, actor);
+            if (toTransfer < 0) {
+              await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+              await asset.transfer(cometActor, abs(toTransfer), '0x0000000000000000000000000000000000000001', { gasPrice: 0 });
+            } else {
+              await context.sourceTokens(world, toTransfer, asset.address, actor);
+            }
           }
         }
         return context;

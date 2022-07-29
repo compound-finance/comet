@@ -7,8 +7,11 @@ scenario(
   'Comet#withdraw > base asset',
   {
     upgrade: true,
+    tokenBalances: {
+      albert: { $base: '== 0' }, // in units of asset, not wei
+    },
     cometBalances: {
-      albert: { $base: 100 }, // in units of asset, not wei
+      albert: { $base: '== 100' }, // in units of asset, not wei
     },
   },
   async ({ comet, actors }, world, context) => {
@@ -25,7 +28,7 @@ scenario(
     expect(await comet.balanceOf(albert.address)).to.be.equal(baseSupplied);
 
     // Albert withdraws 100 units of base from Comet
-    const txn = await albert.withdrawAsset({ asset: baseAsset.address, amount: baseSupplied })
+    const txn = await albert.withdrawAsset({ asset: baseAsset.address, amount: baseSupplied });
 
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(baseSupplied);
     expect(await comet.balanceOf(albert.address)).to.be.equal(0n);
