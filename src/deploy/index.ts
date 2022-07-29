@@ -3,6 +3,7 @@ import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import {
   Comet,
+  CometRewards,
   ERC20,
   GovernorSimple,
   SimpleTimelock,
@@ -53,6 +54,7 @@ export interface ContractsToDeploy {
   comet?: boolean;
   configurator?: boolean;
   cometFactory?: boolean;
+  rewards?: boolean;
 }
 
 interface DeployCometOptionalParams {
@@ -68,6 +70,7 @@ export interface DeployedContracts {
   configuratorProxy: TransparentUpgradeableProxy | null;
   timelock: SimpleTimelock;
   governor: GovernorSimple;
+  rewards: CometRewards;
   tokens?: ERC20[];
 }
 

@@ -6,10 +6,6 @@ import { expectApproximately, getExpectedBaseBalance } from './utils';
 scenario(
   'Comet#withdraw > base asset',
   {
-    upgrade: true,
-    tokenBalances: {
-      albert: { $base: '== 0' }, // in units of asset, not wei
-    },
     cometBalances: {
       albert: { $base: '== 100' }, // in units of asset, not wei
     },
@@ -40,7 +36,6 @@ scenario(
 scenario(
   'Comet#withdraw > collateral asset',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
@@ -67,7 +62,6 @@ scenario(
 scenario(
   'Comet#withdraw > borrow base',
   {
-    upgrade: true,
     tokenBalances: {
       albert: { $base: '== 0'},
       $comet: { $base: 1000 }, // in units of asset, not wei
@@ -99,7 +93,6 @@ scenario(
 scenario(
   'Comet#withdrawFrom > base asset',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
@@ -132,7 +125,6 @@ scenario(
 scenario(
   'Comet#withdrawFrom > collateral asset',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $asset0: 1000 }, // in units of asset, not wei
     },
@@ -161,7 +153,6 @@ scenario(
 scenario(
   'Comet#withdrawFrom > borrow base',
   {
-    upgrade: true,
     tokenBalances: {
       $comet: { $base: 1000 }, // in units of asset, not wei
     },
@@ -194,7 +185,6 @@ scenario(
 scenario(
   'Comet#withdrawFrom reverts if operator not given permission',
   {
-    upgrade: true,
     tokenBalances: {
       $comet: { $base: 100 }, // in units of asset, not wei
     },
@@ -223,7 +213,6 @@ scenario(
 scenario(
   'Comet#withdraw reverts when withdraw is paused',
   {
-    upgrade: true,
     pause: {
       withdrawPaused: true,
     },
@@ -247,9 +236,8 @@ scenario(
 scenario(
   'Comet#withdrawFrom reverts when withdraw is paused',
   {
-    upgrade: true,
     pause: {
-        withdrawPaused: true,
+      withdrawPaused: true,
     },
   },
   async ({ comet, actors }) => {
@@ -273,7 +261,6 @@ scenario(
 scenario(
   'Comet#withdraw base reverts if position is undercollateralized',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 0 }, // in units of asset, not wei
       charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
@@ -297,7 +284,6 @@ scenario(
 scenario(
   'Comet#withdraw collateral reverts if position is undercollateralized',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: -1000, $asset0: 1000 }, // in units of asset, not wei
     },
@@ -320,7 +306,6 @@ scenario(
 scenario(
   'Comet#withdraw reverts if borrow is less than minimum borrow',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 0, $asset0: 100 }
     }
@@ -342,9 +327,7 @@ scenario(
 
 scenario.skip(
   'Comet#withdraw reverts if asset is not supported',
-  {
-    upgrade: true,
-  },
+  {},
   async ({ comet, actors }, world, context) => {
     // XXX requires deploying an unsupported asset (maybe via remote token constraint)
   }
@@ -352,9 +335,7 @@ scenario.skip(
 
 scenario.skip(
   'Comet#withdraw reverts if not enough asset in protocol',
-  {
-    upgrade: true,
-  },
+  {},
   async ({ comet, actors }, world, context) => {
     // XXX fix for development base, where Faucet token doesn't give the same revert message
   }

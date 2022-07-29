@@ -21,6 +21,8 @@ import {
   SimpleTimelock__factory,
   ProxyAdmin,
   CometInterface,
+  CometRewards,
+  CometRewards__factory,
 } from '../../build/types';
 import { ConfigurationStruct } from '../../build/types/Comet';
 import { ExtConfigurationStruct } from '../../build/types/CometExt';
@@ -44,7 +46,7 @@ export async function deployNetworkComet(
     adminSigner = await deploymentManager.getSigner();
   }
 
-  let governorSimple, timelock, proxyAdmin, cometExt, cometProxy, configuratorProxy, comet, configurator, cometFactory;
+  let governorSimple, timelock, proxyAdmin, cometExt, cometProxy, configuratorProxy, comet, configurator, cometFactory, rewards;
 
   /* === Deploy Contracts === */
 
@@ -166,13 +168,13 @@ export async function deployNetworkComet(
     configurator = await deploymentManager.contract('configurator:implementation') as Configurator;
   }
 
-  if (contractsToDeploy.all || contractsToDeploy.cometFactory) {
-    cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
-      'CometFactory.sol',
-      []
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.rewards)) {
+    rewards = await deploymentManager.deploy<CometRewards, CometRewards__factory, [string]>(
+      'CometRewards.sol',
+      [timelock.address]
     );
   } else {
-    // XXX need to handle the fact that there can be multiple Comet factories
+    rewards = await deploymentManager.contract('rewards') as CometRewards;
   }
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxyAdmin)) {
@@ -251,6 +253,7 @@ export async function deployNetworkComet(
     cometProxy,
     configuratorProxy,
     timelock,
-    governor: governorSimple
+    governor: governorSimple,
+    rewards
   };
 }

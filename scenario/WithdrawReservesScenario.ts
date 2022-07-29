@@ -10,7 +10,6 @@ scenario(
       betty: { $base: '== 100000' },
       albert: { $base: '== 0' },
     },
-    upgrade: true,
   },
   async ({ comet, timelock, actors }, world, context) => {
     const { albert, betty } = actors;
@@ -47,7 +46,6 @@ scenario(
     tokenBalances: {
       $comet: { $base: 100 },
     },
-    upgrade: true,
   },
   async ({ actors }) => {
     const { albert } = actors;
@@ -63,10 +61,9 @@ scenario(
     tokenBalances: {
       $comet: { $base: 100 },
     },
-    upgrade: true,
   },
   async ({ comet, actors }, world, context) => {
-    const { admin, albert } = actors;
+    const { albert } = actors;
 
     const scale = (await comet.baseScale()).toBigInt();
 

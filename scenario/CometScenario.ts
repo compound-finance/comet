@@ -17,6 +17,6 @@ scenario('has assets', {}, async ({ comet, actors, assets }: CometProperties, wo
   expect(collateralAssets.map(a => a.asset)).to.have.members(contextAssets);
 });
 
-scenario('requires upgrade', { upgrade: true }, async ({ comet }, world) => {
+scenario('requires upgrade', {}, async ({ comet }, world) => {
   // Nothing currently here
 });
