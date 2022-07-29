@@ -48,9 +48,9 @@ migration<Vars>('1644388553_deploy_kovan', {
     // We have to re-spider to get the new deployments
     await deploymentManager.spider();
 
-    // Wait 30 seconds so we can mint UNI
-    debug("Waiting 30s before minting tokens...")
-    await new Promise(r => setTimeout(r, 30_000));
+    // Wait 45 seconds so we have a buffer before minting UNI
+    debug("Waiting 45s before minting tokens...")
+    await new Promise(r => setTimeout(r, 45_000));
 
     await mintToFauceteer(deploymentManager);
 
@@ -69,6 +69,17 @@ async function deployContracts(deploymentManager: DeploymentManager): Promise<Va
   let signer = await deploymentManager.getSigner();
   let signerAddress = signer.address;
 
+  const blockNumber = await ethers.provider.getBlockNumber();
+  const blockTimestamp = (await ethers.provider.getBlock(blockNumber)).timestamp;
+
+  // Deploy UNI first because it is the flakiest (has a dependency on block timestamp)
+  // XXX currently this retries with the same timestamp. we should update the timestamp on retries
+  let uni = await deploymentManager.clone(
+    cloneAddr.uni,
+    [signerAddress, signerAddress, blockTimestamp + 60],
+    cloneNetwork
+  );
+
   let usdcProxyAdminArgs: [] = [];
   let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
     'vendor/proxy/transparent/ProxyAdmin.sol',
@@ -78,15 +89,6 @@ async function deployContracts(deploymentManager: DeploymentManager): Promise<Va
   let fauceteer = await deploymentManager.deploy<Fauceteer, Fauceteer__factory, []>(
     'test/Fauceteer.sol',
     []
-  );
-
-  const blockNumber = await ethers.provider.getBlockNumber();
-  const blockTimestamp = (await ethers.provider.getBlock(blockNumber)).timestamp;
-
-  let uni = await deploymentManager.clone(
-    cloneAddr.uni,
-    [signerAddress, signerAddress, blockTimestamp + 60],
-    cloneNetwork
   );
 
   let usdcImplementation = await deploymentManager.clone(
