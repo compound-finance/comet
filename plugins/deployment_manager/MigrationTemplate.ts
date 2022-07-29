@@ -6,8 +6,8 @@ export interface MigrationTemplateVars {
 }
 
 export function migrationTemplate({ timestamp, name }: MigrationTemplateVars): string {
-  return `import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
-import { migration } from '../../../plugins/deployment_manager/Migration';
+  return `import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
+import { migration } from '../../../../plugins/deployment_manager/Migration';
 
 interface Vars {};
 

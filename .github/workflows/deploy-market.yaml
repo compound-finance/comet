@@ -8,6 +8,9 @@ on:
         options:
           - fuji
           - kovan
+      deployment:
+        description: Deployment Name (e.g. "usdc")
+        required: true
       simulate:
         type: boolean
         description: Simulate
@@ -39,7 +42,7 @@ jobs:
         run: yarn tsc
 
       - name: Run Deploy
-        run: yarn hardhat deploy --network ${{ github.event.inputs.network }} ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }}
+        run: yarn hardhat deploy --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }}
         env:
           ETH_PK: ${{ github.event.inputs.eth_pk }}
           DEBUG: true

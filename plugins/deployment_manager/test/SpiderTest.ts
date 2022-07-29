@@ -103,7 +103,7 @@ describe('Spider', () => {
   });
 
   it('runs valid spider', async () => {
-    let cache = new Cache('test');
+    let cache = new Cache('test-network', 'test-deployment');
     let { finn, molly, spot, finnImpl } = await setupContracts(cache, hre);
 
     let roots = new Map([['finn', finn.address]]);

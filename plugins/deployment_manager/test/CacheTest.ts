@@ -6,7 +6,7 @@ import { objectFromMap } from '../Utils';
 
 describe('Cache', () => {
   it('read and store values in-memory', async () => {
-    let cache = new Cache('test', false, tempDir());
+    let cache = new Cache('test-network', 'test-deployment', false, tempDir());
 
     await cache.storeCache(['abc'], 5);
 
@@ -16,17 +16,17 @@ describe('Cache', () => {
   });
 
   it('read and store values in-memory rel', async () => {
-    let cache = new Cache('test', false, tempDir());
+    let cache = new Cache('test-network', 'test-deployment', false, tempDir());
 
     await cache.storeCache({ rel: 'abc' }, 5);
 
-    expect(cache.cache).to.eql(new Map([['test', new Map([['abc', 5]])]]));
+    expect(cache.cache).to.eql(new Map([['test-network', new Map([['test-deployment', new Map([['abc', 5]])]])]]));
 
     expect(await cache.readCache({ rel: 'abc' })).to.eql(5);
   });
 
   it('read and store values to disk', async () => {
-    let cache = new Cache('test', true, tempDir());
+    let cache = new Cache('test-network', 'test-deployment', true, tempDir());
 
     await cache.storeCache(['abc'], 5);
 
@@ -40,11 +40,11 @@ describe('Cache', () => {
   });
 
   it('read and store values to disk rel', async () => {
-    let cache = new Cache('test', true, tempDir());
+    let cache = new Cache('test-network', 'test-deployment', true, tempDir());
 
     await cache.storeCache({ rel: 'abc' }, 5);
 
-    expect(cache.cache).to.eql(new Map([['test', new Map([['abc', 5]])]]));
+    expect(cache.cache).to.eql(new Map([['test-network', new Map([['test-deployment', new Map([['abc', 5]])]])]]));
 
     expect(await cache.readCache({ rel: 'abc' })).to.eql(5);
 
@@ -55,11 +55,11 @@ describe('Cache', () => {
 
   describe('map', () => {
     it('read and store values in-memory rel', async () => {
-      let cache = new Cache('test', false, tempDir());
+      let cache = new Cache('test-network', 'test-deployment', false, tempDir());
 
       await cache.storeMap({ rel: 'abc' }, new Map([['a', 5]]));
 
-      expect(cache.cache).to.eql(new Map([['test', new Map([['abc', new Map([['a', 5]])]])]]));
+      expect(cache.cache).to.eql(new Map([['test-network', new Map([['test-deployment', new Map([['abc', new Map([['a', 5]])]])]])]]));
 
       expect(objectFromMap(await cache.readCache({ rel: 'abc' }))).to.eql({a: 5});
 
@@ -72,9 +72,9 @@ describe('Cache', () => {
   describe('getFilePath', async () => {
     it('returns proper rel path', async () => {
       let dir = tempDir();
-      let cache = new Cache('test', true, dir);
+      let cache = new Cache('test-network', 'test-deployment', true, dir);
 
-      expect(cache.getFilePath({ rel: 'abc.cool' })).to.equal(`${dir}/test/abc.cool`);
+      expect(cache.getFilePath({ rel: 'abc.cool' })).to.equal(`${dir}/test-network/test-deployment/abc.cool`);
     });
   });
 });

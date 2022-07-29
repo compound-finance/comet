@@ -8,6 +8,9 @@ on:
         options:
           - fuji
           - kovan
+      deployment:
+        description: Deployment Name (e.g. "usdc")
+        required: true
       migration:
         description: Migration Name
         required: true
@@ -42,7 +45,7 @@ jobs:
         run: yarn tsc
 
       - name: Run Prepare Migration
-        run: yarn hardhat migrate --network ${{ github.event.inputs.network }} --prepare --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ github.event.inputs.migration }}
+        run: yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --prepare --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ github.event.inputs.migration }}
         env:
           ETH_PK: ${{ github.event.inputs.eth_pk }}
           DEBUG: true
@@ -50,5 +53,5 @@ jobs:
       - uses: actions/upload-artifact@v2 # upload test results
         if: success() || failure() # run this step even if previous step failed
         with:
-          name: ${{ github.event.inputs.network }}-${{ github.event.inputs.migration }}
-          path: deployments/${{ github.event.inputs.network }}/artifacts/${{ github.event.inputs.migration }}.json
+          name: ${{ github.event.inputs.network }}-${{ github.event.inputs.deployment }}-${{ github.event.inputs.migration }}
+          path: deployments/${{ github.event.inputs.network }}/${{ github.event.inputs.deployment }}/artifacts/${{ github.event.inputs.migration }}.json

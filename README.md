@@ -154,7 +154,7 @@ This is just a prototype and it currently pulls relevant contracts for V2.
 
 > Note: Make sure $ETHERSCAN_KEY is set as an env variable.
 
-`npx hardhat spider --network mainnet`
+`npx hardhat spider --network mainnet --deployment usdc`
 
 #### Delete artifacts
 
@@ -169,7 +169,7 @@ The spider script uses configuration from two files to start its crawl:
 - `roots.json`
 - `relations.json`
 
-Both these contracts are committed to the repo under `deployments/<chain>/<file>.json`. The `roots.json` config contains the address of the root contract for spider to start crawling from. The `relations.json` config defines all the different relationships and rules that spider will follow when crawling. The following section will go over in detail the set of rules defined in `relations.json`.
+Both these contracts are committed to the repo under `deployments/<network>/<deployment>/<file>.json`. The `roots.json` config contains the address of the root contract for spider to start crawling from. The `relations.json` config defines all the different relationships and rules that spider will follow when crawling. The following section will go over in detail the set of rules defined in `relations.json`.
 
 #### Defining relations
 
@@ -191,11 +191,11 @@ For more information, see [SCENARIO.md](./SCENARIO.md).
 
 XXX explain/get to
  deploying a new root contract?
-  deployments/${network}/${market}/deploy.ts
+  deployments/${network}/${deployment}/deploy.ts
    open PR, run `deploy` workflow through CI
     will commit `deployments/` diffs to branch
  otherwise
-  deployments/${network}/${market}/migrations/XXX.ts
+  deployments/${network}/${deployment}/migrations/XXX.ts
    open PR
     if prepare step
      run `prepare-migration` workflow through CI
@@ -216,12 +216,12 @@ New deployment?
 XXX simplify to above
 
 1. run `1644388553_deploy_kovan` migration, `prepare` step
-2. update `deployments/kovan/roots.json` with the new roots from step 1
+2. update `deployments/kovan/<deployment>/roots.json` with the new roots from step 1
 3. run `1649108513_upgrade_timelock_and_set_up_governor` migration, `prepare` step
 4. run `1649108513_upgrade_timelock_and_set_up_governor` migration, `enact` step
 5. find the proposal ID step from 4; manually execute the proposal via the newly-deployed Governor
 6. run `1651257129_bulker_and_rewards` migration, `prepare` step
-7. update `deployments/kovan/roots.json` with the rewards and bulker roots from step 6
+7. update `deployments/kovan/<deployment>/roots.json` with the rewards and bulker roots from step 6
 8. run `1653357106_mint_to_fauceteer` migration, `prepare` step
 9. run `1653512186_seed_rewards_with_comp`, `prepare` step
 10. run `1653512186_seed_rewards_with_comp`, `enact` step
@@ -230,12 +230,12 @@ XXX simplify to above
 #### Fuji
 
 1. run `1644432723_deploy_fuji`, `prepare` step
-2. update `deployments/fuji/roots.json` with new roots from step 1
+2. update `deployments/fuji/<deployment>/roots.json` with new roots from step 1
 3. run `1649117302_upgrade_timelock_and_set_up_governor`, `prepare` step
 4. run `1649117302_upgrade_timelock_and_set_up_governor`, `enact` step
 5. find the proposal ID step from 4; manually execute the proposal via the newly-deployed Governor
 6. run `1651257139_rewards`, `prepare` step
-7. update `deployments/fuji/roots.json` with new rewards root from step 6
+7. update `deployments/fuji/<deployment>/roots.json` with new rewards root from step 6
 8. run `1653431603_mint_to_fauceteer`, `prepare` step
 
 #### Other considerations
@@ -252,7 +252,7 @@ Uniswap for a profit.
 To run the bot, you'll need the address of a deployed version of the Liquidator
 contract (or you can deploy a new instance of it yourself):
 
-`LIQUIDATOR_ADDRESS="0xABC..." yarn liquidation-bot`
+`LIQUIDATOR_ADDRESS="0xABC..." DEPLOYMENT="usdc" yarn liquidation-bot --network kovan`
 
 Initiating transactions this way via the public mempool will
 [almost certainly get frontrun](https://youtu.be/UZ-NNd6yjFM), but you might be

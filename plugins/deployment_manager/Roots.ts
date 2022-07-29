@@ -3,7 +3,7 @@ import { Cache } from './Cache';
 
 export type Roots = Map<Alias, Address>;
 
-// File to store root information in, e.g. `$pwd/deployments/$network/roots.json`
+// File to store root information in, e.g. `$pwd/deployments/$network/$deployment/roots.json`
 let rootsSpec = { rel: 'roots.json' };
 
 // Reads root information for given deployment

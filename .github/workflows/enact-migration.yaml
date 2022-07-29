@@ -8,6 +8,9 @@ on:
         options:
           - fuji
           - kovan
+      deployment:
+        description: Deployment Name (e.g. "usdc")
+        required: true
       migration:
         description: Migration Name
         required: true
@@ -48,10 +51,10 @@ jobs:
         with:
           workflow: prepare-migration.yml
           run_id: ${{ github.event.inputs.run_id }}
-          name: ${{ github.event.inputs.network }}-${{ github.event.inputs.migration }}
-          path: deployments/${{ github.event.inputs.network }}/artifacts/
+          name: ${{ github.event.inputs.network }}-${{ github.event.inputs.deployment }}-${{ github.event.inputs.migration }}
+          path: deployments/${{ github.event.inputs.network }}/${{ github.event.inputs.deployment }}/artifacts/
 
       - name: Run Enact Migration
-        run: yarn hardhat migrate --network ${{ github.event.inputs.network }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ github.event.inputs.migration }}
+        run: yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ github.event.inputs.migration }}
         env:
           ETH_PK: ${{ github.event.inputs.eth_pk }}

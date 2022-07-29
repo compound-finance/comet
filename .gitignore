@@ -11,13 +11,13 @@ build/
 cache/
 dist/
 deployments/hardhat
-deployments/*/artifacts
-deployments/*/cache
-deployments/*/contracts
-deployments/*/verify
-deployments/*/aliases.json
-deployments/*/pointers.json
-deployments/*/proxies.json
+deployments/*/*/artifacts
+deployments/*/*/cache
+deployments/*/*/contracts
+deployments/*/*/verify
+deployments/*/*/aliases.json
+deployments/*/*/pointers.json
+deployments/*/*/proxies.json
 
 .env
 coverage/

@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
-import { CometInterface, CometRewards, ERC20, GovernorSimple, ProxyAdmin, SimpleTimelock } from '../../../build/types';
-import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
-import { migration } from '../../../plugins/deployment_manager/Migration';
+import { CometInterface, CometRewards, ERC20, GovernorSimple, ProxyAdmin, SimpleTimelock } from '../../../../build/types';
+import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
+import { migration } from '../../../../plugins/deployment_manager/Migration';
 
 interface Vars { };
 

@@ -44,12 +44,14 @@ type CacheMap = Map<string, any | CacheMap>;
 
 export class Cache {
   cache: CacheMap;
+  network: string;
   deployment: string;
   deploymentDir: string;
   writeCacheToDisk: boolean;
 
-  constructor(deployment: string, writeCacheToDisk?: boolean, deploymentDir?: string) {
+  constructor(network: string, deployment: string, writeCacheToDisk?: boolean, deploymentDir?: string) {
     this.cache = new Map(); // todo cache config?
+    this.network = network;
     this.deployment = deployment;
     this.deploymentDir = deploymentDir ?? nodepath.join(process.cwd(), 'deployments');
     this.writeCacheToDisk = writeCacheToDisk ?? false;
@@ -61,7 +63,7 @@ export class Cache {
     } else if (Array.isArray(spec)) {
       return spec.map((s) => s.toLowerCase());
     } else if (spec.hasOwnProperty('rel')) {
-      return [this.deployment, ...this.getPath(spec.rel)];
+      return [this.network, this.deployment, ...this.getPath(spec.rel)];
     }
   }
 

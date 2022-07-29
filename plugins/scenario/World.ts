@@ -6,6 +6,7 @@ import { DeploymentManager } from '../deployment_manager/DeploymentManager';
 
 export type ForkSpec = {
   name: string;
+  deployment: string;
   url?: string;
   blockNumber?: number;
   allocation?: number;
@@ -22,7 +23,7 @@ export class World {
     // Q: should we really need to fork/snapshot the deployment manager?
     this.hre = hre;
     this.base = base;
-    this.deploymentManager = new DeploymentManager(base.name, hre, { debug: true });
+    this.deploymentManager = new DeploymentManager(base.name, base.deployment, hre, { debug: true });
     this.snapshotDeploymentManager = this.deploymentManager;
   }
 
