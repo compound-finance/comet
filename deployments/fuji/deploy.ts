@@ -1,6 +1,6 @@
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../plugins/deployment_manager/Migration';
-import { deployNetworkComet } from '../../src/deploy/Network';
+import { deployComet } from '../../src/deploy';
 import { exp, wait } from '../../test/helpers';
 import {
   Fauceteer,
@@ -114,7 +114,7 @@ async function deployContracts(deploymentManager: DeploymentManager): Promise<Va
   ]);
 
   // Deploy all Comet-related contracts
-  let { cometProxy, configuratorProxy, rewards } = await deployNetworkComet(
+  let { cometProxy, configuratorProxy, rewards } = await deployComet(
     deploymentManager,
     { all: true },
     {},

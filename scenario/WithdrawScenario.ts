@@ -10,7 +10,7 @@ scenario(
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -40,7 +40,7 @@ scenario(
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
@@ -69,7 +69,7 @@ scenario(
       albert: { $asset0: 3000 } // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -96,7 +96,7 @@ scenario(
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -128,7 +128,7 @@ scenario(
       albert: { $asset0: 1000 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
@@ -159,7 +159,7 @@ scenario(
       albert: { $asset0: 3000 } // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -191,7 +191,7 @@ scenario(
       albert: { $asset0: 100 } // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -265,7 +265,7 @@ scenario(
       charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -287,7 +287,7 @@ scenario(
       albert: { $base: -1000, $asset0: 1000 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
@@ -309,7 +309,7 @@ scenario(
       albert: { $base: 0, $asset0: 100 }
     }
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -327,7 +327,7 @@ scenario(
 scenario.skip(
   'Comet#withdraw reverts if asset is not supported',
   {},
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }) => {
     // XXX requires deploying an unsupported asset (maybe via remote token constraint)
   }
 );
@@ -335,7 +335,7 @@ scenario.skip(
 scenario.skip(
   'Comet#withdraw reverts if not enough asset in protocol',
   {},
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }) => {
     // XXX fix for development base, where Faucet token doesn't give the same revert message
   }
 );

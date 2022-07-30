@@ -177,13 +177,13 @@ scenario(
 scenario.skip(
   'Comet#interestRate > when utilization is 50%',
   { utilization: 0.5 },
-  async ({ comet, actors }, world) => {
+  async ({ comet, actors }, context) => {
     const utilization = await comet.getUtilization();
     expect(defactor(utilization)).to.be.approximately(0.5, 0.00001);
 
     // Note: this is dependent on the `deployments/fuji/configuration.json` variables
     // TODO: Consider if there's a better way to test the live curve.
-    if (world.base.name === 'fuji') {
+    if (context.world.base.name === 'fuji') {
       // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
       // utilization = 50%
       // ( 1% + 2% * 50% ) * 50% * (100% - 10%)

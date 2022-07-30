@@ -48,18 +48,13 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
         migrationList.sort((a, b) => a.name.localeCompare(b.name))
         debug(`Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);
         for (let migration of migrationList) {
-          debug(`Preparing migration ${migration.name}`);
-          let artifact = await migration.actions.prepare(ctx.deploymentManager);
+          const artifact = await migration.actions.prepare(ctx.deploymentManager);
           debug(`Prepared migration ${migration.name}.\n  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
           // XXX enact will take the 'gov' deployment manager instead of the 'local' one
-          debug(`Enacting migration ${migration.name}`);
           await migration.actions.enact(ctx.deploymentManager, artifact);
           debug(`Enacted migration ${migration.name}`);
         }
-        debug(`Spidering...`);
         await ctx.deploymentManager.spider();
-        debug(`Complete`);
-
         return ctx;
       });
     }

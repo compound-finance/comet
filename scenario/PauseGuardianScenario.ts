@@ -1,6 +1,5 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { setNextBaseFeeToZero } from './utils';
 
 scenario(
   'Comet#pause > governor pauses market actions',
@@ -9,7 +8,7 @@ scenario(
       all: false,
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { admin } = actors;
 
     expect(await comet.isSupplyPaused()).to.be.false;
@@ -18,7 +17,7 @@ scenario(
     expect(await comet.isAbsorbPaused()).to.be.false;
     expect(await comet.isBuyPaused()).to.be.false;
 
-    await setNextBaseFeeToZero(world);
+    await context.setNextBaseFeeToZero();
     const txn = await admin.pause({
       supplyPaused: true,
       transferPaused: true,
@@ -44,7 +43,7 @@ scenario(
       all: false,
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { pauseGuardian } = actors;
 
     expect(await comet.isSupplyPaused()).to.be.false;
@@ -53,7 +52,7 @@ scenario(
     expect(await comet.isAbsorbPaused()).to.be.false;
     expect(await comet.isBuyPaused()).to.be.false;
 
-    await setNextBaseFeeToZero(world);
+    await context.setNextBaseFeeToZero();
     await pauseGuardian.pause({
       supplyPaused: true,
       transferPaused: true,

@@ -33,7 +33,7 @@ export class DeploymentManager {
   deployment: string;
   hre: HardhatRuntimeEnvironment;
   config: DeploymentManagerConfig;
-  cache: Cache;
+  cache: Cache; // TODO: kind of a misnomer since its handling *all* path stuff
   contractsCache: ContractMap | null;
   _signers: SignerWithAddress[];
 
@@ -130,6 +130,28 @@ export class DeploymentManager {
       async () => deployBuild(buildFile, deployArgs, this.hre, await this.deployOpts()),
       retries
     );
+  }
+
+  /* Deploys missing contracts from the deployment, using the user-space deploy.ts script */
+  async deployMissing(force: boolean = true) {
+    // XXX if this is idempotent we can just always deploy, and do the same for dev
+    //  as is, won't handle cases where the deploy script adds roots or partial redeploys
+    // if force or there are no roots, deploy
+    //  force will also have to change with idempotent deploy changes
+    //   its here for deploy task, which doesn't really care if roots exists or not
+    //    but we'll want another way to specify how idempotent should work
+    const roots = await this.getRoots();
+    if (force || roots.size == 0) {
+      // XXX noted above but cache is a misnomer since we have non-cache files its kind of managing
+      //  could either rename or move that functionality
+      const deployScript = this.cache.getFilePath({ rel: 'deploy.ts' });
+      // XXX expect returns roots, and we write them?
+      const { default: deploy } = await import(deployScript);
+      if (!deploy || !deploy.call) {
+        throw new Error(`Missing deploy function in ${deployScript}.`);
+      }
+      await deploy(this);
+    }
   }
 
   /* Stores a new alias, which can then be referenced via `deploymentManager.contract()` */
@@ -278,9 +300,9 @@ export class DeploymentManager {
     return getNetwork(this.deployment);
   }
 
-  static fork(d: DeploymentManager): DeploymentManager {
-    let copy = new DeploymentManager(d.deployment, d.hre, d.config);
-    copy.cache.loadMemory(d.cache.cache);
+  fork(): DeploymentManager {
+    let copy = new DeploymentManager(this.deployment, this.hre, this.config);
+    copy.cache.loadMemory(this.cache.cache);
     return copy;
   }
 }

@@ -5,9 +5,8 @@ import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentMa
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
 
 // TODO: Don't depend on scenario's hreForBase
-function getBase(env: HardhatRuntimeEnvironment): HardhatRuntimeEnvironment {
-  let baseMap = Object.fromEntries(env.config.scenario.bases.map((base) => [base.name, base]));
-  let base = baseMap[env.network.name];
+function getForkEnv(env: HardhatRuntimeEnvironment): HardhatRuntimeEnvironment {
+  const base = env.config.scenario.bases.find(b => b.name == env.network.name);
   if (!base) {
     throw new Error(`No fork spec for ${env.network.name}`);
   }
@@ -53,7 +52,7 @@ task('deploy', 'Deploys market')
     async ({ simulate }, env: HardhatRuntimeEnvironment) => {
       let maybeForkEnv: HardhatRuntimeEnvironment = env;
       if (simulate) {
-        maybeForkEnv = getBase(env);
+        maybeForkEnv = getForkEnv(env);
       }
       const network = env.network.name;
       const dm = new DeploymentManager(network, maybeForkEnv, {
@@ -62,14 +61,7 @@ task('deploy', 'Deploys market')
         verifyContracts: true,
       });
       await dm.spider();
-
-      // XXX wrap?
-      const deployment = dm.deployment; // XXX should become per instance
-      const { default: deploy } = await import(`../../deployments/${deployment}/deploy.ts`);
-      if (!deploy) {
-        throw new Error(`Missing deploy function for ${deployment}.`);
-      }
-      await deploy(dm);
+      await dm.deployMissing(true); // XXX truly idempotent will change the arg here
     }
   );
 
@@ -97,12 +89,12 @@ task('migrate', 'Runs migration')
       { migration: migrationName, prepare, enact, simulate, overwrite },
       env: HardhatRuntimeEnvironment
     ) => {
-      let theEnv: HardhatRuntimeEnvironment = env;
+      let maybeForkEnv: HardhatRuntimeEnvironment = env;
       if (simulate) {
-        theEnv = getBase(env);
+        maybeForkEnv = getForkEnv(env);
       }
       let network = env.network.name;
-      let dm = new DeploymentManager(network, theEnv, {
+      let dm = new DeploymentManager(network, maybeForkEnv, {
         writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
         debug: true,
         verifyContracts: true,

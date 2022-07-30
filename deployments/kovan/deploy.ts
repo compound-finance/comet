@@ -1,6 +1,6 @@
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../plugins/deployment_manager/Migration';
-import { deployNetworkComet } from '../../src/deploy/Network';
+import { deployComet } from '../../src/deploy';
 import { exp, wait } from '../../test/helpers';
 import {
   Bulker,
@@ -156,7 +156,7 @@ async function deployContracts(deploymentManager: DeploymentManager): Promise<Va
   ]);
 
   // Deploy all Comet-related contracts
-  let { cometProxy, configuratorProxy, timelock, rewards } = await deployNetworkComet(
+  let { cometProxy, configuratorProxy, timelock, rewards } = await deployComet(
     deploymentManager,
     { all: true },
     {},

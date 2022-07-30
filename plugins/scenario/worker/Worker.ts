@@ -59,10 +59,10 @@ export async function run<T, U, R>({ bases, config, worker }: WorkerData) {
     scenarios = getLoader<T, U, R>().getScenarios();
   }
 
-  for (let base of bases) {
-    let world = new World(hreForBase(base), base);
-    let runner = new Runner({ base, world });
-    runners[base.name] = runner;
+  for (const base of bases) {
+    const world = new World(hreForBase(base), base);
+    await world.deploymentManager.deployMissing();
+    runners[base.name] = new Runner({ base, world });
   }
 
   onMessage(worker, async (message: Message) => {

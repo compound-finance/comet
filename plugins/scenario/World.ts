@@ -1,6 +1,9 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
+// NB: this couples this plugin to deployment manager plugin
+import { DeploymentManager } from '../deployment_manager/DeploymentManager';
+
 export type ForkSpec = {
   name: string;
   url?: string;
@@ -12,10 +15,15 @@ export type ForkSpec = {
 export class World {
   hre: HardhatRuntimeEnvironment;
   base: ForkSpec;
+  deploymentManager: DeploymentManager;
+  snapshotDeploymentManager: DeploymentManager;
 
   constructor(hre, base: ForkSpec) {
+    // Q: should we really need to fork/snapshot the deployment manager?
     this.hre = hre;
     this.base = base;
+    this.deploymentManager = new DeploymentManager(base.name, hre, { debug: true });
+    this.snapshotDeploymentManager = this.deploymentManager;
   }
 
   // TODO: Can we do this better?
@@ -24,6 +32,7 @@ export class World {
   }
 
   async _snapshot(): Promise<string> {
+    this.snapshotDeploymentManager = this.deploymentManager.fork();
     return (await this.hre.network.provider.request({
       method: 'evm_snapshot',
       params: [],
@@ -31,6 +40,7 @@ export class World {
   }
 
   async _revert(snapshot: string) {
+    this.deploymentManager = this.snapshotDeploymentManager;
     return this.hre.network.provider.request({
       method: 'evm_revert',
       params: [snapshot],
@@ -38,10 +48,7 @@ export class World {
   }
 
   async _revertAndSnapshot(snapshot: string): Promise<string> {
-    await this.hre.network.provider.request({
-      method: 'evm_revert',
-      params: [snapshot],
-    });
+    await this._revert(snapshot);
     return await this._snapshot();
   }
 

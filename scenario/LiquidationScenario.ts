@@ -53,7 +53,7 @@ scenario(
       betty: { $base: 1000 },
     },
   },
-  async ({ comet, actors }, world) => {
+  async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
     const baseToken = await comet.baseToken();
     const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
@@ -86,7 +86,7 @@ scenario(
       absorbPaused: true,
     },
   },
-  async ({ comet, actors }, world) => {
+  async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
     const baseToken = await comet.baseToken();
     const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
@@ -121,7 +121,7 @@ scenario(
       betty: { $base: 10 }
     },
   },
-  async ({ comet, actors }, world) => {
+  async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
 
     await world.increaseTime(
@@ -174,7 +174,7 @@ scenario.skip(
       },
     },
   },
-  async ({ comet, actors }, world) => {
+  async ({ comet, actors }, context, world) => {
     const { albert, betty, charles } = actors;
     const { asset: asset0Address, scale } = await comet.getAssetInfo(0);
 

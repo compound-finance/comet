@@ -37,7 +37,7 @@ export function buildScenarioFn<T, U, R>(
   forker: Forker<T>,
   constraints: Constraint<T, R>[]
 ) {
-  let addScenarioWithOpts =
+  const addScenarioWithOpts =
     (flags: ScenarioFlags) => (name: string, requirements: R, property: Property<T, U>) => {
       addScenario<T, U, R>(
         name,
@@ -51,7 +51,7 @@ export function buildScenarioFn<T, U, R>(
       );
     };
 
-  let res: ScenarioBuilder<T, U, R> = Object.assign(addScenarioWithOpts(null), {
+  const res: ScenarioBuilder<T, U, R> = Object.assign(addScenarioWithOpts(null), {
     only: addScenarioWithOpts('only'),
     skip: addScenarioWithOpts('skip'),
   });
