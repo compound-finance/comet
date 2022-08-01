@@ -1,6 +1,6 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { utils } from 'ethers';
+import { setNextBaseFeeToZero } from './utils';
 
 scenario(
   'Comet#pause > governor pauses market actions',
@@ -9,23 +9,23 @@ scenario(
       all: false,
     },
   },
-  async ({ comet, actors }, _world, context) => {
+  async ({ comet, actors }, world, context) => {
+    const { admin } = actors;
+
     expect(await comet.isSupplyPaused()).to.be.false;
     expect(await comet.isTransferPaused()).to.be.false;
     expect(await comet.isWithdrawPaused()).to.be.false;
     expect(await comet.isAbsorbPaused()).to.be.false;
     expect(await comet.isBuyPaused()).to.be.false;
 
-    const pauseCalldata = utils.defaultAbiCoder.encode(
-      ["bool", "bool", "bool", "bool", "bool"],
-      [true, true, true, true, true]
-    );
-    const txn = await context.fastGovernanceExecute(
-      [comet.address],
-      [0],
-      ["pause(bool,bool,bool,bool,bool)"],
-      [pauseCalldata]
-    );
+    await setNextBaseFeeToZero(world);
+    const txn = await admin.pause({
+      supplyPaused: true,
+      transferPaused: true,
+      withdrawPaused: true,
+      absorbPaused: true,
+      buyPaused: true,
+    }, { gasPrice: 0 });
 
     expect(await comet.isSupplyPaused()).to.be.true;
     expect(await comet.isTransferPaused()).to.be.true;
@@ -44,23 +44,23 @@ scenario(
       all: false,
     },
   },
-  async ({ comet, actors }, _world, context) => {
+  async ({ comet, actors }, world, context) => {
+    const { pauseGuardian } = actors;
+
     expect(await comet.isSupplyPaused()).to.be.false;
     expect(await comet.isTransferPaused()).to.be.false;
     expect(await comet.isWithdrawPaused()).to.be.false;
     expect(await comet.isAbsorbPaused()).to.be.false;
     expect(await comet.isBuyPaused()).to.be.false;
 
-    const pauseCalldata = utils.defaultAbiCoder.encode(
-      ["bool", "bool", "bool", "bool", "bool"],
-      [true, true, true, true, true]
-    );
-    await context.fastGovernanceExecute(
-      [comet.address],
-      [0],
-      ["pause(bool,bool,bool,bool,bool)"],
-      [pauseCalldata]
-    );
+    await setNextBaseFeeToZero(world);
+    await pauseGuardian.pause({
+      supplyPaused: true,
+      transferPaused: true,
+      withdrawPaused: true,
+      absorbPaused: true,
+      buyPaused: true,
+    }, { gasPrice: 0 });
 
     expect(await comet.isSupplyPaused()).to.be.true;
     expect(await comet.isTransferPaused()).to.be.true;

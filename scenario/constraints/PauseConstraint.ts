@@ -2,7 +2,7 @@ import { Constraint, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
-import { utils } from "ethers";
+import { setNextBaseFeeToZero } from '../utils';
 
 export class PauseConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, context: T, world: World) {
@@ -11,40 +11,37 @@ export class PauseConstraint<T extends CometContext, R extends Requirements> imp
       return null;
     }
 
-    const comet = await context.getComet();
-
     if (typeof pauseRequirements['all'] !== 'undefined') {
-      return async (context: CometContext) => {
+      return async (ctx: CometContext, wld: World) => {
+        const pauseGuardian = ctx.actors['pauseGuardian'];
         const isPaused = pauseRequirements['all'];
-        const pauseCalldata = utils.defaultAbiCoder.encode(
-          ["bool", "bool", "bool", "bool", "bool"],
-          [isPaused, isPaused, isPaused, isPaused, isPaused]
-        );
-        await context.fastGovernanceExecute(
-          [comet.address],
-          [0],
-          ["pause(bool,bool,bool,bool,bool)"],
-          [pauseCalldata]
-        );
+
+        await setNextBaseFeeToZero(wld);
+        await pauseGuardian.pause({
+          supplyPaused: isPaused,
+          transferPaused: isPaused,
+          withdrawPaused: isPaused,
+          absorbPaused: isPaused,
+          buyPaused: isPaused,
+        }, { gasPrice: 0 });
       };
     } else {
-      return async (context: CometContext) => {
+      return async (ctx: CometContext, wld: World) => {
+        const pauseGuardian = ctx.actors['pauseGuardian'];
         const supplyPaused = pauseRequirements['supplyPaused'] ?? false;
         const transferPaused = pauseRequirements['transferPaused'] ?? false;
         const withdrawPaused = pauseRequirements['withdrawPaused'] ?? false;
         const absorbPaused = pauseRequirements['absorbPaused'] ?? false;
         const buyPaused = pauseRequirements['buyPaused'] ?? false;
 
-        const pauseCalldata = utils.defaultAbiCoder.encode(
-          ["bool", "bool", "bool", "bool", "bool"],
-          [supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused]
-        );
-        await context.fastGovernanceExecute(
-          [comet.address],
-          [0],
-          ["pause(bool,bool,bool,bool,bool)"],
-          [pauseCalldata]
-        );
+        await setNextBaseFeeToZero(wld);
+        await pauseGuardian.pause({
+          supplyPaused,
+          transferPaused,
+          withdrawPaused,
+          absorbPaused,
+          buyPaused,
+        }, { gasPrice: 0 });
       };
     }
   }

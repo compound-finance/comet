@@ -1,73 +1,38 @@
-import fg from 'fast-glob';
-import * as path from 'path';
 import { DeploymentManager } from './DeploymentManager';
 import { FileSpec } from './Cache';
 
-interface Action<T> {
+interface Actions<T> {
   prepare: (dm: DeploymentManager) => Promise<T>;
   enact: (dm: DeploymentManager, t: T) => Promise<void>;
-  enacted: (dm: DeploymentManager) => Promise<boolean>;
 }
 
-export interface Migration<T> {
+export class Migration<T> {
   name: string;
-  actions: Action<T>;
-}
+  actions: Actions<T>;
 
-export class Loader<T> {
-  migrations: { [name: string]: Migration<T> };
-
-  constructor() {
-    this.migrations = {};
-  }
-
-  addMigration(name: string, actions: Action<T>) {
-    if (this.migrations[name]) {
-      throw new Error(`Duplicate migration by name: ${name}`);
-    }
-    this.migrations[name] = {
-      name,
-      actions
-    };
-  }
-
-  getMigrations(): { [name: string]: Migration<T> } {
-    return this.migrations;
+  constructor(name: string, actions: Actions<T>) {
+    this.name = name;
+    this.actions = actions;
   }
 }
 
-export let loader: any;
-
-export function setupLoader<T>() {
-  loader = new Loader<T>();
+export async function loadMigration(path: string): Promise<Migration<any>> {
+  const { default: thing } = await import(path);
+  if (!(thing instanceof Migration))
+    throw new Error(`Does not export a valid default Migration`);
+  return thing;
 }
 
-export function getLoader<T>(): Loader<T> {
-  if (!loader) {
-    throw new Error('Loader not initialized');
+export async function loadMigrations(paths: string[]): Promise<Migration<any>[]> {
+  const migrations = [];
+  for (const path of paths) {
+    migrations.push(await loadMigration(path));
   }
-
-  return <Loader<T>>loader;
+  return migrations;
 }
 
-export async function loadMigrations<T>(glob: string): Promise<{ [name: string]: Migration<T> }> {
-  setupLoader<T>();
-
-  const entries = await fg(glob); // Grab all potential migration files
-
-  for (let entry of entries) {
-    let entryPath = path.join(process.cwd(), entry);
-
-    /* Import scenario file */
-    await import(entryPath);
-    /* Import complete */
-  }
-
-  return loader.getMigrations();
-}
-
-export function migration<T>(name: string, actions: Action<T>) {
-  getLoader().addMigration(name, actions);
+export function migration<T>(name: string, actions: Actions<T>) {
+  return new Migration(name, actions);
 }
 
 export function getArtifactSpec<T>(migration: Migration<T>): FileSpec {

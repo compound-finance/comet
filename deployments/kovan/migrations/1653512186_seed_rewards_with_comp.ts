@@ -6,10 +6,11 @@ import { wait } from '../../../test/helpers';
 
 interface Vars { };
 
-migration<Vars>('1653512186_seed_rewards_with_comp', {
+export default migration('1653512186_seed_rewards_with_comp', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
   },
+
   enact: async (deploymentManager: DeploymentManager, vars: Vars) => {
     const { ethers } = deploymentManager.hre;
 
@@ -68,8 +69,5 @@ migration<Vars>('1653512186_seed_rewards_with_comp', {
     // debug("COMP balance of Timelock: ", await COMP.balanceOf(timelock.address));
     // debug("COMP balance of CometRewards: ", await COMP.balanceOf(rewards.address));
     // debug("RewardConfig: ", await rewards.rewardConfig(comet.address));
-  },
-  enacted: async (deploymentManager: DeploymentManager) => {
-    return false;
-  },
+  }
 });

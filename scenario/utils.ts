@@ -1,4 +1,6 @@
 import { expect } from 'chai';
+import { execSync } from 'child_process';
+import { existsSync } from 'fs';
 import { BigNumber, BigNumberish, utils } from 'ethers';
 import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
@@ -91,6 +93,10 @@ export function getInterest(balance: bigint, rate: bigint, seconds: bigint) {
   return balance * rate * seconds / (10n ** 18n);
 }
 
+export async function setNextBaseFeeToZero(world: World) {
+  await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+}
+
 // Instantly executes some actions through the governance proposal process
 // Note: `governor` must be connected to an `admin` signer
 export async function fastGovernanceExecute(governor: GovernorSimple, targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
@@ -120,7 +126,7 @@ export async function upgradeComet(world: World, context: CometContext, configOv
         cometFactory: true
       },
       configurationOverrides: cometConfig,
-      adminSigner: context.actors['admin'].signer
+      adminSigner: context.actors['signer'].signer
     }
   );
   let initializer: string | undefined;
@@ -269,4 +275,11 @@ function matchGroup(str, patterns): ComparativeAmount {
     if (match) return { val: match[1], op: ComparisonOp[k] };
   }
   throw new Error(`No match for ${str} in ${patterns}`);
+}
+
+export async function modifiedPaths(pattern: RegExp, against: string = 'origin/main'): Promise<string[]> {
+  const output = execSync(`git diff --numstat $(git merge-base ${against} HEAD)`);
+  const paths = output.toString().split('\n').map(l => l.split(/\s+/)[2]);
+  const modified = paths.filter(p => pattern.test(p) && existsSync(p));
+  return modified;
 }
