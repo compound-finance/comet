@@ -1,5 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumberish, Signature, ethers, ContractReceipt } from 'ethers';
+import { BigNumberish, Signature, ethers, ContractReceipt, Overrides } from 'ethers';
 import { CometContext } from './CometContext';
 import { AddressLike, resolveAddress } from './Address';
 import { ERC20__factory } from '../../build/types';
@@ -74,21 +74,6 @@ export default class CometActor {
   async allow(manager: CometActor, isAllowed: boolean): Promise<ContractReceipt> {
     let comet = await this.context.getComet();
     return await (await comet.connect(this.signer).allow(manager.address, isAllowed)).wait();
-  }
-
-  async pause({
-    supplyPaused = false,
-    transferPaused = false,
-    withdrawPaused = false,
-    absorbPaused = false,
-    buyPaused = false,
-  }): Promise<ContractReceipt> {
-    let comet = await this.context.getComet();
-    return await (
-      await comet
-        .connect(this.signer)
-        .pause(supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused)
-    ).wait();
   }
 
   async supplyAsset({ asset, amount }): Promise<ContractReceipt> {
@@ -182,8 +167,36 @@ export default class CometActor {
     return console.log(`Actor#${this.name}{${JSON.stringify(this.info)}}`);
   }
 
-  async withdrawReserves(to: CometActor, amount: BigNumberish): Promise<ContractReceipt> {
+  /* ===== Admin-only functions ===== */
+
+  async withdrawReserves(to: string, amount: BigNumberish, overrides?: Overrides): Promise<ContractReceipt> {
     let comet = await this.context.getComet();
-    return await (await comet.connect(this.signer).withdrawReserves(to.address, amount)).wait();
+    return await (await comet.connect(this.signer).withdrawReserves(to, amount, { ...overrides })).wait();
+  }
+
+  async pause({
+    supplyPaused = false,
+    transferPaused = false,
+    withdrawPaused = false,
+    absorbPaused = false,
+    buyPaused = false,
+  }, overrides?: Overrides
+  ): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (
+      await comet
+        .connect(this.signer)
+        .pause(supplyPaused, transferPaused, withdrawPaused, absorbPaused, buyPaused, { ...overrides })
+    ).wait();
+  }
+
+  async approveThis(manager: string, asset: string, amount: BigNumberish, overrides?: Overrides): Promise<ContractReceipt> {
+    let comet = await this.context.getComet();
+    return await (await comet.connect(this.signer).approveThis(manager, asset, amount, { ...overrides })).wait();
+  }
+
+  async deployAndUpgradeTo(configuratorProxy: string, cometProxy: string, overrides?: Overrides): Promise<ContractReceipt> {
+    let proxyAdmin = await this.context.getCometAdmin();
+    return await (await proxyAdmin.connect(this.signer).deployAndUpgradeTo(configuratorProxy, cometProxy, { ...overrides })).wait();
   }
 }

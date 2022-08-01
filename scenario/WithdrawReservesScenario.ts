@@ -1,6 +1,6 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { utils } from 'ethers';
+import { setNextBaseFeeToZero } from './utils';
 
 // XXX we could use a Comet reserves constraint here
 scenario(
@@ -11,7 +11,7 @@ scenario(
     },
   },
   async ({ comet, timelock, actors }, world, context) => {
-    const { albert, betty } = actors;
+    const { admin, albert, betty } = actors;
 
     const baseToken = context.getAssetByAddress(await comet.baseToken());
     const scale = (await comet.baseScale()).toBigInt();
@@ -24,13 +24,8 @@ scenario(
     expect(await comet.governor()).to.equal(timelock.address);
 
     const toWithdrawAmount = 10n * scale;
-    let withdrawReservesCalldata = utils.defaultAbiCoder.encode(["address", "uint256"], [albert.address, toWithdrawAmount]);
-    const txn = await context.fastGovernanceExecute(
-      [comet.address],
-      [0],
-      ["withdrawReserves(address,uint256)"],
-      [withdrawReservesCalldata]
-    );
+    await setNextBaseFeeToZero(world);
+    const txn = await admin.withdrawReserves(albert.address, toWithdrawAmount, { gasPrice: 0 });
 
     expect(await baseToken.balanceOf(comet.address)).to.equal(cometBaseBalance - toWithdrawAmount);
     expect(await baseToken.balanceOf(albert.address)).to.equal(toWithdrawAmount);
@@ -48,7 +43,7 @@ scenario(
   },
   async ({ actors }) => {
     const { albert } = actors;
-    await expect(albert.withdrawReserves(albert, 10)).to.be.revertedWith(
+    await expect(albert.withdrawReserves(albert.address, 10)).to.be.revertedWith(
       "custom error 'Unauthorized()'"
     );
   }
@@ -62,18 +57,13 @@ scenario(
     },
   },
   async ({ comet, actors }, world, context) => {
-    const { albert } = actors;
+    const { admin, albert } = actors;
 
     const scale = (await comet.baseScale()).toBigInt();
 
-    let withdrawReservesCalldata = utils.defaultAbiCoder.encode(["address", "uint256"], [albert.address, 101n * scale]);
-    // Note: Should be `InsufficientReserves()` error, but that error is masked by the Timelock error
-    await expect(context.fastGovernanceExecute(
-      [comet.address],
-      [0],
-      ["withdrawReserves(address,uint256)"],
-      [withdrawReservesCalldata]
-    )).to.be.revertedWith('Timelock::executeTransaction: Transaction execution reverted.');
+    await setNextBaseFeeToZero(world);
+    await expect(admin.withdrawReserves(albert.address, 101n * scale, { gasPrice: 0 }))
+      .to.be.revertedWith("custom error 'InsufficientReserves()'");
   }
 );
 

@@ -20,7 +20,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { Requirements } from '../constraints/Requirements';
-import { fastGovernanceExecute } from '../utils';
+import { fastGovernanceExecute, setNextBaseFeeToZero } from '../utils';
 
 type ActorMap = { [name: string]: CometActor };
 type AssetMap = { [name: string]: CometAsset };
@@ -73,8 +73,8 @@ export class CometContext {
     return await this.deploymentManager.contract('comet:implementation') as Comet;
   }
 
-  async getCometAdmin(): Promise<ProxyAdmin> {
-    return await this.deploymentManager.contract('cometAdmin') as ProxyAdmin;
+  async getCometAdmin(): Promise<CometProxyAdmin> {
+    return await this.deploymentManager.contract('cometAdmin') as CometProxyAdmin;
   }
 
   async getConfigurator(): Promise<Configurator> {
@@ -92,30 +92,19 @@ export class CometContext {
   async upgradeTo(newComet: Comet, world: World, data?: string) {
     let comet = await this.getComet();
     let proxyAdmin = await this.getCometAdmin();
-    let governor = await this.getGovernor();
 
     // Set the admin and pause guardian addresses again since these may have changed.
-    let adminAddress = await governor.admins(0); // any admin will do
+    let adminAddress = await comet.governor();
     let pauseGuardianAddress = await comet.pauseGuardian();
     let adminSigner = await world.impersonateAddress(adminAddress);
     let pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
 
+    // Set gas fee to 0 in case admin is a contract address (e.g. Timelock)
+    await setNextBaseFeeToZero(world);
     if (data) {
-      let calldata = utils.defaultAbiCoder.encode(["address", "address", "bytes"], [comet.address, newComet.address, data]);
-      await this.fastGovernanceExecute(
-        [proxyAdmin.address],
-        [0],
-        ["upgradeAndCall(address,address,bytes)"],
-        [calldata]
-      );
+      await (await proxyAdmin.connect(adminSigner).upgradeAndCall(comet.address, newComet.address, data, { gasPrice: 0 })).wait();
     } else {
-      let calldata = utils.defaultAbiCoder.encode(["address", "address"], [comet.address, newComet.address]);
-      await this.fastGovernanceExecute(
-        [proxyAdmin.address],
-        [0],
-        ["upgrade(address,address)"],
-        [calldata]
-      );
+      await (await proxyAdmin.connect(adminSigner).upgrade(comet.address, newComet.address, { gasPrice: 0 })).wait();
     }
     this.actors['admin'] = await buildActor('admin', adminSigner, this);
     this.actors['pauseGuardian'] = await buildActor('pauseGuardian', pauseGuardianSigner, this);
@@ -126,7 +115,7 @@ export class CometContext {
   }
 
   primaryActor(): CometActor {
-    return Object.values(this.actors)[0];
+    return this.actors['signer'];
   }
 
   async allocateActor(world: World, name: string, info: object = {}): Promise<CometActor> {
@@ -136,12 +125,12 @@ export class CometContext {
     this.actors[name] = actor;
 
     // For now, send some Eth from the first actor. Pay attention in the future
-    let admin = this.primaryActor();
+    let primaryActor = this.primaryActor();
     let nativeTokenAmount = world.base.allocation ?? 1.0;
     // When we allocate a new actor, how much eth should we warm the account with?
     // This seems to really vary by which network we're looking at, esp. since EIP-1559,
     // which makes the base fee for transactions variable by the network itself.
-    await admin.sendEth(actor, nativeTokenAmount);
+    await primaryActor.sendEth(actor, nativeTokenAmount);
 
     return actor;
   }
@@ -175,7 +164,7 @@ export class CometContext {
       const fauceteerSigner = await world.impersonateAddress(fauceteer.address);
       const fauceteerActor = await buildActor('fauceteerActor', fauceteerSigner, this);
       // make gas fee 0 so we can source from contract addresses as well as EOAs
-      await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+      await setNextBaseFeeToZero(world);
       await cometAsset.transfer(fauceteerActor, amount, recipientAddress, { gasPrice: 0 });
       return;
     }
@@ -186,7 +175,7 @@ export class CometContext {
       if (actorBalance > amount) {
         this.debug(`Source Tokens: stealing from actor ${name}`);
         // make gas fee 0 so we can source from contract addresses as well as EOAs
-        await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+        await setNextBaseFeeToZero(world);
         await cometAsset.transfer(actor, amount, recipientAddress, { gasPrice: 0 });
         return;
       }
@@ -254,13 +243,12 @@ export async function getActors(context: CometContext, world: World) {
   let signers = await dm.getSigners();
 
   let comet = await context.getComet();
-  let governor = await context.getGovernor();
 
   let [localAdminSigner, localPauseGuardianSigner, albertSigner, bettySigner, charlesSigner] =
     signers;
   let adminSigner, pauseGuardianSigner;
 
-  let adminAddress = await governor.admins(0); // any admin will do
+  let adminAddress = await comet.governor();
   let pauseGuardianAddress = await comet.pauseGuardian();
   let useLocalAdminSigner = adminAddress === await localAdminSigner.getAddress();
   let useLocalPauseGuardianSigner = pauseGuardianAddress === await localPauseGuardianSigner.getAddress();
