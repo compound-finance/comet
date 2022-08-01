@@ -9,7 +9,6 @@ jobs:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
-      NODE_OPTIONS: "--max-old-space-size=16384"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

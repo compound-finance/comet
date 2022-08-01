@@ -173,15 +173,7 @@ const config: HardhatUserConfig = {
         name: 'fuji',
         chainId: 43113,
         url: 'https://api.avax-test.network/ext/bc/C/rpc',
-      },
-      {
-        name: 'mainnet',
-        chainId: 1,
-        blockNumber: 15227100,
-        url: getDefaultProviderURL('mainnet'),
-        baseTokenFauceteer: '0xA929022c9107643515F5c777cE9a910F0D1e490C',
-        deployNewComet: true
-      },
+      }
     ],
   },
 
