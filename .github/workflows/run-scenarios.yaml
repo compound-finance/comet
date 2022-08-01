@@ -3,12 +3,13 @@ on:
   workflow_dispatch:
   pull_request:
 jobs:
-  run-coverage:
+  run-scenarios:
     name: Run scenarios
     env:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
+      NODE_OPTIONS: "--max-old-space-size=8192"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
