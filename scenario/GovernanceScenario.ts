@@ -3,8 +3,7 @@ import { expect } from 'chai';
 import { constants, utils } from 'ethers';
 import { CometModifiedFactory, CometModifiedFactory__factory } from '../build/types';
 
-// XXX skipping until the fix for simulating mainnet gov proposals is in
-scenario.skip('upgrade Comet implementation and initialize', { upgradeAll: true }, async ({ comet, configurator, proxyAdmin }, context) => {
+scenario('upgrade Comet implementation and initialize', {}, async ({ comet, configurator, proxyAdmin }, context) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
   expect((await comet.liquidatorPoints(constants.AddressZero)).numAbsorbs).to.be.equal(0);
 
@@ -23,6 +22,7 @@ scenario.skip('upgrade Comet implementation and initialize', { upgradeAll: true 
   let deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
   let initializeCalldata = utils.defaultAbiCoder.encode(["address"], [constants.AddressZero]);
   await context.fastGovernanceExecute(
+    world,
     [configurator.address, proxyAdmin.address, comet.address],
     [0, 0, 0],
     ["setFactory(address,address)", "deployAndUpgradeTo(address,address)", "initialize(address)"],
@@ -33,7 +33,7 @@ scenario.skip('upgrade Comet implementation and initialize', { upgradeAll: true 
   expect((await comet.liquidatorPoints(constants.AddressZero)).numAbsorbs).to.be.equal(2 ** 32 - 1);
 });
 
-scenario.skip('upgrade Comet implementation and call new function', { upgradeAll: true }, async ({ comet, configurator, proxyAdmin, timelock, actors }, context) => {
+scenario('upgrade Comet implementation and call new function', {}, async ({ comet, configurator, proxyAdmin, timelock, actors }, context) => {
   // Deploy new version of Comet Factory
   const dm = context.deploymentManager;
   const cometModifiedFactory = await dm.deploy<CometModifiedFactory, CometModifiedFactory__factory, []>(
@@ -45,6 +45,7 @@ scenario.skip('upgrade Comet implementation and call new function', { upgradeAll
   let setFactoryCalldata = utils.defaultAbiCoder.encode(["address", "address"], [comet.address, cometModifiedFactory.address]);
   let deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
   await context.fastGovernanceExecute(
+    world,
     [configurator.address, proxyAdmin.address],
     [0, 0],
     ["setFactory(address,address)", "deployAndUpgradeTo(address,address)"],
