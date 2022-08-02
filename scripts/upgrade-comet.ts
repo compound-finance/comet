@@ -23,7 +23,7 @@ async function main() {
   let isDevelopment = hre.network.name === 'hardhat';
   let dm = new DeploymentManager(hre.network.name, hre, {
     writeCacheToDisk: true,
-    verifyContracts: !isDevelopment,
+    verificationStrategy: isDevelopment ? 'eager' : 'none',
     debug: true,
   });
 
