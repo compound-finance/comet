@@ -1,5 +1,4 @@
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-import { migration } from '../../plugins/deployment_manager/Migration';
 import { deployComet } from '../../src/deploy';
 import { exp, wait } from '../../test/helpers';
 import {
@@ -33,8 +32,12 @@ interface Vars {
 };
 
 export default async function deploy(deploymentManager: DeploymentManager) {
-  deploymentManager.shouldLazilyVerifyContracts(true);
+  return await deploymentManager.doThenVerify(
+    () => deployAll(deploymentManager)
+  );
+}
 
+async function deployAll(deploymentManager: DeploymentManager) {
   const newRoots = await deployContracts(deploymentManager);
   deploymentManager.putRoots(new Map(Object.entries(newRoots)));
 
@@ -52,9 +55,6 @@ export default async function deploy(deploymentManager: DeploymentManager) {
   await new Promise(r => setTimeout(r, 45_000));
 
   await mintToFauceteer(deploymentManager);
-
-  // Verify contracts after all contracts have been deployed
-  await deploymentManager.verifyContracts();
 
   return newRoots;
 }

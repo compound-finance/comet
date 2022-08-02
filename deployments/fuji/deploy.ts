@@ -29,6 +29,12 @@ interface Vars {
 };
 
 export default async function deploy(deploymentManager: DeploymentManager) {
+  return await deploymentManager.doThenVerify(
+    () => deployAll(deploymentManager)
+  );
+}
+
+async function deployAll(deploymentManager: DeploymentManager) {
   deploymentManager.shouldLazilyVerifyContracts(true);
 
   const newRoots = await deployContracts(deploymentManager);
@@ -50,7 +56,6 @@ export default async function deploy(deploymentManager: DeploymentManager) {
 
   return newRoots;
 }
-
 
 async function deployContracts(deploymentManager: DeploymentManager): Promise<Vars> {
   let signer = await deploymentManager.getSigner();

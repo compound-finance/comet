@@ -302,6 +302,7 @@ export class DeploymentManager {
    * @param wait time to wait between tries in milliseconds
    */
   async asyncCallWithRetry(fn: (signer: SignerWithAddress) => Promise<any>, retries: number = 5, timeLimit?: number, wait: number = 250) {
+    // XXX maybe rename to `doWithRetry`
     const signer = await this.getSigner();
     try {
       return await asyncCallWithTimeout(fn(signer), timeLimit);
@@ -313,6 +314,22 @@ export class DeploymentManager {
       await new Promise(ok => setTimeout(ok, wait));
       return await this.asyncCallWithRetry(fn, retries, timeLimit, wait * 2);
     }
+  }
+
+  /**
+   * Calls an arbitrary function with lazy verification turned on
+   * Note: Main use-case is to be a light wrapper around deploy scripts
+   */
+  async doThenVerify(fn: () => Promise<any>): Promise<any> {
+    const prevSetting = this.config.lazyVerify;
+    this.shouldLazilyVerifyContracts(true);
+
+    const result = await fn();
+
+    await this.verifyContracts();
+    this.shouldLazilyVerifyContracts(prevSetting);
+
+    return result;
   }
 
   async clone<C extends Contract>(address: string, args: any[], network?: string, retries?: number): Promise<C> {
