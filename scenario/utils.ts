@@ -151,7 +151,7 @@ export async function fastGovernanceExecute(world: World, governor: GovernorSimp
 // XXX Hardhat 2.9 has 'hardhat_mine' for mining multiple blocks
 async function mineBlocks(world: World, blocks: number) {
   for (let i = 0; i < blocks; i++) {
-    return await world.hre.network.provider.send('evm_mine', []);
+    await world.hre.network.provider.send('evm_mine', []);
   }
 }
 
