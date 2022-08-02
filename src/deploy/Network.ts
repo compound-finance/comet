@@ -46,6 +46,7 @@ export async function deployNetworkComet(
     adminSigner = await deploymentManager.getSigner();
   }
 
+  let ethers = deploymentManager.hre.ethers;
   let governorSimple, timelock, proxyAdmin, cometExt, cometProxy, configuratorProxy, comet, configurator, cometFactory, rewards;
 
   /* === Deploy Contracts === */
@@ -99,14 +100,14 @@ export async function deployNetworkComet(
     targetReserves,
     assetConfigs,
   } = {
-    governor: timelock.address,
-    pauseGuardian: timelock.address,
+    governor: timelock ? timelock.address : ethers.constants.AddressZero,
+    pauseGuardian: timelock ? timelock.address : ethers.constants.AddressZero,
     ...await getConfiguration(deploymentManager, contractMapOverride, configurationOverrides),
   };
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometExt)) {
     const extConfiguration = {
-      symbol32: deploymentManager.hre.ethers.utils.formatBytes32String(symbol),
+      symbol32: ethers.utils.formatBytes32String(symbol),
     };
     cometExt = await deploymentManager.deploy<CometExt, CometExt__factory, [ExtConfigurationStruct]>(
       'CometExt.sol',
@@ -170,7 +171,7 @@ export async function deployNetworkComet(
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.rewards)) {
     rewards = await deploymentManager.deploy<CometRewards, CometRewards__factory, [string]>(
       'CometRewards.sol',
-      [timelock.address]
+      [governor]
     );
   } else {
     rewards = await deploymentManager.contract('rewards') as CometRewards;
