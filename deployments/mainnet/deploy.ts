@@ -40,17 +40,19 @@ async function deployContracts(deploymentManager: DeploymentManager): Promise<Va
   ]);
 
   // Deploy all Comet-related contracts
-  let { cometProxy, configuratorProxy, timelock, rewards } = await deployNetworkComet(
+  let { cometProxy, comet, configuratorProxy, rewards } = await deployNetworkComet(
     deploymentManager,
-    { all: true },
-    { governor: '0x6d903f6003cca6255d85cca4d3b5e5146dc33925' },
+    { all: true, timelock: false, governor: false },
+    {},
     contracts
   );
+
+  const timelockAddress = await comet.attach(cometProxy.address).governor();
 
   // Deploy Bulker
   const bulker = await deploymentManager.deploy<Bulker, Bulker__factory, [string, string, string]>(
     'Bulker.sol',
-    [timelock.address, cometProxy.address, contracts.get('WETH').address]
+    [timelockAddress, cometProxy.address, contracts.get('WETH').address]
   );
 
   return {
