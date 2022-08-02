@@ -33,6 +33,8 @@ interface Vars {
 };
 
 export default async function deploy(deploymentManager: DeploymentManager) {
+  deploymentManager.shouldLazilyVerifyContracts(true);
+
   const newRoots = await deployContracts(deploymentManager);
   deploymentManager.putRoots(new Map(Object.entries(newRoots)));
 
@@ -50,6 +52,9 @@ export default async function deploy(deploymentManager: DeploymentManager) {
   await new Promise(r => setTimeout(r, 45_000));
 
   await mintToFauceteer(deploymentManager);
+
+  // Verify contracts after all contracts have been deployed
+  await deploymentManager.verifyContracts();
 
   return newRoots;
 }
