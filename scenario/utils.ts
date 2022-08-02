@@ -5,7 +5,6 @@ import { BigNumber, BigNumberish, Contract, utils } from 'ethers';
 import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
 import { ProtocolConfiguration, deployComet } from '../src/deploy';
-import { GovernorSimple, IGovernorBravo } from '../build/types';
 import { World } from '../plugins/scenario';
 import { exp } from '../test/helpers';
 import { AssetConfigStruct, AssetInfoStructOutput } from '../build/types/Comet';
@@ -91,68 +90,6 @@ export function getExpectedBaseBalance(balance: bigint, baseIndexScale: bigint, 
 
 export function getInterest(balance: bigint, rate: bigint, seconds: bigint) {
   return balance * rate * seconds / (10n ** 18n);
-}
-
-// Instantly executes some actions through the governance proposal process
-// Note: `governor` must be connected to an `admin` signer
-export async function fastGovernanceExecute(world: World, governor: GovernorSimple, targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
-  // XXX See if there is a better way to determine if GovernorSimple or Bravo should be used
-  try {
-    const admin = await governor.admins(0);
-    const adminSigner = await world.impersonateAddress(admin);
-    const governorAsAdmin = governor.connect(adminSigner);
-
-    const tx = await (await governorAsAdmin.propose(targets, values, signatures, calldatas, 'FastExecuteProposal')).wait();
-    const event = tx.events.find(event => event.event === 'ProposalCreated');
-    const [proposalId] = event.args;
-
-    await governorAsAdmin.queue(proposalId);
-    await governorAsAdmin.execute(proposalId);
-  } catch (e) {
-    // XXX find a better way to do this without hardcoding whales
-    const voters = [
-      '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
-      '0x683a4f9915d6216f73d6df50151725036bd26c02'
-    ];
-    const adminSigner = await world.impersonateAddress(voters[0]);
-    const governorAsAdmin = await world.hre.ethers.getContractAt(
-      'IGovernorBravo',
-      governor.address,
-      adminSigner
-    ) as IGovernorBravo;
-
-    const proposeTxn = await (await governorAsAdmin.propose(targets, values, signatures, calldatas, 'FastExecuteProposal')).wait();
-    const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
-    const [proposalId, , , , , , startBlock, endBlock] = proposeEvent.args;
-
-    const blocksUntilStart = startBlock - await world.hre.ethers.provider.getBlockNumber();
-    const blocksFromStartToEnd = endBlock - startBlock;
-    await mineBlocks(world, blocksUntilStart);
-    for (const voter of voters) {
-      const voterSigner = await world.impersonateAddress(voter);
-      const govAsVoter = await world.hre.ethers.getContractAt(
-        'IGovernorBravo',
-        governor.address,
-        voterSigner
-      ) as IGovernorBravo;
-      await govAsVoter.castVote(proposalId, 1);
-    }
-
-    await mineBlocks(world, blocksFromStartToEnd);
-    const queueTxn = await (await governorAsAdmin.queue(proposalId)).wait();
-    const queueEvent = queueTxn.events.find(event => event.event === 'ProposalQueued');
-    let [proposalId_, eta] = queueEvent.args;
-
-    await world.hre.ethers.provider.send('evm_setNextBlockTimestamp', [eta.toNumber()])
-    await governorAsAdmin.execute(proposalId);
-  }
-}
-
-// XXX Hardhat 2.9 has 'hardhat_mine' for mining multiple blocks
-async function mineBlocks(world: World, blocks: number) {
-  for (let i = 0; i < blocks; i++) {
-    await world.hre.network.provider.send('evm_mine', []);
-  }
 }
 
 // Increases the supply cap for collateral assets that would go over the supply cap
