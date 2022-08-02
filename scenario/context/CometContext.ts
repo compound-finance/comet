@@ -160,6 +160,17 @@ export class CometContext {
     const fauceteerAddress = fauceteerContract ? fauceteerContract.address : world.base.baseTokenFauceteer;
     const fauceteerBalance = fauceteerAddress ? await cometAsset.balanceOf(fauceteerAddress) : 0;
 
+    if (amount < 0) {
+      await sourceTokens({
+        hre: this.deploymentManager.hre,
+        amount,
+        asset: cometAsset.address,
+        address: recipientAddress,
+        blacklist: [comet.address],
+      });
+      return;
+    }
+
     if (fauceteerAddress && fauceteerBalance > amount) {
       this.debug(`Source Tokens: stealing from fauceteer`);
       const fauceteerSigner = await world.impersonateAddress(fauceteerAddress);
@@ -272,7 +283,7 @@ async function buildActor(name: string, signer: SignerWithAddress, context: Come
 const getInitialContext = async (world: World): Promise<CometContext> => {
   let deploymentManager = new DeploymentManager(world.base.name, world.hre, { debug: true });
 
-  if (!world.isRemoteFork() || world.base.deployNewComet) {
+  if (!world.isRemoteFork()) {
     // XXX try to move to `deployments/development` and follow same code path
     await deployComet(deploymentManager);
   } else {
