@@ -88,12 +88,12 @@ export class DeploymentManager {
 
   // Configuration Parameter for retries after Etherscan import failures
   private importRetries(): number {
-    return this.config.importRetries ?? 3;
+    return this.config.importRetries ?? 4;
   }
 
   // Configuration Parameter for delay between retries on Etherscan import failure
   private importRetryDelay(): number {
-    return this.config.importRetryDelay ?? 2000;
+    return this.config.importRetryDelay ?? 5_000;
   }
 
   // Clears the contract cache. Should be invalidated when any aliases have changed.
@@ -275,19 +275,21 @@ export class DeploymentManager {
    * because a new instance of a signer needs to be used on each retry
    * @param retries the number of times to retry the function. Default is 5 retries
    * @param timeLimit time limit before timeout in milliseconds
+   * @param wait time to wait between tries in milliseconds
    */
-  async asyncCallWithRetry(fn: (signer: SignerWithAddress) => Promise<any>, retries: number = 5, timeLimit?: number): Promise<any> {
+  async asyncCallWithRetry(fn: (signer: SignerWithAddress) => Promise<any>, retries: number = 5, timeLimit?: number, wait: number = 250) {
     const signer = await this.getSigner();
     try {
       return await asyncCallWithTimeout(fn(signer), timeLimit);
     } catch (e) {
       retries -= 1;
-      debug(`Retrying with retries left: ${retries}`);
+      debug(`Retrying with retries left: ${retries}, wait: ${wait}`);
       debug('Error is: ', e);
       if (retries === 0) throw e;
       // XXX to be extra safe, we can also get the signer transaction count and figure out the next nonce
       this._signers = [];
-      return await this.asyncCallWithRetry(fn, retries, timeLimit);
+      await new Promise(ok => setTimeout(ok, wait));
+      return await this.asyncCallWithRetry(fn, retries, timeLimit, wait * 2);
     }
   }
 
