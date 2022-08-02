@@ -16,15 +16,14 @@ import { ExtendedNonceManager } from './NonceManager';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { asyncCallWithTimeout, debug } from './Utils';
 import { deleteVerifyArgs, getVerifyArgs } from './VerifyArgs';
-import { verifyContract } from './Verify';
+import { verifyContract, VerificationStrategy } from './Verify';
 
 interface DeploymentManagerConfig {
   baseDir?: string;
   importRetries?: number;
   importRetryDelay?: number;
   writeCacheToDisk?: boolean;
-  verifyContracts?: boolean;
-  lazyVerify?: boolean;
+  verificationStrategy?: VerificationStrategy;
   debug?: boolean;
 }
 
@@ -83,8 +82,7 @@ export class DeploymentManager {
 
   private async deployOpts(): Promise<DeployOpts> {
     return {
-      verify: this.config.verifyContracts,
-      lazyVerify: this.config.lazyVerify,
+      verificationStrategy: this.config.verificationStrategy,
       cache: this.cache,
       connect: await this.getSigner(),
     };
@@ -257,14 +255,9 @@ export class DeploymentManager {
     return contracts.get(alias);
   }
 
-  /* Changes configuration of verifying contracts on deployment */
-  shouldVerifyContracts(verifyContracts: boolean) {
-    this.config.verifyContracts = verifyContracts;
-  }
-
-  /* Changes configuration of lazily verifying contracts on deployment */
-  shouldLazilyVerifyContracts(lazilyVerifyContracts: boolean) {
-    this.config.lazyVerify = lazilyVerifyContracts;
+  /* Changes configuration of verification strategy during deployment */
+  setVerificationStrategy(verificationStrategy: VerificationStrategy) {
+    this.config.verificationStrategy = verificationStrategy;
   }
 
   /* Changes configuration of writing cache to disk, or not. */
@@ -321,13 +314,13 @@ export class DeploymentManager {
    * Note: Main use-case is to be a light wrapper around deploy scripts
    */
   async doThenVerify(fn: () => Promise<any>): Promise<any> {
-    const prevSetting = this.config.lazyVerify;
-    this.shouldLazilyVerifyContracts(true);
+    const prevSetting = this.config.verificationStrategy;
+    this.setVerificationStrategy('lazy');
 
     const result = await fn();
 
     await this.verifyContracts();
-    this.shouldLazilyVerifyContracts(prevSetting);
+    this.setVerificationStrategy(prevSetting);
 
     return result;
   }
