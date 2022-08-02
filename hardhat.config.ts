@@ -35,6 +35,11 @@ const {
   REPORT_GAS = 'false',
 } = process.env;
 
+function *deriveAccounts(pk: string, n: number = 10) {
+  for (let i = 0; i < n; i++)
+    yield (BigInt('0x' + pk) + BigInt(i)).toString(16);
+}
+
 function throwIfMissing(envVariable, msg: string) {
   if (!envVariable) {
     throw new Error(msg);
@@ -84,7 +89,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
       url: netConfig.url || getDefaultProviderURL(netConfig.network),
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
-      accounts: ETH_PK ? [ETH_PK] : { mnemonic: MNEMONIC },
+      accounts: ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC },
     };
   }
 }
@@ -123,7 +128,7 @@ const config: HardhatUserConfig = {
       gas: 12000000,
       gasPrice: 'auto',
       blockGasLimit: 12000000,
-      accounts: ETH_PK ? [{ privateKey: ETH_PK, balance: (10n ** 36n).toString() }] : { mnemonic: MNEMONIC },
+      accounts: ETH_PK ? [...deriveAccounts(ETH_PK)].map(privateKey => ({ privateKey, balance: (10n ** 36n).toString() })) : { mnemonic: MNEMONIC },
       // this should be default commented out and only enabled during dev to allow partial testing
       // XXX comment out by default once we've made the full contract fit
       allowUnlimitedContractSize: true,
