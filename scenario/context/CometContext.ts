@@ -232,10 +232,9 @@ export class CometContext {
   }
 
   // Instantly executes some actions through the governance proposal process
-  async fastGovernanceExecute(world: World, targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
-    let admin = this.actors['admin'];
+  async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
     let governor = await this.getGovernor();
-    await fastGovernanceExecute(world, governor, targets, values, signatures, calldatas);
+    await fastGovernanceExecute(this.world, governor, targets, values, signatures, calldatas);
   }
 }
 
