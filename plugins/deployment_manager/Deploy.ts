@@ -40,7 +40,7 @@ async function deployFromBuildFile(
   debug(`Deploying ${Object.keys(buildFile.contracts)} with args`, deployArgs);
   const contract = await contractFactory.deploy(...deployArgs);
   const deployed = await contract.deployed();
-  debug(`Deployed ${contractName}`);
+  debug(`Deployed ${contractName} @ ${contract.address}`);
   return deployed;
 }
 
@@ -102,7 +102,7 @@ export async function deploy<
   let contract = await factory.deploy(...deployArgs);
   await contract.deployed();
 
-  debug(`Deployed ${contractName} via tx ${contract.deployTransaction?.hash}`);
+  debug(`Deployed ${contractName} via tx ${contract.deployTransaction?.hash} @ ${contract.address}`);
 
   let buildFile = await getBuildFileFromArtifacts(contractFile, contractFileName);
 

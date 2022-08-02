@@ -140,6 +140,7 @@ async function runSpider(
           );
         }
       }
+      debug(`Spidered ${address}:`, contractMetadata.name || contractMetadata['key']);
 
       // Store the build file. This is the primary result of spidering: a huge list
       // of `address -> build file`, which is the contract cache.

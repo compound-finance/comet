@@ -133,7 +133,7 @@ export class DeploymentManager {
   }
 
   /* Deploys missing contracts from the deployment, using the user-space deploy.ts script */
-  async deployMissing(force: boolean = true) {
+  async deployMissing(force: boolean = false) {
     // XXX if this is idempotent we can just always deploy, and do the same for dev
     //  as is, won't handle cases where the deploy script adds roots or partial redeploys
     // if force or there are no roots, deploy

@@ -2,7 +2,10 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { BigNumber, Contract, Event, EventFilter } from 'ethers';
 import { erc20 } from './ERC20';
 
-let getMaxEntry = (args: [string, BigNumber][]) =>
+const MAX_SEARCH_BLOCKS = 40000;
+const BLOCK_SPAN = 1000;
+
+const getMaxEntry = (args: [string, BigNumber][]) =>
   args.reduce(([a1, m], [a2, e]) => (m.gte(e) == true ? [a1, m] : [a2, e]));
 
 interface SourceTokenParameters {
@@ -68,8 +71,9 @@ async function addTokens(
   let { recentLogs, blocksDelta, err } = await fetchQuery(
     tokenContract,
     filter,
-    block - 1000 - (offsetBlocks ?? 0),
-    block - (offsetBlocks ?? 0)
+    block - BLOCK_SPAN - (offsetBlocks ?? 0),
+    block - (offsetBlocks ?? 0),
+    block
   );
   if (err) {
     throw err;
@@ -89,7 +93,7 @@ async function addTokens(
       params: [holder],
     });
   } else {
-    if ((offsetBlocks ?? 0) > 40000) throw "Error: Couldn't find sufficient tokens";
+    if ((offsetBlocks ?? 0) > MAX_SEARCH_BLOCKS) throw "Error: Couldn't find sufficient tokens";
     await addTokens(hre, amount, asset, address, blacklist, block, (offsetBlocks ?? 0) + blocksDelta);
   }
 }
@@ -98,24 +102,28 @@ async function fetchQuery(
   contract: Contract,
   filter: EventFilter,
   fromBlock: number,
-  toBlock: number
+  toBlock: number,
+  originalBlock: number
 ): Promise<{ recentLogs?: Event[], blocksDelta?: number, err?: Error }> {
+  if (originalBlock - fromBlock > MAX_SEARCH_BLOCKS) {
+    return { err: new Error(`No events found within ${MAX_SEARCH_BLOCKS} blocks for ${contract.address}`) };
+  }
   try {
     let res = await contract.queryFilter(filter, fromBlock, toBlock);
     if (res.length > 0) {
       return { recentLogs: res, blocksDelta: toBlock - fromBlock };
     } else {
       let nextToBlock = fromBlock;
-      let nextFrom = fromBlock - 1000;
+      let nextFrom = fromBlock - BLOCK_SPAN;
       if (nextFrom < 0) {
         return { err: new Error('No events found by chain genesis') };
       }
-      return await fetchQuery(contract, filter, nextFrom, nextToBlock);
+      return await fetchQuery(contract, filter, nextFrom, nextToBlock, originalBlock);
     }
   } catch (err) {
     if (err.message.includes('query returned more')) {
       let midBlock = (fromBlock + toBlock) / 2;
-      return await fetchQuery(contract, filter, midBlock, toBlock);
+      return await fetchQuery(contract, filter, midBlock, toBlock, originalBlock);
     } else {
       return { err };
     }
