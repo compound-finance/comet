@@ -2,21 +2,20 @@ import { Constraint, World } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
-import { setNextBaseFeeToZero } from '../utils';
 
 export class PauseConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(requirements: R, context: T, world: World) {
+  async solve(requirements: R, context: T) {
     const pauseRequirements = requirements.pause;
     if (!pauseRequirements) {
       return null;
     }
 
     if (typeof pauseRequirements['all'] !== 'undefined') {
-      return async (ctx: CometContext, wld: World) => {
+      return async (ctx: CometContext) => {
         const pauseGuardian = ctx.actors['pauseGuardian'];
         const isPaused = pauseRequirements['all'];
 
-        await setNextBaseFeeToZero(wld);
+        await ctx.setNextBaseFeeToZero();
         await pauseGuardian.pause({
           supplyPaused: isPaused,
           transferPaused: isPaused,
@@ -26,7 +25,7 @@ export class PauseConstraint<T extends CometContext, R extends Requirements> imp
         }, { gasPrice: 0 });
       };
     } else {
-      return async (ctx: CometContext, wld: World) => {
+      return async (ctx: CometContext) => {
         const pauseGuardian = ctx.actors['pauseGuardian'];
         const supplyPaused = pauseRequirements['supplyPaused'] ?? false;
         const transferPaused = pauseRequirements['transferPaused'] ?? false;
@@ -34,7 +33,7 @@ export class PauseConstraint<T extends CometContext, R extends Requirements> imp
         const absorbPaused = pauseRequirements['absorbPaused'] ?? false;
         const buyPaused = pauseRequirements['buyPaused'] ?? false;
 
-        await setNextBaseFeeToZero(wld);
+        await ctx.setNextBaseFeeToZero();
         await pauseGuardian.pause({
           supplyPaused,
           transferPaused,

@@ -4,7 +4,7 @@ import { Cache } from './Cache';
 import { loadContract } from '../import/import';
 
 const DEFAULT_RETRIES = 5;
-const DEFAULT_RETRY_DELAY = 30_000;
+const DEFAULT_RETRY_DELAY = 10_000;
 
 /**
  * Imports a contract from remote, e.g. Etherscan, generating local build file.
@@ -41,7 +41,7 @@ export async function importContract(
     console.log(`retrying in ${retryDelay / 1000}s; ${retries} retries left`);
 
     await new Promise((resolve) => setTimeout(resolve, retryDelay));
-    return await importContract(network, address, retries - 1, retryDelay);
+    return await importContract(network, address, retries - 1, retryDelay * 2);
   }
 
   return buildFile;

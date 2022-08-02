@@ -27,8 +27,8 @@ task('scenario', 'Runs scenario tests')
   .addOptionalParam('bases', 'Bases to run on [defaults to all]')
   .addFlag('noSpider', 'skip spider')
   .addFlag('sync', 'run synchronously')
-  .addOptionalParam('stall', 'milliseconds to wait until we fail for stalling', 120000, types.int)
-  .addOptionalParam('workers', 'count of workers', 6, types.int)
+  .addOptionalParam('stall', 'milliseconds to wait until we fail for stalling', 180_000, types.int)
+  .addOptionalParam('workers', 'count of workers', 3, types.int) // TODO: prob make workers more 1:1 w/ deployments and threads : architecture
   .setAction(async (taskArgs, env: HardhatRuntimeEnvironment) => {
     let bases: ForkSpec[] = getBasesFromTaskArgs(taskArgs.bases, env);
 

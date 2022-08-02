@@ -1,6 +1,5 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { setNextBaseFeeToZero } from './utils';
 
 // XXX we could use a Comet reserves constraint here
 scenario(
@@ -10,7 +9,7 @@ scenario(
       betty: { $base: 100000 },
     },
   },
-  async ({ comet, timelock, actors }, world, context) => {
+  async ({ comet, timelock, actors }, context) => {
     const { admin, albert, betty } = actors;
 
     const baseToken = context.getAssetByAddress(await comet.baseToken());
@@ -24,7 +23,7 @@ scenario(
     expect(await comet.governor()).to.equal(timelock.address);
 
     const toWithdrawAmount = 10n * scale;
-    await setNextBaseFeeToZero(world);
+    await context.setNextBaseFeeToZero();
     const txn = await admin.withdrawReserves(albert.address, toWithdrawAmount, { gasPrice: 0 });
 
     expect(await baseToken.balanceOf(comet.address)).to.equal(cometBaseBalance - toWithdrawAmount);
@@ -56,12 +55,12 @@ scenario(
       $comet: { $base: 100 },
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { admin, albert } = actors;
 
     const scale = (await comet.baseScale()).toBigInt();
 
-    await setNextBaseFeeToZero(world);
+    await context.setNextBaseFeeToZero();
     await expect(admin.withdrawReserves(albert.address, 101n * scale, { gasPrice: 0 }))
       .to.be.revertedWith("custom error 'InsufficientReserves()'");
   }

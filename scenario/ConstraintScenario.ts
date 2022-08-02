@@ -12,7 +12,7 @@ scenario(
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const { asset: asset0Address, scale } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
@@ -32,7 +32,7 @@ scenario(
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -57,7 +57,7 @@ scenario(
       albert: { $base: -1000 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, _world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);

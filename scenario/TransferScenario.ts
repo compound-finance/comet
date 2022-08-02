@@ -10,7 +10,7 @@ scenario(
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const { asset: asset0Address, scale } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
@@ -33,7 +33,7 @@ scenario(
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -63,7 +63,7 @@ scenario(
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -102,7 +102,7 @@ scenario(
       charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -135,7 +135,7 @@ scenario(
       charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -169,7 +169,7 @@ scenario(
       charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -202,7 +202,7 @@ scenario(
       charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -238,7 +238,7 @@ scenario(
       betty: { $asset0: 0 },
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
@@ -263,7 +263,7 @@ scenario(
       betty: { $asset0: 0 },
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
@@ -364,7 +364,7 @@ scenario(
 scenario(
   'Comet#transferFrom reverts if operator not given permission',
   {},
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -437,7 +437,7 @@ scenario(
       albert: { $base: 0, $asset0: 100 }
     }
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);

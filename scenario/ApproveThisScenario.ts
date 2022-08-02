@@ -1,34 +1,33 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { constants } from 'ethers';
-import { setNextBaseFeeToZero } from './utils';
 
-scenario('Comet#approveThis > allows governor to authorize and rescind authorization for Comet ERC20', {}, async ({ comet, timelock, actors }, world, context) => {
+scenario('Comet#approveThis > allows governor to authorize and rescind authorization for Comet ERC20', {}, async ({ comet, timelock, actors }, context) => {
   const { admin } = actors;
 
-  await setNextBaseFeeToZero(world);
+  await context.setNextBaseFeeToZero();
   await admin.approveThis(timelock.address, comet.address, constants.MaxUint256, { gasPrice: 0 });
 
   expect(await comet.isAllowed(comet.address, timelock.address)).to.be.true;
 
-  await setNextBaseFeeToZero(world);
+  await context.setNextBaseFeeToZero();
   await admin.approveThis(timelock.address, comet.address, 0, { gasPrice: 0 });
 
   expect(await comet.isAllowed(comet.address, timelock.address)).to.be.false;
 });
 
-scenario('Comet#approveThis > allows governor to authorize and rescind authorization for non-Comet ERC20', {}, async ({ comet, timelock, actors }, world, context) => {
+scenario('Comet#approveThis > allows governor to authorize and rescind authorization for non-Comet ERC20', {}, async ({ comet, timelock, actors }, context) => {
   const { admin } = actors;
   const baseTokenAddress = await comet.baseToken();
   const baseToken = context.getAssetByAddress(baseTokenAddress);
 
   const newAllowance = 999_888n;
-  await setNextBaseFeeToZero(world);
+  await context.setNextBaseFeeToZero();
   await admin.approveThis(timelock.address, baseTokenAddress, newAllowance, { gasPrice: 0 });
 
   expect(await baseToken.allowance(comet.address, timelock.address)).to.be.equal(newAllowance);
 
-  await setNextBaseFeeToZero(world);
+  await context.setNextBaseFeeToZero();
   await admin.approveThis(timelock.address, baseTokenAddress, 0, { gasPrice: 0 });
 
   expect(await baseToken.allowance(comet.address, timelock.address)).to.be.equal(0n);

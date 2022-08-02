@@ -10,7 +10,7 @@ scenario(
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -41,7 +41,7 @@ scenario(
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const { asset: asset0Address, scale: scaleBN, supplyCap } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
@@ -81,7 +81,7 @@ scenario(
       albert: { $base: -1000 } // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -109,7 +109,7 @@ scenario(
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -144,7 +144,7 @@ scenario(
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const { asset: asset0Address, scale: scaleBN, supplyCap } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
@@ -189,7 +189,7 @@ scenario(
       betty: { $base: -1000 } // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -221,7 +221,7 @@ scenario(
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -243,7 +243,7 @@ scenario(
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -270,7 +270,7 @@ scenario(
       albert: { $base: 10 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -293,7 +293,7 @@ scenario(
       albert: { $base: 10 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -319,7 +319,7 @@ scenario(
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -388,7 +388,7 @@ scenario(
 scenario(
   'Comet#supply reverts if asset is not supported',
   {},
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }) => {
     // XXX requires deploying an unsupported asset (maybe via remote token constraint)
   }
 );

@@ -4,9 +4,7 @@ import { existsSync } from 'fs';
 import { BigNumber, BigNumberish, utils } from 'ethers';
 import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
-import { ProtocolConfiguration, deployComet } from '../src/deploy';
 import { GovernorSimple } from '../build/types';
-import { World } from '../plugins/scenario';
 import { exp } from '../test/helpers';
 import { AssetConfigStruct, AssetInfoStructOutput } from '../build/types/Comet';
 import { CometInterface } from '../build/types';
@@ -93,58 +91,8 @@ export function getInterest(balance: bigint, rate: bigint, seconds: bigint) {
   return balance * rate * seconds / (10n ** 18n);
 }
 
-export async function setNextBaseFeeToZero(world: World) {
-  await world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
-}
-
-// Instantly executes some actions through the governance proposal process
-// Note: `governor` must be connected to an `admin` signer
-export async function fastGovernanceExecute(governor: GovernorSimple, targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
-  let tx = await (await governor.propose(targets, values, signatures, calldatas, 'FastExecuteProposal')).wait();
-  let event = tx.events.find(event => event.event === 'ProposalCreated');
-  let [proposalId] = event.args;
-
-  await governor.queue(proposalId);
-  await governor.execute(proposalId);
-}
-
-export async function upgradeComet(world: World, context: CometContext, configOverrides: ProtocolConfiguration): Promise<CometContext> {
-  console.log('Upgrading to modern...');
-  // TODO: Make this deployment script less ridiculous, e.g. since it redeploys tokens right now
-  let oldComet = await context.getComet();
-  let timelock = await context.getTimelock();
-  let cometConfig = { governor: timelock.address, ...configOverrides } // Use old timelock as governor
-  let { comet: newComet } = await deployComet(
-    context.deploymentManager,
-    // Deploy a new configurator proxy to set the proper CometConfiguration storage values
-    {
-      contractsToDeploy: {
-        configuratorProxy: true,
-        configurator: true,
-        comet: true,
-        cometExt: true,
-        cometFactory: true
-      },
-      configurationOverrides: cometConfig,
-      adminSigner: context.actors['signer'].signer
-    }
-  );
-  let initializer: string | undefined;
-  if (!oldComet.totalsBasic || (await oldComet.totalsBasic()).lastAccrualTime === 0) {
-    initializer = (await newComet.populateTransaction.initializeStorage()).data;
-  }
-
-  await context.upgradeTo(newComet, world, initializer);
-  await context.setAssets();
-  await context.spider();
-
-  console.log('Upgraded to modern...');
-
-  return context
-}
-
 // Increases the supply cap for collateral assets that would go over the supply cap
-export async function bumpSupplyCaps(world: World, context: CometContext, supplyAmountPerAsset: Record<string, bigint>) {
+export async function bumpSupplyCaps(context: CometContext, supplyAmountPerAsset: Record<string, bigint>) {
   const comet = await context.getComet();
   const configurator = await context.getConfigurator();
   const proxyAdmin = await context.getCometAdmin();

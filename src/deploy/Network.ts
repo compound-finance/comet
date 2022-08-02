@@ -101,8 +101,7 @@ export async function deployNetworkComet(
   } = {
     governor: timelock.address,
     pauseGuardian: timelock.address,
-    ...await getConfiguration(deploymentManager.deployment, deploymentManager.hre, contractMapOverride),
-    ...configurationOverrides
+    ...await getConfiguration(deploymentManager, contractMapOverride, configurationOverrides),
   };
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometExt)) {

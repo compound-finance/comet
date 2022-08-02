@@ -1,4 +1,4 @@
-import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
+import { Constraint, Scenario, Solution } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
@@ -7,7 +7,7 @@ import { exp } from '../../test/helpers';
 import { ComparativeAmount, ComparisonOp, getActorAddressFromName, getAssetFromName, parseAmount, max, min, getToTransferAmount } from '../utils';
 
 export class TokenBalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(requirements: R, initialContext: T, initialWorld: World) {
+  async solve(requirements: R, initialContext: T) {
     const assetsByActor = requirements.tokenBalances;
     if (assetsByActor) {
       const actorsByAsset = Object.entries(assetsByActor).reduce((a, [actor, assets]) => {
@@ -27,7 +27,7 @@ export class TokenBalanceConstraint<T extends CometContext, R extends Requiremen
       // XXX ideally when properties fail
       //  we can report the names of the solution which were applied
       const solutions = [];
-      solutions.push(async function barelyMeet(context: T, world: World) {
+      solutions.push(async function barelyMeet(context: T) {
         for (const assetName in actorsByAsset) {
           const asset = await getAssetFromName(assetName, context)
           for (const actorName in actorsByAsset[assetName]) {
@@ -36,7 +36,7 @@ export class TokenBalanceConstraint<T extends CometContext, R extends Requiremen
             const balance = await asset.balanceOf(actor);
             const decimals = await asset.token.decimals();
             const toTransfer = getToTransferAmount(amount, balance, decimals);
-            await context.sourceTokens(world, toTransfer, asset.address, actor);
+            await context.sourceTokens(toTransfer, asset.address, actor);
           }
         }
         return context;
@@ -45,7 +45,7 @@ export class TokenBalanceConstraint<T extends CometContext, R extends Requiremen
     }
   }
 
-  async check(requirements: R, context: T, world: World) {
+  async check(requirements: R, context: T) {
     const assetsByActor = requirements.tokenBalances;
     if (assetsByActor) {
       for (const [actorName, assets] of Object.entries(assetsByActor)) {

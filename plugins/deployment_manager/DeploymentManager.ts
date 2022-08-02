@@ -33,7 +33,7 @@ export class DeploymentManager {
   deployment: string;
   hre: HardhatRuntimeEnvironment;
   config: DeploymentManagerConfig;
-  cache: Cache;
+  cache: Cache; // TODO: kind of a misnomer since its handling *all* path stuff
   contractsCache: ContractMap | null;
   _signers: SignerWithAddress[];
 
@@ -88,12 +88,12 @@ export class DeploymentManager {
 
   // Configuration Parameter for retries after Etherscan import failures
   private importRetries(): number {
-    return this.config.importRetries ?? 3;
+    return this.config.importRetries ?? 4;
   }
 
   // Configuration Parameter for delay between retries on Etherscan import failure
   private importRetryDelay(): number {
-    return this.config.importRetryDelay ?? 2000;
+    return this.config.importRetryDelay ?? 5_000;
   }
 
   // Clears the contract cache. Should be invalidated when any aliases have changed.
@@ -130,6 +130,28 @@ export class DeploymentManager {
       async () => deployBuild(buildFile, deployArgs, this.hre, await this.deployOpts()),
       retries
     );
+  }
+
+  /* Deploys missing contracts from the deployment, using the user-space deploy.ts script */
+  async deployMissing(force: boolean = false) {
+    // XXX if this is idempotent we can just always deploy, and do the same for dev
+    //  as is, won't handle cases where the deploy script adds roots or partial redeploys
+    // if force or there are no roots, deploy
+    //  force will also have to change with idempotent deploy changes
+    //   its here for deploy task, which doesn't really care if roots exists or not
+    //    but we'll want another way to specify how idempotent should work
+    const roots = await this.getRoots();
+    if (force || roots.size == 0) {
+      // XXX noted above but cache is a misnomer since we have non-cache files its kind of managing
+      //  could either rename or move that functionality
+      const deployScript = this.cache.getFilePath({ rel: 'deploy.ts' });
+      // XXX expect returns roots, and we write them?
+      const { default: deploy } = await import(deployScript);
+      if (!deploy || !deploy.call) {
+        throw new Error(`Missing deploy function in ${deployScript}.`);
+      }
+      await deploy(this);
+    }
   }
 
   /* Stores a new alias, which can then be referenced via `deploymentManager.contract()` */
@@ -253,19 +275,19 @@ export class DeploymentManager {
    * because a new instance of a signer needs to be used on each retry
    * @param retries the number of times to retry the function. Default is 5 retries
    * @param timeLimit time limit before timeout in milliseconds
+   * @param wait time to wait between tries in milliseconds
    */
-  async asyncCallWithRetry(fn: (signer: SignerWithAddress) => Promise<any>, retries: number = 5, timeLimit?: number): Promise<any> {
+  async asyncCallWithRetry(fn: (signer: SignerWithAddress) => Promise<any>, retries: number = 5, timeLimit?: number, wait: number = 250) {
     const signer = await this.getSigner();
     try {
       return await asyncCallWithTimeout(fn(signer), timeLimit);
     } catch (e) {
       retries -= 1;
-      debug(`Retrying with retries left: ${retries}`);
+      debug(`Retrying with retries left: ${retries}, wait: ${wait}`);
       debug('Error is: ', e);
       if (retries === 0) throw e;
-      // XXX to be extra safe, we can also get the signer transaction count and figure out the next nonce
-      this._signers = [];
-      return await this.asyncCallWithRetry(fn, retries, timeLimit);
+      await new Promise(ok => setTimeout(ok, wait));
+      return await this.asyncCallWithRetry(fn, retries, timeLimit, wait * 2);
     }
   }
 
@@ -278,9 +300,9 @@ export class DeploymentManager {
     return getNetwork(this.deployment);
   }
 
-  static fork(d: DeploymentManager): DeploymentManager {
-    let copy = new DeploymentManager(d.deployment, d.hre, d.config);
-    copy.cache.loadMemory(d.cache.cache);
+  fork(): DeploymentManager {
+    let copy = new DeploymentManager(this.deployment, this.hre, this.config);
+    copy.cache.loadMemory(this.cache.cache);
     return copy;
   }
 }
