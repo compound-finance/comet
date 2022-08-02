@@ -22,7 +22,6 @@ scenario('upgrade Comet implementation and initialize', {}, async ({ comet, conf
   let deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
   let initializeCalldata = utils.defaultAbiCoder.encode(["address"], [constants.AddressZero]);
   await context.fastGovernanceExecute(
-    world,
     [configurator.address, proxyAdmin.address, comet.address],
     [0, 0, 0],
     ["setFactory(address,address)", "deployAndUpgradeTo(address,address)", "initialize(address)"],
@@ -45,7 +44,6 @@ scenario('upgrade Comet implementation and call new function', {}, async ({ come
   let setFactoryCalldata = utils.defaultAbiCoder.encode(["address", "address"], [comet.address, cometModifiedFactory.address]);
   let deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
   await context.fastGovernanceExecute(
-    world,
     [configurator.address, proxyAdmin.address],
     [0, 0],
     ["setFactory(address,address)", "deployAndUpgradeTo(address,address)"],

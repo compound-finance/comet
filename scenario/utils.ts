@@ -193,7 +193,7 @@ export async function bumpSupplyCaps(context: CometContext, supplyAmountPerAsset
     values.push(0);
     signatures.push('deployAndUpgradeTo(address,address)');
     calldata.push(utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, comet.address]));
-    await context.fastGovernanceExecute(world, targets, values, signatures, calldata);
+    await context.fastGovernanceExecute(targets, values, signatures, calldata);
   }
 }
 
