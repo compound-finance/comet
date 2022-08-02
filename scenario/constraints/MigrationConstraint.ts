@@ -39,11 +39,19 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
       solutions.push(async function (ctx: T, wld: World): Promise<T> {
         // ensure that signer is a governor of the timelock before attempting to run migrations
         // XXX why?
-        const { signer } = ctx.actors;
-        const governor = await ctx.getGovernor();
-        const adminAddress = await governor.admins(0);
-        const adminSigner = await wld.impersonateAddress(adminAddress);
-        await governor.connect(adminSigner).addAdmin(signer.address);
+
+        // XXX is there a better way to check if governor is GovernorSimple?
+        try {
+          const { signer } = ctx.actors;
+          const governor = await ctx.getGovernor();
+          if (!(await governor.isAdmin(signer.address))) {
+            const adminAddress = await governor.admins(0);
+            const adminSigner = await wld.impersonateAddress(adminAddress);
+            await governor.connect(adminSigner).addAdmin(signer.address);
+          }
+        } catch (e) {
+          // not GovernorSimple
+        }
 
         migrationList.sort((a, b) => a.name.localeCompare(b.name))
         debug(`Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);

@@ -48,6 +48,7 @@ interface NetworkTrackingConfiguration {
 }
 
 interface NetworkAssetConfiguration {
+  address?: string;
   priceFeed: string;
   decimals: number;
   borrowCF: number;
@@ -61,6 +62,7 @@ interface NetworkConfiguration {
   governor?: string;
   pauseGuardian?: string;
   baseToken: string;
+  baseTokenAddress?: string;
   baseTokenPriceFeed: string;
   borrowMin: number;
   storeFrontPriceFactor: number;
@@ -82,12 +84,18 @@ function getContractAddress(contractName: string, contracts: ContractMap): strin
   return contract.address;
 }
 
+// XXX but if contract address exists AND optional address is set in config,
+// which one takes precedence? probably override
+function hasContractAddress(contractName: string, contractMap: ContractMap): boolean {
+  return contractMap.has(contractName);
+}
+
 function getAssetConfigs(
   assets: { [name: string]: NetworkAssetConfiguration },
   contracts: ContractMap,
 ): AssetConfigStruct[] {
   return Object.entries(assets).map(([assetName, assetConfig]) => ({
-    asset: getContractAddress(assetName, contracts),
+    asset: hasContractAddress(assetName, contracts) ? getContractAddress(assetName, contracts) : assetConfig.address,
     priceFeed: address(assetConfig.priceFeed),
     decimals: number(assetConfig.decimals),
     borrowCollateralFactor: percentage(assetConfig.borrowCF),
@@ -122,7 +130,7 @@ function getOverridesOrConfig(
     ...(config.governor && { governor: _ => address(config.governor) }),
     ...(config.pauseGuardian && { pauseGuardian: _ => address(config.pauseGuardian) }),
     symbol: _ => config.symbol,
-    baseToken: _ => getContractAddress(config.baseToken, contracts),
+    baseToken: _ => hasContractAddress(config.baseToken, contracts) ? getContractAddress(config.baseToken, contracts) : config.baseTokenAddress,
     baseTokenPriceFeed: _ => address(config.baseTokenPriceFeed),
     baseBorrowMin: _ => number(config.borrowMin), // TODO: in token units (?)
     storeFrontPriceFactor: _ => percentage(config.storeFrontPriceFactor),

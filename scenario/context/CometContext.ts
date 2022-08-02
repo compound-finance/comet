@@ -20,6 +20,7 @@ import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { ProtocolConfiguration, deployComet } from '../../src/deploy';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { Requirements } from '../constraints/Requirements';
+import { fastGovernanceExecute } from '../utils';
 
 type ActorMap = { [name: string]: CometActor };
 type AssetMap = { [name: string]: CometAsset };
@@ -112,7 +113,7 @@ export class CometContext {
     await this.spider();
     debug('Upgraded to modern...');
     return this;
-}
+  }
 
   async upgradeTo(newComet: Comet, data?: string) {
     const { world } = this;
@@ -231,16 +232,10 @@ export class CometContext {
   }
 
   // Instantly executes some actions through the governance proposal process
-  // Note: `governor` must be connected to an `admin` signer
-  async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
-    const admin = this.actors['admin'];
-    const governor = (await this.getGovernor()).connect(admin.signer);
-    const tx = await (await governor.propose(targets, values, signatures, calldatas, 'FastExecuteProposal')).wait();
-    const event = tx.events.find(event => event.event === 'ProposalCreated');
-    const [proposalId] = event.args;
-
-    await governor.queue(proposalId);
-    await governor.execute(proposalId);
+  async fastGovernanceExecute(world: World, targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
+    let admin = this.actors['admin'];
+    let governor = await this.getGovernor();
+    await fastGovernanceExecute(world, governor, targets, values, signatures, calldatas);
   }
 }
 
@@ -297,7 +292,7 @@ export async function getAssets(context: CometContext): Promise<{ [symbol: strin
   })));
 }
 
-async function getInitialContext (world: World): Promise<CometContext> {
+async function getInitialContext(world: World): Promise<CometContext> {
   const context = new CometContext(world);
   await context.deploymentManager.spider();
   await context.setActors();
