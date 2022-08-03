@@ -28,7 +28,7 @@ export class World {
 
   // TODO: Can we do this better?
   isRemoteFork(): boolean {
-    return this.base.network !== "hardhat";
+    return this.base.network !== 'hardhat';
   }
 
   async _snapshot(): Promise<string> {

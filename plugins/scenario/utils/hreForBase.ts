@@ -17,7 +17,7 @@ import { HARDHAT_PARAM_DEFINITIONS } from 'hardhat/internal/core/params/hardhat-
 import { Environment } from 'hardhat/internal/core/runtime-environment';
 import { ForkSpec } from '../World';
 import { memoize } from '../../../src/memoize';
-import { HttpNetworkUserConfig } from "hardhat/types";
+import { HttpNetworkUserConfig } from 'hardhat/types';
 
 /*
 Hardhat's Environment class implements the HardhatRuntimeEnvironment interface.
