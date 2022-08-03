@@ -6,11 +6,10 @@ import { DeploymentManager } from '../deployment_manager/DeploymentManager';
 
 export type ForkSpec = {
   name: string;
+  network: string;
   deployment: string;
-  url?: string;
   blockNumber?: number;
   allocation?: number;
-  chainId?: number;
 };
 
 export class World {
@@ -23,13 +22,13 @@ export class World {
     // Q: should we really need to fork/snapshot the deployment manager?
     this.hre = hre;
     this.base = base;
-    this.deploymentManager = new DeploymentManager(base.name, base.deployment, hre, { debug: true });
+    this.deploymentManager = new DeploymentManager(base.network, base.deployment, hre, { debug: true });
     this.snapshotDeploymentManager = this.deploymentManager;
   }
 
   // TODO: Can we do this better?
   isRemoteFork(): boolean {
-    return !!this.base.url;
+    return this.base.network !== "hardhat";
   }
 
   async _snapshot(): Promise<string> {

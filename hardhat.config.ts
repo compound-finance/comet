@@ -50,7 +50,7 @@ throwIfMissing(SNOWTRACE_KEY, 'Missing required environment variable: SNOWTRACE_
 throwIfMissing(INFURA_KEY, 'Missing required environment variable: INFURA_KEY');
 
 // Networks
-interface NetworkConfig {
+export interface NetworkConfig {
   network: string;
   chainId: number;
   url?: string;
@@ -160,26 +160,24 @@ const config: HardhatUserConfig = {
     bases: [
       {
         name: 'mainnet',
-        chainId: 1,
-        url: getDefaultProviderURL('mainnet'),
+        network: 'mainnet',
+        deployment: 'usdc',
         allocation: 0.1, // eth
       },
       {
         name: 'development',
+        network: 'hardhat',
         deployment: 'dai'
       },
       {
-        name: 'kovan',
-        deployment: 'usdc',
-        chainId: 42,
-        url: getDefaultProviderURL('kovan'),
-        allocation: 0.1, // eth
+        name: 'fuji',
+        network: 'fuji',
+        deployment: 'usdc'
       },
       {
-        name: 'fuji',
+        name: 'kovan',
+        network: 'kovan',
         deployment: 'usdc',
-        chainId: 43113,
-        url: 'https://api.avax-test.network/ext/bc/C/rpc',
       },
     ],
   },
