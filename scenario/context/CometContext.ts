@@ -273,7 +273,9 @@ export class CometContext {
       // XXX find a better way to do this without hardcoding whales
       const voters = [
         '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
-        '0x683a4f9915d6216f73d6df50151725036bd26c02'
+        '0x683a4f9915d6216f73d6df50151725036bd26c02',
+        '0x9aa835bc7b8ce13b9b0c9764a52fbf71ac62ccf1',
+        '0x61258f12c459984f32b83c86a6cc10aa339396de',
       ];
       const adminSigner = await world.impersonateAddress(voters[0]);
       const governorAsAdmin = await world.hre.ethers.getContractAt(
@@ -289,14 +291,15 @@ export class CometContext {
       const blocksUntilStart = startBlock - await world.hre.ethers.provider.getBlockNumber();
       const blocksFromStartToEnd = endBlock - startBlock;
       await this.mineBlocks(blocksUntilStart);
-      for (const voter of voters) {
+      for (const voter of voters.slice(1)) {
         const voterSigner = await world.impersonateAddress(voter);
         const govAsVoter = await world.hre.ethers.getContractAt(
           'IGovernorBravo',
           governor.address,
           voterSigner
         ) as IGovernorBravo;
-        await govAsVoter.castVote(proposalId, 1);
+        await this.setNextBaseFeeToZero();
+        await govAsVoter.castVote(proposalId, 1, { gasPrice: 0 });
       }
 
       await this.mineBlocks(blocksFromStartToEnd);
