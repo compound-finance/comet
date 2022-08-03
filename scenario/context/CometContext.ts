@@ -195,8 +195,7 @@ export class CometContext {
     const contracts = await this.deploymentManager.contracts();
     const fauceteer = contracts.get('fauceteer');
     const fauceteerBalance = fauceteer ? await cometAsset.balanceOf(fauceteer.address) : 0;
-
-    if (fauceteerBalance > amount) {
+    if (amount > 0 && fauceteerBalance > amount) {
       debug(`Source Tokens: stealing from fauceteer`, amount, cometAsset.address);
       const fauceteerSigner = await world.impersonateAddress(fauceteer.address);
       const fauceteerActor = await buildActor('fauceteerActor', fauceteerSigner, this);
@@ -209,7 +208,7 @@ export class CometContext {
     // Second, try to steal from a known actor
     for (let [name, actor] of Object.entries(this.actors)) {
       let actorBalance = await cometAsset.balanceOf(actor);
-      if (actorBalance > amount) {
+      if (amount > 0 && actorBalance > amount) {
         debug(`Source Tokens: stealing from actor ${name}`, amount, cometAsset.address);
         // make gas fee 0 so we can source from contract addresses as well as EOAs
         await this.setNextBaseFeeToZero();
