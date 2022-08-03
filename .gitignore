@@ -10,6 +10,7 @@ artifacts/
 build/
 cache/
 dist/
+deployments/hardhat
 deployments/*/*/artifacts
 deployments/*/*/cache
 deployments/*/*/contracts
