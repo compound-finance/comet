@@ -12,6 +12,12 @@ interface Vars {
 };
 
 export default async function deploy(deploymentManager: DeploymentManager) {
+  return await deploymentManager.doThenVerify(
+    () => deployAll(deploymentManager)
+  );
+}
+
+async function deployAll(deploymentManager: DeploymentManager) {
   const newRoots = await deployContracts(deploymentManager);
   deploymentManager.putRoots(new Map(Object.entries(newRoots)));
 
