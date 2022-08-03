@@ -75,7 +75,7 @@ export class DeploymentManager {
     }
 
     // address given, first try to find the managed signer for it
-    const signer = this._signers.find(s => s.address == address);
+    const signer = this._signers.find(s => s.address.toLowerCase() === address.toLowerCase());
     if (signer) {
       return signer;
     }
