@@ -26,7 +26,9 @@ export async function sourceTokens({
 }: SourceTokenParameters) {
   let amount = BigNumber.from(amount_);
 
-  if (amount.isNegative()) {
+  if (amount.isZero()) {
+    return;
+  } else if (amount.isNegative()) {
     await removeTokens(hre, amount.abs(), asset, address);
   } else {
     await addTokens(hre, amount, asset, address, blacklist);
