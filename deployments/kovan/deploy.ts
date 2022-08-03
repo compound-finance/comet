@@ -1,5 +1,4 @@
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-import { migration } from '../../plugins/deployment_manager/Migration';
 import { deployComet } from '../../src/deploy';
 import { exp, wait } from '../../test/helpers';
 import {
@@ -33,6 +32,12 @@ interface Vars {
 };
 
 export default async function deploy(deploymentManager: DeploymentManager) {
+  return await deploymentManager.doThenVerify(
+    () => deployAll(deploymentManager)
+  );
+}
+
+async function deployAll(deploymentManager: DeploymentManager) {
   const newRoots = await deployContracts(deploymentManager);
   deploymentManager.putRoots(new Map(Object.entries(newRoots)));
 

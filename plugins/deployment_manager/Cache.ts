@@ -30,7 +30,14 @@ function parseJson<K>(x: string | undefined): K {
 }
 
 function stringifyJson<K>(k: K): string {
-  return JSON.stringify(k, null, 4);
+  return JSON.stringify(
+    k,
+    (_key, value) =>
+      typeof value === 'bigint'
+        ? value.toString()
+        : value,
+    4
+  );
 }
 
 type CacheMap = Map<string, any | CacheMap>;

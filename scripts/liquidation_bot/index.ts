@@ -18,7 +18,7 @@ async function main() {
   const dm = new DeploymentManager(hre.network.name, hre, {
     writeCacheToDisk: false,
     debug: true,
-    verifyContracts: true,
+    verificationStrategy: 'eager',
   });
   await dm.spider();
 

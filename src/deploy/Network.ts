@@ -245,7 +245,6 @@ export async function deployNetworkComet(
   }
 
   await deploymentManager.putRoots(updatedRoots);
-  await deploymentManager.spider();
 
   return {
     comet,

@@ -15,13 +15,15 @@ import { generateMigration } from './MigrationTemplate';
 import { ExtendedNonceManager } from './NonceManager';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { asyncCallWithTimeout, debug } from './Utils';
+import { deleteVerifyArgs, getVerifyArgs } from './VerifyArgs';
+import { verifyContract, VerificationStrategy } from './Verify';
 
 interface DeploymentManagerConfig {
   baseDir?: string;
   importRetries?: number;
   importRetryDelay?: number;
   writeCacheToDisk?: boolean;
-  verifyContracts?: boolean;
+  verificationStrategy?: VerificationStrategy;
   debug?: boolean;
 }
 
@@ -80,7 +82,7 @@ export class DeploymentManager {
 
   private async deployOpts(): Promise<DeployOpts> {
     return {
-      verify: this.config.verifyContracts,
+      verificationStrategy: this.config.verificationStrategy,
       cache: this.cache,
       connect: await this.getSigner(),
     };
@@ -151,6 +153,21 @@ export class DeploymentManager {
         throw new Error(`Missing deploy function in ${deployScript}.`);
       }
       await deploy(this);
+    }
+  }
+
+  /* Verifies contracts using the verify arguments stored in cache */
+  async verifyContracts() {
+    let verifyArgs = await getVerifyArgs(this.cache);
+    for (const address of verifyArgs.keys()) {
+      await verifyContract(
+        verifyArgs.get(address),
+        this.hre,
+        (await this.deployOpts()).raiseOnVerificationFailure
+      );
+
+      // Clear from cache after successfully verifying
+      await deleteVerifyArgs(this.cache, address);
     }
   }
 
@@ -238,9 +255,9 @@ export class DeploymentManager {
     return contracts.get(alias);
   }
 
-  /* Changes configuration of verifying contracts on deployment */
-  shouldVerifyContracts(verifyContracts: boolean) {
-    this.config.verifyContracts = verifyContracts;
+  /* Changes configuration of verification strategy during deployment */
+  setVerificationStrategy(verificationStrategy: VerificationStrategy) {
+    this.config.verificationStrategy = verificationStrategy;
   }
 
   /* Changes configuration of writing cache to disk, or not. */
@@ -278,6 +295,7 @@ export class DeploymentManager {
    * @param wait time to wait between tries in milliseconds
    */
   async asyncCallWithRetry(fn: (signer: SignerWithAddress) => Promise<any>, retries: number = 5, timeLimit?: number, wait: number = 250) {
+    // XXX maybe rename to `doWithRetry`
     const signer = await this.getSigner();
     try {
       return await asyncCallWithTimeout(fn(signer), timeLimit);
@@ -289,6 +307,22 @@ export class DeploymentManager {
       await new Promise(ok => setTimeout(ok, wait));
       return await this.asyncCallWithRetry(fn, retries, timeLimit, wait * 2);
     }
+  }
+
+  /**
+   * Calls an arbitrary function with lazy verification turned on
+   * Note: Main use-case is to be a light wrapper around deploy scripts
+   */
+  async doThenVerify(fn: () => Promise<any>): Promise<any> {
+    const prevSetting = this.config.verificationStrategy;
+    this.setVerificationStrategy('lazy');
+
+    const result = await fn();
+
+    await this.verifyContracts();
+    this.setVerificationStrategy(prevSetting);
+
+    return result;
   }
 
   async clone<C extends Contract>(address: string, args: any[], network?: string, retries?: number): Promise<C> {

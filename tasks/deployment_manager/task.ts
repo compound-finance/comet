@@ -58,7 +58,7 @@ task('deploy', 'Deploys market')
       const dm = new DeploymentManager(network, maybeForkEnv, {
         writeCacheToDisk: !simulate, // Don't write to disk when simulating
         debug: true,
-        verifyContracts: true,
+        verificationStrategy: 'lazy',
       });
       await dm.spider();
       await dm.deployMissing(true); // XXX truly idempotent will change the arg here
@@ -72,7 +72,7 @@ task('gen:migration', 'Generates a new migration')
     let dm = new DeploymentManager(network, env, {
       writeCacheToDisk: true,
       debug: true,
-      verifyContracts: true,
+      verificationStrategy: 'lazy',
     });
     let file = await dm.generateMigration(name);
     console.log(`Generated migration ${file}`);
@@ -97,7 +97,7 @@ task('migrate', 'Runs migration')
       let dm = new DeploymentManager(network, maybeForkEnv, {
         writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
         debug: true,
-        verifyContracts: true,
+        verificationStrategy: 'lazy',
       });
       await dm.spider();
 
