@@ -33,6 +33,8 @@ scenario('upgrade Comet implementation and initialize', {}, async ({ comet, conf
 });
 
 scenario('upgrade Comet implementation and call new function', {}, async ({ comet, configurator, proxyAdmin, timelock, actors }, context) => {
+  const { signer } = actors;
+
   // Deploy new version of Comet Factory
   const dm = context.deploymentManager;
   const cometModifiedFactory = await dm.deploy<CometModifiedFactory, CometModifiedFactory__factory, []>(
@@ -51,7 +53,7 @@ scenario('upgrade Comet implementation and call new function', {}, async ({ come
   );
 
   const CometModified = await dm.hre.ethers.getContractFactory('CometModified');
-  const modifiedComet = CometModified.attach(comet.address).connect(actors['signer'].signer);
+  const modifiedComet = CometModified.attach(comet.address).connect(signer.signer);
 
   // Call new functions on Comet
   await modifiedComet.initialize(constants.AddressZero);

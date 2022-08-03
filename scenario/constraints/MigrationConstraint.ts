@@ -37,11 +37,11 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
 
     for (let migrationList of subsets(await getMigrations(context, requirements))) {
       solutions.push(async function (ctx: T, wld: World): Promise<T> {
-        // ensure that signer is a governor of the timelock before attempting to run migrations
-        // XXX why?
 
         // XXX is there a better way to check if governor is GovernorSimple?
         try {
+          // Ensure that signer is an admin of GovernorSimple before running migrations
+          // This is so the signer has permission to propose and queue proposals
           const { signer } = ctx.actors;
           const governor = await ctx.getGovernor();
           if (!(await governor.isAdmin(signer.address))) {

@@ -1,14 +1,11 @@
 import { expect } from 'chai';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
-import { BigNumber, BigNumberish, Contract, utils } from 'ethers';
+import { BigNumber, BigNumberish, utils } from 'ethers';
 import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
-import { ProtocolConfiguration, deployComet } from '../src/deploy';
-import { World } from '../plugins/scenario';
 import { exp } from '../test/helpers';
-import { AssetConfigStruct, AssetInfoStructOutput } from '../build/types/Comet';
-import { CometInterface } from '../build/types';
+import { AssetInfoStructOutput } from '../build/types/Comet';
 
 export function abs(x: bigint): bigint {
   return x < 0n ? -x : x;
