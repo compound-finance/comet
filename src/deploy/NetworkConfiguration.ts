@@ -72,9 +72,10 @@ interface NetworkConfiguration {
   assets: { [name: string]: NetworkAssetConfiguration };
 }
 
-function getContractAddress(contractName: string, contracts: ContractMap): string {
+function getContractAddress(contractName: string, contracts: ContractMap, fallbackAddress?: string): string {
   let contract = contracts.get(contractName);
   if (!contract) {
+    if (fallbackAddress) return fallbackAddress;
     throw new Error(
       `Cannot find contract \`${contractName}\` in contract map with keys \`${JSON.stringify(
         [...contracts.keys()]
@@ -84,18 +85,12 @@ function getContractAddress(contractName: string, contracts: ContractMap): strin
   return contract.address;
 }
 
-// XXX but if contract address exists AND optional address is set in config,
-// which one takes precedence? probably override
-function hasContractAddress(contractName: string, contractMap: ContractMap): boolean {
-  return contractMap.has(contractName);
-}
-
 function getAssetConfigs(
   assets: { [name: string]: NetworkAssetConfiguration },
   contracts: ContractMap,
 ): AssetConfigStruct[] {
   return Object.entries(assets).map(([assetName, assetConfig]) => ({
-    asset: hasContractAddress(assetName, contracts) ? getContractAddress(assetName, contracts) : assetConfig.address,
+    asset: getContractAddress(assetName, contracts, assetConfig.address),
     priceFeed: address(assetConfig.priceFeed),
     decimals: number(assetConfig.decimals),
     borrowCollateralFactor: percentage(assetConfig.borrowCF),
@@ -130,7 +125,7 @@ function getOverridesOrConfig(
     ...(config.governor && { governor: _ => address(config.governor) }),
     ...(config.pauseGuardian && { pauseGuardian: _ => address(config.pauseGuardian) }),
     symbol: _ => config.symbol,
-    baseToken: _ => hasContractAddress(config.baseToken, contracts) ? getContractAddress(config.baseToken, contracts) : config.baseTokenAddress,
+    baseToken: _ => getContractAddress(config.baseToken, contracts, config.baseTokenAddress),
     baseTokenPriceFeed: _ => address(config.baseTokenPriceFeed),
     baseBorrowMin: _ => number(config.borrowMin), // TODO: in token units (?)
     storeFrontPriceFactor: _ => percentage(config.storeFrontPriceFactor),
