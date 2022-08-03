@@ -17,7 +17,6 @@ import { HARDHAT_PARAM_DEFINITIONS } from 'hardhat/internal/core/params/hardhat-
 import { Environment } from 'hardhat/internal/core/runtime-environment';
 import { ForkSpec } from '../World';
 import { memoize } from '../../../src/memoize';
-import { NetworkConfig } from "../../../hardhat.config";
 import { HttpNetworkUserConfig } from "hardhat/types";
 
 /*

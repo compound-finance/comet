@@ -50,7 +50,7 @@ throwIfMissing(SNOWTRACE_KEY, 'Missing required environment variable: SNOWTRACE_
 throwIfMissing(INFURA_KEY, 'Missing required environment variable: INFURA_KEY');
 
 // Networks
-export interface NetworkConfig {
+interface NetworkConfig {
   network: string;
   chainId: number;
   url?: string;
