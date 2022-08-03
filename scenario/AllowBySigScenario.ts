@@ -10,7 +10,7 @@ scenario(
     expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
 
     const nonce = await comet.userNonce(albert.address);
-    const expiry = (await world.timestamp()) + 100;
+    const expiry = (await world.timestamp()) + 1_000;
 
     const signature = await albert.signAuthorization({
       manager: betty.address,
