@@ -139,9 +139,14 @@ export default async function makeLiquidatableProtocol() {
     totalBorrowBase: 2e13
   });
 
+
+  // create underwater user
+  const [signer, underwaterUser, recipient] = await ethers.getSigners();
+
   // build Liquidator
   const Liquidator = await ethers.getContractFactory('Liquidator') as Liquidator__factory;
   const liquidator = await Liquidator.deploy(
+    recipient.address,
     ethers.utils.getAddress(SWAP_ROUTER),
     ethers.utils.getAddress(comet.address),
     ethers.utils.getAddress(UNISWAP_V3_FACTORY),
@@ -159,9 +164,6 @@ export default async function makeLiquidatableProtocol() {
     [500, 500, 3000, 3000, 3000, 3000]
   );
   await liquidator.deployed();
-
-  // create underwater user
-  const [signer, underwaterUser] = await ethers.getSigners();
 
   const mockDai = new ethers.Contract(DAI, daiAbi, signer);
   const mockUSDC = new ethers.Contract(USDC, usdcAbi, signer);
@@ -230,7 +232,7 @@ export default async function makeLiquidatableProtocol() {
   return {
     comet: cometHarnessInterface,
     liquidator,
-    users: [signer, underwaterUser],
+    users: [signer, underwaterUser, recipient],
     assets: {
       dai: mockDai,
       usdc: mockUSDC,
