@@ -220,7 +220,7 @@ export class CometContext {
     // Third, source from logs (expensive, in terms of node API limits)
     debug('Source Tokens: sourcing from logs...', amount, cometAsset.address);
     await sourceTokens({
-      hre: this.deploymentManager.hre,
+      dm: this.deploymentManager,
       amount,
       asset: cometAsset.address,
       address: recipientAddress,
