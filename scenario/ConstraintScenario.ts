@@ -51,7 +51,7 @@ scenario(
   'Comet#constraint > negative comet base balance (borrow position)',
   {
     tokenBalances: {
-      albert: { $base: 1000 }, // in units of asset, not wei
+      albert: { $base: ' == 1000' }, // in units of asset, not wei
     },
     cometBalances: {
       albert: { $base: -1000 }, // in units of asset, not wei
