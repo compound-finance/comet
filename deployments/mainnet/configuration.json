@@ -30,8 +30,8 @@
       "priceFeed": "0xdbd020CAeF83eFd542f4De03e3cF0C28A4428bd5",
       "decimals": "18",
       "borrowCF": 0.65,
-      "liquidateCF": 0.7,
-      "liquidationFactor": 0.92,
+      "liquidateCF": 0.73,
+      "liquidationFactor": 0.93,
       "supplyCap": "0e18"
     },
     "WBTC": {
@@ -39,8 +39,8 @@
       "priceFeed": "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c",
       "decimals": "8",
       "borrowCF": 0.7,
-      "liquidateCF": 0.75,
-      "liquidationFactor": 0.93,
+      "liquidateCF": 0.78,
+      "liquidationFactor": 0.95,
       "supplyCap": "0e8"
     },
     "WETH": {
@@ -48,8 +48,8 @@
       "priceFeed": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
       "decimals": "18",
       "borrowCF": 0.82,
-      "liquidateCF": 0.85,
-      "liquidationFactor": 0.93,
+      "liquidateCF": 0.9,
+      "liquidationFactor": 0.95,
       "supplyCap": "0e18"
     },
     "UNI": {
@@ -57,17 +57,17 @@
       "priceFeed": "0x553303d460EE0afB37EdFf9bE42922D8FF63220e",
       "decimals": "18",
       "borrowCF": 0.75,
-      "liquidateCF": 0.8,
-      "liquidationFactor": 0.92,
+      "liquidateCF": 0.83,
+      "liquidationFactor": 0.93,
       "supplyCap": "0e18"
     },
     "LINK": {
       "address": "0x514910771af9ca656af840dff83e8264ecf986ca",
       "priceFeed": "0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c",
       "decimals": "18",
-      "borrowCF": 0.75,
-      "liquidateCF": 0.8,
-      "liquidationFactor": 0.92,
+      "borrowCF": 0.79,
+      "liquidateCF": 0.87,
+      "liquidationFactor": 0.93,
       "supplyCap": "0e18"
     }
   }
