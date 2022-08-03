@@ -140,7 +140,7 @@ describe('DeploymentManager', () => {
 
   describe('verifyContracts', () => {
     it('should verify contracts succesfully', async () => {
-      let deploymentManager = new DeploymentManager('test', hre, {
+      let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
         baseDir: tempDir(),
