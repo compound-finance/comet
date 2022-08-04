@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { BigNumber, Contract, Event, EventFilter } from 'ethers';
+import { BigNumber, Contract, Event } from 'ethers';
 import { erc20 } from './ERC20';
 import { DeploymentManager } from '../../deployment_manager/DeploymentManager';
 import { MAX_SEARCH_BLOCKS, BLOCK_SPAN, fetchQuery } from '../../../scenario/utils';
