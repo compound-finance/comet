@@ -1,14 +1,9 @@
-import {
-  Comet,
-  CometRewards,
-  ERC20,
-  GovernorSimple,
-  SimpleTimelock,
-  TransparentUpgradeableProxy,
-} from '../../build/types';
 import { AssetConfigStruct } from '../../build/types/Comet';
 import { BigNumberish } from 'ethers';
-export { deployNetworkComet as deployComet } from './Network';
+
+export { deployNetworkComet as deployComet, sameAddress } from './Network';
+export { exp, getBlock, wait } from '../../test/helpers';
+export { debug } from '../../plugins/deployment_manager/Utils';
 
 export interface ProtocolConfiguration {
   symbol?: string;
@@ -35,30 +30,11 @@ export interface ProtocolConfiguration {
   rewardTokenAddress?: string;
 }
 
-// Specific contracts take precedence over `all`, which allows for expressions
-// such as:
-// { all: true, timelock: false }
-// which will deploy all contracts other than Timelock
-export interface ContractsToDeploy {
-  all?: boolean;
-  cometProxy?: boolean;
-  configuratorProxy?: boolean;
-  cometProxyAdmin?: boolean;
-  timelock?: boolean;
-  governor?: boolean;
-  cometExt?: boolean;
-  comet?: boolean;
-  configurator?: boolean;
-  cometFactory?: boolean;
-  rewards?: boolean;
-}
-
-export interface DeployedContracts {
-  comet: Comet;
-  cometProxy: TransparentUpgradeableProxy | null;
-  configuratorProxy: TransparentUpgradeableProxy | null;
-  timelock: SimpleTimelock;
-  governor: GovernorSimple;
-  rewards: CometRewards;
-  tokens?: ERC20[];
+// If `all` is specified, it takes precedence.
+// Other options are independent of one another.
+export interface DeploySpec {
+  all?: boolean;       // Re-deploy everything (including proxies and proxy admin)
+  cometMain?: boolean; // Re-deploy the main interface (config impl + comet factory + comet impl)
+  cometExt?: boolean;  // Re-deploy the ext interface (comet ext)
+  rewards?: boolean;   // Re-deploy the rewards contract
 }

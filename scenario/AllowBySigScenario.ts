@@ -35,10 +35,9 @@ scenario(
   }
 );
 
-// XXX These revert scenarios need to set `upgrade: true` because Hardhat fails to
-// recognize custom errors received in fallback functions that originate from external
-// artifacts. For example, CometExt is an external artifact here unless we redeploy it
-// using the ModernConstraint.
+// XXX These revert scenarios need to set `upgrade` because Hardhat fails to
+//  recognize custom errors received in fallback functions that originate from external artifacts.
+// CometExt is an external artifact here unless we redeploy it.
 // Related: https://github.com/NomicFoundation/hardhat/issues/1875
 scenario(
   'Comet#allowBySig > fails if owner argument is altered',

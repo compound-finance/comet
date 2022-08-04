@@ -1,4 +1,5 @@
 import { task } from 'hardhat/config';
+import { diff } from 'jest-diff';
 import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
@@ -56,18 +57,20 @@ task('deploy', 'Deploys market')
         maybeForkEnv = getForkEnv(env);
       }
       const network = env.network.name;
+      const tag = `${network}/${deployment}`;
       const dm = new DeploymentManager(
         network,
         deployment,
         maybeForkEnv,
         {
           writeCacheToDisk: !simulate, // Don't write to disk when simulating
-          debug: true,
           verificationStrategy: 'lazy',
         }
       );
-      await dm.spider();
-      await dm.deployMissing(true); // XXX truly idempotent will change the arg here
+      const overrides = undefined; // TODO: pass through cli args
+      const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
+      console.log(`[${tag}] Deployed ${dm.counter} contracts`);
+      console.log(`[${tag}]\n${diff(delta.new, delta.old, {aAnnotation: 'New addresses', bAnnotation: 'Old addresses'})}`);
     }
   );
 
@@ -82,7 +85,6 @@ task('gen:migration', 'Generates a new migration')
       env,
       {
         writeCacheToDisk: true,
-        debug: true,
         verificationStrategy: 'lazy',
       }
     );
@@ -113,7 +115,6 @@ task('migrate', 'Runs migration')
         maybeForkEnv,
         {
           writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-          debug: true,
           verificationStrategy: 'lazy',
         }
       );

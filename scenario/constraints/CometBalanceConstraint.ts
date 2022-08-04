@@ -155,7 +155,6 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
             actualBalance = BigNumber.from(await comet.collateralBalanceOf(actor.address, asset.address));
             expectedBalance = BigNumber.from(exp(amount.val, decimals));
           }
-          console.log('expected balance is ', expectedBalance)
           switch (amount.op) {
             case ComparisonOp.EQ:
               expect(actualBalance).to.equal(expectedBalance);

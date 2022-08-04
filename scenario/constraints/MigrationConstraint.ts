@@ -3,6 +3,7 @@ import { CometContext } from '../context/CometContext';
 import { Requirements } from './Requirements';
 import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
 import { modifiedPaths } from '../utils';
+import { debug } from '../../plugins/deployment_manager/Utils';
 
 async function getMigrations<T>(context: CometContext, requirements: Requirements): Promise<Migration<T>[]> {
   // TODO: make this configurable from cli params/env var?
@@ -20,10 +21,6 @@ function* subsets<T>(array: T[], offset = 0): Generator<T[]> {
     }
   }
   yield [];
-}
-
-function debug(...args: any[]) {
-  console.log(`[MigrationConstraint]`, ...args);
 }
 
 async function asyncFilter<T>(els: T[], f: (T) => Promise<boolean>): Promise<T[]> {

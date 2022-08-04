@@ -1,4 +1,3 @@
-
 export type ABI = string | any[];
 
 export interface ContractMetadata {

@@ -1,5 +1,4 @@
 import { get, getEtherscanApiKey, getEtherscanApiUrl, getEtherscanUrl } from './etherscan';
-import { memoizeAsync } from '../../src/memoize';
 
 /**
  * Copied from Saddle import with some small modifications.
@@ -14,7 +13,7 @@ export async function loadContract(source: string, network: string, address: str
   }
   switch (source) {
     case 'etherscan':
-      return await loadEtherscanContractMemoized(network, address);
+      return await loadEtherscanContract(network, address);
     default:
       throw new Error(`Unknown source \`${source}\`, expected one of [etherscan]`);
   }
@@ -129,7 +128,3 @@ export async function loadEtherscanContract(network: string, address: string) {
 
   return contractBuild;
 }
-
-const loadEtherscanContractMemoized = memoizeAsync(loadEtherscanContract, {
-  debug: true,
-});

@@ -141,16 +141,18 @@ export class Cache {
   async storeCache<T>(spec: FileSpec, data: T, diskTransformer: (T) => string = stringifyJson) {
     this.putMemory<T>(spec, data);
     if (this.writeCacheToDisk) {
-      return await this.putDisk<T>(spec, data, diskTransformer);
+      await this.putDisk<T>(spec, data, diskTransformer);
     }
   }
 
   async readMap<V>(spec: FileSpec): Promise<Map<string, V>> {
-    return await this.readCache(spec, compose<string, object, Map<string, V>>(parseJson, objectToMap));
+    // make sure others have their own copy of the map so they don't modify the memory version
+    return new Map(await this.readCache(spec, compose<string, object, Map<string, V>>(parseJson, objectToMap)));
   }
 
   async storeMap<K, V>(spec: FileSpec, map: Map<K, V>) {
-    await this.storeCache(spec, map, compose(objectFromMap, stringifyJson));
+    // make sure we have our own copy of the map so others don't modify the memory version
+    await this.storeCache(spec, new Map(map), compose(objectFromMap, stringifyJson));
   }
 
   clearMemory() {

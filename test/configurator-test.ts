@@ -188,14 +188,26 @@ describe('configurator', function () {
       expect((await configuratorAsProxy.getConfiguration(newCometProxyAddress)).governor).to.be.equal(newConfiguration.governor);
     });
 
-    it('reverts when setting Configuration for a Comet proxy with an existing configuration', async () => {
+    it('allows setting a valid Configuration for a Comet proxy with an existing configuration', async () => {
       const { configurator, configuratorProxy, cometProxy } = await makeConfigurator();
 
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       const configuration = await configuratorAsProxy.getConfiguration(cometProxy.address);
 
+      const _tx = await wait(configuratorAsProxy.setConfiguration(cometProxy.address, configuration));
+
+      expect(await configuratorAsProxy.getConfiguration(cometProxy.address)).to.be.not.equal(configuration);
+    });
+
+    it('reverts when setting bad Configuration for a Comet proxy with an existing configuration', async () => {
+      const { configurator, configuratorProxy, cometProxy } = await makeConfigurator();
+
+      const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+      const oldConfiguration = await configuratorAsProxy.getConfiguration(cometProxy.address);
+      const newConfiguration = { ...oldConfiguration, baseToken: ethers.constants.AddressZero };
+
       await expect(
-        configuratorAsProxy.setConfiguration(cometProxy.address, configuration)
+        configuratorAsProxy.setConfiguration(cometProxy.address, newConfiguration)
       ).to.be.revertedWith("custom error 'ConfigurationAlreadyExists()'");
     });
 

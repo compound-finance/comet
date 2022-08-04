@@ -25,7 +25,6 @@ async function main() {
     hre,
     {
       writeCacheToDisk: false,
-      debug: true,
       verificationStrategy: 'eager',
     }
   );

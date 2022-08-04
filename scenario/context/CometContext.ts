@@ -71,32 +71,24 @@ export class CometContext {
     this.assets = {};
   }
 
-  async contracts(): Promise<ContractMap> {
-    return await this.deploymentManager.contracts();
-  }
-
   async getComet(): Promise<CometInterface> {
-    return await this.deploymentManager.contract('comet') as CometInterface;
-  }
-
-  async getCometImplemenation(): Promise<Comet> {
-    return await this.deploymentManager.contract('comet:implementation') as Comet;
+    return this.deploymentManager.contract('comet');
   }
 
   async getCometAdmin(): Promise<CometProxyAdmin> {
-    return await this.deploymentManager.contract('cometAdmin') as CometProxyAdmin;
+    return this.deploymentManager.contract('cometAdmin');
   }
 
   async getConfigurator(): Promise<Configurator> {
-    return await this.deploymentManager.contract('configurator') as Configurator;
+    return this.deploymentManager.contract('configurator');
   }
 
   async getTimelock(): Promise<SimpleTimelock> {
-    return await this.deploymentManager.contract('timelock') as SimpleTimelock;
+    return this.deploymentManager.contract('timelock');
   }
 
   async getGovernor(): Promise<GovernorSimple> {
-    return await this.deploymentManager.contract('governor') as GovernorSimple;
+    return this.deploymentManager.contract('governor');
   }
 
   async getConfiguration(): Promise<ProtocolConfiguration> {
@@ -106,83 +98,35 @@ export class CometContext {
   }
 
   async upgrade(configOverrides: ProtocolConfiguration): Promise<CometContext> {
-    debug('Upgrading to modern...');
-    const oldComet = await this.getComet();
-    const timelock = await this.getTimelock();
-    const cometConfig = { governor: timelock.address, ...configOverrides } // Use old timelock as governor
-    const { comet: newComet } = await deployComet(
-      this.deploymentManager,
-      // Deploy a new configurator proxy to set the proper CometConfiguration storage values
-      {
-        configuratorProxy: true,
-        configurator: true,
-        comet: true,
-        cometExt: true,
-        cometFactory: true
-      },
-      cometConfig,
-      null,
-      this.actors['signer'].signer
-    );
-
-    let initializer: string | undefined;
-    if (!oldComet.totalsBasic || (await oldComet.totalsBasic()).lastAccrualTime === 0) {
-      initializer = (await newComet.populateTransaction.initializeStorage()).data;
-    }
-
-    await this.upgradeTo(newComet, initializer);
-    await this.setAssets();
-    await this.spider();
-    debug('Upgraded to modern...');
-    return this;
-  }
-
-  async upgradeTo(newComet: Comet, data?: string) {
     const { world } = this;
 
-    let comet = await this.getComet();
-    let proxyAdmin = await this.getCometAdmin();
+    const oldComet = await this.getComet();
+    const admin = await world.impersonateAddress(await oldComet.governor(), 10n**18n);
 
-    // Set the admin and pause guardian addresses again since these may have changed.
-    let adminAddress = await comet.governor();
-    let pauseGuardianAddress = await comet.pauseGuardian();
-    let adminSigner = await world.impersonateAddress(adminAddress);
-    let pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
+    const deploySpec = { cometMain: true, cometExt: true };
+    const deployed = await deployComet(this.deploymentManager, deploySpec, configOverrides, admin);
 
-    // Set gas fee to 0 in case admin is a contract address (e.g. Timelock)
-    await this.setNextBaseFeeToZero();
-    if (data) {
-      await (await proxyAdmin.connect(adminSigner).upgradeAndCall(comet.address, newComet.address, data, { gasPrice: 0 })).wait();
-    } else {
-      await (await proxyAdmin.connect(adminSigner).upgrade(comet.address, newComet.address, { gasPrice: 0 })).wait();
-    }
-    this.actors['admin'] = await buildActor('admin', adminSigner, this);
-    this.actors['pauseGuardian'] = await buildActor('pauseGuardian', pauseGuardianSigner, this);
-  }
+    await this.deploymentManager.spider(deployed);
+    await this.setAssets();
 
-  async spider() {
-    await this.deploymentManager.spider();
-  }
+    debug('Upgraded comet...');
 
-  primaryActor(): CometActor {
-    return this.actors['signer'];
+    return this;
   }
 
   async allocateActor(name: string, info: object = {}): Promise<CometActor> {
     const { world } = this;
+    const { signer } = this.actors;
 
-    let actorAddress = getAddressFromNumber(Object.keys(this.actors).length + 1);
-    let signer = await world.impersonateAddress(actorAddress);
-    let actor: CometActor = new CometActor(name, signer, actorAddress, this, info);
+    const actorAddress = getAddressFromNumber(Object.keys(this.actors).length + 1);
+    const actorSigner = await world.impersonateAddress(actorAddress);
+    const actor: CometActor = new CometActor(name, actorSigner, actorAddress, this, info);
     this.actors[name] = actor;
 
-    // For now, send some Eth from the first actor. Pay attention in the future
-    let primaryActor = this.primaryActor();
-    let nativeTokenAmount = world.base.allocation ?? 1.0;
     // When we allocate a new actor, how much eth should we warm the account with?
     // This seems to really vary by which network we're looking at, esp. since EIP-1559,
     // which makes the base fee for transactions variable by the network itself.
-    await primaryActor.sendEth(actor, nativeTokenAmount);
+    await signer.sendEth(actor, world.base.allocation ?? 1.0);
 
     return actor;
   }
@@ -348,23 +292,22 @@ async function buildActor(name: string, signer: SignerWithAddress, context: Come
 export async function getActors(context: CometContext): Promise<{ [name: string]: CometActor }> {
   const { world, deploymentManager } = context;
 
-  let comet = await context.getComet();
-
-  let [
+  const comet = await context.getComet();
+  const [
     localAdminSigner,
     localPauseGuardianSigner,
     albertSigner,
     bettySigner,
     charlesSigner
   ] = await deploymentManager.getSigners();
-  let adminSigner, pauseGuardianSigner;
 
-  let adminAddress = await comet.governor();
-  let pauseGuardianAddress = await comet.pauseGuardian();
-  let useLocalAdminSigner = adminAddress === await localAdminSigner.getAddress();
-  let useLocalPauseGuardianSigner = pauseGuardianAddress === await localPauseGuardianSigner.getAddress();
-  adminSigner = useLocalAdminSigner ? localAdminSigner : await world.impersonateAddress(adminAddress);
-  pauseGuardianSigner = useLocalPauseGuardianSigner ? localPauseGuardianSigner : await world.impersonateAddress(pauseGuardianAddress);
+  const adminAddress = await comet.governor();
+  const pauseGuardianAddress = await comet.pauseGuardian();
+  const useLocalAdminSigner = adminAddress === await localAdminSigner.getAddress();
+  const useLocalPauseGuardianSigner = pauseGuardianAddress === await localPauseGuardianSigner.getAddress();
+  const adminSigner = useLocalAdminSigner ? localAdminSigner : await world.impersonateAddress(adminAddress);
+  const pauseGuardianSigner = useLocalPauseGuardianSigner ? localPauseGuardianSigner : await world.impersonateAddress(pauseGuardianAddress);
+
   return {
     admin: await buildActor('admin', adminSigner, context),
     pauseGuardian: await buildActor('pauseGuardian', pauseGuardianSigner, context),
@@ -379,7 +322,7 @@ export async function getAssets(context: CometContext): Promise<{ [symbol: strin
   const { deploymentManager } = context;
 
   let comet = await context.getComet();
-  let signer = (await deploymentManager.hre.ethers.getSigners())[1]; // dunno?
+  let signer = await deploymentManager.getSigner();
   let numAssets = await comet.numAssets();
   let assetAddresses = [
     await comet.baseToken(),

@@ -48,7 +48,6 @@ async function main() {
     {
       writeCacheToDisk: true,
       verificationStrategy: isDevelopment ? 'eager' : 'none',
-      debug: true,
     }
   );
 
