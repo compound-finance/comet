@@ -12,6 +12,7 @@ export async function getRoots(cache: Cache): Promise<Roots> {
 }
 
 // Stores new roots for a given deployment in cache
-export async function putRoots(cache: Cache, roots: Roots) {
+export async function putRoots(cache: Cache, roots: Roots): Promise<Roots> {
   await cache.storeMap<Alias, Address>(rootsSpec, roots);
+  return roots;
 }

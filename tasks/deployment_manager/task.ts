@@ -1,7 +1,8 @@
 import { task } from 'hardhat/config';
+import { diff } from 'jest-diff';
 import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
+import { DeploymentManager } from '../../plugins/deployment_manager';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
 
 // TODO: Don't depend on scenario's hreForBase
@@ -48,45 +49,57 @@ async function runMigration<T>(
 
 task('deploy', 'Deploys market')
   .addFlag('simulate', 'only simulates the blockchain effects')
+  .addFlag('noVerify', 'do not verify any contracts')
+  .addFlag('overwrite', 'overwrites cache')
   .addParam('deployment', 'The deployment to deploy')
-  .setAction(
-    async ({ simulate, deployment }, env: HardhatRuntimeEnvironment) => {
-      let maybeForkEnv: HardhatRuntimeEnvironment = env;
-      if (simulate) {
-        maybeForkEnv = getForkEnv(env);
+  .setAction(async ({ simulate, noVerify, overwrite, deployment }, env) => {
+    const maybeForkEnv = simulate ? getForkEnv(env) : env;
+    const network = env.network.name;
+    const tag = `${network}/${deployment}`;
+    const dm = new DeploymentManager(
+      network,
+      deployment,
+      maybeForkEnv,
+      {
+        writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
+        verificationStrategy: 'lazy',
       }
-      const network = env.network.name;
-      const dm = new DeploymentManager(
-        network,
-        deployment,
-        maybeForkEnv,
-        {
-          writeCacheToDisk: !simulate, // Don't write to disk when simulating
-          debug: true,
-          verificationStrategy: 'lazy',
-        }
-      );
-      await dm.spider();
-      await dm.deployMissing(true); // XXX truly idempotent will change the arg here
-    }
-  );
+    );
+
+    const overrides = undefined; // TODO: pass through cli args
+    const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
+    console.log(`[${tag}] Deployed ${dm.counter} contracts`);
+    console.log(`[${tag}]\n${diff(delta.new, delta.old, {aAnnotation: 'New addresses', bAnnotation: 'Old addresses'})}`);
+
+    const verify = noVerify ? false : !simulate;
+    const desc = verify ? 'Verify' : 'Would verify';
+    await dm.verifyContracts(async (address, args) => {
+      // TODO: add comet impl verification (on deploy) and delete verify-comet script
+      if (args.via === 'buildfile') {
+        const { contract: _, ...rest } = args;
+        console.log(`[${tag}] ${desc} ${address}:`, rest);
+      } else {
+        console.log(`[${tag}] ${desc} ${address}:`, args);
+      }
+      return verify;
+    });
+  });
 
 task('gen:migration', 'Generates a new migration')
   .addPositionalParam('name', 'name of the migration')
   .addParam('deployment', 'The deployment to generate the migration for')
-  .setAction(async ({ name, deployment }, env: HardhatRuntimeEnvironment) => {
-    let network = env.network.name;
-    let dm = new DeploymentManager(
+  .setAction(async ({ name, deployment }, env) => {
+    const network = env.network.name;
+    const dm = new DeploymentManager(
       network,
       deployment,
       env,
       {
         writeCacheToDisk: true,
-        debug: true,
         verificationStrategy: 'lazy',
       }
     );
-    let file = await dm.generateMigration(name);
+    const file = await dm.generateMigration(name);
     console.log(`Generated migration ${network}/${deployment}/${file}`);
   });
 
@@ -98,29 +111,22 @@ task('migrate', 'Runs migration')
   .addFlag('simulate', 'only simulates the blockchain effects')
   .addFlag('overwrite', 'overwrites artifact if exists, fails otherwise')
   .setAction(
-    async (
-      { migration: migrationName, prepare, enact, simulate, overwrite, deployment },
-      env: HardhatRuntimeEnvironment
-    ) => {
-      let maybeForkEnv: HardhatRuntimeEnvironment = env;
-      if (simulate) {
-        maybeForkEnv = getForkEnv(env);
-      }
-      let network = env.network.name;
-      let dm = new DeploymentManager(
+    async ({ migration: migrationName, prepare, enact, simulate, overwrite, deployment }, env) => {
+      const maybeForkEnv = simulate ? getForkEnv(env) : env;
+      const network = env.network.name;
+      const dm = new DeploymentManager(
         network,
         deployment,
         maybeForkEnv,
         {
           writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-          debug: true,
           verificationStrategy: 'lazy',
         }
       );
       await dm.spider();
 
-      let migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
-      let [migration] = await loadMigrations([migrationPath]);
+      const migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
+      const [migration] = await loadMigrations([migrationPath]);
       if (!migration) {
         throw new Error(`Unknown migration for network ${network}/${deployment}: \`${migrationName}\`.`);
       }

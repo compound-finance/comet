@@ -4,41 +4,35 @@ import { Requirements } from './Requirements';
 import { IGovernorBravo } from '../../build/types';
 import { fetchQuery } from '../utils';
 
-
 function debug(...args: any[]) {
   console.log(`[ProposalConstraint]`, ...args);
 }
 
+// TODO: can we import the enum from IGovernorBravo?
 // States of proposals that need to be executed
 const PENDING_PROPOSAL_STATE = 0;
 const ACTIVE_PROPOSAL_STATE = 1;
 
 type PendingProposal = { proposalId: number, startBlock: number, endBlock: number };
 
-async function getAllPendingProposals(world: World, governor: string, admin: string): Promise<PendingProposal[]> {
-  const adminSigner = await world.impersonateAddress(admin);
-  const governorAsAdmin = await world.hre.ethers.getContractAt(
-    'IGovernorBravo',
-    governor,
-    adminSigner
-  ) as IGovernorBravo;
-  const votingDelay = (await governorAsAdmin.votingDelay()).toNumber();
-  const votingPeriod = (await governorAsAdmin.votingPeriod()).toNumber();
+async function getAllPendingProposals(world: World, governor: IGovernorBravo): Promise<PendingProposal[]> {
+  const votingDelay = (await governor.votingDelay()).toNumber();
+  const votingPeriod = (await governor.votingPeriod()).toNumber();
   const block = await world.hre.ethers.provider.getBlockNumber();
-  let filter = governorAsAdmin.filters.ProposalCreated();
-  let { recentLogs } = await fetchQuery(
-    governorAsAdmin,
+  const filter = governor.filters.ProposalCreated();
+  const { recentLogs } = await fetchQuery(
+    governor,
     filter,
     block - (votingDelay + votingPeriod),
     block,
     block
   );
 
-  const pendingProposals: PendingProposal[] = [];
+  const pendingProposals = [];
   if (recentLogs) {
     for (let log of recentLogs) {
       const [proposalId, , , , , , startBlock, endBlock] = log.args;
-      const state = await governorAsAdmin.state(proposalId);
+      const state = await governor.state(proposalId);
       // Save only pending proposals
       if (state == PENDING_PROPOSAL_STATE || state == ACTIVE_PROPOSAL_STATE) {
         pendingProposals.push({
@@ -49,13 +43,12 @@ async function getAllPendingProposals(world: World, governor: string, admin: str
       }
     }
   }
-
   return pendingProposals;
 }
 
 export class ProposalConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, context: T, world: World) {
-    let solutions: Solution<T>[] = [];
+    const solutions: Solution<T>[] = [];
 
     // Only run migration for mainnet scenarios
     if (await world.chainId() != 1) {
@@ -63,13 +56,9 @@ export class ProposalConstraint<T extends CometContext, R extends Requirements> 
     }
 
     const governor = await context.getGovernor();
+    const proposals = await getAllPendingProposals(world, governor);
 
-    // XXX pull all pending proposals for the associated gov (chain)
-    // produce all the subsets and queue/execute each batch of them
-    // to form each solution
-    const pendingProposals = await getAllPendingProposals(world, governor.address, context.voters[0]);
-
-    for (let proposal of pendingProposals) {
+    for (let proposal of proposals) {
       solutions.push(async function (context: T): Promise<T> {
         try {
           // XXX if gov chain is not local chain, simulate bridge

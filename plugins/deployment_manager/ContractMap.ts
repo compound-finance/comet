@@ -5,7 +5,7 @@ import { Cache, FileSpec } from './Cache';
 import { ABI, Address, Alias, BuildFile } from './Types';
 import { Aliases, getAliases } from './Aliases';
 import { Proxies, getProxies } from './Proxies';
-import { getPrimaryContract, mergeABI } from './Utils';
+import { debug, getPrimaryContract, mergeABI } from './Utils';
 
 export type ContractMap = Map<Alias, Contract>;
 
@@ -17,10 +17,10 @@ export async function getContractsFromAliases(
   hre: HardhatRuntimeEnvironment,
   signer?: Signer
 ): Promise<ContractMap> {
-  let contracts: ContractMap = new Map();
-  let theSigner = signer ?? (await hre.ethers.getSigners())[0];
-  for (let [alias, address] of aliases.entries()) {
-    let contract = await getContractByAddressProxy(
+  const contracts: ContractMap = new Map();
+  const theSigner = signer ?? (await hre.ethers.getSigners())[0];
+  for (const [alias, address] of aliases.entries()) {
+    const contract = await getContractByAddressProxy(
       cache,
       proxies,
       address,
@@ -31,7 +31,9 @@ export async function getContractsFromAliases(
       address
     );
 
-    contracts.set(alias, contract);
+    if (contract) {
+      contracts.set(alias, contract);
+    }
   }
 
   return contracts;
@@ -47,9 +49,13 @@ async function getContractByAddressProxy(
   accABI: ABI,
   accAlias: string,
   accAddress: Address
-): Promise<Contract> {
-  let { abi } = await getContractByAddress(cache, accAlias, accAddress, hre, signer);
-  let nextABI = mergeABI(abi, accABI); // duplicate entries (like constructor) defer to accABI
+): Promise<Contract | null> {
+  const contract = await getContractByAddress(cache, accAlias, accAddress, hre, signer);
+  if (!contract) {
+    return null; // NB: assume its not a contract
+  }
+  const { abi } = contract;
+  const nextABI = mergeABI(abi, accABI); // duplicate entries (like constructor) defer to accABI
   if (proxies.has(accAlias)) {
     return await getContractByAddressProxy(
       cache,
@@ -74,42 +80,33 @@ async function getContractByAddress(
   hre: HardhatRuntimeEnvironment,
   signer: Signer,
   implBuildFile?: BuildFile
-): Promise<{ name: string, contract: Contract, abi: ABI }> {
-  let buildFile = await getRequiredBuildFile(cache, address, alias);
-  let [contractName, metadata] = getPrimaryContract(buildFile);
+): Promise<{ name: string, contract: Contract, abi: ABI } | null> {
+  const buildFile = await getBuildFile(cache, address);
+  if (!buildFile) {
+    debug(`No build file for ${alias} (${address}), assuming its not a contract`);
+    return null;
+  }
+  const [contractName, metadata] = getPrimaryContract(buildFile);
   let abi;
   if (implBuildFile) {
-    let [_implContractName, implMetadata] = getPrimaryContract(implBuildFile);
+    const [_implContractName, implMetadata] = getPrimaryContract(implBuildFile);
     abi = implMetadata.abi;
   } else {
     abi = metadata.abi;
   }
-
   return { name: contractName, contract: new hre.ethers.Contract(address, abi, signer), abi: abi };
 }
 
 function getFileSpec(address: Address): FileSpec {
-  return { rel: ['contracts', address + '.json'] };
+  return { top: ['.contracts', address + '.json'] };
 }
 
 export async function getBuildFile(cache: Cache, address: Address): Promise<BuildFile> {
-  return await cache.readCache<BuildFile>(getFileSpec(address));
+  return cache.readCache<BuildFile>(getFileSpec(address));
 }
 
 export async function storeBuildFile(cache: Cache, address: Address, buildFile: BuildFile) {
   await cache.storeCache(getFileSpec(address), buildFile);
-}
-
-async function getRequiredBuildFile(
-  cache: Cache,
-  address: Address,
-  alias?: Alias
-): Promise<BuildFile> {
-  let buildFile = await getBuildFile(cache, address);
-  if (!buildFile) {
-    throw new Error(`Failed to find contract${alias ? ' by alias ' + alias : ''} at ${address}`);
-  }
-  return buildFile;
 }
 
 /**
@@ -120,7 +117,7 @@ export async function getContracts(
   hre: HardhatRuntimeEnvironment,
   signer?: Signer
 ): Promise<ContractMap> {
-  let aliases = await getAliases(cache);
-  let proxies = await getProxies(cache);
+  const aliases = await getAliases(cache);
+  const proxies = await getProxies(cache);
   return await getContractsFromAliases(cache, aliases, proxies, hre, signer);
 }

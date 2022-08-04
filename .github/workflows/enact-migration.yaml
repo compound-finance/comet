@@ -1,4 +1,4 @@
-name: 'Enact Migration'
+name: Enact Migration
 on:
   workflow_dispatch:
     inputs:

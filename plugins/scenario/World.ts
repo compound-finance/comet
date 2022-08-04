@@ -22,7 +22,7 @@ export class World {
     // Q: should we really need to fork/snapshot the deployment manager?
     this.hre = hre;
     this.base = base;
-    this.deploymentManager = new DeploymentManager(base.network, base.deployment, hre, { debug: true });
+    this.deploymentManager = new DeploymentManager(base.network, base.deployment, hre);
     this.snapshotDeploymentManager = this.deploymentManager;
   }
 
@@ -51,7 +51,11 @@ export class World {
     return await this._snapshot();
   }
 
-  async impersonateAddress(address: string): Promise<SignerWithAddress> {
+  async impersonateAddress(address: string, value?: bigint): Promise<SignerWithAddress> {
+    if (value) {
+      const signer = await this.deploymentManager.getSigner();
+      await signer.sendTransaction({ to: address, value });
+    }
     await this.hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [address],

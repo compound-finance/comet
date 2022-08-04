@@ -495,10 +495,10 @@
     "@ethersproject/properties" "^5.6.0"
     "@ethersproject/transactions" "^5.6.2"
 
-"@ethersproject/experimental@^5.6.2":
-  version "5.6.2"
-  resolved "https://registry.yarnpkg.com/@ethersproject/experimental/-/experimental-5.6.2.tgz#2614f87df3c0111f6dccf420a8e8fa37ea321b65"
-  integrity sha512-9iP+S8EeNMuPtiCxjpKFMH5/CGHZDNJrhtLYV10RhCDB7MQMkzvBZpMkWurObLTv7Kof273WPBXMFrt7PZ0ZWw==
+"@ethersproject/experimental@^5.6.3":
+  version "5.6.3"
+  resolved "https://registry.yarnpkg.com/@ethersproject/experimental/-/experimental-5.6.3.tgz#d1cd8f3b886cbab86430fb2954eb65ddb7c75ffd"
+  integrity sha512-yMymv32XMr9sXvHc3S1On2wD0JMT6n4X9uKpfZ8jFFw5rEcI99yfovcCZ0tpUedh1b3IvReSain+RobeNQmmEg==
   dependencies:
     "@ethersproject/web" "^5.6.1"
     ethers "^5.6.8"

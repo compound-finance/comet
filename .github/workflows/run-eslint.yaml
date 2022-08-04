@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
 jobs:
-  run-coverage:
+  run-lint:
     name: Run ESLint
     runs-on: ubuntu-latest
     env:

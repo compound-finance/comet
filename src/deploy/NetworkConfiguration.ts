@@ -2,6 +2,7 @@ import { AssetConfigStruct } from '../../build/types/Comet';
 import { ProtocolConfiguration } from './index';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
+import { ethers } from 'ethers';
 
 function address(a: string): string {
   if (!a.match(/^0x[a-fA-F0-9]{40}$/)) {
@@ -58,6 +59,7 @@ interface NetworkAssetConfiguration {
 }
 
 interface NetworkConfiguration {
+  name: string;
   symbol: string;
   governor?: string;
   pauseGuardian?: string;
@@ -124,9 +126,10 @@ function getOverridesOrConfig(
     baseMinForRewards: _ => number(tracking.baseMinForRewards),
   });
   const mapping = () => ({
-    ...(config.governor && { governor: _ => address(config.governor) }),
-    ...(config.pauseGuardian && { pauseGuardian: _ => address(config.pauseGuardian) }),
+    name: _ => config.name,
     symbol: _ => config.symbol,
+    governor: _ => config.governor ? address(config.governor) : getContractAddress('timelock', contracts),
+    pauseGuardian: _ => config.pauseGuardian ? address(config.pauseGuardian) : getContractAddress('timelock', contracts),
     baseToken: _ => getContractAddress(config.baseToken, contracts, config.baseTokenAddress),
     baseTokenPriceFeed: _ => address(config.baseTokenPriceFeed),
     baseBorrowMin: _ => number(config.borrowMin), // TODO: in token units (?)
@@ -137,7 +140,7 @@ function getOverridesOrConfig(
     assetConfigs: _ => getAssetConfigs(config.assets, contracts),
     rewardTokenAddress: _ => (config.rewardToken || config.rewardTokenAddress) ?
       getContractAddress(config.rewardToken, contracts, config.rewardTokenAddress) :
-      undefined
+      ethers.constants.AddressZero,
   });
   return Object.entries(mapping()).reduce((acc, [k, f]) => {
     return { [k]: overrides[k] ?? f(config), ...acc };
@@ -146,10 +149,9 @@ function getOverridesOrConfig(
 
 export async function getConfiguration(
   deploymentManager: DeploymentManager,
-  contractOverrides?: ContractMap,
   configOverrides: ProtocolConfiguration = {},
 ): Promise<ProtocolConfiguration> {
-  const config = await deploymentManager.cache.readCache({ rel: 'configuration.json' });
-  const contracts = contractOverrides ?? await deploymentManager.contracts();
-  return getOverridesOrConfig(configOverrides, config as NetworkConfiguration, contracts);
+  const config = await deploymentManager.readConfig<NetworkConfiguration>();
+  const contracts = await deploymentManager.contracts();
+  return getOverridesOrConfig(configOverrides, config, contracts);
 }
