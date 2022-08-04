@@ -47,7 +47,7 @@ export async function deployNetworkComet(
   }
 
   let ethers = deploymentManager.hre.ethers;
-  let governorSimple, timelock, proxyAdmin, cometExt, cometProxy, configuratorProxy, comet, configurator, cometFactory, rewards;
+  let governorSimple, timelock, proxyAdmin, cometExt, cometProxy, configuratorProxy, comet, configurator, cometFactory, rewards: CometRewards;
 
   /* === Deploy Contracts === */
 
@@ -99,6 +99,7 @@ export async function deployNetworkComet(
     baseBorrowMin,
     targetReserves,
     assetConfigs,
+    rewardTokenAddress
   } = {
     governor: timelock ? timelock.address : ethers.constants.AddressZero,
     pauseGuardian: timelock ? timelock.address : ethers.constants.AddressZero,
@@ -168,15 +169,6 @@ export async function deployNetworkComet(
     configurator = await deploymentManager.contract('configurator:implementation') as Configurator;
   }
 
-  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.rewards)) {
-    rewards = await deploymentManager.deploy<CometRewards, CometRewards__factory, [string]>(
-      'CometRewards.sol',
-      [governor]
-    );
-  } else {
-    rewards = await deploymentManager.contract('rewards') as CometRewards;
-  }
-
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxyAdmin)) {
     let proxyAdminArgs: [] = [];
     proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
@@ -235,7 +227,7 @@ export async function deployNetworkComet(
     );
 
     // Transfer ownership of Configurator
-    debug(`Transferring ownership in Configurator`);
+    debug(`Transferring ownership of Configurator`);
     await deploymentManager.asyncCallWithRetry(
       (signer_) => wait(configuratorAsProxy.connect(adminSigner_ ?? signer_).transferGovernor(governor))
     );
@@ -243,6 +235,31 @@ export async function deployNetworkComet(
     updatedRoots.set('configurator', configuratorProxy.address);
   } else {
     configuratorProxy = await deploymentManager.contract('configurator') as Configurator;
+  }
+
+
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.rewards)) {
+    rewards = await deploymentManager.deploy<CometRewards, CometRewards__factory, [string]>(
+      'CometRewards.sol',
+      [adminSigner.address]
+    );
+
+    // Set the rewards config for Comet in CometRewards
+    // XXX we should validate rewardTokenAddress is set earlier
+    debug(`Setting RewardConfig in CometRewards`);
+    await deploymentManager.asyncCallWithRetry(
+      (signer_) => wait(rewards.connect(adminSigner_ ?? signer_).setRewardConfig(cometProxy.address, rewardTokenAddress))
+    );
+
+    // Transfer ownership of CometRewards
+    debug(`Transferring ownership of CometRewards`);
+    await deploymentManager.asyncCallWithRetry(
+      (signer_) => wait(rewards.connect(adminSigner_ ?? signer_).transferGovernor(governor))
+    );
+
+    updatedRoots.set('rewards', rewards.address);
+  } else {
+    rewards = await deploymentManager.contract('rewards') as CometRewards;
   }
 
   await deploymentManager.putRoots(updatedRoots);

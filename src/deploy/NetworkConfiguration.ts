@@ -70,6 +70,8 @@ interface NetworkConfiguration {
   rates: NetworkRateConfiguration;
   tracking: NetworkTrackingConfiguration;
   assets: { [name: string]: NetworkAssetConfiguration };
+  rewardToken?: string;
+  rewardTokenAddress?: string;
 }
 
 function getContractAddress(contractName: string, contracts: ContractMap, fallbackAddress?: string): string {
@@ -132,7 +134,8 @@ function getOverridesOrConfig(
     targetReserves: _ => number(config.targetReserves),
     ...interestRateInfoMapping(config.rates),
     ...trackingInfoMapping(config.tracking),
-    assetConfigs: _ => getAssetConfigs(config.assets, contracts)
+    assetConfigs: _ => getAssetConfigs(config.assets, contracts),
+    rewardTokenAddress: _ => getContractAddress(config.rewardToken, contracts, config.rewardTokenAddress)
   });
   return Object.entries(mapping()).reduce((acc, [k, f]) => {
     return { [k]: overrides[k] ?? f(config), ...acc };
