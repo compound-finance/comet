@@ -4,10 +4,8 @@ import { existsSync } from 'fs';
 import { BigNumber, BigNumberish, utils } from 'ethers';
 import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
-import { GovernorSimple } from '../build/types';
 import { exp } from '../test/helpers';
-import { AssetConfigStruct, AssetInfoStructOutput } from '../build/types/Comet';
-import { CometInterface } from '../build/types';
+import { AssetInfoStructOutput } from '../build/types/Comet';
 
 export function abs(x: bigint): bigint {
   return x < 0n ? -x : x;

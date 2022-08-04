@@ -57,7 +57,7 @@ export class World {
       method: 'hardhat_impersonateAccount',
       params: [address],
     });
-    return await this.hre.ethers.getSigner(address);
+    return await this.deploymentManager.getSigner(address);
   }
 
   async timestamp() {

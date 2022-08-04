@@ -14,7 +14,18 @@ import {
 } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
-import { Comet, CometInterface, ProxyAdmin, ERC20, ERC20__factory, Configurator, SimpleTimelock, CometProxyAdmin, GovernorSimple } from '../../build/types';
+import {
+  Comet,
+  CometInterface,
+  ProxyAdmin,
+  ERC20,
+  ERC20__factory,
+  Configurator,
+  SimpleTimelock,
+  CometProxyAdmin,
+  GovernorSimple,
+  IGovernorBravo,
+} from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { ProtocolConfiguration, deployComet } from '../../src/deploy';
@@ -112,7 +123,7 @@ export class CometContext {
     await this.spider();
     debug('Upgraded to modern...');
     return this;
-}
+  }
 
   async upgradeTo(newComet: Comet, data?: string) {
     const { world } = this;
@@ -184,8 +195,7 @@ export class CometContext {
     const contracts = await this.deploymentManager.contracts();
     const fauceteer = contracts.get('fauceteer');
     const fauceteerBalance = fauceteer ? await cometAsset.balanceOf(fauceteer.address) : 0;
-
-    if (fauceteerBalance > amount) {
+    if (amount >= 0 && fauceteerBalance > amount) {
       debug(`Source Tokens: stealing from fauceteer`, amount, cometAsset.address);
       const fauceteerSigner = await world.impersonateAddress(fauceteer.address);
       const fauceteerActor = await buildActor('fauceteerActor', fauceteerSigner, this);
@@ -198,7 +208,7 @@ export class CometContext {
     // Second, try to steal from a known actor
     for (let [name, actor] of Object.entries(this.actors)) {
       let actorBalance = await cometAsset.balanceOf(actor);
-      if (actorBalance > amount) {
+      if (amount >= 0 && actorBalance > amount) {
         debug(`Source Tokens: stealing from actor ${name}`, amount, cometAsset.address);
         // make gas fee 0 so we can source from contract addresses as well as EOAs
         await this.setNextBaseFeeToZero();
@@ -210,7 +220,7 @@ export class CometContext {
     // Third, source from logs (expensive, in terms of node API limits)
     debug('Source Tokens: sourcing from logs...', amount, cometAsset.address);
     await sourceTokens({
-      hre: this.deploymentManager.hre,
+      dm: this.deploymentManager,
       amount,
       asset: cometAsset.address,
       address: recipientAddress,
@@ -230,17 +240,69 @@ export class CometContext {
     await this.world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
   }
 
+  async setNextBlockTimestamp(timestamp: number) {
+    await this.world.hre.ethers.provider.send('evm_setNextBlockTimestamp', [timestamp]);
+  }
+
+  async mineBlocks(blocks: number) {
+    await this.world.hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
+  }
+
   // Instantly executes some actions through the governance proposal process
   // Note: `governor` must be connected to an `admin` signer
   async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
-    const admin = this.actors['admin'];
-    const governor = (await this.getGovernor()).connect(admin.signer);
-    const tx = await (await governor.propose(targets, values, signatures, calldatas, 'FastExecuteProposal')).wait();
-    const event = tx.events.find(event => event.event === 'ProposalCreated');
-    const [proposalId] = event.args;
+    const { world } = this;
+    const governor = await this.getGovernor();
+    // XXX See if there is a better way to determine if GovernorSimple or Bravo should be used
+    try {
+      const admin = await governor.admins(0);
+      const adminSigner = await world.impersonateAddress(admin);
+      const governorAsAdmin = governor.connect(adminSigner);
 
-    await governor.queue(proposalId);
-    await governor.execute(proposalId);
+      const tx = await (await governorAsAdmin.propose(targets, values, signatures, calldatas, 'FastExecuteProposal')).wait();
+      const event = tx.events.find(event => event.event === 'ProposalCreated');
+      const [proposalId] = event.args;
+
+      await governorAsAdmin.queue(proposalId);
+      await governorAsAdmin.execute(proposalId);
+    } catch (e) {
+      // XXX find a better way to do this without hardcoding whales
+      const voters = [
+        '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
+        '0x683a4f9915d6216f73d6df50151725036bd26c02'
+      ];
+      const adminSigner = await world.impersonateAddress(voters[0]);
+      const governorAsAdmin = await world.hre.ethers.getContractAt(
+        'IGovernorBravo',
+        governor.address,
+        adminSigner
+      ) as IGovernorBravo;
+
+      const proposeTxn = await (await governorAsAdmin.propose(targets, values, signatures, calldatas, 'FastExecuteProposal')).wait();
+      const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
+      const [proposalId, , , , , , startBlock, endBlock] = proposeEvent.args;
+
+      const blocksUntilStart = startBlock - await world.hre.ethers.provider.getBlockNumber();
+      const blocksFromStartToEnd = endBlock - startBlock;
+      await this.mineBlocks(blocksUntilStart);
+      for (const voter of voters) {
+        const voterSigner = await world.impersonateAddress(voter);
+        const govAsVoter = await world.hre.ethers.getContractAt(
+          'IGovernorBravo',
+          governor.address,
+          voterSigner
+        ) as IGovernorBravo;
+        await govAsVoter.castVote(proposalId, 1);
+      }
+
+      await this.mineBlocks(blocksFromStartToEnd);
+      const queueTxn = await (await governorAsAdmin.queue(proposalId)).wait();
+      const queueEvent = queueTxn.events.find(event => event.event === 'ProposalQueued');
+      let [proposalId_, eta] = queueEvent.args;
+
+      await this.setNextBlockTimestamp(eta.toNumber());
+      await governorAsAdmin.execute(proposalId);
+    }
   }
 }
 
@@ -297,7 +359,7 @@ export async function getAssets(context: CometContext): Promise<{ [symbol: strin
   })));
 }
 
-async function getInitialContext (world: World): Promise<CometContext> {
+async function getInitialContext(world: World): Promise<CometContext> {
   const context = new CometContext(world);
   await context.deploymentManager.spider();
   await context.setActors();

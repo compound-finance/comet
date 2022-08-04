@@ -48,6 +48,7 @@ interface NetworkTrackingConfiguration {
 }
 
 interface NetworkAssetConfiguration {
+  address?: string;
   priceFeed: string;
   decimals: number;
   borrowCF: number;
@@ -61,6 +62,7 @@ interface NetworkConfiguration {
   governor?: string;
   pauseGuardian?: string;
   baseToken: string;
+  baseTokenAddress?: string;
   baseTokenPriceFeed: string;
   borrowMin: number;
   storeFrontPriceFactor: number;
@@ -70,9 +72,10 @@ interface NetworkConfiguration {
   assets: { [name: string]: NetworkAssetConfiguration };
 }
 
-function getContractAddress(contractName: string, contracts: ContractMap): string {
+function getContractAddress(contractName: string, contracts: ContractMap, fallbackAddress?: string): string {
   let contract = contracts.get(contractName);
   if (!contract) {
+    if (fallbackAddress) return fallbackAddress;
     throw new Error(
       `Cannot find contract \`${contractName}\` in contract map with keys \`${JSON.stringify(
         [...contracts.keys()]
@@ -87,7 +90,7 @@ function getAssetConfigs(
   contracts: ContractMap,
 ): AssetConfigStruct[] {
   return Object.entries(assets).map(([assetName, assetConfig]) => ({
-    asset: getContractAddress(assetName, contracts),
+    asset: getContractAddress(assetName, contracts, assetConfig.address),
     priceFeed: address(assetConfig.priceFeed),
     decimals: number(assetConfig.decimals),
     borrowCollateralFactor: percentage(assetConfig.borrowCF),
@@ -122,7 +125,7 @@ function getOverridesOrConfig(
     ...(config.governor && { governor: _ => address(config.governor) }),
     ...(config.pauseGuardian && { pauseGuardian: _ => address(config.pauseGuardian) }),
     symbol: _ => config.symbol,
-    baseToken: _ => getContractAddress(config.baseToken, contracts),
+    baseToken: _ => getContractAddress(config.baseToken, contracts, config.baseTokenAddress),
     baseTokenPriceFeed: _ => address(config.baseTokenPriceFeed),
     baseBorrowMin: _ => number(config.borrowMin), // TODO: in token units (?)
     storeFrontPriceFactor: _ => percentage(config.storeFrontPriceFactor),

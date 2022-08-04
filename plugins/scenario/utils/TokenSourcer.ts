@@ -1,6 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { BigNumber, Contract, Event, EventFilter } from 'ethers';
 import { erc20 } from './ERC20';
+import { DeploymentManager } from '../../deployment_manager/DeploymentManager';
 
 const MAX_SEARCH_BLOCKS = 40000;
 const BLOCK_SPAN = 1000;
@@ -9,7 +10,7 @@ const getMaxEntry = (args: [string, BigNumber][]) =>
   args.reduce(([a1, m], [a2, e]) => (m.gte(e) == true ? [a1, m] : [a2, e]));
 
 interface SourceTokenParameters {
-  hre: HardhatRuntimeEnvironment;
+  dm: DeploymentManager;
   amount: number | bigint;
   asset: string;
   address: string;
@@ -18,7 +19,7 @@ interface SourceTokenParameters {
 
 /// ETH balance is used for transfer out when amount is negative
 export async function sourceTokens({
-  hre,
+  dm,
   amount: amount_,
   asset,
   address,
@@ -26,37 +27,39 @@ export async function sourceTokens({
 }: SourceTokenParameters) {
   let amount = BigNumber.from(amount_);
 
-  if (amount.isNegative()) {
-    await removeTokens(hre, amount.abs(), asset, address);
+  if (amount.isZero()) {
+    return;
+  } else if (amount.isNegative()) {
+    await removeTokens(dm, amount.abs(), asset, address);
   } else {
-    await addTokens(hre, amount, asset, address, blacklist);
+    await addTokens(dm, amount, asset, address, blacklist);
   }
 }
 
 async function removeTokens(
-  hre: HardhatRuntimeEnvironment,
+  dm: DeploymentManager,
   amount: BigNumber,
   asset: string,
   address: string
 ) {
-  let ethers = hre.ethers;
-  await hre.network.provider.request({
+  let ethers = dm.hre.ethers;
+  await dm.hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
     params: [address],
   });
-  let signer = await ethers.getSigner(address);
+  let signer = await dm.getSigner(address);
   let tokenContract = new ethers.Contract(asset, erc20, signer);
   let currentBalance = await tokenContract.balanceOf(address);
   if (currentBalance.lt(amount)) throw 'Error: Insufficient address balance';
-  await tokenContract.transfer('0x0000000000000000000000000000000000000000', amount);
-  await hre.network.provider.request({
+  await tokenContract.transfer('0x0000000000000000000000000000000000000001', amount);
+  await dm.hre.network.provider.request({
     method: 'hardhat_stopImpersonatingAccount',
     params: [address],
   });
 }
 
 async function addTokens(
-  hre: HardhatRuntimeEnvironment,
+  dm: DeploymentManager,
   amount: BigNumber,
   asset: string,
   address: string,
@@ -64,7 +67,7 @@ async function addTokens(
   block?: number,
   offsetBlocks?: number
 ) {
-  let ethers = hre.ethers;
+  let ethers = dm.hre.ethers;
   block = block ?? (await ethers.provider.getBlockNumber());
   let tokenContract = new ethers.Contract(asset, erc20, ethers.provider);
   let filter = tokenContract.filters.Transfer();
@@ -80,21 +83,21 @@ async function addTokens(
   }
   let holder = await searchLogs(recentLogs, amount, tokenContract, ethers, blacklist);
   if (holder) {
-    await hre.network.provider.request({
+    await dm.hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [holder],
     });
-    let impersonatedSigner = await ethers.getSigner(holder);
+    let impersonatedSigner = await dm.getSigner(holder);
     let impersonatedProviderTokenContract = tokenContract.connect(impersonatedSigner);
-    await hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+    await dm.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
     await impersonatedProviderTokenContract.transfer(address, amount, { gasPrice: 0 });
-    await hre.network.provider.request({
+    await dm.hre.network.provider.request({
       method: 'hardhat_stopImpersonatingAccount',
       params: [holder],
     });
   } else {
     if ((offsetBlocks ?? 0) > MAX_SEARCH_BLOCKS) throw "Error: Couldn't find sufficient tokens";
-    await addTokens(hre, amount, asset, address, blacklist, block, (offsetBlocks ?? 0) + blocksDelta);
+    await addTokens(dm, amount, asset, address, blacklist, block, (offsetBlocks ?? 0) + blocksDelta);
   }
 }
 

@@ -31,6 +31,11 @@ function getNetwork(deployment: string): string {
   return deployment; // TODO: Handle deployments that don't map correctly
 }
 
+async function getManagedSigner(signer): Promise<SignerWithAddress> {
+  const managedSigner = new ExtendedNonceManager(signer) as unknown as providers.JsonRpcSigner;
+  return SignerWithAddress.create(managedSigner);
+}
+
 export class DeploymentManager {
   deployment: string;
   hre: HardhatRuntimeEnvironment;
@@ -59,15 +64,26 @@ export class DeploymentManager {
       return this._signers;
     }
     const signers = await this.hre.ethers.getSigners();
-    this._signers = await Promise.all(signers.map(async (signer) => {
-      const managedSigner = new ExtendedNonceManager(signer) as unknown as providers.JsonRpcSigner;
-      return await SignerWithAddress.create(managedSigner);
-    }));
+    this._signers = await Promise.all(signers.map(getManagedSigner));
     return this._signers;
   }
 
-  async getSigner(): Promise<SignerWithAddress> {
-    return (await this.getSigners())[0];
+  async getSigner(address?: string): Promise<SignerWithAddress> {
+    // no address specified, return any signer
+    if (!address) {
+      return (await this.getSigners())[0];
+    }
+
+    // address given, first try to find the managed signer for it
+    const signer = this._signers.find(s => s.address.toLowerCase() === address.toLowerCase());
+    if (signer) {
+      return signer;
+    }
+
+    // otherwise create a new managed signer for the given address
+    const newSigner = await getManagedSigner(await this.hre.ethers.getSigner(address));
+    this._signers.push(newSigner);
+    return newSigner;
   }
 
   private debug(...args: any[]) {

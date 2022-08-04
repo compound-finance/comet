@@ -75,7 +75,7 @@ scenario(
   'Comet#supply > repay borrow',
   {
     tokenBalances: {
-      albert: { $base: 1000 }
+      albert: { $base: '==1000' }
     },
     cometBalances: {
       albert: { $base: -1000 } // in units of asset, not wei

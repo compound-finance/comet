@@ -6,8 +6,11 @@ import { expectApproximately, getExpectedBaseBalance } from './utils';
 scenario(
   'Comet#withdraw > base asset',
   {
+    tokenBalances: {
+      albert: { $base: '== 0' },
+    },
     cometBalances: {
-      albert: { $base: 100 }, // in units of asset, not wei
+      albert: { $base: '==100' }, // in units of asset, not wei
     },
   },
   async ({ comet, actors }, context) => {
@@ -63,6 +66,7 @@ scenario(
   'Comet#withdraw > borrow base',
   {
     tokenBalances: {
+      albert: { $base: '== 0' },
       $comet: { $base: 1000 }, // in units of asset, not wei
     },
     cometBalances: {

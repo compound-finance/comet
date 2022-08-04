@@ -159,6 +159,12 @@ const config: HardhatUserConfig = {
   scenario: {
     bases: [
       {
+        name: 'mainnet',
+        chainId: 1,
+        url: getDefaultProviderURL('mainnet'),
+        allocation: 0.1, // eth
+      },
+      {
         name: 'development',
       },
       {
