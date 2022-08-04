@@ -22,12 +22,11 @@ export class World {
     // Q: should we really need to fork/snapshot the deployment manager?
     this.hre = hre;
     this.base = base;
-    const networkName = base.name === 'development' ? 'development' : base.network;
+    const networkName = this.isRemoteFork() ? base.network : 'development';
     this.deploymentManager = new DeploymentManager(networkName, base.deployment, hre, { debug: true });
     this.snapshotDeploymentManager = this.deploymentManager;
   }
 
-  // TODO: Can we do this better?
   isRemoteFork(): boolean {
     return this.base.network !== 'hardhat';
   }
