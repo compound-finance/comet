@@ -1,5 +1,5 @@
 import { AssetConfigStruct } from '../../build/types/Comet';
-import { BigNumberish } from 'ethers';
+import { BigNumberish, Contract, PopulatedTransaction } from 'ethers';
 
 export { cloneGov, deployNetworkComet as deployComet, sameAddress } from './Network';
 export { exp, getBlock, wait } from '../../test/helpers';
@@ -40,6 +40,29 @@ export interface DeploySpec {
   rewards?: boolean;   // Re-deploy the rewards contract
 }
 
+export interface ContractAction {
+  contract: Contract;
+  value?: BigNumberish;
+  signature: string;
+  args: any[];
+}
+
+export interface TargetAction {
+  target: string;
+  value?: BigNumberish;
+  signature: string;
+  calldata: string;
+}
+
+export type ProposalAction = ContractAction | TargetAction;
+export type Proposal = [
+  string[],       // targets
+  BigNumberish[], // values
+  string[],       // signatures
+  string[],       // calldatas
+  string          // description
+];
+
 // Note: this list could change over time, based on mainnet
 export const COMP_WHALES = [
   '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
@@ -50,3 +73,28 @@ export const COMP_WHALES = [
   '0x88fb3d509fc49b515bfeb04e23f53ba339563981',
   '0x8169522c2c57883e8ef80c498aab7820da539806'
 ];
+
+export async function calldata(req: Promise<PopulatedTransaction>): Promise<string> {
+  // Splice out the first 4 bytes (function selector) of the tx data
+  return '0x' + (await req).data.slice(2 + 8);
+}
+
+export async function proposal(actions: ProposalAction[], description: string): Promise<Proposal> {
+  const targets = [], values = [], signatures = [], calldatas = [];
+  for (const action of actions) {
+    if (action['contract']) {
+      const { contract, value, signature, args } = action as ContractAction;
+      targets.push(contract.address);
+      values.push(value ?? 0);
+      signatures.push(signature);
+      calldatas.push(await calldata(contract.populateTransaction[signature](...args)));
+    } else {
+      const { target, value, signature, calldata } = action as TargetAction;
+      targets.push(target);
+      values.push(value ?? 0);
+      signatures.push(signature);
+      calldatas.push(calldata);
+    }
+  }
+  return [targets, values, signatures, calldatas, description];
+}

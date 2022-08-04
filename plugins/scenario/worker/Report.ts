@@ -21,12 +21,16 @@ export function pluralize(n, singular, plural = null) {
 }
 
 async function showReportConsole(results: Result[], _consoleOptions: ConsoleFormatOptions, _startTime: number, _endTime: number) {
-  let testCount = 0;
-  let succCount = 0;
-  let errCount = 0;
-  let skipCount = 0;
-  let totalTime = 0;
-  let errors: {
+  const statsPer: object = {}, getStats = (base) => {
+    return statsPer[base] = statsPer[base] || {
+      skipCount: 0,
+      testCount: 0,
+      totalTime: 0,
+      succCount: 0,
+      errCount: 0,
+    };
+  };
+  const errors: {
     base: string;
     scenario: string;
     error: Error;
@@ -34,36 +38,40 @@ async function showReportConsole(results: Result[], _consoleOptions: ConsoleForm
     diff?: { actual: any, expected: any };
   }[] = [];
 
-  for (let { base, scenario, elapsed, error, trace, diff, skipped } of results) {
+  for (const { base, scenario, elapsed, error, trace, diff, skipped } of results) {
+    const stats = getStats(base);
     if (skipped) {
-      skipCount++;
+      stats.skipCount++;
     } else {
-      testCount++;
-      totalTime += elapsed;
+      stats.testCount++;
+      stats.totalTime += elapsed;
       if (error) {
-        errCount++;
+        stats.errCount++;
         errors.push({ base, scenario, error, trace, diff });
       } else {
-        succCount++;
+        stats.succCount++;
       }
     }
   }
 
-  for (let { base, scenario, error, trace, diff } of errors) {
-    console.error(`❌ ${scenario}@${base}: Error ${trace || error.message}`);
+  for (const { base, scenario, error, trace, diff } of errors) {
+    console.error(`[${base}] ❌ ${scenario}: Error ${trace || error.message}`);
     if (diff) {
       console.error(showDiff(diff.expected, diff.actual));
     }
   }
 
-  let prefix = errCount === 0 ? '✅' : '❌';
-  let avgTime = testCount > 0 ? totalTime / testCount : 0;
-  let succText = pluralize(succCount, 'success', 'successes');
-  let errText = pluralize(errCount, 'error', 'errors');
-  let skipText = pluralize(skipCount, 'skipped');
-  let avgText = `[avg time: ${avgTime.toFixed(0)}ms]`;
-
-  console.log(`\n\n${prefix} Results: ${succText}, ${errText}, ${skipText} ${avgText}\n`);
+  console.log('\n\n');
+  for (const [base, stats] of Object.entries(statsPer)) {
+    const prefix = stats.errCount === 0 ? '✅' : '❌';
+    const avgTime = stats.testCount > 0 ? stats.totalTime / stats.testCount : 0;
+    const succText = pluralize(stats.succCount, 'success', 'successes');
+    const errText = pluralize(stats.errCount, 'error', 'errors');
+    const skipText = pluralize(stats.skipCount, 'skipped');
+    const avgText = `[avg time: ${avgTime.toFixed(0)}ms]`;
+    console.log(`${prefix} Results: ${succText}, ${errText}, ${skipText} ${avgText} [${base}]`);
+  }
+  console.log('\n');
 }
 
 interface JsonTestResult {

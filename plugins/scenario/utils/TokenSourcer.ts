@@ -2,7 +2,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { BigNumber, Contract, Event } from 'ethers';
 import { erc20 } from './ERC20';
 import { DeploymentManager } from '../../deployment_manager/DeploymentManager';
-import { MAX_SEARCH_BLOCKS, BLOCK_SPAN, fetchQuery } from '../../../scenario/utils';
+import { fetchQuery } from '../../../scenario/utils';
 
 const getMaxEntry = (args: [string, BigNumber][]) =>
   args.reduce(([a1, m], [a2, e]) => (m.gte(e) == true ? [a1, m] : [a2, e]));
@@ -63,7 +63,9 @@ async function addTokens(
   address: string,
   blacklist?: string[],
   block?: number,
-  offsetBlocks?: number
+  offsetBlocks?: number,
+  MAX_SEARCH_BLOCKS = 40000,
+  BLOCK_SPAN = 1000
 ) {
   let ethers = dm.hre.ethers;
   block = block ?? (await ethers.provider.getBlockNumber());
@@ -74,7 +76,9 @@ async function addTokens(
     filter,
     block - BLOCK_SPAN - (offsetBlocks ?? 0),
     block - (offsetBlocks ?? 0),
-    block
+    block,
+    MAX_SEARCH_BLOCKS,
+    BLOCK_SPAN
   );
   if (err) {
     throw err;

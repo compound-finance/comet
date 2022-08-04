@@ -2,6 +2,7 @@ import { Constraint, Forker, Initializer, Property, ScenarioFlags, Transformer }
 import { getLoader } from './Loader';
 export { Constraint, Initializer, Property, Scenario, Solution, Transformer } from './Scenario';
 export { ForkSpec, World } from './World';
+export { debug } from '../deployment_manager/Utils';
 
 export interface ScenarioBuilder<T, U, R> {
   (name: string, requirements: R, property: Property<T, U>): void;

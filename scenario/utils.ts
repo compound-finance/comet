@@ -86,8 +86,15 @@ export function optionalNumber<T>(o: object, key: string): number {
   return value;
 }
 
-export function scaleToDecimals(scale: BigNumberish): number {
-  return scale.toString().split('0').length - 1; // # of 0's in scale
+export function* subsets<T>(array: T[], offset = 0): Generator<T[]> {
+  while (offset < array.length) {
+    const first = array[offset++];
+    for (const subset of subsets(array, offset)) {
+      subset.push(first);
+      yield subset;
+    }
+  }
+  yield [];
 }
 
 export function getExpectedBaseBalance(balance: bigint, baseIndexScale: bigint, borrowOrSupplyIndex: bigint): bigint {
@@ -199,16 +206,14 @@ export async function modifiedPaths(pattern: RegExp, against: string = 'origin/m
   return modified;
 }
 
-export const MAX_SEARCH_BLOCKS = 40000;
-
-export const BLOCK_SPAN = 1000;
-
 export async function fetchQuery(
   contract: Contract,
   filter: EventFilter,
   fromBlock: number,
   toBlock: number,
-  originalBlock: number
+  originalBlock: number,
+  MAX_SEARCH_BLOCKS = 40000,
+  BLOCK_SPAN = 1000
 ): Promise<{ recentLogs?: Event[], blocksDelta?: number, err?: Error }> {
   if (originalBlock - fromBlock > MAX_SEARCH_BLOCKS) {
     return { err: new Error(`No events found within ${MAX_SEARCH_BLOCKS} blocks for ${contract.address}`) };

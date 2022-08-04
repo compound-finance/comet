@@ -1,12 +1,8 @@
-import { Constraint, Solution, World } from '../../plugins/scenario';
+import { Constraint, Solution, World, debug } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import { Requirements } from './Requirements';
 import { IGovernorBravo } from '../../build/types';
 import { fetchQuery } from '../utils';
-
-function debug(...args: any[]) {
-  console.log(`[ProposalConstraint]`, ...args);
-}
 
 // TODO: can we import the enum from IGovernorBravo?
 // States of proposals that need to be executed
@@ -48,30 +44,24 @@ async function getAllPendingProposals(world: World, governor: IGovernorBravo): P
 
 export class ProposalConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, context: T, world: World) {
-    const solutions: Solution<T>[] = [];
-
-    const governor = await context.getGovernor();
-    const proposals = await getAllPendingProposals(world, governor);
-
-    for (let proposal of proposals) {
-      solutions.push(async function (context: T): Promise<T> {
+    const label = `[${world.base.name}] {ProposalConstraint}`;
+    return async function (ctx: T): Promise<T> {
+      const governor = await ctx.getGovernor();
+      const proposals = await getAllPendingProposals(ctx.world, governor);
+      for (const proposal of proposals) {
         try {
           // XXX if gov chain is not local chain, simulate bridge
-          debug(`Processing pending proposal ${proposal.proposalId}`);
+          debug(`${label} Processing pending proposal ${proposal.proposalId}`);
           const { proposalId, startBlock, endBlock } = proposal;
-
-          await context.executePendingProposal(proposalId, startBlock, endBlock);
-
-          debug(`Pending proposal ${proposalId} was executed`);
-          return context;
+          await ctx.executePendingProposal(proposalId, startBlock, endBlock);
+          debug(`${label} Pending proposal ${proposalId} was executed`);
+          return ctx;
         } catch (err) {
-          debug(`Failed with error ${err}`);
-          return context;
+          debug(`${label} Failed with error ${err}`);
+          return ctx;
         }
-      });
-    }
-
-    return solutions.length > 0 ? solutions : null;
+      }
+    };
   }
 
   async check(requirements: R, context: T, world: World) {
