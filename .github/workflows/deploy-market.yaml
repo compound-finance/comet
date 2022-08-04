@@ -29,7 +29,7 @@ jobs:
       - name: Seacrest
         uses: hayesgm/seacrest@v1
         with:
-          ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"kovan\":\"https://kovan.infura.io/v3/$INFURA_KEY\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\"}')[inputs.network] }}"
+          ethereum_url: '${{ fromJSON(''{"fuji":"https://api.avax-test.network/ext/bc/C/rpc","kovan":"https://kovan.infura.io/v3/$INFURA_KEY","mainnet":"https://mainnet.infura.io/v3/$INFURA_KEY"}'')[inputs.network] }}'
           port: 8585
         if: github.event.inputs.eth_pk == ''
 
@@ -54,7 +54,7 @@ jobs:
           yarn hardhat deploy --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }}
         env:
           DEBUG: true
-          ETH_PK: "${{ inputs.eth_pk }}"
+          ETH_PK: '${{ inputs.eth_pk }}'
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
 

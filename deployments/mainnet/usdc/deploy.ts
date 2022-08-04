@@ -14,11 +14,13 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const { comet } = deployed;
 
   // Deploy Bulker
-  const bulker = await deploymentManager.deploy(
-    'bulker',
-    'Bulker.sol',
-    [await comet.governor(), WETH.address]
-  );
+  // const bulker = await deploymentManager.deploy(
+  //   'bulker',
+  //   'Bulker.sol',
+  //   [await comet.governor(), comet.address, WETH.address]
+  // );
 
-  return { ...deployed, bulker };
+  // return { ...deployed, bulker };
+
+  return deployed; // TODO: until we finish adding claim to bulker, no need to deploy
 }
