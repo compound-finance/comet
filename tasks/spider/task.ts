@@ -4,9 +4,9 @@ import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentMa
 
 async function deleteSpiderArtifacts() {
   [
-    'rm -rf deployments/*/contracts',
-    'rm deployments/*/aliases.json',
-    'rm deployments/*/proxies.json',
+    'rm -rf deployments/*/*/contracts',
+    'rm deployments/*/*/aliases.json',
+    'rm deployments/*/*/proxies.json',
   ].forEach(async (command) => {
     console.log(command);
     execSync(command);
@@ -15,13 +15,24 @@ async function deleteSpiderArtifacts() {
 
 task('spider', 'Use Spider method to pull in contract configs')
   .addFlag('clean', 'Deletes spider artifacts')
-  .setAction(async ({ clean }, hre) => {
+  .addOptionalParam('deployment', 'The deployment to spider')
+  .setAction(async ({ clean, deployment }, hre) => {
+    const network = hre.network.name;
+
     if (clean) {
       await deleteSpiderArtifacts();
     } else {
-      let dm = new DeploymentManager(hre.network.name, hre, {
-        writeCacheToDisk: true,
-      });
+      if (!deployment) {
+        throw new Error('missing argument --deployment');
+      }
+      let dm = new DeploymentManager(
+        network,
+        deployment,
+        hre,
+        {
+          writeCacheToDisk: true,
+        }
+      );
       await dm.spider();
     }
   });

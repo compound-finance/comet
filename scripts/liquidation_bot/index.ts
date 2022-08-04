@@ -9,17 +9,26 @@ import liquidateUnderwaterBorrowers from './liquidateUnderwaterBorrowers';
 const loopDelay = 5000;
 
 async function main() {
-  const liquidatorAddress = process.env.LIQUIDATOR_ADDRESS;
-
+  let { DEPLOYMENT: deployment, LIQUIDATOR_ADDRESS: liquidatorAddress } = process.env;
   if (!liquidatorAddress) {
     throw new Error('missing required env variable: LIQUIDATOR_ADDRESS');
   }
+  if (!deployment) {
+    throw new Error('missing required env variable: DEPLOYMENT');
+  }
 
-  const dm = new DeploymentManager(hre.network.name, hre, {
-    writeCacheToDisk: false,
-    debug: true,
-    verificationStrategy: 'eager',
-  });
+  const network = hre.network.name;
+
+  const dm = new DeploymentManager(
+    network,
+    deployment,
+    hre,
+    {
+      writeCacheToDisk: false,
+      debug: true,
+      verificationStrategy: 'eager',
+    }
+  );
   await dm.spider();
 
   const signer = await dm.getSigner();
@@ -27,7 +36,7 @@ async function main() {
   const comet = contracts.get('comet') as CometInterface;
 
   if (!comet) {
-    throw new Error(`no deployed Comet found for network: ${hre.network.name}`);
+    throw new Error(`no deployed Comet found for ${network}/${deployment}`);
   }
 
   const liquidator = await hre.ethers.getContractAt(

@@ -33,7 +33,7 @@ export function updateBuildFileABI(buildFile: BuildFile, abi: object): BuildFile
 describe('ContractMap', () => {
   describe('getContractsFromAliases', () => {
     it('returns a contract map without proxy', async () => {
-      let cache = new Cache('test', false, tempDir());
+      let cache = new Cache('test-network', 'test-deployment', false, tempDir());
 
       await storeBuildFile(
         cache,
@@ -50,7 +50,7 @@ describe('ContractMap', () => {
     });
 
     it('returns a contract map with proxy', async () => {
-      let cache = new Cache('test', false, tempDir());
+      let cache = new Cache('test-network', 'test-deployment', false, tempDir());
 
       await storeBuildFile(
         cache,
@@ -169,7 +169,7 @@ describe('ContractMap', () => {
     });
 
     it('retains the contract\'s constructor when building contract with proxy', async () => {
-      let cache = new Cache('test', false, tempDir());
+      let cache = new Cache('test-network', 'test-deployment', false, tempDir());
 
       await storeBuildFile(
         cache,
@@ -278,7 +278,7 @@ describe('ContractMap', () => {
     });
 
     it('fails when proxy not found', async () => {
-      let cache = new Cache('test', false, tempDir());
+      let cache = new Cache('test-network', 'test-deployment', false, tempDir());
 
       await storeBuildFile(
         cache,
@@ -297,12 +297,12 @@ describe('ContractMap', () => {
 
   describe('getContracts', () => {
     it('returns an empty contract map', async () => {
-      let cache = new Cache('test', false, tempDir());
+      let cache = new Cache('test-network', 'test-deployment', false, tempDir());
       expect(objectFromMap(await getContracts(cache, hre))).to.eql({});
     });
 
     it('returns a contract map', async () => {
-      let cache = new Cache('test', false, tempDir());
+      let cache = new Cache('test-network', 'test-deployment', false, tempDir());
 
       await deploy<FaucetToken, FaucetToken__factory, [number, string, number, string]>(
         'test/FaucetToken.sol',

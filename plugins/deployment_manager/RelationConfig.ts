@@ -28,9 +28,10 @@ export type RelationConfigMap = { [alias: Alias]: RelationConfig };
 // Read relation configuration
 export function getRelationConfig(
   deploymentManagerConfig: DeploymentManagerConfig,
-  deployment: string
+  network: string,
+  deployment: string,
 ): RelationConfigMap {
-  let relRelationConfigMap = deploymentManagerConfig?.networks?.[deployment];
+  let relRelationConfigMap = deploymentManagerConfig?.networks?.[network]?.[deployment];
   if (relRelationConfigMap) {
     return relRelationConfigMap;
   }

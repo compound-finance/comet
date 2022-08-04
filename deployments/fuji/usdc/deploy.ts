@@ -1,15 +1,13 @@
-import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-import { migration } from '../../plugins/deployment_manager/Migration';
-import { deployComet } from '../../src/deploy';
-import { exp, wait } from '../../test/helpers';
+import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
+import { exp, wait } from '../../../test/helpers';
 import {
   Fauceteer,
   Fauceteer__factory,
   ProxyAdmin,
   ProxyAdmin__factory
-} from '../../build/types';
+} from '../../../build/types';
 import { Contract } from 'ethers';
-import { debug } from '../../plugins/deployment_manager/Utils';
+import { debug } from '../../../plugins/deployment_manager/Utils';
 
 let cloneNetwork = 'avalanche';
 let cloneAddr = {

@@ -10,7 +10,7 @@ import { Dog__factory, Dog } from '../../../build/types';
 
 describe('VerifyArgs', () => {
   it('gets, sets, and deletes verify args', async () => {
-    let cache = new Cache('test', false, os.tmpdir());
+    let cache = new Cache('test-network', 'test-deployment', false, os.tmpdir());
 
     let testContract = await deploy<Dog, Dog__factory, [string, string, string[]]>(
       'test/Dog.sol',

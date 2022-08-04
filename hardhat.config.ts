@@ -160,23 +160,24 @@ const config: HardhatUserConfig = {
     bases: [
       {
         name: 'mainnet',
-        chainId: 1,
-        url: getDefaultProviderURL('mainnet'),
+        network: 'mainnet',
+        deployment: 'usdc',
         allocation: 0.1, // eth
       },
       {
         name: 'development',
-      },
-      {
-        name: 'kovan',
-        chainId: 42,
-        url: getDefaultProviderURL('kovan'),
-        allocation: 0.1, // eth
+        network: 'hardhat',
+        deployment: 'dai'
       },
       {
         name: 'fuji',
-        chainId: 43113,
-        url: 'https://api.avax-test.network/ext/bc/C/rpc',
+        network: 'fuji',
+        deployment: 'usdc'
+      },
+      {
+        name: 'kovan',
+        network: 'kovan',
+        deployment: 'usdc',
       },
     ],
   },

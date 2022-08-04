@@ -56,12 +56,14 @@ describe('RelationConfig', () => {
     hre.config.deploymentManager = {
       relationConfigMap: testBaseRelations,
       networks: {
-        test: testRelRelations,
+        'test-network': {
+          'test-deployment': testRelRelations,
+        }
       },
     };
 
-    expect(await getRelationConfig(hre.config.deploymentManager, 'fuji')).to.eql(testBaseRelations);
-    expect(await getRelationConfig(hre.config.deploymentManager, 'test')).to.eql(testRelRelations);
+    expect(await getRelationConfig(hre.config.deploymentManager, 'fuji', 'dai')).to.eql(testBaseRelations);
+    expect(await getRelationConfig(hre.config.deploymentManager, 'test-network', 'test-deployment')).to.eql(testRelRelations);
   });
 
   describe('getFieldKey', () => {
