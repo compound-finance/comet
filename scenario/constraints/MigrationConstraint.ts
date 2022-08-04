@@ -7,8 +7,9 @@ import { debug } from '../../plugins/deployment_manager/Utils';
 
 async function getMigrations<T>(context: CometContext, requirements: Requirements): Promise<Migration<T>[]> {
   // TODO: make this configurable from cli params/env var?
-  const deployment = context.deploymentManager.deployment; // XXX should become per instance
-  const pattern = new RegExp(`deployments/${deployment}/migrations/.*.ts`);
+  const network = context.deploymentManager.network;
+  const deployment = context.deploymentManager.deployment;
+  const pattern = new RegExp(`deployments/${network}/${deployment}/migrations/.*.ts`);
   return await loadMigrations((await modifiedPaths(pattern)).map(p => '../../' + p));
 }
 
@@ -35,7 +36,10 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
     for (let migrationList of subsets(await getMigrations(context, requirements))) {
       solutions.push(async function (ctx: T): Promise<T> {
         const governor = await ctx.getGovernor();
-        const proposer = await ctx.getProposer(); // XXX reconcile with Kevins, just unshift into signers?
+        const proposer = await ctx.getProposer();
+
+        // Make proposer the default signer
+        ctx.deploymentManager._signers.unshift(proposer);
 
         migrationList.sort((a, b) => a.name.localeCompare(b.name))
         debug(`Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);
@@ -46,6 +50,10 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
           await migration.actions.enact(ctx.deploymentManager, artifact);
           debug(`Enacted migration ${migration.name}`);
         }
+
+        // Remove proposer from signers
+        ctx.deploymentManager._signers.shift();
+
         return ctx;
       });
     }

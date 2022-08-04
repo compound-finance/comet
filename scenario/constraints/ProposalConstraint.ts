@@ -48,35 +48,29 @@ async function getAllPendingProposals(world: World, governor: IGovernorBravo): P
 
 export class ProposalConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, context: T, world: World) {
-    const solutions: Solution<T>[] = [];
-
     // Only run migration for mainnet scenarios
+    // TODO: should we add to testnet or its too slow? would be supported now...
     if (await world.chainId() != 1) {
       return null;
     }
 
-    const governor = await context.getGovernor();
-    const proposals = await getAllPendingProposals(world, governor);
-
-    for (let proposal of proposals) {
-      solutions.push(async function (context: T): Promise<T> {
+    return async function (ctx: T): Promise<T> {
+      const governor = await ctx.getGovernor();
+      const proposals = await getAllPendingProposals(ctx.world, governor);
+      for (const proposal of proposals) {
         try {
           // XXX if gov chain is not local chain, simulate bridge
           debug(`Processing pending proposal ${proposal.proposalId}`);
           const { proposalId, startBlock, endBlock } = proposal;
-
-          await context.executePendingProposal(proposalId, startBlock, endBlock);
-
+          await ctx.executePendingProposal(proposalId, startBlock, endBlock);
           debug(`Pending proposal ${proposalId} was executed`);
-          return context;
+          return ctx;
         } catch (err) {
           debug(`Failed with error ${err}`);
-          return context;
+          return ctx;
         }
-      });
-    }
-
-    return solutions.length > 0 ? solutions : null;
+      }
+    };
   }
 
   async check(requirements: R, context: T, world: World) {
