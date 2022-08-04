@@ -17,8 +17,6 @@ import './tasks/scenario/task.ts';
 
 // Relation Config
 import relationConfigMap from './deployments/relations';
-import fujiRelationConfigMap from './deployments/fuji/relations';
-import kovanRelationConfigMap from './deployments/kovan/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -129,8 +127,7 @@ const config: HardhatUserConfig = {
       gasPrice: 'auto',
       blockGasLimit: 12000000,
       accounts: ETH_PK ? [...deriveAccounts(ETH_PK)].map(privateKey => ({ privateKey, balance: (10n ** 36n).toString() })) : { mnemonic: MNEMONIC },
-      // this should be default commented out and only enabled during dev to allow partial testing
-      // XXX comment out by default once we've made the full contract fit
+      // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,
     },
   },
@@ -157,10 +154,6 @@ const config: HardhatUserConfig = {
 
   deploymentManager: {
     relationConfigMap,
-    networks: {
-      fuji: fujiRelationConfigMap,
-      kovan: kovanRelationConfigMap,
-    },
   },
 
   scenario: {
