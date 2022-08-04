@@ -2,9 +2,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { BigNumber, Contract, Event, EventFilter } from 'ethers';
 import { erc20 } from './ERC20';
 import { DeploymentManager } from '../../deployment_manager/DeploymentManager';
-
-const MAX_SEARCH_BLOCKS = 40000;
-const BLOCK_SPAN = 1000;
+import { MAX_SEARCH_BLOCKS, BLOCK_SPAN, fetchQuery } from '../../../scenario/utils';
 
 const getMaxEntry = (args: [string, BigNumber][]) =>
   args.reduce(([a1, m], [a2, e]) => (m.gte(e) == true ? [a1, m] : [a2, e]));
@@ -98,38 +96,6 @@ async function addTokens(
   } else {
     if ((offsetBlocks ?? 0) > MAX_SEARCH_BLOCKS) throw "Error: Couldn't find sufficient tokens";
     await addTokens(dm, amount, asset, address, blacklist, block, (offsetBlocks ?? 0) + blocksDelta);
-  }
-}
-
-export async function fetchQuery(
-  contract: Contract,
-  filter: EventFilter,
-  fromBlock: number,
-  toBlock: number,
-  originalBlock: number
-): Promise<{ recentLogs?: Event[], blocksDelta?: number, err?: Error }> {
-  if (originalBlock - fromBlock > MAX_SEARCH_BLOCKS) {
-    return { err: new Error(`No events found within ${MAX_SEARCH_BLOCKS} blocks for ${contract.address}`) };
-  }
-  try {
-    let res = await contract.queryFilter(filter, fromBlock, toBlock);
-    if (res.length > 0) {
-      return { recentLogs: res, blocksDelta: toBlock - fromBlock };
-    } else {
-      let nextToBlock = fromBlock;
-      let nextFrom = fromBlock - BLOCK_SPAN;
-      if (nextFrom < 0) {
-        return { err: new Error('No events found by chain genesis') };
-      }
-      return await fetchQuery(contract, filter, nextFrom, nextToBlock, originalBlock);
-    }
-  } catch (err) {
-    if (err.message.includes('query returned more')) {
-      let midBlock = (fromBlock + toBlock) / 2;
-      return await fetchQuery(contract, filter, midBlock, toBlock, originalBlock);
-    } else {
-      return { err };
-    }
   }
 }
 
