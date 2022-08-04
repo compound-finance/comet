@@ -29,10 +29,16 @@ import { ExtConfigurationStruct } from '../../build/types/CometExt';
 
 import { ContractsToDeploy, DeployedContracts, ProtocolConfiguration } from './index';
 import { getConfiguration } from './NetworkConfiguration';
-import { shouldDeploy } from '../utils';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { wait } from '../../test/helpers';
 import { debug } from '../../plugins/deployment_manager/Utils';
+
+function shouldDeploy(deployAll: boolean, deployContract: boolean): boolean {
+  if (deployContract !== undefined) {
+    return deployContract;
+  }
+  return deployAll;
+}
 
 export async function deployNetworkComet(
   deploymentManager: DeploymentManager,

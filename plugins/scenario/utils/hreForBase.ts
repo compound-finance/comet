@@ -16,7 +16,6 @@ import { getEnvHardhatArguments } from 'hardhat/internal/core/params/env-variabl
 import { HARDHAT_PARAM_DEFINITIONS } from 'hardhat/internal/core/params/hardhat-params';
 import { Environment } from 'hardhat/internal/core/runtime-environment';
 import { ForkSpec } from '../World';
-import { memoize } from '../../../src/memoize';
 import { HttpNetworkUserConfig } from 'hardhat/types';
 
 /*
@@ -53,7 +52,7 @@ declare module 'hardhat/internal/core/runtime-environment' {
   }
 }
 
-function hreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
+export default function hreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
   // replicates https://github.com/nomiclabs/hardhat/blob/master/packages/hardhat-core/src/internal/lib/hardhat-lib.ts
   const ctx: HardhatContext = HardhatContext.getHardhatContext();
 
@@ -102,5 +101,3 @@ function hreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
     ctx.experimentalHardhatNetworkMessageTraceHooks
   );
 }
-
-export default memoize(hreForBase, { debug: true });
