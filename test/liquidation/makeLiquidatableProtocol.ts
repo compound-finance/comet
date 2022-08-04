@@ -139,7 +139,6 @@ export default async function makeLiquidatableProtocol() {
     totalBorrowBase: 2e13
   });
 
-
   // create underwater user
   const [signer, underwaterUser, recipient] = await ethers.getSigners();
 
