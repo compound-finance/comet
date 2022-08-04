@@ -101,7 +101,7 @@ async function addTokens(
   }
 }
 
-async function fetchQuery(
+export async function fetchQuery(
   contract: Contract,
   filter: EventFilter,
   fromBlock: number,
