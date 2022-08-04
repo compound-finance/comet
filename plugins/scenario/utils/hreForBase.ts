@@ -58,7 +58,7 @@ function hreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
 
   const hardhatArguments = getEnvHardhatArguments(HARDHAT_PARAM_DEFINITIONS, process.env);
 
-  const config = loadConfigAndTasks(hardhatArguments);
+  const { resolvedConfig: config } = loadConfigAndTasks(hardhatArguments);
 
   const {
     networks: { hardhat: defaultNetwork },
@@ -70,6 +70,7 @@ function hreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
       forking: {
         enabled: true,
         url: base.url,
+        httpHeaders: {},
         ...(base.blockNumber && { blockNumber: base.blockNumber }),
       },
     },

@@ -244,11 +244,8 @@ export class CometContext {
     await this.world.hre.ethers.provider.send('evm_setNextBlockTimestamp', [timestamp]);
   }
 
-  // XXX Hardhat 2.9 has 'hardhat_mine' for mining multiple blocks
   async mineBlocks(blocks: number) {
-    for (let i = 0; i < blocks; i++) {
-      await this.world.hre.network.provider.send('evm_mine', []);
-    }
+    await this.world.hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
   }
 
   // Instantly executes some actions through the governance proposal process
