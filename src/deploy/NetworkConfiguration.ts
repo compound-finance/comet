@@ -135,7 +135,9 @@ function getOverridesOrConfig(
     ...interestRateInfoMapping(config.rates),
     ...trackingInfoMapping(config.tracking),
     assetConfigs: _ => getAssetConfigs(config.assets, contracts),
-    rewardTokenAddress: _ => getContractAddress(config.rewardToken, contracts, config.rewardTokenAddress)
+    rewardTokenAddress: _ => (config.rewardToken || config.rewardTokenAddress) ?
+      getContractAddress(config.rewardToken, contracts, config.rewardTokenAddress) :
+      undefined
   });
   return Object.entries(mapping()).reduce((acc, [k, f]) => {
     return { [k]: overrides[k] ?? f(config), ...acc };
