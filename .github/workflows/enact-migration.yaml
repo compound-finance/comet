@@ -8,6 +8,7 @@ on:
         options:
           - fuji
           - kovan
+          - mainnet
       deployment:
         description: Deployment Name (e.g. "usdc")
         required: true
@@ -34,7 +35,7 @@ jobs:
       - name: Seacrest
         uses: hayesgm/seacrest@v1
         with:
-          ethereum_url: "${{ fromJSON('{\"fuji\": \"https://api.avax-test.network/ext/bc/C/rpc\", \"kovan\": \"https://kovan-eth.compound.finance\"}')[inputs.network] }}"
+          ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"kovan\":\"https://kovan-eth.compound.finance\",\"mainnet\":\"https://mainnet-eth.compound.finance\"}')[inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
 
@@ -65,6 +66,7 @@ jobs:
         run: |
           yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ github.event.inputs.migration }}
         env:
+          DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
