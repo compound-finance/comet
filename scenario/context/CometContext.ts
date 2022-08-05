@@ -323,7 +323,7 @@ export class CometContext {
 
       await governorAsAdmin.queue(proposalId);
       await governorAsAdmin.execute(proposalId);
-    } catch(e) {
+    } catch (e) {
       const adminSigner = await world.impersonateAddress(this.voters[0]);
       const governorAsAdmin = await world.hre.ethers.getContractAt(
         'IGovernorBravo',
