@@ -1,3 +1,4 @@
+import { Contract } from 'ethers';
 
 export type ABI = string | any[];
 
@@ -21,3 +22,5 @@ export interface BuildFile {
 
 export type Address = string;
 export type Alias = string;
+
+export type Ctx = { [ref: string]: Contract[] };

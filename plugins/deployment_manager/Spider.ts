@@ -4,6 +4,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Cache } from './Cache';
 import {
   AliasTemplate,
+  AliasRender,
   RelationConfigMap,
   RelationInnerConfig,
   aliasTemplateFromAlias,
@@ -11,11 +12,11 @@ import {
   readAlias,
   readField,
 } from './RelationConfig';
-import { Address, Alias, BuildFile } from './Types';
+import { Address, Alias, BuildFile, Ctx } from './Types';
 import { Aliases } from './Aliases';
 import { Proxies } from './Proxies';
 import { Roots } from './Roots';
-import { asArray, cross, debug, getPrimaryContract, mergeABI } from './Utils';
+import { asArray, debug, getPrimaryContract, mergeABI } from './Utils';
 import { fetchAndCacheContract } from './Import';
 
 function isValidAddress(address: Address): boolean {
@@ -24,21 +25,24 @@ function isValidAddress(address: Address): boolean {
 
 async function getDiscoverNodes(
   contract: Contract,
+  context: Ctx,
   relationConfig: RelationInnerConfig,
   alias: Alias
-): Promise<[Address, AliasTemplate][]> {
-  let addresses: string[] = await readField(contract, getFieldKey(alias, relationConfig));
+): Promise<[Address, AliasRender, Alias, Ctx][]> {
+  let addresses: string[] = await readField(contract, getFieldKey(alias, relationConfig), context);
   let aliasTemplates: AliasTemplate[] = relationConfig.alias
     ? asArray<AliasTemplate>(relationConfig.alias)
     : [aliasTemplateFromAlias(alias)];
 
-  return cross(addresses, aliasTemplates);
+  return addresses.map((a, i) => [a, { template: aliasTemplates[i] || aliasTemplates[0], i }, alias, context]);
 }
 
 interface VisitedNode {
+  name: string;
   buildFile: BuildFile;
   contract: Contract;
-  aliasTemplates: AliasTemplate[];
+  context: Ctx;
+  aliasRenders: AliasRender[];
   implAddress?: Address;
 }
 
@@ -48,7 +52,7 @@ async function runSpider(
   network: string,
   hre: HardhatRuntimeEnvironment,
   relationConfigMap: RelationConfigMap, // For base relations (??)
-  discovered: [Address, AliasTemplate][],
+  discovered: [Address, AliasRender, Alias, Ctx][],
   visited: Map<Address, VisitedNode>,
   importRetries?: number,
   importRetryDelay?: number
@@ -59,22 +63,23 @@ async function runSpider(
   }
 
   // Let's spider over the next unvisited node in our list
-  let [address, aliasTemplate] = discovered.shift();
-  debug(`Spidering ${address}...`, aliasTemplate);
+  let [address, aliasRender, alias, context] = discovered.shift();
+  debug(`Spidering ${address}...`, aliasRender);
 
   // Skip visited nodes (and invalid addresses)
   if (isValidAddress(address)) {
     // Fetch the build file from Etherscan
     // TODO: Cache?
     if (visited.has(address)) {
-      let { buildFile, contract, aliasTemplates, ...rest } = visited.get(address);
+      let { buildFile, contract, aliasRenders, ...rest } = visited.get(address);
       visited.set(address, {
         buildFile,
         contract,
-        aliasTemplates: [...aliasTemplates, aliasTemplate],
+        aliasRenders: [...aliasRenders, aliasRender],
         ...rest,
       });
     } else {
+      const aliasTemplate = aliasRender.template;
       const buildFile = await fetchAndCacheContract(
         cache,
         network,
@@ -84,6 +89,7 @@ async function runSpider(
       );
 
       const [contractName, contractMetadata] = getPrimaryContract(buildFile);
+      const name = contractMetadata.name || contractMetadata['key'];
 
       let relationConfig = relationConfigMap[contractName] ??
         (typeof aliasTemplate === 'string' ? relationConfigMap[aliasTemplate] : undefined) ?? {
@@ -103,6 +109,7 @@ async function runSpider(
 
         let implDiscovered = await getDiscoverNodes(
           contract,
+          context,
           relationConfig.proxy,
           `${defaultAlias}:implementation`
         );
@@ -140,19 +147,33 @@ async function runSpider(
           );
         }
       }
-      debug(`Spidered ${address}:`, contractMetadata.name || contractMetadata['key']);
+      debug(`Spidered ${address}:`, name);
+
+      // Add the alias in place to the context
+      if (context[alias]) {
+        context[alias].push(contract);
+      } else {
+        context[alias] = [contract];
+      }
 
       // Store the build file. This is the primary result of spidering: a huge list
       // of `address -> build file`, which is the contract cache.
       visited.set(address, {
+        name,
         buildFile,
         contract,
-        aliasTemplates: [aliasTemplate],
+        context,
+        aliasRenders: [aliasRender],
         implAddress,
       });
 
-      for (let [alias, relationInnerConfig] of Object.entries(relationConfig.relations)) {
-        let newDiscovered = await getDiscoverNodes(contract, relationInnerConfig, alias);
+      for (let [subAlias, relationInnerConfig] of Object.entries(relationConfig.relations)) {
+        let newDiscovered = await getDiscoverNodes(
+          contract,
+          context,
+          relationInnerConfig,
+          subAlias
+        );
         discovered.push(...newDiscovered);
       }
     }
@@ -179,8 +200,8 @@ export async function spider(
   importRetries?: number,
   importRetryDelay?: number
 ): Promise<{ cache: Cache, aliases: Aliases, proxies: Proxies }> {
-  let discovered: [Address, AliasTemplate][] = [...roots.entries()].map(([alias, address]) => {
-    return [address, aliasTemplateFromAlias(alias)];
+  let discovered: [Address, AliasRender, Alias, Ctx][] = [...roots.entries()].map(([alias, address]) => {
+    return [address, { template: aliasTemplateFromAlias(alias), i: 0 }, alias, {}];
   });
 
   let visited = await runSpider(
@@ -197,9 +218,9 @@ export async function spider(
   // TODO: Consider parallelizing these reads
   let proxies: Proxies = new Map();
   let aliases: Aliases = new Map();
-  for (let [address, { contract, aliasTemplates, implAddress }] of visited.entries()) {
-    for (let aliasTemplate of aliasTemplates) {
-      let alias = await readAlias(contract, aliasTemplate);
+  for (let [address, { name, contract, context, aliasRenders, implAddress }] of visited.entries()) {
+    for (let aliasRender of aliasRenders) {
+      let alias = await readAlias(contract, aliasRender, context);
       aliases.set(alias, address);
       if (implAddress) {
         proxies.set(alias, implAddress);

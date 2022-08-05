@@ -16,17 +16,33 @@ let relationConfigMap: RelationConfigMap = {
       baseToken: {
         alias: (token) => token.symbol(),
       },
+      baseTokenPriceFeed: {
+        field: (_, { comet }) => comet[0].baseTokenPriceFeed(),
+        alias: async (_, { baseToken }) => `${await baseToken[0].symbol()}:priceFeed`,
+      },
       assets: {
         field: async (comet) => {
-          let assetLen = await comet.numAssets();
-          return await Promise.all(
-            [...new Array(assetLen)].map(async (el, i) => {
-              let assetInfo = await comet.getAssetInfo(i);
+          const n = await comet.numAssets();
+          return Promise.all(
+            Array(n).fill(0).map(async (_, i) => {
+              const assetInfo = await comet.getAssetInfo(i);
               return assetInfo.asset;
             })
           );
         },
         alias: (token) => token.symbol(),
+      },
+      assetPriceFeeds: {
+        field: async (comet) => {
+          const n = await comet.numAssets();
+          return Promise.all(
+            Array(n).fill(0).map(async (_, i) => {
+              const assetInfo = await comet.getAssetInfo(i);
+              return assetInfo.priceFeed;
+            })
+          );
+        },
+        alias: async (_, { assets }, i) => `${await assets[i].symbol()}:priceFeed`,
       },
     },
   },
@@ -53,25 +69,21 @@ let relationConfigMap: RelationConfigMap = {
   cometAdmin: {
     relations: {
       timelock: {
-        field: async (cometAdmin) => {
-          return await cometAdmin.owner();
-        }
+        field: (cometAdmin) => cometAdmin.owner()
       }
     }
   },
   configuratorAdmin: {
     relations: {
       timelock: {
-        field: async (cometAdmin) => {
-          return await cometAdmin.owner();
-        }
+        field: (cometAdmin) => cometAdmin.owner()
       }
     }
   },
   timelock: {
     relations: {
       governor: {
-        field: async (timelock) => await timelock.admin(),
+        field: (timelock) => timelock.admin(),
       }
     }
   },

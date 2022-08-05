@@ -1,12 +1,13 @@
 import { Contract, utils } from 'ethers';
 import { DeploymentManagerConfig } from './type-extensions';
-import { Address, Alias } from './Types';
+import { Address, Alias, Ctx } from './Types';
 
-export type AliasFunction = (contract: Contract) => Promise<string>;
+export type AliasFunction = (contract: Contract, context: Ctx, i: number) => Promise<string>;
 export type AliasTemplateString = string;
 export type AliasTemplate = AliasTemplateString | AliasFunction;
+export type AliasRender = { template: AliasTemplate, i: number };
 
-export type FieldFunction = (c: Contract) => Promise<string | string[]>;
+export type FieldFunction = (c: Contract, context: Ctx) => Promise<string | string[]>;
 export interface FieldKey {
   key?: string;
   slot?: string;
@@ -80,7 +81,7 @@ async function readKey(contract: Contract, fnName: string): Promise<any> {
   return await fn();
 }
 
-export async function readField(contract: Contract, fieldKey: FieldKey): Promise<Address[]> {
+export async function readField(contract: Contract, fieldKey: FieldKey, context: Ctx): Promise<Address[]> {
   if (fieldKey.slot) {
     // Read from slot
     let addressRaw = await contract.provider.getStorageAt(contract.address, fieldKey.slot);
@@ -90,7 +91,7 @@ export async function readField(contract: Contract, fieldKey: FieldKey): Promise
     let val = await readKey(contract, fieldKey.key);
     return asAddressArray(val, fieldKey.key);
   } else if (fieldKey.getter) {
-    return asAddressArray(await fieldKey.getter(contract), 'custom function');
+    return asAddressArray(await fieldKey.getter(contract, context), 'custom function');
   } else {
     throw new Error(`Unknown or invalid field key ${JSON.stringify(fieldKey)}`);
   }
@@ -98,8 +99,10 @@ export async function readField(contract: Contract, fieldKey: FieldKey): Promise
 
 export async function readAlias(
   contract: Contract,
-  aliasTemplate: AliasTemplate
+  aliasRender: AliasRender,
+  context: Ctx,
 ): Promise<Alias> {
+  const { template: aliasTemplate, i } = aliasRender;
   if (typeof aliasTemplate === 'string') {
     if (aliasTemplate.startsWith('.')) {
       return await readKey(contract, aliasTemplate.slice(1));
@@ -107,7 +110,7 @@ export async function readAlias(
       return aliasTemplate;
     }
   } else if (typeof aliasTemplate === 'function') {
-    return await aliasTemplate(contract);
+    return await aliasTemplate(contract, context, i);
   } else {
     throw new Error(`Invalid alias template: ${JSON.stringify(aliasTemplate)}`);
   }

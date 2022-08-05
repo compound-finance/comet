@@ -102,14 +102,6 @@ export function mapValues<V, W>(o: { string: V }, f: (V) => W): { [k: string]: W
   return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, f(v)]));
 }
 
-export function cross<A, B>(as: A[], bs: B[]): [A, B][] {
-  return as.map<[A, B][]>((a) => {
-    return bs.map<[A, B]>((b) => {
-      return [a, b];
-    });
-  }).flat();
-}
-
 export function asArray<A>(v: A | A[]): A[] {
   if (Array.isArray(v)) {
     return v;
