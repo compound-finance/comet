@@ -253,8 +253,8 @@ export class CometContext {
   async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
     const { world } = this;
     const governor = await this.getGovernor();
-    // XXX See if there is a better way to determine if GovernorSimple or Bravo should be used
-    try {
+    // Use GovernorBravo for mainnet and GovernorSimple for everything else
+    if (await world.chainId() != 1) {
       const admin = await governor.admins(0);
       const adminSigner = await world.impersonateAddress(admin);
       const governorAsAdmin = governor.connect(adminSigner);
@@ -265,7 +265,7 @@ export class CometContext {
 
       await governorAsAdmin.queue(proposalId);
       await governorAsAdmin.execute(proposalId);
-    } catch (e) {
+    } else {
       // XXX find a better way to do this without hardcoding whales
       const voters = [
         '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
