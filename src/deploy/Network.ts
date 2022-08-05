@@ -77,6 +77,16 @@ export async function deployNetworkComet(
     );
   }
 
+  const protocolConfiguration = {
+    governor: timelock ? timelock.address : ethers.constants.AddressZero,
+    pauseGuardian: timelock ? timelock.address : ethers.constants.AddressZero,
+    ...await getConfiguration(deploymentManager, contractMapOverride, configurationOverrides),
+  };
+
+  // Validate that the configuration is properly set before trying to deploy contracts
+  // XXX awkward that this has to be here instead of in the beginning of the function
+  validateConfiguration(contractsToDeploy, protocolConfiguration);
+
   const {
     symbol,
     governor,
@@ -100,11 +110,7 @@ export async function deployNetworkComet(
     targetReserves,
     assetConfigs,
     rewardTokenAddress
-  } = {
-    governor: timelock ? timelock.address : ethers.constants.AddressZero,
-    pauseGuardian: timelock ? timelock.address : ethers.constants.AddressZero,
-    ...await getConfiguration(deploymentManager, contractMapOverride, configurationOverrides),
-  };
+  } = protocolConfiguration;
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometExt)) {
     const extConfiguration = {
@@ -245,7 +251,6 @@ export async function deployNetworkComet(
     );
 
     // Set the rewards config for Comet in CometRewards
-    // XXX we should validate rewardTokenAddress is set earlier
     debug(`Setting RewardConfig in CometRewards`);
     await deploymentManager.asyncCallWithRetry(
       (signer_) => wait(rewards.connect(adminSigner_ ?? signer_).setRewardConfig(cometProxy.address, rewardTokenAddress))
@@ -272,4 +277,12 @@ export async function deployNetworkComet(
     governor: governorSimple,
     rewards
   };
+}
+
+function validateConfiguration(contractsToDeploy: ContractsToDeploy, config: ProtocolConfiguration) {
+  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.rewards)) {
+    if (config.rewardTokenAddress == null) {
+      throw Error('RewardToken or RewardTokenAddress must be defined in configuration.json if CometRewards is being deployed.')
+    }
+  }
 }
