@@ -237,7 +237,7 @@ scenario(
 );
 
 scenario(
-  'Comet#supplyFrom reverts if not enough ERC20 approval',
+  'Comet#supplyFrom reverts if not enough ERC20 base approval',
   {
     tokenBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
@@ -257,6 +257,33 @@ scenario(
         src: albert.address,
         dst: betty.address,
         asset: baseAsset.address,
+        amount: 100n * scale,
+      })
+    ).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
+  }
+);
+
+scenario(
+  'Comet#supplyFrom reverts if not enough ERC20 collateral approval',
+  {
+    tokenBalances: {
+      albert: { $asset0: 100 }, // in units of asset, not wei
+    },
+  },
+  async ({ comet, actors }, context) => {
+    const { albert, betty } = actors;
+    const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
+    const collateralAsset = context.getAssetByAddress(asset0Address);
+    const scale = scaleBN.toBigInt();
+
+    await albert.allow(betty, true);
+    await collateralAsset.approve(albert, betty, 10n * scale);
+
+    await expect(
+      betty.supplyAssetFrom({
+        src: albert.address,
+        dst: betty.address,
+        asset: collateralAsset.address,
         amount: 100n * scale,
       })
     ).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
@@ -287,7 +314,7 @@ scenario(
 );
 
 scenario(
-  'Comet#supplyFrom reverts if not enough ERC20 balance',
+  'Comet#supplyFrom reverts if not enough ERC20 base balance',
   {
     tokenBalances: {
       albert: { $base: 10 }, // in units of asset, not wei
@@ -306,6 +333,33 @@ scenario(
         src: albert.address,
         dst: betty.address,
         asset: baseAsset.address,
+        amount: 100n * scale,
+      })
+    ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+  }
+);
+
+scenario(
+  'Comet#supplyFrom reverts if not enough ERC20 collateral balance',
+  {
+    tokenBalances: {
+      albert: { $asset0: 10 }, // in units of asset, not wei
+    },
+  },
+  async ({ comet, actors }, context) => {
+    const { albert, betty } = actors;
+    const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
+    const collateralAsset = context.getAssetByAddress(asset0Address);
+    const scale = scaleBN.toBigInt();
+
+    await collateralAsset.approve(albert, comet.address);
+    await albert.allow(betty, true);
+
+    await expect(
+      betty.supplyAssetFrom({
+        src: albert.address,
+        dst: betty.address,
+        asset: collateralAsset.address,
         amount: 100n * scale,
       })
     ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
@@ -345,11 +399,9 @@ scenario(
     },
   },
   async ({ comet, actors }) => {
-    const { albert, betty } = actors;
+    const { albert } = actors;
 
     const baseToken = await comet.baseToken();
-
-    await betty.allow(albert, true);
 
     await expect(
       albert.supplyAsset({

@@ -83,7 +83,7 @@ scenario(
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(0n);
     expect(await comet.balanceOf(albert.address)).to.be.equal(0n);
 
-    // Albert borrows 1 unit of base from Comet
+    // Albert borrows 1000 unit of base from Comet
     const txn = await albert.withdrawAsset({ asset: baseAsset.address, amount: 1000n * scale });
 
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(1000n * scale);
@@ -175,7 +175,7 @@ scenario(
 
     await albert.allow(betty, true);
 
-    // Betty borrows 1 unit of base using Albert's account
+    // Betty borrows 1000 unit of base using Albert's account
     const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: 1000n * scale });
 
     expect(await baseAsset.balanceOf(betty.address)).to.be.equal(1000n * scale);
@@ -221,11 +221,8 @@ scenario(
     },
   },
   async ({ comet, actors }) => {
-    const { albert, betty } = actors;
-
+    const { albert } = actors;
     const baseToken = await comet.baseToken();
-
-    await betty.allow(albert, true);
 
     await expect(
       albert.withdrawAsset({
@@ -285,6 +282,33 @@ scenario(
 );
 
 scenario(
+  'Comet#withdrawFrom base reverts if position is undercollateralized',
+  {
+    cometBalances: {
+      albert: { $base: 0 }, // in units of asset, not wei
+      betty: { $base: 1000 }, // to give the protocol enough base for others to borrow from
+    },
+  },
+  async ({ comet, actors }, context) => {
+    const { albert, betty } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const scale = (await comet.baseScale()).toBigInt();
+
+    await albert.allow(betty, true);
+
+    await expect(
+      betty.withdrawAssetFrom({
+        src: albert.address,
+        dst: betty.address,
+        asset: baseAsset.address,
+        amount: 1000n * scale,
+      })
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+  }
+);
+
+scenario(
   'Comet#withdraw collateral reverts if position is undercollateralized',
   {
     cometBalances: {
@@ -307,6 +331,32 @@ scenario(
 );
 
 scenario(
+  'Comet#withdrawFrom collateral reverts if position is undercollateralized',
+  {
+    cometBalances: {
+      albert: { $base: -1000, $asset0: 1000 }, // in units of asset, not wei
+    },
+  },
+  async ({ comet, actors }, context) => {
+    const { albert, betty } = actors;
+    const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
+    const collateralAsset = context.getAssetByAddress(asset0Address);
+    const scale = scaleBN.toBigInt();
+
+    await albert.allow(betty, true);
+
+    await expect(
+      betty.withdrawAssetFrom({
+        src: albert.address,
+        dst: betty.address,
+        asset: collateralAsset.address,
+        amount: 1000n * scale,
+      })
+    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+  }
+);
+
+scenario(
   'Comet#withdraw reverts if borrow is less than minimum borrow',
   {
     cometBalances: {
@@ -323,6 +373,32 @@ scenario(
       albert.withdrawAsset({
         asset: baseAsset.address,
         amount: minBorrow / 2n
+      })
+    ).to.be.revertedWith("custom error 'BorrowTooSmall()'");
+  }
+);
+
+scenario(
+  'Comet#withdrawFrom reverts if borrow is less than minimum borrow',
+  {
+    cometBalances: {
+      albert: { $asset0: 100 }
+    }
+  },
+  async ({ comet, actors }, context) => {
+    const { albert, betty } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const minBorrow = (await comet.baseBorrowMin()).toBigInt();
+
+    await albert.allow(betty, true);
+
+    await expect(
+      betty.withdrawAssetFrom({
+        src: albert.address,
+        dst: betty.address,
+        asset: baseAsset.address,
+        amount: minBorrow / 2n,
       })
     ).to.be.revertedWith("custom error 'BorrowTooSmall()'");
   }
