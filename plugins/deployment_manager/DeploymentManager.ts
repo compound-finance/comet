@@ -321,6 +321,8 @@ export class DeploymentManager {
       debug('Error is: ', e);
       if (retries === 0) throw e;
       // XXX to be extra safe, we can also get the signer transaction count and figure out the next nonce
+      // We reset signers here to force a new signer to be instantiated using a new provider. This helps
+      // when retrying hanging txns.
       this._signers = [];
       await new Promise(ok => setTimeout(ok, wait));
       return await this.asyncCallWithRetry(fn, retries, timeLimit, wait * 2);
