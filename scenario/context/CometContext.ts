@@ -248,13 +248,56 @@ export class CometContext {
     await this.world.hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
   }
 
+  async executePendingProposal(proposalId, startBlock, endBlock, voters) {
+    const governor = await this.getGovernor();
+
+    const blockNow = await this.world.hre.ethers.provider.getBlockNumber();
+    const blocksUntilStart = startBlock - blockNow;
+    const blocksFromStartToEnd = endBlock - Math.max(startBlock, blockNow);
+
+    if (blocksUntilStart > 0) {
+      await this.mineBlocks(blocksUntilStart);
+    }
+
+    for (const voter of voters) {
+      try {
+        // Voting can fail if voter has already voted
+        const voterSigner = await this.world.impersonateAddress(voter);
+        const govAsVoter = await this.world.hre.ethers.getContractAt(
+          'IGovernorBravo',
+          governor.address,
+          voterSigner
+        ) as IGovernorBravo;
+        await govAsVoter.castVote(proposalId, 1);
+      } catch (err) {
+        debug(`Error while voting ${err}`);
+      }
+    }
+    await this.mineBlocks(blocksFromStartToEnd);
+
+    const adminSigner = await this.world.impersonateAddress(voters[0]);
+    const governorAsAdmin = await this.world.hre.ethers.getContractAt(
+      'IGovernorBravo',
+      governor.address,
+      adminSigner
+    ) as IGovernorBravo;
+
+    // Queue proposal
+    const queueTxn = await (await governorAsAdmin.queue(proposalId)).wait();
+    const queueEvent = queueTxn.events?.find(event => event.event === 'ProposalQueued');
+    await this.setNextBlockTimestamp(queueEvent?.args?.eta.toNumber());
+
+    // Execute proposal
+    await governorAsAdmin.execute(proposalId);
+  }
+
   // Instantly executes some actions through the governance proposal process
   // Note: `governor` must be connected to an `admin` signer
   async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
     const { world } = this;
     const governor = await this.getGovernor();
     // Use GovernorBravo for mainnet and GovernorSimple for everything else
-    if (await world.chainId() != 1) {
+    try {
       const admin = await governor.admins(0);
       const adminSigner = await world.impersonateAddress(admin);
       const governorAsAdmin = governor.connect(adminSigner);
@@ -265,7 +308,7 @@ export class CometContext {
 
       await governorAsAdmin.queue(proposalId);
       await governorAsAdmin.execute(proposalId);
-    } else {
+    } catch(e) {
       // XXX find a better way to do this without hardcoding whales
       const voters = [
         '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
@@ -282,26 +325,7 @@ export class CometContext {
       const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
       const [proposalId, , , , , , startBlock, endBlock] = proposeEvent.args;
 
-      const blocksUntilStart = startBlock - await world.hre.ethers.provider.getBlockNumber();
-      const blocksFromStartToEnd = endBlock - startBlock;
-      await this.mineBlocks(blocksUntilStart);
-      for (const voter of voters) {
-        const voterSigner = await world.impersonateAddress(voter);
-        const govAsVoter = await world.hre.ethers.getContractAt(
-          'IGovernorBravo',
-          governor.address,
-          voterSigner
-        ) as IGovernorBravo;
-        await govAsVoter.castVote(proposalId, 1);
-      }
-
-      await this.mineBlocks(blocksFromStartToEnd);
-      const queueTxn = await (await governorAsAdmin.queue(proposalId)).wait();
-      const queueEvent = queueTxn.events.find(event => event.event === 'ProposalQueued');
-      let [proposalId_, eta] = queueEvent.args;
-
-      await this.setNextBlockTimestamp(eta.toNumber());
-      await governorAsAdmin.execute(proposalId);
+      this.executePendingProposal(proposalId, startBlock, endBlock, voters)
     }
   }
 }

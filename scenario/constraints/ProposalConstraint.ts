@@ -88,43 +88,8 @@ export class ProposalConstraint<T extends CometContext, R extends Requirements> 
           // XXX if gov chain is not local chain, simulate bridge
           debug(`Processing pending proposal ${proposal.proposalId}`);
           const { proposalId, startBlock, endBlock } = proposal;
-          const blockNow = await world.hre.ethers.provider.getBlockNumber();
-          const blocksUntilStart = startBlock - blockNow;
-          const blocksFromStartToEnd = endBlock - Math.max(startBlock, blockNow);
-          if (blocksUntilStart > 0) {
-            await context.mineBlocks(blocksUntilStart);
-          }
 
-          for (const voter of voters) {
-            try {
-              // Voting can fail if voter has already voted
-              const voterSigner = await world.impersonateAddress(voter);
-              const govAsVoter = await world.hre.ethers.getContractAt(
-                'IGovernorBravo',
-                governor.address,
-                voterSigner
-              ) as IGovernorBravo;
-              await govAsVoter.castVote(proposalId, 1);
-            } catch (err) {
-              debug(`Error while voting ${err}`);
-            }
-          }
-          await context.mineBlocks(blocksFromStartToEnd);
-
-          const adminSigner = await world.impersonateAddress(voters[0]);
-          const governorAsAdmin = await world.hre.ethers.getContractAt(
-            'IGovernorBravo',
-            governor.address,
-            adminSigner
-          ) as IGovernorBravo;
-
-          // Queue proposal
-          const queueTxn = await (await governorAsAdmin.queue(proposalId)).wait();
-          const queueEvent = queueTxn.events?.find(event => event.event === 'ProposalQueued');
-          await context.setNextBlockTimestamp(queueEvent?.args?.eta.toNumber());
-
-          // Execute proposal
-          await governorAsAdmin.execute(proposalId);
+          await context.executePendingProposal(proposalId, startBlock, endBlock, voters);
 
           debug(`Pending proposal ${proposalId} was executed`);
           return context;
