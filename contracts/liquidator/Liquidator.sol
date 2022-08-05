@@ -51,6 +51,9 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     /// @notice Uniswap standard pool fee, used if custom fee is not specified for the pool
     uint24 public constant DEFAULT_POOL_FEE = 500;
 
+    /// @notice Address to send liquidation proceeds to
+    address public immutable recipient;
+
     /// @notice Uniswap router used for token exchange
     ISwapRouter public immutable swapRouter;
 
@@ -68,6 +71,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
     /**
      * @notice Construct a new liquidator instance
+     * @param _recipient The address to send all proceeds to
      * @param _swapRouter The Uniswap V3 Swap router address
      * @param _comet The Compound V3 Comet instance address
      * @param _factory The Uniswap V3 pools factory instance address
@@ -78,6 +82,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
      * @param _poolFees The list of given poolFees for assets
      **/
     constructor(
+        address _recipient,
         ISwapRouter _swapRouter,
         CometInterface _comet,
         address _factory,
@@ -90,6 +95,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         require(_assets.length == _lowLiquidityPools.length, "Wrong data");
         require(_assets.length == _poolFees.length, "Wrong data");
 
+        recipient = _recipient;
         swapRouter = _swapRouter;
         comet = _comet;
         weth = _WETH9;
@@ -208,7 +214,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         // We borrow only 1 asset, so one of fees will be 0
         uint256 fee = fee0 + fee1;
         // Payback flashloan to Uniswap pool and profit to the caller
-        payback(decoded.amount, fee, comet.baseToken(), totalAmountOut, decoded.recipient);
+        payback(decoded.amount, fee, comet.baseToken(), totalAmountOut);
     }
 
     /**
@@ -217,14 +223,12 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
      * @param fee The fee for taking the loan
      * @param token The base token which was borrowed for successful liquidation
      * @param amountOut The total amount of base token received after liquidation
-     * @param recipient The caller address of liquidation bot
      */
     function payback(
         uint256 amount,
         uint256 fee,
         address token,
-        uint256 amountOut,
-        address recipient
+        uint256 amountOut
     ) internal {
         uint256 amountOwed = amount + fee;
         TransferHelper.safeApprove(token, address(this), amountOwed);
