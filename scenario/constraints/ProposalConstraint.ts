@@ -3,7 +3,6 @@ import { CometContext } from '../context/CometContext';
 import { Requirements } from './Requirements';
 import { IGovernorBravo } from '../../build/types';
 import { fetchQuery } from '../utils';
-import CometActor from '../context/CometActor';
 
 
 function debug(...args: any[]) {
