@@ -282,7 +282,7 @@ export async function deployNetworkComet(
 function validateConfiguration(contractsToDeploy: ContractsToDeploy, config: ProtocolConfiguration) {
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.rewards)) {
     if (config.rewardTokenAddress == null) {
-      throw Error('RewardToken or RewardTokenAddress must be defined in configuration.json if CometRewards is being deployed.')
+      throw Error('RewardToken or RewardTokenAddress must be defined in configuration.json if CometRewards is being deployed.');
     }
   }
 }
