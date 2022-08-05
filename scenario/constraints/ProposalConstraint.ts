@@ -10,14 +10,6 @@ function debug(...args: any[]) {
   console.log(`[ProposalConstraint]`, ...args);
 }
 
-// Fund voters account with eth for sending transactions
-async function fundVoters(world: World, voters: string[], actor: CometActor) {
-  const nativeTokenAmount = world.base.allocation ?? 1.0;
-  for (let voter of voters) {
-    await actor.sendEth(voter, nativeTokenAmount);
-  }
-}
-
 type PendingProposal = { proposalId: number, startBlock: number, endBlock: number };
 
 async function getAllPendingProposals(world: World, governor: string, admin: string): Promise<PendingProposal[]> {
@@ -79,7 +71,11 @@ export class ProposalConstraint<T extends CometContext, R extends Requirements> 
       '0x88fb3d509fc49b515bfeb04e23f53ba339563981',
       '0x8169522c2c57883e8ef80c498aab7820da539806'
     ];
-    await fundVoters(world, voters, context.primaryActor());
+    await context.setNextBaseFeeToZero();
+
+    // XXX pull all pending proposals for the associated gov (chain)
+    // produce all the subsets and queue/execute each batch of them
+    // to form each solution
     const pendingProposals = await getAllPendingProposals(world, governor.address, voters[0]);
 
     for (let proposal of pendingProposals) {
