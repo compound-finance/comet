@@ -1,5 +1,5 @@
 import { Constraint, World } from '../../plugins/scenario';
-import { CometContext, getActors } from '../context/CometContext';
+import { CometContext } from '../context/CometContext';
 import { deployComet, ProtocolConfiguration } from '../../src/deploy';
 import { getFuzzedRequirements } from './Fuzzing';
 import { Requirements } from './Requirements';
@@ -34,7 +34,7 @@ export class ModernConstraint<T extends CometContext, R extends Requirements> im
           const deploymentManager = ctx.deploymentManager;
           await deployComet(deploymentManager, { all: true }, config.cometConfig);
           await deploymentManager.spider();
-          ctx.actors = await getActors(ctx);
+          await ctx.setActors();
           return ctx;
         });
       } else if (config.upgrade) {

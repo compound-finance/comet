@@ -67,10 +67,6 @@ export class CometContext {
     return this.deploymentManager.contract('comet');
   }
 
-  async getCometImplemenation(): Promise<Comet> {
-    return this.deploymentManager.contract('comet:implementation');
-  }
-
   async getCometAdmin(): Promise<CometProxyAdmin> {
     return this.deploymentManager.contract('cometAdmin');
   }
@@ -98,20 +94,17 @@ export class CometContext {
     const oldComet = await this.getComet();
     const timelock = await this.getTimelock();
     const cometConfig = { governor: timelock.address, ...configOverrides } // Use old timelock as governor
-    const { comet: newComet } = await deployComet(
+    await deployComet(
       this.deploymentManager,
       // Deploy a new configurator proxy to set the proper CometConfiguration storage values
       {
-        configuratorProxy: true,
-        configurator: true,
         comet: true,
-        cometExt: true,
-        cometFactory: true
+        configurator: true,
       },
       cometConfig,
-      null,
       this.actors['signer'].signer
     );
+    const newComet = await this.getComet();
 
     let initializer: string | undefined;
     if (!oldComet.totalsBasic || (await oldComet.totalsBasic()).lastAccrualTime === 0) {

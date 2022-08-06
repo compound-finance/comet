@@ -8,7 +8,10 @@ import {
 } from '../../build/types';
 import { AssetConfigStruct } from '../../build/types/Comet';
 import { BigNumberish } from 'ethers';
-export { deployNetworkComet as deployComet } from './Network';
+
+export { deployNetworkComet as deployComet, sameAddress } from './Network';
+export { wait } from '../../test/helpers';
+export { debug } from '../../plugins/deployment_manager/Utils';
 
 export interface ProtocolConfiguration {
   symbol?: string;
@@ -36,28 +39,12 @@ export interface ProtocolConfiguration {
 
 // Specific contracts take precedence over `all`, which allows for expressions
 // such as:
-// { all: true, timelock: false }
-// which will deploy all contracts other than Timelock
+// { all: true, rewards: false }
+// which will deploy all contracts other than Rewards
 export interface ContractsToDeploy {
   all?: boolean;
-  cometProxy?: boolean;
-  configuratorProxy?: boolean;
-  cometProxyAdmin?: boolean;
-  timelock?: boolean;
-  governor?: boolean;
-  cometExt?: boolean;
+  cometAdmin?: boolean;
   comet?: boolean;
   configurator?: boolean;
-  cometFactory?: boolean;
   rewards?: boolean;
-}
-
-export interface DeployedContracts {
-  comet: Comet;
-  cometProxy: TransparentUpgradeableProxy | null;
-  configuratorProxy: TransparentUpgradeableProxy | null;
-  timelock: SimpleTimelock;
-  governor: GovernorSimple;
-  rewards: CometRewards;
-  tokens?: ERC20[];
 }

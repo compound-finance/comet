@@ -1,8 +1,6 @@
 import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
 import { FaucetToken, SimplePriceFeed } from '../../../build/types';
-import { deployComet } from '../../../src/deploy';
-
-// XXX clean this all up further, but minimize changes for now on first pass refactor
+import { debug, deployComet, sameAddress, wait } from '../../../src/deploy';
 
 async function makeToken(
   deploymentManager: DeploymentManager,
@@ -11,12 +9,8 @@ async function makeToken(
   decimals: number,
   symbol: string
 ): Promise<FaucetToken> {
-  return deploymentManager.getOrDeployAlias(symbol, 'test/FaucetToken.sol', [
-    (BigInt(amount) * 10n ** BigInt(decimals)).toString(),
-    name,
-    decimals,
-    symbol,
-  ]);
+  const mint = (BigInt(amount) * 10n ** BigInt(decimals)).toString();
+  return deploymentManager.deploy(symbol, 'test/FaucetToken.sol', [mint, name, decimals, symbol]);
 }
 
 async function makePriceFeed(
@@ -25,22 +19,37 @@ async function makePriceFeed(
   initialPrice: number,
   decimals: number
 ): Promise<SimplePriceFeed> {
-  return deploymentManager.getOrDeployAlias(alias, 'test/SimplePriceFeed.sol', [initialPrice * 1e8, decimals]);
+  return deploymentManager.deploy(alias, 'test/SimplePriceFeed.sol', [initialPrice * 1e8, decimals]);
 }
 
 // TODO: Support configurable assets as well?
-export default async function deploy(deploymentManager: DeploymentManager) {
+export default async function deploy(deploymentManager: DeploymentManager, deploySpec) {
+  const ethers = deploymentManager.hre.ethers;
   const [admin, pauseGuardianSigner] = await deploymentManager.getSigners();
 
-  let dai = await makeToken(deploymentManager, 1000000, 'DAI', 18, 'DAI');
-  let gold = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
-  let silver = await makeToken(deploymentManager, 3000000, 'SILVER', 10, 'SILVER');
+  // XXX clone
+  const governor = await deploymentManager.deploy('governor', 'test/GovernorSimple.sol', []);
+  const timelock = await deploymentManager.deploy('timelock', 'test/SimpleTimelock.sol', [governor.address]);
 
-  let daiPriceFeed = await makePriceFeed(deploymentManager, 'DAI:priceFeed', 1, 8);
-  let goldPriceFeed = await makePriceFeed(deploymentManager, 'GOLD:priceFeed', 0.5, 8);
-  let silverPriceFeed = await makePriceFeed(deploymentManager, 'SILVER:priceFeed', 0.05, 8);
+  // XXX will fail if gov already has a diff timelock, and technically should otherwise ensure admin
+  //  but we are anyway replacing gov simple
+  await deploymentManager.idempotent(
+    async () => !sameAddress(await governor.timelock(), timelock.address),
+    async (signer) => {
+      debug(`Initializing GovSimple`);
+      await wait(governor.connect(signer).initialize(timelock.address, [admin.address]));
+    }
+  );
 
-  let assetConfig0 = {
+  const dai = await makeToken(deploymentManager, 1000000, 'DAI', 18, 'DAI');
+  const gold = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
+  const silver = await makeToken(deploymentManager, 3000000, 'SILVER', 10, 'SILVER');
+
+  const daiPriceFeed = await makePriceFeed(deploymentManager, 'DAI:priceFeed', 1, 8);
+  const goldPriceFeed = await makePriceFeed(deploymentManager, 'GOLD:priceFeed', 0.5, 8);
+  const silverPriceFeed = await makePriceFeed(deploymentManager, 'SILVER:priceFeed', 0.05, 8);
+
+  const assetConfig0 = {
     asset: gold.address,
     priceFeed: goldPriceFeed.address,
     decimals: (8).toString(),
@@ -50,7 +59,7 @@ export default async function deploy(deploymentManager: DeploymentManager) {
     supplyCap: (1000000e8).toString(),
   };
 
-  let assetConfig1 = {
+  const assetConfig1 = {
     asset: silver.address,
     priceFeed: silverPriceFeed.address,
     decimals: (10).toString(),
@@ -61,18 +70,10 @@ export default async function deploy(deploymentManager: DeploymentManager) {
   };
 
   // Deploy all Comet-related contracts
-  let { cometProxy, configuratorProxy, timelock, rewards } = await deployComet(
-    deploymentManager,
-    { all: true },
-    {
-      baseTokenPriceFeed: daiPriceFeed.address,
-      assetConfigs: [assetConfig0, assetConfig1],
-    }
-  );
+  await deployComet( deploymentManager, deploySpec, {
+    baseTokenPriceFeed: daiPriceFeed.address,
+    assetConfigs: [assetConfig0, assetConfig1],
+  });
 
-  return {
-    comet: cometProxy.address,
-    configurator: configuratorProxy.address,
-    rewards: rewards.address,
-  };
+  return ['comet', 'configurator', 'rewards'];
 }

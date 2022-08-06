@@ -67,7 +67,8 @@ task('deploy', 'Deploys market')
           verificationStrategy: 'lazy',
         }
       );
-      const delta = await dm.deployMissing(true); // XXX truly idempotent will change the arg here
+      const overrides = undefined; // TODO: pass through cli args
+      const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
       console.log(`[${tag}] Deployed ${dm.counter} contracts to initialize world 🗺`);
       console.log(`[${tag}]\n${diff(delta.new, delta.old, {aAnnotation: 'New addresses', bAnnotation: 'Old addresses'})}`);
     }

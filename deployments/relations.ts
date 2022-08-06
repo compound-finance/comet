@@ -47,6 +47,7 @@ let relationConfigMap: RelationConfigMap = {
     },
   },
   'comet:implementation': {
+    artifact: 'contracts/Comet.sol:Comet',
     proxy: {
       field: (comet) => comet.extensionDelegate(),
     },
@@ -63,9 +64,14 @@ let relationConfigMap: RelationConfigMap = {
         field: {
           slot: '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103',
         }
+      },
+      cometFactory: {
+        field: async (_, { baseToken }) => baseToken[0].address
       }
     }
   },
+  // XXX if we dont transfer to gov, owner is eoa, and we can't import, understandably
+  //  but handle that case better than 'is not valid address'
   cometAdmin: {
     relations: {
       timelock: {
@@ -73,13 +79,17 @@ let relationConfigMap: RelationConfigMap = {
       }
     }
   },
-  configuratorAdmin: {
-    relations: {
-      timelock: {
-        field: (cometAdmin) => cometAdmin.owner()
-      }
-    }
-  },
+  // XXX if we comment above out and follow this path, we dont see the timelock relation at all
+  //  I believe we first visit and find no relation config -> get contract -> empty relations
+  //   then we skip the next time we see it
+  //  so what to do if the same contract has 2 different types of relations to other contracts?
+  // configuratorAdmin: {
+  //   relations: {
+  //     timelock: {
+  //       field: (configuratorAdmin) => configuratorAdmin.owner()
+  //     }
+  //   }
+  // },
   timelock: {
     relations: {
       governor: {

@@ -122,9 +122,9 @@ function getOverridesOrConfig(
     baseMinForRewards: _ => number(tracking.baseMinForRewards),
   });
   const mapping = () => ({
-    ...(config.governor && { governor: _ => address(config.governor) }),
-    ...(config.pauseGuardian && { pauseGuardian: _ => address(config.pauseGuardian) }),
     symbol: _ => config.symbol,
+    governor: _ => config.governor ? address(config.governor) : getContractAddress('timelock', contracts),
+    pauseGuardian: _ => config.pauseGuardian ? address(config.pauseGuardian) : getContractAddress('timelock', contracts),
     baseToken: _ => getContractAddress(config.baseToken, contracts, config.baseTokenAddress),
     baseTokenPriceFeed: _ => address(config.baseTokenPriceFeed),
     baseBorrowMin: _ => number(config.borrowMin), // TODO: in token units (?)
@@ -141,10 +141,9 @@ function getOverridesOrConfig(
 
 export async function getConfiguration(
   deploymentManager: DeploymentManager,
-  contractOverrides?: ContractMap,
   configOverrides: ProtocolConfiguration = {},
 ): Promise<ProtocolConfiguration> {
-  const config = await deploymentManager.cache.readCache({ rel: 'configuration.json' });
-  const contracts = contractOverrides ?? await deploymentManager.contracts();
-  return getOverridesOrConfig(configOverrides, config as NetworkConfiguration, contracts);
+  const config = await deploymentManager.readConfig<NetworkConfiguration>();
+  const contracts = await deploymentManager.contracts();
+  return getOverridesOrConfig(configOverrides, config, contracts);
 }

@@ -20,6 +20,7 @@ export interface RelationInnerConfig {
 }
 
 export interface RelationConfig {
+  artifact?: string;
   proxy?: RelationInnerConfig;
   relations: { [alias: string]: RelationInnerConfig };
 }

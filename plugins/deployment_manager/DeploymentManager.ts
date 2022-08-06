@@ -14,7 +14,7 @@ import { Migration, getArtifactSpec } from './Migration';
 import { generateMigration } from './MigrationTemplate';
 import { ExtendedNonceManager } from './NonceManager';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { asyncCallWithTimeout, debug } from './Utils';
+import { asyncCallWithTimeout, debug, getEthersContract } from './Utils';
 import { deleteVerifyArgs, getVerifyArgs } from './VerifyArgs';
 import { verifyContract, VerificationStrategy } from './Verify';
 
@@ -27,8 +27,8 @@ interface DeploymentManagerConfig {
 }
 
 interface DeploymentDelta {
-  old: { roots: Roots, spider: Spider },
-  new: { roots: Roots, spider: Spider },
+  old: { count: number, roots: Roots, spider: Spider },
+  new: { count: number, roots: Roots, spider: Spider },
 }
 
 async function getManagedSigner(signer): Promise<SignerWithAddress> {
@@ -118,6 +118,16 @@ export class DeploymentManager {
     this.contractsCache = null;
   }
 
+  /* Conditionally executes an action */
+  async idempotent(
+    condition: () => Promise<any>,
+    action: (signer: SignerWithAddress) => Promise<any>,
+    retries?: number): Promise<any> {
+    if (await condition()) {
+      return this.asyncCallWithRetry(action, retries);
+    }
+  }
+
   /* Imports a contract, if not already imported, from Etherscan for local deploys, etc. */
   async import(address: string, network?: string): Promise<BuildFile> {
     return await fetchAndCacheContract(
@@ -129,11 +139,22 @@ export class DeploymentManager {
     );
   }
 
-  // XXX make getOrDeploy deploy and make the others internalish _
+  /* Conditionally clones a contract with its alias from a given network to this deployment */
+  async clone<C extends Contract>(
+    alias: Alias,
+    address: string,
+    deployArgs: any[],
+    fromNetwork?: string,
+    retries?: number
+  ): Promise<C> {
+    // XXX conditional
+    let buildFile = await this.import(address, fromNetwork);
+    return this._deployBuild(buildFile, deployArgs, retries);
+  }
 
-  /* Conditionally deploy a contract with an alias if it does not exist, or if forced */
-  async getOrDeployAlias<C extends Contract, DeployArgs extends Array<any>>(
-    alias: string,
+  /* Conditionally deploy a contract with its alias if it does not exist, or if forced */
+  async deploy<C extends Contract, DeployArgs extends Array<any>>(
+    alias: Alias,
     contractFile: string,
     deployArgs: DeployArgs,
     force?: boolean,
@@ -142,15 +163,26 @@ export class DeploymentManager {
     const maybeExisting: C = await this.contract(alias);
     if (!maybeExisting || force) {
       // NB: would like to use an override on deployOpts, but it doesn't invalidate cache...
-      const contract: C = await this.deploy(contractFile, deployArgs, retries);
+      const contract: C = await this._deploy(contractFile, deployArgs, retries);
       await this.putAlias(alias, contract.address);
       return contract;
     }
     return maybeExisting;
   }
 
+  async existing<C extends Contract>(alias: Alias, address: string): Promise<C> {
+    const maybeExisting = await this.contract<C>(alias);
+    if (!maybeExisting) {
+      const buildFile = await this.import(address);
+      const contract = getEthersContract<C>(address, buildFile, this.hre);
+      await this.putAlias(alias, address);
+      return contract;
+    }
+    return maybeExisting;
+  }
+
   /* Deploys a contract from Hardhat artifacts */
-  async deploy<
+  async _deploy<
     C extends Contract,
     Factory extends Deployer<C, DeployArgs>,
     DeployArgs extends Array<any>
@@ -164,7 +196,7 @@ export class DeploymentManager {
   }
 
   /* Deploys a contract from a build file, e.g. an one imported contract */
-  async deployBuild<C extends Contract>(buildFile: BuildFile, deployArgs: any[], retries?: number): Promise<C> {
+  async _deployBuild<C extends Contract>(buildFile: BuildFile, deployArgs: any[], retries?: number): Promise<C> {
     const contract = await this.asyncCallWithRetry(
       async () => deployBuild(buildFile, deployArgs, this.hre, await this.deployOpts()),
       retries
@@ -174,13 +206,8 @@ export class DeploymentManager {
   }
 
   /* Deploys missing contracts from the deployment, using the user-space deploy.ts script */
-  async deployMissing(force: boolean = false): Promise<DeploymentDelta> {
-    // XXX if this is idempotent we can just always deploy, and do the same for dev
-    //  as is, won't handle cases where the deploy script adds roots or partial redeploys
-    // if force or there are no roots, deploy
-    //  force will also have to change with idempotent deploy changes
-    //   its here for deploy task, which doesn't really care if roots exists or not
-    //    but we'll want another way to specify how idempotent should work
+  async runDeployScript(deploySpec: object): Promise<DeploymentDelta> {
+    const oldCount = this.counter;
     const oldRoots = await this.getRoots();
     const oldSpider = await this.spider();
     const deployScript = this.cache.getFilePath({ rel: 'deploy.ts' });
@@ -188,12 +215,14 @@ export class DeploymentManager {
     if (!deployFn || !deployFn.call) {
       throw new Error(`Missing deploy function in ${deployScript}.`);
     }
-    const result = await deployFn(this); // XXX { allMissing: true } actually passed in here
-    const newRoots = await this.putRoots(new Map(Object.entries(result)));
+    const result = await deployFn(this, deploySpec);
+    const aliases = await this.getAliases();
+    const newCount = this.counter;
+    const newRoots = await this.putRoots(new Map(result.map(a => [a, aliases.get(a)])));
     const newSpider = await this.spider();
     return {
-      old: { roots: oldRoots, spider: oldSpider },
-      new: { roots: newRoots, spider: newSpider }
+      old: { count: oldCount, roots: oldRoots, spider: oldSpider },
+      new: { count: newCount, roots: newRoots, spider: newSpider }
     };
   }
 
@@ -312,24 +341,26 @@ export class DeploymentManager {
     this.cache.writeCacheToDisk = writeCacheToDisk;
   }
 
-  /* Generates a new migration file, e.g. `deployments/<network>/<deployment>/migrations/1644385406_my_new_migration.ts`
-   **/
+  /* Generates a new migration file, e.g. `deployments/<network>/<deployment>/migrations/1644385406_my_new_migration.ts` */
   async generateMigration(name: string, timestamp?: number): Promise<string> {
     return generateMigration(this.cache, name, timestamp);
   }
 
-  /* Stores artifact from a migration, e.g. `deployments/<network>/<deployment>/artifacts/1644385406_my_new_migration.json`
-   **/
+  /* Stores artifact from a migration, e.g. `deployments/<network>/<deployment>/artifacts/1644385406_my_new_migration.json` */
   async storeArtifact<A>(migration: Migration<A>, artifact: A): Promise<string> {
     let artifactSpec = getArtifactSpec(migration);
     await this.cache.storeCache(artifactSpec, artifact);
     return this.cache.getFilePath(artifactSpec);
   }
 
-  /* Reads artifact from a migration, e.g. `deployments/<network>/<deployment>/artifacts/1644385406_my_new_migration.json`
-   **/
+  /* Reads artifact from a migration, e.g. `deployments/<network>/<deployment>/artifacts/1644385406_my_new_migration.json` */
   async readArtifact<A>(migration: Migration<A>): Promise<A> {
     return this.cache.readCache(getArtifactSpec(migration));
+  }
+
+  /* Reads the deployment configuration */
+  async readConfig<Config>(): Promise<Config> {
+    return this.cache.readCache({ rel: 'configuration.json' });
   }
 
   /**
@@ -369,11 +400,6 @@ export class DeploymentManager {
     this.setVerificationStrategy(prevSetting);
 
     return result;
-  }
-
-  async clone<C extends Contract>(address: string, args: any[], network?: string, retries?: number): Promise<C> {
-    let buildFile = await this.import(address, network);
-    return this.deployBuild(buildFile, args, retries);
   }
 
   fork(): DeploymentManager {

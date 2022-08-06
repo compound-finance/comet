@@ -62,7 +62,7 @@ export async function run<T, U, R>({ bases, config, worker }: WorkerData) {
 
   for (const base of bases) {
     const world = new World(hreForBase(base), base);
-    const delta = await world.deploymentManager.deployMissing();
+    const delta = await world.deploymentManager.runDeployScript({ allMissing: true });
     console.log(`[${base.name}] Deployed ${world.deploymentManager.counter} contracts to initialize world 🗺`);
     console.log(`[${base.name}]\n${diff(delta.new, delta.old, {aAnnotation: 'New addresses', bAnnotation: 'Old addresses'})}`);
     runners[base.name] = new Runner({ base, world });

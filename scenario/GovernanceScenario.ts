@@ -1,7 +1,7 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { constants, utils } from 'ethers';
-import { CometModifiedFactory, CometModifiedFactory__factory } from '../build/types';
+import { CometModifiedFactory } from '../build/types';
 
 scenario('upgrade Comet implementation and initialize', {}, async ({ comet, configurator, proxyAdmin }, context) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
@@ -9,9 +9,11 @@ scenario('upgrade Comet implementation and initialize', {}, async ({ comet, conf
 
   // Deploy new version of Comet Factory
   const dm = context.deploymentManager;
-  const cometModifiedFactory = await dm.deploy<CometModifiedFactory, CometModifiedFactory__factory, []>(
+  const cometModifiedFactory = await dm.deploy<CometModifiedFactory, []>(
+    'cometFactory',
     'test/CometModifiedFactory.sol',
-    []
+    [],
+    true
   );
 
   // Execute a governance proposal to:
@@ -37,9 +39,11 @@ scenario('upgrade Comet implementation and call new function', {}, async ({ come
 
   // Deploy new version of Comet Factory
   const dm = context.deploymentManager;
-  const cometModifiedFactory = await dm.deploy<CometModifiedFactory, CometModifiedFactory__factory, []>(
+  const cometModifiedFactory = await dm.deploy<CometModifiedFactory, []>(
+    'cometFactory',
     'test/CometModifiedFactory.sol',
-    []
+    [],
+    true
   );
 
   // Upgrade Comet implementation

@@ -1,4 +1,6 @@
 import * as fs from 'fs/promises';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { Contract } from 'ethers';
 import { ABI, BuildFile, ContractMetadata } from './Types';
 
 type InputOrOutput = {
@@ -65,6 +67,11 @@ export function getPrimaryContract(buildFile: BuildFile): [string, ContractMetad
   return [targetContract, contractMetadata];
 }
 
+export function getEthersContract<C extends Contract>(address: string, buildFile: BuildFile, hre: HardhatRuntimeEnvironment): C {
+  const [_, metadata] = getPrimaryContract(buildFile);
+  return new hre.ethers.Contract(address, metadata.abi, hre.ethers.provider) as C;
+}
+
 // merge two ABIs
 // conflicting entries (like constructors) will defer to the second abi
 // ("abi1"); duplicate entries are removed
@@ -77,6 +84,9 @@ export function mergeABI(abi0: ABI, abi1: ABI): ABIEntry[] {
   const entries = {};
 
   for (const abiEntry of mergedABI) {
+    // remove fields which can break deduplication
+    delete abiEntry['gas'];
+
     // only allow one constructor or one unique entry
     const key = abiEntry.type === 'constructor' ? 'constructor' : JSON.stringify(abiEntry);
 

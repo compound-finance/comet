@@ -1,89 +1,42 @@
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import {
-  Comet__factory,
   Comet,
-  CometExt__factory,
   CometExt,
-  CometFactory__factory,
   CometFactory,
-  GovernorSimple,
-  GovernorSimple__factory,
   CometProxyAdmin,
-  CometProxyAdmin__factory,
   TransparentUpgradeableProxy,
-  TransparentUpgradeableProxy__factory,
   ConfiguratorProxy,
-  ConfiguratorProxy__factory,
   Configurator,
-  Configurator__factory,
-  SimpleTimelock,
-  SimpleTimelock__factory,
   CometRewards,
-  CometRewards__factory,
 } from '../../build/types';
 import { ConfigurationStruct } from '../../build/types/Comet';
 import { ExtConfigurationStruct } from '../../build/types/CometExt';
 
-import { ContractsToDeploy, DeployedContracts, ProtocolConfiguration } from './index';
+import { ContractsToDeploy, ProtocolConfiguration, debug, wait } from './index';
 import { getConfiguration } from './NetworkConfiguration';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { wait } from '../../test/helpers';
-import { debug } from '../../plugins/deployment_manager/Utils';
 
-function shouldDeploy(deployAll: boolean, deployContract: boolean): boolean {
-  if (deployContract !== undefined) {
-    return deployContract;
-  }
-  return deployAll;
+export function sameAddress(a: string, b: string) {
+  return a.toLowerCase() === b.toLowerCase();
 }
 
 export async function deployNetworkComet(
   deploymentManager: DeploymentManager,
-  contractsToDeploy: ContractsToDeploy = { all: true },
+  deploySpec: ContractsToDeploy = { all: true },
   configurationOverrides: ProtocolConfiguration = {},
-  contractMapOverrides?: ContractMap,
-  adminSigner_?: SignerWithAddress,
-): Promise<DeployedContracts> {
-  let adminSigner: SignerWithAddress = adminSigner_;
-  if (adminSigner == null) {
-    adminSigner = await deploymentManager.getSigner();
+  adminSigner?: SignerWithAddress,
+) {
+  function maybeForce(alias: string): boolean {
+    return deploySpec.all || deploySpec[alias];
   }
 
-  let ethers = deploymentManager.hre.ethers;
-  let governorSimple, timelock, proxyAdmin, cometExt, cometProxy, configuratorProxy, comet, configurator, cometFactory, rewards;
-
-  /* === Deploy Contracts === */
-
-  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.governor)) {
-    governorSimple = await deploymentManager.deploy<GovernorSimple, GovernorSimple__factory, []>(
-      'test/GovernorSimple.sol',
-      []
-    );
-  } else {
-    governorSimple = await deploymentManager.contract('governor');
-  }
-
-  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.timelock)) {
-    timelock = await deploymentManager.deploy<SimpleTimelock, SimpleTimelock__factory, [string]>(
-      'test/SimpleTimelock.sol',
-      [governorSimple.address]
-    );
-  } else {
-    timelock = await deploymentManager.contract('timelock');
-  }
-
-  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.governor)) {
-    // Initialize the storage of GovernorSimple
-    debug(`Initializing GovSimple`);
-    await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(governorSimple.connect(signer_).initialize(timelock.address, [adminSigner.address]))
-    );
-  }
+  const admin = adminSigner ?? await deploymentManager.getSigner();
+  const ethers = deploymentManager.hre.ethers;
 
   const {
     symbol,
-    governor,
+    governor, // NB: generally 'timelock' alias, not 'governor'
     pauseGuardian,
     baseToken,
     baseTokenPriceFeed,
@@ -103,23 +56,36 @@ export async function deployNetworkComet(
     baseBorrowMin,
     targetReserves,
     assetConfigs,
-  } = {
-    governor: timelock ? timelock.address : ethers.constants.AddressZero,
-    pauseGuardian: timelock ? timelock.address : ethers.constants.AddressZero,
-    ...await getConfiguration(deploymentManager, contractMapOverrides, configurationOverrides),
-  };
+  } = await getConfiguration(deploymentManager, configurationOverrides);
 
-  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometExt)) {
-    const extConfiguration = {
-      symbol32: ethers.utils.formatBytes32String(symbol),
-    };
-    cometExt = await deploymentManager.deploy<CometExt, CometExt__factory, [ExtConfigurationStruct]>(
-      'CometExt.sol',
-      [extConfiguration]
-    );
-  } else {
-    cometExt = await deploymentManager.contract('comet:implementation:implementation');
-  }
+  const cometAdmin = await deploymentManager.deploy(
+    'cometAdmin',
+    'CometProxyAdmin.sol',
+    [],
+    maybeForce('cometAdmin')
+  );
+
+  const extConfiguration = { symbol32: ethers.utils.formatBytes32String(symbol) };
+  const cometExt = await deploymentManager.deploy(
+    'comet:implementation:implementation',
+    'CometExt.sol',
+    [extConfiguration],
+    maybeForce('comet')
+  );
+
+  const cometFactory = await deploymentManager.deploy(
+    'cometFactory',
+    'CometFactory.sol',
+    [],
+    maybeForce('comet')
+  );
+
+  const cometProxy = await deploymentManager.deploy(
+    'comet',
+    'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
+    [cometFactory.address, cometAdmin.address, []], // NB: temporary implementation contract
+    maybeForce('comet'),
+  );
 
   const configuration = {
     governor,
@@ -145,118 +111,73 @@ export async function deployNetworkComet(
     assetConfigs,
   };
 
-  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.comet)) {
-    comet = await deploymentManager.deploy<Comet, Comet__factory, [ConfigurationStruct]>(
-      'Comet.sol',
-      [configuration]
-    );
-  } else {
-    comet = await deploymentManager.contract('comet:implementation');
-  }
+  const configuratorImpl = await deploymentManager.deploy(
+    'configurator:implementation',
+    'Configurator.sol',
+    [],
+    maybeForce('configurator')
+  );
 
-  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometFactory)) {
-    cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
-      'CometFactory.sol',
-      []
-    );
-  } else {
-    // XXX need to handle the fact that there can be multiple Comet factories
-  }
+  // If we deploy a new proxy, we initialize it to the current/new impl
+  // If its an existing proxy, the impl we got for the alias must already be current
+  // In other words, we shan't have deployed an impl in the last step unless there was no proxy too
+  const configuratorProxy = await deploymentManager.deploy(
+    'configurator',
+    'ConfiguratorProxy.sol',
+    [configuratorImpl.address, cometAdmin.address, (await configuratorImpl.populateTransaction.initialize(admin.address)).data],
+    maybeForce('configurator')
+  );
 
-  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.configurator)) {
-    configurator = await deploymentManager.deploy<Configurator, Configurator__factory, []>(
-      'Configurator.sol',
-      []
-    );
-  } else {
-    configurator = await deploymentManager.contract('configurator:implementation');
-  }
+  // Now configure the configurator and actually deploy comet
+  // TODO: the success of these calls are also going to be dependent on who the admin is and if/when its been transferred
+  const configurator = (configuratorImpl as Configurator).attach(configuratorProxy.address);
 
-  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.rewards)) {
-    rewards = await deploymentManager.deploy<CometRewards, CometRewards__factory, [string]>(
-      'CometRewards.sol',
-      [governor]
-    );
-  } else {
-    rewards = await deploymentManager.contract('rewards');
-  }
+  await deploymentManager.idempotent(
+    async () => !sameAddress(await configurator.factory(cometProxy.address), cometFactory.address),
+    async () => {
+      debug(`Setting factory in Configurator to ${cometFactory.address}`);
+      await wait(configurator.connect(admin).setFactory(cometProxy.address, cometFactory.address));
+    }
+  );
 
-  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxyAdmin)) {
-    let proxyAdminArgs: [] = [];
-    proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
-      'CometProxyAdmin.sol',
-      proxyAdminArgs
-    );
-    debug(`Transferring ownership of ProxyAdmin to ${governor}`);
-    await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(proxyAdmin.connect(signer_).transferOwnership(governor))
-    );
-  } else {
-    proxyAdmin = await deploymentManager.contract('cometAdmin');
-  }
+  await deploymentManager.idempotent(
+    async () => sameAddress((await configurator.getConfiguration(cometProxy.address)).baseToken, ethers.constants.AddressZero),
+    async () => {
+      debug(`Setting configuration in Configurator`);
+      await wait(configurator.connect(admin).setConfiguration(cometProxy.address, configuration));
+    }
+  );
 
-  let updatedRoots = await deploymentManager.getRoots();
-  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxy)) {
-    // Comet proxy
-    cometProxy = await deploymentManager.deploy<
-      TransparentUpgradeableProxy,
-      TransparentUpgradeableProxy__factory,
-      [string, string, string]
-    >('vendor/proxy/transparent/TransparentUpgradeableProxy.sol', [
-      comet.address,
-      proxyAdmin.address,
-      (await comet.populateTransaction.initializeStorage()).data,
-    ]);
+  await deploymentManager.idempotent(
+    async () => !sameAddress(await configurator.governor(), governor),
+    async () => {
+      debug(`Transferring governor of Configurator to ${governor}`);
+      await wait(configurator.connect(admin).transferGovernor(governor));
+    }
+  );
 
-    updatedRoots.set('comet', cometProxy.address);
-  } else {
-    // Use the existing Comet proxy if a new one is not deployed
-    // XXX This, along with Spider aliases, may need to be redesigned to support multiple Comet deployments
-    cometProxy = await deploymentManager.contract('comet');
-  }
+  await deploymentManager.idempotent(
+    async () => sameAddress(await cometAdmin.getProxyImplementation(cometProxy.address), cometFactory.address),
+    async () => {
+      debug(`Deploying implementation of Comet`);
+      await wait(cometAdmin.connect(admin).deployAndUpgradeTo(configurator.address, cometProxy.address));
+    }
+  );
 
-  if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.configuratorProxy)) {
-    // Configuration proxy
-    configuratorProxy = await deploymentManager.deploy<
-      ConfiguratorProxy,
-      ConfiguratorProxy__factory,
-      [string, string, string]
-    >('ConfiguratorProxy.sol', [
-      configurator.address,
-      proxyAdmin.address,
-      (await configurator.populateTransaction.initialize(adminSigner.address)).data,
-    ]);
+  // XXX better to check owner is admin? what if its some previous governor?
+  //  anyway if we never transfer ownership
+  // await deploymentManager.idempotent(
+  //   async () => !sameAddress(await cometAdmin.owner(), governor),
+  //   async () => {
+  //     debug(`Transferring ownership of CometProxyAdmin to ${governor}`);
+  //     await wait(cometAdmin.connect(admin).transferOwnership(governor));
+  //   }
+  // );
 
-    // Set the initial factory and configuration for Comet in Configurator
-    const configuratorAsProxy = (configurator as Configurator).attach(configuratorProxy.address);
-    debug(`Setting factory in Configurator`);
-    await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(configuratorAsProxy.connect(adminSigner_ ?? signer_).setFactory(cometProxy.address, cometFactory.address))
-    );
-    debug(`Setting configuration in Configurator`);
-    await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(configuratorAsProxy.connect(adminSigner_ ?? signer_).setConfiguration(cometProxy.address, configuration))
-    );
-
-    // Transfer ownership of Configurator
-    debug(`Transferring ownership in Configurator`);
-    await deploymentManager.asyncCallWithRetry(
-      (signer_) => wait(configuratorAsProxy.connect(adminSigner_ ?? signer_).transferGovernor(governor))
-    );
-
-    updatedRoots.set('configurator', configuratorProxy.address);
-  } else {
-    configuratorProxy = await deploymentManager.contract('configurator');
-  }
-
-  await deploymentManager.putRoots(updatedRoots);
-
-  return {
-    comet,
-    cometProxy,
-    configuratorProxy,
-    timelock,
-    governor: governorSimple,
-    rewards
-  };
+  const rewards = await deploymentManager.deploy(
+    'rewards',
+    'CometRewards.sol',
+    [governor],
+    maybeForce('rewards')
+  );
 }
