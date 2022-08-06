@@ -15,7 +15,7 @@ on:
         type: boolean
         description: Simulate
       eth_pk:
-        description: Ethereum Private Key
+        description: Ignore if you plan to use WalletConnect, otherwise, you can paste in a Ethereum private key
 jobs:
   deploy_market:
     name: Deploy Market
@@ -25,6 +25,13 @@ jobs:
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
     steps:
+      - name: Seacrest
+        uses: hayesgm/seacrest@v1
+        with:
+          ethereum_url: "${{ fromJSON('{\"fuji\": \"https://api.avax-test.network/ext/bc/C/rpc\", \"kovan\": \"https://kovan-eth.compound.finance\"}')[inputs.network] }}"
+          port: 8585
+        if: github.event.inputs.eth_pk == ''
+
       - name: Checkout repository
         uses: actions/checkout@v2
 
@@ -42,9 +49,16 @@ jobs:
         run: yarn tsc
 
       - name: Run Deploy
-        run: yarn hardhat deploy --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }}
+        run: |
+          if [ -n "${{ inputs.eth_pk }}" ]; then
+            export ETH_PK="${{ inputs.eth_pk }}"
+          else
+            export NETWORK_PROVIDER="http://localhost:8585"
+            export REMOTE_ACCOUNTS="true"
+          fi
+
+          yarn hardhat deploy --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }}
         env:
-          ETH_PK: ${{ github.event.inputs.eth_pk }}
           DEBUG: true
 
       - name: Commit changes
