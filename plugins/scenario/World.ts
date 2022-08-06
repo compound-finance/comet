@@ -22,7 +22,7 @@ export class World {
     // Q: should we really need to fork/snapshot the deployment manager?
     this.hre = hre;
     this.base = base;
-    this.deploymentManager = new DeploymentManager(base.network, base.deployment, hre, { debug: true });
+    this.deploymentManager = new DeploymentManager(base.network, base.deployment, hre);
     this.snapshotDeploymentManager = this.deploymentManager;
   }
 

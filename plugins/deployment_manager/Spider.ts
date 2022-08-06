@@ -19,6 +19,20 @@ import { Roots } from './Roots';
 import { asArray, debug, getPrimaryContract, mergeABI } from './Utils';
 import { fetchAndCacheContract } from './Import';
 
+export interface Spider {
+  aliases: Aliases,
+  proxies: Proxies,
+}
+
+interface VisitedNode {
+  name: string;
+  buildFile: BuildFile;
+  contract: Contract;
+  context: Ctx;
+  aliasRenders: AliasRender[];
+  implAddress?: Address;
+}
+
 function isValidAddress(address: Address): boolean {
   return address !== '0x0000000000000000000000000000000000000000';
 }
@@ -35,15 +49,6 @@ async function getDiscoverNodes(
     : [aliasTemplateFromAlias(alias)];
 
   return addresses.map((a, i) => [a, { template: aliasTemplates[i] || aliasTemplates[0], i }, alias, context]);
-}
-
-interface VisitedNode {
-  name: string;
-  buildFile: BuildFile;
-  contract: Contract;
-  context: Ctx;
-  aliasRenders: AliasRender[];
-  implAddress?: Address;
 }
 
 // Tail-call optimized version of spider method, which crawls a dependency graph gathering contract data
@@ -129,13 +134,13 @@ async function runSpider(
             importRetryDelay
           );
 
-          let { buildFile: proxyBuildFile } = visited.get(implAddress);
-          if (!proxyBuildFile) {
+          const proxyVisited = visited.get(implAddress);
+          if (!proxyVisited || !proxyVisited.buildFile) {
             throw new Error(
               `Failed to spider implementation for ${defaultAlias} at ${implAddress}`
             );
           }
-          const [_proxyContractName, proxyContractMetadata] = getPrimaryContract(proxyBuildFile);
+          const [_proxyContractName, proxyContractMetadata] = getPrimaryContract(proxyVisited.buildFile);
 
           // duplicate entries (like constructor) defer to contractMetadata.abi
           const mergedABI = mergeABI(proxyContractMetadata.abi, contractMetadata.abi);
@@ -199,7 +204,7 @@ export async function spider(
   roots: Roots,
   importRetries?: number,
   importRetryDelay?: number
-): Promise<{ cache: Cache, aliases: Aliases, proxies: Proxies }> {
+): Promise<Spider> {
   let discovered: [Address, AliasRender, Alias, Ctx][] = [...roots.entries()].map(([alias, address]) => {
     return [address, { template: aliasTemplateFromAlias(alias), i: 0 }, alias, {}];
   });
@@ -228,5 +233,5 @@ export async function spider(
     }
   }
 
-  return { cache, aliases, proxies };
+  return { aliases, proxies };
 }

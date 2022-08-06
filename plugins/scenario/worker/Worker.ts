@@ -1,4 +1,5 @@
 import { parentPort } from 'worker_threads';
+import { diff } from 'jest-diff';
 import { Runner } from '../Runner';
 import { ForkSpec, World } from '../World';
 import { Scenario } from '../Scenario';
@@ -61,26 +62,28 @@ export async function run<T, U, R>({ bases, config, worker }: WorkerData) {
 
   for (const base of bases) {
     const world = new World(hreForBase(base), base);
-    await world.deploymentManager.deployMissing();
+    const delta = await world.deploymentManager.deployMissing();
+    console.log(`[${base.name}] Deployed ${world.deploymentManager.counter} contracts to initialize world 🗺`);
+    console.log(`[${base.name}]\n${diff(delta.new, delta.old, {aAnnotation: 'New addresses', bAnnotation: 'Old addresses'})}`);
     runners[base.name] = new Runner({ base, world });
   }
 
   onMessage(worker, async (message: Message) => {
     if (message.scenario) {
-      let { scenario: scenarioName, base } = message.scenario;
+      let { scenario: scenarioName, base: baseName } = message.scenario;
       let scenario = scenarios[scenarioName];
       if (!scenario) {
         throw new Error(`Worker encountered unknown scenario: ${scenarioName}`);
       }
 
-      console.log('Running', scenarioName, base);
+      console.log(`[${baseName}] Running ${scenarioName} ...`);
       try {
-        let result = await runners[base].run(scenario);
+        let result = await runners[baseName].run(scenario);
         eventually(() => {
           postMessage(worker, { result });
         });
         let numSolutionSets = result.numSolutionSets ?? 0;
-        console.log(`Ran ${pluralize(numSolutionSets, 'solution', 'solutions')} for ${base}:${scenarioName}`);
+        console.log(`[${baseName}] ... ran ${scenarioName} on ${pluralize(numSolutionSets, 'solution', 'solutions')}`);
       } catch (e) {
         console.error('Encountered worker error', e);
         eventually(() => {

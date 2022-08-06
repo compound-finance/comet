@@ -19,8 +19,6 @@ import {
   Configurator__factory,
   SimpleTimelock,
   SimpleTimelock__factory,
-  ProxyAdmin,
-  CometInterface,
   CometRewards,
   CometRewards__factory,
 } from '../../build/types';
@@ -44,7 +42,7 @@ export async function deployNetworkComet(
   deploymentManager: DeploymentManager,
   contractsToDeploy: ContractsToDeploy = { all: true },
   configurationOverrides: ProtocolConfiguration = {},
-  contractMapOverride?: ContractMap,
+  contractMapOverrides?: ContractMap,
   adminSigner_?: SignerWithAddress,
 ): Promise<DeployedContracts> {
   let adminSigner: SignerWithAddress = adminSigner_;
@@ -63,7 +61,7 @@ export async function deployNetworkComet(
       []
     );
   } else {
-    governorSimple = await deploymentManager.contract('governor') as GovernorSimple;
+    governorSimple = await deploymentManager.contract('governor');
   }
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.timelock)) {
@@ -72,7 +70,7 @@ export async function deployNetworkComet(
       [governorSimple.address]
     );
   } else {
-    timelock = await deploymentManager.contract('timelock') as SimpleTimelock;
+    timelock = await deploymentManager.contract('timelock');
   }
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.governor)) {
@@ -108,7 +106,7 @@ export async function deployNetworkComet(
   } = {
     governor: timelock ? timelock.address : ethers.constants.AddressZero,
     pauseGuardian: timelock ? timelock.address : ethers.constants.AddressZero,
-    ...await getConfiguration(deploymentManager, contractMapOverride, configurationOverrides),
+    ...await getConfiguration(deploymentManager, contractMapOverrides, configurationOverrides),
   };
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometExt)) {
@@ -120,7 +118,7 @@ export async function deployNetworkComet(
       [extConfiguration]
     );
   } else {
-    cometExt = await deploymentManager.contract('comet:implementation:implementation') as CometExt;
+    cometExt = await deploymentManager.contract('comet:implementation:implementation');
   }
 
   const configuration = {
@@ -153,7 +151,7 @@ export async function deployNetworkComet(
       [configuration]
     );
   } else {
-    comet = await deploymentManager.contract('comet:implementation') as CometInterface;
+    comet = await deploymentManager.contract('comet:implementation');
   }
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometFactory)) {
@@ -171,7 +169,7 @@ export async function deployNetworkComet(
       []
     );
   } else {
-    configurator = await deploymentManager.contract('configurator:implementation') as Configurator;
+    configurator = await deploymentManager.contract('configurator:implementation');
   }
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.rewards)) {
@@ -180,7 +178,7 @@ export async function deployNetworkComet(
       [governor]
     );
   } else {
-    rewards = await deploymentManager.contract('rewards') as CometRewards;
+    rewards = await deploymentManager.contract('rewards');
   }
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.cometProxyAdmin)) {
@@ -194,7 +192,7 @@ export async function deployNetworkComet(
       (signer_) => wait(proxyAdmin.connect(signer_).transferOwnership(governor))
     );
   } else {
-    proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
+    proxyAdmin = await deploymentManager.contract('cometAdmin');
   }
 
   let updatedRoots = await deploymentManager.getRoots();
@@ -214,7 +212,7 @@ export async function deployNetworkComet(
   } else {
     // Use the existing Comet proxy if a new one is not deployed
     // XXX This, along with Spider aliases, may need to be redesigned to support multiple Comet deployments
-    cometProxy = await deploymentManager.contract('comet') as CometInterface;
+    cometProxy = await deploymentManager.contract('comet');
   }
 
   if (shouldDeploy(contractsToDeploy.all, contractsToDeploy.configuratorProxy)) {
@@ -248,7 +246,7 @@ export async function deployNetworkComet(
 
     updatedRoots.set('configurator', configuratorProxy.address);
   } else {
-    configuratorProxy = await deploymentManager.contract('configurator') as Configurator;
+    configuratorProxy = await deploymentManager.contract('configurator');
   }
 
   await deploymentManager.putRoots(updatedRoots);

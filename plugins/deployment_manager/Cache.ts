@@ -141,7 +141,7 @@ export class Cache {
   async storeCache<T>(spec: FileSpec, data: T, diskTransformer: (T) => string = stringifyJson) {
     this.putMemory<T>(spec, data);
     if (this.writeCacheToDisk) {
-      return await this.putDisk<T>(spec, data, diskTransformer);
+      await this.putDisk<T>(spec, data, diskTransformer);
     }
   }
 
@@ -150,7 +150,8 @@ export class Cache {
   }
 
   async storeMap<K, V>(spec: FileSpec, map: Map<K, V>) {
-    await this.storeCache(spec, map, compose(objectFromMap, stringifyJson));
+    // make sure we have our own copy of the map so others don't modify the memory version
+    await this.storeCache(spec, new Map(map), compose(objectFromMap, stringifyJson));
   }
 
   clearMemory() {

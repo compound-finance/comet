@@ -18,7 +18,6 @@ export abstract class Deployer<Contract, DeployArgs extends Array<any>> {
 }
 
 export interface DeployOpts {
-  name?: string; // name for aliasing
   overwrite?: boolean; // should we overwrite existing contract link
   connect?: Signer; // signer for the returned contract
   verificationStrategy?: VerificationStrategy; // strategy for verifying contracts on etherscan

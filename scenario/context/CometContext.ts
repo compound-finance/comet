@@ -60,31 +60,31 @@ export class CometContext {
   }
 
   async contracts(): Promise<ContractMap> {
-    return await this.deploymentManager.contracts();
+    return this.deploymentManager.contracts();
   }
 
   async getComet(): Promise<CometInterface> {
-    return await this.deploymentManager.contract('comet') as CometInterface;
+    return this.deploymentManager.contract('comet');
   }
 
   async getCometImplemenation(): Promise<Comet> {
-    return await this.deploymentManager.contract('comet:implementation') as Comet;
+    return this.deploymentManager.contract('comet:implementation');
   }
 
   async getCometAdmin(): Promise<CometProxyAdmin> {
-    return await this.deploymentManager.contract('cometAdmin') as CometProxyAdmin;
+    return this.deploymentManager.contract('cometAdmin');
   }
 
   async getConfigurator(): Promise<Configurator> {
-    return await this.deploymentManager.contract('configurator') as Configurator;
+    return this.deploymentManager.contract('configurator');
   }
 
   async getTimelock(): Promise<SimpleTimelock> {
-    return await this.deploymentManager.contract('timelock') as SimpleTimelock;
+    return this.deploymentManager.contract('timelock');
   }
 
   async getGovernor(): Promise<GovernorSimple> {
-    return await this.deploymentManager.contract('governor') as GovernorSimple;
+    return this.deploymentManager.contract('governor');
   }
 
   async getConfiguration(): Promise<ProtocolConfiguration> {

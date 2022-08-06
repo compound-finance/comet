@@ -1,10 +1,5 @@
 import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
-import {
-  FaucetToken,
-  FaucetToken__factory,
-  SimplePriceFeed,
-  SimplePriceFeed__factory,
-} from '../../../build/types';
+import { FaucetToken, SimplePriceFeed } from '../../../build/types';
 import { deployComet } from '../../../src/deploy';
 
 // XXX clean this all up further, but minimize changes for now on first pass refactor
@@ -16,11 +11,7 @@ async function makeToken(
   decimals: number,
   symbol: string
 ): Promise<FaucetToken> {
-  return await deploymentManager.deploy<
-    FaucetToken,
-    FaucetToken__factory,
-    [string, string, number, string]
-  >('test/FaucetToken.sol', [
+  return deploymentManager.getOrDeployAlias(symbol, 'test/FaucetToken.sol', [
     (BigInt(amount) * 10n ** BigInt(decimals)).toString(),
     name,
     decimals,
@@ -30,14 +21,11 @@ async function makeToken(
 
 async function makePriceFeed(
   deploymentManager: DeploymentManager,
+  alias: string,
   initialPrice: number,
   decimals: number
 ): Promise<SimplePriceFeed> {
-  return await deploymentManager.deploy<
-    SimplePriceFeed,
-    SimplePriceFeed__factory,
-    [number, number]
-  >('test/SimplePriceFeed.sol', [initialPrice * 1e8, decimals]);
+  return deploymentManager.getOrDeployAlias(alias, 'test/SimplePriceFeed.sol', [initialPrice * 1e8, decimals]);
 }
 
 // TODO: Support configurable assets as well?
@@ -48,9 +36,9 @@ export default async function deploy(deploymentManager: DeploymentManager) {
   let gold = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
   let silver = await makeToken(deploymentManager, 3000000, 'SILVER', 10, 'SILVER');
 
-  let daiPriceFeed = await makePriceFeed(deploymentManager, 1, 8);
-  let goldPriceFeed = await makePriceFeed(deploymentManager, 0.5, 8);
-  let silverPriceFeed = await makePriceFeed(deploymentManager, 0.05, 8);
+  let daiPriceFeed = await makePriceFeed(deploymentManager, 'DAI:priceFeed', 1, 8);
+  let goldPriceFeed = await makePriceFeed(deploymentManager, 'GOLD:priceFeed', 0.5, 8);
+  let silverPriceFeed = await makePriceFeed(deploymentManager, 'SILVER:priceFeed', 0.05, 8);
 
   let assetConfig0 = {
     asset: gold.address,
@@ -72,13 +60,6 @@ export default async function deploy(deploymentManager: DeploymentManager) {
     supplyCap: (500000e10).toString(),
   };
 
-  // Contracts referenced in `configuration.json` or configs
-  let contracts = new Map([
-    ['DAI', dai],
-    ['SILVER', silver],
-    ['GOLD', gold],
-  ]);
-
   // Deploy all Comet-related contracts
   let { cometProxy, configuratorProxy, timelock, rewards } = await deployComet(
     deploymentManager,
@@ -86,8 +67,7 @@ export default async function deploy(deploymentManager: DeploymentManager) {
     {
       baseTokenPriceFeed: daiPriceFeed.address,
       assetConfigs: [assetConfig0, assetConfig1],
-    },
-    contracts
+    }
   );
 
   return {
