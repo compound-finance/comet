@@ -1,13 +1,14 @@
 import { Contract, utils } from 'ethers';
 import { DeploymentManagerConfig } from './type-extensions';
-import { Address, Alias, Ctx } from './Types';
+import { Address, Alias } from './Types';
+
+export type Ctx = { [aliasTemplate: string]: Contract[] };
 
 export type AliasFunction = (contract: Contract, context: Ctx, i: number) => Promise<string>;
-export type AliasTemplateString = string;
-export type AliasTemplate = AliasTemplateString | AliasFunction;
+export type AliasTemplate = string | AliasFunction;
 export type AliasRender = { template: AliasTemplate, i: number };
 
-export type FieldFunction = (c: Contract, context: Ctx) => Promise<string | string[]>;
+export type FieldFunction = (parent: Contract, context: Ctx) => Promise<string | string[]>;
 export interface FieldKey {
   key?: string;
   slot?: string;
@@ -20,12 +21,12 @@ export interface RelationInnerConfig {
 }
 
 export interface RelationConfig {
-  artifact?: string;
-  proxy?: RelationInnerConfig;
-  relations: { [alias: string]: RelationInnerConfig };
+  artifact?: string; // NB: only applies if for an aliasTemplate key
+  delegates?: RelationInnerConfig; // XXX map to default suffix?
+  relations?: { [aliasTemplate: string]: RelationInnerConfig };
 }
 
-export type RelationConfigMap = { [alias: Alias]: RelationConfig };
+export type RelationConfigMap = { [aliasTemplateOrContractName: string]: RelationConfig };
 
 // Read relation configuration
 export function getRelationConfig(
@@ -46,7 +47,7 @@ export function getRelationConfig(
   );
 }
 
-export function getFieldKey(alias: Alias, config: RelationInnerConfig): FieldKey {
+export function getFieldKey(config: RelationInnerConfig, defaultKey?: string): FieldKey {
   if (typeof config.field === 'string') {
     return { key: config.field };
   } else if (typeof config.field === 'function') {
@@ -54,7 +55,7 @@ export function getFieldKey(alias: Alias, config: RelationInnerConfig): FieldKey
   } else if (config.field) {
     return config.field;
   } else {
-    return { key: alias };
+    return { key: defaultKey };
   }
 }
 
@@ -117,6 +118,10 @@ export async function readAlias(
   }
 }
 
-export function aliasTemplateFromAlias(alias: Alias): AliasTemplate {
-  return alias;
+export function aliasTemplateKey(aliasTemplate: AliasTemplate): string | undefined {
+  if (typeof aliasTemplate === 'string') {
+    return aliasTemplate;
+  } else if (aliasTemplate.name && aliasTemplate.name !== 'alias') {
+    return aliasTemplate.name;
+  }
 }

@@ -3,11 +3,8 @@ import hre from 'hardhat';
 import nock from 'nock';
 
 import {
-  Dog__factory,
   Dog,
   ProxyAdmin,
-  ProxyAdmin__factory,
-  TransparentUpgradeableProxy__factory,
   TransparentUpgradeableProxy,
 } from '../../../build/types';
 
@@ -37,38 +34,37 @@ export interface TestContracts {
 
 export async function setupContracts(deploymentManager: DeploymentManager): Promise<TestContracts> {
   let proxyAdminArgs: [] = [];
-  let proxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
+  let proxyAdmin: ProxyAdmin = await deploymentManager.deploy(
+    'proxyAdmin',
     'vendor/proxy/transparent/ProxyAdmin.sol',
     proxyAdminArgs
   );
 
-  let finnImpl = await deploymentManager.deploy<Dog, Dog__factory, [string, string, string[]]>(
+  let finnImpl: Dog = await deploymentManager.deploy(
+    'finnImpl',
     'test/Dog.sol',
-    ['', '0x0000000000000000000000000000000000000000', []]
+    ['finn:implementation', '0x0000000000000000000000000000000000000000', []]
   );
 
-  let proxy = await deploymentManager.deploy<
-    TransparentUpgradeableProxy,
-    TransparentUpgradeableProxy__factory,
-    [string, string, string]
-  >('vendor/proxy/transparent/TransparentUpgradeableProxy.sol', [
-    finnImpl.address,
-    proxyAdmin.address,
-    (
+  let proxy: TransparentUpgradeableProxy = await deploymentManager.deploy(
+    'proxy',
+    'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
+    [finnImpl.address, proxyAdmin.address, (
       await finnImpl.populateTransaction.initializeDog(
         'finn',
-        '0x0000000000000000000000000000000000000000',
+        finnImpl.address,
         []
       )
-    ).data,
-  ]);
+    ).data]);
 
-  let molly = await deploymentManager.deploy<Dog, Dog__factory, [string, string, string[]]>(
+  let molly: Dog = await deploymentManager.deploy(
+    'molly',
     'test/Dog.sol',
     ['molly', proxy.address, []]
   );
 
-  let spot = await deploymentManager.deploy<Dog, Dog__factory, [string, string, string[]]>(
+  let spot: Dog = await deploymentManager.deploy(
+    'spot',
     'test/Dog.sol',
     ['spot', proxy.address, []]
   );
@@ -117,7 +113,8 @@ describe('DeploymentManager', () => {
         writeCacheToDisk: true,
         baseDir: tempDir(),
       });
-      let spot = await deploymentManager.deploy<Dog, Dog__factory, [string, string, string[]]>(
+      let spot: Dog = await deploymentManager.deploy(
+        'spot',
         'test/Dog.sol',
         ['spot', '0x0000000000000000000000000000000000000000', []]
       );
@@ -126,14 +123,14 @@ describe('DeploymentManager', () => {
     });
   });
 
-  describe('deployBuild', () => {
+  describe('_deployBuild', () => {
     it('should deployBuild succesfully', async () => {
       let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
         baseDir: tempDir(),
       });
-      let token = await deploymentManager.deployBuild(faucetTokenBuildFile, tokenArgs);
+      let token = await deploymentManager._deployBuild(faucetTokenBuildFile, tokenArgs);
       expect(await token.symbol()).to.equal('TEST');
     });
   });
@@ -185,11 +182,13 @@ describe('DeploymentManager', () => {
         writeCacheToDisk: true,
         baseDir: tempDir(),
       });
-      let spot = await deploymentManager.deploy<Dog, Dog__factory, [string, string, string[]]>(
+      let spot: Dog = await deploymentManager.deploy(
+        'spot',
         'test/Dog.sol',
         ['spot', '0x0000000000000000000000000000000000000000', []]
       );
-      let molly = await deploymentManager.deploy<Dog, Dog__factory, [string, string, string[]]>(
+      let molly: Dog = await deploymentManager.deploy(
+        'molly',
         'test/Dog.sol',
         ['molly', '0x0000000000000000000000000000000000000000', []]
       );
@@ -250,7 +249,7 @@ describe('DeploymentManager', () => {
         'test-network': {
           'test-deployment': {
             finn: {
-              proxy: {
+              delegates: {
                 field: {
                   slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc',
                 },
@@ -279,7 +278,7 @@ describe('DeploymentManager', () => {
       }
       expect(check).to.eql({
         finn: 'finn',
-        'finn:implementation': finnImpl.address,
+        'finn:implementation': 'finn:implementation',
         molly: 'molly',
         spot: 'spot',
       });

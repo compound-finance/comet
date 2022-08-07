@@ -1,5 +1,5 @@
 import * as fs from 'fs/promises';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { HardhatRuntimeEnvironment as HRE } from 'hardhat/types';
 import { Contract } from 'ethers';
 import { ABI, BuildFile, ContractMetadata } from './Types';
 
@@ -67,7 +67,7 @@ export function getPrimaryContract(buildFile: BuildFile): [string, ContractMetad
   return [targetContract, contractMetadata];
 }
 
-export function getEthersContract<C extends Contract>(address: string, buildFile: BuildFile, hre: HardhatRuntimeEnvironment): C {
+export function getEthersContract<C extends Contract>(address: string, buildFile: BuildFile, hre: HRE): C {
   const [_, metadata] = getPrimaryContract(buildFile);
   return new hre.ethers.Contract(address, metadata.abi, hre.ethers.provider) as C;
 }

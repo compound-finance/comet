@@ -40,8 +40,7 @@ scenario(
 // artifacts. For example, CometExt is an external artifact here unless we redeploy it
 // using the ModernConstraint.
 // Related: https://github.com/NomicFoundation/hardhat/issues/1875
-// XXX
-scenario.only(
+scenario(
   'Comet#allowBySig > fails if owner argument is altered',
   { upgrade: true },
   async ({ comet, actors }, context, world) => {

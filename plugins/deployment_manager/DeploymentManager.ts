@@ -280,7 +280,7 @@ export class DeploymentManager {
     );
     await storeAliases(this.cache, crawl.aliases);
     await storeProxies(this.cache, crawl.proxies);
-    this.invalidateContractsCache();
+    this.invalidateContractsCache(); // XXX should we just write contracts from spider?
     return crawl;
   }
 

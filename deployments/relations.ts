@@ -2,22 +2,17 @@ import { RelationConfigMap } from '../plugins/deployment_manager/RelationConfig'
 
 let relationConfigMap: RelationConfigMap = {
   comet: {
-    proxy: {
+    delegates: {
       field: {
         slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc',
       },
     },
     relations: {
-      cometAdmin: {
-        field: {
-          slot: '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103',
-        },
-      },
       baseToken: {
-        alias: (token) => token.symbol(),
+        alias: async (token) => token.symbol(),
       },
       baseTokenPriceFeed: {
-        field: (_, { comet }) => comet[0].baseTokenPriceFeed(),
+        field: async (comet) => comet.baseTokenPriceFeed(),
         alias: async (_, { baseToken }) => `${await baseToken[0].symbol()}:priceFeed`,
       },
       assets: {
@@ -30,7 +25,7 @@ let relationConfigMap: RelationConfigMap = {
             })
           );
         },
-        alias: (token) => token.symbol(),
+        alias: async (token) => token.symbol(),
       },
       assetPriceFeeds: {
         field: async (comet) => {
@@ -44,17 +39,21 @@ let relationConfigMap: RelationConfigMap = {
         },
         alias: async (_, { assets }, i) => `${await assets[i].symbol()}:priceFeed`,
       },
+      cometAdmin: {
+        field: {
+          slot: '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103',
+        },
+      },
     },
   },
   'comet:implementation': {
     artifact: 'contracts/Comet.sol:Comet',
-    proxy: {
-      field: (comet) => comet.extensionDelegate(),
+    delegates: {
+      field: async (comet) => comet.extensionDelegate(),
     },
-    relations: {},
   },
   configurator: {
-    proxy: {
+    delegates: {
       field: {
         slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc',
       }
@@ -70,40 +69,33 @@ let relationConfigMap: RelationConfigMap = {
       }
     }
   },
-  // XXX if we dont transfer to gov, owner is eoa, and we can't import, understandably
-  //  but handle that case better than 'is not valid address'
   cometAdmin: {
     relations: {
       timelock: {
-        field: (cometAdmin) => cometAdmin.owner()
+        field: async (cometAdmin) => cometAdmin.owner()
       }
     }
   },
-  // XXX if we comment above out and follow this path, we dont see the timelock relation at all
-  //  I believe we first visit and find no relation config -> get contract -> empty relations
-  //   then we skip the next time we see it
-  //  so what to do if the same contract has 2 different types of relations to other contracts?
-  // configuratorAdmin: {
-  //   relations: {
-  //     timelock: {
-  //       field: (configuratorAdmin) => configuratorAdmin.owner()
-  //     }
-  //   }
-  // },
+  configuratorAdmin: {
+    relations: {
+      timelock: {
+        field: (configuratorAdmin) => configuratorAdmin.owner()
+      }
+    }
+  },
   timelock: {
     relations: {
       governor: {
-        field: (timelock) => timelock.admin(),
+        field: async (timelock) => timelock.admin(),
       }
     }
   },
   FiatTokenProxy: {
-    proxy: {
+    delegates: {
       field: {
         slot: '0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3',
       },
     },
-    relations: {},
   },
 };
 
