@@ -227,7 +227,7 @@ describe('configurator', function () {
     });
 
     it('reverts when setting Configuration and changing trackingIndexScale for a Comet proxy with an existing configuration', async () => {
-      const { configurator, configuratorProxy, cometProxy, tokens } = await makeConfigurator();
+      const { configurator, configuratorProxy, cometProxy } = await makeConfigurator();
 
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
       const oldConfiguration = await configuratorAsProxy.getConfiguration(cometProxy.address);
