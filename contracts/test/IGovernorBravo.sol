@@ -35,6 +35,10 @@ interface IGovernorBravo {
 
     event ProposalExecuted(uint256 proposalId);
 
+    function votingDelay() external view returns (uint256);
+
+    function votingPeriod() external view returns (uint256);
+
     function state(uint256 proposalId) external view returns (ProposalState);
 
     function propose(

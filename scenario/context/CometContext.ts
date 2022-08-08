@@ -52,6 +52,18 @@ export class CometContext {
   actors: ActorMap;
   assets: AssetMap;
 
+  // COMP biggest whales
+  // XXX find a better way to do this without hardcoding whales
+  voters = [
+    '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
+    '0x61258f12c459984f32b83c86a6cc10aa339396de',
+    '0x9aa835bc7b8ce13b9b0c9764a52fbf71ac62ccf1',
+    '0x683a4f9915d6216f73d6df50151725036bd26c02',
+    '0xa1b61405791170833070c0ea61ed28728a840241',
+    '0x88fb3d509fc49b515bfeb04e23f53ba339563981',
+    '0x8169522c2c57883e8ef80c498aab7820da539806'
+  ];
+
   constructor(world: World) {
     this.world = world;
     this.deploymentManager = world.deploymentManager; // NB: backwards compatibility (temporary?)
@@ -248,12 +260,58 @@ export class CometContext {
     await this.world.hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
   }
 
+  async executePendingProposal(proposalId: number, startBlock: number, endBlock: number) {
+    const governor = await this.getGovernor();
+
+    const blockNow = await this.world.hre.ethers.provider.getBlockNumber();
+    const blocksUntilStart = startBlock - blockNow;
+    const blocksFromStartToEnd = endBlock - Math.max(startBlock, blockNow);
+
+    if (blocksUntilStart > 0) {
+      await this.mineBlocks(blocksUntilStart);
+    }
+
+    for (const voter of this.voters) {
+      try {
+        // Voting can fail if voter has already voted
+        const voterSigner = await this.world.impersonateAddress(voter);
+        const govAsVoter = await this.world.hre.ethers.getContractAt(
+          'IGovernorBravo',
+          governor.address,
+          voterSigner
+        ) as IGovernorBravo;
+        await this.setNextBaseFeeToZero();
+        await govAsVoter.castVote(proposalId, 1, { gasPrice: 0 });
+      } catch (err) {
+        debug(`Error while voting ${err}`);
+      }
+    }
+    await this.mineBlocks(blocksFromStartToEnd);
+
+    const adminSigner = await this.world.impersonateAddress(this.voters[0]);
+    const governorAsAdmin = await this.world.hre.ethers.getContractAt(
+      'IGovernorBravo',
+      governor.address,
+      adminSigner
+    ) as IGovernorBravo;
+
+    // Queue proposal
+    await this.setNextBaseFeeToZero();
+    const queueTxn = await (await governorAsAdmin.queue(proposalId, { gasPrice: 0 })).wait();
+    const queueEvent = queueTxn.events?.find(event => event.event === 'ProposalQueued');
+    await this.setNextBlockTimestamp(queueEvent?.args?.eta.toNumber());
+
+    // Execute proposal
+    await this.setNextBaseFeeToZero();
+    await governorAsAdmin.execute(proposalId, { gasPrice: 0 });
+  }
+
   // Instantly executes some actions through the governance proposal process
   // Note: `governor` must be connected to an `admin` signer
   async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
     const { world } = this;
     const governor = await this.getGovernor();
-    // XXX See if there is a better way to determine if GovernorSimple or Bravo should be used
+    // Use GovernorBravo for mainnet and GovernorSimple for everything else
     try {
       const admin = await governor.admins(0);
       const adminSigner = await world.impersonateAddress(admin);
@@ -265,13 +323,8 @@ export class CometContext {
 
       await governorAsAdmin.queue(proposalId);
       await governorAsAdmin.execute(proposalId);
-    } catch (e) {
-      // XXX find a better way to do this without hardcoding whales
-      const voters = [
-        '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
-        '0x683a4f9915d6216f73d6df50151725036bd26c02'
-      ];
-      const adminSigner = await world.impersonateAddress(voters[0]);
+    } catch(e) {
+      const adminSigner = await world.impersonateAddress(this.voters[0]);
       const governorAsAdmin = await world.hre.ethers.getContractAt(
         'IGovernorBravo',
         governor.address,
@@ -283,29 +336,7 @@ export class CometContext {
       const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
       const [proposalId, , , , , , startBlock, endBlock] = proposeEvent.args;
 
-      const blocksUntilStart = startBlock - await world.hre.ethers.provider.getBlockNumber();
-      const blocksFromStartToEnd = endBlock - startBlock;
-      await this.mineBlocks(blocksUntilStart);
-      for (const voter of voters) {
-        const voterSigner = await world.impersonateAddress(voter);
-        const govAsVoter = await world.hre.ethers.getContractAt(
-          'IGovernorBravo',
-          governor.address,
-          voterSigner
-        ) as IGovernorBravo;
-        await this.setNextBaseFeeToZero();
-        await govAsVoter.castVote(proposalId, 1, { gasPrice: 0 });
-      }
-
-      await this.mineBlocks(blocksFromStartToEnd);
-      await this.setNextBaseFeeToZero();
-      const queueTxn = await (await governorAsAdmin.queue(proposalId, { gasPrice: 0 })).wait();
-      const queueEvent = queueTxn.events.find(event => event.event === 'ProposalQueued');
-      let [proposalId_, eta] = queueEvent.args;
-
-      await this.setNextBlockTimestamp(eta.toNumber());
-      await this.setNextBaseFeeToZero();
-      await governorAsAdmin.execute(proposalId, { gasPrice: 0 });
+      await this.executePendingProposal(proposalId, startBlock, endBlock);
     }
   }
 }
