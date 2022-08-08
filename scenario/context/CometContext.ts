@@ -278,7 +278,8 @@ export class CometContext {
         adminSigner
       ) as IGovernorBravo;
 
-      const proposeTxn = await (await governorAsAdmin.propose(targets, values, signatures, calldatas, 'FastExecuteProposal')).wait();
+      await this.setNextBaseFeeToZero();
+      const proposeTxn = await (await governorAsAdmin.propose(targets, values, signatures, calldatas, 'FastExecuteProposal', { gasPrice: 0 })).wait();
       const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
       const [proposalId, , , , , , startBlock, endBlock] = proposeEvent.args;
 
@@ -292,16 +293,19 @@ export class CometContext {
           governor.address,
           voterSigner
         ) as IGovernorBravo;
-        await govAsVoter.castVote(proposalId, 1);
+        await this.setNextBaseFeeToZero();
+        await govAsVoter.castVote(proposalId, 1, { gasPrice: 0 });
       }
 
       await this.mineBlocks(blocksFromStartToEnd);
-      const queueTxn = await (await governorAsAdmin.queue(proposalId)).wait();
+      await this.setNextBaseFeeToZero();
+      const queueTxn = await (await governorAsAdmin.queue(proposalId, { gasPrice: 0 })).wait();
       const queueEvent = queueTxn.events.find(event => event.event === 'ProposalQueued');
       let [proposalId_, eta] = queueEvent.args;
 
       await this.setNextBlockTimestamp(eta.toNumber());
-      await governorAsAdmin.execute(proposalId);
+      await this.setNextBaseFeeToZero();
+      await governorAsAdmin.execute(proposalId, { gasPrice: 0 });
     }
   }
 }

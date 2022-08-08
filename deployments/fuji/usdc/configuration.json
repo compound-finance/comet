@@ -21,6 +21,7 @@
     "baseBorrowSpeed": "0.0011458333333333333e15",
     "baseMinForRewards": "1000000e6"
   },
+  "rewardToken": "WAVAX",
   "assets": {
     "WBTC.e": {
       "priceFeed": "0x31CF013A08c6Ac228C94551d535d5BAfE19c602a",

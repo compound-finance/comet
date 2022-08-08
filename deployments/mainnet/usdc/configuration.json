@@ -24,6 +24,7 @@
     "baseBorrowSpeed": "0e15",
     "baseMinForRewards": "1000000e6"
   },
+  "rewardTokenAddress": "0xc00e94cb662c3520282e6f5717214004a7f26888",
   "assets": {
     "COMP": {
       "address": "0xc00e94cb662c3520282e6f5717214004a7f26888",
