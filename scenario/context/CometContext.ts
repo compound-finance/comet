@@ -268,7 +268,8 @@ export class CometContext {
           governor.address,
           voterSigner
         ) as IGovernorBravo;
-        await govAsVoter.castVote(proposalId, 1);
+        await this.setNextBaseFeeToZero();
+        await govAsVoter.castVote(proposalId, 1, { gasPrice: 0 });
       } catch (err) {
         debug(`Error while voting ${err}`);
       }
@@ -283,12 +284,14 @@ export class CometContext {
     ) as IGovernorBravo;
 
     // Queue proposal
-    const queueTxn = await (await governorAsAdmin.queue(proposalId)).wait();
+    await this.setNextBaseFeeToZero();
+    const queueTxn = await (await governorAsAdmin.queue(proposalId, { gasPrice: 0 })).wait();
     const queueEvent = queueTxn.events?.find(event => event.event === 'ProposalQueued');
     await this.setNextBlockTimestamp(queueEvent?.args?.eta.toNumber());
 
     // Execute proposal
-    await governorAsAdmin.execute(proposalId);
+    await this.setNextBaseFeeToZero();
+    await governorAsAdmin.execute(proposalId, { gasPrice: 0 });
   }
 
   // Instantly executes some actions through the governance proposal process

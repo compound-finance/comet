@@ -69,7 +69,6 @@ export class ProposalConstraint<T extends CometContext, R extends Requirements> 
       '0x88fb3d509fc49b515bfeb04e23f53ba339563981',
       '0x8169522c2c57883e8ef80c498aab7820da539806'
     ];
-    await context.setNextBaseFeeToZero();
 
     // XXX pull all pending proposals for the associated gov (chain)
     // produce all the subsets and queue/execute each batch of them
