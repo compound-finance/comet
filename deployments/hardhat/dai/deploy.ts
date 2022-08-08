@@ -35,9 +35,9 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   //  but we are anyway replacing gov simple
   await deploymentManager.idempotent(
     async () => !sameAddress(await governor.timelock(), timelock.address),
-    async (signer) => {
+    async () => {
       debug(`Initializing GovSimple`);
-      await wait(governor.connect(signer).initialize(timelock.address, [admin.address]));
+      await wait(governor.connect(admin).initialize(timelock.address, [admin.address]));
     }
   );
 

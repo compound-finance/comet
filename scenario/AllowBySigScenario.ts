@@ -39,8 +39,7 @@ scenario(
 //  recognize custom errors received in fallback functions that originate from external artifacts.
 // CometExt is an external artifact here unless we redeploy it.
 // Related: https://github.com/NomicFoundation/hardhat/issues/1875
-// XXX
-scenario.only(
+scenario(
   'Comet#allowBySig > fails if owner argument is altered',
   { upgrade: true },
   async ({ comet, actors }, context, world) => {

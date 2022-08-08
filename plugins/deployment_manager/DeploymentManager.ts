@@ -95,6 +95,11 @@ export class DeploymentManager {
     return newSigner;
   }
 
+  async resetSignersPendingCounts() {
+    // nonce manager never clears the _deltaCount, so we add a helper to force it
+    this._signers.forEach(s => s['_signer']._deltaCount = 0);
+  }
+
   private async deployOpts(): Promise<DeployOpts> {
     return {
       verificationStrategy: this.config.verificationStrategy,
@@ -121,10 +126,10 @@ export class DeploymentManager {
   /* Conditionally executes an action */
   async idempotent(
     condition: () => Promise<any>,
-    action: (signer: SignerWithAddress) => Promise<any>,
+    action: () => Promise<any>,
     retries?: number): Promise<any> {
     if (await condition()) {
-      return this.asyncCallWithRetry(action, retries);
+      return this.retry(action, retries);
     }
   }
 
@@ -151,11 +156,18 @@ export class DeploymentManager {
     address: string,
     deployArgs: any[],
     fromNetwork?: string,
+    force?: boolean,
     retries?: number
   ): Promise<C> {
-    // XXX conditional
-    const buildFile = await this.import(address, fromNetwork);
-    return this._deployBuild(buildFile, deployArgs, retries);
+    const maybeExisting: C = await this.contract(alias);
+    if (!maybeExisting || force) {
+      // NB: might use an override alias on deployOpts, but it doesn't invalidate cache...
+      const buildFile = await this.import(address, fromNetwork);
+      const contract: C = await this._deployBuild(buildFile, deployArgs, retries);
+      await this.putAlias(alias, contract.address);
+      return contract;
+    }
+    return maybeExisting;
   }
 
   /* Conditionally deploy a contract with its alias if it does not exist, or if forced */
@@ -168,7 +180,7 @@ export class DeploymentManager {
   ): Promise<C> {
     const maybeExisting: C = await this.contract(alias);
     if (!maybeExisting || force) {
-      // NB: would like to use an override on deployOpts, but it doesn't invalidate cache...
+      // NB: might use an override alias on deployOpts, but it doesn't invalidate cache...
       const contract: C = await this._deploy(contractFile, deployArgs, retries);
       await this.putAlias(alias, contract.address);
       return contract;
@@ -179,10 +191,9 @@ export class DeploymentManager {
   async existing<C extends Contract>(
     alias: Alias,
     address: string,
-    force?: boolean
   ): Promise<C> {
     const maybeExisting = await this.contract<C>(alias);
-    if (!maybeExisting || force) {
+    if (!maybeExisting) {
       const buildFile = await this.import(address);
       const contract = getEthersContract<C>(address, buildFile, this.hre);
       await this.putAlias(alias, address);
@@ -198,7 +209,7 @@ export class DeploymentManager {
     Factory extends Deployer<C, DeployArgs>,
     DeployArgs extends Array<any>
   >(contractFile: string, deployArgs: DeployArgs, retries?: number): Promise<C> {
-    const contract = await this.asyncCallWithRetry(
+    const contract = await this.retry(
       async () => deploy<C, Factory, DeployArgs>(contractFile, deployArgs, this.hre, await this.deployOpts()),
       retries
     );
@@ -208,7 +219,7 @@ export class DeploymentManager {
 
   /* Deploys a contract from a build file, e.g. an one imported contract */
   async _deployBuild<C extends Contract>(buildFile: BuildFile, deployArgs: any[], retries?: number): Promise<C> {
-    const contract = await this.asyncCallWithRetry(
+    const contract = await this.retry(
       async () => deployBuild(buildFile, deployArgs, this.hre, await this.deployOpts()),
       retries
     );
@@ -266,7 +277,6 @@ export class DeploymentManager {
 
   /* Stores new roots, which are the basis for spidering. */
   async putRoots(roots: Roots): Promise<Roots> {
-    console.log('xxxx putting roots', roots)
     return putRoots(this.cache, roots);
   }
 
@@ -383,35 +393,18 @@ export class DeploymentManager {
    * @param timeLimit time limit before timeout in milliseconds
    * @param wait time to wait between tries in milliseconds
    */
-  async asyncCallWithRetry(fn: (signer: SignerWithAddress) => Promise<any>, retries: number = 5, timeLimit?: number, wait: number = 250) {
-    // XXX maybe rename to `doWithRetry`
-    const signer = await this.getSigner();
+  async retry(fn: () => Promise<any>, retries: number = 5, timeLimit?: number, wait: number = 250) {
     try {
-      return await asyncCallWithTimeout(fn(signer), timeLimit);
+      return await asyncCallWithTimeout(fn(), timeLimit);
     } catch (e) {
-      retries -= 1;
-      debug(`Retrying with retries left: ${retries}, wait: ${wait}`);
-      debug('Error is: ', e);
       if (retries === 0) throw e;
+
+      console.warn(`Retrying with retries left: ${retries}, wait: ${wait}, error is: `, e);
+      await this.resetSignersPendingCounts();
+
       await new Promise(ok => setTimeout(ok, wait));
-      return this.asyncCallWithRetry(fn, retries, timeLimit, wait * 2);
+      return this.retry(fn, retries - 1, timeLimit, wait * 2);
     }
-  }
-
-  /**
-   * Calls an arbitrary function with lazy verification turned on
-   * Note: Main use-case is to be a light wrapper around deploy scripts
-   */
-  async doThenVerify(fn: () => Promise<any>): Promise<any> {
-    const prevSetting = this.config.verificationStrategy;
-    this.setVerificationStrategy('lazy');
-
-    const result = await fn();
-
-    await this.verifyContracts();
-    this.setVerificationStrategy(prevSetting);
-
-    return result;
   }
 
   fork(): DeploymentManager {

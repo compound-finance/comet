@@ -47,21 +47,18 @@ export async function importContract(
   retries: number = DEFAULT_RETRIES,
   retryDelay: number = DEFAULT_RETRY_DELAY
 ): Promise<BuildFile> {
-  let buildFile, errMsg;
   try {
-    buildFile = (await loadContract('etherscan', network, address)) as BuildFile;
+    return (await loadContract('etherscan', network, address)) as BuildFile;
   } catch (e) {
-    if (retries === 0 || ((errMsg = e.message) && errMsg.includes('Contract source code not verified'))) {
+    if (retries === 0 || (e.message && e.message.includes('Contract source code not verified'))) {
       throw e;
     }
 
-    console.warn(`Import failed for ${network}@${address} (${errMsg}), retrying in ${retryDelay / 1000}s; ${retries} retries left`);
+    console.warn(`Import failed for ${network}@${address} (${e.message}), retrying in ${retryDelay / 1000}s; ${retries} retries left`);
 
-    await new Promise((resolve) => setTimeout(resolve, retryDelay));
-    return await importContract(network, address, retries - 1, retryDelay * 2);
+    await new Promise(ok => setTimeout(ok, retryDelay));
+    return importContract(network, address, retries - 1, retryDelay * 2);
   }
-
-  return buildFile;
 }
 
 // Reads a contract if exists in cache, otherwise attempts to import contract by address
@@ -77,7 +74,7 @@ export async function fetchContract(
   if (cachedBuildFile) {
     return cachedBuildFile;
   } else {
-    return await importContract(network, address, importRetries, importRetryDelay);
+    return importContract(network, address, importRetries, importRetryDelay);
   }
 }
 

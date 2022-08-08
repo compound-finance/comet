@@ -1,4 +1,4 @@
-// XXX Define strict types for these objects
+// TODO: Could define strict types for these objects
 export interface Requirements {
     tokenBalances?: object, // Token balance constraint
     cometBalances?: object, // Comet balance constraint

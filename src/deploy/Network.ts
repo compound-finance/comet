@@ -24,11 +24,11 @@ export function sameAddress(a: string, b: string) {
 export async function deployNetworkComet(
   deploymentManager: DeploymentManager,
   deploySpec: ContractsToDeploy = { all: true },
-  configurationOverrides: ProtocolConfiguration = {},
+  configOverrides: ProtocolConfiguration = {},
   adminSigner?: SignerWithAddress,
 ) {
-  function maybeForce(alias?: string): boolean {
-    return deploySpec.all || (alias && deploySpec[alias]);
+  function maybeForce(flag?: boolean): boolean {
+    return deploySpec.all || flag;
   }
 
   const admin = adminSigner ?? await deploymentManager.getSigner();
@@ -56,13 +56,15 @@ export async function deployNetworkComet(
     baseBorrowMin,
     targetReserves,
     assetConfigs,
-  } = await getConfiguration(deploymentManager, configurationOverrides);
+  } = await getConfiguration(deploymentManager, configOverrides);
+
+  /* Deploy contracts */
 
   const cometAdmin = await deploymentManager.deploy(
     'cometAdmin',
     'CometProxyAdmin.sol',
     [],
-    maybeForce('cometAdmin')
+    maybeForce()
   );
 
   const extConfiguration = { symbol32: ethers.utils.formatBytes32String(symbol) };
@@ -70,25 +72,21 @@ export async function deployNetworkComet(
     'comet:implementation:implementation',
     'CometExt.sol',
     [extConfiguration],
-    maybeForce('comet')
+    maybeForce(deploySpec.cometExt)
   );
 
   const cometFactory = await deploymentManager.deploy(
     'cometFactory',
     'CometFactory.sol',
     [],
-    maybeForce('comet')
+    maybeForce(deploySpec.cometMain)
   );
 
-  console.log('xxxx', cometAdmin.address)
-  // XXX most generally we would want to set the admin to admin
-  //  then change admin to cometAdmin if not already, using passed in admin
-  //   that way if cometAdmin is deployed we get the new one
   const cometProxy = await deploymentManager.deploy(
     'comet',
     'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
     [cometFactory.address, cometAdmin.address, []], // NB: temporary implementation contract
-    maybeForce('comet'),
+    maybeForce(),
   );
 
   const configuration = {
@@ -119,7 +117,7 @@ export async function deployNetworkComet(
     'configurator:implementation',
     'Configurator.sol',
     [],
-    maybeForce('configurator')
+    maybeForce(deploySpec.cometMain)
   );
 
   // If we deploy a new proxy, we initialize it to the current/new impl
@@ -129,8 +127,17 @@ export async function deployNetworkComet(
     'configurator',
     'ConfiguratorProxy.sol',
     [configuratorImpl.address, cometAdmin.address, (await configuratorImpl.populateTransaction.initialize(admin.address)).data],
-    maybeForce('configurator')
+    maybeForce()
   );
+
+  const rewards = await deploymentManager.deploy(
+    'rewards',
+    'CometRewards.sol',
+    [governor],
+    maybeForce(deploySpec.rewards)
+  );
+
+  /* Wire things up */
 
   // Now configure the configurator and actually deploy comet
   // Note: the success of these calls is dependent on who the admin is and if/when its been transferred
@@ -139,6 +146,19 @@ export async function deployNetworkComet(
 
   // Also get a handle for Comet, although it may not *actually* support the interface yet
   const comet = await deploymentManager.cast(cometProxy.address, 'contracts/CometInterface.sol:CometInterface');
+
+  // Get the currently impl addresses for the proxies, and determine if this is the first deploy
+  const $configuratorImpl = await cometAdmin.getProxyImplementation(configurator.address);
+  const $cometImpl = await cometAdmin.getProxyImplementation(comet.address);
+  const isFirstDeploy = sameAddress($cometImpl, cometFactory.address);
+
+  await deploymentManager.idempotent(
+    async () => !sameAddress($configuratorImpl, configuratorImpl.address),
+    async () => {
+      debug(`Setting Configurator implementation to ${configuratorImpl.address}`);
+      await wait(cometAdmin.connect(admin).upgrade(configurator.address, configuratorImpl.address));
+    }
+  );
 
   await deploymentManager.idempotent(
     async () => !sameAddress(await configurator.factory(comet.address), cometFactory.address),
@@ -149,12 +169,25 @@ export async function deployNetworkComet(
   );
 
   await deploymentManager.idempotent(
-    async () => sameAddress((await configurator.getConfiguration(comet.address)).baseToken, ethers.constants.AddressZero),
+    async () => isFirstDeploy || deploySpec.all || deploySpec.cometMain || deploySpec.cometExt,
     async () => {
       debug(`Setting configuration in Configurator for ${comet.address}`);
       await wait(configurator.connect(admin).setConfiguration(comet.address, configuration));
+
+      if (isFirstDeploy) {
+        debug(`Deploying first implementation of Comet and initializing...`);
+        const data = (await comet.populateTransaction.initializeStorage()).data;
+        await wait(cometAdmin.connect(admin).deployUpgradeToAndCall(configurator.address, comet.address, data));
+      } else {
+        debug(`Upgrading implementation of Comet...`);
+        await wait(cometAdmin.connect(admin).deployAndUpgradeTo(configurator.address, comet.address));
+      }
+
+      debug(`Factory deployed implementation at ${await cometAdmin.getProxyImplementation(comet.address)}`);
     }
   );
+
+  /* Transfer to Gov */
 
   await deploymentManager.idempotent(
     async () => !sameAddress(await configurator.governor(), governor),
@@ -164,23 +197,6 @@ export async function deployNetworkComet(
     }
   );
 
-  console.log('xxxx', await cometAdmin.owner(), admin.address, governor)
-  await deploymentManager.idempotent(
-    async () => sameAddress(await cometAdmin.getProxyImplementation(comet.address), cometFactory.address),
-    async () => {
-      debug(`Deploying first implementation of Comet and initializing...`);
-      // XXX ok this works for changing factory -> first impl and initializing
-      //  but what if we just want to do a change of impl? i.e. there's a new factory but not first
-      // XXX do we have a way of *just* calling? unnecessary re-upgrade?
-      const data = (await comet.populateTransaction.initializeStorage()).data;
-      await wait(cometAdmin.connect(admin).deployUpgradeToAndCall(configurator.address, comet.address, data));
-      debug(`Factory deployed implementation at ${await cometAdmin.getProxyImplementation(comet.address)}`);
-    }
-  );
-  console.log('xxxx', await cometAdmin.owner(), admin.address, governor, (await deploymentManager.getSigner()).address)
-
-  // XXX move? if we do this earlier, we might not be owner first time we deploy,
-  // if not at all, no timelock contract, if now, not for upgrade
   await deploymentManager.idempotent(
     async () => !sameAddress(await cometAdmin.owner(), governor),
     async () => {
@@ -189,17 +205,8 @@ export async function deployNetworkComet(
     }
   );
 
-  const rewards = await deploymentManager.deploy(
-    'rewards',
-    'CometRewards.sol',
-    [governor],
-    maybeForce('rewards')
-  );
-
-  // XXX when to put roots?
-  //  we are using deployment manager but not writing roots back?
-  //   but wrapper is also calling put roots...?
-  deploymentManager.putRoots(new Map([
+  // XXX when to put roots? in some case wrapper is also putting...
+  await deploymentManager.putRoots(new Map([
     ['comet', comet.address],
     ['configurator', configurator.address],
     ['rewards', rewards.address],

@@ -1,11 +1,3 @@
-import {
-  Comet,
-  CometRewards,
-  ERC20,
-  GovernorSimple,
-  SimpleTimelock,
-  TransparentUpgradeableProxy,
-} from '../../build/types';
 import { AssetConfigStruct } from '../../build/types/Comet';
 import { BigNumberish } from 'ethers';
 
@@ -37,13 +29,11 @@ export interface ProtocolConfiguration {
   assetConfigs?: AssetConfigStruct[];
 }
 
-// Specific contracts take precedence over `all`, which allows for expressions
-// such as:
-// { all: true, rewards: false }
-// which will deploy all contracts other than Rewards
+// If `all` is specified, it takes precedence.
+// Other options are independent of one another.
 export interface ContractsToDeploy {
-  all?: boolean;
-  comet?: boolean;
-  configurator?: boolean;
-  rewards?: boolean;
+  all?: boolean;       // Re-deploy everything (including proxies and proxy admin)
+  cometMain?: boolean; // Re-deploy the main interface (config impl + comet factory + comet impl)
+  cometExt?: boolean;  // Re-deploy the ext interface (comet ext)
+  rewards?: boolean;   // Re-deploy the rewards contract
 }

@@ -85,27 +85,14 @@ export class CometContext {
     return configurator.getConfiguration(comet.address);
   }
 
-  async upgrade(configurationOverrides: ProtocolConfiguration): Promise<CometContext> {
+  async upgrade(configOverrides: ProtocolConfiguration): Promise<CometContext> {
     const { world } = this;
     const oldComet = await this.getComet();
-
-    // XXX currently will deploy a new proxy, factory, and ext
-    //  and then do deploy and initialize for the impl
-    //   which means it never actually does an upgrade
+    const admin = await world.impersonateAddress(await oldComet.governor(), 10n**18n);
 
     // XXX get addresses from deployComet directly, dont have it write roots?
-    await deployComet(
-      this.deploymentManager,
-      // Deploy a new configurator proxy to set the proper CometConfiguration storage values
-      {
-        //all: true, // XXX
-        comet: true,
-        configurator: true,
-      },
-      configurationOverrides,
-      // XXX if we dont set value, and dont have enough eth, we hit nonce issue on retry?
-      await world.impersonateAddress(await oldComet.governor(), 10n**18n),
-    );
+    const deploySpec = { cometMain: true, cometExt: true };
+    await deployComet(this.deploymentManager, deploySpec, configOverrides, admin);
 
     await this.setAssets();
     await this.spider();

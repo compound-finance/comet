@@ -77,8 +77,7 @@ scenario(
   }
 );
 
-// XXX
-scenario.only(
+scenario(
   'Comet#interestRate > below kink rates using hypothetical configuration constants',
   {
     upgrade: {

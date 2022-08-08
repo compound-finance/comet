@@ -27,12 +27,12 @@ export interface DeployOpts {
 }
 
 // Deploys a contract given a build file (e.g. something imported or spidered)
-async function deployFromBuildFile(
+async function deployFromBuildFile<C extends Contract>(
   buildFile: BuildFile,
   deployArgs: any[],
   hre: HardhatRuntimeEnvironment,
   deployOpts: DeployOpts = {}
-): Promise<Contract> {
+): Promise<C> {
   let [contractName, metadata] = getPrimaryContract(buildFile);
   const [ethersSigner] = await hre.ethers.getSigners();
   const signer = deployOpts.connect ?? ethersSigner;
@@ -41,7 +41,7 @@ async function deployFromBuildFile(
   const contract = await contractFactory.deploy(...deployArgs);
   const deployed = await contract.deployed();
   debug(`Deployed ${contractName} @ ${contract.address}`);
-  return deployed;
+  return deployed as C;
 }
 
 async function maybeStoreCache(deployOpts: DeployOpts, contract: Contract, buildFile: BuildFile) {
@@ -135,15 +135,15 @@ export async function deploy<
 /**
  * Deploy a new contract from a build file, e.g. something imported or crawled
  */
-export async function deployBuild(
+export async function deployBuild<C extends Contract>(
   buildFile: BuildFile,
   deployArgs: any[],
   hre: HardhatRuntimeEnvironment,
   deployOpts: DeployOpts = {}
-): Promise<Contract> {
+): Promise<C> {
   debug(`Deploying ${Object.keys(buildFile.contracts)} with args`, deployArgs);
 
-  let contract = await deployFromBuildFile(buildFile, deployArgs, hre, deployOpts);
+  let contract: C = await deployFromBuildFile(buildFile, deployArgs, hre, deployOpts);
 
   let verifyArgs: VerifyArgs = {
     via: 'buildfile',
