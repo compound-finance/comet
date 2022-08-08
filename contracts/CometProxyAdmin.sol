@@ -17,4 +17,14 @@ contract CometProxyAdmin is ProxyAdmin {
         address newCometImpl = configuratorProxy.deploy(address(cometProxy));
         upgrade(cometProxy, newCometImpl);
     }
+
+    /**
+     * @dev Deploy a new Comet and upgrade the implementation of the Comet proxy, then call the function
+     *  Requirements:
+     *   - This contract must be the admin of `CometProxy`
+     */
+    function deployUpgradeToAndCall(Deployable configuratorProxy, TransparentUpgradeableProxy cometProxy, bytes memory data) public virtual onlyOwner {
+        address newCometImpl = configuratorProxy.deploy(address(cometProxy));
+        upgradeAndCall(cometProxy, newCometImpl, data);
+    }
 }

@@ -41,7 +41,7 @@ export interface CometProperties {
   assets: AssetMap;
   comet: CometInterface;
   configurator: Configurator;
-  proxyAdmin: ProxyAdmin;
+  proxyAdmin: CometProxyAdmin;
   timelock: SimpleTimelock;
   governor: GovernorSimple;
 }
