@@ -52,6 +52,18 @@ export class CometContext {
   actors: ActorMap;
   assets: AssetMap;
 
+  // COMP biggest whales
+  // XXX find a better way to do this without hardcoding whales
+  voters = [
+    '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
+    '0x61258f12c459984f32b83c86a6cc10aa339396de',
+    '0x9aa835bc7b8ce13b9b0c9764a52fbf71ac62ccf1',
+    '0x683a4f9915d6216f73d6df50151725036bd26c02',
+    '0xa1b61405791170833070c0ea61ed28728a840241',
+    '0x88fb3d509fc49b515bfeb04e23f53ba339563981',
+    '0x8169522c2c57883e8ef80c498aab7820da539806'
+  ];
+
   constructor(world: World) {
     this.world = world;
     this.deploymentManager = world.deploymentManager; // NB: backwards compatibility (temporary?)
@@ -248,7 +260,7 @@ export class CometContext {
     await this.world.hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
   }
 
-  async executePendingProposal(proposalId: number, startBlock: number, endBlock: number, voters: string[]) {
+  async executePendingProposal(proposalId: number, startBlock: number, endBlock: number) {
     const governor = await this.getGovernor();
 
     const blockNow = await this.world.hre.ethers.provider.getBlockNumber();
@@ -259,7 +271,7 @@ export class CometContext {
       await this.mineBlocks(blocksUntilStart);
     }
 
-    for (const voter of voters) {
+    for (const voter of this.voters) {
       try {
         // Voting can fail if voter has already voted
         const voterSigner = await this.world.impersonateAddress(voter);
@@ -276,7 +288,7 @@ export class CometContext {
     }
     await this.mineBlocks(blocksFromStartToEnd);
 
-    const adminSigner = await this.world.impersonateAddress(voters[0]);
+    const adminSigner = await this.world.impersonateAddress(this.voters[0]);
     const governorAsAdmin = await this.world.hre.ethers.getContractAt(
       'IGovernorBravo',
       governor.address,
@@ -312,12 +324,7 @@ export class CometContext {
       await governorAsAdmin.queue(proposalId);
       await governorAsAdmin.execute(proposalId);
     } catch(e) {
-      // XXX find a better way to do this without hardcoding whales
-      const voters = [
-        '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
-        '0x683a4f9915d6216f73d6df50151725036bd26c02'
-      ];
-      const adminSigner = await world.impersonateAddress(voters[0]);
+      const adminSigner = await world.impersonateAddress(this.voters[0]);
       const governorAsAdmin = await world.hre.ethers.getContractAt(
         'IGovernorBravo',
         governor.address,
@@ -328,7 +335,7 @@ export class CometContext {
       const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
       const [proposalId, , , , , , startBlock, endBlock] = proposeEvent.args;
 
-      this.executePendingProposal(proposalId, startBlock, endBlock, voters);
+      this.executePendingProposal(proposalId, startBlock, endBlock);
     }
   }
 }
