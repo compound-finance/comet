@@ -32,7 +32,7 @@ scenario('upgrade Comet implementation and initialize', {}, async ({ comet, conf
   expect((await comet.liquidatorPoints(constants.AddressZero)).numAbsorbs).to.be.equal(2 ** 32 - 1);
 });
 
-// We need to `upgradeAll` here because the CometProxyAdmin in testnets don't have the deployUpgradeToAndCall function
+// We need to `upgradeAll` here because the CometProxyAdmin on testnets don't have the deployUpgradeToAndCall function
 scenario('upgrade Comet implementation and initialize using deployUpgradeToAndCall', { upgradeAll: true }, async ({ comet, configurator, proxyAdmin }, context) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
   expect((await comet.liquidatorPoints(constants.AddressZero)).numAbsorbs).to.be.equal(0);
