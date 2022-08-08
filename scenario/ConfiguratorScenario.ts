@@ -53,10 +53,10 @@ scenario('add assets', {}, async ({ comet, configurator, proxyAdmin, actors }, c
   expect(updatedCollateralAssets.map(a => a.asset)).to.have.members(updatedContextAssets);
 });
 
-// XXX Hardhat currently can't parse custom errors from external contracts. We can use `upgrade: true` and
-// have an option for the ModernConstraint to also re-deploy proxies.
-// https://github.com/NomicFoundation/hardhat/issues/1618
-scenario.skip(
+// XXX Hardhat currently can't parse custom errors from external contracts.
+//  We could use `upgrade` and have an option for the ModernConstraint to also re-deploy proxies?
+//  https://github.com/NomicFoundation/hardhat/issues/1618
+scenario.skip( // XXX try again
   'reverts if configurator is not called by admin',
   {},
   async ({ comet, configurator, proxyAdmin, actors }) => {

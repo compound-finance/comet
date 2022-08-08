@@ -27,8 +27,8 @@ export async function deployNetworkComet(
   configurationOverrides: ProtocolConfiguration = {},
   adminSigner?: SignerWithAddress,
 ) {
-  function maybeForce(alias: string): boolean {
-    return deploySpec.all || deploySpec[alias];
+  function maybeForce(alias?: string): boolean {
+    return deploySpec.all || (alias && deploySpec[alias]);
   }
 
   const admin = adminSigner ?? await deploymentManager.getSigner();
@@ -80,6 +80,10 @@ export async function deployNetworkComet(
     maybeForce('comet')
   );
 
+  console.log('xxxx', cometAdmin.address)
+  // XXX most generally we would want to set the admin to admin
+  //  then change admin to cometAdmin if not already, using passed in admin
+  //   that way if cometAdmin is deployed we get the new one
   const cometProxy = await deploymentManager.deploy(
     'comet',
     'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
@@ -129,25 +133,26 @@ export async function deployNetworkComet(
   );
 
   // Now configure the configurator and actually deploy comet
-  // TODO: the success of these calls are also going to be dependent on who the admin is and if/when its been transferred
+  // Note: the success of these calls is dependent on who the admin is and if/when its been transferred
+  //  scenarios can pass in an impersonated signer, but real deploys may require proposals for some states
   const configurator = (configuratorImpl as Configurator).attach(configuratorProxy.address);
 
   // Also get a handle for Comet, although it may not *actually* support the interface yet
   const comet = await deploymentManager.cast(cometProxy.address, 'contracts/CometInterface.sol:CometInterface');
 
   await deploymentManager.idempotent(
-    async () => !sameAddress(await configurator.factory(cometProxy.address), cometFactory.address),
+    async () => !sameAddress(await configurator.factory(comet.address), cometFactory.address),
     async () => {
       debug(`Setting factory in Configurator to ${cometFactory.address}`);
-      await wait(configurator.connect(admin).setFactory(cometProxy.address, cometFactory.address));
+      await wait(configurator.connect(admin).setFactory(comet.address, cometFactory.address));
     }
   );
 
   await deploymentManager.idempotent(
-    async () => sameAddress((await configurator.getConfiguration(cometProxy.address)).baseToken, ethers.constants.AddressZero),
+    async () => sameAddress((await configurator.getConfiguration(comet.address)).baseToken, ethers.constants.AddressZero),
     async () => {
-      debug(`Setting configuration in Configurator`);
-      await wait(configurator.connect(admin).setConfiguration(cometProxy.address, configuration));
+      debug(`Setting configuration in Configurator for ${comet.address}`);
+      await wait(configurator.connect(admin).setConfiguration(comet.address, configuration));
     }
   );
 
@@ -159,25 +164,23 @@ export async function deployNetworkComet(
     }
   );
 
+  console.log('xxxx', await cometAdmin.owner(), admin.address, governor)
   await deploymentManager.idempotent(
-    async () => sameAddress(await cometAdmin.getProxyImplementation(cometProxy.address), cometFactory.address),
+    async () => sameAddress(await cometAdmin.getProxyImplementation(comet.address), cometFactory.address),
     async () => {
-      debug(`Deploying first implementation of Comet and initializing`);
+      debug(`Deploying first implementation of Comet and initializing...`);
       // XXX ok this works for changing factory -> first impl and initializing
       //  but what if we just want to do a change of impl? i.e. there's a new factory but not first
       // XXX do we have a way of *just* calling? unnecessary re-upgrade?
-      // console.log('xxxx last accrual', (await comet.totalsBasic()).lastAccrualTime)
-      //await wait(cometAdmin.connect(admin).deployAndUpgradeTo(configurator.address, comet.address));
-      // XXX probably initializeStorage, explains div by 0? yes...
-      //if ((await comet.totalsBasic()).lastAccrualTime === 0) {
-        const data = (await comet.populateTransaction.initializeStorage()).data;
-        await wait(cometAdmin.connect(admin).deployUpgradeToAndCall(configurator.address, comet.address, data));
-      //}
+      const data = (await comet.populateTransaction.initializeStorage()).data;
+      await wait(cometAdmin.connect(admin).deployUpgradeToAndCall(configurator.address, comet.address, data));
+      debug(`Factory deployed implementation at ${await cometAdmin.getProxyImplementation(comet.address)}`);
     }
-);
+  );
+  console.log('xxxx', await cometAdmin.owner(), admin.address, governor, (await deploymentManager.getSigner()).address)
 
-  // XXX better to check owner is admin? what if its some previous governor?
-  //  anyway if we never transfer ownership
+  // XXX move? if we do this earlier, we might not be owner first time we deploy,
+  // if not at all, no timelock contract, if now, not for upgrade
   await deploymentManager.idempotent(
     async () => !sameAddress(await cometAdmin.owner(), governor),
     async () => {
@@ -192,4 +195,13 @@ export async function deployNetworkComet(
     [governor],
     maybeForce('rewards')
   );
+
+  // XXX when to put roots?
+  //  we are using deployment manager but not writing roots back?
+  //   but wrapper is also calling put roots...?
+  deploymentManager.putRoots(new Map([
+    ['comet', comet.address],
+    ['configurator', configurator.address],
+    ['rewards', rewards.address],
+  ])); // XXX
 }

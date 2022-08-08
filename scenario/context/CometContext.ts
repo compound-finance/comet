@@ -59,10 +59,6 @@ export class CometContext {
     this.assets = {};
   }
 
-  async contracts(): Promise<ContractMap> {
-    return this.deploymentManager.contracts();
-  }
-
   async getComet(): Promise<CometInterface> {
     return this.deploymentManager.contract('comet');
   }
@@ -89,96 +85,53 @@ export class CometContext {
     return configurator.getConfiguration(comet.address);
   }
 
-  async upgrade(configOverrides: ProtocolConfiguration): Promise<CometContext> {
-    debug('Upgrading to modern...');
+  async upgrade(configurationOverrides: ProtocolConfiguration): Promise<CometContext> {
+    const { world } = this;
     const oldComet = await this.getComet();
-    const timelock = await this.getTimelock();
-    const cometConfig = { governor: timelock.address, ...configOverrides } // Use old timelock as governor
+
+    // XXX currently will deploy a new proxy, factory, and ext
+    //  and then do deploy and initialize for the impl
+    //   which means it never actually does an upgrade
+
+    // XXX get addresses from deployComet directly, dont have it write roots?
     await deployComet(
       this.deploymentManager,
       // Deploy a new configurator proxy to set the proper CometConfiguration storage values
       {
-        all: true, // XXX
+        //all: true, // XXX
         comet: true,
         configurator: true,
       },
-      cometConfig,
-      this.actors['signer'].signer
+      configurationOverrides,
+      // XXX if we dont set value, and dont have enough eth, we hit nonce issue on retry?
+      await world.impersonateAddress(await oldComet.governor(), 10n**18n),
     );
-    const newComet = await this.getComet();
-    console.log('xxxxx z', oldComet.address, newComet.address)
 
-    let initializer: string | undefined;
-    if (!oldComet.totalsBasic || (await oldComet.totalsBasic()).lastAccrualTime === 0) {
-      initializer = (await newComet.populateTransaction.initializeStorage()).data;
-    }
-
-    await this.upgradeTo(newComet, initializer);
     await this.setAssets();
     await this.spider();
-    debug('Upgraded to modern...');
+
+    debug('Upgraded comet...');
+
     return this;
-  }
-
-  async upgradeTo(newComet: Comet, data?: string) {
-    const { world } = this;
-
-    let comet = await this.getComet();
-    let proxyAdmin = await this.getCometAdmin();
-
-    // Set the admin and pause guardian addresses again since these may have changed.
-    let adminAddress = await comet.governor();
-    let pauseGuardianAddress = await comet.pauseGuardian();
-    let adminSigner = await world.impersonateAddress(adminAddress);
-    let pauseGuardianSigner = await world.impersonateAddress(pauseGuardianAddress);
-
-    // Set gas fee to 0 in case admin is a contract address (e.g. Timelock)
-    await this.setNextBaseFeeToZero();
-    console.log('xxxxx zz y') // XXX
-    const xxx = await this.deploymentManager.contract('comet:implementation');
-    if (data) {
-      // XXX I think we're setting the proxy impl to itself
-      //  and when we do "and call initializeStorage"
-      //   we are admin calling a fn which doesnt exist, which goes to fallback and fails?
-      //  and when we dont call
-      //   we are infinitely recurring on ourselves
-      // XXX if we *didnt* just force a redeploy, impl would already be spidered and the impl
-      //  but since we did, and not the proxy the aliases
-      //   not sure how this was supp to work at all
-      console.log('xxxx', comet.address, newComet.address, data)
-      console.log('xxxx', xxx.address, await proxyAdmin.getProxyImplementation(comet.address))
-      await (await proxyAdmin.connect(adminSigner).upgradeAndCall(comet.address, xxx.address, data, { gasPrice: 0 })).wait();
-    } else {
-      console.log('xxxxx zz y 2')
-      await (await proxyAdmin.connect(adminSigner).upgrade(comet.address, xxx.address, { gasPrice: 0 })).wait();
-    }
-    this.actors['admin'] = await buildActor('admin', adminSigner, this);
-    this.actors['pauseGuardian'] = await buildActor('pauseGuardian', pauseGuardianSigner, this);
   }
 
   async spider() {
     await this.deploymentManager.spider();
   }
 
-  primaryActor(): CometActor {
-    return this.actors['signer'];
-  }
-
   async allocateActor(name: string, info: object = {}): Promise<CometActor> {
     const { world } = this;
+    const { signer } = this.actors;
 
-    let actorAddress = getAddressFromNumber(Object.keys(this.actors).length + 1);
-    let signer = await world.impersonateAddress(actorAddress);
-    let actor: CometActor = new CometActor(name, signer, actorAddress, this, info);
+    const actorAddress = getAddressFromNumber(Object.keys(this.actors).length + 1);
+    const actorSigner = await world.impersonateAddress(actorAddress);
+    const actor: CometActor = new CometActor(name, actorSigner, actorAddress, this, info);
     this.actors[name] = actor;
 
-    // For now, send some Eth from the first actor. Pay attention in the future
-    let primaryActor = this.primaryActor();
-    let nativeTokenAmount = world.base.allocation ?? 1.0;
     // When we allocate a new actor, how much eth should we warm the account with?
     // This seems to really vary by which network we're looking at, esp. since EIP-1559,
     // which makes the base fee for transactions variable by the network itself.
-    await primaryActor.sendEth(actor, nativeTokenAmount);
+    await signer.sendEth(actor, world.base.allocation ?? 1.0);
 
     return actor;
   }
@@ -352,7 +305,7 @@ export async function getAssets(context: CometContext): Promise<{ [symbol: strin
   const { deploymentManager } = context;
 
   let comet = await context.getComet();
-  let signer = (await deploymentManager.hre.ethers.getSigners())[1]; // dunno?
+  let signer = await deploymentManager.getSigner();
   let numAssets = await comet.numAssets();
   let assetAddresses = [
     await comet.baseToken(),

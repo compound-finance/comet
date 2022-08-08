@@ -266,6 +266,7 @@ export class DeploymentManager {
 
   /* Stores new roots, which are the basis for spidering. */
   async putRoots(roots: Roots): Promise<Roots> {
+    console.log('xxxx putting roots', roots)
     return putRoots(this.cache, roots);
   }
 

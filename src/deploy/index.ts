@@ -43,7 +43,6 @@ export interface ProtocolConfiguration {
 // which will deploy all contracts other than Rewards
 export interface ContractsToDeploy {
   all?: boolean;
-  cometAdmin?: boolean;
   comet?: boolean;
   configurator?: boolean;
   rewards?: boolean;
