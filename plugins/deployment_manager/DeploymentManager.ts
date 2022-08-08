@@ -5,7 +5,7 @@ import { Aliases, getAliases, putAlias, storeAliases } from './Aliases';
 import { Cache } from './Cache';
 import { ContractMap, getContracts } from './ContractMap';
 import { Deployer, DeployOpts, deploy, deployBuild } from './Deploy';
-import { fetchAndCacheContract } from './Import';
+import { fetchAndCacheContract, readContract } from './Import';
 import { Proxies, getProxies, putProxy, storeProxies } from './Proxies';
 import { getRelationConfig } from './RelationConfig';
 import { Roots, getRoots, putRoots } from './Roots';
@@ -130,13 +130,19 @@ export class DeploymentManager {
 
   /* Imports a contract, if not already imported, from Etherscan for local deploys, etc. */
   async import(address: string, network?: string): Promise<BuildFile> {
-    return await fetchAndCacheContract(
+    return fetchAndCacheContract(
       this.cache,
       network ?? this.network,
       address,
       this.importRetries(),
       this.importRetryDelay()
     );
+  }
+
+  /* Unconditionally casts a contract as the given artifact type, without caching */
+  async cast<C extends Contract>(address: string, artifact: string): Promise<C> {
+    const buildFile = await readContract(this.cache, this.hre, artifact, address, true);
+    return getEthersContract<C>(address, buildFile, this.hre);
   }
 
   /* Conditionally clones a contract with its alias from a given network to this deployment */
@@ -148,7 +154,7 @@ export class DeploymentManager {
     retries?: number
   ): Promise<C> {
     // XXX conditional
-    let buildFile = await this.import(address, fromNetwork);
+    const buildFile = await this.import(address, fromNetwork);
     return this._deployBuild(buildFile, deployArgs, retries);
   }
 
@@ -170,12 +176,17 @@ export class DeploymentManager {
     return maybeExisting;
   }
 
-  async existing<C extends Contract>(alias: Alias, address: string): Promise<C> {
+  async existing<C extends Contract>(
+    alias: Alias,
+    address: string,
+    force?: boolean
+  ): Promise<C> {
     const maybeExisting = await this.contract<C>(alias);
-    if (!maybeExisting) {
+    if (!maybeExisting || force) {
       const buildFile = await this.import(address);
       const contract = getEthersContract<C>(address, buildFile, this.hre);
       await this.putAlias(alias, address);
+      debug(`Imported ${buildFile.contract} from ${address} as '${alias}'`);
       return contract;
     }
     return maybeExisting;

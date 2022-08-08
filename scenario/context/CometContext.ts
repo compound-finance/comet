@@ -98,6 +98,7 @@ export class CometContext {
       this.deploymentManager,
       // Deploy a new configurator proxy to set the proper CometConfiguration storage values
       {
+        all: true, // XXX
         comet: true,
         configurator: true,
       },
@@ -105,6 +106,7 @@ export class CometContext {
       this.actors['signer'].signer
     );
     const newComet = await this.getComet();
+    console.log('xxxxx z', oldComet.address, newComet.address)
 
     let initializer: string | undefined;
     if (!oldComet.totalsBasic || (await oldComet.totalsBasic()).lastAccrualTime === 0) {
@@ -132,10 +134,23 @@ export class CometContext {
 
     // Set gas fee to 0 in case admin is a contract address (e.g. Timelock)
     await this.setNextBaseFeeToZero();
+    console.log('xxxxx zz y') // XXX
+    const xxx = await this.deploymentManager.contract('comet:implementation');
     if (data) {
-      await (await proxyAdmin.connect(adminSigner).upgradeAndCall(comet.address, newComet.address, data, { gasPrice: 0 })).wait();
+      // XXX I think we're setting the proxy impl to itself
+      //  and when we do "and call initializeStorage"
+      //   we are admin calling a fn which doesnt exist, which goes to fallback and fails?
+      //  and when we dont call
+      //   we are infinitely recurring on ourselves
+      // XXX if we *didnt* just force a redeploy, impl would already be spidered and the impl
+      //  but since we did, and not the proxy the aliases
+      //   not sure how this was supp to work at all
+      console.log('xxxx', comet.address, newComet.address, data)
+      console.log('xxxx', xxx.address, await proxyAdmin.getProxyImplementation(comet.address))
+      await (await proxyAdmin.connect(adminSigner).upgradeAndCall(comet.address, xxx.address, data, { gasPrice: 0 })).wait();
     } else {
-      await (await proxyAdmin.connect(adminSigner).upgrade(comet.address, newComet.address, { gasPrice: 0 })).wait();
+      console.log('xxxxx zz y 2')
+      await (await proxyAdmin.connect(adminSigner).upgrade(comet.address, xxx.address, { gasPrice: 0 })).wait();
     }
     this.actors['admin'] = await buildActor('admin', adminSigner, this);
     this.actors['pauseGuardian'] = await buildActor('pauseGuardian', pauseGuardianSigner, this);

@@ -15,10 +15,11 @@ export async function fetchAndCacheContract(
   network: string,
   address: Address,
   importRetries = DEFAULT_RETRIES,
-  importRetryDelay = DEFAULT_RETRY_DELAY
+  importRetryDelay = DEFAULT_RETRY_DELAY,
+  force = false
 ): Promise<BuildFile> {
   // TODO: Handle storing to a different deployment?
-  let buildFile = await fetchContract(cache, network, address, importRetries, importRetryDelay);
+  let buildFile = await fetchContract(cache, network, address, importRetries, importRetryDelay, force);
   await storeBuildFile(cache, address, buildFile);
   return buildFile;
 }
@@ -31,9 +32,10 @@ export async function readAndCacheContract(
   hre: HardhatRuntimeEnvironment,
   artifact: string,
   address: Address,
+  force = false
 ): Promise<BuildFile> {
   // TODO: Handle storing to a different deployment?
-  let buildFile = await readContract(cache, hre, artifact, address);
+  let buildFile = await readContract(cache, hre, artifact, address, force);
   await storeBuildFile(cache, address, buildFile);
   return buildFile;
 }
@@ -68,9 +70,10 @@ export async function fetchContract(
   network: string,
   address: Address,
   importRetries = DEFAULT_RETRIES,
-  importRetryDelay = DEFAULT_RETRY_DELAY
+  importRetryDelay = DEFAULT_RETRY_DELAY,
+  force = false
 ): Promise<BuildFile> {
-  let cachedBuildFile = await getBuildFile(cache, address);
+  let cachedBuildFile = !force && await getBuildFile(cache, address);
   if (cachedBuildFile) {
     return cachedBuildFile;
   } else {
@@ -84,8 +87,9 @@ export async function readContract(
   hre: HardhatRuntimeEnvironment,
   fullyQualifiedName: string,
   address: Address,
+  force = false
 ): Promise<BuildFile> {
-  let cachedBuildFile = await getBuildFile(cache, address);
+  let cachedBuildFile = !force && await getBuildFile(cache, address);
   if (cachedBuildFile) {
     return cachedBuildFile;
   } else {

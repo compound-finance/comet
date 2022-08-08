@@ -93,7 +93,7 @@ function getFileSpec(address: Address): FileSpec {
 }
 
 export async function getBuildFile(cache: Cache, address: Address): Promise<BuildFile> {
-  return await cache.readCache<BuildFile>(getFileSpec(address));
+  return cache.readCache<BuildFile>(getFileSpec(address));
 }
 
 export async function storeBuildFile(cache: Cache, address: Address, buildFile: BuildFile) {

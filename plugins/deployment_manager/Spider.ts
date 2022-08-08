@@ -122,6 +122,7 @@ async function crawl(
           }
 
           // Extend the contract ABI w/ the delegate
+          debug(`Merging ${address} <- ${implNode.address} (${alias} <- ${implAlias})`);
           contract = new hre.ethers.Contract(
             address,
             mergeABI(

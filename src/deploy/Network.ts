@@ -1,7 +1,7 @@
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import {
-  Comet,
+  CometInterface,
   CometExt,
   CometFactory,
   CometProxyAdmin,
@@ -132,6 +132,9 @@ export async function deployNetworkComet(
   // TODO: the success of these calls are also going to be dependent on who the admin is and if/when its been transferred
   const configurator = (configuratorImpl as Configurator).attach(configuratorProxy.address);
 
+  // Also get a handle for Comet, although it may not *actually* support the interface yet
+  const comet = await deploymentManager.cast(cometProxy.address, 'contracts/CometInterface.sol:CometInterface');
+
   await deploymentManager.idempotent(
     async () => !sameAddress(await configurator.factory(cometProxy.address), cometFactory.address),
     async () => {
@@ -159,20 +162,29 @@ export async function deployNetworkComet(
   await deploymentManager.idempotent(
     async () => sameAddress(await cometAdmin.getProxyImplementation(cometProxy.address), cometFactory.address),
     async () => {
-      debug(`Deploying implementation of Comet`);
-      await wait(cometAdmin.connect(admin).deployAndUpgradeTo(configurator.address, cometProxy.address));
+      debug(`Deploying first implementation of Comet and initializing`);
+      // XXX ok this works for changing factory -> first impl and initializing
+      //  but what if we just want to do a change of impl? i.e. there's a new factory but not first
+      // XXX do we have a way of *just* calling? unnecessary re-upgrade?
+      // console.log('xxxx last accrual', (await comet.totalsBasic()).lastAccrualTime)
+      //await wait(cometAdmin.connect(admin).deployAndUpgradeTo(configurator.address, comet.address));
+      // XXX probably initializeStorage, explains div by 0? yes...
+      //if ((await comet.totalsBasic()).lastAccrualTime === 0) {
+        const data = (await comet.populateTransaction.initializeStorage()).data;
+        await wait(cometAdmin.connect(admin).deployUpgradeToAndCall(configurator.address, comet.address, data));
+      //}
     }
-  );
+);
 
   // XXX better to check owner is admin? what if its some previous governor?
   //  anyway if we never transfer ownership
-  // await deploymentManager.idempotent(
-  //   async () => !sameAddress(await cometAdmin.owner(), governor),
-  //   async () => {
-  //     debug(`Transferring ownership of CometProxyAdmin to ${governor}`);
-  //     await wait(cometAdmin.connect(admin).transferOwnership(governor));
-  //   }
-  // );
+  await deploymentManager.idempotent(
+    async () => !sameAddress(await cometAdmin.owner(), governor),
+    async () => {
+      debug(`Transferring ownership of CometProxyAdmin to ${governor}`);
+      await wait(cometAdmin.connect(admin).transferOwnership(governor));
+    }
+  );
 
   const rewards = await deploymentManager.deploy(
     'rewards',
