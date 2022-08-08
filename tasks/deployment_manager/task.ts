@@ -48,18 +48,24 @@ async function runMigration<T>(
 
 task('deploy', 'Deploys market')
   .addFlag('simulate', 'only simulates the blockchain effects')
+  .addParam('deployment', 'The deployment to deploy')
   .setAction(
-    async ({ simulate }, env: HardhatRuntimeEnvironment) => {
+    async ({ simulate, deployment }, env: HardhatRuntimeEnvironment) => {
       let maybeForkEnv: HardhatRuntimeEnvironment = env;
       if (simulate) {
         maybeForkEnv = getForkEnv(env);
       }
       const network = env.network.name;
-      const dm = new DeploymentManager(network, maybeForkEnv, {
-        writeCacheToDisk: !simulate, // Don't write to disk when simulating
-        debug: true,
-        verificationStrategy: 'lazy',
-      });
+      const dm = new DeploymentManager(
+        network,
+        deployment,
+        maybeForkEnv,
+        {
+          writeCacheToDisk: !simulate, // Don't write to disk when simulating
+          debug: true,
+          verificationStrategy: 'lazy',
+        }
+      );
       await dm.spider();
       await dm.deployMissing(true); // XXX truly idempotent will change the arg here
     }
@@ -67,26 +73,33 @@ task('deploy', 'Deploys market')
 
 task('gen:migration', 'Generates a new migration')
   .addPositionalParam('name', 'name of the migration')
-  .setAction(async ({ name }, env: HardhatRuntimeEnvironment) => {
+  .addParam('deployment', 'The deployment to generate the migration for')
+  .setAction(async ({ name, deployment }, env: HardhatRuntimeEnvironment) => {
     let network = env.network.name;
-    let dm = new DeploymentManager(network, env, {
-      writeCacheToDisk: true,
-      debug: true,
-      verificationStrategy: 'lazy',
-    });
+    let dm = new DeploymentManager(
+      network,
+      deployment,
+      env,
+      {
+        writeCacheToDisk: true,
+        debug: true,
+        verificationStrategy: 'lazy',
+      }
+    );
     let file = await dm.generateMigration(name);
-    console.log(`Generated migration ${file}`);
+    console.log(`Generated migration ${network}/${deployment}/${file}`);
   });
 
 task('migrate', 'Runs migration')
   .addPositionalParam('migration', 'name of migration')
+  .addParam('deployment', 'The deployment to apply the migration to')
   .addFlag('prepare', 'runs preparation [defaults to true if enact not specified]')
   .addFlag('enact', 'enacts migration [implies prepare]')
   .addFlag('simulate', 'only simulates the blockchain effects')
   .addFlag('overwrite', 'overwrites artifact if exists, fails otherwise')
   .setAction(
     async (
-      { migration: migrationName, prepare, enact, simulate, overwrite },
+      { migration: migrationName, prepare, enact, simulate, overwrite, deployment },
       env: HardhatRuntimeEnvironment
     ) => {
       let maybeForkEnv: HardhatRuntimeEnvironment = env;
@@ -94,17 +107,22 @@ task('migrate', 'Runs migration')
         maybeForkEnv = getForkEnv(env);
       }
       let network = env.network.name;
-      let dm = new DeploymentManager(network, maybeForkEnv, {
-        writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-        debug: true,
-        verificationStrategy: 'lazy',
-      });
+      let dm = new DeploymentManager(
+        network,
+        deployment,
+        maybeForkEnv,
+        {
+          writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
+          debug: true,
+          verificationStrategy: 'lazy',
+        }
+      );
       await dm.spider();
 
-      let migrationPath = `${__dirname}/../../deployments/${network}/migrations/${migrationName}.ts`;
+      let migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
       let [migration] = await loadMigrations([migrationPath]);
       if (!migration) {
-        throw new Error(`Unknown migration for network ${network}: \`${migrationName}\`.`);
+        throw new Error(`Unknown migration for network ${network}/${deployment}: \`${migrationName}\`.`);
       }
       if (!prepare && !enact) {
         prepare = true;

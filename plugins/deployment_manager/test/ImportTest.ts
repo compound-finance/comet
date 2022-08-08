@@ -1,6 +1,4 @@
-import hre from 'hardhat';
 import nock from 'nock';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { expect } from 'chai';
 
 import { Cache } from '../Cache';
@@ -47,7 +45,7 @@ export const fiatTokenBuildFile: BuildFile = {
   version: 'v0.6.12+commit.27d51765',
 };
 
-export function mockImportSuccess(hre: HardhatRuntimeEnvironment, address: string) {
+export function mockImportSuccess(address: string) {
   process.env.SNOWTRACE_KEY = 'AVA_KEY';
   nock('https://api.snowtrace.io/')
     .get('/api')
@@ -68,7 +66,7 @@ describe('Import', () => {
   });
 
   it('imports from Etherscan', async () => {
-    mockImportSuccess(hre, '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e');
+    mockImportSuccess('0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e');
     let importResult = await importContract(
       'avalanche',
       '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e',
@@ -78,7 +76,7 @@ describe('Import', () => {
   });
 
   it('loads from cache', async () => {
-    let cache = new Cache('test');
+    let cache = new Cache('test-network', 'test-deployment');
     await storeBuildFile(cache, '0x0000000000000000000000000000000000000001', fiatTokenBuildFile);
     expect(
       await fetchContract(cache, 'avalanche', '0x0000000000000000000000000000000000000001', 0)
@@ -86,8 +84,8 @@ describe('Import', () => {
   });
 
   it('stores in cache', async () => {
-    mockImportSuccess(hre, '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e');
-    let cache = new Cache('test');
+    mockImportSuccess('0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e');
+    let cache = new Cache('test-network', 'test-deployment');
     expect(
       await fetchAndCacheContract(
         cache,

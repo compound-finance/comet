@@ -6,7 +6,7 @@ import { tempDir } from './TestHelpers';
 
 describe('Proxies', () => {
   it('gets and sets proxies', async () => {
-    let cache = new Cache('test', true, tempDir());
+    let cache = new Cache('test-network', 'test-deployment', true, tempDir());
 
     expect(objectFromMap(await getProxies(cache))).to.eql({});
     await storeProxies(cache, new Map([['poochie', '0x0000000000000000000000000000000000000000']]));

@@ -27,16 +27,13 @@ interface DeploymentManagerConfig {
   debug?: boolean;
 }
 
-function getNetwork(deployment: string): string {
-  return deployment; // TODO: Handle deployments that don't map correctly
-}
-
 async function getManagedSigner(signer): Promise<SignerWithAddress> {
   const managedSigner = new ExtendedNonceManager(signer) as unknown as providers.JsonRpcSigner;
   return SignerWithAddress.create(managedSigner);
 }
 
 export class DeploymentManager {
+  network: string;
   deployment: string;
   hre: HardhatRuntimeEnvironment;
   config: DeploymentManagerConfig;
@@ -45,15 +42,21 @@ export class DeploymentManager {
   _signers: SignerWithAddress[];
 
   constructor(
+    network: string,
     deployment: string,
     hre: HardhatRuntimeEnvironment,
     config: DeploymentManagerConfig = {}
   ) {
+    this.network = network;
     this.deployment = deployment;
     this.hre = hre;
     this.config = config;
 
-    this.cache = new Cache(deployment, config.writeCacheToDisk ?? false, config.baseDir);
+    this.cache = new Cache(
+      this.network,
+      this.deployment,
+      config.writeCacheToDisk ?? false, config.baseDir
+    );
 
     this.contractsCache = null;
     this._signers = [];
@@ -123,7 +126,7 @@ export class DeploymentManager {
   async import(address: string, network?: string): Promise<BuildFile> {
     return await fetchAndCacheContract(
       this.cache,
-      network ?? getNetwork(this.deployment),
+      network ?? this.network,
       address,
       this.importRetries(),
       this.importRetryDelay()
@@ -211,11 +214,15 @@ export class DeploymentManager {
 
   /* Loads contract configuration by tracing from roots outwards, based on relationConfig. */
   async spider() {
-    let relationConfigMap = getRelationConfig(this.hre.config.deploymentManager, this.deployment);
+    let relationConfigMap = getRelationConfig(
+      this.hre.config.deploymentManager,
+      this.network,
+      this.deployment
+    );
     let roots = await getRoots(this.cache);
     let { aliases, proxies } = await spider(
       this.cache,
-      getNetwork(this.deployment),
+      this.network,
       this.hre,
       relationConfigMap,
       roots
@@ -282,13 +289,13 @@ export class DeploymentManager {
     this.cache.writeCacheToDisk = writeCacheToDisk;
   }
 
-  /* Generates a new migration file, e.g. `deployments/test/migrations/1644385406_my_new_migration.ts`
+  /* Generates a new migration file, e.g. `deployments/<network>/<deployment>/migrations/1644385406_my_new_migration.ts`
    **/
   async generateMigration(name: string, timestamp?: number): Promise<string> {
     return await generateMigration(this.cache, name, timestamp);
   }
 
-  /* Stores artifact from a migration, e.g. `deployments/test/artifacts/1644385406_my_new_migration.json`
+  /* Stores artifact from a migration, e.g. `deployments/<network>/<deployment>/artifacts/1644385406_my_new_migration.json`
    **/
   async storeArtifact<A>(migration: Migration<A>, artifact: A): Promise<string> {
     let artifactSpec = getArtifactSpec(migration);
@@ -296,7 +303,7 @@ export class DeploymentManager {
     return this.cache.getFilePath(artifactSpec);
   }
 
-  /* Reads artifact from a migration, e.g. `deployments/test/artifacts/1644385406_my_new_migration.json`
+  /* Reads artifact from a migration, e.g. `deployments/<network>/<deployment>/artifacts/1644385406_my_new_migration.json`
    **/
   async readArtifact<A>(migration: Migration<A>): Promise<A> {
     return await this.cache.readCache(getArtifactSpec(migration));
@@ -320,6 +327,10 @@ export class DeploymentManager {
       debug(`Retrying with retries left: ${retries}, wait: ${wait}`);
       debug('Error is: ', e);
       if (retries === 0) throw e;
+      // XXX to be extra safe, we can also get the signer transaction count and figure out the next nonce
+      // We reset signers here to force a new signer to be instantiated using a new provider. This helps
+      // when retrying hanging txns.
+      this._signers = [];
       await new Promise(ok => setTimeout(ok, wait));
       return await this.asyncCallWithRetry(fn, retries, timeLimit, wait * 2);
     }
@@ -346,12 +357,8 @@ export class DeploymentManager {
     return await this.deployBuild(buildFile, args, retries) as C;
   }
 
-  network(): string {
-    return getNetwork(this.deployment);
-  }
-
   fork(): DeploymentManager {
-    let copy = new DeploymentManager(this.deployment, this.hre, this.config);
+    let copy = new DeploymentManager(this.network, this.deployment, this.hre, this.config);
     copy.cache.loadMemory(this.cache.cache);
     return copy;
   }

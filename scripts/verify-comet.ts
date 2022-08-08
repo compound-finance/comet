@@ -34,13 +34,23 @@ async function verifyContract(address: string, constructorArguments) {
  * fail.
  */
 async function main() {
+  let { DEPLOYMENT: deployment } = process.env;
+  if (!deployment) {
+    throw new Error('missing required env variable: DEPLOYMENT');
+  }
   await hre.run('compile');
-  let isDevelopment = hre.network.name === 'hardhat';
-  let dm = new DeploymentManager(hre.network.name, hre, {
-    writeCacheToDisk: true,
-    verificationStrategy: isDevelopment ? 'eager' : 'none',
-    debug: true,
-  });
+  let network = hre.network.name;
+  let isDevelopment = network === 'hardhat';
+  let dm = new DeploymentManager(
+    network,
+    deployment,
+    hre,
+    {
+      writeCacheToDisk: true,
+      verificationStrategy: isDevelopment ? 'eager' : 'none',
+      debug: true,
+    }
+  );
 
   const comet = await dm.contract('comet') as CometInterface;
   const configurator = await dm.contract('configurator') as Configurator;

@@ -44,11 +44,16 @@ task('scenario:spider', 'Runs spider in preparation for scenarios')
     let bases: ForkSpec[] = getBasesFromTaskArgs(taskArgs.bases, env);
 
     await Promise.all(bases.map(async (base) => {
-      if (base.name !== 'development') {
+      if (base.network !== 'hardhat') {
         let hre = hreForBase(base);
-        let dm = new DeploymentManager(base.name, hre, {
-          writeCacheToDisk: true,
-        });
+        let dm = new DeploymentManager(
+          base.name,
+          base.deployment,
+          hre,
+          {
+            writeCacheToDisk: true,
+          }
+        );
         await dm.spider();
       }
     }));

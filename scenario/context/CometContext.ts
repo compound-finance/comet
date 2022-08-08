@@ -331,7 +331,8 @@ export class CometContext {
         adminSigner
       ) as IGovernorBravo;
 
-      const proposeTxn = await (await governorAsAdmin.propose(targets, values, signatures, calldatas, 'FastExecuteProposal')).wait();
+      await this.setNextBaseFeeToZero();
+      const proposeTxn = await (await governorAsAdmin.propose(targets, values, signatures, calldatas, 'FastExecuteProposal', { gasPrice: 0 })).wait();
       const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
       const [proposalId, , , , , , startBlock, endBlock] = proposeEvent.args;
 

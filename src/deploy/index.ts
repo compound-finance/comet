@@ -32,6 +32,7 @@ export interface ProtocolConfiguration {
   baseBorrowMin?: BigNumberish;
   targetReserves?: BigNumberish;
   assetConfigs?: AssetConfigStruct[];
+  rewardTokenAddress?: string;
 }
 
 // Specific contracts take precedence over `all`, which allows for expressions

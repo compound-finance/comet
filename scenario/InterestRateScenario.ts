@@ -183,7 +183,7 @@ scenario.skip(
 
     // Note: this is dependent on the `deployments/fuji/configuration.json` variables
     // TODO: Consider if there's a better way to test the live curve.
-    if (context.world.base.name === 'fuji') {
+    if (context.world.base.network === 'fuji') {
       // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
       // utilization = 50%
       // ( 1% + 2% * 50% ) * 50% * (100% - 10%)

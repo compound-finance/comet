@@ -8,6 +8,9 @@ on:
         options:
           - fuji
           - kovan
+      deployment:
+        description: Deployment Name (e.g. "usdc")
+        required: true
       migration:
         description: Migration Name
         required: true
@@ -18,7 +21,7 @@ on:
         description: Run ID for Artifact
         required: true
       eth_pk:
-        description: Ethereum Private Key
+        description: Ignore if you plan to use WalletConnect, otherwise, you can paste in a Ethereum private key
 jobs:
   enact_migration:
     name: Enact Migration
@@ -28,6 +31,13 @@ jobs:
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
     steps:
+      - name: Seacrest
+        uses: hayesgm/seacrest@v1
+        with:
+          ethereum_url: "${{ fromJSON('{\"fuji\": \"https://api.avax-test.network/ext/bc/C/rpc\", \"kovan\": \"https://kovan-eth.compound.finance\"}')[inputs.network] }}"
+          port: 8585
+        if: github.event.inputs.eth_pk == ''
+
       - name: Checkout repository
         uses: actions/checkout@v2
 
@@ -48,10 +58,16 @@ jobs:
         with:
           workflow: prepare-migration.yml
           run_id: ${{ github.event.inputs.run_id }}
-          name: ${{ github.event.inputs.network }}-${{ github.event.inputs.migration }}
-          path: deployments/${{ github.event.inputs.network }}/artifacts/
+          name: ${{ github.event.inputs.network }}-${{ github.event.inputs.deployment }}-${{ github.event.inputs.migration }}
+          path: deployments/${{ github.event.inputs.network }}/${{ github.event.inputs.deployment }}/artifacts/
 
       - name: Run Enact Migration
-        run: yarn hardhat migrate --network ${{ github.event.inputs.network }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ github.event.inputs.migration }}
-        env:
-          ETH_PK: ${{ github.event.inputs.eth_pk }}
+        run: |
+          if [ -n "${{ inputs.eth_pk }}" ]; then
+            export ETH_PK="${{ inputs.eth_pk }}"
+          else
+            export NETWORK_PROVIDER="http://localhost:8585"
+            export REMOTE_ACCOUNTS="true"
+          fi
+
+          yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ github.event.inputs.migration }}

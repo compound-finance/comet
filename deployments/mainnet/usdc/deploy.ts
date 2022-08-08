@@ -1,8 +1,8 @@
-import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-import { deployNetworkComet } from '../../src/deploy/Network';
+import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
+import { deployNetworkComet } from '../../../src/deploy/Network';
 import { Contract } from 'ethers';
-import { debug } from '../../plugins/deployment_manager/Utils';
-import { Bulker, Bulker__factory } from '../../build/types';
+import { debug } from '../../../plugins/deployment_manager/Utils';
+import { Bulker, Bulker__factory } from '../../../build/types';
 
 interface Vars {
   comet: string,

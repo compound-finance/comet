@@ -1,11 +1,11 @@
-import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
+import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
 import {
   FaucetToken,
   FaucetToken__factory,
   SimplePriceFeed,
   SimplePriceFeed__factory,
-} from '../../build/types';
-import { deployComet } from '../../src/deploy';
+} from '../../../build/types';
+import { deployComet } from '../../../src/deploy';
 
 // XXX clean this all up further, but minimize changes for now on first pass refactor
 

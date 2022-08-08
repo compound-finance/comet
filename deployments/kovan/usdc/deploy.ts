@@ -1,6 +1,6 @@
-import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-import { deployComet } from '../../src/deploy';
-import { exp, wait } from '../../test/helpers';
+import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
+import { deployComet } from '../../../src/deploy';
+import { exp, wait } from '../../../test/helpers';
 import {
   Bulker,
   Bulker__factory,
@@ -8,9 +8,9 @@ import {
   Fauceteer__factory,
   ProxyAdmin,
   ProxyAdmin__factory,
-} from '../../build/types';
+} from '../../../build/types';
 import { Contract } from 'ethers';
-import { debug } from '../../plugins/deployment_manager/Utils';
+import { debug } from '../../../plugins/deployment_manager/Utils';
 
 let cloneNetwork = 'mainnet';
 let cloneAddr = {

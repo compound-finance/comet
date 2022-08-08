@@ -97,15 +97,14 @@ describe('DeploymentManager', () => {
 
   describe('import', () => {
     it('should import succesfully', async () => {
-      mockImportSuccess(hre, '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e');
-      let deploymentManager = new DeploymentManager('test', hre, {
+      mockImportSuccess('0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e');
+      let deploymentManager = new DeploymentManager('avalanche', 'frax', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
         baseDir: tempDir(),
       });
       let importResult = await deploymentManager.import(
         '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e',
-        'avalanche'
       );
       expect(importResult).to.eql(fiatTokenBuildFile);
     });
@@ -113,7 +112,7 @@ describe('DeploymentManager', () => {
 
   describe('deploy', () => {
     it('should deploy succesfully', async () => {
-      let deploymentManager = new DeploymentManager('test', hre, {
+      let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
         baseDir: tempDir(),
@@ -129,7 +128,7 @@ describe('DeploymentManager', () => {
 
   describe('deployBuild', () => {
     it('should deployBuild succesfully', async () => {
-      let deploymentManager = new DeploymentManager('test', hre, {
+      let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
         baseDir: tempDir(),
@@ -141,7 +140,7 @@ describe('DeploymentManager', () => {
 
   describe('verifyContracts', () => {
     it('should verify contracts succesfully', async () => {
-      let deploymentManager = new DeploymentManager('test', hre, {
+      let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
         baseDir: tempDir(),
@@ -170,7 +169,7 @@ describe('DeploymentManager', () => {
 
   describe('putAlias', () => {
     it('should putAlias succesfully', async () => {
-      let deploymentManager = new DeploymentManager('test', hre, {
+      let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
         baseDir: tempDir(),
@@ -181,7 +180,7 @@ describe('DeploymentManager', () => {
     });
 
     it('should invalidate contract cache', async () => {
-      let deploymentManager = new DeploymentManager('test', hre, {
+      let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
         baseDir: tempDir(),
@@ -203,7 +202,7 @@ describe('DeploymentManager', () => {
 
   describe('putProxy', () => {
     it('should putProxy succesfully', async () => {
-      let deploymentManager = new DeploymentManager('test', hre, {
+      let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
         baseDir: tempDir(),
@@ -218,7 +217,7 @@ describe('DeploymentManager', () => {
 
   describe('putRoots', () => {
     it('should putRoots succesfully', async () => {
-      let deploymentManager = new DeploymentManager('test', hre, {
+      let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
         baseDir: tempDir(),
@@ -233,31 +232,37 @@ describe('DeploymentManager', () => {
 
   describe('spider', () => {
     it('should spider succesfully', async () => {
-      let deploymentManager = new DeploymentManager('test', hre, {
-        importRetries: 0,
-        writeCacheToDisk: true,
-        baseDir: tempDir(),
-      });
+      let deploymentManager = new DeploymentManager(
+        'test-network',
+        'test-deployment',
+        hre, {
+          importRetries: 0,
+          writeCacheToDisk: true,
+          baseDir: tempDir(),
+        }
+      );
 
       let { finnImpl } = await setupContracts(
         deploymentManager
       );
 
       hre.config.deploymentManager.networks = {
-        test: {
-          finn: {
-            proxy: {
-              field: {
-                slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc',
+        'test-network': {
+          'test-deployment': {
+            finn: {
+              proxy: {
+                field: {
+                  slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc',
+                },
               },
-            },
-            relations: {
-              father: {
-                alias: '.name',
-              },
-              pups: {
-                field: async (dog) => (await dog.callStatic.puppers()).map(({ pup }) => pup),
-                alias: ['.name'],
+              relations: {
+                father: {
+                  alias: '.name',
+                },
+                pups: {
+                  field: async (dog) => (await dog.callStatic.puppers()).map(({ pup }) => pup),
+                  alias: ['.name'],
+                },
               },
             },
           },
@@ -283,7 +288,7 @@ describe('DeploymentManager', () => {
 
   describe('contracts', () => {
     it('should get contracts succesfully', async () => {
-      let deploymentManager = new DeploymentManager('test', hre, {
+      let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
         baseDir: tempDir(),
@@ -304,7 +309,7 @@ describe('DeploymentManager', () => {
 
   describe('contract', () => {
     it('should get contract succesfully', async () => {
-      let deploymentManager = new DeploymentManager('test', hre, {
+      let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
         baseDir: tempDir(),
@@ -323,7 +328,7 @@ describe('DeploymentManager', () => {
 
   describe('generateMigration', () => {
     it('should generate expected migration', async () => {
-      let deploymentManager = new DeploymentManager('test', hre, {
+      let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
         baseDir: tempDir(),
@@ -340,7 +345,7 @@ describe('DeploymentManager', () => {
   describe('storeArtifact & readArtifact', () => {
     it('should store and retrieve a given artifact', async () => {
       let baseDir = tempDir();
-      let deploymentManager = new DeploymentManager('test', hre, {
+      let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
         baseDir,
@@ -357,7 +362,7 @@ describe('DeploymentManager', () => {
       expect(await deploymentManager.readArtifact(migration)).to.eql(undefined);
 
       expect(await deploymentManager.storeArtifact(migration, { dog: 'cool' })).to.eql(
-        `${baseDir}/test/artifacts/1_cool.json`
+        `${baseDir}/test-network/test-deployment/artifacts/1_cool.json`
       );
 
       expect(await deploymentManager.readArtifact(migration)).to.eql({ dog: 'cool' });

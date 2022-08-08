@@ -8,13 +8,24 @@ import { deployComet } from '../src/deploy';
 import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
 
 async function main() {
+  let { DEPLOYMENT: deployment } = process.env;
+  if (!deployment) {
+    throw new Error('missing required env variable: DEPLOYMENT');
+  }
+
   await hre.run('compile');
-  let isDevelopment = hre.network.name === 'hardhat';
-  let dm = new DeploymentManager(hre.network.name, hre, {
-    writeCacheToDisk: true,
-    verificationStrategy: isDevelopment ? 'lazy' : 'none',
-    debug: true,
-  });
+  let network = hre.network.name;
+  let isDevelopment = network === 'hardhat';
+  let dm = new DeploymentManager(
+    network,
+    deployment,
+    hre,
+    {
+      writeCacheToDisk: true,
+      verificationStrategy: isDevelopment ? 'lazy' : 'none',
+      debug: true,
+    }
+  );
   await deployComet(dm);
   await dm.spider();
 }
