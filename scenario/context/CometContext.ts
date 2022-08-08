@@ -335,7 +335,7 @@ export class CometContext {
       const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
       const [proposalId, , , , , , startBlock, endBlock] = proposeEvent.args;
 
-      this.executePendingProposal(proposalId, startBlock, endBlock);
+      await this.executePendingProposal(proposalId, startBlock, endBlock);
     }
   }
 }
