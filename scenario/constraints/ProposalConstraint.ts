@@ -59,7 +59,6 @@ export class ProposalConstraint<T extends CometContext, R extends Requirements> 
     }
 
     const governor = await context.getGovernor();
-    // Fund voters account with eth for sending transactions
     // COMP biggest whales
     const voters = [
       '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',

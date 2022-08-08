@@ -248,7 +248,7 @@ export class CometContext {
     await this.world.hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
   }
 
-  async executePendingProposal(proposalId, startBlock, endBlock, voters) {
+  async executePendingProposal(proposalId: number, startBlock: number, endBlock: number, voters: string[]) {
     const governor = await this.getGovernor();
 
     const blockNow = await this.world.hre.ethers.provider.getBlockNumber();
@@ -325,7 +325,7 @@ export class CometContext {
       const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
       const [proposalId, , , , , , startBlock, endBlock] = proposeEvent.args;
 
-      this.executePendingProposal(proposalId, startBlock, endBlock, voters)
+      this.executePendingProposal(proposalId, startBlock, endBlock, voters);
     }
   }
 }
