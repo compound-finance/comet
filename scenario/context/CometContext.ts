@@ -94,16 +94,12 @@ export class CometContext {
     const deploySpec = { cometMain: true, cometExt: true };
     await deployComet(this.deploymentManager, deploySpec, configOverrides, admin);
 
+    await this.deploymentManager.spider();
     await this.setAssets();
-    await this.spider();
 
     debug('Upgraded comet...');
 
     return this;
-  }
-
-  async spider() {
-    await this.deploymentManager.spider();
   }
 
   async allocateActor(name: string, info: object = {}): Promise<CometActor> {

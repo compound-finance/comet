@@ -220,7 +220,7 @@ describe('RelationConfig', () => {
     it('returns alias template', async () => {
       const alias = async () => 'bob';
       expect(aliasTemplateKey('bob')).to.eql('bob');
-      expect(aliasTemplateKey(async function alice() { return 'bob' })).to.eql('alice');
+      expect(aliasTemplateKey(async function alice() { return 'bob'; })).to.eql('alice');
       expect(aliasTemplateKey(async () => 'bob')).to.eql(undefined);
       expect(aliasTemplateKey(alias)).to.eql(undefined);
     });

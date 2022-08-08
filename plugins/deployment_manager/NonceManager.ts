@@ -5,6 +5,10 @@ import { providers } from 'ethers';
 
 // NonceManager does not implement `_signTypedData`, which is needed for the EIP-712 functions
 export class ExtendedNonceManager extends NonceManager implements TypedDataSigner {
+  async _reset() {
+    return this.setTransactionCount(await this.getTransactionCount());
+  }
+
   async _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string> {
     const provider = this.provider as providers.JsonRpcProvider;
 

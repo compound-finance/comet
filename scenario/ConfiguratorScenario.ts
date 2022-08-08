@@ -61,10 +61,9 @@ scenario.skip( // XXX try again
   {},
   async ({ comet, configurator, proxyAdmin, actors }) => {
     const { albert } = actors;
-
-    await expect(configurator.connect(albert.signer).setGovernor(comet.address, albert.address)).to.be.revertedWith(
-      'Unauthorized'
-    );
+    await expect(
+      configurator.connect(albert.signer).setGovernor(comet.address, albert.address)
+    ).to.be.revertedWith('Unauthorized');
   });
 
 scenario.skip('reverts if proxy is not upgraded by ProxyAdmin', {}, async ({ comet, proxyAdmin, actors }) => {

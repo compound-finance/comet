@@ -241,7 +241,7 @@ describe('DeploymentManager', () => {
         }
       );
 
-      let { finnImpl } = await setupContracts(
+      let { finnImpl: _finnImpl } = await setupContracts(
         deploymentManager
       );
 

@@ -27,8 +27,8 @@ interface DeploymentManagerConfig {
 }
 
 interface DeploymentDelta {
-  old: { count: number, roots: Roots, spider: Spider },
-  new: { count: number, roots: Roots, spider: Spider },
+  old: { count: number, roots: Roots, spider: Spider };
+  new: { count: number, roots: Roots, spider: Spider };
 }
 
 async function getManagedSigner(signer): Promise<SignerWithAddress> {
@@ -97,7 +97,7 @@ export class DeploymentManager {
 
   async resetSignersPendingCounts() {
     // nonce manager never clears the _deltaCount, so we add a helper to force it
-    this._signers.forEach(s => s['_signer']._deltaCount = 0);
+    await Promise.all(this._signers.map(s => s['_signer']._reset()));
   }
 
   private async deployOpts(): Promise<DeployOpts> {

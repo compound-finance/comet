@@ -75,5 +75,5 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     assetConfigs: [assetConfig0, assetConfig1],
   });
 
-  return ['comet', 'configurator', 'rewards'];
+  return ['comet', 'configurator', 'rewards']; // XXX
 }

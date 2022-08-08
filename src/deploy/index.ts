@@ -2,7 +2,7 @@ import { AssetConfigStruct } from '../../build/types/Comet';
 import { BigNumberish } from 'ethers';
 
 export { deployNetworkComet as deployComet, sameAddress } from './Network';
-export { wait } from '../../test/helpers';
+export { exp, wait } from '../../test/helpers';
 export { debug } from '../../plugins/deployment_manager/Utils';
 
 export interface ProtocolConfiguration {

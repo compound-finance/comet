@@ -1,6 +1,6 @@
 import { RelationConfigMap } from '../plugins/deployment_manager/RelationConfig';
 
-let relationConfigMap: RelationConfigMap = {
+const relationConfigMap: RelationConfigMap = {
   comet: {
     delegates: {
       field: {
@@ -76,13 +76,6 @@ let relationConfigMap: RelationConfigMap = {
       }
     }
   },
-  configuratorAdmin: {
-    relations: {
-      timelock: {
-        field: (configuratorAdmin) => configuratorAdmin.owner()
-      }
-    }
-  },
   timelock: {
     relations: {
       governor: {
@@ -91,6 +84,7 @@ let relationConfigMap: RelationConfigMap = {
     }
   },
   FiatTokenProxy: {
+    artifact: 'contracts/ERC20.sol:ERC20',
     delegates: {
       field: {
         slot: '0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3',

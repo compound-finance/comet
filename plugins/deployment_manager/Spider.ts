@@ -4,7 +4,6 @@ import { HardhatRuntimeEnvironment as HRE } from 'hardhat/types';
 import { Cache } from './Cache';
 import {
   Ctx,
-  AliasTemplate,
   AliasRender,
   RelationConfigMap,
   RelationConfig,
@@ -20,7 +19,7 @@ import { Proxies } from './Proxies';
 import { ContractMap } from './ContractMap';
 import { Roots } from './Roots';
 import { asArray, debug, getEthersContract, mergeABI } from './Utils';
-import { fetchAndCacheContract, readAndCacheContract } from './Import';
+import { fetchAndCacheContract, readAndCacheContract, readContract } from './Import';
 
 export interface Spider {
   aliases: Aliases;
@@ -43,7 +42,7 @@ function maybeStore(alias: Alias, address: Address, into: Aliases | Proxies): bo
     if (maybeExists === address) {
       return false;
     } else {
-      throw new Error(`Had ${alias} -> ${maybeExists}, not ${address}`)
+      throw new Error(`Had ${alias} -> ${maybeExists}, not ${address}`);
     }
   } else {
     into.set(alias, address);
@@ -70,7 +69,9 @@ async function isContract(hre: HRE, address: string) {
 }
 
 async function localBuild(cache: Cache, hre: HRE, artifact: string, address: Address): Promise<Build> {
-  const buildFile = await readAndCacheContract(cache, hre, artifact, address);
+  const buildFile = cache ?
+    await readAndCacheContract(cache, hre, artifact, address) :
+    await readContract(null, hre, artifact, address, true);
   const contract = getEthersContract(address, buildFile, hre);
   return { buildFile, contract };
 }
@@ -94,11 +95,11 @@ async function crawl(
 ): Promise<Alias> {
   const { aliasRender, address } = node;
   const { template: aliasTemplate } = aliasRender;
-  debug(`Crawling ${address}...`, aliasRender);
+  //debug(`Crawling ${address}`, aliasRender);
 
   async function maybeProcess(alias: Alias, build: Build, config: RelationConfig): Promise<Alias> {
     if (maybeStore(alias, address, aliases)) {
-      debug(`Processing ${address}...`, alias);
+      //debug(`Processing ${address}: ${alias} using ${build.buildFile.contract} ...`);
       let contract = build.contract;
 
       if (config.delegates) {
@@ -122,7 +123,7 @@ async function crawl(
           }
 
           // Extend the contract ABI w/ the delegate
-          debug(`Merging ${address} <- ${implNode.address} (${alias} <- ${implAlias})`);
+          //debug(`Merging ${address} <- ${implNode.address} (${alias} <- ${implAlias})`);
           contract = new hre.ethers.Contract(
             address,
             mergeABI(
@@ -132,8 +133,11 @@ async function crawl(
             hre.ethers.provider
           );
 
-          // TOOD: is Proxies necessary? limiting us to one delegate here really
+          // TODO: is Proxies necessary? limiting us to one delegate here really
           maybeStore(alias, implNode.address, proxies);
+
+          // Add the alias in place to the relative context
+          (context[implAlias] = context[implAlias] || []).push(implContract);
         }
       }
 
@@ -157,42 +161,53 @@ async function crawl(
             );
 
             // Add the aliasTemplate in place to the relative context
-            const subContract = contracts.get(subAlias);
-            if (subContract) {
-              (context[subKey] = context[subKey] || []).push(subContract);
-            }
+            (context[subKey] = context[subKey] || []).push(contracts.get(subAlias));
           }
         }
       }
 
-      debug(`Crawled ${address}:`, alias);
+      debug(`Crawled ${address}: ${alias}`);
     } else {
-      debug(`Already processed ${address}...`, alias);
+      debug(`Visited ${address}: ${alias} already, skipping`);
     }
     return alias;
   }
 
   const aliasConfig = relations[aliasTemplateKey(aliasTemplate)];
   if (aliasConfig) {
+    //debug('... has alias config');
     if (!await isContract(hre, address)) {
       throw new Error(`Found config for '${aliasTemplate}' but no contract at ${address}`);
     }
     if (aliasConfig.artifact) {
+      //debug('... has artifact specified');
       const build = await localBuild(cache, hre, aliasConfig.artifact, address);
       const alias = await readAlias(build.contract, aliasRender, context);
       return maybeProcess(alias, build, aliasConfig);
     } else {
+      //debug('... no artifact specified');
       const build = await remoteBuild(cache, hre, network, address);
       const alias = await readAlias(build.contract, aliasRender, context);
       return maybeProcess(alias, build, aliasConfig);
     }
   } else {
+    //debug('... does not have alias config');
     if (await isContract(hre, address)) {
+      //debug('... is a contract');
       const build = await remoteBuild(cache, hre, network, address);
-      const alias = await readAlias(build.contract, aliasRender, context);
       const contractConfig = relations[build.buildFile.contract] || {};
-      return maybeProcess(alias, build, contractConfig);
+      if (contractConfig.artifact) {
+        //debug('... has artifact specified');
+        const build_ = await localBuild(null, hre, contractConfig.artifact, address);
+        const alias = await readAlias(build_.contract, aliasRender, context);
+        return maybeProcess(alias, build_, contractConfig);
+      } else {
+        //debug('... does not have artifact specified');
+        const alias = await readAlias(build.contract, aliasRender, context);
+        return maybeProcess(alias, build, contractConfig);
+      }
     } else {
+      //debug('... is not a contract');
       const alias = await readAlias(undefined, aliasRender, context);
       return maybeStore(alias, address, aliases), alias;
     }
@@ -206,10 +221,6 @@ export async function spider(
   relations: RelationConfigMap,
   roots: Roots,
 ): Promise<Spider> {
-  const discovered: DiscoverNode[] = [...roots.entries()].map(([alias, address]) => ({
-    aliasRender: { template: alias, i: 0 },
-    address,
-  }));
   const context = {};
   const aliases = new Map();
   const proxies = new Map();
@@ -227,6 +238,9 @@ export async function spider(
       proxies,
       contracts,
     );
+
+    // Add the aliasTemplate in place to the relative context
+    (context[alias] = context[alias] || []).push(contracts.get(alias));
   }
 
   return { aliases, proxies };

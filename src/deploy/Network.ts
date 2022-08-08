@@ -1,18 +1,5 @@
-import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-import {
-  CometInterface,
-  CometExt,
-  CometFactory,
-  CometProxyAdmin,
-  TransparentUpgradeableProxy,
-  ConfiguratorProxy,
-  Configurator,
-  CometRewards,
-} from '../../build/types';
-import { ConfigurationStruct } from '../../build/types/Comet';
-import { ExtConfigurationStruct } from '../../build/types/CometExt';
-
+import { Configurator } from '../../build/types';
 import { ContractsToDeploy, ProtocolConfiguration, debug, wait } from './index';
 import { getConfiguration } from './NetworkConfiguration';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
