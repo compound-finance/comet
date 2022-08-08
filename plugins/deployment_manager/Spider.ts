@@ -34,6 +34,7 @@ interface Build {
 interface DiscoverNode {
   address: Address;
   aliasRender: AliasRender;
+  path: Contract[];
 }
 
 function maybeStore(alias: Alias, address: Address, into: Aliases | Proxies): boolean {
@@ -51,6 +52,7 @@ function maybeStore(alias: Alias, address: Address, into: Aliases | Proxies): bo
 }
 
 async function discoverNodes(
+  path: Contract[],
   contract: Contract,
   context: Ctx,
   config: RelationInnerConfig,
@@ -61,6 +63,7 @@ async function discoverNodes(
   return addresses.map((address, i) => ({
     address,
     aliasRender: { template: templates[i % templates.length], i },
+    path: [contract].concat(path),
   }));
 }
 
@@ -93,7 +96,7 @@ async function crawl(
   proxies: Proxies,
   contracts: ContractMap,
 ): Promise<Alias> {
-  const { aliasRender, address } = node;
+  const { aliasRender, address, path } = node;
   const { template: aliasTemplate } = aliasRender;
   //debug(`Crawling ${address}`, aliasRender);
 
@@ -104,7 +107,7 @@ async function crawl(
 
       if (config.delegates) {
         const implAliasTemplate = `${alias}:implementation`;
-        const implNodes = await discoverNodes(contract, context, config.delegates, implAliasTemplate);
+        const implNodes = await discoverNodes(path, contract, context, config.delegates, implAliasTemplate);
         for (const implNode of implNodes) {
           const implAlias = await crawl(
             cache,
@@ -146,7 +149,7 @@ async function crawl(
 
       if (config.relations) {
         for (const [subKey, subConfig] of Object.entries(config.relations)) {
-          const subNodes = await discoverNodes(contract, context, subConfig, subKey);
+          const subNodes = await discoverNodes(path, contract, context, subConfig, subKey);
           for (const subNode of subNodes) {
             const subAlias = await crawl(
               cache,
@@ -173,42 +176,56 @@ async function crawl(
     return alias;
   }
 
-  const aliasConfig = relations[aliasTemplateKey(aliasTemplate)];
-  if (aliasConfig) {
-    //debug('... has alias config');
+  const aliasTemplateConfig = relations[aliasTemplateKey(aliasTemplate)];
+  if (aliasTemplateConfig) {
+    //debug(' ... has alias template config');
     if (!await isContract(hre, address)) {
       throw new Error(`Found config for '${aliasTemplate}' but no contract at ${address}`);
     }
-    if (aliasConfig.artifact) {
-      //debug('... has artifact specified');
-      const build = await localBuild(cache, hre, aliasConfig.artifact, address);
-      const alias = await readAlias(build.contract, aliasRender, context);
-      return maybeProcess(alias, build, aliasConfig);
+    if (aliasTemplateConfig.artifact) {
+      //debug('  ... has artifact specified (${aliasTemplateConfig.artifact})');
+      const build = await localBuild(cache, hre, aliasTemplateConfig.artifact, address);
+      const alias = await readAlias(build.contract, aliasRender, context, path);
+      return maybeProcess(alias, build, aliasTemplateConfig);
     } else {
-      //debug('... no artifact specified');
+      //debug('  ... no artifact specified');
       const build = await remoteBuild(cache, hre, network, address);
-      const alias = await readAlias(build.contract, aliasRender, context);
-      return maybeProcess(alias, build, aliasConfig);
+      const alias = await readAlias(build.contract, aliasRender, context, path);
+      return maybeProcess(alias, build, aliasTemplateConfig);
     }
   } else {
-    //debug('... does not have alias config');
+    //debug(' ... no alias template config');
     if (await isContract(hre, address)) {
-      //debug('... is a contract');
+      //debug('  ... is a contract');
       const build = await remoteBuild(cache, hre, network, address);
-      const contractConfig = relations[build.buildFile.contract] || {};
-      if (contractConfig.artifact) {
-        //debug('... has artifact specified');
-        const build_ = await localBuild(null, hre, contractConfig.artifact, address);
-        const alias = await readAlias(build_.contract, aliasRender, context);
-        return maybeProcess(alias, build_, contractConfig);
+      const contractConfig = relations[build.buildFile.contract];
+      if (contractConfig) {
+        //debug(`   ... has contract config (${build.buildFile.contract})`);
+        if (contractConfig.artifact) {
+          //debug(`    ... has artifact specified (${contractConfig.artifact})`);
+          const build_ = await localBuild(null, hre, contractConfig.artifact, address);
+          const alias = await readAlias(build_.contract, aliasRender, context, path);
+          return maybeProcess(alias, build_, contractConfig);
+        } else {
+          //debug('    ... no artifact specified');
+          const alias = await readAlias(build.contract, aliasRender, context, path);
+          return maybeProcess(alias, build, contractConfig);
+        }
       } else {
-        //debug('... does not have artifact specified');
-        const alias = await readAlias(build.contract, aliasRender, context);
-        return maybeProcess(alias, build, contractConfig);
+        //debug(`   ... no contract config (${build.buildFile.contract})`);
+        const alias = await readAlias(build.contract, aliasRender, context, path);
+        const aliasConfig = relations[alias];
+        if (aliasConfig) {
+          //debug(`    ... has alias config (${alias})`);
+          return maybeProcess(alias, build, aliasConfig);
+        } else {
+          //debug(`    ... no alias config (${alias})`);
+          return maybeProcess(alias, build, {});
+        }
       }
     } else {
-      //debug('... is not a contract');
-      const alias = await readAlias(undefined, aliasRender, context);
+      //debug('  ... is not a contract');
+      const alias = await readAlias(undefined, aliasRender, context, path);
       return maybeStore(alias, address, aliases), alias;
     }
   }
@@ -232,7 +249,7 @@ export async function spider(
       network,
       hre,
       relations,
-      { aliasRender: { template: alias, i: 0 }, address },
+      { aliasRender: { template: alias, i: 0 }, address, path: [] },
       context,
       aliases,
       proxies,

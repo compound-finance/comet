@@ -124,10 +124,10 @@ export class DeploymentManager {
   }
 
   /* Conditionally executes an action */
-  async idempotent(
+  async idempotent<T>(
     condition: () => Promise<any>,
-    action: () => Promise<any>,
-    retries?: number): Promise<any> {
+    action: () => Promise<T>,
+    retries?: number): Promise<T> {
     if (await condition()) {
       return this.retry(action, retries);
     }

@@ -65,7 +65,7 @@ const relationConfigMap: RelationConfigMap = {
         }
       },
       cometFactory: {
-        field: async (_, { baseToken }) => baseToken[0].address
+        field: async (configurator, { comet }) => configurator.factory(comet[0].address),
       }
     }
   },
@@ -83,8 +83,17 @@ const relationConfigMap: RelationConfigMap = {
       }
     }
   },
+
   FiatTokenProxy: {
     artifact: 'contracts/ERC20.sol:ERC20',
+    relations: {
+      proxyAdmin: {
+        field: {
+          slot: '0x10d6a54a4754c8869d6886b5f5d7fbfa5b4522237ea5c60d11bc4e7a1ff9390b',
+        },
+        alias: async (_admin, _ctx, _i, [token]) => `${await token.symbol()}:proxyAdmin`,
+      }
+    },
     delegates: {
       field: {
         slot: '0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3',

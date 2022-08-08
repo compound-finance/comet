@@ -4,7 +4,7 @@ import { Address, Alias } from './Types';
 
 export type Ctx = { [aliasTemplate: string]: Contract[] };
 
-export type AliasFunction = (contract: Contract, context: Ctx, i: number) => Promise<string>;
+export type AliasFunction = (contract: Contract, context: Ctx, i: number, path: Contract[]) => Promise<string>;
 export type AliasTemplate = string | AliasFunction;
 export type AliasRender = { template: AliasTemplate, i: number };
 
@@ -103,6 +103,7 @@ export async function readAlias(
   contract: Contract,
   aliasRender: AliasRender,
   context: Ctx,
+  path: Contract[],
 ): Promise<Alias> {
   const { template: aliasTemplate, i } = aliasRender;
   if (typeof aliasTemplate === 'string') {
@@ -112,7 +113,7 @@ export async function readAlias(
       return aliasTemplate;
     }
   } else if (typeof aliasTemplate === 'function') {
-    return await aliasTemplate(contract, context, i);
+    return await aliasTemplate(contract, context, i, path);
   } else {
     throw new Error(`Invalid alias template: ${JSON.stringify(aliasTemplate)}`);
   }
