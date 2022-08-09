@@ -59,6 +59,7 @@ interface NetworkAssetConfiguration {
 }
 
 interface NetworkConfiguration {
+  name: string;
   symbol: string;
   governor?: string;
   pauseGuardian?: string;
@@ -125,6 +126,7 @@ function getOverridesOrConfig(
     baseMinForRewards: _ => number(tracking.baseMinForRewards),
   });
   const mapping = () => ({
+    name: _ => config.name,
     symbol: _ => config.symbol,
     governor: _ => config.governor ? address(config.governor) : getContractAddress('timelock', contracts),
     pauseGuardian: _ => config.pauseGuardian ? address(config.pauseGuardian) : getContractAddress('timelock', contracts),

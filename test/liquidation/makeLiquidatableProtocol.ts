@@ -43,8 +43,9 @@ import linkAbi from './link-abi';
 export default async function makeLiquidatableProtocol() {
   // build Comet
   const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
+  const name32 = ethers.utils.formatBytes32String('Compound Comet');
   const symbol32 = ethers.utils.formatBytes32String('📈BASE');
-  const extensionDelegate = await CometExtFactory.deploy({ symbol32 });
+  const extensionDelegate = await CometExtFactory.deploy({ name32, symbol32 });
   await extensionDelegate.deployed();
 
   const CometFactory = (await ethers.getContractFactory('CometHarness')) as CometHarness__factory;

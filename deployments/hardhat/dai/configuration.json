@@ -1,5 +1,6 @@
 {
-  "symbol": "📈DAI",
+  "name": "Compound DAI",
+  "symbol": "cDAIv3",
   "baseToken": "DAI",
   "borrowMin": "1000e6",
   "storeFrontPriceFactor": 0.5,

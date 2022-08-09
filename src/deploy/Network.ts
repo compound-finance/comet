@@ -22,6 +22,7 @@ export async function deployNetworkComet(
   const ethers = deploymentManager.hre.ethers;
 
   const {
+    name,
     symbol,
     governor, // NB: generally 'timelock' alias, not 'governor'
     pauseGuardian,
@@ -55,7 +56,10 @@ export async function deployNetworkComet(
     maybeForce()
   );
 
-  const extConfiguration = { symbol32: ethers.utils.formatBytes32String(symbol) };
+  const extConfiguration = {
+    name32: ethers.utils.formatBytes32String(name),
+    symbol32: ethers.utils.formatBytes32String(symbol)
+  };
   const cometExt = await deploymentManager.deploy(
     'comet:implementation:implementation',
     'CometExt.sol',

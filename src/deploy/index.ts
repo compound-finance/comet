@@ -6,6 +6,7 @@ export { exp, getBlock, wait } from '../../test/helpers';
 export { debug } from '../../plugins/deployment_manager/Utils';
 
 export interface ProtocolConfiguration {
+  name?: string;
   symbol?: string;
   governor?: string;
   pauseGuardian?: string;
