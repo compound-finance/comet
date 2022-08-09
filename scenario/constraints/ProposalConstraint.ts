@@ -87,7 +87,7 @@ export class ProposalConstraint<T extends CometContext, R extends Requirements> 
       });
     }
 
-    return solutions;
+    return solutions.length > 0 ? solutions : null;
   }
 
   async check(requirements: R, context: T, world: World) {
