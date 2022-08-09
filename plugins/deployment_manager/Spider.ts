@@ -22,6 +22,7 @@ import { asArray, debug, getEthersContract, mergeABI } from './Utils';
 import { fetchAndCacheContract, readAndCacheContract, readContract } from './Import';
 
 export interface Spider {
+  roots: Roots,
   aliases: Aliases;
   proxies: Proxies;
 }
@@ -260,5 +261,5 @@ export async function spider(
     (context[alias] = context[alias] || []).push(contracts.get(alias));
   }
 
-  return { aliases, proxies };
+  return { roots, aliases, proxies };
 }

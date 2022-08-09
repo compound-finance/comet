@@ -146,7 +146,8 @@ export class Cache {
   }
 
   async readMap<V>(spec: FileSpec): Promise<Map<string, V>> {
-    return await this.readCache(spec, compose<string, object, Map<string, V>>(parseJson, objectToMap));
+    // make sure others have their own copy of the map so they don't modify the memory version
+    return new Map(await this.readCache(spec, compose<string, object, Map<string, V>>(parseJson, objectToMap)));
   }
 
   async storeMap<K, V>(spec: FileSpec, map: Map<K, V>) {

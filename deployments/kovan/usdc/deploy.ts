@@ -1,7 +1,6 @@
-import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
-import { debug, deployComet, exp, sameAddress, wait } from '../../../src/deploy';
+import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
 import { Bulker, Fauceteer, ProxyAdmin } from '../../../build/types';
-import { Contract } from 'ethers';
+import { DeploySpec, debug, deployComet, exp, getBlock, sameAddress, wait } from '../../../src/deploy';
 
 const cloneNetwork = 'mainnet';
 const cloneAddr = {
@@ -14,21 +13,18 @@ const cloneAddr = {
   link: '0x514910771af9ca656af840dff83e8264ecf986ca',
 };
 
-export default async function deploy(deploymentManager: DeploymentManager, deploySpec) {
-  const newRoots = await deployContracts(deploymentManager, deploySpec); // XXX fix api
-
-  // Wait 45 seconds so we have a buffer before minting UNI
-  debug("Waiting 45s before minting tokens...")
-  await new Promise(r => setTimeout(r, 45_000));
-
-  await mintToFauceteer(deploymentManager);
-
-  return newRoots;
+export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
+  const deployed = await deployContracts(deploymentManager, deploySpec);
+  await mintTokens(deploymentManager);
+  return deployed;
 }
 
-async function deployContracts(deploymentManager: DeploymentManager, deploySpec) {
+async function deployContracts(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const { ethers } = deploymentManager.hre;
   const signer = await deploymentManager.getSigner();
+
+  // Deploy fauceteer (XXX probably first in order to mint cloned gov COMP to it)
+  const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
 
   // XXX clone
   const governor = await deploymentManager.deploy('governor', 'test/GovernorSimple.sol', []);
@@ -44,15 +40,12 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec)
     }
   );
 
-  const blockNumber = await ethers.provider.getBlockNumber();
-  const blockTimestamp = (await ethers.provider.getBlock(blockNumber)).timestamp;
-
   // Deploy UNI first because it is the flakiest (has a dependency on block timestamp)
-  // XXX currently this retries with the same timestamp. we should update the timestamp on retries
-  const uni = await deploymentManager.clone(
+  // TODO: currently this retries with the same timestamp. we should update the timestamp on retries
+  const UNI = await deploymentManager.clone(
     'UNI',
     cloneAddr.uni,
-    [signer.address, signer.address, blockTimestamp + 60],
+    [signer.address, signer.address, (await getBlock(null, ethers)).timestamp + 60],
     cloneNetwork
   );
 
@@ -62,114 +55,127 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec)
     []
   );
 
-  const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
-
   const usdcImpl = await deploymentManager.clone('USDC:implementation', cloneAddr.usdcImpl, [], cloneNetwork);
   const usdcProxy = await deploymentManager.clone('USDC', cloneAddr.usdcProxy, [usdcImpl.address], cloneNetwork);
+  const usdcProxyAdminSlot = '0x10d6a54a4754c8869d6886b5f5d7fbfa5b4522237ea5c60d11bc4e7a1ff9390b';
+  const USDC = usdcImpl.attach(usdcProxy.address);
 
-  debug(`Changing admin of USDC proxy to ${usdcProxyAdmin.address}`);
-  await deploymentManager.retry(
-    () => wait(usdcProxy.connect(signer).changeAdmin(usdcProxyAdmin.address))
-  )
-  const usdc = usdcImpl.attach(usdcProxy.address);
-  // Give signer 10,000 USDC
-  debug(`Initializing USDC`);
-  await deploymentManager.retry(
-    () => wait(
-      usdc.connect(signer).initialize('USD Coin', 'USDC', 'USD', 6, signer.address, signer.address, signer.address, signer.address)
-    )
+  await deploymentManager.idempotent(
+    async () => !sameAddress(await ethers.provider.getStorageAt(usdcProxy.address, usdcProxyAdminSlot), usdcProxyAdmin.address),
+    async () => {
+      debug(`Changing admin of USDC proxy to ${usdcProxyAdmin.address}`);
+      await wait(usdcProxy.connect(signer).changeAdmin(usdcProxyAdmin.address));
+
+      debug(`Initializing USDC`);
+      await wait(USDC.connect(signer).initialize(
+        'USD Coin',     // name
+        'USDC',         // symbol
+        'USD',          // currency
+        6,              // decimals
+        signer.address, // Master Minter
+        signer.address, // Pauser
+        signer.address, // Blacklister
+        signer.address  // Owner
+      ));
+    }
   );
 
-  const wbtc = await deploymentManager.clone('WBTC', cloneAddr.wbtc, [], cloneNetwork);
-  const weth = await deploymentManager.clone('WETH', cloneAddr.weth, [], cloneNetwork);
-
-  // Give admin 0.01 WETH tokens [this is a precious resource here!]
-  debug(`Minting some WETH`);
-  await deploymentManager.retry(
-    () => wait(weth.connect(signer).deposit({ value: exp(0.01, 18) }))
-  );
-
-  const comp = await deploymentManager.clone('COMP', cloneAddr.comp, [signer.address], cloneNetwork);
-  const link = await deploymentManager.clone('LINK', cloneAddr.link, [], cloneNetwork);
+  const WBTC = await deploymentManager.clone('WBTC', cloneAddr.wbtc, [], cloneNetwork);
+  const WETH = await deploymentManager.clone('WETH', cloneAddr.weth, [], cloneNetwork);
+  const COMP = await deploymentManager.clone('COMP', cloneAddr.comp, [signer.address], cloneNetwork);
+  const LINK = await deploymentManager.clone('LINK', cloneAddr.link, [], cloneNetwork);
 
   // Deploy all Comet-related contracts
-  await deployComet(deploymentManager, deploySpec);
-
-  // XXX returned?
-  const contracts = await deploymentManager.contracts();
-  const comet = contracts.get('comet');
+  const deployed = await deployComet(deploymentManager, deploySpec);
+  const { comet } = deployed;
 
   // Deploy Bulker
   const bulker = await deploymentManager.deploy(
     'bulker',
     'Bulker.sol',
-    [timelock.address, comet.address, weth.address]
+    [timelock.address, comet.address, WETH.address]
   );
 
-  return ['comet', 'configurator', 'fauceteer', 'rewards', 'bulker'];
+  return { ...deployed, fauceteer, bulker };
 }
 
-async function mintToFauceteer(deploymentManager: DeploymentManager) {
+async function mintTokens(deploymentManager: DeploymentManager) {
   const signer = await deploymentManager.getSigner();
-
-  debug(`Minting as signer: ${signer.address}`);
-
   const contracts = await deploymentManager.contracts();
   const timelock = contracts.get('timelock');
   const fauceteer = contracts.get('fauceteer');
 
-  // USDC
-  const USDC = contracts.get('USDC');
-  const usdcDecimals = await USDC.decimals();
-  debug(`minting USDC@${USDC.address} to fauceteer@${fauceteer.address}`);
-  await deploymentManager.retry(
-    () => wait(USDC.connect(signer).configureMinter(signer.address, exp(100_000_000, usdcDecimals))) // mint 100M USDC
-  );
-  await deploymentManager.retry(
-    () => wait(USDC.connect(signer).mint(fauceteer.address, exp(100_000_000, usdcDecimals)))
-  );
-  debug(`USDC.balanceOf(fauceteer.address): ${await USDC.balanceOf(fauceteer.address)}`);
+  debug(`Attempting to mint as ${signer.address}...`);
 
-  // WBTC
+  const WETH = contracts.get('WETH');
+  await deploymentManager.idempotent(
+    async () => (await WETH.balanceOf(signer.address)).lt(exp(0.01, 18)),
+    async () => {
+      debug(`Minting 0.01 WETH for signer (this is a precious resource!)`);
+      await wait(WETH.connect(signer).deposit({ value: exp(0.01, 18) }));
+      debug(`WETH.balanceOf(${signer.address}): ${await WETH.balanceOf(signer.address)}`);
+    }
+  );
+
+  // If we haven't spidered new contracts (which we could before minting, but its slow),
+  //  then the proxy contract won't have the impl functions yet, so just do it explicitly
+  const usdcProxy = contracts.get('USDC'), usdcImpl = contracts.get('USDC:implementation');
+  const USDC = usdcImpl.attach(usdcProxy.address);
+  await deploymentManager.idempotent(
+    async () => sameAddress(await USDC.owner(), signer.address),
+    async () => {
+      debug(`Minting 100M USDC to fauceteer`);
+      const amount = exp(100_000_000, await USDC.decimals());
+      await wait(USDC.connect(signer).configureMinter(signer.address, amount));
+      await wait(USDC.connect(signer).mint(fauceteer.address, amount));
+      debug(`USDC.balanceOf(${fauceteer.address}): ${await USDC.balanceOf(fauceteer.address)}`);
+    }
+  );
+
   const WBTC = contracts.get('WBTC');
-  const wbtcDecimals = await WBTC.decimals();
-  debug(`minting WBTC@${WBTC.address} to fauceteer${fauceteer.address}`);
-  await deploymentManager.retry(
-    () => wait(WBTC.connect(signer).mint(fauceteer.address, exp(20, wbtcDecimals))) // mint 20 WBTC
+  await deploymentManager.idempotent(
+    async () => sameAddress(await WBTC.owner(), signer.address),
+    async () => {
+      debug(`Minting 20 WBTC to fauceteer`);
+      const amount = exp(20, await WBTC.decimals());
+      await wait(WBTC.connect(signer).mint(fauceteer.address, amount));
+      debug(`WBTC.balanceOf(${fauceteer.address}): ${await WBTC.balanceOf(fauceteer.address)}`);
+    }
   );
-  debug(`WBTC.balanceOf(fauceteer.address): ${await WBTC.balanceOf(fauceteer.address)}`);
 
-  // COMP
   const COMP = contracts.get('COMP');
-  const signerCompBalance = await COMP.balanceOf(signer.address);
-
-  debug(`transferring ${signerCompBalance.div(2)} COMP@${COMP.address} to fauceteer@${fauceteer.address}`);
-  await deploymentManager.retry(
-    () => wait(COMP.connect(signer).transfer(fauceteer.address, signerCompBalance.div(2))) // transfer half of signer's balance
+  await deploymentManager.idempotent(
+    async () => (await COMP.balanceOf(signer.address)).eq(await COMP.totalSupply()),
+    async () => {
+      debug(`Sending half of all COMP to fauceteer, half to timelock`);
+      const amount = (await COMP.balanceOf(signer.address)).div(2);
+      await wait(COMP.connect(signer).transfer(fauceteer.address, amount));
+      await wait(COMP.connect(signer).transfer(timelock.address, amount));
+      debug(`COMP.balanceOf(${fauceteer.address}): ${await COMP.balanceOf(fauceteer.address)}`);
+      debug(`COMP.balanceOf(${timelock.address}): ${await COMP.balanceOf(timelock.address)}`);
+    }
   );
-  debug(`COMP.balanceOf(fauceteer.address): ${await COMP.balanceOf(fauceteer.address)}`);
 
-  debug(`transferring ${signerCompBalance.div(2)} COMP@${COMP.address} to timelock@${timelock.address}`);
-  await deploymentManager.retry(
-    () => wait(COMP.connect(signer).transfer(timelock.address, signerCompBalance.div(2))) // transfer half of signer's balance
-  );
-  debug(`COMP.balanceOf(timelock.address): ${await COMP.balanceOf(timelock.address)}`);
-
-  // UNI
-  const UNI = contracts.get('UNI');
-  const uniTotalSupply = await UNI.totalSupply();
-  debug(`minting UNI@${UNI.address} to fauceteer@${fauceteer.address}`);
-  await deploymentManager.retry(
-    () => wait(UNI.connect(signer).mint(fauceteer.address, uniTotalSupply.div(1e2))) // mint 1% of total supply (UNI contract only allows minting 2% of total supply)
-  );
-  debug(`UNI.balanceOf(fauceteer.address): ${await UNI.balanceOf(fauceteer.address)}`);
-
-  // LINK
   const LINK = contracts.get('LINK');
-  const signerLinkBalance = await LINK.balanceOf(signer.address);
-  debug(`transferring ${signerLinkBalance.div(100)} LINK@${LINK.address} to fauceteer@${fauceteer.address}`);
-  await deploymentManager.retry(
-    () => wait(LINK.connect(signer).transfer(fauceteer.address, signerLinkBalance.div(100))) // transfer 1% of total supply
+  await deploymentManager.idempotent(
+    async () => (await LINK.balanceOf(signer.address)).eq(await LINK.totalSupply()),
+    async () => {
+      debug(`Sending half of all LINK to fauceteer`);
+      const amount = (await LINK.balanceOf(signer.address)).div(2);
+      await wait(LINK.connect(signer).transfer(fauceteer.address, amount));
+      debug(`LINK.balanceOf(${fauceteer.address}): ${await LINK.balanceOf(fauceteer.address)}`);
+    }
   );
-  debug(`LINK.balanceOf(fauceteer.address): ${await LINK.balanceOf(fauceteer.address)}`);
+
+  const UNI = contracts.get('UNI');
+  await deploymentManager.idempotent(
+    async () => sameAddress(await UNI.minter(), signer.address),
+    async () => {
+      debug(`Minting 1% of UNI to fauceteer (mintCap is 2%, first waiting 45s...)`);
+      const amount = (await UNI.totalSupply()).div(1e2);
+      await new Promise(r => setTimeout(r, 45_000));
+      await wait(UNI.connect(signer).mint(fauceteer.address, amount));
+      debug(`UNI.balanceOf(${fauceteer.address}): ${await UNI.balanceOf(fauceteer.address)}`);
+    }
+  );
 }

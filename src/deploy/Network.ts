@@ -1,19 +1,19 @@
-import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
+import { Deployed, DeploymentManager } from '../../plugins/deployment_manager';
 import { Configurator } from '../../build/types';
-import { ContractsToDeploy, ProtocolConfiguration, debug, wait } from './index';
+import { DeploySpec, ProtocolConfiguration, debug, wait } from './index';
 import { getConfiguration } from './NetworkConfiguration';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 export function sameAddress(a: string, b: string) {
-  return a.toLowerCase() === b.toLowerCase();
+  return BigInt(a) === BigInt(b);
 }
 
 export async function deployNetworkComet(
   deploymentManager: DeploymentManager,
-  deploySpec: ContractsToDeploy = { all: true },
+  deploySpec: DeploySpec = { all: true },
   configOverrides: ProtocolConfiguration = {},
   adminSigner?: SignerWithAddress,
-) {
+): Promise<Deployed> {
   function maybeForce(flag?: boolean): boolean {
     return deploySpec.all || flag;
   }
@@ -170,7 +170,7 @@ export async function deployNetworkComet(
         await wait(cometAdmin.connect(admin).deployAndUpgradeTo(configurator.address, comet.address));
       }
 
-      debug(`Factory deployed implementation at ${await cometAdmin.getProxyImplementation(comet.address)}`);
+      debug(`New implementation at ${await cometAdmin.getProxyImplementation(comet.address)}`);
     }
   );
 
@@ -192,10 +192,5 @@ export async function deployNetworkComet(
     }
   );
 
-  // XXX when to put roots? in some case wrapper is also putting...
-  await deploymentManager.putRoots(new Map([
-    ['comet', comet.address],
-    ['configurator', configurator.address],
-    ['rewards', rewards.address],
-  ])); // XXX
+  return { comet, configurator, rewards };
 }

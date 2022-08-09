@@ -27,14 +27,16 @@ interface DeploymentManagerConfig {
 }
 
 interface DeploymentDelta {
-  old: { count: number, roots: Roots, spider: Spider };
-  new: { count: number, roots: Roots, spider: Spider };
+  old: { count: number, spider: Spider };
+  new: { count: number, spider: Spider };
 }
 
 async function getManagedSigner(signer): Promise<SignerWithAddress> {
   const managedSigner = new ExtendedNonceManager(signer) as unknown as providers.JsonRpcSigner;
   return SignerWithAddress.create(managedSigner);
 }
+
+export type Deployed = { [alias: Alias]: Contract };
 
 export class DeploymentManager {
   network: string;
@@ -230,21 +232,18 @@ export class DeploymentManager {
   /* Deploys missing contracts from the deployment, using the user-space deploy.ts script */
   async runDeployScript(deploySpec: object): Promise<DeploymentDelta> {
     const oldCount = this.counter;
-    const oldRoots = await this.getRoots();
     const oldSpider = await this.spider();
     const deployScript = this.cache.getFilePath({ rel: 'deploy.ts' });
     const { default: deployFn } = await import(deployScript);
     if (!deployFn || !deployFn.call) {
       throw new Error(`Missing deploy function in ${deployScript}.`);
     }
-    const result = await deployFn(this, deploySpec);
-    const aliases = await this.getAliases();
+    const deployed = await deployFn(this, deploySpec);
     const newCount = this.counter;
-    const newRoots = await this.putRoots(new Map(result.map(a => [a, aliases.get(a)])));
-    const newSpider = await this.spider();
+    const newSpider = await this.spider(deployed);
     return {
-      old: { count: oldCount, roots: oldRoots, spider: oldSpider },
-      new: { count: newCount, roots: newRoots, spider: newSpider }
+      old: { count: oldCount, spider: oldSpider },
+      new: { count: newCount, spider: newSpider }
     };
   }
 
@@ -263,6 +262,31 @@ export class DeploymentManager {
     }
   }
 
+  /* Loads contract configuration by tracing from roots outwards, based on relationConfig. */
+  async spider(deployed: Deployed = {}): Promise<Spider> {
+    const relationConfigMap = getRelationConfig(
+      this.hre.config.deploymentManager,
+      this.network,
+      this.deployment
+    );
+    const roots = new Map([
+      ...await getRoots(this.cache),
+      ...Object.entries(deployed).map(([a, c]): [Alias, Address] => [a, c.address])
+    ]);
+    const crawl = await spider(
+      this.cache,
+      this.network,
+      this.hre,
+      relationConfigMap,
+      roots
+    );
+    await putRoots(this.cache, roots);
+    await storeAliases(this.cache, crawl.aliases);
+    await storeProxies(this.cache, crawl.proxies);
+    this.invalidateContractsCache(); // TODO should we just write new contracts from spider?
+    return crawl;
+  }
+
   /* Stores a new alias, which can then be referenced via `deploymentManager.contract()` */
   async putAlias(alias: Alias, address: Address) {
     await putAlias(this.cache, alias, address);
@@ -273,37 +297,6 @@ export class DeploymentManager {
   async putProxy(alias: Alias, address: Address) {
     await putProxy(this.cache, alias, address);
     this.invalidateContractsCache();
-  }
-
-  /* Stores new roots, which are the basis for spidering. */
-  async putRoots(roots: Roots): Promise<Roots> {
-    return putRoots(this.cache, roots);
-  }
-
-  /* Gets the existing roots. */
-  async getRoots(): Promise<Roots> {
-    return getRoots(this.cache);
-  }
-
-  /* Loads contract configuration by tracing from roots outwards, based on relationConfig. */
-  async spider(): Promise<Spider> {
-    const relationConfigMap = getRelationConfig(
-      this.hre.config.deploymentManager,
-      this.network,
-      this.deployment
-    );
-    const roots = await getRoots(this.cache);
-    const crawl = await spider(
-      this.cache,
-      this.network,
-      this.hre,
-      relationConfigMap,
-      roots
-    );
-    await storeAliases(this.cache, crawl.aliases);
-    await storeProxies(this.cache, crawl.proxies);
-    this.invalidateContractsCache(); // XXX should we just write contracts from spider?
-    return crawl;
   }
 
   async getProxies(): Promise<Proxies> {

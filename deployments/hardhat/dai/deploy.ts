@@ -1,6 +1,6 @@
-import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
+import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
 import { FaucetToken, SimplePriceFeed } from '../../../build/types';
-import { debug, deployComet, sameAddress, wait } from '../../../src/deploy';
+import { DeploySpec, debug, deployComet, sameAddress, wait } from '../../../src/deploy';
 
 async function makeToken(
   deploymentManager: DeploymentManager,
@@ -23,7 +23,7 @@ async function makePriceFeed(
 }
 
 // TODO: Support configurable assets as well?
-export default async function deploy(deploymentManager: DeploymentManager, deploySpec) {
+export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const ethers = deploymentManager.hre.ethers;
   const [admin, pauseGuardianSigner] = await deploymentManager.getSigners();
 
@@ -41,16 +41,16 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     }
   );
 
-  const dai = await makeToken(deploymentManager, 1000000, 'DAI', 18, 'DAI');
-  const gold = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
-  const silver = await makeToken(deploymentManager, 3000000, 'SILVER', 10, 'SILVER');
+  const DAI = await makeToken(deploymentManager, 1000000, 'DAI', 18, 'DAI');
+  const GOLD = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
+  const SILVER = await makeToken(deploymentManager, 3000000, 'SILVER', 10, 'SILVER');
 
   const daiPriceFeed = await makePriceFeed(deploymentManager, 'DAI:priceFeed', 1, 8);
   const goldPriceFeed = await makePriceFeed(deploymentManager, 'GOLD:priceFeed', 0.5, 8);
   const silverPriceFeed = await makePriceFeed(deploymentManager, 'SILVER:priceFeed', 0.05, 8);
 
   const assetConfig0 = {
-    asset: gold.address,
+    asset: GOLD.address,
     priceFeed: goldPriceFeed.address,
     decimals: (8).toString(),
     borrowCollateralFactor: (0.9e18).toString(),
@@ -60,7 +60,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   };
 
   const assetConfig1 = {
-    asset: silver.address,
+    asset: SILVER.address,
     priceFeed: silverPriceFeed.address,
     decimals: (10).toString(),
     borrowCollateralFactor: (0.4e18).toString(),
@@ -70,10 +70,8 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   };
 
   // Deploy all Comet-related contracts
-  await deployComet( deploymentManager, deploySpec, {
+  return deployComet(deploymentManager, deploySpec, {
     baseTokenPriceFeed: daiPriceFeed.address,
     assetConfigs: [assetConfig0, assetConfig1],
   });
-
-  return ['comet', 'configurator', 'rewards']; // XXX
 }

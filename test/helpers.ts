@@ -204,14 +204,14 @@ export const factorScale = factor(1);
 export const ONE = factorScale;
 export const ZERO = factor(0);
 
-export async function getBlock(n?: number): Promise<Block> {
-  const blockNumber = n === undefined ? await ethers.provider.getBlockNumber() : n;
-  return ethers.provider.getBlock(blockNumber);
+export async function getBlock(n?: number, ethers_ = ethers): Promise<Block> {
+  const blockNumber = n == undefined ? await ethers_.provider.getBlockNumber() : n;
+  return ethers_.provider.getBlock(blockNumber)
 }
 
-export async function fastForward(seconds: number): Promise<Block> {
+export async function fastForward(seconds: number, ethers_ = ethers): Promise<Block> {
   const block = await getBlock();
-  await ethers.provider.send('evm_setNextBlockTimestamp', [block.timestamp + seconds]);
+  await ethers_.provider.send('evm_setNextBlockTimestamp', [block.timestamp + seconds]);
   return block;
 }
 

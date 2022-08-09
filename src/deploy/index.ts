@@ -2,7 +2,7 @@ import { AssetConfigStruct } from '../../build/types/Comet';
 import { BigNumberish } from 'ethers';
 
 export { deployNetworkComet as deployComet, sameAddress } from './Network';
-export { exp, wait } from '../../test/helpers';
+export { exp, getBlock, wait } from '../../test/helpers';
 export { debug } from '../../plugins/deployment_manager/Utils';
 
 export interface ProtocolConfiguration {
@@ -31,7 +31,7 @@ export interface ProtocolConfiguration {
 
 // If `all` is specified, it takes precedence.
 // Other options are independent of one another.
-export interface ContractsToDeploy {
+export interface DeploySpec {
   all?: boolean;       // Re-deploy everything (including proxies and proxy admin)
   cometMain?: boolean; // Re-deploy the main interface (config impl + comet factory + comet impl)
   cometExt?: boolean;  // Re-deploy the ext interface (comet ext)

@@ -15,7 +15,6 @@ import { fiatTokenBuildFile, mockImportSuccess } from './ImportTest';
 import { Migration } from '../Migration';
 import { expectedTemplate } from './MigrationTemplateTest';
 import { getProxies } from '../Proxies';
-import { getRoots } from '../Roots';
 import { faucetTokenBuildFile, tokenArgs } from './DeployHelpers';
 import { tempDir } from './TestHelpers';
 import { VerifyArgs } from '../Verify';
@@ -73,8 +72,6 @@ export async function setupContracts(deploymentManager: DeploymentManager): Prom
 
   await finn.addPup(molly.address);
   await finn.addPup(spot.address);
-
-  deploymentManager.putRoots(new Map([['finn', finn.address]]));
 
   return {
     finn,
@@ -214,21 +211,6 @@ describe('DeploymentManager', () => {
     // TODO: Test cache invalidation?
   });
 
-  describe('putRoots', () => {
-    it('should putRoots succesfully', async () => {
-      let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
-        importRetries: 0,
-        writeCacheToDisk: true,
-        baseDir: tempDir(),
-      });
-      await deploymentManager.putRoots(
-        new Map([['finn', '0x0000000000000000000000000000000000000000']])
-      );
-      let roots = await getRoots(deploymentManager.cache);
-      expect(roots.get('finn')).to.equal('0x0000000000000000000000000000000000000000');
-    });
-  });
-
   describe('spider', () => {
     it('should spider succesfully', async () => {
       let deploymentManager = new DeploymentManager(
@@ -241,7 +223,7 @@ describe('DeploymentManager', () => {
         }
       );
 
-      let { finnImpl: _finnImpl } = await setupContracts(
+      let { finn } = await setupContracts(
         deploymentManager
       );
 
@@ -268,7 +250,7 @@ describe('DeploymentManager', () => {
         },
       };
 
-      await deploymentManager.spider();
+      await deploymentManager.spider({ finn });
 
       let check = {};
       for (let [alias, contract] of await deploymentManager.contracts()) {

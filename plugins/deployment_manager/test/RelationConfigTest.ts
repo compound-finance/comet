@@ -211,7 +211,7 @@ describe('RelationConfig', () => {
 
     readAliasTests.forEach(({ name, contract, template, exp }) => {
       it(name, async () => {
-        expect(await readAlias(contract, { template, i: 0 }, {})).to.eql(exp);
+        expect(await readAlias(contract, { template, i: 0 }, {}, [])).to.eql(exp);
       });
     });
   });

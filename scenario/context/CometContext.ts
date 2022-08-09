@@ -87,14 +87,14 @@ export class CometContext {
 
   async upgrade(configOverrides: ProtocolConfiguration): Promise<CometContext> {
     const { world } = this;
+
     const oldComet = await this.getComet();
     const admin = await world.impersonateAddress(await oldComet.governor(), 10n**18n);
 
-    // XXX get addresses from deployComet directly, dont have it write roots?
     const deploySpec = { cometMain: true, cometExt: true };
-    await deployComet(this.deploymentManager, deploySpec, configOverrides, admin);
+    const deployed = await deployComet(this.deploymentManager, deploySpec, configOverrides, admin);
 
-    await this.deploymentManager.spider();
+    await this.deploymentManager.spider(deployed);
     await this.setAssets();
 
     debug('Upgraded comet...');
