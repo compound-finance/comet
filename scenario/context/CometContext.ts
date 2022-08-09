@@ -25,6 +25,7 @@ import {
   CometProxyAdmin,
   GovernorSimple,
   IGovernorBravo,
+  CometRewards,
 } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
@@ -44,6 +45,7 @@ export interface CometProperties {
   proxyAdmin: ProxyAdmin;
   timelock: SimpleTimelock;
   governor: GovernorSimple;
+  rewards: CometRewards;
 }
 
 export class CometContext {
@@ -97,6 +99,10 @@ export class CometContext {
 
   async getGovernor(): Promise<GovernorSimple> {
     return await this.deploymentManager.contract('governor') as GovernorSimple;
+  }
+
+  async getRewards(): Promise<CometRewards> {
+    return await this.deploymentManager.contract('rewards') as CometRewards;
   }
 
   async getConfiguration(): Promise<ProtocolConfiguration> {
@@ -412,6 +418,7 @@ async function getContextProperties(context: CometContext): Promise<CometPropert
     proxyAdmin: await context.getCometAdmin(),
     timelock: await context.getTimelock(),
     governor: await context.getGovernor(),
+    rewards: await context.getRewards(),
   }
 }
 
