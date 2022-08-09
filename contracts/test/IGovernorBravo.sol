@@ -54,4 +54,8 @@ interface IGovernorBravo {
     function execute(uint256 proposalId) external payable;
 
     function castVote(uint256 proposalId, uint8 support) external returns (uint256 balance);
+
+    function initialize(address timelock_, address comp_, uint votingPeriod_, uint votingDelay_, uint proposalThreshold_) external;
+
+    function timelock() external returns (address);
 }

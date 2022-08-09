@@ -167,7 +167,8 @@ const config: HardhatUserConfig = {
       {
         name: 'development',
         network: 'hardhat',
-        deployment: 'dai'
+        deployment: 'dai',
+        allocation: 0.1, // eth
       },
       {
         name: 'fuji',

@@ -21,10 +21,12 @@ export async function deployNetworkComet(
   const admin = adminSigner ?? await deploymentManager.getSigner();
   const ethers = deploymentManager.hre.ethers;
 
+  const { governor, pauseGuardian } = configOverrides;
+
   const {
     symbol,
-    governor, // NB: generally 'timelock' alias, not 'governor'
-    pauseGuardian,
+    // governor, // NB: generally 'timelock' alias, not 'governor'
+    // pauseGuardian,
     baseToken,
     baseTokenPriceFeed,
     supplyKink,
@@ -185,6 +187,7 @@ export async function deployNetworkComet(
 
   /* Transfer to Gov */
 
+  // XXX ?
   await deploymentManager.idempotent(
     async () => !sameAddress(await configurator.governor(), governor),
     async () => {
