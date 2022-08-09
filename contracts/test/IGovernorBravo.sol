@@ -58,4 +58,6 @@ interface IGovernorBravo {
     function initialize(address timelock_, address comp_, uint votingPeriod_, uint votingDelay_, uint proposalThreshold_) external;
 
     function timelock() external returns (address);
+
+    function _initiate(address governorAlpha) external;
 }

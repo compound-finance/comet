@@ -1,5 +1,5 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
-import { FaucetToken, IGovernorBravo, SimplePriceFeed, TimelockInterface } from '../../../build/types';
+import { FaucetToken, IGovernorBravo, SimplePriceFeed, TimelockInterface, ITimelock } from '../../../build/types';
 import { DeploySpec, debug, deployComet, sameAddress, wait } from '../../../src/deploy';
 
 const cloneNetwork = 'mainnet';
@@ -31,7 +31,7 @@ async function makePriceFeed(
 }
 
 type GovernanceContracts = {
-  timelock: TimelockInterface;
+  timelock: ITimelock;
   governor: IGovernorBravo;
 }
 
@@ -41,7 +41,7 @@ async function cloneGovernance(dm: DeploymentManager, compAddress: string): Prom
   const day = 60 * 60 * 24;
 
   // clone the timelock
-  const timelock = await dm.clone(
+  const timelock = await dm.clone<ITimelock>(
     "Timelock",
     TIMELOCK,
     [signer.address, 2 * day],
@@ -65,7 +65,7 @@ async function cloneGovernance(dm: DeploymentManager, compAddress: string): Prom
   );
 
   // clone GovernorDelegator
-  const governorDelegator = await dm.clone(
+  const governorDelegator = await dm.clone<IGovernorBravo>(
     "GovernorBravoDelegator",
     GOVERNOR_BRAVO_DELEGATOR,
     [
@@ -79,7 +79,7 @@ async function cloneGovernance(dm: DeploymentManager, compAddress: string): Prom
     ],
     cloneNetwork
   );
-  const governor = governorDelegate.attach(governorDelegator.address);
+  const governor = governorDelegate.attach(governorDelegator.address) as IGovernorBravo;
 
   // XXX create a governor alpha proposal
   //     function propose(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint) {
