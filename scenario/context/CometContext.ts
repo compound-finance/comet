@@ -197,56 +197,44 @@ export class CometContext {
   async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
     const { world } = this;
     const governor = await this.getGovernor();
-    // XXX See if there is a better way to determine if GovernorSimple or Bravo should be used
-    try {
-      const admin = await governor.admins(0);
-      const adminSigner = await world.impersonateAddress(admin);
-      const governorAsAdmin = governor.connect(adminSigner);
 
-      const tx = await (await governorAsAdmin.propose(targets, values, signatures, calldatas, 'FastExecuteProposal')).wait();
-      const event = tx.events.find(event => event.event === 'ProposalCreated');
-      const [proposalId] = event.args;
+    // XXX find a better way to do this without hardcoding whales
+    const voters = [
+      '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
+      '0x683a4f9915d6216f73d6df50151725036bd26c02'
+    ];
+    const adminSigner = await world.impersonateAddress(voters[0]);
+    const governorAsAdmin = await world.hre.ethers.getContractAt(
+      'IGovernorBravo',
+      governor.address,
+      adminSigner
+    ) as IGovernorBravo;
 
-      await governorAsAdmin.queue(proposalId);
-      await governorAsAdmin.execute(proposalId);
-    } catch (e) {
-      // XXX find a better way to do this without hardcoding whales
-      const voters = [
-        '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
-        '0x683a4f9915d6216f73d6df50151725036bd26c02'
-      ];
-      const adminSigner = await world.impersonateAddress(voters[0]);
-      const governorAsAdmin = await world.hre.ethers.getContractAt(
+    await this.setNextBaseFeeToZero();
+    const proposeTxn = await (await governorAsAdmin.propose(targets, values, signatures, calldatas, 'FastExecuteProposal', { gasPrice: 0 })).wait();
+    const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
+    const [proposalId, , , , , , startBlock, endBlock] = proposeEvent.args;
+
+    const blocksUntilStart = startBlock - await world.hre.ethers.provider.getBlockNumber();
+    const blocksFromStartToEnd = endBlock - startBlock;
+    await this.mineBlocks(blocksUntilStart);
+    for (const voter of voters) {
+      const voterSigner = await world.impersonateAddress(voter);
+      const govAsVoter = await world.hre.ethers.getContractAt(
         'IGovernorBravo',
         governor.address,
-        adminSigner
+        voterSigner
       ) as IGovernorBravo;
-
-      const proposeTxn = await (await governorAsAdmin.propose(targets, values, signatures, calldatas, 'FastExecuteProposal')).wait();
-      const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
-      const [proposalId, , , , , , startBlock, endBlock] = proposeEvent.args;
-
-      const blocksUntilStart = startBlock - await world.hre.ethers.provider.getBlockNumber();
-      const blocksFromStartToEnd = endBlock - startBlock;
-      await this.mineBlocks(blocksUntilStart);
-      for (const voter of voters) {
-        const voterSigner = await world.impersonateAddress(voter);
-        const govAsVoter = await world.hre.ethers.getContractAt(
-          'IGovernorBravo',
-          governor.address,
-          voterSigner
-        ) as IGovernorBravo;
-        await govAsVoter.castVote(proposalId, 1);
-      }
-
-      await this.mineBlocks(blocksFromStartToEnd);
-      const queueTxn = await (await governorAsAdmin.queue(proposalId)).wait();
-      const queueEvent = queueTxn.events.find(event => event.event === 'ProposalQueued');
-      let [proposalId_, eta] = queueEvent.args;
-
-      await this.setNextBlockTimestamp(eta.toNumber());
-      await governorAsAdmin.execute(proposalId);
+      await govAsVoter.castVote(proposalId, 1);
     }
+
+    await this.mineBlocks(blocksFromStartToEnd);
+    const queueTxn = await (await governorAsAdmin.queue(proposalId)).wait();
+    const queueEvent = queueTxn.events.find(event => event.event === 'ProposalQueued');
+    let [proposalId_, eta] = queueEvent.args;
+
+    await this.setNextBlockTimestamp(eta.toNumber());
+    await governorAsAdmin.execute(proposalId);
   }
 }
 

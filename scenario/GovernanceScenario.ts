@@ -2,12 +2,13 @@ import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { constants, utils } from 'ethers';
 
-scenario('upgrade Comet implementation and initialize', {}, async ({ comet, configurator, proxyAdmin }, context) => {
+scenario.only('upgrade Comet implementation and initialize', {}, async ({ comet, configurator, proxyAdmin }, context) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
   expect((await comet.liquidatorPoints(constants.AddressZero)).numAbsorbs).to.be.equal(0);
 
   // Deploy new version of Comet Factory
   const dm = context.deploymentManager;
+  console.log("deploying cometModified:");
   const cometModifiedFactory = await dm.deploy('cometFactory', 'test/CometModifiedFactory.sol', [], true);
 
   // Execute a governance proposal to:
@@ -17,6 +18,9 @@ scenario('upgrade Comet implementation and initialize', {}, async ({ comet, conf
   let setFactoryCalldata = utils.defaultAbiCoder.encode(["address", "address"], [comet.address, cometModifiedFactory.address]);
   let deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
   let initializeCalldata = utils.defaultAbiCoder.encode(["address"], [constants.AddressZero]);
+
+  console.log("fastGovernanceExecute:");
+
   await context.fastGovernanceExecute(
     [configurator.address, proxyAdmin.address, comet.address],
     [0, 0, 0],
