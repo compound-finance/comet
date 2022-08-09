@@ -49,8 +49,8 @@ scenario('upgrade Comet implementation and initialize using deployUpgradeToAndCa
   // 2. DeployUpgradeToAndCall the new implementation of Comet
   const setFactoryCalldata = utils.defaultAbiCoder.encode(["address", "address"], [comet.address, cometModifiedFactory.address]);
   const modifiedComet = (await dm.hre.ethers.getContractFactory('CometModified')).attach(comet.address);
-  const intializeCalldata = (await modifiedComet.populateTransaction.initialize(constants.AddressZero)).data;
-  const deployUpgradeToAndCallCalldata = utils.defaultAbiCoder.encode(["address", "address", "bytes"], [configurator.address, comet.address, intializeCalldata]);
+  const initializeCalldata = (await modifiedComet.populateTransaction.initialize(constants.AddressZero)).data;
+  const deployUpgradeToAndCallCalldata = utils.defaultAbiCoder.encode(["address", "address", "bytes"], [configurator.address, comet.address, initializeCalldata]);
 
   await context.fastGovernanceExecute(
     [configurator.address, proxyAdmin.address],
@@ -63,7 +63,7 @@ scenario('upgrade Comet implementation and initialize using deployUpgradeToAndCa
   expect((await comet.liquidatorPoints(constants.AddressZero)).numAbsorbs).to.be.equal(2 ** 32 - 1);
 });
 
-scenario('upgrade Comet implementation and call new function', {}, async ({ comet, configurator, proxyAdmin, timelock, actors }, context) => {
+scenario('upgrade Comet implementation and call new function', {}, async ({ comet, configurator, proxyAdmin, actors }, context) => {
   const { signer } = actors;
 
   // Deploy new version of Comet Factory
