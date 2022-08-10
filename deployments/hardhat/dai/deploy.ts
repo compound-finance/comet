@@ -6,6 +6,7 @@ import {
   SimplePriceFeed__factory,
 } from '../../../build/types';
 import { deployComet } from '../../../src/deploy';
+import { exp } from '../../../test/helpers';
 
 // XXX clean this all up further, but minimize changes for now on first pass refactor
 
@@ -44,9 +45,9 @@ async function makePriceFeed(
 export default async function deploy(deploymentManager: DeploymentManager) {
   const [admin, pauseGuardianSigner] = await deploymentManager.getSigners();
 
-  let dai = await makeToken(deploymentManager, 1000000, 'DAI', 18, 'DAI');
-  let gold = await makeToken(deploymentManager, 2000000, 'GOLD', 8, 'GOLD');
-  let silver = await makeToken(deploymentManager, 3000000, 'SILVER', 10, 'SILVER');
+  let dai = await makeToken(deploymentManager, 10000000, 'DAI', 18, 'DAI');
+  let gold = await makeToken(deploymentManager, 20000000, 'GOLD', 8, 'GOLD');
+  let silver = await makeToken(deploymentManager, 30000000, 'SILVER', 10, 'SILVER');
 
   let daiPriceFeed = await makePriceFeed(deploymentManager, 1, 8);
   let goldPriceFeed = await makePriceFeed(deploymentManager, 0.5, 8);
@@ -80,7 +81,7 @@ export default async function deploy(deploymentManager: DeploymentManager) {
   ]);
 
   // Deploy all Comet-related contracts
-  let { cometProxy, configuratorProxy, timelock, rewards } = await deployComet(
+  let { cometProxy, configuratorProxy, rewards } = await deployComet(
     deploymentManager,
     { all: true },
     {
@@ -89,6 +90,9 @@ export default async function deploy(deploymentManager: DeploymentManager) {
     },
     contracts
   );
+
+  // Transfer some GOLD token to the rewards contract to use as rewards
+  await gold.transfer(rewards.address, exp(2_000_000, 8));
 
   return {
     comet: cometProxy.address,
