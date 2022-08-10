@@ -1,5 +1,4 @@
 import { parentPort } from 'worker_threads';
-import { diff } from 'jest-diff';
 import { Runner } from '../Runner';
 import { ForkSpec, World } from '../World';
 import { Scenario } from '../Scenario';
@@ -64,7 +63,7 @@ export async function run<T, U, R>({ bases, config, worker }: WorkerData) {
     const world = new World(hreForBase(base), base);
     const delta = await world.deploymentManager.runDeployScript({ allMissing: true });
     console.log(`[${base.name}] Deployed ${world.deploymentManager.counter} contracts to initialize world 🗺`);
-    console.log(`[${base.name}]\n${diff(delta.new, delta.old, {aAnnotation: 'New addresses', bAnnotation: 'Old addresses'})}`);
+    console.log(`[${base.name}]\n${world.deploymentManager.diffDelta(delta)}`);
     runners[base.name] = new Runner({ base, world });
   }
 

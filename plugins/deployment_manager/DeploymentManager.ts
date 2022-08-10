@@ -1,12 +1,13 @@
+import { diff } from 'jest-diff';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Contract, providers } from 'ethers';
 import { Alias, Address, BuildFile } from './Types';
 import { Aliases, getAliases, putAlias, storeAliases } from './Aliases';
 import { Cache } from './Cache';
-import { ContractMap, getContracts } from './ContractMap';
+import { ContractMap } from './ContractMap';
 import { Deployer, DeployOpts, deploy, deployBuild } from './Deploy';
 import { fetchAndCacheContract, readContract } from './Import';
-import { Proxies, getProxies, putProxy, storeProxies } from './Proxies';
+import { storeProxies } from './Proxies';
 import { getRelationConfig } from './RelationConfig';
 import { getRoots, putRoots } from './Roots';
 import { Spider, spider } from './Spider';
@@ -18,17 +19,17 @@ import { asyncCallWithTimeout, debug, getEthersContract } from './Utils';
 import { deleteVerifyArgs, getVerifyArgs } from './VerifyArgs';
 import { verifyContract, VerifyArgs, VerificationStrategy } from './Verify';
 
+interface DeploymentDelta {
+  old: { start: Date, count: number, spider: Spider };
+  new: { start: Date, count: number, spider: Spider };
+}
+
 interface DeploymentManagerConfig {
   baseDir?: string;
   importRetries?: number;
   importRetryDelay?: number;
   writeCacheToDisk?: boolean;
   verificationStrategy?: VerificationStrategy;
-}
-
-interface DeploymentDelta {
-  old: { start: Date, count: number, spider: Spider };
-  new: { start: Date, count: number, spider: Spider };
 }
 
 async function getManagedSigner(signer): Promise<SignerWithAddress> {
@@ -121,11 +122,6 @@ export class DeploymentManager {
     return this.config.importRetryDelay ?? 5_000;
   }
 
-  // Clears the contract cache. Should be invalidated when any aliases have changed.
-  private invalidateContractsCache() {
-    this.contractsCache = null;
-  }
-
   /* Conditionally executes an action */
   async idempotent<T>(
     condition: () => Promise<any>,
@@ -167,7 +163,7 @@ export class DeploymentManager {
       // NB: might use an override alias on deployOpts, but it doesn't invalidate cache...
       const buildFile = await this.import(address, fromNetwork);
       const contract: C = await this._deployBuild(buildFile, deployArgs, retries);
-      await this.putAlias(alias, contract.address);
+      await this.putAlias(alias, contract);
       return contract;
     }
     return maybeExisting;
@@ -185,7 +181,7 @@ export class DeploymentManager {
     if (!maybeExisting || force) {
       // NB: might use an override alias on deployOpts, but it doesn't invalidate cache...
       const contract: C = await this._deploy(contractFile, deployArgs, retries);
-      await this.putAlias(alias, contract.address);
+      await this.putAlias(alias, contract);
       return contract;
     }
     return maybeExisting;
@@ -199,7 +195,7 @@ export class DeploymentManager {
     if (!maybeExisting) {
       const buildFile = await this.import(address);
       const contract = getEthersContract<C>(address, buildFile, this.hre);
-      await this.putAlias(alias, address);
+      await this.putAlias(alias, contract);
       debug(`Imported ${buildFile.contract} from ${address} as '${alias}'`);
       return contract;
     }
@@ -286,35 +282,24 @@ export class DeploymentManager {
     );
     await putRoots(this.cache, roots);
     await storeAliases(this.cache, crawl.aliases);
-    await storeProxies(this.cache, crawl.proxies);
-    this.invalidateContractsCache(); // TODO should we just write new contracts from spider?
+    await storeProxies(this.cache, crawl.proxies); // TODO: I think we can get rid of this?
+    this.contractsCache = crawl.contracts;
     return crawl;
   }
 
   /* Stores a new alias, which can then be referenced via `deploymentManager.contract()` */
-  async putAlias(alias: Alias, address: Address) {
-    await putAlias(this.cache, alias, address);
-    this.invalidateContractsCache();
-  }
-
-  /* Stores a new proxy, which dictates the ABI available for that contract in `deploymentManager.contract()` */
-  async putProxy(alias: Alias, address: Address) {
-    await putProxy(this.cache, alias, address);
-    this.invalidateContractsCache();
-  }
-
-  async getProxies(): Promise<Proxies> {
-    return getProxies(this.cache);
+  async putAlias(alias: Alias, contract: Contract) {
+    await putAlias(this.cache, alias, contract.address);
+    this.contractsCache.set(alias, contract);
   }
 
   async getAliases(): Promise<Aliases> {
     return getAliases(this.cache);
   }
 
-  /* Returns a memory-cached map of contracts indexed by alias. Note: this map
-   * is cached in-memory (and invalidated when aliases or proxies change), so
-   * you should feel free to call this as often as you would like without concern
-   * for memory usage.
+  /* Returns a memory-cached map of contracts indexed by alias.
+   * Note: this map is cached in-memory and updated when aliases change,
+   *  so call this as often as you would like.
    *
    * For example:
    *
@@ -325,13 +310,11 @@ export class DeploymentManager {
    * ```
    **/
   async contracts(): Promise<ContractMap> {
-    if (this.contractsCache !== null) {
-      return this.contractsCache;
-    } else {
-      // TODO: When else do we need to clear the contracts cache
-      this.contractsCache = await getContracts(this.cache, this.hre, await this.getSigner());
-      return this.contractsCache;
+    if (this.contractsCache === null) {
+      // TODO: do we need to clear the contracts cache anywhere?
+      await this.spider();
     }
+    return this.contractsCache;
   }
 
   /* Returns a single contracts indexed by alias.
@@ -346,7 +329,8 @@ export class DeploymentManager {
    **/
   async contract<T extends Contract>(alias: string): Promise<T | undefined> {
     const contracts = await this.contracts();
-    return contracts.get(alias) as T;
+    const contract = contracts.get(alias);
+    return contract && contract.connect(await this.getSigner()) as T;
   }
 
   /* Changes configuration of verification strategy during deployment */
@@ -402,6 +386,13 @@ export class DeploymentManager {
       await new Promise(ok => setTimeout(ok, wait));
       return this.retry(fn, retries - 1, timeLimit, wait * 2);
     }
+  }
+
+  diffDelta(delta: DeploymentDelta): string {
+    const withoutContracts = ({ contracts: _, ...rest }) => rest;
+    const new_ = { ...delta.new, spider: withoutContracts(delta.new.spider) };
+    const old_ = { ...delta.old, spider: withoutContracts(delta.old.spider) };
+    return diff(new_, old_, {aAnnotation: 'New addresses', bAnnotation: 'Old addresses'});
   }
 
   fork(): DeploymentManager {

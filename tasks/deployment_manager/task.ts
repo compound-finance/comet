@@ -1,5 +1,4 @@
 import { task } from 'hardhat/config';
-import { diff } from 'jest-diff';
 import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeploymentManager } from '../../plugins/deployment_manager';
@@ -69,7 +68,7 @@ task('deploy', 'Deploys market')
     const overrides = undefined; // TODO: pass through cli args
     const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
     console.log(`[${tag}] Deployed ${dm.counter} contracts`);
-    console.log(`[${tag}]\n${diff(delta.new, delta.old, {aAnnotation: 'New addresses', bAnnotation: 'Old addresses'})}`);
+    console.log(`[${tag}]\n${dm.diffDelta(delta)}`);
 
     const verify = noVerify ? false : !simulate;
     const desc = verify ? 'Verify' : 'Would verify';

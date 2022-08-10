@@ -8,13 +8,11 @@ import {
   TransparentUpgradeableProxy,
 } from '../../../build/types';
 
-import { getAliases } from '../Aliases';
 import { getBuildFile } from '../ContractMap';
 import { DeploymentManager } from '../DeploymentManager';
 import { fiatTokenBuildFile, mockImportSuccess } from './ImportTest';
 import { Migration } from '../Migration';
 import { expectedTemplate } from './MigrationTemplateTest';
-import { getProxies } from '../Proxies';
 import { faucetTokenBuildFile, tokenArgs } from './DeployHelpers';
 import { tempDir } from './TestHelpers';
 import { VerifyArgs } from '../Verify';
@@ -164,18 +162,7 @@ describe('DeploymentManager', () => {
   });
 
   describe('putAlias', () => {
-    it('should putAlias succesfully', async () => {
-      let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
-        importRetries: 0,
-        writeCacheToDisk: true,
-        baseDir: tempDir(),
-      });
-      await deploymentManager.putAlias('finn', '0x0000000000000000000000000000000000000000');
-      let aliases = await getAliases(deploymentManager.cache);
-      expect(aliases.get('finn')).to.equal('0x0000000000000000000000000000000000000000');
-    });
-
-    it('should invalidate contract cache', async () => {
+    it('should update contract cache', async () => {
       let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
@@ -191,26 +178,11 @@ describe('DeploymentManager', () => {
         'test/Dog.sol',
         ['molly', '0x0000000000000000000000000000000000000000', []]
       );
-      await deploymentManager.putAlias('pet', spot.address);
+      await deploymentManager.putAlias('pet', spot);
       expect(await (await deploymentManager.contract('pet')).name()).to.equal('spot');
-      await deploymentManager.putAlias('pet', molly.address);
+      await deploymentManager.putAlias('pet', molly);
       expect(await (await deploymentManager.contract('pet')).name()).to.equal('molly');
     });
-  });
-
-  describe('putProxy', () => {
-    it('should putProxy succesfully', async () => {
-      let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
-        importRetries: 0,
-        writeCacheToDisk: true,
-        baseDir: tempDir(),
-      });
-      await deploymentManager.putProxy('finn', '0x0000000000000000000000000000000000000000');
-      let proxies = await getProxies(deploymentManager.cache);
-      expect(proxies.get('finn')).to.equal('0x0000000000000000000000000000000000000000');
-    });
-
-    // TODO: Test cache invalidation?
   });
 
   describe('spider', () => {
@@ -277,13 +249,11 @@ describe('DeploymentManager', () => {
         baseDir: tempDir(),
       });
 
-      let { finn, finnImpl } = await setupContracts(
+      let { finn } = await setupContracts(
         deploymentManager
       );
 
-      // TODO: Is this using the proxy correctly?
-      await deploymentManager.putAlias('mydog', finn.address);
-      await deploymentManager.putProxy('mydog', finnImpl.address);
+      await deploymentManager.putAlias('mydog', finn);
       let contracts = await deploymentManager.contracts();
 
       expect(await contracts.get('mydog').name()).to.eql('finn');
@@ -298,12 +268,11 @@ describe('DeploymentManager', () => {
         baseDir: tempDir(),
       });
 
-      let { finn, finnImpl } = await setupContracts(
+      let { finn } = await setupContracts(
         deploymentManager
       );
 
-      await deploymentManager.putAlias('mydog', finn.address);
-      await deploymentManager.putProxy('mydog', finnImpl.address);
+      await deploymentManager.putAlias('mydog', finn);
       let contract = await deploymentManager.contract('mydog');
       expect(await contract.name()).to.eql('finn');
     });

@@ -85,6 +85,7 @@ const relationConfigMap: RelationConfigMap = {
   },
 
   governor: {
+    artifact: 'contracts/IProxy.sol:IProxy',
     delegates: {
       field: async (governor) => governor.implementation(),
     },
@@ -93,6 +94,13 @@ const relationConfigMap: RelationConfigMap = {
         field: async (governor) => governor.comp(),
       }
     }
+  },
+  'governor:implementation': {
+    artifact: 'contracts/IGovernorBravo.sol:IGovernorBravo',
+  },
+
+  COMP: {
+    artifact: 'contracts/IComp.sol:IComp',
   },
 
   FiatTokenProxy: {

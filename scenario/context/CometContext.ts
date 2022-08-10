@@ -85,7 +85,7 @@ export class CometContext {
   }
 
   async getRewards(): Promise<CometRewards> {
-    return await this.deploymentManager.contract('rewards') as CometRewards;
+    return this.deploymentManager.contract('rewards');
   }
 
   async getConfiguration(): Promise<ProtocolConfiguration> {

@@ -28,19 +28,19 @@ interface IGovernorBravo {
         uint256 endBlock,
         string description
     );
-
     event ProposalCanceled(uint256 proposalId);
-
     event ProposalQueued(uint256 proposalId, uint256 eta);
-
     event ProposalExecuted(uint256 proposalId);
 
+    function MIN_VOTING_PERIOD() external view returns (uint256);
+    function MIN_VOTING_DELAY() external view returns (uint256);
+    function MIN_PROPOSAL_THRESHOLD() external view returns (uint256);
+
+    function comp() external view returns (address);
+    function proposalCount() external view returns (uint256);
     function votingDelay() external view returns (uint256);
-
     function votingPeriod() external view returns (uint256);
-
     function state(uint256 proposalId) external view returns (ProposalState);
-
     function propose(
         address[] memory targets,
         uint256[] memory values,
@@ -48,10 +48,7 @@ interface IGovernorBravo {
         bytes[] memory calldatas,
         string memory description
     ) external returns (uint256 proposalId);
-
     function queue(uint256 proposalId) external payable;
-
     function execute(uint256 proposalId) external payable;
-
     function castVote(uint256 proposalId, uint8 support) external returns (uint256 balance);
 }

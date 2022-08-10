@@ -18,22 +18,7 @@ export async function fetchAndCacheContract(
   importRetryDelay = DEFAULT_RETRY_DELAY,
   force = false
 ): Promise<BuildFile> {
-  let buildFile = await fetchContract(cache, network, address, importRetries, importRetryDelay, force);
-  await storeBuildFile(cache, address, buildFile);
-  return buildFile;
-}
-
-/**
- * Reads a contract from hardhat, generating local build file.
- */
-export async function readAndCacheContract(
-  cache: Cache,
-  hre: HardhatRuntimeEnvironment,
-  artifact: string,
-  address: Address,
-  force = false
-): Promise<BuildFile> {
-  let buildFile = await readContract(cache, hre, artifact, address, force);
+  const buildFile = await fetchContract(cache, network, address, importRetries, importRetryDelay, force);
   await storeBuildFile(cache, address, buildFile);
   return buildFile;
 }
@@ -69,7 +54,7 @@ export async function fetchContract(
   importRetryDelay = DEFAULT_RETRY_DELAY,
   force = false
 ): Promise<BuildFile> {
-  let cachedBuildFile = !force && await getBuildFile(cache, address);
+  const cachedBuildFile = !force && await getBuildFile(cache, address);
   if (cachedBuildFile) {
     return cachedBuildFile;
   } else {
@@ -85,7 +70,7 @@ export async function readContract(
   address: Address,
   force = false
 ): Promise<BuildFile> {
-  let cachedBuildFile = !force && await getBuildFile(cache, address);
+  const cachedBuildFile = !force && await getBuildFile(cache, address);
   if (cachedBuildFile) {
     return cachedBuildFile;
   } else {

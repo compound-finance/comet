@@ -19,12 +19,13 @@ import { Proxies } from './Proxies';
 import { ContractMap } from './ContractMap';
 import { Roots } from './Roots';
 import { asArray, debug, getEthersContract, mergeABI } from './Utils';
-import { fetchAndCacheContract, readAndCacheContract, readContract } from './Import';
+import { fetchAndCacheContract, readContract } from './Import';
 
 export interface Spider {
   roots: Roots;
   aliases: Aliases;
   proxies: Proxies;
+  contracts: ContractMap;
 }
 
 interface Build {
@@ -73,9 +74,7 @@ async function isContract(hre: HRE, address: string) {
 }
 
 async function localBuild(cache: Cache, hre: HRE, artifact: string, address: Address): Promise<Build> {
-  const buildFile = cache ?
-    await readAndCacheContract(cache, hre, artifact, address) :
-    await readContract(null, hre, artifact, address, true);
+  const buildFile = await readContract(cache, hre, artifact, address, !cache);
   const contract = getEthersContract(address, buildFile, hre);
   return { buildFile, contract };
 }
@@ -180,11 +179,12 @@ async function crawl(
   const aliasTemplateConfig = relations[aliasTemplateKey(aliasTemplate)];
   if (aliasTemplateConfig) {
     //debug(' ... has alias template config');
-    if (!await isContract(hre, address)) {
-      throw new Error(`Found config for '${aliasTemplate}' but no contract at ${address}`);
-    }
+    // Note: skipping this check, since it adds a brittle network call and isn't strictly necessary
+    // if (!await isContract(hre, address)) {
+    //   throw new Error(`Found config for '${aliasTemplate}' but no contract at ${address}`);
+    // }
     if (aliasTemplateConfig.artifact) {
-      //debug('  ... has artifact specified (${aliasTemplateConfig.artifact})');
+      //debug(`  ... has artifact specified (${aliasTemplateConfig.artifact})`);
       const build = await localBuild(cache, hre, aliasTemplateConfig.artifact, address);
       const alias = await readAlias(build.contract, aliasRender, context, path);
       return maybeProcess(alias, build, aliasTemplateConfig);
@@ -261,5 +261,5 @@ export async function spider(
     (context[alias] = context[alias] || []).push(contracts.get(alias));
   }
 
-  return { roots, aliases, proxies };
+  return { roots, aliases, proxies, contracts };
 }

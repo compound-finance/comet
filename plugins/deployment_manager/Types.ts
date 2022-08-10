@@ -1,4 +1,14 @@
 export type ABI = string | any[];
+export type Address = string;
+export type Alias = string;
+
+export interface BuildFile {
+  contract: string;
+  contracts: {
+    [fileContractName: string]: ContractMetadata | { [contractName: string]: ContractMetadata };
+  };
+  version: string;
+}
 
 export interface ContractMetadata {
   address: Address;
@@ -9,14 +19,3 @@ export interface ContractMetadata {
   source?: string;
   constructorArgs: string;
 }
-
-export interface BuildFile {
-  contract: string;
-  contracts: {
-    [fileContractName: string]: ContractMetadata | { [contractName: string]: ContractMetadata };
-  };
-  version: string;
-}
-
-export type Address = string;
-export type Alias = string;

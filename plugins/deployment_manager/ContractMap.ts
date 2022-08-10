@@ -9,6 +9,10 @@ import { debug, getPrimaryContract, mergeABI } from './Utils';
 
 export type ContractMap = Map<Alias, Contract>;
 
+// TODO: I think we could do away with proxies and these inversions now
+//  we get everything from the results of running spider, including the contracts map
+// Leaving in place for the moment though...
+
 // Gets list of contracts from given aliases
 export async function getContractsFromAliases(
   cache: Cache,
