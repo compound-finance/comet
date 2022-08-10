@@ -2,6 +2,7 @@ import { annualize, defactor, defaultAssets, ethers, event, exp, expect, factor,
 import { CometModifiedFactory__factory, SimplePriceFeed__factory, SimpleTimelock__factory } from '../build/types';
 import { AssetInfoStructOutput } from '../build/types/CometHarnessInterface';
 import { ConfigurationStructOutput } from '../build/types/Configurator';
+import { BigNumber } from 'ethers';
 
 type ConfiguratorAssetConfig = {
   asset: string;
@@ -188,14 +189,52 @@ describe('configurator', function () {
       expect((await configuratorAsProxy.getConfiguration(newCometProxyAddress)).governor).to.be.equal(newConfiguration.governor);
     });
 
-    it('reverts when setting Configuration for a Comet proxy with an existing configuration', async () => {
+    it('sets Configuration for a Comet proxy with an existing configuration', async () => {
+      const { configurator, configuratorProxy, cometProxy } = await makeConfigurator({
+        assets: {
+          USDC: { initial: 1e6, decimals: 6 },
+        }
+      });
+
+      const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+      const oldConfiguration = await configuratorAsProxy.getConfiguration(cometProxy.address);
+      const newConfiguration = { ...oldConfiguration, baseBorrowMin: BigNumber.from(1) } as ConfigurationStructOutput;
+
+      const txn = await wait(configuratorAsProxy.setConfiguration(cometProxy.address, newConfiguration));
+
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetConfiguration: {
+          cometProxy: cometProxy.address,
+          oldConfiguration: convertToEventConfiguration(oldConfiguration),
+          newConfiguration: convertToEventConfiguration(newConfiguration),
+        }
+      });
+      expect(oldConfiguration).to.be.not.equal(newConfiguration);
+      expect((await configuratorAsProxy.getConfiguration(cometProxy.address)).baseBorrowMin).to.be.equal(newConfiguration.baseBorrowMin);
+    });
+
+    it('reverts when setting Configuration and changing baseToken for a Comet proxy with an existing configuration', async () => {
+      const { configurator, configuratorProxy, cometProxy, tokens } = await makeConfigurator();
+      const { COMP } = tokens;
+
+      const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+      const oldConfiguration = await configuratorAsProxy.getConfiguration(cometProxy.address);
+      const newConfiguration = { ...oldConfiguration, baseToken: COMP.address } as ConfigurationStructOutput;
+
+      await expect(
+        configuratorAsProxy.setConfiguration(cometProxy.address, newConfiguration)
+      ).to.be.revertedWith("custom error 'ConfigurationAlreadyExists()'");
+    });
+
+    it('reverts when setting Configuration and changing trackingIndexScale for a Comet proxy with an existing configuration', async () => {
       const { configurator, configuratorProxy, cometProxy } = await makeConfigurator();
 
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-      const configuration = await configuratorAsProxy.getConfiguration(cometProxy.address);
+      const oldConfiguration = await configuratorAsProxy.getConfiguration(cometProxy.address);
+      const newConfiguration = { ...oldConfiguration, trackingIndexScale: BigNumber.from(1e7) } as ConfigurationStructOutput;
 
       await expect(
-        configuratorAsProxy.setConfiguration(cometProxy.address, configuration)
+        configuratorAsProxy.setConfiguration(cometProxy.address, newConfiguration)
       ).to.be.revertedWith("custom error 'ConfigurationAlreadyExists()'");
     });
 
