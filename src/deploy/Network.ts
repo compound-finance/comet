@@ -41,8 +41,8 @@ export async function cloneGov(
   await deploymentManager.idempotent(
     async () => (await COMP.balanceOf(admin.address)).eq(await COMP.totalSupply()),
     async () => {
-      debug(`Sending 1/3 of all COMP to fauceteer, 1/3 to timelock`);
-      const amount = (await COMP.totalSupply()).div(3);
+      debug(`Sending 1/4 of all COMP to fauceteer, 1/4 to timelock`);
+      const amount = (await COMP.totalSupply()).div(4);
       await wait(COMP.connect(admin).transfer(fauceteer.address, amount));
       await wait(COMP.connect(admin).transfer(timelock.address, amount));
       debug(`COMP.balanceOf(${fauceteer.address}): ${await COMP.balanceOf(fauceteer.address)}`);

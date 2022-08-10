@@ -398,6 +398,7 @@ export class DeploymentManager {
   fork(): DeploymentManager {
     const copy = new DeploymentManager(this.network, this.deployment, this.hre, this.config);
     copy.cache.loadMemory(this.cache.cache);
+    copy.contractsCache = new Map(this.contractsCache);
     return copy;
   }
 }

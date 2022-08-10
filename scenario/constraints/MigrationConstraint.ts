@@ -46,7 +46,6 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
           await migration.actions.enact(ctx.deploymentManager, artifact);
           debug(`Enacted migration ${migration.name}`);
         }
-        await ctx.deploymentManager.spider();
         return ctx;
       });
     }

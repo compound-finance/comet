@@ -19,11 +19,11 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 }
 
 async function deployContracts(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
-  const { ethers } = deploymentManager.hre;
+  const ethers = deploymentManager.hre.ethers;
   const signer = await deploymentManager.getSigner();
 
   // Deploy governance contracts
-  const { fauceteer, governor, timelock } = await cloneGov(deploymentManager);
+  const { COMP, fauceteer, governor, timelock } = await cloneGov(deploymentManager);
 
   // Deploy UNI first because it is the flakiest (has a dependency on block timestamp)
   // TODO: currently this retries with the same timestamp. we should update the timestamp on retries
@@ -65,13 +65,23 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
-  const { comet } = deployed;
+  const { comet, rewards } = deployed;
 
   // Deploy Bulker
   const bulker = await deploymentManager.deploy(
     'bulker',
     'Bulker.sol',
     [timelock.address, comet.address, WETH.address]
+  );
+
+  await deploymentManager.idempotent(
+    async () => (await COMP.balanceOf(rewards.address)).eq(0),
+    async () => {
+      debug(`Sending some COMP to CometRewards`);
+      const amount = exp(2_000_000, 18);
+      await wait(COMP.connect(signer).transfer(rewards.address, amount));
+      debug(`COMP.balanceOf(${rewards.address}): ${await COMP.balanceOf(rewards.address)}`);
+    }
   );
 
   return { ...deployed, fauceteer, bulker };

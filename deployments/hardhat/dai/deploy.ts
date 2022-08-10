@@ -25,7 +25,7 @@ async function makePriceFeed(
 // TODO: Support configurable assets as well?
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const ethers = deploymentManager.hre.ethers;
-  const [admin, pauseGuardianSigner] = await deploymentManager.getSigners();
+  const signer = await deploymentManager.getSigner();
 
   // Deploy governance contracts
   const { fauceteer, governor, timelock } = await cloneGov(deploymentManager);
@@ -59,20 +59,21 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   };
 
   // Deploy all Comet-related contracts
-  const { rewards, ...deployed } = await deployComet(deploymentManager, deploySpec, {
+  const deployed = await deployComet(deploymentManager, deploySpec, {
     baseTokenPriceFeed: daiPriceFeed.address,
     assetConfigs: [assetConfig0, assetConfig1],
   });
+  const { rewards } = deployed;
 
   await deploymentManager.idempotent(
     async () => (await GOLD.balanceOf(rewards.address)).eq(0),
     async () => {
       debug(`Sending some GOLD to CometRewards`);
       const amount = exp(2_000_000, 8);
-      await wait(GOLD.connect(admin).transfer(rewards.address, amount));
+      await wait(GOLD.connect(signer).transfer(rewards.address, amount));
       debug(`GOLD.balanceOf(${rewards.address}): ${await GOLD.balanceOf(rewards.address)}`);
     }
   );
 
-  return { ...deployed, fauceteer, rewards };
+  return { ...deployed, fauceteer };
 }

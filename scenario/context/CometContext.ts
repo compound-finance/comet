@@ -315,7 +315,6 @@ export async function getAssets(context: CometContext): Promise<{ [symbol: strin
 
 async function getInitialContext(world: World): Promise<CometContext> {
   const context = new CometContext(world);
-  await context.deploymentManager.spider();
   await context.setActors();
   await context.setAssets();
   return context;

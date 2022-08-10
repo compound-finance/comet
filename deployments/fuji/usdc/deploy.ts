@@ -17,7 +17,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 }
 
 async function deployContracts(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
-  const { ethers } = deploymentManager.hre;
+  const ethers = deploymentManager.hre.ethers;
   const signer = await deploymentManager.getSigner();
 
   // Deploy governance contracts
