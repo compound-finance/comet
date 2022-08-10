@@ -3,7 +3,7 @@
 ### Website
 
 Documentation website:
-https://c3-docs.compound.finance/
+https://v3-docs.compound.finance/
 
 
 ### Source Code
