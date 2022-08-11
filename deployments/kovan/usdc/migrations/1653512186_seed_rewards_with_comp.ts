@@ -30,7 +30,7 @@ export default migration('1653512186_seed_rewards_with_comp', {
     const transferCompCalldata = ethers.utils.defaultAbiCoder.encode(["address", "uint"], [rewards.address, timelockCompBalance.div(2)]);
 
     // Create a new proposal and queue it up. Execution can be done manually or in a third step.
-    const txn = await deploymentManager.asyncCallWithRetry(
+    const txn = await deploymentManager.retry(
       async (signer_) => (await governor.connect(signer_).propose(
         [
           rewards.address,
@@ -55,13 +55,13 @@ export default migration('1653512186_seed_rewards_with_comp', {
     const event = txn.events.find(event => event.event === 'ProposalCreated');
     const [proposalId] = event.args;
 
-    await deploymentManager.asyncCallWithRetry(
+    await deploymentManager.retry(
       (signer_) => wait(governor.connect(signer_).queue(proposalId))
     );
 
     debug(`Created proposal ${proposalId} and queued it. Proposal still needs to be executed.`);
 
-    // await deploymentManager.asyncCallWithRetry(
+    // await deploymentManager.retry(
     //   (signer_) => wait(governor.connect(signer_).execute(proposalId))
     // );
 

@@ -1,9 +1,8 @@
-import { Constraint, Solution, World } from '../../plugins/scenario';
+import { Constraint, Solution, World, debug } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import { Requirements } from './Requirements';
 import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
 import { modifiedPaths } from '../utils';
-import { debug } from '../../plugins/deployment_manager/Utils';
 
 async function getMigrations<T>(context: CometContext, requirements: Requirements): Promise<Migration<T>[]> {
   // TODO: make this configurable from cli params/env var?
@@ -31,9 +30,10 @@ async function asyncFilter<T>(els: T[], f: (T) => Promise<boolean>): Promise<T[]
 
 export class MigrationConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, context: T, world: World) {
-    let solutions: Solution<T>[] = [];
+    const label = `[${world.base.name}] {MigrationConstraint}`;
+    const solutions: Solution<T>[] = [];
 
-    for (let migrationList of subsets(await getMigrations(context, requirements))) {
+    for (const migrationList of subsets(await getMigrations(context, requirements))) {
       solutions.push(async function (ctx: T): Promise<T> {
         const governor = await ctx.getGovernor();
         const proposer = await ctx.getProposer();
@@ -42,13 +42,13 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
         ctx.deploymentManager._signers.unshift(proposer);
 
         migrationList.sort((a, b) => a.name.localeCompare(b.name))
-        debug(`Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);
-        for (let migration of migrationList) {
+        debug(`${label} Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);
+        for (const migration of migrationList) {
           const artifact = await migration.actions.prepare(ctx.deploymentManager);
-          debug(`Prepared migration ${migration.name}.\n  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
+          debug(`${label} Prepared migration ${migration.name}.\n  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
           // XXX enact will take the 'gov' deployment manager instead of the 'local' one
           await migration.actions.enact(ctx.deploymentManager, artifact);
-          debug(`Enacted migration ${migration.name}`);
+          debug(`${label} Enacted migration ${migration.name}`);
         }
 
         // Remove proposer from signers

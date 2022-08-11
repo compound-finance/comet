@@ -310,6 +310,13 @@ export class DeploymentManager {
     return this.contractsCache;
   }
 
+  /* Gets all the contracts, connected to signer, as an object */
+  async getContracts(signer?: SignerWithAddress): Promise<{ [alias: Alias]: Contract }> {
+    const contracts = await this.contracts();
+    const signer_ = signer ?? await this.getSigner();
+    return Object.fromEntries([...contracts].map(([a, c]) => [a, c.connect(signer_)]));
+  }
+
   /* Returns a single contracts indexed by alias.
    *
    * For example:
@@ -320,10 +327,10 @@ export class DeploymentManager {
    * "Compound Comet"
    * ```
    **/
-  async contract<T extends Contract>(alias: string): Promise<T | undefined> {
+  async contract<T extends Contract>(alias: string, signer?: SignerWithAddress): Promise<T | undefined> {
     const contracts = await this.contracts();
     const contract = contracts.get(alias);
-    return contract && contract.connect(await this.getSigner()) as T;
+    return contract && contract.connect(signer ?? await this.getSigner()) as T;
   }
 
   /* Changes configuration of verification strategy during deployment */
@@ -367,7 +374,7 @@ export class DeploymentManager {
    * @param timeLimit time limit before timeout in milliseconds
    * @param wait time to wait between tries in milliseconds
    */
-  async retry(fn: () => Promise<any>, retries: number = 5, timeLimit?: number, wait: number = 250) {
+  async retry(fn: () => Promise<any>, retries: number = 7, timeLimit?: number, wait: number = 500) {
     try {
       return await asyncCallWithTimeout(fn(), timeLimit);
     } catch (e) {

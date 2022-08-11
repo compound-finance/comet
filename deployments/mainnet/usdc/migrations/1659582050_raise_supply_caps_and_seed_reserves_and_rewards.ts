@@ -1,124 +1,90 @@
-import { CometInterface, CometProxyAdmin, CometRewards, Configurator, ERC20, GovernorSimple, IGovernorBravo, ProxyAdmin, SimpleTimelock } from '../../../../build/types';
-import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
-import { migration } from '../../../../plugins/deployment_manager/Migration';
-import { debug } from '../../../../plugins/deployment_manager/Utils';
-import { extractCalldata } from '../../../../src/utils';
-import { exp } from '../../../../test/helpers';
+import { DeploymentManager, migration } from '../../../../plugins/deployment_manager';
+import { calldata, debug, exp, proposal } from '../../../../src/deploy';
 
-
-interface Vars { };
+const comptrollerAddress = '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b';
 
 export default migration('1659582050_raise_supply_caps_and_seed_reserves_and_rewards', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
   },
 
-  enact: async (deploymentManager: DeploymentManager, vars: Vars) => {
-    const { ethers } = deploymentManager.hre;
+  enact: async (deploymentManager: DeploymentManager) => {
+    const ethers = deploymentManager.hre.ethers;
 
-    // XXX this only has the ABI for the governor proxy
-    const govProxy = await deploymentManager.contract('governor');
-    const governor = await ethers.getContractAt(
-      'IGovernorBravo',
-      govProxy.address,
-    ) as IGovernorBravo;
-    const comet = await deploymentManager.contract('comet') as CometInterface;
-    const configurator = await deploymentManager.contract('configurator') as Configurator;
-    const proxyAdmin = await deploymentManager.contract('cometAdmin') as CometProxyAdmin;
-    const rewards = await deploymentManager.contract('rewards') as CometRewards;
-    const USDC = await deploymentManager.contract('USDC') as ERC20;
-    const COMP = await deploymentManager.contract('COMP') as ERC20;
-    const WBTC = await deploymentManager.contract('WBTC') as ERC20;
-    const WETH = await deploymentManager.contract('WETH') as ERC20;
-    const UNI = await deploymentManager.contract('UNI') as ERC20;
-    const LINK = await deploymentManager.contract('LINK') as ERC20;
+    const {
+      governor,
+      comet,
+      configurator,
+      cometAdmin,
+      rewards,
+      USDC,
+      COMP,
+      WBTC,
+      WETH,
+      UNI,
+      LINK
+    } = await deploymentManager.getContracts();
 
-    // XXX assert supply caps are currently 0
+    const actions = [
+      // 1. Increase supply caps for each of the assets
+      {
+        contract: configurator,
+        signature: "updateAssetSupplyCap(address,address,uint128)",
+        args: [comet.address, COMP.address, exp(150_000, 18)],
+      }, {
+        contract: configurator,
+        signature: "updateAssetSupplyCap(address,address,uint128)",
+        args: [comet.address, WBTC.address, exp(2_000, 8)],
+      }, {
+        contract: configurator,
+        signature: "updateAssetSupplyCap(address,address,uint128)",
+        args: [comet.address, WETH.address, exp(25_000, 18)],
+      }, {
+        contract: configurator,
+        signature: "updateAssetSupplyCap(address,address,uint128)",
+        args: [comet.address, UNI.address, exp(250_000, 18)],
+      }, {
+        contract: configurator,
+        signature: "updateAssetSupplyCap(address,address,uint128)",
+        args: [comet.address, LINK.address, exp(1_000_000, 18)],
+      },
 
-    // Steps:
-    // 1. Increase supply caps for each of the assets
-    // 2. Increase borrow reward speed
-    // 3. Deploy and upgrade to a new version of Comet
-    // XXX these supply caps might be a bit too high
-    const updateCOMPSupplyCapCalldata = extractCalldata((await configurator.populateTransaction.updateAssetSupplyCap(comet.address, COMP.address, exp(50_0000, 18))).data);
-    const updateWBTCSupplyCapCalldata = extractCalldata((await configurator.populateTransaction.updateAssetSupplyCap(comet.address, WBTC.address, exp(35_000, 8))).data);
-    const updateWETHSupplyCapCalldata = extractCalldata((await configurator.populateTransaction.updateAssetSupplyCap(comet.address, WETH.address, exp(1_000_000, 18))).data);
-    const updateUNISupplyCapCalldata = extractCalldata((await configurator.populateTransaction.updateAssetSupplyCap(comet.address, UNI.address, exp(50_000_000, 18))).data);
-    const updateLINKSupplyCapCalldata = extractCalldata((await configurator.populateTransaction.updateAssetSupplyCap(comet.address, LINK.address, exp(50_000_000, 18))).data);
-    // 50 COMP/day
-    const setBorrowSpeedCalldata = extractCalldata((await configurator.populateTransaction.setBaseTrackingBorrowSpeed(comet.address, exp(0.000578703703703703703, 15))).data);
-    const deployAndUpgradeToCalldata = extractCalldata((await proxyAdmin.populateTransaction.deployAndUpgradeTo(configurator.address, comet.address)).data);
+      // 2. Increase borrow reward speed
+      // XXX set minimal supply speed for tracking?
+      {
+        contract: configurator,
+        signature: "setBaseTrackingBorrowSpeed(address,uint64)",
+        args: [comet.address, exp(50 / 86400, 15)], // 50 COMP / day
+      },
 
-    // 4. Send some USDC from Timelock to Comet
-    // XXX assert that funds have been transferred by diffing the balances before and after
-    const sendUSDCToCometCalldata = extractCalldata((await USDC.populateTransaction.transfer(comet.address, exp(500_000, 6))).data)
+      // 3. Deploy and upgrade to a new version of Comet
+      {
+        contract: cometAdmin,
+        signature: "deployAndUpgradeTo(address,address)",
+        args: [configurator.address, comet.address],
+      },
 
-    // 5. Stream COMP
-    // Streaming COMP speed = (COMP/year) / (seconds in a year / avg. block time)
-    // (50 * 365) * 13.5 / 3.154e7 = 0.0078115 COMP per block
-    const comptrollerAddress = '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b';
-    const streamCOMPCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'uint'], [rewards.address, exp(0.0078115, 18)]);
+      // 4. Send USDC from Timelock to Comet
+      // XXX assert that funds have been transferred by diffing the balances before and after
+      {
+        contract: USDC,
+        signature: "transfer(address,uint256)",
+        args: [comet.address, exp(500_000, 6)],
+      },
 
-    const txn = await deploymentManager.asyncCallWithRetry(
-      async (signer_) => (await governor.connect(signer_).propose(
-        [
-          // 1,2,3
-          configurator.address,
-          configurator.address,
-          configurator.address,
-          configurator.address,
-          configurator.address,
-          configurator.address,
-          proxyAdmin.address,
-          // 4
-          USDC.address,
-          // 5
-          comptrollerAddress
-        ],
-        [
-          // 1,2,3
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          // 4
-          0,
-          // 5
-          0,
-        ],
-        [
-          // 1,2,3
-          "updateAssetSupplyCap(address,address,uint128)",
-          "updateAssetSupplyCap(address,address,uint128)",
-          "updateAssetSupplyCap(address,address,uint128)",
-          "updateAssetSupplyCap(address,address,uint128)",
-          "updateAssetSupplyCap(address,address,uint128)",
-          "setBaseTrackingBorrowSpeed(address,uint64)",
-          "deployAndUpgradeTo(address,address)",
-          // 4
-          "transfer(address,uint256)",
-          // 5
-          "_setContributorCompSpeed(address,uint256)"
-        ],
-        [
-          // 1,2,3
-          updateCOMPSupplyCapCalldata,
-          updateWBTCSupplyCapCalldata,
-          updateWETHSupplyCapCalldata,
-          updateUNISupplyCapCalldata,
-          updateLINKSupplyCapCalldata,
-          setBorrowSpeedCalldata,
-          deployAndUpgradeToCalldata,
-          // 4
-          sendUSDCToCometCalldata,
-          // 5
-          streamCOMPCalldata,
-        ],
-        'Increase supply caps and borrow speed, seed Comet USDC reserves from Timelock, and stream COMP to CometRewards')
-      ).wait()
+      // 5. Stream COMP
+      {
+        target: comptrollerAddress,
+        signature: "_setContributorCompSpeed(address,uint256)",
+        calldata: ethers.utils.defaultAbiCoder.encode(
+          ['address', 'uint'],
+          [rewards.address, exp(50 / 86400 * 13.5, 18)], // 50 COMP / day * avg block time
+        )
+      },
+    ];
+    const description = "Increase supply caps and borrow speed, seed Comet USDC reserves from Timelock, and stream COMP to CometRewards";
+    const txn = await deploymentManager.retry(
+      async () => (await governor.propose(...await proposal(actions, description))).wait()
     );
 
     const event = txn.events.find(event => event.event === 'ProposalCreated');
