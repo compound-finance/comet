@@ -50,11 +50,6 @@ export class ProposalConstraint<T extends CometContext, R extends Requirements> 
   async solve(requirements: R, context: T, world: World) {
     const solutions: Solution<T>[] = [];
 
-    // Only run migration for mainnet scenarios
-    if (await world.chainId() != 1) {
-      return null;
-    }
-
     const governor = await context.getGovernor();
     const proposals = await getAllPendingProposals(world, governor);
 
