@@ -25,7 +25,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            deployments/.contracts
+            deployments/*/.contracts
             deployments/**/aliases.json
             !deployments/hardhat
             !deployments/relations.ts

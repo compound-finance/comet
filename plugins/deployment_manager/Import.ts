@@ -19,7 +19,7 @@ export async function fetchAndCacheContract(
   force = false
 ): Promise<BuildFile> {
   const buildFile = await fetchContract(cache, network, address, importRetries, importRetryDelay, force);
-  await storeBuildFile(cache, address, buildFile);
+  await storeBuildFile(cache, network, address, buildFile);
   return buildFile;
 }
 
@@ -54,7 +54,7 @@ export async function fetchContract(
   importRetryDelay = DEFAULT_RETRY_DELAY,
   force = false
 ): Promise<BuildFile> {
-  const cachedBuildFile = !force && await getBuildFile(cache, address);
+  const cachedBuildFile = !force && await getBuildFile(cache, network, address);
   if (cachedBuildFile) {
     return cachedBuildFile;
   } else {
@@ -67,10 +67,11 @@ export async function readContract(
   cache: Cache,
   hre: HardhatRuntimeEnvironment,
   fullyQualifiedName: string,
+  network: string,
   address: Address,
   force = false
 ): Promise<BuildFile> {
-  const cachedBuildFile = !force && await getBuildFile(cache, address);
+  const cachedBuildFile = !force && await getBuildFile(cache, network, address);
   if (cachedBuildFile) {
     return cachedBuildFile;
   } else {
