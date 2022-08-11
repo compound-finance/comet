@@ -111,10 +111,12 @@ scenario(
 
     const supplySpeed = (await comet.baseTrackingSupplySpeed()).toBigInt();
     const trackingIndexScale = (await comet.trackingIndexScale()).toBigInt();
-    const expectedRewardsOwed = calculateRewardsOwed(albertBalance, totalSupplyBalance, supplySpeed, 86400, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
-    const expectedRewardsReceived = calculateRewardsOwed(albertBalance, totalSupplyBalance, supplySpeed, 86400 + timeElapsed, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
+    const timestampDelta = preTxnTimestamp - supplyTimestamp;
+    const expectedRewardsOwed = calculateRewardsOwed(albertBalance, totalSupplyBalance, supplySpeed, timestampDelta, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
+    const expectedRewardsReceived = calculateRewardsOwed(albertBalance, totalSupplyBalance, supplySpeed, timestampDelta + timeElapsed, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
 
-    expect(preTxnTimestamp - supplyTimestamp).to.be.equal(86400);
+    // Occasionally `timestampDelta` is equal to 86401
+    expect(timestampDelta).to.be.greaterThanOrEqual(86400);
     expect(rewardsOwedBefore).to.be.equal(expectedRewardsOwed);
     expect(await rewardToken.balanceOf(betty.address)).to.be.equal(expectedRewardsReceived);
     expect(rewardsOwedAfter).to.be.equal(0n);
