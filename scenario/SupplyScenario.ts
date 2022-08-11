@@ -1,6 +1,6 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, getExpectedBaseBalance, getInterest } from './utils';
+import { expectApproximately, expectRevertMatches, getExpectedBaseBalance, getInterest } from './utils';
 
 // XXX consider creating these tests for assets0-15
 scenario(
@@ -279,14 +279,15 @@ scenario(
     await albert.allow(betty, true);
     await collateralAsset.approve(albert, betty, 10n * scale);
 
-    await expect(
+    await expectRevertMatches(
       betty.supplyAssetFrom({
         src: albert.address,
         dst: betty.address,
         asset: collateralAsset.address,
         amount: 100n * scale,
-      })
-    ).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
+      }),
+      [/ERC20: transfer amount exceeds allowance/, /transfer amount exceeds spender allowance/]
+    );
   }
 );
 
@@ -355,14 +356,15 @@ scenario(
     await collateralAsset.approve(albert, comet.address);
     await albert.allow(betty, true);
 
-    await expect(
+    await expectRevertMatches(
       betty.supplyAssetFrom({
         src: albert.address,
         dst: betty.address,
         asset: collateralAsset.address,
         amount: 100n * scale,
-      })
-    ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+      }),
+      /transfer amount exceeds balance/
+    );
   }
 );
 

@@ -4,7 +4,7 @@ import CometActor from '../context/CometActor';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { baseBalanceOf, exp, factorScale } from '../../test/helpers';
-import { bumpSupplyCaps, ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, max, getExpectedBaseBalance, getToTransferAmount } from '../utils';
+import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, max, getExpectedBaseBalance, getToTransferAmount } from '../utils';
 import { BigNumber } from 'ethers';
 import { AssetInfoStructOutput } from '../../build/types/Comet';
 
@@ -80,7 +80,7 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
 
         // First increase supply caps if necessary
         const supplyAmountPerAsset = await getSupplyAmountPerAsset(context, actorsByAsset);
-        await bumpSupplyCaps(context, supplyAmountPerAsset);
+        await context.bumpSupplyCaps(supplyAmountPerAsset);
 
         for (const assetName in actorsByAsset) {
           const asset = await getAssetFromName(assetName, context)

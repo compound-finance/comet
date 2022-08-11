@@ -1,6 +1,6 @@
 import { Constraint } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
-import { bumpSupplyCaps, optionalNumber } from '../utils';
+import { optionalNumber } from '../utils';
 import { defactor, factor, factorScale } from '../../test/helpers';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
@@ -140,7 +140,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
 
           await context.sourceTokens(collateralNeeded, collateralToken, borrowActor);
           await collateralToken.approve(borrowActor, comet);
-          await bumpSupplyCaps(context, { [collateralToken.address]: collateralNeeded })
+          await context.bumpSupplyCaps({ [collateralToken.address]: collateralNeeded })
           await comet.connect(borrowActor.signer).supply(collateralToken.address, collateralNeeded);
 
           // XXX will also need to make sure there are enough base tokens in the protocol to withdraw

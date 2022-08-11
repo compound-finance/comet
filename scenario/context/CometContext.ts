@@ -26,6 +26,7 @@ import {
   IGovernorBravo,
   CometRewards,
 } from '../../build/types';
+import { AssetInfoStructOutput } from '../../build/types/Comet';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { ProtocolConfiguration, deployComet, COMP_WHALES } from '../../src/deploy';
@@ -109,6 +110,47 @@ export class CometContext {
     debug('Upgraded comet...');
 
     return this;
+  }
+
+  async bumpSupplyCaps(supplyAmountPerAsset: Record<string, bigint>) {
+    const comet = await this.getComet();
+    const configurator = await this.getConfigurator();
+    const proxyAdmin = await this.getCometAdmin();
+
+    // Update supply cap in asset configs if new collateral supply will exceed the supply cap
+    let shouldUpgrade = false;
+    const newSupplyCaps: Record<string, bigint> = {};
+    for (const asset in supplyAmountPerAsset) {
+      let assetInfo: AssetInfoStructOutput;
+      try {
+        assetInfo = await comet.getAssetInfoByAddress(asset);
+      } catch (e) {
+        continue; // skip if asset is not a collateral asset
+      }
+
+      const currentTotalSupply = (await comet.totalsCollateral(asset)).totalSupplyAsset.toBigInt();
+      const newTotalSupply = currentTotalSupply + supplyAmountPerAsset[asset];
+      if (newTotalSupply > assetInfo.supplyCap.toBigInt()) {
+        shouldUpgrade = true;
+        newSupplyCaps[asset] = newTotalSupply * 2n;
+      }
+    }
+
+    // Set new supply caps in Configurator and do a deployAndUpgradeTo
+    if (shouldUpgrade) {
+      const [targets, values, signatures, calldata] = [[], [], [], []];
+      for (const asset in newSupplyCaps) {
+        targets.push(configurator.address);
+        values.push(0);
+        signatures.push('updateAssetSupplyCap(address,uint128)');
+        calldata.push(utils.defaultAbiCoder.encode(['address', 'uint128'], [asset, newSupplyCaps[asset]]))
+      }
+      targets.push(proxyAdmin.address);
+      values.push(0);
+      signatures.push('deployAndUpgradeTo(address,address)');
+      calldata.push(utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, comet.address]));
+      await this.fastGovernanceExecute(targets, values, signatures, calldata);
+    }
   }
 
   async allocateActor(name: string, info: object = {}): Promise<CometActor> {
@@ -265,7 +307,7 @@ async function buildActor(name: string, signer: SignerWithAddress, context: Come
   return new CometActor(name, signer, await signer.getAddress(), context);
 }
 
-export async function getActors(context: CometContext): Promise<{ [name: string]: CometActor }> {
+async function getActors(context: CometContext): Promise<{ [name: string]: CometActor }> {
   const { world, deploymentManager } = context;
 
   const comet = await context.getComet();
@@ -294,7 +336,7 @@ export async function getActors(context: CometContext): Promise<{ [name: string]
   };
 }
 
-export async function getAssets(context: CometContext): Promise<{ [symbol: string]: CometAsset }> {
+async function getAssets(context: CometContext): Promise<{ [symbol: string]: CometAsset }> {
   const { deploymentManager } = context;
 
   let comet = await context.getComet();
