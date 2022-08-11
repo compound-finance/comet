@@ -291,10 +291,6 @@ export class DeploymentManager {
     this.contractsCache.set(alias, contract);
   }
 
-  async getAliases(): Promise<Aliases> {
-    return getAliases(this.cache);
-  }
-
   /* Returns a memory-cached map of contracts indexed by alias.
    * Note: this map is cached in-memory and updated when aliases change,
    *  so call this as often as you would like.
