@@ -17,7 +17,7 @@ on:
       eth_pk:
         description: Ignore if you plan to use WalletConnect, otherwise, you can paste in a Ethereum private key
 jobs:
-  deploy_market:
+  deploy-market:
     name: Deploy Market
     runs-on: ubuntu-latest
     env:

@@ -2,7 +2,7 @@ import { diff } from 'jest-diff';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Contract, providers } from 'ethers';
 import { Alias, Address, BuildFile } from './Types';
-import { Aliases, getAliases, putAlias, storeAliases } from './Aliases';
+import { putAlias, storeAliases } from './Aliases';
 import { Cache } from './Cache';
 import { ContractMap } from './ContractMap';
 import { Deployer, DeployOpts, deploy, deployBuild } from './Deploy';
