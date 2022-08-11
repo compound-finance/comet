@@ -14,7 +14,7 @@ async function main() {
   throwIfMissing(RECIPIENT, 'missing required env variable: RECIPIENT');
 
   const network = hre.network.name;
-  if (["hardhat", "fuji"].includes(network)) {
+  if (['hardhat', 'fuji'].includes(network)) {
     throw new Error(`Uniswap unavailable on network: ${network}`);
   }
 
