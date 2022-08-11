@@ -195,7 +195,7 @@ export class DeploymentManager {
       const buildFile = await this.import(address);
       const contract = getEthersContract<C>(address, buildFile, this.hre);
       await this.putAlias(alias, contract);
-      debug(`Imported ${buildFile.contract} from ${address} as '${alias}'`);
+      debug(`Loaded ${buildFile.contract} from ${address} as '${alias}'`);
       return contract;
     }
     return maybeExisting;

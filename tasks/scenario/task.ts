@@ -28,7 +28,7 @@ task('scenario', 'Runs scenario tests')
   .addFlag('noSpider', 'skip spider')
   .addFlag('sync', 'run synchronously')
   .addOptionalParam('stall', 'milliseconds to wait until we fail for stalling', 180_000, types.int)
-  .addOptionalParam('workers', 'count of workers', 3, types.int) // TODO: prob make workers more 1:1 w/ deployments and threads : architecture
+  .addOptionalParam('workers', 'count of workers', 1, types.int) // TODO: optimize parallelized workers better
   .setAction(async (taskArgs, env: HardhatRuntimeEnvironment) => {
     let bases: ForkSpec[] = getBasesFromTaskArgs(taskArgs.bases, env);
 
