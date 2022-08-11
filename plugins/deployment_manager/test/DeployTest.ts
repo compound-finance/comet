@@ -11,7 +11,7 @@ describe('Deploy', () => {
   });
 
   it('deployBuild', async () => {
-    let token = await deployBuild(faucetTokenBuildFile, tokenArgs, hre);
+    let token = await deployBuild(faucetTokenBuildFile, tokenArgs, hre, { network: 'test-network' });
     expect(await token.symbol()).to.equal('TEST');
   });
 });

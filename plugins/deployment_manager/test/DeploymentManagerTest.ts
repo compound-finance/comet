@@ -116,7 +116,7 @@ describe('DeploymentManager', () => {
         ['spot', '0x0000000000000000000000000000000000000000', []]
       );
       // Check that we've cached the build file
-      expect((await getBuildFile(deploymentManager.cache, spot.address)).contract).to.eql('Dog');
+      expect((await getBuildFile(deploymentManager.cache, 'test-network', spot.address)).contract).to.eql('Dog');
     });
   });
 

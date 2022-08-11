@@ -4,7 +4,7 @@ import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentMa
 
 async function deleteSpiderArtifacts() {
   [
-    'rm -rf deployments/.contracts',
+    'rm -rf deployments/*/.contracts',
     'rm deployments/*/*/aliases.json',
   ].forEach(async (command) => {
     console.log(command);

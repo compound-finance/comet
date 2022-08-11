@@ -72,16 +72,20 @@ task('deploy', 'Deploys market')
 
     const verify = noVerify ? false : !simulate;
     const desc = verify ? 'Verify' : 'Would verify';
-    await dm.verifyContracts(async (address, args) => {
-      // TODO: add comet impl verification (on deploy) and delete verify-comet script
-      if (args.via === 'buildfile') {
-        const { contract: _, ...rest } = args;
-        console.log(`[${tag}] ${desc} ${address}:`, rest);
-      } else {
-        console.log(`[${tag}] ${desc} ${address}:`, args);
-      }
-      return verify;
-    });
+    if (noVerify && simulate) {
+      // Don't even print if --no-verify is set with --simulate
+    } else {
+      await dm.verifyContracts(async (address, args) => {
+        // TODO: add comet impl verification (on deploy) and delete verify-comet script
+        if (args.via === 'buildfile') {
+          const { contract: _, ...rest } = args;
+          console.log(`[${tag}] ${desc} ${address}:`, rest);
+        } else {
+          console.log(`[${tag}] ${desc} ${address}:`, args);
+        }
+        return verify;
+      });
+    }
   });
 
 task('gen:migration', 'Generates a new migration')
