@@ -20,7 +20,7 @@ on:
       eth_pk:
         description: Ignore if you plan to use WalletConnect, otherwise, you can paste in a Ethereum private key
 jobs:
-  prepare_migration:
+  prepare-migration:
     name: Prepare Migration
     runs-on: ubuntu-latest
     env:

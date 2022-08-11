@@ -42,10 +42,11 @@ scenario(
     await baseAsset.approve(albert, comet.address);
     await albert.supplyAsset({ asset: baseAssetAddress, amount: 1_000_000n * baseScale })
 
+    const supplyTimestamp = await world.timestamp();
     const albertBalance = await albert.getCometBaseBalance();
     const totalSupplyBalance = (await comet.totalSupply()).toBigInt();
 
-    await world.increaseTime(86_400); // fast forward a day
+    await world.increaseTime(86400); // fast forward a day
     const preTxnTimestamp = await world.timestamp();
 
     const rewardsOwedBefore = (await rewards.callStatic.getRewardOwed(comet.address, albert.address)).owed.toBigInt();
@@ -60,6 +61,7 @@ scenario(
     const expectedRewardsOwed = calculateRewardsOwed(albertBalance, totalSupplyBalance, supplySpeed, 86400, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
     const expectedRewardsReceived = calculateRewardsOwed(albertBalance, totalSupplyBalance, supplySpeed, 86400 + timeElapsed, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
 
+    expect(preTxnTimestamp - supplyTimestamp).to.be.equal(86400);
     expect(rewardsOwedBefore).to.be.equal(expectedRewardsOwed);
     expect(await rewardToken.balanceOf(albert.address)).to.be.equal(expectedRewardsReceived);
     expect(rewardsOwedAfter).to.be.equal(0n);
@@ -93,10 +95,11 @@ scenario(
     await baseAsset.approve(albert, comet.address);
     await albert.supplyAsset({ asset: baseAssetAddress, amount: 1_000_000n * baseScale })
 
+    const supplyTimestamp = await world.timestamp();
     const albertBalance = await albert.getCometBaseBalance();
     const totalSupplyBalance = (await comet.totalSupply()).toBigInt();
 
-    await world.increaseTime(86_400); // fast forward a day
+    await world.increaseTime(86400); // fast forward a day
     const preTxnTimestamp = await world.timestamp();
 
     const rewardsOwedBefore = (await rewards.callStatic.getRewardOwed(comet.address, albert.address)).owed.toBigInt();
@@ -111,6 +114,7 @@ scenario(
     const expectedRewardsOwed = calculateRewardsOwed(albertBalance, totalSupplyBalance, supplySpeed, 86400, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
     const expectedRewardsReceived = calculateRewardsOwed(albertBalance, totalSupplyBalance, supplySpeed, 86400 + timeElapsed, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
 
+    expect(preTxnTimestamp - supplyTimestamp).to.be.equal(86400);
     expect(rewardsOwedBefore).to.be.equal(expectedRewardsOwed);
     expect(await rewardToken.balanceOf(betty.address)).to.be.equal(expectedRewardsReceived);
     expect(rewardsOwedAfter).to.be.equal(0n);

@@ -13,8 +13,6 @@ dist/
 deployments/.contracts
 deployments/*/*/verify
 deployments/*/*/aliases.json
-deployments/*/*/pointers.json
-deployments/*/*/proxies.json
 
 .env
 coverage/

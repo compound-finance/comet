@@ -2,12 +2,11 @@ import { diff } from 'jest-diff';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Contract, providers } from 'ethers';
 import { Alias, Address, BuildFile } from './Types';
-import { Aliases, getAliases, putAlias, storeAliases } from './Aliases';
+import { putAlias, storeAliases } from './Aliases';
 import { Cache } from './Cache';
 import { ContractMap } from './ContractMap';
 import { Deployer, DeployOpts, deploy, deployBuild } from './Deploy';
 import { fetchAndCacheContract, readContract } from './Import';
-import { storeProxies } from './Proxies';
 import { getRelationConfig } from './RelationConfig';
 import { getRoots, putRoots } from './Roots';
 import { Spider, spider } from './Spider';
@@ -196,7 +195,7 @@ export class DeploymentManager {
       const buildFile = await this.import(address);
       const contract = getEthersContract<C>(address, buildFile, this.hre);
       await this.putAlias(alias, contract);
-      debug(`Imported ${buildFile.contract} from ${address} as '${alias}'`);
+      debug(`Loaded ${buildFile.contract} from ${address} as '${alias}'`);
       return contract;
     }
     return maybeExisting;
@@ -282,7 +281,6 @@ export class DeploymentManager {
     );
     await putRoots(this.cache, roots);
     await storeAliases(this.cache, crawl.aliases);
-    await storeProxies(this.cache, crawl.proxies); // TODO: I think we can get rid of this?
     this.contractsCache = crawl.contracts;
     return crawl;
   }
@@ -291,10 +289,6 @@ export class DeploymentManager {
   async putAlias(alias: Alias, contract: Contract) {
     await putAlias(this.cache, alias, contract.address);
     this.contractsCache.set(alias, contract);
-  }
-
-  async getAliases(): Promise<Aliases> {
-    return getAliases(this.cache);
   }
 
   /* Returns a memory-cached map of contracts indexed by alias.
