@@ -7,7 +7,6 @@ import { Cache } from './Cache';
 import { ContractMap } from './ContractMap';
 import { Deployer, DeployOpts, deploy, deployBuild } from './Deploy';
 import { fetchAndCacheContract, readContract } from './Import';
-import { storeProxies } from './Proxies';
 import { getRelationConfig } from './RelationConfig';
 import { getRoots, putRoots } from './Roots';
 import { Spider, spider } from './Spider';
@@ -282,7 +281,6 @@ export class DeploymentManager {
     );
     await putRoots(this.cache, roots);
     await storeAliases(this.cache, crawl.aliases);
-    await storeProxies(this.cache, crawl.proxies); // TODO: I think we can get rid of this?
     this.contractsCache = crawl.contracts;
     return crawl;
   }

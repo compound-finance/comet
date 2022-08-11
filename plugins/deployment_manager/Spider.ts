@@ -15,7 +15,6 @@ import {
 } from './RelationConfig';
 import { Address, Alias, BuildFile } from './Types';
 import { Aliases } from './Aliases';
-import { Proxies } from './Proxies';
 import { ContractMap } from './ContractMap';
 import { Roots } from './Roots';
 import { asArray, debug, getEthersContract, mergeABI } from './Utils';
@@ -24,7 +23,6 @@ import { fetchAndCacheContract, readContract } from './Import';
 export interface Spider {
   roots: Roots;
   aliases: Aliases;
-  proxies: Proxies;
   contracts: ContractMap;
 }
 
@@ -39,7 +37,7 @@ interface DiscoverNode {
   path: Contract[];
 }
 
-function maybeStore(alias: Alias, address: Address, into: Aliases | Proxies): boolean {
+function maybeStore(alias: Alias, address: Address, into: Aliases): boolean {
   const maybeExists = into.get(alias);
   if (maybeExists) {
     if (maybeExists === address) {
@@ -93,7 +91,6 @@ async function crawl(
   node: DiscoverNode,
   context: Ctx,
   aliases: Aliases,
-  proxies: Proxies,
   contracts: ContractMap,
 ): Promise<Alias> {
   const { aliasRender, address, path } = node;
@@ -117,7 +114,6 @@ async function crawl(
             implNode,
             context,
             aliases,
-            proxies,
             contracts,
           );
           const implContract = contracts.get(implAlias);
@@ -135,9 +131,6 @@ async function crawl(
             ),
             hre.ethers.provider
           );
-
-          // TODO: is Proxies necessary? limiting us to one delegate here really
-          maybeStore(alias, implNode.address, proxies);
 
           // Add the alias in place to the relative context
           (context[implAlias] = context[implAlias] || []).push(implContract);
@@ -159,7 +152,6 @@ async function crawl(
               subNode,
               context,
               aliases,
-              proxies,
               contracts,
             );
 
@@ -241,7 +233,6 @@ export async function spider(
 ): Promise<Spider> {
   const context = {};
   const aliases = new Map();
-  const proxies = new Map();
   const contracts = new Map();
 
   for (const [alias, address] of roots) {
@@ -253,7 +244,6 @@ export async function spider(
       { aliasRender: { template: alias, i: 0 }, address, path: [] },
       context,
       aliases,
-      proxies,
       contracts,
     );
 
@@ -261,5 +251,5 @@ export async function spider(
     (context[alias] = context[alias] || []).push(contracts.get(alias));
   }
 
-  return { roots, aliases, proxies, contracts };
+  return { roots, aliases, contracts };
 }

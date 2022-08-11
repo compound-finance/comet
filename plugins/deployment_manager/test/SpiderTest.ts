@@ -10,7 +10,6 @@ import {
 } from '../../../build/types';
 
 import { Cache } from '../Cache';
-import { getContractsFromAliases } from '../ContractMap';
 import { spider } from '../Spider';
 import { RelationConfigMap } from '../RelationConfig';
 import { objectFromMap } from '../Utils';
@@ -119,10 +118,7 @@ describe('Spider', () => {
       },
     };
 
-    let {
-      aliases,
-      proxies,
-    } = await spider(cache, 'avalanche', hre, relationConfig, roots);
+    let { aliases, contracts } = await spider(cache, 'avalanche', hre, relationConfig, roots);
 
     expect(objectFromMap(aliases)).to.eql({
       finn: finn.address,
@@ -136,12 +132,8 @@ describe('Spider', () => {
       // ],
     });
 
-    expect(objectFromMap(proxies)).to.eql({
-      finn: finnImpl.address,
-    });
-
     let check = {};
-    for (let [alias, contract] of await getContractsFromAliases(cache, aliases, proxies, hre)) {
+    for (let [alias, contract] of contracts) {
       // Just make sure these contracts are working, too.
       let name = contract.hasOwnProperty('name') ? await contract.name() : null;
       check[alias] = name ? name : contract.address;
