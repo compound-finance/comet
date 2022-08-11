@@ -1,6 +1,5 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { scaleToDecimals } from './utils';
 
 scenario('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, timelock, actors }, context) => {
   const { admin, albert } = actors;
@@ -28,7 +27,7 @@ scenario('add assets', {}, async ({ comet, configurator, proxyAdmin, actors }, c
 
   // Add new asset and deploy + upgrade
   const newAsset = await comet.getAssetInfo(0);
-  const newAssetDecimals = scaleToDecimals(newAsset.scale); // # of 0's in scale
+  const newAssetDecimals = Math.log10(Number(newAsset.scale.toString()));
   const newAssetConfig = {
     asset: newAsset.asset,
     priceFeed: newAsset.priceFeed,
