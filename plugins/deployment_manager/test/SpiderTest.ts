@@ -32,14 +32,14 @@ async function setupContracts(
     'vendor/proxy/transparent/ProxyAdmin.sol',
     [],
     hre,
-    { cache }
+    { cache, network: 'test-network' }
   );
 
   let finnImpl: Dog = await deploy(
     'test/Dog.sol',
     ['finn:implementation', '0x0000000000000000000000000000000000000000', []],
     hre,
-    { cache }
+    { cache, network: 'test-network' }
   );
 
   let proxy: TransparentUpgradeableProxy = await deploy(
@@ -56,21 +56,21 @@ async function setupContracts(
       ).data,
     ],
     hre,
-    { cache }
+    { cache, network: 'test-network' }
   );
 
   let molly: Dog = await deploy(
     'test/Dog.sol',
     ['molly', proxy.address, []],
     hre,
-    { cache }
+    { cache, network: 'test-network' }
   );
 
   let spot: Dog = await deploy(
     'test/Dog.sol',
     ['spot', proxy.address, []],
     hre,
-    { cache }
+    { cache, network: 'test-network' }
   );
 
   let finn = finnImpl.attach(proxy.address);
@@ -118,7 +118,7 @@ describe('Spider', () => {
       },
     };
 
-    let { aliases, contracts } = await spider(cache, 'avalanche', hre, relationConfig, roots);
+    let { aliases, contracts } = await spider(cache, 'test-network', hre, relationConfig, roots);
 
     expect(objectFromMap(aliases)).to.eql({
       finn: finn.address,

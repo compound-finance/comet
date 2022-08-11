@@ -10,7 +10,7 @@ artifacts/
 build/
 cache/
 dist/
-deployments/.contracts
+deployments/*/.contracts
 deployments/*/*/verify
 deployments/*/*/aliases.json
 
