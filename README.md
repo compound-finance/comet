@@ -189,54 +189,38 @@ For more information, see [SCENARIO.md](./SCENARIO.md).
 
 ### Migrations
 
-XXX explain/get to
- deploying a new root contract?
-  deployments/${network}/${deployment}/deploy.ts
-   open PR, run `deploy` workflow through CI
-    will commit `deployments/` diffs to branch
- otherwise
-  deployments/${network}/${deployment}/migrations/XXX.ts
-   open PR
-    if prepare step
-     run `prepare-migration` workflow through CI
-      XXX currently required to run to obtain artifact for enact
-    run `enact-migration` workflow through CI
-     wait for governance/execution
-      merge PR with completed change
+Migrations are used to make proposals to governance, for changes to the live protocol.
+A migration script has two parts: `prepare` and `enact`.
+The prepare step can perform necessary preparation of artifacts for the enact step, which is where the proposal gets made.
 
-New deployment?
- copy `deploy.ts` scripts from existing instance
-  ignore migrations
-   continue same as above
+Migrations integrate with scenarios, so that changes are automatically tested against the entire scenario suite, with and without the proposal.
+In fact, all combinations of open migrations are checked against the protocol, to ensure safety against any execution order by governance.
+The same script that is used for testing can then be executed for real through the GitHub UI.
+
+Once a proposal that's been made through a pull request has been executed by governance, the pull request should be merged into the `main` branch.
+The PR should include any necessary tests, which will remain in the repository.
+The migration script itself can be deleted in a separate commit, after the PR has been merged and recorded on the `main` branch, for good hygiene.
+It's important to remove migrations once they've been executed, to avoid exploding the cost of running scenarios beyond what's necessary for testing.
+
+For more information, seee [MIGRATIONS.md](./MIGRATIONS.md).
 
 ### Deploying to testnets
 
-#### Kovan
+Each deployment of Comet should have an associated directory inside of `deployments` in the repository.
+Deployments are stored per network, for instance `deployments/mainnet/usdc/`.
 
-XXX simplify to above
+To start a new deployment, create the directory with a `deploy.ts` script and a `configuration.json` file (both probably copied initially from another deployment).
+When copying files from other directories, `migrations` may safely be ignored, as they are meant only for migrating the state of an existing deployment, not starting fresh deployments.
+New deployments and changes to them are also hypothetically tested with scenarios, like migrations are.
+These simulations are extremely useful for testing deployments before actually creating them.
 
-1. run `1644388553_deploy_kovan` migration, `prepare` step
-2. update `deployments/kovan/<deployment>/roots.json` with the new roots from step 1
-3. run `1649108513_upgrade_timelock_and_set_up_governor` migration, `prepare` step
-4. run `1649108513_upgrade_timelock_and_set_up_governor` migration, `enact` step
-5. find the proposal ID step from 4; manually execute the proposal via the newly-deployed Governor
-6. run `1651257129_bulker_and_rewards` migration, `prepare` step
-7. update `deployments/kovan/<deployment>/roots.json` with the rewards and bulker roots from step 6
-8. run `1653357106_mint_to_fauceteer` migration, `prepare` step
-9. run `1653512186_seed_rewards_with_comp`, `prepare` step
-10. run `1653512186_seed_rewards_with_comp`, `enact` step
-11. execute the proposal from step 10
+#### Deploy Workflow
 
-#### Fuji
-
-1. run `1644432723_deploy_fuji`, `prepare` step
-2. update `deployments/fuji/<deployment>/roots.json` with new roots from step 1
-3. run `1649117302_upgrade_timelock_and_set_up_governor`, `prepare` step
-4. run `1649117302_upgrade_timelock_and_set_up_governor`, `enact` step
-5. find the proposal ID step from 4; manually execute the proposal via the newly-deployed Governor
-6. run `1651257139_rewards`, `prepare` step
-7. update `deployments/fuji/<deployment>/roots.json` with new rewards root from step 6
-8. run `1653431603_mint_to_fauceteer`, `prepare` step
+0. Create the deployment script and configuration file, and test locally
+1. Open a PR containing the new deployment directory files
+2. Trigger the `run-deploy` workflow action through the GitHub UI
+3. Inspect the new `roots.json` which the workflow automatically commited to your PR
+4. Start using the new protocol deployment and/or create further migrations to modify it
 
 #### Other considerations
 
