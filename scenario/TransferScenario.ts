@@ -39,7 +39,7 @@ scenario(
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
 
-    // Albert transfers 50 units of collateral to Betty
+    // Albert transfers 50 units of base to Betty
     const toTransfer = 50n * scale;
     const txn = await albert.transferAsset({ dst: betty.address, asset: baseAsset.address, amount: toTransfer });
 

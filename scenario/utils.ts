@@ -1,22 +1,11 @@
 import { expect } from 'chai';
+import { ContractReceipt } from 'ethers';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { BigNumber, BigNumberish, utils, Contract, Event, EventFilter } from 'ethers';
 import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
 import { exp } from '../test/helpers';
-import { AssetInfoStructOutput } from '../build/types/Comet';
-
-export function abs(x: bigint): bigint {
-  return x < 0n ? -x : x;
-}
-
-export const max = (...args) => args.reduce((m, e) => e > m ? e : m);
-export const min = (...args) => args.reduce((m, e) => e < m ? e : m);
-
-export function expectApproximately(expected: bigint, actual: bigint, precision: bigint = 0n) {
-  expect(BigNumber.from(abs(expected - actual))).to.be.lte(BigNumber.from(precision));
-}
 
 export interface ComparativeAmount {
   val: number,
@@ -29,6 +18,28 @@ export enum ComparisonOp {
   LTE,
   LT,
   EQ
+}
+
+export const max = (...args) => args.reduce((m, e) => e > m ? e : m);
+export const min = (...args) => args.reduce((m, e) => e < m ? e : m);
+
+export function abs(x: bigint): bigint {
+  return x < 0n ? -x : x;
+}
+
+export function expectApproximately(expected: bigint, actual: bigint, precision: bigint = 0n) {
+  expect(BigNumber.from(abs(expected - actual))).to.be.lte(BigNumber.from(precision));
+}
+
+export function expectRevertMatches(tx: Promise<ContractReceipt>, patterns: RegExp | RegExp[]) {
+  return tx
+    .then(_ => { throw new Error('Expected transaction to be reverted') })
+    .catch(e => {
+      for (const pattern of [].concat(patterns))
+        if (pattern.test(e.message))
+          return;
+      throw new Error(`Expected revert message in one of ${patterns}, but reverted with: ${e.message}`);
+    });
 }
 
 export function requireString(o: object, key: string, err: string): string {
@@ -87,48 +98,6 @@ export function getExpectedBaseBalance(balance: bigint, baseIndexScale: bigint, 
 
 export function getInterest(balance: bigint, rate: bigint, seconds: bigint) {
   return balance * rate * seconds / (10n ** 18n);
-}
-
-// Increases the supply cap for collateral assets that would go over the supply cap
-export async function bumpSupplyCaps(context: CometContext, supplyAmountPerAsset: Record<string, bigint>) {
-  const comet = await context.getComet();
-  const configurator = await context.getConfigurator();
-  const proxyAdmin = await context.getCometAdmin();
-
-  // Update supply cap in asset configs if new collateral supply will exceed the supply cap
-  let shouldUpgrade = false;
-  const newSupplyCaps: Record<string, bigint> = {};
-  for (const asset in supplyAmountPerAsset) {
-    let assetInfo: AssetInfoStructOutput;
-    try {
-      assetInfo = await comet.getAssetInfoByAddress(asset);
-    } catch (e) {
-      continue; // skip if asset is not a collateral asset
-    }
-
-    const currentTotalSupply = (await comet.totalsCollateral(asset)).totalSupplyAsset.toBigInt();
-    let newTotalSupply = currentTotalSupply + supplyAmountPerAsset[asset];
-    if (newTotalSupply > assetInfo.supplyCap.toBigInt()) {
-      shouldUpgrade = true;
-      newSupplyCaps[asset] = newTotalSupply * 2n;
-    }
-  }
-
-  // Set new supply caps in Configurator and do a deployAndUpgradeTo
-  if (shouldUpgrade) {
-    const [targets, values, signatures, calldata] = [[], [], [], []];
-    for (const asset in newSupplyCaps) {
-      targets.push(configurator.address);
-      values.push(0);
-      signatures.push('updateAssetSupplyCap(address,uint128)');
-      calldata.push(utils.defaultAbiCoder.encode(['address', 'uint128'], [asset, newSupplyCaps[asset]]))
-    }
-    targets.push(proxyAdmin.address);
-    values.push(0);
-    signatures.push('deployAndUpgradeTo(address,address)');
-    calldata.push(utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, comet.address]));
-    await context.fastGovernanceExecute(targets, values, signatures, calldata);
-  }
 }
 
 export async function getActorAddressFromName(name: string, context: CometContext): Promise<string> {

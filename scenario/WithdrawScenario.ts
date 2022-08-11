@@ -1,6 +1,6 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, getExpectedBaseBalance } from './utils';
+import { expectApproximately, expectRevertMatches, getExpectedBaseBalance } from './utils';
 
 // XXX consider creating these tests for assets0-15
 scenario(
@@ -83,7 +83,7 @@ scenario(
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(0n);
     expect(await comet.balanceOf(albert.address)).to.be.equal(0n);
 
-    // Albert borrows 1 unit of base from Comet
+    // Albert borrows 1000 unit of base from Comet
     const txn = await albert.withdrawAsset({ asset: baseAsset.address, amount: 1000n * scale });
 
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(1000n * scale);
@@ -175,7 +175,7 @@ scenario(
 
     await albert.allow(betty, true);
 
-    // Betty borrows 1 unit of base using Albert's account
+    // Betty borrows 1000 unit of base using Albert's account
     const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: 1000n * scale });
 
     expect(await baseAsset.balanceOf(betty.address)).to.be.equal(1000n * scale);
@@ -221,11 +221,8 @@ scenario(
     },
   },
   async ({ comet, actors }) => {
-    const { albert, betty } = actors;
-
+    const { albert } = actors;
     const baseToken = await comet.baseToken();
-
-    await betty.allow(albert, true);
 
     await expect(
       albert.withdrawAsset({
