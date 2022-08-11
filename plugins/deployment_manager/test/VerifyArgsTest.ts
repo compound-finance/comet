@@ -16,7 +16,7 @@ describe('VerifyArgs', () => {
       'test/Dog.sol',
       ['spot', '0x0000000000000000000000000000000000000001', []],
       hre,
-      { cache }
+      { cache, network: 'test-network' }
     );
     let verifyArgs1: VerifyArgs = { via: 'artifacts', address: '0x0000000000000000000000000000000000000000', constructorArguments: [] };
     let verifyArgs2: VerifyArgs = { via: 'buildfile', contract: testContract, buildFile: faucetTokenBuildFile, deployArgs: [] };

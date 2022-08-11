@@ -71,8 +71,8 @@ async function isContract(hre: HRE, address: string) {
   return await hre.ethers.provider.getCode(address) !== '0x';
 }
 
-async function localBuild(cache: Cache, hre: HRE, artifact: string, address: Address): Promise<Build> {
-  const buildFile = await readContract(cache, hre, artifact, address, !cache);
+async function localBuild(cache: Cache, hre: HRE, artifact: string, network: string, address: Address): Promise<Build> {
+  const buildFile = await readContract(cache, hre, artifact, network, address, !cache);
   const contract = getEthersContract(address, buildFile, hre);
   return { buildFile, contract };
 }
@@ -177,7 +177,7 @@ async function crawl(
     // }
     if (aliasTemplateConfig.artifact) {
       //debug(`  ... has artifact specified (${aliasTemplateConfig.artifact})`);
-      const build = await localBuild(cache, hre, aliasTemplateConfig.artifact, address);
+      const build = await localBuild(cache, hre, aliasTemplateConfig.artifact, network, address);
       const alias = await readAlias(build.contract, aliasRender, context, path);
       return maybeProcess(alias, build, aliasTemplateConfig);
     } else {
@@ -196,7 +196,7 @@ async function crawl(
         //debug(`   ... has contract config (${build.buildFile.contract})`);
         if (contractConfig.artifact) {
           //debug(`    ... has artifact specified (${contractConfig.artifact})`);
-          const build_ = await localBuild(null, hre, contractConfig.artifact, address);
+          const build_ = await localBuild(null, hre, contractConfig.artifact, network, address);
           const alias = await readAlias(build_.contract, aliasRender, context, path);
           return maybeProcess(alias, build_, contractConfig);
         } else {

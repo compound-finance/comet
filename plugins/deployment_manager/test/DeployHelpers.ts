@@ -1,5 +1,4 @@
 import hre from 'hardhat';
-import { FaucetToken, FaucetToken__factory } from '../../../build/types';
 import { BuildFile } from '../Types';
 import { deploy, deployBuild } from '../Deploy';
 export { deploy, deployBuild, hre };
@@ -25,9 +24,5 @@ export const faucetTokenBuildFile: BuildFile = {
 export const tokenArgs: [number, string, number, string] = [10000000, 'Test Token', 6, 'TEST'];
 
 export async function buildToken() {
-  return await deploy<FaucetToken, FaucetToken__factory, [number, string, number, string]>(
-    'test/FaucetToken.sol',
-    tokenArgs,
-    hre
-  );
+  return await deploy('test/FaucetToken.sol', tokenArgs, hre, { network: 'test-network' });
 }

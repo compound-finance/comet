@@ -77,7 +77,7 @@ describe('Import', () => {
 
   it('loads from cache', async () => {
     let cache = new Cache('test-network', 'test-deployment');
-    await storeBuildFile(cache, '0x0000000000000000000000000000000000000001', fiatTokenBuildFile);
+    await storeBuildFile(cache, 'avalanche', '0x0000000000000000000000000000000000000001', fiatTokenBuildFile);
     expect(
       await fetchContract(cache, 'avalanche', '0x0000000000000000000000000000000000000001', 0)
     ).to.equal(fiatTokenBuildFile);
@@ -94,7 +94,7 @@ describe('Import', () => {
         0
       )
     ).to.eql(fiatTokenBuildFile);
-    expect(await getBuildFile(cache, '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e')).to.eql(
+    expect(await getBuildFile(cache, 'avalanche', '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e')).to.eql(
       fiatTokenBuildFile
     );
   });

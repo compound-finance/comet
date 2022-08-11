@@ -105,6 +105,7 @@ export class DeploymentManager {
 
   private async deployOpts(): Promise<DeployOpts> {
     return {
+      network: this.network,
       verificationStrategy: this.config.verificationStrategy,
       cache: this.cache,
       connect: await this.getSigner(),
@@ -144,7 +145,7 @@ export class DeploymentManager {
 
   /* Unconditionally casts a contract as the given artifact type, without caching */
   async cast<C extends Contract>(address: string, artifact: string): Promise<C> {
-    const buildFile = await readContract(this.cache, this.hre, artifact, address, true);
+    const buildFile = await readContract(this.cache, this.hre, artifact, this.network, address, true);
     return getEthersContract<C>(address, buildFile, this.hre);
   }
 
@@ -159,7 +160,6 @@ export class DeploymentManager {
   ): Promise<C> {
     const maybeExisting: C = await this.contract(alias);
     if (!maybeExisting || force) {
-      // NB: might use an override alias on deployOpts, but it doesn't invalidate cache...
       const buildFile = await this.import(address, fromNetwork);
       const contract: C = await this._deployBuild(buildFile, deployArgs, retries);
       await this.putAlias(alias, contract);
@@ -178,7 +178,6 @@ export class DeploymentManager {
   ): Promise<C> {
     const maybeExisting: C = await this.contract(alias);
     if (!maybeExisting || force) {
-      // NB: might use an override alias on deployOpts, but it doesn't invalidate cache...
       const contract: C = await this._deploy(contractFile, deployArgs, retries);
       await this.putAlias(alias, contract);
       return contract;

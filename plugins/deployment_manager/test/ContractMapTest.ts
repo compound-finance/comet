@@ -12,18 +12,20 @@ describe('ContractMap', () => {
     it('gets what it stores', async () => {
       const cache = new Cache('test-network', 'test-deployment', false, tempDir());
       const address = '0x0000000000000000000000000000000000000000';
-      await storeBuildFile(cache, address, faucetTokenBuildFile);
-      const buildFile = await getBuildFile(cache, address);
+      await storeBuildFile(cache, 'test-network', address, faucetTokenBuildFile);
+      const buildFile = await getBuildFile(cache, 'test-network', address);
+      const noBuildFile = await getBuildFile(cache, 'no-test-network', address);
       expect(buildFile).to.eql(faucetTokenBuildFile);
+      expect(noBuildFile).to.eql(undefined);
     });
 
     it('stores deploys in the right place', async () => {
       const cache = new Cache('test-network', 'test-deployment', false, tempDir());
-      await deploy('test/FaucetToken.sol', tokenArgs, hre, { cache, alias: 'Toke' });
-      const contracts = cache.cache.get('.contracts');
-      const aliases = cache.cache.get('test-network').get('test-deployment').get('aliases.json');
-      const address = aliases.get('Toke');
-      expect(contracts.has(`${address.toLowerCase()}.json`)).to.eql(true);
+      await deploy('test/FaucetToken.sol', tokenArgs, hre, { cache, network: 'test-network' });
+      const contracts = cache.cache.get('test-network').get('.contracts');
+      const noContracts = cache.cache.get('no-test-network');
+      expect(contracts.size).to.eql(1);
+      expect(noContracts).to.eql(undefined);
     });
   });
 });
