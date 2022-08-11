@@ -1,4 +1,6 @@
 import * as fs from 'fs/promises';
+import { HardhatRuntimeEnvironment as HRE } from 'hardhat/types';
+import { Contract } from 'ethers';
 import { ABI, BuildFile, ContractMetadata } from './Types';
 
 type InputOrOutput = {
@@ -65,24 +67,23 @@ export function getPrimaryContract(buildFile: BuildFile): [string, ContractMetad
   return [targetContract, contractMetadata];
 }
 
-// merge two ABIs
-// conflicting entries (like constructors) will defer to the second abi
-// ("abi1"); duplicate entries are removed
+export function getEthersContract<C extends Contract>(address: string, buildFile: BuildFile, hre: HRE): C {
+  const [_, metadata] = getPrimaryContract(buildFile);
+  return new hre.ethers.Contract(address, metadata.abi, hre.ethers.provider) as C;
+}
+
+// merge two ABIs, duplicate entries are removed
+// conflicting entries (like constructors) will defer to the second abi (`abi1`)
 export function mergeABI(abi0: ABI, abi1: ABI): ABIEntry[] {
-  let parsedABI0: ABIEntry[] = typeof abi0 === 'string' ? JSON.parse(abi0) : abi0;
-  let parsedABI1: ABIEntry[] = typeof abi1 === 'string' ? JSON.parse(abi1) : abi1;
-
-  const mergedABI = [...parsedABI0, ...parsedABI1];
-
+  const parsedABI0: ABIEntry[] = typeof abi0 === 'string' ? JSON.parse(abi0) : abi0;
+  const parsedABI1: ABIEntry[] = typeof abi1 === 'string' ? JSON.parse(abi1) : abi1;
   const entries = {};
-
-  for (const abiEntry of mergedABI) {
-    // only allow one constructor or one unique entry
-    const key = abiEntry.type === 'constructor' ? 'constructor' : JSON.stringify(abiEntry);
-
+  for (const abiEntry of parsedABI0.concat(parsedABI1)) {
+    const { type, name, inputs } = abiEntry;
+    const normalizedEntry = { type, name, inputs: inputs && inputs.map(i => ({ type: i.type })) };
+    const key = type === 'constructor' ? 'constructor' : JSON.stringify(normalizedEntry);
     entries[key] = abiEntry;
   }
-
   return Object.values(entries);
 }
 
@@ -100,14 +101,6 @@ export function objectFromMap<V>(map: Map<string, V>): { [k: string]: V } {
 
 export function mapValues<V, W>(o: { string: V }, f: (V) => W): { [k: string]: W } {
   return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, f(v)]));
-}
-
-export function cross<A, B>(as: A[], bs: B[]): [A, B][] {
-  return as.map<[A, B][]>((a) => {
-    return bs.map<[A, B]>((b) => {
-      return [a, b];
-    });
-  }).flat();
 }
 
 export function asArray<A>(v: A | A[]): A[] {

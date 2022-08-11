@@ -1,4 +1,4 @@
-name: 'Scenario Report'
+name: Scenario Report
 on:
   workflow_run:
     workflows: ['Run Scenarios']  # runs after CI workflow

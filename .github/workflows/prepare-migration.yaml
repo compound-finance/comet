@@ -1,4 +1,4 @@
-name: 'Prepare Migration'
+name: Prepare Migration
 on:
   workflow_dispatch:
     inputs:

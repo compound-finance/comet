@@ -3,6 +3,7 @@ import { CometContext } from '../context/CometContext';
 import { Requirements } from './Requirements';
 import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
 import { modifiedPaths } from '../utils';
+import { debug } from '../../plugins/deployment_manager/Utils';
 
 async function getMigrations<T>(context: CometContext, requirements: Requirements): Promise<Migration<T>[]> {
   // TODO: make this configurable from cli params/env var?
@@ -22,10 +23,6 @@ function* subsets<T>(array: T[], offset = 0): Generator<T[]> {
   yield [];
 }
 
-function debug(...args: any[]) {
-  console.log(`[MigrationConstraint]`, ...args);
-}
-
 async function asyncFilter<T>(els: T[], f: (T) => Promise<boolean>): Promise<T[]> {
   let filterResults = await Promise.all(els.map((el) => f(el)));
   return els.filter((el, i) => filterResults[i]);
@@ -36,22 +33,9 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
     let solutions: Solution<T>[] = [];
 
     for (let migrationList of subsets(await getMigrations(context, requirements))) {
-      solutions.push(async function (ctx: T, wld: World): Promise<T> {
-
-        // XXX is there a better way to check if governor is GovernorSimple?
-        try {
-          // Ensure that signer is an admin of GovernorSimple before running migrations
-          // This is so the signer has permission to propose and queue proposals
-          const { signer } = ctx.actors;
-          const governor = await ctx.getGovernor();
-          if (!(await governor.isAdmin(signer.address))) {
-            const adminAddress = await governor.admins(0);
-            const adminSigner = await wld.impersonateAddress(adminAddress);
-            await governor.connect(adminSigner).addAdmin(signer.address);
-          }
-        } catch (e) {
-          // not GovernorSimple
-        }
+      solutions.push(async function (ctx: T): Promise<T> {
+        const governor = await ctx.getGovernor();
+        const proposer = await ctx.getProposer(); // XXX reconcile with Kevins, just unshift into signers?
 
         migrationList.sort((a, b) => a.name.localeCompare(b.name))
         debug(`Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);
@@ -62,7 +46,6 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
           await migration.actions.enact(ctx.deploymentManager, artifact);
           debug(`Enacted migration ${migration.name}`);
         }
-        await ctx.deploymentManager.spider();
         return ctx;
       });
     }

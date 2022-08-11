@@ -3,7 +3,7 @@ import * as nodepath from 'path';
 import { inspect } from 'util';
 import { fileExists, objectFromMap, objectToMap } from './Utils';
 
-export type FileSpec = string | string[] | { rel: string | string[] };
+export type FileSpec = string | string[] | { rel: string | string[] } | { top: string | string[] };
 
 function compose<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C {
   return (x) => g(f(x));
@@ -63,7 +63,9 @@ export class Cache {
     } else if (Array.isArray(spec)) {
       return spec.map((s) => s.toLowerCase());
     } else if (spec.hasOwnProperty('rel')) {
-      return [this.network, this.deployment, ...this.getPath(spec.rel)];
+      return [this.network, this.deployment, ...this.getPath(spec['rel'])];
+    } else if (spec.hasOwnProperty('top')) {
+      return this.getPath(spec['top']);
     }
   }
 
@@ -141,16 +143,18 @@ export class Cache {
   async storeCache<T>(spec: FileSpec, data: T, diskTransformer: (T) => string = stringifyJson) {
     this.putMemory<T>(spec, data);
     if (this.writeCacheToDisk) {
-      return await this.putDisk<T>(spec, data, diskTransformer);
+      await this.putDisk<T>(spec, data, diskTransformer);
     }
   }
 
   async readMap<V>(spec: FileSpec): Promise<Map<string, V>> {
-    return await this.readCache(spec, compose<string, object, Map<string, V>>(parseJson, objectToMap));
+    // make sure others have their own copy of the map so they don't modify the memory version
+    return new Map(await this.readCache(spec, compose<string, object, Map<string, V>>(parseJson, objectToMap)));
   }
 
   async storeMap<K, V>(spec: FileSpec, map: Map<K, V>) {
-    await this.storeCache(spec, map, compose(objectFromMap, stringifyJson));
+    // make sure we have our own copy of the map so others don't modify the memory version
+    await this.storeCache(spec, new Map(map), compose(objectFromMap, stringifyJson));
   }
 
   clearMemory() {

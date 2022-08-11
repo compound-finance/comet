@@ -7,6 +7,7 @@ pragma solidity 0.8.15;
  */
 contract CometConfiguration {
     struct ExtConfiguration {
+        bytes32 name32;
         bytes32 symbol32;
     }
 

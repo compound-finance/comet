@@ -61,6 +61,7 @@ export type ProtocolOpts = {
       factory?: FaucetToken__factory | EvilToken__factory | FaucetWETH__factory;
     };
   };
+  name?: string;
   symbol?: string;
   governor?: SignerWithAddress;
   pauseGuardian?: SignerWithAddress;
@@ -204,14 +205,14 @@ export const factorScale = factor(1);
 export const ONE = factorScale;
 export const ZERO = factor(0);
 
-export async function getBlock(n?: number): Promise<Block> {
-  const blockNumber = n === undefined ? await ethers.provider.getBlockNumber() : n;
-  return ethers.provider.getBlock(blockNumber);
+export async function getBlock(n?: number, ethers_ = ethers): Promise<Block> {
+  const blockNumber = n == undefined ? await ethers_.provider.getBlockNumber() : n;
+  return ethers_.provider.getBlock(blockNumber);
 }
 
-export async function fastForward(seconds: number): Promise<Block> {
+export async function fastForward(seconds: number, ethers_ = ethers): Promise<Block> {
   const block = await getBlock();
-  await ethers.provider.send('evm_setNextBlockTimestamp', [block.timestamp + seconds]);
+  await ethers_.provider.send('evm_setNextBlockTimestamp', [block.timestamp + seconds]);
   return block;
 }
 
@@ -229,6 +230,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     priceFeeds[asset] = priceFeed;
   }
 
+  const name32 = ethers.utils.formatBytes32String((opts.name || 'Compound Comet'));
   const symbol32 = ethers.utils.formatBytes32String((opts.symbol || '📈BASE'));
   const governor = opts.governor || signers[0];
   const pauseGuardian = opts.pauseGuardian || signers[1];
@@ -269,7 +271,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   let extensionDelegate = opts.extensionDelegate;
   if (extensionDelegate === undefined) {
     const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
-    extensionDelegate = await CometExtFactory.deploy({ symbol32 });
+    extensionDelegate = await CometExtFactory.deploy({ name32, symbol32 });
     await extensionDelegate.deployed();
   }
 

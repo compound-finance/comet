@@ -4,11 +4,8 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import nock from 'nock';
 
 import {
-  Dog__factory,
   Dog,
   ProxyAdmin,
-  ProxyAdmin__factory,
-  TransparentUpgradeableProxy__factory,
   TransparentUpgradeableProxy,
 } from '../../../build/types';
 
@@ -32,26 +29,21 @@ async function setupContracts(
   cache: Cache,
   hre: HardhatRuntimeEnvironment
 ): Promise<TestContracts> {
-  let proxyAdminArgs: [] = [];
-  let proxyAdmin = await deploy<ProxyAdmin, ProxyAdmin__factory, []>(
+  let proxyAdmin: ProxyAdmin = await deploy(
     'vendor/proxy/transparent/ProxyAdmin.sol',
-    proxyAdminArgs,
+    [],
     hre,
     { cache }
   );
 
-  let finnImpl = await deploy<Dog, Dog__factory, [string, string, string[]]>(
+  let finnImpl: Dog = await deploy(
     'test/Dog.sol',
-    ['', '0x0000000000000000000000000000000000000000', []],
+    ['finn:implementation', '0x0000000000000000000000000000000000000000', []],
     hre,
     { cache }
   );
 
-  let proxy = await deploy<
-    TransparentUpgradeableProxy,
-    TransparentUpgradeableProxy__factory,
-    [string, string, string]
-  >(
+  let proxy: TransparentUpgradeableProxy = await deploy(
     'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
     [
       finnImpl.address,
@@ -59,7 +51,7 @@ async function setupContracts(
       (
         await finnImpl.populateTransaction.initializeDog(
           'finn',
-          '0x0000000000000000000000000000000000000000',
+          finnImpl.address,
           []
         )
       ).data,
@@ -68,14 +60,14 @@ async function setupContracts(
     { cache }
   );
 
-  let molly = await deploy<Dog, Dog__factory, [string, string, string[]]>(
+  let molly: Dog = await deploy(
     'test/Dog.sol',
     ['molly', proxy.address, []],
     hre,
     { cache }
   );
 
-  let spot = await deploy<Dog, Dog__factory, [string, string, string[]]>(
+  let spot: Dog = await deploy(
     'test/Dog.sol',
     ['spot', proxy.address, []],
     hre,
@@ -110,7 +102,7 @@ describe('Spider', () => {
 
     let relationConfig: RelationConfigMap = {
       finn: {
-        proxy: {
+        delegates: {
           field: {
             slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc',
           },
@@ -130,7 +122,7 @@ describe('Spider', () => {
     let {
       aliases,
       proxies,
-    } = await spider(cache, 'avalanche', hre, relationConfig, roots, 0);
+    } = await spider(cache, 'avalanche', hre, relationConfig, roots);
 
     expect(objectFromMap(aliases)).to.eql({
       finn: finn.address,
@@ -156,7 +148,7 @@ describe('Spider', () => {
     }
     expect(check).to.eql({
       finn: 'finn',
-      'finn:implementation': finnImpl.address,
+      'finn:implementation': 'finn:implementation',
       molly: 'molly',
       spot: 'spot',
     });

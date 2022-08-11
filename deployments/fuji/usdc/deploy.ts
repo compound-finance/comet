@@ -1,171 +1,109 @@
-import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
-import { exp, wait } from '../../../test/helpers';
-import {
-  Fauceteer,
-  Fauceteer__factory,
-  ProxyAdmin,
-  ProxyAdmin__factory
-} from '../../../build/types';
-import { Contract } from 'ethers';
-import { debug } from '../../../plugins/deployment_manager/Utils';
+import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
+import { Fauceteer, ProxyAdmin } from '../../../build/types';
+import { DeploySpec, cloneGov, debug, deployComet, exp, sameAddress, wait } from '../../../src/deploy';
 
-let cloneNetwork = 'avalanche';
-let cloneAddr = {
-  usdcImplementation: '0xa3fa3d254bf6af295b5b22cc6730b04144314890',
+const cloneNetwork = 'avalanche';
+const clone = {
+  usdcImpl: '0xa3fa3d254bf6af295b5b22cc6730b04144314890',
   usdcProxy: '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e',
   wbtc: '0x50b7545627a5162f82a992c33b87adc75187b218',
   wavax: '0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7',
 };
 
-interface Vars {
-  comet: string,
-  configurator: string,
-  fauceteer: string,
-  rewards: string,
-  // XXX deploy bulker once that is implemented for Avalanche
-  bulker?: string
-};
-
-export default async function deploy(deploymentManager: DeploymentManager) {
-  return await deploymentManager.doThenVerify(
-    () => deployAll(deploymentManager)
-  );
+export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
+  const deployed = await deployContracts(deploymentManager, deploySpec);
+  await mintTokens(deploymentManager);
+  return deployed;
 }
 
-async function deployAll(deploymentManager: DeploymentManager) {
-  const newRoots = await deployContracts(deploymentManager);
-  deploymentManager.putRoots(new Map(Object.entries(newRoots)));
+async function deployContracts(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
+  const ethers = deploymentManager.hre.ethers;
+  const signer = await deploymentManager.getSigner();
 
-  debug("Roots.json have been set to:");
-  debug("");
-  debug("");
-  debug(JSON.stringify(newRoots, null, 4));
-  debug("");
+  // Deploy governance contracts
+  const { fauceteer, governor, timelock } = await cloneGov(deploymentManager);
 
-  // We have to re-spider to get the new deployments
-  await deploymentManager.spider();
+  const usdcProxyAdmin = await deploymentManager.deploy('USDC:admin', 'vendor/proxy/transparent/ProxyAdmin.sol', []);
+  const usdcImpl = await deploymentManager.clone('USDC:implementation', clone.usdcImpl, [], cloneNetwork);
+  const usdcProxy = await deploymentManager.clone('USDC', clone.usdcProxy, [usdcImpl.address], cloneNetwork);
+  const usdcProxyAdminSlot = '0x10d6a54a4754c8869d6886b5f5d7fbfa5b4522237ea5c60d11bc4e7a1ff9390b';
+  const USDC = usdcImpl.attach(usdcProxy.address);
 
-  await mintToFauceteer(deploymentManager);
+  await deploymentManager.idempotent(
+    async () => !sameAddress(await ethers.provider.getStorageAt(usdcProxy.address, usdcProxyAdminSlot), usdcProxyAdmin.address),
+    async () => {
+      debug(`Changing admin of USDC proxy to ${usdcProxyAdmin.address}`);
+      await wait(usdcProxy.connect(signer).changeAdmin(usdcProxyAdmin.address));
 
-  return newRoots;
-}
-
-async function deployContracts(deploymentManager: DeploymentManager): Promise<Vars> {
-  let signer = await deploymentManager.getSigner();
-  let signerAddress = signer.address;
-
-  let usdcProxyAdminArgs: [] = [];
-  let usdcProxyAdmin = await deploymentManager.deploy<ProxyAdmin, ProxyAdmin__factory, []>(
-    'vendor/proxy/transparent/ProxyAdmin.sol',
-    usdcProxyAdminArgs
+      debug(`Initializing USDC`);
+      await wait(USDC.connect(signer).initialize(
+        'USD Coin',     // name
+        'USDC',         // symbol
+        'USD',          // currency
+        6,              // decimals
+        signer.address, // Master Minter
+        signer.address, // Pauser
+        signer.address, // Blacklister
+        signer.address  // Owner
+      ));
+    }
   );
 
-  let fauceteer = await deploymentManager.deploy<Fauceteer, Fauceteer__factory, []>(
-    'test/Fauceteer.sol',
-    []
-  );
-
-  let usdcImplementation = await deploymentManager.clone(
-    cloneAddr.usdcImplementation,
-    [],
-    cloneNetwork
-  );
-
-  let usdc;
-  let usdcProxy = await deploymentManager.clone(
-    cloneAddr.usdcProxy,
-    [usdcImplementation.address],
-    cloneNetwork
-  );
-
-  debug(`Changing admin of USDC proxy to ${usdcProxyAdmin.address}`);
-  await deploymentManager.asyncCallWithRetry(
-    (signer_) => wait(usdcProxy.connect(signer_).changeAdmin(usdcProxyAdmin.address))
-  )
-  usdc = usdcImplementation.attach(usdcProxy.address);
-  // Give signer 10,000 USDC
-  debug(`Initializing USDC`);
-  await deploymentManager.asyncCallWithRetry(
-    (signer_) => wait(
-      usdc.connect(signer_).initialize(
-        'USD Coin',
-        'USDC',
-        'USD',
-        6,
-        signerAddress,
-        signerAddress,
-        signerAddress,
-        signerAddress
-      )
-    )
-  );
-
-  let wbtc = await deploymentManager.clone(cloneAddr.wbtc, [], cloneNetwork);
-
-  let wavax = await deploymentManager.clone(cloneAddr.wavax, [], cloneNetwork);
-  // Give admin 0.01 WAVAX tokens [this is a precious resource here!]
-  debug(`Minting some WAVAX`);
-  await deploymentManager.asyncCallWithRetry(
-    (signer_) => wait(wavax.connect(signer_).deposit({ value: exp(0.01, 18) }))
-  );
-
-  // Contracts referenced in `configuration.json`.
-  let contracts = new Map<string, Contract>([
-    ['USDC', usdc],
-    ['WBTC.e', wbtc],
-    ['WAVAX', wavax],
-  ]);
+  const WBTC = await deploymentManager.clone('WBTC.e', clone.wbtc, [], cloneNetwork);
+  const WAVAX = await deploymentManager.clone('WAVAX', clone.wavax, [], cloneNetwork);
 
   // Deploy all Comet-related contracts
-  let { cometProxy, configuratorProxy, rewards } = await deployComet(
-    deploymentManager,
-    { all: true },
-    {},
-    contracts
-  );
+  const deployed = await deployComet(deploymentManager, deploySpec);
 
-  return {
-    comet: cometProxy.address,
-    configurator: configuratorProxy.address,
-    fauceteer: fauceteer.address,
-    rewards: rewards.address,
-  };
+  // TODO: Bulker for Avalanche
+
+  return { ...deployed, fauceteer };
 }
 
-async function mintToFauceteer(deploymentManager: DeploymentManager) {
+async function mintTokens(deploymentManager: DeploymentManager) {
   const signer = await deploymentManager.getSigner();
-  const signerAddress = signer.address;
-
-  debug(`Minting as signer: ${signerAddress}`);
-
   const contracts = await deploymentManager.contracts();
+  const timelock = contracts.get('timelock');
   const fauceteer = contracts.get('fauceteer');
-  const fauceteerAddress = fauceteer.address;
 
-  // USDC
-  const USDC = contracts.get('USDC');
-  const usdcDecimals = await USDC.decimals();
-  debug(`minting USDC@${USDC.address} to fauceteer@${fauceteerAddress}`);
-  await deploymentManager.asyncCallWithRetry(
-    (signer_) => wait(USDC.connect(signer_).configureMinter(signerAddress, exp(100_000_000, usdcDecimals))) // mint 100M USDC
-  );
-  await deploymentManager.asyncCallWithRetry(
-    (signer_) => wait(USDC.connect(signer_).mint(fauceteerAddress, exp(100_000_000, usdcDecimals)))
-  );
-  debug(`USDC.balanceOf(fauceteerAddress): ${await USDC.balanceOf(fauceteerAddress)}`);
+  debug(`Attempting to mint as ${signer.address}...`);
 
-  // WBTC
+  const WAVAX = contracts.get('WAVAX');
+  await deploymentManager.idempotent(
+    async () => (await WAVAX.balanceOf(signer.address)).lt(exp(0.01, 18)),
+    async () => {
+      debug(`Minting 0.01 WAVAX for signer (this is a precious resource!)`);
+      await wait(WAVAX.connect(signer).deposit({ value: exp(0.01, 18) }));
+      debug(`WAVAX.balanceOf(${signer.address}): ${await WAVAX.balanceOf(signer.address)}`);
+    }
+  );
+
+  // If we haven't spidered new contracts (which we could before minting, but its slow),
+  //  then the proxy contract won't have the impl functions yet, so just do it explicitly
+  const usdcProxy = contracts.get('USDC'), usdcImpl = contracts.get('USDC:implementation');
+  const USDC = usdcImpl.attach(usdcProxy.address);
+  await deploymentManager.idempotent(
+    async () => (await USDC.balanceOf(fauceteer.address)).eq(0),
+    async () => {
+      debug(`Minting 100M USDC to fauceteer`);
+      const amount = exp(100_000_000, await USDC.decimals());
+      await wait(USDC.connect(signer).configureMinter(signer.address, amount));
+      await wait(USDC.connect(signer).mint(fauceteer.address, amount));
+      debug(`USDC.balanceOf(${fauceteer.address}): ${await USDC.balanceOf(fauceteer.address)}`);
+    }
+  );
+
   const WBTC = contracts.get('WBTC.e');
-  const wbtcDecimals = await WBTC.decimals();
-  debug(`minting WBTC@${WBTC.address} to fauceteer@${fauceteerAddress}`);
-  await deploymentManager.asyncCallWithRetry(
-    (signer_) => wait(WBTC.connect(signer_).mint(
-      fauceteer.address,
-      exp(20, wbtcDecimals), // mint 20 WBTC
-      '0x0000000000000000000000000000000000000000',
-      0,
-      '0x0000000000000000000000000000000000000000000000000000000000000000')
-    )
+  await deploymentManager.idempotent(
+    async () => (await WBTC.balanceOf(fauceteer.address)).eq(0),
+    async () => {
+      debug(`Minting 10000 WBTC to fauceteer`);
+      const amount = exp(10000, await WBTC.decimals());
+      const feeAddress = '0x0000000000000000000000000000000000000000';
+      const feeAmount = 0;
+      const originTxId = '0x0000000000000000000000000000000000000000000000000000000000000000';
+      await wait(WBTC.connect(signer).mint(fauceteer.address, amount, feeAddress, feeAmount, originTxId));
+      debug(`WBTC.balanceOf(${fauceteer.address}): ${await WBTC.balanceOf(fauceteer.address)}`);
+    }
   );
-  debug(`WBTC.balanceOf(fauceteerAddress): ${await WBTC.balanceOf(fauceteerAddress)}`);
 }

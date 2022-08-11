@@ -289,9 +289,7 @@ describe('ContractMap', () => {
       let aliases = new Map([['token', '0x0000000000000000000000000000000000000000']]);
       let proxies = new Map([['token', '0x0000000000000000000000000000000000000001']]);
 
-      await expect(getContractsFromAliases(cache, aliases, proxies, hre)).to.be.rejectedWith(
-        'Failed to find contract by alias token:implementation at 0x0000000000000000000000000000000000000001'
-      );
+      expect(await getContractsFromAliases(cache, aliases, proxies, hre)).to.eql(new Map);
     });
   });
 

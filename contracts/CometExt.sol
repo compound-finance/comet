@@ -15,9 +15,6 @@ contract CometExt is CometExtInterface {
 
     /** Public constants **/
 
-    /// @notice The name of this contract
-    string public override constant name = "Compound Comet";
-
     /// @notice The major version of this contract
     string public override constant version = "0";
 
@@ -35,6 +32,9 @@ contract CometExt is CometExtInterface {
 
     /** Immutable symbol **/
 
+    /// @dev The ERC20 name for wrapped base token
+    bytes32 internal immutable name32;
+
     /// @dev The ERC20 symbol for wrapped base token
     bytes32 internal immutable symbol32;
 
@@ -43,6 +43,7 @@ contract CometExt is CometExtInterface {
      * @param config The mapping of initial/constant parameters
      **/
     constructor(ExtConfiguration memory config) {
+        name32 = config.name32;
         symbol32 = config.symbol32;
     }
 
@@ -71,6 +72,26 @@ contract CometExt is CometExtInterface {
     }
 
     /** Additional ERC20 functionality and approval interface **/
+
+    /**
+     * @notice Get the ERC20 name for wrapped base token
+     * @return The name as a string
+     */
+    function name() override public view returns (string memory) {
+        uint8 i;
+        for (i = 0; i < 32; ) {
+            if (name32[i] == 0) {
+                break;
+            }
+            unchecked { i++; }
+        }
+        bytes memory name_ = new bytes(i);
+        for (uint8 j = 0; j < i; ) {
+            name_[j] = name32[j];
+            unchecked { j++; }
+        }
+        return string(name_);
+    }
 
     /**
      * @notice Get the ERC20 symbol for wrapped base token
@@ -183,7 +204,7 @@ contract CometExt is CometExtInterface {
         if (uint256(s) > MAX_VALID_ECDSA_S) revert InvalidValueS();
         // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
         if (v != 27 && v != 28) revert InvalidValueV();
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), keccak256(bytes(version)), block.chainid, address(this)));
+        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name())), keccak256(bytes(version)), block.chainid, address(this)));
         bytes32 structHash = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, owner, manager, isAllowed_, nonce, expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);

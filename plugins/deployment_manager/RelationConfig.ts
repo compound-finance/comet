@@ -2,11 +2,13 @@ import { Contract, utils } from 'ethers';
 import { DeploymentManagerConfig } from './type-extensions';
 import { Address, Alias } from './Types';
 
-export type AliasFunction = (contract: Contract) => Promise<string>;
-export type AliasTemplateString = string;
-export type AliasTemplate = AliasTemplateString | AliasFunction;
+export type Ctx = { [aliasTemplate: string]: Contract[] };
 
-export type FieldFunction = (c: Contract) => Promise<string | string[]>;
+export type AliasFunction = (contract: Contract, context: Ctx, i: number, path: Contract[]) => Promise<string>;
+export type AliasTemplate = string | AliasFunction;
+export type AliasRender = { template: AliasTemplate, i: number };
+
+export type FieldFunction = (parent: Contract, context: Ctx) => Promise<string | string[]>;
 export interface FieldKey {
   key?: string;
   slot?: string;
@@ -19,11 +21,12 @@ export interface RelationInnerConfig {
 }
 
 export interface RelationConfig {
-  proxy?: RelationInnerConfig;
-  relations: { [alias: string]: RelationInnerConfig };
+  artifact?: string; // NB: only applies if for an aliasTemplate key
+  delegates?: RelationInnerConfig; // XXX map to default suffix?
+  relations?: { [aliasTemplate: string]: RelationInnerConfig };
 }
 
-export type RelationConfigMap = { [alias: Alias]: RelationConfig };
+export type RelationConfigMap = { [aliasTemplateOrContractName: string]: RelationConfig };
 
 // Read relation configuration
 export function getRelationConfig(
@@ -44,7 +47,7 @@ export function getRelationConfig(
   );
 }
 
-export function getFieldKey(alias: Alias, config: RelationInnerConfig): FieldKey {
+export function getFieldKey(config: RelationInnerConfig, defaultKey?: string): FieldKey {
   if (typeof config.field === 'string') {
     return { key: config.field };
   } else if (typeof config.field === 'function') {
@@ -52,7 +55,7 @@ export function getFieldKey(alias: Alias, config: RelationInnerConfig): FieldKey
   } else if (config.field) {
     return config.field;
   } else {
-    return { key: alias };
+    return { key: defaultKey };
   }
 }
 
@@ -80,7 +83,7 @@ async function readKey(contract: Contract, fnName: string): Promise<any> {
   return await fn();
 }
 
-export async function readField(contract: Contract, fieldKey: FieldKey): Promise<Address[]> {
+export async function readField(contract: Contract, fieldKey: FieldKey, context: Ctx): Promise<Address[]> {
   if (fieldKey.slot) {
     // Read from slot
     let addressRaw = await contract.provider.getStorageAt(contract.address, fieldKey.slot);
@@ -90,7 +93,7 @@ export async function readField(contract: Contract, fieldKey: FieldKey): Promise
     let val = await readKey(contract, fieldKey.key);
     return asAddressArray(val, fieldKey.key);
   } else if (fieldKey.getter) {
-    return asAddressArray(await fieldKey.getter(contract), 'custom function');
+    return asAddressArray(await fieldKey.getter(contract, context), 'custom function');
   } else {
     throw new Error(`Unknown or invalid field key ${JSON.stringify(fieldKey)}`);
   }
@@ -98,8 +101,11 @@ export async function readField(contract: Contract, fieldKey: FieldKey): Promise
 
 export async function readAlias(
   contract: Contract,
-  aliasTemplate: AliasTemplate
+  aliasRender: AliasRender,
+  context: Ctx,
+  path: Contract[],
 ): Promise<Alias> {
+  const { template: aliasTemplate, i } = aliasRender;
   if (typeof aliasTemplate === 'string') {
     if (aliasTemplate.startsWith('.')) {
       return await readKey(contract, aliasTemplate.slice(1));
@@ -107,12 +113,16 @@ export async function readAlias(
       return aliasTemplate;
     }
   } else if (typeof aliasTemplate === 'function') {
-    return await aliasTemplate(contract);
+    return await aliasTemplate(contract, context, i, path);
   } else {
     throw new Error(`Invalid alias template: ${JSON.stringify(aliasTemplate)}`);
   }
 }
 
-export function aliasTemplateFromAlias(alias: Alias): AliasTemplate {
-  return alias;
+export function aliasTemplateKey(aliasTemplate: AliasTemplate): string | undefined {
+  if (typeof aliasTemplate === 'string') {
+    return aliasTemplate;
+  } else if (aliasTemplate.name && aliasTemplate.name !== 'alias') {
+    return aliasTemplate.name;
+  }
 }

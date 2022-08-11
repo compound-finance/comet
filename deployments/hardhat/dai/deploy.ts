@@ -1,14 +1,6 @@
-import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
-import {
-  FaucetToken,
-  FaucetToken__factory,
-  SimplePriceFeed,
-  SimplePriceFeed__factory,
-} from '../../../build/types';
-import { deployComet } from '../../../src/deploy';
-import { exp } from '../../../test/helpers';
-
-// XXX clean this all up further, but minimize changes for now on first pass refactor
+import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
+import { FaucetToken, SimplePriceFeed } from '../../../build/types';
+import { DeploySpec, cloneGov, debug, deployComet, exp, sameAddress, wait } from '../../../src/deploy';
 
 async function makeToken(
   deploymentManager: DeploymentManager,
@@ -17,44 +9,37 @@ async function makeToken(
   decimals: number,
   symbol: string
 ): Promise<FaucetToken> {
-  return await deploymentManager.deploy<
-    FaucetToken,
-    FaucetToken__factory,
-    [string, string, number, string]
-  >('test/FaucetToken.sol', [
-    (BigInt(amount) * 10n ** BigInt(decimals)).toString(),
-    name,
-    decimals,
-    symbol,
-  ]);
+  const mint = (BigInt(amount) * 10n ** BigInt(decimals)).toString();
+  return deploymentManager.deploy(symbol, 'test/FaucetToken.sol', [mint, name, decimals, symbol]);
 }
 
 async function makePriceFeed(
   deploymentManager: DeploymentManager,
+  alias: string,
   initialPrice: number,
   decimals: number
 ): Promise<SimplePriceFeed> {
-  return await deploymentManager.deploy<
-    SimplePriceFeed,
-    SimplePriceFeed__factory,
-    [number, number]
-  >('test/SimplePriceFeed.sol', [initialPrice * 1e8, decimals]);
+  return deploymentManager.deploy(alias, 'test/SimplePriceFeed.sol', [initialPrice * 1e8, decimals]);
 }
 
 // TODO: Support configurable assets as well?
-export default async function deploy(deploymentManager: DeploymentManager) {
-  const [admin, pauseGuardianSigner] = await deploymentManager.getSigners();
+export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
+  const ethers = deploymentManager.hre.ethers;
+  const signer = await deploymentManager.getSigner();
 
-  let dai = await makeToken(deploymentManager, 10000000, 'DAI', 18, 'DAI');
-  let gold = await makeToken(deploymentManager, 20000000, 'GOLD', 8, 'GOLD');
-  let silver = await makeToken(deploymentManager, 30000000, 'SILVER', 10, 'SILVER');
+  // Deploy governance contracts
+  const { fauceteer, governor, timelock } = await cloneGov(deploymentManager);
 
-  let daiPriceFeed = await makePriceFeed(deploymentManager, 1, 8);
-  let goldPriceFeed = await makePriceFeed(deploymentManager, 0.5, 8);
-  let silverPriceFeed = await makePriceFeed(deploymentManager, 0.05, 8);
+  const DAI = await makeToken(deploymentManager, 10000000, 'DAI', 18, 'DAI');
+  const GOLD = await makeToken(deploymentManager, 20000000, 'GOLD', 8, 'GOLD');
+  const SILVER = await makeToken(deploymentManager, 30000000, 'SILVER', 10, 'SILVER');
 
-  let assetConfig0 = {
-    asset: gold.address,
+  const daiPriceFeed = await makePriceFeed(deploymentManager, 'DAI:priceFeed', 1, 8);
+  const goldPriceFeed = await makePriceFeed(deploymentManager, 'GOLD:priceFeed', 0.5, 8);
+  const silverPriceFeed = await makePriceFeed(deploymentManager, 'SILVER:priceFeed', 0.05, 8);
+
+  const assetConfig0 = {
+    asset: GOLD.address,
     priceFeed: goldPriceFeed.address,
     decimals: (8).toString(),
     borrowCollateralFactor: (0.9e18).toString(),
@@ -63,8 +48,8 @@ export default async function deploy(deploymentManager: DeploymentManager) {
     supplyCap: (1000000e8).toString(),
   };
 
-  let assetConfig1 = {
-    asset: silver.address,
+  const assetConfig1 = {
+    asset: SILVER.address,
     priceFeed: silverPriceFeed.address,
     decimals: (10).toString(),
     borrowCollateralFactor: (0.4e18).toString(),
@@ -73,30 +58,22 @@ export default async function deploy(deploymentManager: DeploymentManager) {
     supplyCap: (500000e10).toString(),
   };
 
-  // Contracts referenced in `configuration.json` or configs
-  let contracts = new Map([
-    ['DAI', dai],
-    ['SILVER', silver],
-    ['GOLD', gold],
-  ]);
-
   // Deploy all Comet-related contracts
-  let { cometProxy, configuratorProxy, rewards } = await deployComet(
-    deploymentManager,
-    { all: true },
-    {
-      baseTokenPriceFeed: daiPriceFeed.address,
-      assetConfigs: [assetConfig0, assetConfig1],
-    },
-    contracts
+  const deployed = await deployComet(deploymentManager, deploySpec, {
+    baseTokenPriceFeed: daiPriceFeed.address,
+    assetConfigs: [assetConfig0, assetConfig1],
+  });
+  const { rewards } = deployed;
+
+  await deploymentManager.idempotent(
+    async () => (await GOLD.balanceOf(rewards.address)).eq(0),
+    async () => {
+      debug(`Sending some GOLD to CometRewards`);
+      const amount = exp(2_000_000, 8);
+      await wait(GOLD.connect(signer).transfer(rewards.address, amount));
+      debug(`GOLD.balanceOf(${rewards.address}): ${await GOLD.balanceOf(rewards.address)}`);
+    }
   );
 
-  // Transfer some GOLD token to the rewards contract to use as rewards
-  await gold.transfer(rewards.address, exp(2_000_000, 8));
-
-  return {
-    comet: cometProxy.address,
-    configurator: configuratorProxy.address,
-    rewards: rewards.address,
-  };
+  return { ...deployed, fauceteer };
 }

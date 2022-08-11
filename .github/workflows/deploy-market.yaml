@@ -1,4 +1,4 @@
-name: 'Deploy Market'
+name: Deploy Market
 on:
   workflow_dispatch:
     inputs:

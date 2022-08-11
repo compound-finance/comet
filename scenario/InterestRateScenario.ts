@@ -80,8 +80,7 @@ scenario(
 scenario(
   'Comet#interestRate > below kink rates using hypothetical configuration constants',
   {
-    upgrade: true,
-    cometConfig: {
+    upgrade: {
       supplyKink: exp(0.8, 18),
       supplyPerYearInterestRateBase: exp(0, 18),
       supplyPerYearInterestRateSlopeLow: exp(0.04, 18),
@@ -104,8 +103,7 @@ scenario(
 scenario(
   'Comet#interestRate > above kink rates using hypothetical configuration constants',
   {
-    upgrade: true,
-    cometConfig: {
+    upgrade: {
       supplyKink: exp(0.8, 18),
       supplyPerYearInterestRateBase: exp(0, 18),
       supplyPerYearInterestRateSlopeLow: exp(0.04, 18),
@@ -117,7 +115,7 @@ scenario(
     },
     utilization: 0.85,
   },
-  async ({ comet, actors }) => {
+  async ({ comet, actors }, context) => {
     const utilization = await comet.getUtilization();
     expect(defactor(utilization)).to.be.approximately(0.85, 0.00001);
     expect(annualize(await comet.getSupplyRate(utilization))).to.be.approximately(0.052, 0.001);
@@ -128,8 +126,7 @@ scenario(
 scenario(
   'Comet#interestRate > rates using fuzzed configuration constants',
   {
-    upgrade: true,
-    cometConfig: {
+    upgrade: {
       // TODO: Read types directly from Solidity?
       supplyPerYearInterestRateBase: { type: FuzzType.UINT64 },
       borrowPerYearInterestRateBase: { type: FuzzType.UINT64, max: (1e18).toString() /* 100% */ },

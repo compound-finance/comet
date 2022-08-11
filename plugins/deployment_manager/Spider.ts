@@ -1,12 +1,14 @@
 import { Contract } from 'ethers';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { HardhatRuntimeEnvironment as HRE } from 'hardhat/types';
 
 import { Cache } from './Cache';
 import {
-  AliasTemplate,
+  Ctx,
+  AliasRender,
   RelationConfigMap,
+  RelationConfig,
   RelationInnerConfig,
-  aliasTemplateFromAlias,
+  aliasTemplateKey,
   getFieldKey,
   readAlias,
   readField,
@@ -14,198 +16,250 @@ import {
 import { Address, Alias, BuildFile } from './Types';
 import { Aliases } from './Aliases';
 import { Proxies } from './Proxies';
+import { ContractMap } from './ContractMap';
 import { Roots } from './Roots';
-import { asArray, cross, debug, getPrimaryContract, mergeABI } from './Utils';
-import { fetchAndCacheContract } from './Import';
+import { asArray, debug, getEthersContract, mergeABI } from './Utils';
+import { fetchAndCacheContract, readContract } from './Import';
 
-function isValidAddress(address: Address): boolean {
-  return address !== '0x0000000000000000000000000000000000000000';
+export interface Spider {
+  roots: Roots;
+  aliases: Aliases;
+  proxies: Proxies;
+  contracts: ContractMap;
 }
 
-async function getDiscoverNodes(
-  contract: Contract,
-  relationConfig: RelationInnerConfig,
-  alias: Alias
-): Promise<[Address, AliasTemplate][]> {
-  let addresses: string[] = await readField(contract, getFieldKey(alias, relationConfig));
-  let aliasTemplates: AliasTemplate[] = relationConfig.alias
-    ? asArray<AliasTemplate>(relationConfig.alias)
-    : [aliasTemplateFromAlias(alias)];
-
-  return cross(addresses, aliasTemplates);
-}
-
-interface VisitedNode {
+interface Build {
   buildFile: BuildFile;
   contract: Contract;
-  aliasTemplates: AliasTemplate[];
-  implAddress?: Address;
 }
 
-// Tail-call optimized version of spider method, which crawls a dependency graph gathering contract data
-async function runSpider(
+interface DiscoverNode {
+  address: Address;
+  aliasRender: AliasRender;
+  path: Contract[];
+}
+
+function maybeStore(alias: Alias, address: Address, into: Aliases | Proxies): boolean {
+  const maybeExists = into.get(alias);
+  if (maybeExists) {
+    if (maybeExists === address) {
+      return false;
+    } else {
+      throw new Error(`Had ${alias} -> ${maybeExists}, not ${address}`);
+    }
+  } else {
+    into.set(alias, address);
+    return true;
+  }
+}
+
+async function discoverNodes(
+  path: Contract[],
+  contract: Contract,
+  context: Ctx,
+  config: RelationInnerConfig,
+  defaultKeyAndTemplate: string
+): Promise<DiscoverNode[]> {
+  const addresses = await readField(contract, getFieldKey(config, defaultKeyAndTemplate), context);
+  const templates = config.alias ? asArray(config.alias) : [defaultKeyAndTemplate];
+  return addresses.map((address, i) => ({
+    address,
+    aliasRender: { template: templates[i % templates.length], i },
+    path: [contract].concat(path),
+  }));
+}
+
+async function isContract(hre: HRE, address: string) {
+  return await hre.ethers.provider.getCode(address) !== '0x';
+}
+
+async function localBuild(cache: Cache, hre: HRE, artifact: string, address: Address): Promise<Build> {
+  const buildFile = await readContract(cache, hre, artifact, address, !cache);
+  const contract = getEthersContract(address, buildFile, hre);
+  return { buildFile, contract };
+}
+
+async function remoteBuild(cache: Cache, hre: HRE, network: string, address: Address): Promise<Build> {
+  const buildFile = await fetchAndCacheContract(cache, network, address);
+  const contract = getEthersContract(address, buildFile, hre);
+  return { buildFile, contract };
+}
+
+async function crawl(
   cache: Cache,
   network: string,
-  hre: HardhatRuntimeEnvironment,
-  relationConfigMap: RelationConfigMap, // For base relations (??)
-  discovered: [Address, AliasTemplate][],
-  visited: Map<Address, VisitedNode>,
-  importRetries?: number,
-  importRetryDelay?: number
-): Promise<Map<Address, VisitedNode>> {
-  if (discovered.length === 0) {
-    // We have no more unvisited nodes; that means we're done.
-    return visited;
-  }
+  hre: HRE,
+  relations: RelationConfigMap,
+  node: DiscoverNode,
+  context: Ctx,
+  aliases: Aliases,
+  proxies: Proxies,
+  contracts: ContractMap,
+): Promise<Alias> {
+  const { aliasRender, address, path } = node;
+  const { template: aliasTemplate } = aliasRender;
+  //debug(`Crawling ${address}`, aliasRender);
 
-  // Let's spider over the next unvisited node in our list
-  let [address, aliasTemplate] = discovered.shift();
-  debug(`Spidering ${address}...`, aliasTemplate);
+  async function maybeProcess(alias: Alias, build: Build, config: RelationConfig): Promise<Alias> {
+    if (maybeStore(alias, address, aliases)) {
+      //debug(`Processing ${address}: ${alias} using ${build.buildFile.contract} ...`);
+      let contract = build.contract;
 
-  // Skip visited nodes (and invalid addresses)
-  if (isValidAddress(address)) {
-    // Fetch the build file from Etherscan
-    // TODO: Cache?
-    if (visited.has(address)) {
-      let { buildFile, contract, aliasTemplates, ...rest } = visited.get(address);
-      visited.set(address, {
-        buildFile,
-        contract,
-        aliasTemplates: [...aliasTemplates, aliasTemplate],
-        ...rest,
-      });
-    } else {
-      const buildFile = await fetchAndCacheContract(
-        cache,
-        network,
-        address,
-        importRetries,
-        importRetryDelay
-      );
-
-      const [contractName, contractMetadata] = getPrimaryContract(buildFile);
-
-      let relationConfig = relationConfigMap[contractName] ??
-        (typeof aliasTemplate === 'string' ? relationConfigMap[aliasTemplate] : undefined) ?? {
-        relations: {},
-      };
-
-      // Relation Config tells us how to keep spidering from here, plus possibly
-      // alternative aliases. If we don't have config, we can skip all of this.
-
-      // Note: if this contract is a proxy, we'll need to grab the implementation
-      // to get the current ABI.
-      let contract = new hre.ethers.Contract(address, contractMetadata.abi, hre.ethers.provider);
-      let implAddress;
-
-      if (relationConfig.proxy) {
-        let defaultAlias = typeof aliasTemplate === 'string' ? aliasTemplate : address;
-
-        let implDiscovered = await getDiscoverNodes(
-          contract,
-          relationConfig.proxy,
-          `${defaultAlias}:implementation`
-        );
-
-        if (implDiscovered.length > 0) {
-          [implAddress] = implDiscovered.map(([address]) => address);
-
-          // Recurse a single step to get implementation
-          visited = await runSpider(
+      if (config.delegates) {
+        const implAliasTemplate = `${alias}:implementation`;
+        const implNodes = await discoverNodes(path, contract, context, config.delegates, implAliasTemplate);
+        for (const implNode of implNodes) {
+          const implAlias = await crawl(
             cache,
             network,
             hre,
-            relationConfigMap,
-            implDiscovered,
-            visited,
-            importRetries,
-            importRetryDelay
+            relations,
+            implNode,
+            context,
+            aliases,
+            proxies,
+            contracts,
           );
-
-          let { buildFile: proxyBuildFile } = visited.get(implAddress);
-          if (!proxyBuildFile) {
-            throw new Error(
-              `Failed to spider implementation for ${defaultAlias} at ${implAddress}`
-            );
+          const implContract = contracts.get(implAlias);
+          if (!implContract) {
+            throw new Error(`Failed to crawl ${implAlias} at ${implNode.address}`);
           }
-          const [_proxyContractName, proxyContractMetadata] = getPrimaryContract(proxyBuildFile);
 
-          // duplicate entries (like constructor) defer to contractMetadata.abi
-          const mergedABI = mergeABI(proxyContractMetadata.abi, contractMetadata.abi);
-
+          // Extend the contract ABI w/ the delegate
+          //debug(`Merging ${address} <- ${implNode.address} (${alias} <- ${implAlias})`);
           contract = new hre.ethers.Contract(
             address,
-            mergedABI,
+            mergeABI(
+              implContract.interface.format('json'),
+              contract.interface.format('json')
+            ),
             hre.ethers.provider
           );
+
+          // TODO: is Proxies necessary? limiting us to one delegate here really
+          maybeStore(alias, implNode.address, proxies);
+
+          // Add the alias in place to the relative context
+          (context[implAlias] = context[implAlias] || []).push(implContract);
         }
       }
-      debug(`Spidered ${address}:`, contractMetadata.name || contractMetadata['key']);
 
-      // Store the build file. This is the primary result of spidering: a huge list
-      // of `address -> build file`, which is the contract cache.
-      visited.set(address, {
-        buildFile,
-        contract,
-        aliasTemplates: [aliasTemplate],
-        implAddress,
-      });
+      // Add the alias in place to the absolute contracts
+      contracts.set(alias, contract);
 
-      for (let [alias, relationInnerConfig] of Object.entries(relationConfig.relations)) {
-        let newDiscovered = await getDiscoverNodes(contract, relationInnerConfig, alias);
-        discovered.push(...newDiscovered);
+      if (config.relations) {
+        for (const [subKey, subConfig] of Object.entries(config.relations)) {
+          const subNodes = await discoverNodes(path, contract, context, subConfig, subKey);
+          for (const subNode of subNodes) {
+            const subAlias = await crawl(
+              cache,
+              network,
+              hre,
+              relations,
+              subNode,
+              context,
+              aliases,
+              proxies,
+              contracts,
+            );
+
+            // Add the aliasTemplate in place to the relative context
+            (context[subKey] = context[subKey] || []).push(contracts.get(subAlias));
+          }
+        }
       }
+
+      debug(`Crawled ${address}: ${alias}`);
+    } else {
+      debug(`Visited ${address}: ${alias} already, skipping`);
     }
+    return alias;
   }
 
-  return await runSpider(
-    cache,
-    network,
-    hre,
-    relationConfigMap,
-    discovered,
-    visited,
-    importRetries,
-    importRetryDelay
-  );
+  const aliasTemplateConfig = relations[aliasTemplateKey(aliasTemplate)];
+  if (aliasTemplateConfig) {
+    //debug(' ... has alias template config');
+    // Note: skipping this check, since it adds a brittle network call and isn't strictly necessary
+    // if (!await isContract(hre, address)) {
+    //   throw new Error(`Found config for '${aliasTemplate}' but no contract at ${address}`);
+    // }
+    if (aliasTemplateConfig.artifact) {
+      //debug(`  ... has artifact specified (${aliasTemplateConfig.artifact})`);
+      const build = await localBuild(cache, hre, aliasTemplateConfig.artifact, address);
+      const alias = await readAlias(build.contract, aliasRender, context, path);
+      return maybeProcess(alias, build, aliasTemplateConfig);
+    } else {
+      //debug('  ... no artifact specified');
+      const build = await remoteBuild(cache, hre, network, address);
+      const alias = await readAlias(build.contract, aliasRender, context, path);
+      return maybeProcess(alias, build, aliasTemplateConfig);
+    }
+  } else {
+    //debug(' ... no alias template config');
+    if (await isContract(hre, address)) {
+      //debug('  ... is a contract');
+      const build = await remoteBuild(cache, hre, network, address);
+      const contractConfig = relations[build.buildFile.contract];
+      if (contractConfig) {
+        //debug(`   ... has contract config (${build.buildFile.contract})`);
+        if (contractConfig.artifact) {
+          //debug(`    ... has artifact specified (${contractConfig.artifact})`);
+          const build_ = await localBuild(null, hre, contractConfig.artifact, address);
+          const alias = await readAlias(build_.contract, aliasRender, context, path);
+          return maybeProcess(alias, build_, contractConfig);
+        } else {
+          //debug('    ... no artifact specified');
+          const alias = await readAlias(build.contract, aliasRender, context, path);
+          return maybeProcess(alias, build, contractConfig);
+        }
+      } else {
+        //debug(`   ... no contract config (${build.buildFile.contract})`);
+        const alias = await readAlias(build.contract, aliasRender, context, path);
+        const aliasConfig = relations[alias];
+        if (aliasConfig) {
+          //debug(`    ... has alias config (${alias})`);
+          return maybeProcess(alias, build, aliasConfig);
+        } else {
+          //debug(`    ... no alias config (${alias})`);
+          return maybeProcess(alias, build, {});
+        }
+      }
+    } else {
+      //debug('  ... is not a contract');
+      const alias = await readAlias(undefined, aliasRender, context, path);
+      return maybeStore(alias, address, aliases), alias;
+    }
+  }
 }
 
 export async function spider(
   cache: Cache,
   network: string,
-  hre: HardhatRuntimeEnvironment,
-  relationConfigMap: RelationConfigMap,
+  hre: HRE,
+  relations: RelationConfigMap,
   roots: Roots,
-  importRetries?: number,
-  importRetryDelay?: number
-): Promise<{ cache: Cache, aliases: Aliases, proxies: Proxies }> {
-  let discovered: [Address, AliasTemplate][] = [...roots.entries()].map(([alias, address]) => {
-    return [address, aliasTemplateFromAlias(alias)];
-  });
+): Promise<Spider> {
+  const context = {};
+  const aliases = new Map();
+  const proxies = new Map();
+  const contracts = new Map();
 
-  let visited = await runSpider(
-    cache,
-    network,
-    hre,
-    relationConfigMap,
-    discovered,
-    new Map(),
-    importRetries,
-    importRetryDelay
-  );
+  for (const [alias, address] of roots) {
+    await crawl(
+      cache,
+      network,
+      hre,
+      relations,
+      { aliasRender: { template: alias, i: 0 }, address, path: [] },
+      context,
+      aliases,
+      proxies,
+      contracts,
+    );
 
-  // TODO: Consider parallelizing these reads
-  let proxies: Proxies = new Map();
-  let aliases: Aliases = new Map();
-  for (let [address, { contract, aliasTemplates, implAddress }] of visited.entries()) {
-    for (let aliasTemplate of aliasTemplates) {
-      let alias = await readAlias(contract, aliasTemplate);
-      aliases.set(alias, address);
-      if (implAddress) {
-        proxies.set(alias, implAddress);
-      }
-    }
+    // Add the aliasTemplate in place to the relative context
+    (context[alias] = context[alias] || []).push(contracts.get(alias));
   }
 
-  return { cache, aliases, proxies };
+  return { roots, aliases, proxies, contracts };
 }
