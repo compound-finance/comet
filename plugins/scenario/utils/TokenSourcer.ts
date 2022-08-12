@@ -49,7 +49,8 @@ async function removeTokens(
   let tokenContract = new ethers.Contract(asset, erc20, signer);
   let currentBalance = await tokenContract.balanceOf(address);
   if (currentBalance.lt(amount)) throw 'Error: Insufficient address balance';
-  await tokenContract.transfer('0x0000000000000000000000000000000000000001', amount);
+  await dm.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+  await tokenContract.transfer('0x0000000000000000000000000000000000000001', amount, { gasPrice: 0 });
   await dm.hre.network.provider.request({
     method: 'hardhat_stopImpersonatingAccount',
     params: [address],

@@ -120,7 +120,7 @@ export class CometContext {
     let shouldUpgrade = false;
     const newSupplyCaps: Record<string, bigint> = {};
     for (const asset in supplyAmountPerAsset) {
-      if (asset != baseToken) {
+      if (asset !== baseToken) {
         const assetInfo = await comet.getAssetInfoByAddress(asset);
         const currentTotalSupply = (await comet.totalsCollateral(asset)).totalSupplyAsset.toBigInt();
         const newTotalSupply = currentTotalSupply + supplyAmountPerAsset[asset];

@@ -62,6 +62,7 @@ jobs:
           DEBUG: true
 
       - name: Commit changes
+        if: ${{ github.events.inputs.simulate == 'false' }}
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
