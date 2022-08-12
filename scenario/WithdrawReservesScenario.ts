@@ -53,7 +53,7 @@ scenario(
   'Comet#withdrawReserves > reverts if not enough reserves are owned by protocol',
   {
     tokenBalances: {
-      $comet: { $base: 100 },
+      $comet: { $base: '== 100' },
     },
   },
   async ({ comet, actors }, context) => {

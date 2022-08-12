@@ -411,7 +411,12 @@ export class DeploymentManager {
     const withoutContracts = ({ contracts: _, ...rest }) => rest;
     const new_ = { ...delta.new, spider: withoutContracts(delta.new.spider) };
     const old_ = { ...delta.old, spider: withoutContracts(delta.old.spider) };
-    return diff(new_, old_, {aAnnotation: 'New addresses', bAnnotation: 'Old addresses'});
+    return diff(new_, old_, {
+      aAnnotation: 'New addresses',
+      aIndicator: '+',
+      bAnnotation: 'Old addresses',
+      bIndicator: '-',
+    });
   }
 
   fork(): DeploymentManager {
