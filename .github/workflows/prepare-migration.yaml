@@ -53,16 +53,12 @@ jobs:
 
       - name: Run Prepare Migration
         run: |
-          if [ -n "${{ inputs.eth_pk }}" ]; then
-            export ETH_PK="${{ inputs.eth_pk }}"
-          else
-            export NETWORK_PROVIDER="http://localhost:8585"
-            export REMOTE_ACCOUNTS="true"
-          fi
-
           yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --prepare --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ github.event.inputs.migration }}
         env:
           DEBUG: true
+          ETH_PK: "${{ inputs.eth_pk }}"
+          NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
+          REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
 
       - uses: actions/upload-artifact@v2 # upload test results
         if: success() || failure() # run this step even if previous step failed
