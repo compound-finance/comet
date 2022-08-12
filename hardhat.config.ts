@@ -31,6 +31,8 @@ const {
   INFURA_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
+  NETWORK_PROVIDER = '',
+  REMOTE_ACCOUNTS = '',
 } = process.env;
 
 function *deriveAccounts(pk: string, n: number = 10) {
@@ -84,10 +86,10 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
   for (const netConfig of networkConfigs) {
     hardhatConfig.networks[netConfig.network] = {
       chainId: netConfig.chainId,
-      url: netConfig.url || getDefaultProviderURL(netConfig.network),
+      url: NETWORK_PROVIDER || netConfig.url || getDefaultProviderURL(netConfig.network),
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
-      accounts: ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC },
+      accounts: REMOTE_ACCOUNTS ? "remote" : ( ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC } ),
     };
   }
 }
