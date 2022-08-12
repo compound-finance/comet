@@ -1,3 +1,5 @@
+import { TransactionResponse } from '@ethersproject/abstract-provider';
+
 export type ABI = string | any[];
 export type Address = string;
 export type Alias = string;
@@ -19,3 +21,6 @@ export interface ContractMetadata {
   source?: string;
   constructorArgs: string;
 }
+
+export type TraceArg = string | TransactionResponse;
+export type TraceFn = (TraceArg, ...any) => void;

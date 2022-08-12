@@ -60,10 +60,10 @@ export async function run<T, U, R>({ bases, config, worker }: WorkerData) {
   }
 
   for (const base of bases) {
-    const world = new World(hreForBase(base), base);
-    const delta = await world.deploymentManager.runDeployScript({ allMissing: true });
-    console.log(`[${base.name}] Deployed ${world.deploymentManager.counter} contracts to initialize world 🗺`);
-    console.log(`[${base.name}]\n${world.deploymentManager.diffDelta(delta)}`);
+    const world = new World(hreForBase(base), base), dm = world.deploymentManager;
+    const delta = await dm.runDeployScript({ allMissing: true });
+    console.log(`[${base.name}] Deployed ${dm.counter} contracts, spent ${dm.spent} to initialize world 🗺`);
+    console.log(`[${base.name}]\n${dm.diffDelta(delta)}`);
     runners[base.name] = new Runner({ base, world });
   }
 

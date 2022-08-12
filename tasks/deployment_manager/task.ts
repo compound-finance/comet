@@ -67,7 +67,7 @@ task('deploy', 'Deploys market')
 
     const overrides = undefined; // TODO: pass through cli args
     const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
-    console.log(`[${tag}] Deployed ${dm.counter} contracts`);
+    console.log(`[${tag}] Deployed ${dm.counter} contracts, spent ${dm.spent} Ξ`);
     console.log(`[${tag}]\n${dm.diffDelta(delta)}`);
 
     const verify = noVerify ? false : !simulate;
