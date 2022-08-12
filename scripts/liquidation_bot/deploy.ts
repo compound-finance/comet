@@ -34,6 +34,7 @@ async function main() {
   const assets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
 
   const liquidator = await dm.deploy(
+    'liquidator',
     'liquidator/Liquidator.sol',
     [
       RECIPIENT, // _recipient
