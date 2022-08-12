@@ -7,6 +7,7 @@ import hre from 'hardhat';
 import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
 import { CometInterface, Configurator } from '../build/types';
 import { ConfigurationStruct } from '../build/types/CometFactory';
+import { throwIfMissing } from '../hardhat.config';
 
 async function verifyContract(address: string, constructorArguments) {
   try {
@@ -34,14 +35,14 @@ async function verifyContract(address: string, constructorArguments) {
  * fail.
  */
 async function main() {
-  let { DEPLOYMENT: deployment } = process.env;
-  if (!deployment) {
-    throw new Error('missing required env variable: DEPLOYMENT');
-  }
+  const { DEPLOYMENT: deployment, COMET_ADDRESS: cometAddress } = process.env;
+  throwIfMissing(deployment, 'missing required env variable: DEPLOYMENT');
+  throwIfMissing(cometAddress, 'missing required env variable: COMET_ADDRESS');
+
   await hre.run('compile');
-  let network = hre.network.name;
-  let isDevelopment = network === 'hardhat';
-  let dm = new DeploymentManager(
+  const network = hre.network.name;
+  const isDevelopment = network === 'hardhat';
+  const dm = new DeploymentManager(
     network,
     deployment,
     hre,
@@ -53,12 +54,10 @@ async function main() {
 
   const comet = await dm.contract('comet') as CometInterface;
   const configurator = await dm.contract('configurator') as Configurator;
-  let config: ConfigurationStruct = await configurator.getConfiguration(comet.address);
+  const config: ConfigurationStruct = await configurator.getConfiguration(comet.address);
   console.log('Latest configuration is: ', config);
   console.log('Starting verification!');
 
-  // XXX move to command line, which requires this to be a Hardhat task since HH scripts can't take user arguments
-  const cometAddress = '0x3F6Faa0Bd3506F8C7d5f2D50cD364d47290D23Fc';
   await verifyContract(cometAddress, [config]);
 
   console.log('Finished verification!');
