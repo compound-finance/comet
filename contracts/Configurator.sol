@@ -307,7 +307,7 @@ contract Configurator is ConfiguratorStorage {
     /**
      * @dev Determine index of asset that matches given address
      */
-    function getAssetIndex(address cometProxy, address asset) internal view returns (uint) {
+    function getAssetIndex(address cometProxy, address asset) public view returns (uint) {
         AssetConfig[] memory assetConfigs = configuratorParams[cometProxy].assetConfigs;
         uint numAssets = assetConfigs.length;
         for (uint i = 0; i < numAssets; ) {
