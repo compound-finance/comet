@@ -114,17 +114,20 @@ export class CometContext {
 
   async bumpSupplyCaps(supplyAmountPerAsset: Record<string, bigint>) {
     const comet = await this.getComet();
+    const baseToken = await comet.baseToken();
 
     // Update supply cap in asset configs if new collateral supply will exceed the supply cap
     let shouldUpgrade = false;
     const newSupplyCaps: Record<string, bigint> = {};
     for (const asset in supplyAmountPerAsset) {
-      const assetInfo = await comet.getAssetInfoByAddress(asset);
-      const currentTotalSupply = (await comet.totalsCollateral(asset)).totalSupplyAsset.toBigInt();
-      const newTotalSupply = currentTotalSupply + supplyAmountPerAsset[asset];
-      if (newTotalSupply > assetInfo.supplyCap.toBigInt()) {
-        shouldUpgrade = true;
-        newSupplyCaps[asset] = newTotalSupply * 2n;
+      if (asset != baseToken) {
+        const assetInfo = await comet.getAssetInfoByAddress(asset);
+        const currentTotalSupply = (await comet.totalsCollateral(asset)).totalSupplyAsset.toBigInt();
+        const newTotalSupply = currentTotalSupply + supplyAmountPerAsset[asset];
+        if (newTotalSupply > assetInfo.supplyCap.toBigInt()) {
+          shouldUpgrade = true;
+          newSupplyCaps[asset] = newTotalSupply * 2n;
+        }
       }
     }
 
