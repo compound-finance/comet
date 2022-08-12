@@ -38,7 +38,7 @@ function *deriveAccounts(pk: string, n: number = 10) {
     yield (BigInt('0x' + pk) + BigInt(i)).toString(16);
 }
 
-function throwIfMissing(envVariable, msg: string) {
+export function throwIfMissing(envVariable, msg: string) {
   if (!envVariable) {
     throw new Error(msg);
   }
