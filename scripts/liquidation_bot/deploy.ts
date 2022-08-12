@@ -24,8 +24,7 @@ async function main() {
     hre,
     {
       writeCacheToDisk: true,
-      verificationStrategy: 'eager',
-      debug: true,
+      verificationStrategy: 'eager'
     }
   );
   await dm.spider();
