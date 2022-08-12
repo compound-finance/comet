@@ -114,20 +114,12 @@ export class CometContext {
 
   async bumpSupplyCaps(supplyAmountPerAsset: Record<string, bigint>) {
     const comet = await this.getComet();
-    const configurator = await this.getConfigurator();
-    const proxyAdmin = await this.getCometAdmin();
 
     // Update supply cap in asset configs if new collateral supply will exceed the supply cap
     let shouldUpgrade = false;
     const newSupplyCaps: Record<string, bigint> = {};
     for (const asset in supplyAmountPerAsset) {
-      let assetInfo: AssetInfoStructOutput;
-      try {
-        assetInfo = await comet.getAssetInfoByAddress(asset);
-      } catch (e) {
-        continue; // skip if asset is not a collateral asset
-      }
-
+      const assetInfo = await comet.getAssetInfoByAddress(asset);
       const currentTotalSupply = (await comet.totalsCollateral(asset)).totalSupplyAsset.toBigInt();
       const newTotalSupply = currentTotalSupply + supplyAmountPerAsset[asset];
       if (newTotalSupply > assetInfo.supplyCap.toBigInt()) {
@@ -138,18 +130,13 @@ export class CometContext {
 
     // Set new supply caps in Configurator and do a deployAndUpgradeTo
     if (shouldUpgrade) {
-      const [targets, values, signatures, calldata] = [[], [], [], []];
-      for (const asset in newSupplyCaps) {
-        targets.push(configurator.address);
-        values.push(0);
-        signatures.push('updateAssetSupplyCap(address,uint128)');
-        calldata.push(utils.defaultAbiCoder.encode(['address', 'uint128'], [asset, newSupplyCaps[asset]]))
+      const gov = await this.world.impersonateAddress(await comet.governor(), 10n**18n);
+      const cometAdmin = (await this.getCometAdmin()).connect(gov);
+      const configurator = (await this.getConfigurator()).connect(gov);
+      for (const [asset, cap] of Object.entries(newSupplyCaps)) {
+        await configurator.updateAssetSupplyCap(comet.address, asset, cap);
       }
-      targets.push(proxyAdmin.address);
-      values.push(0);
-      signatures.push('deployAndUpgradeTo(address,address)');
-      calldata.push(utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, comet.address]));
-      await this.fastGovernanceExecute(targets, values, signatures, calldata);
+      await cometAdmin.deployAndUpgradeTo(configurator.address, comet.address);
     }
   }
 
@@ -272,9 +259,9 @@ export class CometContext {
     const queueEvent = queueTxn.events?.find(event => event.event === 'ProposalQueued');
     await this.setNextBlockTimestamp(queueEvent?.args?.eta.toNumber() + 1);
 
-    // Execute proposal
+    // Execute proposal (w/ gas limit so we see if exec reverts, not a gas estimation error)
     await this.setNextBaseFeeToZero();
-    await governor.execute(proposalId, { gasPrice: 0 });
+    await governor.execute(proposalId, { gasPrice: 0, gasLimit: 12000000 });
   }
 
   // Instantly executes some actions through the governance proposal process

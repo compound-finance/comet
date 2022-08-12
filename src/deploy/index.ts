@@ -69,9 +69,6 @@ export const COMP_WHALES = [
   '0x61258f12c459984f32b83c86a6cc10aa339396de',
   '0x9aa835bc7b8ce13b9b0c9764a52fbf71ac62ccf1',
   '0x683a4f9915d6216f73d6df50151725036bd26c02',
-  '0xa1b61405791170833070c0ea61ed28728a840241',
-  '0x88fb3d509fc49b515bfeb04e23f53ba339563981',
-  '0x8169522c2c57883e8ef80c498aab7820da539806'
 ];
 
 export async function calldata(req: Promise<PopulatedTransaction>): Promise<string> {
