@@ -6,12 +6,12 @@ import { buildToken, deployBuild, faucetTokenBuildFile, tokenArgs, hre } from '.
 
 describe('Deploy', () => {
   it('deploy', async () => {
-    let token = await buildToken();
+    const token = await buildToken();
     expect(await token.symbol()).to.equal('TEST');
   });
 
   it('deployBuild', async () => {
-    let token = await deployBuild(faucetTokenBuildFile, tokenArgs, hre, { network: 'test-network' });
+    const token = await deployBuild(faucetTokenBuildFile, tokenArgs, hre, { network: 'test-network' });
     expect(await token.symbol()).to.equal('TEST');
   });
 });

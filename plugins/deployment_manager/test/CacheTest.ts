@@ -6,7 +6,7 @@ import { objectFromMap } from '../Utils';
 
 describe('Cache', () => {
   it('read and store values in-memory', async () => {
-    let cache = new Cache('test-network', 'test-deployment', false, tempDir());
+    const cache = new Cache('test-network', 'test-deployment', false, tempDir());
 
     await cache.storeCache(['abc'], 5);
 
@@ -16,7 +16,7 @@ describe('Cache', () => {
   });
 
   it('read and store values in-memory rel', async () => {
-    let cache = new Cache('test-network', 'test-deployment', false, tempDir());
+    const cache = new Cache('test-network', 'test-deployment', false, tempDir());
 
     await cache.storeCache({ rel: 'abc' }, 5);
 
@@ -26,7 +26,7 @@ describe('Cache', () => {
   });
 
   it('read and store values to disk', async () => {
-    let cache = new Cache('test-network', 'test-deployment', true, tempDir());
+    const cache = new Cache('test-network', 'test-deployment', true, tempDir());
 
     await cache.storeCache(['abc'], 5);
 
@@ -40,7 +40,7 @@ describe('Cache', () => {
   });
 
   it('read and store values to disk rel', async () => {
-    let cache = new Cache('test-network', 'test-deployment', true, tempDir());
+    const cache = new Cache('test-network', 'test-deployment', true, tempDir());
 
     await cache.storeCache({ rel: 'abc' }, 5);
 
@@ -55,7 +55,7 @@ describe('Cache', () => {
 
   describe('map', () => {
     it('read and store values in-memory rel', async () => {
-      let cache = new Cache('test-network', 'test-deployment', false, tempDir());
+      const cache = new Cache('test-network', 'test-deployment', false, tempDir());
 
       await cache.storeMap({ rel: 'abc' }, new Map([['a', 5]]));
 
@@ -71,8 +71,8 @@ describe('Cache', () => {
 
   describe('getFilePath', async () => {
     it('returns proper rel path', async () => {
-      let dir = tempDir();
-      let cache = new Cache('test-network', 'test-deployment', true, dir);
+      const dir = tempDir();
+      const cache = new Cache('test-network', 'test-deployment', true, dir);
 
       expect(cache.getFilePath({ rel: 'abc.cool' })).to.equal(`${dir}/test-network/test-deployment/abc.cool`);
     });

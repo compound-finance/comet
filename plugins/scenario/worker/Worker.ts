@@ -49,7 +49,7 @@ function postMessage(worker: SimpleWorker | undefined, message: any) {
 
 export async function run<T, U, R>({ bases, config, worker }: WorkerData) {
   let scenarios: { [name: string]: Scenario<T, U, R> };
-  let runners = {};
+  const runners = {};
 
   if (!worker) {
     // only create if we're not in a simple worker
@@ -69,19 +69,19 @@ export async function run<T, U, R>({ bases, config, worker }: WorkerData) {
 
   onMessage(worker, async (message: Message) => {
     if (message.scenario) {
-      let { scenario: scenarioName, base: baseName } = message.scenario;
-      let scenario = scenarios[scenarioName];
+      const { scenario: scenarioName, base: baseName } = message.scenario;
+      const scenario = scenarios[scenarioName];
       if (!scenario) {
         throw new Error(`Worker encountered unknown scenario: ${scenarioName}`);
       }
 
       console.log(`[${baseName}] Running ${scenarioName} ...`);
       try {
-        let result = await runners[baseName].run(scenario);
+        const result = await runners[baseName].run(scenario);
         eventually(() => {
           postMessage(worker, { result });
         });
-        let numSolutionSets = result.numSolutionSets ?? 0;
+        const numSolutionSets = result.numSolutionSets ?? 0;
         console.log(`[${baseName}] ... ran ${scenarioName} on ${pluralize(numSolutionSets, 'solution', 'solutions')}`);
       } catch (e) {
         console.error('Encountered worker error', e);

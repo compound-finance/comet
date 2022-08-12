@@ -6,7 +6,7 @@ import * as os from 'os';
 
 describe('Aliases', () => {
   it('gets and sets aliases', async () => {
-    let cache = new Cache('test-network', 'test-deployment', false, os.tmpdir());
+    const cache = new Cache('test-network', 'test-deployment', false, os.tmpdir());
 
     expect(objectFromMap(await getAliases(cache))).to.eql({});
     await putAlias(cache, 'poochie', '0x0000000000000000000000000000000000000000');

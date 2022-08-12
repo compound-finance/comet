@@ -32,7 +32,7 @@ async function deployFromBuildFile<C extends Contract>(
   hre: HardhatRuntimeEnvironment,
   deployOpts: DeployOpts
 ): Promise<C> {
-  let [contractName, metadata] = getPrimaryContract(buildFile);
+  const [contractName, metadata] = getPrimaryContract(buildFile);
   const [ethersSigner] = await hre.ethers.getSigners();
   const signer = deployOpts.connect ?? ethersSigner;
   const contractFactory = new hre.ethers.ContractFactory(metadata.abi, metadata.bin, signer);
@@ -55,15 +55,15 @@ async function getBuildFileFromArtifacts(
 ): Promise<BuildFile> {
   // We should be able to get the artifact, even if it's going to be a little hacky
   // TODO: Check sub-pathed files
-  let debugFile = path.join(
+  const debugFile = path.join(
     process.cwd(),
     'artifacts',
     'contracts',
     contractFile,
     contractFileName.replace('.sol', '.dbg.json')
   );
-  let { buildInfo } = JSON.parse(await fs.readFile(debugFile, 'utf8')) as { buildInfo: string };
-  let { output: buildFile } = JSON.parse(
+  const { buildInfo } = JSON.parse(await fs.readFile(debugFile, 'utf8')) as { buildInfo: string };
+  const { output: buildFile } = JSON.parse(
     await fs.readFile(path.join(debugFile, '..', buildInfo), 'utf8')
   ) as {
     output: BuildFile;
@@ -85,8 +85,8 @@ export async function deploy<
   hre: HardhatRuntimeEnvironment,
   deployOpts: DeployOpts
 ): Promise<C> {
-  let contractFileName = contractFile.split('/').reverse()[0];
-  let contractName = contractFileName.replace('.sol', '');
+  const contractFileName = contractFile.split('/').reverse()[0];
+  const contractName = contractFileName.replace('.sol', '');
   let factory = (await hre.ethers.getContractFactory(contractName)) as unknown as Factory;
   if (deployOpts.connect) {
     factory = factory.connect(deployOpts.connect);
@@ -94,19 +94,19 @@ export async function deploy<
 
   debug(`Deploying ${contractName} with args`, deployArgs);
 
-  let contract = await factory.deploy(...deployArgs);
+  const contract = await factory.deploy(...deployArgs);
   await contract.deployed();
 
   debug(`Deployed ${contractName} via tx ${contract.deployTransaction?.hash} @ ${contract.address}`);
 
-  let buildFile = await getBuildFileFromArtifacts(contractFile, contractFileName);
+  const buildFile = await getBuildFileFromArtifacts(contractFile, contractFileName);
 
   if (!buildFile.contract) {
     // This is just to make it clear which contract was deployed, when reading the build file
     buildFile.contract = contractName;
   }
 
-  let verifyArgs: VerifyArgs = {
+  const verifyArgs: VerifyArgs = {
     via: 'artifacts',
     address: contract.address,
     constructorArguments: deployArgs,
@@ -138,9 +138,9 @@ export async function deployBuild<C extends Contract>(
 ): Promise<C> {
   debug(`Deploying ${Object.keys(buildFile.contracts)} with args`, deployArgs);
 
-  let contract: C = await deployFromBuildFile(buildFile, deployArgs, hre, deployOpts);
+  const contract: C = await deployFromBuildFile(buildFile, deployArgs, hre, deployOpts);
 
-  let verifyArgs: VerifyArgs = {
+  const verifyArgs: VerifyArgs = {
     via: 'buildfile',
     contract,
     buildFile,

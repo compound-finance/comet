@@ -30,7 +30,7 @@ module.exports = {
     'no-constant-condition': ['error', { checkLoops: false }],
     'no-prototype-builtins': 'off',
     'no-unused-vars': 'off',
-    'prefer-const': 'off',
+    "prefer-const": "error",
     'prefer-spread': 'off',
     'quotes': [
       'error',

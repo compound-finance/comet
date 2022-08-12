@@ -62,8 +62,8 @@ export async function loadScenarios<T, U, R>(glob: string): Promise<{ [name: str
 
   const entries = await fg(glob); // Grab all potential scenario files
 
-  for (let entry of entries) {
-    let entryPath = path.join(process.cwd(), entry);
+  for (const entry of entries) {
+    const entryPath = path.join(process.cwd(), entry);
 
     /* Import scenario file */
     await import(entryPath);

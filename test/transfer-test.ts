@@ -256,7 +256,7 @@ describe('transfer', function () {
 
     await comet.setCollateralBalance(alice.address, WETH.address, exp(1, 18));
 
-    let t0 = await comet.totalsBasic();
+    const t0 = await comet.totalsBasic();
     await setTotalsBasic(comet, {
       baseBorrowIndex: t0.baseBorrowIndex.mul(2),
     });

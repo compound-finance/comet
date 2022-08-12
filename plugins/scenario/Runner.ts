@@ -49,7 +49,7 @@ export class Runner<T, U, R> {
     const { config } = this;
     const { base, world } = config;
     const { constraints = [] } = scenario;
-    let startTime = Date.now();
+    const startTime = Date.now();
     let numSolutionSets = 0;
 
     // reset the world if a snapshot exists and take a snapshot of it
@@ -60,7 +60,7 @@ export class Runner<T, U, R> {
     }
 
     // initialize the context and take a snapshot of it
-    let context = await scenario.initializer(world);
+    const context = await scenario.initializer(world);
     let contextSnapshot = await world._snapshot();
 
     // generate worlds which satisfy the constraints
@@ -87,7 +87,7 @@ export class Runner<T, U, R> {
         }
 
         // requirements met, run the property
-        let txnReceipt = await scenario.property(await scenario.transformer(ctx), ctx, world);
+        const txnReceipt = await scenario.property(await scenario.transformer(ctx), ctx, world);
         if (txnReceipt) {
           cumulativeGas += txnReceipt.cumulativeGasUsed.toNumber();
         }
@@ -113,7 +113,7 @@ export class Runner<T, U, R> {
   ): Result {
     let diff = null;
     if (err instanceof AssertionError) {
-      let { actual, expected } = <any>err; // Types unclear
+      const { actual, expected } = <any>err; // Types unclear
       if (actual !== expected) {
         diff = { actual, expected };
       }

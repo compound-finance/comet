@@ -7,10 +7,10 @@ export interface StackCall {
 }
 
 export function getStack(skipFrames: number = 1): StackCall[] {
-  let regex = /at (?<function>[^ ]+) [(](?<file>[^ ]+?)(:(?<line>\d+))?(:(?<char>\d+))?[)]/g;
-  let stack = new Error().stack;
+  const regex = /at (?<function>[^ ]+) [(](?<file>[^ ]+?)(:(?<line>\d+))?(:(?<char>\d+))?[)]/g;
+  const stack = new Error().stack;
   let next;
-  let trace = [];
+  const trace = [];
   let index = 0;
 
   while (null != (next=regex.exec(stack))) {

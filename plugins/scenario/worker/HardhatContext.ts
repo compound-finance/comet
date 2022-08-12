@@ -15,9 +15,9 @@ export type GlobalWithHardhatContext = typeof global & {
 export function createContext(config: HardhatConfig, hardhatArguments: HardhatArguments) {
   // TODO: I'm not sure this is ideal, inspired by these lines:
   // https://github.com/nomiclabs/hardhat/blob/4f108b51fc7f87bcf7f173a4301b5973918b4903/packages/hardhat-core/src/internal/context.ts#L13-L40
-  let ctx = HardhatContext.createHardhatContext();
+  const ctx = HardhatContext.createHardhatContext();
 
-  let env = new Environment(
+  const env = new Environment(
     config,
     hardhatArguments,
     ctx.tasksDSL.getTaskDefinitions(),

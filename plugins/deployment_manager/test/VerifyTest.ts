@@ -8,7 +8,7 @@ import { deployBuild } from '../Deploy';
 import { buildToken, faucetTokenBuildFile, tokenArgs } from './DeployHelpers';
 
 export function mockVerifySuccess(hre: HardhatRuntimeEnvironment) {
-  let solcList = JSON.parse(fs.readFileSync(path.join(__dirname, './SolcList.json'), 'utf8'));
+  const solcList = JSON.parse(fs.readFileSync(path.join(__dirname, './SolcList.json'), 'utf8'));
 
   // Note: we need to convince the prober task that this is goerli, which it's not.
   // So we'll fake the network name and the chain ID
@@ -16,7 +16,7 @@ export function mockVerifySuccess(hre: HardhatRuntimeEnvironment) {
     goerli: 'GOERLI_KEY',
   };
   hre.network.name = 'goerli';
-  let sendOld = hre.network.provider.send.bind(hre.network.provider);
+  const sendOld = hre.network.provider.send.bind(hre.network.provider);
   hre.network.provider.send = function (...args) {
     if (args.length === 1 && args[0] === 'eth_chainId') {
       return Promise.resolve(5);
@@ -58,7 +58,7 @@ describe('Verify', () => {
   describe('via artifacts', () => {
     it('verify from artifacts [success]', async () => {
       mockVerifySuccess(hre);
-      let token = await buildToken();
+      const token = await buildToken();
       await verifyContract(
         { via: 'artifacts', address: token.address, constructorArguments: tokenArgs },
         hre,
@@ -70,7 +70,7 @@ describe('Verify', () => {
   describe('via buildfile', () => {
     it('verify from build file', async () => {
       mockVerifySuccess(hre);
-      let contract = await deployBuild(faucetTokenBuildFile, tokenArgs, hre, { network: 'test-network' });
+      const contract = await deployBuild(faucetTokenBuildFile, tokenArgs, hre, { network: 'test-network' });
       await verifyContract(
         { via: 'buildfile', contract, buildFile: faucetTokenBuildFile, deployArgs: tokenArgs },
         hre,

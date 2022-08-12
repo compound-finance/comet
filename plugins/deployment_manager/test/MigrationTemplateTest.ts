@@ -30,7 +30,7 @@ describe('MigrationTemplate', () => {
   });
 
   it('should write to cache', async () => {
-    let cache = new Cache('test-network', 'test-deployment', true, tempDir());
+    const cache = new Cache('test-network', 'test-deployment', true, tempDir());
 
     expect(await generateMigration(cache, 'cool', 1)).to.equal('1_cool.ts');
     cache.clearMemory();
@@ -41,7 +41,7 @@ describe('MigrationTemplate', () => {
   });
 
   it('should fail if already exists', async () => {
-    let cache = new Cache('test-network', 'test-deployment', true, tempDir());
+    const cache = new Cache('test-network', 'test-deployment', true, tempDir());
 
     expect(await generateMigration(cache, 'cool', 1)).to.equal('1_cool.ts');
 

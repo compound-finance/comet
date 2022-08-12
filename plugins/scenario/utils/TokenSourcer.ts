@@ -23,7 +23,7 @@ export async function sourceTokens({
   address,
   blacklist,
 }: SourceTokenParameters) {
-  let amount = BigNumber.from(amount_);
+  const amount = BigNumber.from(amount_);
 
   if (amount.isZero()) {
     return;
@@ -40,14 +40,14 @@ async function removeTokens(
   asset: string,
   address: string
 ) {
-  let ethers = dm.hre.ethers;
+  const ethers = dm.hre.ethers;
   await dm.hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
     params: [address],
   });
-  let signer = await dm.getSigner(address);
-  let tokenContract = new ethers.Contract(asset, erc20, signer);
-  let currentBalance = await tokenContract.balanceOf(address);
+  const signer = await dm.getSigner(address);
+  const tokenContract = new ethers.Contract(asset, erc20, signer);
+  const currentBalance = await tokenContract.balanceOf(address);
   if (currentBalance.lt(amount)) throw 'Error: Insufficient address balance';
   await tokenContract.transfer('0x0000000000000000000000000000000000000001', amount);
   await dm.hre.network.provider.request({
@@ -67,11 +67,11 @@ async function addTokens(
   MAX_SEARCH_BLOCKS = 40000,
   BLOCK_SPAN = 1000
 ) {
-  let ethers = dm.hre.ethers;
+  const ethers = dm.hre.ethers;
   block = block ?? (await ethers.provider.getBlockNumber());
-  let tokenContract = new ethers.Contract(asset, erc20, ethers.provider);
-  let filter = tokenContract.filters.Transfer();
-  let { recentLogs, blocksDelta, err } = await fetchQuery(
+  const tokenContract = new ethers.Contract(asset, erc20, ethers.provider);
+  const filter = tokenContract.filters.Transfer();
+  const { recentLogs, blocksDelta, err } = await fetchQuery(
     tokenContract,
     filter,
     block - BLOCK_SPAN - (offsetBlocks ?? 0),
@@ -83,14 +83,14 @@ async function addTokens(
   if (err) {
     throw err;
   }
-  let holder = await searchLogs(recentLogs, amount, tokenContract, ethers, blacklist);
+  const holder = await searchLogs(recentLogs, amount, tokenContract, ethers, blacklist);
   if (holder) {
     await dm.hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [holder],
     });
-    let impersonatedSigner = await dm.getSigner(holder);
-    let impersonatedProviderTokenContract = tokenContract.connect(impersonatedSigner);
+    const impersonatedSigner = await dm.getSigner(holder);
+    const impersonatedProviderTokenContract = tokenContract.connect(impersonatedSigner);
     await dm.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
     await impersonatedProviderTokenContract.transfer(address, amount, { gasPrice: 0 });
     await dm.hre.network.provider.request({
@@ -111,24 +111,24 @@ async function searchLogs(
   blacklist?: string[],
   logOffset?: number,
 ): Promise<string | null> {
-  let addresses = new Set<string>();
+  const addresses = new Set<string>();
   if ((logOffset ?? 0) >= recentLogs.length) return null;
   recentLogs.slice(logOffset ?? 0, (logOffset ?? 0) + 20).map((log) => {
     addresses.add(log.args![0]);
     addresses.add(log.args![1]);
   });
-  let balancesDict = new Map<string, BigNumber>();
+  const balancesDict = new Map<string, BigNumber>();
   await Promise.all([
     ...Array.from(addresses).map(async (address) => {
       balancesDict.set(address, await tokenContract.balanceOf(address));
     })
   ]);
-  for (let address of blacklist) {
+  for (const address of blacklist) {
     balancesDict.delete(address);
   }
-  let balances = Array.from(balancesDict.entries());
+  const balances = Array.from(balancesDict.entries());
   if (balances.length > 0) {
-    let max = getMaxEntry(balances);
+    const max = getMaxEntry(balances);
     if (max[1].gte(amount)) {
       return max[0];
     }

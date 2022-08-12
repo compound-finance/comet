@@ -220,7 +220,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const signers = await ethers.getSigners();
 
   const assets = opts.assets || defaultAssets();
-  let priceFeeds = {};
+  const priceFeeds = {};
   const PriceFeedFactory = (await ethers.getContractFactory('SimplePriceFeed')) as SimplePriceFeed__factory;
   for (const asset in assets) {
     const initialPrice = exp(assets[asset].initialPrice || 1, 8);
@@ -261,8 +261,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     const initial = config.initial || 1e6;
     const name = config.name || symbol;
     const factory = config.factory || FaucetFactory;
-    let token;
-    token = (tokens[symbol] = await factory.deploy(initial, name, decimals, symbol));
+    const token = (tokens[symbol] = await factory.deploy(initial, name, decimals, symbol));
     await token.deployed();
   }
 
@@ -562,7 +561,7 @@ export async function wait(
   tx: TransactionResponse | Promise<TransactionResponse>
 ): Promise<TransactionResponseExt> {
   const tx_ = await tx;
-  let receipt = await tx_.wait();
+  const receipt = await tx_.wait();
   return {
     ...tx_,
     receipt,

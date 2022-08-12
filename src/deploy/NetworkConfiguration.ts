@@ -77,7 +77,7 @@ interface NetworkConfiguration {
 }
 
 function getContractAddress(contractName: string, contracts: ContractMap, fallbackAddress?: string): string {
-  let contract = contracts.get(contractName);
+  const contract = contracts.get(contractName);
   if (!contract) {
     if (fallbackAddress) return fallbackAddress;
     throw new Error(

@@ -19,7 +19,7 @@ describe('bulker', function () {
     await comet.connect(alice).allow(bulker.address, true);
 
     // Alice supplies 10 USDC through the bulker
-    let supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [alice.address, USDC.address, supplyAmount]);
+    const supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [alice.address, USDC.address, supplyAmount]);
     await bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_ASSET()], [supplyAssetCalldata]);
 
     expect(await baseBalanceOf(comet, alice.address)).to.be.equal(supplyAmount);
@@ -40,7 +40,7 @@ describe('bulker', function () {
     await comet.connect(alice).allow(bulker.address, true);
 
     // Alice supplies 10 COMP through the bulker
-    let supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [alice.address, COMP.address, supplyAmount]);
+    const supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [alice.address, COMP.address, supplyAmount]);
     await bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_ASSET()], [supplyAssetCalldata]);
 
     expect(await comet.collateralBalanceOf(alice.address, COMP.address)).to.be.equal(supplyAmount);
@@ -61,7 +61,7 @@ describe('bulker', function () {
     await comet.connect(alice).allow(bulker.address, true);
 
     // Alice supplies 10 COMP to Bob through the bulker
-    let supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [bob.address, COMP.address, supplyAmount]);
+    const supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [bob.address, COMP.address, supplyAmount]);
     await bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_ASSET()], [supplyAssetCalldata]);
 
     expect(await comet.collateralBalanceOf(alice.address, COMP.address)).to.be.equal(0);
@@ -82,7 +82,7 @@ describe('bulker', function () {
 
     // Alice supplies 10 ETH through the bulker
     const supplyAmount = exp(10, 18);
-    let supplyEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'uint'], [alice.address, supplyAmount]);
+    const supplyEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'uint'], [alice.address, supplyAmount]);
     await bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_ETH()], [supplyEthCalldata], { value: supplyAmount });
 
     expect(await comet.collateralBalanceOf(alice.address, WETH.address)).to.be.equal(supplyAmount);
@@ -103,7 +103,7 @@ describe('bulker', function () {
     // Alice supplies 10 ETH through the bulker but actually sends 20 ETH
     const aliceBalanceBefore = await alice.getBalance();
     const supplyAmount = exp(10, 18);
-    let supplyEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'uint'], [alice.address, supplyAmount]);
+    const supplyEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'uint'], [alice.address, supplyAmount]);
     const txn = await wait(bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_ETH()], [supplyEthCalldata], { value: supplyAmount * 2n }));
     const aliceBalanceAfter = await alice.getBalance();
 
@@ -125,7 +125,7 @@ describe('bulker', function () {
 
     // Alice supplies 10 ETH through the bulker but only sends 5 ETH
     const supplyAmount = exp(10, 18);
-    let supplyEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'uint'], [alice.address, supplyAmount]);
+    const supplyEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'uint'], [alice.address, supplyAmount]);
     await expect(bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_ETH()], [supplyEthCalldata], { value: supplyAmount / 2n }))
       .to.be.revertedWith('code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
   });
@@ -143,7 +143,7 @@ describe('bulker', function () {
     await comet.connect(alice).allow(bulker.address, true);
 
     // Alice transfer 10 USDC to Bob through the bulker
-    let transferAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [bob.address, USDC.address, transferAmount]);
+    const transferAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [bob.address, USDC.address, transferAmount]);
     await bulker.connect(alice).invoke([await bulker.ACTION_TRANSFER_ASSET()], [transferAssetCalldata]);
 
     expect(await baseBalanceOf(comet, alice.address)).to.be.equal(0n);
@@ -163,7 +163,7 @@ describe('bulker', function () {
     await comet.connect(alice).allow(bulker.address, true);
 
     // Alice transfer 10 COMP to Bob through the bulker
-    let transferAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [bob.address, COMP.address, transferAmount]);
+    const transferAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [bob.address, COMP.address, transferAmount]);
     await bulker.connect(alice).invoke([await bulker.ACTION_TRANSFER_ASSET()], [transferAssetCalldata]);
 
     expect(await comet.collateralBalanceOf(alice.address, COMP.address)).to.be.equal(0);
@@ -189,7 +189,7 @@ describe('bulker', function () {
     await comet.connect(alice).allow(bulker.address, true);
 
     // Alice withdraws 10 USDC through the bulker
-    let withdrawAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [alice.address, USDC.address, withdrawAmount]);
+    const withdrawAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [alice.address, USDC.address, withdrawAmount]);
     await bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_ASSET()], [withdrawAssetCalldata]);
 
     expect(await baseBalanceOf(comet, alice.address)).to.be.equal(0n);
@@ -215,7 +215,7 @@ describe('bulker', function () {
     await comet.connect(alice).allow(bulker.address, true);
 
     // Alice withdraws 10 COMP through the bulker
-    let withdrawAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [alice.address, COMP.address, withdrawAmount]);
+    const withdrawAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [alice.address, COMP.address, withdrawAmount]);
     await bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_ASSET()], [withdrawAssetCalldata]);
 
     expect(await comet.collateralBalanceOf(alice.address, COMP.address)).to.be.equal(0);
@@ -241,7 +241,7 @@ describe('bulker', function () {
     await comet.connect(alice).allow(bulker.address, true);
 
     // Alice withdraws 10 COMP through the bulker
-    let withdrawAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [bob.address, COMP.address, withdrawAmount]);
+    const withdrawAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [bob.address, COMP.address, withdrawAmount]);
     await bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_ASSET()], [withdrawAssetCalldata]);
 
     expect(await comet.collateralBalanceOf(alice.address, COMP.address)).to.be.equal(0);
@@ -274,7 +274,7 @@ describe('bulker', function () {
 
     // Alice supplies 10 ETH through the bulker
     const aliceBalanceBefore = await alice.getBalance();
-    let withdrawEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'uint'], [alice.address, withdrawAmount]);
+    const withdrawEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'uint'], [alice.address, withdrawAmount]);
     const txn = await wait(bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_ETH()], [withdrawEthCalldata]));
     const aliceBalanceAfter = await alice.getBalance();
 
@@ -288,7 +288,7 @@ describe('bulker', function () {
     const bulkerInfo = await makeBulker({ comet: comet.address, weth: WETH.address });
     const { bulker } = bulkerInfo;
 
-    let supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [alice.address, USDC.address, 1]);
+    const supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [alice.address, USDC.address, 1]);
     await expect(bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_ASSET()], [supplyAssetCalldata]))
       .to.be.reverted; // Should revert with "custom error 'Unauthorized()'"
   });
@@ -299,7 +299,7 @@ describe('bulker', function () {
     const bulkerInfo = await makeBulker({ comet: comet.address, weth: WETH.address });
     const { bulker } = bulkerInfo;
 
-    let transferAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [bob.address, COMP.address, 1]);
+    const transferAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [bob.address, COMP.address, 1]);
     await expect(bulker.connect(alice).invoke([await bulker.ACTION_TRANSFER_ASSET()], [transferAssetCalldata]))
       .to.be.reverted; // Should revert with "custom error 'Unauthorized()'"
   });
@@ -310,7 +310,7 @@ describe('bulker', function () {
     const bulkerInfo = await makeBulker({ comet: comet.address, weth: WETH.address });
     const { bulker } = bulkerInfo;
 
-    let withdrawAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [alice.address, COMP.address, 1]);
+    const withdrawAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [alice.address, COMP.address, 1]);
     await expect(bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_ASSET()], [withdrawAssetCalldata]))
       .to.be.reverted; // Should revert with "custom error 'Unauthorized()'"
   });
@@ -325,7 +325,7 @@ describe('bulker', function () {
     const bulkerInfo = await makeBulker({ comet: comet.address, weth: WETH.address });
     const { bulker } = bulkerInfo;
 
-    let withdrawEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'uint'], [alice.address, 1]);
+    const withdrawEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'uint'], [alice.address, 1]);
     await expect(bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_ETH()], [withdrawEthCalldata]))
       .to.be.reverted; // Should revert with "custom error 'Unauthorized()'"
   });
@@ -426,9 +426,9 @@ describe('bulker multiple actions', function () {
     await comet.connect(alice).allow(bulker.address, true);
 
     // Alice supplies 10 COMP through the bulker
-    let supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [alice.address, COMP.address, supplyAmount]);
+    const supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [alice.address, COMP.address, supplyAmount]);
     // Alice withdraws 10 USDC through the bulker
-    let withdrawAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [alice.address, USDC.address, borrowAmount]);
+    const withdrawAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [alice.address, USDC.address, borrowAmount]);
     await bulker.connect(alice).invoke(
       [await bulker.ACTION_SUPPLY_ASSET(), await bulker.ACTION_WITHDRAW_ASSET()],
       [supplyAssetCalldata, withdrawAssetCalldata]
@@ -453,8 +453,8 @@ describe('bulker multiple actions', function () {
 
     // Alice supplies 10 ETH through the bulker
     const supplyAmount = exp(10, 18);
-    let supplyAliceEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'uint'], [alice.address, supplyAmount / 2n]);
-    let supplyBobEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'uint'], [bob.address, supplyAmount / 2n]);
+    const supplyAliceEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'uint'], [alice.address, supplyAmount / 2n]);
+    const supplyBobEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'uint'], [bob.address, supplyAmount / 2n]);
     await bulker.connect(alice).invoke(
       [await bulker.ACTION_SUPPLY_ETH(), await bulker.ACTION_SUPPLY_ETH()],
       [supplyAliceEthCalldata, supplyBobEthCalldata],

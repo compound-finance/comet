@@ -104,15 +104,15 @@ interface JsonSuiteResult {
 
 async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions, startTime: number, endTime: number) {
   // TODO: Accept options, etc.
-  let suites = new Set();
-  let passes: JsonTestResult[] = [];
-  let pending: JsonTestResult[] = [];
-  let failures: JsonTestResult[] = [];
-  let tests: JsonTestResult[] = results.map((result) => {
-    let suite = result.file; // TODO: Is this how we should do suites?
+  const suites = new Set();
+  const passes: JsonTestResult[] = [];
+  const pending: JsonTestResult[] = [];
+  const failures: JsonTestResult[] = [];
+  const tests: JsonTestResult[] = results.map((result) => {
+    const suite = result.file; // TODO: Is this how we should do suites?
     suites.add(suite);
 
-    let test = {
+    const test = {
       title: result.scenario,
       fullTitle: `${result.base} ${result.scenario}`,
       file: result.file,
@@ -134,7 +134,7 @@ async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions,
     return test;
   });
 
-  let suiteResult: JsonSuiteResult = {
+  const suiteResult: JsonSuiteResult = {
     stats: {
       suites: suites.size,
       tests: tests.length,
@@ -151,7 +151,7 @@ async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions,
     passes,
   };
 
-  let result = JSON.stringify(suiteResult, null, 4);
+  const result = JSON.stringify(suiteResult, null, 4);
 
   if (jsonOptions.output) {
     await fs.writeFile(jsonOptions.output, result);

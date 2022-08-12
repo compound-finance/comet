@@ -35,9 +35,9 @@ export async function generateMigration(
   name: string,
   timestamp?: number
 ): Promise<string> {
-  let templateVars: MigrationTemplateVars = { name, timestamp: timestamp ?? now() };
-  let migrationFileName = migrationName(templateVars);
-  let migrationFileSpec = { rel: ['migrations', migrationFileName] };
+  const templateVars: MigrationTemplateVars = { name, timestamp: timestamp ?? now() };
+  const migrationFileName = migrationName(templateVars);
+  const migrationFileSpec = { rel: ['migrations', migrationFileName] };
 
   if (await cache.readCache(migrationFileSpec, (x) => x) !== undefined) {
     throw new Error(`Migration ${migrationFileName} already exists.`);

@@ -6,7 +6,7 @@ export type VerifyArgsMap = Map<Address, VerifyArgs>;
 export type InvertedAliases = Map<Address, Alias[]>;
 
 // File to store verification metadata in, e.g. `$pwd/deployments/deployment/verify/args.json`
-let verificationSpec = { rel: ['verify', 'args.json'] };
+const verificationSpec = { rel: ['verify', 'args.json'] };
 
 // Read verify args
 export async function getVerifyArgs(cache: Cache): Promise<VerifyArgsMap> {
@@ -19,13 +19,13 @@ export async function storeVerifyArgs(cache: Cache, verifyArgsMap: VerifyArgsMap
 }
 
 export async function putVerifyArgs(cache: Cache, address: Address, verifyArgs: VerifyArgs) {
-  let verifyArgsMap = await getVerifyArgs(cache);
+  const verifyArgsMap = await getVerifyArgs(cache);
   verifyArgsMap.set(address, verifyArgs);
   await storeVerifyArgs(cache, verifyArgsMap);
 }
 
 export async function deleteVerifyArgs(cache: Cache, address: Address) {
-  let verifyArgsMap = await getVerifyArgs(cache);
+  const verifyArgsMap = await getVerifyArgs(cache);
   verifyArgsMap.delete(address);
   await storeVerifyArgs(cache, verifyArgsMap);
 }

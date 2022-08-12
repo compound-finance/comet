@@ -10,16 +10,16 @@ import { Dog__factory, Dog } from '../../../build/types';
 
 describe('VerifyArgs', () => {
   it('gets, sets, and deletes verify args', async () => {
-    let cache = new Cache('test-network', 'test-deployment', false, os.tmpdir());
+    const cache = new Cache('test-network', 'test-deployment', false, os.tmpdir());
 
-    let testContract = await deploy<Dog, Dog__factory, [string, string, string[]]>(
+    const testContract = await deploy<Dog, Dog__factory, [string, string, string[]]>(
       'test/Dog.sol',
       ['spot', '0x0000000000000000000000000000000000000001', []],
       hre,
       { cache, network: 'test-network' }
     );
-    let verifyArgs1: VerifyArgs = { via: 'artifacts', address: '0x0000000000000000000000000000000000000000', constructorArguments: [] };
-    let verifyArgs2: VerifyArgs = { via: 'buildfile', contract: testContract, buildFile: faucetTokenBuildFile, deployArgs: [] };
+    const verifyArgs1: VerifyArgs = { via: 'artifacts', address: '0x0000000000000000000000000000000000000000', constructorArguments: [] };
+    const verifyArgs2: VerifyArgs = { via: 'buildfile', contract: testContract, buildFile: faucetTokenBuildFile, deployArgs: [] };
 
     expect(objectFromMap(await getVerifyArgs(cache))).to.eql({});
     await putVerifyArgs(cache, '0x0000000000000000000000000000000000000000', verifyArgs1);

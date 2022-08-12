@@ -6,7 +6,7 @@ import { DeploymentManager } from '../../deployment_manager/DeploymentManager';
 describe('Migration', () => {
   it('test a simple migration', async () => {
     let x = [];
-    let m = migration('test migration', {
+    const m = migration('test migration', {
       prepare: async (_deploymentManager) => {
         x = [...x, 'step 1'];
         return 'step 2';
@@ -15,25 +15,25 @@ describe('Migration', () => {
         x = [...x, y];
       }
     });
-    let dm = new DeploymentManager('test-network', 'test-deployment', hre);
+    const dm = new DeploymentManager('test-network', 'test-deployment', hre);
     expect(m.name).to.eql('test migration');
     expect(x).to.eql([]);
-    let v = await m.actions.prepare(dm);
+    const v = await m.actions.prepare(dm);
     expect(x).to.eql(['step 1']);
     await m.actions.enact(dm, v);
     expect(x).to.eql(['step 1', 'step 2']);
   });
 
   it('loads a simple migration', async () => {
-    let [m] = await loadMigrations([`${__dirname}/migration.ts`]);
-    let dm = new DeploymentManager('test-network', 'test-market', hre);
+    const [m] = await loadMigrations([`${__dirname}/migration.ts`]);
+    const dm = new DeploymentManager('test-network', 'test-market', hre);
     expect(m.name).to.eql('test migration');
     expect(await m.actions.prepare(dm)).to.eql(['step 1']);
     expect(await m.actions.enact(dm, [])).to.eql(undefined);
   });
 
   it('returns proper artifact file spec', async () => {
-    let m = migration('test', {
+    const m = migration('test', {
       prepare: async () => null,
       enact: async () => { /* */ }
     });

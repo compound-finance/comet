@@ -24,7 +24,7 @@ task('spider', 'Use Spider method to pull in contract configs')
       if (!deployment) {
         throw new Error('missing argument --deployment');
       }
-      let dm = new DeploymentManager(
+      const dm = new DeploymentManager(
         network,
         deployment,
         hre,

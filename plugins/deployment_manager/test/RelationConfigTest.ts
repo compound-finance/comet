@@ -34,7 +34,7 @@ interface ReadAliasTest {
   exp: string;
 }
 
-let testRelRelations: RelationConfigMap = {
+const testRelRelations: RelationConfigMap = {
   poochie: {
     relations: {
       name: {},
@@ -43,7 +43,7 @@ let testRelRelations: RelationConfigMap = {
   },
 };
 
-let testBaseRelations: RelationConfigMap = {
+const testBaseRelations: RelationConfigMap = {
   poochie: {
     relations: {
       age: {},
@@ -67,8 +67,8 @@ describe('RelationConfig', () => {
   });
 
   describe('getFieldKey', () => {
-    let getter = (x) => x;
-    let fieldKeyTests: FieldKeyTest[] = [
+    const getter = (x) => x;
+    const fieldKeyTests: FieldKeyTest[] = [
       {
         name: 'simple alias',
         alias: 'simple',
@@ -111,12 +111,12 @@ describe('RelationConfig', () => {
   });
 
   describe('readField', () => {
-    let _zero = '0x0000000000000000000000000000000000000000';
-    let one = '0x0000000000000000000000000000000000000001';
-    let two = '0x0000000000000000000000000000000000000002';
-    let three = '0x0000000000000000000000000000000000000003';
+    const _zero = '0x0000000000000000000000000000000000000000';
+    const one = '0x0000000000000000000000000000000000000001';
+    const two = '0x0000000000000000000000000000000000000002';
+    const three = '0x0000000000000000000000000000000000000003';
 
-    let contract = {
+    const contract = {
       provider: {
         getStorageAt: async (c, x) => {
           return `0x00000000000000000000000000000000000000000000000000000000000000${x.slice(-2)}`;
@@ -128,7 +128,7 @@ describe('RelationConfig', () => {
       },
     };
 
-    let readFieldTests: ReadFieldTest[] = [
+    const readFieldTests: ReadFieldTest[] = [
       {
         name: 'simple key single',
         contract,
@@ -179,16 +179,16 @@ describe('RelationConfig', () => {
   });
 
   describe('readAlias', () => {
-    let contractFns = {
+    const contractFns = {
       name: async () => 'Bob',
       children: async () => ['Tommy', 'Sue'],
     };
-    let contract = {
+    const contract = {
       ...contractFns,
       callStatic: contractFns,
     };
 
-    let readAliasTests: ReadAliasTest[] = [
+    const readAliasTests: ReadAliasTest[] = [
       {
         name: 'simple alias',
         contract,

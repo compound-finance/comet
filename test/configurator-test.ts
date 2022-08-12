@@ -118,8 +118,8 @@ describe('configurator', function () {
 
     // 1. SetGovernor
     // 2. DeployAndUpgradeTo
-    let setGovernorCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address'], [cometProxy.address, alice.address]);
-    let deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address'], [configuratorProxy.address, cometProxy.address]);
+    const setGovernorCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address'], [cometProxy.address, alice.address]);
+    const deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address'], [configuratorProxy.address, cometProxy.address]);
     await timelock.executeTransactions([configuratorProxy.address, proxyAdmin.address], [0, 0], ['setGovernor(address,address)', 'deployAndUpgradeTo(address,address)'], [setGovernorCalldata, deployAndUpgradeToCalldata]);
 
     expect((await configuratorAsProxy.getConfiguration(cometProxy.address)).governor).to.be.equal(alice.address);

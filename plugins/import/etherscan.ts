@@ -7,7 +7,7 @@ export interface Result {
 }
 
 export function getEtherscanApiUrl(network: string): string {
-  let host = {
+  const host = {
     kovan: 'api-kovan.etherscan.io',
     rinkeby: 'api-rinkeby.etherscan.io',
     ropsten: 'api-ropsten.etherscan.io',
@@ -25,7 +25,7 @@ export function getEtherscanApiUrl(network: string): string {
 }
 
 export function getEtherscanUrl(network: string): string {
-  let host = {
+  const host = {
     kovan: 'kovan.etherscan.io',
     rinkeby: 'rinkeby.etherscan.io',
     ropsten: 'ropsten.etherscan.io',
@@ -43,7 +43,7 @@ export function getEtherscanUrl(network: string): string {
 }
 
 export function getEtherscanApiKey(network: string): string {
-  let apiKey = {
+  const apiKey = {
     kovan: process.env.ETHERSCAN_KEY,
     rinkeby: process.env.ETHERSCAN_KEY,
     ropsten: process.env.ETHERSCAN_KEY,

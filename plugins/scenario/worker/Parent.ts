@@ -32,9 +32,9 @@ export interface Result {
 function filterRunning<T, U, R>(
   baseScenarios: BaseScenario<T, U, R>[]
 ): [BaseScenario<T, U, R>[], BaseScenario<T, U, R>[]] {
-  let rest = baseScenarios.filter(({ scenario }) => scenario.flags === null);
-  let only = baseScenarios.filter(({ scenario }) => scenario.flags === 'only');
-  let skip = baseScenarios.filter(({ scenario }) => scenario.flags === 'skip');
+  const rest = baseScenarios.filter(({ scenario }) => scenario.flags === null);
+  const only = baseScenarios.filter(({ scenario }) => scenario.flags === 'only');
+  const skip = baseScenarios.filter(({ scenario }) => scenario.flags === 'skip');
 
   if (only.length > 0) {
     return [only, skip.concat(rest)];
@@ -44,11 +44,11 @@ function filterRunning<T, U, R>(
 }
 
 function getBaseScenarios<T, U, R>(bases: ForkSpec[], scenarios: Scenario<T, U, R>[]): BaseScenario<T, U, R>[] {
-  let result: BaseScenario<T, U, R>[] = [];
+  const result: BaseScenario<T, U, R>[] = [];
 
   // Note: this could filter if scenarios had some such filtering (e.g. to state the scenario is only compatible with certain bases)
-  for (let base of bases) {
-    for (let scenario of scenarios) {
+  for (const base of bases) {
+    for (const scenario of scenarios) {
       result.push({ base, scenario });
     }
   }
@@ -71,16 +71,16 @@ export async function runScenario<T, U, R>(
   async: boolean,
   stallMs: number
 ) {
-  let hardhatConfig = convertToSerializableObject(getConfig()) as HardhatConfig;
-  let hardhatArguments = getHardhatArguments();
-  let formats = defaultFormats;
-  let scenarios: Scenario<T, U, R>[] = Object.values(await loadScenarios(scenarioGlob));
-  let baseScenarios: BaseScenario<T, U, R>[] = getBaseScenarios(bases, scenarios);
-  let [runningScenarios, skippedScenarios] = filterRunning(baseScenarios);
+  const hardhatConfig = convertToSerializableObject(getConfig()) as HardhatConfig;
+  const hardhatArguments = getHardhatArguments();
+  const formats = defaultFormats;
+  const scenarios: Scenario<T, U, R>[] = Object.values(await loadScenarios(scenarioGlob));
+  const baseScenarios: BaseScenario<T, U, R>[] = getBaseScenarios(bases, scenarios);
+  const [runningScenarios, skippedScenarios] = filterRunning(baseScenarios);
 
-  let startTime = Date.now();
+  const startTime = Date.now();
 
-  let results: Result[] = skippedScenarios.map(({ base, scenario }) => ({
+  const results: Result[] = skippedScenarios.map(({ base, scenario }) => ({
     base: base.name,
     file: scenario.file || scenario.name,
     scenario: scenario.name,
@@ -88,13 +88,13 @@ export async function runScenario<T, U, R>(
     error: undefined,
     skipped: true,
   }));
-  let pending: Set<string> = new Set(
+  const pending: Set<string> = new Set(
     runningScenarios.map((baseScenario) => key(baseScenario.base.name, baseScenario.scenario.name))
   );
-  let assignable: Iterator<BaseScenario<T, U, R>> = runningScenarios[Symbol.iterator]();
+  const assignable: Iterator<BaseScenario<T, U, R>> = runningScenarios[Symbol.iterator]();
   let done;
   let fail;
-  let isDone = new Promise((resolve, reject) => {
+  const isDone = new Promise((resolve, reject) => {
     done = resolve;
     fail = reject;
   });
@@ -123,7 +123,7 @@ export async function runScenario<T, U, R>(
   checkDone(); // Just in case we don't have any scens
 
   function getNextScenario(): BaseScenario<T, U, R> | null {
-    let next = assignable.next();
+    const next = assignable.next();
     if (!next.done && next.value) {
       return next.value;
     }
@@ -131,7 +131,7 @@ export async function runScenario<T, U, R>(
   }
 
   function assignWork(worker: Worker) {
-    let baseScenario = getNextScenario();
+    const baseScenario = getNextScenario();
     if (baseScenario) {
       worker.postMessage({
         scenario: {
@@ -187,7 +187,7 @@ export async function runScenario<T, U, R>(
 
   await isDone;
 
-  let endTime = Date.now();
+  const endTime = Date.now();
 
   await showReport(results, formats, startTime, endTime);
 

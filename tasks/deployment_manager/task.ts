@@ -31,7 +31,7 @@ async function runMigration<T>(
     console.log('Running preparation step...');
     artifact = await migration.actions.prepare(deploymentManager);
     console.log('Preparation artifact', artifact);
-    let outputFile = await deploymentManager.storeArtifact(migration, artifact);
+    const outputFile = await deploymentManager.storeArtifact(migration, artifact);
     if (deploymentManager.cache.writeCacheToDisk) {
       console.log(`Migration preparation artifact stored in ${outputFile}.`);
     } else {

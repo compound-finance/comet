@@ -34,11 +34,11 @@ export function getRelationConfig(
   network: string,
   deployment: string,
 ): RelationConfigMap {
-  let relRelationConfigMap = deploymentManagerConfig?.networks?.[network]?.[deployment];
+  const relRelationConfigMap = deploymentManagerConfig?.networks?.[network]?.[deployment];
   if (relRelationConfigMap) {
     return relRelationConfigMap;
   }
-  let baseRelationConfigMap = deploymentManagerConfig?.relationConfigMap;
+  const baseRelationConfigMap = deploymentManagerConfig?.relationConfigMap;
   if (baseRelationConfigMap) {
     return baseRelationConfigMap;
   }
@@ -76,7 +76,7 @@ function asAddressArray(val: any, msg: string): string[] {
 }
 
 async function readKey(contract: Contract, fnName: string): Promise<any> {
-  let fn = contract.callStatic[fnName];
+  const fn = contract.callStatic[fnName];
   if (!fn) {
     throw new Error(`Cannot find contract function ${await contract.address}.${fnName}()`);
   }
@@ -86,11 +86,11 @@ async function readKey(contract: Contract, fnName: string): Promise<any> {
 export async function readField(contract: Contract, fieldKey: FieldKey, context: Ctx): Promise<Address[]> {
   if (fieldKey.slot) {
     // Read from slot
-    let addressRaw = await contract.provider.getStorageAt(contract.address, fieldKey.slot);
-    let address = utils.getAddress('0x' + addressRaw.substring(26));
+    const addressRaw = await contract.provider.getStorageAt(contract.address, fieldKey.slot);
+    const address = utils.getAddress('0x' + addressRaw.substring(26));
     return [address];
   } else if (fieldKey.key) {
-    let val = await readKey(contract, fieldKey.key);
+    const val = await readKey(contract, fieldKey.key);
     return asAddressArray(val, fieldKey.key);
   } else if (fieldKey.getter) {
     return asAddressArray(await fieldKey.getter(contract, context), 'custom function');

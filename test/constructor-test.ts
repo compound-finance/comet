@@ -43,7 +43,7 @@ describe('constructor', function () {
     }
 
     // price feeds
-    let priceFeeds = {};
+    const priceFeeds = {};
     const PriceFeedFactory = (await ethers.getContractFactory('SimplePriceFeed')) as SimplePriceFeed__factory;
     for (const asset in assets) {
       const priceFeed = await PriceFeedFactory.deploy(exp(1, 8), 8);

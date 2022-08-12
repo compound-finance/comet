@@ -36,17 +36,17 @@ export async function fileExists(path: string): Promise<boolean> {
 }
 
 export function getPrimaryContract(buildFile: BuildFile): [string, ContractMetadata] {
-  let targetContract = buildFile.contract;
+  const targetContract = buildFile.contract;
   if (!targetContract) {
     throw new Error(`Missing target contract in build file. This is a new requirement.`);
   }
 
-  let contractEntries = Object.entries(buildFile.contracts);
-  let contracts = Object.fromEntries(
+  const contractEntries = Object.entries(buildFile.contracts);
+  const contracts = Object.fromEntries(
     contractEntries
       .map(([key, value]) => {
         if (key.includes(':')) {
-          let [source, contractName] = key.split(':');
+          const [source, contractName] = key.split(':');
           return [[contractName, { ...value, source } as ContractMetadata]];
         } else {
           return Object.entries(value).map(([contractName, v]) => [contractName, { ...v, key }]);
@@ -55,7 +55,7 @@ export function getPrimaryContract(buildFile: BuildFile): [string, ContractMetad
       .flat()
   );
 
-  let contractMetadata = contracts[targetContract];
+  const contractMetadata = contracts[targetContract];
   if (contractMetadata === undefined) {
     throw new Error(
       `Could not find contract ${targetContract} in buildFile with contracts: ${JSON.stringify(

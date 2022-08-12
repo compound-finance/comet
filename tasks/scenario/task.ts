@@ -10,9 +10,9 @@ import * as types from 'hardhat/internal/core/params/argumentTypes'; // TODO har
 function getBasesFromTaskArgs(givenBases: string | undefined, env: HardhatRuntimeEnvironment): ForkSpec[] {
   let bases: ForkSpec[] = env.config.scenario.bases;
   if (givenBases) {
-    let baseMap = Object.fromEntries(env.config.scenario.bases.map((base) => [base.name, base]));
+    const baseMap = Object.fromEntries(env.config.scenario.bases.map((base) => [base.name, base]));
     bases = givenBases.split(',').map((baseName) => {
-      let base = baseMap[baseName];
+      const base = baseMap[baseName];
       if (!base) {
         throw new Error(`Unknown base: ${baseName}`);
       }
@@ -42,8 +42,8 @@ task('scenario:spider', 'Runs spider in preparation for scenarios')
     const bases: ForkSpec[] = getBasesFromTaskArgs(taskArgs.bases, env);
     await Promise.all(bases.map(async (base) => {
       if (base.network !== 'hardhat') {
-        let hre = hreForBase(base);
-        let dm = new DeploymentManager(
+        const hre = hreForBase(base);
+        const dm = new DeploymentManager(
           base.name,
           base.deployment,
           hre,

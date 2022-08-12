@@ -44,7 +44,7 @@ export class Scenario<T, U, R> {
     this.forker = forker;
     this.constraints = constraints;
     this.flags = flags;
-    let frame = getStack(3);
+    const frame = getStack(3);
     this.file = frame[0] ? frame[0].file : null;
   }
 }

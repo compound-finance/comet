@@ -10,8 +10,8 @@ function compose<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C {
 }
 
 function deepClone(c: CacheMap): CacheMap {
-  let res = new Map();
-  for (let [name, entry] of c.entries()) {
+  const res = new Map();
+  for (const [name, entry] of c.entries()) {
     if (entry instanceof Map) {
       res.set(name, deepClone(entry));
     } else {
@@ -70,14 +70,14 @@ export class Cache {
   }
 
   getFilePath(spec: FileSpec): string {
-    let path = this.getPath(spec);
+    const path = this.getPath(spec);
     path[path.length - 1] = path[path.length - 1];
     return nodepath.join(this.deploymentDir, ...path);
   }
 
   private getMemory<T>(spec: FileSpec): T | undefined {
     let c = this.cache;
-    for (let path of this.getPath(spec)) {
+    for (const path of this.getPath(spec)) {
       if (c instanceof Map && c.has(path)) {
         c = c.get(path);
       } else {
@@ -89,8 +89,8 @@ export class Cache {
 
   private putMemory<T>(spec: FileSpec, data: T) {
     let c = this.cache;
-    let paths = this.getPath(spec);
-    for (let [i, path] of paths.entries()) {
+    const paths = this.getPath(spec);
+    for (const [i, path] of paths.entries()) {
       if (i === paths.length - 1) {
         c.set(path, data);
         return;
@@ -109,8 +109,8 @@ export class Cache {
   }
 
   private async putDisk<T>(spec: FileSpec, data: T, transformer: (T) => string) {
-    let path = this.getFilePath(spec);
-    let dir = nodepath.dirname(path);
+    const path = this.getFilePath(spec);
+    const dir = nodepath.dirname(path);
     // TODO: Fix this logic
     if (!(await fileExists(dir))) {
       await fs.mkdir(dir, { recursive: true });
@@ -120,7 +120,7 @@ export class Cache {
   }
 
   private async getDisk<T>(spec: FileSpec, transformer: (x: string | undefined) => T): Promise<T> {
-    let filePath = this.getFilePath(spec);
+    const filePath = this.getFilePath(spec);
     if (await fileExists(filePath)) {
       return transformer(await fs.readFile(filePath, 'utf8'));
     } else {
@@ -132,7 +132,7 @@ export class Cache {
     spec: FileSpec,
     diskTransformer: (x: string | undefined) => T = parseJson
   ): Promise<T | undefined> {
-    let cached = this.getMemory<T>(spec);
+    const cached = this.getMemory<T>(spec);
     if (cached) {
       return cached;
     } else {

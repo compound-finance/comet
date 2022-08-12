@@ -9,7 +9,7 @@ import liquidateUnderwaterBorrowers from './liquidateUnderwaterBorrowers';
 const loopDelay = 5000;
 
 async function main() {
-  let { DEPLOYMENT: deployment, LIQUIDATOR_ADDRESS: liquidatorAddress } = process.env;
+  const { DEPLOYMENT: deployment, LIQUIDATOR_ADDRESS: liquidatorAddress } = process.env;
   if (!liquidatorAddress) {
     throw new Error('missing required env variable: LIQUIDATOR_ADDRESS');
   }

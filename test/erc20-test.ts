@@ -41,7 +41,7 @@ describe('erc20', function () {
 
       await comet.setBasePrincipal(user.address, 100e6);
 
-      let totalsBasic = await comet.totalsBasic();
+      const totalsBasic = await comet.totalsBasic();
       await setTotalsBasic(comet, {
         baseSupplyIndex: totalsBasic.baseSupplyIndex.mul(2),
       });

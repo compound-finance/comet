@@ -67,7 +67,7 @@ describe('Import', () => {
 
   it('imports from Etherscan', async () => {
     mockImportSuccess('0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e');
-    let importResult = await importContract(
+    const importResult = await importContract(
       'avalanche',
       '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e',
       0
@@ -76,7 +76,7 @@ describe('Import', () => {
   });
 
   it('loads from cache', async () => {
-    let cache = new Cache('test-network', 'test-deployment');
+    const cache = new Cache('test-network', 'test-deployment');
     await storeBuildFile(cache, 'avalanche', '0x0000000000000000000000000000000000000001', fiatTokenBuildFile);
     expect(
       await fetchContract(cache, 'avalanche', '0x0000000000000000000000000000000000000001', 0)
@@ -85,7 +85,7 @@ describe('Import', () => {
 
   it('stores in cache', async () => {
     mockImportSuccess('0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e');
-    let cache = new Cache('test-network', 'test-deployment');
+    const cache = new Cache('test-network', 'test-deployment');
     expect(
       await fetchAndCacheContract(
         cache,

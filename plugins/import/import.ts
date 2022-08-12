@@ -33,9 +33,9 @@ interface EtherscanSource {
 }
 
 async function getEtherscanApiData(network: string, address: string, apiKey: string) {
-  let apiUrl = await getEtherscanApiUrl(network);
+  const apiUrl = await getEtherscanApiUrl(network);
 
-  let result = await get(apiUrl, {
+  const result = await get(apiUrl, {
     module: 'contract',
     action: 'getsourcecode',
     address,
@@ -46,7 +46,7 @@ async function getEtherscanApiData(network: string, address: string, apiKey: str
     throw new Error(`Etherscan Error: ${result.message} - ${result.result}`);
   }
 
-  let s = <EtherscanSource>(<unknown>result.result[0]);
+  const s = <EtherscanSource>(<unknown>result.result[0]);
 
   if (s.ABI === 'Contract source code not verified') {
     throw new Error('Contract source code not verified');
@@ -64,10 +64,10 @@ async function getEtherscanApiData(network: string, address: string, apiKey: str
 }
 
 async function getContractCreationCode(network: string, address: string) {
-  let url = `${await getEtherscanUrl(network)}/address/${address}#code`;
-  let result = <string>await get(url, {});
-  let regex = /<div id='verifiedbytecode2'>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
-  let matches = [...result.matchAll(regex)];
+  const url = `${await getEtherscanUrl(network)}/address/${address}#code`;
+  const result = <string>await get(url, {});
+  const regex = /<div id='verifiedbytecode2'>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
+  const matches = [...result.matchAll(regex)];
   if (matches.length === 0) {
     if (result.match(/request throttled/i) || result.match(/try again later/i)) {
       throw new Error(`Request throttled: ${url}`);
@@ -82,14 +82,14 @@ export async function loadEtherscanContract(network: string, address: string) {
   const apiKey = getEtherscanApiKey(network);
 
   const networkName = network;
-  let { source, abi, contract, compiler, optimized, optimizationRuns, constructorArgs } = await getEtherscanApiData(networkName, address, apiKey);
+  const { source, abi, contract, compiler, optimized, optimizationRuns, constructorArgs } = await getEtherscanApiData(networkName, address, apiKey);
   let contractCreationCode = await getContractCreationCode(networkName, address);
   if (constructorArgs.length > 0 && contractCreationCode.endsWith(constructorArgs)) {
     contractCreationCode = contractCreationCode.slice(0, -constructorArgs.length);
   }
-  let encodedABI = JSON.stringify(abi);
-  let contractSource = `contracts/${contract}.sol:${contract}`;
-  let contractBuild = {
+  const encodedABI = JSON.stringify(abi);
+  const contractSource = `contracts/${contract}.sol:${contract}`;
+  const contractBuild = {
     contract,
     contracts: {
       [contractSource]: {
