@@ -40,7 +40,7 @@ scenario(
     expect(await rewardToken.balanceOf(albert.address)).to.be.equal(0n);
 
     await baseAsset.approve(albert, comet.address);
-    await albert.supplyAsset({ asset: baseAssetAddress, amount: 1_000_000n * baseScale })
+    await albert.safeSupplyAsset({ asset: baseAssetAddress, amount: 1_000_000n * baseScale })
 
     const supplyTimestamp = await world.timestamp();
     const albertBalance = await albert.getCometBaseBalance();
@@ -95,7 +95,7 @@ scenario(
 
     await albert.allow(betty, true); // Albert allows Betty to manage his account
     await baseAsset.approve(albert, comet.address);
-    await albert.supplyAsset({ asset: baseAssetAddress, amount: 1_000_000n * baseScale });
+    await albert.safeSupplyAsset({ asset: baseAssetAddress, amount: 1_000_000n * baseScale });
 
     const supplyTimestamp = await world.timestamp();
     const albertBalance = await albert.getCometBaseBalance();

@@ -140,8 +140,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
 
           await context.sourceTokens(collateralNeeded, collateralToken, borrowActor);
           await collateralToken.approve(borrowActor, comet);
-          await context.bumpSupplyCaps({ [collateralToken.address]: collateralNeeded })
-          await comet.connect(borrowActor.signer).supply(collateralToken.address, collateralNeeded);
+          await borrowActor.safeSupplyAsset({ asset: collateralToken.address, amount: collateralNeeded });
 
           // XXX will also need to make sure there are enough base tokens in the protocol to withdraw
           await comet.connect(borrowActor.signer).withdraw(baseToken.address, toBorrowBase);
