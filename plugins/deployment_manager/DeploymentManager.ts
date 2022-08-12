@@ -1,11 +1,12 @@
 import { diff } from 'jest-diff';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Contract, providers } from 'ethers';
-import { Alias, Address, BuildFile } from './Types';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { Alias, Address, BuildFile, TraceFn } from './Types';
 import { putAlias, storeAliases } from './Aliases';
 import { Cache } from './Cache';
 import { ContractMap } from './ContractMap';
-import { Deployer, DeployOpts, deploy, deployBuild } from './Deploy';
+import { DeployOpts, deploy, deployBuild } from './Deploy';
 import { fetchAndCacheContract, readContract } from './Import';
 import { getRelationConfig } from './RelationConfig';
 import { getRoots, putRoots } from './Roots';
@@ -13,8 +14,7 @@ import { Spider, spider } from './Spider';
 import { Migration, getArtifactSpec } from './Migration';
 import { generateMigration } from './MigrationTemplate';
 import { ExtendedNonceManager } from './NonceManager';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { asyncCallWithTimeout, debug, getEthersContract } from './Utils';
+import { asyncCallWithTimeout, debug, getEthersContract, txCost } from './Utils';
 import { deleteVerifyArgs, getVerifyArgs } from './VerifyArgs';
 import { verifyContract, VerifyArgs, VerificationStrategy } from './Verify';
 
@@ -31,12 +31,12 @@ interface DeploymentManagerConfig {
   verificationStrategy?: VerificationStrategy;
 }
 
+export type Deployed = { [alias: Alias]: Contract };
+
 async function getManagedSigner(signer): Promise<SignerWithAddress> {
   const managedSigner = new ExtendedNonceManager(signer) as unknown as providers.JsonRpcSigner;
   return SignerWithAddress.create(managedSigner);
 }
-
-export type Deployed = { [alias: Alias]: Contract };
 
 export class DeploymentManager {
   network: string;
@@ -44,6 +44,7 @@ export class DeploymentManager {
   hre: HardhatRuntimeEnvironment;
   config: DeploymentManagerConfig;
   counter: number;
+  spent: number;
   cache: Cache; // TODO: kind of a misnomer since its handling *all* path stuff
   contractsCache: ContractMap | null;
   _signers: SignerWithAddress[];
@@ -59,6 +60,7 @@ export class DeploymentManager {
     this.hre = hre;
     this.config = config;
     this.counter = 0;
+    this.spent = 0;
 
     this.cache = new Cache(
       this.network,
@@ -109,6 +111,7 @@ export class DeploymentManager {
       verificationStrategy: this.config.verificationStrategy,
       cache: this.cache,
       connect: await this.getSigner(),
+      trace: this.tracer()
     };
   }
 
@@ -191,23 +194,20 @@ export class DeploymentManager {
   ): Promise<C> {
     const maybeExisting = await this.contract<C>(alias);
     if (!maybeExisting) {
+      const trace = this.tracer();
       const buildFile = await this.import(address);
       const contract = getEthersContract<C>(address, buildFile, this.hre);
       await this.putAlias(alias, contract);
-      debug(`Loaded ${buildFile.contract} from ${address} as '${alias}'`);
+      trace(`Loaded ${buildFile.contract} from ${address} as '${alias}'`);
       return contract;
     }
     return maybeExisting;
   }
 
   /* Deploys a contract from Hardhat artifacts */
-  async _deploy<
-    C extends Contract,
-    Factory extends Deployer<C, DeployArgs>,
-    DeployArgs extends Array<any>
-  >(contractFile: string, deployArgs: DeployArgs, retries?: number): Promise<C> {
+  async _deploy<C extends Contract>(contractFile: string, deployArgs: any[], retries?: number): Promise<C> {
     const contract = await this.retry(
-      async () => deploy<C, Factory, DeployArgs>(contractFile, deployArgs, this.hre, await this.deployOpts()),
+      async () => deploy(contractFile, deployArgs, this.hre, await this.deployOpts()),
       retries
     );
     this.counter++;
@@ -276,7 +276,8 @@ export class DeploymentManager {
       this.network,
       this.hre,
       relationConfigMap,
-      roots
+      roots,
+      this.tracer()
     );
     await putRoots(this.cache, roots);
     await storeAliases(this.cache, crawl.aliases);
@@ -386,6 +387,24 @@ export class DeploymentManager {
       await new Promise(ok => setTimeout(ok, wait));
       return this.retry(fn, retries - 1, timeLimit, wait * 2);
     }
+  }
+
+  tracer(): TraceFn {
+    return (first, ...rest) => {
+      if (typeof first === 'string') {
+        debug(`[${this.network}] ${first}`, ...rest);
+      } else {
+        return first.wait().then(async (tx) => {
+          const cost = Number(txCost(tx) / (10n ** 12n)) / 1e6;
+          const logs = tx.events.map(e => `${e.event ?? 'unknown'}(${e.args ?? '?'})`).join(' ');
+          const info = `@ ${tx.transactionHash}[${tx.transactionIndex}]`;
+          const desc = `${info} in blockNumber: ${tx.blockNumber} emits: ${logs}`;
+          debug(`[${this.network}] {${cost} Ξ}`, ...rest, desc);
+          this.spent += cost;
+          return tx;
+        });
+      }
+    };
   }
 
   diffDelta(delta: DeploymentDelta): string {

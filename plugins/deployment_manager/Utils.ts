@@ -115,6 +115,10 @@ export function asArray<A>(v: A | A[]): A[] {
   }
 }
 
+export function txCost({ cumulativeGasUsed, effectiveGasPrice }): bigint {
+  return cumulativeGasUsed.mul(effectiveGasPrice).toBigInt();
+}
+
 /**
  * Call an async function with a maximum time limit (in milliseconds) for the timeout
  * @param asyncPromise an async promise to resolve

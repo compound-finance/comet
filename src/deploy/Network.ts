@@ -1,5 +1,5 @@
 import { Deployed, DeploymentManager } from '../../plugins/deployment_manager';
-import { DeploySpec, ProtocolConfiguration, debug, wait, COMP_WHALES } from './index';
+import { DeploySpec, ProtocolConfiguration, wait, COMP_WHALES } from './index';
 import { getConfiguration } from './NetworkConfiguration';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
@@ -14,6 +14,7 @@ export async function cloneGov(
   voterAddress = COMP_WHALES[0],
   adminSigner?: SignerWithAddress
 ): Promise<Deployed> {
+  const trace = deploymentManager.tracer();
   const admin = adminSigner ?? await deploymentManager.getSigner();
   const clone = {
     comp: '0xc00e94cb662c3520282e6f5717214004a7f26888',
@@ -41,37 +42,37 @@ export async function cloneGov(
   await deploymentManager.idempotent(
     async () => (await COMP.balanceOf(admin.address)).eq(await COMP.totalSupply()),
     async () => {
-      debug(`Sending 1/4 of all COMP to fauceteer, 1/4 to timelock`);
+      trace(`Sending 1/4 of all COMP to fauceteer, 1/4 to timelock`);
       const amount = (await COMP.totalSupply()).div(4);
-      await wait(COMP.connect(admin).transfer(fauceteer.address, amount));
-      await wait(COMP.connect(admin).transfer(timelock.address, amount));
-      debug(`COMP.balanceOf(${fauceteer.address}): ${await COMP.balanceOf(fauceteer.address)}`);
-      debug(`COMP.balanceOf(${timelock.address}): ${await COMP.balanceOf(timelock.address)}`);
+      trace(await wait(COMP.connect(admin).transfer(fauceteer.address, amount)));
+      trace(await wait(COMP.connect(admin).transfer(timelock.address, amount)));
+      trace(`COMP.balanceOf(${fauceteer.address}): ${await COMP.balanceOf(fauceteer.address)}`);
+      trace(`COMP.balanceOf(${timelock.address}): ${await COMP.balanceOf(timelock.address)}`);
     }
   );
 
   await deploymentManager.idempotent(
     async () => (await COMP.getCurrentVotes(voterAddress)).eq(0),
     async () => {
-      debug(`Delegating COMP votes to ${voterAddress}`);
-      await wait(COMP.connect(admin).delegate(voterAddress));
-      debug(`COMP.getCurrentVotes(${voterAddress}): ${await COMP.getCurrentVotes(voterAddress)}`);
+      trace(`Delegating COMP votes to ${voterAddress}`);
+      trace(await wait(COMP.connect(admin).delegate(voterAddress)));
+      trace(`COMP.getCurrentVotes(${voterAddress}): ${await COMP.getCurrentVotes(voterAddress)}`);
     }
   );
 
   await deploymentManager.idempotent(
     async () => (await governor.proposalCount()).eq(0),
     async () => {
-      debug(`Initiating Governor using patched Timelock`);
-      await wait(governor.connect(admin)._initiate(timelock.address));
+      trace(`Initiating Governor using patched Timelock`);
+      trace(await wait(governor.connect(admin)._initiate(timelock.address)));
     }
   );
 
   await deploymentManager.idempotent(
     async () => !sameAddress(await timelock.admin(), governor.address),
     async () => {
-      debug(`Transferring Governor of Timelock to ${governor.address}`);
-      await wait(timelock.connect(admin).setAdmin(governor.address));
+      trace(`Transferring Governor of Timelock to ${governor.address}`);
+      trace(await wait(timelock.connect(admin).setAdmin(governor.address)));
     }
   );
 
@@ -88,8 +89,9 @@ export async function deployNetworkComet(
     return deploySpec.all || flag;
   }
 
-  const admin = adminSigner ?? await deploymentManager.getSigner();
   const ethers = deploymentManager.hre.ethers;
+  const trace = deploymentManager.tracer();
+  const admin = adminSigner ?? await deploymentManager.getSigner();
 
   const {
     name,
@@ -217,43 +219,43 @@ export async function deployNetworkComet(
   await deploymentManager.idempotent(
     async () => !sameAddress($configuratorImpl, configuratorImpl.address),
     async () => {
-      debug(`Setting Configurator implementation to ${configuratorImpl.address}`);
-      await wait(cometAdmin.connect(admin).upgrade(configurator.address, configuratorImpl.address));
+      trace(`Setting Configurator implementation to ${configuratorImpl.address}`);
+      trace(await wait(cometAdmin.connect(admin).upgrade(configurator.address, configuratorImpl.address)));
     }
   );
 
   await deploymentManager.idempotent(
     async () => !sameAddress(await configurator.factory(comet.address), cometFactory.address),
     async () => {
-      debug(`Setting factory in Configurator to ${cometFactory.address}`);
-      await wait(configurator.connect(admin).setFactory(comet.address, cometFactory.address));
+      trace(`Setting factory in Configurator to ${cometFactory.address}`);
+      trace(await wait(configurator.connect(admin).setFactory(comet.address, cometFactory.address)));
     }
   );
 
   await deploymentManager.idempotent(
     async () => isFirstDeploy || deploySpec.all || deploySpec.cometMain || deploySpec.cometExt,
     async () => {
-      debug(`Setting configuration in Configurator for ${comet.address}`);
-      await wait(configurator.connect(admin).setConfiguration(comet.address, configuration));
+      trace(`Setting configuration in Configurator for ${comet.address}`);
+      trace(await wait(configurator.connect(admin).setConfiguration(comet.address, configuration)));
 
       if (isFirstDeploy) {
-        debug(`Deploying first implementation of Comet and initializing...`);
+        trace(`Deploying first implementation of Comet and initializing...`);
         const data = (await comet.populateTransaction.initializeStorage()).data;
-        await wait(cometAdmin.connect(admin).deployUpgradeToAndCall(configurator.address, comet.address, data));
+        trace(await wait(cometAdmin.connect(admin).deployUpgradeToAndCall(configurator.address, comet.address, data)));
       } else {
-        debug(`Upgrading implementation of Comet...`);
-        await wait(cometAdmin.connect(admin).deployAndUpgradeTo(configurator.address, comet.address));
+        trace(`Upgrading implementation of Comet...`);
+        trace(await wait(cometAdmin.connect(admin).deployAndUpgradeTo(configurator.address, comet.address)));
       }
 
-      debug(`New Comet implementation at ${await cometAdmin.getProxyImplementation(comet.address)}`);
+      trace(`New Comet implementation at ${await cometAdmin.getProxyImplementation(comet.address)}`);
     }
   );
 
   await deploymentManager.idempotent(
     async () => !sameAddress((await rewards.rewardConfig(comet.address)).token, rewardTokenAddress),
     async () => {
-      debug(`Setting reward token in CometRewards to ${rewardTokenAddress}`);
-      await wait(rewards.connect(admin).setRewardConfig(comet.address, rewardTokenAddress));
+      trace(`Setting reward token in CometRewards to ${rewardTokenAddress}`);
+      trace(await wait(rewards.connect(admin).setRewardConfig(comet.address, rewardTokenAddress)));
     }
   );
 
@@ -262,24 +264,24 @@ export async function deployNetworkComet(
   await deploymentManager.idempotent(
     async () => !sameAddress(await configurator.governor(), governor),
     async () => {
-      debug(`Transferring governor of Configurator to ${governor}`);
-      await wait(configurator.connect(admin).transferGovernor(governor));
+      trace(`Transferring governor of Configurator to ${governor}`);
+      trace(await wait(configurator.connect(admin).transferGovernor(governor)));
     }
   );
 
   await deploymentManager.idempotent(
     async () => !sameAddress(await cometAdmin.owner(), governor),
     async () => {
-      debug(`Transferring ownership of CometProxyAdmin to ${governor}`);
-      await wait(cometAdmin.connect(admin).transferOwnership(governor));
+      trace(`Transferring ownership of CometProxyAdmin to ${governor}`);
+      trace(await wait(cometAdmin.connect(admin).transferOwnership(governor)));
     }
   );
 
   await deploymentManager.idempotent(
     async () => !sameAddress(await rewards.governor(), governor),
     async () => {
-      debug(`Transferring governor of CometRewards to ${governor}`);
-      await wait(rewards.connect(admin).transferGovernor(governor));
+      trace(`Transferring governor of CometRewards to ${governor}`);
+      trace(await wait(rewards.connect(admin).transferGovernor(governor)));
     }
   );
 
