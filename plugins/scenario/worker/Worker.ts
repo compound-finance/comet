@@ -64,7 +64,7 @@ export async function run<T, U, R>({ bases, config, worker }: WorkerData) {
     const world = new World(hreForBase(base), base), dm = world.deploymentManager;
     const delta = await dm.runDeployScript({ allMissing: true });
 
-    // Reading pending proposals for all scenarios
+    // Reading pending proposals and storing them in the cache for all scenarios
     const proposals = await getAllPendingProposals(world);
     dm.cache.storeCache(getProposalCacheId(base.network), proposals);
 
