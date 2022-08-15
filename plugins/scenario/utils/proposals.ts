@@ -1,6 +1,6 @@
 
 import { fetchQuery } from '../utils/fetchQuery';
-import { IGovernorBravo } from '../../../build/types';
+import { IGovernorBravo } from '../../../build/types/IGovernorBravo';
 import { World } from '../World';
 
 // TODO: can we import the enum from IGovernorBravo?
