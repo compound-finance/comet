@@ -3,8 +3,13 @@ pragma solidity 0.8.15;
 
 import "./CometInterface.sol";
 import "./ERC20.sol";
-import "./ICometRewards.sol";
 import "./IWETH9.sol";
+
+interface IClaimable {
+    function claim(address comet, address src, bool shouldAccrue) external;
+
+    function claimTo(address comet, address src, address to, bool shouldAccrue) external;
+}
 
 contract Bulker {
     /** General configuration constants **/
@@ -27,7 +32,6 @@ contract Bulker {
     error FailedToSendEther();
     error Unauthorized();
 
-    // XXX do we want to be constantizing the comet address and rewards address
     constructor(address admin_, address comet_, address rewards_, address payable weth_) {
         admin = admin_;
         comet = comet_;
@@ -150,6 +154,6 @@ contract Bulker {
      * @notice Claim reward for a user
      */
     function claimReward(address src, bool shouldAccrue) internal {
-        ICometRewards(rewards).claim(comet, src, shouldAccrue);
+        IClaimable(rewards).claim(comet, src, shouldAccrue);
     }
 }
