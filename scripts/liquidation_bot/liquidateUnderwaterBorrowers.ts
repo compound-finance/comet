@@ -44,7 +44,7 @@ export default async function liquidateUnderwaterBorrowers(
   for (const address of uniqueAddresses) {
     const isLiquidatable = await comet.isLiquidatable(address);
 
-    console.log(`${address} isLiquidatble=${isLiquidatable}`);
+    console.log(`${address} isLiquidatable=${isLiquidatable}`);
 
     if (isLiquidatable) {
       await attemptLiquidation(
