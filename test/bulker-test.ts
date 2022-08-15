@@ -1,4 +1,4 @@
-import { baseBalanceOf, ethers, expect, exp, makeProtocol, wait, makeBulker, defaultAssets, getGasUsed } from './helpers';
+import { baseBalanceOf, ethers, expect, exp, makeProtocol, wait, makeBulker, defaultAssets, getGasUsed, makeRewards, fastForward } from './helpers';
 import { FaucetWETH__factory } from '../build/types';
 
 // XXX Improve the "no permission" tests that should expect a custom error when
@@ -280,6 +280,39 @@ describe('bulker', function () {
 
     expect(await comet.collateralBalanceOf(alice.address, WETH.address)).to.be.equal(0);
     expect(aliceBalanceAfter.sub(aliceBalanceBefore)).to.be.equal(withdrawAmount - getGasUsed(txn));
+  });
+
+  it('claim rewards', async () => {
+    const protocol = await makeProtocol({
+      baseMinForRewards: 10e6,
+    });
+    const {
+      comet,
+      governor,
+      tokens: { USDC, COMP, WETH },
+      users: [alice],
+    } = protocol;
+    const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
+    const bulkerInfo = await makeBulker({ comet: comet.address, rewards: rewards.address, weth: WETH.address });
+    const { bulker } = bulkerInfo;
+
+    // Allocate and approve transfers
+    await COMP.allocateTo(rewards.address, exp(86400, 18));
+    await USDC.allocateTo(alice.address, 10e6);
+    await USDC.connect(alice).approve(comet.address, 10e6);
+
+    // Supply once
+    await comet.connect(alice).supply(USDC.address, 10e6);
+
+    await fastForward(86400);
+
+    expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
+
+    // Alice claims rewards through the bulker
+    const claimRewardCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'bool'], [alice.address, true]);
+    await bulker.connect(alice).invoke([await bulker.ACTION_CLAIM_REWARD()], [claimRewardCalldata]);
+
+    expect(await COMP.balanceOf(alice.address)).to.be.equal(exp(86400, 18));
   });
 
   it('reverts on supply asset if no permission granted to bulker', async () => {

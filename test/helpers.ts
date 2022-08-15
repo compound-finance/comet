@@ -126,6 +126,7 @@ export type Rewards = {
 export type BulkerOpts = {
   admin?: SignerWithAddress;
   comet?: string;
+  rewards?: string;
   weth?: string;
 };
 
@@ -493,10 +494,11 @@ export async function makeBulker(opts: BulkerOpts): Promise<BulkerInfo> {
 
   const admin = opts.admin || signers[0];
   const comet = opts.comet;
+  const rewards = opts.rewards || ethers.constants.AddressZero;
   const weth = opts.weth;
 
   const BulkerFactory = (await ethers.getContractFactory('Bulker')) as Bulker__factory;
-  const bulker = await BulkerFactory.deploy(admin.address, comet, weth);
+  const bulker = await BulkerFactory.deploy(admin.address, comet, rewards, weth);
   await bulker.deployed();
 
   return {
