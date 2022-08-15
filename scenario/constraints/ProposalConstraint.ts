@@ -1,5 +1,5 @@
 import { Constraint, World, debug } from '../../plugins/scenario';
-import { getProposalCacheId } from '../../plugins/scenario/utils/proposals';
+import { getAllPendingProposals, getProposalCacheId } from '../../plugins/scenario/utils/proposals';
 import { CometContext } from '../context/CometContext';
 import { Requirements } from './Requirements';
 
@@ -9,8 +9,9 @@ export class ProposalConstraint<T extends CometContext, R extends Requirements> 
   async solve(requirements: R, context: T, world: World) {
     const label = `[${world.base.name}] {ProposalConstraint}`;
     return async function (ctx: T): Promise<T> {
-      const cacheId = getProposalCacheId(world.base.network);
-      const proposals: PendingProposal[] = await world.deploymentManager.cache.readCache(cacheId);
+      // const cacheId = getProposalCacheId(world.base.network);
+      // const proposals: PendingProposal[] = await world.deploymentManager.cache.readCache(cacheId);
+      const proposals = await getAllPendingProposals(world);
       for (const proposal of proposals) {
         try {
           // XXX if gov chain is not local chain, simulate bridge
