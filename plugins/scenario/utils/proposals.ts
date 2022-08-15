@@ -1,6 +1,6 @@
 
 import { fetchQuery } from '../utils/fetchQuery';
-import { IGovernorBravo } from '../../../build/types/IGovernorBravo';
+// import { IGovernorBravo } from '../../../build/types';
 import { World } from '../World';
 
 // TODO: can we import the enum from IGovernorBravo?
@@ -10,7 +10,7 @@ const ACTIVE_PROPOSAL_STATE = 1;
 
 type PendingProposal = { proposalId: number, startBlock: number, endBlock: number };
 
-async function getGovernor(world: World): Promise<IGovernorBravo> {
+async function getGovernor(world: World): Promise<any> {
   return world.deploymentManager.contract('governor');
 }
 
