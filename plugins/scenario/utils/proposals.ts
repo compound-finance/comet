@@ -1,8 +1,7 @@
 
 import { fetchQuery } from '../utils/fetchQuery';
-import { IGovernorBravo } from '../../../build/types/IGovernorBravo';
+import { IGovernorBravo } from '../../../build/types';
 import { World } from '../World';
-import { network } from 'hardhat';
 
 // TODO: can we import the enum from IGovernorBravo?
 // States of proposals that need to be executed
