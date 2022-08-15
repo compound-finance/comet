@@ -1,5 +1,4 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
-import { Bulker, Fauceteer, ProxyAdmin } from '../../../build/types';
 import { DeploySpec, cloneGov, deployComet, exp, getBlock, sameAddress, wait } from '../../../src/deploy';
 
 const clone = {
@@ -72,7 +71,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const bulker = await deploymentManager.deploy(
     'bulker',
     'Bulker.sol',
-    [timelock.address, comet.address, WETH.address]
+    [timelock.address, comet.address, rewards.address, WETH.address]
   );
 
   await deploymentManager.idempotent(
