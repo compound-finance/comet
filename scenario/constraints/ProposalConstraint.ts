@@ -9,9 +9,8 @@ export class ProposalConstraint<T extends CometContext, R extends Requirements> 
   async solve(requirements: R, context: T, world: World) {
     const label = `[${world.base.name}] {ProposalConstraint}`;
     return async function (ctx: T): Promise<T> {
-      // const cacheId = getProposalCacheId(world.base.network);
-      // const proposals: PendingProposal[] = await world.deploymentManager.cache.readCache(cacheId);
-      const proposals = await getAllPendingProposals(world);
+      const cacheId = getProposalCacheId(world.base.network);
+      const proposals: PendingProposal[] = await world.deploymentManager.cache.readCache(cacheId);
       for (const proposal of proposals) {
         try {
           // XXX if gov chain is not local chain, simulate bridge
