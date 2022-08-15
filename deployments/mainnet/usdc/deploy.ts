@@ -17,7 +17,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const bulker = await deploymentManager.deploy(
     'bulker',
     'Bulker.sol',
-    [await comet.governor(), comet.address, rewards.address, WETH.address]
+    [await comet.governor(), WETH.address]
   );
 
   return { ...deployed, bulker };
