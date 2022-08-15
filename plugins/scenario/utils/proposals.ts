@@ -15,7 +15,7 @@ async function getGovernor(world: World): Promise<IGovernorBravo> {
   return world.deploymentManager.contract('governor');
 }
 
-export function getProposalCacheId(network): string {
+export function getProposalCacheId(network: string): string {
   return `proposals_${network}`;
 }
 
