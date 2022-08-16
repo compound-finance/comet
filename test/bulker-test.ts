@@ -366,7 +366,7 @@ describe('bulker', function () {
   describe('admin functions', function () {
     it('sweep ERC20 token', async () => {
       const protocol = await makeProtocol({});
-      const { comet, governor, tokens: { USDC, WETH }, users: [alice] } = protocol;
+      const { governor, tokens: { USDC, WETH }, users: [alice] } = protocol;
       const bulkerInfo = await makeBulker({ admin: governor, weth: WETH.address });
       const { bulker } = bulkerInfo;
 
@@ -390,7 +390,7 @@ describe('bulker', function () {
 
     it('sweep ETH', async () => {
       const protocol = await makeProtocol({});
-      const { comet, governor, tokens: { WETH }, users: [alice] } = protocol;
+      const { governor, tokens: { WETH }, users: [alice] } = protocol;
       const bulkerInfo = await makeBulker({ admin: governor, weth: WETH.address });
       const { bulker } = bulkerInfo;
 
@@ -413,7 +413,7 @@ describe('bulker', function () {
 
     it('reverts if sweepToken is called by non-admin', async () => {
       const protocol = await makeProtocol({});
-      const { comet, governor, tokens: { USDC, WETH }, users: [alice] } = protocol;
+      const { governor, tokens: { USDC, WETH }, users: [alice] } = protocol;
       const bulkerInfo = await makeBulker({ admin: governor, weth: WETH.address });
       const { bulker } = bulkerInfo;
 
@@ -424,7 +424,7 @@ describe('bulker', function () {
 
     it('reverts if sweepEth is called by non-admin', async () => {
       const protocol = await makeProtocol({});
-      const { comet, governor, tokens: { WETH }, users: [alice] } = protocol;
+      const { governor, tokens: { WETH }, users: [alice] } = protocol;
       const bulkerInfo = await makeBulker({ admin: governor, weth: WETH.address });
       const { bulker } = bulkerInfo;
 
