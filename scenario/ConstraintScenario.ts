@@ -104,9 +104,8 @@ scenario(
   }
 );
 
-// XXX not enough base asset exists in the Kovan protocol to borrow up to 100% utilization;
-//     utilization constraint should also source tokens to the protocol if needed
-scenario.skip(
+// Utilization constraint should also source tokens to the protocol if needed
+scenario.only(
   'UtilizationConstraint > sets utilization to 100%',
   {
     utilization: 1,
@@ -116,12 +115,11 @@ scenario.skip(
   }
 );
 
-// XXX enable scenario; fails on test nets currently
-scenario.skip(
+scenario.only(
   'UtilizationConstraint > works in combination with other constraints',
   {
     cometBalances: {
-      albert: { $base: -100 },
+      albert: { $base: -1000 },
     },
     utilization: 1
   },
