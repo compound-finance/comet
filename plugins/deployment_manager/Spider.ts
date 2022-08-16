@@ -99,6 +99,8 @@ async function crawl(
   //trace(`Crawling ${address}`, aliasRender);
 
   async function maybeProcess(alias: Alias, build: Build, config: RelationConfig): Promise<Alias> {
+    trace(`maybeProcess ${alias}`);
+
     if (maybeStore(alias, address, aliases)) {
       //trace(`Processing ${address}: ${alias} using ${build.buildFile.contract} ...`);
       let contract = build.contract;

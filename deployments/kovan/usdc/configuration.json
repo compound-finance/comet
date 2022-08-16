@@ -1,5 +1,6 @@
 {
   "name": "Compound USDC",
+  "governor": "0xbBFE34E868343E6F4f5E8B5308de980d7bd88c46",
   "symbol": "cUSDCv3",
   "baseToken": "USDC",
   "baseTokenPriceFeed": "0x9211c6b3BF41A10F78539810Cf5c64e1BB78Ec60",
