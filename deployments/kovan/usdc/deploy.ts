@@ -71,7 +71,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const bulker = await deploymentManager.deploy(
     'bulker',
     'Bulker.sol',
-    [timelock.address, comet.address, rewards.address, WETH.address]
+    [timelock.address, WETH.address]
   );
 
   await deploymentManager.idempotent(
