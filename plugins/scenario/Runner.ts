@@ -92,10 +92,10 @@ export class Runner<T, U, R> {
           cumulativeGas += txnReceipt.cumulativeGasUsed.toNumber();
         }
         numSolutionSets++;
-        console.log('PASSED')
+        console.log('PASSED');
       } catch (e) {
         // TODO: Include the specific solution (set of states) that failed in the result
-        console.log('FAILED')
+        console.log('FAILED');
         return this.generateResult(base, scenario, startTime, 0, ++numSolutionSets, e);
       } finally {
         contextSnapshot = await world._revertAndSnapshot(contextSnapshot);
