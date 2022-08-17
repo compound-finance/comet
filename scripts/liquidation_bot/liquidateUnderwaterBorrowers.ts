@@ -4,9 +4,9 @@ import {
   Liquidator
 } from '../../build/types';
 
-const daiPool = {
-  tokenAddress: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-  poolFee: 100
+const linkPool = {
+  tokenAddress: '0xb6d2505de375ec39d906e61e3d7acd5a55ab9994',
+  poolFee: 10000
 };
 
 async function attemptLiquidation(
@@ -17,8 +17,8 @@ async function attemptLiquidation(
   try {
     await liquidator.connect(signer).initFlash({
       accounts: targetAddresses,
-      pairToken: daiPool.tokenAddress,
-      poolFee: daiPool.poolFee
+      pairToken: linkPool.tokenAddress,
+      poolFee: linkPool.poolFee
     });
     console.log(`Successfully liquidated ${targetAddresses}`);
   } catch (e) {
