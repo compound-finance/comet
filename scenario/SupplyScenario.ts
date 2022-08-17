@@ -1,20 +1,12 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, expectRevertMatches, getExpectedBaseBalance, getInterest } from './utils';
+import { expectApproximately, expectRevertMatches, getExpectedBaseBalance, getInterest, isValidAssetIndex, NUM_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
-
-const NUM_ASSETS = 15;
-
-async function isValidAssetIndex(ctx: CometContext, num: number): Promise<boolean> {
-  const comet = await ctx.getComet();
-  return num < await comet.numAssets();
-}
 
 // XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
 // of testing them conditionally
 async function testSupplyCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
   const comet = await context.getComet();
-  if (assetNum >= (await comet.numAssets())) return;
   const { albert } = await context.actors;
   const { asset: assetAddress, scale: scaleBN, supplyCap } = await comet.getAssetInfo(assetNum);
   const collateralAsset = context.getAssetByAddress(assetAddress);
@@ -45,7 +37,6 @@ async function testSupplyCollateral(context: CometContext, assetNum: number): Pr
 
 async function testSupplyFromCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
   const comet = await context.getComet();
-  if (assetNum >= (await comet.numAssets())) return;
   const { albert, betty } = await context.actors;
   const { asset: assetAddress, scale: scaleBN, supplyCap } = await comet.getAssetInfo(assetNum);
   const collateralAsset = context.getAssetByAddress(assetAddress);
@@ -79,7 +70,6 @@ async function testSupplyFromCollateral(context: CometContext, assetNum: number)
   }
 }
 
-// XXX consider creating these tests for assets0-15
 scenario(
   'Comet#supply > base asset',
   {

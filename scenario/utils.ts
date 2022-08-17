@@ -7,6 +7,8 @@ import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
 import { exp } from '../test/helpers';
 
+export const NUM_ASSETS = 15;
+
 export interface ComparativeAmount {
   val: number,
   op: ComparisonOp,
@@ -238,4 +240,9 @@ export async function fetchQuery(
       return { err };
     }
   }
+}
+
+export async function isValidAssetIndex(ctx: CometContext, num: number): Promise<boolean> {
+  const comet = await ctx.getComet();
+  return num < await comet.numAssets();
 }
