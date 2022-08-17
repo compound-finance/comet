@@ -1,4 +1,4 @@
-import { expect, exp, fastForward, makeProtocol, setTotalsBasic, toYears } from './helpers';
+import { expect, exp, fastForward, makeProtocol, setTotalsBasic, toYears, wait } from './helpers';
 import { BigNumber } from 'ethers';
 
 describe('total tracking index bounds', function () {
@@ -131,7 +131,7 @@ describe('total tracking index bounds', function () {
 describe('user tracking index bounds', async () => {
   // XXX test if small supply/borrow causes users to not accrue rewards
 
-  it('small supply causes users to not accrue rewards', async () => {
+  it('small supply causes user to not accrue rewards', async () => {
     const {
       comet, tokens, users: [alice]
     } = await makeProtocol({
@@ -142,8 +142,8 @@ describe('user tracking index bounds', async () => {
     const { USDC } = tokens;
 
     // allocate and approve transfers
-    await USDC.allocateTo(alice.address, 2e6);
-    await USDC.connect(alice).approve(comet.address, 2e6);
+    await USDC.allocateTo(alice.address, 1e6);
+    await USDC.connect(alice).approve(comet.address, 1e6);
 
     // supply
     await comet.connect(alice).supply(USDC.address, 1e6);
@@ -152,13 +152,42 @@ describe('user tracking index bounds', async () => {
     expect(userBasic1.principal).to.eq(1_000_000);
     expect(userBasic1.baseTrackingAccrued).to.eq(0);
 
-    // allow 10 seconds to pass
+    // allow 20 years to pass
     await fastForward(20 * 31536000);
 
     await comet.accrue();
 
     const userBasic2 = await comet.userBasic(alice.address);
     expect(userBasic2.baseTrackingAccrued).to.eq(0);
+  });
+
+  it('small borrow causes user to not accrue rewards', async () => {
+    const {
+      comet, tokens, users: [bob]
+    } = await makeProtocol({
+      base: 'USDC',
+      trackingIndexScale: 1e15,
+      baseTrackingSupplySpeed: 1e8, // supplySpeed=0.0000001 (1e-7) Comp/s
+    });
+    const { USDC } = tokens;
+
+    await USDC.allocateTo(comet.address, 1e6);
+    await setTotalsBasic(comet, {
+      totalSupplyBase: 100e6,
+    });
+
+    await comet.setBasePrincipal(bob.address, 1e6);
+    const cometAsB = comet.connect(bob);
+
+    await wait(cometAsB.withdraw(USDC.address, 1e6));
+
+    // allow 20 years to pass
+    await fastForward(20 * 31536000);
+
+    await comet.accrue();
+
+    const userBasic = await comet.userBasic(bob.address);
+    expect(userBasic.baseTrackingAccrued).to.eq(0);
   });
 
 });
