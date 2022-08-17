@@ -89,14 +89,15 @@ export class DeploymentManager {
     }
 
     // address given, first try to find the managed signer for it
-    const signer = this._signers.find(s => s.address.toLowerCase() === address.toLowerCase());
+    const signers = await this.getSigners(); // ensure loaded
+    const signer = signers.find(s => s.address.toLowerCase() === address.toLowerCase());
     if (signer) {
       return signer;
     }
 
     // otherwise create a new managed signer for the given address
     const newSigner = await getManagedSigner(await this.hre.ethers.getSigner(address));
-    this._signers.push(newSigner);
+    signers.push(newSigner);
     return newSigner;
   }
 
