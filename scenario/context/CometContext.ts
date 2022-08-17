@@ -34,8 +34,8 @@ import { ProtocolConfiguration, deployComet, COMP_WHALES } from '../../src/deplo
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { Requirements } from '../constraints/Requirements';
 
-type ActorMap = { [name: string]: CometActor };
-type AssetMap = { [name: string]: CometAsset };
+export type ActorMap = { [name: string]: CometActor };
+export type AssetMap = { [name: string]: CometAsset };
 
 export interface CometProperties {
   deploymentManager: DeploymentManager;
