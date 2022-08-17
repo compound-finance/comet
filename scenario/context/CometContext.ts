@@ -11,6 +11,7 @@ import {
   CometBalanceConstraint,
   MigrationConstraint,
   ProposalConstraint,
+  FilterConstraint,
 } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
@@ -99,7 +100,7 @@ export class CometContext {
     const { world } = this;
 
     const oldComet = await this.getComet();
-    const admin = await world.impersonateAddress(await oldComet.governor(), 10n**18n);
+    const admin = await world.impersonateAddress(await oldComet.governor(), 10n ** 18n);
 
     const deploySpec = { cometMain: true, cometExt: true };
     const deployed = await deployComet(this.deploymentManager, deploySpec, configOverrides, admin);
@@ -133,7 +134,7 @@ export class CometContext {
 
     // Set new supply caps in Configurator and do a deployAndUpgradeTo
     if (shouldUpgrade) {
-      const gov = await this.world.impersonateAddress(await comet.governor(), 10n**18n);
+      const gov = await this.world.impersonateAddress(await comet.governor(), 10n ** 18n);
       const cometAdmin = (await this.getCometAdmin()).connect(gov);
       const configurator = (await this.getConfigurator()).connect(gov);
       for (const [asset, cap] of Object.entries(newSupplyCaps)) {
@@ -376,6 +377,7 @@ async function forkContext(c: CometContext, w: World): Promise<CometContext> {
 }
 
 export const constraints = [
+  new FilterConstraint(),
   new MigrationConstraint(),
   new ProposalConstraint(),
   new ModernConstraint(),

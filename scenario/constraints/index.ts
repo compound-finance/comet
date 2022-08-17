@@ -5,3 +5,4 @@ export { UtilizationConstraint } from './UtilizationConstraint';
 export { CometBalanceConstraint } from './CometBalanceConstraint';
 export { MigrationConstraint } from './MigrationConstraint';
 export { ProposalConstraint } from './ProposalConstraint';
+export { FilterConstraint } from './FilterConstraint';
