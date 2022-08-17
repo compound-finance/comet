@@ -5,10 +5,17 @@ import "./CometInterface.sol";
 import "./ERC20.sol";
 import "./IWETH9.sol";
 
+interface IClaimable {
+    function claim(address comet, address src, bool shouldAccrue) external;
+
+    function claimTo(address comet, address src, address to, bool shouldAccrue) external;
+}
+
 contract Bulker {
     /** General configuration constants **/
     address public immutable admin;
     address public immutable comet;
+    address public immutable rewards;
     address payable public immutable weth;
     address public immutable baseToken;
 
@@ -18,15 +25,17 @@ contract Bulker {
     uint public constant ACTION_TRANSFER_ASSET = 3;
     uint public constant ACTION_WITHDRAW_ASSET = 4;
     uint public constant ACTION_WITHDRAW_ETH = 5;
+    uint public constant ACTION_CLAIM_REWARD = 6;
 
     /** Custom errors **/
     error InvalidArgument();
     error FailedToSendEther();
     error Unauthorized();
 
-    constructor(address admin_, address comet_, address payable weth_) {
+    constructor(address admin_, address comet_, address rewards_, address payable weth_) {
         admin = admin_;
         comet = comet_;
+        rewards = rewards_;
         weth = weth_;
         baseToken = CometInterface(comet_).baseToken();
     }
@@ -87,6 +96,9 @@ contract Bulker {
             } else if (action == ACTION_WITHDRAW_ETH) {
                 (address to, uint amount) = abi.decode(data[i], (address, uint));
                 withdrawEthTo(to, amount);
+            } else if (action == ACTION_CLAIM_REWARD) {
+                (address src, bool shouldAccrue) = abi.decode(data[i], (address, bool));
+                claimReward(src, shouldAccrue);
             }
             unchecked { i++; }
         }
@@ -136,5 +148,12 @@ contract Bulker {
         IWETH9(weth).withdraw(amount);
         (bool success, ) = to.call{ value: amount }("");
         if (!success) revert FailedToSendEther();
+    }
+
+    /**
+     * @notice Claim reward for a user
+     */
+    function claimReward(address src, bool shouldAccrue) internal {
+        IClaimable(rewards).claim(comet, src, shouldAccrue);
     }
 }
