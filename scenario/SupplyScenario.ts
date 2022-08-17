@@ -70,6 +70,36 @@ async function testSupplyFromCollateral(context: CometContext, assetNum: number)
   }
 }
 
+for (let i = 0; i < NUM_ASSETS; i++) {
+  scenario(
+    `Comet#supply > collateral asset ${i}`,
+    {
+      filter: async (ctx) => await isValidAssetIndex(ctx, i),
+      tokenBalances: {
+        albert: { [`$asset${i}`]: 100 }, // in units of asset, not wei
+      },
+    },
+    async ({ }, context) => {
+      return await testSupplyCollateral(context, i);
+    }
+  );
+}
+
+for (let i = 0; i < NUM_ASSETS; i++) {
+  scenario(
+    `Comet#supplyFrom > collateral asset ${i}`,
+    {
+      filter: async (ctx) => await isValidAssetIndex(ctx, i),
+      tokenBalances: {
+        albert: { [`$asset${i}`]: 100 }, // in units of asset, not wei
+      },
+    },
+    async ({ }, context) => {
+      return await testSupplyFromCollateral(context, i);
+    }
+  );
+}
+
 scenario(
   'Comet#supply > base asset',
   {
@@ -98,21 +128,6 @@ scenario(
     return txn; // return txn to measure gas
   }
 );
-
-for (let i = 0; i < NUM_ASSETS; i++) {
-  scenario(
-    `Comet#supply > collateral asset ${i}`,
-    {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i),
-      tokenBalances: {
-        albert: { [`$asset${i}`]: 100 }, // in units of asset, not wei
-      },
-    },
-    async ({ }, context) => {
-      return await testSupplyCollateral(context, i);
-    }
-  );
-}
 
 scenario(
   'Comet#supply > repay borrow',
@@ -177,21 +192,6 @@ scenario(
     return txn; // return txn to measure gas
   }
 );
-
-for (let i = 0; i < NUM_ASSETS; i++) {
-  scenario(
-    `Comet#supplyFrom > collateral asset ${i}`,
-    {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i),
-      tokenBalances: {
-        albert: { [`$asset${i}`]: 100 }, // in units of asset, not wei
-      },
-    },
-    async ({ }, context) => {
-      return await testSupplyFromCollateral(context, i);
-    }
-  );
-}
 
 scenario(
   'Comet#supplyFrom > repay borrow',

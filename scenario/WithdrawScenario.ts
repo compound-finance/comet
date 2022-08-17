@@ -43,6 +43,36 @@ async function testWithdrawFromCollateral(context: CometContext, assetNum: numbe
   return txn; // return txn to measure gas
 }
 
+for (let i = 0; i < NUM_ASSETS; i++) {
+  scenario(
+    `Comet#withdraw > collateral asset ${i}`,
+    {
+      filter: async (ctx) => await isValidAssetIndex(ctx, i),
+      cometBalances: {
+        albert: { [`$asset${i}`]: 100 }, // in units of asset, not wei
+      },
+    },
+    async ({ }, context) => {
+      return await testWithdrawCollateral(context, i);
+    }
+  );
+}
+
+for (let i = 0; i < NUM_ASSETS; i++) {
+  scenario(
+    `Comet#withdrawFrom > collateral asset ${i}`,
+    {
+      filter: async (ctx) => await isValidAssetIndex(ctx, i),
+      cometBalances: {
+        albert: { [`$asset${i}`]: 1000 }, // in units of asset, not wei
+      },
+    },
+    async ({ }, context) => {
+      return await testWithdrawFromCollateral(context, i);
+    }
+  );
+}
+
 scenario(
   'Comet#withdraw > base asset',
   {
@@ -75,21 +105,6 @@ scenario(
     return txn; // return txn to measure gas
   }
 );
-
-for (let i = 0; i < NUM_ASSETS; i++) {
-  scenario(
-    `Comet#withdraw > collateral asset ${i}`,
-    {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i),
-      cometBalances: {
-        albert: { [`$asset${i}`]: 100 }, // in units of asset, not wei
-      },
-    },
-    async ({ }, context) => {
-      return await testWithdrawCollateral(context, i);
-    }
-  );
-}
 
 scenario(
   'Comet#withdraw > borrow base',
@@ -153,21 +168,6 @@ scenario(
     return txn; // return txn to measure gas
   }
 );
-
-for (let i = 0; i < NUM_ASSETS; i++) {
-  scenario(
-    `Comet#withdrawFrom > collateral asset ${i}`,
-    {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i),
-      cometBalances: {
-        albert: { [`$asset${i}`]: 1000 }, // in units of asset, not wei
-      },
-    },
-    async ({ }, context) => {
-      return await testWithdrawFromCollateral(context, i);
-    }
-  );
-}
 
 scenario(
   'Comet#withdrawFrom > borrow base',
