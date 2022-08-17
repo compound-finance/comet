@@ -105,7 +105,7 @@ scenario(
 );
 
 // Utilization constraint should also source tokens to the protocol if needed
-scenario.only(
+scenario(
   'UtilizationConstraint > sets utilization to 100%',
   {
     utilization: 1,
@@ -115,7 +115,7 @@ scenario.only(
   }
 );
 
-scenario.only(
+scenario(
   'UtilizationConstraint > works in combination with other constraints',
   {
     cometBalances: {
