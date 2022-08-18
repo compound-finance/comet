@@ -26,6 +26,7 @@ import {
   CometProxyAdmin,
   IGovernorBravo,
   CometRewards,
+  Fauceteer,
 } from '../../build/types';
 import { AssetInfoStructOutput } from '../../build/types/Comet';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -88,6 +89,10 @@ export class CometContext {
 
   async getRewards(): Promise<CometRewards> {
     return this.deploymentManager.contract('rewards');
+  }
+
+  async getFauceteer(): Promise<Fauceteer> {
+    return this.deploymentManager.contract('fauceteer');
   }
 
   async getConfiguration(): Promise<ProtocolConfiguration> {
@@ -178,8 +183,7 @@ export class CometContext {
     let comet = await this.getComet();
 
     // First, try to source from Fauceteer
-    const contracts = await this.deploymentManager.contracts();
-    const fauceteer = contracts.get('fauceteer');
+    const fauceteer = await this.getFauceteer();
     const fauceteerBalance = fauceteer ? await cometAsset.balanceOf(fauceteer.address) : 0;
     if (amount >= 0 && fauceteerBalance > amount) {
       debug(`Source Tokens: stealing from fauceteer`, amount, cometAsset.address);

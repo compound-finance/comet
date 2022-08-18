@@ -1,6 +1,6 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, expectRevertMatches, getExpectedBaseBalance, getInterest, isValidAssetIndex, NUM_ASSETS } from './utils';
+import { expectApproximately, expectRevertMatches, getExpectedBaseBalance, getInterest, isSourceable, isValidAssetIndex, NUM_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
 
 // XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
@@ -71,12 +71,13 @@ async function testSupplyFromCollateral(context: CometContext, assetNum: number)
 }
 
 for (let i = 0; i < NUM_ASSETS; i++) {
+  const amountToSupply = 100; // in units of asset, not wei
   scenario(
     `Comet#supply > collateral asset ${i}`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isSourceable(ctx, i, amountToSupply),
       tokenBalances: {
-        albert: { [`$asset${i}`]: 100 }, // in units of asset, not wei
+        albert: { [`$asset${i}`]: amountToSupply },
       },
     },
     async ({ }, context) => {
@@ -86,12 +87,13 @@ for (let i = 0; i < NUM_ASSETS; i++) {
 }
 
 for (let i = 0; i < NUM_ASSETS; i++) {
+  const amountToSupply = 100; // in units of asset, not wei
   scenario(
     `Comet#supplyFrom > collateral asset ${i}`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isSourceable(ctx, i, amountToSupply),
       tokenBalances: {
-        albert: { [`$asset${i}`]: 100 }, // in units of asset, not wei
+        albert: { [`$asset${i}`]: amountToSupply },
       },
     },
     async ({ }, context) => {

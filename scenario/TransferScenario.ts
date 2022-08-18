@@ -1,6 +1,6 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, getExpectedBaseBalance, getInterest, isValidAssetIndex, NUM_ASSETS } from './utils';
+import { expectApproximately, getExpectedBaseBalance, getInterest, isSourceable, isValidAssetIndex, NUM_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
 
 async function testTransferCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
@@ -38,12 +38,13 @@ async function testTransferFromCollateral(context: CometContext, assetNum: numbe
 }
 
 for (let i = 0; i < NUM_ASSETS; i++) {
+  const amountToTransfer = 100; // in units of asset, not wei
   scenario(
     `Comet#transfer > collateral asset ${i}, enough balance`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isSourceable(ctx, i, amountToTransfer),
       cometBalances: {
-        albert: { [`$asset${i}`]: 100 }, // in units of asset, not wei
+        albert: { [`$asset${i}`]: amountToTransfer },
       },
     },
     async ({ }, context) => {
@@ -53,12 +54,13 @@ for (let i = 0; i < NUM_ASSETS; i++) {
 }
 
 for (let i = 0; i < NUM_ASSETS; i++) {
+  const amountToTransfer = 100; // in units of asset, not wei
   scenario(
     `Comet#transferFrom > collateral asset ${i}, enough balance`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isSourceable(ctx, i, amountToTransfer),
       cometBalances: {
-        albert: { [`$asset${i}`]: 100 }, // in units of asset, not wei
+        albert: { [`$asset${i}`]: amountToTransfer },
       },
     },
     async ({ }, context) => {
