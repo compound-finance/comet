@@ -16,5 +16,6 @@ scenario.only(
     expect((await comet.getAssetInfoByAddress(UNI.address)).supplyCap).to.be.equal(exp(1_000_000, 18));
     expect((await comet.getAssetInfoByAddress(LINK.address)).supplyCap).to.be.equal(exp(1_000_000, 18));
     expect(await USDC.balanceOf(comet.address)).to.be.equal(exp(500_000, 6));
+    expect(await comet.getReserves()).to.be.equal(exp(500_000, 6));
   }
 );
