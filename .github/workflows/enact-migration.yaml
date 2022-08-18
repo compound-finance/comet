@@ -20,7 +20,6 @@ on:
         description: Simulate
       run_id:
         description: Run ID for Artifact
-        required: true
       eth_pk:
         description: Ignore if you plan to use WalletConnect, otherwise, you can paste in a Ethereum private key
 jobs:
@@ -61,6 +60,7 @@ jobs:
           run_id: ${{ github.event.inputs.run_id }}
           name: ${{ github.event.inputs.network }}-${{ github.event.inputs.deployment }}-${{ github.event.inputs.migration }}
           path: deployments/${{ github.event.inputs.network }}/${{ github.event.inputs.deployment }}/artifacts/
+        if: github.event.inputs.run_id != ''
 
       - name: Run Enact Migration
         run: |
