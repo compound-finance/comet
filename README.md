@@ -218,9 +218,21 @@ These simulations are extremely useful for testing deployments before actually c
 
 0. Create the deployment script and configuration file, and test locally
 1. Open a PR containing the new deployment directory files
-2. Trigger the `run-deploy` workflow action through the GitHub UI
+2. Trigger the `deploy-market` workflow action through the GitHub UI
 3. Inspect the new `roots.json` which the workflow automatically commited to your PR
 4. Start using the new protocol deployment and/or create further migrations to modify it
+
+##### Verifying Deployments
+
+Source code verification is a relatively important part of deployments currently.
+The 'spider' tool we use to crawl relevant addresses from the root addresses by default relies on pulling verified contract ABIs.
+Verification happens normally as part of the deploy command-line task (the same command triggered by the `deploy-market` workflow).
+Since deployments are idempotent by default, the deploy command can also be used to *just* verify the existing contracts.
+When all contracts are already deployed, the only actions performed will be to verify the contracts remaining in the verification cache.
+The script *always* attempts to verify the Comet implementation contract, since this is deployed via a factory and the status is relatively unknown to it.
+
+The `--simulate` flag can be used when running deploy to check what the effect of running a deploy would actually be, including verification.
+This can also be used together with `--overwrite`, to produce the verification artifacts locally, which can then be used to run full verification for real.
 
 #### Other considerations
 
