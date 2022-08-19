@@ -1,7 +1,7 @@
 import { task } from 'hardhat/config';
 import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { DeploymentManager } from '../../plugins/deployment_manager';
+import { DeploymentManager, VerifyArgs } from '../../plugins/deployment_manager';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
 
 // TODO: Don't depend on scenario's hreForBase
@@ -76,7 +76,6 @@ task('deploy', 'Deploys market')
       // Don't even print if --no-verify is set with --simulate
     } else {
       await dm.verifyContracts(async (address, args) => {
-        // TODO: add comet impl verification (on deploy) and delete verify-comet script
         if (args.via === 'buildfile') {
           const { contract: _, ...rest } = args;
           console.log(`[${tag}] ${desc} ${address}:`, rest);
@@ -85,6 +84,21 @@ task('deploy', 'Deploys market')
         }
         return verify;
       });
+
+      // Maybe verify the comet impl too
+      const comet = await dm.contract('comet');
+      const cometImpl = await dm.contract('comet:implementation');
+      const configurator = await dm.contract('configurator');
+      const config = await configurator.getConfiguration(comet.address);
+      const args: VerifyArgs = {
+        via: 'artifacts',
+        address: cometImpl.address,
+        constructorArguments: [config]
+      };
+      console.log(`[${tag}] ${desc} ${cometImpl.address}:`, args);
+      if (verify) {
+        await dm.verifyContract(args);
+      }
     }
   });
 
