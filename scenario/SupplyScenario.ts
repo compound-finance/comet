@@ -1,8 +1,107 @@
-import { scenario } from './context/CometContext';
+import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, expectRevertMatches, getExpectedBaseBalance, getInterest } from './utils';
+import { expectApproximately, expectRevertMatches, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
+import { ContractReceipt } from 'ethers';
 
-// XXX consider creating these tests for assets0-15
+// XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
+// of testing them conditionally
+async function testSupplyCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
+  const comet = await context.getComet();
+  const { albert } = await context.actors;
+  const { asset: assetAddress, scale: scaleBN, supplyCap } = await comet.getAssetInfo(assetNum);
+  const collateralAsset = context.getAssetByAddress(assetAddress);
+  const scale = scaleBN.toBigInt();
+  const toSupply = 100n * scale;
+
+  expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupply);
+
+  await collateralAsset.approve(albert, comet.address);
+
+  const totalCollateralSupply = (await comet.totalsCollateral(collateralAsset.address)).totalSupplyAsset.toBigInt();
+  if (totalCollateralSupply + toSupply > supplyCap.toBigInt()) {
+    await expect(
+      albert.supplyAsset({
+        asset: collateralAsset.address,
+        amount: 100n * scale,
+      })
+    ).to.be.revertedWith("custom error 'SupplyCapExceeded()'");
+  } else {
+    // Albert supplies 100 units of collateral to Comet
+    const txn = await albert.supplyAsset({ asset: collateralAsset.address, amount: toSupply })
+
+    expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupply);
+
+    return txn; // return txn to measure gas
+  }
+}
+
+async function testSupplyFromCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
+  const comet = await context.getComet();
+  const { albert, betty } = await context.actors;
+  const { asset: assetAddress, scale: scaleBN, supplyCap } = await comet.getAssetInfo(assetNum);
+  const collateralAsset = context.getAssetByAddress(assetAddress);
+  const scale = scaleBN.toBigInt();
+  const toSupply = 100n * scale;
+
+  expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupply);
+  expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(0n);
+
+  await collateralAsset.approve(albert, comet.address);
+  await albert.allow(betty, true);
+
+  const totalCollateralSupply = (await comet.totalsCollateral(collateralAsset.address)).totalSupplyAsset.toBigInt();
+  if (totalCollateralSupply + toSupply > supplyCap.toBigInt()) {
+    await expect(
+      betty.supplyAssetFrom({
+        src: albert.address,
+        dst: betty.address,
+        asset: collateralAsset.address,
+        amount: toSupply,
+      })
+    ).to.be.revertedWith("custom error 'SupplyCapExceeded()'");
+  } else {
+    // Betty supplies 100 units of collateral from Albert
+    const txn = await betty.supplyAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: toSupply });
+
+    expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(0n);
+    expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(toSupply);
+
+    return txn; // return txn to measure gas
+  }
+}
+
+for (let i = 0; i < MAX_ASSETS; i++) {
+  const amountToSupply = 100; // in units of asset, not wei
+  scenario(
+    `Comet#supply > collateral asset ${i}`,
+    {
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToSupply),
+      tokenBalances: {
+        albert: { [`$asset${i}`]: amountToSupply },
+      },
+    },
+    async ({ }, context) => {
+      return await testSupplyCollateral(context, i);
+    }
+  );
+}
+
+for (let i = 0; i < MAX_ASSETS; i++) {
+  const amountToSupply = 100; // in units of asset, not wei
+  scenario(
+    `Comet#supplyFrom > collateral asset ${i}`,
+    {
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToSupply),
+      tokenBalances: {
+        albert: { [`$asset${i}`]: amountToSupply },
+      },
+    },
+    async ({ }, context) => {
+      return await testSupplyFromCollateral(context, i);
+    }
+  );
+}
+
 scenario(
   'Comet#supply > base asset',
   {
@@ -29,45 +128,6 @@ scenario(
     expect(await comet.balanceOf(albert.address)).to.be.equal(baseSupplied);
 
     return txn; // return txn to measure gas
-  }
-);
-
-// XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
-// of testing them conditionally
-scenario(
-  'Comet#supply > collateral asset',
-  {
-    tokenBalances: {
-      albert: { $asset0: 100 }, // in units of asset, not wei
-    },
-  },
-  async ({ comet, actors }, context) => {
-    const { albert } = actors;
-    const { asset: asset0Address, scale: scaleBN, supplyCap } = await comet.getAssetInfo(0);
-    const collateralAsset = context.getAssetByAddress(asset0Address);
-    const scale = scaleBN.toBigInt();
-    const toSupply = 100n * scale;
-
-    expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupply);
-
-    await collateralAsset.approve(albert, comet.address);
-
-    const totalCollateralSupply = (await comet.totalsCollateral(collateralAsset.address)).totalSupplyAsset.toBigInt();
-    if (totalCollateralSupply + toSupply > supplyCap.toBigInt()) {
-      await expect(
-        albert.supplyAsset({
-          asset: collateralAsset.address,
-          amount: 100n * scale,
-        })
-      ).to.be.revertedWith("custom error 'SupplyCapExceeded()'");
-    } else {
-      // Albert supplies 100 units of collateral to Comet
-      const txn = await albert.supplyAsset({ asset: collateralAsset.address, amount: toSupply })
-
-      expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupply);
-
-      return txn; // return txn to measure gas
-    }
   }
 );
 
@@ -132,50 +192,6 @@ scenario(
     expect(await comet.balanceOf(betty.address)).to.be.equal(baseSupplied);
 
     return txn; // return txn to measure gas
-  }
-);
-
-// XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
-// of testing them conditionally
-scenario(
-  'Comet#supplyFrom > collateral asset',
-  {
-    tokenBalances: {
-      albert: { $asset0: 100 }, // in units of asset, not wei
-    },
-  },
-  async ({ comet, actors }, context) => {
-    const { albert, betty } = actors;
-    const { asset: asset0Address, scale: scaleBN, supplyCap } = await comet.getAssetInfo(0);
-    const collateralAsset = context.getAssetByAddress(asset0Address);
-    const scale = scaleBN.toBigInt();
-    const toSupply = 100n * scale;
-
-    expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupply);
-    expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(0n);
-
-    await collateralAsset.approve(albert, comet.address);
-    await albert.allow(betty, true);
-
-    const totalCollateralSupply = (await comet.totalsCollateral(collateralAsset.address)).totalSupplyAsset.toBigInt();
-    if (totalCollateralSupply + toSupply > supplyCap.toBigInt()) {
-      await expect(
-        betty.supplyAssetFrom({
-          src: albert.address,
-          dst: betty.address,
-          asset: collateralAsset.address,
-          amount: toSupply,
-        })
-      ).to.be.revertedWith("custom error 'SupplyCapExceeded()'");
-    } else {
-      // Betty supplies 100 units of collateral from Albert
-      const txn = await betty.supplyAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: toSupply });
-
-      expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(0n);
-      expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(toSupply);
-
-      return txn; // return txn to measure gas
-    }
   }
 );
 

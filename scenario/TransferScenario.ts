@@ -1,30 +1,73 @@
-import { scenario } from './context/CometContext';
+import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, getExpectedBaseBalance, getInterest } from './utils';
+import { expectApproximately, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
+import { ContractReceipt } from 'ethers';
 
-// XXX consider creating these tests for assets0-15
-scenario(
-  'Comet#transfer > collateral asset, enough balance',
-  {
-    cometBalances: {
-      albert: { $asset0: 100 }, // in units of asset, not wei
+async function testTransferCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
+  const comet = await context.getComet();
+  const { albert, betty } = context.actors;
+  const { asset: assetAddress, scale } = await comet.getAssetInfo(assetNum);
+  const collateralAsset = context.getAssetByAddress(assetAddress);
+
+  // Albert transfers 50 units of collateral to Betty
+  const toTransfer = scale.toBigInt() * 50n;
+  const txn = await albert.transferAsset({ dst: betty.address, asset: collateralAsset.address, amount: toTransfer });
+
+  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(scale.mul(50));
+  expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(scale.mul(50));
+
+  return txn; // return txn to measure gas
+}
+
+async function testTransferFromCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
+  const comet = await context.getComet();
+  const { albert, betty, charles } = context.actors;
+  const { asset: assetAddress, scale } = await comet.getAssetInfo(assetNum);
+  const collateralAsset = context.getAssetByAddress(assetAddress);
+
+  await albert.allow(charles, true);
+
+  // Charles transfers 50 units of collateral from Albert to Betty
+  const toTransfer = scale.toBigInt() * 50n;
+  const txn = await charles.transferAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: toTransfer });
+
+  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(scale.mul(50));
+  expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(scale.mul(50));
+
+  return txn; // return txn to measure gas
+}
+
+for (let i = 0; i < MAX_ASSETS; i++) {
+  const amountToTransfer = 100; // in units of asset, not wei
+  scenario(
+    `Comet#transfer > collateral asset ${i}, enough balance`,
+    {
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToTransfer),
+      cometBalances: {
+        albert: { [`$asset${i}`]: amountToTransfer },
+      },
     },
-  },
-  async ({ comet, actors }, context) => {
-    const { albert, betty } = actors;
-    const { asset: asset0Address, scale } = await comet.getAssetInfo(0);
-    const collateralAsset = context.getAssetByAddress(asset0Address);
+    async ({ }, context) => {
+      return await testTransferCollateral(context, i);
+    }
+  );
+}
 
-    // Albert transfers 50 units of collateral to Betty
-    const toTransfer = scale.toBigInt() * 50n;
-    const txn = await albert.transferAsset({ dst: betty.address, asset: collateralAsset.address, amount: toTransfer });
-
-    expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(scale.mul(50));
-    expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(scale.mul(50));
-
-    return txn; // return txn to measure gas
-  }
-);
+for (let i = 0; i < MAX_ASSETS; i++) {
+  const amountToTransfer = 100; // in units of asset, not wei
+  scenario(
+    `Comet#transferFrom > collateral asset ${i}, enough balance`,
+    {
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToTransfer),
+      cometBalances: {
+        albert: { [`$asset${i}`]: amountToTransfer },
+      },
+    },
+    async ({ }, context) => {
+      return await testTransferFromCollateral(context, i);
+    }
+  );
+}
 
 scenario(
   'Comet#transfer > base asset, enough balance',

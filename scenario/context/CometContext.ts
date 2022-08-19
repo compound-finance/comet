@@ -11,6 +11,7 @@ import {
   CometBalanceConstraint,
   MigrationConstraint,
   ProposalConstraint,
+  FilterConstraint,
 } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
@@ -25,6 +26,7 @@ import {
   CometProxyAdmin,
   IGovernorBravo,
   CometRewards,
+  Fauceteer,
 } from '../../build/types';
 import { AssetInfoStructOutput } from '../../build/types/Comet';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -33,8 +35,8 @@ import { ProtocolConfiguration, deployComet, COMP_WHALES } from '../../src/deplo
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { Requirements } from '../constraints/Requirements';
 
-type ActorMap = { [name: string]: CometActor };
-type AssetMap = { [name: string]: CometAsset };
+export type ActorMap = { [name: string]: CometActor };
+export type AssetMap = { [name: string]: CometAsset };
 
 export interface CometProperties {
   deploymentManager: DeploymentManager;
@@ -89,6 +91,10 @@ export class CometContext {
     return this.deploymentManager.contract('rewards');
   }
 
+  async getFauceteer(): Promise<Fauceteer> {
+    return this.deploymentManager.contract('fauceteer');
+  }
+
   async getConfiguration(): Promise<ProtocolConfiguration> {
     const comet = await this.getComet();
     const configurator = await this.getConfigurator();
@@ -99,7 +105,7 @@ export class CometContext {
     const { world } = this;
 
     const oldComet = await this.getComet();
-    const admin = await world.impersonateAddress(await oldComet.governor(), 10n**18n);
+    const admin = await world.impersonateAddress(await oldComet.governor(), 10n ** 18n);
 
     const deploySpec = { cometMain: true, cometExt: true };
     const deployed = await deployComet(this.deploymentManager, deploySpec, configOverrides, admin);
@@ -133,7 +139,7 @@ export class CometContext {
 
     // Set new supply caps in Configurator and do a deployAndUpgradeTo
     if (shouldUpgrade) {
-      const gov = await this.world.impersonateAddress(await comet.governor(), 10n**18n);
+      const gov = await this.world.impersonateAddress(await comet.governor(), 10n ** 18n);
       const cometAdmin = (await this.getCometAdmin()).connect(gov);
       const configurator = (await this.getConfigurator()).connect(gov);
       for (const [asset, cap] of Object.entries(newSupplyCaps)) {
@@ -177,8 +183,7 @@ export class CometContext {
     let comet = await this.getComet();
 
     // First, try to source from Fauceteer
-    const contracts = await this.deploymentManager.contracts();
-    const fauceteer = contracts.get('fauceteer');
+    const fauceteer = await this.getFauceteer();
     const fauceteerBalance = fauceteer ? await cometAsset.balanceOf(fauceteer.address) : 0;
     if (amount >= 0 && fauceteerBalance > amount) {
       debug(`Source Tokens: stealing from fauceteer`, amount, cometAsset.address);
@@ -376,6 +381,7 @@ async function forkContext(c: CometContext, w: World): Promise<CometContext> {
 }
 
 export const constraints = [
+  new FilterConstraint(),
   new MigrationConstraint(),
   new ProposalConstraint(),
   new ModernConstraint(),

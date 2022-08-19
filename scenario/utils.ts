@@ -7,6 +7,8 @@ import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
 import { exp } from '../test/helpers';
 
+export const MAX_ASSETS = 15;
+
 export interface ComparativeAmount {
   val: number,
   op: ComparisonOp,
@@ -238,4 +240,22 @@ export async function fetchQuery(
       return { err };
     }
   }
+}
+
+export async function isValidAssetIndex(ctx: CometContext, assetNum: number): Promise<boolean> {
+  const comet = await ctx.getComet();
+  return assetNum < await comet.numAssets();
+}
+
+export async function isTriviallySourceable(ctx: CometContext, assetNum: number, amount: number): Promise<boolean> {
+  const fauceteer = await ctx.getFauceteer();
+  // If fauceteer does not exist (e.g. mainnet), then token is likely sourceable from events
+  if (fauceteer == null) return true;
+
+  const comet = await ctx.getComet();
+  const assetInfo = await comet.getAssetInfo(assetNum);
+  const asset = ctx.getAssetByAddress(assetInfo.asset);
+  const amountInWei = BigInt(amount) * assetInfo.scale.toBigInt();
+  // Fauceteer should have greater than the expected amount of the asset
+  return await asset.balanceOf(fauceteer.address) > amountInWei;
 }
