@@ -12,11 +12,11 @@ contract CometConfiguration {
     }
 
     struct Configuration {
-        address governor;
+        address governor; // 0
         address pauseGuardian;
         address baseToken;
         address baseTokenPriceFeed;
-        address extensionDelegate;
+        address extensionDelegate; // 4
 
         uint64 supplyKink;
         uint64 supplyPerYearInterestRateSlopeLow;
@@ -29,19 +29,19 @@ contract CometConfiguration {
         uint64 storeFrontPriceFactor;
         uint64 trackingIndexScale;
         uint64 baseTrackingSupplySpeed;
-        uint64 baseTrackingBorrowSpeed;
+        uint64 baseTrackingBorrowSpeed; // 7
         uint104 baseMinForRewards;
-        uint104 baseBorrowMin;
-        uint104 targetReserves;
+        uint104 baseBorrowMin; // 8
+        uint104 targetReserves; // 9
 
-        AssetConfig[] assetConfigs;
+        AssetConfig[] assetConfigs; // 10
     }
 
     struct AssetConfig {
-        address asset;
-        address priceFeed;
+        address asset; // 0
+        address priceFeed; // 1
         uint8 decimals;
-        uint64 borrowCollateralFactor;
+        uint64 borrowCollateralFactor; // 2
         uint64 liquidateCollateralFactor;
         uint64 liquidationFactor;
         uint128 supplyCap;
