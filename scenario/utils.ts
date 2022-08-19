@@ -7,7 +7,7 @@ import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
 import { exp } from '../test/helpers';
 
-export const NUM_ASSETS = 15;
+export const MAX_ASSETS = 15;
 
 export interface ComparativeAmount {
   val: number,

@@ -1,6 +1,6 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, getExpectedBaseBalance, isTriviallySourceable, isValidAssetIndex, NUM_ASSETS } from './utils';
+import { expectApproximately, getExpectedBaseBalance, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
 
 async function testWithdrawCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
@@ -43,7 +43,7 @@ async function testWithdrawFromCollateral(context: CometContext, assetNum: numbe
   return txn; // return txn to measure gas
 }
 
-for (let i = 0; i < NUM_ASSETS; i++) {
+for (let i = 0; i < MAX_ASSETS; i++) {
   const amountToWithdraw = 100; // in units of asset, not wei
   scenario(
     `Comet#withdraw > collateral asset ${i}`,
@@ -59,7 +59,7 @@ for (let i = 0; i < NUM_ASSETS; i++) {
   );
 }
 
-for (let i = 0; i < NUM_ASSETS; i++) {
+for (let i = 0; i < MAX_ASSETS; i++) {
   const amountToWithdraw = 1000; // in units of asset, not wei
   scenario(
     `Comet#withdrawFrom > collateral asset ${i}`,

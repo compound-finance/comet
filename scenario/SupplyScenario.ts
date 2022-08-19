@@ -1,6 +1,6 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, expectRevertMatches, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, NUM_ASSETS } from './utils';
+import { expectApproximately, expectRevertMatches, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
 
 // XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
@@ -70,7 +70,7 @@ async function testSupplyFromCollateral(context: CometContext, assetNum: number)
   }
 }
 
-for (let i = 0; i < NUM_ASSETS; i++) {
+for (let i = 0; i < MAX_ASSETS; i++) {
   const amountToSupply = 100; // in units of asset, not wei
   scenario(
     `Comet#supply > collateral asset ${i}`,
@@ -86,7 +86,7 @@ for (let i = 0; i < NUM_ASSETS; i++) {
   );
 }
 
-for (let i = 0; i < NUM_ASSETS; i++) {
+for (let i = 0; i < MAX_ASSETS; i++) {
   const amountToSupply = 100; // in units of asset, not wei
   scenario(
     `Comet#supplyFrom > collateral asset ${i}`,
