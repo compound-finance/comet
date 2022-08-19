@@ -247,7 +247,7 @@ export async function isValidAssetIndex(ctx: CometContext, assetNum: number): Pr
   return assetNum < await comet.numAssets();
 }
 
-export async function isSourceable(ctx: CometContext, assetNum: number, amount: number): Promise<boolean> {
+export async function isTriviallySourceable(ctx: CometContext, assetNum: number, amount: number): Promise<boolean> {
   const fauceteer = await ctx.getFauceteer();
   // If fauceteer does not exist (e.g. mainnet), then token is likely sourceable from events
   if (fauceteer == null) return true;

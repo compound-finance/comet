@@ -1,6 +1,6 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, expectRevertMatches, getExpectedBaseBalance, getInterest, isSourceable, isValidAssetIndex, NUM_ASSETS } from './utils';
+import { expectApproximately, expectRevertMatches, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, NUM_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
 
 // XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
@@ -75,7 +75,7 @@ for (let i = 0; i < NUM_ASSETS; i++) {
   scenario(
     `Comet#supply > collateral asset ${i}`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isSourceable(ctx, i, amountToSupply),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToSupply),
       tokenBalances: {
         albert: { [`$asset${i}`]: amountToSupply },
       },
@@ -91,7 +91,7 @@ for (let i = 0; i < NUM_ASSETS; i++) {
   scenario(
     `Comet#supplyFrom > collateral asset ${i}`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isSourceable(ctx, i, amountToSupply),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToSupply),
       tokenBalances: {
         albert: { [`$asset${i}`]: amountToSupply },
       },
