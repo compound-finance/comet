@@ -45,7 +45,7 @@ async function main() {
       0, // _liquidationThreshold,
       assets.map(a => a.asset), // _assets
       assets.map(_a => false), // _lowLiquidityPools
-      assets.map(_a => 500), // _poolFees
+      assets.map(_a => 10000), // _poolFees
     ]
   );
 

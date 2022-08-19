@@ -44,25 +44,11 @@ async function main() {
     signer
   ) as Liquidator;
 
-  let lastBlockNumber: number;
-
-  while (true) {
-    const currentBlockNumber = await hre.ethers.provider.getBlockNumber();
-
-    console.log(`currentBlockNumber: ${currentBlockNumber}`);
-
-    if (currentBlockNumber !== lastBlockNumber) {
-      lastBlockNumber = currentBlockNumber;
-      await liquidateUnderwaterBorrowers(
-        comet,
-        liquidator,
-        signer
-      );
-    } else {
-      console.log(`block already checked; waiting ${loopDelay}ms`);
-      await new Promise(resolve => setTimeout(resolve, loopDelay));
-    }
-  }
+  await liquidateUnderwaterBorrowers(
+    comet,
+    liquidator,
+    signer
+  );
 }
 
 main()
