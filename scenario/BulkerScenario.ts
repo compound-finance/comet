@@ -66,9 +66,10 @@ scenario(
     // Final expectations
     const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
     const baseSupplyIndex = (await comet.totalsBasic()).baseSupplyIndex.toBigInt();
+    const baseBorrowed = getExpectedBaseBalance(toBorrowBase, baseIndexScale, baseSupplyIndex)
     const baseTransferred = getExpectedBaseBalance(toTransferBase, baseIndexScale, baseSupplyIndex);
     expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupplyCollateral);
-    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(toBorrowBase);
+    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(baseBorrowed);
     expect(await comet.balanceOf(betty.address)).to.be.equal(baseTransferred);
     expect(await comet.borrowBalanceOf(albert.address)).to.be.equal(toBorrowBase + toTransferBase);
     expect(await comet.collateralBalanceOf(albert.address, WETH.address)).to.be.equal(toSupplyEth - toWithdrawEth);
@@ -152,9 +153,10 @@ scenario(
     // Final expectations
     const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
     const baseSupplyIndex = (await comet.totalsBasic()).baseSupplyIndex.toBigInt();
+    const baseBorrowed = getExpectedBaseBalance(toBorrowBase, baseIndexScale, baseSupplyIndex)
     const baseTransferred = getExpectedBaseBalance(toTransferBase, baseIndexScale, baseSupplyIndex);
     expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupplyCollateral);
-    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(toBorrowBase);
+    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(baseBorrowed);
     expect(await comet.balanceOf(betty.address)).to.be.equal(baseTransferred);
     expect(await comet.borrowBalanceOf(albert.address)).to.be.equal(toBorrowBase + toTransferBase);
     expect(await comet.collateralBalanceOf(albert.address, WETH.address)).to.be.equal(toSupplyEth - toWithdrawEth);
