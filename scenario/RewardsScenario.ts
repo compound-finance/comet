@@ -1,7 +1,7 @@
 import { scenario } from './context/CometContext';
-import { constants } from 'ethers';
 import { expect } from 'chai';
 import { exp } from '../test/helpers';
+import { isRewardSupported } from './utils';
 
 function calculateRewardsOwed(
   userBalance: bigint,
@@ -21,6 +21,7 @@ function calculateRewardsOwed(
 scenario(
   'Comet#rewards > can claim supply rewards for self',
   {
+    filter: async (ctx) => await isRewardSupported(ctx),
     tokenBalances: {
       albert: { $base: ' == 1000000' }, // in units of asset, not wei
     },
@@ -32,8 +33,6 @@ scenario(
     const baseScale = (await comet.baseScale()).toBigInt();
 
     const [rewardTokenAddress, rescaleFactor] = await rewards.rewardConfig(comet.address);
-    // Pass this scenario if a rewardToken doesn't exist
-    if (rewardTokenAddress === constants.AddressZero) return;
     const rewardToken = context.getAssetByAddress(rewardTokenAddress);
     const rewardScale = exp(1, await rewardToken.decimals());
 
@@ -75,6 +74,7 @@ scenario(
 scenario(
   'Comet#rewards > manager can claimTo supply rewards from a managed account',
   {
+    filter: async (ctx) => await isRewardSupported(ctx),
     tokenBalances: {
       albert: { $base: ' == 1000000' }, // in units of asset, not wei
     },
@@ -86,8 +86,6 @@ scenario(
     const baseScale = (await comet.baseScale()).toBigInt();
 
     const [rewardTokenAddress, rescaleFactor] = await rewards.rewardConfig(comet.address);
-    // Pass this scenario if a rewardToken doesn't exist
-    if (rewardTokenAddress === constants.AddressZero) return;
     const rewardToken = context.getAssetByAddress(rewardTokenAddress);
     const rewardScale = exp(1, await rewardToken.decimals());
 
