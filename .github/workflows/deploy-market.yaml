@@ -28,7 +28,7 @@ jobs:
       - name: Seacrest
         uses: hayesgm/seacrest@v1
         with:
-          ethereum_url: "${{ fromJSON('{\"fuji\": \"https://api.avax-test.network/ext/bc/C/rpc\", \"kovan\": \"https://kovan-eth.compound.finance\"}')[inputs.network] }}"
+          ethereum_url: "${{ fromJSON('{\"fuji\": \"https://api.avax-test.network/ext/bc/C/rpc\", \"kovan\": \"https://kovan.infura.io/v3/$INFURA_KEY}\"}')[inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
 
