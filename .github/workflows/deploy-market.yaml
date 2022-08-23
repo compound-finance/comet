@@ -58,7 +58,7 @@ jobs:
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
 
       - name: Commit changes
-        if: ${{ github.events.inputs.simulate == 'false' }}
+        if: ${{ github.event.inputs.simulate == 'false' }}
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
