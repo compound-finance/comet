@@ -256,7 +256,7 @@ export class CometContext {
         await this.setNextBaseFeeToZero();
         await governor.connect(voter).castVote(proposalId, 1, { gasPrice: 0 });
       } catch (err) {
-        debug(`Error while voting for ${whale}`, err);
+        debug(`Error while voting for ${whale}`, err.message);
       }
     }
     await this.mineBlocks(blocksFromStartToEnd);
