@@ -1,5 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumberish, Signature, ethers, ContractReceipt, Overrides } from 'ethers';
+import { BigNumberish, Signature, ethers, ContractReceipt, Overrides, PayableOverrides } from 'ethers';
 import { CometContext } from './CometContext';
 import { AddressLike, resolveAddress } from './Address';
 import { ERC20__factory } from '../../build/types';
@@ -71,9 +71,10 @@ export default class CometActor {
     return await (await erc20.transfer(dst, amount)).wait();
   }
 
-  async allow(manager: CometActor, isAllowed: boolean): Promise<ContractReceipt> {
+  async allow(manager: CometActor | string, isAllowed: boolean): Promise<ContractReceipt> {
+    if (typeof manager !== 'string') manager = manager.address;
     const comet = await this.context.getComet();
-    return await (await comet.connect(this.signer).allow(manager.address, isAllowed)).wait();
+    return await (await comet.connect(this.signer).allow(manager, isAllowed)).wait();
   }
 
   async safeSupplyAsset({ asset, amount }): Promise<ContractReceipt> {
@@ -167,6 +168,11 @@ export default class CometActor {
     return await (await comet
       .connect(this.signer)
       .allowBySig(owner, manager, isAllowed, nonce, expiry, signature.v, signature.r, signature.s)).wait();
+  }
+
+  async invoke({ actions, calldata }, overrides?: PayableOverrides): Promise<ContractReceipt> {
+    const bulker = await this.context.getBulker();
+    return await (await bulker.connect(this.signer).invoke(actions, calldata, { ...overrides })).wait();
   }
 
   async show() {

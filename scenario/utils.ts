@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { ContractReceipt } from 'ethers';
+import { constants, ContractReceipt } from 'ethers';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { BigNumber, BigNumberish, utils, Contract, Event, EventFilter } from 'ethers';
@@ -258,4 +258,18 @@ export async function isTriviallySourceable(ctx: CometContext, assetNum: number,
   const amountInWei = BigInt(amount) * assetInfo.scale.toBigInt();
   // Fauceteer should have greater than the expected amount of the asset
   return await asset.balanceOf(fauceteer.address) > amountInWei;
+}
+
+export async function isBulkerSupported(ctx: CometContext): Promise<boolean> {
+  const bulker = await ctx.getBulker();
+  return bulker == null ? false : true;
+}
+
+export async function isRewardSupported(ctx: CometContext): Promise<boolean> {
+  const rewards = await ctx.getRewards();
+  const comet = await ctx.getComet();
+  if (rewards == null) return false;
+
+  const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
+  if (rewardTokenAddress === constants.AddressZero) return false;
 }

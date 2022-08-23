@@ -27,6 +27,7 @@ import {
   IGovernorBravo,
   CometRewards,
   Fauceteer,
+  Bulker,
 } from '../../build/types';
 import { AssetInfoStructOutput } from '../../build/types/Comet';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -48,6 +49,7 @@ export interface CometProperties {
   timelock: SimpleTimelock;
   governor: IGovernorBravo;
   rewards: CometRewards;
+  bulker: Bulker;
 }
 
 export class CometContext {
@@ -89,6 +91,10 @@ export class CometContext {
 
   async getRewards(): Promise<CometRewards> {
     return this.deploymentManager.contract('rewards');
+  }
+
+  async getBulker(): Promise<Bulker> {
+    return this.deploymentManager.contract('bulker');
   }
 
   async getFauceteer(): Promise<Fauceteer> {
@@ -368,6 +374,7 @@ async function getContextProperties(context: CometContext): Promise<CometPropert
     timelock: await context.getTimelock(),
     governor: await context.getGovernor(),
     rewards: await context.getRewards(),
+    bulker: await context.getBulker(),
   }
 }
 
