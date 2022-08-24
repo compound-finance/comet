@@ -1,8 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { BigNumber, Contract, Event } from 'ethers';
+import { BigNumber, Contract, Event, EventFilter } from 'ethers';
 import { erc20 } from './ERC20';
 import { DeploymentManager } from '../../deployment_manager/DeploymentManager';
-import { fetchQuery } from '../../../scenario/utils';
 
 const getMaxEntry = (args: [string, BigNumber][]) =>
   args.reduce(([a1, m], [a2, e]) => (m.gte(e) == true ? [a1, m] : [a2, e]));
@@ -13,6 +12,40 @@ interface SourceTokenParameters {
   asset: string;
   address: string;
   blacklist: string[] | undefined;
+}
+
+export async function fetchQuery(
+  contract: Contract,
+  filter: EventFilter,
+  fromBlock: number,
+  toBlock: number,
+  originalBlock: number,
+  MAX_SEARCH_BLOCKS = 40000,
+  BLOCK_SPAN = 2048
+): Promise<{ recentLogs: Event[], blocksDelta: number }> {
+  if (originalBlock - fromBlock > MAX_SEARCH_BLOCKS) {
+    throw(new Error(`No events found within ${MAX_SEARCH_BLOCKS} blocks for ${contract.address}`));
+  }
+  try {
+    const res = await contract.queryFilter(filter, fromBlock, toBlock);
+    if (res.length > 0) {
+      return { recentLogs: res, blocksDelta: toBlock - fromBlock };
+    } else {
+      const nextToBlock = fromBlock;
+      const nextFrom = fromBlock - BLOCK_SPAN;
+      if (nextFrom < 0) {
+        throw(new Error('No events found by chain genesis'));
+      }
+      return fetchQuery(contract, filter, nextFrom, nextToBlock, originalBlock);
+    }
+  } catch (err) {
+    if (err.message.includes('query returned more')) {
+      const midBlock = (fromBlock + toBlock) / 2;
+      return fetchQuery(contract, filter, midBlock, toBlock, originalBlock);
+    } else {
+      throw(err);
+    }
+  }
 }
 
 /// ETH balance is used for transfer out when amount is negative
@@ -66,13 +99,13 @@ async function addTokens(
   block?: number,
   offsetBlocks?: number,
   MAX_SEARCH_BLOCKS = 40000,
-  BLOCK_SPAN = 1000
+  BLOCK_SPAN = 2048
 ) {
   let ethers = dm.hre.ethers;
   block = block ?? (await ethers.provider.getBlockNumber());
   let tokenContract = new ethers.Contract(asset, erc20, ethers.provider);
   let filter = tokenContract.filters.Transfer();
-  let { recentLogs, blocksDelta, err } = await fetchQuery(
+  let { recentLogs, blocksDelta } = await fetchQuery(
     tokenContract,
     filter,
     block - BLOCK_SPAN - (offsetBlocks ?? 0),
@@ -81,9 +114,6 @@ async function addTokens(
     MAX_SEARCH_BLOCKS,
     BLOCK_SPAN
   );
-  if (err) {
-    throw err;
-  }
   let holder = await searchLogs(recentLogs, amount, tokenContract, ethers, blacklist);
   if (holder) {
     await dm.hre.network.provider.request({

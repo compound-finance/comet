@@ -1,45 +1,31 @@
 import { Constraint, Solution, World, debug } from '../../plugins/scenario';
+import { IGovernorBravo, ProposalState, OpenProposal } from '../context/Gov';
 import { CometContext } from '../context/CometContext';
 import { Requirements } from './Requirements';
-import { IGovernorBravo } from '../../build/types';
-import { fetchQuery } from '../utils';
+import { fetchLogs } from '../utils';
 
-// TODO: can we import the enum from IGovernorBravo?
-// States of proposals that need to be executed
-const PENDING_PROPOSAL_STATE = 0;
-const ACTIVE_PROPOSAL_STATE = 1;
-
-type PendingProposal = { proposalId: number, startBlock: number, endBlock: number };
-
-async function getAllPendingProposals(world: World, governor: IGovernorBravo): Promise<PendingProposal[]> {
+async function getOpenProposals(world: World, governor: IGovernorBravo): Promise<OpenProposal[]> {
+  const timelockBuf = 30000; // XXX this should be timelock.delay + timelock.GRACE_PERIOD
   const votingDelay = (await governor.votingDelay()).toNumber();
   const votingPeriod = (await governor.votingPeriod()).toNumber();
+  const searchBlocks = votingDelay + votingPeriod + timelockBuf;
   const block = await world.hre.ethers.provider.getBlockNumber();
   const filter = governor.filters.ProposalCreated();
-  const { recentLogs } = await fetchQuery(
-    governor,
-    filter,
-    block - (votingDelay + votingPeriod),
-    block,
-    block
-  );
-
-  const pendingProposals = [];
-  if (recentLogs) {
-    for (let log of recentLogs) {
-      const [proposalId, , , , , , startBlock, endBlock] = log.args;
-      const state = await governor.state(proposalId);
-      // Save only pending proposals
-      if (state == PENDING_PROPOSAL_STATE || state == ACTIVE_PROPOSAL_STATE) {
-        pendingProposals.push({
-          proposalId: proposalId.toNumber(),
-          startBlock: startBlock.toNumber(),
-          endBlock: endBlock.toNumber()
-        });
+  const logs = await fetchLogs(governor, filter, block - searchBlocks, block);
+  const proposals = [];
+  if (logs) {
+    for (let log of logs) {
+      const [id, , , , , , startBlock, endBlock] = log.args;
+      const state = await governor.state(id);
+      if ([ProposalState.Pending,
+           ProposalState.Active,
+           ProposalState.Succeeded,
+           ProposalState.Queued].includes(state)) {
+        proposals.push({ id, startBlock, endBlock });
       }
     }
   }
-  return pendingProposals;
+  return proposals;
 }
 
 export class ProposalConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
@@ -47,16 +33,15 @@ export class ProposalConstraint<T extends CometContext, R extends Requirements> 
     const label = `[${world.base.name}] {ProposalConstraint}`;
     return async function (ctx: T): Promise<T> {
       const governor = await ctx.getGovernor();
-      const proposals = await getAllPendingProposals(ctx.world, governor);
+      const proposals = await getOpenProposals(ctx.world, governor);
       for (const proposal of proposals) {
         try {
           // XXX if gov chain is not local chain, simulate bridge
-          debug(`${label} Processing pending proposal ${proposal.proposalId}`);
-          const { proposalId, startBlock, endBlock } = proposal;
-          await ctx.executePendingProposal(proposalId, startBlock, endBlock);
-          debug(`${label} Pending proposal ${proposalId} was executed`);
+          debug(`${label} Processing pending proposal ${proposal.id}`);
+          await ctx.executeOpenProposal(proposal);
+          debug(`${label} Open proposal ${proposal.id} was executed`);
         } catch (err) {
-          debug(`${label} Failed with error ${err}`);
+          debug(`${label} Failed to execute proposal ${proposal.id}`, err);
         }
       }
       return ctx;

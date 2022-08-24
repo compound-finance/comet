@@ -15,6 +15,7 @@ import {
 } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
+import { ProposalState, OpenProposal } from './Gov';
 import {
   Comet,
   CometInterface,
@@ -244,38 +245,43 @@ export class CometContext {
     await this.world.hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
   }
 
-  async executePendingProposal(proposalId: number, startBlock: number, endBlock: number) {
+  async executeOpenProposal({ id, startBlock, endBlock }: OpenProposal) {
     const governor = await this.getGovernor();
-
     const blockNow = await this.world.hre.ethers.provider.getBlockNumber();
     const blocksUntilStart = startBlock - blockNow;
-    const blocksFromStartToEnd = endBlock - Math.max(startBlock, blockNow);
+    const blocksUntilEnd = endBlock - Math.max(startBlock, blockNow);
 
     if (blocksUntilStart > 0) {
       await this.mineBlocks(blocksUntilStart);
     }
 
-    for (const whale of COMP_WHALES) {
-      try {
-        // Voting can fail if voter has already voted
-        const voter = await this.world.impersonateAddress(whale);
-        await this.setNextBaseFeeToZero();
-        await governor.connect(voter).castVote(proposalId, 1, { gasPrice: 0 });
-      } catch (err) {
-        debug(`Error while voting for ${whale}`, err.message);
+    if (blocksUntilEnd > 0) {
+      for (const whale of COMP_WHALES) {
+        try {
+          // Voting can fail if voter has already voted
+          const voter = await this.world.impersonateAddress(whale);
+          await this.setNextBaseFeeToZero();
+          await governor.connect(voter).castVote(id, 1, { gasPrice: 0 });
+        } catch (err) {
+          debug(`Error while voting for ${whale}`, err.message);
+        }
       }
+      await this.mineBlocks(blocksUntilEnd);
     }
-    await this.mineBlocks(blocksFromStartToEnd);
 
-    // Queue proposal
-    await this.setNextBaseFeeToZero();
-    const queueTxn = await (await governor.queue(proposalId, { gasPrice: 0 })).wait();
-    const queueEvent = queueTxn.events?.find(event => event.event === 'ProposalQueued');
-    await this.setNextBlockTimestamp(queueEvent?.args?.eta.toNumber() + 1);
+    // Queue proposal (maybe)
+    const state = await governor.state(id);
+    if (state == ProposalState.Succeeded) {
+      await this.setNextBaseFeeToZero();
+      await governor.queue(id, { gasPrice: 0 });
+    }
+
+    const proposal = await governor.proposals(id);
+    await this.setNextBlockTimestamp(proposal.eta.toNumber() + 1);
 
     // Execute proposal (w/ gas limit so we see if exec reverts, not a gas estimation error)
     await this.setNextBaseFeeToZero();
-    await governor.execute(proposalId, { gasPrice: 0, gasLimit: 12000000 });
+    await governor.execute(id, { gasPrice: 0, gasLimit: 12000000 });
   }
 
   // Instantly executes some actions through the governance proposal process
@@ -298,9 +304,9 @@ export class CometContext {
       )
     ).wait();
     const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
-    const [proposalId, , , , , , startBlock, endBlock] = proposeEvent.args;
+    const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
 
-    await this.executePendingProposal(proposalId, startBlock, endBlock);
+    await this.executeOpenProposal({ id, startBlock, endBlock });
   }
 }
 
