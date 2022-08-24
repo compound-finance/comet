@@ -108,6 +108,9 @@ contract Bulker {
      * @notice Supplies an asset to a user in Comet
      */
     function supplyTo(address comet, address to, address asset, uint amount) internal {
+        if (amount == type(uint256).max && asset == CometInterface(comet).baseToken()) {
+            amount = ERC20(asset).balanceOf(msg.sender);
+        }
         CometInterface(comet).supplyFrom(msg.sender, to, asset, amount);
     }
 
