@@ -1,8 +1,7 @@
 import { expect } from 'chai';
-import { constants, ContractReceipt } from 'ethers';
+import { BigNumber, Contract, ContractReceipt, Event, EventFilter, constants } from 'ethers';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
-import { BigNumber, BigNumberish, utils, Contract, Event, EventFilter } from 'ethers';
 import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
 import { exp } from '../test/helpers';
@@ -208,40 +207,6 @@ export async function modifiedPaths(pattern: RegExp, against: string = 'origin/m
   return modified;
 }
 
-export async function fetchQuery(
-  contract: Contract,
-  filter: EventFilter,
-  fromBlock: number,
-  toBlock: number,
-  originalBlock: number,
-  MAX_SEARCH_BLOCKS = 40000,
-  BLOCK_SPAN = 1000
-): Promise<{ recentLogs?: Event[], blocksDelta?: number, err?: Error }> {
-  if (originalBlock - fromBlock > MAX_SEARCH_BLOCKS) {
-    return { err: new Error(`No events found within ${MAX_SEARCH_BLOCKS} blocks for ${contract.address}`) };
-  }
-  try {
-    let res = await contract.queryFilter(filter, fromBlock, toBlock);
-    if (res.length > 0) {
-      return { recentLogs: res, blocksDelta: toBlock - fromBlock };
-    } else {
-      let nextToBlock = fromBlock;
-      let nextFrom = fromBlock - BLOCK_SPAN;
-      if (nextFrom < 0) {
-        return { err: new Error('No events found by chain genesis') };
-      }
-      return await fetchQuery(contract, filter, nextFrom, nextToBlock, originalBlock);
-    }
-  } catch (err) {
-    if (err.message.includes('query returned more')) {
-      let midBlock = (fromBlock + toBlock) / 2;
-      return await fetchQuery(contract, filter, midBlock, toBlock, originalBlock);
-    } else {
-      return { err };
-    }
-  }
-}
-
 export async function isValidAssetIndex(ctx: CometContext, assetNum: number): Promise<boolean> {
   const comet = await ctx.getComet();
   return assetNum < await comet.numAssets();
@@ -272,4 +237,20 @@ export async function isRewardSupported(ctx: CometContext): Promise<boolean> {
 
   const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
   if (rewardTokenAddress === constants.AddressZero) return false;
+}
+
+export async function fetchLogs(
+  contract: Contract,
+  filter: EventFilter,
+  fromBlock: number,
+  toBlock: number,
+  BLOCK_SPAN = 2048 // NB: sadly max for fuji
+): Promise<Event[]> {
+  if (toBlock - fromBlock > BLOCK_SPAN) {
+    const midBlock = fromBlock + BLOCK_SPAN;
+    const logs = await contract.queryFilter(filter, fromBlock, midBlock);
+    return logs.concat(await fetchLogs(contract, filter, midBlock + 1, toBlock));
+  } else {
+    return contract.queryFilter(filter, fromBlock, toBlock);
+  }
 }
