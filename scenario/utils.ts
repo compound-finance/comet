@@ -112,10 +112,14 @@ export function getInterest(balance: bigint, rate: bigint, seconds: bigint) {
 export async function getActorAddressFromName(name: string, context: CometContext): Promise<string> {
   if (name.startsWith('$')) {
     const cometRegex = /comet/;
+    const rewardsRegex = /rewards/;
     let actorAddress: string;
     if (cometRegex.test(name)) {
       // If name matches regex, e.g. "$comet"
       actorAddress = (await context.getComet()).address;
+    } else if (rewardsRegex.test(name)) {
+      // If name matches regex, e.g. "$rewards"
+      actorAddress = (await context.getRewards()).address;
     }
     return actorAddress;
   } else {
@@ -270,6 +274,8 @@ export async function isRewardSupported(ctx: CometContext): Promise<boolean> {
   const comet = await ctx.getComet();
   if (rewards == null) return false;
 
+  console.log('here')
   const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
   if (rewardTokenAddress === constants.AddressZero) return false;
+  return true;
 }
