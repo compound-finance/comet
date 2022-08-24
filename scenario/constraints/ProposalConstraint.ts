@@ -55,12 +55,11 @@ export class ProposalConstraint<T extends CometContext, R extends Requirements> 
           const { proposalId, startBlock, endBlock } = proposal;
           await ctx.executePendingProposal(proposalId, startBlock, endBlock);
           debug(`${label} Pending proposal ${proposalId} was executed`);
-          return ctx;
         } catch (err) {
           debug(`${label} Failed with error ${err}`);
-          return ctx;
         }
       }
+      return ctx;
     };
   }
 
