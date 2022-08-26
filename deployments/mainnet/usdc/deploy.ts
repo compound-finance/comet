@@ -11,7 +11,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
-  const { comet, rewards } = deployed;
+  const { comet } = deployed;
 
   // Deploy Bulker
   const bulker = await deploymentManager.deploy(
