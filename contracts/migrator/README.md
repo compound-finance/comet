@@ -24,6 +24,10 @@ Users can specify the following parameters, generally:
  * `borrowToken: Erc20` **immutable**: The underlying borrow token (e.g. `USDC`).
  * `sweepee: address` **immutable**: Address of an address to send swept tokens to, if for any reason they remain locked in this contract.
 
+## Events
+
+TODO
+
 ## Contract Functions
 
 ### Constructor
@@ -119,9 +123,8 @@ This function may only be called during a migration command. We ensure this by m
 
 #### Inputs
 
- - `sender: address`: The address which called `swap` on Uniswap. Should be this contract's address.
- - `uint amount0`: The amount of token 0 transfered. Ingored.
- - `uint amount1`: The amount of token 1 transfered. Ingored.
+ - `uint fee0`: The fee for borrowing token0 from pool. Ingored.
+ - `uint fee1`: The fee for borrowing token1 from pool. Ingored.
  - `calldata data`: The data encoded above, which is the ABI-encoding of XXX.
 
 #### Bindings
@@ -130,7 +133,7 @@ This function may only be called during a migration command. We ensure this by m
 
 #### Function Spec
 
-`function uniswapV2Call(address sender, uint amount0, uint amount1, bytes calldata data)`
+`function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data)`
 
   - **REQUIRE** `inMigration == 1`
   - **REQUIRE** `msg.sender == uniswapLiquidityPool`
