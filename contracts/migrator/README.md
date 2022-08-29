@@ -24,9 +24,39 @@ Users can specify the following parameters, generally:
  * `borrowToken: Erc20` **immutable**: The underlying borrow token (e.g. `USDC`).
  * `sweepee: address` **immutable**: Address of an address to send swept tokens to, if for any reason they remain locked in this contract.
 
+## Structs
+
+### Collateral
+
+Represents a given amount of collateral to migrate.
+
+```c
+struct Collateral {
+  CToken cToken,
+  uint256 amount
+}
+```
+
+### UniswapCallback
+
+Represents all data required to continue operation after a flash loan is initiated.
+
+```c
+struct MigrationCallbackData {
+  address user,
+  uint256 repayAmountActual,
+  uint256 repayBorrowBehalf,
+  Collateral[] collateral
+}
+```
+
 ## Events
 
 TODO
+
+## Inherits
+
+ * `PeripheryPayments` - https://github.com/Uniswap/v3-periphery/blob/main/contracts/base/PeripheryPayments.sol
 
 ## Contract Functions
 
@@ -37,7 +67,7 @@ This function describes the initialization process for this contract. We set the
 #### Inputs
 
  * `comet_: Comet`: The Comet Ethereum mainnet USDC contract.
- * `uniswapLiquidityPool_: UniswapPool` : The Uniswap pool used by this contract to source liquidity (i.e. flash loans).
+ * `uniswapLiquidityPool_: IUniswapV3Pool` : The Uniswap pool used by this contract to source liquidity (i.e. flash loans).
  * `collateralTokens_: Erc20[]`: A list of valid collateral tokens
  * `borrowCToken`: The Compound II market for the borrowed token (e.g. `cUSDC`).
 
@@ -75,7 +105,7 @@ Notes for (b):
 
 #### Inputs
 
- * `collateral: (cToken: CToken, amount: uint256)[]` - Array of collateral to transfer into Compound III. See notes below.
+ * `collateral: Collateral[]` - Array of collateral to transfer into Compound III. See notes below.
  * `borrowAmount: uint256` - Amount of borrow to migrate (i.e. close in Compound II, and borrow from Compound III). See notes below.
 
 Notes:
@@ -90,8 +120,7 @@ Notes:
  * `underlyings[]: Erc20[]`: Alias for `cToken.underlying()` for collateral tokens.
  * `repayAmountActual: uint256`: The repay amount, after accounting for max.
  * `borrowAmountTotal: uint256`: The amount to borrow from Compound III, accounting for fees.
- * `data: bytes[]`: The ABI-encoding of the following data, to be passed to the Uniswap Liquidity Pool Callback:
-   * `(user: address, repayAmountActual: uint256, repayBorrowBehalf: uint256, collateral: (CToken, uint256)[])`
+ * `data: bytes[]`: The ABI-encoding of the `MigrationCallbackData`, to be passed to the Uniswap Liquidity Pool Callback.
 
 #### Function Spec
 
@@ -104,14 +133,12 @@ Notes:
   - **BIND READ** `repayAmountActual = cToken.borrowBalanceCurrent(user)`
 - **ELSE**
   - **BIND** `repayAmountActual = repayAmount`
-- **BIND** `borrowAmountTotal = repayAmountActual * 1e18 / uniswapLiquidityPoolFee + 1`
-- **BIND** `data = abi.encode((user, repayAmountActual, repayBorrowBehalf, collateral))`
-- **CALL** `uniswapLiquidityPool.swap(uniswapLiquidityPoolToken0 ? repayAmount : 0, uniswapLiquidityPoolToken0 ? 0 : repayAmount, address(this), data)`
+- **BIND** `borrowAmountTotal = repayAmountActual + FullMath.mulDivRoundingUp(repayAmountActual, uniswapLiquidityPoolFee, 1e6)` # TODO: FullMath
+- **BIND** `data = abi.encode(MigrationCallbackData{user, repayAmountActual, repayBorrowBehalf, collateral})`
+- **CALL** `uniswapLiquidityPool.flash(address(this), uniswapLiquidityPoolToken0 ? repayAmount : 0, uniswapLiquidityPoolToken0 ? 0 : repayAmount, data)`
 - **STORE** `inMigration -= 1`
 
-Note: for fee calculation see [Uniswap Flash Loans - Single Token](https://docs.uniswap.org/protocol/V2/guides/smart-contract-integration/using-flash-swaps#single-token), and the calculation formula: `DAIReturned >= DAIWithdrawn / .997`. We add one to tokens to borrow to "round up" (TODO: is this necessary?)
-
-Note: we may modify the above to sweep any lingering tokens (?).
+Note: for fee calculation see [UniswapV3Pool](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Pool.sol#L800).
 
 ### Uniswap Liquidity Pool Callback Function
 
@@ -123,9 +150,9 @@ This function may only be called during a migration command. We ensure this by m
 
 #### Inputs
 
- - `uint fee0`: The fee for borrowing token0 from pool. Ingored.
- - `uint fee1`: The fee for borrowing token1 from pool. Ingored.
- - `calldata data`: The data encoded above, which is the ABI-encoding of XXX.
+ - `uint fee0`: The fee for borrowing token0 from pool. Ignored.
+ - `uint fee1`: The fee for borrowing token1 from pool. Ignored.
+ - `calldata data`: The data encoded above, which is the ABI-encoding of `MigrationCallbackData`.
 
 #### Bindings
 
@@ -138,14 +165,14 @@ This function may only be called during a migration command. We ensure this by m
   - **REQUIRE** `inMigration == 1`
   - **REQUIRE** `msg.sender == uniswapLiquidityPool`
   - **REQUIRE** `sender == address(this)`
-  - **BIND** `(user, repayAmountActual, borrowAmountTotal, collateral) = abi.decode(data, (address, uint256, uint256, (CToken, uint256)[]))`
+  - **BIND** `MigrationCallbackData{user, repayAmountActual, borrowAmountTotal, collateral} = abi.decode(data, (MigrationCallbackData))`
   - **CALL** `borrowCToken.repayBorrowBehalf(user, repayAmountActual)`
   - **FOREACH** `(cToken, amount)` in `collateral`:
     - **CALL** `cToken.transferFrom(user, amount == type(uint256).max ? cToken.balanceOf(user) : amount)`
     - **CALL** `cToken.redeem(cToken.balanceOf(address(this)))`
     - **CALL** `comet.supplyCollateral(address(this), user, cToken.underlying(), cToken.underlying().balanceOf(address(this)))`
   - **CALL** `comet.withdrawBase(user, address(this), borrowAmountTotal)`
-  - **CALL** `borrowToken.transfer(uniswapLiquidityPool, borrowAmountTotal)`
+  - **CALL** `pay(borrowToken, address(this), msg.sender, borrowAmountTotal)`
 
 ### Sweep Function
 
@@ -153,11 +180,14 @@ Sends any tokens in this contract to the sweepee address. This contract should n
 
 #### Inputs
 
- - `token: Erc20`: The token to sweep
+ - `token: Erc20`: The token to sweep, or zero to sweep Ether
 
 #### Function Spec
 
 `function sweep(Erc20 token)`
 
   - **REQUIRE** `inMigration == 0`
-  - **CALL** `token.transfer(sweepee, token.balanceOf(address(this)))`
+  - **WHEN** `token == 0x0000000000000000000000000000000000000000`:
+    - **EXEC** `sweepee.send(address(this).balance)`
+  - **ELSE**
+    - **CALL** `token.transfer(sweepee, token.balanceOf(address(this)))`
