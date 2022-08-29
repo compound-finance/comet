@@ -17,6 +17,19 @@ interface IGovernorBravo {
         Executed
     }
 
+    struct Proposal {
+        uint id;
+        address proposer;
+        uint eta;
+        uint startBlock;
+        uint endBlock;
+        uint forVotes;
+        uint againstVotes;
+        uint abstainVotes;
+        bool canceled;
+        bool executed;
+    }
+
     event ProposalCreated(
         uint256 proposalId,
         address proposer,
@@ -38,6 +51,7 @@ interface IGovernorBravo {
 
     function comp() external view returns (address);
     function proposalCount() external view returns (uint256);
+    function proposals(uint256 proposalId) external view returns (Proposal memory);
     function votingDelay() external view returns (uint256);
     function votingPeriod() external view returns (uint256);
     function state(uint256 proposalId) external view returns (ProposalState);
