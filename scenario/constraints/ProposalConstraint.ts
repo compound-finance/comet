@@ -40,8 +40,9 @@ export class ProposalConstraint<T extends CometContext, R extends Requirements> 
           debug(`${label} Processing pending proposal ${proposal.id}`);
           await ctx.executeOpenProposal(proposal);
           debug(`${label} Open proposal ${proposal.id} was executed`);
-        } catch (err) {
-          debug(`${label} Failed to execute proposal ${proposal.id}`, err);
+        } catch(err) {
+          debug(`${label} Failed to execute proposal ${proposal.id}`, err.message);
+          throw(err);
         }
       }
       return ctx;
