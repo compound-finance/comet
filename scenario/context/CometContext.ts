@@ -1,8 +1,6 @@
 import { Signer, Contract, utils, BigNumberish } from 'ethers';
 import { World, buildScenarioFn } from '../../plugins/scenario';
-import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
-import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-import { debug } from '../../plugins/deployment_manager/Utils';
+import { DeploymentManager, Migration, debug } from '../../plugins/deployment_manager';
 import {
   TokenBalanceConstraint,
   ModernConstraint,
@@ -10,6 +8,7 @@ import {
   UtilizationConstraint,
   CometBalanceConstraint,
   MigrationConstraint,
+  VerifyMigrationConstraint,
   ProposalConstraint,
   FilterConstraint,
 } from '../constraints';
@@ -58,6 +57,7 @@ export class CometContext {
   deploymentManager: DeploymentManager;
   actors: ActorMap;
   assets: AssetMap;
+  migrations?: Migration<any>[];
 
   constructor(world: World) {
     this.world = world;
@@ -397,6 +397,7 @@ export const constraints = [
   new FilterConstraint(),
   new MigrationConstraint(),
   new ProposalConstraint(),
+  new VerifyMigrationConstraint(),
   new ModernConstraint(),
   new PauseConstraint(),
   new CometBalanceConstraint(),
