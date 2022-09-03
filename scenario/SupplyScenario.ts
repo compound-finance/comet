@@ -371,15 +371,14 @@ scenario(
     await collateralAsset.approve(albert, comet.address);
     await albert.allow(betty, true);
 
-    await expectRevertMatches(
+    await expect(
       betty.supplyAssetFrom({
         src: albert.address,
         dst: betty.address,
         asset: collateralAsset.address,
         amount: 100n * scale,
-      }),
-      /transfer amount exceeds balance/
-    );
+      })
+    ).to.be.reverted;
   }
 );
 
