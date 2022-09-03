@@ -23,6 +23,14 @@
     "baseMinForRewards": "1000000e6"
   },
   "assets": {
+    "LINK": {
+      "priceFeed": "0x48731cF7e84dc94C5f84577882c14Be11a5B7456",
+      "decimals": "18",
+      "borrowCF": 0.75,
+      "liquidateCF": 0.8,
+      "liquidationFactor": 0.92,
+      "supplyCap": "50000000e18"
+    },
     "WBTC": {
       "priceFeed": "0xA39434A63A52E749F02807ae27335515BA4b07F7",
       "decimals": "8",
@@ -38,14 +46,6 @@
       "liquidateCF": 0.85,
       "liquidationFactor": 0.93,
       "supplyCap": "1000000e18"
-    },
-    "LINK": {
-      "priceFeed": "0x48731cF7e84dc94C5f84577882c14Be11a5B7456",
-      "decimals": "18",
-      "borrowCF": 0.75,
-      "liquidateCF": 0.8,
-      "liquidationFactor": 0.92,
-      "supplyCap": "50000000e18"
     }
   }
 }
