@@ -4,11 +4,9 @@ import { DeploySpec, cloneGov, deployComet, exp, getBlock, sameAddress, wait } f
 const clone = {
   usdcImpl: '0xa2327a938Febf5FEC13baCFb16Ae10EcBc4cbDCF',
   usdcProxy: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-  // wbtc: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
-  // weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
-  // comp: '0xc00e94cb662c3520282e6f5717214004a7f26888',
-  // link: '0x514910771af9ca656af840dff83e8264ecf986ca',
-  // uni: '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984',
+  wbtc: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
+  weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+  link: '0x514910771af9ca656af840dff83e8264ecf986ca',
 };
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
@@ -51,20 +49,20 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     }
   );
 
-  // const WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
-  // const WETH = await deploymentManager.clone('WETH', clone.weth, []);
-  // const LINK = await deploymentManager.clone('LINK', clone.link, []);
+  const WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
+  const WETH = await deploymentManager.clone('WETH', clone.weth, []);
+  const LINK = await deploymentManager.clone('LINK', clone.link, []);
 
-  // // Deploy all Comet-related contracts
-  // const deployed = await deployComet(deploymentManager, deploySpec);
+  // Deploy all Comet-related contracts
+  const deployed = await deployComet(deploymentManager, deploySpec);
   // const { comet, rewards } = deployed;
 
-  // // Deploy Bulker
-  // const bulker = await deploymentManager.deploy(
-  //   'bulker',
-  //   'Bulker.sol',
-  //   [timelock.address, WETH.address]
-  // );
+  // Deploy Bulker
+  const bulker = await deploymentManager.deploy(
+    'bulker',
+    'Bulker.sol',
+    [timelock.address, WETH.address]
+  );
 
   // await deploymentManager.idempotent(
   //   async () => (await COMP.balanceOf(rewards.address)).eq(0),
@@ -76,8 +74,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   //   }
   // );
 
-  // return { ...deployed, fauceteer, bulker };
-  return {};
+  return { ...deployed, fauceteer, bulker };
 }
 
 // async function mintTokens(deploymentManager: DeploymentManager) {
