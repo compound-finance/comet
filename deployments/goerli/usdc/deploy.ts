@@ -1,14 +1,13 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
-import { DeploySpec, cloneGov, deployComet, exp, getBlock, sameAddress, wait } from '../../../src/deploy';
+import { DeploySpec, cloneGov, deployComet, exp, sameAddress, wait } from '../../../src/deploy';
+import { expect } from 'chai';
 
 const clone = {
   usdcImpl: '0xa2327a938Febf5FEC13baCFb16Ae10EcBc4cbDCF',
   usdcProxy: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
   wbtc: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
   weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
-  comp: '0xc00e94cb662c3520282e6f5717214004a7f26888',
   link: '0x514910771af9ca656af840dff83e8264ecf986ca',
-  uni: '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984',
 };
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
@@ -24,14 +23,6 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
 
   // Deploy governance contracts
   const { COMP, fauceteer, timelock } = await cloneGov(deploymentManager);
-
-  // Deploy UNI first because it is the flakiest (has a dependency on block timestamp)
-  // TODO: currently this retries with the same timestamp. we should update the timestamp on retries
-  const UNI = await deploymentManager.clone(
-    'UNI',
-    clone.uni,
-    [signer.address, signer.address, (await getBlock(null, ethers)).timestamp + 60]
-  );
 
   const usdcProxyAdmin = await deploymentManager.deploy('USDC:admin', 'vendor/proxy/transparent/ProxyAdmin.sol', []);
   const usdcImpl = await deploymentManager.clone('USDC:implementation', clone.usdcImpl, []);
@@ -65,23 +56,12 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
-  const { comet, rewards } = deployed;
 
   // Deploy Bulker
   const bulker = await deploymentManager.deploy(
     'bulker',
     'Bulker.sol',
     [timelock.address, WETH.address]
-  );
-
-  await deploymentManager.idempotent(
-    async () => (await COMP.balanceOf(rewards.address)).eq(0),
-    async () => {
-      trace(`Sending some COMP to CometRewards`);
-      const amount = exp(2_000_000, 18);
-      trace(await wait(COMP.connect(signer).transfer(rewards.address, amount)));
-      trace(`COMP.balanceOf(${rewards.address}): ${await COMP.balanceOf(rewards.address)}`);
-    }
   );
 
   return { ...deployed, fauceteer, bulker };
@@ -139,18 +119,6 @@ async function mintTokens(deploymentManager: DeploymentManager) {
       const amount = (await LINK.balanceOf(signer.address)).div(2);
       trace(await wait(LINK.connect(signer).transfer(fauceteer.address, amount)));
       trace(`LINK.balanceOf(${fauceteer.address}): ${await LINK.balanceOf(fauceteer.address)}`);
-    }
-  );
-
-  const UNI = contracts.get('UNI');
-  await deploymentManager.idempotent(
-    async () => (await UNI.balanceOf(fauceteer.address)).eq(0),
-    async () => {
-      trace(`Minting 1% of UNI to fauceteer (mintCap is 2%, first waiting 45s...)`);
-      const amount = (await UNI.totalSupply()).div(1e2);
-      await new Promise(r => setTimeout(r, 45_000));
-      trace(await wait(UNI.connect(signer).mint(fauceteer.address, amount)));
-      trace(`UNI.balanceOf(${fauceteer.address}): ${await UNI.balanceOf(fauceteer.address)}`);
     }
   );
 }

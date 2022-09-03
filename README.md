@@ -52,7 +52,7 @@ To use this project with other chains, the block explorer API key for your targe
 
 An example deployment command looks like:
 
-`yarn deploy --network fuji`
+`yarn hardhat deploy --network fuji --deployment usdc`
 
 ## Comet protocol contracts
 
@@ -145,7 +145,7 @@ Set up the following env variables:
 
 Deploys contracts to a specified chain using a deployment script.
 
-`yarn deploy --network mainnet`
+`yarn hardhat deploy --network mainnet --deployment usdc`
 
 ### Run spider task
 
@@ -236,8 +236,8 @@ This can also be used together with `--overwrite`, to produce the verification a
 
 #### Other considerations
 
-- make sure that the deploying address has at least 2 units of the chain's
-  native asset (i.e. 2 ETH for Kovan, 2 AVAX for Fuji)
+Make sure that the deploying address has a sufficient amount of the chain's
+native asset (i.e. 2 ETH for Kovan, 2 AVAX for Fuji)
 
 ### Liquidation Bot
 
