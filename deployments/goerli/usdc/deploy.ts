@@ -18,46 +18,38 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 }
 
 async function deployContracts(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
-  // const trace = deploymentManager.tracer()
-  // const ethers = deploymentManager.hre.ethers;
-  // const signer = await deploymentManager.getSigner();
+  const trace = deploymentManager.tracer()
+  const ethers = deploymentManager.hre.ethers;
+  const signer = await deploymentManager.getSigner();
 
-  // // Deploy governance contracts
-  // const { COMP, fauceteer, governor, timelock } = await cloneGov(deploymentManager);
+  // Deploy governance contracts
+  const { COMP, fauceteer, governor, timelock } = await cloneGov(deploymentManager);
 
-  // // Deploy UNI first because it is the flakiest (has a dependency on block timestamp)
-  // // TODO: currently this retries with the same timestamp. we should update the timestamp on retries
-  // const UNI = await deploymentManager.clone(
-  //   'UNI',
-  //   clone.uni,
-  //   [signer.address, signer.address, (await getBlock(null, ethers)).timestamp + 60]
-  // );
+  const usdcProxyAdmin = await deploymentManager.deploy('USDC:admin', 'vendor/proxy/transparent/ProxyAdmin.sol', []);
+  const usdcImpl = await deploymentManager.clone('USDC:implementation', clone.usdcImpl, []);
+  const usdcProxy = await deploymentManager.clone('USDC', clone.usdcProxy, [usdcImpl.address]);
+  const usdcProxyAdminSlot = '0x10d6a54a4754c8869d6886b5f5d7fbfa5b4522237ea5c60d11bc4e7a1ff9390b';
+  const USDC = usdcImpl.attach(usdcProxy.address);
 
-  // const usdcProxyAdmin = await deploymentManager.deploy('USDC:admin', 'vendor/proxy/transparent/ProxyAdmin.sol', []);
-  // const usdcImpl = await deploymentManager.clone('USDC:implementation', clone.usdcImpl, []);
-  // const usdcProxy = await deploymentManager.clone('USDC', clone.usdcProxy, [usdcImpl.address]);
-  // const usdcProxyAdminSlot = '0x10d6a54a4754c8869d6886b5f5d7fbfa5b4522237ea5c60d11bc4e7a1ff9390b';
-  // const USDC = usdcImpl.attach(usdcProxy.address);
+  await deploymentManager.idempotent(
+    async () => !sameAddress(await ethers.provider.getStorageAt(usdcProxy.address, usdcProxyAdminSlot), usdcProxyAdmin.address),
+    async () => {
+      trace(`Changing admin of USDC proxy to ${usdcProxyAdmin.address}`);
+      trace(await wait(usdcProxy.connect(signer).changeAdmin(usdcProxyAdmin.address)));
 
-  // await deploymentManager.idempotent(
-  //   async () => !sameAddress(await ethers.provider.getStorageAt(usdcProxy.address, usdcProxyAdminSlot), usdcProxyAdmin.address),
-  //   async () => {
-  //     trace(`Changing admin of USDC proxy to ${usdcProxyAdmin.address}`);
-  //     trace(await wait(usdcProxy.connect(signer).changeAdmin(usdcProxyAdmin.address)));
-
-  //     trace(`Initializing USDC`);
-  //     trace(await wait(USDC.connect(signer).initialize(
-  //       'USD Coin',     // name
-  //       'USDC',         // symbol
-  //       'USD',          // currency
-  //       6,              // decimals
-  //       signer.address, // Master Minter
-  //       signer.address, // Pauser
-  //       signer.address, // Blacklister
-  //       signer.address  // Owner
-  //     )));
-  //   }
-  // );
+      trace(`Initializing USDC`);
+      trace(await wait(USDC.connect(signer).initialize(
+        'USD Coin',     // name
+        'USDC',         // symbol
+        'USD',          // currency
+        6,              // decimals
+        signer.address, // Master Minter
+        signer.address, // Pauser
+        signer.address, // Blacklister
+        signer.address  // Owner
+      )));
+    }
+  );
 
   // const WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
   // const WETH = await deploymentManager.clone('WETH', clone.weth, []);
