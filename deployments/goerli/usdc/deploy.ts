@@ -21,7 +21,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const signer = await deploymentManager.getSigner();
 
   // Deploy governance contracts
-  const { COMP, fauceteer, governor, timelock } = await cloneGov(deploymentManager);
+  const { fauceteer, timelock } = await cloneGov(deploymentManager);
 
   const usdcProxyAdmin = await deploymentManager.deploy('USDC:admin', 'vendor/proxy/transparent/ProxyAdmin.sol', []);
   const usdcImpl = await deploymentManager.clone('USDC:implementation', clone.usdcImpl, []);
