@@ -9,6 +9,7 @@ on:
           - fuji
           - kovan
           - mainnet
+          - goerli
       deployment:
         description: Deployment Name (e.g. "usdc")
         required: true
