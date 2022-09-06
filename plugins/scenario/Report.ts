@@ -1,6 +1,18 @@
-import { Result } from './Parent';
 import { diff as showDiff } from 'jest-diff';
 import * as fs from 'fs/promises';
+
+export interface Result {
+  base: string;
+  file: string;
+  scenario: string;
+  gasUsed?: number;
+  numSolutionSets?: number;
+  elapsed?: number;
+  error?: Error;
+  trace?: string;
+  diff?: { actual: any, expected: any };
+  skipped?: boolean;
+}
 
 export interface ConsoleFormatOptions { }
 export interface JsonFormatOptions {
@@ -18,6 +30,15 @@ export function pluralize(n, singular, plural = null) {
   } else {
     return `${n} ${plural || singular}`;
   }
+}
+
+export function defaultFormat(): FormatConfig {
+  return {
+    console: {},
+    json: {
+      output: 'scenario-results.json'
+    }
+  };
 }
 
 async function showReportConsole(results: Result[], _consoleOptions: ConsoleFormatOptions, _startTime: number, _endTime: number) {
@@ -162,7 +183,8 @@ async function showJsonReport(results: Result[], jsonOptions: JsonFormatOptions,
   }
 }
 
-export async function showReport(results: Result[], format: FormatConfig, startTime: number, endTime: number) {
+export async function showReport(results: Result[], startTime: number, endTime: number, formatConfig?: FormatConfig) {
+  const format = formatConfig ?? defaultFormat();
   if (format.console) {
     await showReportConsole(results, format.console, startTime, endTime);
   }

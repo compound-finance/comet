@@ -2,7 +2,7 @@ import fg from 'fast-glob';
 import * as path from 'path';
 import { Scenario, ScenarioFlags, Property, Initializer, Forker, Constraint, Transformer } from './Scenario';
 
-class Loader<T, U, R> {
+export class Loader<T, U, R> {
   scenarios: { [name: string]: Scenario<T, U, R> };
 
   constructor() {
@@ -41,12 +41,12 @@ class Loader<T, U, R> {
 
 let loader: any;
 
-function setupLoader<T, U, R>() {
+export function setupLoader<T, U, R>(): Loader<T, U, R> {
   if (loader) {
     throw new Error('Loader already initialized');
   }
 
-  loader = new Loader<T, U, R>();
+  return loader = new Loader<T, U, R>();
 }
 
 export function getLoader<T, U, R>(): Loader<T, U, R> {
@@ -57,7 +57,7 @@ export function getLoader<T, U, R>(): Loader<T, U, R> {
   return <Loader<T, U, R>>loader;
 }
 
-export async function loadScenarios<T, U, R>(glob: string): Promise<{ [name: string]: Scenario<T, U, R> }> {
+export async function loadScenarios<T, U, R>(glob = 'scenario/**.ts'): Promise<{ [name: string]: Scenario<T, U, R> }> {
   setupLoader<T, U, R>();
 
   const entries = await fg(glob); // Grab all potential scenario files
