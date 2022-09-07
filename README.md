@@ -50,6 +50,10 @@ Currently, Avalanche mainnet and testnet (fuji) are supported. This means that d
 
 To use this project with other chains, the block explorer API key for your target chain must be set in .env (e.g. `SNOWTRACE_KEY` for Avalanche).
 
+An example deployment command looks like:
+
+`yarn hardhat deploy --network fuji --deployment usdc`
+
 ## Comet protocol contracts
 
 **[Comet.sol](https://github.com/compound-finance/comet/blob/main/contracts/Comet.sol)** - Contract that inherits `CometMainInterface.sol` and is the implementation for most of Comet's core functionalities. A small set of functions that do not fit within this contract are implemented in `CometExt.sol` instead, which Comet `DELEGATECALL`s to for unrecognized function signatures.
@@ -136,6 +140,12 @@ Set up the following env variables:
 - `REPORT_GAS=true`
 - `COINMARKETCAP_API_KEY=your_coinmarket_api_key`
   optional, only if you want to see cost in USD
+
+### Deploy contracts
+
+Deploys contracts to a specified chain using a deployment script.
+
+`yarn hardhat deploy --network fuji --deployment usdc`
 
 ### Run spider task
 
