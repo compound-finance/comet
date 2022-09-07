@@ -1,5 +1,6 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
-import { DeploySpec, cloneGov, deployComet, exp, getBlock, sameAddress, wait } from '../../../src/deploy';
+import { DeploySpec, cloneGov, deployComet, exp, sameAddress, wait } from '../../../src/deploy';
+import { expect } from 'chai';
 
 const clone = {
   usdcImpl: '0xa2327a938Febf5FEC13baCFb16Ae10EcBc4cbDCF',
@@ -21,7 +22,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const signer = await deploymentManager.getSigner();
 
   // Deploy governance contracts
-  const { fauceteer, timelock } = await cloneGov(deploymentManager);
+  const { COMP, fauceteer, timelock } = await cloneGov(deploymentManager);
 
   const usdcProxyAdmin = await deploymentManager.deploy('USDC:admin', 'vendor/proxy/transparent/ProxyAdmin.sol', []);
   const usdcImpl = await deploymentManager.clone('USDC:implementation', clone.usdcImpl, []);
@@ -52,6 +53,18 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
   const WETH = await deploymentManager.clone('WETH', clone.weth, []);
   const LINK = await deploymentManager.clone('LINK', clone.link, []);
+
+  // ChainLink does not have a COMP price feed as of September 2022
+  const compPriceFeed = await deploymentManager.deploy(
+    'SimplePriceFeed:COMP',
+    'test/SimplePriceFeed.sol',
+    [
+      50 * 1e8, // price in USD
+      8 // price feed decimals
+    ]
+  );
+
+  expect(compPriceFeed.address).to.eq("0xc28aD44975C614EaBe0Ed090207314549e1c6624");
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);

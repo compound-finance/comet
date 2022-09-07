@@ -22,6 +22,7 @@
     "baseBorrowSpeed": "0.0011458333333333333e15",
     "baseMinForRewards": "10000e6"
   },
+  "rewardToken": "COMP",
   "assets": {
     "LINK": {
       "priceFeed": "0x48731cF7e84dc94C5f84577882c14Be11a5B7456",
@@ -30,6 +31,14 @@
       "liquidateCF": 0.8,
       "liquidationFactor": 0.92,
       "supplyCap": "50000000e18"
+    },
+    "COMP": {
+      "priceFeed": "0xc28aD44975C614EaBe0Ed090207314549e1c6624",
+      "decimals": "18",
+      "borrowCF": 0.65,
+      "liquidateCF": 0.7,
+      "liquidationFactor": 0.92,
+      "supplyCap": "500000e18"
     },
     "WBTC": {
       "priceFeed": "0xA39434A63A52E749F02807ae27335515BA4b07F7",
