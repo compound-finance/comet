@@ -14,12 +14,14 @@ rectangle "L2" {
   rectangle CometProxy
   rectangle CometImpl
   rectangle Bulker
+  rectangle L2Timelock
 }
 
 Governor --> Timelock : admin
 Timelock --> BridgeRecipient : admin
-BridgeRecipient --> ProxyAdmin : admin
-BridgeRecipient --> Bulker : admin
+BridgeRecipient --> L2Timelock
+L2Timelock --> ProxyAdmin : admin
+L2Timelock --> Bulker : admin
 ProxyAdmin --> ConfiguratorProxy : admin
 ProxyAdmin --> CometProxy : admin
 ConfiguratorProxy --> ConfiguratorImpl : impl
@@ -27,7 +29,7 @@ ConfiguratorImpl --> CometFactory
 CometFactory ..> CometImpl : makes
 CometProxy --> CometImpl : impl
 Bulker --> CometProxy
-BridgeRecipient ~~> ConfiguratorImpl : governor
-BridgeRecipient ~~> CometImpl : governor
+L2Timelock ~~> ConfiguratorImpl : governor
+L2Timelock ~~> CometImpl : governor
 
 @enduml
