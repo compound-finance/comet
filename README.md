@@ -145,7 +145,7 @@ Set up the following env variables:
 
 Deploys contracts to a specified chain using a deployment script.
 
-`yarn hardhat deploy --network fuji --deployment usdc`
+`yarn hardhat deploy --network mainnet --deployment usdc`
 
 ### Run spider task
 
