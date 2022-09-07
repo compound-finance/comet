@@ -54,18 +54,6 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const WETH = await deploymentManager.clone('WETH', clone.weth, []);
   const LINK = await deploymentManager.clone('LINK', clone.link, []);
 
-  // ChainLink does not have a COMP price feed as of September 2022
-  const compPriceFeed = await deploymentManager.deploy(
-    'SimplePriceFeed:COMP',
-    'test/SimplePriceFeed.sol',
-    [
-      50 * 1e8, // price in USD
-      8 // price feed decimals
-    ]
-  );
-
-  expect(compPriceFeed.address).to.eq("0xc28aD44975C614EaBe0Ed090207314549e1c6624");
-
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
 

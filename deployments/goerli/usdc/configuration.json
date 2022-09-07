@@ -33,7 +33,7 @@
       "supplyCap": "50000000e18"
     },
     "COMP": {
-      "priceFeed": "0xc28aD44975C614EaBe0Ed090207314549e1c6624",
+      "priceFeed": "0x54a06047087927D9B0fb21c1cf0ebd792764dDB8",
       "decimals": "18",
       "borrowCF": 0.65,
       "liquidateCF": 0.7,
