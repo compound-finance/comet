@@ -1,11 +1,7 @@
-// SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.8.10;
-
-import "./SafeMath.sol";
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity 0.8.15;
 
 contract Timelock {
-    using SafeMath for uint;
-
     event NewAdmin(address indexed newAdmin);
     event NewPendingAdmin(address indexed newPendingAdmin);
     event NewDelay(uint indexed newDelay);
