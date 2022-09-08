@@ -8,9 +8,22 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 }
 
 async function deployContracts(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
-  // XXX deploy l2 timelock
-  // XXX deploy polygon bridge recipient
+  // deploy bridgeTimelock(admin, guardian, delay)
+  //   signer as admin
+
   // XXX deploy l2 contracts
+
+  // deploy PolygonBridgeReceiver(mainnetTimelock, l2Timelock)
+  //   mainnetTime = goerli timelock address
+  //   l2Time = bridgeTimelock.address
+
+  // bridgeTimelock.connect(signer).queueTransaction(
+  //   // bridgeTimelock.setPendingAdmin(polygonBridgeReceiver.address)
+  // )
+
+  // bridgeTimelock.executeTransaction() // execute the above transaction
+
+  // polygonBridgeReceiver.initialize() // accept admin
 
   return {};
 }
