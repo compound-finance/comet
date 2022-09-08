@@ -4,27 +4,21 @@ pragma solidity 0.8.15;
 import "../ITimelock.sol";
 
 contract BridgeTimelock is ITimelock {
-    event NewGuardian(address indexed newGuardian);
-
     uint public constant GRACE_PERIOD = 14 days;
-    uint public constant MINIMUM_DELAY = 2 days;
+    uint public constant MINIMUM_DELAY = 2 days; // XXX lower min?
     uint public constant MAXIMUM_DELAY = 30 days;
 
-    address public admin; // aka the bridge receiever
+    address public admin;
     address public pendingAdmin;
-    address public guardian;
     uint public delay;
 
     mapping (bytes32 => bool) public queuedTransactions;
 
-    constructor(address admin_, address guardian_, uint delay_) public {
+    constructor(address admin_, uint delay_) public {
         require(delay_ >= MINIMUM_DELAY, "BridgeTimelock::constructor: Delay must exceed minimum delay.");
         require(delay_ <= MAXIMUM_DELAY, "BridgeTimelock::setDelay: Delay must not exceed maximum delay.");
 
-        // XXX guardian checks?
-
         admin = admin_;
-        guardian = guardian_;
         delay = delay_;
     }
 
@@ -54,13 +48,6 @@ contract BridgeTimelock is ITimelock {
         emit NewPendingAdmin(pendingAdmin);
     }
 
-    function setGuardian(address newGuardian) public {
-        require(msg.sender == address(this), "BridgeTimelock::setGuardian: Call must come from BridgeTimelock.");
-        guardian = newGuardian;
-
-        emit NewGuardian(guardian);
-    }
-
     function queueTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public returns (bytes32) {
         require(msg.sender == admin, "BridgeTimelock::queueTransaction: Call must come from admin.");
         require(eta >= (getBlockTimestamp() + delay), "BridgeTimelock::queueTransaction: Estimated execution block must satisfy delay.");
@@ -73,7 +60,7 @@ contract BridgeTimelock is ITimelock {
     }
 
     function cancelTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public {
-        require(msg.sender == guardian, "BridgeTimelock::cancelTransaction: Call must come from guardian.");
+        require(msg.sender == admin, "BridgeTimelock::cancelTransaction: Call must come from admin.");
 
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         queuedTransactions[txHash] = false;
@@ -82,7 +69,7 @@ contract BridgeTimelock is ITimelock {
     }
 
     function executeTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public payable returns (bytes memory) {
-        require(msg.sender == admin, "BridgeTimelock::executeTransaction: Call must come from admin."); // should anyone be able to execute?
+        require(msg.sender == admin, "BridgeTimelock::executeTransaction: Call must come from admin.");
 
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         require(queuedTransactions[txHash], "BridgeTimelock::executeTransaction: Transaction hasn't been queued.");
