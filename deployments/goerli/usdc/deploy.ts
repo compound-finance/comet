@@ -1,6 +1,5 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
 import { DeploySpec, cloneGov, deployComet, exp, sameAddress, wait } from '../../../src/deploy';
-import { expect } from 'chai';
 
 const clone = {
   usdcImpl: '0xa2327a938Febf5FEC13baCFb16Ae10EcBc4cbDCF',
