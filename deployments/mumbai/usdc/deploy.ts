@@ -1,13 +1,16 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
-import { DeploySpec, cloneGov, deployComet, exp, sameAddress, wait } from '../../../src/deploy';
+import { DeploySpec, deployComet, exp, sameAddress, wait } from '../../../src/deploy';
 
 const clone = {
   usdcImpl: '0xa2327a938Febf5FEC13baCFb16Ae10EcBc4cbDCF',
   usdcProxy: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
   wbtc: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
   weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
-  link: '0x514910771af9ca656af840dff83e8264ecf986ca',
+  wmatic: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
+  sand: '0x3845badAde8e6dFF049820680d1F14bD3903a5d0'
 };
+
+const secondsPerDay = 24 * 60 * 60;
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const deployed = await deployContracts(deploymentManager, deploySpec);
@@ -20,9 +23,42 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const ethers = deploymentManager.hre.ethers;
   const signer = await deploymentManager.getSigner();
 
-  // Deploy governance contracts
-  const { COMP, fauceteer, timelock } = await cloneGov(deploymentManager);
+  // Deploy PolygonBridgeReceiver
+  const polygonBridgeReceiver = await deploymentManager.deploy(
+    'polygonBridgeReceiver',
+    'bridges/polygon/PolygonBridgeReceiver.sol',
+    [
+      signer.address, // admin
+    ]
+  );
 
+  // Deploy L2 Timelock
+  const l2Timelock = await deploymentManager.deploy(
+    'l2Timelock',
+    'vendor/Timelock.sol',
+    [
+      polygonBridgeReceiver.address, // admin
+      2 * secondsPerDay,             // delay
+      14 * secondsPerDay,            // grace period
+      2 * secondsPerDay,             // minimum delay
+      30 * secondsPerDay             // maxiumum delay
+    ]
+  );
+
+  // https://docs.polygon.technology/docs/develop/l1-l2-communication/fx-portal/#contract-addresses
+  const FX_CHILD = "0xCf73231F28B7331BBe3124B907840A94851f9f11"; //
+  const MAINNET_TIMELOCK = "0x6d903f6003cca6255d85cca4d3b5e5146dc33925";
+
+  // Initialize PolygonBridgeReceiver
+  trace(`Initializing PolygonBridgeReceiver`);
+  await polygonBridgeReceiver.initialize(
+    MAINNET_TIMELOCK,       // mainnet timelock
+    l2Timelock.address,     // l2 timelock
+    FX_CHILD                // fxChild
+  );
+  trace(`PolygonBridgeReceiver initialized`);
+
+  // USDC
   const usdcProxyAdmin = await deploymentManager.deploy('USDC:admin', 'vendor/proxy/transparent/ProxyAdmin.sol', []);
   const usdcImpl = await deploymentManager.clone('USDC:implementation', clone.usdcImpl, []);
   const usdcProxy = await deploymentManager.clone('USDC', clone.usdcProxy, [usdcImpl.address]);
@@ -49,32 +85,50 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     }
   );
 
+  const SAND = await deploymentManager.clone(
+    'SAND',
+    clone.sand,
+    [
+      signer.address, // sand admin
+      signer.address, // execution admin
+      signer.address  // beneficiary (initial mint recipient)
+    ]
+  );
   const WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
   const WETH = await deploymentManager.clone('WETH', clone.weth, []);
+  const WMATIC = await deploymentManager.clone(
+    'WMATIC',
+    clone.wmatic,
+    [],
+    'polygon' // NOTE: cloned from Polygon, not mainnet
+  );
 
-  // Deploy all Comet-related contracts
-  const deployed = await deployComet(deploymentManager, deploySpec);
-  const { rewards } = deployed;
+  // Deploy Comet
+  const deployed = await deployComet(
+    deploymentManager,
+    deploySpec,
+    {
+      governor: l2Timelock.address,
+      pauseGuardian: l2Timelock.address
+    }
+  );
 
   // Deploy Bulker
   const bulker = await deploymentManager.deploy(
     'bulker',
     'Bulker.sol',
-    [timelock.address, WETH.address]
+    [l2Timelock.address, WETH.address]
   );
 
-  await deploymentManager.idempotent(
-    async () => (await COMP.balanceOf(rewards.address)).eq(0),
-    async () => {
-      trace(`Sending some COMP to CometRewards`);
-      const amount = exp(1_000_000, 18);
-      trace(await wait(COMP.connect(signer).transfer(rewards.address, amount)));
-      trace(`COMP.balanceOf(${rewards.address}): ${await COMP.balanceOf(rewards.address)}`);
-      trace(`COMP.balanceOf(${signer.address}): ${await COMP.balanceOf(signer.address)}`);
-    }
-  );
+  // Deploy fauceteer
+  const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
 
-  return { ...deployed, fauceteer, bulker };
+  return {
+    polygonBridgeReceiver,
+    bulker,
+    fauceteer,
+    ...deployed
+  };
 }
 
 async function mintTokens(deploymentManager: DeploymentManager) {
@@ -84,6 +138,16 @@ async function mintTokens(deploymentManager: DeploymentManager) {
   const fauceteer = contracts.get('fauceteer');
 
   trace(`Attempting to mint as ${signer.address}...`);
+
+  const WMATIC = contracts.get('WMATIC');
+  await deploymentManager.idempotent(
+    async () => (await WMATIC.balanceOf(signer.address)).lt(exp(0.01, 18)),
+    async () => {
+      trace(`Minting 0.01 WMATIC for signer (this is a precious resource!)`);
+      trace(await wait(WMATIC.connect(signer).deposit({ value: exp(0.01, 18) })));
+      trace(`WMATIC.balanceOf(${signer.address}): ${await WMATIC.balanceOf(signer.address)}`);
+    }
+  );
 
   const WETH = contracts.get('WETH');
   await deploymentManager.idempotent(
@@ -118,6 +182,17 @@ async function mintTokens(deploymentManager: DeploymentManager) {
       const amount = exp(20, await WBTC.decimals());
       trace(await wait(WBTC.connect(signer).mint(fauceteer.address, amount)));
       trace(`WBTC.balanceOf(${fauceteer.address}): ${await WBTC.balanceOf(fauceteer.address)}`);
+    }
+  );
+
+  const SAND = contracts.get('SAND');
+  await deploymentManager.idempotent(
+    async () => (await SAND.balanceOf(signer.address)).eq(await SAND.totalSupply()),
+    async () => {
+      trace(`Sending half of all SAND to fauceteer`);
+      const amount = (await SAND.balanceOf(signer.address)).div(2);
+      trace(await wait(SAND.connect(signer).transfer(fauceteer.address, amount)));
+      trace(`SAND.balanceOf(${fauceteer.address}): ${await SAND.balanceOf(fauceteer.address)}`);
     }
   );
 }
