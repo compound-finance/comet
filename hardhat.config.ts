@@ -197,6 +197,11 @@ const config: HardhatUserConfig = {
         name: 'goerli',
         network: 'goerli',
         deployment: 'usdc'
+      },
+      {
+        name: 'mumbai',
+        network: 'mumbai',
+        deployment: 'usdc'
       }
     ],
   },
