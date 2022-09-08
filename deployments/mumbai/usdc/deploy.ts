@@ -8,8 +8,22 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 }
 
 async function deployContracts(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
-  // deploy bridgeTimelock(admin, guardian, delay)
-  //   signer as admin
+  const trace = deploymentManager.tracer()
+  const ethers = deploymentManager.hre.ethers;
+  const signer = await deploymentManager.getSigner();
+
+  // Deploy BridgeTimelock
+  trace(`Deploying BridgeTimelock`);
+  const bridgeTimelock = await deploymentManager.deploy(
+    'bridgeTimelock',
+    'bridges/BridgeTimelock.sol',
+    [
+      signer.address, // admin
+      signer.address, // guardian
+      2 * 24 * 60 * 60 // delay (min of 2 days)
+    ]
+  );
+  trace(`BridgeTimelock deployed @${bridgeTimelock.address}`);
 
   // XXX deploy l2 contracts
 
@@ -25,5 +39,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
 
   // polygonBridgeReceiver.initialize() // accept admin
 
-  return {};
+  return {
+    bridgeTimelock
+  };
 }
