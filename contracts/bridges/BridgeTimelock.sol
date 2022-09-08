@@ -1,30 +1,31 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-contract Timelock {
-    event NewAdmin(address indexed newAdmin);
-    event NewPendingAdmin(address indexed newPendingAdmin);
-    event NewDelay(uint indexed newDelay);
-    event CancelTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature,  bytes data, uint eta);
-    event ExecuteTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature,  bytes data, uint eta);
-    event QueueTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta);
+import "../ITimelock.sol";
+
+contract BridgeTimelock is ITimelock {
+    event NewGuardian(address indexed newGuardian);
 
     uint public constant GRACE_PERIOD = 14 days;
     uint public constant MINIMUM_DELAY = 2 days;
     uint public constant MAXIMUM_DELAY = 30 days;
 
-    address public admin;
+    address public admin; // aka the bridge receiever
     address public pendingAdmin;
+    address public guardian;
     uint public delay;
 
     mapping (bytes32 => bool) public queuedTransactions;
 
 
-    constructor(address admin_, uint delay_) public {
+    constructor(address admin_, address guardian_, uint delay_) public {
         require(delay_ >= MINIMUM_DELAY, "Timelock::constructor: Delay must exceed minimum delay.");
         require(delay_ <= MAXIMUM_DELAY, "Timelock::setDelay: Delay must not exceed maximum delay.");
 
+        // XXX guardian checks?
+
         admin = admin_;
+        guardian = guardian_;
         delay = delay_;
     }
 
@@ -54,6 +55,13 @@ contract Timelock {
         emit NewPendingAdmin(pendingAdmin);
     }
 
+    function setGuardian(address newGuardian) public {
+        require(msg.sender == address(this), "Timelock::setGuardian: Call must come from Timelock.");
+        guardian = newGuardian;
+
+        emit NewGuardian(guardian);
+    }
+
     function queueTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public returns (bytes32) {
         require(msg.sender == admin, "Timelock::queueTransaction: Call must come from admin.");
         require(eta >= (getBlockTimestamp() + delay), "Timelock::queueTransaction: Estimated execution block must satisfy delay.");
@@ -66,7 +74,7 @@ contract Timelock {
     }
 
     function cancelTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public {
-        require(msg.sender == admin, "Timelock::cancelTransaction: Call must come from admin.");
+        require(msg.sender == guardian, "Timelock::cancelTransaction: Call must come from guardian.");
 
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         queuedTransactions[txHash] = false;
@@ -75,7 +83,7 @@ contract Timelock {
     }
 
     function executeTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public payable returns (bytes memory) {
-        require(msg.sender == admin, "Timelock::executeTransaction: Call must come from admin.");
+        require(msg.sender == admin, "Timelock::executeTransaction: Call must come from admin."); // should anyone be able to execute?
 
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         require(queuedTransactions[txHash], "Timelock::executeTransaction: Transaction hasn't been queued.");
