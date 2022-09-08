@@ -17,10 +17,9 @@ contract BridgeTimelock is ITimelock {
 
     mapping (bytes32 => bool) public queuedTransactions;
 
-
     constructor(address admin_, address guardian_, uint delay_) public {
-        require(delay_ >= MINIMUM_DELAY, "Timelock::constructor: Delay must exceed minimum delay.");
-        require(delay_ <= MAXIMUM_DELAY, "Timelock::setDelay: Delay must not exceed maximum delay.");
+        require(delay_ >= MINIMUM_DELAY, "BridgeTimelock::constructor: Delay must exceed minimum delay.");
+        require(delay_ <= MAXIMUM_DELAY, "BridgeTimelock::setDelay: Delay must not exceed maximum delay.");
 
         // XXX guardian checks?
 
@@ -32,16 +31,16 @@ contract BridgeTimelock is ITimelock {
     fallback() external payable { }
 
     function setDelay(uint delay_) public {
-        require(msg.sender == address(this), "Timelock::setDelay: Call must come from Timelock.");
-        require(delay_ >= MINIMUM_DELAY, "Timelock::setDelay: Delay must exceed minimum delay.");
-        require(delay_ <= MAXIMUM_DELAY, "Timelock::setDelay: Delay must not exceed maximum delay.");
+        require(msg.sender == address(this), "BridgeTimelock::setDelay: Call must come from BridgeTimelock.");
+        require(delay_ >= MINIMUM_DELAY, "BridgeTimelock::setDelay: Delay must exceed minimum delay.");
+        require(delay_ <= MAXIMUM_DELAY, "BridgeTimelock::setDelay: Delay must not exceed maximum delay.");
         delay = delay_;
 
         emit NewDelay(delay);
     }
 
     function acceptAdmin() public {
-        require(msg.sender == pendingAdmin, "Timelock::acceptAdmin: Call must come from pendingAdmin.");
+        require(msg.sender == pendingAdmin, "BridgeTimelock::acceptAdmin: Call must come from pendingAdmin.");
         admin = msg.sender;
         pendingAdmin = address(0);
 
@@ -49,22 +48,22 @@ contract BridgeTimelock is ITimelock {
     }
 
     function setPendingAdmin(address pendingAdmin_) public {
-        require(msg.sender == address(this), "Timelock::setPendingAdmin: Call must come from Timelock.");
+        require(msg.sender == address(this), "BridgeTimelock::setPendingAdmin: Call must come from BridgeTimelock.");
         pendingAdmin = pendingAdmin_;
 
         emit NewPendingAdmin(pendingAdmin);
     }
 
     function setGuardian(address newGuardian) public {
-        require(msg.sender == address(this), "Timelock::setGuardian: Call must come from Timelock.");
+        require(msg.sender == address(this), "BridgeTimelock::setGuardian: Call must come from BridgeTimelock.");
         guardian = newGuardian;
 
         emit NewGuardian(guardian);
     }
 
     function queueTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public returns (bytes32) {
-        require(msg.sender == admin, "Timelock::queueTransaction: Call must come from admin.");
-        require(eta >= (getBlockTimestamp() + delay), "Timelock::queueTransaction: Estimated execution block must satisfy delay.");
+        require(msg.sender == admin, "BridgeTimelock::queueTransaction: Call must come from admin.");
+        require(eta >= (getBlockTimestamp() + delay), "BridgeTimelock::queueTransaction: Estimated execution block must satisfy delay.");
 
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         queuedTransactions[txHash] = true;
@@ -74,7 +73,7 @@ contract BridgeTimelock is ITimelock {
     }
 
     function cancelTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public {
-        require(msg.sender == guardian, "Timelock::cancelTransaction: Call must come from guardian.");
+        require(msg.sender == guardian, "BridgeTimelock::cancelTransaction: Call must come from guardian.");
 
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         queuedTransactions[txHash] = false;
@@ -83,12 +82,12 @@ contract BridgeTimelock is ITimelock {
     }
 
     function executeTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public payable returns (bytes memory) {
-        require(msg.sender == admin, "Timelock::executeTransaction: Call must come from admin."); // should anyone be able to execute?
+        require(msg.sender == admin, "BridgeTimelock::executeTransaction: Call must come from admin."); // should anyone be able to execute?
 
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
-        require(queuedTransactions[txHash], "Timelock::executeTransaction: Transaction hasn't been queued.");
-        require(getBlockTimestamp() >= eta, "Timelock::executeTransaction: Transaction hasn't surpassed time lock.");
-        require(getBlockTimestamp() <= (eta + GRACE_PERIOD), "Timelock::executeTransaction: Transaction is stale.");
+        require(queuedTransactions[txHash], "BridgeTimelock::executeTransaction: Transaction hasn't been queued.");
+        require(getBlockTimestamp() >= eta, "BridgeTimelock::executeTransaction: Transaction hasn't surpassed time lock.");
+        require(getBlockTimestamp() <= (eta + GRACE_PERIOD), "BridgeTimelock::executeTransaction: Transaction is stale.");
 
         queuedTransactions[txHash] = false;
 
@@ -101,7 +100,7 @@ contract BridgeTimelock is ITimelock {
         }
 
         (bool success, bytes memory returnData) = target.call{value: value}(callData);
-        require(success, "Timelock::executeTransaction: Transaction execution reverted.");
+        require(success, "BridgeTimelock::executeTransaction: Transaction execution reverted.");
 
         emit ExecuteTransaction(txHash, target, value, signature, data, eta);
 
