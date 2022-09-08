@@ -2,11 +2,13 @@
 pragma solidity 0.8.15;
 
 import "../../ITimelock.sol";
+import "./FxBaseChildTunnel.sol";
 
-// XXX import FxBaseChildTunnel interface; implement it
-
-contract PolygonBridgeReceiver {
+contract PolygonBridgeReceiver is IFxMessageProcessor {
     error Unauthorized();
+
+    event NewMainnetTimelock(address indexed newMainnetTimelock);
+    event NewL2Timelock(address indexed newL2Timelock);
 
     address public mainnetTimelock;
     address public l2Timelock; // also the admin
@@ -19,21 +21,23 @@ contract PolygonBridgeReceiver {
         l2Timelock = _l2Timelock;
     }
 
-    function changeL2Timelock(address newTimelock) {
+    function changeL2Timelock(address newTimelock) public {
         if (msg.sender != l2Timelock) revert Unauthorized();
         l2Timelock = newTimelock;
+        emit NewL2Timelock(l2Timelock);
     }
 
-    function changeMainnetTimelock(address newTimelock) {
+    function changeMainnetTimelock(address newTimelock) public {
         if (msg.sender != l2Timelock) revert Unauthorized();
         mainnetTimelock = newTimelock;
+        emit NewMainnetTimelock(mainnetTimelock);
     }
 
     function processMessageFromRoot(
         uint256 stateId,
         address messageSender, // original msg.sender that called fxRoot (l1 timelock)
         bytes calldata data
-    ) external override onlyFxChild {
+    ) public override {
         if (messageSender != mainnetTimelock) revert Unauthorized();
 
         address[] memory targets;
