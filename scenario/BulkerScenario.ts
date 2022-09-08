@@ -9,7 +9,7 @@ scenario(
   {
     filter: async (ctx) => await isBulkerSupported(ctx),
     tokenBalances: {
-      albert: { $base: '== 0', $asset0: 1000 },
+      albert: { $base: '== 0', $asset0: 5000 },
       $comet: { $base: 5000 },
     },
   },
@@ -22,7 +22,7 @@ scenario(
     const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const collateralScale = scaleBN.toBigInt();
-    const toSupplyCollateral = 1000n * collateralScale;
+    const toSupplyCollateral = 5000n * collateralScale;
     const toBorrowBase = 1500n * baseScale;
     const toTransferBase = 500n * baseScale;
     const toSupplyEth = exp(0.01, 18);
@@ -38,7 +38,7 @@ scenario(
     expect(await comet.balanceOf(albert.address)).to.be.equal(0n);
 
     // Albert's actions:
-    // 1. Supplies 1000 units of collateral
+    // 1. Supplies 5000 units of collateral
     // 2. Borrows 1500 base
     // 3. Transfers 500 base to Betty
     // 4. Supplies 0.01 ETH

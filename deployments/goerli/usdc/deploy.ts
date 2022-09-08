@@ -1,6 +1,5 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
 import { DeploySpec, cloneGov, deployComet, exp, sameAddress, wait } from '../../../src/deploy';
-import { expect } from 'chai';
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const deployed = await deployContracts(deploymentManager, deploySpec);
