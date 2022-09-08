@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-// XXX import ITimelock interface
+import "../../ITimelock.sol";
+
+// XXX import FxBaseChildTunnel interface; implement it
 
 contract PolygonBridgeReceiver {
+    error Unauthorized();
+
     address public mainnetTimelock;
     address public l2Timelock; // also the admin
 
@@ -30,7 +34,7 @@ contract PolygonBridgeReceiver {
         address messageSender, // original msg.sender that called fxRoot (l1 timelock)
         bytes calldata data
     ) external override onlyFxChild {
-        if (messageSender != mainnetTimelock) revert UnauthorizedRootOrigin();
+        if (messageSender != mainnetTimelock) revert Unauthorized();
 
         address[] memory targets;
         uint256[] memory values;
@@ -42,7 +46,8 @@ contract PolygonBridgeReceiver {
             (address[], uint256[], string[], bytes[])
         );
 
-        // XXX calculate eta
+        uint delay = ITimelock(l2Timelock).delay();
+        uint eta = block.timestamp + delay + 1; // buffer necessary?
 
         for (uint8 i = 0; i < targets.length; ) {
             ITimelock(l2Timelock).queueTransaction(targets[i], values[i], signatures[i], calldatas[i], eta);
