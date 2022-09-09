@@ -10,7 +10,7 @@ import {
   UtilizationConstraint,
   CometBalanceConstraint,
   MigrationConstraint,
-  ProposalConstraint,
+  // ProposalConstraint,
   FilterConstraint,
 } from '../constraints';
 import CometActor from './CometActor';
@@ -396,7 +396,7 @@ async function forkContext(c: CometContext, w: World): Promise<CometContext> {
 export const constraints = [
   new FilterConstraint(),
   new MigrationConstraint(),
-  new ProposalConstraint(),
+  // new ProposalConstraint(),
   new ModernConstraint(),
   new PauseConstraint(),
   new CometBalanceConstraint(),
