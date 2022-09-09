@@ -10,6 +10,7 @@ const clone = {
   // link: '0x514910771af9ca656af840dff83e8264ecf986ca',
 };
 
+const secondsPerDay = 24 * 60 * 60;
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const deployed = await deployContracts(deploymentManager, deploySpec);
@@ -37,7 +38,10 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     'bridges/BridgeTimelock.sol',
     [
       polygonBridgeReceiver.address, // admin
-      2 * 24 * 60 * 60 // delay (min of 2 days)
+      2 * secondsPerDay, // delay
+      14 * secondsPerDay, // grace period
+      2 * secondsPerDay, // minimum delay
+      30 * secondsPerDay // maxiumum delay
     ]
   );
 

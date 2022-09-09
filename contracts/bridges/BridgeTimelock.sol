@@ -13,9 +13,9 @@ contract BridgeTimelock is ITimelock {
     error TransactionReverted();
     error Unauthorized();
 
-    uint public constant GRACE_PERIOD = 14 days;
-    uint public constant MINIMUM_DELAY = 2 days; // XXX lower min?
-    uint public constant MAXIMUM_DELAY = 30 days;
+    uint public immutable GRACE_PERIOD;
+    uint public immutable MINIMUM_DELAY;
+    uint public immutable MAXIMUM_DELAY;
 
     address public admin;
     address public pendingAdmin;
@@ -23,9 +23,13 @@ contract BridgeTimelock is ITimelock {
 
     mapping (bytes32 => bool) public queuedTransactions;
 
-    constructor(address admin_, uint delay_) public {
-        if (delay_ < MINIMUM_DELAY) revert BadDelay();
-        if (delay_ > MAXIMUM_DELAY) revert BadDelay();
+    constructor(address admin_, uint delay_, uint gracePeriod_, uint minimumDelay_, uint maxiumumDelay_) public {
+        if (delay_ < minimumDelay_) revert BadDelay();
+        if (delay_ > maxiumumDelay_) revert BadDelay();
+
+        GRACE_PERIOD = gracePeriod_;
+        MINIMUM_DELAY = minimumDelay_;
+        MAXIMUM_DELAY = maxiumumDelay_;
 
         admin = admin_;
         delay = delay_;
