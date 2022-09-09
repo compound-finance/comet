@@ -7,14 +7,13 @@ const clone = {
   wbtc: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
   weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
   wmatic: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
-  // link: '0x514910771af9ca656af840dff83e8264ecf986ca',
 };
 
 const secondsPerDay = 24 * 60 * 60;
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const deployed = await deployContracts(deploymentManager, deploySpec);
-  // XXX mint tokens
+  await mintTokens(deploymentManager);
   return deployed;
 }
 
@@ -121,4 +120,59 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     fauceteer,
     ...deployed
   };
+}
+
+async function mintTokens(deploymentManager: DeploymentManager) {
+  const trace = deploymentManager.tracer();
+  const signer = await deploymentManager.getSigner();
+  const contracts = await deploymentManager.contracts();
+  const fauceteer = contracts.get('fauceteer');
+
+  trace(`Attempting to mint as ${signer.address}...`);
+
+  const WMATIC = contracts.get('WMATIC');
+  await deploymentManager.idempotent(
+    async () => (await WMATIC.balanceOf(signer.address)).lt(exp(0.01, 18)),
+    async () => {
+      trace(`Minting 0.01 WMATIC for signer (this is a precious resource!)`);
+      trace(await wait(WMATIC.connect(signer).deposit({ value: exp(0.01, 18) })));
+      trace(`WMATIC.balanceOf(${signer.address}): ${await WMATIC.balanceOf(signer.address)}`);
+    }
+  );
+
+  const WETH = contracts.get('WETH');
+  await deploymentManager.idempotent(
+    async () => (await WETH.balanceOf(signer.address)).lt(exp(0.01, 18)),
+    async () => {
+      trace(`Minting 0.01 WETH for signer (this is a precious resource!)`);
+      trace(await wait(WETH.connect(signer).deposit({ value: exp(0.01, 18) })));
+      trace(`WETH.balanceOf(${signer.address}): ${await WETH.balanceOf(signer.address)}`);
+    }
+  );
+
+  // If we haven't spidered new contracts (which we could before minting, but its slow),
+  //  then the proxy contract won't have the impl functions yet, so just do it explicitly
+  const usdcProxy = contracts.get('USDC'), usdcImpl = contracts.get('USDC:implementation');
+  const USDC = usdcImpl.attach(usdcProxy.address);
+  await deploymentManager.idempotent(
+    async () => (await USDC.balanceOf(fauceteer.address)).eq(0),
+    async () => {
+      trace(`Minting 100M USDC to fauceteer`);
+      const amount = exp(100_000_000, await USDC.decimals());
+      trace(await wait(USDC.connect(signer).configureMinter(signer.address, amount)));
+      trace(await wait(USDC.connect(signer).mint(fauceteer.address, amount)));
+      trace(`USDC.balanceOf(${fauceteer.address}): ${await USDC.balanceOf(fauceteer.address)}`);
+    }
+  );
+
+  const WBTC = contracts.get('WBTC');
+  await deploymentManager.idempotent(
+    async () => (await WBTC.balanceOf(fauceteer.address)).eq(0),
+    async () => {
+      trace(`Minting 20 WBTC to fauceteer`);
+      const amount = exp(20, await WBTC.decimals());
+      trace(await wait(WBTC.connect(signer).mint(fauceteer.address, amount)));
+      trace(`WBTC.balanceOf(${fauceteer.address}): ${await WBTC.balanceOf(fauceteer.address)}`);
+    }
+  );
 }
