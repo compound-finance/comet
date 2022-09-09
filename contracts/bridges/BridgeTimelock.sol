@@ -4,6 +4,15 @@ pragma solidity 0.8.15;
 import "../ITimelock.sol";
 
 contract BridgeTimelock is ITimelock {
+    /** Custom errors **/
+    error BadDelay();
+    error BadETA();
+    error TransactionExpired();
+    error TransactionNotQueued();
+    error TransactionNotReady(); //
+    error TransactionReverted();
+    error Unauthorized();
+
     uint public constant GRACE_PERIOD = 14 days;
     uint public constant MINIMUM_DELAY = 2 days; // XXX lower min?
     uint public constant MAXIMUM_DELAY = 30 days;
@@ -15,8 +24,8 @@ contract BridgeTimelock is ITimelock {
     mapping (bytes32 => bool) public queuedTransactions;
 
     constructor(address admin_, uint delay_) public {
-        require(delay_ >= MINIMUM_DELAY, "BridgeTimelock::constructor: Delay must exceed minimum delay.");
-        require(delay_ <= MAXIMUM_DELAY, "BridgeTimelock::setDelay: Delay must not exceed maximum delay.");
+        if (delay_ < MINIMUM_DELAY) revert BadDelay();
+        if (delay_ > MAXIMUM_DELAY) revert BadDelay();
 
         admin = admin_;
         delay = delay_;
@@ -25,16 +34,16 @@ contract BridgeTimelock is ITimelock {
     fallback() external payable { }
 
     function setDelay(uint delay_) public {
-        require(msg.sender == address(this), "BridgeTimelock::setDelay: Call must come from BridgeTimelock.");
-        require(delay_ >= MINIMUM_DELAY, "BridgeTimelock::setDelay: Delay must exceed minimum delay.");
-        require(delay_ <= MAXIMUM_DELAY, "BridgeTimelock::setDelay: Delay must not exceed maximum delay.");
+        if (msg.sender != address(this)) revert Unauthorized();
+        if (delay_ < MINIMUM_DELAY) revert BadDelay();
+        if (delay_ > MAXIMUM_DELAY) revert BadDelay();
         delay = delay_;
 
         emit NewDelay(delay);
     }
 
     function acceptAdmin() public {
-        require(msg.sender == pendingAdmin, "BridgeTimelock::acceptAdmin: Call must come from pendingAdmin.");
+        if (msg.sender != pendingAdmin) revert Unauthorized();
         admin = msg.sender;
         pendingAdmin = address(0);
 
@@ -42,15 +51,15 @@ contract BridgeTimelock is ITimelock {
     }
 
     function setPendingAdmin(address pendingAdmin_) public {
-        require(msg.sender == address(this), "BridgeTimelock::setPendingAdmin: Call must come from BridgeTimelock.");
+        if (msg.sender != address(this)) revert Unauthorized();
         pendingAdmin = pendingAdmin_;
 
         emit NewPendingAdmin(pendingAdmin);
     }
 
     function queueTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public returns (bytes32) {
-        require(msg.sender == admin, "BridgeTimelock::queueTransaction: Call must come from admin.");
-        require(eta >= (getBlockTimestamp() + delay), "BridgeTimelock::queueTransaction: Estimated execution block must satisfy delay.");
+        if (msg.sender != admin) revert Unauthorized();
+        if (eta < (getBlockTimestamp() + delay)) revert BadETA();
 
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         queuedTransactions[txHash] = true;
@@ -60,7 +69,7 @@ contract BridgeTimelock is ITimelock {
     }
 
     function cancelTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public {
-        require(msg.sender == admin, "BridgeTimelock::cancelTransaction: Call must come from admin.");
+        if (msg.sender != admin) revert Unauthorized();
 
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         queuedTransactions[txHash] = false;
@@ -69,12 +78,12 @@ contract BridgeTimelock is ITimelock {
     }
 
     function executeTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public payable returns (bytes memory) {
-        require(msg.sender == admin, "BridgeTimelock::executeTransaction: Call must come from admin.");
+        if (msg.sender != admin) revert Unauthorized();
 
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
-        require(queuedTransactions[txHash], "BridgeTimelock::executeTransaction: Transaction hasn't been queued.");
-        require(getBlockTimestamp() >= eta, "BridgeTimelock::executeTransaction: Transaction hasn't surpassed time lock.");
-        require(getBlockTimestamp() <= (eta + GRACE_PERIOD), "BridgeTimelock::executeTransaction: Transaction is stale.");
+        if (!queuedTransactions[txHash]) revert TransactionNotQueued();
+        if (getBlockTimestamp() < eta) revert TransactionNotReady();
+        if (getBlockTimestamp() > (eta + GRACE_PERIOD)) revert TransactionExpired();
 
         queuedTransactions[txHash] = false;
 
@@ -87,7 +96,7 @@ contract BridgeTimelock is ITimelock {
         }
 
         (bool success, bytes memory returnData) = target.call{value: value}(callData);
-        require(success, "BridgeTimelock::executeTransaction: Transaction execution reverted.");
+        if (!success) revert TransactionReverted();
 
         emit ExecuteTransaction(txHash, target, value, signature, data, eta);
 
