@@ -12,34 +12,54 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const ethers = deploymentManager.hre.ethers;
   const signer = await deploymentManager.getSigner();
 
+  // Deploy PolygonBridgeReceiver
+  const polygonBridgeReceiver = await deploymentManager.deploy(
+    'polygonBridgeReceiver',
+    'bridges/polygon/PolygonBridgeReceiver.sol',
+    [
+      signer.address, // admin
+    ]
+  );
+
   // Deploy BridgeTimelock
-  trace(`Deploying BridgeTimelock`);
   const bridgeTimelock = await deploymentManager.deploy(
     'bridgeTimelock',
     'bridges/BridgeTimelock.sol',
     [
-      signer.address, // admin
-      signer.address, // guardian
+      polygonBridgeReceiver.address, // admin
       2 * 24 * 60 * 60 // delay (min of 2 days)
     ]
   );
-  trace(`BridgeTimelock deployed @${bridgeTimelock.address}`);
 
-  // XXX deploy l2 contracts
+  // https://docs.polygon.technology/docs/develop/l1-l2-communication/fx-portal/#contract-addresses
+  const FX_CHILD = "0xCf73231F28B7331BBe3124B907840A94851f9f11"; //
+  const MAINNET_TIMELOCK = "0x6d903f6003cca6255d85cca4d3b5e5146dc33925";
 
-  // deploy PolygonBridgeReceiver(mainnetTimelock, l2Timelock)
-  //   mainnetTime = goerli timelock address
-  //   l2Time = bridgeTimelock.address
+  // Initialize PolygonBridgeReceiver
+  trace(`Initializing PolygonBridgeReceiver`);
+  await polygonBridgeReceiver.initialize(
+    MAINNET_TIMELOCK, // mainnet timelock
+    bridgeTimelock.address, // l2 timelock
+    FX_CHILD // fxChild
+  );
+  trace(`PolygonBridgeReceiver initialized`);
 
-  // bridgeTimelock.connect(signer).queueTransaction(
-  //   // bridgeTimelock.setPendingAdmin(polygonBridgeReceiver.address)
-  // )
+  // Deploy Comet
+  // const deployed = await deployComet(
+  //   deploymentManager,
+  //   deploySpec,
+  //   {
+  //     governor: bridgeTimelock.address
+  //   }
+  // );
 
-  // bridgeTimelock.executeTransaction() // execute the above transaction
-
-  // polygonBridgeReceiver.initialize() // accept admin
+  // deploy bulker
+  // deploy fauceteer
+  // mint tokens
 
   return {
-    bridgeTimelock
+    bridgeTimelock,
+    polygonBridgeReceiver,
+    // ...deployed
   };
 }
