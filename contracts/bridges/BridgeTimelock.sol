@@ -9,13 +9,13 @@ contract BridgeTimelock is ITimelock {
     error BadETA();
     error TransactionExpired();
     error TransactionNotQueued();
-    error TransactionNotReady(); //
+    error TransactionNotReady();
     error TransactionReverted();
     error Unauthorized();
 
-    uint public immutable GRACE_PERIOD;
-    uint public immutable MINIMUM_DELAY;
-    uint public immutable MAXIMUM_DELAY;
+    uint public immutable gracePeriod;
+    uint public immutable minimumDelay;
+    uint public immutable maximumDelay;
 
     address public admin;
     address public pendingAdmin;
@@ -27,9 +27,9 @@ contract BridgeTimelock is ITimelock {
         if (delay_ < minimumDelay_) revert BadDelay();
         if (delay_ > maxiumumDelay_) revert BadDelay();
 
-        GRACE_PERIOD = gracePeriod_;
-        MINIMUM_DELAY = minimumDelay_;
-        MAXIMUM_DELAY = maxiumumDelay_;
+        gracePeriod = gracePeriod_;
+        minimumDelay = minimumDelay_;
+        maximumDelay = maxiumumDelay_;
 
         admin = admin_;
         delay = delay_;
@@ -39,8 +39,8 @@ contract BridgeTimelock is ITimelock {
 
     function setDelay(uint delay_) public {
         if (msg.sender != address(this)) revert Unauthorized();
-        if (delay_ < MINIMUM_DELAY) revert BadDelay();
-        if (delay_ > MAXIMUM_DELAY) revert BadDelay();
+        if (delay_ < minimumDelay) revert BadDelay();
+        if (delay_ > maximumDelay) revert BadDelay();
         delay = delay_;
 
         emit NewDelay(delay);
@@ -87,7 +87,7 @@ contract BridgeTimelock is ITimelock {
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         if (!queuedTransactions[txHash]) revert TransactionNotQueued();
         if (getBlockTimestamp() < eta) revert TransactionNotReady();
-        if (getBlockTimestamp() > (eta + GRACE_PERIOD)) revert TransactionExpired();
+        if (getBlockTimestamp() > (eta + gracePeriod)) revert TransactionExpired();
 
         queuedTransactions[txHash] = false;
 
