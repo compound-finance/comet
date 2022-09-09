@@ -234,9 +234,9 @@ export async function isRewardSupported(ctx: CometContext): Promise<boolean> {
   const rewards = await ctx.getRewards();
   const comet = await ctx.getComet();
   if (rewards == null) return false;
-
   const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
   if (rewardTokenAddress === constants.AddressZero) return false;
+  return true;
 }
 
 export async function fetchLogs(

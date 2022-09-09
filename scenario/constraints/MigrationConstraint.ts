@@ -29,6 +29,8 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
         migrationList.sort((a, b) => a.name.localeCompare(b.name))
         ctx.migrations = migrationList;
 
+        // XXX This should check that a migration has not already been run/proposed on-chain.
+        // Otherwise the scenario could be running the same proposal twice.
         debug(`${label} Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);
         for (const migration of migrationList) {
           const artifact = await migration.actions.prepare(ctx.deploymentManager);
