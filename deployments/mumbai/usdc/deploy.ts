@@ -80,6 +80,9 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     }
   );
 
+  const WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
+  const WETH = await deploymentManager.clone('WETH', clone.weth, []);
+
   // Deploy Comet
   const deployed = await deployComet(
     deploymentManager,
