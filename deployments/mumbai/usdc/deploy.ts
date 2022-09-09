@@ -104,13 +104,21 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     }
   );
 
-  // deploy bulker
-  // deploy fauceteer
-  // mint tokens
+  // Deploy Bulker
+  const bulker = await deploymentManager.deploy(
+    'bulker',
+    'Bulker.sol',
+    [bridgeTimelock.address, WETH.address]
+  );
+
+  // Deploy fauceteer
+  const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
 
   return {
     bridgeTimelock,
     polygonBridgeReceiver,
+    bulker,
+    fauceteer,
     ...deployed
   };
 }
