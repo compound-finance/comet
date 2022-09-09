@@ -23,6 +23,14 @@
     "baseMinForRewards": "1000000e6"
   },
   "assets": {
+    "SAND": {
+      "priceFeed": "0x9dd18534b8f456557d11B9DDB14dA89b2e52e308",
+      "decimals": "18",
+      "borrowCF": 0.79,
+      "liquidateCF": 0.85,
+      "liquidationFactor": 0.93,
+      "supplyCap": "500000e18"
+    },
     "WBTC": {
       "priceFeed": "0x007A22900a3B98143368Bd5906f8E17e9867581b",
       "decimals": "8",

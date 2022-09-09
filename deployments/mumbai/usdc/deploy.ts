@@ -1,5 +1,5 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
-import { DeploySpec, cloneGov, deployComet, exp, sameAddress, wait } from '../../../src/deploy';
+import { DeploySpec, deployComet, exp, sameAddress, wait } from '../../../src/deploy';
 
 const clone = {
   usdcImpl: '0xa2327a938Febf5FEC13baCFb16Ae10EcBc4cbDCF',
@@ -7,6 +7,7 @@ const clone = {
   wbtc: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
   weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
   wmatic: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
+  sand: '0x3845badAde8e6dFF049820680d1F14bD3903a5d0'
 };
 
 const secondsPerDay = 24 * 60 * 60;
@@ -37,10 +38,10 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     'bridges/BridgeTimelock.sol',
     [
       polygonBridgeReceiver.address, // admin
-      2 * secondsPerDay, // delay
-      14 * secondsPerDay, // grace period
-      2 * secondsPerDay, // minimum delay
-      30 * secondsPerDay // maxiumum delay
+      2 * secondsPerDay,             // delay
+      14 * secondsPerDay,            // grace period
+      2 * secondsPerDay,             // minimum delay
+      30 * secondsPerDay             // maxiumum delay
     ]
   );
 
@@ -51,9 +52,9 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   // Initialize PolygonBridgeReceiver
   trace(`Initializing PolygonBridgeReceiver`);
   await polygonBridgeReceiver.initialize(
-    MAINNET_TIMELOCK, // mainnet timelock
+    MAINNET_TIMELOCK,       // mainnet timelock
     bridgeTimelock.address, // l2 timelock
-    FX_CHILD // fxChild
+    FX_CHILD                // fxChild
   );
   trace(`PolygonBridgeReceiver initialized`);
 
@@ -84,6 +85,15 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     }
   );
 
+  const SAND = await deploymentManager.clone(
+    'SAND',
+    clone.sand,
+    [
+      signer.address, // sand admin
+      signer.address, // execution admin
+      signer.address  // beneficiary (initial mint recipient)
+    ]
+  );
   const WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
   const WETH = await deploymentManager.clone('WETH', clone.weth, []);
   const WMATIC = await deploymentManager.clone(
@@ -173,6 +183,17 @@ async function mintTokens(deploymentManager: DeploymentManager) {
       const amount = exp(20, await WBTC.decimals());
       trace(await wait(WBTC.connect(signer).mint(fauceteer.address, amount)));
       trace(`WBTC.balanceOf(${fauceteer.address}): ${await WBTC.balanceOf(fauceteer.address)}`);
+    }
+  );
+
+  const SAND = contracts.get('SAND');
+  await deploymentManager.idempotent(
+    async () => (await SAND.balanceOf(signer.address)).eq(await SAND.totalSupply()),
+    async () => {
+      trace(`Sending half of all SAND to fauceteer`);
+      const amount = (await SAND.balanceOf(signer.address)).div(2);
+      trace(await wait(SAND.connect(signer).transfer(fauceteer.address, amount)));
+      trace(`SAND.balanceOf(${fauceteer.address}): ${await SAND.balanceOf(fauceteer.address)}`);
     }
   );
 }
