@@ -137,7 +137,6 @@ scenario(
   }
 );
 
-
 scenario(
   'Comet#rewards > can claim borrow rewards for self',
   {
