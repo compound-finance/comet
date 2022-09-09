@@ -17,6 +17,7 @@ import './tasks/scenario/task.ts';
 
 // Relation Config
 import relationConfigMap from './deployments/relations';
+import mumbaiRelationConfigMap from './deployments/mumbai/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -168,6 +169,11 @@ const config: HardhatUserConfig = {
 
   deploymentManager: {
     relationConfigMap,
+    networks: {
+      mumbai: {
+        usdc: mumbaiRelationConfigMap
+      }
+    },
   },
 
   scenario: {
