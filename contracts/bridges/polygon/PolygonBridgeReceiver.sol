@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import "../../ITimelock.sol";
-import "./FxBaseChildTunnel.sol";
+import "../vendor/fx-portal/contracts/FxChild.sol";
 
 contract PolygonBridgeReceiver is IFxMessageProcessor {
     error Unauthorized();
