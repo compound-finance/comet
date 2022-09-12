@@ -12,9 +12,9 @@ interface ITimelock {
     event ExecuteTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature,  bytes data, uint eta);
     event QueueTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta);
 
-    function gracePeriod() virtual external view returns (uint);
-    function minimumDelay() virtual external view returns (uint);
-    function maximumDelay() virtual external view returns (uint);
+    function GRACE_PERIOD() virtual external view returns (uint);
+    function MINIMUM_DELAY() virtual external view returns (uint);
+    function MAXIMUM_DELAY() virtual external view returns (uint);
 
     function admin() virtual external view returns (address);
     function pendingAdmin() virtual external view returns (address);
