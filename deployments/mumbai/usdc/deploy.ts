@@ -49,12 +49,12 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     ]
   );
 
-  const MAINNET_TIMELOCK = "0x6d903f6003cca6255d85cca4d3b5e5146dc33925";
+  const GOERLI_TIMELOCK = "0x339B2D3bf0406DF82f8fa7B0d855a3f47562d8D7";
 
   // Initialize PolygonBridgeReceiver
   trace(`Initializing PolygonBridgeReceiver`);
   await polygonBridgeReceiver.initialize(
-    MAINNET_TIMELOCK,       // mainnet timelock
+    GOERLI_TIMELOCK,       // mainnet timelock
     l2Timelock.address     // l2 timelock
   );
   trace(`PolygonBridgeReceiver initialized`);
