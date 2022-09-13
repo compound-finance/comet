@@ -308,6 +308,39 @@
             " ",
             "         bytes memory callData;"
           ]
+        },
+        {
+          "oldStart": 90,
+          "oldLines": 8,
+          "newStart": 95,
+          "newLines": 9,
+          "lines": [
+            "         } else {",
+            "             callData = abi.encodePacked(bytes4(keccak256(bytes(signature))), data);",
+            "         }",
+            " ",
+            "+        // solium-disable-next-line security/no-call-value",
+            "         (bool success, bytes memory returnData) = target.call{value: value}(callData);",
+            "         require(success, \"Timelock::executeTransaction: Transaction execution reverted.\");",
+            " ",
+            "         emit ExecuteTransaction(txHash, target, value, signature, data, eta);"
+          ]
+        },
+        {
+          "oldStart": 99,
+          "oldLines": 7,
+          "newStart": 105,
+          "newLines": 8,
+          "lines": [
+            "         return returnData;",
+            "     }",
+            " ",
+            "     function getBlockTimestamp() internal view returns (uint) {",
+            "+        // solium-disable-next-line security/no-block-members",
+            "         return block.timestamp;",
+            "     }",
+            " }"
+          ]
         }
       ]
     }

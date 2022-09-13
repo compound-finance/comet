@@ -91,7 +91,6 @@ contract Timelock is ITimelock {
             callData = abi.encodePacked(bytes4(keccak256(bytes(signature))), data);
         }
 
-        // solium-disable-next-line security/no-call-value
         (bool success, bytes memory returnData) = target.call{value: value}(callData);
         require(success, "Timelock::executeTransaction: Transaction execution reverted.");
 
@@ -101,7 +100,6 @@ contract Timelock is ITimelock {
     }
 
     function getBlockTimestamp() internal view returns (uint) {
-        // solium-disable-next-line security/no-block-members
         return block.timestamp;
     }
 }
