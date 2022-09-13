@@ -3,11 +3,14 @@ import { expect } from 'chai';
 import { constants, utils } from 'ethers';
 import hreForBase from '../plugins/scenario/utils/hreForBase';
 import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
+import { COMP_WHALES } from "../src/deploy";
 
 /*
 make l2-only
 
 */
+
+const FX_ROOT_GOERLI = '0x3d1d3E34f7fB6D26245E6640E1c50710eFFf15bA';
 
 scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   // construct l1 deployment manager
@@ -19,9 +22,46 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   const l1Hre = hreForBase(l1Base)
   const l1DeploymentManager = new DeploymentManager("goerli", "usdc", l1Hre);
 
-  // execute l1 proposal
+  // construct l1Governor and l1Proposer
   const l1Governor = await l1DeploymentManager.contract('governor');
-  console.log(`l1Governor.address: ${l1Governor.address}`);
+  const compWhaleAddress = COMP_WHALES[0];
+  await l1Hre.network.provider.request({
+    method: 'hardhat_impersonateAccount',
+    params: [compWhaleAddress],
+  });
+  const l1Proposer = await l1DeploymentManager.getSigner(compWhaleAddress);
+
+  const l2Timelock = await context.deploymentManager.contract('timelock');
+  const polygonBridgeReceiver = await context.deploymentManager.contract('polygonBridgeReceiver');
+  console.log(`polygonBridgeReceiver.address: ${polygonBridgeReceiver?.address}`);
+
+  // construct l2 proposal
+  const setDelayCalldata = utils.defaultAbiCoder.encode(['uint'], [5 * 24 * 60 * 60]);
+  const encodedL2Data = utils.defaultAbiCoder.encode(
+    ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
+    [
+      [l2Timelock?.address],
+      [0],
+      ["setDelay(uint)"],
+      [setDelayCalldata]
+    ]
+  );
+
+  const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
+    ['address', 'bytes'],
+    [polygonBridgeReceiver?.address, encodedL2Data]
+  );
+
+  // construct l1 proposal
+  // fxRoot.sendMessageToChild(fxChildTunnel, message);
+  const l1Targets = [FX_ROOT_GOERLI];
+  const l1Values = [0];
+  const l1Signatures = ["sendMessageToChild(address,bytes)"];
+  const l1Calldata = [sendMessageToChildCalldata];
+
+  // expect the delay to be 2 days
+  // execute proposal
+  // expect the delay to be 5 days
 
 });
 

@@ -38,7 +38,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
 
   // Deploy L2 Timelock
   const l2Timelock = await deploymentManager.deploy(
-    'l2Timelock',
+    'timelock',
     'vendor/Timelock.sol',
     [
       polygonBridgeReceiver.address, // admin
