@@ -23,11 +23,15 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const ethers = deploymentManager.hre.ethers;
   const signer = await deploymentManager.getSigner();
 
+  // https://docs.polygon.technology/docs/develop/l1-l2-communication/fx-portal/#contract-addresses
+  const FX_CHILD = "0xCf73231F28B7331BBe3124B907840A94851f9f11";
+
   // Deploy PolygonBridgeReceiver
   const polygonBridgeReceiver = await deploymentManager.deploy(
     'polygonBridgeReceiver',
     'bridges/polygon/PolygonBridgeReceiver.sol',
     [
+      FX_CHILD,
       signer.address, // admin
     ]
   );
@@ -45,16 +49,13 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     ]
   );
 
-  // https://docs.polygon.technology/docs/develop/l1-l2-communication/fx-portal/#contract-addresses
-  const FX_CHILD = "0xCf73231F28B7331BBe3124B907840A94851f9f11"; //
   const MAINNET_TIMELOCK = "0x6d903f6003cca6255d85cca4d3b5e5146dc33925";
 
   // Initialize PolygonBridgeReceiver
   trace(`Initializing PolygonBridgeReceiver`);
   await polygonBridgeReceiver.initialize(
     MAINNET_TIMELOCK,       // mainnet timelock
-    l2Timelock.address,     // l2 timelock
-    FX_CHILD                // fxChild
+    l2Timelock.address     // l2 timelock
   );
   trace(`PolygonBridgeReceiver initialized`);
 
