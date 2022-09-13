@@ -1,6 +1,29 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { constants, utils } from 'ethers';
+import hreForBase from '../plugins/scenario/utils/hreForBase';
+import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
+
+/*
+make l2-only
+
+*/
+
+scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
+  // construct l1 deployment manager
+  const l1Base = {
+    name: 'goerli',
+    network: 'goerli',
+    deployment: 'usdc'
+  };
+  const l1Hre = hreForBase(l1Base)
+  const l1DeploymentManager = new DeploymentManager("goerli", "usdc", l1Hre);
+
+  // execute l1 proposal
+  const l1Governor = await l1DeploymentManager.contract('governor');
+  console.log(`l1Governor.address: ${l1Governor.address}`);
+
+});
 
 scenario('upgrade Comet implementation and initialize', {}, async ({ comet, configurator, proxyAdmin }, context) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
