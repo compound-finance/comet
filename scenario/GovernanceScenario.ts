@@ -4,6 +4,7 @@ import { constants, utils } from 'ethers';
 import hreForBase from '../plugins/scenario/utils/hreForBase';
 import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
 import { COMP_WHALES } from "../src/deploy";
+import { ProposalState, OpenProposal } from './context/Gov';
 
 /*
 make l2-only
@@ -59,10 +60,88 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   const l1Signatures = ["sendMessageToChild(address,bytes)"];
   const l1Calldata = [sendMessageToChildCalldata];
 
-  // expect the delay to be 2 days
-  // execute proposal
-  // expect the delay to be 5 days
+  console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
+  expect(await l2Timelock?.delay()).to.eq(2 * 24 * 60 * 60);
 
+  async function setNextL1BaseFeeToZero() {
+    await l1Hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+  }
+
+  async function setNextL1BlockTimestamp(timestamp: number) {
+    await l1Hre.ethers.provider.send('evm_setNextBlockTimestamp', [timestamp]);
+  }
+
+  async function mineL1Blocks(blocks: number) {
+    await l1Hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
+  }
+
+  await setNextL1BaseFeeToZero();
+
+  // propose
+  const proposeTxn = await (
+    await l1Governor?.connect(l1Proposer).propose(
+      l1Targets,
+      l1Values,
+      l1Signatures,
+      l1Calldata,
+      'FastExecuteProposal',
+      { gasPrice: 0 }
+    )
+  ).wait();
+  const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
+  const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
+
+  // execute open proposal
+  // const governor = await this.getGovernor();
+  const blockNow = await l1Hre.ethers.provider.getBlockNumber();
+  const blocksUntilStart = startBlock - blockNow;
+  const blocksUntilEnd = endBlock - Math.max(startBlock, blockNow);
+
+  if (blocksUntilStart > 0) {
+    await mineL1Blocks(blocksUntilStart);
+  }
+
+  if (blocksUntilEnd > 0) {
+    for (const whale of COMP_WHALES) {
+      try {
+        // Voting can fail if voter has already voted
+
+        // const voter = await this.world.impersonateAddress(whale);
+        await l1Hre.network.provider.request({
+          method: 'hardhat_impersonateAccount',
+          params: [whale],
+        });
+        const voter = await l1DeploymentManager.getSigner(whale);
+        await setNextL1BaseFeeToZero();
+        await l1Governor?.connect(voter).castVote(id, 1, { gasPrice: 0 });
+      } catch (err) {
+        console.log(`Error while voting for ${whale}`, err.message);
+      }
+    }
+    await mineL1Blocks(blocksUntilEnd);
+  }
+
+  // Queue proposal (maybe)
+  const state = await l1Governor?.state(id);
+  if (state == ProposalState.Succeeded) {
+    await setNextL1BaseFeeToZero();
+    await l1Governor?.queue(id, { gasPrice: 0 });
+  }
+
+  const proposal = await l1Governor?.proposals(id);
+  await setNextL1BlockTimestamp(proposal.eta.toNumber() + 1);
+
+  // Execute proposal (w/ gas limit so we see if exec reverts, not a gas estimation error)
+  await setNextL1BaseFeeToZero();
+  await l1Governor?.execute(id, { gasPrice: 0, gasLimit: 12000000 });
+
+  // listen on events on the fxRoot
+
+  // impersonate the l2 bridge contract; pass the event data from l1 event
+
+  // expect the delay to be 5 days
+  console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
+  expect(await l2Timelock?.delay()).to.eq(5 * 24 * 60 * 60);
 });
 
 scenario('upgrade Comet implementation and initialize', {}, async ({ comet, configurator, proxyAdmin }, context) => {
