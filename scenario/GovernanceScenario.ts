@@ -24,7 +24,8 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   const l1Hre = hreForBase(l1Base)
   const l1DeploymentManager = new DeploymentManager("goerli", "usdc", l1Hre);
 
-  const l2Hre = context.deploymentManager.hre;
+  const l2DeploymentManager = context.deploymentManager;
+  const l2Hre = l2DeploymentManager.hre;
 
   // construct l1Governor and l1Proposer
   const l1Governor = await l1DeploymentManager.contract('governor');
@@ -142,10 +143,6 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   const proposal = await l1Governor?.proposals(id);
   await setNextL1BlockTimestamp(proposal.eta.toNumber() + 1);
 
-  // Execute proposal (w/ gas limit so we see if exec reverts, not a gas estimation error)
-  // await setNextL1BaseFeeToZero();
-  // await l1Governor?.execute(id, { gasPrice: 0, gasLimit: 12000000 });
-
   // listen on events on the fxRoot
   const filter: EventFilter = {
     address: STATE_SENDER,
@@ -154,89 +151,71 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
     ]
   }
 
-  // "event Transfer(address indexed from, address indexed to, uint256 amount)",
-  const iface = new l1Hre.ethers.utils.Interface([
-    "event StateSynced(uint256 indexed id, address indexed contractAddress, bytes data)"
-  ]);
-
-  l1Hre.ethers.provider.on(filter, async (log) => {
-    console.log(`log:`);
-    console.log(log);
-
-    const decoded = iface.decodeEventLog(
-      "StateSynced",
-      log.data,
-      log.topics
-    );
-
-    console.log(`decoded:`);
-    console.log(decoded);
-
-    const fxChild = decoded.contractAddress;
-    console.log(`fxChild: ${fxChild}`);
-
-    // https://goerli.etherscan.io/address/0x3d1d3E34f7fB6D26245E6640E1c50710eFFf15bA#code
-    // abi.encode(msg.sender, _receiver, _data);
-    const [msgSender, msgReceiver, msgData] = utils.defaultAbiCoder.decode(
-      ['address', 'address', 'bytes'],
-      decoded.data
-    );
-
-    console.log(`[msgSender, msgReceiver, msgData]:`);
-    console.log([msgSender, msgReceiver, msgData]);
-
-    // impersonate fxChild
-
-    await l2Hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [fxChild],
+  const stateSyncedListenerPromise = new Promise(async (resolve, reject) => {
+    l1Hre.ethers.provider.on(filter, (log) => {
+      resolve(log);
     });
-    const fxChildSigner = await l1DeploymentManager.getSigner(fxChild);
 
-    // throw unless msgReceiver === polygonBridgeReceiver.address
-
-    // send to msgReceiver
-    await setNextL2BaseFeeToZero();
-
-    // console.log(`polygonBridgeReceiver:`);
-    // console.log(polygonBridgeReceiver);
-
-    console.log("calling enqueueTxn");
-
-    await polygonBridgeReceiver?.processMessageFromRoot(
-      0,
-      msgSender,
-      msgData
-    );
-
-    console.log(`enqueueTxn done:`);
-
-    // await enqueueTxn.wait();
-    // console.log(enqueueTxn.events);
-
-    // with args ( msgSender, msgData)
-
+    setTimeout(() => {
+      reject(new Error('timeout'));
+    }, 60000);
   });
 
   await setNextL1BaseFeeToZero();
   await l1Governor?.execute(id, { gasPrice: 0, gasLimit: 12000000 });
 
-  // const stateSyncedListenerPromise = new Promise(async (resolve, reject) => {
-  //   l1Hre.ethers.provider.on(filter, (log) => {
-  //     resolve(log);
-  //   });
+  // XXX type for stateSyncedEvent
+  const stateSyncedEvent: any = await stateSyncedListenerPromise;
+  console.log(`stateSyncedEvent:`);
+  console.log(stateSyncedEvent);
 
+  const stateSenderInterface = new l1Hre.ethers.utils.Interface([
+    "event StateSynced(uint256 indexed id, address indexed contractAddress, bytes data)"
+  ]);
 
-  //   setTimeout(() => {
-  //     reject(new Error('timeout'));
-  //   }, 60000);
-  // });
+  const decoded = stateSenderInterface.decodeEventLog(
+    "StateSynced",
+    stateSyncedEvent.data,
+    stateSyncedEvent.topics
+  );
 
-  // const stateSyncedEvent = await stateSyncedListenerPromise;
-  // console.log(`stateSyncedEvent:`);
-  // console.log(stateSyncedEvent);
+  console.log(`decoded:`);
+  console.log(decoded);
+
+  const fxChild = decoded.contractAddress;
+
+  // https://goerli.etherscan.io/address/0x3d1d3E34f7fB6D26245E6640E1c50710eFFf15bA#code
+  // abi.encode(msg.sender, _receiver, _data);
+  const [msgSender, msgReceiver, msgData] = utils.defaultAbiCoder.decode(
+    ['address', 'address', 'bytes'],
+    decoded.data
+  );
+
+  // msgSender = mainnet timelock
+  // msgReceiver = l2 bridge receiver
+  console.log(`[msgSender, msgReceiver, msgData]:`);
+  console.log([msgSender, msgReceiver, msgData]);
+
+  await l2Hre.network.provider.request({
+    method: 'hardhat_impersonateAccount',
+    params: [fxChild],
+  });
+  const fxChildSigner = await l2DeploymentManager.getSigner(fxChild);
+
+  console.log("calling processMessageFromRoot")
 
   // impersonate the l2 bridge contract; pass the event data from l1 event
+  await setNextL2BaseFeeToZero();
+  await polygonBridgeReceiver?.connect(fxChildSigner).processMessageFromRoot(
+    0,
+    msgSender,
+    msgData
+  );
+
+  console.log("processMessageFromRoot done")
+
+  // fast forward l2 time
+  // execute queue transaction
 
   // expect the delay to be 5 days
   // console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
