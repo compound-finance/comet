@@ -23,6 +23,7 @@ contract BaseBridgeReceiver {
 
     function initialize(address _mainnetTimelock, address _l2Timelock) external {
         if (initializer == address(0)) revert AlreadyInitialized();
+        if (msg.sender != initializer) revert Unauthorized();
         mainnetTimelock = _mainnetTimelock;
         l2Timelock = _l2Timelock;
         initializer = address(0);
