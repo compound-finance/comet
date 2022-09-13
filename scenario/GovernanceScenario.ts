@@ -1,6 +1,6 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { constants, utils } from 'ethers';
+import { constants, EventFilter, utils } from 'ethers';
 import hreForBase from '../plugins/scenario/utils/hreForBase';
 import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
 import { COMP_WHALES } from "../src/deploy";
@@ -12,6 +12,7 @@ make l2-only
 */
 
 const FX_ROOT_GOERLI = '0x3d1d3E34f7fB6D26245E6640E1c50710eFFf15bA';
+const STATE_SENDER = '0xeaa852323826c71cd7920c3b4c007184234c3945';
 
 scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   // construct l1 deployment manager
@@ -22,6 +23,8 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   };
   const l1Hre = hreForBase(l1Base)
   const l1DeploymentManager = new DeploymentManager("goerli", "usdc", l1Hre);
+
+  const l2Hre = context.deploymentManager.hre;
 
   // construct l1Governor and l1Proposer
   const l1Governor = await l1DeploymentManager.contract('governor');
@@ -67,8 +70,16 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
     await l1Hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
   }
 
+  async function setNextL2BaseFeeToZero() {
+    await l2Hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+  }
+
   async function setNextL1BlockTimestamp(timestamp: number) {
     await l1Hre.ethers.provider.send('evm_setNextBlockTimestamp', [timestamp]);
+  }
+
+  async function setNextL2BlockTimestamp(timestamp: number) {
+    await l2Hre.ethers.provider.send('evm_setNextBlockTimestamp', [timestamp]);
   }
 
   async function mineL1Blocks(blocks: number) {
@@ -132,16 +143,104 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   await setNextL1BlockTimestamp(proposal.eta.toNumber() + 1);
 
   // Execute proposal (w/ gas limit so we see if exec reverts, not a gas estimation error)
+  // await setNextL1BaseFeeToZero();
+  // await l1Governor?.execute(id, { gasPrice: 0, gasLimit: 12000000 });
+
+  // listen on events on the fxRoot
+  const filter: EventFilter = {
+    address: STATE_SENDER,
+    topics: [
+      utils.id("StateSynced(uint256,address,bytes)")
+    ]
+  }
+
+  // "event Transfer(address indexed from, address indexed to, uint256 amount)",
+  const iface = new l1Hre.ethers.utils.Interface([
+    "event StateSynced(uint256 indexed id, address indexed contractAddress, bytes data)"
+  ]);
+
+  l1Hre.ethers.provider.on(filter, async (log) => {
+    console.log(`log:`);
+    console.log(log);
+
+    const decoded = iface.decodeEventLog(
+      "StateSynced",
+      log.data,
+      log.topics
+    );
+
+    console.log(`decoded:`);
+    console.log(decoded);
+
+    const fxChild = decoded.contractAddress;
+    console.log(`fxChild: ${fxChild}`);
+
+    // https://goerli.etherscan.io/address/0x3d1d3E34f7fB6D26245E6640E1c50710eFFf15bA#code
+    // abi.encode(msg.sender, _receiver, _data);
+    const [msgSender, msgReceiver, msgData] = utils.defaultAbiCoder.decode(
+      ['address', 'address', 'bytes'],
+      decoded.data
+    );
+
+    console.log(`[msgSender, msgReceiver, msgData]:`);
+    console.log([msgSender, msgReceiver, msgData]);
+
+    // impersonate fxChild
+
+    await l2Hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [fxChild],
+    });
+    const fxChildSigner = await l1DeploymentManager.getSigner(fxChild);
+
+    // throw unless msgReceiver === polygonBridgeReceiver.address
+
+    // send to msgReceiver
+    await setNextL2BaseFeeToZero();
+
+    // console.log(`polygonBridgeReceiver:`);
+    // console.log(polygonBridgeReceiver);
+
+    console.log("calling enqueueTxn");
+
+    await polygonBridgeReceiver?.processMessageFromRoot(
+      0,
+      msgSender,
+      msgData
+    );
+
+    console.log(`enqueueTxn done:`);
+
+    // await enqueueTxn.wait();
+    // console.log(enqueueTxn.events);
+
+    // with args ( msgSender, msgData)
+
+  });
+
   await setNextL1BaseFeeToZero();
   await l1Governor?.execute(id, { gasPrice: 0, gasLimit: 12000000 });
 
-  // listen on events on the fxRoot
+  // const stateSyncedListenerPromise = new Promise(async (resolve, reject) => {
+  //   l1Hre.ethers.provider.on(filter, (log) => {
+  //     resolve(log);
+  //   });
+
+
+  //   setTimeout(() => {
+  //     reject(new Error('timeout'));
+  //   }, 60000);
+  // });
+
+  // const stateSyncedEvent = await stateSyncedListenerPromise;
+  // console.log(`stateSyncedEvent:`);
+  // console.log(stateSyncedEvent);
 
   // impersonate the l2 bridge contract; pass the event data from l1 event
 
   // expect the delay to be 5 days
-  console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
-  expect(await l2Timelock?.delay()).to.eq(5 * 24 * 60 * 60);
+  // console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
+  // expect(await l2Timelock?.delay()).to.eq(5 * 24 * 60 * 60);
 });
 
 scenario('upgrade Comet implementation and initialize', {}, async ({ comet, configurator, proxyAdmin }, context) => {
