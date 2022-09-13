@@ -4,6 +4,7 @@ import { FileSpec } from './Cache';
 interface Actions<T> {
   prepare: (dm: DeploymentManager) => Promise<T>;
   enact: (dm: DeploymentManager, t: T) => Promise<void>;
+  verify?: (dm: DeploymentManager) => Promise<void>;
 }
 
 export class Migration<T> {

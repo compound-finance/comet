@@ -36,10 +36,10 @@ scenario(
     const rewardToken = context.getAssetByAddress(rewardTokenAddress);
     const rewardScale = exp(1, await rewardToken.decimals());
 
-    expect(await rewardToken.balanceOf(albert.address)).to.be.equal(0n);
-
     await baseAsset.approve(albert, comet.address);
     await albert.safeSupplyAsset({ asset: baseAssetAddress, amount: 1_000_000n * baseScale })
+
+    expect(await rewardToken.balanceOf(albert.address)).to.be.equal(0n);
 
     const supplyTimestamp = await world.timestamp();
     const albertBalance = await albert.getCometBaseBalance();
@@ -58,8 +58,14 @@ scenario(
     const supplySpeed = (await comet.baseTrackingSupplySpeed()).toBigInt();
     const trackingIndexScale = (await comet.trackingIndexScale()).toBigInt();
     const timestampDelta = preTxnTimestamp - supplyTimestamp;
-    const expectedRewardsOwed = calculateRewardsOwed(albertBalance, totalSupplyBalance, supplySpeed, timestampDelta, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
-    const expectedRewardsReceived = calculateRewardsOwed(albertBalance, totalSupplyBalance, supplySpeed, timestampDelta + timeElapsed, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
+    const totalSupplyPrincipal = (await comet.totalsBasic()).totalSupplyBase.toBigInt();
+    const baseMinForRewards = (await comet.baseMinForRewards()).toBigInt();
+    let expectedRewardsOwed = 0n;
+    let expectedRewardsReceived = 0n;
+    if (totalSupplyPrincipal >= baseMinForRewards) {
+      expectedRewardsOwed = calculateRewardsOwed(albertBalance, totalSupplyBalance, supplySpeed, timestampDelta, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
+      expectedRewardsReceived = calculateRewardsOwed(albertBalance, totalSupplyBalance, supplySpeed, timestampDelta + timeElapsed, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
+    }
 
     // Occasionally `timestampDelta` is equal to 86401
     expect(timestampDelta).to.be.greaterThanOrEqual(86400);
@@ -89,11 +95,11 @@ scenario(
     const rewardToken = context.getAssetByAddress(rewardTokenAddress);
     const rewardScale = exp(1, await rewardToken.decimals());
 
-    expect(await rewardToken.balanceOf(albert.address)).to.be.equal(0n);
-
     await albert.allow(betty, true); // Albert allows Betty to manage his account
     await baseAsset.approve(albert, comet.address);
     await albert.safeSupplyAsset({ asset: baseAssetAddress, amount: 1_000_000n * baseScale });
+
+    expect(await rewardToken.balanceOf(albert.address)).to.be.equal(0n);
 
     const supplyTimestamp = await world.timestamp();
     const albertBalance = await albert.getCometBaseBalance();
@@ -112,8 +118,14 @@ scenario(
     const supplySpeed = (await comet.baseTrackingSupplySpeed()).toBigInt();
     const trackingIndexScale = (await comet.trackingIndexScale()).toBigInt();
     const timestampDelta = preTxnTimestamp - supplyTimestamp;
-    const expectedRewardsOwed = calculateRewardsOwed(albertBalance, totalSupplyBalance, supplySpeed, timestampDelta, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
-    const expectedRewardsReceived = calculateRewardsOwed(albertBalance, totalSupplyBalance, supplySpeed, timestampDelta + timeElapsed, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
+    const totalSupplyPrincipal = (await comet.totalsBasic()).totalSupplyBase.toBigInt();
+    const baseMinForRewards = (await comet.baseMinForRewards()).toBigInt();
+    let expectedRewardsOwed = 0n;
+    let expectedRewardsReceived = 0n;
+    if (totalSupplyPrincipal >= baseMinForRewards) {
+      expectedRewardsOwed = calculateRewardsOwed(albertBalance, totalSupplyBalance, supplySpeed, timestampDelta, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
+      expectedRewardsReceived = calculateRewardsOwed(albertBalance, totalSupplyBalance, supplySpeed, timestampDelta + timeElapsed, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
+    }
 
     // Occasionally `timestampDelta` is equal to 86401
     expect(timestampDelta).to.be.greaterThanOrEqual(86400);
@@ -125,4 +137,67 @@ scenario(
   }
 );
 
-// XXX add borrow side rewards, which is trickier because of supply caps
+scenario(
+  'Comet#rewards > can claim borrow rewards for self',
+  {
+    filter: async (ctx) => await isRewardSupported(ctx),
+    tokenBalances: {
+      albert: { $asset0: ' == 10000' }, // in units of asset, not wei
+      $comet: { $base: ' >= 1000 ' }
+    },
+  },
+  async ({ comet, rewards, actors }, context, world) => {
+    const { albert } = actors;
+    const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
+    const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
+    const scale = scaleBN.toBigInt();
+    const toSupply = 10_000n * scale;
+    const baseAssetAddress = await comet.baseToken();
+    const baseScale = (await comet.baseScale()).toBigInt();
+    const toBorrow = 1_000n * baseScale;
+
+    const [rewardTokenAddress, rescaleFactor] = await rewards.rewardConfig(comet.address);
+    const rewardToken = context.getAssetByAddress(rewardTokenAddress);
+    const rewardScale = exp(1, await rewardToken.decimals());
+
+    await collateralAsset.approve(albert, comet.address);
+    await albert.safeSupplyAsset({ asset: collateralAssetAddress, amount: toSupply })
+    await albert.withdrawAsset({ asset: baseAssetAddress, amount: toBorrow })
+
+    expect(await rewardToken.balanceOf(albert.address)).to.be.equal(0n);
+
+    const borrowTimestamp = await world.timestamp();
+    const albertBalance = await albert.getCometBaseBalance();
+    const totalBorrowBalance = (await comet.totalBorrow()).toBigInt();
+
+    await world.increaseTime(86400); // fast forward a day
+    const preTxnTimestamp = await world.timestamp();
+
+    const rewardsOwedBefore = (await rewards.callStatic.getRewardOwed(comet.address, albert.address)).owed.toBigInt();
+    const txn = await (await rewards.connect(albert.signer).claim(comet.address, albert.address, true)).wait();
+    const rewardsOwedAfter = (await rewards.callStatic.getRewardOwed(comet.address, albert.address)).owed.toBigInt();
+
+    const postTxnTimestamp = await world.timestamp();
+    const timeElapsed = postTxnTimestamp - preTxnTimestamp;
+
+    const borrowSpeed = (await comet.baseTrackingBorrowSpeed()).toBigInt();
+    const trackingIndexScale = (await comet.trackingIndexScale()).toBigInt();
+    const timestampDelta = preTxnTimestamp - borrowTimestamp;
+    const totalBorrowPrincipal = (await comet.totalsBasic()).totalBorrowBase.toBigInt();
+    const baseMinForRewards = (await comet.baseMinForRewards()).toBigInt();
+    let expectedRewardsOwed = 0n;
+    let expectedRewardsReceived = 0n;
+    if (totalBorrowPrincipal >= baseMinForRewards) {
+      expectedRewardsOwed = calculateRewardsOwed(-albertBalance, totalBorrowBalance, borrowSpeed, timestampDelta, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
+      expectedRewardsReceived = calculateRewardsOwed(-albertBalance, totalBorrowBalance, borrowSpeed, timestampDelta + timeElapsed, trackingIndexScale, rewardScale, rescaleFactor.toBigInt());
+    }
+
+    // Occasionally `timestampDelta` is equal to 86401
+    expect(timestampDelta).to.be.greaterThanOrEqual(86400);
+    expect(rewardsOwedBefore).to.be.equal(expectedRewardsOwed);
+    expect(await rewardToken.balanceOf(albert.address)).to.be.equal(expectedRewardsReceived);
+    expect(rewardsOwedAfter).to.be.equal(0n);
+
+    return txn; // return txn to measure gas
+  }
+);

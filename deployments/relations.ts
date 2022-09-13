@@ -1,6 +1,12 @@
 import { RelationConfigMap } from '../plugins/deployment_manager/RelationConfig';
 
 const relationConfigMap: RelationConfigMap = {
+  comptrollerV2: {
+    delegates: {
+      field: async (comptroller) => comptroller.comptrollerImplementation(),
+    },
+  },
+
   comet: {
     delegates: {
       field: {

@@ -12,11 +12,6 @@ async function getMigrations<T>(context: CometContext, requirements: Requirement
   return await loadMigrations((await modifiedPaths(pattern)).map(p => '../../' + p));
 }
 
-async function asyncFilter<T>(els: T[], f: (T) => Promise<boolean>): Promise<T[]> {
-  let filterResults = await Promise.all(els.map((el) => f(el)));
-  return els.filter((el, i) => filterResults[i]);
-}
-
 export class MigrationConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, context: T, world: World) {
     const label = `[${world.base.name}] {MigrationConstraint}`;
@@ -30,7 +25,12 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
         // Make proposer the default signer
         ctx.deploymentManager._signers.unshift(proposer);
 
+        // Order migrations deterministically and store in the context (i.e. for verification)
         migrationList.sort((a, b) => a.name.localeCompare(b.name))
+        ctx.migrations = migrationList;
+
+        // XXX This should check that a migration has not already been run/proposed on-chain.
+        // Otherwise the scenario could be running the same proposal twice.
         debug(`${label} Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);
         for (const migration of migrationList) {
           const artifact = await migration.actions.prepare(ctx.deploymentManager);
@@ -53,4 +53,24 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
   async check(requirements: R, context: T, world: World) {
     return; // XXX
   }
+}
+
+export class VerifyMigrationConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
+  async solve(requirements: R, context: T, world: World) {
+    const label = `[${world.base.name}] {VerifyMigrationConstraint}`;
+    return [
+      async function (ctx: T): Promise<T> {
+        for (const migration of ctx.migrations) {
+          // XXX does verify get the 'gov' deployment manager as well as the 'local' one?
+          if (migration.actions.verify) {
+            await migration.actions.verify(ctx.deploymentManager);
+            debug(`${label} Verified migration "${migration.name}"`);
+          }
+        }
+        return ctx;
+      }
+    ];
+  }
+
+  async check(requirements: R, context: T, world: World) { }
 }

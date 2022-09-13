@@ -19,8 +19,8 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const baseScale = (await comet.baseScale()).toBigInt();
-    const { asset: assetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
-    const collateralAsset = context.getAssetByAddress(assetAddress);
+    const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
+    const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const collateralScale = scaleBN.toBigInt();
     const toSupplyCollateral = 100n * collateralScale;
     const toBorrowBase = 1500n * baseScale;
@@ -93,8 +93,8 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const baseScale = (await comet.baseScale()).toBigInt();
-    const { asset: assetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
-    const collateralAsset = context.getAssetByAddress(assetAddress);
+    const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
+    const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const collateralScale = scaleBN.toBigInt();
     const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
     const toSupplyCollateral = 100n * collateralScale;
@@ -117,8 +117,11 @@ scenario(
     expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupplyCollateral);
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(0n);
     expect(await comet.balanceOf(albert.address)).to.be.equal(0n);
-    expect(await albert.getErc20Balance(rewardTokenAddress)).to.be.equal(0n);
-    expect(await rewards.callStatic.getRewardOwed(comet.address, albert.address)).to.be.gt(0n);
+    const startingRewardBalance = await albert.getErc20Balance(rewardTokenAddress);
+    const rewardOwed = ((await rewards.callStatic.getRewardOwed(comet.address, albert.address)).owed).toBigInt();
+    const expectedFinalRewardBalance = collateralAssetAddress === rewardTokenAddress ?
+      startingRewardBalance + rewardOwed - toSupplyCollateral :
+      startingRewardBalance + rewardOwed;
 
     // Albert's actions:
     // 1. Supplies 100 units of collateral
@@ -160,7 +163,7 @@ scenario(
     expect(await comet.balanceOf(betty.address)).to.be.equal(baseTransferred);
     expect(await comet.borrowBalanceOf(albert.address)).to.be.equal(toBorrowBase + toTransferBase);
     expect(await comet.collateralBalanceOf(albert.address, WETH.address)).to.be.equal(toSupplyEth - toWithdrawEth);
-    expect(await albert.getErc20Balance(rewardTokenAddress)).to.be.gt(0n);
+    expect(await albert.getErc20Balance(rewardTokenAddress)).to.be.equal(expectedFinalRewardBalance);
 
     return txn; // return txn to measure gas
   }
