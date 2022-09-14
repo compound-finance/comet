@@ -196,6 +196,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   console.log(`[msgSender, msgReceiver, msgData]:`);
   console.log([msgSender, msgReceiver, msgData]);
 
+  // impersonate the l2 bridge contract
   await l2Hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
     params: [fxChild],
@@ -203,15 +204,13 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   const fxChildSigner = await l2DeploymentManager.getSigner(fxChild);
 
   console.log("calling processMessageFromRoot")
-
-  // impersonate the l2 bridge contract; pass the event data from l1 event
-  await setNextL2BaseFeeToZero();
+  await setNextL2BaseFeeToZero(); // doesn't do the trick here
   await polygonBridgeReceiver?.connect(fxChildSigner).processMessageFromRoot(
     0,
     msgSender,
-    msgData
+    msgData,
+    { gasPrice: 0 }
   );
-
   console.log("processMessageFromRoot done")
 
   // fast forward l2 time
