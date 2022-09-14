@@ -47,7 +47,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
     [
       [l2Timelock?.address],
       [0],
-      ["setDelay(uint)"],
+      ["setDelay(uint256)"],
       [setDelayCalldata]
     ]
   );
@@ -204,21 +204,71 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   const fxChildSigner = await l2DeploymentManager.getSigner(fxChild);
 
   console.log("calling processMessageFromRoot")
-  await setNextL2BaseFeeToZero(); // doesn't do the trick here
-  await polygonBridgeReceiver?.connect(fxChildSigner).processMessageFromRoot(
-    0,
-    msgSender,
-    msgData,
-    { gasPrice: 0 }
-  );
+  await setNextL2BaseFeeToZero();
+  const processMessageFromRootTxn = await (
+    await polygonBridgeReceiver?.connect(fxChildSigner).processMessageFromRoot(
+      0,
+      msgSender,
+      msgData,
+      { gasPrice: 0 }
+    )
+  ).wait();
   console.log("processMessageFromRoot done")
 
+  const queueTransactionEvent = processMessageFromRootTxn.events.find(event => event.address === l2Timelock?.address);
+
+  // console.log(`queueTransactionEvent:`);
+  // console.log(queueTransactionEvent);
+
+  // pull the queue transaction event off of processMessageFromRootTxn
+  const timelockInterface = new l2Hre.ethers.utils.Interface([
+    "event QueueTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta)",
+    "event ExecuteTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta)"
+  ]);
+
+  const decodedEvent = timelockInterface.decodeEventLog(
+    "QueueTransaction",
+    queueTransactionEvent.data,
+    queueTransactionEvent.topics
+  );
+  // console.log(`decodedEvent:`);
+  // console.log(decodedEvent);
+  const { target, value, signature, data, eta} = decodedEvent;
+
   // fast forward l2 time
+  await context.setNextBlockTimestamp(eta.toNumber() + 1);
+
+  console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
+
+  await setNextL2BaseFeeToZero();
   // execute queue transaction
+  const executeTransactionTxn = await (
+    await polygonBridgeReceiver?.executeTransaction(
+      target,
+      value,
+      signature,
+      data,
+      eta,
+      { gasPrice: 0 }
+    )
+  ).wait();
+
+  console.log(`executeTransactionTxn:`);
+  console.log(executeTransactionTxn);
+
+  // const decodedExecuteEvent = timelockInterface.decodeEventLog(
+  //   "ExecuteTransaction",
+  //   executeTransactionTxn.events[1].data,
+  //   executeTransactionTxn.events[1].topics
+  // );
+
+  // console.log(`decodedExecuteEvent:`);
+  // console.log(decodedExecuteEvent);
 
   // expect the delay to be 5 days
-  // console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
-  // expect(await l2Timelock?.delay()).to.eq(5 * 24 * 60 * 60);
+  console.log(`l2Timelock.address: ${l2Timelock?.address}`);
+  console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
+  expect(await l2Timelock?.delay()).to.eq(5 * 24 * 60 * 60);
 });
 
 scenario('upgrade Comet implementation and initialize', {}, async ({ comet, configurator, proxyAdmin }, context) => {

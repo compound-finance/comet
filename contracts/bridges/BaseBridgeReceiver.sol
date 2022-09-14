@@ -79,4 +79,15 @@ contract BaseBridgeReceiver {
 
         emit ProcessMessage(messageSender, targets, values, signatures, calldatas, eta);
     }
+
+    // public?
+    function executeTransaction(
+        address target,
+        uint value,
+        string memory signature,
+        bytes memory data,
+        uint eta
+    ) public payable returns (bytes memory) {
+        ITimelock(l2Timelock).executeTransaction(target, value, signature, data, eta);
+    }
 }
