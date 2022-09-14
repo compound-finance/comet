@@ -7,7 +7,38 @@ import { COMP_WHALES } from "../src/deploy";
 import { ProposalState, OpenProposal } from './context/Gov';
 
 /*
-make l2-only
+requirements:
+
+l1
+  DeploymentManager
+construct deployment manager
+l1DeploymentManager.contract('governor')
+getSigner(compWhale)
+
+  World
+impersonate address (compWhale)
+
+  Context
+setNextBaseFeeToZero
+setNextBlockTimestamp
+fastGovernanceExecute <<--
+
+l2
+
+  DeploymentManager
+deploymentManager.contract('timelock');
+deploymentManager.contract('polygonBridgeReceiver');
+
+  World
+impersonate address (fxChildSigner)
+
+  Context
+setNextBaseFeeToZero (calls fn on world)
+setNextBlockTimestamp (calls fn on world)
+
+  interfaces
+StateSender
+Timelock
 
 */
 
@@ -38,7 +69,6 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
 
   const l2Timelock = await context.deploymentManager.contract('timelock');
   const polygonBridgeReceiver = await context.deploymentManager.contract('polygonBridgeReceiver');
-  console.log(`polygonBridgeReceiver.address: ${polygonBridgeReceiver?.address}`);
 
   // construct l2 proposal
   const setDelayCalldata = utils.defaultAbiCoder.encode(['uint'], [5 * 24 * 60 * 60]);
@@ -64,9 +94,6 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   const l1Signatures = ["sendMessageToChild(address,bytes)"];
   const l1Calldata = [sendMessageToChildCalldata];
 
-  console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
-  expect(await l2Timelock?.delay()).to.eq(2 * 24 * 60 * 60);
-
   async function setNextL1BaseFeeToZero() {
     await l1Hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
   }
@@ -77,10 +104,6 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
 
   async function setNextL1BlockTimestamp(timestamp: number) {
     await l1Hre.ethers.provider.send('evm_setNextBlockTimestamp', [timestamp]);
-  }
-
-  async function setNextL2BlockTimestamp(timestamp: number) {
-    await l2Hre.ethers.provider.send('evm_setNextBlockTimestamp', [timestamp]);
   }
 
   async function mineL1Blocks(blocks: number) {
@@ -104,7 +127,6 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
 
   // execute open proposal
-  // const governor = await this.getGovernor();
   const blockNow = await l1Hre.ethers.provider.getBlockNumber();
   const blocksUntilStart = startBlock - blockNow;
   const blocksUntilEnd = endBlock - Math.max(startBlock, blockNow);
@@ -118,7 +140,6 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
       try {
         // Voting can fail if voter has already voted
 
-        // const voter = await this.world.impersonateAddress(whale);
         await l1Hre.network.provider.request({
           method: 'hardhat_impersonateAccount',
           params: [whale],
@@ -166,8 +187,6 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
 
   // XXX type for stateSyncedEvent
   const stateSyncedEvent: any = await stateSyncedListenerPromise;
-  console.log(`stateSyncedEvent:`);
-  console.log(stateSyncedEvent);
 
   const stateSenderInterface = new l1Hre.ethers.utils.Interface([
     "event StateSynced(uint256 indexed id, address indexed contractAddress, bytes data)"
@@ -179,22 +198,16 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
     stateSyncedEvent.topics
   );
 
-  console.log(`decoded:`);
-  console.log(decoded);
-
   const fxChild = decoded.contractAddress;
 
   // https://goerli.etherscan.io/address/0x3d1d3E34f7fB6D26245E6640E1c50710eFFf15bA#code
   // abi.encode(msg.sender, _receiver, _data);
+  // msgSender = mainnet timelock
+  // msgReceiver = l2 bridge receiver
   const [msgSender, msgReceiver, msgData] = utils.defaultAbiCoder.decode(
     ['address', 'address', 'bytes'],
     decoded.data
   );
-
-  // msgSender = mainnet timelock
-  // msgReceiver = l2 bridge receiver
-  console.log(`[msgSender, msgReceiver, msgData]:`);
-  console.log([msgSender, msgReceiver, msgData]);
 
   // impersonate the l2 bridge contract
   await l2Hre.network.provider.request({
@@ -203,7 +216,6 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   });
   const fxChildSigner = await l2DeploymentManager.getSigner(fxChild);
 
-  console.log("calling processMessageFromRoot")
   await setNextL2BaseFeeToZero();
   const processMessageFromRootTxn = await (
     await polygonBridgeReceiver?.connect(fxChildSigner).processMessageFromRoot(
@@ -213,14 +225,9 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
       { gasPrice: 0 }
     )
   ).wait();
-  console.log("processMessageFromRoot done")
-
-  const queueTransactionEvent = processMessageFromRootTxn.events.find(event => event.address === l2Timelock?.address);
-
-  // console.log(`queueTransactionEvent:`);
-  // console.log(queueTransactionEvent);
 
   // pull the queue transaction event off of processMessageFromRootTxn
+  const queueTransactionEvent = processMessageFromRootTxn.events.find(event => event.address === l2Timelock?.address);
   const timelockInterface = new l2Hre.ethers.utils.Interface([
     "event QueueTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta)",
     "event ExecuteTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta)"
@@ -231,14 +238,13 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
     queueTransactionEvent.data,
     queueTransactionEvent.topics
   );
-  // console.log(`decodedEvent:`);
-  // console.log(decodedEvent);
   const { target, value, signature, data, eta} = decodedEvent;
 
   // fast forward l2 time
   await context.setNextBlockTimestamp(eta.toNumber() + 1);
 
-  console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
+  // check delay before
+  expect(await l2Timelock?.delay()).to.eq(2 * 24 * 60 * 60);
 
   await setNextL2BaseFeeToZero();
   // execute queue transaction
@@ -253,21 +259,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
     )
   ).wait();
 
-  console.log(`executeTransactionTxn:`);
-  console.log(executeTransactionTxn);
-
-  // const decodedExecuteEvent = timelockInterface.decodeEventLog(
-  //   "ExecuteTransaction",
-  //   executeTransactionTxn.events[1].data,
-  //   executeTransactionTxn.events[1].topics
-  // );
-
-  // console.log(`decodedExecuteEvent:`);
-  // console.log(decodedExecuteEvent);
-
-  // expect the delay to be 5 days
-  console.log(`l2Timelock.address: ${l2Timelock?.address}`);
-  console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
+  // check delay before
   expect(await l2Timelock?.delay()).to.eq(5 * 24 * 60 * 60);
 });
 
