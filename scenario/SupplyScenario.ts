@@ -295,14 +295,15 @@ scenario(
     await albert.allow(betty, true);
     await collateralAsset.approve(albert, betty, 10n * scale);
 
-    await expect(
+    await expectRevertMatches(
       betty.supplyAssetFrom({
         src: albert.address,
         dst: betty.address,
         asset: collateralAsset.address,
         amount: 100n * scale,
-      })
-    ).to.be.reverted;
+      }),
+      [/ERC20: transfer amount exceeds allowance/, /transfer amount exceeds spender allowance/]
+    );
   }
 );
 
@@ -371,14 +372,15 @@ scenario(
     await collateralAsset.approve(albert, comet.address);
     await albert.allow(betty, true);
 
-    await expect(
+    await expectRevertMatches(
       betty.supplyAssetFrom({
         src: albert.address,
         dst: betty.address,
         asset: collateralAsset.address,
         amount: 100n * scale,
-      })
-    ).to.be.reverted;
+      }),
+      /transfer amount exceeds balance/
+    );
   }
 );
 

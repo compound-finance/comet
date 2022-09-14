@@ -24,14 +24,6 @@
   },
   "rewardToken": "COMP",
   "assets": {
-    "LINK": {
-      "priceFeed": "0x48731cF7e84dc94C5f84577882c14Be11a5B7456",
-      "decimals": "18",
-      "borrowCF": 0.75,
-      "liquidateCF": 0.8,
-      "liquidationFactor": 0.92,
-      "supplyCap": "50000000e18"
-    },
     "COMP": {
       "priceFeed": "0x54a06047087927D9B0fb21c1cf0ebd792764dDB8",
       "decimals": "18",

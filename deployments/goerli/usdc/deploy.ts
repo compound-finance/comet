@@ -52,16 +52,27 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
 
   const WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
   const WETH = await deploymentManager.clone('WETH', clone.weth, []);
-  const LINK = await deploymentManager.clone('LINK', clone.link, []);
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
+  const { rewards } = deployed;
 
   // Deploy Bulker
   const bulker = await deploymentManager.deploy(
     'bulker',
     'Bulker.sol',
     [timelock.address, WETH.address]
+  );
+
+  await deploymentManager.idempotent(
+    async () => (await COMP.balanceOf(rewards.address)).eq(0),
+    async () => {
+      trace(`Sending some COMP to CometRewards`);
+      const amount = exp(1_000_000, 18);
+      trace(await wait(COMP.connect(signer).transfer(rewards.address, amount)));
+      trace(`COMP.balanceOf(${rewards.address}): ${await COMP.balanceOf(rewards.address)}`);
+      trace(`COMP.balanceOf(${signer.address}): ${await COMP.balanceOf(signer.address)}`);
+    }
   );
 
   return { ...deployed, fauceteer, bulker };
@@ -108,17 +119,6 @@ async function mintTokens(deploymentManager: DeploymentManager) {
       const amount = exp(20, await WBTC.decimals());
       trace(await wait(WBTC.connect(signer).mint(fauceteer.address, amount)));
       trace(`WBTC.balanceOf(${fauceteer.address}): ${await WBTC.balanceOf(fauceteer.address)}`);
-    }
-  );
-
-  const LINK = contracts.get('LINK');
-  await deploymentManager.idempotent(
-    async () => (await LINK.balanceOf(signer.address)).eq(await LINK.totalSupply()),
-    async () => {
-      trace(`Sending half of all LINK to fauceteer`);
-      const amount = (await LINK.balanceOf(signer.address)).div(2);
-      trace(await wait(LINK.connect(signer).transfer(fauceteer.address, amount)));
-      trace(`LINK.balanceOf(${fauceteer.address}): ${await LINK.balanceOf(fauceteer.address)}`);
     }
   );
 }

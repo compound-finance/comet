@@ -65,7 +65,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
-  const { comet, rewards } = deployed;
+  const { rewards } = deployed;
 
   // Deploy Bulker
   const bulker = await deploymentManager.deploy(
@@ -81,6 +81,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
       const amount = exp(2_000_000, 18);
       trace(await wait(COMP.connect(signer).transfer(rewards.address, amount)));
       trace(`COMP.balanceOf(${rewards.address}): ${await COMP.balanceOf(rewards.address)}`);
+      trace(`COMP.balanceOf(${signer.address}): ${await COMP.balanceOf(signer.address)}`);
     }
   );
 
