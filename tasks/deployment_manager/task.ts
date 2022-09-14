@@ -48,10 +48,12 @@ async function runMigration<T>(
 
 task('deploy', 'Deploys market')
   .addFlag('simulate', 'only simulates the blockchain effects')
+  .addFlag('noDeploy', 'skip the actual deploy step')
   .addFlag('noVerify', 'do not verify any contracts')
+  .addFlag('noVerifyImpl', 'do not verify the impl contract')
   .addFlag('overwrite', 'overwrites cache')
   .addParam('deployment', 'The deployment to deploy')
-  .setAction(async ({ simulate, noVerify, overwrite, deployment }, env) => {
+  .setAction(async ({ simulate, noDeploy, noVerify, noVerifyImpl, overwrite, deployment }, env) => {
     const maybeForkEnv = simulate ? getForkEnv(env) : env;
     const network = env.network.name;
     const tag = `${network}/${deployment}`;
@@ -65,10 +67,14 @@ task('deploy', 'Deploys market')
       }
     );
 
-    const overrides = undefined; // TODO: pass through cli args
-    const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
-    console.log(`[${tag}] Deployed ${dm.counter} contracts, spent ${dm.spent} Ξ`);
-    console.log(`[${tag}]\n${dm.diffDelta(delta)}`);
+    if (noDeploy) {
+      // Don't run the deploy script
+    } else {
+      const overrides = undefined; // TODO: pass through cli args
+      const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
+      console.log(`[${tag}] Deployed ${dm.counter} contracts, spent ${dm.spent} Ξ`);
+      console.log(`[${tag}]\n${dm.diffDelta(delta)}`);
+    }
 
     const verify = noVerify ? false : !simulate;
     const desc = verify ? 'Verify' : 'Would verify';
@@ -85,19 +91,23 @@ task('deploy', 'Deploys market')
         return verify;
       });
 
-      // Maybe verify the comet impl too
-      const comet = await dm.contract('comet');
-      const cometImpl = await dm.contract('comet:implementation');
-      const configurator = await dm.contract('configurator');
-      const config = await configurator.getConfiguration(comet.address);
-      const args: VerifyArgs = {
-        via: 'artifacts',
-        address: cometImpl.address,
-        constructorArguments: [config]
-      };
-      console.log(`[${tag}] ${desc} ${cometImpl.address}:`, args);
-      if (verify) {
-        await dm.verifyContract(args);
+      if (noVerifyImpl) {
+        // Don't even try if --no-verify-impl
+      } else {
+        // Maybe verify the comet impl too
+        const comet = await dm.contract('comet');
+        const cometImpl = await dm.contract('comet:implementation');
+        const configurator = await dm.contract('configurator');
+        const config = await configurator.getConfiguration(comet.address);
+        const args: VerifyArgs = {
+          via: 'artifacts',
+          address: cometImpl.address,
+          constructorArguments: [config]
+        };
+        console.log(`[${tag}] ${desc} ${cometImpl.address}:`, args);
+        if (verify) {
+          await dm.verifyContract(args);
+        }
       }
     }
   });
