@@ -2,7 +2,7 @@ import { Result } from './Parent';
 import { diff as showDiff } from 'jest-diff';
 import * as fs from 'fs/promises';
 
-export interface ConsoleFormatOptions {}
+export interface ConsoleFormatOptions { }
 export interface JsonFormatOptions {
   output?: string;
 }
@@ -69,7 +69,8 @@ async function showReportConsole(results: Result[], _consoleOptions: ConsoleForm
     const errText = pluralize(stats.errCount, 'error', 'errors');
     const skipText = pluralize(stats.skipCount, 'skipped');
     const avgText = `[avg time: ${avgTime.toFixed(0)}ms]`;
-    console.log(`${prefix} Results: ${succText}, ${errText}, ${skipText} ${avgText} [${base}]`);
+    const totalText = `[total time: ${stats.totalTime.toFixed(0)}ms]`;
+    console.log(`${prefix} Results: ${succText}, ${errText}, ${skipText} ${avgText} ${totalText} [${base}]`);
   }
   console.log('\n');
 }
