@@ -166,21 +166,26 @@ const config: HardhatUserConfig = {
         deployment: 'usdc',
         allocation: 0.1, // eth
       },
+
       {
         name: 'development',
         network: 'hardhat',
         deployment: 'dai'
       },
+
       {
         name: 'fuji',
         network: 'fuji',
         deployment: 'usdc'
       },
-      {
-        name: 'kovan',
-        network: 'kovan',
-        deployment: 'usdc',
-      },
+
+      // Deprecated in favor of goerli
+      // {
+      //   name: 'kovan',
+      //   network: 'kovan',
+      //   deployment: 'usdc',
+      // },
+
       {
         name: 'goerli',
         network: 'goerli',
