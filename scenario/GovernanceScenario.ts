@@ -17,12 +17,15 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
   }
 
   const l2DeploymentManager = world.deploymentManager;
-  const l2Hre = l2DeploymentManager.hre;
 
-  const l1Governor = await l1DeploymentManager.contract('governor');
   const proposer = await impersonateAddress(l1DeploymentManager, COMP_WHALES[0]);
 
   const l2Timelock = await world.deploymentManager.contract('timelock');
+
+  if (!l2Timelock) {
+    throw new Error("deployment missing timelock");
+  }
+
   const polygonBridgeReceiver = await world.deploymentManager.contract('polygonBridgeReceiver');
 
   // l2 proposal
@@ -109,17 +112,11 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
 
   // pull the queue transaction event off of processMessageFromRootTxn
   const queueTransactionEvent = onStateReceiveTxn.events.find(event => event.address === l2Timelock?.address);
-  const timelockInterface = new l2Hre.ethers.utils.Interface([
-    "event QueueTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta)",
-    "event ExecuteTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta)"
-  ]);
-
-  const decodedEvent = timelockInterface.decodeEventLog(
+  const { target, value, signature, data, eta } = l2Timelock.interface.decodeEventLog(
     "QueueTransaction",
     queueTransactionEvent.data,
     queueTransactionEvent.topics
   );
-  const { target, value, signature, data, eta} = decodedEvent;
 
   // fast forward l2 time
   await context.setNextBlockTimestamp(eta.toNumber() + 1);
