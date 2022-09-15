@@ -20,7 +20,7 @@ async function relayMumbaiMessage(
   if (!l2Timelock) {
     throw new Error("deployment missing timelock");
   }
-  const bridgeReceiver = await bridgeDeploymentManager.contract('polygonBridgeReceiver');
+  const bridgeReceiver = await bridgeDeploymentManager.contract('bridgeReceiver');
   if (!bridgeReceiver) {
     throw new Error("deployment missing bridge receiver");
   }
@@ -138,7 +138,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
     throw new Error("deployment missing timelock");
   }
 
-  const polygonBridgeReceiver = await world.deploymentManager.contract('polygonBridgeReceiver');
+  const bridgeReceiver = await world.deploymentManager.contract('bridgeReceiver');
 
   // l2 proposal
   const fiveDaysInSeconds = 5 * 24 * 60 * 60;
@@ -157,7 +157,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
   // l1 proposal -> fxRoot.sendMessageToChild(fxChildTunnel, l2Data)
   const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
     ['address', 'bytes'],
-    [polygonBridgeReceiver?.address, encodedL2Data]
+    [bridgeReceiver?.address, encodedL2Data]
   );
 
   const bridgeDeploymentManager = world.deploymentManager;
