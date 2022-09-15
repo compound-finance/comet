@@ -80,7 +80,6 @@ contract BaseBridgeReceiver {
         emit ProcessMessage(messageSender, targets, values, signatures, calldatas, eta);
     }
 
-    // public?
     function executeTransaction(
         address target,
         uint value,

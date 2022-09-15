@@ -357,8 +357,8 @@ async function relayMumbaiMessage(
   const EVENT_LISTENER_TIMEOUT = 60000;
 
   const deploymentTag = `${bridgeDeploymentManager.network}/${bridgeDeploymentManager.deployment}`;
-  const l2Timelock = await bridgeDeploymentManager.contract('timelock');
-  if (!l2Timelock) {
+  const timelock = await bridgeDeploymentManager.contract('timelock');
+  if (!timelock) {
     throw new Error(`${deploymentTag} deployment missing timelock`);
   }
   const bridgeReceiver = await bridgeDeploymentManager.contract('bridgeReceiver');
@@ -414,8 +414,8 @@ async function relayMumbaiMessage(
   ).wait();
 
   // pull the queue transaction event off of processMessageFromRootTxn
-  const queueTransactionEvent = onStateReceiveTxn.events.find(event => event.address === l2Timelock?.address);
-  const { target, value, signature, data, eta } = l2Timelock.interface.decodeEventLog(
+  const queueTransactionEvent = onStateReceiveTxn.events.find(event => event.address === timelock.address);
+  const { target, value, signature, data, eta } = timelock.interface.decodeEventLog(
     "QueueTransaction",
     queueTransactionEvent.data,
     queueTransactionEvent.topics
