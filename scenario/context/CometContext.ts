@@ -24,6 +24,7 @@ import {
   CometRewards,
   Fauceteer,
   Bulker,
+  BaseBridgeReceiver,
 } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
@@ -46,6 +47,7 @@ export interface CometProperties {
   governor: IGovernorBravo;
   rewards: CometRewards;
   bulker: Bulker;
+  bridgeReceiver: BaseBridgeReceiver;
 }
 
 export class CometContext {
@@ -93,6 +95,10 @@ export class CometContext {
 
   async getFauceteer(): Promise<Fauceteer> {
     return this.world.deploymentManager.contract('fauceteer');
+  }
+
+  async getBridgeReceiver(): Promise<BaseBridgeReceiver> {
+    return this.world.deploymentManager.contract('bridgeReceiver');
   }
 
   async getConfiguration(): Promise<ProtocolConfiguration> {
@@ -326,6 +332,7 @@ async function getContextProperties(context: CometContext): Promise<CometPropert
     governor: await context.getGovernor(),
     rewards: await context.getRewards(),
     bulker: await context.getBulker(),
+    bridgeReceiver: await context.getBridgeReceiver()
   }
 }
 

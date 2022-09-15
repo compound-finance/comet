@@ -12,25 +12,20 @@ scenario(
   {
     filter: async (ctx) => ctx.world.base.network === 'mumbai'
   },
-  async (_properties, _context, world) => {
+  async ({ timelock, bridgeReceiver }, _context, world) => {
     const governanceDeploymentManager = world.auxiliaryDeploymentManager;
     if (!governanceDeploymentManager) {
       throw new Error("cannot execute governance without governance deployment manager");
     }
 
-    const l2Timelock = await world.deploymentManager.contract('timelock');
-    if (!l2Timelock) {
-      throw new Error("deployment missing timelock");
-    }
-
-    const bridgeReceiver = await world.deploymentManager.contract('bridgeReceiver');
+    const proposer = await impersonateAddress(governanceDeploymentManager, COMP_WHALES[0]);
 
     // l2 proposal
     const fiveDaysInSeconds = 5 * 24 * 60 * 60;
     const encodedL2Data = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
-        [l2Timelock?.address],
+        [timelock.address],
         [0],
         ["setDelay(uint256)"],
         [
@@ -39,22 +34,17 @@ scenario(
       ]
     );
 
-    // l1 proposal -> fxRoot.sendMessageToChild(fxChildTunnel, l2Data)
+    // l1 proposal
     const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
       ['address', 'bytes'],
       [bridgeReceiver?.address, encodedL2Data]
     );
 
-    const bridgeDeploymentManager = world.deploymentManager;
-    const proposer = await impersonateAddress(governanceDeploymentManager, COMP_WHALES[0]);
-
-    // check delay before
-    console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
-    expect(await l2Timelock?.delay()).to.eq(2 * 24 * 60 * 60);
+    expect(await timelock.delay()).to.eq(2 * 24 * 60 * 60);
 
     await fastL2GovernanceExecute(
       governanceDeploymentManager,
-      bridgeDeploymentManager,
+      world.deploymentManager,
       proposer,
       [FX_ROOT_GOERLI],
       [0],
@@ -62,9 +52,7 @@ scenario(
       [sendMessageToChildCalldata]
     );
 
-    // check delay after
-    console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
-    expect(await l2Timelock?.delay()).to.eq(fiveDaysInSeconds);
+    expect(await timelock.delay()).to.eq(fiveDaysInSeconds);
   }
 );
 
