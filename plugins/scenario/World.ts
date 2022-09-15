@@ -1,5 +1,4 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 // NB: this couples this plugin to deployment manager plugin
 import { DeploymentManager } from '../deployment_manager/DeploymentManager';
@@ -36,7 +35,7 @@ export class World {
 
     if (this.base.auxiliaryBase) {
       const auxiliaryBase = hre.config.scenario.bases.find(b => b.name === this.base.auxiliaryBase);
-      this.auxiliaryDeploymentManager = new DeploymentManager(base.network, base.deployment, hreForBase(auxiliaryBase));
+      this.auxiliaryDeploymentManager = new DeploymentManager(auxiliaryBase.network, auxiliaryBase.deployment, hreForBase(auxiliaryBase));
       this.snapshotAuxiliaryDeploymentManager = this.auxiliaryDeploymentManager;
     }
   }

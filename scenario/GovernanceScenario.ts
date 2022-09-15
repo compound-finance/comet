@@ -46,14 +46,12 @@ const FX_ROOT_GOERLI = '0x3d1d3E34f7fB6D26245E6640E1c50710eFFf15bA';
 const STATE_SENDER = '0xeaa852323826c71cd7920c3b4c007184234c3945';
 
 scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) => {
-  // construct l1 deployment manager
-  const l1Base = {
-    name: 'goerli',
-    network: 'goerli',
-    deployment: 'usdc'
-  };
-  const l1Hre = hreForBase(l1Base)
-  const l1DeploymentManager = new DeploymentManager("goerli", "usdc", l1Hre);
+  const l1DeploymentManager = world.auxiliaryDeploymentManager;
+  const l1Hre = l1DeploymentManager?.hre;
+
+  if (!l1DeploymentManager || !l1Hre) {
+    throw new Error("not an L2");
+  }
 
   const l2DeploymentManager = world.deploymentManager;
   const l2Hre = l2DeploymentManager.hre;
