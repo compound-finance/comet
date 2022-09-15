@@ -25,30 +25,6 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
   const l2Timelock = await world.deploymentManager.contract('timelock');
   const polygonBridgeReceiver = await world.deploymentManager.contract('polygonBridgeReceiver');
 
-  // construct l2 proposal
-  const setDelayCalldata = utils.defaultAbiCoder.encode(['uint'], [5 * 24 * 60 * 60]);
-  const encodedL2Data = utils.defaultAbiCoder.encode(
-    ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
-    [
-      [l2Timelock?.address],
-      [0],
-      ["setDelay(uint256)"],
-      [setDelayCalldata]
-    ]
-  );
-
-  const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
-    ['address', 'bytes'],
-    [polygonBridgeReceiver?.address, encodedL2Data]
-  );
-
-  // construct l1 proposal
-  // fxRoot.sendMessageToChild(fxChildTunnel, message);
-  const l1Targets = [FX_ROOT_GOERLI];
-  const l1Values = [0];
-  const l1Signatures = ["sendMessageToChild(address,bytes)"];
-  const l1Calldata = [sendMessageToChildCalldata];
-
   async function setNextL1BaseFeeToZero() {
     await l1Hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
   }
@@ -65,15 +41,34 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
     await l1Hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
   }
 
-  await setNextL1BaseFeeToZero();
+  // l2 proposal
+  const fiveDaysInSeconds = 5 * 24 * 60 * 60;
+  const encodedL2Data = utils.defaultAbiCoder.encode(
+    ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
+    [
+      [l2Timelock?.address],
+      [0],
+      ["setDelay(uint256)"],
+      [
+        utils.defaultAbiCoder.encode(['uint'], [fiveDaysInSeconds])
+      ]
+    ]
+  );
+
+  // l1 proposal -> fxRoot.sendMessageToChild(fxChildTunnel, l2Data)
+  const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
+    ['address', 'bytes'],
+    [polygonBridgeReceiver?.address, encodedL2Data]
+  );
 
   // propose
+  await setNextL1BaseFeeToZero();
   const proposeTxn = await (
     await l1Governor?.connect(proposer).propose(
-      l1Targets,
-      l1Values,
-      l1Signatures,
-      l1Calldata,
+      [FX_ROOT_GOERLI],
+      [0],
+      ["sendMessageToChild(address,bytes)"],
+      [sendMessageToChildCalldata],
       'FastExecuteProposal',
       { gasPrice: 0 }
     )
@@ -222,7 +217,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
   ).wait();
 
   // check delay before
-  expect(await l2Timelock?.delay()).to.eq(5 * 24 * 60 * 60);
+  expect(await l2Timelock?.delay()).to.eq(fiveDaysInSeconds);
 });
 
 scenario('upgrade Comet implementation and initialize', {}, async ({ comet, configurator, proxyAdmin }, context, world) => {
