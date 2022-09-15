@@ -1,7 +1,5 @@
-import { Signer, Contract, utils, BigNumberish } from 'ethers';
+import { BigNumberish } from 'ethers';
 import { World, buildScenarioFn } from '../../plugins/scenario';
-import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
-import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import { debug } from '../../plugins/deployment_manager/Utils';
 import {
   TokenBalanceConstraint,
@@ -17,10 +15,7 @@ import CometActor from './CometActor';
 import CometAsset from './CometAsset';
 import { ProposalState, OpenProposal } from './Gov';
 import {
-  Comet,
   CometInterface,
-  ProxyAdmin,
-  ERC20,
   ERC20__factory,
   Configurator,
   SimpleTimelock,
@@ -30,7 +25,6 @@ import {
   Fauceteer,
   Bulker,
 } from '../../build/types';
-import { AssetInfoStructOutput } from '../../build/types/Comet';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { ProtocolConfiguration, deployComet, COMP_WHALES } from '../../src/deploy';
@@ -284,6 +278,7 @@ export class CometContext {
   // Instantly executes some actions through the governance proposal process
   // Note: `governor` must be connected to an `admin` signer
   async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
+    // XXX throw if called by L1
     const { world } = this;
     const governor = await this.getGovernor();
     const proposer = await this.getProposer();

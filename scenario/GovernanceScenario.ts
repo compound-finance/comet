@@ -1,46 +1,9 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { constants, EventFilter, utils } from 'ethers';
-import hreForBase from '../plugins/scenario/utils/hreForBase';
-import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
 import { COMP_WHALES } from "../src/deploy";
-import { ProposalState, OpenProposal } from './context/Gov';
-
-/*
-requirements:
-
-l1
-  DeploymentManager
-construct deployment manager
-l1DeploymentManager.contract('governor')
-getSigner(compWhale)
-
-  World
-impersonate address (compWhale)
-
-  Context
-setNextBaseFeeToZero
-setNextBlockTimestamp
-fastGovernanceExecute <<--
-
-l2
-
-  DeploymentManager
-deploymentManager.contract('timelock');
-deploymentManager.contract('polygonBridgeReceiver');
-
-  World
-impersonate address (fxChildSigner)
-
-  Context
-setNextBaseFeeToZero (calls fn on world)
-setNextBlockTimestamp (calls fn on world)
-
-  interfaces
-StateSender
-Timelock
-
-*/
+import { ProposalState } from './context/Gov';
+import { impersonateAddress } from '../plugins/scenario/World';
 
 const FX_ROOT_GOERLI = '0x3d1d3E34f7fB6D26245E6640E1c50710eFFf15bA';
 const STATE_SENDER = '0xeaa852323826c71cd7920c3b4c007184234c3945';
@@ -56,14 +19,8 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
   const l2DeploymentManager = world.deploymentManager;
   const l2Hre = l2DeploymentManager.hre;
 
-  // construct l1Governor and l1Proposer
   const l1Governor = await l1DeploymentManager.contract('governor');
-  const compWhaleAddress = COMP_WHALES[0];
-  await l1Hre.network.provider.request({
-    method: 'hardhat_impersonateAccount',
-    params: [compWhaleAddress],
-  });
-  const l1Proposer = await l1DeploymentManager.getSigner(compWhaleAddress);
+  const proposer = await impersonateAddress(l1DeploymentManager, COMP_WHALES[0]);
 
   const l2Timelock = await world.deploymentManager.contract('timelock');
   const polygonBridgeReceiver = await world.deploymentManager.contract('polygonBridgeReceiver');
@@ -112,7 +69,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
 
   // propose
   const proposeTxn = await (
-    await l1Governor?.connect(l1Proposer).propose(
+    await l1Governor?.connect(proposer).propose(
       l1Targets,
       l1Values,
       l1Signatures,
@@ -186,6 +143,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
   // XXX type for stateSyncedEvent
   const stateSyncedEvent: any = await stateSyncedListenerPromise;
 
+  // skip this; just post directly to fxChild (as 0x001001)
   const stateSenderInterface = new l1Hre.ethers.utils.Interface([
     "event StateSynced(uint256 indexed id, address indexed contractAddress, bytes data)"
   ]);
@@ -196,17 +154,22 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
     stateSyncedEvent.topics
   );
 
+  // decoded.data -> (fakeStateId, fxChild)
+
   const fxChild = decoded.contractAddress;
 
   // https://goerli.etherscan.io/address/0x3d1d3E34f7fB6D26245E6640E1c50710eFFf15bA#code
   // abi.encode(msg.sender, _receiver, _data);
   // msgSender = mainnet timelock
   // msgReceiver = l2 bridge receiver
+
+  // XXX skip this step
   const [msgSender, msgReceiver, msgData] = utils.defaultAbiCoder.decode(
     ['address', 'address', 'bytes'],
     decoded.data
   );
 
+  // XXX impersonate 0x0000000000000000000000000000000000001001
   // impersonate the l2 bridge contract
   await l2Hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
@@ -215,6 +178,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
   const fxChildSigner = await l2DeploymentManager.getSigner(fxChild);
 
   await setNextL2BaseFeeToZero();
+  // fxChild.onStateReceive(some int, decoded.data)
   const processMessageFromRootTxn = await (
     await polygonBridgeReceiver?.connect(fxChildSigner).processMessageFromRoot(
       0,

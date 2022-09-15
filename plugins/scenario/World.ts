@@ -18,6 +18,15 @@ export type Snapshot = {
   auxiliarySnapshot?: string;
 }
 
+// XXX move to deployment manager?
+export async function impersonateAddress(dm: DeploymentManager, address: string): Promise<SignerWithAddress> {
+  await dm.hre.network.provider.request({
+    method: 'hardhat_impersonateAccount',
+    params: [address],
+  });
+  return await dm.getSigner(address);
+}
+
 export class World {
   base: ForkSpec;
   deploymentManager: DeploymentManager;
