@@ -9,7 +9,7 @@ async function getOpenProposals(world: World, governor: IGovernorBravo): Promise
   const votingDelay = (await governor.votingDelay()).toNumber();
   const votingPeriod = (await governor.votingPeriod()).toNumber();
   const searchBlocks = votingDelay + votingPeriod + timelockBuf;
-  const block = await world.hre.ethers.provider.getBlockNumber();
+  const block = await world.deploymentManager.hre.ethers.provider.getBlockNumber();
   const filter = governor.filters.ProposalCreated();
   const logs = await fetchLogs(governor, filter, block - searchBlocks, block);
   const proposals = [];

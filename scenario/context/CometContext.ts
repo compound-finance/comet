@@ -41,7 +41,6 @@ export type ActorMap = { [name: string]: CometActor };
 export type AssetMap = { [name: string]: CometAsset };
 
 export interface CometProperties {
-  deploymentManager: DeploymentManager;
   actors: ActorMap;
   assets: AssetMap;
   comet: CometInterface;
@@ -55,13 +54,11 @@ export interface CometProperties {
 
 export class CometContext {
   world: World;
-  deploymentManager: DeploymentManager;
   actors: ActorMap;
   assets: AssetMap;
 
   constructor(world: World) {
     this.world = world;
-    this.deploymentManager = world.deploymentManager; // NB: backwards compatibility (temporary?)
     this.actors = {};
     this.assets = {};
   }
@@ -71,35 +68,35 @@ export class CometContext {
   }
 
   async getComet(): Promise<CometInterface> {
-    return this.deploymentManager.contract('comet');
+    return this.world.deploymentManager.contract('comet');
   }
 
   async getCometAdmin(): Promise<CometProxyAdmin> {
-    return this.deploymentManager.contract('cometAdmin');
+    return this.world.deploymentManager.contract('cometAdmin');
   }
 
   async getConfigurator(): Promise<Configurator> {
-    return this.deploymentManager.contract('configurator');
+    return this.world.deploymentManager.contract('configurator');
   }
 
   async getTimelock(): Promise<SimpleTimelock> {
-    return this.deploymentManager.contract('timelock');
+    return this.world.deploymentManager.contract('timelock');
   }
 
   async getGovernor(): Promise<IGovernorBravo> {
-    return this.deploymentManager.contract('governor');
+    return this.world.deploymentManager.contract('governor');
   }
 
   async getRewards(): Promise<CometRewards> {
-    return this.deploymentManager.contract('rewards');
+    return this.world.deploymentManager.contract('rewards');
   }
 
   async getBulker(): Promise<Bulker> {
-    return this.deploymentManager.contract('bulker');
+    return this.world.deploymentManager.contract('bulker');
   }
 
   async getFauceteer(): Promise<Fauceteer> {
-    return this.deploymentManager.contract('fauceteer');
+    return this.world.deploymentManager.contract('fauceteer');
   }
 
   async getConfiguration(): Promise<ProtocolConfiguration> {
@@ -115,9 +112,9 @@ export class CometContext {
     const admin = await world.impersonateAddress(await oldComet.governor(), 10n ** 18n);
 
     const deploySpec = { cometMain: true, cometExt: true };
-    const deployed = await deployComet(this.deploymentManager, deploySpec, configOverrides, admin);
+    const deployed = await deployComet(this.world.deploymentManager, deploySpec, configOverrides, admin);
 
-    await this.deploymentManager.spider(deployed);
+    await this.world.deploymentManager.spider(deployed);
     await this.setAssets();
 
     debug('Upgraded comet...');
@@ -217,7 +214,7 @@ export class CometContext {
     // Third, source from logs (expensive, in terms of node API limits)
     debug('Source Tokens: sourcing from logs...', amount, cometAsset.address);
     await sourceTokens({
-      dm: this.deploymentManager,
+      dm: this.world.deploymentManager,
       amount,
       asset: cometAsset.address,
       address: recipientAddress,
@@ -234,20 +231,20 @@ export class CometContext {
   }
 
   async setNextBaseFeeToZero() {
-    await this.world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+    await this.world.deploymentManager.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
   }
 
   async setNextBlockTimestamp(timestamp: number) {
-    await this.world.hre.ethers.provider.send('evm_setNextBlockTimestamp', [timestamp]);
+    await this.world.deploymentManager.hre.ethers.provider.send('evm_setNextBlockTimestamp', [timestamp]);
   }
 
   async mineBlocks(blocks: number) {
-    await this.world.hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
+    await this.world.deploymentManager.hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
   }
 
   async executeOpenProposal({ id, startBlock, endBlock }: OpenProposal) {
     const governor = await this.getGovernor();
-    const blockNow = await this.world.hre.ethers.provider.getBlockNumber();
+    const blockNow = await this.world.deploymentManager.hre.ethers.provider.getBlockNumber();
     const blocksUntilStart = startBlock - blockNow;
     const blocksUntilEnd = endBlock - Math.max(startBlock, blockNow);
 
@@ -315,7 +312,7 @@ async function buildActor(name: string, signer: SignerWithAddress, context: Come
 }
 
 async function getActors(context: CometContext): Promise<{ [name: string]: CometActor }> {
-  const { world, deploymentManager } = context;
+  const { world } = context;
 
   const comet = await context.getComet();
   const [
@@ -324,7 +321,7 @@ async function getActors(context: CometContext): Promise<{ [name: string]: Comet
     albertSigner,
     bettySigner,
     charlesSigner
-  ] = await deploymentManager.getSigners();
+  ] = await world.deploymentManager.getSigners();
 
   const adminAddress = await comet.governor();
   const pauseGuardianAddress = await comet.pauseGuardian();
@@ -344,7 +341,7 @@ async function getActors(context: CometContext): Promise<{ [name: string]: Comet
 }
 
 async function getAssets(context: CometContext): Promise<{ [symbol: string]: CometAsset }> {
-  const { deploymentManager } = context;
+  const { deploymentManager } = context.world;
 
   let comet = await context.getComet();
   let signer = await deploymentManager.getSigner();
@@ -371,7 +368,6 @@ async function getInitialContext(world: World): Promise<CometContext> {
 
 async function getContextProperties(context: CometContext): Promise<CometProperties> {
   return {
-    deploymentManager: context.deploymentManager,
     actors: context.actors,
     assets: context.assets,
     comet: await context.getComet(),

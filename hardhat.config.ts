@@ -207,7 +207,8 @@ const config: HardhatUserConfig = {
       {
         name: 'mumbai',
         network: 'mumbai',
-        deployment: 'usdc'
+        deployment: 'usdc',
+        auxiliaryBase: 'goerli'
       }
     ],
   },

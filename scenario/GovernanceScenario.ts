@@ -45,7 +45,7 @@ Timelock
 const FX_ROOT_GOERLI = '0x3d1d3E34f7fB6D26245E6640E1c50710eFFf15bA';
 const STATE_SENDER = '0xeaa852323826c71cd7920c3b4c007184234c3945';
 
-scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
+scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) => {
   // construct l1 deployment manager
   const l1Base = {
     name: 'goerli',
@@ -55,7 +55,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   const l1Hre = hreForBase(l1Base)
   const l1DeploymentManager = new DeploymentManager("goerli", "usdc", l1Hre);
 
-  const l2DeploymentManager = context.deploymentManager;
+  const l2DeploymentManager = world.deploymentManager;
   const l2Hre = l2DeploymentManager.hre;
 
   // construct l1Governor and l1Proposer
@@ -67,8 +67,8 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   });
   const l1Proposer = await l1DeploymentManager.getSigner(compWhaleAddress);
 
-  const l2Timelock = await context.deploymentManager.contract('timelock');
-  const polygonBridgeReceiver = await context.deploymentManager.contract('polygonBridgeReceiver');
+  const l2Timelock = await world.deploymentManager.contract('timelock');
+  const polygonBridgeReceiver = await world.deploymentManager.contract('polygonBridgeReceiver');
 
   // construct l2 proposal
   const setDelayCalldata = utils.defaultAbiCoder.encode(['uint'], [5 * 24 * 60 * 60]);
@@ -263,12 +263,12 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context) => {
   expect(await l2Timelock?.delay()).to.eq(5 * 24 * 60 * 60);
 });
 
-scenario('upgrade Comet implementation and initialize', {}, async ({ comet, configurator, proxyAdmin }, context) => {
+scenario('upgrade Comet implementation and initialize', {}, async ({ comet, configurator, proxyAdmin }, context, world) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
   expect((await comet.liquidatorPoints(constants.AddressZero)).numAbsorbs).to.be.equal(0);
 
   // Deploy new version of Comet Factory
-  const dm = context.deploymentManager;
+  const dm = world.deploymentManager;
   const cometModifiedFactory = await dm.deploy('cometFactory', 'test/CometModifiedFactory.sol', [], true);
 
   // Execute a governance proposal to:
@@ -289,12 +289,12 @@ scenario('upgrade Comet implementation and initialize', {}, async ({ comet, conf
   expect((await comet.liquidatorPoints(constants.AddressZero)).numAbsorbs).to.be.equal(2 ** 32 - 1);
 });
 
-scenario('upgrade Comet implementation and initialize using deployUpgradeToAndCall', {}, async ({ comet, configurator, proxyAdmin }, context) => {
+scenario('upgrade Comet implementation and initialize using deployUpgradeToAndCall', {}, async ({ comet, configurator, proxyAdmin }, context, world) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
   expect((await comet.liquidatorPoints(constants.AddressZero)).numAbsorbs).to.be.equal(0);
 
   // Deploy new version of Comet Factory
-  const dm = context.deploymentManager;
+  const dm = world.deploymentManager;
   const cometModifiedFactory = await dm.deploy(
     'cometFactory',
     'test/CometModifiedFactory.sol',
@@ -321,11 +321,11 @@ scenario('upgrade Comet implementation and initialize using deployUpgradeToAndCa
   expect((await comet.liquidatorPoints(constants.AddressZero)).numAbsorbs).to.be.equal(2 ** 32 - 1);
 });
 
-scenario('upgrade Comet implementation and call new function', {}, async ({ comet, configurator, proxyAdmin, actors }, context) => {
+scenario('upgrade Comet implementation and call new function', {}, async ({ comet, configurator, proxyAdmin, actors }, context, world) => {
   const { signer } = actors;
 
   // Deploy new version of Comet Factory
-  const dm = context.deploymentManager;
+  const dm = world.deploymentManager;
   const cometModifiedFactory = await dm.deploy('cometFactory', 'test/CometModifiedFactory.sol', [], true);
 
   // Upgrade Comet implementation

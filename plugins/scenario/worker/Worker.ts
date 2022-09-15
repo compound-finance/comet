@@ -7,7 +7,6 @@ import { scenarioGlob } from './Config';
 import { HardhatConfig, HardhatArguments, createContext } from './HardhatContext';
 import { ScenarioConfig } from '../types';
 import { SimpleWorker } from './SimpleWorker';
-import hreForBase from '../utils/hreForBase';
 import { pluralize } from './Report';
 
 interface Message {
@@ -60,7 +59,8 @@ export async function run<T, U, R>({ bases, config, worker }: WorkerData) {
   }
 
   for (const base of bases) {
-    const world = new World(hreForBase(base), base), dm = world.deploymentManager;
+    const world = new World(base);
+    const dm = world.deploymentManager;
     const delta = await dm.runDeployScript({ allMissing: true });
     console.log(`[${base.name}] Deployed ${dm.counter} contracts, spent ${dm.spent} to initialize world 🗺`);
     console.log(`[${base.name}]\n${dm.diffDelta(delta)}`);
