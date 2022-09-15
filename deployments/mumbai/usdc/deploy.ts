@@ -41,7 +41,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     'timelock',
     'vendor/Timelock.sol',
     [
-      bridgeReceiver.address, // admin
+      bridgeReceiver.address,        // admin
       2 * secondsPerDay,             // delay
       14 * secondsPerDay,            // grace period
       2 * secondsPerDay,             // minimum delay

@@ -29,9 +29,7 @@ scenario(
         [timelock.address],
         [0],
         ["setDelay(uint256)"],
-        [
-          utils.defaultAbiCoder.encode(['uint'], [newTimelockDelay])
-        ]
+        [utils.defaultAbiCoder.encode(['uint'], [newTimelockDelay])]
       ]
     );
 
