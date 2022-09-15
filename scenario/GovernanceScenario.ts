@@ -1,27 +1,139 @@
-import { scenario, setNextBaseFeeToZero, fastGovernanceExecute } from './context/CometContext';
+import { scenario, setNextBaseFeeToZero, setNextBlockTimestamp, fastGovernanceExecute } from './context/CometContext';
 import { expect } from 'chai';
-import { constants, Contract, EventFilter, utils } from 'ethers';
+import { BigNumberish, constants, Contract, EventFilter, utils } from 'ethers';
 import { COMP_WHALES } from "../src/deploy";
 import { impersonateAddress } from '../plugins/scenario/World';
 import { importContract } from '../plugins/deployment_manager/Import';
+import { DeploymentManager } from '../plugins/deployment_manager';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 const FX_ROOT_GOERLI = '0x3d1d3E34f7fB6D26245E6640E1c50710eFFf15bA';
 const STATE_SENDER = '0xeaa852323826c71cd7920c3b4c007184234c3945';
+const MUMBAI_RECEIVER_ADDRESSS = '0x0000000000000000000000000000000000001001';
+const EVENT_LISTENER_TIMEOUT = 60000;
 
-scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) => {
-  const l1DeploymentManager = world.auxiliaryDeploymentManager;
-  const l1Hre = l1DeploymentManager?.hre;
-
-  if (!l1DeploymentManager || !l1Hre) {
-    throw new Error("not an L2");
+async function relayMumbaiMessage(
+  governanceDeploymentManager: DeploymentManager,
+  bridgeDeploymentManager: DeploymentManager,
+) {
+  const l2Timelock = await bridgeDeploymentManager.contract('timelock');
+  if (!l2Timelock) {
+    throw new Error("deployment missing timelock");
+  }
+  const bridgeReceiver = await bridgeDeploymentManager.contract('polygonBridgeReceiver');
+  if (!bridgeReceiver) {
+    throw new Error("deployment missing bridge receiver");
   }
 
-  const l2DeploymentManager = world.deploymentManager;
+  // listen on events on the fxRoot
+  const stateSyncedListenerPromise = new Promise(async (resolve, reject) => {
+    const filter: EventFilter = {
+      address: STATE_SENDER,
+      topics: [
+        utils.id("StateSynced(uint256,address,bytes)")
+      ]
+    }
 
-  const proposer = await impersonateAddress(l1DeploymentManager, COMP_WHALES[0]);
+    governanceDeploymentManager.hre.ethers.provider.on(filter, (log) => {
+      resolve(log);
+    });
+
+    setTimeout(() => {
+      reject(new Error('StateSender.StateSynced event listener timed out'));
+    }, EVENT_LISTENER_TIMEOUT);
+  });
+
+  // XXX type for stateSyncedEvent
+  const stateSyncedEvent: any = await stateSyncedListenerPromise;
+
+  const stateSenderInterface = new utils.Interface([
+    "event StateSynced(uint256 indexed id, address indexed contractAddress, bytes data)"
+  ]);
+
+  const { contractAddress, data: stateSyncedData } = stateSenderInterface.decodeEventLog(
+    "StateSynced",
+    stateSyncedEvent.data,
+    stateSyncedEvent.topics
+  );
+
+  const fxChildBuildFile = await importContract('mumbai', contractAddress);
+  // XXX better way to construct this contract?
+  const fxChildContract = new Contract(
+    fxChildBuildFile.contracts["contracts/FxChild.sol:FxChild"].address as string,
+    fxChildBuildFile.contracts["contracts/FxChild.sol:FxChild"].abi as string
+  );
+
+  const mumbaiReceiverSigner = await impersonateAddress(bridgeDeploymentManager, MUMBAI_RECEIVER_ADDRESSS);
+
+  await setNextBaseFeeToZero(bridgeDeploymentManager);
+  // function onStateReceive(uint256 stateId, bytes calldata _data)
+  const onStateReceiveTxn = await (
+    await fxChildContract.connect(mumbaiReceiverSigner).onStateReceive(
+      123,  // stateId
+      stateSyncedData, // _data
+      { gasPrice: 0 }
+    )
+  ).wait();
+
+  // pull the queue transaction event off of processMessageFromRootTxn
+  const queueTransactionEvent = onStateReceiveTxn.events.find(event => event.address === l2Timelock?.address);
+  const { target, value, signature, data, eta } = l2Timelock.interface.decodeEventLog(
+    "QueueTransaction",
+    queueTransactionEvent.data,
+    queueTransactionEvent.topics
+  );
+
+  // fast forward l2 time
+  await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
+
+  // execute queued transaction
+  await setNextBaseFeeToZero(bridgeDeploymentManager);
+  await bridgeReceiver.executeTransaction(
+    target,
+    value,
+    signature,
+    data,
+    eta,
+    { gasPrice: 0 }
+  );
+}
+
+async function fastL2GovernanceExecute(
+  governanceDeploymentManager: DeploymentManager,
+  bridgeDeploymentManager: DeploymentManager,
+  proposer: SignerWithAddress,
+  targets: string[],
+  values: BigNumberish[],
+  signatures: string[],
+  calldatas: string[]
+) {
+  // execute mainnet governance proposal
+  await fastGovernanceExecute(
+    governanceDeploymentManager,
+    proposer,
+    targets,
+    values,
+    signatures,
+    calldatas
+  );
+
+  const bridgeNetwork = bridgeDeploymentManager.network;
+  switch (bridgeNetwork) {
+    case 'mumbai':
+      await relayMumbaiMessage(governanceDeploymentManager, bridgeDeploymentManager);
+      break;
+    default:
+      throw new Error(`No governance execution strategy for network: ${bridgeNetwork}`);
+  }
+}
+
+scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) => {
+  const governanceDeploymentManager = world.auxiliaryDeploymentManager;
+  if (!governanceDeploymentManager) {
+    throw new Error("cannot execute governance without governance deployment manager");
+  }
 
   const l2Timelock = await world.deploymentManager.contract('timelock');
-
   if (!l2Timelock) {
     throw new Error("deployment missing timelock");
   }
@@ -48,8 +160,16 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
     [polygonBridgeReceiver?.address, encodedL2Data]
   );
 
-  await fastGovernanceExecute(
-    l1DeploymentManager,
+  const bridgeDeploymentManager = world.deploymentManager;
+  const proposer = await impersonateAddress(governanceDeploymentManager, COMP_WHALES[0]);
+
+  // check delay before
+  console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
+  expect(await l2Timelock?.delay()).to.eq(2 * 24 * 60 * 60);
+
+  await fastL2GovernanceExecute(
+    governanceDeploymentManager,
+    bridgeDeploymentManager,
     proposer,
     [FX_ROOT_GOERLI],
     [0],
@@ -57,86 +177,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
     [sendMessageToChildCalldata]
   );
 
-  // listen on events on the fxRoot
-  const filter: EventFilter = {
-    address: STATE_SENDER,
-    topics: [
-      utils.id("StateSynced(uint256,address,bytes)")
-    ]
-  }
-
-  const stateSyncedListenerPromise = new Promise(async (resolve, reject) => {
-    l1Hre.ethers.provider.on(filter, (log) => {
-      resolve(log);
-    });
-
-    setTimeout(() => {
-      reject(new Error('timeout'));
-    }, 60000);
-  });
-
-  // XXX type for stateSyncedEvent
-  const stateSyncedEvent: any = await stateSyncedListenerPromise;
-
-  const stateSenderInterface = new l1Hre.ethers.utils.Interface([
-    "event StateSynced(uint256 indexed id, address indexed contractAddress, bytes data)"
-  ]);
-
-  const { contractAddress, data: stateSyncedData } = stateSenderInterface.decodeEventLog(
-    "StateSynced",
-    stateSyncedEvent.data,
-    stateSyncedEvent.topics
-  );
-
-  const fxChildBuildFile = await importContract(
-    'mumbai',
-    contractAddress
-  );
-  const fxChildContract = new l1DeploymentManager.hre.ethers.Contract(
-    fxChildBuildFile.contracts["contracts/FxChild.sol:FxChild"].address as string,
-    fxChildBuildFile.contracts["contracts/FxChild.sol:FxChild"].abi as string
-  );
-
-  const MUMBAI_RECEIVER_ADDRESSS = '0x0000000000000000000000000000000000001001';
-  const mumbaiReceiverSigner = await context.world.impersonateAddress(MUMBAI_RECEIVER_ADDRESSS);
-
-  await setNextBaseFeeToZero(l2DeploymentManager);
-  // function onStateReceive(uint256 stateId, bytes calldata _data)
-  const onStateReceiveTxn = await (
-    await fxChildContract.connect(mumbaiReceiverSigner).onStateReceive(
-      123,  // stateId
-      stateSyncedData, // _data
-      { gasPrice: 0 }
-    )
-  ).wait();
-
-  // pull the queue transaction event off of processMessageFromRootTxn
-  const queueTransactionEvent = onStateReceiveTxn.events.find(event => event.address === l2Timelock?.address);
-  const { target, value, signature, data, eta } = l2Timelock.interface.decodeEventLog(
-    "QueueTransaction",
-    queueTransactionEvent.data,
-    queueTransactionEvent.topics
-  );
-
-  // fast forward l2 time
-  await context.setNextBlockTimestamp(eta.toNumber() + 1);
-
-  // check delay before
-  console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
-  expect(await l2Timelock?.delay()).to.eq(2 * 24 * 60 * 60);
-
-  await setNextBaseFeeToZero(l2DeploymentManager);
-  // execute queue transaction
-  await polygonBridgeReceiver?.executeTransaction(
-    target,
-    value,
-    signature,
-    data,
-    eta,
-    { gasPrice: 0 }
-  );
-
-  // check delay before
+  // check delay after
   console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
   expect(await l2Timelock?.delay()).to.eq(fiveDaysInSeconds);
 });
