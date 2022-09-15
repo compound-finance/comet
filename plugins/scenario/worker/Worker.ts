@@ -49,8 +49,8 @@ function postMessage(worker: SimpleWorker | undefined, message: any) {
 
 async function runDeployScript(dm: DeploymentManager, baseName: string, isAuxiliary = false) {
   const delta = await dm.runDeployScript({ allMissing: true });
-  console.log(`[${isAuxiliary ? "Auxiliary:" : ""}${baseName}] Deployed ${dm.counter} contracts, spent ${dm.spent} to initialize world 🗺`);
-  console.log(`[${isAuxiliary ? "Auxiliary:" : ""}${baseName}]\n${dm.diffDelta(delta)}`);
+  console.log(`[${isAuxiliary ? 'Auxiliary:' : ''}${baseName}] Deployed ${dm.counter} contracts, spent ${dm.spent} to initialize world 🗺`);
+  console.log(`[${isAuxiliary ? 'Auxiliary:' : ''}${baseName}]\n${dm.diffDelta(delta)}`);
 }
 
 export async function run<T, U, R>({ bases, config, worker }: WorkerData) {

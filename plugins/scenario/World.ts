@@ -3,7 +3,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 // NB: this couples this plugin to deployment manager plugin
 import { DeploymentManager } from '../deployment_manager/DeploymentManager';
 import hreForBase from './utils/hreForBase';
-import { impersonateAddress } from "./utils";
+import { impersonateAddress } from './utils';
 
 export type ForkSpec = {
   name: string;
