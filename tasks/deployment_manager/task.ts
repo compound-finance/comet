@@ -1,5 +1,6 @@
 import { task } from 'hardhat/config';
 import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
+import { writeEnacted } from '../../plugins/deployment_manager/Enacted';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeploymentManager, VerifyArgs } from '../../plugins/deployment_manager';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
@@ -162,5 +163,9 @@ task('migrate', 'Runs migration')
       }
 
       await runMigration(dm, prepare, enact, migration, overwrite);
+
+      if (!simulate && enact) {
+        await writeEnacted(migration, dm, true);
+      }
     }
   );

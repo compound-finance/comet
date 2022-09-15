@@ -12,7 +12,9 @@ export async function writeEnacted<T>(migration: Migration<T>, deploymentManager
   const newSourceCode = addEnactedToMigration(sourceFile);
 
   if (writeToFile) {
+    const trace = deploymentManager.tracer();
     await fs.writeFile(migrationPath, newSourceCode);
+    trace(`Wrote \`enacted\` to migration at: ${migrationPath}`)
   }
 
   return newSourceCode;
