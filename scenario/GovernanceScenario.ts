@@ -1,4 +1,4 @@
-import { scenario } from './context/CometContext';
+import { scenario, setNextBaseFeeToZero } from './context/CometContext';
 import { expect } from 'chai';
 import { constants, EventFilter, utils } from 'ethers';
 import { COMP_WHALES } from "../src/deploy";
@@ -24,14 +24,6 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
 
   const l2Timelock = await world.deploymentManager.contract('timelock');
   const polygonBridgeReceiver = await world.deploymentManager.contract('polygonBridgeReceiver');
-
-  async function setNextL1BaseFeeToZero() {
-    await l1Hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
-  }
-
-  async function setNextL2BaseFeeToZero() {
-    await l2Hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
-  }
 
   async function setNextL1BlockTimestamp(timestamp: number) {
     await l1Hre.ethers.provider.send('evm_setNextBlockTimestamp', [timestamp]);
@@ -62,7 +54,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
   );
 
   // propose
-  await setNextL1BaseFeeToZero();
+  await setNextBaseFeeToZero(l1DeploymentManager);
   const proposeTxn = await (
     await l1Governor?.connect(proposer).propose(
       [FX_ROOT_GOERLI],
@@ -95,7 +87,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
           params: [whale],
         });
         const voter = await l1DeploymentManager.getSigner(whale);
-        await setNextL1BaseFeeToZero();
+        await setNextBaseFeeToZero(l1DeploymentManager);
         await l1Governor?.connect(voter).castVote(id, 1, { gasPrice: 0 });
       } catch (err) {
         console.log(`Error while voting for ${whale}`, err.message);
@@ -107,7 +99,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
   // Queue proposal (maybe)
   const state = await l1Governor?.state(id);
   if (state == ProposalState.Succeeded) {
-    await setNextL1BaseFeeToZero();
+    await setNextBaseFeeToZero(l1DeploymentManager);
     await l1Governor?.queue(id, { gasPrice: 0 });
   }
 
@@ -132,7 +124,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
     }, 60000);
   });
 
-  await setNextL1BaseFeeToZero();
+  await setNextBaseFeeToZero(l1DeploymentManager);
   await l1Governor?.execute(id, { gasPrice: 0, gasLimit: 12000000 });
 
   // XXX type for stateSyncedEvent
@@ -172,7 +164,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
   });
   const fxChildSigner = await l2DeploymentManager.getSigner(fxChild);
 
-  await setNextL2BaseFeeToZero();
+  await setNextBaseFeeToZero(l2DeploymentManager);
   // fxChild.onStateReceive(some int, decoded.data)
   const processMessageFromRootTxn = await (
     await polygonBridgeReceiver?.connect(fxChildSigner).processMessageFromRoot(
@@ -203,7 +195,7 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
   // check delay before
   expect(await l2Timelock?.delay()).to.eq(2 * 24 * 60 * 60);
 
-  await setNextL2BaseFeeToZero();
+  await setNextBaseFeeToZero(l2DeploymentManager);
   // execute queue transaction
   const executeTransactionTxn = await (
     await polygonBridgeReceiver?.executeTransaction(

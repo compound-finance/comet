@@ -30,6 +30,7 @@ import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { ProtocolConfiguration, deployComet, COMP_WHALES } from '../../src/deploy';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { Requirements } from '../constraints/Requirements';
+import { DeploymentManager } from '../../plugins/deployment_manager';
 
 export type ActorMap = { [name: string]: CometActor };
 export type AssetMap = { [name: string]: CometAsset };
@@ -44,6 +45,10 @@ export interface CometProperties {
   governor: IGovernorBravo;
   rewards: CometRewards;
   bulker: Bulker;
+}
+
+export async function setNextBaseFeeToZero(dm: DeploymentManager) {
+  await dm.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
 }
 
 export class CometContext {
@@ -225,7 +230,7 @@ export class CometContext {
   }
 
   async setNextBaseFeeToZero() {
-    await this.world.deploymentManager.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+    await setNextBaseFeeToZero(this.world.deploymentManager);
   }
 
   async setNextBlockTimestamp(timestamp: number) {
