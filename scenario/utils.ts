@@ -1,10 +1,16 @@
 import { expect } from 'chai';
-import { BigNumber, Contract, ContractReceipt, Event, EventFilter, constants } from 'ethers';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { BigNumber, BigNumberish, Contract, ContractReceipt, Event, EventFilter, constants } from 'ethers';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
 import { exp } from '../test/helpers';
+import { DeploymentManager } from '../plugins/deployment_manager';
+import { impersonateAddress } from '../plugins/scenario/World';
+import { ProposalState, OpenProposal } from './context/Gov';
+import { debug } from '../plugins/deployment_manager/Utils';
+import { COMP_WHALES } from "../src/deploy";
 
 export const MAX_ASSETS = 15;
 
@@ -237,6 +243,8 @@ export async function isRewardSupported(ctx: CometContext): Promise<boolean> {
 
   const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
   if (rewardTokenAddress === constants.AddressZero) return false;
+
+  return true;
 }
 
 export function isBridgedDeployment(ctx: CometContext): boolean {
@@ -257,4 +265,96 @@ export async function fetchLogs(
   } else {
     return contract.queryFilter(filter, fromBlock, toBlock);
   }
+}
+
+export async function setNextBaseFeeToZero(dm: DeploymentManager) {
+  await dm.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+}
+
+export async function mineBlocks(dm: DeploymentManager, blocks: number) {
+  await dm.hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
+}
+
+export async function setNextBlockTimestamp(dm: DeploymentManager, timestamp: number) {
+  await dm.hre.ethers.provider.send('evm_setNextBlockTimestamp', [timestamp]);
+}
+
+export async function executeOpenProposal(
+  dm: DeploymentManager,
+  { id, startBlock, endBlock }: OpenProposal
+) {
+  const governor = await dm.contract('governor');
+
+  if (!governor) {
+    throw new Error("cannot execute proposal without governor");
+  }
+
+  const blockNow = await dm.hre.ethers.provider.getBlockNumber();
+  const blocksUntilStart = startBlock - blockNow;
+  const blocksUntilEnd = endBlock - Math.max(startBlock, blockNow);
+
+  if (blocksUntilStart > 0) {
+    await mineBlocks(dm, blocksUntilStart);
+  }
+
+  if (blocksUntilEnd > 0) {
+    for (const whale of COMP_WHALES) {
+      try {
+        // Voting can fail if voter has already voted
+        const voter = await impersonateAddress(dm, whale);
+        await setNextBaseFeeToZero(dm);
+        await governor.connect(voter).castVote(id, 1, { gasPrice: 0 });
+      } catch (err) {
+        debug(`Error while voting for ${whale}`, err.message);
+      }
+    }
+    await mineBlocks(dm, blocksUntilEnd);
+  }
+
+  // Queue proposal (maybe)
+  const state = await governor.state(id);
+  if (state == ProposalState.Succeeded) {
+    await setNextBaseFeeToZero(dm);
+    await governor.queue(id, { gasPrice: 0 });
+  }
+
+  const proposal = await governor.proposals(id);
+  await setNextBlockTimestamp(dm, proposal.eta.toNumber() + 1);
+
+  // Execute proposal (w/ gas limit so we see if exec reverts, not a gas estimation error)
+  await setNextBaseFeeToZero(dm);
+  await governor.execute(id, { gasPrice: 0, gasLimit: 12000000 });
+}
+
+// Instantly executes some actions through the governance proposal process
+export async function fastGovernanceExecute(
+  dm: DeploymentManager,
+  proposer: SignerWithAddress,
+  targets: string[],
+  values: BigNumberish[],
+  signatures: string[],
+  calldatas: string[]
+) {
+  const governor = await dm.contract('governor');
+
+  if (!governor) {
+    throw new Error("cannot create governance proposal without governor");
+  }
+
+  await setNextBaseFeeToZero(dm);
+
+  const proposeTxn = await (
+    await governor.connect(proposer).propose(
+      targets,
+      values,
+      signatures,
+      calldatas,
+      'FastExecuteProposal',
+      { gasPrice: 0 }
+    )
+  ).wait();
+  const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
+  const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
+
+  await executeOpenProposal(dm, { id, startBlock, endBlock });
 }

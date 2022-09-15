@@ -1,4 +1,4 @@
-import { scenario, setNextBaseFeeToZero, setNextBlockTimestamp, fastGovernanceExecute } from './context/CometContext';
+import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { BigNumberish, constants, Contract, EventFilter, utils } from 'ethers';
 import { COMP_WHALES } from "../src/deploy";
@@ -6,7 +6,7 @@ import { impersonateAddress } from '../plugins/scenario/World';
 import { importContract } from '../plugins/deployment_manager/Import';
 import { DeploymentManager } from '../plugins/deployment_manager';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { isBridgedDeployment } from './utils';
+import { isBridgedDeployment, setNextBaseFeeToZero, setNextBlockTimestamp, fastGovernanceExecute  } from './utils';
 
 const FX_ROOT_GOERLI = '0x3d1d3E34f7fB6D26245E6640E1c50710eFFf15bA';
 const STATE_SENDER = '0xeaa852323826c71cd7920c3b4c007184234c3945';
@@ -131,7 +131,7 @@ async function fastL2GovernanceExecute(
 scenario(
   'execute Mumbai governance proposal',
   {
-    filter: async (ctx) => ctx.world.network === 'mumbai'
+    filter: async (ctx) => ctx.world.base.network === 'mumbai'
   },
   async (_properties, _context, world) => {
     const governanceDeploymentManager = world.auxiliaryDeploymentManager;
