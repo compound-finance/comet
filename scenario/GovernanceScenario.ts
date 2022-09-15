@@ -20,9 +20,8 @@ scenario(
 
     const proposer = await impersonateAddress(governanceDeploymentManager, COMP_WHALES[0]);
 
-    // l2 proposal
     const fiveDaysInSeconds = 5 * 24 * 60 * 60;
-    const encodedL2Data = utils.defaultAbiCoder.encode(
+    const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
         [timelock.address],
@@ -34,10 +33,9 @@ scenario(
       ]
     );
 
-    // l1 proposal
     const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
       ['address', 'bytes'],
-      [bridgeReceiver?.address, encodedL2Data]
+      [bridgeReceiver.address, l2ProposalData]
     );
 
     expect(await timelock.delay()).to.eq(2 * 24 * 60 * 60);
