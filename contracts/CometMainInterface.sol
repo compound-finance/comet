@@ -9,19 +9,19 @@ import "./CometCore.sol";
  * @author Compound
  */
 abstract contract CometMainInterface is CometCore {
-    event Supply(address indexed from, address indexed dst, uint256 amount);
-    event Transfer(address indexed from, address indexed to, uint256 amount);
-    event Withdraw(address indexed src, address indexed to, uint256 amount);
+    event Supply(address indexed from, address indexed dst, uint amount);
+    event Transfer(address indexed from, address indexed to, uint amount);
+    event Withdraw(address indexed src, address indexed to, uint amount);
 
-    event SupplyCollateral(address indexed from, address indexed dst, address indexed asset, uint256 amount);
-    event TransferCollateral(address indexed from, address indexed to, address indexed asset, uint256 amount);
-    event WithdrawCollateral(address indexed src, address indexed to, address indexed asset, uint256 amount);
+    event SupplyCollateral(address indexed from, address indexed dst, address indexed asset, uint amount);
+    event TransferCollateral(address indexed from, address indexed to, address indexed asset, uint amount);
+    event WithdrawCollateral(address indexed src, address indexed to, address indexed asset, uint amount);
 
     /// @notice Event emitted when a borrow position is absorbed by the protocol
-    event AbsorbDebt(address indexed absorber, address indexed borrower, uint104 basePaidOut, uint usdValue);
+    event AbsorbDebt(address indexed absorber, address indexed borrower, uint basePaidOut, uint usdValue);
 
     /// @notice Event emitted when a user's collateral is absorbed by the protocol
-    event AbsorbCollateral(address indexed absorber, address indexed borrower, address indexed asset, uint128 collateralAbsorbed, uint usdValue);
+    event AbsorbCollateral(address indexed absorber, address indexed borrower, address indexed asset, uint collateralAbsorbed, uint usdValue);
 
     /// @notice Event emitted when a collateral asset is purchased from the protocol
     event BuyCollateral(address indexed buyer, address indexed asset, uint baseAmount, uint collateralAmount);
@@ -56,7 +56,7 @@ abstract contract CometMainInterface is CometCore {
     function getAssetInfo(uint8 i) virtual public view returns (AssetInfo memory);
     function getAssetInfoByAddress(address asset) virtual public view returns (AssetInfo memory);
     function getReserves() virtual public view returns (int);
-    function getPrice(address priceFeed) virtual public view returns (uint128);
+    function getPrice(address priceFeed) virtual public view returns (uint);
 
     function isBorrowCollateralized(address account) virtual public view returns (bool);
     function isLiquidatable(address account) virtual public view returns (bool);
@@ -85,15 +85,21 @@ abstract contract CometMainInterface is CometCore {
     function extensionDelegate() virtual external view returns (address);
 
     /// @dev uint64
-    function kink() virtual external view returns (uint);
+    function supplyKink() virtual external view returns (uint);
     /// @dev uint64
-    function perSecondInterestRateSlopeLow() virtual external view returns (uint);
+    function supplyPerSecondInterestRateSlopeLow() virtual external view returns (uint);
     /// @dev uint64
-    function perSecondInterestRateSlopeHigh() virtual external view returns (uint);
+    function supplyPerSecondInterestRateSlopeHigh() virtual external view returns (uint);
     /// @dev uint64
-    function perSecondInterestRateBase() virtual external view returns (uint);
+    function supplyPerSecondInterestRateBase() virtual external view returns (uint);
     /// @dev uint64
-    function reserveRate() virtual external view returns (uint);
+    function borrowKink() virtual external view returns (uint);
+    /// @dev uint64
+    function borrowPerSecondInterestRateSlopeLow() virtual external view returns (uint);
+    /// @dev uint64
+    function borrowPerSecondInterestRateSlopeHigh() virtual external view returns (uint);
+    /// @dev uint64
+    function borrowPerSecondInterestRateBase() virtual external view returns (uint);
     /// @dev uint64
     function storeFrontPriceFactor() virtual external view returns (uint);
 

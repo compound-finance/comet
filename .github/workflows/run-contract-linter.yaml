@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
 jobs:
-  run_contract_linter:
+  run-contract-linter:
     name: Contract linter
     runs-on: ubuntu-latest
     env:

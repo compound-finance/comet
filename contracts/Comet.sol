@@ -18,10 +18,8 @@ contract Comet is CometMainInterface {
     error BadAsset();
     error BadDecimals();
     error BadDiscount();
-    error BadKink();
     error BadMinimum();
     error BadPrice();
-    error BadReserveRate();
     error BorrowTooSmall();
     error BorrowCFTooLarge();
     error InsufficientReserves();
@@ -56,25 +54,37 @@ contract Comet is CometMainInterface {
     /// @notice The address of the extension contract delegate
     address public override immutable extensionDelegate;
 
-    /// @notice The point in the supply and borrow rates separating the low interest rate slope and the high interest rate slope (factor)
+    /// @notice The point in the supply rates separating the low interest rate slope and the high interest rate slope (factor)
     /// @dev uint64
-    uint public override immutable kink;
+    uint public override immutable supplyKink;
 
-    /// @notice Per second interest rate slope applied when utilization is below kink (factor)
+    /// @notice Per second supply interest rate slope applied when utilization is below kink (factor)
     /// @dev uint64
-    uint public override immutable perSecondInterestRateSlopeLow;
+    uint public override immutable supplyPerSecondInterestRateSlopeLow;
 
-    /// @notice Per second interest rate slope applied when utilization is above kink (factor)
+    /// @notice Per second supply interest rate slope applied when utilization is above kink (factor)
     /// @dev uint64
-    uint public override immutable perSecondInterestRateSlopeHigh;
+    uint public override immutable supplyPerSecondInterestRateSlopeHigh;
 
-    /// @notice Per second base interest rate (factor)
+    /// @notice Per second supply base interest rate (factor)
     /// @dev uint64
-    uint public override immutable perSecondInterestRateBase;
+    uint public override immutable supplyPerSecondInterestRateBase;
 
-    /// @notice The rate of total interest paid that goes into reserves (factor)
+    /// @notice The point in the borrow rate separating the low interest rate slope and the high interest rate slope (factor)
     /// @dev uint64
-    uint public override immutable reserveRate;
+    uint public override immutable borrowKink;
+
+    /// @notice Per second borrow interest rate slope applied when utilization is below kink (factor)
+    /// @dev uint64
+    uint public override immutable borrowPerSecondInterestRateSlopeLow;
+
+    /// @notice Per second borrow interest rate slope applied when utilization is above kink (factor)
+    /// @dev uint64
+    uint public override immutable borrowPerSecondInterestRateSlopeHigh;
+
+    /// @notice Per second borrow base interest rate (factor)
+    /// @dev uint64
+    uint public override immutable borrowPerSecondInterestRateBase;
 
     /// @notice The fraction of the liquidation penalty that goes to buyers of collateral instead of the protocol
     /// @dev uint64
@@ -96,17 +106,15 @@ contract Comet is CometMainInterface {
     /// @dev uint64
     uint public override immutable baseTrackingBorrowSpeed;
 
-    /// @notice The minimum amount of base wei for rewards to accrue
+    /// @notice The minimum amount of base principal wei for rewards to accrue
     /// @dev This must be large enough so as to prevent division by base wei from overflowing the 64 bit indices
     /// @dev uint104
     uint public override immutable baseMinForRewards;
 
     /// @notice The minimum base amount required to initiate a borrow
-    /// @dev uint104
     uint public override immutable baseBorrowMin;
 
     /// @notice The minimum base token reserves which must be held before collateral is hodled
-    /// @dev uint104
     uint public override immutable targetReserves;
 
     /// @notice The number of decimals for wrapped base token
@@ -163,8 +171,6 @@ contract Comet is CometMainInterface {
         if (config.assetConfigs.length > MAX_ASSETS) revert TooManyAssets();
         if (config.baseMinForRewards == 0) revert BadMinimum();
         if (AggregatorV3Interface(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
-        if (config.reserveRate > FACTOR_SCALE) revert BadReserveRate();
-        if (config.kink > FACTOR_SCALE) revert BadKink();
 
         // Copy configuration
         unchecked {
@@ -191,11 +197,14 @@ contract Comet is CometMainInterface {
 
         // Set interest rate model configs
         unchecked {
-            kink = config.kink;
-            perSecondInterestRateSlopeLow = config.perYearInterestRateSlopeLow / SECONDS_PER_YEAR;
-            perSecondInterestRateSlopeHigh = config.perYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
-            perSecondInterestRateBase = config.perYearInterestRateBase / SECONDS_PER_YEAR;
-            reserveRate = config.reserveRate;
+            supplyKink = config.supplyKink;
+            supplyPerSecondInterestRateSlopeLow = config.supplyPerYearInterestRateSlopeLow / SECONDS_PER_YEAR;
+            supplyPerSecondInterestRateSlopeHigh = config.supplyPerYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
+            supplyPerSecondInterestRateBase = config.supplyPerYearInterestRateBase / SECONDS_PER_YEAR;
+            borrowKink = config.borrowKink;
+            borrowPerSecondInterestRateSlopeLow = config.borrowPerYearInterestRateSlopeLow / SECONDS_PER_YEAR;
+            borrowPerSecondInterestRateSlopeHigh = config.borrowPerYearInterestRateSlopeHigh / SECONDS_PER_YEAR;
+            borrowPerSecondInterestRateBase = config.borrowPerYearInterestRateBase / SECONDS_PER_YEAR;
         }
 
         // Set asset info
@@ -440,30 +449,31 @@ contract Comet is CometMainInterface {
 
     /**
      * @dev Note: Does not accrue interest first
+     * @param utilization The utilization to check the supply rate for
      * @return The per second supply rate at `utilization`
      */
     function getSupplyRate(uint utilization) override public view returns (uint64) {
-        uint reserveScalingFactor = utilization * (FACTOR_SCALE - reserveRate) / FACTOR_SCALE;
-        if (utilization <= kink) {
-            // (interestRateBase + interestRateSlopeLow * utilization) * utilization * (1 - reserveRate)
-            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization))));
+        if (utilization <= supplyKink) {
+            // interestRateBase + interestRateSlopeLow * utilization
+            return safe64(supplyPerSecondInterestRateBase + mulFactor(supplyPerSecondInterestRateSlopeLow, utilization));
         } else {
-            // (interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)) * utilization * (1 - reserveRate)
-            return safe64(mulFactor(reserveScalingFactor, (perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)))));
+            // interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)
+            return safe64(supplyPerSecondInterestRateBase + mulFactor(supplyPerSecondInterestRateSlopeLow, supplyKink) + mulFactor(supplyPerSecondInterestRateSlopeHigh, (utilization - supplyKink)));
         }
     }
 
     /**
      * @dev Note: Does not accrue interest first
+     * @param utilization The utilization to check the borrow rate for
      * @return The per second borrow rate at `utilization`
      */
     function getBorrowRate(uint utilization) override public view returns (uint64) {
-        if (utilization <= kink) {
+        if (utilization <= borrowKink) {
             // interestRateBase + interestRateSlopeLow * utilization
-            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, utilization));
+            return safe64(borrowPerSecondInterestRateBase + mulFactor(borrowPerSecondInterestRateSlopeLow, utilization));
         } else {
             // interestRateBase + interestRateSlopeLow * kink + interestRateSlopeHigh * (utilization - kink)
-            return safe64(perSecondInterestRateBase + mulFactor(perSecondInterestRateSlopeLow, kink) + mulFactor(perSecondInterestRateSlopeHigh, (utilization - kink)));
+            return safe64(borrowPerSecondInterestRateBase + mulFactor(borrowPerSecondInterestRateSlopeLow, borrowKink) + mulFactor(borrowPerSecondInterestRateSlopeHigh, (utilization - borrowKink)));
         }
     }
 
@@ -486,10 +496,10 @@ contract Comet is CometMainInterface {
      * @param priceFeed The address of a price feed
      * @return The price, scaled by `PRICE_SCALE`
      */
-    function getPrice(address priceFeed) override public view returns (uint128) {
+    function getPrice(address priceFeed) override public view returns (uint256) {
         (, int price, , , ) = AggregatorV3Interface(priceFeed).latestRoundData();
-        if (price <= 0 || price > type(int128).max) revert BadPrice();
-        return uint128(int128(price));
+        if (price <= 0) revert BadPrice();
+        return uint256(price);
     }
 
     /**
@@ -498,9 +508,9 @@ contract Comet is CometMainInterface {
     function getReserves() override public view returns (int) {
         (uint64 baseSupplyIndex_, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
         uint balance = ERC20(baseToken).balanceOf(address(this));
-        uint104 totalSupply_ = presentValueSupply(baseSupplyIndex_, totalSupplyBase);
-        uint104 totalBorrow_ = presentValueBorrow(baseBorrowIndex_, totalBorrowBase);
-        return signed256(balance) - signed104(totalSupply_) + signed104(totalBorrow_);
+        uint totalSupply_ = presentValueSupply(baseSupplyIndex_, totalSupplyBase);
+        uint totalBorrow_ = presentValueBorrow(baseBorrowIndex_, totalBorrowBase);
+        return signed256(balance) - signed256(totalSupply_) + signed256(totalBorrow_);
     }
 
     /**
@@ -699,19 +709,15 @@ contract Comet is CometMainInterface {
     /**
      * @dev Multiply a `fromScale` quantity by a price, returning a common price quantity
      */
-    function mulPrice(uint128 n, uint128 price, uint64 fromScale) internal pure returns (uint) {
-        unchecked {
-            return uint256(n) * price / fromScale;
-        }
+    function mulPrice(uint n, uint price, uint64 fromScale) internal pure returns (uint) {
+        return n * price / fromScale;
     }
 
     /**
      * @dev Multiply a signed `fromScale` quantity by a price, returning a common price quantity
      */
-    function signedMulPrice(int128 n, uint128 price, uint64 fromScale) internal pure returns (int) {
-        unchecked {
-            return n * signed256(price) / signed256(fromScale);
-        }
+    function signedMulPrice(int n, uint price, uint64 fromScale) internal pure returns (int) {
+        return n * signed256(price) / int256(uint256(fromScale));
     }
 
     /**
@@ -828,7 +834,7 @@ contract Comet is CometMainInterface {
             if (amount == type(uint256).max) {
                 amount = borrowBalanceOf(dst);
             }
-            return supplyBase(from, dst, safe104(amount));
+            return supplyBase(from, dst, amount);
         } else {
             return supplyCollateral(from, dst, asset, safe128(amount));
         }
@@ -837,14 +843,14 @@ contract Comet is CometMainInterface {
     /**
      * @dev Supply an amount of base asset from `from` to dst
      */
-    function supplyBase(address from, address dst, uint104 amount) internal {
+    function supplyBase(address from, address dst, uint256 amount) internal {
         doTransferIn(baseToken, from, amount);
 
         accrueInternal();
 
         UserBasic memory dstUser = userBasic[dst];
         int104 dstPrincipal = dstUser.principal;
-        int104 dstBalance = presentValue(dstPrincipal) + signed104(amount);
+        int256 dstBalance = presentValue(dstPrincipal) + signed256(amount);
         int104 dstPrincipalNew = principalValue(dstBalance);
 
         (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(dstPrincipal, dstPrincipalNew);
@@ -940,7 +946,7 @@ contract Comet is CometMainInterface {
             if (amount == type(uint256).max) {
                 amount = balanceOf(src);
             }
-            return transferBase(src, dst, safe104(amount));
+            return transferBase(src, dst, amount);
         } else {
             return transferCollateral(src, dst, asset, safe128(amount));
         }
@@ -949,7 +955,7 @@ contract Comet is CometMainInterface {
     /**
      * @dev Transfer an amount of base asset from src to dst, borrowing if possible/necessary
      */
-    function transferBase(address src, address dst, uint104 amount) internal {
+    function transferBase(address src, address dst, uint256 amount) internal {
         accrueInternal();
 
         UserBasic memory srcUser = userBasic[src];
@@ -957,8 +963,8 @@ contract Comet is CometMainInterface {
 
         int104 srcPrincipal = srcUser.principal;
         int104 dstPrincipal = dstUser.principal;
-        int104 srcBalance = presentValue(srcPrincipal) - signed104(amount);
-        int104 dstBalance = presentValue(dstPrincipal) + signed104(amount);
+        int256 srcBalance = presentValue(srcPrincipal) - signed256(amount);
+        int256 dstBalance = presentValue(dstPrincipal) + signed256(amount);
         int104 srcPrincipalNew = principalValue(srcBalance);
         int104 dstPrincipalNew = principalValue(dstBalance);
 
@@ -973,7 +979,7 @@ contract Comet is CometMainInterface {
         updateBasePrincipal(dst, dstUser, dstPrincipalNew);
 
         if (srcBalance < 0) {
-            if (uint104(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
+            if (uint256(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
             if (!isBorrowCollateralized(src)) revert NotCollateralized();
         }
 
@@ -1050,7 +1056,7 @@ contract Comet is CometMainInterface {
             if (amount == type(uint256).max) {
                 amount = balanceOf(src);
             }
-            return withdrawBase(src, to, safe104(amount));
+            return withdrawBase(src, to, amount);
         } else {
             return withdrawCollateral(src, to, asset, safe128(amount));
         }
@@ -1059,12 +1065,12 @@ contract Comet is CometMainInterface {
     /**
      * @dev Withdraw an amount of base asset from src to `to`, borrowing if possible/necessary
      */
-    function withdrawBase(address src, address to, uint104 amount) internal {
+    function withdrawBase(address src, address to, uint256 amount) internal {
         accrueInternal();
 
         UserBasic memory srcUser = userBasic[src];
         int104 srcPrincipal = srcUser.principal;
-        int104 srcBalance = presentValue(srcPrincipal) - signed104(amount);
+        int256 srcBalance = presentValue(srcPrincipal) - signed256(amount);
         int104 srcPrincipalNew = principalValue(srcBalance);
 
         (uint104 withdrawAmount, uint104 borrowAmount) = withdrawAndBorrowAmount(srcPrincipal, srcPrincipalNew);
@@ -1075,7 +1081,7 @@ contract Comet is CometMainInterface {
         updateBasePrincipal(src, srcUser, srcPrincipalNew);
 
         if (srcBalance < 0) {
-            if (uint104(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
+            if (uint256(-srcBalance) < baseBorrowMin) revert BorrowTooSmall();
             if (!isBorrowCollateralized(src)) revert NotCollateralized();
         }
 
@@ -1144,11 +1150,11 @@ contract Comet is CometMainInterface {
 
         UserBasic memory accountUser = userBasic[account];
         int104 oldPrincipal = accountUser.principal;
-        int104 oldBalance = presentValue(oldPrincipal);
+        int256 oldBalance = presentValue(oldPrincipal);
         uint16 assetsIn = accountUser.assetsIn;
 
-        uint128 basePrice = getPrice(baseTokenPriceFeed);
-        uint deltaValue = 0;
+        uint256 basePrice = getPrice(baseTokenPriceFeed);
+        uint256 deltaValue = 0;
 
         for (uint8 i = 0; i < numAssets; ) {
             if (isInAsset(assetsIn, i)) {
@@ -1158,7 +1164,7 @@ contract Comet is CometMainInterface {
                 userCollateral[account][asset].balance = 0;
                 userCollateral[address(this)][asset].balance += seizeAmount;
 
-                uint value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
+                uint256 value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
                 deltaValue += mulFactor(value, assetInfo.liquidationFactor);
 
                 emit AbsorbCollateral(absorber, account, asset, seizeAmount, value);
@@ -1166,8 +1172,8 @@ contract Comet is CometMainInterface {
             unchecked { i++; }
         }
 
-        uint104 deltaBalance = safe104(divPrice(deltaValue, basePrice, uint64(baseScale)));
-        int104 newBalance = oldBalance + signed104(deltaBalance);
+        uint256 deltaBalance = divPrice(deltaValue, basePrice, uint64(baseScale));
+        int256 newBalance = oldBalance + signed256(deltaBalance);
         // New balance will not be negative, all excess debt absorbed by reserves
         if (newBalance < 0) {
             newBalance = 0;
@@ -1186,8 +1192,8 @@ contract Comet is CometMainInterface {
         totalSupplyBase += supplyAmount;
         totalBorrowBase -= repayAmount;
 
-        uint104 basePaidOut = unsigned104(newBalance - oldBalance);
-        uint valueOfBasePaidOut = mulPrice(basePaidOut, basePrice, uint64(baseScale));
+        uint256 basePaidOut = unsigned256(newBalance - oldBalance);
+        uint256 valueOfBasePaidOut = mulPrice(basePaidOut, basePrice, uint64(baseScale));
         emit AbsorbDebt(absorber, account, basePaidOut, valueOfBasePaidOut);
     }
 
@@ -1226,12 +1232,12 @@ contract Comet is CometMainInterface {
      */
     function quoteCollateral(address asset, uint baseAmount) override public view returns (uint) {
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
-        uint128 assetPrice = getPrice(assetInfo.priceFeed);
+        uint256 assetPrice = getPrice(assetInfo.priceFeed);
         // Store front discount is derived from the collateral asset's liquidationFactor and storeFrontPriceFactor
         // discount = storeFrontPriceFactor * (1e18 - liquidationFactor)
-        uint discountFactor = mulFactor(storeFrontPriceFactor, FACTOR_SCALE - assetInfo.liquidationFactor);
-        uint128 assetPriceDiscounted = uint128(mulFactor(assetPrice, FACTOR_SCALE - discountFactor));
-        uint128 basePrice = getPrice(baseTokenPriceFeed);
+        uint256 discountFactor = mulFactor(storeFrontPriceFactor, FACTOR_SCALE - assetInfo.liquidationFactor);
+        uint256 assetPriceDiscounted = mulFactor(assetPrice, FACTOR_SCALE - discountFactor);
+        uint256 basePrice = getPrice(baseTokenPriceFeed);
         // # of collateral assets
         // = (TotalValueOfBaseAmount / DiscountedPriceOfCollateralAsset) * assetScale
         // = ((basePrice * baseAmount / baseScale) / assetPriceDiscounted) * assetScale

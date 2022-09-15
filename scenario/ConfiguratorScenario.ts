@@ -1,39 +1,34 @@
-import { CometProperties, scenario } from './context/CometContext';
+import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { utils } from 'ethers';
-import { scaleToDecimals } from './utils';
 
-scenario('upgrade governor', { upgradeAll: true }, async ({ comet, configurator, proxyAdmin, timelock, actors }, world, context) => {
+scenario('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, timelock, actors }, context) => {
   const { admin, albert } = actors;
 
   expect(await comet.governor()).to.equal(timelock.address);
   expect((await configurator.getConfiguration(comet.address)).governor).to.equal(timelock.address);
 
-  let setGovernorCalldata = utils.defaultAbiCoder.encode(["address", "address"], [comet.address, albert.address]);
-  let deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
-  await context.fastGovernanceExecute(
-    [configurator.address, proxyAdmin.address],
-    [0, 0],
-    ["setGovernor(address,address)", "deployAndUpgradeTo(address,address)"],
-    [setGovernorCalldata, deployAndUpgradeToCalldata]
-  );
+  await context.setNextBaseFeeToZero();
+  await configurator.connect(admin.signer).setGovernor(comet.address, albert.address, { gasPrice: 0 });
+  await context.setNextBaseFeeToZero();
+  await admin.deployAndUpgradeTo(configurator.address, comet.address, { gasPrice: 0 });
 
   expect(await comet.governor()).to.equal(albert.address);
   expect((await configurator.getConfiguration(comet.address)).governor).to.be.equal(albert.address);
 });
 
-scenario('add assets', { upgradeAll: true }, async ({ comet, configurator, proxyAdmin }: CometProperties, world, context) => {
+scenario('add assets', {}, async ({ comet, configurator, proxyAdmin, actors }, context) => {
+  const { admin } = actors;
   let numAssets = await comet.numAssets();
-  let collateralAssets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
-  let contextAssets =
+  const collateralAssets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
+  const contextAssets =
     Object.values(collateralAssets)
       .map((asset) => asset.asset); // grab asset address
   expect(collateralAssets.map(a => a.asset)).to.have.members(contextAssets);
 
   // Add new asset and deploy + upgrade
-  let newAsset = await comet.getAssetInfo(0);
-  let newAssetDecimals = scaleToDecimals(newAsset.scale); // # of 0's in scale
-  let newAssetConfig = {
+  const newAsset = await comet.getAssetInfo(0);
+  const newAssetDecimals = Math.log10(Number(newAsset.scale.toString()));
+  const newAssetConfig = {
     asset: newAsset.asset,
     priceFeed: newAsset.priceFeed,
     decimals: newAssetDecimals.toString(),
@@ -42,67 +37,43 @@ scenario('add assets', { upgradeAll: true }, async ({ comet, configurator, proxy
     liquidationFactor: (0.95e18).toString(),
     supplyCap: (1000000e8).toString(),
   };
-  let addAssetCalldata = utils.defaultAbiCoder.encode(
-    ["address", "tuple(address,address,uint8,uint64,uint64,uint64,uint128)"],
-    [
-      comet.address,
-      [
-        newAssetConfig.asset,
-        newAssetConfig.priceFeed,
-        newAssetConfig.decimals,
-        newAssetConfig.borrowCollateralFactor,
-        newAssetConfig.liquidateCollateralFactor,
-        newAssetConfig.liquidationFactor,
-        newAssetConfig.supplyCap
-      ]
-    ]);
-  let deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(["address", "address"], [configurator.address, comet.address]);
-  await context.fastGovernanceExecute(
-    [configurator.address],
-    [0],
-    ["addAsset(address,(address,address,uint8,uint64,uint64,uint64,uint128))"],
-    [addAssetCalldata]
-  );
-  await context.fastGovernanceExecute(
-    [proxyAdmin.address],
-    [0],
-    ["deployAndUpgradeTo(address,address)"],
-    [deployAndUpgradeToCalldata]
-  );
+  await context.setNextBaseFeeToZero();
+  await configurator.connect(admin.signer).addAsset(comet.address, newAssetConfig, { gasPrice: 0 });
+  await context.setNextBaseFeeToZero();
+  await admin.deployAndUpgradeTo(configurator.address, comet.address, { gasPrice: 0 });
 
   // Verify new asset is added
   numAssets = await comet.numAssets();
-  let updatedCollateralAssets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
-  let updatedContextAssets =
+  const updatedCollateralAssets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
+  const updatedContextAssets =
     Object.values(updatedCollateralAssets)
       .map((asset) => asset.asset); // grab asset address
   expect(updatedCollateralAssets.length).to.equal(collateralAssets.length + 1);
   expect(updatedCollateralAssets.map(a => a.asset)).to.have.members(updatedContextAssets);
 });
 
-// XXX Hardhat currently can't parse custom errors from external contracts. We can use `upgrade: true` and
-// have an option for the ModernConstraint to also re-deploy proxies.
-// https://github.com/NomicFoundation/hardhat/issues/1618
-scenario.skip(
+// XXX Hardhat currently can't parse custom errors from external contracts.
+//  We could use `upgrade` and have an option for the ModernConstraint to also re-deploy proxies?
+//  https://github.com/NomicFoundation/hardhat/issues/1618
+scenario.skip( // XXX try again
   'reverts if configurator is not called by admin',
   {},
-  async ({ comet, configurator, proxyAdmin, actors }, world) => {
+  async ({ comet, configurator, proxyAdmin, actors }) => {
     const { albert } = actors;
-
-    await expect(configurator.connect(albert.signer).setGovernor(comet.address, albert.address)).to.be.revertedWith(
-      'Unauthorized'
-    );
+    await expect(
+      configurator.connect(albert.signer).setGovernor(comet.address, albert.address)
+    ).to.be.revertedWith('Unauthorized');
   });
 
-scenario.skip('reverts if proxy is not upgraded by ProxyAdmin', {}, async ({ comet, proxyAdmin, actors }, world) => {
+scenario.skip('reverts if proxy is not upgraded by ProxyAdmin', {}, async ({ comet, proxyAdmin, actors }) => {
   // XXX
 });
 
 
-scenario.skip('fallbacks to implementation if called by non-admin', {}, async ({ comet, proxyAdmin, actors }, world) => {
+scenario.skip('fallbacks to implementation if called by non-admin', {}, async ({ comet, proxyAdmin, actors }) => {
   // XXX
 });
 
-scenario.skip('transfer admin of configurator', {}, async ({ comet, proxyAdmin, actors }, world) => {
+scenario.skip('transfer admin of configurator', {}, async ({ comet, proxyAdmin, actors }) => {
   // XXX
 });

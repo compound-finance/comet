@@ -25,30 +25,32 @@ function getBasesFromTaskArgs(givenBases: string | undefined, env: HardhatRuntim
 
 task('scenario', 'Runs scenario tests')
   .addOptionalParam('bases', 'Bases to run on [defaults to all]')
-  .addFlag('noSpider', 'skip spider')
-  .addFlag('sync', 'run synchronously')
-  .addOptionalParam('stall', 'milliseconds to wait until we fail for stalling', 120000, types.int)
-  .addOptionalParam('workers', 'count of workers', 6, types.int)
+  .addFlag('spider', 'run spider persistently before scenarios')
+  .addOptionalParam('stall', 'milliseconds to wait until we fail for stalling', 180_000, types.int)
+  .addOptionalParam('workers', 'count of workers', 1, types.int) // TODO: optimize parallelized workers better (1 per base?)
   .setAction(async (taskArgs, env: HardhatRuntimeEnvironment) => {
-    let bases: ForkSpec[] = getBasesFromTaskArgs(taskArgs.bases, env);
-
-    if (!taskArgs.noSpider) {
+    const bases: ForkSpec[] = getBasesFromTaskArgs(taskArgs.bases, env);
+    if (taskArgs.spider) {
       await env.run('scenario:spider', taskArgs);
     }
-    await runScenario(env.config.scenario, bases, taskArgs.workers, !taskArgs.sync, taskArgs.stall);
+    await runScenario(env.config.scenario, bases, taskArgs.workers, taskArgs.workers > 1, taskArgs.stall);
   });
 
 task('scenario:spider', 'Runs spider in preparation for scenarios')
   .addOptionalParam('bases', 'Bases to run on [defaults to all]')
   .setAction(async (taskArgs, env) => {
-    let bases: ForkSpec[] = getBasesFromTaskArgs(taskArgs.bases, env);
-
+    const bases: ForkSpec[] = getBasesFromTaskArgs(taskArgs.bases, env);
     await Promise.all(bases.map(async (base) => {
-      if (base.name !== 'development') {
+      if (base.network !== 'hardhat') {
         let hre = hreForBase(base);
-        let dm = new DeploymentManager(base.name, hre, {
-          writeCacheToDisk: true,
-        });
+        let dm = new DeploymentManager(
+          base.name,
+          base.deployment,
+          hre,
+          {
+            writeCacheToDisk: true,
+          }
+        );
         await dm.spider();
       }
     }));

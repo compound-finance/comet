@@ -59,28 +59,30 @@ export async function run<T, U, R>({ bases, config, worker }: WorkerData) {
     scenarios = getLoader<T, U, R>().getScenarios();
   }
 
-  for (let base of bases) {
-    let world = new World(hreForBase(base), base);
-    let runner = new Runner({ base, world });
-    runners[base.name] = runner;
+  for (const base of bases) {
+    const world = new World(hreForBase(base), base), dm = world.deploymentManager;
+    const delta = await dm.runDeployScript({ allMissing: true });
+    console.log(`[${base.name}] Deployed ${dm.counter} contracts, spent ${dm.spent} to initialize world 🗺`);
+    console.log(`[${base.name}]\n${dm.diffDelta(delta)}`);
+    runners[base.name] = new Runner({ base, world });
   }
 
   onMessage(worker, async (message: Message) => {
     if (message.scenario) {
-      let { scenario: scenarioName, base } = message.scenario;
+      let { scenario: scenarioName, base: baseName } = message.scenario;
       let scenario = scenarios[scenarioName];
       if (!scenario) {
         throw new Error(`Worker encountered unknown scenario: ${scenarioName}`);
       }
 
-      console.log('Running', scenarioName, base);
+      console.log(`[${baseName}] Running ${scenarioName} ...`);
       try {
-        let result = await runners[base].run(scenario);
+        let result = await runners[baseName].run(scenario);
         eventually(() => {
           postMessage(worker, { result });
         });
         let numSolutionSets = result.numSolutionSets ?? 0;
-        console.log(`Ran ${pluralize(numSolutionSets, 'solution', 'solutions')} for ${base}:${scenarioName}`);
+        console.log(`[${baseName}] ... ran ${scenarioName} on ${pluralize(numSolutionSets, 'solution', 'solutions')}`);
       } catch (e) {
         console.error('Encountered worker error', e);
         eventually(() => {

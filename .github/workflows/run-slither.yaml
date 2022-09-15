@@ -1,9 +1,9 @@
-name: 'Run slither'
+name: Run Slither
 on:
   workflow_dispatch:
   pull_request:
 jobs:
-  slither_analyzer:
+  slither-analyzer:
     name: Slither analyzer
     runs-on: ubuntu-latest
     steps:

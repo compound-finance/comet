@@ -8,10 +8,10 @@ Migrations are simple scripts which deploy or modify contracts. The goal of migr
 To create a new migration, run:
 
 ```sh
-yarn hardhat gen:migration --network kovan my_migration
+yarn hardhat gen:migration --network kovan --deployment usdc my_migration
 ```
 
-This will create a new file, such as `deployments/kovan/migrations/164443237_my_migration.ts` with a base migration script. There are currently two steps to a migration script, but this is likely to change soon:
+This will create a new file, such as `deployments/kovan/usdc/migrations/164443237_my_migration.ts` with a base migration script. There are currently two steps to a migration script, but this is likely to change soon:
 
  1. Prepare: steps used to create artifacts, such as new on-chain contracts. The output from this step is stored (e.g. "NewCometImplementation: 0x...")
  2. Enact: steps used to make these artifacts current, such as upgrading the proxy to the address from the previous step.
@@ -21,25 +21,25 @@ This will create a new file, such as `deployments/kovan/migrations/164443237_my_
 You can run the preparation for a migration locally via:
 
 ```sh
-yarn hardhat migrate --network kovan --prepare 164443237_my_migration
+yarn hardhat migrate --network kovan --deployment usdc --prepare 164443237_my_migration
 ```
 
 or the enactment via:
 
 ```sh
-yarn hardhat migrate --network kovan --enact 164443237_my_migration
+yarn hardhat migrate --network kovan --deployment usdc --enact 164443237_my_migration
 ```
 
 or both preparation and enactment via:
 
 ```sh
-yarn hardhat migrate --network kovan --prepare --enact 164443237_my_migration
+yarn hardhat migrate --network kovan --deployment usdc --prepare --enact 164443237_my_migration
 ```
 
 Also, you can simulate either of the previous steps to see what effect they would have without actually modifying the on-chain state:
 
 ```sh
-yarn hardhat migrate --network kovan --prepare --simulate 164443237_my_migration
+yarn hardhat migrate --network kovan --deployment usdc --prepare --simulate 164443237_my_migration
 ```
 
 ## Running a Migration in GitHub
@@ -48,4 +48,4 @@ The preferred way to run a migration is in GitHub, via manual workflow dispatch.
 
 ## Migration Artifacts
 
-After preparation, a migration stores some artifacts under `deployments/kovan/artifacts/164443237_my_migration.json`. These will be loaded and can be referenced in the enact step of that migration.
+After preparation, a migration stores some artifacts under `deployments/kovan/usdc/artifacts/164443237_my_migration.json`. These will be loaded and can be referenced in the enact step of that migration.

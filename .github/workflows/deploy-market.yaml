@@ -1,0 +1,68 @@
+name: Deploy Market
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        type: choice
+        description: Network
+        options:
+          - fuji
+          - kovan
+          - mainnet
+      deployment:
+        description: Deployment Name (e.g. "usdc")
+        required: true
+      simulate:
+        type: boolean
+        description: Simulate
+      eth_pk:
+        description: Ignore if you plan to use WalletConnect, otherwise, you can paste in a Ethereum private key
+jobs:
+  deploy-market:
+    name: Deploy Market
+    runs-on: ubuntu-latest
+    env:
+      ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
+      SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
+      INFURA_KEY: ${{ secrets.INFURA_KEY }}
+    steps:
+      - name: Seacrest
+        uses: hayesgm/seacrest@v1
+        with:
+          ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"kovan\":\"https://kovan.infura.io/v3/$INFURA_KEY\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\"}')[inputs.network] }}"
+          port: 8585
+        if: github.event.inputs.eth_pk == ''
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install packages
+        run: yarn install --non-interactive --frozen-lockfile
+
+      - name: Compile
+        run: yarn hardhat compile
+
+      - name: Check types
+        run: yarn tsc
+
+      - name: Run Deploy
+        run: |
+          yarn hardhat deploy --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }}
+        env:
+          DEBUG: true
+          ETH_PK: "${{ inputs.eth_pk }}"
+          NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
+          REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
+
+      - name: Commit changes
+        if: ${{ github.event.inputs.simulate == 'false' }}
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          git add deployments/\*/roots.json
+          git commit -m "Modified deployment roots from GitHub Actions"
+          git push origin

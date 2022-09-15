@@ -70,7 +70,7 @@ describe('Verify', () => {
   describe('via buildfile', () => {
     it('verify from build file', async () => {
       mockVerifySuccess(hre);
-      let contract = await deployBuild(faucetTokenBuildFile, tokenArgs, hre);
+      let contract = await deployBuild(faucetTokenBuildFile, tokenArgs, hre, { network: 'test-network' });
       await verifyContract(
         { via: 'buildfile', contract, buildFile: faucetTokenBuildFile, deployArgs: tokenArgs },
         hre,

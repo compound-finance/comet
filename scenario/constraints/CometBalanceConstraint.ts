@@ -1,35 +1,13 @@
-import { Constraint, World } from '../../plugins/scenario';
+import { Constraint } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import CometActor from '../context/CometActor';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { baseBalanceOf, exp, factorScale } from '../../test/helpers';
-import { bumpSupplyCaps, ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, max, getExpectedBaseBalance, getToTransferAmount } from '../utils';
+import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, max, getExpectedBaseBalance, getToTransferAmount } from '../utils';
 import { BigNumber } from 'ethers';
-import { AssetInfoStructOutput } from '../../build/types/Comet';
 
-async function getSupplyAmountPerAsset(context: CometContext, actorsByAsset): Promise<Record<string, bigint>> {
-  const comet = await context.getComet();
-
-  let supplyAmountPerAsset = {};
-  for (const assetName in actorsByAsset) {
-    const asset = await getAssetFromName(assetName, context)
-    let supplyAmount = 0;
-    for (const actorName in actorsByAsset[assetName]) {
-      supplyAmount += max(actorsByAsset[assetName][actorName].val, 0);
-    }
-    let assetInfo: AssetInfoStructOutput;
-    try {
-      assetInfo = await comet.getAssetInfoByAddress(asset.address);
-    } catch (e) {
-      continue; // skip if asset is not a collateral asset
-    }
-    supplyAmountPerAsset[asset.address] = BigInt(Math.ceil(supplyAmount)) * assetInfo.scale.toBigInt();
-  }
-  return supplyAmountPerAsset;
-}
-
-async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, world: World, context: CometContext) {
+async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, context: CometContext) {
   const comet = await context.getComet();
   // XXX only use collaterals that are not specified in the requirement or have `gte`
   const { asset: collateralAsset, borrowCollateralFactor, priceFeed, scale } = await comet.getAssetInfo(0);
@@ -48,14 +26,14 @@ async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, world: 
   collateralNeeded = (collateralNeeded * factorScale) / borrowCollateralFactor.toBigInt(); // adjust for borrowCollateralFactor
   collateralNeeded = (collateralNeeded * 11n) / 10n; // add fudge factor
 
-  await context.sourceTokens(world, collateralNeeded, collateralToken, borrowActor);
+  await context.sourceTokens(collateralNeeded, collateralToken, borrowActor);
   await collateralToken.approve(borrowActor, comet);
-  await borrowActor.supplyAsset({ asset: collateralToken.address, amount: collateralNeeded });
+  await borrowActor.safeSupplyAsset({ asset: collateralToken.address, amount: collateralNeeded });
   await borrowActor.withdrawAsset({ asset: baseTokenAddress, amount: toBorrowBase });
 }
 
 export class CometBalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(requirements: R, initialContext: T, initialWorld: World) {
+  async solve(requirements: R, initialContext: T) {
     const assetsByActor = requirements.cometBalances;
     if (assetsByActor) {
       const actorsByAsset = Object.entries(assetsByActor).reduce((a, [actor, assets]) => {
@@ -75,13 +53,8 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
       // XXX ideally when properties fail
       //  we can report the names of the solution which were applied
       const solutions = [];
-      solutions.push(async function barelyMeet(context: T, world: World) {
+      solutions.push(async function barelyMeet(context: T) {
         const comet = await context.getComet();
-
-        // First increase supply caps if necessary
-        const supplyAmountPerAsset = await getSupplyAmountPerAsset(context, actorsByAsset);
-        await bumpSupplyCaps(world, context, supplyAmountPerAsset);
-
         for (const assetName in actorsByAsset) {
           const asset = await getAssetFromName(assetName, context)
           for (const actorName in actorsByAsset[assetName]) {
@@ -93,11 +66,11 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
             if (toTransfer > 0) {
               // Case: Supply asset
               // 1. Source tokens to user
-              await context.sourceTokens(world, toTransfer, asset.address, actor.address);
+              await context.sourceTokens(toTransfer, asset.address, actor.address);
               // 2. Supply tokens to Comet
               // Note: but will interest rates cause supply/borrow to not exactly match the desired amount?
               await asset.approve(actor, comet.address);
-              await actor.supplyAsset({ asset: asset.address, amount: toTransfer })
+              await actor.safeSupplyAsset({ asset: asset.address, amount: toTransfer })
             } else if (toTransfer < 0) {
               const toWithdraw = -toTransfer;
               const baseToken = await context.getAssetByAddress(await comet.baseToken());
@@ -108,10 +81,10 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
                 const cometBaseBalanceShortfall = toWithdraw - cometBaseBalance;
                 // 2. If there is a shortfall, make up for it by sourcing base tokens to Comet
                 if (cometBaseBalanceShortfall > 0) {
-                  await context.sourceTokens(world, cometBaseBalanceShortfall, baseToken.address, comet.address);
+                  await context.sourceTokens(cometBaseBalanceShortfall, baseToken.address, comet.address);
                 }
                 // 3. Borrow base (will supply collateral if needed to borrow)
-                await borrowBase(actor, -toTransfer, world, context);
+                await borrowBase(actor, -toTransfer, context);
               } else {
                 // Case: Withdraw collateral asset
                 // 1. Withdraw collateral
@@ -126,7 +99,7 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
     }
   }
 
-  async check(requirements: R, context: T, world: World) {
+  async check(requirements: R, context: T) {
     const assetsByActor = requirements.cometBalances;
     if (assetsByActor) {
       const comet = await context.getComet();
@@ -155,7 +128,6 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
             actualBalance = BigNumber.from(await comet.collateralBalanceOf(actor.address, asset.address));
             expectedBalance = BigNumber.from(exp(amount.val, decimals));
           }
-          console.log('expected balance is ', expectedBalance)
           switch (amount.op) {
             case ComparisonOp.EQ:
               expect(actualBalance).to.equal(expectedBalance);

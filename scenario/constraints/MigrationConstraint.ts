@@ -1,78 +1,49 @@
-import { Constraint, Scenario, Solution, World } from '../../plugins/scenario';
+import { Constraint, Solution, World, debug } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
-import { ProtocolConfiguration, deployComet } from '../../src/deploy';
-import { getFuzzedRequirements } from './Fuzzing';
-import CometAsset from '../context/CometAsset';
-import { Contract } from 'ethers';
 import { Requirements } from './Requirements';
-
-import * as path from 'path';
 import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
+import { modifiedPaths, subsets } from '../utils';
 
-// TODO: Improvements
-function getMigrationConfigs(requirements: Requirements): boolean {
-  return requirements.migrate ?? false;
-}
-
-function* subsets<T>(array: T[], offset = 0): Generator<T[]> {
-  while (offset < array.length) {
-    let first = array[offset++];
-    for (let subset of subsets(array, offset)) {
-      subset.push(first);
-      yield subset;
-    }
-  }
-  yield [];
-}
-
-function debug(...args: any[]) {
-  console.log(`[MigrationConstraint]`, ...args);
-}
-
-async function asyncFilter<T>(els: T[], f: (T) => Promise<boolean>): Promise<T[]> {
-  let filterResults = await Promise.all(els.map((el) => f(el)));
-  return els.filter((el, i) => filterResults[i]);
+async function getMigrations<T>(context: CometContext, requirements: Requirements): Promise<Migration<T>[]> {
+  // TODO: make this configurable from cli params/env var?
+  const network = context.deploymentManager.network;
+  const deployment = context.deploymentManager.deployment;
+  const pattern = new RegExp(`deployments/${network}/${deployment}/migrations/.*.ts`);
+  return await loadMigrations((await modifiedPaths(pattern)).map(p => '../../' + p));
 }
 
 export class MigrationConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, context: T, world: World) {
-    let migrate = getMigrationConfigs(requirements);
-    if (!migrate) {
-      return null;
-    }
+    const label = `[${world.base.name}] {MigrationConstraint}`;
+    const solutions: Solution<T>[] = [];
 
-    let solutions: Solution<T>[] = [];
-    let migrationsGlob = path.join('deployments', context.deploymentManager.network(), 'migrations', '**.ts');
-    let migrations = Object.values(await loadMigrations(migrationsGlob));
-    let pendingMigrations = await asyncFilter(migrations, async (migration) => !await migration.actions.enacted(context.deploymentManager));
+    for (const migrationList of subsets(await getMigrations(context, requirements))) {
+      solutions.push(async function (ctx: T): Promise<T> {
+        const governor = await ctx.getGovernor();
+        const proposer = await ctx.getProposer();
 
-    for (let migrationList of subsets(pendingMigrations)) {
-      solutions.push(async function (context: T): Promise<T> {
-        // ensure that signer is a governor of the timelock before attempting to
-        // run migrations
-        const { admin, signer } = context.actors;
-        const governor = await context.getGovernor();
-        await governor.connect(admin.signer).addAdmin(signer.address);
+        // Make proposer the default signer
+        ctx.deploymentManager._signers.unshift(proposer);
 
+        // Order migrations deterministically and store in the context (i.e. for verification)
         migrationList.sort((a, b) => a.name.localeCompare(b.name))
-        debug(`Running scenario with migrations: ${JSON.stringify(migrationList.map((migration) => migration.name))}`);
-        for (let migration of migrationList) {
-          debug(`Preparing migration ${migration.name}`);
-          let artifact = await migration.actions.prepare(context.deploymentManager);
-          debug(`Prepared migration ${migration.name}.\n  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
-          debug(`Enacting migration ${migration.name}`);
-          await migration.actions.enact(context.deploymentManager, artifact);
-          // TODO: Check migration was enacted
-          // if (!await migration.actions.enacted(context.deploymentManager)) {
-          //   throw new Error(`Failed to enact: ${migration.name}`);
-          // }
-          debug(`Enacted migration ${migration.name}`);
-        }
-        debug(`Spidering...`);
-        await context.deploymentManager.spider();
-        debug(`Complete`);
+        ctx.migrations = migrationList;
 
-        return context;
+        // XXX This should check that a migration has not already been run/proposed on-chain.
+        // Otherwise the scenario could be running the same proposal twice.
+        debug(`${label} Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);
+        for (const migration of migrationList) {
+          const artifact = await migration.actions.prepare(ctx.deploymentManager);
+          debug(`${label} Prepared migration ${migration.name}.\n  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
+          // XXX enact will take the 'gov' deployment manager instead of the 'local' one
+          await migration.actions.enact(ctx.deploymentManager, artifact);
+          debug(`${label} Enacted migration ${migration.name}`);
+        }
+
+        // Remove proposer from signers
+        ctx.deploymentManager._signers.shift();
+
+        return ctx;
       });
     }
 
@@ -82,4 +53,24 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
   async check(requirements: R, context: T, world: World) {
     return; // XXX
   }
+}
+
+export class VerifyMigrationConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
+  async solve(requirements: R, context: T, world: World) {
+    const label = `[${world.base.name}] {VerifyMigrationConstraint}`;
+    return [
+      async function (ctx: T): Promise<T> {
+        for (const migration of ctx.migrations) {
+          // XXX does verify get the 'gov' deployment manager as well as the 'local' one?
+          if (migration.actions.verify) {
+            await migration.actions.verify(ctx.deploymentManager);
+            debug(`${label} Verified migration "${migration.name}"`);
+          }
+        }
+        return ctx;
+      }
+    ];
+  }
+
+  async check(requirements: R, context: T, world: World) { }
 }

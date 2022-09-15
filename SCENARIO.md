@@ -10,17 +10,17 @@ You can run scenarios against a given base as:
 
 `npx hardhat scenario --bases development,goerli,fuji`
 
-You can skip the spider step if you wish:
+You can run spider persistently first if you wish:
 
-`npx hardhat scenario --no-spider`
+`npx hardhat scenario --spider`
+
+Note: if you want to speed up, probably better to first:
+
+`npx hardhat deploy --simulate --overwrite`
 
 You can change the number of workers:
 
-`npx hardhat scenario --workers 1`
-
-And run synchronously, without worker threads:
-
-`npx hardhat scenario --workers 1 --sync`
+`npx hardhat scenario --workers 4`
 
 ## Adding New Scenarios
 

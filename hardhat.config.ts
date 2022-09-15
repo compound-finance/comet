@@ -17,8 +17,6 @@ import './tasks/scenario/task.ts';
 
 // Relation Config
 import relationConfigMap from './deployments/relations';
-import fujiRelationConfigMap from './deployments/fuji/relations';
-import kovanRelationConfigMap from './deployments/kovan/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -31,11 +29,18 @@ const {
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
   INFURA_KEY,
-  MNEMONIC = '',
+  MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
+  NETWORK_PROVIDER = '',
+  REMOTE_ACCOUNTS = '',
 } = process.env;
 
-function throwIfMissing(envVariable, msg: string) {
+function *deriveAccounts(pk: string, n: number = 10) {
+  for (let i = 0; i < n; i++)
+    yield (BigInt('0x' + pk) + BigInt(i)).toString(16);
+}
+
+export function throwIfMissing(envVariable, msg: string) {
   if (!envVariable) {
     throw new Error(msg);
   }
@@ -81,14 +86,10 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
   for (const netConfig of networkConfigs) {
     hardhatConfig.networks[netConfig.network] = {
       chainId: netConfig.chainId,
-      url: netConfig.url || getDefaultProviderURL(netConfig.network),
+      url: NETWORK_PROVIDER || netConfig.url || getDefaultProviderURL(netConfig.network),
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
-      accounts: ETH_PK
-        ? [ETH_PK]
-        : {
-          mnemonic: MNEMONIC,
-        },
+      accounts: REMOTE_ACCOUNTS ? "remote" : ( ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC } ),
     };
   }
 }
@@ -127,11 +128,8 @@ const config: HardhatUserConfig = {
       gas: 12000000,
       gasPrice: 'auto',
       blockGasLimit: 12000000,
-      accounts: {
-        mnemonic: MNEMONIC || 'myth like bonus scare over problem client lizard pioneer submit female collect',
-      },
-      // this should be default commented out and only enabled during dev to allow partial testing
-      // XXX comment out by default once we've made the full contract fit
+      accounts: ETH_PK ? [...deriveAccounts(ETH_PK)].map(privateKey => ({ privateKey, balance: (10n ** 36n).toString() })) : { mnemonic: MNEMONIC },
+      // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,
     },
   },
@@ -158,27 +156,30 @@ const config: HardhatUserConfig = {
 
   deploymentManager: {
     relationConfigMap,
-    networks: {
-      fuji: fujiRelationConfigMap,
-      kovan: kovanRelationConfigMap,
-    },
   },
 
   scenario: {
     bases: [
       {
-        name: 'development',
-      },
-      {
-        name: 'kovan',
-        chainId: 42,
-        url: getDefaultProviderURL('kovan'),
+        name: 'mainnet',
+        network: 'mainnet',
+        deployment: 'usdc',
         allocation: 0.1, // eth
       },
       {
+        name: 'development',
+        network: 'hardhat',
+        deployment: 'dai'
+      },
+      {
         name: 'fuji',
-        chainId: 43113,
-        url: 'https://api.avax-test.network/ext/bc/C/rpc',
+        network: 'fuji',
+        deployment: 'usdc'
+      },
+      {
+        name: 'kovan',
+        network: 'kovan',
+        deployment: 'usdc',
       },
     ],
   },

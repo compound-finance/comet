@@ -31,6 +31,7 @@ describe('CometRewards', () => {
       // Note: First event is an ERC20 Transfer event
       expect(event(txn, 1)).to.be.deep.equal({
         RewardClaimed: {
+          src: alice.address,
           recipient: alice.address,
           token: COMP.address,
           amount: exp(86400, 18),
@@ -68,6 +69,7 @@ describe('CometRewards', () => {
       // Note: First event is an ERC20 Transfer event
       expect(event(txn, 1)).to.be.deep.equal({
         RewardClaimed: {
+          src: alice.address,
           recipient: alice.address,
           token: COMP.address,
           amount: exp(86400, 5),
@@ -105,6 +107,7 @@ describe('CometRewards', () => {
       // Note: First event is an ERC20 Transfer event
       expect(event(txn, 1)).to.be.deep.equal({
         RewardClaimed: {
+          src: alice.address,
           recipient: alice.address,
           token: COMP.address,
           amount: exp(86400, 6),
@@ -221,8 +224,18 @@ describe('CometRewards', () => {
       expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
       expect(await USDC.balanceOf(alice.address)).to.be.equal(10e6);
       expect(await comet.borrowBalanceOf(alice.address)).to.be.equal(10e6);
-      const _tx = await wait(rewards.connect(bob).claimTo(comet.address, alice.address, bob.address, true));
+      const tx = await wait(rewards.connect(bob).claimTo(comet.address, alice.address, bob.address, true));
       expect(await COMP.balanceOf(bob.address)).to.be.equal(exp(86400 * 2, 18));
+
+      // Note: First event is an ERC20 Transfer event
+      expect(event(tx, 1)).to.be.deep.equal({
+        RewardClaimed: {
+          src: alice.address,
+          recipient: bob.address,
+          token: COMP.address,
+          amount: exp(86400 * 2, 18),
+        }
+      });
     });
 
     it('can construct and claim rewards to target with downscale', async () => {

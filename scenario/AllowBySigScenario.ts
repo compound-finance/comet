@@ -3,14 +3,14 @@ import { expect } from 'chai';
 
 scenario(
   'Comet#allowBySig > allows a user to authorize a manager by signature',
-  { upgrade: true },
-  async ({ comet, actors }, world) => {
+  {},
+  async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
 
     expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
 
     const nonce = await comet.userNonce(albert.address);
-    const expiry = (await world.timestamp()) + 10;
+    const expiry = (await world.timestamp()) + 1_000;
 
     const signature = await albert.signAuthorization({
       manager: betty.address,
@@ -35,10 +35,14 @@ scenario(
   }
 );
 
+// Note: These revert scenarios may need to add `upgrade` if Hardhat fails to
+//  recognize custom errors received in fallback functions that originate from external artifacts.
+// CometExt is an external artifact here unless we redeploy it.
+// Related: https://github.com/NomicFoundation/hardhat/issues/1875
 scenario(
   'Comet#allowBySig > fails if owner argument is altered',
-  { upgrade: true },
-  async ({ comet, actors }, world) => {
+  { },
+  async ({ comet, actors }, context, world) => {
     const { albert, betty, charles } = actors;
 
     expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
@@ -69,8 +73,8 @@ scenario(
 
 scenario(
   'Comet#allowBySig > fails if manager argument is altered',
-  { upgrade: true },
-  async ({ comet, actors }, world) => {
+  { },
+  async ({ comet, actors }, context, world) => {
     const { albert, betty, charles } = actors;
 
     expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
@@ -101,8 +105,8 @@ scenario(
 
 scenario(
   'Comet#allowBySig > fails if isAllowed argument is altered',
-  { upgrade: true },
-  async ({ comet, actors }, world) => {
+  { },
+  async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
 
     expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
@@ -133,8 +137,8 @@ scenario(
 
 scenario(
   'Comet#allowBySig > fails if nonce argument is altered',
-  { upgrade: true },
-  async ({ comet, actors }, world) => {
+  { },
+  async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
 
     expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
@@ -165,8 +169,8 @@ scenario(
 
 scenario(
   'Comet#allowBySig > fails if expiry argument is altered',
-  { upgrade: true },
-  async ({ comet, actors }, world) => {
+  { },
+  async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
 
     expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
@@ -197,8 +201,8 @@ scenario(
 
 scenario(
   'Comet#allowBySig fails if signature contains invalid nonce',
-  { upgrade: true },
-  async ({ comet, actors }, world) => {
+  { },
+  async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
 
     expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
@@ -230,14 +234,14 @@ scenario(
 
 scenario(
   'Comet#allowBySig rejects a repeated message',
-  { upgrade: true },
-  async ({ comet, actors }, world) => {
+  { },
+  async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
 
     expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
 
     const nonce = await comet.userNonce(albert.address);
-    const expiry = (await world.timestamp()) + 10;
+    const expiry = (await world.timestamp()) + 10000;
 
     const signature = await albert.signAuthorization({
       manager: betty.address,
@@ -273,8 +277,8 @@ scenario(
 
 scenario(
   'Comet#allowBySig fails for invalid expiry',
-  { upgrade: true },
-  async ({ comet, actors }, world) => {
+  { },
+  async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
 
     expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
@@ -305,8 +309,8 @@ scenario(
 
 scenario(
   'Comet#allowBySig fails if v not in {27,28}',
-  { upgrade: true },
-  async ({ comet, actors }, world) => {
+  { },
+  async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
 
     expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;
@@ -339,8 +343,8 @@ scenario(
 
 scenario(
   'Comet#allowBySig fails if s is too high',
-  { upgrade: true },
-  async ({ comet, actors }, world) => {
+  { },
+  async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
 
     expect(await comet.isAllowed(albert.address, betty.address)).to.be.false;

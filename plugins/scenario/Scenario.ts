@@ -16,7 +16,8 @@ export interface Constraint<T, R> {
   check(requirements: R, context: T, world: World): Promise<void>;
 }
 
-export type Property<T, U> = (properties: U, world: World, context: T) => Promise<any>;
+export type Receipt = { cumulativeGasUsed: { toNumber: () => number } };
+export type Property<T, U> = (properties: U, context: T, world: World) => Promise<Receipt | void>;
 export type Initializer<T> = (world: World) => Promise<T>;
 export type Transformer<T, U> = (context: T) => Promise<U>;
 export type Forker<T> = (T, world: World) => Promise<T>;

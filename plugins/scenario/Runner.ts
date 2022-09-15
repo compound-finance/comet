@@ -87,7 +87,7 @@ export class Runner<T, U, R> {
         }
 
         // requirements met, run the property
-        let txnReceipt = await scenario.property(await scenario.transformer(ctx), world, ctx);
+        let txnReceipt = await scenario.property(await scenario.transformer(ctx), ctx, world);
         if (txnReceipt) {
           cumulativeGas += txnReceipt.cumulativeGasUsed.toNumber();
         }

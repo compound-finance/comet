@@ -1,23 +1,13 @@
-import * as path from 'path';
-import * as fs from 'fs/promises';
-
 import { AssetConfigStruct } from '../../build/types/Comet';
 import { ProtocolConfiguration } from './index';
-import { BigNumberish } from 'ethers';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { fileExists } from '../../plugins/deployment_manager/Utils';
-
-function isAddress(a: string): boolean {
-  return a.match(/^0x[a-fA-F0-9]{40}$/) !== null;
-}
+import { ethers } from 'ethers';
 
 function address(a: string): string {
-  if (!isAddress(a)) {
+  if (!a.match(/^0x[a-fA-F0-9]{40}$/)) {
     throw new Error(`expected address, got \`${a}\``);
   }
-
   return a;
 }
 
@@ -37,15 +27,18 @@ function percentage(n: number, checkRange: boolean = true): bigint {
       throw new Error(`percentage less than 0% [received=${n}]`);
     }
   }
-
   return floor(n * 1e18);
 }
 
 interface NetworkRateConfiguration {
-  kink: number;
-  slopeLow: number;
-  slopeHigh: number;
-  base: number;
+  supplyKink: number;
+  supplySlopeLow: number;
+  supplySlopeHigh: number;
+  supplyBase: number;
+  borrowKink: number;
+  borrowSlopeLow: number;
+  borrowSlopeHigh: number;
+  borrowBase: number;
 }
 
 interface NetworkTrackingConfiguration {
@@ -56,6 +49,7 @@ interface NetworkTrackingConfiguration {
 }
 
 interface NetworkAssetConfiguration {
+  address?: string;
   priceFeed: string;
   decimals: number;
   borrowCF: number;
@@ -65,136 +59,99 @@ interface NetworkAssetConfiguration {
 }
 
 interface NetworkConfiguration {
+  name: string;
   symbol: string;
   governor?: string;
   pauseGuardian?: string;
   baseToken: string;
+  baseTokenAddress?: string;
   baseTokenPriceFeed: string;
-  reserveRate: number;
   borrowMin: number;
   storeFrontPriceFactor: number;
   targetReserves: number;
   rates: NetworkRateConfiguration;
   tracking: NetworkTrackingConfiguration;
   assets: { [name: string]: NetworkAssetConfiguration };
+  rewardToken?: string;
+  rewardTokenAddress?: string;
 }
 
-interface InterestRateInfo {
-  kink: BigNumberish;
-  perYearInterestRateSlopeLow: BigNumberish;
-  perYearInterestRateSlopeHigh: BigNumberish;
-  perYearInterestRateBase: BigNumberish;
-}
-
-interface TrackingInfo {
-  trackingIndexScale: BigNumberish;
-  baseTrackingSupplySpeed: BigNumberish;
-  baseTrackingBorrowSpeed: BigNumberish;
-  baseMinForRewards: BigNumberish;
-}
-
-function getContractAddress(contractName: string, contractMap: ContractMap): string {
-  let contract = contractMap.get(contractName);
+function getContractAddress(contractName: string, contracts: ContractMap, fallbackAddress?: string): string {
+  let contract = contracts.get(contractName);
   if (!contract) {
+    if (fallbackAddress) return fallbackAddress;
     throw new Error(
       `Cannot find contract \`${contractName}\` in contract map with keys \`${JSON.stringify(
-        [...contractMap.keys()]
+        [...contracts.keys()]
       )}\``
     );
   }
   return contract.address;
 }
 
-function getInterestRateInfo(rates: NetworkRateConfiguration): InterestRateInfo {
-  return {
-    kink: percentage(rates.kink),
-    perYearInterestRateSlopeLow: percentage(rates.slopeLow),
-    perYearInterestRateSlopeHigh: percentage(rates.slopeHigh),
-    perYearInterestRateBase: percentage(rates.base),
-  };
-}
-
-function getTrackingInfo(tracking: NetworkTrackingConfiguration): TrackingInfo {
-  return {
-    trackingIndexScale: number(tracking.indexScale),
-    baseTrackingSupplySpeed: number(tracking.baseSupplySpeed),
-    baseTrackingBorrowSpeed: number(tracking.baseBorrowSpeed),
-    baseMinForRewards: number(tracking.baseMinForRewards),
-  };
-}
-
 function getAssetConfigs(
   assets: { [name: string]: NetworkAssetConfiguration },
-  contractMap: ContractMap
+  contracts: ContractMap,
 ): AssetConfigStruct[] {
-  return Object.entries(assets).map(([assetName, assetConfig]) => {
-    let assetAddress = getContractAddress(assetName, contractMap);
+  return Object.entries(assets).map(([assetName, assetConfig]) => ({
+    asset: getContractAddress(assetName, contracts, assetConfig.address),
+    priceFeed: address(assetConfig.priceFeed),
+    decimals: number(assetConfig.decimals),
+    borrowCollateralFactor: percentage(assetConfig.borrowCF),
+    liquidateCollateralFactor: percentage(assetConfig.liquidateCF),
+    liquidationFactor: percentage(assetConfig.liquidationFactor),
+    supplyCap: number(assetConfig.supplyCap), // TODO: Decimals
+  }));
+}
 
-    return {
-      asset: assetAddress,
-      priceFeed: address(assetConfig.priceFeed),
-      decimals: number(assetConfig.decimals),
-      borrowCollateralFactor: percentage(assetConfig.borrowCF),
-      liquidateCollateralFactor: percentage(assetConfig.liquidateCF),
-      liquidationFactor: percentage(assetConfig.liquidationFactor),
-      supplyCap: number(assetConfig.supplyCap), // TODO: Decimals
-    };
+function getOverridesOrConfig(
+  overrides: ProtocolConfiguration,
+  config: NetworkConfiguration,
+  contracts: ContractMap,
+): ProtocolConfiguration {
+  const interestRateInfoMapping = (rates) => ({
+    supplyKink: _ => percentage(rates.supplyKink),
+    supplyPerYearInterestRateSlopeLow: _ => percentage(rates.supplySlopeLow),
+    supplyPerYearInterestRateSlopeHigh: _ => percentage(rates.supplySlopeHigh),
+    supplyPerYearInterestRateBase: _ => percentage(rates.supplyBase),
+    borrowKink: _ => percentage(rates.borrowKink),
+    borrowPerYearInterestRateSlopeLow: _ => percentage(rates.borrowSlopeLow),
+    borrowPerYearInterestRateSlopeHigh: _ => percentage(rates.borrowSlopeHigh),
+    borrowPerYearInterestRateBase: _ => percentage(rates.borrowBase),
   });
-}
-
-function getNetworkConfigurationFilePath(network: string): string {
-  return path.join(__dirname, '..', '..', 'deployments', network, 'configuration.json');
-}
-
-export async function hasNetworkConfiguration(network: string): Promise<boolean> {
-  let configurationFile = getNetworkConfigurationFilePath(network);
-  return await fileExists(configurationFile);
-}
-
-export async function loadNetworkConfiguration(network: string): Promise<NetworkConfiguration> {
-  let configurationFile = getNetworkConfigurationFilePath(network);
-  let configurationJson = await fs.readFile(configurationFile, 'utf8');
-  return JSON.parse(configurationJson) as NetworkConfiguration;
+  const trackingInfoMapping = (tracking) => ({
+    trackingIndexScale: _ => number(tracking.indexScale),
+    baseTrackingSupplySpeed: _ => number(tracking.baseSupplySpeed),
+    baseTrackingBorrowSpeed: _ => number(tracking.baseBorrowSpeed),
+    baseMinForRewards: _ => number(tracking.baseMinForRewards),
+  });
+  const mapping = () => ({
+    name: _ => config.name,
+    symbol: _ => config.symbol,
+    governor: _ => config.governor ? address(config.governor) : getContractAddress('timelock', contracts),
+    pauseGuardian: _ => config.pauseGuardian ? address(config.pauseGuardian) : getContractAddress('timelock', contracts),
+    baseToken: _ => getContractAddress(config.baseToken, contracts, config.baseTokenAddress),
+    baseTokenPriceFeed: _ => address(config.baseTokenPriceFeed),
+    baseBorrowMin: _ => number(config.borrowMin), // TODO: in token units (?)
+    storeFrontPriceFactor: _ => percentage(config.storeFrontPriceFactor),
+    targetReserves: _ => number(config.targetReserves),
+    ...interestRateInfoMapping(config.rates),
+    ...trackingInfoMapping(config.tracking),
+    assetConfigs: _ => getAssetConfigs(config.assets, contracts),
+    rewardTokenAddress: _ => (config.rewardToken || config.rewardTokenAddress) ?
+      getContractAddress(config.rewardToken, contracts, config.rewardTokenAddress) :
+      ethers.constants.AddressZero,
+  });
+  return Object.entries(mapping()).reduce((acc, [k, f]) => {
+    return { [k]: overrides[k] ?? f(config), ...acc };
+  }, {});
 }
 
 export async function getConfiguration(
-  network: string,
-  hre: HardhatRuntimeEnvironment,
-  contractMapOverride?: ContractMap
+  deploymentManager: DeploymentManager,
+  configOverrides: ProtocolConfiguration = {},
 ): Promise<ProtocolConfiguration> {
-  let networkConfiguration = await loadNetworkConfiguration(network);
-  let deploymentManager = new DeploymentManager(network, hre);
-  let contractMap = contractMapOverride ?? await deploymentManager.contracts();
-
-  let symbol = networkConfiguration.symbol;
-  let baseToken = getContractAddress(networkConfiguration.baseToken, contractMap);
-  let baseTokenPriceFeed = address(networkConfiguration.baseTokenPriceFeed);
-  let reserveRate = percentage(networkConfiguration.reserveRate);
-  let baseBorrowMin = number(networkConfiguration.borrowMin); // TODO: in token units (?)
-  let storeFrontPriceFactor = percentage(networkConfiguration.storeFrontPriceFactor);
-  let targetReserves = number(networkConfiguration.targetReserves);
-
-  let interestRateInfo = getInterestRateInfo(networkConfiguration.rates);
-  let trackingInfo = getTrackingInfo(networkConfiguration.tracking);
-
-  let assetConfigs = getAssetConfigs(networkConfiguration.assets, contractMap);
-
-  return {
-    symbol,
-    ...(networkConfiguration.governor && {
-      governor: address(networkConfiguration.governor)
-    }),
-    ...(networkConfiguration.pauseGuardian && {
-      pauseGuardian: address(networkConfiguration.pauseGuardian)
-    }),
-    baseToken,
-    baseTokenPriceFeed,
-    ...interestRateInfo,
-    reserveRate,
-    storeFrontPriceFactor,
-    ...trackingInfo,
-    baseBorrowMin,
-    targetReserves,
-    assetConfigs,
-  };
+  const config = await deploymentManager.readConfig<NetworkConfiguration>();
+  const contracts = await deploymentManager.contracts();
+  return getOverridesOrConfig(configOverrides, config, contracts);
 }

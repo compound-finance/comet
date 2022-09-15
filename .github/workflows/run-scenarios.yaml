@@ -1,9 +1,9 @@
-name: 'Run Scenarios'
+name: Run Scenarios
 on:
   workflow_dispatch:
   pull_request:
 jobs:
-  run-coverage:
+  run-scenarios:
     name: Run scenarios
     env:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v2
         with:
@@ -23,9 +25,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            deployments/*/contracts/*
-            deployments/*/aliases.json
-            deployments/*/proxies.json
+            deployments/*/.contracts
+            deployments/**/aliases.json
             !deployments/hardhat
             !deployments/relations.ts
             !deployments/**/roots.json

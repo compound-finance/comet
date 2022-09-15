@@ -8,21 +8,19 @@ import { tempDir } from './TestHelpers';
 
 use(chaiAsPromised);
 
-export const expectedTemplate = `import { DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
-import { migration } from '../../../plugins/deployment_manager/Migration';
+export const expectedTemplate = `import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
+import { migration } from '../../../../plugins/deployment_manager/Migration';
 
 interface Vars {};
 
-migration<Vars>('1_cool', {
+export default migration('1_cool', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
   },
-  enact: async (deploymentManager: DeploymentManager, vars: Vars) => {
 
-  },
-  enacted: async (deploymentManager: DeploymentManager) => {
-    return false;
-  },
+  enact: async (deploymentManager: DeploymentManager, vars: Vars) => {
+    // No governance changes
+  }
 });
 `;
 
@@ -32,7 +30,7 @@ describe('MigrationTemplate', () => {
   });
 
   it('should write to cache', async () => {
-    let cache = new Cache('test', true, tempDir());
+    let cache = new Cache('test-network', 'test-deployment', true, tempDir());
 
     expect(await generateMigration(cache, 'cool', 1)).to.equal('1_cool.ts');
     cache.clearMemory();
@@ -43,7 +41,7 @@ describe('MigrationTemplate', () => {
   });
 
   it('should fail if already exists', async () => {
-    let cache = new Cache('test', true, tempDir());
+    let cache = new Cache('test-network', 'test-deployment', true, tempDir());
 
     expect(await generateMigration(cache, 'cool', 1)).to.equal('1_cool.ts');
 

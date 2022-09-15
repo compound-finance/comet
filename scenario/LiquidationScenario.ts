@@ -3,7 +3,7 @@ import { CometInterface } from '../build/types';
 import CometActor from './context/CometActor';
 import { event, expect } from '../test/helpers';
 
-async function getLiquidationMargin({comet, actor, baseLiquidity, factorScale}): Promise<bigint> {
+async function getLiquidationMargin({ comet, actor, baseLiquidity, factorScale }): Promise<bigint> {
   const numAssets = await comet.numAssets();
   let liquidity = baseLiquidity;
   for (let i = 0; i < numAssets; i++) {
@@ -24,7 +24,7 @@ invariant:
 isolating for timeElapsed:
 timeElapsed = -liquidationMargin / (baseBalanceOf * price / baseScale) / (borrowRate / factorScale);
 */
-async function timeUntilUnderwater({comet, actor, fudgeFactor = 0n}: {comet: CometInterface, actor: CometActor, fudgeFactor?: bigint}): Promise<number> {
+async function timeUntilUnderwater({ comet, actor, fudgeFactor = 0n }: { comet: CometInterface, actor: CometActor, fudgeFactor?: bigint }): Promise<number> {
   const baseBalance = await actor.getCometBaseBalance();
   const baseScale = (await comet.baseScale()).toBigInt();
   const basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
@@ -32,7 +32,7 @@ async function timeUntilUnderwater({comet, actor, fudgeFactor = 0n}: {comet: Com
   const utilization = await comet.getUtilization();
   const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
   const factorScale = (await comet.factorScale()).toBigInt();
-  const liquidationMargin = await getLiquidationMargin({comet, actor, baseLiquidity, factorScale});
+  const liquidationMargin = await getLiquidationMargin({ comet, actor, baseLiquidity, factorScale });
 
   if (liquidationMargin < 0) {
     return 0; // already underwater
@@ -52,9 +52,8 @@ scenario(
       albert: { $base: -1000 },
       betty: { $base: 1000 },
     },
-    upgrade: true
   },
-  async ({ comet, actors }, world) => {
+  async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
     const baseToken = await comet.baseToken();
     const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
@@ -67,7 +66,7 @@ scenario(
       })
     );
 
-    await betty.withdrawAsset({asset: baseToken, amount: baseBorrowMin}); // force accrue
+    await betty.withdrawAsset({ asset: baseToken, amount: baseBorrowMin }); // force accrue
 
     expect(await comet.isLiquidatable(albert.address)).to.be.true;
   }
@@ -86,9 +85,8 @@ scenario(
     pause: {
       absorbPaused: true,
     },
-    upgrade: true
   },
-  async ({ comet, actors }, world) => {
+  async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
     const baseToken = await comet.baseToken();
     const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
@@ -101,10 +99,10 @@ scenario(
       })
     );
 
-    await betty.withdrawAsset({asset: baseToken, amount: baseBorrowMin}); // force accrue
+    await betty.withdrawAsset({ asset: baseToken, amount: baseBorrowMin }); // force accrue
 
     await expect(
-      betty.absorb({absorber: betty.address, accounts: [albert.address]})
+      betty.absorb({ absorber: betty.address, accounts: [albert.address] })
     ).to.be.revertedWith("custom error 'Paused()'");
   }
 );
@@ -122,9 +120,8 @@ scenario(
       },
       betty: { $base: 10 }
     },
-    upgrade: true
   },
-  async ({ comet, actors }, world) => {
+  async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;
 
     await world.increaseTime(
@@ -137,7 +134,7 @@ scenario(
 
     const lp0 = await comet.liquidatorPoints(betty.address);
 
-    await betty.absorb({absorber: betty.address, accounts: [albert.address]});
+    await betty.absorb({ absorber: betty.address, accounts: [albert.address] });
 
     const lp1 = await comet.liquidatorPoints(betty.address);
 
@@ -176,10 +173,9 @@ scenario.skip(
         $asset0: .001
       },
     },
-    upgrade: true
   },
-  async ({ comet, actors }, world) => {
-    const { albert, betty, admin } = actors;
+  async ({ comet, actors }, context, world) => {
+    const { albert, betty, charles } = actors;
     const { asset: asset0Address, scale } = await comet.getAssetInfo(0);
 
     const collateralBalance = scale.toBigInt() / 1000n; // .001
@@ -192,27 +188,27 @@ scenario.skip(
       })
     );
 
-    await betty.absorb({absorber: betty.address, accounts: [albert.address]});
+    await betty.absorb({ absorber: betty.address, accounts: [albert.address] });
 
-    const txReceipt = await admin.withdrawAssetFrom({
+    const txReceipt = await charles.withdrawAssetFrom({
       src: comet.address,
-      dst: admin.address,
+      dst: charles.address,
       asset: asset0Address,
       amount: collateralBalance
     });
 
-    expect(event({receipt: txReceipt}, 0)).to.deep.equal({
+    expect(event({ receipt: txReceipt }, 0)).to.deep.equal({
       Transfer: {
         from: comet.address,
-        to: admin.address,
+        to: charles.address,
         amount: collateralBalance
       }
     });
 
-    expect(event({receipt: txReceipt}, 1)).to.deep.equal({
+    expect(event({ receipt: txReceipt }, 1)).to.deep.equal({
       WithdrawCollateral: {
         src: comet.address,
-        to: admin.address,
+        to: charles.address,
         asset: asset0Address,
         amount: collateralBalance
       }

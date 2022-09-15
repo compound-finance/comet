@@ -6,7 +6,7 @@ import {
   FieldKey,
   RelationConfigMap,
   RelationInnerConfig,
-  aliasTemplateFromAlias,
+  aliasTemplateKey,
   getRelationConfig,
   getFieldKey,
   readAlias,
@@ -56,12 +56,14 @@ describe('RelationConfig', () => {
     hre.config.deploymentManager = {
       relationConfigMap: testBaseRelations,
       networks: {
-        test: testRelRelations,
+        'test-network': {
+          'test-deployment': testRelRelations,
+        }
       },
     };
 
-    expect(await getRelationConfig(hre.config.deploymentManager, 'fuji')).to.eql(testBaseRelations);
-    expect(await getRelationConfig(hre.config.deploymentManager, 'test')).to.eql(testRelRelations);
+    expect(await getRelationConfig(hre.config.deploymentManager, 'fuji', 'dai')).to.eql(testBaseRelations);
+    expect(await getRelationConfig(hre.config.deploymentManager, 'test-network', 'test-deployment')).to.eql(testRelRelations);
   });
 
   describe('getFieldKey', () => {
@@ -103,7 +105,7 @@ describe('RelationConfig', () => {
 
     fieldKeyTests.forEach(({ name, alias, config, exp }) => {
       it(name, async () => {
-        expect(getFieldKey(alias, config || {})).to.eql(exp);
+        expect(getFieldKey(config || {}, alias)).to.eql(exp);
       });
     });
   });
@@ -171,7 +173,7 @@ describe('RelationConfig', () => {
 
     readFieldTests.forEach(({ name, contract, fieldKey, exp }) => {
       it(name, async () => {
-        expect(await readField(contract, fieldKey)).to.eql(exp);
+        expect(await readField(contract, fieldKey, {})).to.eql(exp);
       });
     });
   });
@@ -209,14 +211,18 @@ describe('RelationConfig', () => {
 
     readAliasTests.forEach(({ name, contract, template, exp }) => {
       it(name, async () => {
-        expect(await readAlias(contract, template)).to.eql(exp);
+        expect(await readAlias(contract, { template, i: 0 }, {}, [])).to.eql(exp);
       });
     });
   });
 
-  describe('readAlias', () => {
+  describe('aliasTemplateKey', () => {
     it('returns alias template', async () => {
-      expect(aliasTemplateFromAlias('bob')).to.eql('bob');
+      const alias = async () => 'bob';
+      expect(aliasTemplateKey('bob')).to.eql('bob');
+      expect(aliasTemplateKey(async function alice() { return 'bob'; })).to.eql('alice');
+      expect(aliasTemplateKey(async () => 'bob')).to.eql(undefined);
+      expect(aliasTemplateKey(alias)).to.eql(undefined);
     });
   });
 });

@@ -1,21 +1,56 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { BigNumber, Contract, Event, EventFilter } from 'ethers';
 import { erc20 } from './ERC20';
+import { DeploymentManager } from '../../deployment_manager/DeploymentManager';
 
-let getMaxEntry = (args: [string, BigNumber][]) =>
+const getMaxEntry = (args: [string, BigNumber][]) =>
   args.reduce(([a1, m], [a2, e]) => (m.gte(e) == true ? [a1, m] : [a2, e]));
 
 interface SourceTokenParameters {
-  hre: HardhatRuntimeEnvironment;
+  dm: DeploymentManager;
   amount: number | bigint;
   asset: string;
   address: string;
   blacklist: string[] | undefined;
 }
 
+export async function fetchQuery(
+  contract: Contract,
+  filter: EventFilter,
+  fromBlock: number,
+  toBlock: number,
+  originalBlock: number,
+  MAX_SEARCH_BLOCKS = 40000,
+  BLOCK_SPAN = 2048
+): Promise<{ recentLogs: Event[], blocksDelta: number }> {
+  if (originalBlock - fromBlock > MAX_SEARCH_BLOCKS) {
+    throw(new Error(`No events found within ${MAX_SEARCH_BLOCKS} blocks for ${contract.address}`));
+  }
+  try {
+    const res = await contract.queryFilter(filter, fromBlock, toBlock);
+    if (res.length > 0) {
+      return { recentLogs: res, blocksDelta: toBlock - fromBlock };
+    } else {
+      const nextToBlock = fromBlock;
+      const nextFrom = fromBlock - BLOCK_SPAN;
+      if (nextFrom < 0) {
+        throw(new Error('No events found by chain genesis'));
+      }
+      return fetchQuery(contract, filter, nextFrom, nextToBlock, originalBlock);
+    }
+  } catch (err) {
+    if (err.message.includes('query returned more')) {
+      const midBlock = (fromBlock + toBlock) / 2;
+      return fetchQuery(contract, filter, midBlock, toBlock, originalBlock);
+    } else {
+      throw(err);
+    }
+  }
+}
+
 /// ETH balance is used for transfer out when amount is negative
 export async function sourceTokens({
-  hre,
+  dm,
   amount: amount_,
   asset,
   address,
@@ -23,102 +58,79 @@ export async function sourceTokens({
 }: SourceTokenParameters) {
   let amount = BigNumber.from(amount_);
 
-  if (amount.isNegative()) {
-    await removeTokens(hre, amount.abs(), asset, address);
+  if (amount.isZero()) {
+    return;
+  } else if (amount.isNegative()) {
+    await removeTokens(dm, amount.abs(), asset, address);
   } else {
-    await addTokens(hre, amount, asset, address, blacklist);
+    await addTokens(dm, amount, asset, address, blacklist);
   }
 }
 
 async function removeTokens(
-  hre: HardhatRuntimeEnvironment,
+  dm: DeploymentManager,
   amount: BigNumber,
   asset: string,
   address: string
 ) {
-  let ethers = hre.ethers;
-  await hre.network.provider.request({
+  let ethers = dm.hre.ethers;
+  await dm.hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
     params: [address],
   });
-  let signer = await ethers.getSigner(address);
+  let signer = await dm.getSigner(address);
   let tokenContract = new ethers.Contract(asset, erc20, signer);
   let currentBalance = await tokenContract.balanceOf(address);
   if (currentBalance.lt(amount)) throw 'Error: Insufficient address balance';
-  await tokenContract.transfer('0x0000000000000000000000000000000000000000', amount);
-  await hre.network.provider.request({
+  await dm.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+  await tokenContract.transfer('0x0000000000000000000000000000000000000001', amount, { gasPrice: 0 });
+  await dm.hre.network.provider.request({
     method: 'hardhat_stopImpersonatingAccount',
     params: [address],
   });
 }
 
 async function addTokens(
-  hre: HardhatRuntimeEnvironment,
+  dm: DeploymentManager,
   amount: BigNumber,
   asset: string,
   address: string,
   blacklist?: string[],
   block?: number,
-  offsetBlocks?: number
+  offsetBlocks?: number,
+  MAX_SEARCH_BLOCKS = 40000,
+  BLOCK_SPAN = 2048
 ) {
-  let ethers = hre.ethers;
+  let ethers = dm.hre.ethers;
   block = block ?? (await ethers.provider.getBlockNumber());
   let tokenContract = new ethers.Contract(asset, erc20, ethers.provider);
   let filter = tokenContract.filters.Transfer();
-  let { recentLogs, blocksDelta, err } = await fetchQuery(
+  let { recentLogs, blocksDelta } = await fetchQuery(
     tokenContract,
     filter,
-    block - 1000 - (offsetBlocks ?? 0),
-    block - (offsetBlocks ?? 0)
+    block - BLOCK_SPAN - (offsetBlocks ?? 0),
+    block - (offsetBlocks ?? 0),
+    block,
+    MAX_SEARCH_BLOCKS,
+    BLOCK_SPAN
   );
-  if (err) {
-    throw err;
-  }
   let holder = await searchLogs(recentLogs, amount, tokenContract, ethers, blacklist);
   if (holder) {
-    await hre.network.provider.request({
+    await dm.hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [holder],
     });
-    let impersonatedSigner = await ethers.getSigner(holder);
+    let impersonatedSigner = await dm.getSigner(holder);
     let impersonatedProviderTokenContract = tokenContract.connect(impersonatedSigner);
-    await hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+    await dm.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
     await impersonatedProviderTokenContract.transfer(address, amount, { gasPrice: 0 });
-    await hre.network.provider.request({
+    await dm.hre.network.provider.request({
       method: 'hardhat_stopImpersonatingAccount',
       params: [holder],
     });
   } else {
-    if ((offsetBlocks ?? 0) > 40000) throw "Error: Couldn't find sufficient tokens";
-    await addTokens(hre, amount, asset, address, blacklist, block, (offsetBlocks ?? 0) + blocksDelta);
-  }
-}
-
-async function fetchQuery(
-  contract: Contract,
-  filter: EventFilter,
-  fromBlock: number,
-  toBlock: number
-): Promise<{ recentLogs?: Event[], blocksDelta?: number, err?: Error }> {
-  try {
-    let res = await contract.queryFilter(filter, fromBlock, toBlock);
-    if (res.length > 0) {
-      return { recentLogs: res, blocksDelta: toBlock - fromBlock };
-    } else {
-      let nextToBlock = fromBlock;
-      let nextFrom = fromBlock - 1000;
-      if (nextFrom < 0) {
-        return { err: new Error('No events found by chain genesis') };
-      }
-      return await fetchQuery(contract, filter, nextFrom, nextToBlock);
-    }
-  } catch (err) {
-    if (err.message.includes('query returned more')) {
-      let midBlock = (fromBlock + toBlock) / 2;
-      return await fetchQuery(contract, filter, midBlock, toBlock);
-    } else {
-      return { err };
-    }
+    if ((offsetBlocks ?? 0) > MAX_SEARCH_BLOCKS) throw "Error: Couldn't find sufficient tokens";
+    await addTokens(dm, amount, asset, address, blacklist, block, (offsetBlocks ?? 0) + blocksDelta);
   }
 }
 

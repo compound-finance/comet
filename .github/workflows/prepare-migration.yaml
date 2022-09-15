@@ -1,4 +1,4 @@
-name: 'Prepare Migration'
+name: Prepare Migration
 on:
   workflow_dispatch:
     inputs:
@@ -8,6 +8,10 @@ on:
         options:
           - fuji
           - kovan
+          - mainnet
+      deployment:
+        description: Deployment Name (e.g. "usdc")
+        required: true
       migration:
         description: Migration Name
         required: true
@@ -15,9 +19,9 @@ on:
         type: boolean
         description: Simulate
       eth_pk:
-        description: Ethereum Private Key
+        description: Ignore if you plan to use WalletConnect, otherwise, you can paste in a Ethereum private key
 jobs:
-  prepare_migration:
+  prepare-migration:
     name: Prepare Migration
     runs-on: ubuntu-latest
     env:
@@ -25,6 +29,13 @@ jobs:
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
     steps:
+      - name: Seacrest
+        uses: hayesgm/seacrest@v1
+        with:
+          ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"kovan\":\"https://kovan-eth.compound.finance\",\"mainnet\":\"https://mainnet-eth.compound.finance\"}')[inputs.network] }}"
+          port: 8585
+        if: github.event.inputs.eth_pk == ''
+
       - name: Checkout repository
         uses: actions/checkout@v2
 
@@ -42,13 +53,16 @@ jobs:
         run: yarn tsc
 
       - name: Run Prepare Migration
-        run: yarn hardhat migrate --network ${{ github.event.inputs.network }} --prepare --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ github.event.inputs.migration }}
+        run: |
+          yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --prepare --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ github.event.inputs.migration }}
         env:
-          ETH_PK: ${{ github.event.inputs.eth_pk }}
           DEBUG: true
+          ETH_PK: "${{ inputs.eth_pk }}"
+          NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
+          REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
 
       - uses: actions/upload-artifact@v2 # upload test results
         if: success() || failure() # run this step even if previous step failed
         with:
-          name: ${{ github.event.inputs.network }}-${{ github.event.inputs.migration }}
-          path: deployments/${{ github.event.inputs.network }}/artifacts/${{ github.event.inputs.migration }}.json
+          name: ${{ github.event.inputs.network }}-${{ github.event.inputs.deployment }}-${{ github.event.inputs.migration }}
+          path: deployments/${{ github.event.inputs.network }}/${{ github.event.inputs.deployment }}/artifacts/${{ github.event.inputs.migration }}.json

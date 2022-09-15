@@ -16,7 +16,7 @@ import { getEnvHardhatArguments } from 'hardhat/internal/core/params/env-variabl
 import { HARDHAT_PARAM_DEFINITIONS } from 'hardhat/internal/core/params/hardhat-params';
 import { Environment } from 'hardhat/internal/core/runtime-environment';
 import { ForkSpec } from '../World';
-import { memoize } from '../../../src/memoize';
+import { HttpNetworkUserConfig } from 'hardhat/types';
 
 /*
 Hardhat's Environment class implements the HardhatRuntimeEnvironment interface.
@@ -52,28 +52,34 @@ declare module 'hardhat/internal/core/runtime-environment' {
   }
 }
 
-function hreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
+export default function hreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
   // replicates https://github.com/nomiclabs/hardhat/blob/master/packages/hardhat-core/src/internal/lib/hardhat-lib.ts
   const ctx: HardhatContext = HardhatContext.getHardhatContext();
 
   const hardhatArguments = getEnvHardhatArguments(HARDHAT_PARAM_DEFINITIONS, process.env);
 
-  const config = loadConfigAndTasks(hardhatArguments);
+  const { resolvedConfig: config } = loadConfigAndTasks(hardhatArguments);
 
-  const {
-    networks: { hardhat: defaultNetwork },
-  } = config;
+  const networks = config.networks;
+  const { hardhat: defaultNetwork, localhost } = networks;
+
+  const baseNetwork = networks[base.network] as HttpNetworkUserConfig;
+
+  if (!baseNetwork) {
+    throw new Error(`cannot find network config for network: ${base.network}`);
+  }
 
   const forkedNetwork = {
     ...defaultNetwork,
     ...{
       forking: {
         enabled: true,
-        url: base.url,
+        url: baseNetwork.url,
+        httpHeaders: {},
         ...(base.blockNumber && { blockNumber: base.blockNumber }),
       },
     },
-    ...(base.chainId ? { chainId: base.chainId } : {}),
+    ...(baseNetwork.chainId ? { chainId: baseNetwork.chainId } : {}),
   };
 
   const forkedConfig = {
@@ -82,7 +88,7 @@ function hreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
       defaultNetwork: 'hardhat',
       networks: {
         hardhat: forkedNetwork,
-        localhost: config.networks.localhost,
+        localhost
       },
     },
   };
@@ -95,5 +101,3 @@ function hreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
     ctx.experimentalHardhatNetworkMessageTraceHooks
   );
 }
-
-export default memoize(hreForBase, { debug: true });

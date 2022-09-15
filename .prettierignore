@@ -2,8 +2,7 @@ artifacts
 build
 cache
 coverage
-deployments/*/cache
-deployments/*/config.json
-deployments/*/proxies.json
+deployments/*/.contracts
+deployments/*/*/*.json
 dist
 SPEC.md

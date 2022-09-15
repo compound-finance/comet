@@ -33,7 +33,7 @@ contract CometRewards {
     /** Custom events **/
 
     event GovernorTransferred(address indexed oldGovernor, address indexed newGovernor);
-    event RewardClaimed(address indexed recipient, address indexed token, uint256 amount);
+    event RewardClaimed(address indexed src, address indexed recipient, address indexed token, uint256 amount);
 
     /** Custom errors **/
 
@@ -161,7 +161,7 @@ contract CometRewards {
             rewardsClaimed[comet][src] = accrued;
             doTransferOut(config.token, to, owed);
 
-            emit RewardClaimed(to, config.token, owed);
+            emit RewardClaimed(src, to, config.token, owed);
         }
     }
 

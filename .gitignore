@@ -10,13 +10,9 @@ artifacts/
 build/
 cache/
 dist/
-deployments/hardhat
-deployments/*/artifacts
-deployments/*/cache
-deployments/*/contracts
-deployments/*/aliases.json
-deployments/*/pointers.json
-deployments/*/proxies.json
+deployments/*/.contracts
+deployments/*/*/verify
+deployments/*/*/aliases.json
 
 .env
 coverage/

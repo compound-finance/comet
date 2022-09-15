@@ -4,16 +4,12 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import nock from 'nock';
 
 import {
-  Dog__factory,
   Dog,
   ProxyAdmin,
-  ProxyAdmin__factory,
-  TransparentUpgradeableProxy__factory,
   TransparentUpgradeableProxy,
 } from '../../../build/types';
 
 import { Cache } from '../Cache';
-import { getContractsFromAliases } from '../ContractMap';
 import { spider } from '../Spider';
 import { RelationConfigMap } from '../RelationConfig';
 import { objectFromMap } from '../Utils';
@@ -32,26 +28,21 @@ async function setupContracts(
   cache: Cache,
   hre: HardhatRuntimeEnvironment
 ): Promise<TestContracts> {
-  let proxyAdminArgs: [] = [];
-  let proxyAdmin = await deploy<ProxyAdmin, ProxyAdmin__factory, []>(
+  let proxyAdmin: ProxyAdmin = await deploy(
     'vendor/proxy/transparent/ProxyAdmin.sol',
-    proxyAdminArgs,
+    [],
     hre,
-    { cache }
+    { cache, network: 'test-network' }
   );
 
-  let finnImpl = await deploy<Dog, Dog__factory, [string, string, string[]]>(
+  let finnImpl: Dog = await deploy(
     'test/Dog.sol',
-    ['', '0x0000000000000000000000000000000000000000', []],
+    ['finn:implementation', '0x0000000000000000000000000000000000000000', []],
     hre,
-    { cache }
+    { cache, network: 'test-network' }
   );
 
-  let proxy = await deploy<
-    TransparentUpgradeableProxy,
-    TransparentUpgradeableProxy__factory,
-    [string, string, string]
-  >(
+  let proxy: TransparentUpgradeableProxy = await deploy(
     'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
     [
       finnImpl.address,
@@ -59,27 +50,27 @@ async function setupContracts(
       (
         await finnImpl.populateTransaction.initializeDog(
           'finn',
-          '0x0000000000000000000000000000000000000000',
+          finnImpl.address,
           []
         )
       ).data,
     ],
     hre,
-    { cache }
+    { cache, network: 'test-network' }
   );
 
-  let molly = await deploy<Dog, Dog__factory, [string, string, string[]]>(
+  let molly: Dog = await deploy(
     'test/Dog.sol',
     ['molly', proxy.address, []],
     hre,
-    { cache }
+    { cache, network: 'test-network' }
   );
 
-  let spot = await deploy<Dog, Dog__factory, [string, string, string[]]>(
+  let spot: Dog = await deploy(
     'test/Dog.sol',
     ['spot', proxy.address, []],
     hre,
-    { cache }
+    { cache, network: 'test-network' }
   );
 
   let finn = finnImpl.attach(proxy.address);
@@ -103,14 +94,14 @@ describe('Spider', () => {
   });
 
   it('runs valid spider', async () => {
-    let cache = new Cache('test');
+    let cache = new Cache('test-network', 'test-deployment');
     let { finn, molly, spot, finnImpl } = await setupContracts(cache, hre);
 
     let roots = new Map([['finn', finn.address]]);
 
     let relationConfig: RelationConfigMap = {
       finn: {
-        proxy: {
+        delegates: {
           field: {
             slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc',
           },
@@ -127,10 +118,7 @@ describe('Spider', () => {
       },
     };
 
-    let {
-      aliases,
-      proxies,
-    } = await spider(cache, 'avalanche', hre, relationConfig, roots, 0);
+    let { aliases, contracts } = await spider(cache, 'test-network', hre, relationConfig, roots);
 
     expect(objectFromMap(aliases)).to.eql({
       finn: finn.address,
@@ -144,19 +132,15 @@ describe('Spider', () => {
       // ],
     });
 
-    expect(objectFromMap(proxies)).to.eql({
-      finn: finnImpl.address,
-    });
-
     let check = {};
-    for (let [alias, contract] of await getContractsFromAliases(cache, aliases, proxies, hre)) {
+    for (let [alias, contract] of contracts) {
       // Just make sure these contracts are working, too.
       let name = contract.hasOwnProperty('name') ? await contract.name() : null;
       check[alias] = name ? name : contract.address;
     }
     expect(check).to.eql({
       finn: 'finn',
-      'finn:implementation': finnImpl.address,
+      'finn:implementation': 'finn:implementation',
       molly: 'molly',
       spot: 'spot',
     });

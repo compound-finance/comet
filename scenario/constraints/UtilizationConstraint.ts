@@ -1,6 +1,6 @@
-import { Constraint, World } from '../../plugins/scenario';
+import { Constraint } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
-import { bumpSupplyCaps, optionalNumber } from '../utils';
+import { optionalNumber } from '../utils';
 import { defactor, factor, factorScale } from '../../test/helpers';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
@@ -49,7 +49,7 @@ else
   -> ( borrows / target ) - supply = X
 */
 export class UtilizationConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(requirements: R, context: T, world: World) {
+  async solve(requirements: R, context: T) {
     let { utilization } = getUtilizationConfig(requirements);
 
     if (utilization == null) {
@@ -97,12 +97,12 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
         // everything will come out as zero.
         if (toSupplyBase > 0n) {
           // Add some supply, any amount will do
-          let supplyActor = await context.allocateActor(world, 'UtilizationConstraint{Supplier}', {
+          let supplyActor = await context.allocateActor('UtilizationConstraint{Supplier}', {
             toSupplyBase,
           });
 
           await baseToken.approve(supplyActor, comet);
-          await context.sourceTokens(world, toSupplyBase, baseToken, supplyActor);
+          await context.sourceTokens(toSupplyBase, baseToken, supplyActor);
           await comet.connect(supplyActor.signer).supply(baseToken.address, toSupplyBase);
         }
 
@@ -136,16 +136,11 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
             collateralNeeded: collateralNeeded.toString(),
           };
 
-          let borrowActor = await context.allocateActor(
-            world,
-            'UtilizationConstraint{Borrower}',
-            info
-          );
+          let borrowActor = await context.allocateActor('UtilizationConstraint{Borrower}', info);
 
-          await context.sourceTokens(world, collateralNeeded, collateralToken, borrowActor);
+          await context.sourceTokens(collateralNeeded, collateralToken, borrowActor);
           await collateralToken.approve(borrowActor, comet);
-          await bumpSupplyCaps(world, context, { [collateralToken.address]: collateralNeeded })
-          await comet.connect(borrowActor.signer).supply(collateralToken.address, collateralNeeded);
+          await borrowActor.safeSupplyAsset({ asset: collateralToken.address, amount: collateralNeeded });
 
           // XXX will also need to make sure there are enough base tokens in the protocol to withdraw
           await comet.connect(borrowActor.signer).withdraw(baseToken.address, toBorrowBase);
@@ -156,7 +151,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
     }
   }
 
-  async check(requirements: R, context: T, world: World) {
+  async check(requirements: R, context: T) {
     let { utilization } = getUtilizationConfig(requirements);
 
     if (utilization) {

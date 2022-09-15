@@ -1,12 +1,12 @@
-import { CometProperties, scenario } from './context/CometContext';
+import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 
-scenario('initializes governor correctly', { migrate: true }, async ({ comet, timelock, actors }, world) => {
+scenario('initializes governor correctly', {}, async ({ comet, timelock, actors }) => {
   // TODO: Make this more interesting.
   expect(await comet.governor()).to.equal(timelock.address);
 });
 
-scenario('has assets', {}, async ({ comet, actors, assets }: CometProperties, world) => {
+scenario('has assets', {}, async ({ comet, actors, assets }) => {
   let baseToken = await comet.baseToken();
   let numAssets = await comet.numAssets();
   let collateralAssets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
@@ -17,6 +17,6 @@ scenario('has assets', {}, async ({ comet, actors, assets }: CometProperties, wo
   expect(collateralAssets.map(a => a.asset)).to.have.members(contextAssets);
 });
 
-scenario('requires upgrade', { upgrade: true }, async ({ comet }, world) => {
+scenario('requires upgrade', {}, async ({ comet }) => {
   // Nothing currently here
 });

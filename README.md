@@ -154,7 +154,7 @@ This is just a prototype and it currently pulls relevant contracts for V2.
 
 > Note: Make sure $ETHERSCAN_KEY is set as an env variable.
 
-`npx hardhat spider --network mainnet`
+`npx hardhat spider --network mainnet --deployment usdc`
 
 #### Delete artifacts
 
@@ -169,7 +169,7 @@ The spider script uses configuration from two files to start its crawl:
 - `roots.json`
 - `relations.json`
 
-Both these contracts are committed to the repo under `deployments/<chain>/<file>.json`. The `roots.json` config contains the address of the root contract for spider to start crawling from. The `relations.json` config defines all the different relationships and rules that spider will follow when crawling. The following section will go over in detail the set of rules defined in `relations.json`.
+Both these contracts are committed to the repo under `deployments/<network>/<deployment>/<file>.json`. The `roots.json` config contains the address of the root contract for spider to start crawling from. The `relations.json` config defines all the different relationships and rules that spider will follow when crawling. The following section will go over in detail the set of rules defined in `relations.json`.
 
 #### Defining relations
 
@@ -187,41 +187,70 @@ Scenarios are high-level property and ad-hoc tests for the Comet protocol. To ru
 
 For more information, see [SCENARIO.md](./SCENARIO.md).
 
+### Migrations
+
+Migrations are used to make proposals to governance, for changes to the live protocol.
+A migration script has two parts: `prepare` and `enact`.
+The prepare step can perform necessary preparation of artifacts for the enact step, which is where the proposal gets made.
+
+Migrations integrate with scenarios, so that changes are automatically tested against the entire scenario suite, with and without the proposal.
+In fact, all combinations of open migrations are checked against the protocol, to ensure safety against any execution order by governance.
+The same script that is used for testing can then be executed for real through the GitHub UI.
+
+Once a proposal that's been made through a pull request has been executed by governance, the pull request should be merged into the `main` branch.
+The PR should include any necessary tests, which will remain in the repository.
+The migration script itself can be deleted in a separate commit, after the PR has been merged and recorded on the `main` branch, for good hygiene.
+It's important to remove migrations once they've been executed, to avoid exploding the cost of running scenarios beyond what's necessary for testing.
+
+For more information, seee [MIGRATIONS.md](./MIGRATIONS.md).
+
 ### Deploying to testnets
 
-#### Kovan
+Each deployment of Comet should have an associated directory inside of `deployments` in the repository.
+Deployments are stored per network, for instance `deployments/mainnet/usdc/`.
 
-1. run `1644388553_deploy_kovan` migration, `prepare` step
-2. update `deployments/kovan/roots.json` with the new roots from step 1
-3. run `1649108513_upgrade_timelock_and_set_up_governor` migration, `prepare` step
-4. run `1649108513_upgrade_timelock_and_set_up_governor` migration, `enact` step
-5. find the proposal ID step from 4; manually execute the proposal via the newly-deployed Governor
-6. run `1651257129_bulker_and_rewards` migration, `prepare` step
-7. update `deployments/kovan/roots.json` with the rewards and bulker roots from step 6
-8. run `1653357106_mint_to_fauceteer` migration, `prepare` step
-9. run `1653512186_seed_rewards_with_comp`, `prepare` step
-10. run `1653512186_seed_rewards_with_comp`, `enact` step
-11. execute the proposal from step 10
+To start a new deployment, create the directory with a `deploy.ts` script and a `configuration.json` file (both probably copied initially from another deployment).
+When copying files from other directories, `migrations` may safely be ignored, as they are meant only for migrating the state of an existing deployment, not starting fresh deployments.
+New deployments and changes to them are also hypothetically tested with scenarios, like migrations are.
+These simulations are extremely useful for testing deployments before actually creating them.
 
-#### Fuji
+#### Deploy Workflow
 
-1. run `1644432723_deploy_fuji`, `prepare` step
-2. update `deployments/fuji/roots.json` with new roots from step 1
-3. run `1649117302_upgrade_timelock_and_set_up_governor`, `prepare` step
-4. run `1649117302_upgrade_timelock_and_set_up_governor`, `enact` step
-5. find the proposal ID step from 4; manually execute the proposal via the newly-deployed Governor
-6. run `1651257139_rewards`, `prepare` step
-7. update `deployments/fuji/roots.json` with new rewards root from step 6
-8. run `1653431603_mint_to_fauceteer`, `prepare` step
+0. Create the deployment script and configuration file, and test locally
+1. Open a PR containing the new deployment directory files
+2. Trigger the `deploy-market` workflow action through the GitHub UI
+3. Inspect the new `roots.json` which the workflow automatically commited to your PR
+4. Start using the new protocol deployment and/or create further migrations to modify it
 
-#### Update Webb3 to use new roots
+##### Verifying Deployments
 
-1. in the Webb3 repo, run `rm -rf deployments` to clear out the previous deploy artifacts
-2. in `scripts/crawl.sh`, update the `DEPLOYMENTS` variable to point to the
-   artifact with your latest deployed roots (will be the artifact generated by the `Run Spider` Action)
-3. `npm run build`
+Source code verification is a relatively important part of deployments currently.
+The 'spider' tool we use to crawl relevant addresses from the root addresses by default relies on pulling verified contract ABIs.
+Verification happens normally as part of the deploy command-line task (the same command triggered by the `deploy-market` workflow).
+Since deployments are idempotent by default, the deploy command can also be used to *just* verify the existing contracts.
+When all contracts are already deployed, the only actions performed will be to verify the contracts remaining in the verification cache.
+The script *always* attempts to verify the Comet implementation contract, since this is deployed via a factory and the status is relatively unknown to it.
+
+The `--simulate` flag can be used when running deploy to check what the effect of running a deploy would actually be, including verification.
+This can also be used together with `--overwrite`, to produce the verification artifacts locally, which can then be used to run full verification for real.
 
 #### Other considerations
 
 - make sure that the deploying address has at least 2 units of the chain's
   native asset (i.e. 2 ETH for Kovan, 2 AVAX for Fuji)
+
+### Liquidation Bot
+
+This repo includes a contract (Liquidator.sol) that will absorb an underwater
+position, purchase the absorbed collateral, and then attempt to sell it on
+Uniswap for a profit.
+
+To run the bot, you'll need the address of a deployed version of the Liquidator
+contract (or you can deploy a new instance of it yourself):
+
+`LIQUIDATOR_ADDRESS="0xABC..." DEPLOYMENT="usdc" yarn liquidation-bot --network kovan`
+
+Initiating transactions this way via the public mempool will
+[almost certainly get frontrun](https://youtu.be/UZ-NNd6yjFM), but you might be
+able to use [flashbots](https://docs.flashbots.net/) to mask your transactions
+from frontrunners.

@@ -1,47 +1,88 @@
-import { scenario } from './context/CometContext';
+import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, getExpectedBaseBalance, getInterest } from './utils';
+import { expectApproximately, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
+import { ContractReceipt } from 'ethers';
 
-// XXX consider creating these tests for assets0-15
-scenario(
-  'Comet#transfer > collateral asset, enough balance',
-  {
-    upgrade: true,
-    cometBalances: {
-      albert: { $asset0: 100 }, // in units of asset, not wei
+async function testTransferCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
+  const comet = await context.getComet();
+  const { albert, betty } = context.actors;
+  const { asset: assetAddress, scale } = await comet.getAssetInfo(assetNum);
+  const collateralAsset = context.getAssetByAddress(assetAddress);
+
+  // Albert transfers 50 units of collateral to Betty
+  const toTransfer = scale.toBigInt() * 50n;
+  const txn = await albert.transferAsset({ dst: betty.address, asset: collateralAsset.address, amount: toTransfer });
+
+  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(scale.mul(50));
+  expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(scale.mul(50));
+
+  return txn; // return txn to measure gas
+}
+
+async function testTransferFromCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
+  const comet = await context.getComet();
+  const { albert, betty, charles } = context.actors;
+  const { asset: assetAddress, scale } = await comet.getAssetInfo(assetNum);
+  const collateralAsset = context.getAssetByAddress(assetAddress);
+
+  await albert.allow(charles, true);
+
+  // Charles transfers 50 units of collateral from Albert to Betty
+  const toTransfer = scale.toBigInt() * 50n;
+  const txn = await charles.transferAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: toTransfer });
+
+  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(scale.mul(50));
+  expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(scale.mul(50));
+
+  return txn; // return txn to measure gas
+}
+
+for (let i = 0; i < MAX_ASSETS; i++) {
+  const amountToTransfer = 100; // in units of asset, not wei
+  scenario(
+    `Comet#transfer > collateral asset ${i}, enough balance`,
+    {
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToTransfer),
+      cometBalances: {
+        albert: { [`$asset${i}`]: amountToTransfer },
+      },
     },
-  },
-  async ({ comet, actors }, world, context) => {
-    const { albert, betty } = actors;
-    const { asset: asset0Address, scale } = await comet.getAssetInfo(0);
-    const collateralAsset = context.getAssetByAddress(asset0Address);
+    async ({ }, context) => {
+      return await testTransferCollateral(context, i);
+    }
+  );
+}
 
-    // Albert transfers 50 units of collateral to Betty
-    const toTransfer = scale.toBigInt() * 50n;
-    const txn = await albert.transferAsset({ dst: betty.address, asset: collateralAsset.address, amount: toTransfer });
-
-    expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(scale.mul(50));
-    expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(scale.mul(50));
-
-    return txn; // return txn to measure gas
-  }
-);
+for (let i = 0; i < MAX_ASSETS; i++) {
+  const amountToTransfer = 100; // in units of asset, not wei
+  scenario(
+    `Comet#transferFrom > collateral asset ${i}, enough balance`,
+    {
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToTransfer),
+      cometBalances: {
+        albert: { [`$asset${i}`]: amountToTransfer },
+      },
+    },
+    async ({ }, context) => {
+      return await testTransferFromCollateral(context, i);
+    }
+  );
+}
 
 scenario(
   'Comet#transfer > base asset, enough balance',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
 
-    // Albert transfers 50 units of collateral to Betty
+    // Albert transfers 50 units of base to Betty
     const toTransfer = 50n * scale;
     const txn = await albert.transferAsset({ dst: betty.address, asset: baseAsset.address, amount: toTransfer });
 
@@ -61,12 +102,11 @@ scenario(
 scenario(
   'Comet#transfer > base asset, total and user balances are summed up properly',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -99,14 +139,13 @@ scenario(
 scenario(
   'Comet#transfer > partial withdraw / borrow base to partial repay / supply',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 1000, $asset0: 5000 }, // in units of asset, not wei
       betty: { $base: -1000 },
       charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -133,14 +172,13 @@ scenario(
 scenario(
   'Comet#transferFrom > withdraw to repay',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 1000, $asset0: 50 }, // in units of asset, not wei
       betty: { $base: -1000 },
       charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -168,14 +206,13 @@ scenario(
 scenario(
   'Comet#transfer base reverts if undercollateralized',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 1000, $asset0: 0.000001 }, // in units of asset, not wei
       betty: { $base: -1000 },
       charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -202,14 +239,13 @@ scenario(
 scenario(
   'Comet#transferFrom base reverts if undercollateralized',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 1000, $asset0: 0.000001 }, // in units of asset, not wei
       betty: { $base: -1000 },
       charles: { $base: 1000 }, // to give the protocol enough base for others to borrow from
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -239,14 +275,13 @@ scenario(
 scenario(
   'Comet#transfer collateral reverts if undercollateralized',
   {
-    upgrade: true,
     // XXX we should probably have a price constraint?
     cometBalances: {
       albert: { $base: -1000, $asset0: '== 3000' }, // in units of asset, not wei
       betty: { $asset0: 0 },
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
@@ -265,14 +300,13 @@ scenario(
 scenario(
   'Comet#transferFrom collateral reverts if undercollateralized',
   {
-    upgrade: true,
     // XXX we should probably have a price constraint?
     cometBalances: {
       albert: { $base: -1000, $asset0: '== 3000' }, // in units of asset, not wei
       betty: { $asset0: 0 },
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
@@ -294,9 +328,7 @@ scenario(
 
 scenario(
   'Comet#transfer disallows self-transfer of base',
-  {
-    upgrade: true,
-  },
+  {},
   async ({ comet, actors }) => {
     const { albert } = actors;
 
@@ -314,9 +346,7 @@ scenario(
 
 scenario(
   'Comet#transfer disallows self-transfer of collateral',
-  {
-    upgrade: true,
-  },
+  {},
   async ({ comet, actors }) => {
     const { albert } = actors;
 
@@ -334,9 +364,7 @@ scenario(
 
 scenario(
   'Comet#transferFrom disallows self-transfer of base',
-  {
-    upgrade: true,
-  },
+  {},
   async ({ comet, actors }) => {
     const { albert, betty } = actors;
 
@@ -357,9 +385,7 @@ scenario(
 
 scenario(
   'Comet#transferFrom disallows self-transfer of collateral',
-  {
-    upgrade: true,
-  },
+  {},
   async ({ comet, actors }) => {
     const { albert, betty } = actors;
 
@@ -380,10 +406,8 @@ scenario(
 
 scenario(
   'Comet#transferFrom reverts if operator not given permission',
-  {
-    upgrade: true,
-  },
-  async ({ comet, actors }, world, context) => {
+  {},
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -403,7 +427,6 @@ scenario(
 scenario(
   'Comet#transfer reverts when transfer is paused',
   {
-    upgrade: true,
     pause: {
       transferPaused: true,
     },
@@ -428,7 +451,6 @@ scenario(
 scenario(
   'Comet#transferFrom reverts when transfer is paused',
   {
-    upgrade: true,
     pause: {
       transferPaused: true,
     },
@@ -454,12 +476,11 @@ scenario(
 scenario(
   'Comet#transfer reverts if borrow is less than minimum borrow',
   {
-    upgrade: true,
     cometBalances: {
       albert: { $base: 0, $asset0: 100 }
     }
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);

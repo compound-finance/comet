@@ -5,7 +5,6 @@ import { defactor, expect } from '../test/helpers';
 scenario(
   'Comet#constraint > collateral CometBalanceConstraint + BalanceConstraint both satisfied',
   {
-    upgrade: true,
     tokenBalances: {
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
@@ -13,7 +12,7 @@ scenario(
       albert: { $asset0: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const { asset: asset0Address, scale } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
@@ -26,7 +25,6 @@ scenario(
 scenario(
   'Comet#constraint > base CometBalanceConstraint + BalanceConstraint both satisfied',
   {
-    upgrade: true,
     tokenBalances: {
       albert: { $base: 100 }, // in units of asset, not wei
     },
@@ -34,7 +32,7 @@ scenario(
       albert: { $base: 100 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -52,15 +50,14 @@ scenario(
 scenario(
   'Comet#constraint > negative comet base balance (borrow position)',
   {
-    upgrade: true,
     tokenBalances: {
-      albert: { $base: 1000 }, // in units of asset, not wei
+      albert: { $base: ' == 1000' }, // in units of asset, not wei
     },
     cometBalances: {
       albert: { $base: -1000 }, // in units of asset, not wei
     },
   },
-  async ({ comet, actors }, _world, context) => {
+  async ({ comet, actors }, context) => {
     const { albert } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
@@ -80,7 +77,6 @@ scenario(
 scenario(
   'UtilizationConstraint > sets utilization to 25%',
   {
-    upgrade: true,
     utilization: 0.25,
   },
   async ({ comet }) => {
@@ -91,7 +87,6 @@ scenario(
 scenario(
   'UtilizationConstraint > sets utilization to 50%',
   {
-    upgrade: true,
     utilization: 0.50,
   },
   async ({ comet }) => {
@@ -102,7 +97,6 @@ scenario(
 scenario(
   'UtilizationConstraint > sets utilization to 75%',
   {
-    upgrade: true,
     utilization: 0.75,
   },
   async ({ comet }) => {
@@ -115,7 +109,6 @@ scenario(
 scenario.skip(
   'UtilizationConstraint > sets utilization to 100%',
   {
-    upgrade: true,
     utilization: 1,
   },
   async ({ comet }) => {

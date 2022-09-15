@@ -61,17 +61,21 @@ export type ProtocolOpts = {
       factory?: FaucetToken__factory | EvilToken__factory | FaucetWETH__factory;
     };
   };
+  name?: string;
   symbol?: string;
   governor?: SignerWithAddress;
   pauseGuardian?: SignerWithAddress;
   extensionDelegate?: CometExt;
   base?: string;
   reward?: string;
-  kink?: Numeric;
-  interestRateBase?: Numeric;
-  interestRateSlopeLow?: Numeric;
-  interestRateSlopeHigh?: Numeric;
-  reserveRate?: Numeric;
+  supplyKink?: Numeric;
+  supplyInterestRateBase?: Numeric;
+  supplyInterestRateSlopeLow?: Numeric;
+  supplyInterestRateSlopeHigh?: Numeric;
+  borrowKink?: Numeric;
+  borrowInterestRateBase?: Numeric;
+  borrowInterestRateSlopeLow?: Numeric;
+  borrowInterestRateSlopeHigh?: Numeric;
   storeFrontPriceFactor?: Numeric;
   trackingIndexScale?: Numeric;
   baseTrackingSupplySpeed?: Numeric;
@@ -121,7 +125,6 @@ export type Rewards = {
 
 export type BulkerOpts = {
   admin?: SignerWithAddress;
-  comet?: string;
   weth?: string;
 };
 
@@ -201,14 +204,14 @@ export const factorScale = factor(1);
 export const ONE = factorScale;
 export const ZERO = factor(0);
 
-export async function getBlock(n?: number): Promise<Block> {
-  const blockNumber = n === undefined ? await ethers.provider.getBlockNumber() : n;
-  return ethers.provider.getBlock(blockNumber);
+export async function getBlock(n?: number, ethers_ = ethers): Promise<Block> {
+  const blockNumber = n == undefined ? await ethers_.provider.getBlockNumber() : n;
+  return ethers_.provider.getBlock(blockNumber);
 }
 
-export async function fastForward(seconds: number): Promise<Block> {
+export async function fastForward(seconds: number, ethers_ = ethers): Promise<Block> {
   const block = await getBlock();
-  await ethers.provider.send('evm_setNextBlockTimestamp', [block.timestamp + seconds]);
+  await ethers_.provider.send('evm_setNextBlockTimestamp', [block.timestamp + seconds]);
   return block;
 }
 
@@ -226,17 +229,21 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     priceFeeds[asset] = priceFeed;
   }
 
+  const name32 = ethers.utils.formatBytes32String((opts.name || 'Compound Comet'));
   const symbol32 = ethers.utils.formatBytes32String((opts.symbol || '📈BASE'));
   const governor = opts.governor || signers[0];
   const pauseGuardian = opts.pauseGuardian || signers[1];
   const users = signers.slice(2); // guaranteed to not be governor or pause guardian
   const base = opts.base || 'USDC';
   const reward = opts.reward || 'COMP';
-  const kink = dfn(opts.kink, exp(0.8, 18));
-  const perYearInterestRateBase = dfn(opts.interestRateBase, exp(0.005, 18));
-  const perYearInterestRateSlopeLow = dfn(opts.interestRateSlopeLow, exp(0.1, 18));
-  const perYearInterestRateSlopeHigh = dfn(opts.interestRateSlopeHigh, exp(3, 18));
-  const reserveRate = dfn(opts.reserveRate, exp(0.1, 18));
+  const supplyKink = dfn(opts.supplyKink, exp(0.8, 18));
+  const supplyPerYearInterestRateBase = dfn(opts.supplyInterestRateBase, exp(0.0, 18));
+  const supplyPerYearInterestRateSlopeLow = dfn(opts.supplyInterestRateSlopeLow, exp(0.05, 18));
+  const supplyPerYearInterestRateSlopeHigh = dfn(opts.supplyInterestRateSlopeHigh, exp(2, 18));
+  const borrowKink = dfn(opts.borrowKink, exp(0.8, 18));
+  const borrowPerYearInterestRateBase = dfn(opts.borrowInterestRateBase, exp(0.005, 18));
+  const borrowPerYearInterestRateSlopeLow = dfn(opts.borrowInterestRateSlopeLow, exp(0.1, 18));
+  const borrowPerYearInterestRateSlopeHigh = dfn(opts.borrowInterestRateSlopeHigh, exp(3, 18));
   const storeFrontPriceFactor = dfn(opts.storeFrontPriceFactor, ONE);
   const trackingIndexScale = opts.trackingIndexScale || exp(1, 15);
   const baseTrackingSupplySpeed = dfn(opts.baseTrackingSupplySpeed, trackingIndexScale);
@@ -263,7 +270,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   let extensionDelegate = opts.extensionDelegate;
   if (extensionDelegate === undefined) {
     const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
-    extensionDelegate = await CometExtFactory.deploy({ symbol32 });
+    extensionDelegate = await CometExtFactory.deploy({ name32, symbol32 });
     await extensionDelegate.deployed();
   }
 
@@ -274,11 +281,14 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     extensionDelegate: extensionDelegate.address,
     baseToken: tokens[base].address,
     baseTokenPriceFeed: priceFeeds[base].address,
-    kink,
-    perYearInterestRateBase,
-    perYearInterestRateSlopeLow,
-    perYearInterestRateSlopeHigh,
-    reserveRate,
+    supplyKink,
+    supplyPerYearInterestRateBase,
+    supplyPerYearInterestRateSlopeLow,
+    supplyPerYearInterestRateSlopeHigh,
+    borrowKink,
+    borrowPerYearInterestRateBase,
+    borrowPerYearInterestRateSlopeLow,
+    borrowPerYearInterestRateSlopeHigh,
     storeFrontPriceFactor,
     trackingIndexScale,
     baseTrackingSupplySpeed,
@@ -359,11 +369,14 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   await cometProxy.deployed();
 
   // Derive the rest of the Configurator configuration values
-  const kink = await comet.kink();
-  const perYearInterestRateBase = dfn(opts.interestRateBase, exp(0.005, 18));
-  const perYearInterestRateSlopeLow = dfn(opts.interestRateSlopeLow, exp(0.1, 18));
-  const perYearInterestRateSlopeHigh = dfn(opts.interestRateSlopeHigh, exp(3, 18));
-  const reserveRate = await comet.reserveRate();
+  const supplyKink = dfn(opts.supplyKink, exp(0.8, 18));
+  const supplyPerYearInterestRateBase = dfn(opts.supplyInterestRateBase, exp(0.0, 18));
+  const supplyPerYearInterestRateSlopeLow = dfn(opts.supplyInterestRateSlopeLow, exp(0.05, 18));
+  const supplyPerYearInterestRateSlopeHigh = dfn(opts.supplyInterestRateSlopeHigh, exp(2, 18));
+  const borrowKink = dfn(opts.borrowKink, exp(0.8, 18));
+  const borrowPerYearInterestRateBase = dfn(opts.borrowInterestRateBase, exp(0.005, 18));
+  const borrowPerYearInterestRateSlopeLow = dfn(opts.borrowInterestRateSlopeLow, exp(0.1, 18));
+  const borrowPerYearInterestRateSlopeHigh = dfn(opts.borrowInterestRateSlopeHigh, exp(3, 18));
   const storeFrontPriceFactor = await comet.storeFrontPriceFactor();
   const trackingIndexScale = await comet.trackingIndexScale();
   const baseTrackingSupplySpeed = await comet.baseTrackingSupplySpeed();
@@ -387,11 +400,14 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     extensionDelegate: extensionDelegate.address,
     baseToken: tokens[base].address,
     baseTokenPriceFeed: priceFeeds[base].address,
-    kink,
-    perYearInterestRateBase,
-    perYearInterestRateSlopeLow,
-    perYearInterestRateSlopeHigh,
-    reserveRate,
+    supplyKink,
+    supplyPerYearInterestRateBase,
+    supplyPerYearInterestRateSlopeLow,
+    supplyPerYearInterestRateSlopeHigh,
+    borrowKink,
+    borrowPerYearInterestRateBase,
+    borrowPerYearInterestRateSlopeLow,
+    borrowPerYearInterestRateSlopeHigh,
     storeFrontPriceFactor,
     trackingIndexScale,
     baseTrackingSupplySpeed,
@@ -475,11 +491,10 @@ export async function makeBulker(opts: BulkerOpts): Promise<BulkerInfo> {
   const signers = await ethers.getSigners();
 
   const admin = opts.admin || signers[0];
-  const comet = opts.comet;
   const weth = opts.weth;
 
   const BulkerFactory = (await ethers.getContractFactory('Bulker')) as Bulker__factory;
-  const bulker = await BulkerFactory.deploy(admin.address, comet, weth);
+  const bulker = await BulkerFactory.deploy(admin.address, weth);
   await bulker.deployed();
 
   return {

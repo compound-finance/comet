@@ -1,70 +1,113 @@
-import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
-import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-import {
-  Comet__factory,
-  Comet,
-  CometExt__factory,
-  CometExt,
-  CometFactory__factory,
-  CometFactory,
-  GovernorSimple,
-  GovernorSimple__factory,
-  CometProxyAdmin,
-  CometProxyAdmin__factory,
-  TransparentUpgradeableProxy,
-  TransparentUpgradeableProxy__factory,
-  ConfiguratorProxy,
-  ConfiguratorProxy__factory,
-  Configurator,
-  Configurator__factory,
-  SimpleTimelock,
-  SimpleTimelock__factory,
-  ProxyAdmin,
-  CometInterface,
-} from '../../build/types';
-import { ConfigurationStruct } from '../../build/types/Comet';
-import { ExtConfigurationStruct } from '../../build/types/CometExt';
-
-import { DeployedContracts, DeployProxyOption, ProtocolConfiguration } from './index';
+import { Deployed, DeploymentManager } from '../../plugins/deployment_manager';
+import { DeploySpec, ProtocolConfiguration, wait, COMP_WHALES } from './index';
 import { getConfiguration } from './NetworkConfiguration';
-import { extractCalldata, fastGovernanceExecute } from '../utils';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+
+export function sameAddress(a: string, b: string) {
+  return BigInt(a) === BigInt(b);
+}
+
+// XXX make sure we are deploying clone contracts from the cache
+//  to preserve local development speed and without network
+export async function cloneGov(
+  deploymentManager: DeploymentManager,
+  voterAddress = COMP_WHALES[0],
+  adminSigner?: SignerWithAddress
+): Promise<Deployed> {
+  const trace = deploymentManager.tracer();
+  const admin = adminSigner ?? await deploymentManager.getSigner();
+  const clone = {
+    comp: '0xc00e94cb662c3520282e6f5717214004a7f26888',
+    governorBravoImpl: '0x30065b703de5d473975a2db5bbb790a23fd6efbd',
+    governorBravo: '0xc0da02939e1441f497fd74f78ce7decb17b66529',
+  };
+
+  const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
+  const timelock = await deploymentManager.deploy('timelock', 'test/SimpleTimelock.sol', [admin.address]);
+
+  const COMP = await deploymentManager.clone('COMP', clone.comp, [admin.address]);
+
+  const governorImpl = await deploymentManager.clone('governor:implementation', clone.governorBravoImpl, []);
+  const governorProxy = await deploymentManager.clone('governor', clone.governorBravo, [
+    timelock.address,
+    COMP.address,
+    admin.address,
+    governorImpl.address,
+    await governorImpl.MIN_VOTING_PERIOD(),
+    await governorImpl.MIN_VOTING_DELAY(),
+    await governorImpl.MIN_PROPOSAL_THRESHOLD(),
+  ]);
+  const governor = governorImpl.attach(governorProxy.address);
+
+  await deploymentManager.idempotent(
+    async () => (await COMP.balanceOf(admin.address)).eq(await COMP.totalSupply()),
+    async () => {
+      trace(`Sending 1/4 of all COMP to fauceteer, 1/4 to timelock`);
+      const amount = (await COMP.totalSupply()).div(4);
+      trace(await wait(COMP.connect(admin).transfer(fauceteer.address, amount)));
+      trace(await wait(COMP.connect(admin).transfer(timelock.address, amount)));
+      trace(`COMP.balanceOf(${fauceteer.address}): ${await COMP.balanceOf(fauceteer.address)}`);
+      trace(`COMP.balanceOf(${timelock.address}): ${await COMP.balanceOf(timelock.address)}`);
+    }
+  );
+
+  await deploymentManager.idempotent(
+    async () => (await COMP.getCurrentVotes(voterAddress)).eq(0),
+    async () => {
+      trace(`Delegating COMP votes to ${voterAddress}`);
+      trace(await wait(COMP.connect(admin).delegate(voterAddress)));
+      trace(`COMP.getCurrentVotes(${voterAddress}): ${await COMP.getCurrentVotes(voterAddress)}`);
+    }
+  );
+
+  await deploymentManager.idempotent(
+    async () => (await governor.proposalCount()).eq(0),
+    async () => {
+      trace(`Initiating Governor using patched Timelock`);
+      trace(await wait(governor.connect(admin)._initiate(timelock.address)));
+    }
+  );
+
+  await deploymentManager.idempotent(
+    async () => !sameAddress(await timelock.admin(), governor.address),
+    async () => {
+      trace(`Transferring Governor of Timelock to ${governor.address}`);
+      trace(await wait(timelock.connect(admin).setAdmin(governor.address)));
+    }
+  );
+
+  return { COMP, fauceteer, governor, timelock };
+}
 
 export async function deployNetworkComet(
   deploymentManager: DeploymentManager,
-  deployProxy: DeployProxyOption = { deployCometProxy: true, deployConfiguratorProxy: true },
-  configurationOverrides: ProtocolConfiguration = {},
-  contractMapOverride?: ContractMap,
+  deploySpec: DeploySpec = { all: true },
+  configOverrides: ProtocolConfiguration = {},
   adminSigner?: SignerWithAddress,
-): Promise<DeployedContracts> {
-  if (adminSigner == null) {
-    adminSigner = await deploymentManager.getSigner();
+): Promise<Deployed> {
+  function maybeForce(flag?: boolean): boolean {
+    return deploySpec.all || flag;
   }
 
-  let governorSimple = await deploymentManager.deploy<GovernorSimple, GovernorSimple__factory, []>(
-    'test/GovernorSimple.sol',
-    []
-  );
-
-  let timelock = await deploymentManager.deploy<SimpleTimelock, SimpleTimelock__factory, [string]>(
-    'test/SimpleTimelock.sol',
-    [governorSimple.address]
-  );
-
-  // Initialize the storage of GovernorSimple
-  await governorSimple.initialize(timelock.address, [adminSigner.address]);
+  const ethers = deploymentManager.hre.ethers;
+  const trace = deploymentManager.tracer();
+  const admin = adminSigner ?? await deploymentManager.getSigner();
 
   const {
+    name,
     symbol,
-    governor,
+    governor, // NB: generally 'timelock' alias, not 'governor'
     pauseGuardian,
     baseToken,
     baseTokenPriceFeed,
-    kink,
-    perYearInterestRateSlopeLow,
-    perYearInterestRateSlopeHigh,
-    perYearInterestRateBase,
-    reserveRate,
+    supplyKink,
+    supplyPerYearInterestRateSlopeLow,
+    supplyPerYearInterestRateSlopeHigh,
+    supplyPerYearInterestRateBase,
+    borrowKink,
+    borrowPerYearInterestRateSlopeLow,
+    borrowPerYearInterestRateSlopeHigh,
+    borrowPerYearInterestRateBase,
     storeFrontPriceFactor,
     trackingIndexScale,
     baseTrackingSupplySpeed,
@@ -73,19 +116,41 @@ export async function deployNetworkComet(
     baseBorrowMin,
     targetReserves,
     assetConfigs,
-  } = {
-    governor: timelock.address,
-    pauseGuardian: timelock.address,
-    ...await getConfiguration(deploymentManager.deployment, deploymentManager.hre, contractMapOverride),
-    ...configurationOverrides
-  };
+    rewardTokenAddress
+  } = await getConfiguration(deploymentManager, configOverrides);
+
+  /* Deploy contracts */
+
+  const cometAdmin = await deploymentManager.deploy(
+    'cometAdmin',
+    'CometProxyAdmin.sol',
+    [],
+    maybeForce()
+  );
 
   const extConfiguration = {
-    symbol32: deploymentManager.hre.ethers.utils.formatBytes32String(symbol),
+    name32: ethers.utils.formatBytes32String(name),
+    symbol32: ethers.utils.formatBytes32String(symbol)
   };
-  const cometExt = await deploymentManager.deploy<CometExt, CometExt__factory, [ExtConfigurationStruct]>(
+  const cometExt = await deploymentManager.deploy(
+    'comet:implementation:implementation',
     'CometExt.sol',
-    [extConfiguration]
+    [extConfiguration],
+    maybeForce(deploySpec.cometExt)
+  );
+
+  const cometFactory = await deploymentManager.deploy(
+    'cometFactory',
+    'CometFactory.sol',
+    [],
+    maybeForce(deploySpec.cometMain)
+  );
+
+  const cometProxy = await deploymentManager.deploy(
+    'comet',
+    'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
+    [cometFactory.address, cometAdmin.address, []], // NB: temporary implementation contract
+    maybeForce(),
   );
 
   const configuration = {
@@ -94,11 +159,14 @@ export async function deployNetworkComet(
     baseToken,
     baseTokenPriceFeed,
     extensionDelegate: cometExt.address,
-    kink,
-    perYearInterestRateSlopeLow,
-    perYearInterestRateSlopeHigh,
-    perYearInterestRateBase,
-    reserveRate,
+    supplyKink,
+    supplyPerYearInterestRateSlopeLow,
+    supplyPerYearInterestRateSlopeHigh,
+    supplyPerYearInterestRateBase,
+    borrowKink,
+    borrowPerYearInterestRateSlopeLow,
+    borrowPerYearInterestRateSlopeHigh,
+    borrowPerYearInterestRateBase,
     storeFrontPriceFactor,
     trackingIndexScale,
     baseTrackingSupplySpeed,
@@ -108,102 +176,114 @@ export async function deployNetworkComet(
     targetReserves,
     assetConfigs,
   };
-  const comet = await deploymentManager.deploy<Comet, Comet__factory, [ConfigurationStruct]>(
-    'Comet.sol',
-    [configuration]
-  );
 
-  const cometFactory = await deploymentManager.deploy<CometFactory, CometFactory__factory, []>(
-    'CometFactory.sol',
-    []
-  );
-
-  const configurator = await deploymentManager.deploy<Configurator, Configurator__factory, []>(
+  const configuratorImpl = await deploymentManager.deploy(
+    'configurator:implementation',
     'Configurator.sol',
-    []
+    [],
+    maybeForce(deploySpec.cometMain)
   );
 
-  /* === Proxies === */
+  // If we deploy a new proxy, we initialize it to the current/new impl
+  // If its an existing proxy, the impl we got for the alias must already be current
+  // In other words, we shan't have deployed an impl in the last step unless there was no proxy too
+  const configuratorProxy = await deploymentManager.deploy(
+    'configurator',
+    'ConfiguratorProxy.sol',
+    [configuratorImpl.address, cometAdmin.address, (await configuratorImpl.populateTransaction.initialize(admin.address)).data],
+    maybeForce()
+  );
 
-  let updatedRoots = await deploymentManager.getRoots();
-  let cometProxy = null;
-  let configuratorProxy = null;
-  let proxyAdmin = null;
+  const rewards = await deploymentManager.deploy(
+    'rewards',
+    'CometRewards.sol',
+    [admin.address],
+    maybeForce(deploySpec.rewards)
+  );
 
-  // If we are deploying new proxies for both Comet and Configurator, we will also deploy a new ProxyAdmin
-  // because this is most likely going to be a completely fresh deployment.
-  // Note: If this assumption is incorrect, we should probably add a third option in `DeployProxyOption` to
-  //       specify if a new CometProxyAdmin should be deployed.
-  if (deployProxy.deployCometProxy && deployProxy.deployConfiguratorProxy) {
-    let proxyAdminArgs: [] = [];
-    proxyAdmin = await deploymentManager.deploy<CometProxyAdmin, CometProxyAdmin__factory, []>(
-      'CometProxyAdmin.sol',
-      proxyAdminArgs
-    );
-    await proxyAdmin.transferOwnership(timelock.address);
-  } else {
-    // We don't want to be using a new ProxyAdmin/Timelock/Governor if we are not deploying both proxies
-    proxyAdmin = await deploymentManager.contract('cometAdmin') as ProxyAdmin;
-    timelock = await deploymentManager.contract('timelock') as SimpleTimelock;
-    governorSimple = await deploymentManager.contract('governor') as GovernorSimple;
-  }
+  /* Wire things up */
 
-  if (deployProxy.deployCometProxy) {
-    // Comet proxy
-    cometProxy = await deploymentManager.deploy<
-      TransparentUpgradeableProxy,
-      TransparentUpgradeableProxy__factory,
-      [string, string, string]
-    >('vendor/proxy/transparent/TransparentUpgradeableProxy.sol', [
-      comet.address,
-      proxyAdmin.address,
-      (await comet.populateTransaction.initializeStorage()).data,
-    ]);
+  // Now configure the configurator and actually deploy comet
+  // Note: the success of these calls is dependent on who the admin is and if/when its been transferred
+  //  scenarios can pass in an impersonated signer, but real deploys may require proposals for some states
+  const configurator = configuratorImpl.attach(configuratorProxy.address);
 
-    updatedRoots.set('comet', cometProxy.address);
-  } else {
-    // Use the existing Comet proxy if a new one is not deployed
-    // XXX This, along with Spider aliases, may need to be redesigned to support multiple Comet deployments
-    cometProxy = await deploymentManager.contract('comet') as CometInterface;
-  }
+  // Also get a handle for Comet, although it may not *actually* support the interface yet
+  const comet = await deploymentManager.cast(cometProxy.address, 'contracts/CometInterface.sol:CometInterface');
 
-  if (deployProxy.deployConfiguratorProxy) {
-    // Configuration proxy
-    configuratorProxy = await deploymentManager.deploy<
-      ConfiguratorProxy,
-      ConfiguratorProxy__factory,
-      [string, string, string]
-    >('ConfiguratorProxy.sol', [
-      configurator.address,
-      proxyAdmin.address,
-      (await configurator.populateTransaction.initialize(timelock.address)).data,
-    ]);
+  // Get the currently impl addresses for the proxies, and determine if this is the first deploy
+  const $configuratorImpl = await cometAdmin.getProxyImplementation(configurator.address);
+  const $cometImpl = await cometAdmin.getProxyImplementation(comet.address);
+  const isFirstDeploy = sameAddress($cometImpl, cometFactory.address);
 
-    // Set the initial factory and configuration for Comet in Configurator
-    const setFactoryCalldata = extractCalldata((await configurator.populateTransaction.setFactory(cometProxy.address, cometFactory.address)).data);
-    const setConfigurationCalldata = extractCalldata((await configurator.populateTransaction.setConfiguration(cometProxy.address, configuration)).data);
-    await fastGovernanceExecute(
-      governorSimple.connect(adminSigner),
-      [configuratorProxy.address, configuratorProxy.address],
-      [0, 0],
-      [
-        'setFactory(address,address)',
-        'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
-      ],
-      [setFactoryCalldata, setConfigurationCalldata]
-    );
+  await deploymentManager.idempotent(
+    async () => !sameAddress($configuratorImpl, configuratorImpl.address),
+    async () => {
+      trace(`Setting Configurator implementation to ${configuratorImpl.address}`);
+      trace(await wait(cometAdmin.connect(admin).upgrade(configurator.address, configuratorImpl.address)));
+    }
+  );
 
-    updatedRoots.set('configurator', configuratorProxy.address);
-  }
+  await deploymentManager.idempotent(
+    async () => !sameAddress(await configurator.factory(comet.address), cometFactory.address),
+    async () => {
+      trace(`Setting factory in Configurator to ${cometFactory.address}`);
+      trace(await wait(configurator.connect(admin).setFactory(comet.address, cometFactory.address)));
+    }
+  );
 
-  await deploymentManager.putRoots(updatedRoots);
-  await deploymentManager.spider();
+  await deploymentManager.idempotent(
+    async () => isFirstDeploy || deploySpec.all || deploySpec.cometMain || deploySpec.cometExt,
+    async () => {
+      trace(`Setting configuration in Configurator for ${comet.address}`);
+      trace(await wait(configurator.connect(admin).setConfiguration(comet.address, configuration)));
 
-  return {
-    comet,
-    cometProxy,
-    configuratorProxy,
-    timelock,
-    governor: governorSimple
-  };
+      if (isFirstDeploy) {
+        trace(`Deploying first implementation of Comet and initializing...`);
+        const data = (await comet.populateTransaction.initializeStorage()).data;
+        trace(await wait(cometAdmin.connect(admin).deployUpgradeToAndCall(configurator.address, comet.address, data)));
+      } else {
+        trace(`Upgrading implementation of Comet...`);
+        trace(await wait(cometAdmin.connect(admin).deployAndUpgradeTo(configurator.address, comet.address)));
+      }
+
+      trace(`New Comet implementation at ${await cometAdmin.getProxyImplementation(comet.address)}`);
+    }
+  );
+
+  await deploymentManager.idempotent(
+    async () => !sameAddress((await rewards.rewardConfig(comet.address)).token, rewardTokenAddress),
+    async () => {
+      trace(`Setting reward token in CometRewards to ${rewardTokenAddress}`);
+      trace(await wait(rewards.connect(admin).setRewardConfig(comet.address, rewardTokenAddress)));
+    }
+  );
+
+  /* Transfer to Gov */
+
+  await deploymentManager.idempotent(
+    async () => !sameAddress(await configurator.governor(), governor),
+    async () => {
+      trace(`Transferring governor of Configurator to ${governor}`);
+      trace(await wait(configurator.connect(admin).transferGovernor(governor)));
+    }
+  );
+
+  await deploymentManager.idempotent(
+    async () => !sameAddress(await cometAdmin.owner(), governor),
+    async () => {
+      trace(`Transferring ownership of CometProxyAdmin to ${governor}`);
+      trace(await wait(cometAdmin.connect(admin).transferOwnership(governor)));
+    }
+  );
+
+  await deploymentManager.idempotent(
+    async () => !sameAddress(await rewards.governor(), governor),
+    async () => {
+      trace(`Transferring governor of CometRewards to ${governor}`);
+      trace(await wait(rewards.connect(admin).transferGovernor(governor)));
+    }
+  );
+
+  return { comet, configurator, rewards };
 }

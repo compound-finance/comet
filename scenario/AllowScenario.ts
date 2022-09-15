@@ -2,7 +2,7 @@ import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { utils } from 'ethers';
 
-scenario('Comet#allow > allows a user to authorize a manager', { upgrade: true }, async ({ comet, actors }) => {
+scenario('Comet#allow > allows a user to authorize a manager', {}, async ({ comet, actors }) => {
   const { albert, betty } = actors;
 
   const txn = await albert.allow(betty, true);

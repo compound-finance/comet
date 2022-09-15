@@ -1,18 +1,17 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { utils } from 'ethers';
 
 // XXX we could use a Comet reserves constraint here
 scenario(
   'Comet#withdrawReserves > governor withdraw reserves',
   {
     tokenBalances: {
-      betty: { $base: 100000 },
+      betty: { $base: '== 100000' },
+      albert: { $base: '== 0' },
     },
-    upgrade: true,
   },
-  async ({ comet, timelock, actors }, world, context) => {
-    const { albert, betty } = actors;
+  async ({ comet, timelock, actors }, context) => {
+    const { admin, albert, betty } = actors;
 
     const baseToken = context.getAssetByAddress(await comet.baseToken());
     const scale = (await comet.baseScale()).toBigInt();
@@ -25,13 +24,8 @@ scenario(
     expect(await comet.governor()).to.equal(timelock.address);
 
     const toWithdrawAmount = 10n * scale;
-    let withdrawReservesCalldata = utils.defaultAbiCoder.encode(["address", "uint256"], [albert.address, toWithdrawAmount]);
-    const txn = await context.fastGovernanceExecute(
-      [comet.address],
-      [0],
-      ["withdrawReserves(address,uint256)"],
-      [withdrawReservesCalldata]
-    );
+    await context.setNextBaseFeeToZero();
+    const txn = await admin.withdrawReserves(albert.address, toWithdrawAmount, { gasPrice: 0 });
 
     expect(await baseToken.balanceOf(comet.address)).to.equal(cometBaseBalance - toWithdrawAmount);
     expect(await baseToken.balanceOf(albert.address)).to.equal(toWithdrawAmount);
@@ -46,11 +40,10 @@ scenario(
     tokenBalances: {
       $comet: { $base: 100 },
     },
-    upgrade: true,
   },
   async ({ actors }) => {
     const { albert } = actors;
-    await expect(albert.withdrawReserves(albert, 10)).to.be.revertedWith(
+    await expect(albert.withdrawReserves(albert.address, 10)).to.be.revertedWith(
       "custom error 'Unauthorized()'"
     );
   }
@@ -60,23 +53,17 @@ scenario(
   'Comet#withdrawReserves > reverts if not enough reserves are owned by protocol',
   {
     tokenBalances: {
-      $comet: { $base: 100 },
+      $comet: { $base: '== 100' },
     },
-    upgrade: true,
   },
-  async ({ comet, actors }, world, context) => {
+  async ({ comet, actors }, context) => {
     const { admin, albert } = actors;
 
     const scale = (await comet.baseScale()).toBigInt();
 
-    let withdrawReservesCalldata = utils.defaultAbiCoder.encode(["address", "uint256"], [albert.address, 101n * scale]);
-    // Note: Should be `InsufficientReserves()` error, but that error is masked by the Timelock error
-    await expect(context.fastGovernanceExecute(
-      [comet.address],
-      [0],
-      ["withdrawReserves(address,uint256)"],
-      [withdrawReservesCalldata]
-    )).to.be.revertedWith('Timelock::executeTransaction: Transaction execution reverted.');
+    await context.setNextBaseFeeToZero();
+    await expect(admin.withdrawReserves(albert.address, 101n * scale, { gasPrice: 0 }))
+      .to.be.revertedWith("custom error 'InsufficientReserves()'");
   }
 );
 

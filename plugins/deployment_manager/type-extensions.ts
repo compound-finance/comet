@@ -3,7 +3,11 @@ import { RelationConfigMap } from './RelationConfig';
 
 export interface DeploymentManagerConfig {
   relationConfigMap?: RelationConfigMap;
-  networks?: { [network: string]: RelationConfigMap };
+  networks?: {
+    [network: string]: {
+      [deployment: string]: RelationConfigMap;
+    };
+  };
 }
 
 declare module 'hardhat/types/config' {
