@@ -356,13 +356,14 @@ async function relayMumbaiMessage(
   const MUMBAI_RECEIVER_ADDRESSS = '0x0000000000000000000000000000000000001001';
   const EVENT_LISTENER_TIMEOUT = 60000;
 
+  const deploymentTag = `${bridgeDeploymentManager.network}/${bridgeDeploymentManager.deployment}`;
   const l2Timelock = await bridgeDeploymentManager.contract('timelock');
   if (!l2Timelock) {
-    throw new Error("deployment missing timelock");
+    throw new Error(`${deploymentTag} deployment missing timelock`);
   }
   const bridgeReceiver = await bridgeDeploymentManager.contract('bridgeReceiver');
   if (!bridgeReceiver) {
-    throw new Error("deployment missing bridge receiver");
+    throw new Error(`${deploymentTag} deployment missing bridge receiver`);
   }
 
   // listen on events on the fxRoot
@@ -372,7 +373,7 @@ async function relayMumbaiMessage(
       topics: [
         utils.id("StateSynced(uint256,address,bytes)")
       ]
-    }
+    };
 
     governanceDeploymentManager.hre.ethers.provider.on(filter, (log) => {
       resolve(log);
@@ -383,8 +384,7 @@ async function relayMumbaiMessage(
     }, EVENT_LISTENER_TIMEOUT);
   });
 
-  // XXX type for stateSyncedEvent
-  const stateSyncedEvent: any = await stateSyncedListenerPromise;
+  const stateSyncedEvent = await stateSyncedListenerPromise as Event;
 
   const stateSenderInterface = new utils.Interface([
     "event StateSynced(uint256 indexed id, address indexed contractAddress, bytes data)"
