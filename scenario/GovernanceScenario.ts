@@ -1,8 +1,9 @@
 import { scenario, setNextBaseFeeToZero, fastGovernanceExecute } from './context/CometContext';
 import { expect } from 'chai';
-import { constants, EventFilter, utils } from 'ethers';
+import { constants, Contract, EventFilter, utils } from 'ethers';
 import { COMP_WHALES } from "../src/deploy";
 import { impersonateAddress } from '../plugins/scenario/World';
+import { importContract } from '../plugins/deployment_manager/Import';
 
 const FX_ROOT_GOERLI = '0x3d1d3E34f7fB6D26245E6640E1c50710eFFf15bA';
 const STATE_SENDER = '0xeaa852323826c71cd7920c3b4c007184234c3945';
@@ -74,53 +75,40 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
   // XXX type for stateSyncedEvent
   const stateSyncedEvent: any = await stateSyncedListenerPromise;
 
-  // skip this; just post directly to fxChild (as 0x001001)
   const stateSenderInterface = new l1Hre.ethers.utils.Interface([
     "event StateSynced(uint256 indexed id, address indexed contractAddress, bytes data)"
   ]);
 
-  const decoded = stateSenderInterface.decodeEventLog(
+  const { contractAddress, data: stateSyncedData } = stateSenderInterface.decodeEventLog(
     "StateSynced",
     stateSyncedEvent.data,
     stateSyncedEvent.topics
   );
 
-  // decoded.data -> (fakeStateId, fxChild)
-
-  const fxChild = decoded.contractAddress;
-
-  // https://goerli.etherscan.io/address/0x3d1d3E34f7fB6D26245E6640E1c50710eFFf15bA#code
-  // abi.encode(msg.sender, _receiver, _data);
-  // msgSender = mainnet timelock
-  // msgReceiver = l2 bridge receiver
-
-  // XXX skip this step
-  const [msgSender, msgReceiver, msgData] = utils.defaultAbiCoder.decode(
-    ['address', 'address', 'bytes'],
-    decoded.data
+  const fxChildBuildFile = await importContract(
+    'mumbai',
+    contractAddress
+  );
+  const fxChildContract = new l1DeploymentManager.hre.ethers.Contract(
+    fxChildBuildFile.contracts["contracts/FxChild.sol:FxChild"].address as string,
+    fxChildBuildFile.contracts["contracts/FxChild.sol:FxChild"].abi as string
   );
 
-  // XXX impersonate 0x0000000000000000000000000000000000001001
-  // impersonate the l2 bridge contract
-  await l2Hre.network.provider.request({
-    method: 'hardhat_impersonateAccount',
-    params: [fxChild],
-  });
-  const fxChildSigner = await l2DeploymentManager.getSigner(fxChild);
+  const MUMBAI_RECEIVER_ADDRESSS = '0x0000000000000000000000000000000000001001';
+  const mumbaiReceiverSigner = await context.world.impersonateAddress(MUMBAI_RECEIVER_ADDRESSS);
 
   await setNextBaseFeeToZero(l2DeploymentManager);
-  // fxChild.onStateReceive(some int, decoded.data)
-  const processMessageFromRootTxn = await (
-    await polygonBridgeReceiver?.connect(fxChildSigner).processMessageFromRoot(
-      0,
-      msgSender,
-      msgData,
+  // function onStateReceive(uint256 stateId, bytes calldata _data)
+  const onStateReceiveTxn = await (
+    await fxChildContract.connect(mumbaiReceiverSigner).onStateReceive(
+      123,  // stateId
+      stateSyncedData, // _data
       { gasPrice: 0 }
     )
   ).wait();
 
   // pull the queue transaction event off of processMessageFromRootTxn
-  const queueTransactionEvent = processMessageFromRootTxn.events.find(event => event.address === l2Timelock?.address);
+  const queueTransactionEvent = onStateReceiveTxn.events.find(event => event.address === l2Timelock?.address);
   const timelockInterface = new l2Hre.ethers.utils.Interface([
     "event QueueTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta)",
     "event ExecuteTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta)"
@@ -142,16 +130,14 @@ scenario.only('L2 Governance scenario', {}, async ({ comet }, context, world) =>
 
   await setNextBaseFeeToZero(l2DeploymentManager);
   // execute queue transaction
-  const executeTransactionTxn = await (
-    await polygonBridgeReceiver?.executeTransaction(
-      target,
-      value,
-      signature,
-      data,
-      eta,
-      { gasPrice: 0 }
-    )
-  ).wait();
+  await polygonBridgeReceiver?.executeTransaction(
+    target,
+    value,
+    signature,
+    data,
+    eta,
+    { gasPrice: 0 }
+  );
 
   // check delay before
   console.log(`await l2Timelock?.delay(): ${await l2Timelock?.delay()}`);
