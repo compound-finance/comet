@@ -7,7 +7,7 @@ import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
 import { exp } from '../test/helpers';
 import { DeploymentManager } from '../plugins/deployment_manager';
-import { impersonateAddress } from '../plugins/scenario/World';
+import { impersonateAddress, mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from '../plugins/scenario/utils';
 import { ProposalState, OpenProposal } from './context/Gov';
 import { debug } from '../plugins/deployment_manager/Utils';
 import { COMP_WHALES } from "../src/deploy";
@@ -265,18 +265,6 @@ export async function fetchLogs(
   } else {
     return contract.queryFilter(filter, fromBlock, toBlock);
   }
-}
-
-export async function setNextBaseFeeToZero(dm: DeploymentManager) {
-  await dm.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
-}
-
-export async function mineBlocks(dm: DeploymentManager, blocks: number) {
-  await dm.hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
-}
-
-export async function setNextBlockTimestamp(dm: DeploymentManager, timestamp: number) {
-  await dm.hre.ethers.provider.send('evm_setNextBlockTimestamp', [timestamp]);
 }
 
 export async function executeOpenProposal(

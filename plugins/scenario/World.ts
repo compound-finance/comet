@@ -3,6 +3,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 // NB: this couples this plugin to deployment manager plugin
 import { DeploymentManager } from '../deployment_manager/DeploymentManager';
 import hreForBase from './utils/hreForBase';
+import { impersonateAddress } from "./utils";
 
 export type ForkSpec = {
   name: string;
@@ -16,15 +17,6 @@ export type ForkSpec = {
 export type Snapshot = {
   snapshot: string;
   auxiliarySnapshot?: string;
-}
-
-// XXX move to deployment manager?
-export async function impersonateAddress(dm: DeploymentManager, address: string): Promise<SignerWithAddress> {
-  await dm.hre.network.provider.request({
-    method: 'hardhat_impersonateAccount',
-    params: [address],
-  });
-  return await dm.getSigner(address);
 }
 
 export class World {
@@ -96,11 +88,7 @@ export class World {
       const signer = await this.deploymentManager.getSigner();
       await signer.sendTransaction({ to: address, value });
     }
-    await this.deploymentManager.hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [address],
-    });
-    return await this.deploymentManager.getSigner(address);
+    return await impersonateAddress(this.deploymentManager, address);
   }
 
   async timestamp() {
