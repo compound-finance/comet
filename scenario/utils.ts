@@ -366,7 +366,7 @@ async function relayMumbaiMessage(
     throw new Error(`${deploymentTag} deployment missing bridge receiver`);
   }
 
-  // listen on events on the fxRoot
+  // listen on events on the fxRoot contract
   const stateSyncedListenerPromise = new Promise(async (resolve, reject) => {
     const filter: EventFilter = {
       address: STATE_SENDER,
@@ -396,20 +396,18 @@ async function relayMumbaiMessage(
     stateSyncedEvent.topics
   );
 
-  const fxChildBuildFile = await importContract('mumbai', contractAddress);
-  // XXX better way to construct this contract?
+  const { contracts } = await bridgeDeploymentManager.import(contractAddress, 'mumbai');
   const fxChildContract = new Contract(
-    fxChildBuildFile.contracts["contracts/FxChild.sol:FxChild"].address as string,
-    fxChildBuildFile.contracts["contracts/FxChild.sol:FxChild"].abi as string
+    contractAddress,
+    contracts["contracts/FxChild.sol:FxChild"].abi as string
   );
 
   const mumbaiReceiverSigner = await impersonateAddress(bridgeDeploymentManager, MUMBAI_RECEIVER_ADDRESSS);
 
   await setNextBaseFeeToZero(bridgeDeploymentManager);
-  // function onStateReceive(uint256 stateId, bytes calldata _data)
   const onStateReceiveTxn = await (
     await fxChildContract.connect(mumbaiReceiverSigner).onStateReceive(
-      123,  // stateId
+      123,             // stateId
       stateSyncedData, // _data
       { gasPrice: 0 }
     )
@@ -447,7 +445,6 @@ export async function fastL2GovernanceExecute(
   signatures: string[],
   calldatas: string[]
 ) {
-  // execute mainnet governance proposal
   await fastGovernanceExecute(
     governanceDeploymentManager,
     proposer,
