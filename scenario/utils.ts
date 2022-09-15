@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber, BigNumberish, Contract, ContractReceipt, Event, EventFilter, constants } from 'ethers';
+import { BigNumber, BigNumberish, Contract, ContractReceipt, Event, EventFilter, constants, utils } from 'ethers';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { CometContext } from './context/CometContext';
@@ -11,6 +11,7 @@ import { impersonateAddress, mineBlocks, setNextBaseFeeToZero, setNextBlockTimes
 import { ProposalState, OpenProposal } from './context/Gov';
 import { debug } from '../plugins/deployment_manager/Utils';
 import { COMP_WHALES } from "../src/deploy";
+import { importContract } from '../plugins/deployment_manager/Import';
 
 export const MAX_ASSETS = 15;
 
@@ -345,4 +346,123 @@ export async function fastGovernanceExecute(
   const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
 
   await executeOpenProposal(dm, { id, startBlock, endBlock });
+}
+
+async function relayMumbaiMessage(
+  governanceDeploymentManager: DeploymentManager,
+  bridgeDeploymentManager: DeploymentManager,
+) {
+  const STATE_SENDER = '0xeaa852323826c71cd7920c3b4c007184234c3945';
+  const MUMBAI_RECEIVER_ADDRESSS = '0x0000000000000000000000000000000000001001';
+  const EVENT_LISTENER_TIMEOUT = 60000;
+
+  const l2Timelock = await bridgeDeploymentManager.contract('timelock');
+  if (!l2Timelock) {
+    throw new Error("deployment missing timelock");
+  }
+  const bridgeReceiver = await bridgeDeploymentManager.contract('bridgeReceiver');
+  if (!bridgeReceiver) {
+    throw new Error("deployment missing bridge receiver");
+  }
+
+  // listen on events on the fxRoot
+  const stateSyncedListenerPromise = new Promise(async (resolve, reject) => {
+    const filter: EventFilter = {
+      address: STATE_SENDER,
+      topics: [
+        utils.id("StateSynced(uint256,address,bytes)")
+      ]
+    }
+
+    governanceDeploymentManager.hre.ethers.provider.on(filter, (log) => {
+      resolve(log);
+    });
+
+    setTimeout(() => {
+      reject(new Error('StateSender.StateSynced event listener timed out'));
+    }, EVENT_LISTENER_TIMEOUT);
+  });
+
+  // XXX type for stateSyncedEvent
+  const stateSyncedEvent: any = await stateSyncedListenerPromise;
+
+  const stateSenderInterface = new utils.Interface([
+    "event StateSynced(uint256 indexed id, address indexed contractAddress, bytes data)"
+  ]);
+
+  const { contractAddress, data: stateSyncedData } = stateSenderInterface.decodeEventLog(
+    "StateSynced",
+    stateSyncedEvent.data,
+    stateSyncedEvent.topics
+  );
+
+  const fxChildBuildFile = await importContract('mumbai', contractAddress);
+  // XXX better way to construct this contract?
+  const fxChildContract = new Contract(
+    fxChildBuildFile.contracts["contracts/FxChild.sol:FxChild"].address as string,
+    fxChildBuildFile.contracts["contracts/FxChild.sol:FxChild"].abi as string
+  );
+
+  const mumbaiReceiverSigner = await impersonateAddress(bridgeDeploymentManager, MUMBAI_RECEIVER_ADDRESSS);
+
+  await setNextBaseFeeToZero(bridgeDeploymentManager);
+  // function onStateReceive(uint256 stateId, bytes calldata _data)
+  const onStateReceiveTxn = await (
+    await fxChildContract.connect(mumbaiReceiverSigner).onStateReceive(
+      123,  // stateId
+      stateSyncedData, // _data
+      { gasPrice: 0 }
+    )
+  ).wait();
+
+  // pull the queue transaction event off of processMessageFromRootTxn
+  const queueTransactionEvent = onStateReceiveTxn.events.find(event => event.address === l2Timelock?.address);
+  const { target, value, signature, data, eta } = l2Timelock.interface.decodeEventLog(
+    "QueueTransaction",
+    queueTransactionEvent.data,
+    queueTransactionEvent.topics
+  );
+
+  // fast forward l2 time
+  await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
+
+  // execute queued transaction
+  await setNextBaseFeeToZero(bridgeDeploymentManager);
+  await bridgeReceiver.executeTransaction(
+    target,
+    value,
+    signature,
+    data,
+    eta,
+    { gasPrice: 0 }
+  );
+}
+
+export async function fastL2GovernanceExecute(
+  governanceDeploymentManager: DeploymentManager,
+  bridgeDeploymentManager: DeploymentManager,
+  proposer: SignerWithAddress,
+  targets: string[],
+  values: BigNumberish[],
+  signatures: string[],
+  calldatas: string[]
+) {
+  // execute mainnet governance proposal
+  await fastGovernanceExecute(
+    governanceDeploymentManager,
+    proposer,
+    targets,
+    values,
+    signatures,
+    calldatas
+  );
+
+  const bridgeNetwork = bridgeDeploymentManager.network;
+  switch (bridgeNetwork) {
+    case 'mumbai':
+      await relayMumbaiMessage(governanceDeploymentManager, bridgeDeploymentManager);
+      break;
+    default:
+      throw new Error(`No governance execution strategy for network: ${bridgeNetwork}`);
+  }
 }
