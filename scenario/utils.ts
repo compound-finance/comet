@@ -239,6 +239,10 @@ export async function isRewardSupported(ctx: CometContext): Promise<boolean> {
   if (rewardTokenAddress === constants.AddressZero) return false;
 }
 
+export function isBridgedDeployment(ctx: CometContext): boolean {
+  return ctx.world.auxiliaryDeploymentManager !== undefined;
+}
+
 export async function fetchLogs(
   contract: Contract,
   filter: EventFilter,
