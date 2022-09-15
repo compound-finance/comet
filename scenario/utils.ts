@@ -436,6 +436,20 @@ async function relayMumbaiMessage(
   );
 }
 
+export async function relayMessage(
+  governanceDeploymentManager: DeploymentManager,
+  bridgeDeploymentManager: DeploymentManager
+) {
+  const bridgeNetwork = bridgeDeploymentManager.network;
+  switch (bridgeNetwork) {
+    case 'mumbai':
+      await relayMumbaiMessage(governanceDeploymentManager, bridgeDeploymentManager);
+      break;
+    default:
+      throw new Error(`No governance execution strategy for network: ${bridgeNetwork}`);
+  }
+}
+
 export async function fastL2GovernanceExecute(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
@@ -454,12 +468,15 @@ export async function fastL2GovernanceExecute(
     calldatas
   );
 
-  const bridgeNetwork = bridgeDeploymentManager.network;
-  switch (bridgeNetwork) {
-    case 'mumbai':
-      await relayMumbaiMessage(governanceDeploymentManager, bridgeDeploymentManager);
-      break;
-    default:
-      throw new Error(`No governance execution strategy for network: ${bridgeNetwork}`);
-  }
+  await relayMessage(governanceDeploymentManager, bridgeDeploymentManager);
+}
+
+export async function executeOpenProposalAndRelay(
+  governanceDeploymentManager: DeploymentManager,
+  bridgeDeploymentManager: DeploymentManager,
+  openProposal: OpenProposal
+) {
+
+  await executeOpenProposal(governanceDeploymentManager, openProposal);
+  await relayMessage(governanceDeploymentManager, bridgeDeploymentManager);
 }

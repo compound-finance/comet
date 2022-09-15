@@ -8,7 +8,7 @@ import {
   UtilizationConstraint,
   CometBalanceConstraint,
   MigrationConstraint,
-  // ProposalConstraint,
+  ProposalConstraint,
   FilterConstraint,
 } from '../constraints';
 import CometActor from './CometActor';
@@ -244,10 +244,6 @@ export class CometContext {
     await mineBlocks(this.world.deploymentManager, blocks);
   }
 
-  async executeOpenProposal(openProposal: OpenProposal) {
-    await executeOpenProposal(this.world.deploymentManager, openProposal);
-  }
-
   // Instantly executes some actions through the governance proposal process
   async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
     const proposer = await this.getProposer();
@@ -348,7 +344,7 @@ async function forkContext(c: CometContext, w: World): Promise<CometContext> {
 export const constraints = [
   new FilterConstraint(),
   new MigrationConstraint(),
-  // new ProposalConstraint(),
+  new ProposalConstraint(),
   new ModernConstraint(),
   new PauseConstraint(),
   new CometBalanceConstraint(),
