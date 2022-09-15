@@ -86,7 +86,7 @@ contract BaseBridgeReceiver {
         string memory signature,
         bytes memory data,
         uint eta
-    ) public payable returns (bytes memory) {
-        ITimelock(l2Timelock).executeTransaction(target, value, signature, data, eta);
+    ) external payable returns (bytes memory) {
+        return ITimelock(l2Timelock).executeTransaction(target, value, signature, data, eta);
     }
 }
