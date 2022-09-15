@@ -13,6 +13,7 @@ export interface BuildFile {
 }
 
 export interface ContractMetadata {
+  network?: string;
   address: Address;
   name: string;
   abi: ABI;

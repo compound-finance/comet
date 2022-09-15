@@ -274,6 +274,8 @@ export class CometContext {
     if (state == ProposalState.Succeeded) {
       await this.setNextBaseFeeToZero();
       await governor.queue(id, { gasPrice: 0 });
+    } else if (state == ProposalState.Defeated) {
+      debug(`⛔ Proposal ${id} was unexpectedly defeated`)
     }
 
     const proposal = await governor.proposals(id);

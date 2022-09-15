@@ -32,7 +32,17 @@ interface EtherscanSource {
   SwarmSource: string;
 }
 
-async function getEtherscanApiData(network: string, address: string, apiKey: string) {
+interface EtherscanData {
+  source: string;
+  abi: object;
+  contract: string;
+  compiler: string;
+  optimized: boolean;
+  optimizationRuns: number;
+  constructorArgs: string;
+}
+
+async function getEtherscanApiData(network: string, address: string, apiKey: string): Promise<EtherscanData> {
   let apiUrl = await getEtherscanApiUrl(network);
 
   let result = await get(apiUrl, {
@@ -78,21 +88,68 @@ async function getContractCreationCode(network: string, address: string) {
   return matches[0][1];
 }
 
+function parseSources({ source, contract, optimized, optimizationRuns }: EtherscanData) {
+  if (source.startsWith('{') && source.endsWith('}')) {
+    const sliced = source.slice(1, -1);
+    if (sliced.startsWith('{') && sliced.endsWith('}')) {
+      return JSON.parse(sliced);
+    } else {
+      return {
+        language: 'Solidity',
+        settings: {
+          optimizer: {
+            enabled: optimized,
+            runs: optimizationRuns,
+          }
+        },
+        sources: JSON.parse(source)
+      };
+    }
+  } else {
+    // Note: legacy for tests, but is this even right?
+    return {
+      language: 'Solidity',
+      settings: {
+        optimizer: {
+          enabled: optimized,
+          runs: optimizationRuns,
+        }
+      },
+      sources: {
+        [`contracts/${contract}.sol`]: {
+          content: source,
+          keccak256: '',
+        }
+      }
+    };
+  }
+}
+
 export async function loadEtherscanContract(network: string, address: string) {
   const apiKey = getEtherscanApiKey(network);
-
   const networkName = network;
-  let { source, abi, contract, compiler, optimized, optimizationRuns, constructorArgs } = await getEtherscanApiData(networkName, address, apiKey);
+  const etherscanData = await getEtherscanApiData(networkName, address, apiKey);
+  const {
+    abi,
+    contract,
+    compiler,
+    constructorArgs
+  } = etherscanData;
+  const { language, settings, sources } = parseSources(etherscanData);
+  const contractPath = Object.keys(sources)[0];
+  const contractFQN = `${contractPath}:${contract}`;
+
   let contractCreationCode = await getContractCreationCode(networkName, address);
   if (constructorArgs.length > 0 && contractCreationCode.endsWith(constructorArgs)) {
     contractCreationCode = contractCreationCode.slice(0, -constructorArgs.length);
   }
-  let encodedABI = JSON.stringify(abi);
-  let contractSource = `contracts/${contract}.sol:${contract}`;
-  let contractBuild = {
+
+  const encodedABI = JSON.stringify(abi);
+  const contractBuild = {
     contract,
     contracts: {
-      [contractSource]: {
+      [contractFQN]: {
+        network,
         address,
         name: contract,
         abi: encodedABI,
@@ -102,23 +159,13 @@ export async function loadEtherscanContract(network: string, address: string) {
           compiler: {
             version: compiler,
           },
-          language: 'Solidity',
+          language,
           output: {
             abi: encodedABI,
           },
           devdoc: {},
-          sources: {
-            [contractSource]: {
-              content: source,
-              keccak256: '',
-            },
-          },
-          settings: {
-            optimizer: {
-              enabled: optimized,
-              runs: optimizationRuns
-            }
-          },
+          sources,
+          settings,
           version: 1,
         }),
       },
