@@ -1,8 +1,9 @@
 import { Constraint, Solution, World, debug } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import { Requirements } from './Requirements';
-import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
+import { Migration, loadMigrations, Actions } from '../../plugins/deployment_manager/Migration';
 import { modifiedPaths, subsets } from '../utils';
+import { DeploymentManager } from '../../plugins/deployment_manager';
 
 async function getMigrations<T>(context: CometContext, requirements: Requirements): Promise<Migration<T>[]> {
   // TODO: make this configurable from cli params/env var?
@@ -10,6 +11,10 @@ async function getMigrations<T>(context: CometContext, requirements: Requirement
   const deployment = context.deploymentManager.deployment;
   const pattern = new RegExp(`deployments/${network}/${deployment}/migrations/.*.ts`);
   return await loadMigrations((await modifiedPaths(pattern)).map(p => '../../' + p));
+}
+
+async function isEnacted<T>(actions: Actions<T>, deploymentManager: DeploymentManager): Promise<boolean> {
+  return actions.enacted && await actions.enacted(deploymentManager)
 }
 
 export class MigrationConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
@@ -29,15 +34,17 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
         migrationList.sort((a, b) => a.name.localeCompare(b.name))
         ctx.migrations = migrationList;
 
-        // XXX This should check that a migration has not already been run/proposed on-chain.
-        // Otherwise the scenario could be running the same proposal twice.
         debug(`${label} Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);
         for (const migration of migrationList) {
           const artifact = await migration.actions.prepare(ctx.deploymentManager);
           debug(`${label} Prepared migration ${migration.name}.\n  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
           // XXX enact will take the 'gov' deployment manager instead of the 'local' one
-          await migration.actions.enact(ctx.deploymentManager, artifact);
-          debug(`${label} Enacted migration ${migration.name}`);
+          if (await isEnacted(migration.actions, ctx.deploymentManager)) {
+            debug(`${label} Migration ${migration.name} has already been enacted`);
+          } else {
+            await migration.actions.enact(ctx.deploymentManager, artifact);
+            debug(`${label} Enacted migration ${migration.name}`);
+          }
         }
 
         // Remove proposer from signers
@@ -62,7 +69,7 @@ export class VerifyMigrationConstraint<T extends CometContext, R extends Require
       async function (ctx: T): Promise<T> {
         for (const migration of ctx.migrations) {
           // XXX does verify get the 'gov' deployment manager as well as the 'local' one?
-          if (migration.actions.verify) {
+          if (migration.actions.verify && !(await isEnacted(migration.actions, ctx.deploymentManager))) {
             await migration.actions.verify(ctx.deploymentManager);
             debug(`${label} Verified migration "${migration.name}"`);
           }
