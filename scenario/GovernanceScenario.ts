@@ -20,7 +20,9 @@ scenario(
 
     const proposer = await impersonateAddress(governanceDeploymentManager, COMP_WHALES[0]);
 
-    const fiveDaysInSeconds = 5 * 24 * 60 * 60;
+    const currentTimelockDelay = await timelock.delay();
+    const newTimelockDelay = currentTimelockDelay.mul(2);
+
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
@@ -28,7 +30,7 @@ scenario(
         [0],
         ["setDelay(uint256)"],
         [
-          utils.defaultAbiCoder.encode(['uint'], [fiveDaysInSeconds])
+          utils.defaultAbiCoder.encode(['uint'], [newTimelockDelay])
         ]
       ]
     );
@@ -38,7 +40,8 @@ scenario(
       [bridgeReceiver.address, l2ProposalData]
     );
 
-    expect(await timelock.delay()).to.eq(2 * 24 * 60 * 60);
+    expect(await timelock.delay()).to.eq(currentTimelockDelay);
+    expect(currentTimelockDelay).to.not.eq(newTimelockDelay);
 
     await fastL2GovernanceExecute(
       governanceDeploymentManager,
@@ -50,7 +53,7 @@ scenario(
       [sendMessageToChildCalldata]
     );
 
-    expect(await timelock.delay()).to.eq(fiveDaysInSeconds);
+    expect(await timelock.delay()).to.eq(newTimelockDelay);
   }
 );
 
