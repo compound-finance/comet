@@ -71,3 +71,12 @@ jobs:
           ETH_PK: "${{ inputs.eth_pk }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
+
+      - name: Commit changes
+        if: ${{ github.event.inputs.simulate == 'false' }}
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          git add deployments/${{ github.event.inputs.network }}/${{ github.event.inputs.deployment }}/migrations/${{ github.event.inputs.migration }}.ts
+          git commit -m "Modified migration from GitHub Actions"
+          git push origin
