@@ -378,7 +378,6 @@ async function relayMumbaiMessage(
     )
   ).wait();
 
-  // pull the queue transaction event off of processMessageFromRootTxn
   const queueTransactionEvent = onStateReceiveTxn.events.find(event => event.address === timelock.address);
   const { args: { target, value, signature, data, eta } } = timelock.interface.parseLog(queueTransactionEvent);
 
