@@ -35,6 +35,7 @@ import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { ProtocolConfiguration, deployComet, COMP_WHALES } from '../../src/deploy';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { Requirements } from '../constraints/Requirements';
+import { max } from '../utils';
 
 export type ActorMap = { [name: string]: CometActor };
 export type AssetMap = { [name: string]: CometAsset };
@@ -279,7 +280,8 @@ export class CometContext {
     }
 
     const proposal = await governor.proposals(id);
-    await this.setNextBlockTimestamp(proposal.eta.toNumber() + 1);
+    const nextBlockTimestamp = max(proposal.eta.toNumber(), await this.world.timestamp());
+    await this.setNextBlockTimestamp(nextBlockTimestamp + 1);
 
     // Execute proposal (w/ gas limit so we see if exec reverts, not a gas estimation error)
     await this.setNextBaseFeeToZero();
