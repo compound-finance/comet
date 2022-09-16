@@ -319,11 +319,7 @@ export async function fastGovernanceExecute(
   signatures: string[],
   calldatas: string[]
 ) {
-  const governor = await dm.contract('governor');
-
-  if (!governor) {
-    throw new Error("cannot create governance proposal without governor");
-  }
+  const governor = await dm.getContractOrThrow('governor');
 
   await setNextBaseFeeToZero(dm);
 
@@ -353,15 +349,11 @@ async function relayMumbaiMessage(
   const stateSender = await governanceDeploymentManager.getContractOrThrow('stateSender');
   const timelock = await bridgeDeploymentManager.getContractOrThrow('timelock');
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
+  const fxChild = await bridgeDeploymentManager.getContractOrThrow('fxChild');
 
   // listen on events on the fxRoot contract
   const stateSyncedListenerPromise = new Promise(async (resolve, reject) => {
-    const filter: EventFilter = {
-      address: stateSender.address,
-      topics: [
-        utils.id("StateSynced(uint256,address,bytes)")
-      ]
-    };
+    const filter = stateSender.filters.StateSynced();
 
     governanceDeploymentManager.hre.ethers.provider.on(filter, (log) => {
       resolve(log);
@@ -373,24 +365,13 @@ async function relayMumbaiMessage(
   });
 
   const stateSyncedEvent = await stateSyncedListenerPromise as Event;
-
-  const stateSenderInterface = new utils.Interface([
-    "event StateSynced(uint256 indexed id, address indexed contractAddress, bytes data)"
-  ]);
-
-  const { data: stateSyncedData } = stateSenderInterface.decodeEventLog(
-    "StateSynced",
-    stateSyncedEvent.data,
-    stateSyncedEvent.topics
-  );
-
-  const fxChild = await bridgeDeploymentManager.contract('fxChild');
+  const { args: { data: stateSyncedData } } = stateSender.interface.parseLog(stateSyncedEvent);
 
   const mumbaiReceiverSigner = await impersonateAddress(bridgeDeploymentManager, MUMBAI_RECEIVER_ADDRESSS);
 
   await setNextBaseFeeToZero(bridgeDeploymentManager);
   const onStateReceiveTxn = await (
-    await fxChild?.connect(mumbaiReceiverSigner).onStateReceive(
+    await fxChild.connect(mumbaiReceiverSigner).onStateReceive(
       123,             // stateId
       stateSyncedData, // _data
       { gasPrice: 0 }
@@ -399,11 +380,7 @@ async function relayMumbaiMessage(
 
   // pull the queue transaction event off of processMessageFromRootTxn
   const queueTransactionEvent = onStateReceiveTxn.events.find(event => event.address === timelock.address);
-  const { target, value, signature, data, eta } = timelock.interface.decodeEventLog(
-    "QueueTransaction",
-    queueTransactionEvent.data,
-    queueTransactionEvent.topics
-  );
+  const { args: { target, value, signature, data, eta } } = timelock.interface.parseLog(queueTransactionEvent);
 
   // fast forward l2 time
   await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
