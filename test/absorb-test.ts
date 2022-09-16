@@ -1,3 +1,4 @@
+import { ethers } from 'ethers';
 import { event, expect, exp, factor, defaultAssets, makeProtocol, mulPrice, portfolio, wait, setTotalsBasic } from './helpers';
 
 describe('absorb', function () {
@@ -355,14 +356,15 @@ describe('absorb', function () {
     const { comet, tokens, users: [absorber, underwater], priceFeeds } = protocol;
     const { COMP, WBTC, WETH } = tokens;
 
-    const debt = 1n - (exp(41000, 6) + exp(3000, 6) + exp(175, 6));
+    const finalDebt = 1n;
+    const startingDebt = finalDebt - (exp(41000, 6) + exp(3000, 6) + exp(175, 6));
     await setTotalsBasic(comet, {
-      totalBorrowBase: -debt,
+      totalBorrowBase: -startingDebt,
     });
 
     const r0 = await comet.getReserves();
 
-    await comet.setBasePrincipal(underwater.address, debt);
+    await comet.setBasePrincipal(underwater.address, startingDebt);
     await comet.setCollateralBalance(underwater.address, COMP.address, exp(1, 18));
     await comet.setCollateralBalance(underwater.address, WETH.address, exp(1, 18));
     await comet.setCollateralBalance(underwater.address, WBTC.address, exp(1, 8));
@@ -382,16 +384,16 @@ describe('absorb', function () {
     const lA1 = await comet.liquidatorPoints(absorber.address);
     const _lU1 = await comet.liquidatorPoints(underwater.address);
 
-    expect(r0).to.be.equal(-debt);
-    expect(t1.totalSupplyBase).to.be.equal(1);
+    expect(r0).to.be.equal(-startingDebt);
+    expect(t1.totalSupplyBase).to.be.equal(finalDebt);
     expect(t1.totalBorrowBase).to.be.equal(0);
-    expect(r1).to.be.equal(-1);
+    expect(r1).to.be.equal(-finalDebt);
 
     expect(pP0.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
     expect(pP0.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
     expect(pA0.internal).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
     expect(pA0.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
-    expect(pU0.internal).to.be.deep.equal({ COMP: exp(1, 18), USDC: debt, WBTC: exp(1, 8), WETH: exp(1, 18) });
+    expect(pU0.internal).to.be.deep.equal({ COMP: exp(1, 18), USDC: startingDebt, WBTC: exp(1, 8), WETH: exp(1, 18) });
     expect(pU0.external).to.be.deep.equal({ COMP: 0n, USDC: 0n, WBTC: 0n, WETH: 0n });
 
     expect(pP1.internal).to.be.deep.equal({ COMP: exp(1, 18), USDC: 0n, WBTC: exp(1, 8), WETH: exp(1, 18) });
@@ -442,11 +444,18 @@ describe('absorb', function () {
       }
     });
     expect(event(a0, 3)).to.be.deep.equal({
+      Transfer: {
+        amount: finalDebt,
+        from: ethers.constants.AddressZero,
+        to: underwater.address,
+      }
+    });
+    expect(event(a0, 4)).to.be.deep.equal({
       AbsorbDebt: {
         absorber: absorber.address,
         borrower: underwater.address,
-        basePaidOut: pU1.internal.USDC - debt,
-        usdValue: mulPrice(pU1.internal.USDC - debt, usdcPrice, baseScale),
+        basePaidOut: pU1.internal.USDC - startingDebt,
+        usdValue: mulPrice(pU1.internal.USDC - startingDebt, usdcPrice, baseScale),
       }
     });
   });

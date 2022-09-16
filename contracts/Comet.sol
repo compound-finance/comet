@@ -1181,6 +1181,9 @@ contract Comet is CometMainInterface {
 
         int104 newPrincipal = principalValue(newBalance);
         updateBasePrincipal(account, accountUser, newPrincipal);
+        if (newBalance > 0) {
+            emit Transfer(address(0), account, uint256(newBalance));
+        }
 
         // reset assetsIn
         userBasic[account].assetsIn = 0;
