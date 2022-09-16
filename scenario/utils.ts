@@ -11,7 +11,6 @@ import { impersonateAddress, mineBlocks, setNextBaseFeeToZero, setNextBlockTimes
 import { ProposalState, OpenProposal } from './context/Gov';
 import { debug } from '../plugins/deployment_manager/Utils';
 import { COMP_WHALES } from "../src/deploy";
-import { importContract } from '../plugins/deployment_manager/Import';
 
 export const MAX_ASSETS = 15;
 
@@ -282,6 +281,7 @@ export async function executeOpenProposal(
   }
 
   if (blocksUntilEnd > 0) {
+    // XXX COMP_WHALES are mainnet-specific; make this work for multiple chains
     for (const whale of COMP_WHALES) {
       try {
         // Voting can fail if voter has already voted
