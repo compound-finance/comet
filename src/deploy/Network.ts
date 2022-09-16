@@ -254,7 +254,7 @@ export async function deployNetworkComet(
   await deploymentManager.idempotent(
     async () => !sameAddress((await rewards.rewardConfig(comet.address)).token, rewardTokenAddress),
     async () => {
-      trace(`Setting reward token in CometRewards to ${rewardTokenAddress}`);
+      trace(`Setting reward token in CometRewards to ${rewardTokenAddress} for ${comet.address}`);
       trace(await wait(rewards.connect(admin).setRewardConfig(comet.address, rewardTokenAddress)));
     }
   );
