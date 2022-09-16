@@ -5,8 +5,6 @@ import { COMP_WHALES } from "../src/deploy";
 import { impersonateAddress } from '../plugins/scenario/utils';
 import { isBridgedDeployment, fastL2GovernanceExecute } from './utils';
 
-const FX_ROOT_GOERLI = '0x3d1d3E34f7fB6D26245E6640E1c50710eFFf15bA';
-
 scenario(
   'execute Mumbai governance proposal',
   {
@@ -38,6 +36,9 @@ scenario(
       [bridgeReceiver.address, l2ProposalData]
     );
 
+    const fxChild = await world.deploymentManager.contract('fxChild');
+    const fxRootAddress = await fxChild?.fxRoot();
+
     expect(await timelock.delay()).to.eq(currentTimelockDelay);
     expect(currentTimelockDelay).to.not.eq(newTimelockDelay);
 
@@ -45,7 +46,7 @@ scenario(
       governanceDeploymentManager,
       world.deploymentManager,
       proposer,
-      [FX_ROOT_GOERLI],
+      [fxRootAddress],
       [0],
       ["sendMessageToChild(address,bytes)"],
       [sendMessageToChildCalldata]
