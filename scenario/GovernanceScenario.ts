@@ -36,8 +36,7 @@ scenario(
       [bridgeReceiver.address, l2ProposalData]
     );
 
-    const fxChild = await world.deploymentManager.contract('fxChild');
-    const fxRootAddress = await fxChild?.fxRoot();
+    const fxRoot = await governanceDeploymentManager.getContractOrThrow('fxRoot');
 
     expect(await timelock.delay()).to.eq(currentTimelockDelay);
     expect(currentTimelockDelay).to.not.eq(newTimelockDelay);
@@ -46,7 +45,7 @@ scenario(
       governanceDeploymentManager,
       world.deploymentManager,
       proposer,
-      [fxRootAddress],
+      [fxRoot.address],
       [0],
       ["sendMessageToChild(address,bytes)"],
       [sendMessageToChildCalldata]

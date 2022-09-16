@@ -272,12 +272,7 @@ export async function executeOpenProposal(
   dm: DeploymentManager,
   { id, startBlock, endBlock }: OpenProposal
 ) {
-  const governor = await dm.contract('governor');
-
-  if (!governor) {
-    throw new Error("cannot execute proposal without governor");
-  }
-
+  const governor = await dm.getContractOrThrow('governor');
   const blockNow = await dm.hre.ethers.provider.getBlockNumber();
   const blocksUntilStart = startBlock - blockNow;
   const blocksUntilEnd = endBlock - Math.max(startBlock, blockNow);
@@ -352,24 +347,17 @@ async function relayMumbaiMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
 ) {
-  const STATE_SENDER = '0xeaa852323826c71cd7920c3b4c007184234c3945';
   const MUMBAI_RECEIVER_ADDRESSS = '0x0000000000000000000000000000000000001001';
   const EVENT_LISTENER_TIMEOUT = 60000;
 
-  const deploymentTag = `${bridgeDeploymentManager.network}/${bridgeDeploymentManager.deployment}`;
-  const timelock = await bridgeDeploymentManager.contract('timelock');
-  if (!timelock) {
-    throw new Error(`${deploymentTag} deployment missing timelock`);
-  }
-  const bridgeReceiver = await bridgeDeploymentManager.contract('bridgeReceiver');
-  if (!bridgeReceiver) {
-    throw new Error(`${deploymentTag} deployment missing bridge receiver`);
-  }
+  const stateSender = await governanceDeploymentManager.getContractOrThrow('stateSender');
+  const timelock = await bridgeDeploymentManager.getContractOrThrow('timelock');
+  const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
 
   // listen on events on the fxRoot contract
   const stateSyncedListenerPromise = new Promise(async (resolve, reject) => {
     const filter: EventFilter = {
-      address: STATE_SENDER,
+      address: stateSender.address,
       topics: [
         utils.id("StateSynced(uint256,address,bytes)")
       ]

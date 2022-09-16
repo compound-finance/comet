@@ -336,6 +336,15 @@ export class DeploymentManager {
     return contract && contract.connect(signer ?? await this.getSigner()) as T;
   }
 
+  async getContractOrThrow<T extends Contract>(alias: string, signer?: SignerWithAddress): Promise<T> {
+    const tag = `${this.network}/${this.deployment}`;
+    const contract = await this.contract<T>(alias, signer);
+    if (!contract) {
+      throw new Error(`${tag} deployment missing ${alias}`);
+    }
+    return contract;
+  }
+
   /* Changes configuration of verification strategy during deployment */
   setVerificationStrategy(verificationStrategy: VerificationStrategy) {
     this.config.verificationStrategy = verificationStrategy;

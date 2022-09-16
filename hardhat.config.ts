@@ -17,6 +17,7 @@ import './tasks/scenario/task.ts';
 
 // Relation Config
 import relationConfigMap from './deployments/relations';
+import goerliRelationConfigMap from './deployments/goerli/usdc/relations';
 import mumbaiRelationConfigMap from './deployments/mumbai/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
@@ -170,6 +171,9 @@ const config: HardhatUserConfig = {
   deploymentManager: {
     relationConfigMap,
     networks: {
+      goerli: {
+        usdc: goerliRelationConfigMap
+      },
       mumbai: {
         usdc: mumbaiRelationConfigMap
       }
