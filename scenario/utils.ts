@@ -390,23 +390,19 @@ async function relayMumbaiMessage(
     "event StateSynced(uint256 indexed id, address indexed contractAddress, bytes data)"
   ]);
 
-  const { contractAddress, data: stateSyncedData } = stateSenderInterface.decodeEventLog(
+  const { data: stateSyncedData } = stateSenderInterface.decodeEventLog(
     "StateSynced",
     stateSyncedEvent.data,
     stateSyncedEvent.topics
   );
 
-  const { contracts } = await bridgeDeploymentManager.import(contractAddress, 'mumbai');
-  const fxChildContract = new Contract(
-    contractAddress,
-    contracts["contracts/FxChild.sol:FxChild"].abi as string
-  );
+  const fxChild = await bridgeDeploymentManager.contract('fxChild');
 
   const mumbaiReceiverSigner = await impersonateAddress(bridgeDeploymentManager, MUMBAI_RECEIVER_ADDRESSS);
 
   await setNextBaseFeeToZero(bridgeDeploymentManager);
   const onStateReceiveTxn = await (
-    await fxChildContract.connect(mumbaiReceiverSigner).onStateReceive(
+    await fxChild?.connect(mumbaiReceiverSigner).onStateReceive(
       123,             // stateId
       stateSyncedData, // _data
       { gasPrice: 0 }

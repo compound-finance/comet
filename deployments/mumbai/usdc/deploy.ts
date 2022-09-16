@@ -23,16 +23,15 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const ethers = deploymentManager.hre.ethers;
   const signer = await deploymentManager.getSigner();
 
-  // https://docs.polygon.technology/docs/develop/l1-l2-communication/fx-portal/#contract-addresses
-  const FX_CHILD = "0xCf73231F28B7331BBe3124B907840A94851f9f11";
+  const fxChild = await deploymentManager.contract('fxChild');
 
   // Deploy PolygonBridgeReceiver
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
     'bridges/polygon/PolygonBridgeReceiver.sol',
     [
-      FX_CHILD,
-      signer.address, // admin
+      fxChild?.address,  // fxChild
+      signer.address,    // initializer
     ]
   );
 
