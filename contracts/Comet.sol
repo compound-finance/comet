@@ -1169,6 +1169,10 @@ contract Comet is CometMainInterface {
         uint256 basePaidOut = unsigned256(newBalance - oldBalance);
         uint256 valueOfBasePaidOut = mulPrice(basePaidOut, basePrice, uint64(baseScale));
         emit AbsorbDebt(absorber, account, basePaidOut, valueOfBasePaidOut);
+
+        if (newPrincipal > 0) {
+            emit Transfer(address(0), account, presentValueSupply(baseSupplyIndex, unsigned104(newPrincipal)));
+        }
     }
 
     /**
