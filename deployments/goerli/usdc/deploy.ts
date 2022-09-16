@@ -24,31 +24,9 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   // Deploy governance contracts
   const { COMP, fauceteer, timelock } = await cloneGov(deploymentManager);
 
-  const usdcProxyAdmin = await deploymentManager.deploy('USDC:admin', 'vendor/proxy/transparent/ProxyAdmin.sol', []);
   const usdcImpl = await deploymentManager.clone('USDC:implementation', clone.usdcImpl, []);
   const usdcProxy = await deploymentManager.clone('USDC', clone.usdcProxy, [usdcImpl.address]);
-  const usdcProxyAdminSlot = '0x10d6a54a4754c8869d6886b5f5d7fbfa5b4522237ea5c60d11bc4e7a1ff9390b';
   const USDC = usdcImpl.attach(usdcProxy.address);
-
-  await deploymentManager.idempotent(
-    async () => !sameAddress(await ethers.provider.getStorageAt(usdcProxy.address, usdcProxyAdminSlot), usdcProxyAdmin.address),
-    async () => {
-      trace(`Changing admin of USDC proxy to ${usdcProxyAdmin.address}`);
-      trace(await wait(usdcProxy.connect(signer).changeAdmin(usdcProxyAdmin.address)));
-
-      trace(`Initializing USDC`);
-      trace(await wait(USDC.connect(signer).initialize(
-        'USD Coin',     // name
-        'USDC',         // symbol
-        'USD',          // currency
-        6,              // decimals
-        signer.address, // Master Minter
-        signer.address, // Pauser
-        signer.address, // Blacklister
-        signer.address  // Owner
-      )));
-    }
-  );
 
   const WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
   const WETH = await deploymentManager.clone('WETH', clone.weth, []);
@@ -93,21 +71,6 @@ async function mintTokens(deploymentManager: DeploymentManager) {
       trace(`Minting 0.01 WETH for signer (this is a precious resource!)`);
       trace(await wait(WETH.connect(signer).deposit({ value: exp(0.01, 18) })));
       trace(`WETH.balanceOf(${signer.address}): ${await WETH.balanceOf(signer.address)}`);
-    }
-  );
-
-  // If we haven't spidered new contracts (which we could before minting, but its slow),
-  //  then the proxy contract won't have the impl functions yet, so just do it explicitly
-  const usdcProxy = contracts.get('USDC'), usdcImpl = contracts.get('USDC:implementation');
-  const USDC = usdcImpl.attach(usdcProxy.address);
-  await deploymentManager.idempotent(
-    async () => (await USDC.balanceOf(fauceteer.address)).eq(0),
-    async () => {
-      trace(`Minting 100M USDC to fauceteer`);
-      const amount = exp(100_000_000, await USDC.decimals());
-      trace(await wait(USDC.connect(signer).configureMinter(signer.address, amount)));
-      trace(await wait(USDC.connect(signer).mint(fauceteer.address, amount)));
-      trace(`USDC.balanceOf(${fauceteer.address}): ${await USDC.balanceOf(fauceteer.address)}`);
     }
   );
 
