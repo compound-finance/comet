@@ -83,18 +83,21 @@ const relationConfigMap: RelationConfigMap = {
     }
   },
   timelock: {
+    artifact: 'contracts/v2/Timelock.sol:Timelock',
+
     relations: {
       governor: {
-        field: async (timelock) => timelock.admin(),
+        field: async (timelock) => timelock.admin()
       }
     }
   },
 
   governor: {
-    artifact: 'contracts/IProxy.sol:IProxy',
-    delegates: {
-      field: async (governor) => governor.implementation(),
-    },
+    artifact: 'contracts/IGovernorBravo.sol:IGovernorBravo',
+    // XXX
+    // delegates: {
+    //   field: async (governor) => governor.implementation()
+    // },
     relations: {
       COMP: {
         field: async (governor) => governor.comp(),
@@ -103,6 +106,18 @@ const relationConfigMap: RelationConfigMap = {
   },
   'governor:implementation': {
     artifact: 'contracts/IGovernorBravo.sol:IGovernorBravo',
+  },
+
+  '0xd87ba7a50b2e7e660f678a895e4b72e7cb4ccd9c': {
+    artifact: 'contracts/ERC20.sol:ERC20',
+  },
+
+  '0xc04b0d3107736c32e19f1c62b2af67be61d63a05': {
+    artifact: 'contracts/ERC20.sol:ERC20',
+  },
+
+  '0xe16c7165c8fea64069802ae4c4c9c320783f2b6e': {
+    artifact: 'contracts/IComp.sol:IComp',
   },
 
   COMP: {

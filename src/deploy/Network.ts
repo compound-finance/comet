@@ -251,13 +251,14 @@ export async function deployNetworkComet(
     }
   );
 
-  await deploymentManager.idempotent(
-    async () => !sameAddress((await rewards.rewardConfig(comet.address)).token, rewardTokenAddress),
-    async () => {
-      trace(`Setting reward token in CometRewards to ${rewardTokenAddress} for ${comet.address}`);
-      trace(await wait(rewards.connect(admin).setRewardConfig(comet.address, rewardTokenAddress)));
-    }
-  );
+  // XXX
+  // await deploymentManager.idempotent(
+  //   async () => !sameAddress((await rewards.rewardConfig(comet.address)).token, rewardTokenAddress),
+  //   async () => {
+  //     trace(`Setting reward token in CometRewards to ${rewardTokenAddress} for ${comet.address}`);
+  //     trace(await wait(rewards.connect(admin).setRewardConfig(comet.address, rewardTokenAddress)));
+  //   }
+  // );
 
   /* Transfer to Gov */
 
@@ -277,13 +278,14 @@ export async function deployNetworkComet(
     }
   );
 
-  await deploymentManager.idempotent(
-    async () => !sameAddress(await rewards.governor(), governor),
-    async () => {
-      trace(`Transferring governor of CometRewards to ${governor}`);
-      trace(await wait(rewards.connect(admin).transferGovernor(governor)));
-    }
-  );
+  // XXX
+  // await deploymentManager.idempotent(
+  //   async () => !sameAddress(await rewards.governor(), governor),
+  //   async () => {
+  //     trace(`Transferring governor of CometRewards to ${governor}`);
+  //     trace(await wait(rewards.connect(admin).transferGovernor(governor)));
+  //   }
+  // );
 
   return { comet, configurator, rewards };
 }

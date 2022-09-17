@@ -171,6 +171,22 @@ async function crawl(
     return alias;
   }
 
+  const addressConfig = relations[address.toLowerCase()];
+  if (addressConfig) {
+    //trace(' ... has an address config (${address})');
+    if (addressConfig.artifact) {
+      //trace(`  ... has artifact specified (${addressConfig.artifact})`);
+      const build = await localBuild(cache, hre, addressConfig.artifact, network, address);
+      const alias = await readAlias(build.contract, aliasRender, context, path);
+      return maybeProcess(alias, build, addressConfig);
+    } else {
+      //trace('  ... no artifact specified');
+      const build = await remoteBuild(cache, hre, network, address);
+      const alias = await readAlias(build.contract, aliasRender, context, path);
+      return maybeProcess(alias, build, addressConfig);
+    }
+  }
+
   const aliasTemplateConfig = relations[aliasTemplateKey(aliasTemplate)];
   if (aliasTemplateConfig) {
     //trace(' ... has alias template config');

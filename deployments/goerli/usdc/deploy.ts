@@ -42,16 +42,17 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     [timelock.address, WETH.address]
   );
 
-  await deploymentManager.idempotent(
-    async () => (await COMP.balanceOf(rewards.address)).eq(0),
-    async () => {
-      trace(`Sending some COMP to CometRewards`);
-      const amount = exp(1_000_000, 18);
-      trace(await wait(COMP.connect(signer).transfer(rewards.address, amount)));
-      trace(`COMP.balanceOf(${rewards.address}): ${await COMP.balanceOf(rewards.address)}`);
-      trace(`COMP.balanceOf(${signer.address}): ${await COMP.balanceOf(signer.address)}`);
-    }
-  );
+  // XXX
+  // await deploymentManager.idempotent(
+  //   async () => (await COMP.balanceOf(rewards.address)).eq(0),
+  //   async () => {
+  //     trace(`Sending some COMP to CometRewards`);
+  //     const amount = exp(1_000_000, 18);
+  //     trace(await wait(COMP.connect(signer).transfer(rewards.address, amount)));
+  //     trace(`COMP.balanceOf(${rewards.address}): ${await COMP.balanceOf(rewards.address)}`);
+  //     trace(`COMP.balanceOf(${signer.address}): ${await COMP.balanceOf(signer.address)}`);
+  //   }
+  // );
 
   return { ...deployed, fauceteer, bulker };
 }
@@ -64,24 +65,25 @@ async function mintTokens(deploymentManager: DeploymentManager) {
 
   trace(`Attempting to mint as ${signer.address}...`);
 
-  const WETH = contracts.get('WETH');
-  await deploymentManager.idempotent(
-    async () => (await WETH.balanceOf(signer.address)).lt(exp(0.01, 18)),
-    async () => {
-      trace(`Minting 0.01 WETH for signer (this is a precious resource!)`);
-      trace(await wait(WETH.connect(signer).deposit({ value: exp(0.01, 18) })));
-      trace(`WETH.balanceOf(${signer.address}): ${await WETH.balanceOf(signer.address)}`);
-    }
-  );
+  // XXX
+  // const WETH = contracts.get('WETH');
+  // await deploymentManager.idempotent(
+  //   async () => (await WETH.balanceOf(signer.address)).lt(exp(0.01, 18)),
+  //   async () => {
+  //     trace(`Minting 0.01 WETH for signer (this is a precious resource!)`);
+  //     trace(await wait(WETH.connect(signer).deposit({ value: exp(0.01, 18) })));
+  //     trace(`WETH.balanceOf(${signer.address}): ${await WETH.balanceOf(signer.address)}`);
+  //   }
+  // );
 
-  const WBTC = contracts.get('WBTC');
-  await deploymentManager.idempotent(
-    async () => (await WBTC.balanceOf(fauceteer.address)).eq(0),
-    async () => {
-      trace(`Minting 20 WBTC to fauceteer`);
-      const amount = exp(20, await WBTC.decimals());
-      trace(await wait(WBTC.connect(signer).mint(fauceteer.address, amount)));
-      trace(`WBTC.balanceOf(${fauceteer.address}): ${await WBTC.balanceOf(fauceteer.address)}`);
-    }
-  );
+  // const WBTC = contracts.get('WBTC');
+  // await deploymentManager.idempotent(
+  //   async () => (await WBTC.balanceOf(fauceteer.address)).eq(0),
+  //   async () => {
+  //     trace(`Minting 20 WBTC to fauceteer`);
+  //     const amount = exp(20, await WBTC.decimals());
+  //     trace(await wait(WBTC.connect(signer).mint(fauceteer.address, amount)));
+  //     trace(`WBTC.balanceOf(${fauceteer.address}): ${await WBTC.balanceOf(fauceteer.address)}`);
+  //   }
+  // );
 }
