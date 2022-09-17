@@ -24,7 +24,6 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   // Deploy governance contracts
   const { COMP, fauceteer, timelock } = await cloneGov(deploymentManager);
 
-  const usdcImpl = await deploymentManager.clone('USDC:implementation', clone.usdcImpl, []);
   const usdcProxy = await deploymentManager.clone('USDC', clone.usdcProxy, [usdcImpl.address]);
   const USDC = usdcImpl.attach(usdcProxy.address);
 
