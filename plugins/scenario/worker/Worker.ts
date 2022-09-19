@@ -47,10 +47,10 @@ function postMessage(worker: SimpleWorker | undefined, message: any) {
   }
 }
 
-async function runDeployScript(dm: DeploymentManager, baseName: string, isAuxiliary = false) {
+async function runDeployScript(dm: DeploymentManager, baseName: string) {
   const delta = await dm.runDeployScript({ allMissing: true });
-  console.log(`[${isAuxiliary ? 'Auxiliary:' : ''}${baseName}] Deployed ${dm.counter} contracts, spent ${dm.spent} to initialize world 🗺`);
-  console.log(`[${isAuxiliary ? 'Auxiliary:' : ''}${baseName}]\n${dm.diffDelta(delta)}`);
+  console.log(`[${baseName}] Deployed ${dm.counter} contracts, spent ${dm.spent} to initialize world 🗺`);
+  console.log(`[${baseName}]\n${dm.diffDelta(delta)}`);
 }
 
 export async function run<T, U, R>({ bases, config, worker }: WorkerData) {
@@ -69,10 +69,6 @@ export async function run<T, U, R>({ bases, config, worker }: WorkerData) {
     const world = new World(base);
     const dm = world.deploymentManager;
     await runDeployScript(dm, base.name);
-
-    if (world.auxiliaryDeploymentManager) {
-      await runDeployScript(world.auxiliaryDeploymentManager, base.auxiliaryBase, true);
-    }
 
     runners[base.name] = new Runner({ base, world });
   }
