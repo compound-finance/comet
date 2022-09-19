@@ -302,7 +302,11 @@ scenario(
         asset: collateralAsset.address,
         amount: 100n * scale,
       }),
-      [/ERC20: transfer amount exceeds allowance/, /transfer amount exceeds spender allowance/]
+      [
+        /ERC20: transfer amount exceeds allowance/,
+        /transfer amount exceeds spender allowance/,
+        /Dai\/insufficient-allowance/
+      ]
     );
   }
 );
@@ -379,7 +383,10 @@ scenario(
         asset: collateralAsset.address,
         amount: 100n * scale,
       }),
-      /transfer amount exceeds balance/
+      [
+        /transfer amount exceeds balance/,
+        /Dai\/insufficient-balance/
+      ]
     );
   }
 );
