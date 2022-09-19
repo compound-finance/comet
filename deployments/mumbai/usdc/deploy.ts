@@ -48,7 +48,8 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     ]
   );
 
-  const GOERLI_TIMELOCK = "0x339B2D3bf0406DF82f8fa7B0d855a3f47562d8D7";
+  // pull directly from deployed Goerli roots
+  const GOERLI_TIMELOCK = "0x8Fa336EB4bF58Cfc508dEA1B0aeC7336f55B1399";
 
   trace(`Initializing BridgeReceiver`);
   await bridgeReceiver.initialize(
