@@ -24,7 +24,6 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
 
     for (const migrationList of subsets(await getMigrations(context, requirements))) {
       solutions.push(async function (ctx: T): Promise<T> {
-        const governor = await ctx.getGovernor();
         const proposer = await ctx.getProposer();
 
         // Make proposer the default signer
