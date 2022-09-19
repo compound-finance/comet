@@ -67,8 +67,12 @@ export class CometContext {
     this.assets = {};
   }
 
+  async getCompWhales(): Promise<string[]> {
+    return COMP_WHALES[this.world.base.name === 'mainnet' ? 'mainnet' : 'testnet'];
+  }
+
   async getProposer(): Promise<SignerWithAddress> {
-    return this.world.impersonateAddress(COMP_WHALES[0]);
+    return this.world.impersonateAddress((await this.getCompWhales())[0]);
   }
 
   async getComet(): Promise<CometInterface> {
@@ -257,7 +261,7 @@ export class CometContext {
     }
 
     if (blocksUntilEnd > 0) {
-      for (const whale of COMP_WHALES) {
+      for (const whale of await this.getCompWhales()) {
         try {
           // Voting can fail if voter has already voted
           const voter = await this.world.impersonateAddress(whale);

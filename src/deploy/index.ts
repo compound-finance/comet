@@ -63,13 +63,20 @@ export type Proposal = [
   string          // description
 ];
 
-// Note: this list could change over time, based on mainnet
-export const COMP_WHALES = [
-  '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
-  '0x61258f12c459984f32b83c86a6cc10aa339396de',
-  '0x9aa835bc7b8ce13b9b0c9764a52fbf71ac62ccf1',
-  '0x683a4f9915d6216f73d6df50151725036bd26c02',
-];
+// Note: this list could change over time
+// Ideally these wouldn't be hardcoded, but other solutions are much more complex, and slower
+export const COMP_WHALES = {
+  mainnet: [
+    '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
+    '0x61258f12c459984f32b83c86a6cc10aa339396de',
+    '0x9aa835bc7b8ce13b9b0c9764a52fbf71ac62ccf1',
+    '0x683a4f9915d6216f73d6df50151725036bd26c02',
+  ],
+
+  testnet: [
+    '0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46',
+  ]
+};
 
 export async function calldata(req: Promise<PopulatedTransaction>): Promise<string> {
   // Splice out the first 4 bytes (function selector) of the tx data
