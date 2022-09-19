@@ -4,13 +4,16 @@ import { BigNumberish, constants, utils } from 'ethers';
 import { exp } from '../test/helpers';
 import { FaucetToken } from '../build/types';
 import { calldata } from '../src/deploy';
+import { COMP_WHALES } from "../src/deploy";
+import { impersonateAddress } from '../plugins/scenario/utils';
+import { isBridgedDeployment, fastL2GovernanceExecute } from './utils';
 
-scenario('upgrade Comet implementation and initialize', {}, async ({ comet, configurator, proxyAdmin }, context) => {
+scenario('upgrade Comet implementation and initialize', {filter: async (ctx) => !isBridgedDeployment(ctx)}, async ({ comet, configurator, proxyAdmin }, context) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
   expect((await comet.liquidatorPoints(constants.AddressZero)).numAbsorbs).to.be.equal(0);
 
   // Deploy new version of Comet Factory
-  const dm = context.deploymentManager;
+  const dm = context.world.deploymentManager;
   const cometModifiedFactory = await dm.deploy('cometFactory', 'test/CometModifiedFactory.sol', [], true);
 
   // Execute a governance proposal to:
@@ -31,12 +34,12 @@ scenario('upgrade Comet implementation and initialize', {}, async ({ comet, conf
   expect((await comet.liquidatorPoints(constants.AddressZero)).numAbsorbs).to.be.equal(2 ** 32 - 1);
 });
 
-scenario('upgrade Comet implementation and initialize using deployUpgradeToAndCall', {}, async ({ comet, configurator, proxyAdmin }, context) => {
+scenario('upgrade Comet implementation and initialize using deployUpgradeToAndCall', {filter: async (ctx) => !isBridgedDeployment(ctx)}, async ({ comet, configurator, proxyAdmin }, context) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
   expect((await comet.liquidatorPoints(constants.AddressZero)).numAbsorbs).to.be.equal(0);
 
   // Deploy new version of Comet Factory
-  const dm = context.deploymentManager;
+  const dm = context.world.deploymentManager;
   const cometModifiedFactory = await dm.deploy(
     'cometFactory',
     'test/CometModifiedFactory.sol',
@@ -63,11 +66,11 @@ scenario('upgrade Comet implementation and initialize using deployUpgradeToAndCa
   expect((await comet.liquidatorPoints(constants.AddressZero)).numAbsorbs).to.be.equal(2 ** 32 - 1);
 });
 
-scenario('upgrade Comet implementation and call new function', {}, async ({ comet, configurator, proxyAdmin, actors }, context) => {
+scenario('upgrade Comet implementation and call new function', {filter: async (ctx) => !isBridgedDeployment(ctx)}, async ({ comet, configurator, proxyAdmin, actors }, context) => {
   const { signer } = actors;
 
   // Deploy new version of Comet Factory
-  const dm = context.deploymentManager;
+  const dm = context.world.deploymentManager;
   const cometModifiedFactory = await dm.deploy('cometFactory', 'test/CometModifiedFactory.sol', [], true);
 
   // Upgrade Comet implementation
@@ -90,6 +93,7 @@ scenario('upgrade Comet implementation and call new function', {}, async ({ come
 
 scenario('add new asset',
   {
+    filter: async (ctx) => !isBridgedDeployment(ctx),
     tokenBalances: {
       $comet: { $base: '>= 1000' },
     },
@@ -98,7 +102,7 @@ scenario('add new asset',
     const { albert } = actors;
 
     // Deploy new token and pricefeed
-    const dm = context.deploymentManager;
+    const dm = context.world.deploymentManager;
     const dogecoin = await dm.deploy<FaucetToken, [string, string, BigNumberish, string]>(
       'DOGE',
       'test/FaucetToken.sol',
@@ -147,3 +151,53 @@ scenario('add new asset',
     expect(await albert.getCometCollateralBalance(dogecoin.address)).to.be.equal(exp(100, 8));
     expect(await albert.getCometBaseBalance()).to.be.equal(-borrowAmount);
   });
+
+scenario(
+  'execute Mumbai governance proposal',
+  {
+    filter: async (ctx) => ctx.world.base.network === 'mumbai'
+  },
+  async ({ timelock, bridgeReceiver }, _context, world) => {
+    const governanceDeploymentManager = world.auxiliaryDeploymentManager;
+    if (!governanceDeploymentManager) {
+      throw new Error("cannot execute governance without governance deployment manager");
+    }
+
+    const proposer = await impersonateAddress(governanceDeploymentManager, COMP_WHALES.testnet[0]);
+
+    const currentTimelockDelay = await timelock.delay();
+    const newTimelockDelay = currentTimelockDelay.mul(2);
+
+    const l2ProposalData = utils.defaultAbiCoder.encode(
+      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
+      [
+        [timelock.address],
+        [0],
+        ["setDelay(uint256)"],
+        [utils.defaultAbiCoder.encode(['uint'], [newTimelockDelay])]
+      ]
+    );
+
+    const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'bytes'],
+      [bridgeReceiver.address, l2ProposalData]
+    );
+
+    const fxRoot = await governanceDeploymentManager.getContractOrThrow('fxRoot');
+
+    expect(await timelock.delay()).to.eq(currentTimelockDelay);
+    expect(currentTimelockDelay).to.not.eq(newTimelockDelay);
+
+    await fastL2GovernanceExecute(
+      governanceDeploymentManager,
+      world.deploymentManager,
+      proposer,
+      [fxRoot.address],
+      [0],
+      ["sendMessageToChild(address,bytes)"],
+      [sendMessageToChildCalldata]
+    );
+
+    expect(await timelock.delay()).to.eq(newTimelockDelay);
+  }
+);

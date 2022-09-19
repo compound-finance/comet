@@ -23,21 +23,24 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const ethers = deploymentManager.hre.ethers;
   const signer = await deploymentManager.getSigner();
 
+  const fxChild = await deploymentManager.contract('fxChild');
+
   // Deploy PolygonBridgeReceiver
-  const polygonBridgeReceiver = await deploymentManager.deploy(
-    'polygonBridgeReceiver',
+  const bridgeReceiver = await deploymentManager.deploy(
+    'bridgeReceiver',
     'bridges/polygon/PolygonBridgeReceiver.sol',
     [
-      signer.address, // admin
+      fxChild?.address,  // fxChild
+      signer.address,    // initializer
     ]
   );
 
   // Deploy L2 Timelock
   const l2Timelock = await deploymentManager.deploy(
-    'l2Timelock',
+    'timelock',
     'vendor/Timelock.sol',
     [
-      polygonBridgeReceiver.address, // admin
+      bridgeReceiver.address,        // admin
       2 * secondsPerDay,             // delay
       14 * secondsPerDay,            // grace period
       2 * secondsPerDay,             // minimum delay
@@ -45,18 +48,14 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     ]
   );
 
-  // https://docs.polygon.technology/docs/develop/l1-l2-communication/fx-portal/#contract-addresses
-  const FX_CHILD = "0xCf73231F28B7331BBe3124B907840A94851f9f11"; //
-  const MAINNET_TIMELOCK = "0x6d903f6003cca6255d85cca4d3b5e5146dc33925";
+  const GOERLI_TIMELOCK = "0x339B2D3bf0406DF82f8fa7B0d855a3f47562d8D7";
 
-  // Initialize PolygonBridgeReceiver
-  trace(`Initializing PolygonBridgeReceiver`);
-  await polygonBridgeReceiver.initialize(
-    MAINNET_TIMELOCK,       // mainnet timelock
-    l2Timelock.address,     // l2 timelock
-    FX_CHILD                // fxChild
+  trace(`Initializing BridgeReceiver`);
+  await bridgeReceiver.initialize(
+    GOERLI_TIMELOCK,       // mainnet timelock
+    l2Timelock.address     // l2 timelock
   );
-  trace(`PolygonBridgeReceiver initialized`);
+  trace(`BridgeReceiver initialized`);
 
   // USDC
   const usdcProxyAdmin = await deploymentManager.deploy('USDC:admin', 'vendor/proxy/transparent/ProxyAdmin.sol', []);
@@ -124,7 +123,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
 
   return {
-    polygonBridgeReceiver,
+    bridgeReceiver,
     bulker,
     fauceteer,
     ...deployed
