@@ -4,10 +4,10 @@ import { DeploySpec, deployComet, exp, sameAddress, wait } from '../../../src/de
 const clone = {
   usdcImpl: '0xa2327a938Febf5FEC13baCFb16Ae10EcBc4cbDCF',
   usdcProxy: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-  wbtc: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
   weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+  wbtc: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
   wmatic: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
-  sand: '0x3845badAde8e6dFF049820680d1F14bD3903a5d0'
+  dai: '0x6b175474e89094c44da98b954eedeac495271d0f',
 };
 
 const secondsPerDay = 24 * 60 * 60;
@@ -85,15 +85,6 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     }
   );
 
-  const SAND = await deploymentManager.clone(
-    'SAND',
-    clone.sand,
-    [
-      signer.address, // sand admin
-      signer.address, // execution admin
-      signer.address  // beneficiary (initial mint recipient)
-    ]
-  );
   const WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
   const WETH = await deploymentManager.clone('WETH', clone.weth, []);
   const WMATIC = await deploymentManager.clone(
@@ -101,6 +92,9 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     clone.wmatic,
     [],
     'polygon' // NOTE: cloned from Polygon, not mainnet
+  );
+  const DAI = await deploymentManager.clone('DAI', clone.dai,
+    [80001] // chain id
   );
 
   // Deploy Comet
@@ -185,14 +179,14 @@ async function mintTokens(deploymentManager: DeploymentManager) {
     }
   );
 
-  const SAND = contracts.get('SAND');
+  const DAI = contracts.get('DAI');
   await deploymentManager.idempotent(
-    async () => (await SAND.balanceOf(signer.address)).eq(await SAND.totalSupply()),
+    async () => (await DAI.balanceOf(fauceteer.address)).eq(0),
     async () => {
-      trace(`Sending half of all SAND to fauceteer`);
-      const amount = (await SAND.balanceOf(signer.address)).div(2);
-      trace(await wait(SAND.connect(signer).transfer(fauceteer.address, amount)));
-      trace(`SAND.balanceOf(${fauceteer.address}): ${await SAND.balanceOf(fauceteer.address)}`);
+      trace(`Minting 100M DAI to fauceteer`);
+      const amount = exp(100_000_000, await DAI.decimals());
+      trace(await wait(DAI.connect(signer).mint(fauceteer.address, amount)));
+      trace(`DAI.balanceOf(${fauceteer.address}): ${await DAI.balanceOf(fauceteer.address)}`);
     }
   );
 }
