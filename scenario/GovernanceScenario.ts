@@ -2,8 +2,8 @@ import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { BigNumberish, constants, utils } from 'ethers';
 import { exp } from '../test/helpers';
-import { extractCalldata } from './utils';
 import { FaucetToken } from '../build/types';
+import { calldata } from '../src/deploy';
 
 scenario('upgrade Comet implementation and initialize', {}, async ({ comet, configurator, proxyAdmin }, context) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
@@ -128,7 +128,7 @@ scenario('add new asset',
       supplyCap: exp(1_000, 8),
     };
 
-    const addAssetCalldata = extractCalldata((await configurator.populateTransaction.addAsset(comet.address, newAssetConfig)).data);
+    const addAssetCalldata = await calldata(configurator.populateTransaction.addAsset(comet.address, newAssetConfig));
     const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, comet.address]);
     await context.fastGovernanceExecute(
       [configurator.address, proxyAdmin.address],

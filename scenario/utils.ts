@@ -254,8 +254,3 @@ export async function fetchLogs(
     return contract.queryFilter(filter, fromBlock, toBlock);
   }
 }
-
-export function extractCalldata(data: string): string {
-  // Remove the first 4 bytes (function selector) of the transaction data
-  return '0x' + data.slice(10);
-}
