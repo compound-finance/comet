@@ -11,7 +11,7 @@ export function sameAddress(a: string, b: string) {
 //  to preserve local development speed and without network
 export async function cloneGov(
   deploymentManager: DeploymentManager,
-  voterAddress = COMP_WHALES[0],
+  voterAddress = COMP_WHALES.testnet[0],
   adminSigner?: SignerWithAddress
 ): Promise<Deployed> {
   const trace = deploymentManager.tracer();
