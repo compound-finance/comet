@@ -6,8 +6,8 @@ import { modifiedPaths, subsets } from '../utils';
 
 async function getMigrations<T>(context: CometContext, requirements: Requirements): Promise<Migration<T>[]> {
   // TODO: make this configurable from cli params/env var?
-  const network = context.deploymentManager.network;
-  const deployment = context.deploymentManager.deployment;
+  const network = context.world.deploymentManager.network;
+  const deployment = context.world.deploymentManager.deployment;
   const pattern = new RegExp(`deployments/${network}/${deployment}/migrations/.*.ts`);
   return await loadMigrations((await modifiedPaths(pattern)).map(p => '../../' + p));
 }
@@ -23,7 +23,7 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
         const proposer = await ctx.getProposer();
 
         // Make proposer the default signer
-        ctx.deploymentManager._signers.unshift(proposer);
+        ctx.world.deploymentManager._signers.unshift(proposer);
 
         // Order migrations deterministically and store in the context (i.e. for verification)
         migrationList.sort((a, b) => a.name.localeCompare(b.name))
@@ -33,15 +33,15 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
         // Otherwise the scenario could be running the same proposal twice.
         debug(`${label} Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);
         for (const migration of migrationList) {
-          const artifact = await migration.actions.prepare(ctx.deploymentManager);
+          const artifact = await migration.actions.prepare(ctx.world.deploymentManager);
           debug(`${label} Prepared migration ${migration.name}.\n  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
           // XXX enact will take the 'gov' deployment manager instead of the 'local' one
-          await migration.actions.enact(ctx.deploymentManager, artifact);
+          await migration.actions.enact(ctx.world.deploymentManager, artifact);
           debug(`${label} Enacted migration ${migration.name}`);
         }
 
         // Remove proposer from signers
-        ctx.deploymentManager._signers.shift();
+        ctx.world.deploymentManager._signers.shift();
 
         return ctx;
       });
@@ -63,7 +63,7 @@ export class VerifyMigrationConstraint<T extends CometContext, R extends Require
         for (const migration of ctx.migrations) {
           // XXX does verify get the 'gov' deployment manager as well as the 'local' one?
           if (migration.actions.verify) {
-            await migration.actions.verify(ctx.deploymentManager);
+            await migration.actions.verify(ctx.world.deploymentManager);
             debug(`${label} Verified migration "${migration.name}"`);
           }
         }
