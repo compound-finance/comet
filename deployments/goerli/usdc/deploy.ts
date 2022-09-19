@@ -3,8 +3,6 @@ import { DeploySpec, cloneGov, deployComet, exp, sameAddress, wait } from '../..
 import { expect } from 'chai';
 
 const clone = {
-  usdcImpl: '0xa2327a938Febf5FEC13baCFb16Ae10EcBc4cbDCF',
-  usdcProxy: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
   wbtc: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
   weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
   link: '0x514910771af9ca656af840dff83e8264ecf986ca',
@@ -23,10 +21,6 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
 
   // Deploy governance contracts
   const { COMP, fauceteer, timelock } = await cloneGov(deploymentManager);
-
-  const usdcImpl = await deploymentManager.clone('USDC:implementation', clone.usdcImpl, []);
-  const usdcProxy = await deploymentManager.clone('USDC', clone.usdcProxy, [usdcImpl.address]);
-  const USDC = usdcImpl.attach(usdcProxy.address);
 
   const WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
   const WETH = await deploymentManager.clone('WETH', clone.weth, []);
