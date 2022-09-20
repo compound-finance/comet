@@ -444,18 +444,18 @@ describe('absorb', function () {
       }
     });
     expect(event(a0, 3)).to.be.deep.equal({
-      Transfer: {
-        amount: finalDebt,
-        from: ethers.constants.AddressZero,
-        to: underwater.address,
-      }
-    });
-    expect(event(a0, 4)).to.be.deep.equal({
       AbsorbDebt: {
         absorber: absorber.address,
         borrower: underwater.address,
         basePaidOut: pU1.internal.USDC - startingDebt,
         usdValue: mulPrice(pU1.internal.USDC - startingDebt, usdcPrice, baseScale),
+      }
+    });
+    expect(event(a0, 4)).to.be.deep.equal({
+      Transfer: {
+        amount: finalDebt,
+        from: ethers.constants.AddressZero,
+        to: underwater.address,
       }
     });
   });
