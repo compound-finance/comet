@@ -272,5 +272,10 @@ export async function spider(
     (context[alias] = context[alias] || []).push(contracts.get(alias));
   }
 
+  for (const [alias, address] of roots) {
+    // Ensure roots are aliased, after we are done crawling (so as not to short circuit)
+    maybeStore(alias, address, aliases);
+  }
+
   return { roots, aliases, contracts };
 }
