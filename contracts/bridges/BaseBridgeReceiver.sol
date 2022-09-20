@@ -6,16 +6,39 @@ import "../ITimelock.sol";
 contract BaseBridgeReceiver {
     error AlreadyInitialized();
     error BadData();
+    error InvalidProposalId();
+    error ProposalNotQueued();
     error Unauthorized();
 
     event Initialized(address indexed l2Timelock, address indexed mainnetTimelock);
     event NewL2Timelock(address indexed oldL2Timelock, address indexed newL2Timelock);
     event NewMainnetTimelock(address indexed oldMainnetTimelock, address indexed newMainnetTimelock);
-    event ProcessMessage(address indexed messageSender, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint eta);
+    event ProposalCreated(address indexed messageSender, uint id, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, uint eta);
+    event ProposalExecuted(uint id);
 
     address public initializer;
     address public mainnetTimelock;
     address public l2Timelock;
+
+    uint public proposalCount;
+
+    struct Proposal {
+        uint id;
+        address[] targets;
+        uint[] values;
+        string[] signatures;
+        bytes[] calldatas;
+        uint eta;
+        bool executed;
+    }
+
+    mapping (uint => Proposal) public proposals;
+
+    enum ProposalState {
+        Queued,
+        Expired,
+        Executed
+    }
 
     constructor(address _initializer) {
         initializer = _initializer;
@@ -77,16 +100,40 @@ contract BaseBridgeReceiver {
             unchecked { i++; }
         }
 
-        emit ProcessMessage(messageSender, targets, values, signatures, calldatas, eta);
+        proposalCount++;
+        Proposal memory proposal = Proposal({
+            id: proposalCount,
+            targets: targets,
+            values: values,
+            signatures: signatures,
+            calldatas: calldatas,
+            eta: eta,
+            executed: false
+        });
+
+        proposals[proposal.id] = proposal;
+        emit ProposalCreated(messageSender, proposal.id, targets, values, signatures, calldatas, eta);
     }
 
-    function executeTransaction(
-        address target,
-        uint value,
-        string memory signature,
-        bytes memory data,
-        uint eta
-    ) external returns (bytes memory) {
-        return ITimelock(l2Timelock).executeTransaction(target, value, signature, data, eta);
+    function executeProposal(uint proposalId) external {
+        if (state(proposalId) != ProposalState.Queued) revert ProposalNotQueued();
+        Proposal storage proposal = proposals[proposalId];
+        proposal.executed = true;
+        for (uint i = 0; i < proposal.targets.length; i++) {
+            ITimelock(l2Timelock).executeTransaction(proposal.targets[i], proposal.values[i], proposal.signatures[i], proposal.calldatas[i], proposal.eta);
+        }
+        emit ProposalExecuted(proposalId);
+    }
+
+    function state(uint proposalId) public view returns (ProposalState) {
+        if (proposalId > proposalCount || proposalId == 0) revert InvalidProposalId();
+        Proposal storage proposal = proposals[proposalId];
+        if (proposal.executed) {
+            return ProposalState.Executed;
+        } else if (block.timestamp >= (proposal.eta + ITimelock(l2Timelock).GRACE_PERIOD())) {
+            return ProposalState.Expired;
+        } else {
+            return ProposalState.Queued;
+        }
     }
 }

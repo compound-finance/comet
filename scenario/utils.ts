@@ -379,22 +379,15 @@ async function relayMumbaiMessage(
     )
   ).wait();
 
-  const queueTransactionEvent = onStateReceiveTxn.events.find(event => event.address === timelock.address);
-  const { args: { target, value, signature, data, eta } } = timelock.interface.parseLog(queueTransactionEvent);
+  const proposalCreatedEvent = onStateReceiveTxn.events.find(event => event.address === bridgeReceiver.address);
+  const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
 
   // fast forward l2 time
   await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
 
-  // execute queued transaction
+  // execute queued proposal
   await setNextBaseFeeToZero(bridgeDeploymentManager);
-  await bridgeReceiver.executeTransaction(
-    target,
-    value,
-    signature,
-    data,
-    eta,
-    { gasPrice: 0 }
-  );
+  await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
 }
 
 export async function relayMessage(
