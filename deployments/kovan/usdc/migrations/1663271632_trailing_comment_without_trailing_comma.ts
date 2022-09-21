@@ -10,5 +10,9 @@ export default migration('1663271632_trailing_comment_without_trailing_comma', {
 
   enact: async (deploymentManager: DeploymentManager, vars: Vars) => {
     // No governance changes
-  } // Trailing comment
+  },
+
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
+  }, // Trailing comment
 });
