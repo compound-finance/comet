@@ -11,7 +11,7 @@ scenario(
 
     await context.mineBlocks(1); // note: in case init took a while
     const nonce = await comet.userNonce(albert.address);
-    const expiry = (await world.timestamp()) + 10_000;
+    const expiry = (await world.timestamp()) + 1_000;
 
     const signature = await albert.signAuthorization({
       manager: betty.address,
