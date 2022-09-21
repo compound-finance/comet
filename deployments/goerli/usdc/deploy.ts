@@ -13,13 +13,14 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const ethers = deploymentManager.hre.ethers;
   const signer = await deploymentManager.getSigner();
 
-  // Deploy governance contracts
-  const { COMP, fauceteer, timelock } = await cloneGov(deploymentManager);
-
   // Declare existing assets as aliases
+  const COMP = await deploymentManager.existing('COMP', '0x3587b2F7E0E2D6166d6C14230e7Fe160252B0ba4');
   const USDC = await deploymentManager.existing('USDC', '0x07865c6E87B9F70255377e024ace6630C1Eaa37F');
   const WBTC = await deploymentManager.existing('WBTC', '0xAAD4992D949f9214458594dF92B44165Fb84dC19');
   const WETH = await deploymentManager.existing('WETH', '0x42a71137C09AE83D8d05974960fd607d40033499');
+
+  // Deploy governance contracts
+  const { fauceteer, timelock } = await cloneGov(deploymentManager);
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
