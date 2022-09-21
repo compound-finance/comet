@@ -1,9 +1,10 @@
 import { DeploymentManager } from './DeploymentManager';
 import { FileSpec } from './Cache';
 
-interface Actions<T> {
+export interface Actions<T> {
   prepare: (dm: DeploymentManager) => Promise<T>;
   enact: (dm: DeploymentManager, t: T) => Promise<void>;
+  enacted?: (dm: DeploymentManager) => Promise<boolean>;
   verify?: (dm: DeploymentManager) => Promise<void>;
 }
 
@@ -37,5 +38,5 @@ export function migration<T>(name: string, actions: Actions<T>) {
 }
 
 export function getArtifactSpec<T>(migration: Migration<T>): FileSpec {
-  return { rel: [ 'artifacts', `${migration.name}.json` ] };
+  return { rel: ['artifacts', `${migration.name}.json`] };
 }

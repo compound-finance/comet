@@ -19,6 +19,9 @@ on:
       simulate:
         type: boolean
         description: Simulate
+      no_enacted:
+        type: boolean
+        description: Do not write Enacted  
       run_id:
         description: Run ID for Artifact
       eth_pk:
@@ -65,9 +68,18 @@ jobs:
 
       - name: Run Enact Migration
         run: |
-          yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ github.event.inputs.migration }}
+          yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }}
         env:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
+
+      - name: Commit changes
+        if: ${{ github.event.inputs.simulate == 'false' }}
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          git add deployments/${{ github.event.inputs.network }}/${{ github.event.inputs.deployment }}/migrations/${{ github.event.inputs.migration }}.ts
+          git commit -m "Modified migration from GitHub Actions" || echo "No changes to commit"
+          git push origin

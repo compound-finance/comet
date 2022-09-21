@@ -1,5 +1,6 @@
 import { task } from 'hardhat/config';
 import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
+import { writeEnacted } from '../../plugins/deployment_manager/Enacted';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeploymentManager, VerifyArgs } from '../../plugins/deployment_manager';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
@@ -135,10 +136,11 @@ task('migrate', 'Runs migration')
   .addParam('deployment', 'The deployment to apply the migration to')
   .addFlag('prepare', 'runs preparation [defaults to true if enact not specified]')
   .addFlag('enact', 'enacts migration [implies prepare]')
+  .addFlag('noEnacted', 'do not write enacted to the migration script')
   .addFlag('simulate', 'only simulates the blockchain effects')
   .addFlag('overwrite', 'overwrites artifact if exists, fails otherwise')
   .setAction(
-    async ({ migration: migrationName, prepare, enact, simulate, overwrite, deployment }, env) => {
+    async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, deployment }, env) => {
       const maybeForkEnv = simulate ? getForkEnv(env) : env;
       const network = env.network.name;
       const dm = new DeploymentManager(
@@ -162,5 +164,9 @@ task('migrate', 'Runs migration')
       }
 
       await runMigration(dm, prepare, enact, migration, overwrite);
+
+      if (enact && !noEnacted) {
+        await writeEnacted(migration, dm, true);
+      }
     }
   );
