@@ -71,7 +71,7 @@ export async function run<T, U, R>({ bases, config, worker }: WorkerData) {
     await runDeployScript(dm, base.name);
 
     if (world.auxiliaryDeploymentManager) {
-      await world.auxiliaryDeploymentManager.spider();
+      await runDeployScript(world.auxiliaryDeploymentManager, base.auxiliaryBase);
     }
 
     runners[base.name] = new Runner({ base, world });
