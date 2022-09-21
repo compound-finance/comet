@@ -44,9 +44,6 @@ export function addEnactedToMigration(sourceFile: ts.SourceFile): string {
       + code
       + sourceFileText.substring(endPos);
   } else {
-    // XXX doesn't handle trailing comments well yet
-    // Can use ts.getTrailingCommentRanges to figure that out and use
-    // the last comment end position instead of enact.end
     let insertPos;
     if (sourceFileText.charAt(enact.end) === ',') {
       // Insert after the comma
