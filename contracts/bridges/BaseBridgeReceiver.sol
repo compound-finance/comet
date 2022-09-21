@@ -10,14 +10,14 @@ contract BaseBridgeReceiver {
     error ProposalNotQueued();
     error Unauthorized();
 
-    event Initialized(address indexed l2Timelock, address indexed govTimelock);
-    event NewL2Timelock(address indexed oldL2Timelock, address indexed newL2Timelock);
+    event Initialized(address indexed govTimelock, address indexed localTimelock);
+    event NewLocalTimelock(address indexed oldLocalTimelock, address indexed newLocalTimelock);
     event NewGovTimelock(address indexed oldGovTimelock, address indexed newGovTimelock);
     event ProposalCreated(address indexed messageSender, uint id, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, uint eta);
     event ProposalExecuted(uint id);
 
     address public govTimelock;
-    address public l2Timelock;
+    address public localTimelock;
     bool public initialized;
 
     uint public proposalCount;
@@ -40,28 +40,28 @@ contract BaseBridgeReceiver {
         Executed
     }
 
-    function initialize(address _govTimelock, address _l2Timelock) external {
+    function initialize(address _govTimelock, address _localTimelock) external {
         if (initialized) revert AlreadyInitialized();
         govTimelock = _govTimelock;
-        l2Timelock = _l2Timelock;
+        localTimelock = _localTimelock;
         initialized = true;
-        emit Initialized(_govTimelock, _l2Timelock);
+        emit Initialized(_govTimelock, _localTimelock);
     }
 
-    function acceptL2TimelockAdmin() external {
-        if (msg.sender != l2Timelock) revert Unauthorized();
-        ITimelock(l2Timelock).acceptAdmin();
+    function acceptLocalTimelockAdmin() external {
+        if (msg.sender != localTimelock) revert Unauthorized();
+        ITimelock(localTimelock).acceptAdmin();
     }
 
-    function setL2Timelock(address newTimelock) public {
-        if (msg.sender != l2Timelock) revert Unauthorized();
-        address oldL2Timelock = l2Timelock;
-        l2Timelock = newTimelock;
-        emit NewL2Timelock(oldL2Timelock, newTimelock);
+    function setLocalTimelock(address newTimelock) public {
+        if (msg.sender != localTimelock) revert Unauthorized();
+        address oldLocalTimelock = localTimelock;
+        localTimelock = newTimelock;
+        emit NewLocalTimelock(oldLocalTimelock, newTimelock);
     }
 
     function setGovTimelock(address newTimelock) public {
-        if (msg.sender != l2Timelock) revert Unauthorized();
+        if (msg.sender != localTimelock) revert Unauthorized();
         address oldGovTimelock = govTimelock;
         govTimelock = newTimelock;
         emit NewGovTimelock(oldGovTimelock, newTimelock);
@@ -87,11 +87,11 @@ contract BaseBridgeReceiver {
         if (signatures.length != targets.length) revert BadData();
         if (calldatas.length != targets.length) revert BadData();
 
-        uint delay = ITimelock(l2Timelock).delay();
+        uint delay = ITimelock(localTimelock).delay();
         uint eta = block.timestamp + delay;
 
         for (uint8 i = 0; i < targets.length; ) {
-            ITimelock(l2Timelock).queueTransaction(targets[i], values[i], signatures[i], calldatas[i], eta);
+            ITimelock(localTimelock).queueTransaction(targets[i], values[i], signatures[i], calldatas[i], eta);
             unchecked { i++; }
         }
 
@@ -115,7 +115,7 @@ contract BaseBridgeReceiver {
         Proposal storage proposal = proposals[proposalId];
         proposal.executed = true;
         for (uint i = 0; i < proposal.targets.length; i++) {
-            ITimelock(l2Timelock).executeTransaction(proposal.targets[i], proposal.values[i], proposal.signatures[i], proposal.calldatas[i], proposal.eta);
+            ITimelock(localTimelock).executeTransaction(proposal.targets[i], proposal.values[i], proposal.signatures[i], proposal.calldatas[i], proposal.eta);
         }
         emit ProposalExecuted(proposalId);
     }
@@ -125,7 +125,7 @@ contract BaseBridgeReceiver {
         Proposal memory proposal = proposals[proposalId];
         if (proposal.executed) {
             return ProposalState.Executed;
-        } else if (block.timestamp >= (proposal.eta + ITimelock(l2Timelock).GRACE_PERIOD())) {
+        } else if (block.timestamp >= (proposal.eta + ITimelock(localTimelock).GRACE_PERIOD())) {
             return ProposalState.Expired;
         } else {
             return ProposalState.Queued;

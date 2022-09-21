@@ -35,8 +35,8 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     [fxChild?.address]  // fxChild
   );
 
-  // Deploy L2 Timelock
-  const l2Timelock = await deploymentManager.deploy(
+  // Deploy Local Timelock
+  const localTimelock = await deploymentManager.deploy(
     'timelock',
     'vendor/Timelock.sol',
     [
@@ -50,8 +50,8 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
 
   trace(`Initializing BridgeReceiver`);
   await bridgeReceiver.initialize(
-    GOERLI_TIMELOCK,       // gov timelock
-    l2Timelock.address     // l2 timelock
+    GOERLI_TIMELOCK,       // govTimelock
+    localTimelock.address  // localTimelock
   );
   trace(`BridgeReceiver initialized`);
 
@@ -99,8 +99,8 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     deploymentManager,
     deploySpec,
     {
-      governor: l2Timelock.address,
-      pauseGuardian: l2Timelock.address
+      governor: localTimelock.address,
+      pauseGuardian: localTimelock.address
     }
   );
 
@@ -108,7 +108,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const bulker = await deploymentManager.deploy(
     'bulker',
     'Bulker.sol',
-    [l2Timelock.address, WETH.address]
+    [localTimelock.address, WETH.address]
   );
 
   // Deploy fauceteer

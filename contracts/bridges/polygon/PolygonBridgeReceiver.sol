@@ -16,7 +16,7 @@ contract PolygonBridgeReceiver is IFxMessageProcessor, BaseBridgeReceiver {
     }
 
     function changeFxChild(address newFxChild) public {
-        if (msg.sender != l2Timelock) revert Unauthorized();
+        if (msg.sender != localTimelock) revert Unauthorized();
         address oldFxChild = fxChild;
         fxChild = newFxChild;
         emit NewFxChild(oldFxChild, newFxChild);
