@@ -136,11 +136,11 @@ task('migrate', 'Runs migration')
   .addParam('deployment', 'The deployment to apply the migration to')
   .addFlag('prepare', 'runs preparation [defaults to true if enact not specified]')
   .addFlag('enact', 'enacts migration [implies prepare]')
-  .addFlag('setEnacted', 'write enacted to the migration script')
+  .addFlag('noEnacted', 'do not write enacted to the migration script')
   .addFlag('simulate', 'only simulates the blockchain effects')
   .addFlag('overwrite', 'overwrites artifact if exists, fails otherwise')
   .setAction(
-    async ({ migration: migrationName, prepare, enact, setEnacted, simulate, overwrite, deployment }, env) => {
+    async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, deployment }, env) => {
       const maybeForkEnv = simulate ? getForkEnv(env) : env;
       const network = env.network.name;
       const dm = new DeploymentManager(
@@ -165,7 +165,7 @@ task('migrate', 'Runs migration')
 
       await runMigration(dm, prepare, enact, migration, overwrite);
 
-      if (enact && setEnacted) {
+      if (enact && !noEnacted) {
         await writeEnacted(migration, dm, true);
       }
     }
