@@ -280,7 +280,7 @@ export async function executeOpenProposal(
     await mineBlocks(dm, blocksUntilStart);
   }
 
-  const compWhales = dm.network === "mainnet" ? COMP_WHALES.mainnet : COMP_WHALES.testnet;
+  const compWhales = dm.network === 'mainnet' ? COMP_WHALES.mainnet : COMP_WHALES.testnet;
 
   if (blocksUntilEnd > 0) {
     for (const whale of compWhales) {
