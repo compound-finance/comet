@@ -8,6 +8,7 @@ contract BaseBridgeReceiver {
     error BadData();
     error InvalidProposalId();
     error ProposalNotQueued();
+    error TransactionAlreadyQueued();
     error Unauthorized();
 
     event Initialized(address indexed govTimelock, address indexed localTimelock);
@@ -91,6 +92,7 @@ contract BaseBridgeReceiver {
         uint eta = block.timestamp + delay;
 
         for (uint8 i = 0; i < targets.length; ) {
+            if (ITimelock(localTimelock).queuedTransactions(keccak256(abi.encode(targets[i], values[i], signatures[i], calldatas[i], eta)))) revert TransactionAlreadyQueued();
             ITimelock(localTimelock).queueTransaction(targets[i], values[i], signatures[i], calldatas[i], eta);
             unchecked { i++; }
         }
