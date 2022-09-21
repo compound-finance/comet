@@ -16,7 +16,7 @@ export default migration('${timestamp}_${name}', {
     return {};
   },
 
-  enact: async (deploymentManager: DeploymentManager, vars: Vars) => {
+  enact: async (governanceDeploymentManager: DeploymentManager, vars: Vars) => {
     // No governance changes
   }
 });\n`;
