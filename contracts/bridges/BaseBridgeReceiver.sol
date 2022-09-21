@@ -122,7 +122,7 @@ contract BaseBridgeReceiver {
 
     function state(uint proposalId) public view returns (ProposalState) {
         if (proposalId > proposalCount || proposalId == 0) revert InvalidProposalId();
-        Proposal storage proposal = proposals[proposalId];
+        Proposal memory proposal = proposals[proposalId];
         if (proposal.executed) {
             return ProposalState.Executed;
         } else if (block.timestamp >= (proposal.eta + ITimelock(l2Timelock).GRACE_PERIOD())) {
