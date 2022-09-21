@@ -2,12 +2,6 @@ import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager
 import { DeploySpec, cloneGov, deployComet, exp, sameAddress, wait } from '../../../src/deploy';
 import { expect } from 'chai';
 
-const clone = {
-  wbtc: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
-  weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
-  link: '0x514910771af9ca656af840dff83e8264ecf986ca',
-};
-
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const deployed = await deployContracts(deploymentManager, deploySpec);
   await mintTokens(deploymentManager);
@@ -22,8 +16,10 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   // Deploy governance contracts
   const { COMP, fauceteer, timelock } = await cloneGov(deploymentManager);
 
-  const WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
-  const WETH = await deploymentManager.clone('WETH', clone.weth, []);
+  // Declare existing assets as aliases
+  const USDC = await deploymentManager.existing('USDC', '0x07865c6E87B9F70255377e024ace6630C1Eaa37F');
+  const WBTC = await deploymentManager.existing('WBTC', '0xAAD4992D949f9214458594dF92B44165Fb84dC19');
+  const WETH = await deploymentManager.existing('WETH', '0x42a71137C09AE83D8d05974960fd607d40033499');
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
