@@ -81,5 +81,5 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
           git add deployments/${{ github.event.inputs.network }}/${{ github.event.inputs.deployment }}/migrations/${{ github.event.inputs.migration }}.ts
-          git commit -m "Modified migration from GitHub Actions"
+          git commit -m "Modified migration from GitHub Actions" || echo "No changes to commit"
           git push origin
