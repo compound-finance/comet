@@ -192,11 +192,12 @@ export class DeploymentManager {
   async existing<C extends Contract>(
     alias: Alias,
     address: string,
+    network = 'mainnet'
   ): Promise<C> {
     const maybeExisting = await this.contract<C>(alias);
     if (!maybeExisting) {
       const trace = this.tracer();
-      const buildFile = await this.import(address);
+      const buildFile = await this.import(address, network);
       const contract = getEthersContract<C>(address, buildFile, this.hre);
       await this.putAlias(alias, contract);
       trace(`Loaded ${buildFile.contract} from ${address} as '${alias}'`);

@@ -10,6 +10,9 @@ const clone = {
   dai: '0x6b175474e89094c44da98b954eedeac495271d0f',
 };
 
+const FX_CHILD = "0xCf73231F28B7331BBe3124B907840A94851f9f11";
+const GOERLI_TIMELOCK = "0x8Fa336EB4bF58Cfc508dEA1B0aeC7336f55B1399";
+
 const secondsPerDay = 24 * 60 * 60;
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
@@ -23,7 +26,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const ethers = deploymentManager.hre.ethers;
   const signer = await deploymentManager.getSigner();
 
-  const fxChild = await deploymentManager.contract('fxChild');
+  const fxChild = await deploymentManager.existing('fxChild', FX_CHILD, 'mumbai');
 
   // Deploy PolygonBridgeReceiver
   const bridgeReceiver = await deploymentManager.deploy(
@@ -44,9 +47,6 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
       30 * secondsPerDay             // maxiumum delay
     ]
   );
-
-  // pull directly from deployed Goerli roots
-  const GOERLI_TIMELOCK = "0x8Fa336EB4bF58Cfc508dEA1B0aeC7336f55B1399";
 
   trace(`Initializing BridgeReceiver`);
   await bridgeReceiver.initialize(
@@ -118,6 +118,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     bridgeReceiver,
     bulker,
     fauceteer,
+    fxChild,
     ...deployed
   };
 }
