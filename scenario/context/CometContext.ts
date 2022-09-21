@@ -32,8 +32,7 @@ import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { ProtocolConfiguration, deployComet, COMP_WHALES } from '../../src/deploy';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { Requirements } from '../constraints/Requirements';
-import { fastGovernanceExecute,  } from '../utils';
-import { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from '../../plugins/scenario/utils';
+import { fastGovernanceExecute, mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from '../utils';
 
 export type ActorMap = { [name: string]: CometActor };
 export type AssetMap = { [name: string]: CometAsset };
