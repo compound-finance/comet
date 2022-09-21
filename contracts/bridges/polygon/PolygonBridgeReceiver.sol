@@ -11,7 +11,7 @@ contract PolygonBridgeReceiver is IFxMessageProcessor, BaseBridgeReceiver {
 
     address public fxChild;
 
-    constructor(address _fxChild, address _initializer) BaseBridgeReceiver(_initializer) {
+    constructor(address _fxChild) {
         fxChild = _fxChild;
     }
 

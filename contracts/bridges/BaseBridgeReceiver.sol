@@ -16,9 +16,9 @@ contract BaseBridgeReceiver {
     event ProposalCreated(address indexed messageSender, uint id, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, uint eta);
     event ProposalExecuted(uint id);
 
-    address public initializer;
     address public mainnetTimelock;
     address public l2Timelock;
+    bool public initialized;
 
     uint public proposalCount;
 
@@ -40,16 +40,11 @@ contract BaseBridgeReceiver {
         Executed
     }
 
-    constructor(address _initializer) {
-        initializer = _initializer;
-    }
-
     function initialize(address _mainnetTimelock, address _l2Timelock) external {
-        if (initializer == address(0)) revert AlreadyInitialized();
-        if (msg.sender != initializer) revert Unauthorized();
+        if (initialized) revert AlreadyInitialized();
         mainnetTimelock = _mainnetTimelock;
         l2Timelock = _l2Timelock;
-        initializer = address(0);
+        initialized = true;
         emit Initialized(_mainnetTimelock, _l2Timelock);
     }
 

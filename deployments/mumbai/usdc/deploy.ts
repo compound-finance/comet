@@ -29,10 +29,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
     'bridges/polygon/PolygonBridgeReceiver.sol',
-    [
-      fxChild?.address,  // fxChild
-      signer.address,    // initializer
-    ]
+    [fxChild?.address]  // fxChild
   );
 
   // Deploy L2 Timelock
