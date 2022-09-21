@@ -400,7 +400,7 @@ export async function relayMessage(
       await relayMumbaiMessage(governanceDeploymentManager, bridgeDeploymentManager);
       break;
     default:
-      throw new Error(`No governance execution strategy for network: ${bridgeNetwork}`);
+      throw new Error(`No message relay implementation from ${bridgeNetwork} -> ${governanceDeploymentManager.network}`);
   }
 }
 
