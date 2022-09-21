@@ -3,7 +3,7 @@
   "symbol": "cUSDCv3",
   "baseToken": "USDC",
   "baseTokenPriceFeed": "0x572dDec9087154dC5dfBB1546Bb62713147e0Ab0",
-  "borrowMin": "1000e6",
+  "borrowMin": "100e6",
   "storeFrontPriceFactor": 0.5,
   "targetReserves": "5000000e6",
   "rates": {
