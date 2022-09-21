@@ -50,7 +50,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
 
   trace(`Initializing BridgeReceiver`);
   await bridgeReceiver.initialize(
-    GOERLI_TIMELOCK,       // mainnet timelock
+    GOERLI_TIMELOCK,       // gov timelock
     l2Timelock.address     // l2 timelock
   );
   trace(`BridgeReceiver initialized`);

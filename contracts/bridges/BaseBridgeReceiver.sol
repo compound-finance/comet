@@ -10,13 +10,13 @@ contract BaseBridgeReceiver {
     error ProposalNotQueued();
     error Unauthorized();
 
-    event Initialized(address indexed l2Timelock, address indexed mainnetTimelock);
+    event Initialized(address indexed l2Timelock, address indexed govTimelock);
     event NewL2Timelock(address indexed oldL2Timelock, address indexed newL2Timelock);
-    event NewMainnetTimelock(address indexed oldMainnetTimelock, address indexed newMainnetTimelock);
+    event NewGovTimelock(address indexed oldGovTimelock, address indexed newGovTimelock);
     event ProposalCreated(address indexed messageSender, uint id, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, uint eta);
     event ProposalExecuted(uint id);
 
-    address public mainnetTimelock;
+    address public govTimelock;
     address public l2Timelock;
     bool public initialized;
 
@@ -40,12 +40,12 @@ contract BaseBridgeReceiver {
         Executed
     }
 
-    function initialize(address _mainnetTimelock, address _l2Timelock) external {
+    function initialize(address _govTimelock, address _l2Timelock) external {
         if (initialized) revert AlreadyInitialized();
-        mainnetTimelock = _mainnetTimelock;
+        govTimelock = _govTimelock;
         l2Timelock = _l2Timelock;
         initialized = true;
-        emit Initialized(_mainnetTimelock, _l2Timelock);
+        emit Initialized(_govTimelock, _l2Timelock);
     }
 
     function acceptL2TimelockAdmin() external {
@@ -60,18 +60,18 @@ contract BaseBridgeReceiver {
         emit NewL2Timelock(oldL2Timelock, newTimelock);
     }
 
-    function setMainnetTimelock(address newTimelock) public {
+    function setGovTimelock(address newTimelock) public {
         if (msg.sender != l2Timelock) revert Unauthorized();
-        address oldMainnetTimelock = mainnetTimelock;
-        mainnetTimelock = newTimelock;
-        emit NewMainnetTimelock(oldMainnetTimelock, newTimelock);
+        address oldGovTimelock = govTimelock;
+        govTimelock = newTimelock;
+        emit NewGovTimelock(oldGovTimelock, newTimelock);
     }
 
     function processMessage(
         address messageSender,
         bytes calldata data
     ) internal {
-        if (messageSender != mainnetTimelock) revert Unauthorized();
+        if (messageSender != govTimelock) revert Unauthorized();
 
         address[] memory targets;
         uint256[] memory values;
