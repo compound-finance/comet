@@ -18,13 +18,13 @@ async function makeTimelock({ admin }: { admin: string }) {
 }
 
 async function makeBridgeReceiver({ initialize } = { initialize: true }) {
-  const signers = await ethers.getSigners();
+  const [_defaultSigner, govTimelockAdmin, ...signers] = await ethers.getSigners();
 
   const BaseBridgeReceiverFactory = (await ethers.getContractFactory('BaseBridgeReceiver')) as BaseBridgeReceiver__factory;
   const baseBridgeReceiver = await BaseBridgeReceiverFactory.deploy();
   await baseBridgeReceiver.deployed();
 
-  const govTimelock = await makeTimelock({ admin: signers[0].address });
+  const govTimelock = await makeTimelock({ admin: govTimelockAdmin.address });
   const localTimelock = await makeTimelock({ admin: baseBridgeReceiver.address });
 
   if (initialize) {
@@ -106,7 +106,35 @@ describe.only('BaseBridgeReceiver', function () {
     ).to.be.revertedWith("custom error 'Unauthorized()'");
   });
 
-  // setLocalTimelock > sets new timelock
+  it('setLocalTimelock > sets new timelock', async () => {
+    const {
+      baseBridgeReceiver,
+      govTimelock,
+      signers
+    } = await makeBridgeReceiver({ initialize: false });
+
+    const [localTimelockSigner, newLocalTimelockSigner] = signers;
+
+    await baseBridgeReceiver.initialize(
+      govTimelock.address,
+      localTimelockSigner.address
+    );
+
+    const tx = await wait(
+      baseBridgeReceiver.connect(localTimelockSigner).setLocalTimelock(
+        newLocalTimelockSigner.address
+      )
+    );
+
+    expect(await baseBridgeReceiver.localTimelock()).to.eq(newLocalTimelockSigner.address);
+
+    expect(event(tx, 0)).to.be.deep.equal({
+      NewLocalTimelock: {
+        newLocalTimelock: newLocalTimelockSigner.address,
+        oldLocalTimelock: localTimelockSigner.address
+      }
+    });
+  });
 
   // setGovTimelock > sets gov timelock
 
