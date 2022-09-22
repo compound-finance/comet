@@ -6,7 +6,7 @@ jobs:
   run-scenarios:
     strategy:
       matrix:
-        bases: [ development, mainnet, goerli, kovan, fuji ]
+        bases: [ development, mainnet, goerli, fuji ]
     name: Run scenarios
     env:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
