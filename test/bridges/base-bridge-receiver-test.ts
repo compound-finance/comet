@@ -1,4 +1,4 @@
-import { ethers, event, expect, wait, fastForward } from './../helpers';
+import { ethers, event, expect, wait } from './../helpers';
 import { utils } from 'ethers';
 import {
   BaseBridgeReceiverHarness__factory,
@@ -6,6 +6,12 @@ import {
 } from '../../build/types';
 
 const TYPES = ['address[]', 'uint256[]', 'string[]', 'bytes[]'];
+
+enum ProposalState {
+  Queued = 0,
+  Expired = 1,
+  Executed = 2
+}
 
 async function makeTimelock({ admin }: { admin: string }) {
   const TimelockFactory = (await ethers.getContractFactory('Timelock')) as Timelock__factory;
@@ -339,12 +345,17 @@ describe.only('BaseBridgeReceiver', function () {
 
     await baseBridgeReceiver.processMessageExternal(govTimelock.address, calldata);
 
-    const { eta } = await baseBridgeReceiver.proposals(1);
+    // queues the proposal
+    expect(await baseBridgeReceiver.state(1)).to.eq(ProposalState.Queued);
 
+    const { eta } = await baseBridgeReceiver.proposals(1);
     const gracePeriod = await localTimelock.GRACE_PERIOD();
 
-    // XXX fix this
-    await fastForward(eta.add(gracePeriod).toNumber());
+    await ethers.provider.send('evm_setNextBlockTimestamp', [eta.add(gracePeriod).toNumber()]);
+    await ethers.provider.send('evm_mine', []);
+
+    // proposal is expired
+    expect(await baseBridgeReceiver.state(1)).to.eq(ProposalState.Expired);
 
     await expect(
        baseBridgeReceiver.executeProposal(1)
@@ -377,6 +388,9 @@ describe.only('BaseBridgeReceiver', function () {
 
     await baseBridgeReceiver.processMessageExternal(govTimelock.address, calldata);
 
+    // queues the proposal
+    expect(await baseBridgeReceiver.state(1)).to.eq(ProposalState.Queued);
+
     const { eta } = await baseBridgeReceiver.proposals(1);
 
     await ethers.provider.send('evm_setNextBlockTimestamp', [eta.toNumber()]);
@@ -385,15 +399,12 @@ describe.only('BaseBridgeReceiver', function () {
 
     expect(await localTimelock.delay()).to.eq(newDelay);
 
-    expect(event(tx, 2)).to.be.deep.equal({
-      ProposalExecuted: {
-        id: 1n
-      }
-    });
+    expect(event(tx, 2)).to.be.deep.equal({ ProposalExecuted: { id: 1n } });
 
     const updatedProposal = await baseBridgeReceiver.proposals(1);
 
     expect(updatedProposal.executed).to.be.true;
+    expect(await baseBridgeReceiver.state(1)).to.eq(ProposalState.Executed);
   });
 
   it('executeProposal > reverts if proposal is already executed', async () => {
@@ -447,12 +458,4 @@ describe.only('BaseBridgeReceiver', function () {
       baseBridgeReceiver.executeProposal(proposalCount.add(1))
     ).to.be.revertedWith("custom error 'InvalidProposalId()'");
   });
-
-  // state > returns executed
-
-  // state > returns expired
-
-  // state > returns queued
-
-  // acceptLocalTimelockAdmin > calls acceptAdmin
 });
