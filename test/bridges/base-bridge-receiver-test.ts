@@ -145,7 +145,35 @@ describe.only('BaseBridgeReceiver', function () {
     ).to.be.revertedWith("custom error 'Unauthorized()'");
   });
 
-  // setGovTimelock > sets gov timelock
+  it('setGovTimelock > sets gov timelock', async () => {
+    const {
+      baseBridgeReceiver,
+      govTimelock,
+      signers
+    } = await makeBridgeReceiver({ initialize: false });
+
+    const [localTimelockSigner, newGovTimelockSigner] = signers;
+
+    await baseBridgeReceiver.initialize(
+      govTimelock.address,
+      localTimelockSigner.address
+    );
+
+    const tx = await wait(
+      baseBridgeReceiver.connect(localTimelockSigner).setGovTimelock(
+        newGovTimelockSigner.address
+      )
+    );
+
+    expect(await baseBridgeReceiver.govTimelock()).to.eq(newGovTimelockSigner.address);
+
+    expect(event(tx, 0)).to.be.deep.equal({
+      NewGovTimelock: {
+        newGovTimelock: newGovTimelockSigner.address,
+        oldGovTimelock: govTimelock.address
+      }
+    });
+  });
 
   // processMessage > reverts unauthorized
 
