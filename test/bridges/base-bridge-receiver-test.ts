@@ -1,4 +1,4 @@
-import { ethers, event, expect, wait } from './../helpers';
+import { ethers, event, expect, wait, fastForward } from './../helpers';
 import { utils } from 'ethers';
 import {
   BaseBridgeReceiverHarness__factory,
@@ -315,13 +315,42 @@ describe.only('BaseBridgeReceiver', function () {
     ).to.be.true;
   });
 
-  // it('executeProposal > reverts if not queued', async () => {
-  //   const { baseBridgeReceiver } = await makeBridgeReceiver();
+  it('executeProposal > reverts if proposal is expired', async () => {
+    const {
+      baseBridgeReceiver,
+      govTimelock,
+      localTimelock
+    } = await makeBridgeReceiver();
 
-  //   await expect(
-  //     baseBridgeReceiver.executeProposal(1)
-  //   ).to.be.revertedWith("custom error 'Unauthorized()'");
-  // });
+    expect(await baseBridgeReceiver.proposalCount()).to.eq(0);
+
+    const targets = Array(2).fill(localTimelock.address);
+    const values = Array(2).fill(0);
+    const signatures = Array(2).fill("setDelay(uint256)");
+    const calldatas = [
+      utils.defaultAbiCoder.encode(['uint256'], [42]),
+      utils.defaultAbiCoder.encode(['uint256'], [43])
+    ];
+
+    const calldata = utils.defaultAbiCoder.encode(
+      TYPES,
+      [targets, values, signatures, calldatas]
+    );
+
+    await baseBridgeReceiver.processMessageExternal(govTimelock.address, calldata);
+
+    const { eta } = await baseBridgeReceiver.proposals(1);
+
+    const gracePeriod = await localTimelock.GRACE_PERIOD();
+
+    await fastForward(eta.add(gracePeriod).toNumber());
+
+    await expect(
+       baseBridgeReceiver.executeProposal(1)
+    ).to.be.revertedWith("custom error 'ProposalNotQueued()'");
+  });
+
+  // executeProposal > reverts is proposal is already executed
 
   // executeProposal > executes the transactions
 
