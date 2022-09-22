@@ -195,7 +195,42 @@ describe.only('BaseBridgeReceiver', function () {
     ).to.be.revertedWith("custom error 'Unauthorized()'");
   });
 
-  // processMessage > reverts for bad data
+  it('processMessage > reverts for bad data', async () => {
+    const {
+      baseBridgeReceiver,
+      govTimelock
+    } = await makeBridgeReceiver();
+
+    const types = ['address[]', 'uint256[]', 'string[]', 'bytes[]'];
+    const targets = Array(3).fill(ethers.constants.AddressZero);
+    const values = Array(3).fill(0);
+    const signatures = Array(3).fill("setDelay(uint256)");
+    const calldatas = Array(3).fill(utils.defaultAbiCoder.encode(['uint256'], [42]));
+    const missingValue = utils.defaultAbiCoder.encode(
+      types,
+      [targets, values.slice(1), signatures, calldatas]
+    );
+    const missingSignature = utils.defaultAbiCoder.encode(
+      types,
+      [targets, values, signatures.slice(1), calldatas]
+    );
+    const missingCalldata = utils.defaultAbiCoder.encode(
+      types,
+      [targets, values, signatures, calldatas.slice(1)]
+    );
+
+    await expect(
+      baseBridgeReceiver.processMessageExternal(govTimelock.address, missingValue)
+    ).to.be.revertedWith("custom error 'BadData()'");
+
+    await expect(
+      baseBridgeReceiver.processMessageExternal(govTimelock.address, missingSignature)
+    ).to.be.revertedWith("custom error 'BadData()'");
+
+    await expect(
+      baseBridgeReceiver.processMessageExternal(govTimelock.address, missingCalldata)
+    ).to.be.revertedWith("custom error 'BadData()'");
+  });
 
   // processMessage > queues transactions
 
