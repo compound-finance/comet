@@ -7,6 +7,8 @@ import {
   Timelock__factory
 } from '../../build/types';
 
+const TYPES = ['address[]', 'uint256[]', 'string[]', 'bytes[]'];
+
 async function makeTimelock({ admin }: { admin: string }) {
   const TimelockFactory = (await ethers.getContractFactory('Timelock')) as Timelock__factory;
   const timelock = await TimelockFactory.deploy(
@@ -196,26 +198,22 @@ describe.only('BaseBridgeReceiver', function () {
   });
 
   it('processMessage > reverts for bad data', async () => {
-    const {
-      baseBridgeReceiver,
-      govTimelock
-    } = await makeBridgeReceiver();
+    const { baseBridgeReceiver, govTimelock } = await makeBridgeReceiver();
 
-    const types = ['address[]', 'uint256[]', 'string[]', 'bytes[]'];
     const targets = Array(3).fill(ethers.constants.AddressZero);
     const values = Array(3).fill(0);
     const signatures = Array(3).fill("setDelay(uint256)");
     const calldatas = Array(3).fill(utils.defaultAbiCoder.encode(['uint256'], [42]));
     const missingValue = utils.defaultAbiCoder.encode(
-      types,
+      TYPES,
       [targets, values.slice(1), signatures, calldatas]
     );
     const missingSignature = utils.defaultAbiCoder.encode(
-      types,
+      TYPES,
       [targets, values, signatures.slice(1), calldatas]
     );
     const missingCalldata = utils.defaultAbiCoder.encode(
-      types,
+      TYPES,
       [targets, values, signatures, calldatas.slice(1)]
     );
 
@@ -232,11 +230,27 @@ describe.only('BaseBridgeReceiver', function () {
     ).to.be.revertedWith("custom error 'BadData()'");
   });
 
+  it('processMessage > reverts for repeated transactions', async () => {
+    const { baseBridgeReceiver, govTimelock } = await makeBridgeReceiver();
+
+    const calldata = utils.defaultAbiCoder.encode(
+      TYPES,
+      [
+        Array(2).fill(ethers.constants.AddressZero),
+        Array(2).fill(0),
+        Array(2).fill("setDelay(uint256)"),
+        Array(2).fill(utils.defaultAbiCoder.encode(['uint256'], [42]))
+      ]
+    );
+
+    await expect(
+      baseBridgeReceiver.processMessageExternal(govTimelock.address, calldata)
+    ).to.be.revertedWith("custom error 'TransactionAlreadyQueued()'");
+  });
+
   // processMessage > queues transactions
 
   // processMessage > stores a proposal
-
-  // processMessage > reverts for repeated transactions
 
   // executeProposal > reverts if not queued
 
