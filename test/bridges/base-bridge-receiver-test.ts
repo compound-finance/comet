@@ -1,5 +1,8 @@
 import { ethers, event, expect, wait } from './../helpers';
+import { utils } from 'ethers';
 import {
+  BaseBridgeReceiverHarness,
+  BaseBridgeReceiverHarness__factory,
   BaseBridgeReceiver__factory,
   Timelock__factory
 } from '../../build/types';
@@ -20,7 +23,7 @@ async function makeTimelock({ admin }: { admin: string }) {
 async function makeBridgeReceiver({ initialize } = { initialize: true }) {
   const [_defaultSigner, govTimelockAdmin, ...signers] = await ethers.getSigners();
 
-  const BaseBridgeReceiverFactory = (await ethers.getContractFactory('BaseBridgeReceiver')) as BaseBridgeReceiver__factory;
+  const BaseBridgeReceiverFactory = (await ethers.getContractFactory('BaseBridgeReceiverHarness')) as BaseBridgeReceiverHarness__factory;
   const baseBridgeReceiver = await BaseBridgeReceiverFactory.deploy();
   await baseBridgeReceiver.deployed();
 
@@ -175,7 +178,22 @@ describe.only('BaseBridgeReceiver', function () {
     });
   });
 
-  // processMessage > reverts unauthorized
+  it('processMessage > reverts if messageSender is not govTimelock', async () => {
+    const {
+      baseBridgeReceiver,
+      signers
+    } = await makeBridgeReceiver();
+
+    const [unauthorizedSigner] = signers;
+    const calldata = utils.defaultAbiCoder.encode([], []);
+
+    await expect(
+      baseBridgeReceiver.processMessageExternal(
+        unauthorizedSigner.address,
+        calldata
+      )
+    ).to.be.revertedWith("custom error 'Unauthorized()'");
+  });
 
   // processMessage > reverts for bad data
 
