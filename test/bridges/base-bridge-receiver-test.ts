@@ -343,6 +343,7 @@ describe.only('BaseBridgeReceiver', function () {
 
     const gracePeriod = await localTimelock.GRACE_PERIOD();
 
+    // XXX fix this
     await fastForward(eta.add(gracePeriod).toNumber());
 
     await expect(
@@ -350,7 +351,39 @@ describe.only('BaseBridgeReceiver', function () {
     ).to.be.revertedWith("custom error 'ProposalNotQueued()'");
   });
 
-  // executeProposal > reverts is proposal is already executed
+  it('executeProposal > reverts if proposal is already executed', async () => {
+    const {
+      baseBridgeReceiver,
+      govTimelock,
+      localTimelock
+    } = await makeBridgeReceiver();
+
+    expect(await baseBridgeReceiver.proposalCount()).to.eq(0);
+
+    const targets = Array(1).fill(localTimelock.address);
+    const values = Array(1).fill(0);
+    const signatures = Array(1).fill("setDelay(uint256)");
+    const calldatas = [
+      utils.defaultAbiCoder.encode(['uint256'], [20 * 60])
+    ];
+
+    const calldata = utils.defaultAbiCoder.encode(
+      TYPES,
+      [targets, values, signatures, calldatas]
+    );
+
+    await baseBridgeReceiver.processMessageExternal(govTimelock.address, calldata);
+
+    const { eta } = await baseBridgeReceiver.proposals(1);
+
+    await ethers.provider.send('evm_setNextBlockTimestamp', [eta.toNumber()]);
+
+    await baseBridgeReceiver.executeProposal(1)
+
+    await expect(
+       baseBridgeReceiver.executeProposal(1)
+    ).to.be.revertedWith("custom error 'ProposalNotQueued()'");
+  });
 
   // executeProposal > executes the transactions
 
