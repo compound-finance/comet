@@ -35,6 +35,7 @@ async function makeBridgeReceiver({ initialize } = { initialize: true }) {
   };
 }
 
+// XXX remove .only
 describe.only('BaseBridgeReceiver', function () {
   it('is initialized with empty storage values', async () => {
     const { baseBridgeReceiver } = await makeBridgeReceiver({initialize: false});
@@ -101,7 +102,17 @@ describe.only('BaseBridgeReceiver', function () {
 
   // processMessage > stores a proposal
 
-  // processMessage >
+  // processMessage > reverts for repeated transactions
 
+  // executeProposal > reverts if not queued
 
+  // executeProposal > executes the transactions
+
+  // state > reverts for invalid proposal id
+
+  // state > returns executed
+
+  // state > returns expired
+
+  // state > returns queued
 });
