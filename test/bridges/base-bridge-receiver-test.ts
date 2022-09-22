@@ -351,6 +351,51 @@ describe.only('BaseBridgeReceiver', function () {
     ).to.be.revertedWith("custom error 'ProposalNotQueued()'");
   });
 
+  it('executeProposal > executes the proposal', async () => {
+    const {
+      baseBridgeReceiver,
+      govTimelock,
+      localTimelock
+    } = await makeBridgeReceiver();
+
+    expect(await baseBridgeReceiver.proposalCount()).to.eq(0);
+
+    const delay = await localTimelock.delay();
+    const newDelay = delay.mul(2);
+
+    const targets = Array(1).fill(localTimelock.address);
+    const values = Array(1).fill(0);
+    const signatures = Array(1).fill("setDelay(uint256)");
+    const calldatas = [
+      utils.defaultAbiCoder.encode(['uint256'], [newDelay.toNumber()])
+    ];
+
+    const calldata = utils.defaultAbiCoder.encode(
+      TYPES,
+      [targets, values, signatures, calldatas]
+    );
+
+    await baseBridgeReceiver.processMessageExternal(govTimelock.address, calldata);
+
+    const { eta } = await baseBridgeReceiver.proposals(1);
+
+    await ethers.provider.send('evm_setNextBlockTimestamp', [eta.toNumber()]);
+
+    const tx = await wait(baseBridgeReceiver.executeProposal(1));
+
+    expect(await localTimelock.delay()).to.eq(newDelay);
+
+    expect(event(tx, 2)).to.be.deep.equal({
+      ProposalExecuted: {
+        id: 1n
+      }
+    });
+
+    const updatedProposal = await baseBridgeReceiver.proposals(1);
+
+    expect(updatedProposal.executed).to.be.true;
+  });
+
   it('executeProposal > reverts if proposal is already executed', async () => {
     const {
       baseBridgeReceiver,
@@ -384,8 +429,6 @@ describe.only('BaseBridgeReceiver', function () {
        baseBridgeReceiver.executeProposal(1)
     ).to.be.revertedWith("custom error 'ProposalNotQueued()'");
   });
-
-  // executeProposal > executes the transactions
 
   it('state > reverts for proposal id = 0', async () => {
     const { baseBridgeReceiver } = await makeBridgeReceiver();
