@@ -51,7 +51,10 @@ async function makeBridgeReceiver({ initialize } = { initialize: true }) {
   };
 }
 
-// XXX remove .only
+function encodeBridgeReceiverCalldata({ targets, values, signatures, calldatas }) {
+  return utils.defaultAbiCoder.encode(TYPES, [targets, values, signatures, calldatas]);
+}
+
 describe.only('BaseBridgeReceiver', function () {
   it('is initialized with empty storage values', async () => {
     const { baseBridgeReceiver } = await makeBridgeReceiver({initialize: false});
@@ -237,15 +240,15 @@ describe.only('BaseBridgeReceiver', function () {
   it('processMessage > reverts for repeated transactions', async () => {
     const { baseBridgeReceiver, govTimelock, localTimelock } = await makeBridgeReceiver();
 
-    const calldata = utils.defaultAbiCoder.encode(
-      TYPES,
-      [
-        Array(2).fill(localTimelock.address),
-        Array(2).fill(0),
-        Array(2).fill("setDelay(uint256)"),
-        Array(2).fill(utils.defaultAbiCoder.encode(['uint256'], [42]))
+     const calldata = encodeBridgeReceiverCalldata({
+      targets: Array(2).fill(localTimelock.address),
+      values: Array(2).fill(0),
+      signatures: Array(2).fill("setDelay(uint256)"),
+      calldatas: [
+        utils.defaultAbiCoder.encode(['uint256'], [20 * 60]),
+        utils.defaultAbiCoder.encode(['uint256'], [20 * 60])
       ]
-    );
+    });
 
     await expect(
       baseBridgeReceiver.processMessageExternal(govTimelock.address, calldata)
@@ -269,10 +272,7 @@ describe.only('BaseBridgeReceiver', function () {
       utils.defaultAbiCoder.encode(['uint256'], [43])
     ];
 
-    const calldata = utils.defaultAbiCoder.encode(
-      TYPES,
-      [targets, values, signatures, calldatas]
-    );
+    const calldata = encodeBridgeReceiverCalldata({ targets, values, signatures, calldatas });
 
     const tx = await wait(baseBridgeReceiver.processMessageExternal(govTimelock.address, calldata));
 
@@ -330,18 +330,15 @@ describe.only('BaseBridgeReceiver', function () {
 
     expect(await baseBridgeReceiver.proposalCount()).to.eq(0);
 
-    const targets = Array(2).fill(localTimelock.address);
-    const values = Array(2).fill(0);
-    const signatures = Array(2).fill("setDelay(uint256)");
-    const calldatas = [
-      utils.defaultAbiCoder.encode(['uint256'], [42]),
-      utils.defaultAbiCoder.encode(['uint256'], [43])
-    ];
-
-    const calldata = utils.defaultAbiCoder.encode(
-      TYPES,
-      [targets, values, signatures, calldatas]
-    );
+    const calldata = encodeBridgeReceiverCalldata({
+      targets: Array(2).fill(localTimelock.address),
+      values: Array(2).fill(0),
+      signatures: Array(2).fill("setDelay(uint256)"),
+      calldatas: [
+        utils.defaultAbiCoder.encode(['uint256'], [42]),
+        utils.defaultAbiCoder.encode(['uint256'], [43])
+      ]
+    });
 
     await baseBridgeReceiver.processMessageExternal(govTimelock.address, calldata);
 
@@ -374,17 +371,14 @@ describe.only('BaseBridgeReceiver', function () {
     const delay = await localTimelock.delay();
     const newDelay = delay.mul(2);
 
-    const targets = Array(1).fill(localTimelock.address);
-    const values = Array(1).fill(0);
-    const signatures = Array(1).fill("setDelay(uint256)");
-    const calldatas = [
-      utils.defaultAbiCoder.encode(['uint256'], [newDelay.toNumber()])
-    ];
-
-    const calldata = utils.defaultAbiCoder.encode(
-      TYPES,
-      [targets, values, signatures, calldatas]
-    );
+     const calldata = encodeBridgeReceiverCalldata({
+      targets: Array(1).fill(localTimelock.address),
+      values: Array(1).fill(0),
+      signatures: Array(1).fill("setDelay(uint256)"),
+      calldatas: [
+        utils.defaultAbiCoder.encode(['uint256'], [newDelay.toNumber()])
+      ]
+    });
 
     await baseBridgeReceiver.processMessageExternal(govTimelock.address, calldata);
 
@@ -416,17 +410,14 @@ describe.only('BaseBridgeReceiver', function () {
 
     expect(await baseBridgeReceiver.proposalCount()).to.eq(0);
 
-    const targets = Array(1).fill(localTimelock.address);
-    const values = Array(1).fill(0);
-    const signatures = Array(1).fill("setDelay(uint256)");
-    const calldatas = [
-      utils.defaultAbiCoder.encode(['uint256'], [20 * 60])
-    ];
-
-    const calldata = utils.defaultAbiCoder.encode(
-      TYPES,
-      [targets, values, signatures, calldatas]
-    );
+    const calldata = encodeBridgeReceiverCalldata({
+      targets: Array(1).fill(localTimelock.address),
+      values: Array(1).fill(0),
+      signatures: Array(1).fill("setDelay(uint256)"),
+      calldatas: [
+        utils.defaultAbiCoder.encode(['uint256'], [20 * 60])
+      ]
+    });
 
     await baseBridgeReceiver.processMessageExternal(govTimelock.address, calldata);
 
