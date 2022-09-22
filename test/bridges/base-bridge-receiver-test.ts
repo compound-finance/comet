@@ -1,9 +1,7 @@
 import { ethers, event, expect, wait } from './../helpers';
 import { utils } from 'ethers';
 import {
-  BaseBridgeReceiverHarness,
   BaseBridgeReceiverHarness__factory,
-  BaseBridgeReceiver__factory,
   Timelock__factory
 } from '../../build/types';
 
@@ -198,9 +196,9 @@ describe.only('BaseBridgeReceiver', function () {
   });
 
   it('processMessage > reverts for bad data', async () => {
-    const { baseBridgeReceiver, govTimelock } = await makeBridgeReceiver();
+    const { baseBridgeReceiver, govTimelock, localTimelock } = await makeBridgeReceiver();
 
-    const targets = Array(3).fill(ethers.constants.AddressZero);
+    const targets = Array(3).fill(localTimelock.address);
     const values = Array(3).fill(0);
     const signatures = Array(3).fill("setDelay(uint256)");
     const calldatas = Array(3).fill(utils.defaultAbiCoder.encode(['uint256'], [42]));
@@ -231,12 +229,12 @@ describe.only('BaseBridgeReceiver', function () {
   });
 
   it('processMessage > reverts for repeated transactions', async () => {
-    const { baseBridgeReceiver, govTimelock } = await makeBridgeReceiver();
+    const { baseBridgeReceiver, govTimelock, localTimelock } = await makeBridgeReceiver();
 
     const calldata = utils.defaultAbiCoder.encode(
       TYPES,
       [
-        Array(2).fill(ethers.constants.AddressZero),
+        Array(2).fill(localTimelock.address),
         Array(2).fill(0),
         Array(2).fill("setDelay(uint256)"),
         Array(2).fill(utils.defaultAbiCoder.encode(['uint256'], [42]))
@@ -248,9 +246,74 @@ describe.only('BaseBridgeReceiver', function () {
     ).to.be.revertedWith("custom error 'TransactionAlreadyQueued()'");
   });
 
-  // processMessage > queues transactions
+  it('processMessage > queues transactions and stores a proposal', async () => {
+    const {
+      baseBridgeReceiver,
+      govTimelock,
+      localTimelock
+    } = await makeBridgeReceiver();
 
-  // processMessage > stores a proposal
+    expect(await baseBridgeReceiver.proposalCount()).to.eq(0);
+
+    const targets = Array(2).fill(localTimelock.address);
+    const values = Array(2).fill(0);
+    const signatures = Array(2).fill("setDelay(uint256)");
+    const calldatas = [
+      utils.defaultAbiCoder.encode(['uint256'], [42]),
+      utils.defaultAbiCoder.encode(['uint256'], [43])
+    ];
+
+    const calldata = utils.defaultAbiCoder.encode(
+      TYPES,
+      [targets, values, signatures, calldatas]
+    );
+
+    const tx = await wait(baseBridgeReceiver.processMessageExternal(govTimelock.address, calldata));
+
+    // increments proposal count
+    expect(await baseBridgeReceiver.proposalCount()).to.eq(1);
+
+    // creates a proposal
+    const { id, eta, executed } = await baseBridgeReceiver.proposals(1);
+    expect(id).to.eq(1);
+    expect(eta).to.not.eq(0)
+    expect(executed).to.be.false;
+
+    // emits ProposalCreated event
+    expect(event(tx, 2)).to.be.deep.equal({
+      ProposalCreated: {
+        messageSender: govTimelock.address,
+        id: id.toBigInt(),
+        targets,
+        signatures,
+        calldatas,
+        eta: eta.toBigInt()
+      }
+    });
+
+    // queues 2 transactions
+    expect(
+      await localTimelock.queuedTransactions(
+        utils.keccak256(
+          utils.defaultAbiCoder.encode(
+            ['address', 'uint256', 'string', 'bytes', 'uint256'],
+            [targets[0], values[0], signatures[0], calldatas[0], eta]
+          )
+        )
+      )
+    ).to.be.true;
+
+    expect(
+      await localTimelock.queuedTransactions(
+        utils.keccak256(
+          utils.defaultAbiCoder.encode(
+            ['address', 'uint256', 'string', 'bytes', 'uint256'],
+            [targets[1], values[1], signatures[1], calldatas[1], eta]
+          )
+        )
+      )
+    ).to.be.true;
+  });
 
   // executeProposal > reverts if not queued
 
