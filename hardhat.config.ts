@@ -160,6 +160,9 @@ const config: HardhatUserConfig = {
       // Avalanche
       avalanche: SNOWTRACE_KEY,
       avalancheFujiTestnet: SNOWTRACE_KEY,
+      // Polygon
+      polygon: POLYGONSCAN_KEY,
+      polygonMumbai: POLYGONSCAN_KEY,
     },
   },
 
