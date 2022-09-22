@@ -93,9 +93,7 @@ describe.only('BaseBridgeReceiver', function () {
     ).to.be.revertedWith("custom error 'Unauthorized()'");
   });
 
-  // acceptLocalTimelockAdmin > calls acceptAdmin
-
-  it('setLocalTimelock > reverts for unuauthorized', async () => {
+  it('setLocalTimelock > reverts for unuauthorized caller', async () => {
     const {
       baseBridgeReceiver,
       localTimelock
@@ -136,9 +134,18 @@ describe.only('BaseBridgeReceiver', function () {
     });
   });
 
-  // setGovTimelock > sets gov timelock
+  it('setGovTimelock > reverts for unauthorized caller', async () => {
+    const {
+      baseBridgeReceiver,
+      govTimelock
+    } = await makeBridgeReceiver();
 
-  // setGovTimelock > reverts for unauthorized
+    await expect(
+      baseBridgeReceiver.setGovTimelock(govTimelock.address)
+    ).to.be.revertedWith("custom error 'Unauthorized()'");
+  });
+
+  // setGovTimelock > sets gov timelock
 
   // processMessage > reverts unauthorized
 
@@ -161,4 +168,6 @@ describe.only('BaseBridgeReceiver', function () {
   // state > returns expired
 
   // state > returns queued
+
+  // acceptLocalTimelockAdmin > calls acceptAdmin
 });
