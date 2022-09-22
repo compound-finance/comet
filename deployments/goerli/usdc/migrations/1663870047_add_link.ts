@@ -1,5 +1,5 @@
 import { DeploymentManager, migration } from '../../../../plugins/deployment_manager';
-import { calldata, exp, proposal, wait } from '../../../../src/deploy';
+import { exp, proposal, wait } from '../../../../src/deploy';
 
 import { expect } from 'chai';
 
@@ -8,6 +8,14 @@ const clone = {
 };
 
 const LINK_PRICE_FEED = '0x48731cF7e84dc94C5f84577882c14Be11a5B7456';
+const PROPOSED_LINK_ASSET_INFO = {
+  priceFeed: LINK_PRICE_FEED,
+  decimals: 18,
+  borrowCollateralFactor: exp(0.75, 18),
+  liquidateCollateralFactor: exp(0.8, 18),
+  liquidationFactor: exp(0.92, 18),
+  supplyCap: exp(50_000_000, 18),
+};
 
 export default migration('1663870047_add_link', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -35,12 +43,7 @@ export default migration('1663870047_add_link', {
 
     const linkAssetConfig = {
       asset: LINK.address,
-      priceFeed: LINK_PRICE_FEED,
-      decimals: await LINK.decimals(),
-      borrowCollateralFactor: exp(0.75, 18),
-      liquidateCollateralFactor: exp(0.8, 18),
-      liquidationFactor: exp(0.92, 18),
-      supplyCap: exp(50_000_000, 18),
+      ...PROPOSED_LINK_ASSET_INFO
     };
 
     const actions = [
@@ -71,31 +74,39 @@ export default migration('1663870047_add_link', {
 
   async verify(deploymentManager: DeploymentManager) {
     const {
-      governor,
       comet,
       configurator,
-      cometAdmin,
       fauceteer,
       LINK
     } = await deploymentManager.getContracts();
-
-    // 1.
+    const linkAssetIndex = 3;
     const linkAssetConfig = {
-      offset: 3,
       asset: LINK.address,
-      priceFeed: LINK_PRICE_FEED,
-      scale: exp(1, await LINK.decimals()),
-      borrowCollateralFactor: exp(0.75, 18),
-      liquidateCollateralFactor: exp(0.8, 18),
-      liquidationFactor: exp(0.92, 18),
-      supplyCap: exp(50_000_000, 18),
+      ...PROPOSED_LINK_ASSET_INFO
     };
 
-    expect(await comet.getAssetInfoByAddress(LINK.address)).to.be.equal(linkAssetConfig);
+    // 1. Compare proposed asset config with Comet asset info
+    const cometLinkAssetInfo = await comet.getAssetInfoByAddress(LINK.address);
+    expect(linkAssetIndex).to.be.equal(cometLinkAssetInfo.offset);
+    expect(linkAssetConfig.asset).to.be.equal(cometLinkAssetInfo.asset);
+    expect(linkAssetConfig.priceFeed).to.be.equal(cometLinkAssetInfo.priceFeed);
+    expect(exp(1, linkAssetConfig.decimals)).to.be.equal(cometLinkAssetInfo.scale);
+    expect(linkAssetConfig.borrowCollateralFactor).to.be.equal(cometLinkAssetInfo.borrowCollateralFactor);
+    expect(linkAssetConfig.liquidateCollateralFactor).to.be.equal(cometLinkAssetInfo.liquidateCollateralFactor);
+    expect(linkAssetConfig.liquidationFactor).to.be.equal(cometLinkAssetInfo.liquidationFactor);
+    expect(linkAssetConfig.supplyCap).to.be.equal(cometLinkAssetInfo.supplyCap);
 
-    // XXX check configurator state as well
+    // 2. Compare proposed asset config with Configurator asset config
+    const configuratorLinkAssetConfig = (await configurator.getConfiguration(comet.address)).assetConfigs[linkAssetIndex];
+    expect(linkAssetConfig.asset).to.be.equal(configuratorLinkAssetConfig.asset);
+    expect(linkAssetConfig.priceFeed).to.be.equal(configuratorLinkAssetConfig.priceFeed);
+    expect(linkAssetConfig.decimals).to.be.equal(configuratorLinkAssetConfig.decimals);
+    expect(linkAssetConfig.borrowCollateralFactor).to.be.equal(configuratorLinkAssetConfig.borrowCollateralFactor);
+    expect(linkAssetConfig.liquidateCollateralFactor).to.be.equal(configuratorLinkAssetConfig.liquidateCollateralFactor);
+    expect(linkAssetConfig.liquidationFactor).to.be.equal(configuratorLinkAssetConfig.liquidationFactor);
+    expect(linkAssetConfig.supplyCap).to.be.equal(configuratorLinkAssetConfig.supplyCap);
 
-    // 2.
+    // 3. Expect that the Fauceteer has received half of the LINK total supply
     expect(await LINK.balanceOf(fauceteer.address)).to.be.equal(exp(500_000_000, 18)); // Half of 1bn total supply
   },
 });
