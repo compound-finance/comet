@@ -1,8 +1,9 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 // NB: this couples this plugin to deployment manager plugin
 import { DeploymentManager } from '../deployment_manager/DeploymentManager';
+import hreForBase from './utils/hreForBase';
+import { impersonateAddress } from './utils';
 
 export type ForkSpec = {
   name: string;
@@ -10,43 +11,74 @@ export type ForkSpec = {
   deployment: string;
   blockNumber?: number;
   allocation?: number;
+  auxiliaryBase?: string;
 };
 
+export type Snapshot = {
+  snapshot: string;
+  auxiliarySnapshot?: string;
+}
+
 export class World {
-  hre: HardhatRuntimeEnvironment;
   base: ForkSpec;
   deploymentManager: DeploymentManager;
   snapshotDeploymentManager: DeploymentManager;
 
-  constructor(hre, base: ForkSpec) {
+  auxiliaryDeploymentManager?: DeploymentManager;
+  snapshotAuxiliaryDeploymentManager?: DeploymentManager;
+
+  constructor(base: ForkSpec) {
     // Q: should we really need to fork/snapshot the deployment manager?
-    this.hre = hre;
+    const hre = hreForBase(base);
     this.base = base;
     this.deploymentManager = new DeploymentManager(base.network, base.deployment, hre);
     this.snapshotDeploymentManager = this.deploymentManager;
+
+    if (this.base.auxiliaryBase) {
+      const auxiliaryBase = hre.config.scenario.bases.find(b => b.name === this.base.auxiliaryBase);
+      this.auxiliaryDeploymentManager = new DeploymentManager(auxiliaryBase.network, auxiliaryBase.deployment, hreForBase(auxiliaryBase));
+      this.snapshotAuxiliaryDeploymentManager = this.auxiliaryDeploymentManager;
+    }
   }
 
   isRemoteFork(): boolean {
     return this.base.network !== 'hardhat';
   }
 
-  async _snapshot(): Promise<string> {
+  async _snapshot(): Promise<Snapshot> {
     this.snapshotDeploymentManager = this.deploymentManager.fork();
-    return (await this.hre.network.provider.request({
+    const snapshot = await this.deploymentManager.hre.network.provider.request({
       method: 'evm_snapshot',
       params: [],
-    })) as string;
+    }) as string;
+    let auxiliarySnapshot: string;
+    if (this.auxiliaryDeploymentManager) {
+      this.snapshotAuxiliaryDeploymentManager = this.auxiliaryDeploymentManager.fork();
+      auxiliarySnapshot = await this.auxiliaryDeploymentManager.hre.network.provider.request({
+        method: 'evm_snapshot',
+        params: [],
+      }) as string;
+    }
+    return { snapshot, auxiliarySnapshot };
   }
 
-  async _revert(snapshot: string) {
+  async _revert(snapshot: Snapshot) {
     this.deploymentManager = this.snapshotDeploymentManager;
-    return this.hre.network.provider.request({
+    await this.deploymentManager.hre.network.provider.request({
       method: 'evm_revert',
-      params: [snapshot],
+      params: [snapshot.snapshot],
     });
+
+    if (this.auxiliaryDeploymentManager) {
+      this.auxiliaryDeploymentManager = this.snapshotAuxiliaryDeploymentManager;
+      await this.auxiliaryDeploymentManager.hre.network.provider.request({
+        method: 'evm_revert',
+        params: [snapshot.auxiliarySnapshot],
+      });
+    }
   }
 
-  async _revertAndSnapshot(snapshot: string): Promise<string> {
+  async _revertAndSnapshot(snapshot: Snapshot): Promise<Snapshot> {
     await this._revert(snapshot);
     return await this._snapshot();
   }
@@ -56,24 +88,20 @@ export class World {
       const signer = await this.deploymentManager.getSigner();
       await signer.sendTransaction({ to: address, value });
     }
-    await this.hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [address],
-    });
-    return await this.deploymentManager.getSigner(address);
+    return await impersonateAddress(this.deploymentManager, address);
   }
 
   async timestamp() {
-    const blockNumber = await this.hre.ethers.provider.getBlockNumber();
-    return (await this.hre.ethers.provider.getBlock(blockNumber)).timestamp;
+    const blockNumber = await this.deploymentManager.hre.ethers.provider.getBlockNumber();
+    return (await this.deploymentManager.hre.ethers.provider.getBlock(blockNumber)).timestamp;
   }
 
   async increaseTime(amount: number) {
-    await this.hre.network.provider.send('evm_increaseTime', [amount]);
-    await this.hre.network.provider.send('evm_mine'); // ensure block is mined
+    await this.deploymentManager.hre.network.provider.send('evm_increaseTime', [amount]);
+    await this.deploymentManager.hre.network.provider.send('evm_mine'); // ensure block is mined
   }
 
   async chainId() {
-    return (await this.hre.ethers.provider.getNetwork()).chainId;
+    return (await this.deploymentManager.hre.ethers.provider.getNetwork()).chainId;
   }
 }

@@ -19,6 +19,8 @@ import { ForkSpec } from '../World';
 import { HttpNetworkUserConfig } from 'hardhat/types';
 
 /*
+mimics https://github.com/nomiclabs/hardhat/blob/master/packages/hardhat-core/src/internal/lib/hardhat-lib.ts
+
 Hardhat's Environment class implements the HardhatRuntimeEnvironment interface.
 However, the ethers and waffle plugins later extend the
 HardhatRuntimeEnvironment interface. So if we want to interact with the
@@ -52,13 +54,37 @@ declare module 'hardhat/internal/core/runtime-environment' {
   }
 }
 
-export default function hreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
-  // replicates https://github.com/nomiclabs/hardhat/blob/master/packages/hardhat-core/src/internal/lib/hardhat-lib.ts
+export function nonForkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
+  const ctx: HardhatContext = HardhatContext.getHardhatContext();
+
+  const hardhatArguments = getEnvHardhatArguments(
+    HARDHAT_PARAM_DEFINITIONS,
+    process.env
+  );
+
+  const { resolvedConfig, userConfig } = loadConfigAndTasks(hardhatArguments);
+
+  return new Environment(
+    resolvedConfig,
+    {
+      ...hardhatArguments,
+      ...{
+        network: base.network
+      }
+    },
+    ctx.tasksDSL.getTaskDefinitions(),
+    ctx.extendersManager.getExtenders(),
+    ctx.experimentalHardhatNetworkMessageTraceHooks,
+    userConfig
+  );
+}
+
+export function forkedHreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
   const ctx: HardhatContext = HardhatContext.getHardhatContext();
 
   const hardhatArguments = getEnvHardhatArguments(HARDHAT_PARAM_DEFINITIONS, process.env);
 
-  const { resolvedConfig: config } = loadConfigAndTasks(hardhatArguments);
+  const { resolvedConfig: config, userConfig } = loadConfigAndTasks(hardhatArguments);
 
   const networks = config.networks;
   const { hardhat: defaultNetwork, localhost } = networks;
@@ -98,6 +124,15 @@ export default function hreForBase(base: ForkSpec): HardhatRuntimeEnvironment {
     hardhatArguments,
     ctx.tasksDSL.getTaskDefinitions(),
     ctx.extendersManager.getExtenders(),
-    ctx.experimentalHardhatNetworkMessageTraceHooks
+    ctx.experimentalHardhatNetworkMessageTraceHooks,
+    userConfig
   );
+}
+
+export default function hreForBase(base: ForkSpec, fork = true): HardhatRuntimeEnvironment {
+  if (fork) {
+    return forkedHreForBase(base);
+  } else {
+    return nonForkedHreForBase(base);
+  }
 }

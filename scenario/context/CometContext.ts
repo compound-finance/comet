@@ -1,6 +1,7 @@
-import { Signer, Contract, utils, BigNumberish } from 'ethers';
+import { BigNumberish } from 'ethers';
 import { World, buildScenarioFn } from '../../plugins/scenario';
-import { DeploymentManager, Migration, debug } from '../../plugins/deployment_manager';
+import { Migration } from '../../plugins/deployment_manager';
+import { debug } from '../../plugins/deployment_manager/Utils';
 import {
   TokenBalanceConstraint,
   ModernConstraint,
@@ -14,12 +15,8 @@ import {
 } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
-import { ProposalState, OpenProposal } from './Gov';
 import {
-  Comet,
   CometInterface,
-  ProxyAdmin,
-  ERC20,
   ERC20__factory,
   Configurator,
   SimpleTimelock,
@@ -28,20 +25,19 @@ import {
   CometRewards,
   Fauceteer,
   Bulker,
+  BaseBridgeReceiver,
 } from '../../build/types';
-import { AssetInfoStructOutput } from '../../build/types/Comet';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { ProtocolConfiguration, deployComet, COMP_WHALES } from '../../src/deploy';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { Requirements } from '../constraints/Requirements';
-import { max } from '../utils';
+import { fastGovernanceExecute, mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from '../utils';
 
 export type ActorMap = { [name: string]: CometActor };
 export type AssetMap = { [name: string]: CometAsset };
 
 export interface CometProperties {
-  deploymentManager: DeploymentManager;
   actors: ActorMap;
   assets: AssetMap;
   comet: CometInterface;
@@ -51,18 +47,17 @@ export interface CometProperties {
   governor: IGovernorBravo;
   rewards: CometRewards;
   bulker: Bulker;
+  bridgeReceiver: BaseBridgeReceiver;
 }
 
 export class CometContext {
   world: World;
-  deploymentManager: DeploymentManager;
   actors: ActorMap;
   assets: AssetMap;
   migrations?: Migration<any>[];
 
   constructor(world: World) {
     this.world = world;
-    this.deploymentManager = world.deploymentManager; // NB: backwards compatibility (temporary?)
     this.actors = {};
     this.assets = {};
   }
@@ -76,35 +71,39 @@ export class CometContext {
   }
 
   async getComet(): Promise<CometInterface> {
-    return this.deploymentManager.contract('comet');
+    return this.world.deploymentManager.contract('comet');
   }
 
   async getCometAdmin(): Promise<CometProxyAdmin> {
-    return this.deploymentManager.contract('cometAdmin');
+    return this.world.deploymentManager.contract('cometAdmin');
   }
 
   async getConfigurator(): Promise<Configurator> {
-    return this.deploymentManager.contract('configurator');
+    return this.world.deploymentManager.contract('configurator');
   }
 
   async getTimelock(): Promise<SimpleTimelock> {
-    return this.deploymentManager.contract('timelock');
+    return this.world.deploymentManager.contract('timelock');
   }
 
   async getGovernor(): Promise<IGovernorBravo> {
-    return this.deploymentManager.contract('governor');
+    return this.world.deploymentManager.contract('governor');
   }
 
   async getRewards(): Promise<CometRewards> {
-    return this.deploymentManager.contract('rewards');
+    return this.world.deploymentManager.contract('rewards');
   }
 
   async getBulker(): Promise<Bulker> {
-    return this.deploymentManager.contract('bulker');
+    return this.world.deploymentManager.contract('bulker');
   }
 
   async getFauceteer(): Promise<Fauceteer> {
-    return this.deploymentManager.contract('fauceteer');
+    return this.world.deploymentManager.contract('fauceteer');
+  }
+
+  async getBridgeReceiver(): Promise<BaseBridgeReceiver> {
+    return this.world.deploymentManager.contract('bridgeReceiver');
   }
 
   async getConfiguration(): Promise<ProtocolConfiguration> {
@@ -120,9 +119,9 @@ export class CometContext {
     const admin = await world.impersonateAddress(await oldComet.governor(), 10n ** 18n);
 
     const deploySpec = { cometMain: true, cometExt: true };
-    const deployed = await deployComet(this.deploymentManager, deploySpec, configOverrides, admin);
+    const deployed = await deployComet(this.world.deploymentManager, deploySpec, configOverrides, admin);
 
-    await this.deploymentManager.spider(deployed);
+    await this.world.deploymentManager.spider(deployed);
     await this.setAssets();
 
     debug('Upgraded comet...');
@@ -222,7 +221,7 @@ export class CometContext {
     // Third, source from logs (expensive, in terms of node API limits)
     debug('Source Tokens: sourcing from logs...', amount, cometAsset.address);
     await sourceTokens({
-      dm: this.deploymentManager,
+      dm: this.world.deploymentManager,
       amount,
       asset: cometAsset.address,
       address: recipientAddress,
@@ -239,82 +238,28 @@ export class CometContext {
   }
 
   async setNextBaseFeeToZero() {
-    await this.world.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+    await setNextBaseFeeToZero(this.world.deploymentManager);
   }
 
   async setNextBlockTimestamp(timestamp: number) {
-    await this.world.hre.ethers.provider.send('evm_setNextBlockTimestamp', [timestamp]);
+    await setNextBlockTimestamp(this.world.deploymentManager, timestamp);
   }
 
   async mineBlocks(blocks: number) {
-    await this.world.hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
-  }
-
-  async executeOpenProposal({ id, startBlock, endBlock }: OpenProposal) {
-    const governor = await this.getGovernor();
-    const blockNow = await this.world.hre.ethers.provider.getBlockNumber();
-    const blocksUntilStart = startBlock - blockNow;
-    const blocksUntilEnd = endBlock - Math.max(startBlock, blockNow);
-
-    if (blocksUntilStart > 0) {
-      await this.mineBlocks(blocksUntilStart);
-    }
-
-    if (blocksUntilEnd > 0) {
-      for (const whale of await this.getCompWhales()) {
-        try {
-          // Voting can fail if voter has already voted
-          const voter = await this.world.impersonateAddress(whale);
-          await this.setNextBaseFeeToZero();
-          await governor.connect(voter).castVote(id, 1, { gasPrice: 0 });
-        } catch (err) {
-          debug(`Error while voting for ${whale}`, err.message);
-        }
-      }
-      await this.mineBlocks(blocksUntilEnd);
-    }
-
-    // Queue proposal (maybe)
-    const state = await governor.state(id);
-    if (state == ProposalState.Succeeded) {
-      await this.setNextBaseFeeToZero();
-      await governor.queue(id, { gasPrice: 0 });
-    } else if (state == ProposalState.Defeated) {
-      debug(`⛔ Proposal ${id} was unexpectedly defeated`)
-    }
-
-    const proposal = await governor.proposals(id);
-    const nextBlockTimestamp = max(proposal.eta.toNumber(), await this.world.timestamp());
-    await this.setNextBlockTimestamp(nextBlockTimestamp + 1);
-
-    // Execute proposal (w/ gas limit so we see if exec reverts, not a gas estimation error)
-    await this.setNextBaseFeeToZero();
-    await governor.execute(id, { gasPrice: 0, gasLimit: 12000000 });
+    await mineBlocks(this.world.deploymentManager, blocks);
   }
 
   // Instantly executes some actions through the governance proposal process
-  // Note: `governor` must be connected to an `admin` signer
   async fastGovernanceExecute(targets: string[], values: BigNumberish[], signatures: string[], calldatas: string[]) {
-    const { world } = this;
-    const governor = await this.getGovernor();
     const proposer = await this.getProposer();
-
-    await this.setNextBaseFeeToZero();
-
-    const proposeTxn = await (
-      await governor.connect(proposer).propose(
-        targets,
-        values,
-        signatures,
-        calldatas,
-        'FastExecuteProposal',
-        { gasPrice: 0 }
-      )
-    ).wait();
-    const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
-    const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
-
-    await this.executeOpenProposal({ id, startBlock, endBlock });
+    await fastGovernanceExecute(
+      this.world.deploymentManager,
+      proposer,
+      targets,
+      values,
+      signatures,
+      calldatas
+    );
   }
 }
 
@@ -323,7 +268,7 @@ async function buildActor(name: string, signer: SignerWithAddress, context: Come
 }
 
 async function getActors(context: CometContext): Promise<{ [name: string]: CometActor }> {
-  const { world, deploymentManager } = context;
+  const { world } = context;
 
   const comet = await context.getComet();
   const [
@@ -332,7 +277,7 @@ async function getActors(context: CometContext): Promise<{ [name: string]: Comet
     albertSigner,
     bettySigner,
     charlesSigner
-  ] = await deploymentManager.getSigners();
+  ] = await world.deploymentManager.getSigners();
 
   const adminAddress = await comet.governor();
   const pauseGuardianAddress = await comet.pauseGuardian();
@@ -352,7 +297,7 @@ async function getActors(context: CometContext): Promise<{ [name: string]: Comet
 }
 
 async function getAssets(context: CometContext): Promise<{ [symbol: string]: CometAsset }> {
-  const { deploymentManager } = context;
+  const { deploymentManager } = context.world;
 
   let comet = await context.getComet();
   let signer = await deploymentManager.getSigner();
@@ -379,7 +324,6 @@ async function getInitialContext(world: World): Promise<CometContext> {
 
 async function getContextProperties(context: CometContext): Promise<CometProperties> {
   return {
-    deploymentManager: context.deploymentManager,
     actors: context.actors,
     assets: context.assets,
     comet: await context.getComet(),
@@ -389,6 +333,7 @@ async function getContextProperties(context: CometContext): Promise<CometPropert
     governor: await context.getGovernor(),
     rewards: await context.getRewards(),
     bulker: await context.getBulker(),
+    bridgeReceiver: await context.getBridgeReceiver()
   }
 }
 

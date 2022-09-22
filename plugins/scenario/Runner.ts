@@ -1,5 +1,5 @@
 import { Scenario, Solution } from './Scenario';
-import { ForkSpec, World } from './World';
+import { ForkSpec, Snapshot, World } from './World';
 import { Result } from './worker/Parent';
 import { AssertionError } from 'chai';
 
@@ -39,7 +39,7 @@ function mapSolution<T>(s: Solution<T> | Solution<T>[] | null): Solution<T>[] {
 
 export class Runner<T, U, R> {
   config: Config;
-  worldSnapshot: string;
+  worldSnapshot: Snapshot;
 
   constructor(config: Config) {
     this.config = config;
@@ -61,7 +61,7 @@ export class Runner<T, U, R> {
 
     // initialize the context and take a snapshot of it
     let context = await scenario.initializer(world);
-    let contextSnapshot = await world._snapshot();
+    let contextSnapshot = this.worldSnapshot;
 
     // generate worlds which satisfy the constraints
     // note: `solve` is expected not to modify context or world

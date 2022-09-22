@@ -192,11 +192,12 @@ export class DeploymentManager {
   async existing<C extends Contract>(
     alias: Alias,
     address: string,
+    network = 'mainnet'
   ): Promise<C> {
     const maybeExisting = await this.contract<C>(alias);
     if (!maybeExisting) {
       const trace = this.tracer();
-      const buildFile = await this.import(address);
+      const buildFile = await this.import(address, network);
       const contract = getEthersContract<C>(address, buildFile, this.hre);
       await this.putAlias(alias, contract);
       trace(`Loaded ${buildFile.contract} from ${address} as '${alias}'`);
@@ -334,6 +335,15 @@ export class DeploymentManager {
     const contracts = await this.contracts();
     const contract = contracts.get(alias);
     return contract && contract.connect(signer ?? await this.getSigner()) as T;
+  }
+
+  async getContractOrThrow<T extends Contract>(alias: string, signer?: SignerWithAddress): Promise<T> {
+    const tag = `${this.network}/${this.deployment}`;
+    const contract = await this.contract<T>(alias, signer);
+    if (!contract) {
+      throw new Error(`${tag} deployment missing ${alias}`);
+    }
+    return contract;
   }
 
   /* Changes configuration of verification strategy during deployment */

@@ -26,7 +26,7 @@ function getBasesFromTaskArgs(givenBases: string | undefined, env: HardhatRuntim
 task('scenario', 'Runs scenario tests')
   .addOptionalParam('bases', 'Bases to run on [defaults to all]')
   .addFlag('spider', 'run spider persistently before scenarios')
-  .addOptionalParam('stall', 'milliseconds to wait until we fail for stalling', 180_000, types.int)
+  .addOptionalParam('stall', 'milliseconds to wait until we fail for stalling', 240_000, types.int)
   .addOptionalParam('workers', 'count of workers', 1, types.int) // TODO: optimize parallelized workers better (1 per base?)
   .setAction(async (taskArgs, env: HardhatRuntimeEnvironment) => {
     const bases: ForkSpec[] = getBasesFromTaskArgs(taskArgs.bases, env);
