@@ -315,11 +315,33 @@ describe.only('BaseBridgeReceiver', function () {
     ).to.be.true;
   });
 
-  // executeProposal > reverts if not queued
+  // it('executeProposal > reverts if not queued', async () => {
+  //   const { baseBridgeReceiver } = await makeBridgeReceiver();
+
+  //   await expect(
+  //     baseBridgeReceiver.executeProposal(1)
+  //   ).to.be.revertedWith("custom error 'Unauthorized()'");
+  // });
 
   // executeProposal > executes the transactions
 
-  // state > reverts for invalid proposal id
+  it('state > reverts for proposal id = 0', async () => {
+    const { baseBridgeReceiver } = await makeBridgeReceiver();
+
+    await expect(
+      baseBridgeReceiver.executeProposal(0)
+    ).to.be.revertedWith("custom error 'InvalidProposalId()'");
+  });
+
+  it('state > reverts if proposal id is greater than proposalCount', async () => {
+    const { baseBridgeReceiver } = await makeBridgeReceiver();
+
+    const proposalCount = await baseBridgeReceiver.proposalCount();
+
+    await expect(
+      baseBridgeReceiver.executeProposal(proposalCount.add(1))
+    ).to.be.revertedWith("custom error 'InvalidProposalId()'");
+  });
 
   // state > returns executed
 
