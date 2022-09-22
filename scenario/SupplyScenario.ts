@@ -77,6 +77,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
   scenario(
     `Comet#supply > collateral asset ${i}`,
     {
+      // XXX Unfortunately, the filtering step happens before solutions are run, so this will filter out
+      // hypothetical assets added during the migration/proposal constraint because those assets don't exist
+      // yet
       filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToSupply),
       tokenBalances: {
         albert: { [`$asset${i}`]: amountToSupply },
