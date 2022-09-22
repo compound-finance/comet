@@ -48,12 +48,17 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     ]
   );
 
-  trace(`Initializing BridgeReceiver`);
-  await bridgeReceiver.initialize(
-    GOERLI_TIMELOCK,       // govTimelock
-    localTimelock.address  // localTimelock
+  await deploymentManager.idempotent(
+    async () => !(await bridgeReceiver.initialized()),
+    async () => {
+      trace(`Initializing BridgeReceiver`);
+      await bridgeReceiver.initialize(
+        GOERLI_TIMELOCK,       // govTimelock
+        localTimelock.address  // localTimelock
+      );
+      trace(`BridgeReceiver initialized`);
+    }
   );
-  trace(`BridgeReceiver initialized`);
 
   // USDC
   const usdcProxyAdmin = await deploymentManager.deploy('USDC:admin', 'vendor/proxy/transparent/ProxyAdmin.sol', []);
