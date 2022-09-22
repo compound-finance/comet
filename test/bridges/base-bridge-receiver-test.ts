@@ -55,7 +55,7 @@ function encodeBridgeReceiverCalldata({ targets, values, signatures, calldatas }
   return utils.defaultAbiCoder.encode(TYPES, [targets, values, signatures, calldatas]);
 }
 
-describe.only('BaseBridgeReceiver', function () {
+describe('BaseBridgeReceiver', function () {
   it('is initialized with empty storage values', async () => {
     const { baseBridgeReceiver } = await makeBridgeReceiver({initialize: false});
 
