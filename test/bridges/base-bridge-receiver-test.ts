@@ -5,7 +5,7 @@ import {
   Timelock__factory
 } from '../../build/types';
 
-const TYPES = ['address[]', 'uint256[]', 'string[]', 'bytes[]'];
+const BRIDGE_RECEIVER_CALLDATA_ABI = ['address[]', 'uint256[]', 'string[]', 'bytes[]'];
 
 enum ProposalState {
   Queued = 0,
@@ -52,7 +52,7 @@ async function makeBridgeReceiver({ initialize } = { initialize: true }) {
 }
 
 function encodeBridgeReceiverCalldata({ targets, values, signatures, calldatas }) {
-  return utils.defaultAbiCoder.encode(TYPES, [targets, values, signatures, calldatas]);
+  return utils.defaultAbiCoder.encode(BRIDGE_RECEIVER_CALLDATA_ABI, [targets, values, signatures, calldatas]);
 }
 
 describe('BaseBridgeReceiver', function () {
@@ -212,15 +212,15 @@ describe('BaseBridgeReceiver', function () {
     const signatures = Array(3).fill('setDelay(uint256)');
     const calldatas = Array(3).fill(utils.defaultAbiCoder.encode(['uint256'], [42]));
     const missingValue = utils.defaultAbiCoder.encode(
-      TYPES,
+      BRIDGE_RECEIVER_CALLDATA_ABI,
       [targets, values.slice(1), signatures, calldatas]
     );
     const missingSignature = utils.defaultAbiCoder.encode(
-      TYPES,
+      BRIDGE_RECEIVER_CALLDATA_ABI,
       [targets, values, signatures.slice(1), calldatas]
     );
     const missingCalldata = utils.defaultAbiCoder.encode(
-      TYPES,
+      BRIDGE_RECEIVER_CALLDATA_ABI,
       [targets, values, signatures, calldatas.slice(1)]
     );
 
