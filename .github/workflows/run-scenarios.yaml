@@ -5,6 +5,7 @@ on:
 jobs:
   run-scenarios:
     strategy:
+      fail-fast: false
       matrix:
         bases: [ development, mainnet, goerli, fuji, mumbai ]
     name: Run scenarios
