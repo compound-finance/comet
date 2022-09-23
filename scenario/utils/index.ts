@@ -11,6 +11,10 @@ import { impersonateAddress } from '../plugins/scenario/utils';
 import { ProposalState, OpenProposal } from './context/Gov';
 import { debug } from '../plugins/deployment_manager/Utils';
 import { COMP_WHALES } from '../src/deploy';
+import relayMessage from './relayMessage';
+import { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
+
+export { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp };
 
 export const MAX_ASSETS = 15;
 
@@ -267,18 +271,6 @@ export async function fetchLogs(
   }
 }
 
-export async function setNextBaseFeeToZero(dm: DeploymentManager) {
-  await dm.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
-}
-
-export async function mineBlocks(dm: DeploymentManager, blocks: number) {
-  await dm.hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
-}
-
-export async function setNextBlockTimestamp(dm: DeploymentManager, timestamp: number) {
-  await dm.hre.ethers.provider.send('evm_setNextBlockTimestamp', [timestamp]);
-}
-
 export async function executeOpenProposal(
   dm: DeploymentManager,
   { id, startBlock, endBlock }: OpenProposal
@@ -350,69 +342,6 @@ export async function fastGovernanceExecute(
   const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
 
   await executeOpenProposal(dm, { id, startBlock, endBlock });
-}
-
-async function relayMumbaiMessage(
-  governanceDeploymentManager: DeploymentManager,
-  bridgeDeploymentManager: DeploymentManager,
-) {
-  const MUMBAI_RECEIVER_ADDRESSS = '0x0000000000000000000000000000000000001001';
-  const EVENT_LISTENER_TIMEOUT = 60000;
-
-  const stateSender = await governanceDeploymentManager.getContractOrThrow('stateSender');
-  const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
-  const fxChild = await bridgeDeploymentManager.getContractOrThrow('fxChild');
-
-  // listen on events on the fxRoot contract
-  const stateSyncedListenerPromise = new Promise((resolve, reject) => {
-    const filter = stateSender.filters.StateSynced();
-
-    governanceDeploymentManager.hre.ethers.provider.on(filter, (log) => {
-      resolve(log);
-    });
-
-    setTimeout(() => {
-      reject(new Error('StateSender.StateSynced event listener timed out'));
-    }, EVENT_LISTENER_TIMEOUT);
-  });
-
-  const stateSyncedEvent = await stateSyncedListenerPromise as Event;
-  const { args: { data: stateSyncedData } } = stateSender.interface.parseLog(stateSyncedEvent);
-
-  const mumbaiReceiverSigner = await impersonateAddress(bridgeDeploymentManager, MUMBAI_RECEIVER_ADDRESSS);
-
-  await setNextBaseFeeToZero(bridgeDeploymentManager);
-  const onStateReceiveTxn = await (
-    await fxChild.connect(mumbaiReceiverSigner).onStateReceive(
-      123,             // stateId
-      stateSyncedData, // _data
-      { gasPrice: 0 }
-    )
-  ).wait();
-
-  const proposalCreatedEvent = onStateReceiveTxn.events.find(event => event.address === bridgeReceiver.address);
-  const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
-
-  // fast forward l2 time
-  await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
-
-  // execute queued proposal
-  await setNextBaseFeeToZero(bridgeDeploymentManager);
-  await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
-}
-
-export async function relayMessage(
-  governanceDeploymentManager: DeploymentManager,
-  bridgeDeploymentManager: DeploymentManager
-) {
-  const bridgeNetwork = bridgeDeploymentManager.network;
-  switch (bridgeNetwork) {
-    case 'mumbai':
-      await relayMumbaiMessage(governanceDeploymentManager, bridgeDeploymentManager);
-      break;
-    default:
-      throw new Error(`No message relay implementation from ${bridgeNetwork} -> ${governanceDeploymentManager.network}`);
-  }
 }
 
 export async function fastL2GovernanceExecute(
