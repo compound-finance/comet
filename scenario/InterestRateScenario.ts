@@ -1,6 +1,6 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { annualize, defactor, exp, factor } from '../test/helpers';
+import { annualize, defactor, exp } from '../test/helpers';
 import { BigNumber } from 'ethers';
 import { FuzzType } from './constraints/Fuzzing';
 
@@ -41,7 +41,7 @@ function calculateUtilization(
 scenario(
   'Comet#interestRate > rates using on-chain configuration constants',
   {},
-  async ({ comet, actors }) => {
+  async ({ comet }) => {
     let { totalSupplyBase, totalBorrowBase, baseSupplyIndex, baseBorrowIndex } = await comet.totalsBasic();
     const supplyKink = await comet.supplyKink();
     const supplyPerSecondInterestRateBase = await comet.supplyPerSecondInterestRateBase();
@@ -92,7 +92,7 @@ scenario(
     },
     utilization: 0.5,
   },
-  async ({ comet, actors }) => {
+  async ({ comet }) => {
     const utilization = await comet.getUtilization();
     expect(defactor(utilization)).to.be.approximately(0.5, 0.00001);
     expect(annualize(await comet.getSupplyRate(utilization))).to.be.approximately(0.02, 0.001);
@@ -115,7 +115,7 @@ scenario(
     },
     utilization: 0.85,
   },
-  async ({ comet, actors }, context) => {
+  async ({ comet }) => {
     const utilization = await comet.getUtilization();
     expect(defactor(utilization)).to.be.approximately(0.85, 0.00001);
     expect(annualize(await comet.getSupplyRate(utilization))).to.be.approximately(0.052, 0.001);
@@ -132,7 +132,7 @@ scenario(
       borrowPerYearInterestRateBase: { type: FuzzType.UINT64, max: (1e18).toString() /* 100% */ },
     }
   },
-  async ({ comet, actors }) => {
+  async ({ comet }) => {
     let { totalSupplyBase, totalBorrowBase, baseSupplyIndex, baseBorrowIndex } = await comet.totalsBasic();
     const supplyKink = await comet.supplyKink();
     const supplyPerSecondInterestRateBase = await comet.supplyPerSecondInterestRateBase();
@@ -174,7 +174,7 @@ scenario(
 scenario.skip(
   'Comet#interestRate > when utilization is 50%',
   { utilization: 0.5 },
-  async ({ comet, actors }, context) => {
+  async ({ comet }, context) => {
     const utilization = await comet.getUtilization();
     expect(defactor(utilization)).to.be.approximately(0.5, 0.00001);
 

@@ -4,7 +4,7 @@ import CometActor from '../context/CometActor';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { baseBalanceOf, exp, factorScale } from '../../test/helpers';
-import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, max, getExpectedBaseBalance, getToTransferAmount } from '../utils';
+import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, getExpectedBaseBalance, getToTransferAmount } from '../utils';
 import { BigNumber } from 'ethers';
 
 async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, context: CometContext) {
@@ -33,7 +33,7 @@ async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, context
 }
 
 export class CometBalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(requirements: R, initialContext: T) {
+  async solve(requirements: R, _initialContext: T) {
     const assetsByActor = requirements.cometBalances;
     if (assetsByActor) {
       const actorsByAsset = Object.entries(assetsByActor).reduce((a, [actor, assets]) => {

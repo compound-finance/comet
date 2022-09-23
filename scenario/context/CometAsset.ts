@@ -1,4 +1,4 @@
-import { BigNumberish, Contract, Overrides, Signer } from 'ethers';
+import { Overrides } from 'ethers';
 import { ERC20 } from '../../build/types';
 import CometActor from './CometActor';
 import { AddressLike, resolveAddress } from './Address';

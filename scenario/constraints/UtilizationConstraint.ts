@@ -49,7 +49,7 @@ else
   -> ( borrows / target ) - supply = X
 */
 export class UtilizationConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(requirements: R, context: T) {
+  async solve(requirements: R, _context: T) {
     let { utilization } = getUtilizationConfig(requirements);
 
     if (utilization == null) {

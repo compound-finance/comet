@@ -1,13 +1,13 @@
-import { Constraint, Scenario, Solution } from '../../plugins/scenario';
+import { Constraint } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
 import { BigNumber } from 'ethers';
 import { exp } from '../../test/helpers';
-import { ComparativeAmount, ComparisonOp, getActorAddressFromName, getAssetFromName, parseAmount, max, min, getToTransferAmount } from '../utils';
+import { ComparativeAmount, ComparisonOp, getActorAddressFromName, getAssetFromName, parseAmount, getToTransferAmount } from '../utils';
 
 export class TokenBalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(requirements: R, initialContext: T) {
+  async solve(requirements: R, _initialContext: T) {
     const assetsByActor = requirements.tokenBalances;
     if (assetsByActor) {
       const actorsByAsset = Object.entries(assetsByActor).reduce((a, [actor, assets]) => {

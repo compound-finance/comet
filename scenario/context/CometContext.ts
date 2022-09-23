@@ -178,7 +178,7 @@ export class CometContext {
   }
 
   getAssetByAddress(address: string): CometAsset {
-    for (let [name, asset] of Object.entries(this.assets)) {
+    for (let [_name, asset] of Object.entries(this.assets)) {
       if (asset.address.toLowerCase() === address.toLowerCase()) {
         return asset;
       }

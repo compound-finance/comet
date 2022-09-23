@@ -80,7 +80,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         albert: { [`$asset${i}`]: amountToSupply },
       },
     },
-    async ({ }, context) => {
+    async (_properties, context) => {
       return await testSupplyCollateral(context, i);
     }
   );
@@ -96,7 +96,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         albert: { [`$asset${i}`]: amountToSupply },
       },
     },
-    async ({ }, context) => {
+    async (_properties, context) => {
       return await testSupplyFromCollateral(context, i);
     }
   );
@@ -465,7 +465,7 @@ scenario(
 scenario(
   'Comet#supply reverts if asset is not supported',
   {},
-  async ({ comet, actors }) => {
+  async () => {
     // XXX requires deploying an unsupported asset (maybe via remote token constraint)
   }
 );

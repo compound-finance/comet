@@ -17,7 +17,7 @@ export class FilterConstraint<T extends CometContext, R extends Requirements> im
     }
   }
 
-  async check(requirements: R, context: T, world: World) {
+  async check(requirements: R, context: T, _world: World) {
     const filterFn = requirements.filter;
     if (!filterFn) {
       return;

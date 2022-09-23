@@ -53,7 +53,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         albert: { [`$asset${i}`]: amountToWithdraw },
       },
     },
-    async ({ }, context) => {
+    async (_properties, context) => {
       return await testWithdrawCollateral(context, i);
     }
   );
@@ -69,7 +69,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         albert: { [`$asset${i}`]: amountToWithdraw },
       },
     },
-    async ({ }, context) => {
+    async (_properties, context) => {
       return await testWithdrawFromCollateral(context, i);
     }
   );
@@ -346,7 +346,7 @@ scenario(
 scenario.skip(
   'Comet#withdraw reverts if asset is not supported',
   {},
-  async ({ comet, actors }) => {
+  async () => {
     // XXX requires deploying an unsupported asset (maybe via remote token constraint)
   }
 );
@@ -354,7 +354,7 @@ scenario.skip(
 scenario.skip(
   'Comet#withdraw reverts if not enough asset in protocol',
   {},
-  async ({ comet, actors }) => {
+  async () => {
     // XXX fix for development base, where Faucet token doesn't give the same revert message
   }
 );

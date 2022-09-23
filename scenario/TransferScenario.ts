@@ -47,7 +47,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         albert: { [`$asset${i}`]: amountToTransfer },
       },
     },
-    async ({ }, context) => {
+    async (_properties, context) => {
       return await testTransferCollateral(context, i);
     }
   );
@@ -63,7 +63,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         albert: { [`$asset${i}`]: amountToTransfer },
       },
     },
-    async ({ }, context) => {
+    async (_properties, context) => {
       return await testTransferFromCollateral(context, i);
     }
   );

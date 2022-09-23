@@ -64,7 +64,7 @@ export class ProposalConstraint<T extends CometContext, R extends Requirements> 
     };
   }
 
-  async check(requirements: R, context: T, world: World) {
+  async check(_requirements: R, _context: T, _world: World) {
     return; // XXX
   }
 }

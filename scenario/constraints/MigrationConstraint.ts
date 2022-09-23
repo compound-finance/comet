@@ -5,7 +5,7 @@ import { Migration, loadMigrations, Actions } from '../../plugins/deployment_man
 import { modifiedPaths, subsets } from '../utils';
 import { DeploymentManager } from '../../plugins/deployment_manager';
 
-async function getMigrations<T>(context: CometContext, requirements: Requirements): Promise<Migration<T>[]> {
+async function getMigrations<T>(context: CometContext, _requirements: Requirements): Promise<Migration<T>[]> {
   // TODO: make this configurable from cli params/env var?
   const network = context.world.deploymentManager.network;
   const deployment = context.world.deploymentManager.deployment;
@@ -56,7 +56,7 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
     return solutions;
   }
 
-  async check(requirements: R, context: T, world: World) {
+  async check(_requirements: R, _context: T, _world: World) {
     return; // XXX
   }
 }
@@ -78,5 +78,7 @@ export class VerifyMigrationConstraint<T extends CometContext, R extends Require
     ];
   }
 
-  async check(requirements: R, context: T, world: World) { }
+  async check(_requirements: R, _context: T, _world: World) {
+    return; // XXX
+  }
 }
