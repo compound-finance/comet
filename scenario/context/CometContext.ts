@@ -334,7 +334,7 @@ async function getContextProperties(context: CometContext): Promise<CometPropert
     rewards: await context.getRewards(),
     bulker: await context.getBulker(),
     bridgeReceiver: await context.getBridgeReceiver()
-  }
+  };
 }
 
 async function forkContext(c: CometContext, w: World): Promise<CometContext> {

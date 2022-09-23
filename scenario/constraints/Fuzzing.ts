@@ -1,4 +1,4 @@
-import { Requirements } from "./Requirements";
+import { Requirements } from './Requirements';
 
 export enum FuzzType {
   INT64,
@@ -6,14 +6,14 @@ export enum FuzzType {
 }
 
 export interface FuzzConfig {
-  type: FuzzType,
-  min?: any,
-  max?: any
+  type: FuzzType;
+  min?: any;
+  max?: any;
 }
 
 interface KV {
-  key: string,
-  value: string | object
+  key: string;
+  value: string | object;
 }
 
 function isFuzzConfig(object: unknown): object is FuzzConfig {
@@ -44,7 +44,7 @@ function getMaxValForBits(bits: number, isSigned: boolean = false): bigint {
   if (isSigned) {
     max = 2n ** (BigInt(bits / 2)) - 1n;
   } else {
-    max = 2n ** (BigInt(bits)) - 1n
+    max = 2n ** (BigInt(bits)) - 1n;
   }
   return max;
 }
@@ -93,7 +93,7 @@ export function getFuzzedRequirements(requirements: Requirements): Requirements[
       // If value is a non-null object, recursively fuzz its properties
       keyValues.push(getFuzzedRequirements(value).map(v => ({ key, value: v})));
     } else {
-      keyValues.push([{ key, value }])
+      keyValues.push([{ key, value }]);
     }
   }
 

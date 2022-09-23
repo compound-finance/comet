@@ -14,7 +14,7 @@ async function getMigrations<T>(context: CometContext, requirements: Requirement
 }
 
 async function isEnacted<T>(actions: Actions<T>, deploymentManager: DeploymentManager): Promise<boolean> {
-  return actions.enacted && await actions.enacted(deploymentManager)
+  return actions.enacted && await actions.enacted(deploymentManager);
 }
 
 export class MigrationConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
@@ -30,7 +30,7 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
         ctx.world.deploymentManager._signers.unshift(proposer);
 
         // Order migrations deterministically and store in the context (i.e. for verification)
-        migrationList.sort((a, b) => a.name.localeCompare(b.name))
+        migrationList.sort((a, b) => a.name.localeCompare(b.name));
         ctx.migrations = migrationList;
 
         debug(`${label} Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);

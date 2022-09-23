@@ -10,13 +10,13 @@ import { DeploymentManager } from '../plugins/deployment_manager';
 import { impersonateAddress } from '../plugins/scenario/utils';
 import { ProposalState, OpenProposal } from './context/Gov';
 import { debug } from '../plugins/deployment_manager/Utils';
-import { COMP_WHALES } from "../src/deploy";
+import { COMP_WHALES } from '../src/deploy';
 
 export const MAX_ASSETS = 15;
 
 export interface ComparativeAmount {
-  val: number,
-  op: ComparisonOp,
+  val: number;
+  op: ComparisonOp;
 }
 
 export enum ComparisonOp {
@@ -40,7 +40,7 @@ export function expectApproximately(expected: bigint, actual: bigint, precision:
 
 export function expectRevertMatches(tx: Promise<ContractReceipt>, patterns: RegExp | RegExp[]) {
   return tx
-    .then(_ => { throw new Error('Expected transaction to be reverted') })
+    .then(_ => { throw new Error('Expected transaction to be reverted'); })
     .catch(e => {
       for (const pattern of [].concat(patterns))
         if (pattern.test(e.message))

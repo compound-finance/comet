@@ -64,8 +64,8 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
         let totalSupplyBase = (await comet.totalSupply()).toBigInt();
         let totalBorrowBase = (await comet.totalBorrow()).toBigInt();
 
-        let toBorrowBase: bigint = 0n;
-        let toSupplyBase: bigint = 0n;
+        let toBorrowBase = 0n;
+        let toSupplyBase = 0n;
 
         // TODO: Handle units for precision, etc
         if (totalSupplyBase == 0n) {

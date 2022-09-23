@@ -29,7 +29,7 @@ export class TokenBalanceConstraint<T extends CometContext, R extends Requiremen
       const solutions = [];
       solutions.push(async function barelyMeet(context: T) {
         for (const assetName in actorsByAsset) {
-          const asset = await getAssetFromName(assetName, context)
+          const asset = await getAssetFromName(assetName, context);
           for (const actorName in actorsByAsset[assetName]) {
             const actor = await getActorAddressFromName(actorName, context);
             const amount: ComparativeAmount = actorsByAsset[assetName][actorName];
@@ -51,7 +51,7 @@ export class TokenBalanceConstraint<T extends CometContext, R extends Requiremen
       for (const [actorName, assets] of Object.entries(assetsByActor)) {
         for (const [assetName, rawAmount] of Object.entries(assets)) {
           const actor = await getActorAddressFromName(actorName, context);
-          const asset = await getAssetFromName(assetName, context)
+          const asset = await getAssetFromName(assetName, context);
           const amount = parseAmount(rawAmount);
           const balance = BigNumber.from(await asset.balanceOf(actor));
           const decimals = await asset.token.decimals();
