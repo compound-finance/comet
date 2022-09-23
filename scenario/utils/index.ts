@@ -55,7 +55,7 @@ export function expectRevertCustom(tx: Promise<ContractReceipt>, custom: string)
     .catch(e => {
       const selector = utils.keccak256(custom.split('').reduce((a, s) => a + s.charCodeAt(0).toString(16), '0x')).slice(2, 2 + 8);
       const patterns = [
-        new RegExp(`custom error '${custom.replace(/[()]/g, "\\$&")}'`),
+        new RegExp(`custom error '${custom.replace(/[()]/g, '\\$&')}'`),
         new RegExp(`unrecognized custom error with selector ${selector}`),
       ];
       for (const pattern of patterns)
@@ -212,11 +212,11 @@ export function parseAmount(amount): ComparativeAmount {
       return amount >= 0 ? { val: amount, op: ComparisonOp.GTE } : { val: amount, op: ComparisonOp.LTE };
     case 'string':
       return matchGroup(amount, {
-        'GTE': />=\s*(\d+)/,
-        'GT': />\s*(\d+)/,
-        'LTE': /<=\s*(\d+)/,
-        'LT': /<\s*(\d+)/,
-        'EQ': /==\s*(\d+)/,
+        'GTE': />=\s*(-?\d+)/,
+        'GT': />\s*(-?\d+)/,
+        'LTE': /<=\s*(-?\d+)/,
+        'LT': /<\s*(-?\d+)/,
+        'EQ': /==\s*(-?\d+)/,
       });
     case 'object':
       return amount;
@@ -261,6 +261,27 @@ export async function isTriviallySourceable(ctx: CometContext, assetNum: number,
 export async function isBulkerSupported(ctx: CometContext): Promise<boolean> {
   const bulker = await ctx.getBulker();
   return bulker == null ? false : true;
+}
+
+type DeploymentCriterion = {
+  network?: string;
+  deployment?: string;
+}
+
+export function matchesDeployment(ctx: CometContext, deploymentCriteria: DeploymentCriterion[]): boolean {
+  const currentDeployment = {
+    network: ctx.world.base.network,
+    deployment: ctx.world.base.deployment
+  };
+
+  function matchesCurrentDeployment(deploymentCriterion: DeploymentCriterion) {
+    for (const [k, v] of Object.entries(deploymentCriterion)) {
+      if (currentDeployment[k] !== v) return false;
+    }
+    return true;
+  }
+
+  return deploymentCriteria.some(matchesCurrentDeployment);
 }
 
 export async function isRewardSupported(ctx: CometContext): Promise<boolean> {
