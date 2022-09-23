@@ -58,7 +58,7 @@ interface NetworkAssetConfiguration {
   supplyCap: number;
 }
 
-interface NetworkConfiguration {
+export interface NetworkConfiguration {
   name: string;
   symbol: string;
   governor?: string;
@@ -95,7 +95,7 @@ function getAssetConfigs(
 ): AssetConfigStruct[] {
   return Object.entries(assets).map(([assetName, assetConfig]) => ({
     asset: getContractAddress(assetName, contracts, assetConfig.address),
-    priceFeed: address(assetConfig.priceFeed),
+    priceFeed: getContractAddress(`${assetName}:priceFeed`, contracts, assetConfig.priceFeed),
     decimals: number(assetConfig.decimals),
     borrowCollateralFactor: percentage(assetConfig.borrowCF),
     liquidateCollateralFactor: percentage(assetConfig.liquidateCF),
@@ -131,7 +131,7 @@ function getOverridesOrConfig(
     governor: _ => config.governor ? address(config.governor) : getContractAddress('timelock', contracts),
     pauseGuardian: _ => config.pauseGuardian ? address(config.pauseGuardian) : getContractAddress('timelock', contracts),
     baseToken: _ => getContractAddress(config.baseToken, contracts, config.baseTokenAddress),
-    baseTokenPriceFeed: _ => address(config.baseTokenPriceFeed),
+    baseTokenPriceFeed: _ => getContractAddress(`${config.baseToken}:priceFeed`, contracts, config.baseTokenPriceFeed),
     baseBorrowMin: _ => number(config.borrowMin), // TODO: in token units (?)
     storeFrontPriceFactor: _ => percentage(config.storeFrontPriceFactor),
     targetReserves: _ => number(config.targetReserves),
