@@ -19,6 +19,7 @@ import './tasks/scenario/task.ts';
 import relationConfigMap from './deployments/relations';
 import goerliRelationConfigMap from './deployments/goerli/usdc/relations';
 import mumbaiRelationConfigMap from './deployments/mumbai/usdc/relations';
+import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -183,6 +184,9 @@ const config: HardhatUserConfig = {
       },
       mumbai: {
         usdc: mumbaiRelationConfigMap
+      },
+      mainnet: {
+        weth: mainnetWethRelationConfigMap
       }
     },
   },
@@ -194,6 +198,11 @@ const config: HardhatUserConfig = {
         network: 'mainnet',
         deployment: 'usdc',
         allocation: 1.0, // eth
+      },
+      {
+        name: 'mainnet-weth',
+        network: 'mainnet',
+        deployment: 'weth',
       },
       {
         name: 'development',

@@ -8,7 +8,7 @@ import { putVerifyArgs } from './VerifyArgs';
 import { Cache } from './Cache';
 import { storeBuildFile } from './ContractMap';
 import { BuildFile, TraceFn } from './Types';
-import { debug, getPrimaryContract } from './Utils';
+import { debug, getPrimaryContract, stringifyJson } from './Utils';
 import { VerifyArgs, verifyContract, VerificationStrategy } from './Verify';
 
 export interface DeployOpts {
@@ -29,7 +29,7 @@ async function doDeploy<C extends Contract>(
   src: string
 ): Promise<C> {
   const trace = opts.trace ?? debug;
-  trace(`Deploying ${name} with args ${JSON.stringify(args)} via ${src}`);
+  trace(`Deploying ${name} with args ${stringifyJson(args)} via ${src}`);
   const contract = await factory.deploy(...args);
   await contract.deployed();
   trace(contract.deployTransaction, `Deployed ${name} @ ${contract.address}`);

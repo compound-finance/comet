@@ -105,7 +105,13 @@ describe('isBorrowCollateralized', function () {
 
     expect(await comet.isBorrowCollateralized(alice.address)).to.be.true;
 
-    await priceFeeds.COMP.setPrice(exp(0.5, 8));
+    await priceFeeds.COMP.setRoundData(
+      0,           // roundId
+      exp(0.5, 8), // answer
+      0,           // startedAt
+      0,           // updatedAt
+      0            // answeredInRound
+    );
 
     expect(await comet.isBorrowCollateralized(alice.address)).to.be.false;
   });
