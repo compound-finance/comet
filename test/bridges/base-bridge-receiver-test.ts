@@ -209,7 +209,7 @@ describe('BaseBridgeReceiver', function () {
 
     const targets = Array(3).fill(localTimelock.address);
     const values = Array(3).fill(0);
-    const signatures = Array(3).fill("setDelay(uint256)");
+    const signatures = Array(3).fill('setDelay(uint256)');
     const calldatas = Array(3).fill(utils.defaultAbiCoder.encode(['uint256'], [42]));
     const missingValue = utils.defaultAbiCoder.encode(
       TYPES,
@@ -240,10 +240,10 @@ describe('BaseBridgeReceiver', function () {
   it('processMessage > reverts for repeated transactions', async () => {
     const { baseBridgeReceiver, govTimelock, localTimelock } = await makeBridgeReceiver();
 
-     const calldata = encodeBridgeReceiverCalldata({
+    const calldata = encodeBridgeReceiverCalldata({
       targets: Array(2).fill(localTimelock.address),
       values: Array(2).fill(0),
-      signatures: Array(2).fill("setDelay(uint256)"),
+      signatures: Array(2).fill('setDelay(uint256)'),
       calldatas: [
         utils.defaultAbiCoder.encode(['uint256'], [20 * 60]),
         utils.defaultAbiCoder.encode(['uint256'], [20 * 60])
@@ -266,7 +266,7 @@ describe('BaseBridgeReceiver', function () {
 
     const targets = Array(2).fill(localTimelock.address);
     const values = Array(2).fill(0);
-    const signatures = Array(2).fill("setDelay(uint256)");
+    const signatures = Array(2).fill('setDelay(uint256)');
     const calldatas = [
       utils.defaultAbiCoder.encode(['uint256'], [42]),
       utils.defaultAbiCoder.encode(['uint256'], [43])
@@ -282,7 +282,7 @@ describe('BaseBridgeReceiver', function () {
     // creates a proposal
     const { id, eta, executed } = await baseBridgeReceiver.proposals(1);
     expect(id).to.eq(1);
-    expect(eta).to.not.eq(0)
+    expect(eta).to.not.eq(0);
     expect(executed).to.be.false;
 
     // emits ProposalCreated event
@@ -333,7 +333,7 @@ describe('BaseBridgeReceiver', function () {
     const calldata = encodeBridgeReceiverCalldata({
       targets: Array(2).fill(localTimelock.address),
       values: Array(2).fill(0),
-      signatures: Array(2).fill("setDelay(uint256)"),
+      signatures: Array(2).fill('setDelay(uint256)'),
       calldatas: [
         utils.defaultAbiCoder.encode(['uint256'], [42]),
         utils.defaultAbiCoder.encode(['uint256'], [43])
@@ -355,7 +355,7 @@ describe('BaseBridgeReceiver', function () {
     expect(await baseBridgeReceiver.state(1)).to.eq(ProposalState.Expired);
 
     await expect(
-       baseBridgeReceiver.executeProposal(1)
+      baseBridgeReceiver.executeProposal(1)
     ).to.be.revertedWith("custom error 'ProposalNotQueued()'");
   });
 
@@ -371,10 +371,10 @@ describe('BaseBridgeReceiver', function () {
     const delay = await localTimelock.delay();
     const newDelay = delay.mul(2);
 
-     const calldata = encodeBridgeReceiverCalldata({
+    const calldata = encodeBridgeReceiverCalldata({
       targets: Array(1).fill(localTimelock.address),
       values: Array(1).fill(0),
-      signatures: Array(1).fill("setDelay(uint256)"),
+      signatures: Array(1).fill('setDelay(uint256)'),
       calldatas: [
         utils.defaultAbiCoder.encode(['uint256'], [newDelay.toNumber()])
       ]
@@ -413,7 +413,7 @@ describe('BaseBridgeReceiver', function () {
     const calldata = encodeBridgeReceiverCalldata({
       targets: Array(1).fill(localTimelock.address),
       values: Array(1).fill(0),
-      signatures: Array(1).fill("setDelay(uint256)"),
+      signatures: Array(1).fill('setDelay(uint256)'),
       calldatas: [
         utils.defaultAbiCoder.encode(['uint256'], [20 * 60])
       ]
@@ -425,10 +425,10 @@ describe('BaseBridgeReceiver', function () {
 
     await ethers.provider.send('evm_setNextBlockTimestamp', [eta.toNumber()]);
 
-    await baseBridgeReceiver.executeProposal(1)
+    await baseBridgeReceiver.executeProposal(1);
 
     await expect(
-       baseBridgeReceiver.executeProposal(1)
+      baseBridgeReceiver.executeProposal(1)
     ).to.be.revertedWith("custom error 'ProposalNotQueued()'");
   });
 
