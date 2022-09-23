@@ -20,9 +20,9 @@ async function getOpenProposals(deploymentManager: DeploymentManager, governor: 
       const [id, , , , , , startBlock, endBlock] = log.args;
       const state = await governor.state(id);
       if ([ProposalState.Pending,
-           ProposalState.Active,
-           ProposalState.Succeeded,
-           ProposalState.Queued].includes(state)) {
+        ProposalState.Active,
+        ProposalState.Succeeded,
+        ProposalState.Queued].includes(state)) {
         proposals.push({ id, startBlock, endBlock });
       }
     }
@@ -64,7 +64,7 @@ export class ProposalConstraint<T extends CometContext, R extends Requirements> 
     };
   }
 
-  async check(requirements: R, context: T, world: World) {
+  async check(_requirements: R, _context: T, _world: World) {
     return; // XXX
   }
 }

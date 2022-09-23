@@ -5,7 +5,7 @@ import { Migration, loadMigrations, Actions } from '../../plugins/deployment_man
 import { modifiedPaths, subsets } from '../utils';
 import { DeploymentManager } from '../../plugins/deployment_manager';
 
-async function getMigrations<T>(context: CometContext, requirements: Requirements): Promise<Migration<T>[]> {
+async function getMigrations<T>(context: CometContext, _requirements: Requirements): Promise<Migration<T>[]> {
   // TODO: make this configurable from cli params/env var?
   const network = context.world.deploymentManager.network;
   const deployment = context.world.deploymentManager.deployment;
@@ -14,7 +14,7 @@ async function getMigrations<T>(context: CometContext, requirements: Requirement
 }
 
 async function isEnacted<T>(actions: Actions<T>, deploymentManager: DeploymentManager): Promise<boolean> {
-  return actions.enacted && await actions.enacted(deploymentManager)
+  return actions.enacted && await actions.enacted(deploymentManager);
 }
 
 export class MigrationConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
@@ -30,7 +30,7 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
         ctx.world.deploymentManager._signers.unshift(proposer);
 
         // Order migrations deterministically and store in the context (i.e. for verification)
-        migrationList.sort((a, b) => a.name.localeCompare(b.name))
+        migrationList.sort((a, b) => a.name.localeCompare(b.name));
         ctx.migrations = migrationList;
 
         debug(`${label} Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);
@@ -56,7 +56,7 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
     return solutions;
   }
 
-  async check(requirements: R, context: T, world: World) {
+  async check(_requirements: R, _context: T, _world: World) {
     return; // XXX
   }
 }
@@ -78,5 +78,7 @@ export class VerifyMigrationConstraint<T extends CometContext, R extends Require
     ];
   }
 
-  async check(requirements: R, context: T, world: World) { }
+  async check(_requirements: R, _context: T, _world: World) {
+    return; // XXX
+  }
 }

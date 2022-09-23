@@ -4,7 +4,7 @@ import { BigNumberish, constants, utils } from 'ethers';
 import { exp } from '../test/helpers';
 import { FaucetToken } from '../build/types';
 import { calldata } from '../src/deploy';
-import { COMP_WHALES } from "../src/deploy";
+import { COMP_WHALES } from '../src/deploy';
 import { impersonateAddress } from '../plugins/scenario/utils';
 import { isBridgedDeployment, fastL2GovernanceExecute } from './utils';
 
@@ -50,15 +50,15 @@ scenario('upgrade Comet implementation and initialize using deployUpgradeToAndCa
   // Execute a governance proposal to:
   // 1. Set the new factory address in Configurator
   // 2. DeployUpgradeToAndCall the new implementation of Comet
-  const setFactoryCalldata = utils.defaultAbiCoder.encode(["address", "address"], [comet.address, cometModifiedFactory.address]);
+  const setFactoryCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [comet.address, cometModifiedFactory.address]);
   const modifiedComet = (await dm.hre.ethers.getContractFactory('CometModified')).attach(comet.address);
   const initializeCalldata = (await modifiedComet.populateTransaction.initialize(constants.AddressZero)).data;
-  const deployUpgradeToAndCallCalldata = utils.defaultAbiCoder.encode(["address", "address", "bytes"], [configurator.address, comet.address, initializeCalldata]);
+  const deployUpgradeToAndCallCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'bytes'], [configurator.address, comet.address, initializeCalldata]);
 
   await context.fastGovernanceExecute(
     [configurator.address, proxyAdmin.address],
     [0, 0],
-    ["setFactory(address,address)", "deployUpgradeToAndCall(address,address,bytes)"],
+    ['setFactory(address,address)', 'deployUpgradeToAndCall(address,address,bytes)'],
     [setFactoryCalldata, deployUpgradeToAndCallCalldata]
   );
 
@@ -160,7 +160,7 @@ scenario(
   async ({ timelock, bridgeReceiver }, _context, world) => {
     const governanceDeploymentManager = world.auxiliaryDeploymentManager;
     if (!governanceDeploymentManager) {
-      throw new Error("cannot execute governance without governance deployment manager");
+      throw new Error('cannot execute governance without governance deployment manager');
     }
 
     const proposer = await impersonateAddress(governanceDeploymentManager, COMP_WHALES.testnet[0]);
@@ -173,7 +173,7 @@ scenario(
       [
         [timelock.address],
         [0],
-        ["setDelay(uint256)"],
+        ['setDelay(uint256)'],
         [utils.defaultAbiCoder.encode(['uint'], [newTimelockDelay])]
       ]
     );
@@ -194,7 +194,7 @@ scenario(
       proposer,
       [fxRoot.address],
       [0],
-      ["sendMessageToChild(address,bytes)"],
+      ['sendMessageToChild(address,bytes)'],
       [sendMessageToChildCalldata]
     );
 

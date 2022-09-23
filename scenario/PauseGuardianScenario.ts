@@ -76,7 +76,7 @@ scenario(
       all: false,
     },
   },
-  async ({ comet, actors }) => {
+  async ({ actors }) => {
     const { albert } = actors;
     await expect(
       albert.pause({

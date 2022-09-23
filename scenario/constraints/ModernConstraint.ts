@@ -1,6 +1,6 @@
-import { Constraint, World } from '../../plugins/scenario';
+import { Constraint } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
-import { deployComet, ProtocolConfiguration } from '../../src/deploy';
+import { ProtocolConfiguration } from '../../src/deploy';
 import { getFuzzedRequirements } from './Fuzzing';
 import { Requirements } from './Requirements';
 
@@ -31,7 +31,7 @@ export class ModernConstraint<T extends CometContext, R extends Requirements> im
     return solutions.length > 0 ? solutions : null;
   }
 
-  async check(requirements: R, context: T) {
+  async check(_requirements: R, _context: T) {
     return; // XXX
   }
 }

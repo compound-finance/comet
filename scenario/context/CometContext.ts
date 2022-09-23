@@ -178,7 +178,7 @@ export class CometContext {
   }
 
   getAssetByAddress(address: string): CometAsset {
-    for (let [name, asset] of Object.entries(this.assets)) {
+    for (let [_name, asset] of Object.entries(this.assets)) {
       if (asset.address.toLowerCase() === address.toLowerCase()) {
         return asset;
       }
@@ -334,7 +334,7 @@ async function getContextProperties(context: CometContext): Promise<CometPropert
     rewards: await context.getRewards(),
     bulker: await context.getBulker(),
     bridgeReceiver: await context.getBridgeReceiver()
-  }
+  };
 }
 
 async function forkContext(c: CometContext, w: World): Promise<CometContext> {

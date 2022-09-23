@@ -14,7 +14,7 @@ async function testWithdrawCollateral(context: CometContext, assetNum: number): 
   expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(100n * scale);
 
   // Albert withdraws 100 units of collateral from Comet
-  const txn = await albert.withdrawAsset({ asset: collateralAsset.address, amount: 100n * scale })
+  const txn = await albert.withdrawAsset({ asset: collateralAsset.address, amount: 100n * scale });
 
   expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
   expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
@@ -35,7 +35,7 @@ async function testWithdrawFromCollateral(context: CometContext, assetNum: numbe
   await albert.allow(betty, true);
 
   // Betty withdraws 1000 units of collateral from Albert
-  const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: 1000n * scale })
+  const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: 1000n * scale });
 
   expect(await collateralAsset.balanceOf(betty.address)).to.be.equal(1000n * scale);
   expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
@@ -53,7 +53,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         albert: { [`$asset${i}`]: amountToWithdraw },
       },
     },
-    async ({ }, context) => {
+    async (_properties, context) => {
       return await testWithdrawCollateral(context, i);
     }
   );
@@ -69,7 +69,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         albert: { [`$asset${i}`]: amountToWithdraw },
       },
     },
-    async ({ }, context) => {
+    async (_properties, context) => {
       return await testWithdrawFromCollateral(context, i);
     }
   );
@@ -99,7 +99,7 @@ scenario(
     expect(await comet.balanceOf(albert.address)).to.be.equal(baseSupplied);
 
     // Albert withdraws 100 units of base from Comet
-    const txn = await albert.withdrawAsset({ asset: baseAsset.address, amount: baseSupplied })
+    const txn = await albert.withdrawAsset({ asset: baseAsset.address, amount: baseSupplied });
 
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(baseSupplied);
     expect(await comet.balanceOf(albert.address)).to.be.equal(0n);
@@ -162,7 +162,7 @@ scenario(
     await albert.allow(betty, true);
 
     // Betty withdraws 100 units of base from Albert
-    const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: baseSupplied })
+    const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: baseSupplied });
 
     expect(await baseAsset.balanceOf(betty.address)).to.be.equal(baseSupplied);
     expect(await comet.balanceOf(albert.address)).to.be.equal(0n);
@@ -346,7 +346,7 @@ scenario(
 scenario.skip(
   'Comet#withdraw reverts if asset is not supported',
   {},
-  async ({ comet, actors }) => {
+  async () => {
     // XXX requires deploying an unsupported asset (maybe via remote token constraint)
   }
 );
@@ -354,7 +354,7 @@ scenario.skip(
 scenario.skip(
   'Comet#withdraw reverts if not enough asset in protocol',
   {},
-  async ({ comet, actors }) => {
+  async () => {
     // XXX fix for development base, where Faucet token doesn't give the same revert message
   }
 );
