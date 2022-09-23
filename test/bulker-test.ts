@@ -68,7 +68,7 @@ describe('bulker', function () {
     expect(await comet.collateralBalanceOf(bob.address, COMP.address)).to.be.equal(supplyAmount);
   });
 
-  it('supply ETH', async () => {
+  it('supply native token', async () => {
     const protocol = await makeProtocol({
       assets: defaultAssets({}, {
         WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
@@ -82,13 +82,13 @@ describe('bulker', function () {
 
     // Alice supplies 10 ETH through the bulker
     const supplyAmount = exp(10, 18);
-    const supplyEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, supplyAmount]);
-    await bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_ETH()], [supplyEthCalldata], { value: supplyAmount });
+    const supplyNativeTokenCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, supplyAmount]);
+    await bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_NATIVE_TOKEN()], [supplyNativeTokenCalldata], { value: supplyAmount });
 
     expect(await comet.collateralBalanceOf(alice.address, WETH.address)).to.be.equal(supplyAmount);
   });
 
-  it('supply ETH refunds unused ETH', async () => {
+  it('supply native token refunds unused native token', async () => {
     const protocol = await makeProtocol({
       assets: defaultAssets({}, {
         WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
@@ -103,15 +103,15 @@ describe('bulker', function () {
     // Alice supplies 10 ETH through the bulker but actually sends 20 ETH
     const aliceBalanceBefore = await alice.getBalance();
     const supplyAmount = exp(10, 18);
-    const supplyEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, supplyAmount]);
-    const txn = await wait(bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_ETH()], [supplyEthCalldata], { value: supplyAmount * 2n }));
+    const supplyNativeTokenCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, supplyAmount]);
+    const txn = await wait(bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_NATIVE_TOKEN()], [supplyNativeTokenCalldata], { value: supplyAmount * 2n }));
     const aliceBalanceAfter = await alice.getBalance();
 
     expect(await comet.collateralBalanceOf(alice.address, WETH.address)).to.be.equal(supplyAmount);
     expect(aliceBalanceBefore.sub(aliceBalanceAfter)).to.be.equal(supplyAmount + getGasUsed(txn));
   });
 
-  it('supply ETH with insufficient ETH', async () => {
+  it('supply native token with insufficient native token', async () => {
     const protocol = await makeProtocol({
       assets: defaultAssets({}, {
         WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
@@ -125,8 +125,8 @@ describe('bulker', function () {
 
     // Alice supplies 10 ETH through the bulker but only sends 5 ETH
     const supplyAmount = exp(10, 18);
-    const supplyEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, supplyAmount]);
-    await expect(bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_ETH()], [supplyEthCalldata], { value: supplyAmount / 2n }))
+    const supplyNativeTokenCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, supplyAmount]);
+    await expect(bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_NATIVE_TOKEN()], [supplyNativeTokenCalldata], { value: supplyAmount / 2n }))
       .to.be.revertedWith('code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
   });
 
@@ -249,7 +249,7 @@ describe('bulker', function () {
     expect(await COMP.balanceOf(bob.address)).to.be.equal(withdrawAmount);
   });
 
-  it('withdraw ETH', async () => {
+  it('withdraw native token', async () => {
     const protocol = await makeProtocol({
       assets: defaultAssets({}, {
         WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
@@ -274,8 +274,8 @@ describe('bulker', function () {
 
     // Alice supplies 10 ETH through the bulker
     const aliceBalanceBefore = await alice.getBalance();
-    const withdrawEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, withdrawAmount]);
-    const txn = await wait(bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_ETH()], [withdrawEthCalldata]));
+    const withdrawNativeTokenCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, withdrawAmount]);
+    const txn = await wait(bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_NATIVE_TOKEN()], [withdrawNativeTokenCalldata]));
     const aliceBalanceAfter = await alice.getBalance();
 
     expect(await comet.collateralBalanceOf(alice.address, WETH.address)).to.be.equal(0);
@@ -348,7 +348,7 @@ describe('bulker', function () {
       .to.be.reverted; // Should revert with "custom error 'Unauthorized()'"
   });
 
-  it('reverts on withdraw ETH if no permission granted to bulker', async () => {
+  it('reverts on withdraw native token if no permission granted to bulker', async () => {
     const protocol = await makeProtocol({
       assets: defaultAssets({}, {
         WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
@@ -358,8 +358,8 @@ describe('bulker', function () {
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
-    const withdrawEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, 1]);
-    await expect(bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_ETH()], [withdrawEthCalldata]))
+    const withdrawNativeTokenCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, 1]);
+    await expect(bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_NATIVE_TOKEN()], [withdrawNativeTokenCalldata]))
       .to.be.reverted; // Should revert with "custom error 'Unauthorized()'"
   });
 
@@ -388,7 +388,7 @@ describe('bulker', function () {
       expect(newGovBalance.sub(oldGovBalance)).to.be.equal(transferAmount);
     });
 
-    it('sweep ETH', async () => {
+    it('sweep native token', async () => {
       const protocol = await makeProtocol({});
       const { governor, tokens: { WETH }, users: [alice] } = protocol;
       const bulkerInfo = await makeBulker({ admin: governor, weth: WETH.address });
@@ -402,7 +402,7 @@ describe('bulker', function () {
       const oldGovBalance = await ethers.provider.getBalance(governor.address);
 
       // Governor sweeps ETH
-      const txn = await wait(bulker.connect(governor).sweepEth(governor.address));
+      const txn = await wait(bulker.connect(governor).sweepNativeToken(governor.address));
 
       const newBulkerBalance = await ethers.provider.getBalance(bulker.address);
       const newGovBalance = await ethers.provider.getBalance(governor.address);
@@ -422,14 +422,14 @@ describe('bulker', function () {
         .to.be.revertedWith("custom error 'Unauthorized()'");
     });
 
-    it('reverts if sweepEth is called by non-admin', async () => {
+    it('reverts if sweepNativeToken is called by non-admin', async () => {
       const protocol = await makeProtocol({});
       const { governor, tokens: { WETH }, users: [alice] } = protocol;
       const bulkerInfo = await makeBulker({ admin: governor, weth: WETH.address });
       const { bulker } = bulkerInfo;
 
       // Alice sweeps ETH
-      await expect(bulker.connect(alice).sweepEth(governor.address))
+      await expect(bulker.connect(alice).sweepNativeToken(governor.address))
         .to.be.revertedWith("custom error 'Unauthorized()'");
     });
   });
@@ -472,7 +472,7 @@ describe('bulker multiple actions', function () {
     expect(await USDC.balanceOf(alice.address)).to.be.equal(borrowAmount);
   });
 
-  it('supply ETH to multiple accounts', async () => {
+  it('supply native token to multiple accounts', async () => {
     const protocol = await makeProtocol({
       assets: defaultAssets({}, {
         WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
@@ -489,7 +489,7 @@ describe('bulker multiple actions', function () {
     const supplyAliceEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, supplyAmount / 2n]);
     const supplyBobEthCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, bob.address, supplyAmount / 2n]);
     await bulker.connect(alice).invoke(
-      [await bulker.ACTION_SUPPLY_ETH(), await bulker.ACTION_SUPPLY_ETH()],
+      [await bulker.ACTION_SUPPLY_NATIVE_TOKEN(), await bulker.ACTION_SUPPLY_NATIVE_TOKEN()],
       [supplyAliceEthCalldata, supplyBobEthCalldata],
       { value: supplyAmount }
     );

@@ -1,4 +1,4 @@
-import { BigNumberish } from 'ethers';
+import { BigNumber, BigNumberish } from 'ethers';
 import { World, buildScenarioFn } from '../../plugins/scenario';
 import { Migration } from '../../plugins/deployment_manager';
 import { debug } from '../../plugins/deployment_manager/Utils';
@@ -26,6 +26,7 @@ import {
   Fauceteer,
   Bulker,
   BaseBridgeReceiver,
+  ERC20,
 } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
@@ -63,7 +64,7 @@ export class CometContext {
   }
 
   async getCompWhales(): Promise<string[]> {
-    return COMP_WHALES[this.world.base.name === 'mainnet' ? 'mainnet' : 'testnet'];
+    return COMP_WHALES[this.world.base.network === 'mainnet' ? 'mainnet' : 'testnet'];
   }
 
   async getProposer(): Promise<SignerWithAddress> {
@@ -94,6 +95,12 @@ export class CometContext {
     return this.world.deploymentManager.contract('rewards');
   }
 
+  async getRewardToken(): Promise<ERC20> {
+    const signer = await this.world.deploymentManager.getSigner();
+    const { token } = await this.getRewardConfig();
+    return ERC20__factory.connect(token, signer);
+  }
+
   async getBulker(): Promise<Bulker> {
     return this.world.deploymentManager.contract('bulker');
   }
@@ -110,6 +117,12 @@ export class CometContext {
     const comet = await this.getComet();
     const configurator = await this.getConfigurator();
     return configurator.getConfiguration(comet.address);
+  }
+
+  async getRewardConfig(): Promise<{token: string, rescaleFactor: BigNumber, shouldUpscale: boolean}> {
+    const comet = await this.getComet();
+    const rewards = await this.getRewards();
+    return await rewards.rewardConfig(comet.address);
   }
 
   async upgrade(configOverrides: ProtocolConfiguration): Promise<CometContext> {

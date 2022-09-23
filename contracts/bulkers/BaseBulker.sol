@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import "./CometInterface.sol";
-import "./ERC20.sol";
-import "./IWETH9.sol";
+import "../CometInterface.sol";
+import "../ERC20.sol";
+import "../IWETH9.sol";
 
 interface IClaimable {
     function claim(address comet, address src, bool shouldAccrue) external;
@@ -11,31 +11,32 @@ interface IClaimable {
     function claimTo(address comet, address src, address to, bool shouldAccrue) external;
 }
 
-contract Bulker {
+contract BaseBulker {
     /** General configuration constants **/
     address public immutable admin;
-    address payable public immutable weth;
+    address payable public immutable wrappedNativeToken;
 
     /** Actions **/
-    uint public constant ACTION_SUPPLY_ASSET = 1;
-    uint public constant ACTION_SUPPLY_ETH = 2;
-    uint public constant ACTION_TRANSFER_ASSET = 3;
-    uint public constant ACTION_WITHDRAW_ASSET = 4;
-    uint public constant ACTION_WITHDRAW_ETH = 5;
-    uint public constant ACTION_CLAIM_REWARD = 6;
+    bytes32 public constant ACTION_SUPPLY_ASSET = "ACTION_SUPPLY_ASSET";
+    bytes32 public constant ACTION_SUPPLY_NATIVE_TOKEN = "ACTION_SUPPLY_NATIVE_TOKEN";
+    bytes32 public constant ACTION_TRANSFER_ASSET = "ACTION_TRANSFER_ASSET";
+    bytes32 public constant ACTION_WITHDRAW_ASSET = "ACTION_WITHDRAW_ASSET";
+    bytes32 public constant ACTION_WITHDRAW_NATIVE_TOKEN = "ACTION_WITHDRAW_NATIVE_TOKEN";
+    bytes32 public constant ACTION_CLAIM_REWARD = "ACTION_CLAIM_REWARD";
 
     /** Custom errors **/
     error InvalidArgument();
-    error FailedToSendEther();
+    error FailedToSendNativeToken();
     error Unauthorized();
+    error UnhandledAction();
 
-    constructor(address admin_, address payable weth_) {
+    constructor(address admin_, address payable wrappedNativeToken_) {
         admin = admin_;
-        weth = weth_;
+        wrappedNativeToken = wrappedNativeToken_;
     }
 
     /**
-     * @notice Fallback for receiving ether. Needed for ACTION_WITHDRAW_ETH.
+     * @notice Fallback for receiving native token. Needed for ACTION_WITHDRAW_NATIVE_TOKEN.
      */
     receive() external payable {}
 
@@ -52,15 +53,15 @@ contract Bulker {
     }
 
     /**
-     * @notice A public function to sweep accidental ETH transfers to this contract. Tokens are sent to admin (Timelock)
+     * @notice A public function to sweep accidental native token transfers to this contract. Tokens are sent to admin (Timelock)
      * @param recipient The address that will receive the swept funds
      */
-    function sweepEth(address recipient) external {
+    function sweepNativeToken(address recipient) external {
         if (msg.sender != admin) revert Unauthorized();
 
         uint256 balance = address(this).balance;
         (bool success, ) = recipient.call{ value: balance }("");
-        if (!success) revert FailedToSendEther();
+        if (!success) revert FailedToSendNativeToken();
     }
 
     /**
@@ -68,40 +69,46 @@ contract Bulker {
      * @param actions The list of actions to execute in order
      * @param data The list of calldata to use for each action
      */
-    function invoke(uint[] calldata actions, bytes[] calldata data) external payable {
+    function invoke(bytes32[] calldata actions, bytes[] calldata data) external payable {
         if (actions.length != data.length) revert InvalidArgument();
 
-        uint unusedEth = msg.value;
+        uint unusedNativeToken = msg.value;
         for (uint i = 0; i < actions.length; ) {
-            uint action = actions[i];
+            bytes32 action = actions[i];
             if (action == ACTION_SUPPLY_ASSET) {
                 (address comet, address to, address asset, uint amount) = abi.decode(data[i], (address, address, address, uint));
                 supplyTo(comet, to, asset, amount);
-            } else if (action == ACTION_SUPPLY_ETH) {
+            } else if (action == ACTION_SUPPLY_NATIVE_TOKEN) {
                 (address comet, address to, uint amount) = abi.decode(data[i], (address, address, uint));
-                unusedEth -= amount;
-                supplyEthTo(comet, to, amount);
+                unusedNativeToken -= amount;
+                supplyNativeTokenTo(comet, to, amount);
             } else if (action == ACTION_TRANSFER_ASSET) {
                 (address comet, address to, address asset, uint amount) = abi.decode(data[i], (address, address, address, uint));
                 transferTo(comet, to, asset, amount);
             } else if (action == ACTION_WITHDRAW_ASSET) {
                 (address comet, address to, address asset, uint amount) = abi.decode(data[i], (address, address, address, uint));
                 withdrawTo(comet, to, asset, amount);
-            } else if (action == ACTION_WITHDRAW_ETH) {
+            } else if (action == ACTION_WITHDRAW_NATIVE_TOKEN) {
                 (address comet, address to, uint amount) = abi.decode(data[i], (address, address, uint));
-                withdrawEthTo(comet, to, amount);
+                withdrawNativeTokenTo(comet, to, amount);
             } else if (action == ACTION_CLAIM_REWARD) {
                 (address comet, address rewards, address src, bool shouldAccrue) = abi.decode(data[i], (address, address, address, bool));
                 claimReward(comet, rewards, src, shouldAccrue);
+            } else {
+                handleAction(action, data[i]);
             }
             unchecked { i++; }
         }
 
         // Refund unused ETH back to msg.sender
-        if (unusedEth > 0) {
-            (bool success, ) = msg.sender.call{ value: unusedEth }("");
-            if (!success) revert FailedToSendEther();
+        if (unusedNativeToken > 0) {
+            (bool success, ) = msg.sender.call{ value: unusedNativeToken }("");
+            if (!success) revert FailedToSendNativeToken();
         }
+    }
+
+    function handleAction(bytes32 action, bytes calldata data) virtual internal {
+        revert UnhandledAction();
     }
 
     /**
@@ -112,12 +119,12 @@ contract Bulker {
     }
 
     /**
-     * @notice Wraps ETH and supplies WETH to a user in Comet
+     * @notice Wraps native token and supplies wrapped native token to a user in Comet
      */
-    function supplyEthTo(address comet, address to, uint amount) internal {
-        IWETH9(weth).deposit{ value: amount }();
-        IWETH9(weth).approve(comet, amount);
-        CometInterface(comet).supplyFrom(address(this), to, weth, amount);
+    function supplyNativeTokenTo(address comet, address to, uint amount) internal {
+        IWETH9(wrappedNativeToken).deposit{ value: amount }();
+        IWETH9(wrappedNativeToken).approve(comet, amount);
+        CometInterface(comet).supplyFrom(address(this), to, wrappedNativeToken, amount);
     }
 
     /**
@@ -135,13 +142,13 @@ contract Bulker {
     }
 
     /**
-     * @notice Withdraws WETH from Comet to a user after unwrapping it to ETH
+     * @notice Withdraws wrapped native token from Comet to a user after unwrapping it to native token
      */
-    function withdrawEthTo(address comet, address to, uint amount) internal {
-        CometInterface(comet).withdrawFrom(msg.sender, address(this), weth, amount);
-        IWETH9(weth).withdraw(amount);
+    function withdrawNativeTokenTo(address comet, address to, uint amount) internal {
+        CometInterface(comet).withdrawFrom(msg.sender, address(this), wrappedNativeToken, amount);
+        IWETH9(wrappedNativeToken).withdraw(amount);
         (bool success, ) = to.call{ value: amount }("");
-        if (!success) revert FailedToSendEther();
+        if (!success) revert FailedToSendNativeToken();
     }
 
     /**
