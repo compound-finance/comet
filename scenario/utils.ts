@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber, BigNumberish, Contract, ContractReceipt, Event, EventFilter, constants, utils } from 'ethers';
+import { BigNumber, BigNumberish, Contract, ContractReceipt, Event, EventFilter, constants } from 'ethers';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { CometContext } from './context/CometContext';
@@ -71,7 +71,7 @@ export function requireList<T>(o: object, key: string, err: string): T[] {
   return value as T[];
 }
 
-export function requireNumber<T>(o: object, key: string, err: string): number {
+export function requireNumber(o: object, key: string, err: string): number {
   let value: unknown = o[key];
   if (value === undefined) {
     throw new Error(err);
@@ -82,7 +82,7 @@ export function requireNumber<T>(o: object, key: string, err: string): number {
   return value;
 }
 
-export function optionalNumber<T>(o: object, key: string): number {
+export function optionalNumber(o: object, key: string): number {
   let value: unknown = o[key];
   if (value === undefined) {
     return undefined;
@@ -360,12 +360,11 @@ async function relayMumbaiMessage(
   const EVENT_LISTENER_TIMEOUT = 60000;
 
   const stateSender = await governanceDeploymentManager.getContractOrThrow('stateSender');
-  const timelock = await bridgeDeploymentManager.getContractOrThrow('timelock');
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
   const fxChild = await bridgeDeploymentManager.getContractOrThrow('fxChild');
 
   // listen on events on the fxRoot contract
-  const stateSyncedListenerPromise = new Promise(async (resolve, reject) => {
+  const stateSyncedListenerPromise = new Promise((resolve, reject) => {
     const filter = stateSender.filters.StateSynced();
 
     governanceDeploymentManager.hre.ethers.provider.on(filter, (log) => {
