@@ -15,7 +15,7 @@ export default async function relayMumbaiMessage(
   const fxChild = await bridgeDeploymentManager.getContractOrThrow('fxChild');
 
   // listen on events on the fxRoot contract
-  const stateSyncedListenerPromise = new Promise(async (resolve, reject) => {
+  const stateSyncedListenerPromise = new Promise((resolve, reject) => {
     const filter = stateSender.filters.StateSynced();
 
     governanceDeploymentManager.hre.ethers.provider.on(filter, (log) => {
