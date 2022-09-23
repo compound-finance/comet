@@ -3,7 +3,7 @@ pragma solidity 0.8.15;
 
 import "./CometMainInterface.sol";
 import "./ERC20.sol";
-import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "./IPriceFeed.sol";
 
 /**
  * @title Compound's Comet Contract
@@ -144,7 +144,7 @@ contract Comet is CometMainInterface {
         if (config.storeFrontPriceFactor > FACTOR_SCALE) revert BadDiscount();
         if (config.assetConfigs.length > MAX_ASSETS) revert TooManyAssets();
         if (config.baseMinForRewards == 0) revert BadMinimum();
-        if (AggregatorV3Interface(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
+        if (IPriceFeed(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
 
         // Copy configuration
         unchecked {
@@ -240,7 +240,7 @@ contract Comet is CometMainInterface {
         }
 
         // Sanity check price feed and asset decimals
-        if (AggregatorV3Interface(priceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
+        if (IPriceFeed(priceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
         if (ERC20(asset).decimals() != decimals_) revert BadDecimals();
 
         // Ensure collateral factors are within range
@@ -471,7 +471,7 @@ contract Comet is CometMainInterface {
      * @return The price, scaled by `PRICE_SCALE`
      */
     function getPrice(address priceFeed) override public view returns (uint256) {
-        (, int price, , , ) = AggregatorV3Interface(priceFeed).latestRoundData();
+        (, int price, , , ) = IPriceFeed(priceFeed).latestRoundData();
         if (price <= 0) revert BadPrice();
         return uint256(price);
     }

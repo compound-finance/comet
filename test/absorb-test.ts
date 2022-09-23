@@ -65,7 +65,7 @@ describe('absorb', function () {
     expect(lU1.numAbsorbed).to.be.equal(0);
     expect(lU1.approxSpend).to.be.equal(0);
 
-    const usdcPrice = await priceFeeds['USDC'].price();
+    const [_, usdcPrice] = await priceFeeds['USDC'].latestRoundData();
     const baseScale = await comet.baseScale();
     expect(event(a0, 0)).to.be.deep.equal({
       AbsorbDebt: {
@@ -137,7 +137,7 @@ describe('absorb', function () {
     //expect(lA1.approxSpend).to.be.equal(459757131288n);
     expect(lA1.approxSpend).to.be.lt(a0.receipt.gasUsed.mul(a0.receipt.effectiveGasPrice));
 
-    const usdcPrice = await priceFeeds['USDC'].price();
+    const [_, usdcPrice] = await priceFeeds['USDC'].latestRoundData();
     const baseScale = await comet.baseScale();
     expect(event(a0, 0)).to.be.deep.equal({
       AbsorbDebt: {
@@ -267,10 +267,10 @@ describe('absorb', function () {
     //expect(lA1.approxSpend).to.be.equal(130651238630n);
     expect(lA1.approxSpend).to.be.lt(a0.receipt.gasUsed.mul(a0.receipt.effectiveGasPrice));
 
-    const usdcPrice = await priceFeeds['USDC'].price();
-    const compPrice = await priceFeeds['COMP'].price();
-    const wbtcPrice = await priceFeeds['WBTC'].price();
-    const wethPrice = await priceFeeds['WETH'].price();
+    const [_a, usdcPrice] = await priceFeeds['USDC'].latestRoundData();
+    const [_b, compPrice] = await priceFeeds['COMP'].latestRoundData();
+    const [_c, wbtcPrice] = await priceFeeds['WBTC'].latestRoundData();
+    const [_d, wethPrice] = await priceFeeds['WETH'].latestRoundData();
     const baseScale = await comet.baseScale();
     const compScale = exp(1, await COMP.decimals());
     const wbtcScale = exp(1, await WBTC.decimals());
@@ -430,10 +430,10 @@ describe('absorb', function () {
     //expect(lA1.approxSpend).to.be.equal(1672498842684n);
     expect(lA1.approxSpend).to.be.lt(a0.receipt.gasUsed.mul(a0.receipt.effectiveGasPrice));
 
-    const usdcPrice = await priceFeeds['USDC'].price();
-    const compPrice = await priceFeeds['COMP'].price();
-    const wbtcPrice = await priceFeeds['WBTC'].price();
-    const wethPrice = await priceFeeds['WETH'].price();
+    const [_a, usdcPrice] = await priceFeeds['USDC'].latestRoundData();
+    const [_b, compPrice] = await priceFeeds['COMP'].latestRoundData();
+    const [_c, wbtcPrice] = await priceFeeds['WBTC'].latestRoundData();
+    const [_d, wethPrice] = await priceFeeds['WETH'].latestRoundData();
     const baseScale = await comet.baseScale();
     const compScale = exp(1, await COMP.decimals());
     const wbtcScale = exp(1, await WBTC.decimals());

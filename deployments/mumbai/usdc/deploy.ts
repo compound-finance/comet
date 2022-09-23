@@ -112,7 +112,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   // Deploy Bulker
   const bulker = await deploymentManager.deploy(
     'bulker',
-    'Bulker.sol',
+    'bulkers/BaseBulker.sol',
     [localTimelock.address, WETH.address]
   );
 

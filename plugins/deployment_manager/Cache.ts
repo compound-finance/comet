@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 import * as nodepath from 'path';
 import { inspect } from 'util';
-import { fileExists, objectFromMap, objectToMap } from './Utils';
+import { fileExists, objectFromMap, objectToMap, stringifyJson } from './Utils';
 
 export type FileSpec = string | string[] | { rel: string | string[] } | { top: string | string[] };
 
@@ -27,17 +27,6 @@ function parseJson<K>(x: string | undefined): K {
   } else {
     return JSON.parse(x);
   }
-}
-
-function stringifyJson<K>(k: K): string {
-  return JSON.stringify(
-    k,
-    (_key, value) =>
-      typeof value === 'bigint'
-        ? value.toString()
-        : value,
-    4
-  );
 }
 
 type CacheMap = Map<string, any | CacheMap>;

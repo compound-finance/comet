@@ -22,7 +22,7 @@ on:
         description: Simulate
       no_enacted:
         type: boolean
-        description: Do not write Enacted  
+        description: Do not write Enacted
       run_id:
         description: Run ID for Artifact
       eth_pk:
@@ -40,7 +40,7 @@ jobs:
       - name: Seacrest
         uses: hayesgm/seacrest@v1
         with:
-          ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"kovan\":\"https://kovan-eth.compound.finance\",\"mainnet\":\"https://mainnet-eth.compound.finance\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\"}')[inputs.network] }}"
+          ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"kovan\":\"https://kovan.infura.io/v3/$INFURA_KEY\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\"}')[inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
 
