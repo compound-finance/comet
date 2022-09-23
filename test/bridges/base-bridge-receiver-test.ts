@@ -97,7 +97,7 @@ describe('BaseBridgeReceiver', function () {
     ).to.be.revertedWith("custom error 'AlreadyInitialized()'");
   });
 
-  it('acceptLocalTimelockAdmin reverts if not called by localTimelock', async () => {
+  it('acceptLocalTimelockAdmin > reverts for unuauthorized caller', async () => {
     const { baseBridgeReceiver } = await makeBridgeReceiver();
 
     await expect(
@@ -105,7 +105,7 @@ describe('BaseBridgeReceiver', function () {
     ).to.be.revertedWith("custom error 'Unauthorized()'");
   });
 
-  it('setLocalTimelock > reverts for unuauthorized caller', async () => {
+  it('setLocalTimelock > reverts for unauthorized caller', async () => {
     const {
       baseBridgeReceiver,
       localTimelock
