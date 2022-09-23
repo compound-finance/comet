@@ -191,26 +191,37 @@ const config: HardhatUserConfig = {
         deployment: 'usdc',
         allocation: 0.1, // eth
       },
+
+      {
+        name: 'mainnet-eth',
+        network: 'mainnet',
+        deployment: 'eth',
+      },
+
       {
         name: 'development',
         network: 'hardhat',
         deployment: 'dai'
       },
+
       {
         name: 'fuji',
         network: 'fuji',
         deployment: 'usdc'
       },
+
       {
         name: 'kovan',
         network: 'kovan',
         deployment: 'usdc',
       },
+
       {
         name: 'goerli',
         network: 'goerli',
         deployment: 'usdc'
       },
+
       {
         name: 'mumbai',
         network: 'mumbai',
