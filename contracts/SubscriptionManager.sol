@@ -79,6 +79,12 @@ contract SubscriptionManager {
 
     function userSubscriptionStatus(address userAddress, uint subscriptionPlanId) external view returns (UserSubscriptionStatus, uint) {
         UserSubscription memory userSubscription = userSubscriptions[userAddress][subscriptionPlanId];
+        SubscriptionPlan memory subscriptionPlan = subscriptionPlans[subscriptionPlanId];
+
+        // return NotSubscribed if subscriptionPlan does not exist
+        if (subscriptionPlan.id == 0) {
+            return (UserSubscriptionStatus.NotSubscribed, 0);
+        }
 
         uint fundedUntil = subscriptionFundedUntil(userAddress, subscriptionPlanId);
 
