@@ -7,7 +7,6 @@ certoraRun certora/munged/CometExt.sol certora/harness/CometHarnessGetters.sol c
     --verify CometHarnessGetters:certora/specs/governance.spec  \
     --solc solc8.15 \
     --cloud \
-    --send_only \
     $RULE \
     --optimistic_loop \
     --settings -enableEqualitySaturation=false,-solver=z3,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \

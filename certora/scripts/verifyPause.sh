@@ -7,7 +7,6 @@ certoraRun certora/harness/CometHarnessGetters.sol \
     --verify CometHarnessGetters:certora/specs/pause.spec  \
     --solc solc8.15 \
     --cloud \
-    --send_only \
     $RULE \
     --optimistic_loop \
     --settings -useBitVectorTheory \

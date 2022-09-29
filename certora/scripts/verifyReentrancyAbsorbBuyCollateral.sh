@@ -8,7 +8,6 @@ certoraRun certora/munged/CometExt.sol certora/harness/CometHarness.sol certora/
     --link CometHarness:baseToken=SymbolicBaseToken CometHarness:extensionDelegate=CometExt ERC20WithCallBack:comet=CometHarness \
     --solc solc8.15 \
     --cloud \
-    --send_only \
     $RULE \
     --optimistic_loop \
     --loop_iter 2 --rule_sanity \

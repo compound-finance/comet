@@ -8,7 +8,6 @@ certoraRun certora/harness/CometHarnessWrappers.sol certora/harness/SymbolicPric
     --link CometHarnessWrappers:baseTokenPriceFeed=SymbolicPriceOracleA \
     --solc solc8.15 \
     --cloud \
-    --send_only \
     $RULE \
     --optimistic_loop \
     --settings -enableEqualitySaturation=false \
