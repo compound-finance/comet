@@ -38,7 +38,7 @@ contract SubscriptionManager {
 
     // create subscription plan
     function createSubscriptionPlan(uint ethPricePerYear) public returns (SubscriptionPlan memory) {
-        uint id = subscriptionPlanIdCounter++;
+        uint id = ++subscriptionPlanIdCounter;
 
         SubscriptionPlan memory newSubscriptionPlan = SubscriptionPlan({
             id: id,
@@ -54,14 +54,19 @@ contract SubscriptionManager {
 
     // subscribe to app
     function subscribeToPlan(uint subscriptionPlanId) public payable {
-        // XXX handle re-subscribing to an existing subscription
+        UserSubscription memory existingUserSubscription = userSubscriptions[msg.sender][subscriptionPlanId];
+
+        uint accrualTimestamp = existingUserSubscription.paymentAccrualTimestamp != 0 ?
+            existingUserSubscription.paymentAccrualTimestamp
+            : block.timestamp;
+
         userSubscriptions[msg.sender][subscriptionPlanId] = UserSubscription({
-            paymentAccrualTimestamp: block.timestamp,
-            ethBalance: msg.value
+            paymentAccrualTimestamp: accrualTimestamp,
+            ethBalance: existingUserSubscription.ethBalance + msg.value
         });
     }
 
-    function subscriptionFundedUntil(address userAddress, uint subscriptionPlanId) internal returns (uint) {
+    function subscriptionFundedUntil(address userAddress, uint subscriptionPlanId) internal view returns (uint) {
         UserSubscription memory userSubscription = userSubscriptions[userAddress][subscriptionPlanId];
         SubscriptionPlan memory subscriptionPlan = subscriptionPlans[subscriptionPlanId];
 
@@ -86,15 +91,23 @@ contract SubscriptionManager {
         }
     }
 
+    function cancelSubscription(uint subscriptionPlanId) external payable {
+        UserSubscription storage userSubscription = userSubscriptions[msg.sender][subscriptionPlanId];
+        // XXX pay out developer on cancelation
+
+        uint previousBalance = userSubscription.ethBalance;
+
+        userSubscription.paymentAccrualTimestamp = 0;
+        userSubscription.ethBalance = 0;
+
+        (bool success, ) = msg.sender.call{ value: previousBalance }("");
+
+        require(success, "Transfer out failed");
+    }
+
     // XXX developer withdraw
     //   update paymentAccrualTimestamp
     //   update ethBalance
-
-    // XXX user withdraw
-    //   delete userSubscription
-    //   pay out both developer and user
-
-    // XXX cancel subscription
 
     // XXX developer cancel subscription plan?
 }
