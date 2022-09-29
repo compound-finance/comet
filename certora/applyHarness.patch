@@ -34,6 +34,15 @@ diff -ruN Comet.sol Comet.sol
          for (uint8 i = 0; i < numAssets; ) {
              AssetInfo memory assetInfo = getAssetInfo(i);
              if (assetInfo.asset == asset) {
+@@ -406,7 +406,7 @@
+     /**
+      * @dev Calculate accrued interest indices for base token supply and borrows
+      **/
+-    function accruedInterestIndices(uint timeElapsed) internal view returns (uint64, uint64) {
++    function accruedInterestIndices(uint timeElapsed) virtual internal view returns (uint64, uint64) {
+         uint64 baseSupplyIndex_ = baseSupplyIndex;
+         uint64 baseBorrowIndex_ = baseBorrowIndex;
+         if (timeElapsed > 0) {
 @@ -422,7 +422,7 @@
      /**
       * @dev Accrue interest (and rewards) in base token supply and borrows
