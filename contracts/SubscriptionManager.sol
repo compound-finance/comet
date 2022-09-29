@@ -72,7 +72,7 @@ contract SubscriptionManager {
         return userSubscription.paymentAccrualTimestamp + secondsCovered;
     }
 
-    function userSubscriptionStatus(address userAddress, uint subscriptionPlanId) external returns (UserSubscriptionStatus, uint) {
+    function userSubscriptionStatus(address userAddress, uint subscriptionPlanId) external view returns (UserSubscriptionStatus, uint) {
         UserSubscription memory userSubscription = userSubscriptions[userAddress][subscriptionPlanId];
 
         uint fundedUntil = subscriptionFundedUntil(userAddress, subscriptionPlanId);
