@@ -15,7 +15,7 @@ methods{
     getSupplyRate() returns (uint64)
     getBorrowRate() returns (uint64)
     getUtilization() returns (uint)
-    getPrice(address) returns (uint128)
+    getPrice(address) returns (uint256)
     getReserves() returns (int)
     isBorrowCollateralized(address) returns (bool)
     getBorrowLiquidity(address) returns (int)
@@ -27,7 +27,7 @@ methods{
     isWithdrawPaused() returns (bool) envfree
     isAbsorbPaused() returns (bool) envfree
     isBuyPaused() returns (bool) envfree
-    baseBalanceOf(address) returns (int104) envfree
+    baseBalanceOf(address) returns (int256) envfree
     supply(address, uint)
     supplyTo(address, address, uint)
     supplyFrom(address, address, address, uint)

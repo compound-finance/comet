@@ -35,7 +35,7 @@ methods {
     getTotalBorrowBase() returns (uint104) envfree 
     getTotalsSupplyAsset(address asset) returns (uint128) envfree  
     getAssetSupplyCapByAddress(address) returns (uint128) envfree
-    baseBalanceOf(address) returns (int104) envfree
+    baseBalanceOf(address) returns (int256) envfree
     getReserves() returns (int)
     targetReserves() returns (uint256) envfree
     initializeStorage() 

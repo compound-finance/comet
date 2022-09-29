@@ -135,7 +135,7 @@ contract CometHarnessGetters is Comet {
     } 
     
     // Retrieve a user's present value from principal value
-    function baseBalanceOf(address account) external view returns (int104) {
+    function baseBalanceOf(address account) external view returns (int256) {
         return presentValue(userBasic[account].principal);
     }
     

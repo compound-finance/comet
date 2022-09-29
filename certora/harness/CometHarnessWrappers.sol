@@ -46,7 +46,7 @@ contract CometHarnessWrappers is CometHarnessGetters {
     }
 
     // External wrapper for presentValue from CometCore
-    function call_presentValue(int104 principalValue_) external view returns (int104) {
+    function call_presentValue(int104 principalValue_) external view returns (int256) {
         return super.presentValue(principalValue_);
     }
 

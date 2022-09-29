@@ -20,7 +20,7 @@ import "setup_noSummarization.spec"
 
 methods{
 
-    call_presentValue(int104) returns (int104) envfree;
+    call_presentValue(int104) returns (int256) envfree;
     call_principalValue(int104) returns (int104) envfree;
     getAssetScaleByAsset(address) returns (uint64) envfree;
     getBaseSupplyIndex() returns (uint64) envfree;
@@ -332,32 +332,4 @@ rule utilization_zero_supplyRate_zero(){
     env e;
     uint utilization = getUtilization(e);
     assert utilization == 0 => getSupplyRate(e, utilization) == 0;
-}
-
-
-/*
-    @Rule
-
-    @Description:
-        getSupplyRate should always revert if reserveRate > FACTOR_SCALE
-
-    @Formula:
-        { }
-            getSupplyRate()
-        { 
-            reserveRate > FACTOR_SCALE => lastReverted 
-        }
-
-    @Notes:
-
-    @Link:
-        
-*/
-
-rule getSupplyRate_revert_characteristic(){
-    env e;
-    uint utilization = getUtilization(e);
-    getSupplyRate@withrevert(e, utilization);
-    bool isRevert = lastReverted;
-    assert (reserveRate(e) > getFactorScale()) => isRevert;
 }
