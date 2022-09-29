@@ -306,8 +306,8 @@ rule absolute_presentValue_GE_principal(int104 presentValue){
 rule presentValue_G_zero(int104 presentValue){
     env e;
     setup(e);
-    int104 principalValue = call_principalValue(presentValue);
-    int104 presentValue_ = call_presentValue(principalValue);
+    int256 principalValue = call_principalValue(presentValue);
+    int256 presentValue_ = call_presentValue(principalValue);
     assert presentValue_ == presentValue => 
     ( presentValue > 0 <=> principalValue > 0);
 }
