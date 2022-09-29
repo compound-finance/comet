@@ -1,4 +1,3 @@
-patch -p1 ./contracts/Comet.sol ./certora/certora_modifications.patch
 sh certora/scripts/verifyComet.sh assetIn_initialized_with_balance
 sh certora/scripts/verifyComet.sh usage_registered_assets_only
 sh certora/scripts/verifyAssetInfo.sh
@@ -19,4 +18,3 @@ sh certora/scripts/verifyCometExt.sh
 sh certora/scripts/verifyGovernance.sh
 sh certora/scripts/verifyInterestComputation.sh
 sh certora/scripts/verifyPauseGuardians.sh
-patch -p1 -R ./contracts/Comet.sol ./certora/certora_modifications.patch 

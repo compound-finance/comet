@@ -3,7 +3,7 @@ then
     RULE="--rule $1"
 fi
 
-certoraRun contracts/CometExt.sol  \
+certoraRun certora/munged/CometExt.sol  \
     --verify CometExt:certora/specs/cometExt.spec  \
     --solc solc8.15 \
     --cloud \
