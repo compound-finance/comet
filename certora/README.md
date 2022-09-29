@@ -23,19 +23,26 @@ All `.sol` and `.spec` files are well documented. Every assumption, simplificati
 ## Running Instructions
 To run a verification job:
 
-1. Open terminal and `cd` your way to the main Comet repository.
+1. Open terminal and `cd` your way to the `certora` directory in the Comet repository.
 
-2. Apply the `certora_modifications` patch by running the `apply_patch.sh`:
+2. `touch` the `applyHarness.patch` file to make sure its last modification timestamp is later than your contracts:
     ```sh
-    sh certora/scripts/apply_patch
+    touch applyHarness.patch
     ```
 
-3. Run the script you'd like to get results for:
+3. Execute the `munged` command in the make file to copy the contracts to the munged directory and apply the changes in the patch:
+    ```sh
+    make munged
+    ```
+
+4. `cd` your way back to to the main Comet directory.
+
+5. Run the script you'd like to get results for:
     ```sh
     sh certora/scripts/verifyInterestComputation.sh
     ```
 
-* You can also run the script `verifyAll.sh` to run all the scripts consecutively. It also contains a patch apply command, so be mindful not to reverse it if you already executed the second point.
+* You can also run the script `verifyAll.sh` to run all the scripts consecutively. 
 
 </br>
 
