@@ -10,15 +10,11 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 async function deployContracts(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const signer = await deploymentManager.getSigner();
 
-  const notificationSubscriptionManager = await deploymentManager.deploy(
-    'notificationSubscriptionManager',
-    'NotificationSubscriptionManager.sol',
+  const subscriptionManager = await deploymentManager.deploy(
+    'subscriptionManager',
+    'SubscriptionManager.sol',
     [signer.address]
   );
-
-  console.log(`await notificationSubscriptionManager.subscriptionExpirations(signer.address):`);
-  console.log(await notificationSubscriptionManager.subscriptionExpirations(signer.address));
-
 
   // const trace = deploymentManager.tracer()
   // const ethers = deploymentManager.hre.ethers;
