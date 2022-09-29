@@ -8,7 +8,7 @@ certoraRun contracts/CometExt.sol certora/harness/CometHarness.sol certora/harne
     --link CometHarness:baseToken=SymbolicBaseToken CometHarness:extensionDelegate=CometExt \
     --solc solc8.15 \
     --cloud \
-    --disable_auto_cache_key_gen \
+    --send_only \
     --rule $1 \
     --optimistic_loop \
     --settings -enableEqualitySaturation=false,-smt_usePz3=true,-smt_z3PreprocessorTimeout=2 \

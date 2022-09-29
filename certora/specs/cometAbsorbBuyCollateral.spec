@@ -98,12 +98,13 @@ rule buyCollateral_max(address asset, uint minAmount, uint baseAmount, address r
     require asset != _baseToken; 
     require e.msg.sender != currentContract;
     require recipient != currentContract;
+    require asset != currentContract;
 
     mathint max = getUserCollateralBalance(currentContract, asset);
     uint256 balanceAssetBefore = tokenBalanceOf(asset, currentContract);
     buyCollateral(e, asset, minAmount, baseAmount, recipient);
     uint256 balanceAssetAfter = tokenBalanceOf(asset, currentContract);
-    assert (balanceAssetAfter >= balanceAssetBefore - max);
+    assert (balanceAssetAfter >= balanceAssetBefore - max); 
 }
 
 

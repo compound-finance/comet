@@ -7,7 +7,7 @@ certoraRun certora/harness/CometHarnessWrappers.sol \
     --verify CometHarnessWrappers:certora/specs/userAssetIn.spec  \
     --solc solc8.15 \
     --cloud \
-    --disable_auto_cache_key_gen \
+    --send_only \
     $RULE \
     --optimistic_loop \
     --settings -useBitVectorTheory,-smt_hashingScheme=plainInjectivity,-deleteSMTFile=false,-postProcessCounterExamples=false,-solvers=bitwuzla \
