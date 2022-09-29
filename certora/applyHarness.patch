@@ -11,8 +11,8 @@ diff -ruN Comet.sol Comet.sol
      /**
       * @dev Checks and gets the packed asset info for storage
       */
--    function getPackedAssetInternal(AssetConfig[] memory assetConfigs, uint i) virtual internal view returns (uint256, uint256) {
-+    function getPackedAssetInternal(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
+-    function getPackedAssetInternal(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
++    function getPackedAssetInternal(AssetConfig[] memory assetConfigs, uint i) virtual internal view returns (uint256, uint256) {
          AssetConfig memory assetConfig;
          if (i < assetConfigs.length) {
              assembly {
@@ -20,8 +20,8 @@ diff -ruN Comet.sol Comet.sol
       * @param i The index of the asset info to get
       * @return The asset info object
       */
--    function getAssetInfo(uint8 i) virtual override public view returns (AssetInfo memory) {
-+    function getAssetInfo(uint8 i) override public view returns (AssetInfo memory) {
+-    function getAssetInfo(uint8 i) override public view returns (AssetInfo memory) {
++    function getAssetInfo(uint8 i) virtual override public view returns (AssetInfo memory) {
          if (i >= numAssets) revert BadAsset();
  
          uint256 word_a;
@@ -29,8 +29,8 @@ diff -ruN Comet.sol Comet.sol
      /**
       * @dev Determine index of asset that matches given address
       */
--    function getAssetInfoByAddress(address asset) virtual override public view returns (AssetInfo memory) {
-+    function getAssetInfoByAddress(address asset) override public view returns (AssetInfo memory) {
+-    function getAssetInfoByAddress(address asset) override public view returns (AssetInfo memory) {
++    function getAssetInfoByAddress(address asset) virtual override public view returns (AssetInfo memory) {
          for (uint8 i = 0; i < numAssets; ) {
              AssetInfo memory assetInfo = getAssetInfo(i);
              if (assetInfo.asset == asset) {
@@ -38,8 +38,8 @@ diff -ruN Comet.sol Comet.sol
      /**
       * @dev Accrue interest (and rewards) in base token supply and borrows
       **/
--    function accrueInternal() virtual internal {
-+    function accrueInternal() internal {
+-    function accrueInternal() internal {
++    function accrueInternal() virtual internal {
          uint40 now_ = getNowInternal();
          uint timeElapsed = uint256(now_ - lastAccrualTime);
          if (timeElapsed > 0) {
@@ -47,8 +47,8 @@ diff -ruN Comet.sol Comet.sol
      /**
       * @dev Whether user has a non-zero balance of an asset, given assetsIn flags
       */
--    function isInAsset(uint16 assetsIn, uint8 assetOffset) virtual internal view returns (bool) {
-+    function isInAsset(uint16 assetsIn, uint8 assetOffset) internal pure returns (bool) {
+-    function isInAsset(uint16 assetsIn, uint8 assetOffset) internal pure returns (bool) {
++    function isInAsset(uint16 assetsIn, uint8 assetOffset) virtual internal view returns (bool) {
          return (assetsIn & (uint16(1) << assetOffset) != 0);
      }
  
@@ -56,8 +56,8 @@ diff -ruN Comet.sol Comet.sol
          AssetInfo memory assetInfo,
          uint128 initialUserBalance,
          uint128 finalUserBalance
--    ) virtual internal {
-+    ) internal {
+-    ) internal {
++    ) virtual internal {
          if (initialUserBalance == 0 && finalUserBalance != 0) {
              // set bit for asset
              userBasic[account].assetsIn |= (uint16(1) << assetInfo.offset);
@@ -65,8 +65,8 @@ diff -ruN Comet.sol Comet.sol
       * @param asset The asset to transfer
       * @param amount The quantity to transfer
       */
--    function transferAssetFrom(address src, address dst, address asset, uint amount) virtual override external {
-+    function transferAssetFrom(address src, address dst, address asset, uint amount) override external {
+-    function transferAssetFrom(address src, address dst, address asset, uint amount) override external {
++    function transferAssetFrom(address src, address dst, address asset, uint amount) virtual override external {
          return transferInternal(msg.sender, src, dst, asset, amount);
      }
  
@@ -74,7 +74,7 @@ diff -ruN Comet.sol Comet.sol
      /**
       * @notice Fallback to calling the extension delegate for everything else
       */
--     /*
++     /*
      fallback() external payable {
          address delegate = extensionDelegate;
          assembly {
@@ -82,5 +82,5 @@ diff -ruN Comet.sol Comet.sol
              default { return(0, returndatasize()) }
          }
      }
--    */
++    */
  }
