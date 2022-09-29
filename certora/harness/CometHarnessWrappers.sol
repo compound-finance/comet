@@ -2,8 +2,8 @@
 pragma solidity ^0.8.11;
 
 import "./CometHarnessGetters.sol";
-import "../../contracts/ERC20.sol";
-import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "../munged/ERC20.sol";
+import "../munged/vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 /**
  * @title Certora's comet harness wrappers contract

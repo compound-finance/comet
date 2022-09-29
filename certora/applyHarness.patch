@@ -1,0 +1,86 @@
+diff -ruN .gitignore .gitignore
+--- .gitignore	1970-01-01 02:00:00.000000000 +0200
++++ .gitignore	2022-09-29 22:18:49.000000000 +0300
+@@ -0,0 +1,2 @@
++*
++!.gitignore
+diff -ruN Comet.sol Comet.sol
+--- Comet.sol	2022-09-29 22:19:22.000000000 +0300
++++ Comet.sol	2022-09-29 22:19:14.000000000 +0300
+@@ -247,7 +247,7 @@
+     /**
+      * @dev Checks and gets the packed asset info for storage
+      */
+-    function getPackedAssetInternal(AssetConfig[] memory assetConfigs, uint i) virtual internal view returns (uint256, uint256) {
++    function getPackedAssetInternal(AssetConfig[] memory assetConfigs, uint i) internal view returns (uint256, uint256) {
+         AssetConfig memory assetConfig;
+         if (i < assetConfigs.length) {
+             assembly {
+@@ -303,7 +303,7 @@
+      * @param i The index of the asset info to get
+      * @return The asset info object
+      */
+-    function getAssetInfo(uint8 i) virtual override public view returns (AssetInfo memory) {
++    function getAssetInfo(uint8 i) override public view returns (AssetInfo memory) {
+         if (i >= numAssets) revert BadAsset();
+ 
+         uint256 word_a;
+@@ -384,7 +384,7 @@
+     /**
+      * @dev Determine index of asset that matches given address
+      */
+-    function getAssetInfoByAddress(address asset) virtual override public view returns (AssetInfo memory) {
++    function getAssetInfoByAddress(address asset) override public view returns (AssetInfo memory) {
+         for (uint8 i = 0; i < numAssets; ) {
+             AssetInfo memory assetInfo = getAssetInfo(i);
+             if (assetInfo.asset == asset) {
+@@ -422,7 +422,7 @@
+     /**
+      * @dev Accrue interest (and rewards) in base token supply and borrows
+      **/
+-    function accrueInternal() virtual internal {
++    function accrueInternal() internal {
+         uint40 now_ = getNowInternal();
+         uint timeElapsed = uint256(now_ - lastAccrualTime);
+         if (timeElapsed > 0) {
+@@ -730,7 +730,7 @@
+     /**
+      * @dev Whether user has a non-zero balance of an asset, given assetsIn flags
+      */
+-    function isInAsset(uint16 assetsIn, uint8 assetOffset) virtual internal view returns (bool) {
++    function isInAsset(uint16 assetsIn, uint8 assetOffset) internal pure returns (bool) {
+         return (assetsIn & (uint16(1) << assetOffset) != 0);
+     }
+ 
+@@ -742,7 +742,7 @@
+         AssetInfo memory assetInfo,
+         uint128 initialUserBalance,
+         uint128 finalUserBalance
+-    ) virtual internal {
++    ) internal {
+         if (initialUserBalance == 0 && finalUserBalance != 0) {
+             // set bit for asset
+             userBasic[account].assetsIn |= (uint16(1) << assetInfo.offset);
+@@ -929,7 +929,7 @@
+      * @param asset The asset to transfer
+      * @param amount The quantity to transfer
+      */
+-    function transferAssetFrom(address src, address dst, address asset, uint amount) virtual override external {
++    function transferAssetFrom(address src, address dst, address asset, uint amount) override external {
+         return transferInternal(msg.sender, src, dst, asset, amount);
+     }
+ 
+@@ -1322,7 +1322,6 @@
+     /**
+      * @notice Fallback to calling the extension delegate for everything else
+      */
+-     /*
+     fallback() external payable {
+         address delegate = extensionDelegate;
+         assembly {
+@@ -1334,5 +1333,4 @@
+             default { return(0, returndatasize()) }
+         }
+     }
+-    */
+ }

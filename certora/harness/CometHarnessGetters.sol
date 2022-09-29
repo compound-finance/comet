@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: XXX ADD VALID LICENSE
 pragma solidity ^0.8.11;
 
-import "../../contracts/Comet.sol";
-import "../../contracts/ERC20.sol";
-import "../../contracts/vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "../munged/Comet.sol";
+import "../munged/ERC20.sol";
+import "../munged/vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 /**
  * @title Certora's comet harness getters contract
