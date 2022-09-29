@@ -1,12 +1,12 @@
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 02:00:00.000000000 +0200
-+++ .gitignore	2022-09-29 22:18:49.000000000 +0300
++++ .gitignore	2022-09-29 22:52:55.000000000 +0300
 @@ -0,0 +1,2 @@
 +*
 +!.gitignore
 diff -ruN Comet.sol Comet.sol
---- Comet.sol	2022-09-29 22:19:22.000000000 +0300
-+++ Comet.sol	2022-09-29 22:19:14.000000000 +0300
+--- Comet.sol	2022-09-29 22:51:22.000000000 +0300
++++ Comet.sol	2022-09-29 22:56:01.000000000 +0300
 @@ -247,7 +247,7 @@
      /**
       * @dev Checks and gets the packed asset info for storage
@@ -79,15 +79,15 @@ diff -ruN Comet.sol Comet.sol
          return transferInternal(msg.sender, src, dst, asset, amount);
      }
  
-@@ -1322,7 +1322,6 @@
+@@ -1322,6 +1322,7 @@
      /**
       * @notice Fallback to calling the extension delegate for everything else
       */
-+     /*
++    /*
      fallback() external payable {
          address delegate = extensionDelegate;
          assembly {
-@@ -1334,5 +1333,4 @@
+@@ -1333,4 +1334,5 @@
              default { return(0, returndatasize()) }
          }
      }

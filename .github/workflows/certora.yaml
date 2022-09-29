@@ -25,7 +25,7 @@ jobs:
 
       - name: Install python
         uses: actions/setup-python@v2
-        with: { python-version: 3.6 }
+        with: { python-version: 3.9 }
 
       - name: Install java
         uses: actions/setup-java@v1
@@ -42,7 +42,10 @@ jobs:
       
       - name: Verify rule ${{ matrix.rule }}
         run: |
-          sh certora/applyHarness.sh
+          cd certora
+          touch applyHarness.patch
+          make munged
+          cd ..
           echo "key length" ${#CERTORAKEY}
           sh certora/scripts/${{ matrix.rule }}
         env:
