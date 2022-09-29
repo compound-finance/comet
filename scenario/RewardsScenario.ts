@@ -37,7 +37,7 @@ scenario(
     const rewardScale = exp(1, await rewardToken.decimals());
 
     await baseAsset.approve(albert, comet.address);
-    await albert.safeSupplyAsset({ asset: baseAssetAddress, amount: 1_000_000n * baseScale })
+    await albert.safeSupplyAsset({ asset: baseAssetAddress, amount: 1_000_000n * baseScale });
 
     expect(await rewardToken.balanceOf(albert.address)).to.be.equal(0n);
 
@@ -161,8 +161,8 @@ scenario(
     const rewardScale = exp(1, await rewardToken.decimals());
 
     await collateralAsset.approve(albert, comet.address);
-    await albert.safeSupplyAsset({ asset: collateralAssetAddress, amount: toSupply })
-    await albert.withdrawAsset({ asset: baseAssetAddress, amount: toBorrow })
+    await albert.safeSupplyAsset({ asset: collateralAssetAddress, amount: toSupply });
+    await albert.withdrawAsset({ asset: baseAssetAddress, amount: toBorrow });
 
     expect(await rewardToken.balanceOf(albert.address)).to.be.equal(0n);
 

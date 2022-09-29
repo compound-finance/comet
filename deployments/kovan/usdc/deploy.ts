@@ -23,7 +23,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const signer = await deploymentManager.getSigner();
 
   // Deploy governance contracts
-  const { COMP, fauceteer, governor, timelock } = await cloneGov(deploymentManager);
+  const { COMP, fauceteer, timelock } = await cloneGov(deploymentManager);
 
   // Deploy UNI first because it is the flakiest (has a dependency on block timestamp)
   // TODO: currently this retries with the same timestamp. we should update the timestamp on retries
@@ -65,7 +65,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
-  const { comet, rewards } = deployed;
+  const { rewards } = deployed;
 
   // Deploy Bulker
   const bulker = await deploymentManager.deploy(
@@ -81,6 +81,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
       const amount = exp(2_000_000, 18);
       trace(await wait(COMP.connect(signer).transfer(rewards.address, amount)));
       trace(`COMP.balanceOf(${rewards.address}): ${await COMP.balanceOf(rewards.address)}`);
+      trace(`COMP.balanceOf(${signer.address}): ${await COMP.balanceOf(signer.address)}`);
     }
   );
 
@@ -91,7 +92,6 @@ async function mintTokens(deploymentManager: DeploymentManager) {
   const trace = deploymentManager.tracer();
   const signer = await deploymentManager.getSigner();
   const contracts = await deploymentManager.contracts();
-  const timelock = contracts.get('timelock');
   const fauceteer = contracts.get('fauceteer');
 
   trace(`Attempting to mint as ${signer.address}...`);

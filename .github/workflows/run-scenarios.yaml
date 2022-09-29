@@ -4,11 +4,16 @@ on:
   pull_request:
 jobs:
   run-scenarios:
+    strategy:
+      fail-fast: false
+      matrix:
+        bases: [ development, mainnet, goerli, fuji, mumbai ]
     name: Run scenarios
     env:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
+      POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -42,16 +47,16 @@ jobs:
         run: npx hardhat compile
 
       - name: Run scenarios
-        run: yarn scenario
+        run: yarn scenario --bases ${{ matrix.bases }}
 
-      - uses: actions/upload-artifact@v2  # upload scenario results
-        if: success() || failure()        # run this step even if previous step failed
+      - uses: actions/upload-artifact@v2 # upload scenario results
+        if: success() || failure() # run this step even if previous step failed
         with:
           name: scenario-results
           path: scenario-results.json
 
       - uses: dorny/test-reporter@v1
         with:
-          name: Scenario Tests              # Name of the check run which will be created
-          path: 'scenario-results.json'     # Path to test results (inside artifact .zip)
-          reporter: mocha-json              # Format of test results
+          name: Scenario Tests (${{ matrix.bases }}) # Name of the check run which will be created
+          path: scenario-results.json # Path to test results (inside artifact .zip)
+          reporter: mocha-json # Format of test results

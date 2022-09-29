@@ -4,6 +4,7 @@ import { BuildFile } from './Types';
 import { getPrimaryContract } from './Utils';
 import { NomicLabsHardhatPluginError } from 'hardhat/plugins';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { encodeArguments } from '@nomiclabs/hardhat-etherscan/dist/src/ABIEncoder';
 import {
   toCheckStatusRequest,
   toVerifyRequest,
@@ -24,23 +25,23 @@ export async function manualVerifyContract(
   deployArgs: any[],
   hre: HardhatRuntimeEnvironment
 ) {
-  let [contractName, contractMetadata] = getPrimaryContract(buildFile);
+  const [contractFQN, contractMetadata] = getPrimaryContract(buildFile);
 
   const { network: verificationNetwork, urls: etherscanAPIEndpoints } = await hre.run(
     'verify:get-etherscan-endpoint'
   );
 
   const etherscanAPIKey = resolveEtherscanApiKey(hre.config.etherscan, verificationNetwork);
-  let contractAddress = contract.address.toLowerCase();
-  let sourceName = contractMetadata.source;
-  let metadata = JSON.parse(contractMetadata.metadata);
-  let compilerVersion = metadata.compiler.version.replace(
+  const contractAddress = contract.address.toLowerCase();
+  const sourceName = contractMetadata.source;
+  const metadata = JSON.parse(contractMetadata.metadata);
+  const compilerVersion = metadata.compiler.version.replace(
     /\+commit\.([0-9a-fA-F]+)\..*/gi,
     '+commit.$1'
   );
-  let language = metadata.language;
-  let sources = metadata.sources;
-  let settings = metadata.settings;
+  const language = metadata.language;
+  const settings = metadata.settings;
+  const sources = metadata.sources;
 
   // Fix up some settings issues
 
@@ -54,14 +55,15 @@ export async function manualVerifyContract(
     settings.optimizer.runs = 1000000;
   }
 
-  let request = toVerifyRequest({
+  const args = await encodeArguments(contractMetadata.abi, sourceName, contractFQN, deployArgs);
+  const request = toVerifyRequest({
     apiKey: etherscanAPIKey,
     contractAddress,
     sourceCode: JSON.stringify({ language, settings, sources }),
     sourceName,
-    contractName,
+    contractName: contractFQN,
     compilerVersion,
-    constructorArguments: contractMetadata.constructorArgs,
+    constructorArguments: args,
   });
 
   // Since verification can fail for so many reasons; a simple logging approach for debugging
@@ -72,10 +74,7 @@ export async function manualVerifyContract(
   const response = await verifyContract(etherscanAPIEndpoints.apiURL, request);
 
   console.log(
-    `Successfully submitted source code for contract
-${sourceName}:${contractName} at ${contractAddress}
-for verification on the block explorer. Waiting for verification result...
-`
+    `Successfully submitted source code for contract ${contractFQN} at ${contractAddress} for verification on the block explorer. Waiting for verification result...`
   );
 
   const pollRequest = toCheckStatusRequest({

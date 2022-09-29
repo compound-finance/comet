@@ -1,4 +1,4 @@
-import { BigNumberish, Contract, Overrides, Signer } from 'ethers';
+import { Overrides } from 'ethers';
 import { ERC20 } from '../../build/types';
 import CometActor from './CometActor';
 import { AddressLike, resolveAddress } from './Address';
@@ -36,14 +36,14 @@ export default class CometAsset {
   }
 
   async approve(from: CometActor, spender: AddressLike, amount?: number | bigint) {
-    let spenderAddress = resolveAddress(spender)
+    let spenderAddress = resolveAddress(spender);
     let finalAmount = amount ?? constants.MaxUint256;
     await wait(this.token.connect(from.signer).approve(spenderAddress, finalAmount));
   }
 
   async allowance(owner: AddressLike, spender: AddressLike): Promise<bigint> {
-    let ownerAddress = resolveAddress(owner)
-    let spenderAddress = resolveAddress(spender)
+    let ownerAddress = resolveAddress(owner);
+    let spenderAddress = resolveAddress(spender);
     return (await this.token.allowance(ownerAddress, spenderAddress)).toBigInt();
   }
 

@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import { Requirements } from './Requirements';
 
 export class PauseConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(requirements: R, context: T) {
+  async solve(requirements: R, _context: T) {
     const pauseRequirements = requirements.pause;
     if (!pauseRequirements) {
       return null;
@@ -45,7 +45,7 @@ export class PauseConstraint<T extends CometContext, R extends Requirements> imp
     }
   }
 
-  async check(requirements: R, context: T, world: World) {
+  async check(requirements: R, context: T, _world: World) {
     const pauseRequirements = requirements.pause;
     if (!pauseRequirements) {
       return;

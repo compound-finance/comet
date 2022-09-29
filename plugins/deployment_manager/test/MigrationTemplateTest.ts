@@ -18,7 +18,7 @@ export default migration('1_cool', {
     return {};
   },
 
-  enact: async (deploymentManager: DeploymentManager, vars: Vars) => {
+  enact: async (governanceDeploymentManager: DeploymentManager, vars: Vars) => {
     // No governance changes
   }
 });

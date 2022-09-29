@@ -49,7 +49,7 @@ else
   -> ( borrows / target ) - supply = X
 */
 export class UtilizationConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(requirements: R, context: T) {
+  async solve(requirements: R, _context: T) {
     let { utilization } = getUtilizationConfig(requirements);
 
     if (utilization == null) {
@@ -64,8 +64,8 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
         let totalSupplyBase = (await comet.totalSupply()).toBigInt();
         let totalBorrowBase = (await comet.totalBorrow()).toBigInt();
 
-        let toBorrowBase: bigint = 0n;
-        let toSupplyBase: bigint = 0n;
+        let toBorrowBase = 0n;
+        let toSupplyBase = 0n;
 
         // TODO: Handle units for precision, etc
         if (totalSupplyBase == 0n) {

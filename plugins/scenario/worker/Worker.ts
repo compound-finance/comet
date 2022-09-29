@@ -7,8 +7,8 @@ import { scenarioGlob } from './Config';
 import { HardhatConfig, HardhatArguments, createContext } from './HardhatContext';
 import { ScenarioConfig } from '../types';
 import { SimpleWorker } from './SimpleWorker';
-import hreForBase from '../utils/hreForBase';
 import { pluralize } from './Report';
+import { DeploymentManager } from '../../deployment_manager';
 
 interface Message {
   scenario?: {
@@ -47,6 +47,12 @@ function postMessage(worker: SimpleWorker | undefined, message: any) {
   }
 }
 
+async function runDeployScript(dm: DeploymentManager, baseName: string) {
+  const delta = await dm.runDeployScript({ allMissing: true });
+  console.log(`[${baseName}] Deployed ${dm.counter} contracts, spent ${dm.spent} to initialize world 🗺`);
+  console.log(`[${baseName}]\n${dm.diffDelta(delta)}`);
+}
+
 export async function run<T, U, R>({ bases, config, worker }: WorkerData) {
   let scenarios: { [name: string]: Scenario<T, U, R> };
   let runners = {};
@@ -60,10 +66,14 @@ export async function run<T, U, R>({ bases, config, worker }: WorkerData) {
   }
 
   for (const base of bases) {
-    const world = new World(hreForBase(base), base), dm = world.deploymentManager;
-    const delta = await dm.runDeployScript({ allMissing: true });
-    console.log(`[${base.name}] Deployed ${dm.counter} contracts, spent ${dm.spent} to initialize world 🗺`);
-    console.log(`[${base.name}]\n${dm.diffDelta(delta)}`);
+    const world = new World(base);
+    const dm = world.deploymentManager;
+    await runDeployScript(dm, base.name);
+
+    if (world.auxiliaryDeploymentManager) {
+      await world.auxiliaryDeploymentManager.spider();
+    }
+
     runners[base.name] = new Runner({ base, world });
   }
 

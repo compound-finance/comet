@@ -1,5 +1,6 @@
 import { task } from 'hardhat/config';
 import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
+import { writeEnacted } from '../../plugins/deployment_manager/Enacted';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeploymentManager, VerifyArgs } from '../../plugins/deployment_manager';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
@@ -15,6 +16,7 @@ function getForkEnv(env: HardhatRuntimeEnvironment): HardhatRuntimeEnvironment {
 
 async function runMigration<T>(
   deploymentManager: DeploymentManager,
+  governanceDeploymentManager: DeploymentManager,
   prepare: boolean,
   enact: boolean,
   migration: Migration<T>,
@@ -41,17 +43,19 @@ async function runMigration<T>(
 
   if (enact) {
     console.log('Running enactment step with artifact...', artifact);
-    await migration.actions.enact(deploymentManager, artifact);
+    await migration.actions.enact(governanceDeploymentManager, artifact);
     console.log('Enactment complete');
   }
 }
 
 task('deploy', 'Deploys market')
   .addFlag('simulate', 'only simulates the blockchain effects')
+  .addFlag('noDeploy', 'skip the actual deploy step')
   .addFlag('noVerify', 'do not verify any contracts')
+  .addFlag('noVerifyImpl', 'do not verify the impl contract')
   .addFlag('overwrite', 'overwrites cache')
   .addParam('deployment', 'The deployment to deploy')
-  .setAction(async ({ simulate, noVerify, overwrite, deployment }, env) => {
+  .setAction(async ({ simulate, noDeploy, noVerify, noVerifyImpl, overwrite, deployment }, env) => {
     const maybeForkEnv = simulate ? getForkEnv(env) : env;
     const network = env.network.name;
     const tag = `${network}/${deployment}`;
@@ -65,10 +69,14 @@ task('deploy', 'Deploys market')
       }
     );
 
-    const overrides = undefined; // TODO: pass through cli args
-    const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
-    console.log(`[${tag}] Deployed ${dm.counter} contracts, spent ${dm.spent} Ξ`);
-    console.log(`[${tag}]\n${dm.diffDelta(delta)}`);
+    if (noDeploy) {
+      // Don't run the deploy script
+    } else {
+      const overrides = undefined; // TODO: pass through cli args
+      const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
+      console.log(`[${tag}] Deployed ${dm.counter} contracts, spent ${dm.spent} Ξ`);
+      console.log(`[${tag}]\n${dm.diffDelta(delta)}`);
+    }
 
     const verify = noVerify ? false : !simulate;
     const desc = verify ? 'Verify' : 'Would verify';
@@ -85,19 +93,23 @@ task('deploy', 'Deploys market')
         return verify;
       });
 
-      // Maybe verify the comet impl too
-      const comet = await dm.contract('comet');
-      const cometImpl = await dm.contract('comet:implementation');
-      const configurator = await dm.contract('configurator');
-      const config = await configurator.getConfiguration(comet.address);
-      const args: VerifyArgs = {
-        via: 'artifacts',
-        address: cometImpl.address,
-        constructorArguments: [config]
-      };
-      console.log(`[${tag}] ${desc} ${cometImpl.address}:`, args);
-      if (verify) {
-        await dm.verifyContract(args);
+      if (noVerifyImpl) {
+        // Don't even try if --no-verify-impl
+      } else {
+        // Maybe verify the comet impl too
+        const comet = await dm.contract('comet');
+        const cometImpl = await dm.contract('comet:implementation');
+        const configurator = await dm.contract('configurator');
+        const config = await configurator.getConfiguration(comet.address);
+        const args: VerifyArgs = {
+          via: 'artifacts',
+          address: cometImpl.address,
+          constructorArguments: [config]
+        };
+        console.log(`[${tag}] ${desc} ${cometImpl.address}:`, args);
+        if (verify) {
+          await dm.verifyContract(args);
+        }
       }
     }
   });
@@ -125,10 +137,11 @@ task('migrate', 'Runs migration')
   .addParam('deployment', 'The deployment to apply the migration to')
   .addFlag('prepare', 'runs preparation [defaults to true if enact not specified]')
   .addFlag('enact', 'enacts migration [implies prepare]')
+  .addFlag('noEnacted', 'do not write enacted to the migration script')
   .addFlag('simulate', 'only simulates the blockchain effects')
   .addFlag('overwrite', 'overwrites artifact if exists, fails otherwise')
   .setAction(
-    async ({ migration: migrationName, prepare, enact, simulate, overwrite, deployment }, env) => {
+    async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, deployment }, env) => {
       const maybeForkEnv = simulate ? getForkEnv(env) : env;
       const network = env.network.name;
       const dm = new DeploymentManager(
@@ -142,6 +155,27 @@ task('migrate', 'Runs migration')
       );
       await dm.spider();
 
+      let governanceDm: DeploymentManager;
+      const base = env.config.scenario.bases.find(b => b.network === network && b.deployment === deployment);
+      const isBridgedDeployment = base.auxiliaryBase !== undefined;
+      const governanceBase = isBridgedDeployment ? env.config.scenario.bases.find(b => b.name === base.auxiliaryBase) : undefined;
+
+      if (governanceBase) {
+        const governanceEnv = hreForBase(governanceBase, simulate);
+        governanceDm = new DeploymentManager(
+          governanceBase.network,
+          governanceBase.deployment,
+          governanceEnv,
+          {
+            writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
+            verificationStrategy: 'lazy',
+          }
+        );
+        await governanceDm.spider();
+      } else {
+        governanceDm = dm;
+      }
+
       const migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
       const [migration] = await loadMigrations([migrationPath]);
       if (!migration) {
@@ -151,6 +185,10 @@ task('migrate', 'Runs migration')
         prepare = true;
       }
 
-      await runMigration(dm, prepare, enact, migration, overwrite);
+      await runMigration(dm, governanceDm, prepare, enact, migration, overwrite);
+
+      if (enact && !noEnacted) {
+        await writeEnacted(migration, dm, true);
+      }
     }
   );

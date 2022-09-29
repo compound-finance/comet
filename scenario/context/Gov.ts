@@ -9,6 +9,6 @@ export enum ProposalState {
   Queued,
   Expired,
   Executed
-};
+}
 
 export type OpenProposal = { id: number, startBlock: number, endBlock: number };

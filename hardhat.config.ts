@@ -17,6 +17,8 @@ import './tasks/scenario/task.ts';
 
 // Relation Config
 import relationConfigMap from './deployments/relations';
+import goerliRelationConfigMap from './deployments/goerli/usdc/relations';
+import mumbaiRelationConfigMap from './deployments/mumbai/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -30,6 +32,7 @@ const {
   SNOWTRACE_KEY,
   INFURA_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
+  POLYGONSCAN_KEY,
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
   REMOTE_ACCOUNTS = '',
@@ -50,6 +53,7 @@ export function throwIfMissing(envVariable, msg: string) {
 throwIfMissing(ETHERSCAN_KEY, 'Missing required environment variable: ETHERSCAN_KEY');
 throwIfMissing(SNOWTRACE_KEY, 'Missing required environment variable: SNOWTRACE_KEY');
 throwIfMissing(INFURA_KEY, 'Missing required environment variable: INFURA_KEY');
+throwIfMissing(POLYGONSCAN_KEY, 'Missing required environment variable: POLYGONSCAN_KEY');
 
 // Networks
 interface NetworkConfig {
@@ -67,6 +71,11 @@ const networkConfigs: NetworkConfig[] = [
   { network: 'goerli', chainId: 5 },
   { network: 'kovan', chainId: 42 },
   {
+    network: 'polygon',
+    chainId: 137,
+    url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
     network: 'avalanche',
     chainId: 43114,
     url: 'https://api.avax.network/ext/bc/C/rpc',
@@ -75,6 +84,11 @@ const networkConfigs: NetworkConfig[] = [
     network: 'fuji',
     chainId: 43113,
     url: 'https://api.avax-test.network/ext/bc/C/rpc',
+  },
+  {
+    network: 'mumbai',
+    chainId: 80001,
+    url: `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`,
   },
 ];
 
@@ -146,6 +160,9 @@ const config: HardhatUserConfig = {
       // Avalanche
       avalanche: SNOWTRACE_KEY,
       avalancheFujiTestnet: SNOWTRACE_KEY,
+      // Polygon
+      polygon: POLYGONSCAN_KEY,
+      polygonMumbai: POLYGONSCAN_KEY,
     },
   },
 
@@ -156,6 +173,14 @@ const config: HardhatUserConfig = {
 
   deploymentManager: {
     relationConfigMap,
+    networks: {
+      goerli: {
+        usdc: goerliRelationConfigMap
+      },
+      mumbai: {
+        usdc: mumbaiRelationConfigMap
+      }
+    },
   },
 
   scenario: {
@@ -181,6 +206,17 @@ const config: HardhatUserConfig = {
         network: 'kovan',
         deployment: 'usdc',
       },
+      {
+        name: 'goerli',
+        network: 'goerli',
+        deployment: 'usdc'
+      },
+      {
+        name: 'mumbai',
+        network: 'mumbai',
+        deployment: 'usdc',
+        auxiliaryBase: 'goerli'
+      }
     ],
   },
 

@@ -1,7 +1,7 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 
-scenario('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, timelock, actors }, context) => {
+scenario('upgrade governor', {}, async ({ comet, configurator, timelock, actors }, context) => {
   const { admin, albert } = actors;
 
   expect(await comet.governor()).to.equal(timelock.address);
@@ -16,7 +16,7 @@ scenario('upgrade governor', {}, async ({ comet, configurator, proxyAdmin, timel
   expect((await configurator.getConfiguration(comet.address)).governor).to.be.equal(albert.address);
 });
 
-scenario('add assets', {}, async ({ comet, configurator, proxyAdmin, actors }, context) => {
+scenario('add assets', {}, async ({ comet, configurator, actors }, context) => {
   const { admin } = actors;
   let numAssets = await comet.numAssets();
   const collateralAssets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
@@ -58,22 +58,22 @@ scenario('add assets', {}, async ({ comet, configurator, proxyAdmin, actors }, c
 scenario.skip( // XXX try again
   'reverts if configurator is not called by admin',
   {},
-  async ({ comet, configurator, proxyAdmin, actors }) => {
+  async ({ comet, configurator, actors }) => {
     const { albert } = actors;
     await expect(
       configurator.connect(albert.signer).setGovernor(comet.address, albert.address)
     ).to.be.revertedWith('Unauthorized');
   });
 
-scenario.skip('reverts if proxy is not upgraded by ProxyAdmin', {}, async ({ comet, proxyAdmin, actors }) => {
+scenario.skip('reverts if proxy is not upgraded by ProxyAdmin', {}, async () => {
   // XXX
 });
 
 
-scenario.skip('fallbacks to implementation if called by non-admin', {}, async ({ comet, proxyAdmin, actors }) => {
+scenario.skip('fallbacks to implementation if called by non-admin', {}, async () => {
   // XXX
 });
 
-scenario.skip('transfer admin of configurator', {}, async ({ comet, proxyAdmin, actors }) => {
+scenario.skip('transfer admin of configurator', {}, async () => {
   // XXX
 });

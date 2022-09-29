@@ -33,7 +33,7 @@ scenario('Comet#approveThis > allows governor to authorize and rescind authoriza
   expect(await baseToken.allowance(comet.address, timelock.address)).to.be.equal(0n);
 });
 
-scenario('Comet#approveThis > reverts if not called by governor', {}, async ({ comet, timelock, actors }) => {
+scenario('Comet#approveThis > reverts if not called by governor', {}, async ({ comet, timelock }) => {
   await expect(comet.approveThis(timelock.address, comet.address, constants.MaxUint256))
     .to.be.revertedWith("custom error 'Unauthorized()'");
 });

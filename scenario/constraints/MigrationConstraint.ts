@@ -1,15 +1,20 @@
 import { Constraint, Solution, World, debug } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import { Requirements } from './Requirements';
-import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
+import { Migration, loadMigrations, Actions } from '../../plugins/deployment_manager/Migration';
 import { modifiedPaths, subsets } from '../utils';
+import { DeploymentManager } from '../../plugins/deployment_manager';
 
-async function getMigrations<T>(context: CometContext, requirements: Requirements): Promise<Migration<T>[]> {
+async function getMigrations<T>(context: CometContext, _requirements: Requirements): Promise<Migration<T>[]> {
   // TODO: make this configurable from cli params/env var?
-  const network = context.deploymentManager.network;
-  const deployment = context.deploymentManager.deployment;
+  const network = context.world.deploymentManager.network;
+  const deployment = context.world.deploymentManager.deployment;
   const pattern = new RegExp(`deployments/${network}/${deployment}/migrations/.*.ts`);
   return await loadMigrations((await modifiedPaths(pattern)).map(p => '../../' + p));
+}
+
+async function isEnacted<T>(actions: Actions<T>, deploymentManager: DeploymentManager): Promise<boolean> {
+  return actions.enacted && await actions.enacted(deploymentManager);
 }
 
 export class MigrationConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
@@ -19,29 +24,30 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
 
     for (const migrationList of subsets(await getMigrations(context, requirements))) {
       solutions.push(async function (ctx: T): Promise<T> {
-        const governor = await ctx.getGovernor();
         const proposer = await ctx.getProposer();
 
         // Make proposer the default signer
-        ctx.deploymentManager._signers.unshift(proposer);
+        ctx.world.deploymentManager._signers.unshift(proposer);
 
         // Order migrations deterministically and store in the context (i.e. for verification)
-        migrationList.sort((a, b) => a.name.localeCompare(b.name))
+        migrationList.sort((a, b) => a.name.localeCompare(b.name));
         ctx.migrations = migrationList;
 
-        // XXX This should check that a migration has not already been run/proposed on-chain.
-        // Otherwise the scenario could be running the same proposal twice.
         debug(`${label} Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);
         for (const migration of migrationList) {
-          const artifact = await migration.actions.prepare(ctx.deploymentManager);
+          const artifact = await migration.actions.prepare(ctx.world.deploymentManager);
           debug(`${label} Prepared migration ${migration.name}.\n  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
           // XXX enact will take the 'gov' deployment manager instead of the 'local' one
-          await migration.actions.enact(ctx.deploymentManager, artifact);
-          debug(`${label} Enacted migration ${migration.name}`);
+          if (await isEnacted(migration.actions, ctx.world.deploymentManager)) {
+            debug(`${label} Migration ${migration.name} has already been enacted`);
+          } else {
+            await migration.actions.enact(ctx.world.deploymentManager, artifact);
+            debug(`${label} Enacted migration ${migration.name}`);
+          }
         }
 
         // Remove proposer from signers
-        ctx.deploymentManager._signers.shift();
+        ctx.world.deploymentManager._signers.shift();
 
         return ctx;
       });
@@ -50,7 +56,7 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
     return solutions;
   }
 
-  async check(requirements: R, context: T, world: World) {
+  async check(_requirements: R, _context: T, _world: World) {
     return; // XXX
   }
 }
@@ -62,8 +68,8 @@ export class VerifyMigrationConstraint<T extends CometContext, R extends Require
       async function (ctx: T): Promise<T> {
         for (const migration of ctx.migrations) {
           // XXX does verify get the 'gov' deployment manager as well as the 'local' one?
-          if (migration.actions.verify) {
-            await migration.actions.verify(ctx.deploymentManager);
+          if (migration.actions.verify && !(await isEnacted(migration.actions, ctx.world.deploymentManager))) {
+            await migration.actions.verify(ctx.world.deploymentManager);
             debug(`${label} Verified migration "${migration.name}"`);
           }
         }
@@ -72,5 +78,7 @@ export class VerifyMigrationConstraint<T extends CometContext, R extends Require
     ];
   }
 
-  async check(requirements: R, context: T, world: World) { }
+  async check(_requirements: R, _context: T, _world: World) {
+    return; // XXX
+  }
 }

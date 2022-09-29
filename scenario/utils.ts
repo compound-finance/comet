@@ -1,16 +1,22 @@
 import { expect } from 'chai';
-import { BigNumber, Contract, ContractReceipt, Event, EventFilter, constants } from 'ethers';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { BigNumber, BigNumberish, Contract, ContractReceipt, Event, EventFilter, constants } from 'ethers';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { CometContext } from './context/CometContext';
 import CometAsset from './context/CometAsset';
 import { exp } from '../test/helpers';
+import { DeploymentManager } from '../plugins/deployment_manager';
+import { impersonateAddress } from '../plugins/scenario/utils';
+import { ProposalState, OpenProposal } from './context/Gov';
+import { debug } from '../plugins/deployment_manager/Utils';
+import { COMP_WHALES } from '../src/deploy';
 
 export const MAX_ASSETS = 15;
 
 export interface ComparativeAmount {
-  val: number,
-  op: ComparisonOp,
+  val: number;
+  op: ComparisonOp;
 }
 
 export enum ComparisonOp {
@@ -34,7 +40,7 @@ export function expectApproximately(expected: bigint, actual: bigint, precision:
 
 export function expectRevertMatches(tx: Promise<ContractReceipt>, patterns: RegExp | RegExp[]) {
   return tx
-    .then(_ => { throw new Error('Expected transaction to be reverted') })
+    .then(_ => { throw new Error('Expected transaction to be reverted'); })
     .catch(e => {
       for (const pattern of [].concat(patterns))
         if (pattern.test(e.message))
@@ -65,7 +71,7 @@ export function requireList<T>(o: object, key: string, err: string): T[] {
   return value as T[];
 }
 
-export function requireNumber<T>(o: object, key: string, err: string): number {
+export function requireNumber(o: object, key: string, err: string): number {
   let value: unknown = o[key];
   if (value === undefined) {
     throw new Error(err);
@@ -76,7 +82,7 @@ export function requireNumber<T>(o: object, key: string, err: string): number {
   return value;
 }
 
-export function optionalNumber<T>(o: object, key: string): number {
+export function optionalNumber(o: object, key: string): number {
   let value: unknown = o[key];
   if (value === undefined) {
     return undefined;
@@ -234,9 +240,15 @@ export async function isRewardSupported(ctx: CometContext): Promise<boolean> {
   const rewards = await ctx.getRewards();
   const comet = await ctx.getComet();
   if (rewards == null) return false;
+
   const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
   if (rewardTokenAddress === constants.AddressZero) return false;
+
   return true;
+}
+
+export function isBridgedDeployment(ctx: CometContext): boolean {
+  return ctx.world.auxiliaryDeploymentManager !== undefined;
 }
 
 export async function fetchLogs(
@@ -253,4 +265,183 @@ export async function fetchLogs(
   } else {
     return contract.queryFilter(filter, fromBlock, toBlock);
   }
+}
+
+export async function setNextBaseFeeToZero(dm: DeploymentManager) {
+  await dm.hre.network.provider.send('hardhat_setNextBlockBaseFeePerGas', ['0x0']);
+}
+
+export async function mineBlocks(dm: DeploymentManager, blocks: number) {
+  await dm.hre.network.provider.send('hardhat_mine', [`0x${blocks.toString(16)}`]);
+}
+
+export async function setNextBlockTimestamp(dm: DeploymentManager, timestamp: number) {
+  await dm.hre.ethers.provider.send('evm_setNextBlockTimestamp', [timestamp]);
+}
+
+export async function executeOpenProposal(
+  dm: DeploymentManager,
+  { id, startBlock, endBlock }: OpenProposal
+) {
+  const governor = await dm.getContractOrThrow('governor');
+  const blockNow = await dm.hre.ethers.provider.getBlockNumber();
+  const blocksUntilStart = startBlock - blockNow;
+  const blocksUntilEnd = endBlock - Math.max(startBlock, blockNow);
+
+  if (blocksUntilStart > 0) {
+    await mineBlocks(dm, blocksUntilStart);
+  }
+
+  const compWhales = dm.network === 'mainnet' ? COMP_WHALES.mainnet : COMP_WHALES.testnet;
+
+  if (blocksUntilEnd > 0) {
+    for (const whale of compWhales) {
+      try {
+        // Voting can fail if voter has already voted
+        const voter = await impersonateAddress(dm, whale);
+        await setNextBaseFeeToZero(dm);
+        await governor.connect(voter).castVote(id, 1, { gasPrice: 0 });
+      } catch (err) {
+        debug(`Error while voting for ${whale}`, err.message);
+      }
+    }
+    await mineBlocks(dm, blocksUntilEnd);
+  }
+
+  // Queue proposal (maybe)
+  const state = await governor.state(id);
+  if (state == ProposalState.Succeeded) {
+    await setNextBaseFeeToZero(dm);
+    await governor.queue(id, { gasPrice: 0 });
+  }
+
+  const proposal = await governor.proposals(id);
+  await setNextBlockTimestamp(dm, proposal.eta.toNumber() + 1);
+
+  // Execute proposal (w/ gas limit so we see if exec reverts, not a gas estimation error)
+  await setNextBaseFeeToZero(dm);
+  await governor.execute(id, { gasPrice: 0, gasLimit: 12000000 });
+}
+
+// Instantly executes some actions through the governance proposal process
+export async function fastGovernanceExecute(
+  dm: DeploymentManager,
+  proposer: SignerWithAddress,
+  targets: string[],
+  values: BigNumberish[],
+  signatures: string[],
+  calldatas: string[]
+) {
+  const governor = await dm.getContractOrThrow('governor');
+
+  await setNextBaseFeeToZero(dm);
+
+  const proposeTxn = await (
+    await governor.connect(proposer).propose(
+      targets,
+      values,
+      signatures,
+      calldatas,
+      'FastExecuteProposal',
+      { gasPrice: 0 }
+    )
+  ).wait();
+  const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
+  const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
+
+  await executeOpenProposal(dm, { id, startBlock, endBlock });
+}
+
+async function relayMumbaiMessage(
+  governanceDeploymentManager: DeploymentManager,
+  bridgeDeploymentManager: DeploymentManager,
+) {
+  const MUMBAI_RECEIVER_ADDRESSS = '0x0000000000000000000000000000000000001001';
+  const EVENT_LISTENER_TIMEOUT = 60000;
+
+  const stateSender = await governanceDeploymentManager.getContractOrThrow('stateSender');
+  const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
+  const fxChild = await bridgeDeploymentManager.getContractOrThrow('fxChild');
+
+  // listen on events on the fxRoot contract
+  const stateSyncedListenerPromise = new Promise((resolve, reject) => {
+    const filter = stateSender.filters.StateSynced();
+
+    governanceDeploymentManager.hre.ethers.provider.on(filter, (log) => {
+      resolve(log);
+    });
+
+    setTimeout(() => {
+      reject(new Error('StateSender.StateSynced event listener timed out'));
+    }, EVENT_LISTENER_TIMEOUT);
+  });
+
+  const stateSyncedEvent = await stateSyncedListenerPromise as Event;
+  const { args: { data: stateSyncedData } } = stateSender.interface.parseLog(stateSyncedEvent);
+
+  const mumbaiReceiverSigner = await impersonateAddress(bridgeDeploymentManager, MUMBAI_RECEIVER_ADDRESSS);
+
+  await setNextBaseFeeToZero(bridgeDeploymentManager);
+  const onStateReceiveTxn = await (
+    await fxChild.connect(mumbaiReceiverSigner).onStateReceive(
+      123,             // stateId
+      stateSyncedData, // _data
+      { gasPrice: 0 }
+    )
+  ).wait();
+
+  const proposalCreatedEvent = onStateReceiveTxn.events.find(event => event.address === bridgeReceiver.address);
+  const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
+
+  // fast forward l2 time
+  await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
+
+  // execute queued proposal
+  await setNextBaseFeeToZero(bridgeDeploymentManager);
+  await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+}
+
+export async function relayMessage(
+  governanceDeploymentManager: DeploymentManager,
+  bridgeDeploymentManager: DeploymentManager
+) {
+  const bridgeNetwork = bridgeDeploymentManager.network;
+  switch (bridgeNetwork) {
+    case 'mumbai':
+      await relayMumbaiMessage(governanceDeploymentManager, bridgeDeploymentManager);
+      break;
+    default:
+      throw new Error(`No message relay implementation from ${bridgeNetwork} -> ${governanceDeploymentManager.network}`);
+  }
+}
+
+export async function fastL2GovernanceExecute(
+  governanceDeploymentManager: DeploymentManager,
+  bridgeDeploymentManager: DeploymentManager,
+  proposer: SignerWithAddress,
+  targets: string[],
+  values: BigNumberish[],
+  signatures: string[],
+  calldatas: string[]
+) {
+  await fastGovernanceExecute(
+    governanceDeploymentManager,
+    proposer,
+    targets,
+    values,
+    signatures,
+    calldatas
+  );
+
+  await relayMessage(governanceDeploymentManager, bridgeDeploymentManager);
+}
+
+export async function executeOpenProposalAndRelay(
+  governanceDeploymentManager: DeploymentManager,
+  bridgeDeploymentManager: DeploymentManager,
+  openProposal: OpenProposal
+) {
+
+  await executeOpenProposal(governanceDeploymentManager, openProposal);
+  await relayMessage(governanceDeploymentManager, bridgeDeploymentManager);
 }
