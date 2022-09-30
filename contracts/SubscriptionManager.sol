@@ -97,7 +97,7 @@ contract SubscriptionManager {
         }
     }
 
-    function cancelSubscription(uint subscriptionPlanId) external payable {
+    function cancelSubscription(uint subscriptionPlanId) external {
         UserSubscription storage userSubscription = userSubscriptions[msg.sender][subscriptionPlanId];
         // XXX pay out developer on cancelation
 
