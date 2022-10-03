@@ -61,7 +61,11 @@ function key(baseName: string, scenarioName: string): string {
 
 // Strips out unserializable fields such as functions.
 function convertToSerializableObject(object: object) {
-  return JSON.parse(JSON.stringify(object));
+  return JSON.parse(JSON.stringify(object, (_key, value) =>
+    typeof value === 'bigint'
+      ? value.toString()
+      : value
+  ));
 }
 
 export async function runScenario<T, U, R>(

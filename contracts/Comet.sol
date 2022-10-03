@@ -13,6 +13,7 @@ import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.
 contract Comet is CometMainInterface {
     /** Custom errors **/
 
+    error NewError();
     error Absurd();
     error AlreadyInitialized();
     error BadAsset();

@@ -69,7 +69,7 @@ scenario(
   }
 );
 
-scenario(
+scenario.only(
   'Comet#pause > reverts if not called by governor or pause guardian',
   {
     pause: {
