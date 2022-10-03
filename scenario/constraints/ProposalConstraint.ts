@@ -60,6 +60,10 @@ export class ProposalConstraint<T extends CometContext, R extends Requirements> 
           throw(err);
         }
       }
+
+      // Re-set the assets in case they were updated via a proposal
+      await ctx.setAssets();
+
       return ctx;
     };
   }
