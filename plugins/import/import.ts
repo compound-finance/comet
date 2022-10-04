@@ -117,14 +117,15 @@ async function pullFirstTransactionForContract(network: string, address: string)
     apikey: getEtherscanApiKey(network)
   };
   const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]'}})}`;
 
-  debug(`Attempting to pull Contract Creation code from first tx at ${url}`);
+  debug(`Attempting to pull Contract Creation code from first tx at ${debugUrl}`);
   const result = await get(url, {});
   const contractCreationCode = result.result[0].input;
   if (!contractCreationCode) {
-    throw new Error(`Unable to find Contract Creation tx at ${url}`);
+    throw new Error(`Unable to find Contract Creation tx at ${debugUrl}`);
   }
-  debug(`Creation Code found in first tx at ${url}`);
+  debug(`Creation Code found in first tx at ${debugUrl}`);
   return contractCreationCode.slice(2);
 }
 
