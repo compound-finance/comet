@@ -83,7 +83,7 @@ async function getEtherscanApiData(network: string, address: string, apiKey: str
   };
 }
 
-async function scrapeContractCreationCode(network: string, address: string) {
+async function scrapeContractCreationCodeFromEtherscan(network: string, address: string) {
   const url = `${getEtherscanUrl(network)}/address/${address}#code`;
   debug(`Attempting to scrape Contract Creation code at ${url}`);
   const result = <string>await get(url, {});
@@ -100,7 +100,7 @@ async function scrapeContractCreationCode(network: string, address: string) {
   return matches[0][1];
 }
 
-async function pullFirstTransaction(network: string, address: string) {
+async function pullFirstTransactionForContract(network: string, address: string) {
   const url = `${getEtherscanApiUrl(network)}?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=10&sort=asc&apikey=${getEtherscanApiKey(network)}`;
   debug(`Attempting to pull Contract Creation code from first tx at ${url}`);
   const result = await get(url, {});
@@ -114,8 +114,8 @@ async function pullFirstTransaction(network: string, address: string) {
 
 async function getContractCreationCode(network: string, address: string) {
   const strategies = [
-    scrapeContractCreationCode,
-    pullFirstTransaction
+    scrapeContractCreationCodeFromEtherscan,
+    pullFirstTransactionForContract
   ];
   let errors = [];
   for (const strategy of strategies) {
