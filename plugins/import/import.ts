@@ -1,5 +1,15 @@
 import { get, getEtherscanApiKey, getEtherscanApiUrl, getEtherscanUrl } from './etherscan';
 
+export function debug(...args: any[]) {
+  if (process.env['DEBUG']) {
+    if (typeof args[0] === 'function') {
+      console.log(...args[0]());
+    } else {
+      console.log(...args);
+    }
+  }
+}
+
 /**
  * Copied from Saddle import with some small modifications.
  *
@@ -73,11 +83,12 @@ async function getEtherscanApiData(network: string, address: string, apiKey: str
   };
 }
 
-async function getContractCreationCode(network: string, address: string) {
-  let url = `${await getEtherscanUrl(network)}/address/${address}#code`;
-  let result = <string>await get(url, {});
-  let regex = /<div id='verifiedbytecode2'>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
-  let matches = [...result.matchAll(regex)];
+async function scrapeContractCreationCode(network: string, address: string) {
+  const url = `${getEtherscanUrl(network)}/address/${address}#code`;
+  debug(`Attempting to scrape Contract Creation at ${url}`);
+  const result = <string>await get(url, {});
+  const regex = /<div id='verifiedbytecode2'>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
+  const matches = [...result.matchAll(regex)];
   if (matches.length === 0) {
     if (result.match(/request throttled/i) || result.match(/try again later/i)) {
       throw new Error(`Request throttled: ${url}`);
@@ -85,7 +96,36 @@ async function getContractCreationCode(network: string, address: string) {
       throw new Error(`Failed to pull deployed contract code from Etherscan: ${url}`);
     }
   }
+  debug(`Scraping successful for ${url}`);
   return matches[0][1];
+}
+
+async function pullFirstTransaction(network: string, address: string) {
+  const url = `${getEtherscanApiUrl(network)}?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=10&sort=asc&apikey=${getEtherscanApiKey(network)}`;
+  debug(`Attempting to pull Contract Creation code from first tx at ${url}`);
+  const result = await get(url, {});
+  const contractCreationCode = result.result[0].input;
+  if (!contractCreationCode) {
+    throw new Error(`Unable to find Contract Creation event at ${url}`);
+  }
+  debug(`Creation Code found in first tx at ${url}`);
+  return contractCreationCode.slice(2);
+}
+
+async function getContractCreationCode(network: string, address: string) {
+  const strategies = [
+    scrapeContractCreationCode,
+    pullFirstTransaction
+  ];
+  let errors = [];
+  for (const strategy of strategies) {
+    try {
+      return await strategy(network, address);
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  throw new Error(errors.join("; "));
 }
 
 function parseSources({ source, contract, optimized, optimizationRuns }: EtherscanData) {
