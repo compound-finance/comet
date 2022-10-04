@@ -100,8 +100,24 @@ async function scrapeContractCreationCodeFromEtherscan(network: string, address:
   return matches[0][1];
 }
 
+function paramString(params: Object) {
+  return Object.entries(params).map(([k,v]) => `${k}=${v}`).join('&');
+}
+
 async function pullFirstTransactionForContract(network: string, address: string) {
-  const url = `${getEtherscanApiUrl(network)}?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=10&sort=asc&apikey=${getEtherscanApiKey(network)}`;
+  const params = {
+    module: "account",
+    action: 'txlist',
+    address,
+    startblock: 0,
+    endblock: 99999999,
+    page: 1,
+    offset: 10,
+    sort: 'asc',
+    apikey: getEtherscanApiKey(network)
+  };
+  const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
+
   debug(`Attempting to pull Contract Creation code from first tx at ${url}`);
   const result = await get(url, {});
   const contractCreationCode = result.result[0].input;
