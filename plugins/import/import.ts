@@ -125,7 +125,7 @@ async function getContractCreationCode(network: string, address: string) {
       errors.push(error);
     }
   }
-  throw new Error(errors.join("; "));
+  throw new Error(errors.join('; '));
 }
 
 function parseSources({ source, contract, optimized, optimizationRuns }: EtherscanData) {
