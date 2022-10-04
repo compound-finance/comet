@@ -72,7 +72,7 @@ async function testSupplyFromCollateral(context: CometContext, assetNum: number)
 
 for (let i = 0; i < MAX_ASSETS; i++) {
   const amountToSupply = 100; // in units of asset, not wei
-  scenario(
+  scenario.only(
     `Comet#supply > collateral asset ${i}`,
     {
       // XXX Unfortunately, the filtering step happens before solutions are run, so this will filter out

@@ -347,9 +347,10 @@ async function forkContext(c: CometContext, w: World): Promise<CometContext> {
 }
 
 export const constraints = [
-  new FilterConstraint(),
   new MigrationConstraint(),
   new ProposalConstraint(),
+  // We need to filter after migrations and proposals have been run
+  new FilterConstraint(),
   new VerifyMigrationConstraint(),
   new ModernConstraint(),
   new PauseConstraint(),

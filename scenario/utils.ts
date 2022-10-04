@@ -215,6 +215,7 @@ export async function modifiedPaths(pattern: RegExp, against: string = 'origin/m
 
 export async function isValidAssetIndex(ctx: CometContext, assetNum: number): Promise<boolean> {
   const comet = await ctx.getComet();
+  console.log('valid asset index ', assetNum, ' is ', assetNum < await comet.numAssets())
   return assetNum < await comet.numAssets();
 }
 
