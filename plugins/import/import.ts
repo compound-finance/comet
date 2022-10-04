@@ -85,7 +85,7 @@ async function getEtherscanApiData(network: string, address: string, apiKey: str
 
 async function scrapeContractCreationCode(network: string, address: string) {
   const url = `${getEtherscanUrl(network)}/address/${address}#code`;
-  debug(`Attempting to scrape Contract Creation at ${url}`);
+  debug(`Attempting to scrape Contract Creation code at ${url}`);
   const result = <string>await get(url, {});
   const regex = /<div id='verifiedbytecode2'>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
   const matches = [...result.matchAll(regex)];
@@ -106,7 +106,7 @@ async function pullFirstTransaction(network: string, address: string) {
   const result = await get(url, {});
   const contractCreationCode = result.result[0].input;
   if (!contractCreationCode) {
-    throw new Error(`Unable to find Contract Creation event at ${url}`);
+    throw new Error(`Unable to find Contract Creation tx at ${url}`);
   }
   debug(`Creation Code found in first tx at ${url}`);
   return contractCreationCode.slice(2);
