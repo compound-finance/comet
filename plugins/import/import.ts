@@ -100,13 +100,13 @@ async function scrapeContractCreationCodeFromEtherscan(network: string, address:
   return matches[0][1];
 }
 
-function paramString(params: Object) {
+function paramString(params: { [k: string]: string | number }) {
   return Object.entries(params).map(([k,v]) => `${k}=${v}`).join('&');
 }
 
 async function pullFirstTransactionForContract(network: string, address: string) {
   const params = {
-    module: "account",
+    module: 'account',
     action: 'txlist',
     address,
     startblock: 0,
