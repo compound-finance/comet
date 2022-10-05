@@ -32,8 +32,9 @@ module.exports = {
     'no-unused-vars': 'off',
     'prefer-const': 'off',
     'prefer-spread': 'off',
+    // NB: disabling error for this check, as at is buggy
     'quotes': [
-      'error',
+      'warn',
       'single',
       {
         'avoidEscape': true,

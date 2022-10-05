@@ -1,4 +1,5 @@
 import { scenario } from './context/CometContext';
+import { expectRevertCustom } from './utils';
 import { expect } from 'chai';
 
 scenario(
@@ -60,7 +61,7 @@ scenario(
       chainId: await world.chainId(),
     });
 
-    await expect(
+    await expectRevertCustom(
       betty.allowBySig({
         owner: charles.address, // altered owner
         manager: betty.address,
@@ -68,8 +69,9 @@ scenario(
         nonce,
         expiry,
         signature,
-      })
-    ).to.be.revertedWith("custom error 'BadSignatory()'");
+      }),
+      'BadSignatory()'
+    );
   }
 );
 
@@ -93,7 +95,7 @@ scenario(
       chainId: await world.chainId(),
     });
 
-    await expect(
+    await expectRevertCustom(
       betty.allowBySig({
         owner: albert.address,
         manager: charles.address, // altered manager
@@ -101,8 +103,9 @@ scenario(
         nonce,
         expiry,
         signature,
-      })
-    ).to.be.revertedWith("custom error 'BadSignatory()'");
+      }),
+      'BadSignatory()'
+    );
   }
 );
 
@@ -126,7 +129,7 @@ scenario(
       chainId: await world.chainId(),
     });
 
-    await expect(
+    await expectRevertCustom(
       betty.allowBySig({
         owner: albert.address,
         manager: betty.address,
@@ -134,8 +137,9 @@ scenario(
         nonce,
         expiry,
         signature,
-      })
-    ).to.be.revertedWith("custom error 'BadSignatory()'");
+      }),
+      'BadSignatory()'
+    );
   }
 );
 
@@ -159,7 +163,7 @@ scenario(
       chainId: await world.chainId(),
     });
 
-    await expect(
+    await expectRevertCustom(
       betty.allowBySig({
         owner: albert.address,
         manager: betty.address,
@@ -167,8 +171,9 @@ scenario(
         nonce: nonce.add(1), // altered nonce
         expiry,
         signature,
-      })
-    ).to.be.revertedWith("custom error 'BadSignatory()'");
+      }),
+      'BadSignatory()'
+    );
   }
 );
 
@@ -192,7 +197,7 @@ scenario(
       chainId: await world.chainId(),
     });
 
-    await expect(
+    await expectRevertCustom(
       betty.allowBySig({
         owner: albert.address,
         manager: betty.address,
@@ -200,8 +205,9 @@ scenario(
         nonce,
         expiry: expiry + 100, // altered expiry
         signature,
-      })
-    ).to.be.revertedWith("custom error 'BadSignatory()'");
+      }),
+      'BadSignatory()'
+    );
   }
 );
 
@@ -226,7 +232,7 @@ scenario(
       chainId: await world.chainId(),
     });
 
-    await expect(
+    await expectRevertCustom(
       betty.allowBySig({
         owner: albert.address,
         manager: betty.address,
@@ -234,8 +240,9 @@ scenario(
         nonce: invalidNonce,
         expiry,
         signature,
-      })
-    ).to.be.revertedWith("custom error 'BadNonce()'");
+      }),
+      'BadNonce()'
+    );
   }
 );
 
@@ -269,8 +276,8 @@ scenario(
       signature,
     });
 
-    // repeated call
-    await expect(
+    // repeated callRevertCustom
+    await expectRevertCustom(
       betty.allowBySig({
         owner: albert.address,
         manager: betty.address,
@@ -278,8 +285,9 @@ scenario(
         nonce,
         expiry,
         signature,
-      })
-    ).to.be.revertedWith("custom error 'BadNonce()'");
+      }),
+      'BadNonce()'
+    );
   }
 );
 
@@ -303,7 +311,7 @@ scenario(
       chainId: await world.chainId(),
     });
 
-    await expect(
+    await expectRevertCustom(
       betty.allowBySig({
         owner: albert.address,
         manager: betty.address,
@@ -311,8 +319,9 @@ scenario(
         nonce,
         expiry: invalidExpiry,
         signature,
-      })
-    ).to.be.revertedWith("custom error 'SignatureExpired()'");
+      }),
+      'SignatureExpired()'
+    );
   }
 );
 
@@ -338,7 +347,7 @@ scenario(
 
     signature.v = 26;
 
-    await expect(
+    await expectRevertCustom(
       betty.allowBySig({
         owner: albert.address,
         manager: betty.address,
@@ -346,8 +355,9 @@ scenario(
         nonce,
         expiry,
         signature,
-      })
-    ).to.be.revertedWith("custom error 'InvalidValueV()'");
+      }),
+      'InvalidValueV()'
+    );
   }
 );
 
@@ -374,7 +384,7 @@ scenario(
     // 1 greater than the max value of s
     signature.s = '0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1';
 
-    await expect(
+    await expectRevertCustom(
       betty.allowBySig({
         owner: albert.address,
         manager: betty.address,
@@ -382,7 +392,8 @@ scenario(
         nonce,
         expiry,
         signature,
-      })
-    ).to.be.revertedWith("custom error 'InvalidValueS()'");
+      }),
+      'InvalidValueS()'
+    );
   }
 );

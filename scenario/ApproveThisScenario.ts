@@ -1,4 +1,5 @@
 import { scenario } from './context/CometContext';
+import { expectRevertCustom } from './utils';
 import { expect } from 'chai';
 import { constants } from 'ethers';
 
@@ -34,6 +35,5 @@ scenario('Comet#approveThis > allows governor to authorize and rescind authoriza
 });
 
 scenario('Comet#approveThis > reverts if not called by governor', {}, async ({ comet, timelock }) => {
-  await expect(comet.approveThis(timelock.address, comet.address, constants.MaxUint256))
-    .to.be.revertedWith("custom error 'Unauthorized()'");
+  await expectRevertCustom(comet.approveThis(timelock.address, comet.address, constants.MaxUint256), 'Unauthorized()');
 });

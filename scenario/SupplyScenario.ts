@@ -1,6 +1,6 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, expectRevertMatches, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
+import { expectApproximately, expectRevertCustom, expectRevertMatches, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
 
 // XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
@@ -19,12 +19,13 @@ async function testSupplyCollateral(context: CometContext, assetNum: number): Pr
 
   const totalCollateralSupply = (await comet.totalsCollateral(collateralAsset.address)).totalSupplyAsset.toBigInt();
   if (totalCollateralSupply + toSupply > supplyCap.toBigInt()) {
-    await expect(
+    await expectRevertCustom(
       albert.supplyAsset({
         asset: collateralAsset.address,
         amount: 100n * scale,
-      })
-    ).to.be.revertedWith("custom error 'SupplyCapExceeded()'");
+      }),
+      'SupplyCapExceeded()'
+    );
   } else {
     // Albert supplies 100 units of collateral to Comet
     const txn = await albert.supplyAsset({ asset: collateralAsset.address, amount: toSupply });
@@ -51,14 +52,15 @@ async function testSupplyFromCollateral(context: CometContext, assetNum: number)
 
   const totalCollateralSupply = (await comet.totalsCollateral(collateralAsset.address)).totalSupplyAsset.toBigInt();
   if (totalCollateralSupply + toSupply > supplyCap.toBigInt()) {
-    await expect(
+    await expectRevertCustom(
       betty.supplyAssetFrom({
         src: albert.address,
         dst: betty.address,
         asset: collateralAsset.address,
         amount: toSupply,
-      })
-    ).to.be.revertedWith("custom error 'SupplyCapExceeded()'");
+      }),
+      'SupplyCapExceeded()'
+    );
   } else {
     // Betty supplies 100 units of collateral from Albert
     const txn = await betty.supplyAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: toSupply });
@@ -405,14 +407,15 @@ scenario(
     const scale = (await comet.baseScale()).toBigInt();
 
     await baseAsset.approve(albert, comet.address);
-    await expect(
+    await expectRevertCustom(
       betty.supplyAssetFrom({
         src: albert.address,
         dst: betty.address,
         asset: baseAsset.address,
         amount: 100n * scale,
-      })
-    ).to.be.revertedWith("custom error 'Unauthorized()'");
+      }),
+      'Unauthorized()'
+    );
   }
 );
 
@@ -428,12 +431,13 @@ scenario(
 
     const baseToken = await comet.baseToken();
 
-    await expect(
+    await expectRevertCustom(
       albert.supplyAsset({
         asset: baseToken,
         amount: 100,
-      })
-    ).to.be.revertedWith("custom error 'Paused()'");
+      }),
+      'Paused()'
+    );
   }
 );
 
@@ -451,14 +455,15 @@ scenario(
 
     await betty.allow(albert, true);
 
-    await expect(
+    await expectRevertCustom(
       albert.supplyAssetFrom({
         src: betty.address,
         dst: albert.address,
         asset: baseToken,
         amount: 100,
-      })
-    ).to.be.revertedWith("custom error 'Paused()'");
+      }),
+      'Paused()'
+    );
   }
 );
 
