@@ -1,4 +1,5 @@
 import { scenario } from './context/CometContext';
+import { expectRevertCustom } from './utils';
 import { expect } from 'chai';
 
 // XXX we could use a Comet reserves constraint here
@@ -43,11 +44,10 @@ scenario(
   },
   async ({ actors }) => {
     const { albert } = actors;
-    await expect(albert.withdrawReserves(albert.address, 10)).to.be.revertedWith(
-      "custom error 'Unauthorized()'"
-    );
+    await expectRevertCustom(albert.withdrawReserves(albert.address, 10), 'Unauthorized()');
   }
 );
+
 
 scenario(
   'Comet#withdrawReserves > reverts if not enough reserves are owned by protocol',
@@ -62,8 +62,10 @@ scenario(
     const scale = (await comet.baseScale()).toBigInt();
 
     await context.setNextBaseFeeToZero();
-    await expect(admin.withdrawReserves(albert.address, 101n * scale, { gasPrice: 0 }))
-      .to.be.revertedWith("custom error 'InsufficientReserves()'");
+    await expectRevertCustom(
+      admin.withdrawReserves(albert.address, 101n * scale, { gasPrice: 0 }),
+      'InsufficientReserves()'
+    );
   }
 );
 

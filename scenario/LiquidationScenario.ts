@@ -2,6 +2,7 @@ import { scenario } from './context/CometContext';
 import { CometInterface } from '../build/types';
 import CometActor from './context/CometActor';
 import { event, expect } from '../test/helpers';
+import { expectRevertCustom } from './utils';
 
 async function getLiquidationMargin({ comet, actor, baseLiquidity, factorScale }): Promise<bigint> {
   const numAssets = await comet.numAssets();
@@ -101,9 +102,10 @@ scenario(
 
     await betty.withdrawAsset({ asset: baseToken, amount: baseBorrowMin }); // force accrue
 
-    await expect(
-      betty.absorb({ absorber: betty.address, accounts: [albert.address] })
-    ).to.be.revertedWith("custom error 'Paused()'");
+    await expectRevertCustom(
+      betty.absorb({ absorber: betty.address, accounts: [albert.address] }),
+      'Paused()'
+    );
   }
 );
 

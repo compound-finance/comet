@@ -1,4 +1,5 @@
 import { scenario } from './context/CometContext';
+import { expectRevertCustom } from './utils';
 import { expect } from 'chai';
 
 scenario(
@@ -70,7 +71,7 @@ scenario(
 );
 
 scenario(
-  'Comet#pause > reverts if not called by governor or pause guardian',
+  'CometRevertCustom#pause > reverts if not called by governor or pause guardian',
   {
     pause: {
       all: false,
@@ -78,14 +79,15 @@ scenario(
   },
   async ({ actors }) => {
     const { albert } = actors;
-    await expect(
+    await expectRevertCustom(
       albert.pause({
         supplyPaused: true,
         transferPaused: true,
         withdrawPaused: true,
         absorbPaused: true,
         buyPaused: true,
-      })
-    ).to.be.revertedWith("custom error 'Unauthorized()'");
+      }),
+      'Unauthorized()'
+    );
   }
 );

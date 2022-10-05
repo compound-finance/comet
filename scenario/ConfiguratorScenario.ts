@@ -1,4 +1,5 @@
 import { scenario } from './context/CometContext';
+import { expectRevertCustom } from './utils';
 import { expect } from 'chai';
 
 scenario('upgrade governor', {}, async ({ comet, configurator, timelock, actors }, context) => {
@@ -52,17 +53,15 @@ scenario('add assets', {}, async ({ comet, configurator, actors }, context) => {
   expect(updatedCollateralAssets.map(a => a.asset)).to.have.members(updatedContextAssets);
 });
 
-// XXX Hardhat currently can't parse custom errors from external contracts.
-//  We could use `upgrade` and have an option for the ModernConstraint to also re-deploy proxies?
-//  https://github.com/NomicFoundation/hardhat/issues/1618
-scenario.skip( // XXX try again
+scenario(
   'reverts if configurator is not called by admin',
   {},
   async ({ comet, configurator, actors }) => {
     const { albert } = actors;
-    await expect(
-      configurator.connect(albert.signer).setGovernor(comet.address, albert.address)
-    ).to.be.revertedWith('Unauthorized');
+    await expectRevertCustom(
+      configurator.connect(albert.signer).setGovernor(comet.address, albert.address),
+      'Unauthorized()'
+    );
   });
 
 scenario.skip('reverts if proxy is not upgraded by ProxyAdmin', {}, async () => {

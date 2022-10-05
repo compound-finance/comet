@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber, BigNumberish, Contract, ContractReceipt, Event, EventFilter, constants } from 'ethers';
+import { BigNumber, BigNumberish, Contract, ContractReceipt, Event, EventFilter, constants, utils } from 'ethers';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { CometContext } from '../context/CometContext';
@@ -40,6 +40,23 @@ export function abs(x: bigint): bigint {
 
 export function expectApproximately(expected: bigint, actual: bigint, precision: bigint = 0n) {
   expect(BigNumber.from(abs(expected - actual))).to.be.lte(BigNumber.from(precision));
+}
+
+
+export function expectRevertCustom(tx: Promise<ContractReceipt>, custom: string) {
+  return tx
+    .then(_ => { throw new Error('Expected transaction to be reverted'); })
+    .catch(e => {
+      const selector = utils.keccak256(custom.split('').reduce((a, s) => a + s.charCodeAt(0).toString(16), '0x')).slice(2, 2 + 8);
+      const patterns = [
+        new RegExp(`custom error '${custom.replace(/[()]/g, "\\$&")}'`),
+        new RegExp(`unrecognized custom error with selector ${selector}`),
+      ];
+      for (const pattern of patterns)
+        if (pattern.test(e.message))
+          return;
+      throw new Error(`Expected revert message in one of ${patterns}, but reverted with: ${e.message}`);
+    });
 }
 
 export function expectRevertMatches(tx: Promise<ContractReceipt>, patterns: RegExp | RegExp[]) {

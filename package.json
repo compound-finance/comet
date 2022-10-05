@@ -71,7 +71,7 @@
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.5.1",
     "fast-glob": "^3.2.7",
-    "hardhat": "https://github.com/jflatow/hardhat/releases/download/viaIR/hardhat-v2.9.9.tgz",
+    "hardhat": "https://github.com/jflatow/hardhat/releases/download/viaIR/hardhat-v2.11.2.tgz",
     "hardhat-contract-sizer": "^2.4.0",
     "hardhat-cover": "compound-finance/hardhat-cover",
     "hardhat-gas-reporter": "^1.0.7",

@@ -1,6 +1,6 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
+import { expectApproximately, expectRevertCustom, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
 
 async function testTransferCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
@@ -226,13 +226,14 @@ scenario(
 
     // Albert with positive balance transfers to Betty with negative balance
     const toTransfer = 2001n * scale; // XXX min borrow...
-    await expect(
+    await expectRevertCustom(
       albert.transferAsset({
         dst: betty.address,
         asset: baseAsset.address,
         amount: toTransfer,
-      })
-    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+      }),
+      'NotCollateralized()'
+    );
   }
 );
 
@@ -261,14 +262,15 @@ scenario(
 
     // Albert with positive balance transfers to Betty with negative balance
     const toTransfer = 2001n * scale; // XXX min borrow...
-    await expect(
+    await expectRevertCustom(
       betty.transferAssetFrom({
         src: albert.address,
         dst: betty.address,
         asset: baseAsset.address,
         amount: toTransfer,
-      })
-    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+      }),
+      'NotCollateralized()'
+    );
   }
 );
 
@@ -288,12 +290,14 @@ scenario(
     const scale = scaleBN.toBigInt();
 
     // Albert transfers all his collateral to Betty
-    await expect(
+    await expectRevertCustom(
       albert.transferAsset({
         dst: betty.address,
         asset: collateralAsset.address,
         amount: 3000n * scale,
-      })).to.be.revertedWith("custom error 'NotCollateralized()'");
+      }),
+      'NotCollateralized()'
+    );
   }
 );
 
@@ -315,14 +319,15 @@ scenario(
     await albert.allow(betty, true);
 
     // Betty transfers all of Albert's collateral to herself
-    await expect(
+    await expectRevertCustom(
       betty.transferAssetFrom({
         src: albert.address,
         dst: betty.address,
         asset: collateralAsset.address,
         amount: 3000n * scale,
-      })
-    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+      }),
+      'NotCollateralized()'
+    );
   }
 );
 
@@ -334,13 +339,14 @@ scenario(
 
     const baseToken = await comet.baseToken();
 
-    await expect(
+    await expectRevertCustom(
       albert.transferAsset({
         dst: albert.address,
         asset: baseToken,
         amount: 100,
-      })
-    ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
+      }),
+      'NoSelfTransfer()'
+    );
   }
 );
 
@@ -352,13 +358,14 @@ scenario(
 
     const collateralAsset = await comet.getAssetInfo(0);
 
-    await expect(
+    await expectRevertCustom(
       albert.transferAsset({
         dst: albert.address,
         asset: collateralAsset.asset,
         amount: 100,
-      })
-    ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
+      }),
+      'NoSelfTransfer()'
+    );
   }
 );
 
@@ -372,14 +379,15 @@ scenario(
 
     await betty.allow(albert, true);
 
-    await expect(
+    await expectRevertCustom(
       albert.transferAssetFrom({
         src: betty.address,
         dst: betty.address,
         asset: baseToken,
         amount: 100,
-      })
-    ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
+      }),
+      'NoSelfTransfer()'
+    );
   }
 );
 
@@ -393,14 +401,15 @@ scenario(
 
     await betty.allow(albert, true);
 
-    await expect(
+    await expectRevertCustom(
       albert.transferAssetFrom({
         src: betty.address,
         dst: betty.address,
         asset: collateralAsset.asset,
         amount: 100,
-      })
-    ).to.be.revertedWith("custom error 'NoSelfTransfer()'");
+      }),
+      'NoSelfTransfer()'
+    );
   }
 );
 
@@ -413,14 +422,15 @@ scenario(
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
 
-    await expect(
+    await expectRevertCustom(
       betty.transferAssetFrom({
         src: albert.address,
         dst: betty.address,
         asset: baseAsset.address,
         amount: 1n * scale,
-      })
-    ).to.be.revertedWith("custom error 'Unauthorized()'");
+      }),
+      'Unauthorized()'
+    );
   }
 );
 
@@ -438,15 +448,17 @@ scenario(
 
     await betty.allow(albert, true);
 
-    await expect(
+    await expectRevertCustom(
       albert.transferAsset({
         dst: betty.address,
         asset: baseToken,
         amount: 100,
-      })
-    ).to.be.revertedWith("custom error 'Paused()'");
+      }),
+      'Paused()'
+    );
   }
 );
+
 
 scenario(
   'Comet#transferFrom reverts when transfer is paused',
@@ -462,14 +474,15 @@ scenario(
 
     await betty.allow(albert, true);
 
-    await expect(
+    await expectRevertCustom(
       albert.transferAssetFrom({
         src: betty.address,
         dst: albert.address,
         asset: baseToken,
         amount: 100,
-      })
-    ).to.be.revertedWith("custom error 'Paused()'");
+      }),
+      'Paused()'
+    );
   }
 );
 
@@ -486,12 +499,13 @@ scenario(
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const minBorrow = (await comet.baseBorrowMin()).toBigInt();
 
-    await expect(
+    await expectRevertCustom(
       albert.transferAsset({
         dst: betty.address,
         asset: baseAsset.address,
         amount: minBorrow / 2n
-      })
-    ).to.be.revertedWith("custom error 'BorrowTooSmall()'");
+      }),
+      'BorrowTooSmall()'
+    );
   }
 );

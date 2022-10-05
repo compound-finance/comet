@@ -1,6 +1,6 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, getExpectedBaseBalance, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
+import { expectApproximately, expectRevertCustom, getExpectedBaseBalance, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
 
 async function testWithdrawCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
@@ -219,15 +219,16 @@ scenario(
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
 
-    // Betty borrows 1 unit of base using Albert's account
-    await expect(
+    // Betty borrowsRevertCustom 1 unit of base using Albert's account
+    await expectRevertCustom(
       betty.withdrawAssetFrom({
         src: albert.address,
         dst: betty.address,
         asset: baseAsset.address,
         amount: 1n * scale,
-      })
-    ).to.be.revertedWith("custom error 'Unauthorized()'");
+      }),
+      'Unauthorized()'
+    );
   }
 );
 
@@ -242,12 +243,13 @@ scenario(
     const { albert } = actors;
     const baseToken = await comet.baseToken();
 
-    await expect(
+    await expectRevertCustom(
       albert.withdrawAsset({
         asset: baseToken,
         amount: 100,
-      })
-    ).to.be.revertedWith("custom error 'Paused()'");
+      }),
+      'Paused()'
+    );
   }
 );
 
@@ -265,14 +267,15 @@ scenario(
 
     await betty.allow(albert, true);
 
-    await expect(
+    await expectRevertCustom(
       albert.withdrawAssetFrom({
         src: betty.address,
         dst: albert.address,
         asset: baseToken,
         amount: 100,
-      })
-    ).to.be.revertedWith("custom error 'Paused()'");
+      }),
+      'Paused()'
+    );
   }
 );
 
@@ -290,12 +293,13 @@ scenario(
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const scale = (await comet.baseScale()).toBigInt();
 
-    await expect(
+    await expectRevertCustom(
       albert.withdrawAsset({
         asset: baseAsset.address,
         amount: 1000n * scale,
-      })
-    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+      }),
+      'NotCollateralized()'
+    );
   }
 );
 
@@ -312,12 +316,13 @@ scenario(
     const collateralAsset = context.getAssetByAddress(asset0Address);
     const scale = scaleBN.toBigInt();
 
-    await expect(
+    await expectRevertCustom(
       albert.withdrawAsset({
         asset: collateralAsset.address,
         amount: 1000n * scale
-      })
-    ).to.be.revertedWith("custom error 'NotCollateralized()'");
+      }),
+      'NotCollateralized()'
+    );
   }
 );
 
@@ -334,12 +339,13 @@ scenario(
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const minBorrow = (await comet.baseBorrowMin()).toBigInt();
 
-    await expect(
+    await expectRevertCustom(
       albert.withdrawAsset({
         asset: baseAsset.address,
         amount: minBorrow / 2n
-      })
-    ).to.be.revertedWith("custom error 'BorrowTooSmall()'");
+      }),
+      'BorrowTooSmall()'
+    );
   }
 );
 
