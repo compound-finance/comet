@@ -8,6 +8,7 @@ jobs:
     name: Run coverage
     runs-on: ubuntu-latest
     env:
+      NODE_OPTIONS: '--max-old-space-size=4096'
       OPTIMIZER_DISABLED: true
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
