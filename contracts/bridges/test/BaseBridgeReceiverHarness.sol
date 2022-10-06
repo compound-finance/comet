@@ -5,9 +5,9 @@ import "../BaseBridgeReceiver.sol";
 
 contract BaseBridgeReceiverHarness is BaseBridgeReceiver {
     function processMessageExternal(
-        address messageSender,
+        address rootMessageSender,
         bytes calldata data
     ) external {
-        processMessage(messageSender, data);
+        processMessage(rootMessageSender, data);
     }
 }

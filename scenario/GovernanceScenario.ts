@@ -2,11 +2,12 @@ import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { BigNumberish, constants, utils } from 'ethers';
 import { exp } from '../test/helpers';
-import { FaucetToken } from '../build/types';
+import { BaseBridgeReceiver, FaucetToken } from '../build/types';
 import { calldata } from '../src/deploy';
 import { COMP_WHALES } from '../src/deploy';
 import { impersonateAddress } from '../plugins/scenario/utils';
 import { expectBase, isBridgedDeployment, fastL2GovernanceExecute } from './utils';
+import { World } from '../plugins/scenario';
 
 scenario('upgrade Comet implementation and initialize', {filter: async (ctx) => !isBridgedDeployment(ctx)}, async ({ comet, configurator, proxyAdmin }, context) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
@@ -158,49 +159,176 @@ scenario('add new asset',
 scenario(
   'execute Mumbai governance proposal',
   {
-    filter: async (ctx) => ctx.world.base.network === 'mumbai'
+    filter: async ctx => ctx.world.base.network === 'mumbai'
   },
-  async ({ timelock, bridgeReceiver }, _context, world) => {
-    const governanceDeploymentManager = world.auxiliaryDeploymentManager;
-    if (!governanceDeploymentManager) {
-      throw new Error('cannot execute governance without governance deployment manager');
-    }
-
-    const proposer = await impersonateAddress(governanceDeploymentManager, COMP_WHALES.testnet[0]);
-
+  async ({ comet, timelock, bridgeReceiver }, _context, world) => {
     const currentTimelockDelay = await timelock.delay();
     const newTimelockDelay = currentTimelockDelay.mul(2);
 
+    // Cross-chain proposal to change L2 timelock's delay and pause L2 Comet actions
+    const setDelayCalldata = utils.defaultAbiCoder.encode(['uint'], [newTimelockDelay]);
+    const pauseCalldata = await calldata(comet.populateTransaction.pause(true, true, true, true, true));
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
-        [timelock.address],
-        [0],
-        ['setDelay(uint256)'],
-        [utils.defaultAbiCoder.encode(['uint'], [newTimelockDelay])]
+        [timelock.address, comet.address],
+        [0, 0],
+        ['setDelay(uint256)', 'pause(bool,bool,bool,bool,bool)'],
+        [setDelayCalldata, pauseCalldata]
       ]
     );
-
-    const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
-      ['address', 'bytes'],
-      [bridgeReceiver.address, l2ProposalData]
-    );
-
-    const fxRoot = await governanceDeploymentManager.getContractOrThrow('fxRoot');
 
     expect(await timelock.delay()).to.eq(currentTimelockDelay);
     expect(currentTimelockDelay).to.not.eq(newTimelockDelay);
 
-    await fastL2GovernanceExecute(
-      governanceDeploymentManager,
-      world.deploymentManager,
-      proposer,
-      [fxRoot.address],
-      [0],
-      ['sendMessageToChild(address,bytes)'],
-      [sendMessageToChildCalldata]
-    );
+    await fastL1ToPolygonGovernanceExecute(l2ProposalData, bridgeReceiver, world);
 
     expect(await timelock.delay()).to.eq(newTimelockDelay);
+    expect(await comet.isAbsorbPaused()).to.eq(true);
+    expect(await comet.isBuyPaused()).to.eq(true);
+    expect(await comet.isSupplyPaused()).to.eq(true);
+    expect(await comet.isTransferPaused()).to.eq(true);
+    expect(await comet.isWithdrawPaused()).to.eq(true);
   }
 );
+
+scenario(
+  'upgrade Mumbai governance contracts and ensure they work properly',
+  {
+    filter: async ctx => ctx.world.base.network === 'mumbai'
+  },
+  async ({ comet, configurator, proxyAdmin, timelock: oldLocalTimelock, bridgeReceiver: oldBridgeReceiver }, _context, world) => {
+    const dm = world.deploymentManager;
+    const governanceDeploymentManager = world.auxiliaryDeploymentManager;
+    if (!governanceDeploymentManager) {
+      throw new Error('cannot execute governance without governance deployment manager');
+    }
+    const fxChild = await dm.getContractOrThrow('fxChild');
+
+    // Deploy new PolygonBridgeReceiver
+    const newBridgeReceiver = await dm.deploy<BaseBridgeReceiver, [string]>(
+      'newBridgeReceiver',
+      'bridges/polygon/PolygonBridgeReceiver.sol',
+      [fxChild.address]           // fxChild
+    );
+
+    // Deploy new local Timelock
+    const secondsPerDay = 24 * 60 * 60;
+    const newLocalTimelock = await dm.deploy(
+      'newTimelock',
+      'vendor/Timelock.sol',
+      [
+        newBridgeReceiver.address, // admin
+        2 * secondsPerDay,         // delay
+        14 * secondsPerDay,        // grace period
+        2 * secondsPerDay,         // minimum delay
+        30 * secondsPerDay         // maxiumum delay
+      ]
+    );
+
+    // Initialize new PolygonBridgeReceiver
+    const mainnetTimelock = (await governanceDeploymentManager.getContractOrThrow('timelock')).address;
+    await newBridgeReceiver.initialize(
+      mainnetTimelock,             // govTimelock
+      newLocalTimelock.address     // localTimelock
+    );
+
+    // Process for upgrading L2 governance contracts (order matters):
+    // 1. Update the admin of Comet in Configurator to be the new Timelock
+    // 2. Update the admin of CometProxyAdmin to be the new Timelock
+    const transferOwnershipCalldata = utils.defaultAbiCoder.encode(
+      ['address'],
+      [newLocalTimelock.address]
+    );
+    const setGovernorCalldata = await calldata(
+      configurator.populateTransaction.setGovernor(comet.address, newLocalTimelock.address)
+    );
+    const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'address'],
+      [configurator.address, comet.address]
+    );
+    const upgradeL2GovContractsProposal = utils.defaultAbiCoder.encode(
+      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
+      [
+        [configurator.address, proxyAdmin.address, proxyAdmin.address],
+        [0, 0, 0],
+        [
+          'setGovernor(address,address)',
+          'deployAndUpgradeTo(address,address)',
+          'transferOwnership(address)'
+        ],
+        [setGovernorCalldata, deployAndUpgradeToCalldata, transferOwnershipCalldata]
+      ]
+    );
+
+    expect(await proxyAdmin.owner()).to.eq(oldLocalTimelock.address);
+    expect(await comet.governor()).to.eq(oldLocalTimelock.address);
+
+    await fastL1ToPolygonGovernanceExecute(upgradeL2GovContractsProposal, oldBridgeReceiver, world);
+
+    expect(await proxyAdmin.owner()).to.eq(newLocalTimelock.address);
+    expect(await comet.governor()).to.eq(newLocalTimelock.address);
+
+    // Update aliases now that the new Timelock and BridgeReceiver are official
+    await dm.putAlias('timelock', newLocalTimelock);
+    await dm.putAlias('bridgeReceiver', newBridgeReceiver);
+
+    // Now, test that the new L2 governance contracts are working properly via another cross-chain proposal
+    const currentTimelockDelay = await newLocalTimelock.delay();
+    const newTimelockDelay = currentTimelockDelay.mul(2);
+
+    const setDelayCalldata = utils.defaultAbiCoder.encode(['uint'], [newTimelockDelay]);
+    const pauseCalldata = await calldata(comet.populateTransaction.pause(true, true, true, true, true));
+    const l2ProposalData = utils.defaultAbiCoder.encode(
+      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
+      [
+        [newLocalTimelock.address, comet.address],
+        [0, 0],
+        ['setDelay(uint256)', 'pause(bool,bool,bool,bool,bool)'],
+        [setDelayCalldata, pauseCalldata]
+      ]
+    );
+
+    expect(await newLocalTimelock.delay()).to.eq(currentTimelockDelay);
+    expect(currentTimelockDelay).to.not.eq(newTimelockDelay);
+
+    await fastL1ToPolygonGovernanceExecute(l2ProposalData, newBridgeReceiver, world);
+
+    expect(await newLocalTimelock.delay()).to.eq(newTimelockDelay);
+    expect(await comet.isAbsorbPaused()).to.eq(true);
+    expect(await comet.isBuyPaused()).to.eq(true);
+    expect(await comet.isSupplyPaused()).to.eq(true);
+    expect(await comet.isTransferPaused()).to.eq(true);
+    expect(await comet.isWithdrawPaused()).to.eq(true);
+  }
+);
+
+async function fastL1ToPolygonGovernanceExecute(
+  l2ProposalData: string,
+  bridgeReceiver: BaseBridgeReceiver,
+  world: World
+) {
+  const governanceDeploymentManager = world.auxiliaryDeploymentManager;
+  if (!governanceDeploymentManager) {
+    throw new Error('cannot execute governance without governance deployment manager');
+  }
+
+  const proposer = await impersonateAddress(governanceDeploymentManager, COMP_WHALES.testnet[0]);
+
+  const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
+    ['address', 'bytes'],
+    [bridgeReceiver.address, l2ProposalData]
+  );
+
+  const fxRoot = await governanceDeploymentManager.getContractOrThrow('fxRoot');
+
+  await fastL2GovernanceExecute(
+    governanceDeploymentManager,
+    world.deploymentManager,
+    proposer,
+    [fxRoot.address],
+    [0],
+    ['sendMessageToChild(address,bytes)'],
+    [sendMessageToChildCalldata]
+  );
+}

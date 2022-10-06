@@ -8,16 +8,15 @@ contract BaseBridgeReceiver {
     error AlreadyInitialized();
     error BadData();
     error InvalidProposalId();
-    error ProposalNotQueued();
+    error InvalidTimelockAdmin();
+    error ProposalNotExecutable();
     error TransactionAlreadyQueued();
     error Unauthorized();
 
     /** Events **/
     event Initialized(address indexed govTimelock, address indexed localTimelock);
-    event NewLocalTimelock(address indexed oldLocalTimelock, address indexed newLocalTimelock);
-    event NewGovTimelock(address indexed oldGovTimelock, address indexed newGovTimelock);
-    event ProposalCreated(address indexed messageSender, uint id, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, uint eta);
-    event ProposalExecuted(uint id);
+    event ProposalCreated(address indexed rootMessageSender, uint id, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, uint eta);
+    event ProposalExecuted(uint indexed id);
 
     /** Public variables **/
 
@@ -63,6 +62,7 @@ contract BaseBridgeReceiver {
      */
     function initialize(address _govTimelock, address _localTimelock) external {
         if (initialized) revert AlreadyInitialized();
+        if (ITimelock(_localTimelock).admin() != address(this)) revert InvalidTimelockAdmin();
         govTimelock = _govTimelock;
         localTimelock = _localTimelock;
         initialized = true;
@@ -70,45 +70,15 @@ contract BaseBridgeReceiver {
     }
 
     /**
-     * @notice Accept admin role for the localTimelock
-     */
-    function acceptLocalTimelockAdmin() external {
-        if (msg.sender != localTimelock) revert Unauthorized();
-        ITimelock(localTimelock).acceptAdmin();
-    }
-
-    /**
-     * @notice Set localTimelock address
-     * @param newTimelock Address to set as the localTimelock
-     */
-    function setLocalTimelock(address newTimelock) public {
-        if (msg.sender != localTimelock) revert Unauthorized();
-        address oldLocalTimelock = localTimelock;
-        localTimelock = newTimelock;
-        emit NewLocalTimelock(oldLocalTimelock, newTimelock);
-    }
-
-    /**
-     * @notice Set govTimelock address
-     * @param newTimelock Address to set as the govTimelock
-     */
-    function setGovTimelock(address newTimelock) public {
-        if (msg.sender != localTimelock) revert Unauthorized();
-        address oldGovTimelock = govTimelock;
-        govTimelock = newTimelock;
-        emit NewGovTimelock(oldGovTimelock, newTimelock);
-    }
-
-    /**
      * @notice Process a message sent from the governing timelock (across a bridge)
-     * @param messageSender Address of the contract that sent the bridged message
+     * @param rootMessageSender Address of the contract that sent the bridged message
      * @param data ABI-encoded bytes containing the transactions to be queued on the local timelock
      */
     function processMessage(
-        address messageSender,
+        address rootMessageSender,
         bytes calldata data
     ) internal {
-        if (messageSender != govTimelock) revert Unauthorized();
+        if (rootMessageSender != govTimelock) revert Unauthorized();
 
         address[] memory targets;
         uint256[] memory values;
@@ -127,10 +97,9 @@ contract BaseBridgeReceiver {
         uint delay = ITimelock(localTimelock).delay();
         uint eta = block.timestamp + delay;
 
-        for (uint8 i = 0; i < targets.length; ) {
+        for (uint i = 0; i < targets.length; i++) {
             if (ITimelock(localTimelock).queuedTransactions(keccak256(abi.encode(targets[i], values[i], signatures[i], calldatas[i], eta)))) revert TransactionAlreadyQueued();
             ITimelock(localTimelock).queueTransaction(targets[i], values[i], signatures[i], calldatas[i], eta);
-            unchecked { i++; }
         }
 
         proposalCount++;
@@ -145,7 +114,7 @@ contract BaseBridgeReceiver {
         });
 
         proposals[proposal.id] = proposal;
-        emit ProposalCreated(messageSender, proposal.id, targets, values, signatures, calldatas, eta);
+        emit ProposalCreated(rootMessageSender, proposal.id, targets, values, signatures, calldatas, eta);
     }
 
     /**
@@ -153,7 +122,7 @@ contract BaseBridgeReceiver {
      * @param proposalId The id of the proposal to execute
      */
     function executeProposal(uint proposalId) external {
-        if (state(proposalId) != ProposalState.Queued) revert ProposalNotQueued();
+        if (state(proposalId) != ProposalState.Queued) revert ProposalNotExecutable();
         Proposal storage proposal = proposals[proposalId];
         proposal.executed = true;
         for (uint i = 0; i < proposal.targets.length; i++) {
@@ -172,7 +141,7 @@ contract BaseBridgeReceiver {
         Proposal memory proposal = proposals[proposalId];
         if (proposal.executed) {
             return ProposalState.Executed;
-        } else if (block.timestamp >= (proposal.eta + ITimelock(localTimelock).GRACE_PERIOD())) {
+        } else if (block.timestamp > (proposal.eta + ITimelock(localTimelock).GRACE_PERIOD())) {
             return ProposalState.Expired;
         } else {
             return ProposalState.Queued;
