@@ -88,6 +88,11 @@ export const WHALES = {
     '0x2775b1c75658be0f640272ccb8c72ac986009e38',
     '0x1a9c8182c09f50c8318d769245bea52c32be35bc',
     '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b',
+  ],
+  polygon: [
+    '0x2093b4281990a568c9d588b8bce3bfd7a1557ebd', // WETH whale
+    '0xd814b26554204245a30f8a42c289af582421bf04', // WBTC whale
+    '0x167384319b41f7094e62f7506409eb38079abff8'  // WMATIC whale
   ]
 };
 
