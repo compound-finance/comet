@@ -1,5 +1,5 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
-import relayMumbaiMessage from './relayMumbaiMessage';
+import relayPolygonMessage from './relayPolygonMessage';
 
 export default async function relayMessage(
   governanceDeploymentManager: DeploymentManager,
@@ -8,7 +8,8 @@ export default async function relayMessage(
   const bridgeNetwork = bridgeDeploymentManager.network;
   switch (bridgeNetwork) {
     case 'mumbai':
-      await relayMumbaiMessage(governanceDeploymentManager, bridgeDeploymentManager);
+    case 'polygon':
+      await relayPolygonMessage(governanceDeploymentManager, bridgeDeploymentManager);
       break;
     default:
       throw new Error(`No message relay implementation from ${bridgeNetwork} -> ${governanceDeploymentManager.network}`);
