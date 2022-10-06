@@ -14,7 +14,6 @@ contract Timelock is ITimelock {
 
     mapping (bytes32 => bool) public queuedTransactions;
 
-
     constructor(address admin_, uint delay_, uint gracePeriod_, uint minimumDelay_, uint maxiumumDelay_) public {
         require(delay_ >= minimumDelay_, "Timelock::constructor: Delay must exceed minimum delay.");
         require(delay_ <= maxiumumDelay_, "Timelock::setDelay: Delay must not exceed maximum delay.");
