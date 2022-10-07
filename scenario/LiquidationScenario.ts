@@ -161,6 +161,37 @@ scenario(
   }
 );
 
+scenario(
+  'Comet#liquidation > user can end up with a minted supply',
+  {
+    tokenBalances: {
+      $comet: { $base: 1000 },
+    },
+    cometBalances: {
+      albert: {
+        $base: -1000,
+        $asset0: 0.001
+      },
+    },
+  },
+  async ({ comet, actors }, context, world) => {
+    const { albert, betty } = actors;
+
+    await world.increaseTime(
+      await timeUntilUnderwater({
+        comet,
+        actor: albert,
+      })
+    );
+
+    const ab0 = await betty.absorb({ absorber: betty.address, accounts: [albert.address] });
+    expect(ab0.events?.[2]?.event).to.be.equal('Transfer');
+
+    const baseBalance = await albert.getCometBaseBalance();
+    expect(Number(baseBalance)).to.be.greaterThan(0);
+  }
+);
+
 // XXX Skipping temporarily because testnet is in a weird state where an EOA ('admin') still
 // has permission to withdraw Comet's collateral, while Timelock does not. This is because the
 // permission was set up in the initialize() function. There is currently no way to update this

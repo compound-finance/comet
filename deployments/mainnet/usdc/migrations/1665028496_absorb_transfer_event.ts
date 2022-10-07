@@ -67,7 +67,7 @@ export default migration('1665028496_absorb_transfer_event', {
     } = await deploymentManager.getContracts();
 
     // 1. & 2.
-    // XXX check absorb transfer event? at least check factory and comet impl changed here
+    //  added a scenario to check for new Transfer event
 
     // 3.
     expect(await COMP.balanceOf(andrew)).to.be.equal(exp(10, 18));

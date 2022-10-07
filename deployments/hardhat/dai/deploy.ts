@@ -44,7 +44,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     priceFeed: goldPriceFeed.address,
     decimals: (8).toString(),
     borrowCollateralFactor: (0.9e18).toString(),
-    liquidateCollateralFactor: (1e18).toString(),
+    liquidateCollateralFactor: (0.91e18).toString(),
     liquidationFactor: (0.95e18).toString(),
     supplyCap: (1000000e8).toString(),
   };
