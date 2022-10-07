@@ -33,7 +33,7 @@ import {
 } from '../build/types';
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
-import { TotalsBasicStructOutput } from '../build/types/CometHarness';
+import { TotalsBasicStructOutput, TotalsColalteralStructOutput } from '../build/types/CometHarness';
 
 export { Comet, ethers, expect, hre };
 
@@ -502,6 +502,13 @@ export async function makeBulker(opts: BulkerOpts): Promise<BulkerInfo> {
     bulker
   };
 }
+export async function bumpTotalsCollateral(comet: CometHarnessInterface, token: FaucetToken, delta: bigint): Promise<TotalsCollateralStructOutput> {
+  const t0 = await comet.totalsCollateral(token.address);
+  const t1 = Object.assign({}, t0, { totalSupplyAsset: t0.totalSupplyAsset + delta });
+  await token.allocateTo(comet.address, delta);
+  await wait(comet.setTotalsCollateral(token.address, t1));
+  return t1;
+}
 
 export async function setTotalsBasic(comet: CometHarnessInterface, overrides = {}): Promise<TotalsBasicStructOutput> {
   const t0 = await comet.totalsBasic();
@@ -540,6 +547,15 @@ type Portfolio = {
   };
 }
 
+type TotalsAndReserves = {
+  totals: {
+    [symbol: string]: bigint;
+  };
+  reserves: {
+    [symbol: string]: bigint;
+  };
+}
+
 export async function portfolio({ comet, base, tokens }, account): Promise<Portfolio> {
   const internal = { [base]: await baseBalanceOf(comet, account) };
   const external = { [base]: BigInt(await tokens[base].balanceOf(account)) };
@@ -550,6 +566,18 @@ export async function portfolio({ comet, base, tokens }, account): Promise<Portf
     }
   }
   return { internal, external };
+}
+
+export async function totalsAndReserves({ comet, base, tokens }): Promise<TotalsAndReserves> {
+  const totals = { [base]: BigInt((await comet.totalsBasic()).totalSupplyBase) };
+  const reserves = { [base]: BigInt(await comet.getReserves()) };
+  for (const symbol in tokens) {
+    if (symbol != base) {
+      totals[symbol] = BigInt((await comet.totalsCollateral(tokens[symbol].address)).totalSupplyAsset);
+      reserves[symbol] = BigInt(await comet.getCollateralReserves(tokens[symbol].address));
+    }
+  }
+  return { totals, reserves };
 }
 
 export interface TransactionResponseExt extends TransactionResponse {
