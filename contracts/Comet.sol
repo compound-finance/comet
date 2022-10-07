@@ -1249,6 +1249,17 @@ contract Comet is CometMainInterface {
     }
 
     /**
+     * @notice Sweeps excess balance of collateral asset into protocol balance
+     * @param asset The collateral asset to sweep into reserves
+     */
+    function sweepCollateralReserves(address asset) override external {
+        address self = address(this);
+        uint256 balance = ERC20(asset).balanceOf(self);
+        uint256 totalCollateral = totalsCollateral[asset].totalSupplyAsset;
+        supplyInternal(self, self, self, asset, balance - totalCollateral);
+    }
+
+    /**
      * @notice Withdraws base token reserves if called by the governor
      * @param to An address of the receiver of withdrawn reserves
      * @param amount The amount of reserves to be withdrawn from the protocol
