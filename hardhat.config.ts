@@ -232,7 +232,7 @@ const config: HardhatUserConfig = {
   },
 
   paths: {
-    tests: '.test',
+    tests: './test',
   },
 
   contractSizer: {
