@@ -36,7 +36,7 @@
     "lint-contracts:fix": "solhint --fix 'contracts/**/*.sol'",
     "scenario": "hardhat scenario",
     "spider": "hardhat spider",
-    "test": "hardhat test",
+    "test": "hardhat test ./test/*.ts ./test/**/*.ts ./plugins/deployment_manager/test/*.ts ",
     "test:coverage": "hardhat cover --no-compile",
     "audit:liquidator": "vendoza contracts/liquidator/vendor/manifest.json",
     "audit:vendor": "vendoza contracts/vendor/manifest.json",
