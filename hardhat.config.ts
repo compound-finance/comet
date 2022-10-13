@@ -2,12 +2,12 @@ import 'dotenv/config';
 
 import { HardhatUserConfig, task } from 'hardhat/config';
 import '@compound-finance/hardhat-import';
-import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
 import '@typechain/hardhat';
-import 'hardhat-cover';
+import 'hardhat-chai-matchers';
 import 'hardhat-contract-sizer';
+import 'hardhat-cover';
 import 'hardhat-gas-reporter';
 
 // Hardhat tasks

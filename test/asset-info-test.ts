@@ -60,7 +60,7 @@ describe('asset info', function () {
     ).to.be.revertedWith("custom error 'TooManyAssets()'");
   });
 
-  it('reverts if index is greater that numAssets', async () => {
+  it('reverts if index is greater than numAssets', async () => {
     const { comet } = await makeProtocol();
     await expect(comet.getAssetInfo(3)).to.be.revertedWith("custom error 'BadAsset()'");
   });

@@ -52,7 +52,7 @@ describe('Fauceteer', function () {
 
     await expect(
       fauceteer.connect(requester).drip(USDC.address)
-    ).to.be.revertedWith('BalanceTooLow()');
+    ).to.be.revertedWith("custom error 'BalanceTooLow()'");
   });
 
   it('limits each address to one request per asset per day', async () => {
@@ -76,10 +76,10 @@ describe('Fauceteer', function () {
     // repeated request fails
     await expect(
       fauceteer.connect(r1).drip(USDC.address)
-    ).to.be.revertedWith('RequestedTooFrequently()');
+    ).to.be.revertedWith("custom error 'RequestedTooFrequently()'");
     await expect(
       fauceteer.connect(r1).drip(COMP.address)
-    ).to.be.revertedWith('RequestedTooFrequently()');
+    ).to.be.revertedWith("custom error 'RequestedTooFrequently()'");
 
     // does not prevent other requesters from receiving tokens
     await fauceteer.connect(r2).drip(USDC.address);

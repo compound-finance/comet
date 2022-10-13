@@ -1,14 +1,5 @@
-import type { ethers, Contract, providers, Signer } from 'ethers';
+import type { ethers } from 'ethers';
 import type { HardhatEthersHelpers } from '@nomiclabs/hardhat-ethers/types';
-import type {
-  createFixtureLoader,
-  link,
-  loadFixture,
-  MockContract,
-  MockProvider,
-  solidity,
-} from 'ethereum-waffle';
-import type { ContractJSON } from 'ethereum-waffle/dist/esm/ContractJSON';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { HardhatContext } from 'hardhat/internal/context';
 import { loadConfigAndTasks } from 'hardhat/internal/core/config/config-loading';
@@ -36,20 +27,7 @@ waffle type extension: https://github.com/nomiclabs/hardhat/blob/master/packages
 */
 declare module 'hardhat/internal/core/runtime-environment' {
   interface Environment {
-    waffle: {
-      provider: MockProvider;
-      deployContract: (
-        signer: Signer,
-        contractJSON: ContractJSON,
-        args?: any[],
-        overrideOptions?: providers.TransactionRequest
-      ) => Promise<Contract>;
-      solidity: typeof solidity;
-      link: typeof link;
-      deployMockContract: (signer: Signer, abi: any[]) => Promise<MockContract>;
-      createFixtureLoader: typeof createFixtureLoader;
-      loadFixture: typeof loadFixture;
-    };
+    waffle: any;
     ethers: typeof ethers & HardhatEthersHelpers;
   }
 }
