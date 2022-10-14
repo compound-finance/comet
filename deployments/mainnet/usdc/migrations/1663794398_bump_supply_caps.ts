@@ -26,26 +26,26 @@ export default migration('1663794398_bump_supply_caps', {
       // 1. Increase supply caps for each of the assets
       {
         contract: configurator,
-        signature: "updateAssetSupplyCap(address,address,uint128)",
+        signature: 'updateAssetSupplyCap(address,address,uint128)',
         args: [comet.address, COMP.address, exp(600_000, 18)],
       }, {
         contract: configurator,
-        signature: "updateAssetSupplyCap(address,address,uint128)",
+        signature: 'updateAssetSupplyCap(address,address,uint128)',
         args: [comet.address, WBTC.address, exp(6_000, 8)],
       }, {
         contract: configurator,
-        signature: "updateAssetSupplyCap(address,address,uint128)",
+        signature: 'updateAssetSupplyCap(address,address,uint128)',
         args: [comet.address, WETH.address, exp(75_000, 18)],
       },
 
       // 2. Deploy and upgrade to a new version of Comet
       {
         contract: cometAdmin,
-        signature: "deployAndUpgradeTo(address,address)",
+        signature: 'deployAndUpgradeTo(address,address)',
         args: [configurator.address, comet.address],
       },
     ];
-    const description = "# Increase Compound III Supply Caps\n\nThis proposal begins raising collateral supply caps, so that Compound III can continue expanding past its trial phase. The changes are specified on the [governance forum](https://www.comp.xyz/t/compound-iii-supply-caps/3628) and summarized below:\n\n**Proposed Supply Caps**\n\n75,000 ETH ($97M)\n6,000 WBTC ($112M)\n600,000 COMP ($36M)\n\n**Proposal**\n\nThe first three actions of [the proposal](https://github.com/compound-finance/comet/pull/576) raise supply caps for COMP, WBTC, and WETH accordingly, in the Configurator.  The fourth action deploys a new implementation from the Configurator and upgrades the market to use the new implementation.";
+    const description = '# Increase Compound III Supply Caps\n\nThis proposal begins raising collateral supply caps, so that Compound III can continue expanding past its trial phase. The changes are specified on the [governance forum](https://www.comp.xyz/t/compound-iii-supply-caps/3628) and summarized below:\n\n**Proposed Supply Caps**\n\n75,000 ETH ($97M)\n6,000 WBTC ($112M)\n600,000 COMP ($36M)\n\n**Proposal**\n\nThe first three actions of [the proposal](https://github.com/compound-finance/comet/pull/576) raise supply caps for COMP, WBTC, and WETH accordingly, in the Configurator.  The fourth action deploys a new implementation from the Configurator and upgrades the market to use the new implementation.';
     const txn = await deploymentManager.retry(
       async () => trace((await governor.propose(...await proposal(actions, description))))
     );

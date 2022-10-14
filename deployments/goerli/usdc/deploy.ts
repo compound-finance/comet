@@ -8,7 +8,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 }
 
 async function deployContracts(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
-  const trace = deploymentManager.tracer()
+  const trace = deploymentManager.tracer();
   const ethers = deploymentManager.hre.ethers;
   const signer = await deploymentManager.getSigner();
 
