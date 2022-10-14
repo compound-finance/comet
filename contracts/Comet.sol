@@ -11,32 +11,6 @@ import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.
  * @author Compound
  */
 contract Comet is CometMainInterface {
-    /** Custom errors **/
-
-    error Absurd();
-    error AlreadyInitialized();
-    error BadAsset();
-    error BadDecimals();
-    error BadDiscount();
-    error BadMinimum();
-    error BadPrice();
-    error BorrowTooSmall();
-    error BorrowCFTooLarge();
-    error InsufficientReserves();
-    error LiquidateCFTooLarge();
-    error NoSelfTransfer();
-    error NotCollateralized();
-    error NotForSale();
-    error NotLiquidatable();
-    error Paused();
-    error SupplyCapExceeded();
-    error TimestampTooLarge();
-    error TooManyAssets();
-    error TooMuchSlippage();
-    error TransferInFailed();
-    error TransferOutFailed();
-    error Unauthorized();
-
     /** General configuration constants **/
 
     /// @notice The admin of the protocol

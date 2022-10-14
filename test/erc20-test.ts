@@ -226,7 +226,7 @@ describe('erc20', function () {
 
       await expect(
         comet.connect(user).approve(spender.address, 300)
-      ).to.be.revertedWith('BadAmount()');
+      ).to.be.revertedWith("custom error 'BadAmount()'");
     });
   });
 

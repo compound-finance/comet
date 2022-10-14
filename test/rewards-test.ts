@@ -153,7 +153,8 @@ describe('CometRewards', () => {
       const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
       await expect(
         rewards.setRewardConfig(comet.address, COMP.address)
-      ).to.be.revertedWith(`custom error 'AlreadyConfigured("${comet.address}")`);
+        //).to.be.revertedWith(`custom error 'AlreadyConfigured("${comet.address}")`);
+      ).to.be.revertedWith(`custom error 'AlreadyConfigured(address)'`);
     });
 
     it('fails if comet instance is not configured', async () => {
@@ -167,7 +168,8 @@ describe('CometRewards', () => {
       await expect(
         rewards
           .claim(comet.address, alice.address, true)
-      ).to.be.revertedWith(`custom error 'NotSupported("${comet.address}")`);
+        //).to.be.revertedWith(`custom error 'NotSupported("${comet.address}")`);
+      ).to.be.revertedWith(`custom error 'NotSupported(address)'`);
     });
 
     it('fails if not enough rewards in the pool to transfer', async () => {
@@ -354,7 +356,8 @@ describe('CometRewards', () => {
         rewards
           .connect(bob)
           .claim(comet.address, alice.address, true)
-      ).to.be.revertedWith(`custom error 'NotSupported("${comet.address}")`);
+        //).to.be.revertedWith(`custom error 'NotSupported("${comet.address}")`);
+      ).to.be.revertedWith(`custom error 'NotSupported(address)'`);
     });
 
     it('fails if not enough rewards in the pool to transfer', async () => {
@@ -399,7 +402,8 @@ describe('CometRewards', () => {
       await expect(
         rewards
           .claimTo(comet.address, alice.address, governor.address, true)
-      ).to.be.revertedWith(`custom error 'NotPermitted("${governor.address}")'`);
+        //).to.be.revertedWith(`custom error 'NotPermitted("${governor.address}")'`);
+      ).to.be.revertedWith(`custom error 'NotPermitted(address)'`);
     });
   });
 
@@ -543,7 +547,8 @@ describe('CometRewards', () => {
       await expect(
         rewards
           .getRewardOwed(comet.address, alice.address)
-      ).to.be.revertedWith(`custom error 'NotSupported("${comet.address}")`);
+        //).to.be.revertedWith(`custom error 'NotSupported("${comet.address}")`);
+      ).to.be.revertedWith(`custom error 'NotSupported(address)'`);
     });
   });
 
@@ -615,7 +620,8 @@ describe('CometRewards', () => {
         rewards
           .connect(alice)
           .setRewardConfig(comet.address, COMP.address)
-      ).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
+        //).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
+      ).to.be.revertedWith(`custom error 'NotPermitted(address)'`);
     });
 
     // XXX multiple configs
@@ -654,7 +660,8 @@ describe('CometRewards', () => {
         rewards
           .connect(alice)
           .withdrawToken(COMP.address, alice.address, 2e6)
-      ).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
+      //).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
+      ).to.be.revertedWith(`custom error 'NotPermitted(address)'`);
     });
   });
 
@@ -692,7 +699,8 @@ describe('CometRewards', () => {
         rewards
           .connect(alice)
           .transferGovernor(alice.address)
-      ).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
+        //).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
+      ).to.be.revertedWith(`custom error 'NotPermitted(address)'`);
     });
   });
 });

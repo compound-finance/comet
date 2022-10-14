@@ -9,6 +9,13 @@ import "./CometCore.sol";
  * @author Compound
  */
 abstract contract CometExtInterface is CometCore {
+    error BadAmount();
+    error BadNonce();
+    error BadSignatory();
+    error InvalidValueS();
+    error InvalidValueV();
+    error SignatureExpired();
+
     function allow(address manager, bool isAllowed) virtual external;
     function allowBySig(address owner, address manager, bool isAllowed, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s) virtual external;
 

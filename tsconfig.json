@@ -11,8 +11,5 @@
   "files": [
     "./index.ts",
     "./hardhat.config.ts",
-    "node_modules/@nomiclabs/hardhat-ethers/internal/type-extensions.d.ts",
-    "node_modules/@nomiclabs/hardhat-waffle/dist/src/type-extensions.d.ts",
-    "node_modules/@typechain/hardhat/dist/type-extensions.d.ts"
   ]
 }

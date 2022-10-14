@@ -235,7 +235,7 @@ describe('buyCollateral', function () {
 
     // Alice tries to buy 200e18 wei COMP for 200e6 wei USDC
     await wait(baseAsA.approve(comet.address, exp(200, 6)));
-    await expect(cometAsA.buyCollateral(COMP.address, exp(200, 18), 200e6, alice.address)).to.be.revertedWith('reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
+    await expect(cometAsA.buyCollateral(COMP.address, exp(200, 18), 200e6, alice.address)).to.be.revertedWith('code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
   });
 
   it('reverts if buy is paused', async () => {

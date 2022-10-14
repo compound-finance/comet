@@ -162,9 +162,9 @@ describe('Pause Guardian', function () {
 
   it('Should revert if not called by governor or pause guardian', async function () {
     const { comet, users } = await makeProtocol();
-    await expect(comet.connect(users[0]).pause(true, true, true, true, true)).to.be.revertedWith(
-      'Unauthorized'
-    );
+    await expect(
+      comet.connect(users[0]).pause(true, true, true, true, true)
+    ).to.be.revertedWith("custom error 'Unauthorized()'");
   });
 });
 
