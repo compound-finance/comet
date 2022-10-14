@@ -1,6 +1,4 @@
-import hre, { ethers } from 'hardhat';
-import { exp, expect } from './helpers';
-import { HttpNetworkConfig } from 'hardhat/types/config';
+import { ethers, exp, expect } from './helpers';
 import {
   SimplePriceFeed__factory,
   SimpleWstETH__factory,
