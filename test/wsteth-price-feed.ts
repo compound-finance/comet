@@ -51,7 +51,7 @@ const testCases = [
   },
 ];
 
-describe.only('wstETH price feed', function () {
+describe('wstETH price feed', function () {
   describe('latestRoundData', function () {
     for (const { stEthPrice, tokensPerStEth, result } of testCases) {
       it(`stEthPrice (${stEthPrice}), tokensPerStEth (${tokensPerStEth}) -> ${result}`, async () => {
