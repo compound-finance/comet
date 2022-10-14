@@ -1,5 +1,4 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager/DeploymentManager';
-import { Fauceteer, ProxyAdmin } from '../../../build/types';
 import { DeploySpec, cloneGov, deployComet, exp, sameAddress, wait } from '../../../src/deploy';
 
 const cloneNetwork = 'avalanche';
@@ -22,7 +21,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const signer = await deploymentManager.getSigner();
 
   // Deploy governance contracts
-  const { fauceteer, governor, timelock } = await cloneGov(deploymentManager);
+  const { fauceteer } = await cloneGov(deploymentManager);
 
   const usdcProxyAdmin = await deploymentManager.deploy('USDC:admin', 'vendor/proxy/transparent/ProxyAdmin.sol', []);
   const usdcImpl = await deploymentManager.clone('USDC:implementation', clone.usdcImpl, [], cloneNetwork);
@@ -50,8 +49,8 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     }
   );
 
-  const WBTC = await deploymentManager.clone('WBTC.e', clone.wbtc, [], cloneNetwork);
-  const WAVAX = await deploymentManager.clone('WAVAX', clone.wavax, [], cloneNetwork);
+  const _WBTC = await deploymentManager.clone('WBTC.e', clone.wbtc, [], cloneNetwork);
+  const _WAVAX = await deploymentManager.clone('WAVAX', clone.wavax, [], cloneNetwork);
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
@@ -65,7 +64,6 @@ async function mintTokens(deploymentManager: DeploymentManager) {
   const trace = deploymentManager.tracer();
   const signer = await deploymentManager.getSigner();
   const contracts = await deploymentManager.contracts();
-  const timelock = contracts.get('timelock');
   const fauceteer = contracts.get('fauceteer');
 
   trace(`Attempting to mint as ${signer.address}...`);

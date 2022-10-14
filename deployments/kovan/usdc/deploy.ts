@@ -27,7 +27,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
 
   // Deploy UNI first because it is the flakiest (has a dependency on block timestamp)
   // TODO: currently this retries with the same timestamp. we should update the timestamp on retries
-  const UNI = await deploymentManager.clone(
+  const _UNI = await deploymentManager.clone(
     'UNI',
     clone.uni,
     [signer.address, signer.address, (await getBlock(null, ethers)).timestamp + 60]
@@ -59,9 +59,9 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     }
   );
 
-  const WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
+  const _WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
   const WETH = await deploymentManager.clone('WETH', clone.weth, []);
-  const LINK = await deploymentManager.clone('LINK', clone.link, []);
+  const _LINK = await deploymentManager.clone('LINK', clone.link, []);
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);

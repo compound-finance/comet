@@ -87,15 +87,15 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     }
   );
 
-  const WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
+  const _WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
   const WETH = await deploymentManager.clone('WETH', clone.weth, []);
-  const WMATIC = await deploymentManager.clone(
+  const _WMATIC = await deploymentManager.clone(
     'WMATIC',
     clone.wmatic,
     [],
     'polygon' // NOTE: cloned from Polygon, not mainnet
   );
-  const DAI = await deploymentManager.clone('DAI', clone.dai,
+  const _DAI = await deploymentManager.clone('DAI', clone.dai,
     [80001] // chain id
   );
 

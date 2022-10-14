@@ -1,5 +1,5 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
-import { DeploySpec, cloneGov, deployComet, exp, sameAddress, wait } from '../../../src/deploy';
+import { DeploySpec, cloneGov, deployComet, exp, wait } from '../../../src/deploy';
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const deployed = await deployContracts(deploymentManager, deploySpec);
@@ -9,13 +9,12 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 
 async function deployContracts(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const trace = deploymentManager.tracer();
-  const ethers = deploymentManager.hre.ethers;
   const signer = await deploymentManager.getSigner();
 
   // Declare existing assets as aliases
   const COMP = await deploymentManager.existing('COMP', '0x3587b2F7E0E2D6166d6C14230e7Fe160252B0ba4');
-  const USDC = await deploymentManager.existing('USDC', '0x07865c6E87B9F70255377e024ace6630C1Eaa37F');
-  const WBTC = await deploymentManager.existing('WBTC', '0xAAD4992D949f9214458594dF92B44165Fb84dC19');
+  const _USDC = await deploymentManager.existing('USDC', '0x07865c6E87B9F70255377e024ace6630C1Eaa37F');
+  const _WBTC = await deploymentManager.existing('WBTC', '0xAAD4992D949f9214458594dF92B44165Fb84dC19');
   const WETH = await deploymentManager.existing('WETH', '0x42a71137C09AE83D8d05974960fd607d40033499');
 
   // Goerli -> Mumbai bridge contract

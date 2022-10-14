@@ -1,16 +1,15 @@
 import { DeploymentManager, migration } from '../../../../plugins/deployment_manager';
-import { calldata, exp, proposal } from '../../../../src/deploy';
+import { exp, proposal } from '../../../../src/deploy';
 
 import { expect } from 'chai';
 
 export default migration('1663794398_bump_supply_caps', {
-  async prepare(deploymentManager: DeploymentManager) {
+  async prepare(_deploymentManager: DeploymentManager) {
     return {};
   },
 
   async enact(deploymentManager: DeploymentManager) {
     const trace = deploymentManager.tracer();
-    const ethers = deploymentManager.hre.ethers;
 
     const {
       governor,
@@ -56,7 +55,7 @@ export default migration('1663794398_bump_supply_caps', {
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+  async enacted(_deploymentManager: DeploymentManager): Promise<boolean> {
     return true;
   },
 

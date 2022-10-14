@@ -1,5 +1,5 @@
 import { DeploymentManager, migration } from '../../../../plugins/deployment_manager';
-import { calldata, exp, proposal } from '../../../../src/deploy';
+import { exp, proposal } from '../../../../src/deploy';
 
 import { expect } from 'chai';
 
@@ -12,13 +12,12 @@ const cWBTC2Address = '0xccF4429DB6322D5C611ee964527D42E5d685DD6a';
 const cZRXAddress = '0xB3319f5D18Bc0D84dD1b4825Dcde5d5f7266d407';
 
 export default migration('1661899622_rewards', {
-  async prepare(deploymentManager: DeploymentManager) {
+  async prepare(_deploymentManager: DeploymentManager) {
     return {};
   },
 
   async enact(deploymentManager: DeploymentManager) {
     const trace = deploymentManager.tracer();
-    const ethers = deploymentManager.hre.ethers;
 
     const {
       governor,
@@ -27,7 +26,6 @@ export default migration('1661899622_rewards', {
       configurator,
       cometAdmin,
       rewards,
-      COMP,
     } = await deploymentManager.getContracts();
 
     const actions = [
@@ -76,10 +74,8 @@ export default migration('1661899622_rewards', {
 
   async verify(deploymentManager: DeploymentManager) {
     const {
-      governor,
       comptrollerV2,
       comet,
-      configurator,
       rewards,
       COMP,
     } = await deploymentManager.getContracts();
@@ -108,7 +104,7 @@ export default migration('1661899622_rewards', {
     expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(25_000, 18));
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+  async enacted(_deploymentManager: DeploymentManager): Promise<boolean> {
     return true;
   },
 });

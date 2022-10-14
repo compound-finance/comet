@@ -1,21 +1,19 @@
 import { DeploymentManager, migration } from '../../../../plugins/deployment_manager';
-import { calldata, exp, proposal } from '../../../../src/deploy';
+import { exp, proposal } from '../../../../src/deploy';
 
 export default migration('1659582050_raise_supply_caps_and_seed_reserves', {
-  prepare: async (deploymentManager: DeploymentManager) => {
+  prepare: async (_deploymentManager: DeploymentManager) => {
     return {};
   },
 
   enact: async (deploymentManager: DeploymentManager) => {
     const trace = deploymentManager.tracer();
-    const ethers = deploymentManager.hre.ethers;
 
     const {
       governor,
       comet,
       configurator,
       cometAdmin,
-      rewards,
       USDC,
       COMP,
       WBTC,
@@ -74,7 +72,7 @@ export default migration('1659582050_raise_supply_caps_and_seed_reserves', {
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+  async enacted(_deploymentManager: DeploymentManager): Promise<boolean> {
     return true;
   },
 });
