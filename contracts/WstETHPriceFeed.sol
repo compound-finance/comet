@@ -68,9 +68,9 @@ contract WstETHPriceFeed is AggregatorV3Interface {
         uint256 updatedAt,
         uint80 answeredInRound
     ) {
-        (,int256 stETHPrice, , , ) = AggregatorV3Interface(stETHtoUSDPriceFeed).latestRoundData();
+        (uint80 roundId, int256 stETHPrice, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound) = AggregatorV3Interface(stETHtoUSDPriceFeed).latestRoundData();
         uint256 tokensPerStEth = IWstETH(wstETH).tokensPerStEth();
         int price = stETHPrice * signed256(wstETHScale) / signed256(tokensPerStEth);
-        return (0, price, 0, 0, 0);
+        return (roundId, price, startedAt, updatedAt, answeredInRound);
     }
 }
