@@ -28,24 +28,29 @@ export async function makeWstETH({ stEthPrice, tokensPerStEth }) {
 
 const testCases = [
   {
+    stEthPrice: exp(1300, 8),
+    tokensPerStEth: exp(.9, 18),
+    result: 144444444444n
+  },
+  {
+    stEthPrice: exp(1000, 8),
+    tokensPerStEth: exp(.9, 18),
+    result: 111111111111n
+  },
+  {
     stEthPrice: exp(1000, 8),
     tokensPerStEth: exp(.2, 18),
-    result: exp(200, 8)
+    result: exp(5000, 8)
   },
   {
     stEthPrice: exp(1000, 8),
-    tokensPerStEth: exp(.4, 18),
-    result: exp(400, 8)
-  },
-  {
-    stEthPrice: exp(1000, 8),
-    tokensPerStEth: exp(.6, 18),
-    result: exp(600, 8)
+    tokensPerStEth: exp(.5, 18),
+    result: exp(2000, 8)
   },
   {
     stEthPrice: exp(1000, 8),
     tokensPerStEth: exp(.8, 18),
-    result: exp(800, 8)
+    result: exp(1250, 8)
   },
 ];
 
