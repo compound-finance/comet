@@ -135,7 +135,7 @@ describe('Liquidator', function () {
     const afterUSDCBalance = await usdc.balanceOf(recipient.address);
     const profit = afterUSDCBalance - beforeUSDCBalance;
     expect(tx.hash).to.be.not.null;
-    expect(profit).to.be.greaterThan(0);
+    expect(profit).to.be.greaterThan(0); // XXX failing
     expect(event(tx, 2)).to.deep.equal({
       Absorb: {
         initiator: owner.address,
