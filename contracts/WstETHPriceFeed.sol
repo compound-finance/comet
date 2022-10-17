@@ -55,11 +55,11 @@ contract WstETHPriceFeed is AggregatorV3Interface {
 
     /**
      * @notice WstETH Price for the latest round
-     * @return roundId Always 0
+     * @return roundId Round id from the stETH price feed
      * @return answer Latest price for wstETH / USD
-     * @return startedAt Always 0
-     * @return updatedAt Always 0
-     * @return answeredInRound Always 0
+     * @return startedAt Timestamp when the round was started; passed on from stETH price feed
+     * @return updatedAt Timestamp when the round was last updated; passed on from stETH price feed
+     * @return answeredInRound Round id in which the answer was computed; passed on from stETH price feed
      **/
     function latestRoundData() override external view returns (
         uint80 roundId,
