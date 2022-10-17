@@ -26,9 +26,13 @@ contract WstETHPriceFeed is AggregatorV3Interface {
     /// @notice WstETH contract address
     address public immutable wstETH;
 
+    /// @notice scale for WstETH contract
+    uint public immutable wstETHScale;
+
     constructor(address stETHtoUSDPriceFeed_, address wstETH_) {
         stETHtoUSDPriceFeed = stETHtoUSDPriceFeed_;
         wstETH = wstETH_;
+        wstETHScale = 10 ** IWstETH(wstETH).decimals();
     }
 
     function signed256(uint256 n) internal pure returns (int256) {
@@ -65,10 +69,8 @@ contract WstETHPriceFeed is AggregatorV3Interface {
         uint80 answeredInRound
     ) {
         (,int256 stETHPrice, , , ) = AggregatorV3Interface(stETHtoUSDPriceFeed).latestRoundData();
-        uint8 wstDecimals = IWstETH(wstETH).decimals();
         uint256 tokensPerStEth = IWstETH(wstETH).tokensPerStEth();
-        uint wstScale = 10 ** wstDecimals;
-        int price = stETHPrice * signed256(wstScale) / signed256(tokensPerStEth);
+        int price = stETHPrice * signed256(wstETHScale) / signed256(tokensPerStEth);
         return (0, price, 0, 0, 0);
     }
 }
