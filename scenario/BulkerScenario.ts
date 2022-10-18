@@ -179,7 +179,7 @@ scenario(
       $comet: { $base: 5000 },
     },
   },
-  async ({ comet, actors, assets, rewards, bulker }, context, world) => {
+  async ({ comet, actors, rewards, bulker }, context, world) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);

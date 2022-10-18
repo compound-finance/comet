@@ -49,7 +49,7 @@ export function expectRevertCustom(tx: Promise<ContractReceipt>, custom: string)
     .catch(e => {
       const selector = utils.keccak256(custom.split('').reduce((a, s) => a + s.charCodeAt(0).toString(16), '0x')).slice(2, 2 + 8);
       const patterns = [
-        new RegExp(`custom error '${custom.replace(/[()]/g, "\\$&")}'`),
+        new RegExp(`custom error '${custom.replace(/[()]/g, '\\$&')}'`),
         new RegExp(`unrecognized custom error with selector ${selector}`),
       ];
       for (const pattern of patterns)
