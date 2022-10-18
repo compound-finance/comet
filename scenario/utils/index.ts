@@ -257,6 +257,27 @@ export async function isBulkerSupported(ctx: CometContext): Promise<boolean> {
   return bulker == null ? false : true;
 }
 
+type DeploymentCriterion = {
+  network?: string;
+  deployment?: string;
+}
+
+export function matchesDeployment(ctx: CometContext, deploymentCriteria: DeploymentCriterion[]): boolean {
+  const currentDeployment = {
+    network: ctx.world.base.network,
+    deployment: ctx.world.base.deployment
+  };
+
+  function matchesCurrentDeployment(deploymentCriterion: DeploymentCriterion) {
+    for (const [k, v] of Object.entries(deploymentCriterion)) {
+      if (currentDeployment[k] !== v) return false;
+    }
+    return true;
+  }
+
+  return deploymentCriteria.some(matchesCurrentDeployment);
+}
+
 export async function isRewardSupported(ctx: CometContext): Promise<boolean> {
   const rewards = await ctx.getRewards();
   const comet = await ctx.getComet();
