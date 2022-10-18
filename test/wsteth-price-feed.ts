@@ -75,6 +75,6 @@ describe('wstETH price feed', function () {
 
     await expect(
       wstETHPriceFeed.getRoundData(1)
-    ).to.be.revertedWith('NotImplemented()');
+    ).to.be.revertedWith("custom error 'NotImplemented()'");
   });
 });
