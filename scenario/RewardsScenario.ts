@@ -1,7 +1,7 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { exp } from '../test/helpers';
-import { isRewardSupported } from './utils';
+import { isRewardSupported, matchesDeployment } from './utils';
 
 function calculateRewardsOwed(
   userBalance: bigint,
@@ -21,7 +21,7 @@ function calculateRewardsOwed(
 scenario(
   'Comet#rewards > can claim supply rewards for self',
   {
-    filter: async (ctx) => await isRewardSupported(ctx),
+    filter: async (ctx) => await isRewardSupported(ctx) && !matchesDeployment(ctx, [{network: 'mainnet', deployment: 'eth'}]),
     tokenBalances: {
       albert: { $base: ' == 1000000' }, // in units of asset, not wei
     },
