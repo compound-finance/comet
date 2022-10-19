@@ -7,21 +7,21 @@ import {
 
 export async function makeWstETH({ stEthPrice, tokensPerStEth }) {
   const SimplePriceFeedFactory = (await ethers.getContractFactory('SimplePriceFeed')) as SimplePriceFeed__factory;
-  const stETHpriceFeed = await SimplePriceFeedFactory.deploy(stEthPrice, 8);
+  const stETHPriceFeed = await SimplePriceFeedFactory.deploy(stEthPrice, 8);
 
   const SimpleWstETHFactory = (await ethers.getContractFactory('SimpleWstETH')) as SimpleWstETH__factory;
   const simpleWstETH = await SimpleWstETHFactory.deploy(tokensPerStEth);
 
   const wstETHPriceFeedFactory = (await ethers.getContractFactory('WstETHPriceFeed')) as WstETHPriceFeed__factory;
   const wstETHPriceFeed = await wstETHPriceFeedFactory.deploy(
-    stETHpriceFeed.address,
+    stETHPriceFeed.address,
     simpleWstETH.address
   );
   await wstETHPriceFeed.deployed();
 
   return {
     simpleWstETH,
-    stETHpriceFeed,
+    stETHPriceFeed,
     wstETHPriceFeed
   };
 }
@@ -65,6 +65,33 @@ describe('wstETH price feed', function () {
         expect(price).to.eq(result);
       });
     }
+
+    it("passes along roundId, startedAt, updatedAt and answeredInRound values from stETH price feed", async () => {
+      const { stETHPriceFeed, wstETHPriceFeed } = await makeWstETH({
+        stEthPrice: exp(1000, 8),
+        tokensPerStEth: exp(.8, 18),
+      });
+
+      await stETHPriceFeed.setRoundData(
+        exp(15, 18), // roundId_,
+        1,           // answer_,
+        exp(16, 8),  // startedAt_,
+        exp(17, 8),  // updatedAt_,
+        exp(18, 18)  // answeredInRound_
+      );
+
+      const {
+        roundId,
+        startedAt,
+        updatedAt,
+        answeredInRound
+      } = await wstETHPriceFeed.latestRoundData();
+
+      expect(roundId.toBigInt()).to.eq(exp(15, 18));
+      expect(startedAt.toBigInt()).to.eq(exp(16, 8));
+      expect(updatedAt.toBigInt()).to.eq(exp(17, 8));
+      expect(answeredInRound.toBigInt()).to.eq(exp(18, 18));
+    });
   });
 
   it(`getRoundData > always reverts`, async () => {
