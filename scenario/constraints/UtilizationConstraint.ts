@@ -107,43 +107,51 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
         }
 
         if (toBorrowBase > 0n) {
-          // To borrow as much, we need to supply some collateral. We technically
-          // could provide a solution for each token, but we don't know them in advance,
-          // generally, so let's just pick the first one and source enough of it.
+          // To borrow as much, we need to supply some collateral.
+          const numAssets = await comet.numAssets();
+          for (let i = 0; i < numAssets; i++) {
+            console.log(`UtilizationConstraint: attempting to source from $asset${i}`);
 
-          let { asset: collateralAsset, borrowCollateralFactor, priceFeed, scale } = await comet.getAssetInfo(0);
+            const { asset: collateralAsset, borrowCollateralFactor, priceFeed, scale } = await comet.getAssetInfo(i);
 
-          let collateralToken = context.getAssetByAddress(collateralAsset);
+            const collateralToken = context.getAssetByAddress(collateralAsset);
 
-          let basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
-          let collateralPrice = (await comet.getPrice(priceFeed)).toBigInt();
+            const basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
+            const collateralPrice = (await comet.getPrice(priceFeed)).toBigInt();
 
-          let baseScale = (await comet.baseScale()).toBigInt();
-          let collateralScale = scale.toBigInt();
+            const baseScale = (await comet.baseScale()).toBigInt();
+            const collateralScale = scale.toBigInt();
 
-          let collateralWeiPerUnitBase = (collateralScale * basePrice) / collateralPrice;
-          let collateralNeeded = (collateralWeiPerUnitBase * toBorrowBase) / baseScale;
-          collateralNeeded = (collateralNeeded * factorScale) / borrowCollateralFactor.toBigInt(); // adjust for borrowCollateralFactor
-          collateralNeeded = (collateralNeeded * 11n) / 10n; // add fudge factor
+            const collateralWeiPerUnitBase = (collateralScale * basePrice) / collateralPrice;
+            let collateralNeeded = (collateralWeiPerUnitBase * toBorrowBase) / baseScale;
+            collateralNeeded = (collateralNeeded * factorScale) / borrowCollateralFactor.toBigInt(); // adjust for borrowCollateralFactor
+            collateralNeeded = (collateralNeeded * 11n) / 10n; // add fudge factor
 
-          let info = {
-            utilization,
-            totalSupplyBase: totalSupplyBase.toString(),
-            totalBorrowBase: totalBorrowBase.toString(),
-            toBorrowBase: toBorrowBase.toString(),
-            collateralAsset,
-            borrowCollateralFactor: borrowCollateralFactor.toString(),
-            collateralNeeded: collateralNeeded.toString(),
-          };
+            const info = {
+              utilization,
+              totalSupplyBase: totalSupplyBase.toString(),
+              totalBorrowBase: totalBorrowBase.toString(),
+              toBorrowBase: toBorrowBase.toString(),
+              collateralAsset,
+              borrowCollateralFactor: borrowCollateralFactor.toString(),
+              collateralNeeded: collateralNeeded.toString(),
+            };
 
-          let borrowActor = await context.allocateActor('UtilizationConstraint{Borrower}', info);
+            const borrowActor = await context.allocateActor('UtilizationConstraint{Borrower}', info);
 
-          await context.sourceTokens(collateralNeeded, collateralToken, borrowActor);
-          await collateralToken.approve(borrowActor, comet);
-          await borrowActor.safeSupplyAsset({ asset: collateralToken.address, amount: collateralNeeded });
+            try {
+              await context.sourceTokens(collateralNeeded, collateralToken, borrowActor);
+              await collateralToken.approve(borrowActor, comet);
+              await borrowActor.safeSupplyAsset({ asset: collateralToken.address, amount: collateralNeeded });
 
-          // XXX will also need to make sure there are enough base tokens in the protocol to withdraw
-          await comet.connect(borrowActor.signer).withdraw(baseToken.address, toBorrowBase);
+              // XXX will also need to make sure there are enough base tokens in the protocol to withdraw
+              await comet.connect(borrowActor.signer).withdraw(baseToken.address, toBorrowBase);
+              console.log(`UtilizationConstraint: successfully sourced from $asset${i}`);
+              break;
+            } catch (error) {
+              console.log(`UtilizationConstraint: failed to source from $asset${i} (${error.message})`);
+            }
+          }
         }
 
         return context;
