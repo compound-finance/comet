@@ -189,7 +189,7 @@ const config: HardhatUserConfig = {
         name: 'mainnet',
         network: 'mainnet',
         deployment: 'usdc',
-        allocation: 0.1, // eth
+        allocation: 1.0, // eth
       },
       {
         name: 'development',

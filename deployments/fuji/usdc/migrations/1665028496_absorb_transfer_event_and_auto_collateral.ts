@@ -3,7 +3,7 @@ import { calldata, exp, proposal } from '../../../../src/deploy';
 
 import { expect } from 'chai';
 
-export default migration('1665028496_absorb_transfer_event', {
+export default migration('1665028496_absorb_transfer_event_and_auto_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
     const cometFactory = await deploymentManager.deploy('cometFactory', 'CometFactory.sol', [], true);
     return { newFactoryAddress: cometFactory.address };
@@ -36,7 +36,7 @@ export default migration('1665028496_absorb_transfer_event', {
         args: [configurator.address, comet.address],
       },
     ];
-    const description = "# Liquidation Event Handling\n";
+    const description = "# Liquidation Event Handling And Collateral Reserves\n";
     const txn = await deploymentManager.retry(
       async () => governor.propose(...await proposal(actions, description))
     );
@@ -48,14 +48,6 @@ export default migration('1665028496_absorb_transfer_event', {
   },
 
   async verify(deploymentManager: DeploymentManager) {
-    const {
-      governor,
-      comet,
-      configurator,
-      rewards,
-      COMP,
-    } = await deploymentManager.getContracts();
-
     // 1. & 2.
     //  added a scenario to check for new Transfer event
   }

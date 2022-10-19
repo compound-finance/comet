@@ -478,6 +478,7 @@ contract Comet is CometMainInterface {
 
     /**
      * @notice Gets the total balance of protocol collateral reserves for an asset
+     * @dev Note: Reverts if collateral reserves are somehow negative, which should not be possible
      * @param asset The collateral asset
      */
     function getCollateralReserves(address asset) override public view returns (uint) {
@@ -1205,7 +1206,8 @@ contract Comet is CometMainInterface {
         if (collateralAmount > getCollateralReserves(asset)) revert InsufficientReserves();
 
         // Note: Pre-transfer hook can re-enter buyCollateral with a stale collateral ERC20 balance.
-        //       This is a problem if quoteCollateral derives its discount from the collateral ERC20 balance.
+        //  Assets should not be listed which allow re-entry from pre-transfer now, as too much collateral could be bought.
+        //  This is also a problem if quoteCollateral derives its discount from the collateral ERC20 balance.
         doTransferOut(asset, recipient, safe128(collateralAmount));
 
         emit BuyCollateral(msg.sender, asset, baseAmount, collateralAmount);
