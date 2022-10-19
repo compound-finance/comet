@@ -146,10 +146,10 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
 
               // XXX will also need to make sure there are enough base tokens in the protocol to withdraw
               await comet.connect(borrowActor.signer).withdraw(baseToken.address, toBorrowBase);
-              console.log(`UtilizatioConstraint: successfully sourced from $asset${i}`);
+              console.log(`UtilizationConstraint: successfully sourced from $asset${i}`);
               break;
             } catch (error) {
-              console.log(`UtilizatioConstraint: failed to source from $asset${i} (${error.message})`);
+              console.log(`UtilizationConstraint: failed to source from $asset${i} (${error.message})`);
             }
           }
         }
