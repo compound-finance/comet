@@ -110,7 +110,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
           // To borrow as much, we need to supply some collateral.
           const numAssets = await comet.numAssets();
           for (let i = 0; i < numAssets; i++) {
-            console.log(`UtilizatioConstraint: attempting to source from $asset${i}`);
+            console.log(`UtilizationConstraint: attempting to source from $asset${i}`);
 
             const { asset: collateralAsset, borrowCollateralFactor, priceFeed, scale } = await comet.getAssetInfo(i);
 
