@@ -66,7 +66,7 @@ describe('wstETH price feed', function () {
       });
     }
 
-    it("passes along roundId, startedAt, updatedAt and answeredInRound values from stETH price feed", async () => {
+    it('passes along roundId, startedAt, updatedAt and answeredInRound values from stETH price feed', async () => {
       const { stETHPriceFeed, wstETHPriceFeed } = await makeWstETH({
         stEthPrice: exp(1000, 8),
         tokensPerStEth: exp(.8, 18),
