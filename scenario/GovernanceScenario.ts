@@ -143,7 +143,7 @@ scenario('add new asset',
 
     // Try to supply new token and borrow base
     const baseAssetAddress = await comet.baseToken();
-    const borrowAmount = 1_000n * (await comet.baseScale()).toBigInt();
+    const borrowAmount = 10n * (await comet.baseScale()).toBigInt();
     await dogecoin.connect(albert.signer).approve(comet.address, exp(100, 8));
     await albert.supplyAsset({ asset: dogecoin.address, amount: exp(100, 8) });
     await albert.withdrawAsset({ asset: baseAssetAddress, amount: borrowAmount });
