@@ -80,7 +80,7 @@ scenario(
 scenario(
   'Comet#rewards > manager can claimTo supply rewards from a managed account',
   {
-    filter: async (ctx) => await isRewardSupported(ctx),
+    filter: async (ctx) => await isRewardSupported(ctx) && !matchesDeployment(ctx, [{network: 'mainnet', deployment: 'eth'}]),
     tokenBalances: {
       albert: { $base: ' == 1000000' }, // in units of asset, not wei
     },
