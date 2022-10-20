@@ -144,7 +144,14 @@ describe('isLiquidatable', function () {
     expect(await comet.isLiquidatable(alice.address)).to.be.false;
 
     // price drops
-    await priceFeeds.COMP.setPrice(exp(0.5, 8));
+    await priceFeeds.COMP.setRoundData(
+      0,           // roundId
+      exp(0.5, 8), // answer
+      0,           // startedAt
+      0,           // updatedAt
+      0            // answeredInRound
+    );
+
     expect(await comet.isLiquidatable(alice.address)).to.be.true;
   });
 });
