@@ -63,7 +63,7 @@ export class CometContext {
   }
 
   async getCompWhales(): Promise<string[]> {
-    return COMP_WHALES[this.world.base.name === 'mainnet' ? 'mainnet' : 'testnet'];
+    return COMP_WHALES[this.world.base.network === 'mainnet' ? 'mainnet' : 'testnet'];
   }
 
   async getProposer(): Promise<SignerWithAddress> {
