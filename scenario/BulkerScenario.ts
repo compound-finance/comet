@@ -89,7 +89,6 @@ scenario(
   },
   async ({ comet, actors, assets, bulker }, context) => {
     const { albert, betty } = actors;
-    const { WETH } = assets;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const baseScale = (await comet.baseScale()).toBigInt();
