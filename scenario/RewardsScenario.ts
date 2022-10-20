@@ -156,8 +156,8 @@ scenario(
     const baseScale = (await comet.baseScale()).toBigInt();
     const toBorrow = 1_000n * baseScale;
 
-    const [rewardTokenAddress, rescaleFactor] = await rewards.rewardConfig(comet.address);
-    const rewardToken = context.getAssetByAddress(rewardTokenAddress);
+    const [_, rescaleFactor] = await rewards.rewardConfig(comet.address);
+    const rewardToken = await context.getRewardToken();
     const rewardScale = exp(1, await rewardToken.decimals());
 
     await collateralAsset.approve(albert, comet.address);

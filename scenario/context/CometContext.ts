@@ -26,6 +26,7 @@ import {
   Fauceteer,
   Bulker,
   BaseBridgeReceiver,
+  ERC20,
 } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
@@ -92,6 +93,14 @@ export class CometContext {
 
   async getRewards(): Promise<CometRewards> {
     return this.world.deploymentManager.contract('rewards');
+  }
+
+  async getRewardToken(): Promise<ERC20> {
+    const signer = await this.world.deploymentManager.getSigner();
+    const comet = await this.getComet();
+    const rewards = await this.getRewards();
+    const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
+    return ERC20__factory.connect(rewardTokenAddress, signer);
   }
 
   async getBulker(): Promise<Bulker> {
