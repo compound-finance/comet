@@ -6,7 +6,7 @@ import { FaucetToken } from '../build/types';
 import { calldata } from '../src/deploy';
 import { COMP_WHALES } from '../src/deploy';
 import { impersonateAddress } from '../plugins/scenario/utils';
-import { isBridgedDeployment, fastL2GovernanceExecute } from './utils';
+import { isBridgedDeployment, fastL2GovernanceExecute, matchesDeployment } from './utils';
 
 scenario('upgrade Comet implementation and initialize', {filter: async (ctx) => !isBridgedDeployment(ctx)}, async ({ comet, configurator, proxyAdmin }, context) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
@@ -93,7 +93,68 @@ scenario('upgrade Comet implementation and call new function', {filter: async (c
 
 scenario('add new asset',
   {
-    filter: async (ctx) => !isBridgedDeployment(ctx),
+    filter: async (ctx) => !isBridgedDeployment(ctx) && !matchesDeployment(ctx, [{network: 'mainnet', deployment: 'eth'}]),
+    tokenBalances: {
+      $comet: { $base: '>= 1000' },
+    },
+  },
+  async ({ comet, configurator, proxyAdmin, actors }, context) => {
+    const { albert } = actors;
+
+    // Deploy new token and pricefeed
+    const dm = context.world.deploymentManager;
+    const dogecoin = await dm.deploy<FaucetToken, [string, string, BigNumberish, string]>(
+      'DOGE',
+      'test/FaucetToken.sol',
+      [exp(1_000_000, 8).toString(), 'Dogecoin', 8, 'DOGE'],
+      true
+    );
+    const dogecoinPricefeed = await dm.deploy(
+      'DOGE:priceFeed',
+      'test/SimplePriceFeed.sol',
+      [exp(1_000, 8).toString(), 8],
+      true
+    );
+
+    // Allocate some tokens to Albert
+    await dogecoin.allocateTo(albert.address, exp(100, 8));
+
+    // Execute a governance proposal to:
+    // 1. Add new asset via Configurator
+    // 2. Deploy and upgrade to new implementation of Comet
+    const newAssetConfig = {
+      asset: dogecoin.address,
+      priceFeed: dogecoinPricefeed.address,
+      decimals: await dogecoin.decimals(),
+      borrowCollateralFactor: exp(0.8, 18),
+      liquidateCollateralFactor: exp(0.85, 18),
+      liquidationFactor: exp(0.95, 18),
+      supplyCap: exp(1_000, 8),
+    };
+
+    const addAssetCalldata = await calldata(configurator.populateTransaction.addAsset(comet.address, newAssetConfig));
+    const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, comet.address]);
+    await context.fastGovernanceExecute(
+      [configurator.address, proxyAdmin.address],
+      [0, 0],
+      ['addAsset(address,(address,address,uint8,uint64,uint64,uint64,uint128))', 'deployAndUpgradeTo(address,address)'],
+      [addAssetCalldata, deployAndUpgradeToCalldata]
+    );
+
+    // Try to supply new token and borrow base
+    const baseAssetAddress = await comet.baseToken();
+    const borrowAmount = 1000n * (await comet.baseScale()).toBigInt();
+    await dogecoin.connect(albert.signer).approve(comet.address, exp(100, 8));
+    await albert.supplyAsset({ asset: dogecoin.address, amount: exp(100, 8) });
+    await albert.withdrawAsset({ asset: baseAssetAddress, amount: borrowAmount });
+
+    expect(await albert.getCometCollateralBalance(dogecoin.address)).to.be.equal(exp(100, 8));
+    expect(await albert.getCometBaseBalance()).to.be.equal(-borrowAmount);
+  });
+
+scenario('add new asset (mainnet-eth)',
+  {
+    filter: async (ctx) => !isBridgedDeployment(ctx) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'eth'}]),
     tokenBalances: {
       $comet: { $base: '>= 1000' },
     },
