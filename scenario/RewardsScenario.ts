@@ -156,7 +156,7 @@ scenario(
     const baseScale = (await comet.baseScale()).toBigInt();
     const toBorrow = 1_000n * baseScale;
 
-    const [_, rescaleFactor] = await rewards.rewardConfig(comet.address);
+    const { rescaleFactor } = await context.getRewardConfig();
     const rewardToken = await context.getRewardToken();
     const rewardScale = exp(1, await rewardToken.decimals());
 

@@ -1,4 +1,4 @@
-import { BigNumberish } from 'ethers';
+import { BigNumber, BigNumberish } from 'ethers';
 import { World, buildScenarioFn } from '../../plugins/scenario';
 import { Migration } from '../../plugins/deployment_manager';
 import { debug } from '../../plugins/deployment_manager/Utils';
@@ -97,10 +97,8 @@ export class CometContext {
 
   async getRewardToken(): Promise<ERC20> {
     const signer = await this.world.deploymentManager.getSigner();
-    const comet = await this.getComet();
-    const rewards = await this.getRewards();
-    const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
-    return ERC20__factory.connect(rewardTokenAddress, signer);
+    const { token } = await this.getRewardConfig();
+    return ERC20__factory.connect(token, signer);
   }
 
   async getBulker(): Promise<Bulker> {
@@ -119,6 +117,12 @@ export class CometContext {
     const comet = await this.getComet();
     const configurator = await this.getConfigurator();
     return configurator.getConfiguration(comet.address);
+  }
+
+  async getRewardConfig(): Promise<{token: string, rescaleFactor: BigNumber, shouldUpscale: boolean}> {
+    const comet = await this.getComet();
+    const rewards = await this.getRewards();
+    return await rewards.rewardConfig(comet.address);
   }
 
   async upgrade(configOverrides: ProtocolConfiguration): Promise<CometContext> {
