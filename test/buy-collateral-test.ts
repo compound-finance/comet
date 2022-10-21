@@ -391,17 +391,6 @@ describe('buyCollateral', function () {
       await evilWETH.allocateTo(evilComet.address, exp(100, 18));
       await EVIL.allocateTo(evilAlice.address, exp(5000, 6));
 
-      // set collateral balance
-      const t0 = Object.assign({}, await normalComet.totalsCollateral(normalWETH.address), {
-        totalSupplyAsset: exp(5, 18),
-      });
-      await normalComet.setTotalsCollateral(normalWETH.address, t0);
-
-      const t1 = Object.assign({}, await evilComet.totalsCollateral(evilWETH.address), {
-        totalSupplyAsset: exp(5, 18),
-      });
-      await evilComet.setTotalsCollateral(evilWETH.address, t1);
-
       // ensure both Comets have the same lastAccrualTime
       const start = (await getBlock()).timestamp;
 
@@ -416,18 +405,6 @@ describe('buyCollateral', function () {
         lastAccrualTime: start
       });
       await evilComet.setTotalsBasic(tb1);
-
-      // 5 WETH have been absorbed
-      await normalComet.setCollateralBalance(
-        normalComet.address,
-        normalWETH.address,
-        exp(5, 18)
-      );
-      await evilComet.setCollateralBalance(
-        evilComet.address,
-        evilWETH.address,
-        exp(5, 18)
-      );
 
       // approve Comet to move funds
       await normalUSDC.connect(normalAlice).approve(normalComet.address, exp(5000, 6));
