@@ -251,6 +251,7 @@ scenario(
         amount: 100n * scale,
       })
     ).to.be.reverted;
+    // ).to.be.revertedWith('ERC20: transfer amount exceeds allowance');
   }
 );
 
@@ -278,6 +279,7 @@ scenario(
         amount: 100n * scale,
       })
     ).to.be.reverted;
+    // ).to.be.revertedWith('ERC20: transfer amount exceeds allowance');
   }
 );
 
@@ -333,6 +335,7 @@ scenario(
         amount: 100n * scale,
       })
     ).to.be.reverted;
+    // ).to.be.revertedWith('ERC20: transfer amount exceeds balance');
   }
 );
 
@@ -359,6 +362,7 @@ scenario(
         amount: 100n * scale,
       })
     ).to.be.reverted;
+    // ).to.be.revertedWith('ERC20: transfer amount exceeds balance');
   }
 );
 
