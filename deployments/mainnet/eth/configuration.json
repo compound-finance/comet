@@ -38,7 +38,7 @@
     },
     "wstETH": {
       "address": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
-      "priceFeed": "0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8",
+      "priceFeed": "0x0000000000000000000000000000000000000000",
       "decimals": "18",
       "borrowCF": 0.80,
       "liquidateCF": 0.85,

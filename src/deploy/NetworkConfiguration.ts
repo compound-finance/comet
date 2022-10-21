@@ -58,7 +58,7 @@ interface NetworkAssetConfiguration {
   supplyCap: number;
 }
 
-interface NetworkConfiguration {
+export interface NetworkConfiguration {
   name: string;
   symbol: string;
   governor?: string;
