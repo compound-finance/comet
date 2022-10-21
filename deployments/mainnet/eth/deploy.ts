@@ -5,7 +5,7 @@ import { getConfiguration, NetworkConfiguration } from '../../../src/deploy/Netw
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   // Deploy WstETHPriceFeed
   const wstETHPriceFeed = await deploymentManager.deploy(
-    'wstETHPriceFeed',
+    'wstETH:priceFeed',
     'WstETHPriceFeed.sol',
     [
       '0xcfe54b5cd566ab89272946f602d76ea879cab4a8', // stETHtoUSDPriceFeed
