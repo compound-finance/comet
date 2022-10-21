@@ -3,8 +3,6 @@ import { DeploySpec, deployComet } from '../../../src/deploy';
 import { getConfiguration, NetworkConfiguration } from '../../../src/deploy/NetworkConfiguration';
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
-  // XXX configuration params for assets are just placeholders
-
   // Deploy WstETHPriceFeed
   const wstETHPriceFeed = await deploymentManager.deploy(
     'wstETHPriceFeed',
@@ -31,14 +29,11 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   );
   const { comet } = deployed;
 
-  // Get a handle to the WETH contract for bulker
-  const WETH = await deploymentManager.existing('WETH', await comet.baseToken());
-
   // Deploy Bulker
   const bulker = await deploymentManager.deploy(
     'bulker',
     'Bulker.sol',
-    [await comet.governor(), WETH.address]
+    [await comet.governor(), await comet.baseToken()]
   );
 
   return { ...deployed, bulker };
