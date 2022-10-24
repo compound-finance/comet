@@ -13,20 +13,8 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     ]
   );
 
-  const config = await deploymentManager.readConfig<NetworkConfiguration>();
-  const wstETHaddress = config.assets.wstETH.address;
-
-  let { assetConfigs } = await getConfiguration(deploymentManager);
-  assetConfigs = (assetConfigs || []).map(ac => {
-    return ac.asset === wstETHaddress ? { ...ac, ...{ priceFeed: wstETHPriceFeed.address } } : ac;
-  });
-
   // Deploy all Comet-related contracts
-  const deployed = await deployComet(
-    deploymentManager,
-    deploySpec,
-    { assetConfigs }
-  );
+  const deployed = await deployComet(deploymentManager, deploySpec);
   const { comet } = deployed;
 
   // Deploy Bulker
