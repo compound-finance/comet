@@ -57,6 +57,10 @@ export default migration('1665028496_absorb_transfer_event_and_auto_collateral',
     trace(`Created proposal ${proposalId}.`);
   },
 
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
+  },
+
   async verify(deploymentManager: DeploymentManager) {
     const {
       COMP,
