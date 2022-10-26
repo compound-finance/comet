@@ -15,6 +15,12 @@ export async function isBridgeProposal(
       const { targets } = await governor.getActions(openProposal.id);
       return targets.map((x: string) => x.toLowerCase()).includes(fxRoot.address.toLowerCase());
     }
+    case 'optimism': {
+      const governor = await governanceDeploymentManager.getContractOrThrow('governor');
+      const optimismL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('optimismL1CrossDomainMessenger');
+      const { targets } = await governor.getActions(openProposal.id);
+      return targets.includes(optimismL1CrossDomainMessenger.address);
+    }
     default: {
       const tag = `[${bridgeNetwork} -> ${governanceDeploymentManager.network}]`;
       throw new Error(`${tag} Unable to determine whether to relay Proposal ${openProposal.id}`);
