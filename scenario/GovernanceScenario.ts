@@ -6,7 +6,7 @@ import { BaseBridgeReceiver, FaucetToken } from '../build/types';
 import { calldata } from '../src/deploy';
 import { COMP_WHALES } from '../src/deploy';
 import { impersonateAddress } from '../plugins/scenario/utils';
-import { isBridgedDeployment, fastL2GovernanceExecute } from './utils';
+import { isBridgedDeployment, fastL2GovernanceExecute, matchesDeployment } from './utils';
 import { World } from '../plugins/scenario';
 
 scenario('upgrade Comet implementation and initialize', {filter: async (ctx) => !isBridgedDeployment(ctx)}, async ({ comet, configurator, proxyAdmin }, context) => {
@@ -159,7 +159,7 @@ scenario('add new asset',
 scenario(
   'execute Mumbai governance proposal',
   {
-    filter: async ctx => ctx.world.base.network === 'mumbai'
+    filter: async (ctx) => isBridgedDeployment(ctx) && matchesDeployment(ctx, [{network: 'mumbai'}]),
   },
   async ({ comet, timelock, bridgeReceiver }, _context, world) => {
     const currentTimelockDelay = await timelock.delay();
@@ -332,3 +332,53 @@ async function fastL1ToPolygonGovernanceExecute(
     [sendMessageToChildCalldata]
   );
 }
+
+scenario(
+  'execute Optimism governance proposal',
+  {
+    filter: async (ctx) => isBridgedDeployment(ctx) && matchesDeployment(ctx, [{network: 'optimism'}]),
+  },
+  async ({ timelock, bridgeReceiver }, _context, world) => {
+    const governanceDeploymentManager = world.auxiliaryDeploymentManager;
+    if (!governanceDeploymentManager) {
+      throw new Error('cannot execute governance without governance deployment manager');
+    }
+
+    const proposer = await impersonateAddress(governanceDeploymentManager, COMP_WHALES.mainnet[0]);
+
+    const currentTimelockDelay = await timelock.delay();
+    const newTimelockDelay = currentTimelockDelay.mul(2);
+
+    const l2ProposalData = utils.defaultAbiCoder.encode(
+      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
+      [
+        [timelock.address],
+        [0],
+        ['setDelay(uint256)'],
+        [utils.defaultAbiCoder.encode(['uint'], [newTimelockDelay])]
+      ]
+    );
+
+    const sendMessageCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'bytes', 'uint32'],
+      [bridgeReceiver.address, l2ProposalData, 1000000]
+    );
+
+    const optimismL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('optimismL1CrossDomainMessenger');
+
+    expect(await timelock.delay()).to.eq(currentTimelockDelay);
+    expect(currentTimelockDelay).to.not.eq(newTimelockDelay);
+
+    await fastL2GovernanceExecute(
+      governanceDeploymentManager,
+      world.deploymentManager,
+      proposer,
+      [optimismL1CrossDomainMessenger.address],
+      [0],
+      ['sendMessage(address,bytes,uint32)'],
+      [sendMessageCalldata]
+    );
+
+    expect(await timelock.delay()).to.eq(newTimelockDelay);
+  }
+);
