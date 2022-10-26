@@ -26,6 +26,7 @@ import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
 import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 import arbitrumRelationConfigMap from './deployments/arbitrum/usdc/relations';
 import arbitrumGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
+import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -84,6 +85,11 @@ const networkConfigs: NetworkConfig[] = [
   { network: 'ropsten', chainId: 3 },
   { network: 'rinkeby', chainId: 4 },
   { network: 'goerli', chainId: 5 },
+  {
+    network: 'optimism',
+    chainId: 10,
+    url: `https://optimism-mainnet.infura.io/v3/${INFURA_KEY}`
+  },
   { network: 'kovan', chainId: 42 },
   {
     network: 'polygon',
@@ -250,6 +256,9 @@ const config: HardhatUserConfig = {
       },
       'arbitrum-goerli': {
         usdc: arbitrumGoerliRelationConfigMap
+      },
+      optimism: {
+        usdc: optimismRelationConfigMap
       }
     },
   },
@@ -315,6 +324,12 @@ const config: HardhatUserConfig = {
         network: 'arbitrum-goerli',
         deployment: 'usdc',
         auxiliaryBase: 'goerli'
+      },
+      {
+        name: 'optimism',
+        network: 'optimism',
+        deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
       }
     ],
   },
