@@ -1,7 +1,7 @@
 import { task } from 'hardhat/config';
 import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migration';
 import { writeEnacted } from '../../plugins/deployment_manager/Enacted';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { HardhatRuntimeEnvironment, HardhatConfig } from 'hardhat/types';
 import { DeploymentManager, VerifyArgs } from '../../plugins/deployment_manager';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
 
@@ -12,6 +12,14 @@ function getForkEnv(env: HardhatRuntimeEnvironment): HardhatRuntimeEnvironment {
     throw new Error(`No fork spec for ${env.network.name}`);
   }
   return hreForBase(base);
+}
+
+function getDefaultDeployment(config: HardhatConfig, network: string): string {
+  const base = config.scenario.bases.find(b => b.name == network);
+  if (!base) {
+    throw new Error(`No bases for ${network}`);
+  }
+  return base.deployment;
 }
 
 async function runMigration<T>(
@@ -112,6 +120,24 @@ task('deploy', 'Deploys market')
         }
       }
     }
+  });
+
+task('publish', 'Verifies a known contract at an address, given its args')
+  .addParam('address', 'The address to publish')
+  .addParam('deployment', 'The deployment to use to verify', '')
+  .addVariadicPositionalParam('constructorArguments', 'The contract args', [])
+  .setAction(async ({ address, constructorArguments, deployment }, env) => {
+    const network = env.network.name;
+    const deployment_ = deployment || getDefaultDeployment(env.config, network);
+    const tag = `${network}/${deployment_}`;
+    const dm = new DeploymentManager(network, deployment_, env);
+    const args: VerifyArgs = {
+      via: 'artifacts',
+      address,
+      constructorArguments,
+    };
+    console.log(`[${tag} ${address}:`, args);
+    await dm.verifyContract(args);
   });
 
 task('gen:migration', 'Generates a new migration')
