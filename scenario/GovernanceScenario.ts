@@ -93,7 +93,7 @@ scenario('upgrade Comet implementation and call new function', {filter: async (c
 
 scenario('add new asset',
   {
-    filter: async (ctx) => !isBridgedDeployment(ctx) && !matchesDeployment(ctx, [{network: 'mainnet', deployment: 'eth'}]),
+    filter: async (ctx) => !isBridgedDeployment(ctx) && !matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
     tokenBalances: {
       $comet: { $base: '>= 1000' },
     },
@@ -152,9 +152,9 @@ scenario('add new asset',
     expect(await albert.getCometBaseBalance()).to.be.equal(-borrowAmount);
   });
 
-scenario('add new asset (mainnet-eth)',
+scenario('add new asset (mainnet-weth)',
   {
-    filter: async (ctx) => !isBridgedDeployment(ctx) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'eth'}]),
+    filter: async (ctx) => !isBridgedDeployment(ctx) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
     tokenBalances: {
       $comet: { $base: '>= 1000' },
     },

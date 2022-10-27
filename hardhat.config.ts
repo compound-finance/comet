@@ -192,9 +192,9 @@ const config: HardhatUserConfig = {
         allocation: 0.1, // eth
       },
       {
-        name: 'mainnet-eth',
+        name: 'mainnet-weth',
         network: 'mainnet',
-        deployment: 'eth',
+        deployment: 'weth',
       },
       {
         name: 'development',

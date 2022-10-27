@@ -21,7 +21,7 @@ function calculateRewardsOwed(
 scenario(
   'Comet#rewards > can claim supply rewards for self',
   {
-    filter: async (ctx) => await isRewardSupported(ctx) && !matchesDeployment(ctx, [{network: 'mainnet', deployment: 'eth'}]),
+    filter: async (ctx) => await isRewardSupported(ctx) && !matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
     tokenBalances: {
       albert: { $base: ' == 1000000' }, // in units of asset, not wei
     },
@@ -80,7 +80,7 @@ scenario(
 scenario(
   'Comet#rewards > manager can claimTo supply rewards from a managed account',
   {
-    filter: async (ctx) => await isRewardSupported(ctx) && !matchesDeployment(ctx, [{network: 'mainnet', deployment: 'eth'}]),
+    filter: async (ctx) => await isRewardSupported(ctx) && !matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
     tokenBalances: {
       albert: { $base: ' == 1000000' }, // in units of asset, not wei
     },

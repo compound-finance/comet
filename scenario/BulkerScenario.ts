@@ -5,9 +5,9 @@ import { isRewardSupported, isBulkerSupported, getExpectedBaseBalance, matchesDe
 import { exp } from '../test/helpers';
 
 scenario(
-  'Comet#bulker > (non-ETH base) all non-reward actions in one txn',
+  'Comet#bulker > (non-WETH base) all non-reward actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'eth'}]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}]),
     tokenBalances: {
       albert: { $base: '== 0', $asset0: 3000 },
       $comet: { $base: 5000 },
@@ -79,9 +79,9 @@ scenario(
 );
 
 scenario(
-  'Comet#bulker > (ETH base) all non-reward actions in one txn',
+  'Comet#bulker > (WETH base) all non-reward actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{deployment: 'eth'}]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{deployment: 'weth'}]),
     tokenBalances: {
       albert: { $base: '== 0', $asset0: 3000 },
       $comet: { $base: 5000 },
@@ -151,9 +151,9 @@ scenario(
 );
 
 scenario(
-  'Comet#bulker > (non-ETH base) all actions in one txn',
+  'Comet#bulker > (non-WETH base) all actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'eth'}]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}]),
     tokenBalances: {
       albert: { $base: '== 1000000', $asset0: 100 },
       $comet: { $base: 5000 },
@@ -243,9 +243,9 @@ scenario(
 );
 
 scenario(
-  'Comet#bulker > (ETH base) all actions in one txn',
+  'Comet#bulker > (WETH base) all actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && matchesDeployment(ctx, [{deployment: 'eth'}]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && matchesDeployment(ctx, [{deployment: 'weth'}]),
     tokenBalances: {
       albert: { $base: '== 10', $asset0: 10 },
       $comet: { $base: 5000 },
