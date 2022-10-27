@@ -82,21 +82,14 @@ scenario(
       albert: { $base: '== 0' },
     },
     cometBalances: {
-      albert: { $base: '==100' }, // in units of asset, not wei
+      albert: { $base: 100 }, // in units of asset, not wei
     },
   },
   async ({ comet, actors }, context) => {
     const { albert } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
-    const scale = (await comet.baseScale()).toBigInt();
-
-    const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
-    const baseSupplyIndex = (await comet.totalsBasic()).baseSupplyIndex.toBigInt();
-    const baseSupplied = getExpectedBaseBalance(100n * scale, baseIndexScale, baseSupplyIndex);
-
-    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(0n);
-    expect(await comet.balanceOf(albert.address)).to.be.equal(baseSupplied);
+    const baseSupplied = await comet.balanceOf(albert.address);
 
     // Albert withdraws 100 units of base from Comet
     const txn = await albert.withdrawAsset({ asset: baseAsset.address, amount: baseSupplied });
