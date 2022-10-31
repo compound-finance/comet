@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import "./CometInterface.sol";
-import "./ERC20.sol";
-import "./IWETH9.sol";
+import "../CometInterface.sol";
+import "../ERC20.sol";
+import "../IWETH9.sol";
 
 interface IClaimable {
     function claim(address comet, address src, bool shouldAccrue) external;
@@ -11,23 +11,24 @@ interface IClaimable {
     function claimTo(address comet, address src, address to, bool shouldAccrue) external;
 }
 
-contract Bulker {
+contract BaseBulker {
     /** General configuration constants **/
     address public immutable admin;
     address payable public immutable weth;
 
     /** Actions **/
-    uint public constant ACTION_SUPPLY_ASSET = 1;
-    uint public constant ACTION_SUPPLY_ETH = 2;
-    uint public constant ACTION_TRANSFER_ASSET = 3;
-    uint public constant ACTION_WITHDRAW_ASSET = 4;
-    uint public constant ACTION_WITHDRAW_ETH = 5;
-    uint public constant ACTION_CLAIM_REWARD = 6;
+    bytes32 public constant ACTION_SUPPLY_ASSET = 'ACTION_SUPPLY_ASSET';
+    bytes32 public constant ACTION_SUPPLY_ETH = 'ACTION_SUPPLY_ETH';
+    bytes32 public constant ACTION_TRANSFER_ASSET = 'ACTION_TRANSFER_ASSET';
+    bytes32 public constant ACTION_WITHDRAW_ASSET = 'ACTION_WITHDRAW_ASSET';
+    bytes32 public constant ACTION_WITHDRAW_ETH = 'ACTION_WITHDRAW_ETH';
+    bytes32 public constant ACTION_CLAIM_REWARD = 'ACTION_CLAIM_REWARD';
 
     /** Custom errors **/
     error InvalidArgument();
     error FailedToSendEther();
     error Unauthorized();
+    error UnhandledAction();
 
     constructor(address admin_, address payable weth_) {
         admin = admin_;
@@ -68,12 +69,12 @@ contract Bulker {
      * @param actions The list of actions to execute in order
      * @param data The list of calldata to use for each action
      */
-    function invoke(uint[] calldata actions, bytes[] calldata data) external payable {
+    function invoke(bytes32[] calldata actions, bytes[] calldata data) external payable {
         if (actions.length != data.length) revert InvalidArgument();
 
         uint unusedEth = msg.value;
         for (uint i = 0; i < actions.length; ) {
-            uint action = actions[i];
+            bytes32 action = actions[i];
             if (action == ACTION_SUPPLY_ASSET) {
                 (address comet, address to, address asset, uint amount) = abi.decode(data[i], (address, address, address, uint));
                 supplyTo(comet, to, asset, amount);
@@ -93,6 +94,8 @@ contract Bulker {
             } else if (action == ACTION_CLAIM_REWARD) {
                 (address comet, address rewards, address src, bool shouldAccrue) = abi.decode(data[i], (address, address, address, bool));
                 claimReward(comet, rewards, src, shouldAccrue);
+            } else {
+                handleAction(action, data[i]);
             }
             unchecked { i++; }
         }
@@ -102,6 +105,10 @@ contract Bulker {
             (bool success, ) = msg.sender.call{ value: unusedEth }("");
             if (!success) revert FailedToSendEther();
         }
+    }
+
+    function handleAction(bytes32 action, bytes calldata data) virtual internal {
+        revert UnhandledAction();
     }
 
     /**
