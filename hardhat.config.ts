@@ -43,17 +43,21 @@ function *deriveAccounts(pk: string, n: number = 10) {
     yield (BigInt('0x' + pk) + BigInt(i)).toString(16);
 }
 
-export function throwIfMissing(envVariable, msg: string) {
-  if (!envVariable) {
-    throw new Error(msg);
+export function requireEnv(varName, msg?: string): string {
+  const varVal = process.env[varName];
+  if (!varVal) {
+    throw new Error(msg ?? `Missing required environment variable '${varName}'`);
   }
+  return varVal;
 }
 
 // required environment variables
-throwIfMissing(ETHERSCAN_KEY, 'Missing required environment variable: ETHERSCAN_KEY');
-throwIfMissing(SNOWTRACE_KEY, 'Missing required environment variable: SNOWTRACE_KEY');
-throwIfMissing(INFURA_KEY, 'Missing required environment variable: INFURA_KEY');
-throwIfMissing(POLYGONSCAN_KEY, 'Missing required environment variable: POLYGONSCAN_KEY');
+[
+  'ETHERSCAN_KEY',
+  'SNOWTRACE_KEY',
+  'INFURA_KEY',
+  'POLYGONSCAN_KEY'
+].map(v => requireEnv(v))
 
 // Networks
 interface NetworkConfig {
