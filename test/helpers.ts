@@ -4,8 +4,8 @@ import { expect } from 'chai';
 import { Block } from '@ethersproject/abstract-provider';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
-  Bulker,
-  Bulker__factory,
+  BaseBulker,
+  BaseBulker__factory,
   CometExt,
   CometExt__factory,
   CometHarness__factory,
@@ -130,7 +130,7 @@ export type BulkerOpts = {
 
 export type BulkerInfo = {
   opts: BulkerOpts;
-  bulker: Bulker;
+  bulker: BaseBulker;
 };
 
 export function dfn<T>(x: T | undefined | null, dflt: T): T {
@@ -493,7 +493,7 @@ export async function makeBulker(opts: BulkerOpts): Promise<BulkerInfo> {
   const admin = opts.admin || signers[0];
   const weth = opts.weth;
 
-  const BulkerFactory = (await ethers.getContractFactory('Bulker')) as Bulker__factory;
+  const BulkerFactory = (await ethers.getContractFactory('BaseBulker')) as BaseBulker__factory;
   const bulker = await BulkerFactory.deploy(admin.address, weth);
   await bulker.deployed();
 
