@@ -1,7 +1,7 @@
 import hre from 'hardhat';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import { CometInterface } from '../../build/types';
-import { throwIfMissing } from '../../hardhat.config';
+import { requireEnv } from '../../hardhat.config';
 
 // https://docs.uniswap.org/protocol/reference/deployments
 const UNISWAP_V3_FACTORY_ADDRESS = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
@@ -9,10 +9,8 @@ const WETH9 = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 const SWAP_ROUTER = '0xe592427a0aece92de3edee1f18e0157c05861564';
 
 async function main() {
-  const { DEPLOYMENT, RECIPIENT } = process.env;
-  throwIfMissing(DEPLOYMENT, 'missing required env variable: DEPLOYMENT');
-  throwIfMissing(RECIPIENT, 'missing required env variable: RECIPIENT');
-
+  const DEPLOYMENT = requireEnv('DEPLOYMENT');
+  const RECIPIENT = requireEnv('RECIPIENT');
   const network = hre.network.name;
   if (['hardhat', 'fuji'].includes(network)) {
     throw new Error(`Uniswap unavailable on network: ${network}`);

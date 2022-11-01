@@ -477,7 +477,16 @@ contract Comet is CometMainInterface {
     }
 
     /**
-     * @notice Gets the total amount of protocol reserves, denominated in the number of base tokens
+     * @notice Gets the total balance of protocol collateral reserves for an asset
+     * @dev Note: Reverts if collateral reserves are somehow negative, which should not be possible
+     * @param asset The collateral asset
+     */
+    function getCollateralReserves(address asset) override public view returns (uint) {
+        return ERC20(asset).balanceOf(address(this)) - totalsCollateral[asset].totalSupplyAsset;
+    }
+
+    /**
+     * @notice Gets the total amount of protocol reserves of the base asset
      */
     function getReserves() override public view returns (int) {
         (uint64 baseSupplyIndex_, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
@@ -1136,7 +1145,7 @@ contract Comet is CometMainInterface {
                 address asset = assetInfo.asset;
                 uint128 seizeAmount = userCollateral[account][asset].balance;
                 userCollateral[account][asset].balance = 0;
-                userCollateral[address(this)][asset].balance += seizeAmount;
+                totalsCollateral[asset].totalSupplyAsset -= seizeAmount;
 
                 uint256 value = mulPrice(seizeAmount, getPrice(assetInfo.priceFeed), assetInfo.scale);
                 deltaValue += mulFactor(value, assetInfo.liquidationFactor);
@@ -1169,6 +1178,10 @@ contract Comet is CometMainInterface {
         uint256 basePaidOut = unsigned256(newBalance - oldBalance);
         uint256 valueOfBasePaidOut = mulPrice(basePaidOut, basePrice, uint64(baseScale));
         emit AbsorbDebt(absorber, account, basePaidOut, valueOfBasePaidOut);
+
+        if (newPrincipal > 0) {
+            emit Transfer(address(0), account, presentValueSupply(baseSupplyIndex, unsigned104(newPrincipal)));
+        }
     }
 
     /**
@@ -1190,10 +1203,12 @@ contract Comet is CometMainInterface {
 
         uint collateralAmount = quoteCollateral(asset, baseAmount);
         if (collateralAmount < minAmount) revert TooMuchSlippage();
+        if (collateralAmount > getCollateralReserves(asset)) revert InsufficientReserves();
 
         // Note: Pre-transfer hook can re-enter buyCollateral with a stale collateral ERC20 balance.
-        //       This is a problem if quoteCollateral derives its discount from the collateral ERC20 balance.
-        withdrawCollateral(address(this), recipient, asset, safe128(collateralAmount));
+        //  Assets should not be listed which allow re-entry from pre-transfer now, as too much collateral could be bought.
+        //  This is also a problem if quoteCollateral derives its discount from the collateral ERC20 balance.
+        doTransferOut(asset, recipient, safe128(collateralAmount));
 
         emit BuyCollateral(msg.sender, asset, baseAmount, collateralAmount);
     }

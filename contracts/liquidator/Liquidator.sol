@@ -259,7 +259,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         for (uint8 i = 0; i < numAssets; i++) {
             address asset = comet.getAssetInfo(i).asset;
             cometAssets[i] = asset;
-            uint256 collateralBalance = comet.collateralBalanceOf(address(comet), asset);
+            uint256 collateralBalance = comet.getCollateralReserves(asset);
 
             if (collateralBalance == 0) continue;
 

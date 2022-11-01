@@ -67,7 +67,7 @@ export class CometContext {
   }
 
   async getProposer(): Promise<SignerWithAddress> {
-    return this.world.impersonateAddress((await this.getCompWhales())[0]);
+    return this.world.impersonateAddress((await this.getCompWhales())[0], 10n ** 18n);
   }
 
   async getComet(): Promise<CometInterface> {

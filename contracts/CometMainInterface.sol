@@ -79,6 +79,7 @@ abstract contract CometMainInterface is CometCore {
 
     function getAssetInfo(uint8 i) virtual public view returns (AssetInfo memory);
     function getAssetInfoByAddress(address asset) virtual public view returns (AssetInfo memory);
+    function getCollateralReserves(address asset) virtual public view returns (uint);
     function getReserves() virtual public view returns (int);
     function getPrice(address priceFeed) virtual public view returns (uint);
 
