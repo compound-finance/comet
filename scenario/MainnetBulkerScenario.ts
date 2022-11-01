@@ -17,7 +17,7 @@ scenario(
       albert: { $asset1: '== 0' },
     },
   },
-  async ({ comet, actors, assets, bulker }, context) => {
+  async ({ comet, actors, bulker }, context) => {
     const { albert } = actors;
 
     const stETH = await context.world.deploymentManager.contract('stETH') as ERC20;
@@ -39,7 +39,7 @@ scenario(
     const calldata = [supplyStEthCalldata];
     const actions = [await bulker.ACTION_SUPPLY_STETH()];
 
-    const txn = await albert.invoke({ actions, calldata });
+    await albert.invoke({ actions, calldata });
 
     expect(await stETH.balanceOf(albert.address)).to.be.equal(0n);
     expectApproximately(
@@ -59,7 +59,7 @@ scenario(
       $comet: { $asset1: 5 },
     },
   },
-  async ({ comet, actors, assets, bulker }, context) => {
+  async ({ comet, actors, bulker }, context) => {
     const { albert } = actors;
 
     const stETH = await context.world.deploymentManager.contract('stETH') as ERC20;
@@ -81,7 +81,7 @@ scenario(
     const calldata = [withdrawStEthCalldata];
     const actions = [await bulker.ACTION_WITHDRAW_STETH()];
 
-    const txn = await albert.invoke({ actions, calldata });
+    await albert.invoke({ actions, calldata });
 
     expectApproximately(
       await stETH.balanceOf(albert.address),
