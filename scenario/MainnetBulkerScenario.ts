@@ -1,4 +1,4 @@
-import { utils } from 'ethers';
+import { ethers, utils } from 'ethers';
 import { expect } from 'chai';
 import { scenario } from './context/CometContext';
 import CometAsset from './context/CometAsset';
@@ -89,5 +89,28 @@ scenario(
       1n
     );
     expect(await comet.collateralBalanceOf(albert.address, wstETH.address)).to.equal(0);
+  }
+);
+
+scenario(
+  'MainnetBulker > it reverts when passed an action that does not exist',
+  {
+    filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
+  },
+  async ({ comet, actors }) => {
+    const { betty } = actors;
+
+    const supplyGalacticCreditsCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'address', 'uint'],
+      [comet.address, betty.address, exp(1, 18)]
+    );
+    const calldata = [supplyGalacticCreditsCalldata];
+    const actions = [
+      ethers.utils.formatBytes32String('ACTION_SUPPLY_GALACTIC_CREDITS')
+    ];
+
+    await expect(
+      betty.invoke({ actions, calldata })
+    ).to.be.revertedWith("custom error 'UnhandledAction()'");
   }
 );
