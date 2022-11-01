@@ -119,21 +119,21 @@ scenario(
     const supplyAssetCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'address', 'uint'], [comet.address, albert.address, collateralAsset.address, toSupplyCollateral]);
     const withdrawAssetCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'address', 'uint'], [comet.address, albert.address, baseAsset.address, toBorrowBase]);
     const transferAssetCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'address', 'uint'], [comet.address, betty.address, baseAsset.address, toTransferBase]);
-    const supplyEthCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, albert.address, toSupplyEth]);
-    const withdrawEthCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, albert.address, toWithdrawEth]);
+    const supplyNativeTokenCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, albert.address, toSupplyEth]);
+    const withdrawNativeTokenCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, albert.address, toWithdrawEth]);
     const calldata = [
       supplyAssetCalldata,
       withdrawAssetCalldata,
       transferAssetCalldata,
-      supplyEthCalldata,
-      withdrawEthCalldata
+      supplyNativeTokenCalldata,
+      withdrawNativeTokenCalldata
     ];
     const actions = [
       await bulker.ACTION_SUPPLY_ASSET(),
       await bulker.ACTION_WITHDRAW_ASSET(),
       await bulker.ACTION_TRANSFER_ASSET(),
-      await bulker.ACTION_SUPPLY_ETH(),
-      await bulker.ACTION_WITHDRAW_ETH(),
+      await bulker.ACTION_SUPPLY_NATIVE_TOKEN(),
+      await bulker.ACTION_WITHDRAW_NATIVE_TOKEN(),
     ];
     const txn = await albert.invoke({ actions, calldata }, { value: toSupplyEth });
 
@@ -297,23 +297,23 @@ scenario(
     const supplyAssetCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'address', 'uint'], [comet.address, albert.address, collateralAsset.address, toSupplyCollateral]);
     const withdrawAssetCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'address', 'uint'], [comet.address, albert.address, baseAsset.address, toBorrowBase]);
     const transferAssetCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'address', 'uint'], [comet.address, betty.address, baseAsset.address, toTransferBase]);
-    const supplyEthCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, albert.address, toSupplyEth]);
-    const withdrawEthCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, albert.address, toWithdrawEth]);
+    const supplyNativeTokenCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, albert.address, toSupplyEth]);
+    const withdrawNativeTokenCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, albert.address, toWithdrawEth]);
     const claimRewardCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'address', 'bool'], [comet.address, rewards.address, albert.address, true]);
     const calldata = [
       supplyAssetCalldata,
       withdrawAssetCalldata,
       transferAssetCalldata,
-      supplyEthCalldata,
-      withdrawEthCalldata,
+      supplyNativeTokenCalldata,
+      withdrawNativeTokenCalldata,
       claimRewardCalldata
     ];
     const actions = [
       await bulker.ACTION_SUPPLY_ASSET(),
       await bulker.ACTION_WITHDRAW_ASSET(),
       await bulker.ACTION_TRANSFER_ASSET(),
-      await bulker.ACTION_SUPPLY_ETH(),
-      await bulker.ACTION_WITHDRAW_ETH(),
+      await bulker.ACTION_SUPPLY_NATIVE_TOKEN(),
+      await bulker.ACTION_WITHDRAW_NATIVE_TOKEN(),
       await bulker.ACTION_CLAIM_REWARD(),
     ];
     const txn = await albert.invoke({ actions, calldata }, { value: toSupplyEth });
