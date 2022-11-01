@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import "./BaseBulker.sol";
-import "./IWstETH.sol";
+import "../IWstETH.sol";
 
 contract MainnetBulker is BaseBulker {
     address public immutable steth;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import "../ERC20.sol";
+import "./ERC20.sol";
 
 /**
  * @dev Interface for interacting with WstETH contract
