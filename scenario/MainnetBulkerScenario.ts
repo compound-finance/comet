@@ -41,7 +41,7 @@ scenario(
 
     const txn = await albert.invoke({ actions, calldata });
 
-    expect(await wstETH.balanceOf(albert.address)).to.be.equal(0n);
+    expect(await stETH.balanceOf(albert.address)).to.be.equal(0n);
     expectApproximately(
       await comet.collateralBalanceOf(albert.address, wstETH.address),
       await wstETH.getWstETHByStETH(toSupplyStEth),
