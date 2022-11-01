@@ -5,8 +5,8 @@ import "./BaseBulker.sol";
 import "./IWstETH.sol";
 
 contract MainnetBulker is BaseBulker {
-    address payable public immutable steth;
-    address payable public immutable wsteth;
+    address public immutable steth;
+    address public immutable wsteth;
 
     bytes32 public constant ACTION_SUPPLY_STETH = "ACTION_SUPPLY_STETH";
     bytes32 public constant ACTION_WITHDRAW_STETH = "ACTION_WITHDRAW_STETH";
@@ -14,11 +14,10 @@ contract MainnetBulker is BaseBulker {
     constructor(
         address admin_,
         address payable weth_,
-        address payable steth_,
-        address payable wsteth_
+        address wsteth_
     ) BaseBulker(admin_, weth_) {
-        steth = steth_;
         wsteth = wsteth_;
+        steth = IWstETH(wsteth_).stETH();
     }
 
     function handleAction(bytes32 action, bytes calldata data) override internal {

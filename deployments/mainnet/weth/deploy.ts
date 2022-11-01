@@ -26,7 +26,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     [
       await comet.governor(),  // admin_
       await comet.baseToken(), // weth_
-      stETH.address,           // steth_
       wstETH.address           // wsteth_
     ]
   );
