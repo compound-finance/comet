@@ -17,12 +17,12 @@ contract BaseBulker {
     address payable public immutable weth;
 
     /** Actions **/
-    bytes32 public constant ACTION_SUPPLY_ASSET = 'ACTION_SUPPLY_ASSET';
-    bytes32 public constant ACTION_SUPPLY_ETH = 'ACTION_SUPPLY_ETH';
-    bytes32 public constant ACTION_TRANSFER_ASSET = 'ACTION_TRANSFER_ASSET';
-    bytes32 public constant ACTION_WITHDRAW_ASSET = 'ACTION_WITHDRAW_ASSET';
-    bytes32 public constant ACTION_WITHDRAW_ETH = 'ACTION_WITHDRAW_ETH';
-    bytes32 public constant ACTION_CLAIM_REWARD = 'ACTION_CLAIM_REWARD';
+    bytes32 public constant ACTION_SUPPLY_ASSET = "ACTION_SUPPLY_ASSET";
+    bytes32 public constant ACTION_SUPPLY_ETH = "ACTION_SUPPLY_ETH";
+    bytes32 public constant ACTION_TRANSFER_ASSET = "ACTION_TRANSFER_ASSET";
+    bytes32 public constant ACTION_WITHDRAW_ASSET = "ACTION_WITHDRAW_ASSET";
+    bytes32 public constant ACTION_WITHDRAW_ETH = "ACTION_WITHDRAW_ETH";
+    bytes32 public constant ACTION_CLAIM_REWARD = "ACTION_CLAIM_REWARD";
 
     /** Custom errors **/
     error InvalidArgument();
