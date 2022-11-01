@@ -12,26 +12,25 @@ import { expectApproximately, isBulkerSupported, matchesDeployment } from './uti
 scenario(
   'MainnetBulker > wraps stETH before supplying',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{deployment: 'weth'}]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
     tokenBalances: {
       albert: { $asset1: '== 0' },
     },
   },
   async ({ comet, actors, assets, bulker }, context) => {
     const { albert } = actors;
-    const { wstETH } = assets;
+
+    const stETH = await context.world.deploymentManager.contract('stETH') as ERC20;
+    const wstETH = await context.world.deploymentManager.contract('wstETH') as IWstETH;
 
     const toSupplyStEth = exp(.1, 18);
 
-    const stETH = await context.world.deploymentManager.contract('stETH') as ERC20;
-    const stETHAsset = new CometAsset(stETH);
-    // source some stETH for albert
-    await context.sourceTokens(toSupplyStEth, stETHAsset, albert);
+    await context.sourceTokens(toSupplyStEth, new CometAsset(stETH), albert);
 
     expect(await stETH.balanceOf(albert.address)).to.be.approximately(toSupplyStEth, 1);
 
     // approve bulker as albert
-    await stETHAsset.approve(albert, bulker.address, toSupplyStEth);
+    await stETH.connect(albert.signer).approve(bulker.address, toSupplyStEth);
 
     const supplyStEthCalldata = utils.defaultAbiCoder.encode(
       ['address', 'address', 'uint'],
@@ -43,18 +42,18 @@ scenario(
     const txn = await albert.invoke({ actions, calldata });
 
     expect(await wstETH.balanceOf(albert.address)).to.be.equal(0n);
-    // XXX pretty weak expectation
-    expect(await comet.collateralBalanceOf(albert.address, wstETH.address)).to.be.within(
-      0,
-      toSupplyStEth
+    expectApproximately(
+      await comet.collateralBalanceOf(albert.address, wstETH.address),
+      await wstETH.getWstETHByStETH(toSupplyStEth),
+      1n
     );
   }
 );
 
 scenario(
-  'MainnetBulker > wraps wstETH before withdrawing',
+  'MainnetBulker > unwraps wstETH before withdrawing',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{deployment: 'weth'}]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
     tokenBalances: {
       albert: { $asset1: 2 },
       $comet: { $asset1: 5 },
