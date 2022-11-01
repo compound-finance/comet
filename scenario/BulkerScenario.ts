@@ -1,5 +1,5 @@
 import { scenario } from './context/CometContext';
-import { constants, utils } from 'ethers';
+import { constants, ethers, utils } from 'ethers';
 import { expect } from 'chai';
 import { isRewardSupported, isBulkerSupported, getExpectedBaseBalance, matchesDeployment } from './utils';
 import { exp } from '../test/helpers';
@@ -330,5 +330,26 @@ scenario(
     expect(await albert.getErc20Balance(rewardTokenAddress)).to.be.equal(expectedFinalRewardBalance);
 
     return txn; // return txn to measure gas
+  }
+);
+
+scenario(
+  'Comet#bulker > it reverts when passed an action that does not exist',
+  {},
+  async ({ comet, actors }) => {
+    const { betty } = actors;
+
+    const supplyGalacticCreditsCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'address', 'uint'],
+      [comet.address, betty.address, exp(1, 18)]
+    );
+    const calldata = [supplyGalacticCreditsCalldata];
+    const actions = [
+      ethers.utils.formatBytes32String('ACTION_SUPPLY_GALACTIC_CREDITS')
+    ];
+
+    await expect(
+      betty.invoke({ actions, calldata })
+    ).to.be.revertedWith("custom error 'UnhandledAction()'");
   }
 );
