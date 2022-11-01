@@ -141,6 +141,17 @@ Set up the following env variables:
 - `COINMARKETCAP_API_KEY=your_coinmarket_api_key`
   optional, only if you want to see cost in USD
 
+### Run forge tests
+
+Experimental support for `foundry` has been added, so assuming `forge` is installed:
+
+```
+forge test
+```
+
+See the [GitHub workflow](.github/workflows/run-forge-tests.yaml) for an example.
+
+
 ### Deploy contracts
 
 Deploys contracts to a specified chain using a deployment script.
