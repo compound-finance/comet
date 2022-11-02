@@ -52,6 +52,11 @@ const testCases = [
     tokensPerStEth: exp(.8, 18),
     result: exp(1250, 8)
   },
+  {
+    stEthPrice: exp(-1000, 8),
+    tokensPerStEth: exp(.8, 18),
+    result: exp(-1250, 8)
+  },
 ];
 
 describe('wstETH price feed', function () {

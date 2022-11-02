@@ -21,7 +21,7 @@ function calculateRewardsOwed(
 scenario(
   'Comet#rewards > can claim supply rewards for self',
   {
-    filter: async (ctx) => await isRewardSupported(ctx) && !matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
+    filter: async (ctx) => await isRewardSupported(ctx),
     tokenBalances: {
       albert: { $base: ' == 1000000' }, // in units of asset, not wei
     },
