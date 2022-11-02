@@ -13,9 +13,9 @@ contract MainnetBulker is BaseBulker {
 
     constructor(
         address admin_,
-        address payable wrappedNativeToken_,
+        address payable weth_,
         address wsteth_
-    ) BaseBulker(admin_, wrappedNativeToken_) {
+    ) BaseBulker(admin_, weth_) {
         wsteth = wsteth_;
         steth = IWstETH(wsteth_).stETH();
     }

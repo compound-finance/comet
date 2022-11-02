@@ -25,7 +25,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'bulkers/MainnetBulker.sol',
     [
       await comet.governor(),  // admin_
-      await comet.baseToken(), // wrappedNativeToken_
+      await comet.baseToken(), // weth_
       wstETH.address           // wsteth_
     ]
   );
