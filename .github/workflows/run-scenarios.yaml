@@ -7,7 +7,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bases: [ development, mainnet, goerli, fuji, mumbai ]
+        bases: [
+          [development],
+          [mainnet],
+          [goerli, kovan],
+          [fuji, mumbai]
+        ]
     name: Run scenarios
     env:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
@@ -47,7 +52,7 @@ jobs:
         run: npx hardhat compile
 
       - name: Run scenarios
-        run: yarn scenario --bases ${{ matrix.bases }}
+        run: yarn scenario --bases ${{ join(matrix.bases, ',') }}
 
       - uses: actions/upload-artifact@v2 # upload scenario results
         if: success() || failure() # run this step even if previous step failed
@@ -57,6 +62,6 @@ jobs:
 
       - uses: dorny/test-reporter@v1
         with:
-          name: Scenario Tests (${{ matrix.bases }}) # Name of the check run which will be created
+          name: Scenario Tests (${{ join(matrix.bases, ',') }}) # Name of the check run which will be created
           path: scenario-results.json # Path to test results (inside artifact .zip)
           reporter: mocha-json # Format of test results
