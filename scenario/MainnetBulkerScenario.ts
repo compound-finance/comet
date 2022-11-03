@@ -13,6 +13,9 @@ scenario(
   'MainnetBulker > wraps stETH before supplying',
   {
     filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
+    supplyCaps: {
+      $asset1: 1,
+    },
     tokenBalances: {
       albert: { $asset1: '== 0' },
     },
@@ -54,6 +57,9 @@ scenario(
   'MainnetBulker > unwraps wstETH before withdrawing',
   {
     filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
+    supplyCaps: {
+      $asset1: 2,
+    },
     tokenBalances: {
       albert: { $asset1: 2 },
       $comet: { $asset1: 5 },
