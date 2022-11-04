@@ -3,6 +3,7 @@ import { Migration, loadMigrations } from '../../plugins/deployment_manager/Migr
 import { writeEnacted } from '../../plugins/deployment_manager/Enacted';
 import { HardhatRuntimeEnvironment, HardhatConfig } from 'hardhat/types';
 import { DeploymentManager, VerifyArgs } from '../../plugins/deployment_manager';
+import { impersonateAddress } from '../../plugins/scenario/utils';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
 
 // TODO: Don't depend on scenario's hreForBase
@@ -160,6 +161,7 @@ task('gen:migration', 'Generates a new migration')
 
 task('migrate', 'Runs migration')
   .addPositionalParam('migration', 'name of migration')
+  .addOptionalParam('impersonate', 'the governor will impersonate the passed account for proposals [only when simulating]')
   .addParam('deployment', 'The deployment to apply the migration to')
   .addFlag('prepare', 'runs preparation [defaults to true if enact not specified]')
   .addFlag('enact', 'enacts migration [implies prepare]')
@@ -167,7 +169,7 @@ task('migrate', 'Runs migration')
   .addFlag('simulate', 'only simulates the blockchain effects')
   .addFlag('overwrite', 'overwrites artifact if exists, fails otherwise')
   .setAction(
-    async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, deployment }, env) => {
+    async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, deployment, impersonate }, env) => {
       const maybeForkEnv = simulate ? getForkEnv(env) : env;
       const network = env.network.name;
       const dm = new DeploymentManager(
@@ -200,6 +202,13 @@ task('migrate', 'Runs migration')
         await governanceDm.spider();
       } else {
         governanceDm = dm;
+      }
+
+      if (impersonate && !simulate) {
+        throw new Error('Cannot impersonate an address if not simulating a migration. Please specify --simulate to simulate.');
+      } else if (impersonate && simulate) {
+        const signer = await impersonateAddress(governanceDm, impersonate);
+        governanceDm._signers[0] = signer;
       }
 
       const migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
