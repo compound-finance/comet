@@ -8,3 +8,4 @@ export { CometBalanceConstraint } from './CometBalanceConstraint';
 export { MigrationConstraint, VerifyMigrationConstraint } from './MigrationConstraint';
 export { ProposalConstraint } from './ProposalConstraint';
 export { FilterConstraint } from './FilterConstraint';
+export { PriceConstraint } from './PriceConstraint';

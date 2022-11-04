@@ -7,4 +7,5 @@ export interface Requirements {
     pause?: object; // Pause constraint
     utilization?: number; // Utilization constraint
     supplyCaps?: object; // Supply cap constraint
+    prices?: object; // Price constraint
 }
