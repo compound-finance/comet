@@ -208,7 +208,7 @@ task('migrate', 'Runs migration')
         throw new Error('Cannot impersonate an address if not simulating a migration. Please specify --simulate to simulate.');
       } else if (impersonate && simulate) {
         const signer = await impersonateAddress(governanceDm, impersonate);
-        governanceDm._signers[0] = signer;
+        governanceDm._signers.unshift(signer);
       }
 
       const migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
