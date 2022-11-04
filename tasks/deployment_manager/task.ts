@@ -207,7 +207,7 @@ task('migrate', 'Runs migration')
       if (impersonate && !simulate) {
         throw new Error('Cannot impersonate an address if not simulating a migration. Please specify --simulate to simulate.');
       } else if (impersonate && simulate) {
-        const signer = await impersonateAddress(governanceDm, impersonate);
+        const signer = await impersonateAddress(governanceDm, impersonate, 10n ** 18n);
         governanceDm._signers.unshift(signer);
       }
 
