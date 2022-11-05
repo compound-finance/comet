@@ -84,11 +84,7 @@ export class World {
   }
 
   async impersonateAddress(address: string, value?: bigint): Promise<SignerWithAddress> {
-    if (value) {
-      const signer = await this.deploymentManager.getSigner();
-      await signer.sendTransaction({ to: address, value });
-    }
-    return await impersonateAddress(this.deploymentManager, address);
+    return impersonateAddress(this.deploymentManager, address, value);
   }
 
   async timestamp() {
