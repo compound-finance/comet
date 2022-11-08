@@ -1,6 +1,6 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, expectRevertCustom, expectRevertMatches, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
+import { expectApproximately, expectBase, expectRevertCustom, expectRevertMatches, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
 
 // XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
@@ -201,7 +201,7 @@ scenario(
   'Comet#supplyFrom > repay borrow',
   {
     tokenBalances: {
-      albert: { $base: 1000 }
+      albert: { $base: 1010 }
     },
     cometBalances: {
       betty: { $base: -1000 } // in units of asset, not wei
@@ -215,18 +215,15 @@ scenario(
     const utilization = await comet.getUtilization();
     const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
-    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(1000n * scale);
-    expectApproximately(await betty.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 1n) + 1n);
-
     await baseAsset.approve(albert, comet.address);
     await albert.allow(betty, true);
 
-    // Betty supplies 100 units of base from Albert to repay borrows
-    const txn = await betty.supplyAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: 1000n * scale });
+    // Betty supplies 1000 units of base from Albert to repay borrows
+    const debt = await betty.getCometBaseBalance();
+    const txn = await betty.supplyAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: -debt });
 
-    expect(await baseAsset.balanceOf(albert.address)).to.be.equal(0n);
-    // XXX all these timings are crazy
-    expectApproximately(await betty.getCometBaseBalance(), 0n, getInterest(1000n * scale, borrowRate, 8n) + 2n);
+    expect(await baseAsset.balanceOf(albert.address)).to.be.lessThan(10n * scale);
+    expectBase(await betty.getCometBaseBalance(), 0n);
 
     return txn; // return txn to measure gas
   }
