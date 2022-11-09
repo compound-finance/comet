@@ -32,15 +32,34 @@ async function getUniqueAddresses(comet: CometInterface): Promise<Set<string>> {
   return new Set(withdrawEvents.map(event => event.args.src));
 }
 
-export default async function liquidateUnderwaterBorrowers(
+async function hasPurchaseableCollateral(comet: CometInterface): Promise<boolean> {
+  // XXX filter out small amounts
+  // XXX cache the set of assets
+  // XXX refresh cache every day
+  let numAssets = await comet.numAssets();
+  let assets = [
+    ...await Promise.all(Array(numAssets).fill(0).map(async (_, i) => {
+      return (await comet.getAssetInfo(i)).asset;
+    })),
+  ];
+  for (let asset in assets) {
+    if ((await comet.getCollateralReserves(asset)).gt(0)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export async function liquidateUnderwaterBorrowers(
   comet: CometInterface,
   liquidator: Liquidator,
   signer: SignerWithAddress
-) {
+): Promise<boolean> {
   const uniqueAddresses = await getUniqueAddresses(comet);
 
   console.log(`${uniqueAddresses.size} unique addresses found`);
 
+  let liquidationAttempted = false;
   for (const address of uniqueAddresses) {
     const isLiquidatable = await comet.isLiquidatable(address);
 
@@ -52,6 +71,25 @@ export default async function liquidateUnderwaterBorrowers(
         signer,
         [address]
       );
+      liquidationAttempted = true;
     }
+  }
+  return liquidationAttempted;
+}
+
+export async function arbitragePurchaseableCollateral(
+  comet: CometInterface,
+  liquidator: Liquidator,
+  signer: SignerWithAddress
+) {
+  console.log(`Checking for purchaseable collateral`);
+
+  if (await hasPurchaseableCollateral(comet)) {
+    console.log(`There is purchaseable collateral`);
+    await attemptLiquidation(
+      liquidator,
+      signer,
+      [] // empty list means we will only buy collateral and sell it
+    );
   }
 }

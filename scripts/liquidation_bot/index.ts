@@ -4,7 +4,10 @@ import {
   CometInterface,
   Liquidator
 } from '../../build/types';
-import liquidateUnderwaterBorrowers from './liquidateUnderwaterBorrowers';
+import {
+  arbitragePurchaseableCollateral,
+  liquidateUnderwaterBorrowers
+} from './liquidateUnderwaterBorrowers';
 
 const loopDelay = 5000;
 
@@ -53,11 +56,18 @@ async function main() {
 
     if (currentBlockNumber !== lastBlockNumber) {
       lastBlockNumber = currentBlockNumber;
-      await liquidateUnderwaterBorrowers(
+      const liquidationAttempted = await liquidateUnderwaterBorrowers(
         comet,
         liquidator,
         signer
       );
+      if (!liquidationAttempted) {
+        await arbitragePurchaseableCollateral(
+          comet,
+          liquidator,
+          signer
+        );
+      }
     } else {
       console.log(`block already checked; waiting ${loopDelay}ms`);
       await new Promise(resolve => setTimeout(resolve, loopDelay));
