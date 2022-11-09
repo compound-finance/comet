@@ -132,7 +132,7 @@ export async function makeProtocol() {
   await comet.deployed();
   const cometHarnessInterface = await ethers.getContractAt('CometHarnessInterface', comet.address) as CometHarnessInterface;
 
-  const [signer, underwaterUser_, recipient] = await ethers.getSigners();
+  const [signer,, recipient] = await ethers.getSigners();
 
   // build Liquidator
   const Liquidator = await ethers.getContractFactory('Liquidator') as Liquidator__factory;
@@ -228,7 +228,7 @@ export async function makeProtocol() {
       compWhale: compWhaleSigner,
       linkWhale: linkWhaleSigner,
     }
-  }
+  };
 }
 
 export async function makeLiquidatableProtocol() {

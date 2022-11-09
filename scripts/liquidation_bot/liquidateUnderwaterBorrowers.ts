@@ -103,7 +103,7 @@ export async function getAssets(comet: CometInterface): Promise<Asset[]> {
   let assets = [
     ...await Promise.all(Array(numAssets).fill(0).map(async (_, i) => {
       const asset = await comet.getAssetInfo(i);
-      return { address: asset.asset, priceFeed: asset.priceFeed, scale: asset.scale.toBigInt() }
+      return { address: asset.asset, priceFeed: asset.priceFeed, scale: asset.scale.toBigInt() };
     })),
   ];
   return assets;
