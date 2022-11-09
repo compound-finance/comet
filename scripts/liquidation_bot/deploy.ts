@@ -50,7 +50,7 @@ async function main() {
       ],
       [
         true,
-        false,
+        true,
         false,
         true,
         true
