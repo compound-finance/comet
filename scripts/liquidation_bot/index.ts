@@ -6,10 +6,13 @@ import {
 } from '../../build/types';
 import {
   arbitragePurchaseableCollateral,
-  liquidateUnderwaterBorrowers
+  liquidateUnderwaterBorrowers,
+  getAssetAddresses
 } from './liquidateUnderwaterBorrowers';
 
 const loopDelay = 5000;
+const updateAssetsDelay = 86_400_000; // 1 day
+let assetAddresses: string[] = [];
 
 async function main() {
   let { DEPLOYMENT: deployment, LIQUIDATOR_ADDRESS: liquidatorAddress } = process.env;
@@ -48,8 +51,15 @@ async function main() {
   ) as Liquidator;
 
   let lastBlockNumber: number;
-
+  let loopsUntilUpdateAssets = updateAssetsDelay / loopDelay;
   while (true) {
+    loopsUntilUpdateAssets -= 1;
+    if (loopsUntilUpdateAssets <= 0) {
+      console.log('Updating asset addresses');
+      assetAddresses = await getAssetAddresses(comet);
+      loopsUntilUpdateAssets = updateAssetsDelay / loopDelay;
+    }
+
     const currentBlockNumber = await hre.ethers.provider.getBlockNumber();
 
     console.log(`currentBlockNumber: ${currentBlockNumber}`);
@@ -65,7 +75,8 @@ async function main() {
         await arbitragePurchaseableCollateral(
           comet,
           liquidator,
-          signer
+          signer,
+          assetAddresses
         );
       }
     } else {
