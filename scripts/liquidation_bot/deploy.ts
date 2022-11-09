@@ -28,8 +28,6 @@ async function main() {
   await dm.spider();
 
   const comet = await dm.contract('comet') as CometInterface;
-  const numAssets = await comet.numAssets();
-  const assets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
 
   const liquidator = await dm.deploy(
     'liquidator',
