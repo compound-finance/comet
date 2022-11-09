@@ -40,7 +40,7 @@ import uniAbi from './uni-abi';
 import compAbi from './comp-abi';
 import linkAbi from './link-abi';
 
-export default async function makeLiquidatableProtocol() {
+export async function makeProtocol() {
   // build Comet
   const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
   const name32 = ethers.utils.formatBytes32String('Compound Comet');
@@ -132,16 +132,7 @@ export default async function makeLiquidatableProtocol() {
   await comet.deployed();
   const cometHarnessInterface = await ethers.getContractAt('CometHarnessInterface', comet.address) as CometHarnessInterface;
 
-  // configure Comet
-  await setTotalsBasic(cometHarnessInterface, {
-    baseBorrowIndex: 2e15,
-    baseSupplyIndex: 2e15,
-    totalSupplyBase: 2e13,
-    totalBorrowBase: 2e13
-  });
-
-  // create underwater user
-  const [signer, underwaterUser, recipient] = await ethers.getSigners();
+  const [signer, underwaterUser_, recipient] = await ethers.getSigners();
 
   // build Liquidator
   const Liquidator = await ethers.getContractFactory('Liquidator') as Liquidator__factory;
@@ -215,24 +206,10 @@ export default async function makeLiquidatableProtocol() {
   });
   const linkWhaleSigner = await ethers.getSigner(LINK_WHALE);
 
-  await mockUSDC.connect(usdcWhaleSigner).transfer(signer.address, exp(300, 6));
-  // transfer DAI to underwater user
-  await mockDai.connect(daiWhaleSigner).transfer(underwaterUser.address, exp(200, 18));
-  // transfer WETH to underwater user
-  await mockWETH.connect(wethWhaleSigner).transfer(underwaterUser.address, exp(200, 18));
-  // transfer WBTC to underwater user
-  await mockWBTC.connect(wbtcWhaleSigner).transfer(underwaterUser.address, exp(2, 8));
-  // transfer UNI to underwater user
-  await mockUNI.connect(uniWhaleSigner).transfer(underwaterUser.address, exp(200, 18));
-  // transfer COMP to underwater user
-  await mockCOMP.connect(compWhaleSigner).transfer(underwaterUser.address, exp(200, 18));
-  // transfer LINK to underwater user
-  await mockLINK.connect(linkWhaleSigner).transfer(underwaterUser.address, exp(200, 18));
-
   return {
     comet: cometHarnessInterface,
     liquidator,
-    users: [signer, underwaterUser, recipient],
+    users: [signer, recipient],
     assets: {
       dai: mockDai,
       usdc: mockUSDC,
@@ -250,6 +227,64 @@ export default async function makeLiquidatableProtocol() {
       uniWhale: uniWhaleSigner,
       compWhale: compWhaleSigner,
       linkWhale: linkWhaleSigner,
+    }
+  }
+}
+
+export async function makeLiquidatableProtocol() {
+  const {
+    comet,
+    liquidator,
+    assets: { dai, usdc, weth, wbtc, uni, comp, link  },
+    whales: { daiWhale, usdcWhale, wethWhale, wbtcWhale, uniWhale, compWhale, linkWhale }
+  } = await makeProtocol();
+
+  // configure Comet
+  await setTotalsBasic(comet, {
+    baseBorrowIndex: 2e15,
+    baseSupplyIndex: 2e15,
+    totalSupplyBase: 2e13,
+    totalBorrowBase: 2e13
+  });
+
+  // create underwater user
+  const [signer, underwaterUser, recipient] = await ethers.getSigners();
+
+  await usdc.connect(usdcWhale).transfer(signer.address, exp(300, 6));
+  // transfer DAI to underwater user
+  await dai.connect(daiWhale).transfer(underwaterUser.address, exp(200, 18));
+  // transfer WETH to underwater user
+  await weth.connect(wethWhale).transfer(underwaterUser.address, exp(200, 18));
+  // transfer WBTC to underwater user
+  await wbtc.connect(wbtcWhale).transfer(underwaterUser.address, exp(2, 8));
+  // transfer UNI to underwater user
+  await uni.connect(uniWhale).transfer(underwaterUser.address, exp(200, 18));
+  // transfer COMP to underwater user
+  await comp.connect(compWhale).transfer(underwaterUser.address, exp(200, 18));
+  // transfer LINK to underwater user
+  await link.connect(linkWhale).transfer(underwaterUser.address, exp(200, 18));
+
+  return {
+    comet: comet,
+    liquidator,
+    users: [signer, underwaterUser, recipient],
+    assets: {
+      dai,
+      usdc,
+      weth,
+      wbtc,
+      uni,
+      comp,
+      link
+    },
+    whales: {
+      daiWhale,
+      usdcWhale,
+      wethWhale,
+      wbtcWhale,
+      uniWhale,
+      compWhale,
+      linkWhale,
     }
   };
 }

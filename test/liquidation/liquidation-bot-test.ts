@@ -1,6 +1,6 @@
 import { event, expect, exp, wait } from '../helpers';
 import { ethers } from 'hardhat';
-import makeLiquidatableProtocol, { forkMainnet, resetHardhatNetwork } from './makeLiquidatableProtocol';
+import { forkMainnet, makeLiquidatableProtocol, resetHardhatNetwork } from './makeLiquidatableProtocol';
 import { DAI } from './addresses';
 import { SWAP_ROUTER } from './addresses';
 

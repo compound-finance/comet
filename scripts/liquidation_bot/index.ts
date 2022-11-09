@@ -7,12 +7,13 @@ import {
 import {
   arbitragePurchaseableCollateral,
   liquidateUnderwaterBorrowers,
-  getAssetAddresses
+  getAssets,
+  Asset
 } from './liquidateUnderwaterBorrowers';
 
 const loopDelay = 5000;
 const updateAssetsDelay = 86_400_000; // 1 day
-let assetAddresses: string[] = [];
+let assets: Asset[] = [];
 
 async function main() {
   let { DEPLOYMENT: deployment, LIQUIDATOR_ADDRESS: liquidatorAddress } = process.env;
@@ -56,7 +57,7 @@ async function main() {
     loopsUntilUpdateAssets -= 1;
     if (loopsUntilUpdateAssets <= 0) {
       console.log('Updating asset addresses');
-      assetAddresses = await getAssetAddresses(comet);
+      assets = await getAssets(comet);
       loopsUntilUpdateAssets = updateAssetsDelay / loopDelay;
     }
 
@@ -76,7 +77,7 @@ async function main() {
           comet,
           liquidator,
           signer,
-          assetAddresses
+          assets
         );
       }
     } else {
