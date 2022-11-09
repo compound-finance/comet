@@ -56,7 +56,7 @@ async function main() {
   while (true) {
     loopsUntilUpdateAssets -= 1;
     if (loopsUntilUpdateAssets <= 0) {
-      console.log('Updating asset addresses');
+      console.log('Updating assets');
       assets = await getAssets(comet);
       loopsUntilUpdateAssets = updateAssetsDelay / loopDelay;
     }
