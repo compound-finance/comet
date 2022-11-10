@@ -12,6 +12,7 @@ import {
 } from './liquidateUnderwaterBorrowers';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import { providers, Wallet } from 'ethers';
+import googleCloudLog, { LogSeverity } from './googleCloudLog';
 
 const loopDelay = 5000;
 const loopsUntilUpdateAssets = 1000;
@@ -27,6 +28,11 @@ async function main() {
   }
 
   const network = hre.network.name;
+
+  googleCloudLog(
+    LogSeverity.INFO,
+    `Liquidation Bot started {network: ${network}, deployment: ${deployment}, liquidatorAddress: ${liquidatorAddress}}`
+  );
 
   const dm = new DeploymentManager(
     network,
@@ -85,14 +91,14 @@ async function main() {
   let loops = 0;
   while (true) {
     if (loops >= loopsUntilUpdateAssets) {
-      console.log('Updating assets');
+      googleCloudLog(LogSeverity.INFO, 'Updating assets');
       assets = await getAssets(comet);
       loops = 0;
     }
 
     const currentBlockNumber = await hre.ethers.provider.getBlockNumber();
 
-    console.log(`currentBlockNumber: ${currentBlockNumber}`);
+    googleCloudLog(LogSeverity.INFO, `currentBlockNumber: ${currentBlockNumber}`);
 
     if (currentBlockNumber !== lastBlockNumber) {
       lastBlockNumber = currentBlockNumber;
@@ -110,7 +116,7 @@ async function main() {
         );
       }
     } else {
-      console.log(`block already checked; waiting ${loopDelay}ms`);
+      googleCloudLog(LogSeverity.INFO, `block already checked; waiting ${loopDelay}ms`);
       await new Promise(resolve => setTimeout(resolve, loopDelay));
     }
 

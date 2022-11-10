@@ -6,6 +6,7 @@ import {
 import { exp } from '../../test/helpers';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import { PopulatedTransaction } from 'ethers';
+import googleCloudLog, { LogSeverity } from './googleCloudLog';
 
 export interface SignerWithFlashbots {
   signer: SignerWithAddress;
@@ -39,10 +40,10 @@ async function sendTxn(
   signerWithFlashbots: SignerWithFlashbots
 ) {
   if (signerWithFlashbots.flashbotsProvider) {
-    console.log('Sending a private txn');
+    googleCloudLog(LogSeverity.INFO, 'Sending a private txn');
     await sendFlashbotsPrivateTransaction(txn, signerWithFlashbots.flashbotsProvider);
   } else {
-    console.log('Sending a public txn');
+    googleCloudLog(LogSeverity.INFO, 'Sending a public txn');
     await signerWithFlashbots.signer.sendTransaction(txn);
   }
 }
@@ -53,16 +54,19 @@ async function attemptLiquidation(
   signerWithFlashbots: SignerWithFlashbots
 ) {
   try {
+    googleCloudLog(LogSeverity.INFO, `Attempting to liquidate ${targetAddresses} via ${liquidator.address}`);
     const txn = await liquidator.populateTransaction.initFlash({
       accounts: targetAddresses,
       pairToken: daiPool.tokenAddress,
       poolFee: daiPool.poolFee
     });
     await sendTxn(txn, signerWithFlashbots);
-    console.log(`Successfully liquidated ${targetAddresses}`);
+    googleCloudLog(LogSeverity.INFO, `Successfully liquidated ${targetAddresses} via ${liquidator.address}`);
   } catch (e) {
-    console.log(`Failed to liquidate ${targetAddresses}`);
-    console.log(e.message);
+    googleCloudLog(
+      LogSeverity.ALERT,
+      `Failed to liquidate ${targetAddresses} via ${liquidator.address}: ${e.message}`
+    );
   }
 }
 
@@ -92,13 +96,13 @@ export async function liquidateUnderwaterBorrowers(
 ): Promise<boolean> {
   const uniqueAddresses = await getUniqueAddresses(comet);
 
-  console.log(`${uniqueAddresses.size} unique addresses found`);
+  googleCloudLog(LogSeverity.INFO, `${uniqueAddresses.size} unique addresses found`);
 
   let liquidationAttempted = false;
   for (const address of uniqueAddresses) {
     const isLiquidatable = await comet.isLiquidatable(address);
 
-    console.log(`${address} isLiquidatable=${isLiquidatable}`);
+    googleCloudLog(LogSeverity.INFO, `${address} isLiquidatable=${isLiquidatable}`);
 
     if (isLiquidatable) {
       await attemptLiquidation(
@@ -118,10 +122,10 @@ export async function arbitragePurchaseableCollateral(
   assets: Asset[],
   signerWithFlashbots: SignerWithFlashbots
 ) {
-  console.log(`Checking for purchaseable collateral`);
+  googleCloudLog(LogSeverity.INFO, `Checking for purchaseable collateral`);
 
   if (await hasPurchaseableCollateral(comet, assets)) {
-    console.log(`There is purchaseable collateral`);
+    googleCloudLog(LogSeverity.INFO, `There is purchaseable collateral`);
     await attemptLiquidation(
       liquidator,
       [], // empty list means we will only buy collateral and not absorb
