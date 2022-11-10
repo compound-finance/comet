@@ -12,7 +12,7 @@ import {
 } from './liquidateUnderwaterBorrowers';
 
 const loopDelay = 5000;
-const updateAssetsDelay = 86_400_000; // 1 day
+const loopsUntilUpdateAssets = 1000;
 let assets: Asset[] = [];
 
 async function main() {
@@ -52,13 +52,12 @@ async function main() {
   ) as Liquidator;
 
   let lastBlockNumber: number;
-  let loopsUntilUpdateAssets = updateAssetsDelay / loopDelay;
+  let loops = 0;
   while (true) {
-    loopsUntilUpdateAssets -= 1;
-    if (loopsUntilUpdateAssets <= 0) {
+    if (loops >= loopsUntilUpdateAssets) {
       console.log('Updating assets');
       assets = await getAssets(comet);
-      loopsUntilUpdateAssets = updateAssetsDelay / loopDelay;
+      loops = 0;
     }
 
     const currentBlockNumber = await hre.ethers.provider.getBlockNumber();
@@ -84,6 +83,8 @@ async function main() {
       console.log(`block already checked; waiting ${loopDelay}ms`);
       await new Promise(resolve => setTimeout(resolve, loopDelay));
     }
+
+    loops += 1;
   }
 }
 
