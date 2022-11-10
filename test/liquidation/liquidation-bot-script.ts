@@ -30,7 +30,7 @@ describe('Liquidation Bot', function () {
       await liquidateUnderwaterBorrowers(
         comet,
         liquidator,
-        signer
+        {signer}
       );
 
       expect(await comet.isLiquidatable(underwater.address)).to.be.false;
@@ -61,8 +61,8 @@ describe('Liquidation Bot', function () {
       await arbitragePurchaseableCollateral(
         comet,
         liquidator,
-        signer,
-        assetAddresses
+        assetAddresses,
+        {signer}
       );
 
       // There will be some dust to purchase, but we expect it to be less than $1 of worth
@@ -92,8 +92,8 @@ describe('Liquidation Bot', function () {
       await arbitragePurchaseableCollateral(
         comet,
         liquidator,
-        signer,
-        assetAddresses
+        assetAddresses,
+        {signer}
       );
 
       // There will be some dust to purchase, but we expect it to be less than $1 of worth

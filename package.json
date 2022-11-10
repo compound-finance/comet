@@ -47,6 +47,7 @@
   "author": "Compound Finance",
   "license": "UNLICENSED",
   "dependencies": {
+    "@flashbots/ethers-provider-bundle": "^0.5.0",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "jest-diff": "^27.4.2"
