@@ -3,7 +3,14 @@ import {
   CometInterface,
   Liquidator
 } from '../../build/types';
-import {exp} from '../../test/helpers';
+import { exp } from '../../test/helpers';
+import { FlashbotsBundleProvider } from "@flashbots/ethers-provider-bundle";
+import { PopulatedTransaction } from 'ethers';
+
+export interface SignerWithFlashbots {
+  signer: SignerWithAddress;
+  flashbotsProvider?: FlashbotsBundleProvider;
+}
 
 export interface Asset {
   address: string;
@@ -16,17 +23,42 @@ const daiPool = {
   poolFee: 100
 };
 
+async function sendFlashbotsPrivateTransaction(
+  txn: PopulatedTransaction,
+  flashbotsProvider: FlashbotsBundleProvider
+) {
+  const privateTx = {
+    transaction: txn,
+    signer: flashbotsProvider.getSigner(),
+  }
+  await flashbotsProvider.sendPrivateTransaction(privateTx);
+}
+
+async function sendTxn(
+  txn: PopulatedTransaction,
+  signerWithFlashbots: SignerWithFlashbots
+) {
+  if (signerWithFlashbots.flashbotsProvider) {
+    console.log('Sending a private txn');
+    await sendFlashbotsPrivateTransaction(txn, signerWithFlashbots.flashbotsProvider);
+  } else {
+    console.log('Sending a public txn');
+    await signerWithFlashbots.signer.sendTransaction(txn);
+  }
+}
+
 async function attemptLiquidation(
   liquidator: Liquidator,
-  signer: SignerWithAddress,
-  targetAddresses: string[]
+  targetAddresses: string[],
+  signerWithFlashbots: SignerWithFlashbots
 ) {
   try {
-    await liquidator.connect(signer).initFlash({
+    const txn = await liquidator.populateTransaction.initFlash({
       accounts: targetAddresses,
       pairToken: daiPool.tokenAddress,
       poolFee: daiPool.poolFee
     });
+    await sendTxn(txn, signerWithFlashbots);
     console.log(`Successfully liquidated ${targetAddresses}`);
   } catch (e) {
     console.log(`Failed to liquidate ${targetAddresses}`);
@@ -56,7 +88,7 @@ export async function hasPurchaseableCollateral(comet: CometInterface, assets: A
 export async function liquidateUnderwaterBorrowers(
   comet: CometInterface,
   liquidator: Liquidator,
-  signer: SignerWithAddress
+  signerWithFlashbots: SignerWithFlashbots
 ): Promise<boolean> {
   const uniqueAddresses = await getUniqueAddresses(comet);
 
@@ -71,8 +103,8 @@ export async function liquidateUnderwaterBorrowers(
     if (isLiquidatable) {
       await attemptLiquidation(
         liquidator,
-        signer,
-        [address]
+        [address],
+        signerWithFlashbots
       );
       liquidationAttempted = true;
     }
@@ -83,8 +115,8 @@ export async function liquidateUnderwaterBorrowers(
 export async function arbitragePurchaseableCollateral(
   comet: CometInterface,
   liquidator: Liquidator,
-  signer: SignerWithAddress,
-  assets: Asset[]
+  assets: Asset[],
+  signerWithFlashbots: SignerWithFlashbots
 ) {
   console.log(`Checking for purchaseable collateral`);
 
@@ -92,8 +124,8 @@ export async function arbitragePurchaseableCollateral(
     console.log(`There is purchaseable collateral`);
     await attemptLiquidation(
       liquidator,
-      signer,
-      [] // empty list means we will only buy collateral and not absorb
+      [], // empty list means we will only buy collateral and not absorb
+      signerWithFlashbots
     );
   }
 }
