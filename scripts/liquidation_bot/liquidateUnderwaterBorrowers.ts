@@ -4,7 +4,7 @@ import {
   Liquidator
 } from '../../build/types';
 import { exp } from '../../test/helpers';
-import { FlashbotsBundleProvider } from "@flashbots/ethers-provider-bundle";
+import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import { PopulatedTransaction } from 'ethers';
 
 export interface SignerWithFlashbots {
@@ -30,7 +30,7 @@ async function sendFlashbotsPrivateTransaction(
   const privateTx = {
     transaction: txn,
     signer: flashbotsProvider.getSigner(),
-  }
+  };
   await flashbotsProvider.sendPrivateTransaction(privateTx);
 }
 

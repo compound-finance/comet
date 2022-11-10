@@ -10,7 +10,7 @@ import {
   getAssets,
   Asset
 } from './liquidateUnderwaterBorrowers';
-import { FlashbotsBundleProvider } from "@flashbots/ethers-provider-bundle";
+import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import { providers, Wallet } from 'ethers';
 
 const loopDelay = 5000;
