@@ -4,9 +4,16 @@ import {
   CometInterface,
   Liquidator
 } from '../../build/types';
-import liquidateUnderwaterBorrowers from './liquidateUnderwaterBorrowers';
+import {
+  arbitragePurchaseableCollateral,
+  liquidateUnderwaterBorrowers,
+  getAssets,
+  Asset
+} from './liquidateUnderwaterBorrowers';
 
 const loopDelay = 5000;
+const loopsUntilUpdateAssets = 1000;
+let assets: Asset[] = [];
 
 async function main() {
   let { DEPLOYMENT: deployment, LIQUIDATOR_ADDRESS: liquidatorAddress } = process.env;
@@ -45,23 +52,39 @@ async function main() {
   ) as Liquidator;
 
   let lastBlockNumber: number;
-
+  let loops = 0;
   while (true) {
+    if (loops >= loopsUntilUpdateAssets) {
+      console.log('Updating assets');
+      assets = await getAssets(comet);
+      loops = 0;
+    }
+
     const currentBlockNumber = await hre.ethers.provider.getBlockNumber();
 
     console.log(`currentBlockNumber: ${currentBlockNumber}`);
 
     if (currentBlockNumber !== lastBlockNumber) {
       lastBlockNumber = currentBlockNumber;
-      await liquidateUnderwaterBorrowers(
+      const liquidationAttempted = await liquidateUnderwaterBorrowers(
         comet,
         liquidator,
         signer
       );
+      if (!liquidationAttempted) {
+        await arbitragePurchaseableCollateral(
+          comet,
+          liquidator,
+          signer,
+          assets
+        );
+      }
     } else {
       console.log(`block already checked; waiting ${loopDelay}ms`);
       await new Promise(resolve => setTimeout(resolve, loopDelay));
     }
+
+    loops += 1;
   }
 }
 
