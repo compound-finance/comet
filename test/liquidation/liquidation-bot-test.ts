@@ -169,4 +169,56 @@ describe('Liquidator', function () {
     });
   });
 
+  it('sets admin to the deployer', async () => {
+    const { liquidator, users: [signer] } = await makeLiquidatableProtocol();
+    expect(await liquidator.admin()).to.eq(signer.address);
+  });
+
+  it('setLiquidationThreshold reverts if called by non-admin', async () => {
+    const { liquidator, users: [_signer, underwater] } = await makeLiquidatableProtocol();
+    await expect(
+      liquidator.connect(underwater).setLiquidationThreshold(10)
+    ).to.be.revertedWith("custom error 'Unauthorized()'");
+  });
+
+  it('setLiquidationThreshold updates the liquidation threshold', async () => {
+    const { liquidator, users: [signer] } = await makeLiquidatableProtocol();
+
+    expect(await liquidator.liquidationThreshold()).to.eq(10e6);
+
+    await liquidator.connect(signer).setLiquidationThreshold(50e6);
+
+    expect(await liquidator.liquidationThreshold()).to.eq(50e6);
+  });
+
+  it('setPoolConfigs reverts if called by non-admin', async () => {
+    const { liquidator, users: [_signer, underwater] } = await makeLiquidatableProtocol();
+
+    await expect(
+      liquidator.connect(underwater).setPoolConfigs([], [], [])
+    ).to.be.revertedWith("custom error 'Unauthorized()'");
+  });
+
+  it('setPoolConfigs updates pool configs', async () => {
+    const { liquidator, users: [signer] } = await makeLiquidatableProtocol();
+
+    const wethAddress = await liquidator.connect(signer).weth();
+    const poolConfig = await liquidator.connect(signer).poolConfigs(wethAddress);
+
+    const newPoolConfig = {
+      isLowLiquidity: !poolConfig.isLowLiquidity,
+      fee: poolConfig.fee * 2
+    };
+
+    await liquidator.connect(signer).setPoolConfigs(
+      [wethAddress],
+      [newPoolConfig.isLowLiquidity],
+      [newPoolConfig.fee]
+    );
+
+    const updatedPoolConfig = await liquidator.connect(signer).poolConfigs(wethAddress);
+
+    expect(updatedPoolConfig.isLowLiquidity).to.eq(newPoolConfig.isLowLiquidity);
+    expect(updatedPoolConfig.fee).to.eq(newPoolConfig.fee);
+  });
 });

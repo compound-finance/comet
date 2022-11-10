@@ -28,8 +28,6 @@ async function main() {
   await dm.spider();
 
   const comet = await dm.contract('comet') as CometInterface;
-  const numAssets = await comet.numAssets();
-  const assets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
 
   const liquidator = await dm.deploy(
     'liquidator',
@@ -41,9 +39,27 @@ async function main() {
       UNISWAP_V3_FACTORY_ADDRESS, // _factory
       WETH9, // _WETH9
       0, // _liquidationThreshold,
-      assets.map(a => a.asset), // _assets
-      assets.map(_a => false), // _lowLiquidityPools
-      assets.map(_a => 500), // _poolFees
+      [
+        '0xc00e94Cb662C3520282E6f5717214004A7f26888', // COMP
+        '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', // WBTC
+        '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
+        '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', // UNI
+        '0x514910771AF9Ca656af840dff83E8264EcF986CA', // LINK
+      ],
+      [
+        true,
+        true,
+        false,
+        true,
+        true
+      ],
+      [
+        3000,
+        3000,
+        500,
+        3000,
+        3000
+      ]
     ]
   );
 

@@ -18,6 +18,9 @@ import "../ERC20.sol";
  * @author Compound
  */
 contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, PeripheryPayments {
+    /** Errors */
+    error Unauthorized();
+
     /** Events **/
     event Absorb(address indexed initiator, address[] accounts);
     event Pay(address indexed token, address indexed payer, address indexed recipient, uint256 value);
@@ -60,11 +63,14 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     /// @notice Compound Comet protocol
     CometInterface public immutable comet;
 
-    /// @notice Minimum available amount for liquidation in USDC (base token)
-    uint256 public immutable liquidationThreshold;
-
     /// @notice The address of WETH asset
     address public immutable weth;
+
+    /// @notice The admin address
+    address public immutable admin;
+
+    /// @notice Minimum available amount for liquidation in USDC (base token)
+    uint256 public liquidationThreshold;
 
     /// @notice The Uniswap asset pool configurations
     mapping(address => UniswapPoolConfig) public poolConfigs;
@@ -95,6 +101,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         require(_assets.length == _lowLiquidityPools.length, "Wrong data");
         require(_assets.length == _poolFees.length, "Wrong data");
 
+        admin = msg.sender;
         recipient = _recipient;
         swapRouter = _swapRouter;
         comet = _comet;
@@ -102,6 +109,27 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         liquidationThreshold = _liquidationThreshold;
 
         // Set pool configs for all given assets
+        for (uint8 i = 0; i < _assets.length; i++) {
+            address asset = _assets[i];
+            bool lowLiquidity = _lowLiquidityPools[i];
+            uint24 poolFee = _poolFees[i];
+            poolConfigs[asset] = UniswapPoolConfig({isLowLiquidity: lowLiquidity, fee: poolFee});
+        }
+    }
+
+    function setLiquidationThreshold(uint256 _liquidationThreshold) external {
+        if (msg.sender != admin) revert Unauthorized();
+
+        liquidationThreshold = _liquidationThreshold;
+    }
+
+    function setPoolConfigs(
+        address[] memory _assets,
+        bool[] memory _lowLiquidityPools,
+        uint24[] memory _poolFees
+    ) external {
+        if (msg.sender != admin) revert Unauthorized();
+
         for (uint8 i = 0; i < _assets.length; i++) {
             address asset = _assets[i];
             bool lowLiquidity = _lowLiquidityPools[i];
