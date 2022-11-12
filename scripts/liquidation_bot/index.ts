@@ -31,7 +31,7 @@ async function main() {
 
   googleCloudLog(
     LogSeverity.INFO,
-    `Liquidation Bot started {network: ${network}, deployment: ${deployment}, liquidatorAddress: ${liquidatorAddress}}`
+    `Liquidation Bot started ${JSON.stringify({network, deployment, liquidatorAddress, useFlashbots})}`
   );
 
   const dm = new DeploymentManager(
