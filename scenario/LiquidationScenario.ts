@@ -25,7 +25,7 @@ invariant:
 isolating for timeElapsed:
 timeElapsed = -liquidationMargin / (baseBalanceOf * price / baseScale) / (borrowRate / factorScale);
 */
-async function timeUntilUnderwater({ comet, actor, fudgeFactor = 0n }: { comet: CometInterface, actor: CometActor, fudgeFactor?: bigint }): Promise<number> {
+export async function timeUntilUnderwater({ comet, actor, fudgeFactor = 0n }: { comet: CometInterface, actor: CometActor, fudgeFactor?: bigint }): Promise<number> {
   const baseBalance = await actor.getCometBaseBalance();
   const baseScale = (await comet.baseScale()).toBigInt();
   const basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
