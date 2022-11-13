@@ -1,6 +1,7 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { timeUntilUnderwater } from './LiquidationScenario';
+import { isValidAssetIndex, MAX_ASSETS } from './utils';
 // import { Liquidator } from '../build/types';
 
 const daiPool = {
@@ -23,93 +24,97 @@ enum Exchange {
   SushiSwap
 }
 
-scenario.only(
-  'LiquidationBot > liquidates an underwater position',
-  {
-    tokenBalances: {
-      $comet: { $base: 1000 },
-    },
-    cometBalances: {
-      albert: {
-        $base: -10000,
-        $asset0: 500
+for (let i = 0; i < MAX_ASSETS; i++) {
+  scenario.only(
+    `LiquidationBot > liquidates an underwater position for $asset${i}`,
+    {
+      filter: async (ctx) => await isValidAssetIndex(ctx, i),
+      tokenBalances: {
+        $comet: { $base: 1000 },
       },
-      betty: { $base: 1000 },
+      cometBalances: {
+        albert: {
+          $base: -10000,
+          [`$asset${i}`]: 20
+        },
+        betty: { $base: 1000 },
+      },
     },
-  },
-  async ({ comet, actors }, _context, world) => {
-    const { albert, betty } = actors;
+    async ({ comet, actors }, _context, world) => {
+      const { albert, betty } = actors;
 
-    // const liquidator = await world.deploymentManager.existing(
-    //   'liquidator',
-    //   LIQUIDATOR_ADDRESS
-    // ) as Liquidator;
+      // const liquidator = await world.deploymentManager.existing(
+      //   'liquidator',
+      //   LIQUIDATOR_ADDRESS
+      // ) as Liquidator;
 
-    const liquidator = await world.deploymentManager.deploy(
-      'liquidator',
-      'liquidator/Liquidator.sol',
-      [
-        RECIPIENT, // _recipient
-        UNISWAP_ROUTER, // _uniswapRouter
-        SUSHISWAP_ROUTER, // _sushiSwapRouter
-        comet.address, // _comet
-        UNISWAP_V3_FACTORY_ADDRESS, // _factory
-        WETH9, // _WETH9
-        0, // _liquidationThreshold,
+      const liquidator = await world.deploymentManager.deploy(
+        'liquidator',
+        'liquidator/Liquidator.sol',
         [
-          '0xc00e94Cb662C3520282E6f5717214004A7f26888', // COMP
-          '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', // WBTC
-          '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
-          '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', // UNI
-          '0x514910771AF9Ca656af840dff83E8264EcF986CA', // LINK
-        ],
-        [
-          true,
-          true,
-          false,
-          true,
-          true
-        ],
-        [
-          3000,
-          3000,
-          500,
-          3000,
-          3000
-        ],
-        [
-          Exchange.SushiSwap, // COMP
-          Exchange.Uniswap,   // WBTC
-          Exchange.Uniswap,   // WETH
-          Exchange.Uniswap,   // UNI
-          Exchange.Uniswap,   // LINK
+          RECIPIENT, // _recipient
+          UNISWAP_ROUTER, // _uniswapRouter
+          SUSHISWAP_ROUTER, // _sushiSwapRouter
+          comet.address, // _comet
+          UNISWAP_V3_FACTORY_ADDRESS, // _factory
+          WETH9, // _WETH9
+          0, // _liquidationThreshold,
+          [
+            '0xc00e94Cb662C3520282E6f5717214004A7f26888', // COMP
+            '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', // WBTC
+            '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
+            '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', // UNI
+            '0x514910771AF9Ca656af840dff83E8264EcF986CA', // LINK
+          ],
+          [
+            true,
+            true,
+            false,
+            true,
+            true
+          ],
+          [
+            3000,
+            3000,
+            500,
+            3000,
+            3000
+          ],
+          [
+            Exchange.SushiSwap, // COMP
+            Exchange.Uniswap,   // WBTC
+            Exchange.Uniswap,   // WETH
+            Exchange.Uniswap,   // UNI
+            Exchange.Uniswap,   // LINK
+          ]
         ]
-      ]
-    );
+      );
 
-    const baseToken = await comet.baseToken();
-    const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
-    const { asset: collateralAssetAddress } = await comet.getAssetInfo(0);
+      const baseToken = await comet.baseToken();
+      const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
+      const { asset: collateralAssetAddress } = await comet.getAssetInfo(i);
 
-    await world.increaseTime(
-      await timeUntilUnderwater({
-        comet,
-        actor: albert,
-        fudgeFactor: 60n * 10n // 10 minutes past when position is underwater
-      })
-    );
+      await world.increaseTime(
+        await timeUntilUnderwater({
+          comet,
+          actor: albert,
+          fudgeFactor: 60n * 10n // 10 minutes past when position is underwater
+        })
+      );
 
-    await betty.withdrawAsset({ asset: baseToken, amount: baseBorrowMin }); // force accrue
+      await betty.withdrawAsset({ asset: baseToken, amount: baseBorrowMin }); // force accrue
 
-    expect(await comet.isLiquidatable(albert.address)).to.be.true;
-    expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.be.greaterThan(0);
+      expect(await comet.isLiquidatable(albert.address)).to.be.true;
+      expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.be.greaterThan(0);
 
-    await liquidator.connect(betty.signer).initFlash({
-      accounts: [albert.address],
-      pairToken: daiPool.tokenAddress,
-      poolFee: daiPool.poolFee
-    });
+      await liquidator.connect(betty.signer).initFlash({
+        accounts: [albert.address],
+        pairToken: daiPool.tokenAddress,
+        poolFee: daiPool.poolFee
+      });
 
-    expect(await comet.isLiquidatable(albert.address)).to.be.false;
-    expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.eq(0);
-  });
+      expect(await comet.isLiquidatable(albert.address)).to.be.false;
+      expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.eq(0);
+    }
+  );
+}
