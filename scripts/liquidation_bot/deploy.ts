@@ -8,6 +8,11 @@ const UNISWAP_V3_FACTORY_ADDRESS = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
 const WETH9 = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 const SWAP_ROUTER = '0xe592427a0aece92de3edee1f18e0157c05861564';
 
+enum Exchange {
+  Uniswap,
+  SushiSwap
+}
+
 async function main() {
   const DEPLOYMENT = requireEnv('DEPLOYMENT');
   const RECIPIENT = requireEnv('RECIPIENT');
@@ -59,6 +64,13 @@ async function main() {
         500,
         3000,
         3000
+      ],
+      [
+        Exchange.SushiSwap, // COMP
+        Exchange.Uniswap,   // WBTC
+        Exchange.Uniswap,   // WETH
+        Exchange.Uniswap,   // UNI
+        Exchange.Uniswap    // LINK
       ]
     ]
   );
