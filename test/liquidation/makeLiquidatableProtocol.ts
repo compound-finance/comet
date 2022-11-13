@@ -17,7 +17,7 @@ import {
   LINK,
   LINK_USDC_PRICE_FEED,
   LINK_WHALE,
-  SWAP_ROUTER,
+  UNISWAP_ROUTER,
   UNI,
   UNI_USDC_PRICE_FEED,
   UNI_WHALE,
@@ -30,7 +30,8 @@ import {
   WETH9,
   ETH_USDC_PRICE_FEED,
   WETH_WHALE,
-  UNISWAP_V3_FACTORY
+  UNISWAP_V3_FACTORY,
+  SUSHISWAP_ROUTER
 } from './addresses';
 import daiAbi from './dai-abi';
 import usdcAbi from './usdc-abi';
@@ -39,6 +40,11 @@ import wbtcAbi from './wbtc-abi';
 import uniAbi from './uni-abi';
 import compAbi from './comp-abi';
 import linkAbi from './link-abi';
+
+export enum Exchange {
+  Uniswap,
+  SushiSwap
+}
 
 export async function makeProtocol() {
   // build Comet
@@ -138,7 +144,8 @@ export async function makeProtocol() {
   const Liquidator = await ethers.getContractFactory('Liquidator') as Liquidator__factory;
   const liquidator = await Liquidator.deploy(
     recipient.address,
-    ethers.utils.getAddress(SWAP_ROUTER),
+    ethers.utils.getAddress(UNISWAP_ROUTER),
+    ethers.utils.getAddress(SUSHISWAP_ROUTER),
     ethers.utils.getAddress(comet.address),
     ethers.utils.getAddress(UNISWAP_V3_FACTORY),
     ethers.utils.getAddress(WETH9),
@@ -152,7 +159,15 @@ export async function makeProtocol() {
       ethers.utils.getAddress(LINK)
     ],
     [false, false, false, false, true, true],
-    [500, 500, 3000, 3000, 3000, 3000]
+    [500, 500, 3000, 3000, 3000, 3000],
+    [
+      Exchange.Uniswap,
+      Exchange.Uniswap,
+      Exchange.Uniswap,
+      Exchange.Uniswap,
+      Exchange.SushiSwap,
+      Exchange.Uniswap
+    ]
   );
   await liquidator.deployed();
 
