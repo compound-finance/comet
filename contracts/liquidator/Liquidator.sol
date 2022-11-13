@@ -188,15 +188,27 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         return config;
     }
 
+    function swapCollateral(address asset, uint256 amountOutMin) internal returns (uint256) {
+        PoolConfig memory poolConfig = getPoolConfigForAsset(asset);
+
+        if (poolConfig.exchange == Exchange.Uniswap) {
+            return uniswapCollateral(asset, amountOutMin, poolConfig);
+        } else if (poolConfig.exchange == Exchange.SushiSwap) {
+            return sushiSwapCollateral(asset, amountOutMin, poolConfig);
+        } else {
+            // XXX custom error
+            revert("Invalid poolConfig.exchange");
+        }
+    }
+
     /**
      * @dev Swaps the given asset to USDC (base token) using Uniswap pools
      */
-    function swapCollateral(address asset, uint256 amountOutMin) internal returns (uint256) {
+    function uniswapCollateral(address asset, uint256 amountOutMin, PoolConfig memory poolConfig) internal returns (uint256) {
         uint256 swapAmount = ERC20(asset).balanceOf(address(this));
         // Safety check, make sure residue balance in protocol is ignored
         if (swapAmount == 0) return 0;
 
-        PoolConfig memory poolConfig = getPoolConfigForAsset(asset);
         uint24 poolFee = poolConfig.fee;
         address swapToken = asset;
 
@@ -242,13 +254,14 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         return amountOut;
     }
 
-    function sushiSwapCollateral(address asset, uint256 amountOutMin) internal returns (uint256) {
+    /**
+     * @dev Swaps the given asset to USDC (base token) using Sushi Swap pools
+     */
+    function sushiSwapCollateral(address asset, uint256 amountOutMin, PoolConfig memory poolConfig) internal returns (uint256) {
         uint256 swapAmount = ERC20(asset).balanceOf(address(this));
         // Safety check, make sure residue balance in protocol is ignored
         if (swapAmount == 0) return 0;
 
-        PoolConfig memory poolConfig = getPoolConfigForAsset(asset);
-        uint24 poolFee = poolConfig.fee;
         address swapToken = asset;
 
         address baseToken = comet.baseToken();
@@ -309,8 +322,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             if (baseAmount == 0) continue;
 
             comet.buyCollateral(asset, 0, baseAmount, address(this));
-            // uint256 amountOut = swapCollateral(asset, baseAmount);
-            uint256 amountOut = sushiSwapCollateral(asset, baseAmount);
+            uint256 amountOut = swapCollateral(asset, baseAmount);
             totalAmountOut += amountOut;
         }
 
