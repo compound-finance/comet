@@ -15,7 +15,8 @@ const daiPool = {
 const UNISWAP_V3_FACTORY_ADDRESS = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
 const WETH9 = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 const RECIPIENT = '0xe8F0c9059b8Db5B863d48dB8e8C1A09f97D3B991';
-const SWAP_ROUTER = '0xe592427a0aece92de3edee1f18e0157c05861564';
+const UNISWAP_ROUTER = '0xe592427a0aece92de3edee1f18e0157c05861564';
+const SUSHISWAP_ROUTER = '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F';
 
 scenario.only(
   'LiquidationBot > liquidates an underwater position',
@@ -44,7 +45,8 @@ scenario.only(
       'liquidator/Liquidator.sol',
       [
         RECIPIENT, // _recipient
-        SWAP_ROUTER, // _swapRouter
+        UNISWAP_ROUTER, // _uniswapRouter
+        SUSHISWAP_ROUTER, // _sushiSwapRouter
         comet.address, // _comet
         UNISWAP_V3_FACTORY_ADDRESS, // _factory
         WETH9, // _WETH9

@@ -68,10 +68,10 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     address public immutable recipient;
 
     /// @notice Uniswap router used for token exchange
-    ISwapRouter public immutable swapRouter;
+    ISwapRouter public immutable uniswapRouter;
 
     /// @notice SushiSwap router used for token exchange
-    address public constant sushiSwapRouter = 0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F;
+    IUniswapV2Router public immutable sushiSwapRouter;
 
     /// @notice Compound Comet protocol
     CometInterface public immutable comet;
@@ -91,7 +91,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     /**
      * @notice Construct a new liquidator instance
      * @param _recipient The address to send all proceeds to
-     * @param _swapRouter The Uniswap V3 Swap router address
+     * @param _uniswapRouter The Uniswap V3 Swap router address
+     * @param _sushiSwapRouter The Sushi Swap router address
      * @param _comet The Compound V3 Comet instance address
      * @param _factory The Uniswap V3 pools factory instance address
      * @param _WETH9 The WETH address
@@ -102,7 +103,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
      **/
     constructor(
         address _recipient,
-        ISwapRouter _swapRouter,
+        ISwapRouter _uniswapRouter,
+        IUniswapV2Router _sushiSwapRouter,
         CometInterface _comet,
         address _factory,
         address _WETH9,
@@ -116,7 +118,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
         admin = msg.sender;
         recipient = _recipient;
-        swapRouter = _swapRouter;
+        uniswapRouter = _uniswapRouter;
+        sushiSwapRouter = _sushiSwapRouter;
         comet = _comet;
         weth = _WETH9;
         liquidationThreshold = _liquidationThreshold;
@@ -180,10 +183,10 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
         address baseToken = comet.baseToken();
 
-        TransferHelper.safeApprove(asset, address(swapRouter), swapAmount);
+        TransferHelper.safeApprove(asset, address(uniswapRouter), swapAmount);
         // For low liquidity asset, swap it to ETH first
         if (poolConfig.isLowLiquidity) {
-            swapAmount = swapRouter.exactInputSingle(
+            swapAmount = uniswapRouter.exactInputSingle(
                 ISwapRouter.ExactInputSingleParams({
                     tokenIn: asset,
                     tokenOut: weth,
@@ -199,11 +202,11 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             swapToken = weth;
             poolFee = getPoolConfigForAsset(weth).fee;
 
-            TransferHelper.safeApprove(weth, address(swapRouter), swapAmount);
+            TransferHelper.safeApprove(weth, address(uniswapRouter), swapAmount);
         }
 
         // Swap asset or received ETH to base asset
-        uint256 amountOut = swapRouter.exactInputSingle(
+        uint256 amountOut = uniswapRouter.exactInputSingle(
             ISwapRouter.ExactInputSingleParams({
                 tokenIn: swapToken,
                 tokenOut: baseToken,
