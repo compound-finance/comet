@@ -28,7 +28,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
   scenario.only(
     `LiquidationBot > liquidates an underwater position for $asset${i}`,
     {
-      filter: async (ctx) => await isValidAssetIndex(ctx, i),
+      filter: async (ctx) => ctx.world.base.network === 'mainnet' && await isValidAssetIndex(ctx, i),
       tokenBalances: {
         $comet: { $base: 1000 },
       },
