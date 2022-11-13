@@ -1,7 +1,7 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { Liquidator } from '../build/types';
 import { timeUntilUnderwater } from './LiquidationScenario';
+// import { Liquidator } from '../build/types';
 
 const daiPool = {
   tokenAddress: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
