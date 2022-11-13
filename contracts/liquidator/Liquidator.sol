@@ -12,6 +12,16 @@ import "./vendor/@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "../CometInterface.sol";
 import "../ERC20.sol";
 
+interface IUniswapV2Router {
+    function swapExactTokensForTokens(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
+}
+
 /**
  * @title Compound's Example Liquidator Contract
  * @notice An example of liquidation bot, a starting point for further improvements
@@ -59,6 +69,9 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
     /// @notice Uniswap router used for token exchange
     ISwapRouter public immutable swapRouter;
+
+    /// @notice SushiSwap router used for token exchange
+    address public constant sushiSwapRouter = 0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F;
 
     /// @notice Compound Comet protocol
     CometInterface public immutable comet;
@@ -156,7 +169,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     /**
      * @dev Swaps the given asset to USDC (base token) using Uniswap pools
      */
-    function swapCollateral(address asset) internal returns (uint256) {
+    function swapCollateral(address asset, uint256 amountOutMin) internal returns (uint256) {
         uint256 swapAmount = ERC20(asset).balanceOf(address(this));
         // Safety check, make sure residue balance in protocol is ignored
         if (swapAmount == 0) return 0;
@@ -198,13 +211,52 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
                 recipient: address(this),
                 deadline: block.timestamp,
                 amountIn: swapAmount,
-                amountOutMinimum: 0,
+                amountOutMinimum: amountOutMin,
                 sqrtPriceLimitX96: 0
             })
         );
         emit Swap(swapToken, baseToken, poolFee, swapAmount);
 
         return amountOut;
+    }
+
+    function sushiSwapCollateral(address asset, uint256 amountOutMin) internal returns (uint256) {
+        uint256 swapAmount = ERC20(asset).balanceOf(address(this));
+        // Safety check, make sure residue balance in protocol is ignored
+        if (swapAmount == 0) return 0;
+
+        UniswapPoolConfig memory poolConfig = getPoolConfigForAsset(asset);
+        uint24 poolFee = poolConfig.fee;
+        address swapToken = asset;
+
+        address baseToken = comet.baseToken();
+
+        TransferHelper.safeApprove(asset, address(sushiSwapRouter), swapAmount);
+
+        address[] memory path;
+        if (poolConfig.isLowLiquidity) {
+            path = new address[](3);
+            path[0] = swapToken;
+            path[1] = weth;
+            path[2] = baseToken;
+        } else {
+            path = new address[](2);
+            path[0] = swapToken;
+            path[1] = baseToken;
+        }
+
+        uint256[] memory amounts = IUniswapV2Router(sushiSwapRouter).swapExactTokensForTokens(
+            swapAmount,
+            amountOutMin,
+            path,
+            address(this),
+            block.timestamp
+        );
+
+        // XXX emit Swap(swapToken, baseToken, poolFee, swapAmount);
+
+        // return last amount
+        return amounts[amounts.length - 1];
     }
 
     /**
@@ -235,7 +287,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             if (baseAmount == 0) continue;
 
             comet.buyCollateral(asset, 0, baseAmount, address(this));
-            uint256 amountOut = swapCollateral(asset);
+            // uint256 amountOut = swapCollateral(asset, baseAmount);
+            uint256 amountOut = sushiSwapCollateral(asset, baseAmount);
             totalAmountOut += amountOut;
         }
 
@@ -259,6 +312,11 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         uint256 amountOut
     ) internal {
         uint256 amountOwed = amount + fee;
+        uint256 balance = ERC20(token).balanceOf(address(this));
+
+        // XXX custom error
+        if (amountOwed > balance) revert("Balance insufficient to cover amount owed");
+
         TransferHelper.safeApprove(token, address(this), amountOwed);
 
         // Repay the loan

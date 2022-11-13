@@ -25,8 +25,8 @@ scenario.only(
     },
     cometBalances: {
       albert: {
-        $base: -1000,
-        $asset0: 20
+        $base: -10000,
+        $asset0: 500
       },
       betty: { $base: 1000 },
     },
@@ -91,9 +91,7 @@ scenario.only(
     expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.be.greaterThan(0);
 
     await liquidator.connect(betty.signer).initFlash({
-      accounts: [
-        albert.address
-      ],
+      accounts: [albert.address],
       pairToken: daiPool.tokenAddress,
       poolFee: daiPool.poolFee
     });
