@@ -51,9 +51,15 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         uint256[] baseAmounts;
     }
 
-    struct UniswapPoolConfig {
+    enum Exchange {
+        Uniswap,
+        SushiSwap
+    }
+
+    struct PoolConfig {
         bool isLowLiquidity;
         uint24 fee;
+        Exchange exchange;
     }
 
     /** Liquidator configuration constants **/
@@ -86,7 +92,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     uint256 public liquidationThreshold;
 
     /// @notice The Uniswap asset pool configurations
-    mapping(address => UniswapPoolConfig) public poolConfigs;
+    mapping(address => PoolConfig) public poolConfigs;
 
     /**
      * @notice Construct a new liquidator instance
@@ -111,7 +117,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         uint256 _liquidationThreshold,
         address[] memory _assets,
         bool[] memory _lowLiquidityPools,
-        uint24[] memory _poolFees
+        uint24[] memory _poolFees,
+        Exchange[] memory _exchanges
     ) PeripheryImmutableState(_factory, _WETH9) {
         require(_assets.length == _lowLiquidityPools.length, "Wrong data");
         require(_assets.length == _poolFees.length, "Wrong data");
@@ -129,7 +136,12 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             address asset = _assets[i];
             bool lowLiquidity = _lowLiquidityPools[i];
             uint24 poolFee = _poolFees[i];
-            poolConfigs[asset] = UniswapPoolConfig({isLowLiquidity: lowLiquidity, fee: poolFee});
+            Exchange exchange = _exchanges[i];
+            poolConfigs[asset] = PoolConfig({
+                isLowLiquidity: lowLiquidity,
+                fee: poolFee,
+                exchange: exchange
+            });
         }
     }
 
@@ -142,7 +154,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     function setPoolConfigs(
         address[] memory _assets,
         bool[] memory _lowLiquidityPools,
-        uint24[] memory _poolFees
+        uint24[] memory _poolFees,
+        Exchange[] memory _exchanges
     ) external {
         if (msg.sender != admin) revert Unauthorized();
 
@@ -150,20 +163,26 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             address asset = _assets[i];
             bool lowLiquidity = _lowLiquidityPools[i];
             uint24 poolFee = _poolFees[i];
-            poolConfigs[asset] = UniswapPoolConfig({isLowLiquidity: lowLiquidity, fee: poolFee});
+            Exchange exchange = _exchanges[i];
+            poolConfigs[asset] = PoolConfig({
+                isLowLiquidity: lowLiquidity,
+                fee: poolFee,
+                exchange: exchange
+            });
         }
     }
 
     /**
      * @dev Returns Uniswap pool config for given asset
      */
-    function getPoolConfigForAsset(address asset) internal view returns(UniswapPoolConfig memory) {
-        UniswapPoolConfig memory config = poolConfigs[asset];
+    function getPoolConfigForAsset(address asset) internal view returns(PoolConfig memory) {
+        PoolConfig memory config = poolConfigs[asset];
         // If asset is not found, proceed with default pool config
         if (config.fee == 0) {
-            return UniswapPoolConfig({
+            return PoolConfig({
                 fee: DEFAULT_POOL_FEE,
-                isLowLiquidity: false
+                isLowLiquidity: false,
+                exchange: Exchange.Uniswap
             });
         }
         return config;
@@ -177,7 +196,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         // Safety check, make sure residue balance in protocol is ignored
         if (swapAmount == 0) return 0;
 
-        UniswapPoolConfig memory poolConfig = getPoolConfigForAsset(asset);
+        PoolConfig memory poolConfig = getPoolConfigForAsset(asset);
         uint24 poolFee = poolConfig.fee;
         address swapToken = asset;
 
@@ -228,7 +247,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         // Safety check, make sure residue balance in protocol is ignored
         if (swapAmount == 0) return 0;
 
-        UniswapPoolConfig memory poolConfig = getPoolConfigForAsset(asset);
+        PoolConfig memory poolConfig = getPoolConfigForAsset(asset);
         uint24 poolFee = poolConfig.fee;
         address swapToken = asset;
 

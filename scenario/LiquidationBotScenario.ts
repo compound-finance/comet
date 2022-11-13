@@ -18,6 +18,11 @@ const RECIPIENT = '0xe8F0c9059b8Db5B863d48dB8e8C1A09f97D3B991';
 const UNISWAP_ROUTER = '0xe592427a0aece92de3edee1f18e0157c05861564';
 const SUSHISWAP_ROUTER = '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F';
 
+enum Exchange {
+  Uniswap,
+  SushiSwap
+}
+
 scenario.only(
   'LiquidationBot > liquidates an underwater position',
   {
@@ -71,6 +76,13 @@ scenario.only(
           500,
           3000,
           3000
+        ],
+        [
+          Exchange.SushiSwap, // COMP
+          Exchange.Uniswap,   // WBTC
+          Exchange.Uniswap,   // WETH
+          Exchange.Uniswap,   // UNI
+          Exchange.Uniswap,   // LINK
         ]
       ]
     );
