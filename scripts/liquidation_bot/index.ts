@@ -45,7 +45,7 @@ async function main() {
 
   // Flashbots provider requires passing in a standard provider
   let flashbotsProvider: FlashbotsBundleProvider;
-  if (useFlashbots.toLowerCase() === 'true') {
+  if (useFlashbots && useFlashbots.toLowerCase() === 'true') {
     // XXX use a designated auth signer
     // `authSigner` is an Ethereum private key that does NOT store funds and is NOT your bot's primary key.
     // This is an identifying key for signing payloads to establish reputation and whitelisting
