@@ -11,7 +11,7 @@ import {
   Asset
 } from './liquidateUnderwaterBorrowers';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
-import { providers, Wallet } from 'ethers';
+import { Signer, Wallet } from 'ethers';
 import googleCloudLog, { LogSeverity } from './googleCloudLog';
 
 const loopDelay = 5000;
@@ -19,12 +19,15 @@ const loopsUntilUpdateAssets = 1000;
 let assets: Asset[] = [];
 
 async function main() {
-  let { DEPLOYMENT: deployment, LIQUIDATOR_ADDRESS: liquidatorAddress, USE_FLASHBOTS: useFlashbots } = process.env;
+  let { DEPLOYMENT: deployment, LIQUIDATOR_ADDRESS: liquidatorAddress, USE_FLASHBOTS: useFlashbots, ETH_PK: ethPk } = process.env;
   if (!liquidatorAddress) {
     throw new Error('missing required env variable: LIQUIDATOR_ADDRESS');
   }
   if (!deployment) {
     throw new Error('missing required env variable: DEPLOYMENT');
+  }
+  if (!ethPk) {
+    throw new Error('missing required env variable: ETH_PK');
   }
 
   const network = hre.network.name;
@@ -45,12 +48,12 @@ async function main() {
   );
   await dm.spider();
 
-  const signer = await dm.getSigner();
   const contracts = await dm.contracts();
   const comet = contracts.get('comet') as CometInterface;
 
   // Flashbots provider requires passing in a standard provider
   let flashbotsProvider: FlashbotsBundleProvider;
+  let signer: Signer;
   if (useFlashbots && useFlashbots.toLowerCase() === 'true') {
     // XXX use a designated auth signer
     // `authSigner` is an Ethereum private key that does NOT store funds and is NOT your bot's primary key.
@@ -60,12 +63,12 @@ async function main() {
 
     if (network === 'mainnet') {
       flashbotsProvider = await FlashbotsBundleProvider.create(
-        signer.provider! as providers.BaseProvider, // a normal ethers.js provider, to perform gas estimations and nonce lookups
+        hre.ethers.provider, // a normal ethers.js provider, to perform gas estimations and nonce lookups
         authSigner, // ethers.js signer wallet, only for signing request payloads, not transactions
       );
     } else if (network === 'goerli') {
       flashbotsProvider = await FlashbotsBundleProvider.create(
-        signer.provider! as providers.BaseProvider, // a normal ethers.js provider, to perform gas estimations and nonce lookups
+        hre.ethers.provider, // a normal ethers.js provider, to perform gas estimations and nonce lookups
         authSigner, // ethers.js signer wallet, only for signing request payloads, not transactions
         'https://relay-goerli.flashbots.net',
         'goerli'
@@ -73,6 +76,12 @@ async function main() {
     } else {
       throw new Error(`Unsupported network: ${network}`);
     }
+
+    // Note: A `Wallet` is used because it can sign a transaction for flashbots while a generic `Signer` cannot
+    // See https://github.com/ethers-io/ethers.js/issues/1869
+    signer = new Wallet(ethPk);
+  } else {
+    signer = await dm.getSigner();
   }
 
   const signerWithFlashbots = { signer, flashbotsProvider };
@@ -105,14 +114,16 @@ async function main() {
       const liquidationAttempted = await liquidateUnderwaterBorrowers(
         comet,
         liquidator,
-        signerWithFlashbots
+        signerWithFlashbots,
+        network
       );
       if (!liquidationAttempted) {
         await arbitragePurchaseableCollateral(
           comet,
           liquidator,
           assets,
-          signerWithFlashbots
+          signerWithFlashbots,
+          network
         );
       }
     } else {
