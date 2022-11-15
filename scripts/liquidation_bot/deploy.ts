@@ -2,11 +2,14 @@ import hre from 'hardhat';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import { CometInterface } from '../../build/types';
 import { requireEnv } from '../../hardhat.config';
+import { BigNumber } from 'ethers';
+import { exp } from '../../test/helpers';
 
 // https://docs.uniswap.org/protocol/reference/deployments
 const UNISWAP_V3_FACTORY_ADDRESS = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
 const WETH9 = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
-const SWAP_ROUTER = '0xe592427a0aece92de3edee1f18e0157c05861564';
+const UNISWAP_ROUTER = '0xe592427a0aece92de3edee1f18e0157c05861564';
+const SUSHISWAP_ROUTER = '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F';
 
 enum Exchange {
   Uniswap,
@@ -39,7 +42,8 @@ async function main() {
     'liquidator/Liquidator.sol',
     [
       RECIPIENT, // _recipient
-      SWAP_ROUTER, // _swapRouter
+      UNISWAP_ROUTER, // _swapRouter
+      SUSHISWAP_ROUTER, // _sushiSwapRouter
       comet.address, // _comet
       UNISWAP_V3_FACTORY_ADDRESS, // _factory
       WETH9, // _WETH9
@@ -71,6 +75,13 @@ async function main() {
         Exchange.Uniswap,   // WETH
         Exchange.Uniswap,   // UNI
         Exchange.Uniswap    // LINK
+      ],
+      [
+        BigNumber.from(exp(500,18)),    // COMP
+        BigNumber.from(exp(120,8)),     // WBTC
+        BigNumber.from(exp(5000,18)),   // WETH
+        BigNumber.from(exp(150000,18)), // UNI
+        BigNumber.from(exp(250000,18)), // LINK
       ]
     ]
   );

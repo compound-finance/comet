@@ -29,14 +29,17 @@ interface IUniswapV2Router {
  */
 contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, PeripheryPayments {
     /** Errors */
+    error InsufficientAmountOut(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut, uint256 amountOutMin, Exchange exchange, uint24 fee);
     error InsufficientBalance(uint256 available, uint256 required);
     error InvalidExchange();
+    error InvalidPoolConfig();
     error Unauthorized();
 
     /** Events **/
     event Absorb(address indexed initiator, address[] accounts);
+    event AbsorbedWithoutBuyingCollateral();
     event Pay(address indexed token, address indexed payer, address indexed recipient, uint256 value);
-    event Swap(address indexed tokenIn, address indexed tokenOut, Exchange exchange, uint24 fee, uint256 amountIn, uint256 amountOut);
+    event Swap(address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut, Exchange exchange, uint24 fee);
 
     /** Structs needed for Uniswap flash swap **/
     struct FlashParams {
@@ -58,10 +61,13 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         SushiSwap
     }
 
+    // XXX make this less gassy; rearrange fields
     struct PoolConfig {
         bool isLowLiquidity;
         uint24 fee;
         Exchange exchange;
+        uint256 maxCollateralToPurchase;
+        bool isSet;
     }
 
     /** Liquidator configuration constants **/
@@ -108,6 +114,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
      * @param _assets The list of assets for pool configs
      * @param _lowLiquidityPools The list of boolean indicators if pool is low liquidity and requires ETH swap
      * @param _poolFees The list of given poolFees for assets
+     * @param _exchanges The list of given exchanges for assets
+     * @param _maxCollateralToPurchases The list of given maxSafeExchanges for assets
      **/
     constructor(
         address _recipient,
@@ -120,7 +128,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         address[] memory _assets,
         bool[] memory _lowLiquidityPools,
         uint24[] memory _poolFees,
-        Exchange[] memory _exchanges
+        Exchange[] memory _exchanges,
+        uint256[] memory _maxCollateralToPurchases
     ) PeripheryImmutableState(_factory, _WETH9) {
         require(_assets.length == _lowLiquidityPools.length, "Wrong data");
         require(_assets.length == _poolFees.length, "Wrong data");
@@ -139,10 +148,13 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             bool lowLiquidity = _lowLiquidityPools[i];
             uint24 poolFee = _poolFees[i];
             Exchange exchange = _exchanges[i];
+            uint256 maxCollateralToPurchase = _maxCollateralToPurchases[i];
             poolConfigs[asset] = PoolConfig({
                 isLowLiquidity: lowLiquidity,
                 fee: poolFee,
-                exchange: exchange
+                exchange: exchange,
+                maxCollateralToPurchase: maxCollateralToPurchase,
+                isSet: true
             });
         }
     }
@@ -157,7 +169,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         address[] memory _assets,
         bool[] memory _lowLiquidityPools,
         uint24[] memory _poolFees,
-        Exchange[] memory _exchanges
+        Exchange[] memory _exchanges,
+        uint256[] memory _maxCollateralToPurchases
     ) external {
         if (msg.sender != admin) revert Unauthorized();
 
@@ -166,10 +179,13 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             bool lowLiquidity = _lowLiquidityPools[i];
             uint24 poolFee = _poolFees[i];
             Exchange exchange = _exchanges[i];
+            uint256 maxCollateralToPurchase = _maxCollateralToPurchases[i];
             poolConfigs[asset] = PoolConfig({
                 isLowLiquidity: lowLiquidity,
                 fee: poolFee,
-                exchange: exchange
+                exchange: exchange,
+                maxCollateralToPurchase: maxCollateralToPurchase,
+                isSet: true
             });
         }
     }
@@ -179,14 +195,11 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
      */
     function getPoolConfigForAsset(address asset) internal view returns(PoolConfig memory) {
         PoolConfig memory config = poolConfigs[asset];
-        // If asset is not found, proceed with default pool config
-        if (config.fee == 0) {
-            return PoolConfig({
-                fee: DEFAULT_POOL_FEE,
-                isLowLiquidity: false,
-                exchange: Exchange.Uniswap
-            });
+
+        if (!config.isSet) {
+            revert InvalidPoolConfig();
         }
+
         return config;
     }
 
@@ -230,7 +243,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
                     sqrtPriceLimitX96: 0
                 })
             );
-            emit Swap(asset, weth, Exchange.Uniswap, poolFee, swapAmount, swapAmountNew);
+            emit Swap(asset, weth, swapAmount, swapAmountNew, Exchange.Uniswap, poolFee);
             swapAmount = swapAmountNew;
             swapToken = weth;
             poolFee = getPoolConfigForAsset(weth).fee;
@@ -247,11 +260,17 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
                 recipient: address(this),
                 deadline: block.timestamp,
                 amountIn: swapAmount,
-                amountOutMinimum: amountOutMin,
+                amountOutMinimum: 0,
                 sqrtPriceLimitX96: 0
             })
         );
-        emit Swap(swapToken, baseToken, Exchange.Uniswap, poolFee, swapAmount, amountOut);
+
+        if (amountOut < amountOutMin) {
+            // XXX test the error messaging on Goerli
+            revert InsufficientAmountOut(swapToken, baseToken, swapAmount, amountOut, amountOutMin, Exchange.Uniswap, poolFee);
+        }
+
+        emit Swap(swapToken, baseToken, swapAmount, amountOut, Exchange.Uniswap, poolFee);
 
         return amountOut;
     }
@@ -284,14 +303,19 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
         uint256[] memory amounts = IUniswapV2Router(sushiSwapRouter).swapExactTokensForTokens(
             swapAmount,
-            amountOutMin,
+            0,
             path,
             address(this),
             block.timestamp
         );
         uint256 amountOut = amounts[amounts.length - 1];
 
-        emit Swap(swapToken, baseToken, Exchange.SushiSwap, 3000, swapAmount, amountOut);
+        if (amountOut < amountOutMin) {
+            // XXX test the error messaging on Goerli
+            revert InsufficientAmountOut(swapToken, baseToken, swapAmount, amountOut, amountOutMin, Exchange.SushiSwap, 3000);
+        }
+
+        emit Swap(swapToken, baseToken, swapAmount, amountOut, Exchange.SushiSwap, 3000);
 
         return amountOut;
     }
@@ -372,6 +396,13 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     }
 
     /**
+     * @dev Returns lesser of two values
+     */
+    function min(uint256 a, uint256 b) internal view returns (uint256) {
+        return a <= b ? a : b;
+    }
+
+    /**
      * @dev Calculates the total amount of base asset needed to buy all the discounted collateral from the protocol
      */
     function calculateTotalBaseAmount() internal view returns (uint256, uint256[] memory, address[] memory) {
@@ -382,7 +413,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         for (uint8 i = 0; i < numAssets; i++) {
             address asset = comet.getAssetInfo(i).asset;
             cometAssets[i] = asset;
-            uint256 collateralBalance = comet.getCollateralReserves(asset);
+            PoolConfig memory poolConfig = getPoolConfigForAsset(asset);
+            uint256 collateralBalance = min(comet.getCollateralReserves(asset), poolConfig.maxCollateralToPurchase);
 
             if (collateralBalance == 0) continue;
 
@@ -410,6 +442,12 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         emit Absorb(msg.sender, params.accounts);
 
         (uint256 totalBaseAmount, uint256[] memory assetBaseAmounts, address[] memory cometAssets) = calculateTotalBaseAmount();
+
+        // if there is nothing to buy, just absorb the accounts
+        if (totalBaseAmount == 0) {
+            emit AbsorbedWithoutBuyingCollateral();
+            return;
+        }
 
         address poolToken0 = params.pairToken;
         address poolToken1 = comet.baseToken();
