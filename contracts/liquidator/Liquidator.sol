@@ -36,7 +36,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     /** Events **/
     event Absorb(address indexed initiator, address[] accounts);
     event Pay(address indexed token, address indexed payer, address indexed recipient, uint256 value);
-    event Swap(address indexed tokenIn, address indexed tokenOut, uint24 fee, uint256 amountIn);
+    event Swap(address indexed tokenIn, address indexed tokenOut, Exchange exchange, uint24 fee, uint256 amountIn, uint256 amountOut);
 
     /** Structs needed for Uniswap flash swap **/
     struct FlashParams {
@@ -218,7 +218,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         TransferHelper.safeApprove(asset, address(uniswapRouter), swapAmount);
         // For low liquidity asset, swap it to ETH first
         if (poolConfig.isLowLiquidity) {
-            swapAmount = uniswapRouter.exactInputSingle(
+            uint256 swapAmountNew = uniswapRouter.exactInputSingle(
                 ISwapRouter.ExactInputSingleParams({
                     tokenIn: asset,
                     tokenOut: weth,
@@ -230,7 +230,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
                     sqrtPriceLimitX96: 0
                 })
             );
-            emit Swap(asset, weth, poolFee, swapAmount);
+            emit Swap(asset, weth, Exchange.Uniswap, poolFee, swapAmount, swapAmountNew);
+            swapAmount = swapAmountNew;
             swapToken = weth;
             poolFee = getPoolConfigForAsset(weth).fee;
 
@@ -250,7 +251,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
                 sqrtPriceLimitX96: 0
             })
         );
-        emit Swap(swapToken, baseToken, poolFee, swapAmount);
+        emit Swap(swapToken, baseToken, Exchange.Uniswap, poolFee, swapAmount, amountOut);
 
         return amountOut;
     }
@@ -288,11 +289,11 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             address(this),
             block.timestamp
         );
+        uint256 amountOut = amounts[amounts.length - 1];
 
-        // XXX emit Swap(swapToken, baseToken, poolFee, swapAmount);
+        emit Swap(swapToken, baseToken, Exchange.SushiSwap, 3000, swapAmount, amountOut);
 
-        // return last amount
-        return amounts[amounts.length - 1];
+        return amountOut;
     }
 
     /**
