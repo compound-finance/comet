@@ -24,7 +24,34 @@ enum Exchange {
   SushiSwap
 }
 
-for (let i = 0; i < MAX_ASSETS; i++) {
+for (let i = 4; i < MAX_ASSETS; i++) {
+  const borrowPositions = [
+    // COMP
+    {
+      baseBorrowAmount: 20_000n,
+      assetAmount: ' == 1000'
+    },
+    // WBTC
+    {
+      baseBorrowAmount: 1_300_000n,
+      assetAmount: ' == 120'
+    },
+    // WETH
+    {
+      baseBorrowAmount: 10_000_000n,
+      assetAmount: ' == 10000'
+    },
+    // UNI
+    {
+      baseBorrowAmount: 1_000_000n,
+      assetAmount: ' == 250000'
+    },
+    // LINK
+    {
+      baseBorrowAmount: 1_000_000n,
+      assetAmount: ' == 250000'
+    },
+  ];
   scenario.only(
     `LiquidationBot > liquidates an underwater position for $asset${i}`,
     {
@@ -34,10 +61,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       },
       cometBalances: {
         albert: {
-          $base: -10000,
-          [`$asset${i}`]: 20
+          [`$asset${i}`]: borrowPositions[i]?.assetAmount || 0
         },
-        betty: { $base: 1000 },
+        betty: { $base: 1230 },
       },
     },
     async ({ comet, actors }, _context, world) => {
@@ -92,7 +118,13 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 
       const baseToken = await comet.baseToken();
       const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
-      const { asset: collateralAssetAddress } = await comet.getAssetInfo(i);
+      const baseScale = await comet.baseScale();
+      const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(i);
+
+      await albert.withdrawAsset({
+        asset: baseToken,
+        amount: baseScale.mul(borrowPositions[i]?.baseBorrowAmount || 0n)
+      });
 
       await world.increaseTime(
         await timeUntilUnderwater({
