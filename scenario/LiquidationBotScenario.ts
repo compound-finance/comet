@@ -1,7 +1,6 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { timeUntilUnderwater } from './LiquidationScenario';
-import { isValidAssetIndex, MAX_ASSETS } from './utils';
+import { isValidAssetIndex, MAX_ASSETS, timeUntilUnderwater } from './utils';
 
 const daiPool = {
   tokenAddress: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
@@ -38,8 +37,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     },
     // UNI
     {
-      baseBorrowAmount: 1_000_000n,
-      assetAmount: ' == 250000'
+      baseBorrowAmount: 700_000n,
+      assetAmount: ' == 150000'
     },
     // LINK
     {
@@ -112,7 +111,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       const baseToken = await comet.baseToken();
       const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
       const baseScale = await comet.baseScale();
-      const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(i);
+      const { asset: collateralAssetAddress } = await comet.getAssetInfo(i);
 
       await albert.withdrawAsset({
         asset: baseToken,
@@ -140,6 +139,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 
       expect(await comet.isLiquidatable(albert.address)).to.be.false;
       expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.eq(0);
+
+      // XXX confirm that protocol reserves have increased
 
       // check that recipient balance increased
       expect(await USDC.balanceOf(RECIPIENT)).to.be.greaterThan(Number(initialRecipientBalance));
