@@ -17,8 +17,11 @@ export const DAI = '0x6B175474E89094C44Da98b954EedeAC495271d0F';
 export const UNI = '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984';
 export const WETH9 = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
 
+// Sushi Swap contract
+export const SUSHISWAP_ROUTER = '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F';
+
 // Uniwap V3 contracts
-export const SWAP_ROUTER = '0xE592427A0AEce92De3Edee1F18E0157C05861564';
+export const UNISWAP_ROUTER = '0xE592427A0AEce92De3Edee1F18E0157C05861564';
 export const UNISWAP_V3_FACTORY = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
 
 // Chainlink mainnet price feeds

@@ -12,6 +12,16 @@ import "./vendor/@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "../CometInterface.sol";
 import "../ERC20.sol";
 
+interface IUniswapV2Router {
+    function swapExactTokensForTokens(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
+}
+
 /**
  * @title Compound's Example Liquidator Contract
  * @notice An example of liquidation bot, a starting point for further improvements
@@ -19,12 +29,14 @@ import "../ERC20.sol";
  */
 contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, PeripheryPayments {
     /** Errors */
+    error InsufficientBalance(uint256 available, uint256 required);
+    error InvalidExchange();
     error Unauthorized();
 
     /** Events **/
     event Absorb(address indexed initiator, address[] accounts);
     event Pay(address indexed token, address indexed payer, address indexed recipient, uint256 value);
-    event Swap(address indexed tokenIn, address indexed tokenOut, uint24 fee, uint256 amountIn);
+    event Swap(address indexed tokenIn, address indexed tokenOut, Exchange exchange, uint24 fee, uint256 amountIn, uint256 amountOut);
 
     /** Structs needed for Uniswap flash swap **/
     struct FlashParams {
@@ -41,9 +53,15 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         uint256[] baseAmounts;
     }
 
-    struct UniswapPoolConfig {
+    enum Exchange {
+        Uniswap,
+        SushiSwap
+    }
+
+    struct PoolConfig {
         bool isLowLiquidity;
         uint24 fee;
+        Exchange exchange;
     }
 
     /** Liquidator configuration constants **/
@@ -58,7 +76,10 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     address public immutable recipient;
 
     /// @notice Uniswap router used for token exchange
-    ISwapRouter public immutable swapRouter;
+    ISwapRouter public immutable uniswapRouter;
+
+    /// @notice SushiSwap router used for token exchange
+    IUniswapV2Router public immutable sushiSwapRouter;
 
     /// @notice Compound Comet protocol
     CometInterface public immutable comet;
@@ -73,12 +94,13 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     uint256 public liquidationThreshold;
 
     /// @notice The Uniswap asset pool configurations
-    mapping(address => UniswapPoolConfig) public poolConfigs;
+    mapping(address => PoolConfig) public poolConfigs;
 
     /**
      * @notice Construct a new liquidator instance
      * @param _recipient The address to send all proceeds to
-     * @param _swapRouter The Uniswap V3 Swap router address
+     * @param _uniswapRouter The Uniswap V3 Swap router address
+     * @param _sushiSwapRouter The Sushi Swap router address
      * @param _comet The Compound V3 Comet instance address
      * @param _factory The Uniswap V3 pools factory instance address
      * @param _WETH9 The WETH address
@@ -89,21 +111,24 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
      **/
     constructor(
         address _recipient,
-        ISwapRouter _swapRouter,
+        ISwapRouter _uniswapRouter,
+        IUniswapV2Router _sushiSwapRouter,
         CometInterface _comet,
         address _factory,
         address _WETH9,
         uint256 _liquidationThreshold,
         address[] memory _assets,
         bool[] memory _lowLiquidityPools,
-        uint24[] memory _poolFees
+        uint24[] memory _poolFees,
+        Exchange[] memory _exchanges
     ) PeripheryImmutableState(_factory, _WETH9) {
         require(_assets.length == _lowLiquidityPools.length, "Wrong data");
         require(_assets.length == _poolFees.length, "Wrong data");
 
         admin = msg.sender;
         recipient = _recipient;
-        swapRouter = _swapRouter;
+        uniswapRouter = _uniswapRouter;
+        sushiSwapRouter = _sushiSwapRouter;
         comet = _comet;
         weth = _WETH9;
         liquidationThreshold = _liquidationThreshold;
@@ -113,7 +138,12 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             address asset = _assets[i];
             bool lowLiquidity = _lowLiquidityPools[i];
             uint24 poolFee = _poolFees[i];
-            poolConfigs[asset] = UniswapPoolConfig({isLowLiquidity: lowLiquidity, fee: poolFee});
+            Exchange exchange = _exchanges[i];
+            poolConfigs[asset] = PoolConfig({
+                isLowLiquidity: lowLiquidity,
+                fee: poolFee,
+                exchange: exchange
+            });
         }
     }
 
@@ -126,7 +156,8 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
     function setPoolConfigs(
         address[] memory _assets,
         bool[] memory _lowLiquidityPools,
-        uint24[] memory _poolFees
+        uint24[] memory _poolFees,
+        Exchange[] memory _exchanges
     ) external {
         if (msg.sender != admin) revert Unauthorized();
 
@@ -134,43 +165,60 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             address asset = _assets[i];
             bool lowLiquidity = _lowLiquidityPools[i];
             uint24 poolFee = _poolFees[i];
-            poolConfigs[asset] = UniswapPoolConfig({isLowLiquidity: lowLiquidity, fee: poolFee});
+            Exchange exchange = _exchanges[i];
+            poolConfigs[asset] = PoolConfig({
+                isLowLiquidity: lowLiquidity,
+                fee: poolFee,
+                exchange: exchange
+            });
         }
     }
 
     /**
      * @dev Returns Uniswap pool config for given asset
      */
-    function getPoolConfigForAsset(address asset) internal view returns(UniswapPoolConfig memory) {
-        UniswapPoolConfig memory config = poolConfigs[asset];
+    function getPoolConfigForAsset(address asset) internal view returns(PoolConfig memory) {
+        PoolConfig memory config = poolConfigs[asset];
         // If asset is not found, proceed with default pool config
         if (config.fee == 0) {
-            return UniswapPoolConfig({
+            return PoolConfig({
                 fee: DEFAULT_POOL_FEE,
-                isLowLiquidity: false
+                isLowLiquidity: false,
+                exchange: Exchange.Uniswap
             });
         }
         return config;
     }
 
+    function swapCollateral(address asset, uint256 amountOutMin) internal returns (uint256) {
+        PoolConfig memory poolConfig = getPoolConfigForAsset(asset);
+
+        if (poolConfig.exchange == Exchange.Uniswap) {
+            return uniswapCollateral(asset, amountOutMin, poolConfig);
+        } else if (poolConfig.exchange == Exchange.SushiSwap) {
+            return sushiSwapCollateral(asset, amountOutMin, poolConfig);
+        } else {
+            revert InvalidExchange();
+        }
+    }
+
     /**
      * @dev Swaps the given asset to USDC (base token) using Uniswap pools
      */
-    function swapCollateral(address asset) internal returns (uint256) {
+    function uniswapCollateral(address asset, uint256 amountOutMin, PoolConfig memory poolConfig) internal returns (uint256) {
         uint256 swapAmount = ERC20(asset).balanceOf(address(this));
         // Safety check, make sure residue balance in protocol is ignored
         if (swapAmount == 0) return 0;
 
-        UniswapPoolConfig memory poolConfig = getPoolConfigForAsset(asset);
         uint24 poolFee = poolConfig.fee;
         address swapToken = asset;
 
         address baseToken = comet.baseToken();
 
-        TransferHelper.safeApprove(asset, address(swapRouter), swapAmount);
+        TransferHelper.safeApprove(asset, address(uniswapRouter), swapAmount);
         // For low liquidity asset, swap it to ETH first
         if (poolConfig.isLowLiquidity) {
-            swapAmount = swapRouter.exactInputSingle(
+            uint256 swapAmountNew = uniswapRouter.exactInputSingle(
                 ISwapRouter.ExactInputSingleParams({
                     tokenIn: asset,
                     tokenOut: weth,
@@ -182,15 +230,16 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
                     sqrtPriceLimitX96: 0
                 })
             );
-            emit Swap(asset, weth, poolFee, swapAmount);
+            emit Swap(asset, weth, Exchange.Uniswap, poolFee, swapAmount, swapAmountNew);
+            swapAmount = swapAmountNew;
             swapToken = weth;
             poolFee = getPoolConfigForAsset(weth).fee;
 
-            TransferHelper.safeApprove(weth, address(swapRouter), swapAmount);
+            TransferHelper.safeApprove(weth, address(uniswapRouter), swapAmount);
         }
 
         // Swap asset or received ETH to base asset
-        uint256 amountOut = swapRouter.exactInputSingle(
+        uint256 amountOut = uniswapRouter.exactInputSingle(
             ISwapRouter.ExactInputSingleParams({
                 tokenIn: swapToken,
                 tokenOut: baseToken,
@@ -198,11 +247,51 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
                 recipient: address(this),
                 deadline: block.timestamp,
                 amountIn: swapAmount,
-                amountOutMinimum: 0,
+                amountOutMinimum: amountOutMin,
                 sqrtPriceLimitX96: 0
             })
         );
-        emit Swap(swapToken, baseToken, poolFee, swapAmount);
+        emit Swap(swapToken, baseToken, Exchange.Uniswap, poolFee, swapAmount, amountOut);
+
+        return amountOut;
+    }
+
+    /**
+     * @dev Swaps the given asset to USDC (base token) using Sushi Swap pools
+     */
+    function sushiSwapCollateral(address asset, uint256 amountOutMin, PoolConfig memory poolConfig) internal returns (uint256) {
+        uint256 swapAmount = ERC20(asset).balanceOf(address(this));
+        // Safety check, make sure residue balance in protocol is ignored
+        if (swapAmount == 0) return 0;
+
+        address swapToken = asset;
+
+        address baseToken = comet.baseToken();
+
+        TransferHelper.safeApprove(asset, address(sushiSwapRouter), swapAmount);
+
+        address[] memory path;
+        if (poolConfig.isLowLiquidity) {
+            path = new address[](3);
+            path[0] = swapToken;
+            path[1] = weth;
+            path[2] = baseToken;
+        } else {
+            path = new address[](2);
+            path[0] = swapToken;
+            path[1] = baseToken;
+        }
+
+        uint256[] memory amounts = IUniswapV2Router(sushiSwapRouter).swapExactTokensForTokens(
+            swapAmount,
+            amountOutMin,
+            path,
+            address(this),
+            block.timestamp
+        );
+        uint256 amountOut = amounts[amounts.length - 1];
+
+        emit Swap(swapToken, baseToken, Exchange.SushiSwap, 3000, swapAmount, amountOut);
 
         return amountOut;
     }
@@ -235,7 +324,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             if (baseAmount == 0) continue;
 
             comet.buyCollateral(asset, 0, baseAmount, address(this));
-            uint256 amountOut = swapCollateral(asset);
+            uint256 amountOut = swapCollateral(asset, baseAmount);
             totalAmountOut += amountOut;
         }
 
@@ -259,6 +348,12 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         uint256 amountOut
     ) internal {
         uint256 amountOwed = amount + fee;
+        uint256 balance = ERC20(token).balanceOf(address(this));
+
+        if (amountOwed > balance) {
+            revert InsufficientBalance(balance, amountOwed);
+        }
+
         TransferHelper.safeApprove(token, address(this), amountOwed);
 
         // Repay the loan

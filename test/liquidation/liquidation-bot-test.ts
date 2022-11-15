@@ -1,8 +1,7 @@
 import { event, expect, exp, wait } from '../helpers';
 import { ethers } from 'hardhat';
-import { forkMainnet, makeLiquidatableProtocol, resetHardhatNetwork } from './makeLiquidatableProtocol';
-import { DAI } from './addresses';
-import { SWAP_ROUTER } from './addresses';
+import { Exchange, forkMainnet, makeLiquidatableProtocol, resetHardhatNetwork } from './makeLiquidatableProtocol';
+import { DAI, SUSHISWAP_ROUTER, UNISWAP_ROUTER } from './addresses';
 
 describe('Liquidator', function () {
   before(forkMainnet);
@@ -10,7 +9,8 @@ describe('Liquidator', function () {
 
   it('Should init liquidator', async function () {
     const { comet, liquidator } = await makeLiquidatableProtocol();
-    expect(await liquidator.swapRouter()).to.equal(SWAP_ROUTER);
+    expect(await liquidator.uniswapRouter()).to.equal(UNISWAP_ROUTER);
+    expect(await liquidator.sushiSwapRouter()).to.equal(SUSHISWAP_ROUTER);
     expect(await liquidator.comet()).to.equal(comet.address);
   });
 
@@ -195,7 +195,7 @@ describe('Liquidator', function () {
     const { liquidator, users: [_signer, underwater] } = await makeLiquidatableProtocol();
 
     await expect(
-      liquidator.connect(underwater).setPoolConfigs([], [], [])
+      liquidator.connect(underwater).setPoolConfigs([], [], [], [])
     ).to.be.revertedWith("custom error 'Unauthorized()'");
   });
 
@@ -207,13 +207,15 @@ describe('Liquidator', function () {
 
     const newPoolConfig = {
       isLowLiquidity: !poolConfig.isLowLiquidity,
-      fee: poolConfig.fee * 2
+      fee: poolConfig.fee * 2,
+      exchange: poolConfig.exchange === Exchange.Uniswap ? Exchange.SushiSwap : Exchange.Uniswap
     };
 
     await liquidator.connect(signer).setPoolConfigs(
       [wethAddress],
       [newPoolConfig.isLowLiquidity],
-      [newPoolConfig.fee]
+      [newPoolConfig.fee],
+      [newPoolConfig.exchange]
     );
 
     const updatedPoolConfig = await liquidator.connect(signer).poolConfigs(wethAddress);

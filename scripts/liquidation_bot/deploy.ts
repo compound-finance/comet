@@ -8,6 +8,11 @@ const UNISWAP_V3_FACTORY_ADDRESS = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
 const WETH9 = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 const SWAP_ROUTER = '0xe592427a0aece92de3edee1f18e0157c05861564';
 
+enum Exchange {
+  Uniswap,
+  SushiSwap
+}
+
 async function main() {
   const DEPLOYMENT = requireEnv('DEPLOYMENT');
   const RECIPIENT = requireEnv('RECIPIENT');
@@ -38,7 +43,7 @@ async function main() {
       comet.address, // _comet
       UNISWAP_V3_FACTORY_ADDRESS, // _factory
       WETH9, // _WETH9
-      0, // _liquidationThreshold,
+      10e6, // _liquidationThreshold,
       [
         '0xc00e94Cb662C3520282E6f5717214004A7f26888', // COMP
         '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', // WBTC
@@ -59,6 +64,13 @@ async function main() {
         500,
         3000,
         3000
+      ],
+      [
+        Exchange.SushiSwap, // COMP
+        Exchange.Uniswap,   // WBTC
+        Exchange.Uniswap,   // WETH
+        Exchange.Uniswap,   // UNI
+        Exchange.Uniswap    // LINK
       ]
     ]
   );

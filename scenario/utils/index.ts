@@ -13,6 +13,8 @@ import { debug } from '../../plugins/deployment_manager/Utils';
 import { COMP_WHALES } from '../../src/deploy';
 import relayMessage from './relayMessage';
 import { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
+import { CometInterface } from '../../build/types';
+import CometActor from './../context/CometActor';
 
 export { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp };
 
@@ -390,4 +392,43 @@ export async function executeOpenProposalAndRelay(
 
   await executeOpenProposal(governanceDeploymentManager, openProposal);
   await relayMessage(governanceDeploymentManager, bridgeDeploymentManager);
+}
+
+async function getLiquidationMargin({ comet, actor, baseLiquidity, factorScale }): Promise<bigint> {
+  const numAssets = await comet.numAssets();
+  let liquidity = baseLiquidity;
+  for (let i = 0; i < numAssets; i++) {
+    const { asset, priceFeed, scale, liquidateCollateralFactor } = await comet.getAssetInfo(i);
+    const collatBalance = (await comet.collateralBalanceOf(actor.address, asset)).toBigInt();
+    const collatPrice = (await comet.getPrice(priceFeed)).toBigInt();
+    const collatValue = collatBalance * collatPrice / scale.toBigInt();
+    liquidity += collatValue * liquidateCollateralFactor.toBigInt() / factorScale;
+  }
+
+  return liquidity;
+}
+
+/*
+invariant:
+((borrowRate / factorScale) * timeElapsed) * (baseBalanceOf * price / baseScale) = -liquidationMargin
+
+isolating for timeElapsed:
+timeElapsed = -liquidationMargin / (baseBalanceOf * price / baseScale) / (borrowRate / factorScale);
+*/
+export async function timeUntilUnderwater({ comet, actor, fudgeFactor = 0n }: { comet: CometInterface, actor: CometActor, fudgeFactor?: bigint }): Promise<number> {
+  const baseBalance = await actor.getCometBaseBalance();
+  const baseScale = (await comet.baseScale()).toBigInt();
+  const basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
+  const baseLiquidity = baseBalance * basePrice / baseScale;
+  const utilization = await comet.getUtilization();
+  const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
+  const factorScale = (await comet.factorScale()).toBigInt();
+  const liquidationMargin = await getLiquidationMargin({ comet, actor, baseLiquidity, factorScale });
+
+  if (liquidationMargin < 0) {
+    return 0; // already underwater
+  }
+
+  // XXX throw error if baseBalanceOf is positive and liquidationMargin is positive
+  return Number((-liquidationMargin * factorScale / baseLiquidity / borrowRate) + fudgeFactor);
 }
