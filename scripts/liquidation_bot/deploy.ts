@@ -43,7 +43,7 @@ async function main() {
       comet.address, // _comet
       UNISWAP_V3_FACTORY_ADDRESS, // _factory
       WETH9, // _WETH9
-      0, // _liquidationThreshold,
+      100e6, // _liquidationThreshold,
       [
         '0xc00e94Cb662C3520282E6f5717214004A7f26888', // COMP
         '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', // WBTC
