@@ -2,17 +2,12 @@ import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { timeUntilUnderwater } from './LiquidationScenario';
 import { isValidAssetIndex, MAX_ASSETS } from './utils';
-// import { Liquidator } from '../build/types';
 
 const daiPool = {
   tokenAddress: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
   poolFee: 100
 };
 
-// const LIQUIDATOR_ADDRESS = '0xb21b06D71c75973babdE35b49fFDAc3F82Ad3775'; // latest
-// const LIQUIDATOR_ADDRESS = '0x42480C37B249e33aABaf4c22B20235656bd38068'; // previous
-
-// XXX delete
 const UNISWAP_V3_FACTORY_ADDRESS = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
 const WETH9 = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 const RECIPIENT = '0xe8F0c9059b8Db5B863d48dB8e8C1A09f97D3B991';
@@ -24,7 +19,7 @@ enum Exchange {
   SushiSwap
 }
 
-for (let i = 4; i < MAX_ASSETS; i++) {
+for (let i = 0; i < MAX_ASSETS; i++) {
   const borrowPositions = [
     // COMP
     {
@@ -66,13 +61,9 @@ for (let i = 4; i < MAX_ASSETS; i++) {
         betty: { $base: 1230 },
       },
     },
-    async ({ comet, actors }, _context, world) => {
+    async ({ comet, actors, assets }, _context, world) => {
       const { albert, betty } = actors;
-
-      // const liquidator = await world.deploymentManager.existing(
-      //   'liquidator',
-      //   LIQUIDATOR_ADDRESS
-      // ) as Liquidator;
+      const { USDC } = assets;
 
       const liquidator = await world.deploymentManager.deploy(
         'liquidator',
@@ -116,6 +107,8 @@ for (let i = 4; i < MAX_ASSETS; i++) {
         ]
       );
 
+      const initialRecipientBalance = await USDC.balanceOf(RECIPIENT);
+
       const baseToken = await comet.baseToken();
       const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
       const baseScale = await comet.baseScale();
@@ -147,6 +140,9 @@ for (let i = 4; i < MAX_ASSETS; i++) {
 
       expect(await comet.isLiquidatable(albert.address)).to.be.false;
       expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.eq(0);
+
+      // check that recipient balance increased
+      expect(await USDC.balanceOf(RECIPIENT)).to.be.greaterThan(Number(initialRecipientBalance));
     }
   );
 }
