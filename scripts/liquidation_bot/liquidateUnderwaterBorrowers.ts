@@ -58,18 +58,18 @@ async function sendFlashbotsBundle(
     const resolution = await bundleReceipt.wait();
     if (resolution === FlashbotsBundleResolution.BundleIncluded) {
       success = true;
-      console.log('Bundle included!');
+      googleCloudLog(LogSeverity.INFO, 'Bundle included!');
     } else if (resolution === FlashbotsBundleResolution.BlockPassedWithoutInclusion) {
       // XXX alert if too many attempts are not included in a block
       success = false;
-      console.log('Block passed without inclusion');
+      googleCloudLog(LogSeverity.INFO, 'Block passed without inclusion');
     } else if (resolution === FlashbotsBundleResolution.AccountNonceTooHigh) {
       success = false;
-      console.log('Account nonce too high');
+      googleCloudLog(LogSeverity.INFO, 'Account nonce too high');
     }
   } else {
     success = false;
-    console.log('Error while sending Flashbots bundle: ', bundleReceipt.error);
+    googleCloudLog(LogSeverity.ALERT, `Error while sending Flashbots bundle: ${bundleReceipt.error}`);
   }
 
   return success;
