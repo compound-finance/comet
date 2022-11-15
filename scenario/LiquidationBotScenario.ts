@@ -46,7 +46,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       assetAmount: ' == 250000'
     },
   ];
-  scenario.only(
+  scenario(
     `LiquidationBot > liquidates an underwater position for $asset${i}`,
     {
       filter: async (ctx) => ctx.world.base.network === 'mainnet' && await isValidAssetIndex(ctx, i),
