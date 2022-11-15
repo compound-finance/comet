@@ -26,7 +26,7 @@ async function main() {
   if (!deployment) {
     throw new Error('missing required env variable: DEPLOYMENT');
   }
-  if (!ethPk) {
+  if (useFlashbots && !ethPk) {
     throw new Error('missing required env variable: ETH_PK');
   }
 
