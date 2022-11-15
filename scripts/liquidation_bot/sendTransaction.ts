@@ -37,7 +37,7 @@ async function sendFlashbotsBundle(
       googleCloudLog(LogSeverity.INFO, 'Block passed without inclusion');
     } else if (resolution === FlashbotsBundleResolution.AccountNonceTooHigh) {
       success = false;
-      googleCloudLog(LogSeverity.INFO, 'Account nonce too high');
+      googleCloudLog(LogSeverity.ALERT, 'Account nonce too high');
     }
   } else {
     success = false;
