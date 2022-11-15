@@ -32,8 +32,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     },
     // WETH
     {
-      baseBorrowAmount: 10_000_000n,
-      assetAmount: ' == 10000'
+      baseBorrowAmount: 5_000_000n,
+      assetAmount: ' == 5000'
     },
     // UNI
     {
