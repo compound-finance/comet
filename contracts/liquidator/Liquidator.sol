@@ -29,6 +29,8 @@ interface IUniswapV2Router {
  */
 contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, PeripheryPayments {
     /** Errors */
+    error InsufficientBalance(uint256 available, uint256 required);
+    error InvalidExchange();
     error Unauthorized();
 
     /** Events **/
@@ -196,8 +198,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         } else if (poolConfig.exchange == Exchange.SushiSwap) {
             return sushiSwapCollateral(asset, amountOutMin, poolConfig);
         } else {
-            // XXX custom error
-            revert("Invalid poolConfig.exchange");
+            revert InvalidExchange();
         }
     }
 
@@ -348,8 +349,9 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         uint256 amountOwed = amount + fee;
         uint256 balance = ERC20(token).balanceOf(address(this));
 
-        // XXX custom error
-        if (amountOwed > balance) revert("Balance insufficient to cover amount owed");
+        if (amountOwed > balance) {
+            revert InsufficientBalance(balance, amountOwed);
+        }
 
         TransferHelper.safeApprove(token, address(this), amountOwed);
 
