@@ -20,7 +20,7 @@ async function sendFlashbotsBundle(
         signer: wallet, // ethers signer
         transaction: txn // ethers populated transaction object
       }
-    ])
+    ]);
   const bundleReceipt = await flashbotsProvider.sendRawBundle(
     signedBundle, // bundle we signed above
     await hre.ethers.provider.getBlockNumber() + 1, // block number at which this bundle is valid
@@ -53,7 +53,7 @@ export async function sendTxn(
   signerWithFlashbots: SignerWithFlashbots
 ): Promise<boolean> {
   if (signerWithFlashbots.flashbotsProvider) {
-    googleCloudLog(LogSeverity.INFO, 'Sending a private txn');
+    googleCloudLog(LogSeverity.INFO, 'Sending a private txn via Flashbots');
     return await sendFlashbotsBundle(txn, signerWithFlashbots);
   } else {
     googleCloudLog(LogSeverity.INFO, 'Sending a public txn');

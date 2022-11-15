@@ -4,8 +4,8 @@ import {
   Liquidator
 } from '../../build/types';
 import { exp } from '../../test/helpers';
-import { FlashbotsBundleProvider, FlashbotsBundleResolution, FlashbotsTransactionResponse, RelayResponseError } from '@flashbots/ethers-provider-bundle';
-import { PopulatedTransaction, Signer } from 'ethers';
+import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
+import { Signer } from 'ethers';
 import googleCloudLog, { LogSeverity } from './googleCloudLog';
 import {sendTxn} from './sendTransaction';
 
@@ -31,7 +31,7 @@ const flashLoanPools = {
     tokenAddress: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
     poolFee: 3000
   }
-}
+};
 
 async function attemptLiquidation(
   liquidator: Liquidator,
