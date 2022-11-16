@@ -545,7 +545,7 @@ scenario(
 
     // confirm that collateral was not purchased
     expect(event(tx, 4)).to.deep.equal({
-      AbsorbedWithoutBuyingCollateral: {}
+      AbsorbWithoutBuyingCollateral: {}
     });
 
     // XXX confirm that liquidator points increased by 1
