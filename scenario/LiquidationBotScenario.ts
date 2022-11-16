@@ -250,8 +250,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
             Exchange.Uniswap,   // LINK
           ],
           [
-            BigNumber.from(exp(1000,18)),   // COMP
-            BigNumber.from(exp(120,8)),     //  WBTC
+            BigNumber.from(exp(500,18)),    // COMP
+            BigNumber.from(exp(120,8)),     // WBTC
             BigNumber.from(exp(5000,18)),   // WETH
             BigNumber.from(exp(150000,18)), // UNI
             BigNumber.from(exp(250000,18)), // LINK
