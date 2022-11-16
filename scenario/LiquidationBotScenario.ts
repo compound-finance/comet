@@ -193,7 +193,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
   ];
 
   scenario(
-    `LiquidationBot > liquidates large position of $asset${i}, by setting maxCollateralToPurchase`,
+    `LiquidationBot > partially liquidates large position of $asset${i}, by setting maxCollateralToPurchase`,
     {
       filter: async (ctx) => ctx.world.base.network === 'mainnet' && await isValidAssetIndex(ctx, i),
       tokenBalances: {
@@ -263,7 +263,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 
       const baseToken = await comet.baseToken();
       const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
-      const { asset: collateralAssetAddress } = await comet.getAssetInfo(i);
+      const { asset: collateralAssetAddress, scale } = await comet.getAssetInfo(i);
 
       const borrowCapacity = await borrowCapacityForAsset(comet, albert, i);
       const borrowAmount = (borrowCapacity.mul(90n)).div(100n);
@@ -295,6 +295,10 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       // confirm that Albert position has been abosrbed
       expect(await comet.isLiquidatable(albert.address)).to.be.false;
       expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.eq(0);
+
+      // confirm that protocol was only partially liquidated; it should still
+      // hold a significant amount of the asset
+      expect(await comet.getCollateralReserves(collateralAssetAddress)).to.be.above(scale.mul(10));
 
       // check that recipient balance increased
       expect(await USDC.balanceOf(RECIPIENT)).to.be.greaterThan(Number(initialRecipientBalance));
