@@ -73,7 +73,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     },
     async ({ comet, actors, assets }, _context, world) => {
       const { albert, betty } = actors;
-      const { USDC } = assets;
+      const { USDC, COMP, WBTC, WETH, UNI, LINK } = assets;
 
       const liquidator = await world.deploymentManager.deploy(
         'liquidator',
@@ -87,11 +87,11 @@ for (let i = 0; i < MAX_ASSETS; i++) {
           WETH9, // _WETH9
           10e6, // _liquidationThreshold,
           [
-            '0xc00e94Cb662C3520282E6f5717214004A7f26888', // COMP
-            '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', // WBTC
-            '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
-            '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', // UNI
-            '0x514910771AF9Ca656af840dff83E8264EcF986CA', // LINK
+            COMP.address,
+            WBTC.address,
+            WETH.address,
+            UNI.address,
+            LINK.address,
           ],
           [
             true,
@@ -208,7 +208,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     },
     async ({ comet, actors, assets }, _context, world) => {
       const { albert, betty } = actors;
-      const { USDC } = assets;
+      const { USDC, COMP, WBTC, WETH, UNI, LINK } = assets;
 
       const liquidator = await world.deploymentManager.deploy(
         'liquidator',
@@ -222,11 +222,11 @@ for (let i = 0; i < MAX_ASSETS; i++) {
           WETH9, // _WETH9
           10e6, // _liquidationThreshold,
           [
-            '0xc00e94Cb662C3520282E6f5717214004A7f26888', // COMP
-            '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', // WBTC
-            '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
-            '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', // UNI
-            '0x514910771AF9Ca656af840dff83E8264EcF986CA', // LINK
+            COMP.address,
+            WBTC.address,
+            WETH.address,
+            UNI.address,
+            LINK.address,
           ],
           [
             true,
@@ -318,7 +318,7 @@ scenario(
   },
   async ({ comet, actors, assets }, _context, world) => {
     const { albert, betty } = actors;
-    const { USDC } = assets;
+    const { USDC, COMP, WBTC, WETH, UNI, LINK } = assets;
 
     const liquidator = await world.deploymentManager.deploy(
       'liquidator',
@@ -332,11 +332,11 @@ scenario(
         WETH9, // _WETH9
         1000e6, // _liquidationThreshold,
         [
-          '0xc00e94Cb662C3520282E6f5717214004A7f26888', // COMP
-          '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', // WBTC
-          '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
-          '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', // UNI
-          '0x514910771AF9Ca656af840dff83E8264EcF986CA', // LINK
+          COMP.address,
+          WBTC.address,
+          WETH.address,
+          UNI.address,
+          LINK.address,
         ],
         [
           true,
@@ -446,7 +446,7 @@ scenario(
   },
   async ({ comet, actors, assets }, _context, world) => {
     const { albert, betty } = actors;
-    const { USDC } = assets;
+    const { USDC, COMP, WBTC, WETH, UNI, LINK } = assets;
 
     const liquidator = await world.deploymentManager.deploy(
       'liquidator',
@@ -460,11 +460,11 @@ scenario(
         WETH9, // _WETH9
         0, // _liquidationThreshold,
         [
-          '0xc00e94Cb662C3520282E6f5717214004A7f26888', // COMP
-          '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', // WBTC
-          '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
-          '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', // UNI
-          '0x514910771AF9Ca656af840dff83E8264EcF986CA', // LINK
+          COMP.address,
+          WBTC.address,
+          WETH.address,
+          UNI.address,
+          LINK.address,
         ],
         [
           true,
@@ -574,7 +574,7 @@ scenario(
   },
   async ({ comet, actors, assets }, _context, world) => {
     const { albert, betty } = actors;
-    const { USDC } = assets;
+    const { USDC, COMP, WBTC, WETH, UNI, LINK } = assets;
 
     const liquidator = await world.deploymentManager.deploy(
       'liquidator',
@@ -588,11 +588,11 @@ scenario(
         WETH9, // _WETH9
         0, // _liquidationThreshold,
         [
-          '0xc00e94Cb662C3520282E6f5717214004A7f26888', // COMP
-          '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', // WBTC
-          '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
-          '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', // UNI
-          '0x514910771AF9Ca656af840dff83E8264EcF986CA', // LINK
+          COMP.address,
+          WBTC.address,
+          WETH.address,
+          UNI.address,
+          LINK.address,
         ],
         [
           true,
