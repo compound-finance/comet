@@ -1,15 +1,16 @@
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import hre from 'hardhat';
 import {
   CometInterface,
   Liquidator
 } from '../../build/types';
 import { exp } from '../../test/helpers';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
-import { PopulatedTransaction } from 'ethers';
+import { Signer } from 'ethers';
 import googleCloudLog, { LogSeverity } from './googleCloudLog';
+import {sendTxn} from './sendTransaction';
 
 export interface SignerWithFlashbots {
-  signer: SignerWithAddress;
+  signer: Signer;
   flashbotsProvider?: FlashbotsBundleProvider;
 }
 
@@ -19,49 +20,45 @@ export interface Asset {
   scale: bigint;
 }
 
-const daiPool = {
-  tokenAddress: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-  poolFee: 100
-};
-
-async function sendFlashbotsPrivateTransaction(
-  txn: PopulatedTransaction,
-  flashbotsProvider: FlashbotsBundleProvider
-) {
-  const privateTx = {
-    transaction: txn,
-    signer: flashbotsProvider.getSigner(),
-  };
-  await flashbotsProvider.sendPrivateTransaction(privateTx);
-}
-
-async function sendTxn(
-  txn: PopulatedTransaction,
-  signerWithFlashbots: SignerWithFlashbots
-) {
-  if (signerWithFlashbots.flashbotsProvider) {
-    googleCloudLog(LogSeverity.INFO, 'Sending a private txn');
-    await sendFlashbotsPrivateTransaction(txn, signerWithFlashbots.flashbotsProvider);
-  } else {
-    googleCloudLog(LogSeverity.INFO, 'Sending a public txn');
-    await signerWithFlashbots.signer.sendTransaction(txn);
+const flashLoanPools = {
+  'mainnet': {
+    // DAI pool
+    tokenAddress: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+    poolFee: 100
+  },
+  'goerli': {
+    // WETH pool
+    tokenAddress: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
+    poolFee: 3000
   }
-}
+};
 
 async function attemptLiquidation(
   liquidator: Liquidator,
   targetAddresses: string[],
-  signerWithFlashbots: SignerWithFlashbots
+  signerWithFlashbots: SignerWithFlashbots,
+  network: string
 ) {
   try {
     googleCloudLog(LogSeverity.INFO, `Attempting to liquidate ${targetAddresses} via ${liquidator.address}`);
-    const txn = await liquidator.populateTransaction.initFlash({
+    const flashLoanPool = flashLoanPools[network];
+    const calldata = {
       accounts: targetAddresses,
-      pairToken: daiPool.tokenAddress,
-      poolFee: daiPool.poolFee
+      pairToken: flashLoanPool.tokenAddress,
+      poolFee: flashLoanPool.poolFee
+    };
+    // XXX set appropriate gas price...currently we are overestimating slightly to be safe
+    // XXX also factor in gas price to profitability
+    const txn = await liquidator.populateTransaction.initFlash(calldata, {
+      gasLimit: Math.ceil(1.1 * (await liquidator.estimateGas.initFlash(calldata)).toNumber()),
+      gasPrice: Math.ceil(1.1 * (await hre.ethers.provider.getGasPrice()).toNumber()),
     });
-    await sendTxn(txn, signerWithFlashbots);
-    googleCloudLog(LogSeverity.INFO, `Successfully liquidated ${targetAddresses} via ${liquidator.address}`);
+    const success = await sendTxn(txn, signerWithFlashbots);
+    if (success) {
+      googleCloudLog(LogSeverity.INFO, `Successfully liquidated ${targetAddresses} via ${liquidator.address}`);
+    } else {
+      googleCloudLog(LogSeverity.ALERT, `Failed to liquidate ${targetAddresses} via ${liquidator.address}`);
+    }
   } catch (e) {
     googleCloudLog(
       LogSeverity.ALERT,
@@ -92,7 +89,8 @@ export async function hasPurchaseableCollateral(comet: CometInterface, assets: A
 export async function liquidateUnderwaterBorrowers(
   comet: CometInterface,
   liquidator: Liquidator,
-  signerWithFlashbots: SignerWithFlashbots
+  signerWithFlashbots: SignerWithFlashbots,
+  network: string
 ): Promise<boolean> {
   const uniqueAddresses = await getUniqueAddresses(comet);
 
@@ -108,7 +106,8 @@ export async function liquidateUnderwaterBorrowers(
       await attemptLiquidation(
         liquidator,
         [address],
-        signerWithFlashbots
+        signerWithFlashbots,
+        network
       );
       liquidationAttempted = true;
     }
@@ -120,7 +119,8 @@ export async function arbitragePurchaseableCollateral(
   comet: CometInterface,
   liquidator: Liquidator,
   assets: Asset[],
-  signerWithFlashbots: SignerWithFlashbots
+  signerWithFlashbots: SignerWithFlashbots,
+  network: string
 ) {
   googleCloudLog(LogSeverity.INFO, `Checking for purchaseable collateral`);
 
@@ -129,7 +129,8 @@ export async function arbitragePurchaseableCollateral(
     await attemptLiquidation(
       liquidator,
       [], // empty list means we will only buy collateral and not absorb
-      signerWithFlashbots
+      signerWithFlashbots,
+      network
     );
   }
 }
