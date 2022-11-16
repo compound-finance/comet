@@ -37,7 +37,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
     /** Events **/
     event Absorb(address indexed initiator, address[] accounts);
-    event AbsorbedWithoutBuyingCollateral();
+    event AbsorbWithoutBuyingCollateral();
     event Pay(address indexed token, address indexed payer, address indexed recipient, uint256 value);
     event Swap(address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut, Exchange exchange, uint24 fee);
 
@@ -445,7 +445,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
 
         // if there is nothing to buy, just absorb the accounts
         if (totalBaseAmount == 0) {
-            emit AbsorbedWithoutBuyingCollateral();
+            emit AbsorbWithoutBuyingCollateral();
             return;
         }
 
