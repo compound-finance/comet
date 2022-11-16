@@ -78,10 +78,10 @@ async function main() {
       ],
       [
         BigNumber.from(exp(500,18)),    // COMP
-        BigNumber.from(exp(50,8)),      // WBTC
-        BigNumber.from(exp(2500,18)),   // WETH
-        BigNumber.from(exp(100000,18)), // UNI
-        BigNumber.from(exp(100000,18)), // LINK
+        BigNumber.from(exp(120,8)),     // WBTC
+        BigNumber.from(exp(5000,18)),   // WETH
+        BigNumber.from(exp(150000,18)), // UNI
+        BigNumber.from(exp(150000,18)), // LINK
       ]
     ]
   );
