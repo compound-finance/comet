@@ -57,7 +57,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     // LINK
     ' == 250000',
   ];
-  scenario.only(
+  scenario(
     `LiquidationBot > liquidates an underwater position of $asset${i} ${assetAmounts[i] || ''} with no maxCollateralPurchase`,
     {
       filter: async (ctx) => ctx.world.base.network === 'mainnet' && await isValidAssetIndex(ctx, i),
@@ -192,7 +192,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     ' == 500000',
   ];
 
-  scenario.only(
+  scenario(
     `LiquidationBot > liquidates large position of $asset${i}, by setting maxCollateralToPurchase`,
     {
       filter: async (ctx) => ctx.world.base.network === 'mainnet' && await isValidAssetIndex(ctx, i),
@@ -302,7 +302,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
   );
 }
 
-scenario.only(
+scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when value is beneath liquidationThreshold`,
   {
     filter: async (ctx) => ctx.world.base.network === 'mainnet',
@@ -430,7 +430,7 @@ scenario.only(
   }
 );
 
-scenario.only(
+scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when maxCollateralToPurchase=0`,
   {
     filter: async (ctx) => ctx.world.base.network === 'mainnet',
@@ -558,7 +558,7 @@ scenario.only(
   }
 );
 
-scenario.only(
+scenario(
   `LiquidationBot > reverts when price slippage is too high`,
   {
     filter: async (ctx) => ctx.world.base.network === 'mainnet',
