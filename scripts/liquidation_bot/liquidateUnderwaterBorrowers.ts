@@ -125,7 +125,7 @@ export async function arbitragePurchaseableCollateral(
   googleCloudLog(LogSeverity.INFO, `Checking for purchasable collateral`);
 
   if (await hasPurchaseableCollateral(comet, assets)) {
-    googleCloudLog(LogSeverity.ALERT, `There is purchasable collateral`);
+    googleCloudLog(LogSeverity.WARNING, `There is purchasable collateral`);
     await attemptLiquidation(
       liquidator,
       [], // empty list means we will only buy collateral and not absorb
