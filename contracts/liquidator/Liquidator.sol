@@ -265,6 +265,9 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             })
         );
 
+        // we do a manual check against `amountOutMin` (instead of specifying an
+        // `amountOutMinimum` in the swap) so we can provide better information
+        // in the error message
         if (amountOut < amountOutMin) {
             // XXX test the error messaging on Goerli
             revert InsufficientAmountOut(swapToken, baseToken, swapAmount, amountOut, amountOutMin, Exchange.Uniswap, poolFee);
@@ -310,6 +313,9 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         );
         uint256 amountOut = amounts[amounts.length - 1];
 
+        // we do a manual check against `amountOutMin` (instead of specifying an
+        // `amountOutMinimum` in the swap) so we can provide better information
+        // in the error message
         if (amountOut < amountOutMin) {
             // XXX test the error messaging on Goerli
             revert InsufficientAmountOut(swapToken, baseToken, swapAmount, amountOut, amountOutMin, Exchange.SushiSwap, 3000);
