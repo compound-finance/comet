@@ -115,7 +115,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
      * @param _lowLiquidityPools The list of boolean indicators if pool is low liquidity and requires ETH swap
      * @param _poolFees The list of given poolFees for assets
      * @param _exchanges The list of given exchanges for assets
-     * @param _maxCollateralToPurchases The list of given maxSafeExchanges for assets
+     * @param _maxCollateralsToPurchase The list of given maxSafeExchanges for assets
      **/
     constructor(
         address _recipient,
@@ -129,7 +129,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         bool[] memory _lowLiquidityPools,
         uint24[] memory _poolFees,
         Exchange[] memory _exchanges,
-        uint256[] memory _maxCollateralToPurchases
+        uint256[] memory _maxCollateralsToPurchase
     ) PeripheryImmutableState(_factory, _WETH9) {
         require(_assets.length == _lowLiquidityPools.length, "Wrong data");
         require(_assets.length == _poolFees.length, "Wrong data");
@@ -148,7 +148,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             bool lowLiquidity = _lowLiquidityPools[i];
             uint24 poolFee = _poolFees[i];
             Exchange exchange = _exchanges[i];
-            uint256 maxCollateralToPurchase = _maxCollateralToPurchases[i];
+            uint256 maxCollateralToPurchase = _maxCollateralsToPurchase[i];
             poolConfigs[asset] = PoolConfig({
                 isLowLiquidity: lowLiquidity,
                 fee: poolFee,
@@ -170,7 +170,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         bool[] memory _lowLiquidityPools,
         uint24[] memory _poolFees,
         Exchange[] memory _exchanges,
-        uint256[] memory _maxCollateralToPurchases
+        uint256[] memory _maxCollateralsToPurchase
     ) external {
         if (msg.sender != admin) revert Unauthorized();
 
@@ -179,7 +179,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
             bool lowLiquidity = _lowLiquidityPools[i];
             uint24 poolFee = _poolFees[i];
             Exchange exchange = _exchanges[i];
-            uint256 maxCollateralToPurchase = _maxCollateralToPurchases[i];
+            uint256 maxCollateralToPurchase = _maxCollateralsToPurchase[i];
             poolConfigs[asset] = PoolConfig({
                 isLowLiquidity: lowLiquidity,
                 fee: poolFee,
