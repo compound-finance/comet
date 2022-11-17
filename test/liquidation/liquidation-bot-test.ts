@@ -195,7 +195,7 @@ describe('Liquidator', function () {
     const { liquidator, users: [_signer, underwater] } = await makeLiquidatableProtocol();
 
     await expect(
-      liquidator.connect(underwater).setPoolConfigs([], [], [], [])
+      liquidator.connect(underwater).setPoolConfigs([], [], [], [], [])
     ).to.be.revertedWith("custom error 'Unauthorized()'");
   });
 
@@ -208,19 +208,25 @@ describe('Liquidator', function () {
     const newPoolConfig = {
       isLowLiquidity: !poolConfig.isLowLiquidity,
       fee: poolConfig.fee * 2,
-      exchange: poolConfig.exchange === Exchange.Uniswap ? Exchange.SushiSwap : Exchange.Uniswap
+      exchange: poolConfig.exchange === Exchange.Uniswap ? Exchange.SushiSwap : Exchange.Uniswap,
+      maxCollateralToPurchase: poolConfig.maxCollateralToPurchase.div(2)
     };
 
     await liquidator.connect(signer).setPoolConfigs(
       [wethAddress],
       [newPoolConfig.isLowLiquidity],
       [newPoolConfig.fee],
-      [newPoolConfig.exchange]
+      [newPoolConfig.exchange],
+      [newPoolConfig.maxCollateralToPurchase]
     );
 
     const updatedPoolConfig = await liquidator.connect(signer).poolConfigs(wethAddress);
 
     expect(updatedPoolConfig.isLowLiquidity).to.eq(newPoolConfig.isLowLiquidity);
     expect(updatedPoolConfig.fee).to.eq(newPoolConfig.fee);
+    expect(updatedPoolConfig.exchange).to.eq(newPoolConfig.exchange);
+    expect(updatedPoolConfig.maxCollateralToPurchase).to.eq(newPoolConfig.maxCollateralToPurchase);
   });
 });
+
+// XXX test that contracts reverts if pool config doesn't exist

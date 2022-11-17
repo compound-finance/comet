@@ -167,6 +167,14 @@ export async function makeProtocol() {
       Exchange.Uniswap,
       Exchange.SushiSwap,
       Exchange.Uniswap
+    ],
+    [
+      ethers.constants.MaxUint256,
+      ethers.constants.MaxUint256,
+      ethers.constants.MaxUint256,
+      ethers.constants.MaxUint256,
+      ethers.constants.MaxUint256,
+      ethers.constants.MaxUint256
     ]
   );
   await liquidator.deployed();

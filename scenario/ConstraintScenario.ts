@@ -94,7 +94,9 @@ scenario(
   }
 );
 
-scenario(
+// XXX unable to source sufficient $asset0 for mainnet, goerli to borrow up to
+// 75% utilization
+scenario.skip(
   'UtilizationConstraint > sets utilization to 75%',
   {
     utilization: 0.75,
