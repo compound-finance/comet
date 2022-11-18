@@ -14,7 +14,7 @@ contract ScalingPriceFeed is AggregatorV3Interface {
     uint8 public immutable override decimals;
 
     /// @notice Underlying Chainlink price feed where prices are fetched from
-    address public immutable priceFeed;
+    address public immutable underlyingPriceFeed;
 
     /// @notice Description of the price feed
     string public description;
@@ -27,15 +27,15 @@ contract ScalingPriceFeed is AggregatorV3Interface {
 
     /**
      * @notice Construct a new scaling price feed
-     * @param priceFeed_ The address of the underlying price feed to fetch prices from
+     * @param underlyingPriceFeed_ The address of the underlying price feed to fetch prices from
      * @param decimals_ The number of decimals for the returned prices
      **/
-    constructor(address priceFeed_, uint8 decimals_) {
-        priceFeed = priceFeed_;
+    constructor(address underlyingPriceFeed_, uint8 decimals_) {
+        underlyingPriceFeed = underlyingPriceFeed_;
         decimals = decimals_;
-        description = AggregatorV3Interface(priceFeed_).description();
+        description = AggregatorV3Interface(underlyingPriceFeed_).description();
 
-        uint8 chainlinkPriceFeedDecimals = AggregatorV3Interface(priceFeed_).decimals();
+        uint8 chainlinkPriceFeedDecimals = AggregatorV3Interface(underlyingPriceFeed_).decimals();
         // Note: Solidity does not allow setting immutables in if/else statements
         shouldUpscale = chainlinkPriceFeedDecimals < decimals_ ? true : false;
         rescaleFactor = (shouldUpscale
@@ -47,11 +47,11 @@ contract ScalingPriceFeed is AggregatorV3Interface {
     /**
      * @notice Price for a specific round
      * @param roundId_ The round id to fetch the price for
-     * @return roundId Round id from the stETH price feed
-     * @return answer Latest price for wstETH / USD
-     * @return startedAt Timestamp when the round was started; passed on from stETH price feed
-     * @return updatedAt Timestamp when the round was last updated; passed on from stETH price feed
-     * @return answeredInRound Round id in which the answer was computed; passed on from stETH price feed
+     * @return roundId Round id from the underlying price feed
+     * @return answer Latest price for the asset in terms of ETH
+     * @return startedAt Timestamp when the round was started; passed on from underlying price feed
+     * @return updatedAt Timestamp when the round was last updated; passed on from underlying price feed
+     * @return answeredInRound Round id in which the answer was computed; passed on from underlying price feed
      **/
     function getRoundData(uint80 roundId_) external view returns (
         uint80 roundId,
@@ -60,17 +60,17 @@ contract ScalingPriceFeed is AggregatorV3Interface {
         uint256 updatedAt,
         uint80 answeredInRound
     ) {
-        (uint80 roundId, int256 price, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound) = AggregatorV3Interface(priceFeed).getRoundData(roundId_);
+        (uint80 roundId, int256 price, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound) = AggregatorV3Interface(underlyingPriceFeed).getRoundData(roundId_);
         return (roundId, scalePrice(price), startedAt, updatedAt, answeredInRound);
     }
 
     /**
      * @notice Price for the latest round
-     * @return roundId Round id from the stETH price feed
-     * @return answer Latest price for wstETH / USD
-     * @return startedAt Timestamp when the round was started; passed on from stETH price feed
-     * @return updatedAt Timestamp when the round was last updated; passed on from stETH price feed
-     * @return answeredInRound Round id in which the answer was computed; passed on from stETH price feed
+     * @return roundId Round id from the underlying price feed
+     * @return answer Latest price for the asset in terms of ETH
+     * @return startedAt Timestamp when the round was started; passed on from underlying price feed
+     * @return updatedAt Timestamp when the round was last updated; passed on from underlying price feed
+     * @return answeredInRound Round id in which the answer was computed; passed on from underlying price feed
      **/
     function latestRoundData() external view returns (
         uint80 roundId,
@@ -79,7 +79,7 @@ contract ScalingPriceFeed is AggregatorV3Interface {
         uint256 updatedAt,
         uint80 answeredInRound
     ) {
-        (uint80 roundId, int256 price, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound) = AggregatorV3Interface(priceFeed).latestRoundData();
+        (uint80 roundId, int256 price, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound) = AggregatorV3Interface(underlyingPriceFeed).latestRoundData();
         return (roundId, scalePrice(price), startedAt, updatedAt, answeredInRound);
     }
 
