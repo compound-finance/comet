@@ -15,6 +15,15 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     ]
   );
 
+  // Deploy constant price feed for WETH
+  const wethConstantPriceFeed = await deploymentManager.deploy(
+    'WETH:priceFeed',
+    'ConstantPriceFeed.sol',
+    [
+      8                                             // decimals
+    ]
+  );
+
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
   const { comet } = deployed;
