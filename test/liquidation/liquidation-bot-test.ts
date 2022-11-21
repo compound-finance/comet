@@ -1,11 +1,11 @@
 import { event, expect, exp, wait } from '../helpers';
 import { ethers } from 'hardhat';
-import { Exchange, forkMainnet, makeLiquidatableProtocol, resetHardhatNetwork } from './makeLiquidatableProtocol';
+import { Exchange, forkMainnet, makeProtocol, makeLiquidatableProtocol, resetHardhatNetwork } from './makeLiquidatableProtocol';
 import { DAI, SUSHISWAP_ROUTER, UNISWAP_ROUTER } from './addresses';
 
-describe('Liquidator', function () {
-  before(forkMainnet);
-  after(resetHardhatNetwork);
+describe.only('Liquidator', function () {
+  beforeEach(forkMainnet);
+  afterEach(resetHardhatNetwork);
 
   it('Should init liquidator', async function () {
     const { comet, liquidator } = await makeLiquidatableProtocol();
@@ -226,6 +226,55 @@ describe('Liquidator', function () {
     expect(updatedPoolConfig.fee).to.eq(newPoolConfig.fee);
     expect(updatedPoolConfig.exchange).to.eq(newPoolConfig.exchange);
     expect(updatedPoolConfig.maxCollateralToPurchase).to.eq(newPoolConfig.maxCollateralToPurchase);
+  });
+
+  describe('hasPurchasableCollateral', async () => {
+    it('is false when there are no assets for sale', async () => {
+      const { comet, liquidator } = await makeLiquidatableProtocol();
+
+      expect(await liquidator.hasPurchasableCollateral()).to.be.false;
+    });
+
+    it('is true when are collateral is available for purchase', async () => {
+      const {
+        comet,
+        liquidator,
+        assets: { weth },
+        whales: { wethWhale }
+      } = await makeProtocol();
+
+      expect(await liquidator.hasPurchasableCollateral()).to.be.false;
+
+      await weth.connect(wethWhale).transfer(comet.address, exp(100, 18));
+
+      expect(await liquidator.hasPurchasableCollateral()).to.be.true;
+    });
+
+    // uses the liquidation threshold
+    it('uses liquidation threshold to determine if there is a sufficient amount of collateral to purchase', async () => {
+      const {
+        comet,
+        liquidator,
+        users: [signer],
+        assets: { comp },
+        whales: { compWhale }
+      } = await makeProtocol();
+
+      await liquidator.connect(signer).setLiquidationThreshold(100e6);
+
+      // is false initially
+      expect(await liquidator.hasPurchasableCollateral()).to.be.false;
+
+      // comet has 1 COMP for sale
+      await comp.connect(compWhale).transfer(comet.address, exp(1,18));
+
+      // but is still below the liquidation threshold
+      expect(await liquidator.hasPurchasableCollateral()).to.be.false;
+
+      await liquidator.connect(signer).setLiquidationThreshold(5e6);
+
+      expect(await liquidator.hasPurchasableCollateral()).to.be.true;
+    });
   });
 });
 

@@ -408,6 +408,33 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         return a <= b ? a : b;
     }
 
+    function hasPurchasableCollateral() external view returns (bool) {
+        uint8 numAssets = comet.numAssets();
+        for (uint8 i = 0; i < numAssets; i++) {
+            address asset = comet.getAssetInfo(i).asset;
+            uint256 assetBaseAmount = baseAmountForCollateral(asset);
+
+            if (assetBaseAmount > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function baseAmountForCollateral(address asset) internal view returns (uint256) {
+        PoolConfig memory poolConfig = getPoolConfigForAsset(asset);
+        uint256 collateralBalance = min(comet.getCollateralReserves(asset), poolConfig.maxCollateralToPurchase);
+
+        if (collateralBalance == 0) return 0;
+
+        // Find the price in asset needed to base QUOTE_PRICE_SCALE of USDC (base token) of collateral
+        uint256 quotePrice = comet.quoteCollateral(asset, QUOTE_PRICE_SCALE * comet.baseScale());
+        uint256 assetBaseAmount = comet.baseScale() * QUOTE_PRICE_SCALE * collateralBalance / quotePrice;
+
+        // Liquidate only positions with adequate size, no need to collect residue from protocol
+        return assetBaseAmount < liquidationThreshold ? 0 : assetBaseAmount;
+    }
+
     /**
      * @dev Calculates the total amount of base asset needed to buy all the discounted collateral from the protocol
      */
@@ -418,19 +445,9 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         address[] memory cometAssets = new address[](numAssets);
         for (uint8 i = 0; i < numAssets; i++) {
             address asset = comet.getAssetInfo(i).asset;
+            uint256 assetBaseAmount = baseAmountForCollateral(asset);
+
             cometAssets[i] = asset;
-            PoolConfig memory poolConfig = getPoolConfigForAsset(asset);
-            uint256 collateralBalance = min(comet.getCollateralReserves(asset), poolConfig.maxCollateralToPurchase);
-
-            if (collateralBalance == 0) continue;
-
-            // Find the price in asset needed to base QUOTE_PRICE_SCALE of USDC (base token) of collateral
-            uint256 quotePrice = comet.quoteCollateral(asset, QUOTE_PRICE_SCALE * comet.baseScale());
-            uint256 assetBaseAmount = comet.baseScale() * QUOTE_PRICE_SCALE * collateralBalance / quotePrice;
-
-            // Liquidate only positions with adequate size, no need to collect residue from protocol
-            if (assetBaseAmount < liquidationThreshold) continue;
-
             assetBaseAmounts[i] = assetBaseAmount;
             totalBaseAmount += assetBaseAmount;
         }

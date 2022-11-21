@@ -72,20 +72,6 @@ async function getUniqueAddresses(comet: CometInterface): Promise<Set<string>> {
   return new Set(withdrawEvents.map(event => event.args.src));
 }
 
-export async function hasPurchaseableCollateral(comet: CometInterface, assets: Asset[], minUsdValue: number = 100): Promise<boolean> {
-  let totalValue = 0n;
-  const minValue = exp(minUsdValue, 8);
-  for (const asset of assets) {
-    const collateralReserves = await comet.getCollateralReserves(asset.address);
-    const price = await comet.getPrice(asset.priceFeed);
-    totalValue += collateralReserves.toBigInt() * price.toBigInt() / asset.scale;
-    if (totalValue >= minValue) {
-      return true;
-    }
-  }
-  return false;
-}
-
 export async function liquidateUnderwaterBorrowers(
   comet: CometInterface,
   liquidator: Liquidator,
@@ -124,7 +110,7 @@ export async function arbitragePurchaseableCollateral(
 ) {
   googleCloudLog(LogSeverity.INFO, `Checking for purchaseable collateral`);
 
-  if (await hasPurchaseableCollateral(comet, assets)) {
+  if (await liquidator.hasPurchasableCollateral()) {
     googleCloudLog(LogSeverity.INFO, `There is purchaseable collateral`);
     await attemptLiquidation(
       liquidator,

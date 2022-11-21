@@ -1,8 +1,8 @@
 import { expect, exp } from '../helpers';
-import { arbitragePurchaseableCollateral, getAssets, hasPurchaseableCollateral, liquidateUnderwaterBorrowers } from '../../scripts/liquidation_bot/liquidateUnderwaterBorrowers';
+import { arbitragePurchaseableCollateral, getAssets, liquidateUnderwaterBorrowers } from '../../scripts/liquidation_bot/liquidateUnderwaterBorrowers';
 import { forkMainnet, makeProtocol, makeLiquidatableProtocol, resetHardhatNetwork } from './makeLiquidatableProtocol';
 
-describe('Liquidation Bot', function () {
+describe.only('Liquidation Bot', function () {
   before(forkMainnet);
   after(resetHardhatNetwork);
 
@@ -37,7 +37,7 @@ describe('Liquidation Bot', function () {
       expect(await comet.isLiquidatable(underwater.address)).to.be.false;
 
       const assetAddresses = await getAssets(comet);
-      expect(await hasPurchaseableCollateral(comet, assetAddresses, 1)).to.be.false;
+      expect(await liquidator.hasPurchasableCollateral()).to.be.false;
     });
   });
 
@@ -52,12 +52,12 @@ describe('Liquidation Bot', function () {
       } = await makeProtocol();
       const assetAddresses = await getAssets(comet);
 
-      expect(await hasPurchaseableCollateral(comet, assetAddresses)).to.be.false;
+      expect(await liquidator.hasPurchasableCollateral()).to.be.false;
 
       // Transfer WETH to comet, so it has purchaseable collateral
       await weth.connect(wethWhale).transfer(comet.address, 100000000000000000000n); // 100e18
 
-      expect(await hasPurchaseableCollateral(comet, assetAddresses, 0)).to.be.true;
+      expect(await liquidator.hasPurchasableCollateral()).to.be.true;
 
       await arbitragePurchaseableCollateral(
         comet,
@@ -68,7 +68,7 @@ describe('Liquidation Bot', function () {
       );
 
       // There will be some dust to purchase, but we expect it to be less than $1 of worth
-      expect(await hasPurchaseableCollateral(comet, assetAddresses, 1)).to.be.false;
+      expect(await liquidator.hasPurchasableCollateral()).to.be.false;
     });
 
     it('buys all collateral when available', async function () {
@@ -81,7 +81,7 @@ describe('Liquidation Bot', function () {
       } = await makeProtocol();
       const assetAddresses = await getAssets(comet);
 
-      expect(await hasPurchaseableCollateral(comet, assetAddresses)).to.be.false;
+      expect(await liquidator.hasPurchasableCollateral()).to.be.false;
 
       await weth.connect(wethWhale).transfer(comet.address, 100000000000000000000n); // 100e18
       await wbtc.connect(wbtcWhale).transfer(comet.address, 100000000n); // 1e8
@@ -89,7 +89,7 @@ describe('Liquidation Bot', function () {
       await uni.connect(uniWhale).transfer(comet.address, 1000000000000000000000n); // 1000e18
       await link.connect(linkWhale).transfer(comet.address, 5000000000000000000n); // 5e18
 
-      expect(await hasPurchaseableCollateral(comet, assetAddresses, 0)).to.be.true;
+      expect(await liquidator.hasPurchasableCollateral()).to.be.true;
 
       await arbitragePurchaseableCollateral(
         comet,
@@ -100,26 +100,7 @@ describe('Liquidation Bot', function () {
       );
 
       // There will be some dust to purchase, but we expect it to be less than $1 of worth
-      expect(await hasPurchaseableCollateral(comet, assetAddresses, 1)).to.be.false;
-    });
-
-    it('hasPurchaseableCollateral ignores dust collateral', async function () {
-      const {
-        comet,
-        assets: { weth },
-        whales: { wethWhale }
-      } = await makeProtocol();
-      const assetAddresses = await getAssets(comet);
-
-      expect(await hasPurchaseableCollateral(comet, assetAddresses)).to.be.false;
-
-      // Transfer dust amount of WETH to comet, so it has purchaseable collateral
-      await weth.connect(wethWhale).transfer(comet.address, 1000n);
-
-      // Expect non-zero collateral
-      expect(await hasPurchaseableCollateral(comet, assetAddresses, 0)).to.be.true;
-      // There will be some dust to purchase, but we expect it to be less than $1 of worth
-      expect(await hasPurchaseableCollateral(comet, assetAddresses, 1)).to.be.false;
+      expect(await liquidator.hasPurchasableCollateral()).to.be.false;
     });
   });
 });
