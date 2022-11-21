@@ -408,6 +408,10 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         return a <= b ? a : b;
     }
 
+    /**
+     * @notice Returns whether the protocol is selling an amount of any asset
+     * greater than the liquidation threshold
+     */
     function hasPurchasableCollateral() external view returns (bool) {
         uint8 numAssets = comet.numAssets();
         for (uint8 i = 0; i < numAssets; i++) {
@@ -421,6 +425,10 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryImmutableState, Periphe
         return false;
     }
 
+    /**
+     * @dev Calculates the amount of the base asset required to purchase the max
+     * allowed amount of a given collateral asset
+     */
     function baseAmountForCollateral(address asset) internal view returns (uint256) {
         PoolConfig memory poolConfig = getPoolConfigForAsset(asset);
         uint256 collateralBalance = min(comet.getCollateralReserves(asset), poolConfig.maxCollateralToPurchase);
