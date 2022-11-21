@@ -235,7 +235,7 @@ describe('Liquidator', function () {
       expect(await liquidator.hasPurchasableCollateral()).to.be.false;
     });
 
-    it('is true when are collateral is available for purchase', async () => {
+    it('is true when collateral is available for purchase', async () => {
       const {
         comet,
         liquidator,
@@ -250,7 +250,6 @@ describe('Liquidator', function () {
       expect(await liquidator.hasPurchasableCollateral()).to.be.true;
     });
 
-    // uses the liquidation threshold
     it('uses liquidation threshold to determine if there is a sufficient amount of collateral to purchase', async () => {
       const {
         comet,
