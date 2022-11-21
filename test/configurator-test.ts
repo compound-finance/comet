@@ -48,7 +48,8 @@ function convertToEventConfiguration(configuration: ConfigurationStructOutput) {
     configuration.baseMinForRewards.toBigInt(),
     configuration.baseBorrowMin.toBigInt(),
     configuration.targetReserves.toBigInt(),
-    [] // leave asset configs empty for simplicity
+    [], // leave asset configs empty for simplicity
+    configuration.priceFeedDecimals
   ];
 }
 
@@ -706,6 +707,53 @@ describe('configurator', function () {
       expect(oldTargetReserves).to.be.not.equal(newTargetReserves);
       expect((await configuratorAsProxy.getConfiguration(cometProxy.address)).targetReserves).to.be.equal(newTargetReserves);
       expect(await cometAsProxy.targetReserves()).to.be.equal(newTargetReserves);
+    });
+
+    it('reverts if deploying with new priceFeedDecimals using price feeds with old decimals', async () => {
+      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy } = await makeConfigurator();
+
+      const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+      expect((await configuratorAsProxy.getConfiguration(cometProxy.address)).priceFeedDecimals).to.be.equal(await comet.priceFeedDecimals());
+
+      const newPriceFeedDecimals = 18;
+      await wait(configuratorAsProxy.setPriceFeedDecimals(cometProxy.address, newPriceFeedDecimals));
+      await expect(
+        proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address)
+      ).to.be.revertedWith("custom error 'BadDecimals()'");
+    });
+
+    it('sets priceFeedDecimals and deploys Comet with new configuration', async () => {
+      const { configurator, configuratorProxy, proxyAdmin, comet, cometProxy, tokens } = await makeConfigurator();
+
+      const cometAsProxy = comet.attach(cometProxy.address);
+      const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+      expect((await configuratorAsProxy.getConfiguration(cometProxy.address)).priceFeedDecimals).to.be.equal(await comet.priceFeedDecimals());
+
+      const oldPriceFeedDecimals = await comet.priceFeedDecimals();
+      const newPriceFeedDecimals = 18;
+      const txn = await wait(configuratorAsProxy.setPriceFeedDecimals(cometProxy.address, newPriceFeedDecimals));
+      // Also need to set price feeds to be 18 decimals
+      const baseToken = await comet.baseToken();
+      const PriceFeedFactory = (await ethers.getContractFactory('SimplePriceFeed')) as SimplePriceFeed__factory;
+      const newPriceFeed = await PriceFeedFactory.deploy(exp(1, 18), newPriceFeedDecimals);
+      await wait(configuratorAsProxy.setBaseTokenPriceFeed(cometProxy.address, newPriceFeed.address));
+      for (const [, token] of Object.entries(tokens)) {
+        if (token.address === baseToken) continue;
+        await wait(configuratorAsProxy.updateAssetPriceFeed(cometProxy.address, token.address, newPriceFeed.address));
+      }
+      await wait(proxyAdmin.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address));
+
+      expect(event(txn, 0)).to.be.deep.equal({
+        SetPriceFeedDecimals: {
+          cometProxy: cometProxy.address,
+          oldPriceFeedDecimals,
+          newPriceFeedDecimals,
+        }
+      });
+      expect(oldPriceFeedDecimals).to.be.not.equal(newPriceFeedDecimals);
+      expect((await configuratorAsProxy.getConfiguration(cometProxy.address)).priceFeedDecimals).to.be.equal(newPriceFeedDecimals);
+      expect(await cometAsProxy.priceFeedDecimals()).to.be.equal(newPriceFeedDecimals);
+      expect(await cometAsProxy.priceScale()).to.be.equal(exp(1, newPriceFeedDecimals));
     });
 
     it('adds asset and deploys Comet with new configuration', async () => {

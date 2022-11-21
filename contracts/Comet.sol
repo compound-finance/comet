@@ -91,6 +91,12 @@ contract Comet is CometMainInterface {
     /// @notice The minimum base token reserves which must be held before collateral is hodled
     uint public override immutable targetReserves;
 
+    /// @notice The decimals required for a price feed
+    uint8 public override immutable priceFeedDecimals;
+
+    /// @notice The scale for prices (in USD)
+    uint64 public override immutable priceScale;
+
     /// @notice The number of decimals for wrapped base token
     uint8 public override immutable decimals;
 
@@ -144,7 +150,7 @@ contract Comet is CometMainInterface {
         if (config.storeFrontPriceFactor > FACTOR_SCALE) revert BadDiscount();
         if (config.assetConfigs.length > MAX_ASSETS) revert TooManyAssets();
         if (config.baseMinForRewards == 0) revert BadMinimum();
-        if (AggregatorV3Interface(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
+        if (AggregatorV3Interface(config.baseTokenPriceFeed).decimals() != config.priceFeedDecimals) revert BadDecimals();
 
         // Copy configuration
         unchecked {
@@ -167,6 +173,9 @@ contract Comet is CometMainInterface {
 
             baseBorrowMin = config.baseBorrowMin;
             targetReserves = config.targetReserves;
+
+            priceFeedDecimals = config.priceFeedDecimals;
+            priceScale = uint64(10 ** priceFeedDecimals);
         }
 
         // Set interest rate model configs
@@ -240,7 +249,7 @@ contract Comet is CometMainInterface {
         }
 
         // Sanity check price feed and asset decimals
-        if (AggregatorV3Interface(priceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
+        if (AggregatorV3Interface(priceFeed).decimals() != priceFeedDecimals) revert BadDecimals();
         if (ERC20(asset).decimals() != decimals_) revert BadDecimals();
 
         // Ensure collateral factors are within range
@@ -468,7 +477,7 @@ contract Comet is CometMainInterface {
     /**
      * @notice Get the current price from a feed
      * @param priceFeed The address of a price feed
-     * @return The price, scaled by `PRICE_SCALE`
+     * @return The price, scaled by `priceScale`
      */
     function getPrice(address priceFeed) override public view returns (uint256) {
         (, int price, , , ) = AggregatorV3Interface(priceFeed).latestRoundData();

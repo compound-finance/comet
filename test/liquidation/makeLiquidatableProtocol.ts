@@ -70,6 +70,7 @@ export default async function makeLiquidatableProtocol() {
     baseMinForRewards: exp(1, 6),
     baseBorrowMin: exp(1, 6),
     targetReserves: exp(1, 18),
+    priceFeedDecimals: 8,
     assetConfigs: [
       {
         asset: DAI,

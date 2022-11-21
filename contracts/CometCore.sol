@@ -39,9 +39,6 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
     uint8 internal constant PAUSE_ABSORB_OFFSET = 3;
     uint8 internal constant PAUSE_BUY_OFFSET = 4;
 
-    /// @dev The decimals required for a price feed
-    uint8 internal constant PRICE_FEED_DECIMALS = 8;
-
     /// @dev 365 days * 24 hours * 60 minutes * 60 seconds
     uint64 internal constant SECONDS_PER_YEAR = 31_536_000;
 
@@ -50,9 +47,6 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
 
     /// @dev The scale for base index (depends on time/rate scales, not base token)
     uint64 internal constant BASE_INDEX_SCALE = 1e15;
-
-    /// @dev The scale for prices (in USD)
-    uint64 internal constant PRICE_SCALE = uint64(10 ** PRICE_FEED_DECIMALS);
 
     /// @dev The scale for factors
     uint64 internal constant FACTOR_SCALE = 1e18;

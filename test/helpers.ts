@@ -83,6 +83,7 @@ export type ProtocolOpts = {
   baseMinForRewards?: Numeric;
   baseBorrowMin?: Numeric;
   targetReserves?: Numeric;
+  priceFeedDecimals?: Numeric;
   baseTokenBalance?: Numeric;
 };
 
@@ -251,6 +252,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const baseMinForRewards = dfn(opts.baseMinForRewards, exp(1, assets[base].decimals));
   const baseBorrowMin = dfn(opts.baseBorrowMin, exp(1, assets[base].decimals));
   const targetReserves = dfn(opts.targetReserves, 0);
+  const priceFeedDecimals = dfn(opts.priceFeedDecimals, 8);
 
   const FaucetFactory = (await ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
   const tokens = {};
@@ -296,6 +298,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     baseMinForRewards,
     baseBorrowMin,
     targetReserves,
+    priceFeedDecimals,
     assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], _i) => {
       if (symbol != base) {
         acc.push({
@@ -384,6 +387,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   const baseMinForRewards = await comet.baseMinForRewards();
   const baseBorrowMin = await comet.baseBorrowMin();
   const targetReserves = await comet.targetReserves();
+  const priceFeedDecimals = await comet.priceFeedDecimals();
 
   // Deploy CometFactory
   const CometFactoryFactory = (await ethers.getContractFactory('CometFactory')) as CometFactory__factory;
@@ -415,6 +419,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     baseMinForRewards,
     baseBorrowMin,
     targetReserves,
+    priceFeedDecimals,
     assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], _i) => {
       if (symbol != base) {
         acc.push({

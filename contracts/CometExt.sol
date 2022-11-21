@@ -43,7 +43,6 @@ contract CometExt is CometExtInterface {
     function baseAccrualScale() override external pure returns (uint64) { return BASE_ACCRUAL_SCALE; }
     function baseIndexScale() override external pure returns (uint64) { return BASE_INDEX_SCALE; }
     function factorScale() override external pure returns (uint64) { return FACTOR_SCALE; }
-    function priceScale() override external pure returns (uint64) { return PRICE_SCALE; }
     function maxAssets() override external pure returns (uint8) { return MAX_ASSETS; }
 
     /**

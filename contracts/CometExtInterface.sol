@@ -25,7 +25,6 @@ abstract contract CometExtInterface is CometCore {
     function baseAccrualScale() virtual external view returns (uint64);
     function baseIndexScale() virtual external view returns (uint64);
     function factorScale() virtual external view returns (uint64);
-    function priceScale() virtual external view returns (uint64);
 
     function maxAssets() virtual external view returns (uint8);
 

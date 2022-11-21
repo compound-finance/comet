@@ -35,6 +35,8 @@ contract CometConfiguration {
         uint104 targetReserves;
 
         AssetConfig[] assetConfigs;
+
+        uint8 priceFeedDecimals;
     }
 
     struct AssetConfig {

@@ -26,11 +26,6 @@ describe('CometExt', function () {
     expect(factorScale).to.eq(exp(1, 18));
   });
 
-  it('returns price scale', async () => {
-    const priceScale = await comet.priceScale();
-    expect(priceScale).to.eq(exp(1, 8));
-  });
-
   it('returns collateralBalance (in units of the collateral asset)', async () => {
     const { WETH } = tokens;
 

@@ -14,6 +14,42 @@ describe('constructor', function () {
     expect(await comet.baseBorrowMin()).to.eq(exp(100, 6));
   });
 
+  it('sets price scale', async () => {
+    const { comet: comet8 } = await makeProtocol({ priceFeedDecimals: 8 });
+    const priceScale8 = await comet8.priceScale();
+    const { comet: comet18 } = await makeProtocol({
+      priceFeedDecimals: 18,
+      assets: {
+        USDC: { priceFeedDecimals: 18 },
+        COMP: { priceFeedDecimals: 18 },
+        WETH: { priceFeedDecimals: 18 },
+        WBTC: { priceFeedDecimals: 18 },
+      },
+    });
+    const priceScale18 = await comet18.priceScale();
+
+    expect(priceScale8).to.eq(exp(1, 8));
+    expect(priceScale18).to.eq(exp(1, 18));
+  });
+
+  it('sets price feed decimals', async () => {
+    const { comet: comet8 } = await makeProtocol({ priceFeedDecimals: 8 });
+    const priceFeedDecimals8 = await comet8.priceFeedDecimals();
+    const { comet: comet18 } = await makeProtocol({
+      priceFeedDecimals: 18,
+      assets: {
+        USDC: { priceFeedDecimals: 18 },
+        COMP: { priceFeedDecimals: 18 },
+        WETH: { priceFeedDecimals: 18 },
+        WBTC: { priceFeedDecimals: 18 },
+      },
+    });
+    const priceFeedDecimals18 = await comet18.priceFeedDecimals();
+
+    expect(priceFeedDecimals8).to.eq(8);
+    expect(priceFeedDecimals18).to.eq(18);
+  });
+
   it('verifies asset scales', async function () {
     const [governor, pauseGuardian] = await ethers.getSigners();
 
@@ -73,6 +109,7 @@ describe('constructor', function () {
       baseMinForRewards: exp(1, 6),
       baseBorrowMin: exp(1, 6),
       targetReserves: 0,
+      priceFeedDecimals: 8,
       assetConfigs: [{
         asset: tokens['EVIL'].address,
         priceFeed: priceFeeds['EVIL'].address,
@@ -85,6 +122,7 @@ describe('constructor', function () {
     })).to.be.revertedWith("custom error 'BadDecimals()'");
   });
 
+  // XXX change these tests to only revert if price feeds mismatch against Comet's price feed decimals
   it('reverts if baseTokenPriceFeed does not have 8 decimals', async () => {
     await expect(
       makeProtocol({

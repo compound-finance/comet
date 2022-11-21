@@ -146,6 +146,8 @@ abstract contract CometMainInterface is CometCore {
 
     function numAssets() virtual external view returns (uint8);
     function decimals() virtual external view returns (uint8);
+    function priceFeedDecimals() virtual external view returns (uint8);
+    function priceScale() virtual external view returns (uint64);
 
     function initializeStorage() virtual external;
 }

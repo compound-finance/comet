@@ -32,6 +32,7 @@ contract Configurator is ConfiguratorStorage {
     event SetBaseMinForRewards(address indexed cometProxy, uint104 oldBaseMinForRewards, uint104 newBaseMinForRewards);
     event SetBaseBorrowMin(address indexed cometProxy, uint104 oldBaseBorrowMin, uint104 newBaseBorrowMin);
     event SetTargetReserves(address indexed cometProxy, uint104 oldTargetReserves, uint104 newTargetReserves);
+    event SetPriceFeedDecimals(address indexed cometProxy, uint8 oldPriceFeedDecimals, uint8 newPriceFeedDecimals);
     event UpdateAsset(address indexed cometProxy, AssetConfig oldAssetConfig, AssetConfig newAssetConfig);
     event UpdateAssetPriceFeed(address indexed cometProxy, address indexed asset, address oldPriceFeed, address newPriceFeed);
     event UpdateAssetBorrowCollateralFactor(address indexed cometProxy, address indexed asset, uint64 oldBorrowCF, uint64 newBorrowCF);
@@ -239,6 +240,14 @@ contract Configurator is ConfiguratorStorage {
         uint104 oldTargetReserves = configuratorParams[cometProxy].targetReserves;
         configuratorParams[cometProxy].targetReserves = newTargetReserves;
         emit SetTargetReserves(cometProxy, oldTargetReserves, newTargetReserves);
+    }
+
+    function setPriceFeedDecimals(address cometProxy, uint8 newPriceFeedDecimals) external {
+        if (msg.sender != governor) revert Unauthorized();
+
+        uint8 oldPriceFeedDecimals = configuratorParams[cometProxy].priceFeedDecimals;
+        configuratorParams[cometProxy].priceFeedDecimals = newPriceFeedDecimals;
+        emit SetPriceFeedDecimals(cometProxy, oldPriceFeedDecimals, newPriceFeedDecimals);
     }
 
     function addAsset(address cometProxy, AssetConfig calldata assetConfig) external {
