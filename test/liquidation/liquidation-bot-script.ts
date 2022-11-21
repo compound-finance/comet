@@ -2,7 +2,7 @@ import { expect, exp } from '../helpers';
 import { arbitragePurchaseableCollateral, getAssets, liquidateUnderwaterBorrowers } from '../../scripts/liquidation_bot/liquidateUnderwaterBorrowers';
 import { forkMainnet, makeProtocol, makeLiquidatableProtocol, resetHardhatNetwork } from './makeLiquidatableProtocol';
 
-describe.only('Liquidation Bot', function () {
+describe('Liquidation Bot', function () {
   before(forkMainnet);
   after(resetHardhatNetwork);
 
