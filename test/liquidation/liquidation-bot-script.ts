@@ -36,7 +36,6 @@ describe('Liquidation Bot', function () {
 
       expect(await comet.isLiquidatable(underwater.address)).to.be.false;
 
-      const assetAddresses = await getAssets(comet);
       expect(await liquidator.hasPurchasableCollateral()).to.be.false;
     });
   });

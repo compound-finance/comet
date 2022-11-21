@@ -230,7 +230,7 @@ describe('Liquidator', function () {
 
   describe('hasPurchasableCollateral', async () => {
     it('is false when there are no assets for sale', async () => {
-      const { comet, liquidator } = await makeLiquidatableProtocol();
+      const { liquidator } = await makeLiquidatableProtocol();
 
       expect(await liquidator.hasPurchasableCollateral()).to.be.false;
     });

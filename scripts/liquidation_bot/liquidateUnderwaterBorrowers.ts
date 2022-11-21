@@ -3,7 +3,6 @@ import {
   CometInterface,
   Liquidator
 } from '../../build/types';
-import { exp } from '../../test/helpers';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import { Signer } from 'ethers';
 import googleCloudLog, { LogSeverity } from './googleCloudLog';
