@@ -115,6 +115,7 @@ export async function deployNetworkComet(
     baseMinForRewards,
     baseBorrowMin,
     targetReserves,
+    priceFeedDecimals,
     assetConfigs,
     rewardTokenAddress
   } = await getConfiguration(deploymentManager, configOverrides);
@@ -175,6 +176,7 @@ export async function deployNetworkComet(
     baseBorrowMin,
     targetReserves,
     assetConfigs,
+    priceFeedDecimals
   };
 
   const configuratorImpl = await deploymentManager.deploy(

@@ -10,8 +10,17 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'wstETH:priceFeed',
     'WstETHPriceFeed.sol',
     [
-      '0xcfe54b5cd566ab89272946f602d76ea879cab4a8', // stETHtoUSDPriceFeed
+      '0x86392dC19c0b719886221c78AB11eb8Cf5c52812', // stETHtoETHPriceFeed
       wstETH.address                                // wstETH
+    ]
+  );
+
+  // Deploy constant price feed for WETH
+  const wethConstantPriceFeed = await deploymentManager.deploy(
+    'WETH:priceFeed',
+    'ConstantPriceFeed.sol',
+    [
+      18                                             // decimals
     ]
   );
 

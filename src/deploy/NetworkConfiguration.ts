@@ -69,6 +69,7 @@ export interface NetworkConfiguration {
   borrowMin: number;
   storeFrontPriceFactor: number;
   targetReserves: number;
+  priceFeedDecimals: number;
   rates: NetworkRateConfiguration;
   tracking: NetworkTrackingConfiguration;
   assets: { [name: string]: NetworkAssetConfiguration };
@@ -135,6 +136,7 @@ function getOverridesOrConfig(
     baseBorrowMin: _ => number(config.borrowMin), // TODO: in token units (?)
     storeFrontPriceFactor: _ => percentage(config.storeFrontPriceFactor),
     targetReserves: _ => number(config.targetReserves),
+    priceFeedDecimals: _ => number(config.priceFeedDecimals),
     ...interestRateInfoMapping(config.rates),
     ...trackingInfoMapping(config.tracking),
     assetConfigs: _ => getAssetConfigs(config.assets, contracts),

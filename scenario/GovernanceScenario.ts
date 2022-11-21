@@ -173,7 +173,7 @@ scenario('add new asset (mainnet-weth)',
     const dogecoinPricefeed = await dm.deploy(
       'DOGE:priceFeed',
       'test/SimplePriceFeed.sol',
-      [exp(1_000, 8).toString(), 8],
+      [exp(1_000, 18).toString(), 18],
       true
     );
 
