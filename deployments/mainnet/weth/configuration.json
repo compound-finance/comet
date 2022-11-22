@@ -27,7 +27,6 @@
   "assets": {
     "cbETH": {
       "address": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
-      "priceFeed": "0x67eF3CAF8BeB93149F48e8d20920BEC9b4320510",
       "decimals": "18",
       "borrowCF": 0.80,
       "liquidateCF": 0.85,

@@ -24,6 +24,16 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     ]
   );
 
+  // Deploy scaling price feed for cbETH
+  const cbETHScalingPriceFeed = await deploymentManager.deploy(
+    'cbETH:priceFeed',
+    'ScalingPriceFeed.sol',
+    [
+      '0x86392dC19c0b719886221c78AB11eb8Cf5c52812', // XXX using stETH / ETH price feed until cbETH / ETH is deployed
+      8                                             // decimals
+    ]
+  );
+
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
   const { comet } = deployed;
