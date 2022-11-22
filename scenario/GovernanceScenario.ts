@@ -24,7 +24,7 @@ scenario('upgrade Comet implementation and initialize', {filter: async (ctx) => 
   // 4. Deploy and upgrade to the new implementation of Comet
   // 5. Call initialize(address) on the new version of Comet
   const upgradeConfiguratorImplCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, upgradedConfigurator.address]);
-  const setPriceFeedDecimalsCalldata = utils.defaultAbiCoder.encode(['address', 'uint8'], [comet.address, 8]);
+  const setPriceFeedDecimalsCalldata = utils.defaultAbiCoder.encode(['address', 'uint8'], [comet.address, await comet.priceFeedDecimals()]);
   const setFactoryCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [comet.address, cometModifiedFactory.address]);
   const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, comet.address]);
   const initializeCalldata = utils.defaultAbiCoder.encode(['address'], [constants.AddressZero]);
@@ -59,7 +59,7 @@ scenario('upgrade Comet implementation and initialize using deployUpgradeToAndCa
   // 3. Set the new factory address in Configurator
   // 4. DeployUpgradeToAndCall the new implementation of Comet
   const upgradeConfiguratorImplCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, upgradedConfigurator.address]);
-  const setPriceFeedDecimalsCalldata = utils.defaultAbiCoder.encode(['address', 'uint8'], [comet.address, 8]);
+  const setPriceFeedDecimalsCalldata = utils.defaultAbiCoder.encode(['address', 'uint8'], [comet.address, await comet.priceFeedDecimals()]);
   const setFactoryCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [comet.address, cometModifiedFactory.address]);
   const modifiedComet = (await dm.hre.ethers.getContractFactory('CometModified')).attach(comet.address);
   const initializeCalldata = (await modifiedComet.populateTransaction.initialize(constants.AddressZero)).data;
@@ -86,7 +86,7 @@ scenario('upgrade Comet implementation and call new function', {filter: async (c
 
   // Upgrade Comet implementation
   const upgradeConfiguratorImplCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, upgradedConfigurator.address]);
-  const setPriceFeedDecimalsCalldata = utils.defaultAbiCoder.encode(['address', 'uint8'], [comet.address, 8]);
+  const setPriceFeedDecimalsCalldata = utils.defaultAbiCoder.encode(['address', 'uint8'], [comet.address, await comet.priceFeedDecimals()]);
   const setFactoryCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [comet.address, cometModifiedFactory.address]);
   const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, comet.address]);
   await context.fastGovernanceExecute(
