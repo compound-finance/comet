@@ -46,22 +46,22 @@ contract ScalingPriceFeed is AggregatorV3Interface {
 
     /**
      * @notice Price for a specific round
-     * @param roundId_ The round id to fetch the price for
+     * @param _roundId The round id to fetch the price for
      * @return roundId Round id from the underlying price feed
      * @return answer Latest price for the asset in terms of ETH
      * @return startedAt Timestamp when the round was started; passed on from underlying price feed
      * @return updatedAt Timestamp when the round was last updated; passed on from underlying price feed
      * @return answeredInRound Round id in which the answer was computed; passed on from underlying price feed
      **/
-    function getRoundData(uint80 roundId_) external view returns (
+    function getRoundData(uint80 _roundId) external view returns (
         uint80 roundId,
         int256 answer,
         uint256 startedAt,
         uint256 updatedAt,
         uint80 answeredInRound
     ) {
-        (uint80 roundId, int256 price, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound) = AggregatorV3Interface(underlyingPriceFeed).getRoundData(roundId_);
-        return (roundId, scalePrice(price), startedAt, updatedAt, answeredInRound);
+        (uint80 roundId_, int256 price, uint256 startedAt_, uint256 updatedAt_, uint80 answeredInRound_) = AggregatorV3Interface(underlyingPriceFeed).getRoundData(_roundId);
+        return (roundId_, scalePrice(price), startedAt_, updatedAt_, answeredInRound_);
     }
 
     /**
@@ -79,8 +79,8 @@ contract ScalingPriceFeed is AggregatorV3Interface {
         uint256 updatedAt,
         uint80 answeredInRound
     ) {
-        (uint80 roundId, int256 price, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound) = AggregatorV3Interface(underlyingPriceFeed).latestRoundData();
-        return (roundId, scalePrice(price), startedAt, updatedAt, answeredInRound);
+        (uint80 roundId_, int256 price, uint256 startedAt_, uint256 updatedAt_, uint80 answeredInRound_) = AggregatorV3Interface(underlyingPriceFeed).latestRoundData();
+        return (roundId_, scalePrice(price), startedAt_, updatedAt_, answeredInRound_);
     }
 
     function signed256(uint256 n) internal pure returns (int256) {
