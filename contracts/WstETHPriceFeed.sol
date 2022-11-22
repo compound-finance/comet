@@ -8,18 +8,20 @@ contract WstETHPriceFeed is AggregatorV3Interface {
     /** Custom errors **/
     error InvalidInt256();
 
-    string public constant override description = "Custom price feed for wstETH / ETH";
-
+    /// @notice Version of the price feed
     uint public constant override version = 1;
+
+    /// @notice Description of the price feed
+    string public constant override description = "Custom price feed for wstETH / ETH";
 
     /// @notice Number of decimals for returned prices
     uint8 public override decimals = 8;
 
-    /// @notice Number of decimals for the stETH price feed
-    uint public immutable stETHPriceFeedDecimals;
-
     /// @notice Chainlink stETH / ETH price feed
     address public immutable stETHtoETHPriceFeed;
+
+    /// @notice Number of decimals for the stETH / ETH price feed
+    uint public immutable stETHToETHPriceFeedDecimals;
 
     /// @notice WstETH contract address
     address public immutable wstETH;
@@ -29,7 +31,7 @@ contract WstETHPriceFeed is AggregatorV3Interface {
 
     constructor(address stETHtoETHPriceFeed_, address wstETH_) {
         stETHtoETHPriceFeed = stETHtoETHPriceFeed_;
-        stETHPriceFeedDecimals = AggregatorV3Interface(stETHtoETHPriceFeed_).decimals();
+        stETHToETHPriceFeedDecimals = AggregatorV3Interface(stETHtoETHPriceFeed_).decimals();
         wstETH = wstETH_;
         wstETHScale = 10 ** IWstETH(wstETH).decimals();
     }
@@ -59,7 +61,7 @@ contract WstETHPriceFeed is AggregatorV3Interface {
         uint256 tokensPerStEth = IWstETH(wstETH).tokensPerStEth();
         int256 price = stETHPrice * int256(wstETHScale) / signed256(tokensPerStEth);
         // Note: Assumes the stETH price feed has a greater or equal number of decimals than this price feed
-        int256 scaledPrice = price / int256(10 ** (stETHPriceFeedDecimals - decimals));
+        int256 scaledPrice = price / int256(10 ** (stETHToETHPriceFeedDecimals - decimals));
         return (roundId_, scaledPrice, startedAt_, updatedAt_, answeredInRound_);
     }
 
@@ -82,7 +84,7 @@ contract WstETHPriceFeed is AggregatorV3Interface {
         uint256 tokensPerStEth = IWstETH(wstETH).tokensPerStEth();
         int256 price = stETHPrice * int256(wstETHScale) / signed256(tokensPerStEth);
         // Note: Assumes the stETH price feed has a greater or equal number of decimals than this price feed
-        int256 scaledPrice = price / int256(10 ** (stETHPriceFeedDecimals - decimals));
+        int256 scaledPrice = price / int256(10 ** (stETHToETHPriceFeedDecimals - decimals));
         return (roundId_, scaledPrice, startedAt_, updatedAt_, answeredInRound_);
     }
 }

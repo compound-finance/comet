@@ -10,14 +10,14 @@ contract ScalingPriceFeed is AggregatorV3Interface {
     /// @notice Version of the price feed
     uint public constant override version = 1;
 
+    /// @notice Description of the price feed
+    string public description;
+
     /// @notice Number of decimals for returned prices
     uint8 public immutable override decimals;
 
     /// @notice Underlying Chainlink price feed where prices are fetched from
     address public immutable underlyingPriceFeed;
-
-    /// @notice Description of the price feed
-    string public description;
 
     /// @notice Whether or not the price should be upscaled
     bool internal immutable shouldUpscale;
