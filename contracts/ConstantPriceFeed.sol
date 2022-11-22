@@ -32,13 +32,7 @@ contract ConstantPriceFeed is AggregatorV3Interface {
     /**
      * @notice Unimplemented function required to fulfill AggregatorV3Interface; always reverts
      **/
-    function getRoundData(uint80 _roundId) override external view returns (
-        uint80 roundId,
-        int256 answer,
-        uint256 startedAt,
-        uint256 updatedAt,
-        uint80 answeredInRound
-    ) {
+    function getRoundData(uint80 _roundId) override external pure returns (uint80, int256, uint256, uint256, uint80) {
         revert NotImplemented();
     }
 

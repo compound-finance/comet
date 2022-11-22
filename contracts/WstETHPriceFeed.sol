@@ -2,11 +2,7 @@
 pragma solidity 0.8.15;
 
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
-
-interface IWstETH {
-    function decimals() external view returns (uint8);
-    function tokensPerStEth() external view returns (uint256);
-}
+import "./IWstETH.sol";
 
 contract WstETHPriceFeed is AggregatorV3Interface {
     /** Custom errors **/
