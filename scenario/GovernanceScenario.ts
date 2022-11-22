@@ -15,19 +15,24 @@ scenario('upgrade Comet implementation and initialize', {filter: async (ctx) => 
   // Deploy new version of Comet Factory
   const dm = context.world.deploymentManager;
   const cometModifiedFactory = await dm.deploy('cometFactory', 'test/CometModifiedFactory.sol', [], true);
+  const upgradedConfigurator = await dm.deploy('configurator:implementation', 'Configurator.sol', [], true);
 
   // Execute a governance proposal to:
-  // 1. Set the new factory address in Configurator
-  // 2. Deploy and upgrade to the new implementation of Comet
-  // 3. Call initialize(address) on the new version of Comet
+  // 1. Upgrade Configurator implementation
+  // 2. Set price feed decimals in Configurator
+  // 3. Set the new factory address in Configurator
+  // 4. Deploy and upgrade to the new implementation of Comet
+  // 5. Call initialize(address) on the new version of Comet
+  const upgradeConfiguratorImplCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, upgradedConfigurator.address]);
+  const setPriceFeedDecimalsCalldata = utils.defaultAbiCoder.encode(['address', 'uint8'], [comet.address, 8]);
   const setFactoryCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [comet.address, cometModifiedFactory.address]);
   const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, comet.address]);
   const initializeCalldata = utils.defaultAbiCoder.encode(['address'], [constants.AddressZero]);
   await context.fastGovernanceExecute(
-    [configurator.address, proxyAdmin.address, comet.address],
-    [0, 0, 0],
-    ['setFactory(address,address)', 'deployAndUpgradeTo(address,address)', 'initialize(address)'],
-    [setFactoryCalldata, deployAndUpgradeToCalldata, initializeCalldata]
+    [proxyAdmin.address, configurator.address, configurator.address, proxyAdmin.address, comet.address],
+    [0, 0, 0, 0, 0],
+    ['upgrade(address,address)', 'setPriceFeedDecimals(address,uint8)', 'setFactory(address,address)', 'deployAndUpgradeTo(address,address)', 'initialize(address)'],
+    [upgradeConfiguratorImplCalldata, setPriceFeedDecimalsCalldata, setFactoryCalldata, deployAndUpgradeToCalldata, initializeCalldata]
   );
 
   // LiquidatorPoints.numAbsorbs for address ZERO should now be set as UInt32.MAX
@@ -46,20 +51,25 @@ scenario('upgrade Comet implementation and initialize using deployUpgradeToAndCa
     [],
     true
   );
+  const upgradedConfigurator = await dm.deploy('configurator:implementation', 'Configurator.sol', [], true);
 
   // Execute a governance proposal to:
-  // 1. Set the new factory address in Configurator
-  // 2. DeployUpgradeToAndCall the new implementation of Comet
+  // 1. Upgrade Configurator implementation
+  // 2. Set price feed decimals in Configurator
+  // 3. Set the new factory address in Configurator
+  // 4. DeployUpgradeToAndCall the new implementation of Comet
+  const upgradeConfiguratorImplCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, upgradedConfigurator.address]);
+  const setPriceFeedDecimalsCalldata = utils.defaultAbiCoder.encode(['address', 'uint8'], [comet.address, 8]);
   const setFactoryCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [comet.address, cometModifiedFactory.address]);
   const modifiedComet = (await dm.hre.ethers.getContractFactory('CometModified')).attach(comet.address);
   const initializeCalldata = (await modifiedComet.populateTransaction.initialize(constants.AddressZero)).data;
   const deployUpgradeToAndCallCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'bytes'], [configurator.address, comet.address, initializeCalldata]);
 
   await context.fastGovernanceExecute(
-    [configurator.address, proxyAdmin.address],
-    [0, 0],
-    ['setFactory(address,address)', 'deployUpgradeToAndCall(address,address,bytes)'],
-    [setFactoryCalldata, deployUpgradeToAndCallCalldata]
+    [proxyAdmin.address, configurator.address, configurator.address, proxyAdmin.address],
+    [0, 0, 0, 0],
+    ['upgrade(address,address)', 'setPriceFeedDecimals(address,uint8)', 'setFactory(address,address)', 'deployUpgradeToAndCall(address,address,bytes)'],
+    [upgradeConfiguratorImplCalldata, setPriceFeedDecimalsCalldata, setFactoryCalldata, deployUpgradeToAndCallCalldata]
   );
 
   // LiquidatorPoints.numAbsorbs for address ZERO should now be set as UInt32.MAX
@@ -72,15 +82,18 @@ scenario('upgrade Comet implementation and call new function', {filter: async (c
   // Deploy new version of Comet Factory
   const dm = context.world.deploymentManager;
   const cometModifiedFactory = await dm.deploy('cometFactory', 'test/CometModifiedFactory.sol', [], true);
+  const upgradedConfigurator = await dm.deploy('configurator:implementation', 'Configurator.sol', [], true);
 
   // Upgrade Comet implementation
+  const upgradeConfiguratorImplCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, upgradedConfigurator.address]);
+  const setPriceFeedDecimalsCalldata = utils.defaultAbiCoder.encode(['address', 'uint8'], [comet.address, 8]);
   const setFactoryCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [comet.address, cometModifiedFactory.address]);
   const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(['address', 'address'], [configurator.address, comet.address]);
   await context.fastGovernanceExecute(
-    [configurator.address, proxyAdmin.address],
-    [0, 0],
-    ['setFactory(address,address)', 'deployAndUpgradeTo(address,address)'],
-    [setFactoryCalldata, deployAndUpgradeToCalldata]
+    [proxyAdmin.address, configurator.address, configurator.address, proxyAdmin.address],
+    [0, 0, 0, 0],
+    ['upgrade(address,address)', 'setPriceFeedDecimals(address,uint8)', 'setFactory(address,address)', 'deployAndUpgradeTo(address,address)'],
+    [upgradeConfiguratorImplCalldata, setPriceFeedDecimalsCalldata, setFactoryCalldata, deployAndUpgradeToCalldata]
   );
 
   const CometModified = await dm.hre.ethers.getContractFactory('CometModified');
