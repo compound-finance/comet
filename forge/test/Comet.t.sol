@@ -35,6 +35,7 @@ contract CometTest is Test {
                           0,
                           0,
                           0,
+                          0,
                           assets);
         comet = new Comet(config);
     }

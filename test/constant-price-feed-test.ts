@@ -38,7 +38,7 @@ describe('constant price feed', function () {
         updatedAt,
         answeredInRound
       } = await constantPriceFeed.latestRoundData();
-      const currentTimestamp = (await getBlock()).timestamp
+      const currentTimestamp = (await getBlock()).timestamp;
 
       expect(roundId).to.eq(0);
       expect(startedAt).to.eq(currentTimestamp);
