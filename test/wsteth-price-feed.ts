@@ -15,7 +15,8 @@ export async function makeWstETH({ stEthPrice, tokensPerStEth }) {
   const wstETHPriceFeedFactory = (await ethers.getContractFactory('WstETHPriceFeed')) as WstETHPriceFeed__factory;
   const wstETHPriceFeed = await wstETHPriceFeedFactory.deploy(
     stETHPriceFeed.address,
-    simpleWstETH.address
+    simpleWstETH.address,
+    8
   );
   await wstETHPriceFeed.deployed();
 
@@ -60,6 +61,21 @@ const testCases = [
 ];
 
 describe('wstETH price feed', function () {
+  it('reverts if constructed with bad decimals', async () => {
+    const SimplePriceFeedFactory = (await ethers.getContractFactory('SimplePriceFeed')) as SimplePriceFeed__factory;
+    const stETHPriceFeed = await SimplePriceFeedFactory.deploy(exp(1, 18), 18);
+
+    const SimpleWstETHFactory = (await ethers.getContractFactory('SimpleWstETH')) as SimpleWstETH__factory;
+    const simpleWstETH = await SimpleWstETHFactory.deploy(exp(0.9, 18));
+
+    const wstETHPriceFeedFactory = (await ethers.getContractFactory('WstETHPriceFeed')) as WstETHPriceFeed__factory;
+    await expect(wstETHPriceFeedFactory.deploy(
+      stETHPriceFeed.address,
+      simpleWstETH.address,
+      20 // decimals_ is too high
+    )).to.be.revertedWith("custom error 'BadDecimals()'");
+  });
+
   describe('getRoundData', function () {
     for (const { stEthPrice, tokensPerStEth, result } of testCases) {
       it(`stEthPrice (${stEthPrice}), tokensPerStEth (${tokensPerStEth}) -> ${result}`, async () => {

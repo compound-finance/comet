@@ -11,7 +11,8 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'WstETHPriceFeed.sol',
     [
       '0x86392dC19c0b719886221c78AB11eb8Cf5c52812', // stETHtoETHPriceFeed
-      wstETH.address                                // wstETH
+      wstETH.address,                                // wstETH
+      8                                             // decimals
     ]
   );
 
