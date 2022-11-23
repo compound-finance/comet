@@ -46,11 +46,11 @@ export default migration('1666906928_raise_supply_caps_and_seed_reserves_and_rew
       {
         contract: configurator,
         signature: "updateAssetSupplyCap(address,address,uint128)",
-        args: [comet.address, wstETH.address, exp(60_000, 18)], // XXX
+        args: [comet.address, wstETH.address, exp(80_000, 18)], // ~ $100M / $1225
       }, {
         contract: configurator,
         signature: "updateAssetSupplyCap(address,address,uint128)",
-        args: [comet.address, cbETH.address, exp(66_000, 18)], // XXX
+        args: [comet.address, cbETH.address, exp(9_000, 18)], // ~ $10M / $1091
       },
 
       // 4. Deploy and upgrade to a new version of Comet
@@ -79,7 +79,7 @@ export default migration('1666906928_raise_supply_caps_and_seed_reserves_and_rew
         args: [comet.address, exp(1_000, 18)],
       },
     ];
-    const description = "# Initialize cWETHv3 on Ethereum"
+    const description = "# Initialize cWETHv3 on Ethereum" // XXX
     const txn = await deploymentManager.retry(
       async () => trace((await governor.propose(...await proposal(actions, description))))
     );
@@ -111,10 +111,10 @@ export default migration('1666906928_raise_supply_caps_and_seed_reserves_and_rew
 
     // 3. & 4.
     const wstETHInfo = await comet.getAssetInfoByAddress(wstETH.address);
-    expect(wstETHInfo.supplyCap).to.be.equal(exp(60_000, 18));
+    expect(wstETHInfo.supplyCap).to.be.equal(exp(80_000, 18));
 
     const cbETHInfo = await comet.getAssetInfoByAddress(cbETH.address);
-    expect(cbETHInfo.supplyCap).to.be.equal(exp(66_000, 18));
+    expect(cbETHInfo.supplyCap).to.be.equal(exp(9_000, 18));
 
     // 5.
     const config = await rewards.rewardConfig(comet.address);
