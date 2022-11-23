@@ -206,11 +206,11 @@ export function parseAmount(amount): ComparativeAmount {
       return amount >= 0 ? { val: amount, op: ComparisonOp.GTE } : { val: amount, op: ComparisonOp.LTE };
     case 'string':
       return matchGroup(amount, {
-        'GTE': />=\s*(\d+)/,
-        'GT': />\s*(\d+)/,
-        'LTE': /<=\s*(\d+)/,
-        'LT': /<\s*(\d+)/,
-        'EQ': /==\s*(\d+)/,
+        'GTE': />=\s*(-?\d+)/,
+        'GT': />\s*(-?\d+)/,
+        'LTE': /<=\s*(-?\d+)/,
+        'LT': /<\s*(-?\d+)/,
+        'EQ': /==\s*(-?\d+)/,
       });
     case 'object':
       return amount;
