@@ -1,5 +1,5 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
-import { DeploySpec, deployComet } from '../../../src/deploy';
+import { DeploySpec, deployComet, exp } from '../../../src/deploy';
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const stETH = await deploymentManager.existing('stETH', '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84');
@@ -20,7 +20,8 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'WETH:priceFeed',
     'ConstantPriceFeed.sol',
     [
-      8                                             // decimals
+      8,                                             // decimals
+      exp(1, 8)                                      // constantPrice
     ]
   );
 

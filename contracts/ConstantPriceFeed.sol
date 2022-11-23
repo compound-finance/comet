@@ -5,7 +5,6 @@ import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.
 
 contract ConstantPriceFeed is AggregatorV3Interface {
     /** Custom errors **/
-    error InvalidInt256();
     error NotImplemented();
 
     /// @notice Version of the price feed
@@ -18,15 +17,15 @@ contract ConstantPriceFeed is AggregatorV3Interface {
     uint8 public immutable override decimals;
 
     /// @notice The constant price
-    int private immutable CONSTANT_PRICE;
+    int public immutable constantPrice;
 
     /**
      * @notice Construct a new scaling price feed
      * @param decimals_ The number of decimals for the returned prices
      **/
-    constructor(uint8 decimals_) {
+    constructor(uint8 decimals_, int256 constantPrice_) {
         decimals = decimals_;
-        CONSTANT_PRICE = signed256(10 ** decimals_);
+        constantPrice = constantPrice_;
     }
 
     /**
@@ -51,11 +50,6 @@ contract ConstantPriceFeed is AggregatorV3Interface {
         uint256 updatedAt,
         uint80 answeredInRound
     ) {
-        return (0, CONSTANT_PRICE, block.timestamp, block.timestamp, 0);
-    }
-
-    function signed256(uint256 n) internal pure returns (int256) {
-        if (n > uint256(type(int256).max)) revert InvalidInt256();
-        return int256(n);
+        return (0, constantPrice, block.timestamp, block.timestamp, 0);
     }
 }
