@@ -12,6 +12,9 @@ import "./vendor/@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "../CometInterface.sol";
 import "../ERC20.sol";
 
+/* DELETE */
+import "hardhat/console.sol";
+
 /**
  * @title XXX
  * @notice XXX
@@ -40,19 +43,6 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
         address _WETH9
     ) PeripheryImmutableState(_factory, _WETH9) {
         comet = _comet;
-    }
-
-    /**
-     * @notice Uniswap flashloan callback
-     * @param fee0 The fee for borrowing token0 from pool
-     * @param fee1 The fee for borrowing token1 from pool
-     * @param data The encoded data passed from loan initiation function
-     */
-    function uniswapV3FlashCallback(
-        uint256 fee0,
-        uint256 fee1,
-        bytes calldata data
-    ) external override {
     }
 
     /**
@@ -87,5 +77,74 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
             collateralReserves,
             collateralReservesInBase
         );
+    }
+
+    // XXX move
+    struct FlashCallbackData {
+        uint256 flashLoanAmount;
+        PoolAddress.PoolKey poolKey;
+        address[] assets;
+        uint256[] assetBaseAmounts;
+
+        address[] swapTargets;
+        bytes[] swapTransactions;
+    }
+
+    // XXX name?
+    function absorbAndArbitrage(
+        address[] calldata liquidatableAccounts,
+        address[] calldata assets,
+        uint256[] calldata assetBaseAmounts,
+        address[] calldata swapTargets,
+        bytes[] calldata swapTransactions
+    ) external {
+        comet.absorb(address(this), liquidatableAccounts);
+        emit Absorb(msg.sender, liquidatableAccounts);
+
+        address poolToken0 = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // XXX DAI
+        address poolToken1 = comet.baseToken();
+        bool reversedPair = poolToken0 > poolToken1;
+        // Use Uniswap approach to determining order of tokens https://github.com/Uniswap/v3-periphery/blob/main/contracts/libraries/PoolAddress.sol#L20-L27
+        if (reversedPair) (poolToken0, poolToken1) = (poolToken1, poolToken0);
+
+        // Find the desired Uniswap pool to borrow base token from, for ex DAI-USDC
+        // XXX can probably store this poolKey
+        PoolAddress.PoolKey memory poolKey = PoolAddress.PoolKey({
+            token0: poolToken0,
+            token1: poolToken1,
+            fee: 100 // XXX
+        });
+
+        IUniswapV3Pool pool = IUniswapV3Pool(PoolAddress.computeAddress(factory, poolKey));
+
+        uint flashLoanAmount = 0;
+        for (uint8 i = 0; i < assetBaseAmounts.length; i++) {
+            flashLoanAmount += assetBaseAmounts[i];
+        }
+
+        pool.flash(
+            address(this),
+            reversedPair ? flashLoanAmount : 0,
+            reversedPair ? 0 : flashLoanAmount,
+            abi.encode(
+                FlashCallbackData({
+                    flashLoanAmount: flashLoanAmount,
+                    poolKey: poolKey,
+                    assets: assets,
+                    assetBaseAmounts: assetBaseAmounts,
+                    swapTargets: swapTargets,
+                    swapTransactions: swapTransactions
+                })
+            )
+        );
+    }
+
+    function uniswapV3FlashCallback(
+        uint256 fee0,
+        uint256 fee1,
+        bytes calldata data
+    ) external override {
+        console.log("uniswapV3FlashCallback");
+
     }
 }

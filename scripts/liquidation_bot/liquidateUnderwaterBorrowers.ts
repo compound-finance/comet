@@ -33,7 +33,6 @@ function apiRequestUrl(methodName, queryParams) {
   return apiBaseUrl + methodName + '?' + (new URLSearchParams(queryParams)).toString();
 }
 
-
 export async function attemptLiquidation(
   comet: CometInterface,
   liquidator: LiquidatorV2,
@@ -42,10 +41,16 @@ export async function attemptLiquidation(
   network: string
 ) {
   // get the amount of collateral available for sale (using static call)
-  const [addresses, collateralReserves, collateralReservesInBase] = await liquidator.callStatic.availableCollateral(targetAddresses);
+  const [
+    addresses,
+    collateralReserves,
+    collateralReservesInBase
+  ] = await liquidator.callStatic.availableCollateral(targetAddresses);
 
   const baseToken = await comet.baseToken();
 
+  let assets = [];
+  let assetBaseAmounts = [];
   let swapTargets = [];
   let swapCallDatas = [];
 
@@ -54,12 +59,6 @@ export async function attemptLiquidation(
     const address = addresses[i];
     const collateralReserveAmount = collateralReserves[i];
     const collateralReserveAmountInBase = collateralReservesInBase[i];
-
-    console.log({
-      address,
-      collateralReserveAmount,
-      collateralReserveAmountInBase
-    });
 
     // check if collateralReserveAmountInBase is greater than threshold
     const liquidationThreshold = 0; // XXX increase
@@ -80,10 +79,11 @@ export async function attemptLiquidation(
       console.log(`data:`);
       console.log(data);
 
+      assets.push(address);
+      assetBaseAmounts.push(collateralReserveAmountInBase);
       swapTargets.push(data.tx.to);
       swapCallDatas.push(data.tx.data);
     }
-
   }
 
   console.log(`swapTargets:`);
@@ -91,6 +91,18 @@ export async function attemptLiquidation(
 
   console.log(`swapCallDatas:`);
   console.log(swapCallDatas);
+
+  console.log("absorbAndArbitrage()");
+
+  await liquidator.absorbAndArbitrage(
+    targetAddresses,
+    assets,
+    assetBaseAmounts,
+    swapTargets,
+    swapCallDatas
+  );
+
+  console.log("absorbAndArbitrage() done");
 
   // try {
   //   googleCloudLog(LogSeverity.INFO, `Attempting to liquidate ${targetAddresses} via ${liquidator.address}`);
