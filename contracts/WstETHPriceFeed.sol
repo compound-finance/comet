@@ -2,9 +2,10 @@
 pragma solidity 0.8.15;
 
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "./IPriceFeed.sol";
 import "./IWstETH.sol";
 
-contract WstETHPriceFeed is AggregatorV3Interface {
+contract WstETHPriceFeed is IPriceFeed {
     /** Custom errors **/
     error BadDecimals();
     error InvalidInt256();
@@ -44,30 +45,6 @@ contract WstETHPriceFeed is AggregatorV3Interface {
     function signed256(uint256 n) internal pure returns (int256) {
         if (n > uint256(type(int256).max)) revert InvalidInt256();
         return int256(n);
-    }
-
-    /**
-     * @notice WstETH price for a specific round
-     * @param _roundId The round id to fetch the price for
-     * @return roundId Round id from the stETH price feed
-     * @return answer Latest price for wstETH / USD
-     * @return startedAt Timestamp when the round was started; passed on from stETH price feed
-     * @return updatedAt Timestamp when the round was last updated; passed on from stETH price feed
-     * @return answeredInRound Round id in which the answer was computed; passed on from stETH price feed
-     **/
-    function getRoundData(uint80 _roundId) override external view returns (
-        uint80 roundId,
-        int256 answer,
-        uint256 startedAt,
-        uint256 updatedAt,
-        uint80 answeredInRound
-    ) {
-        (uint80 roundId_, int256 stETHPrice, uint256 startedAt_, uint256 updatedAt_, uint80 answeredInRound_) = AggregatorV3Interface(stETHtoETHPriceFeed).getRoundData(_roundId);
-        uint256 tokensPerStEth = IWstETH(wstETH).tokensPerStEth();
-        int256 price = stETHPrice * int256(wstETHScale) / signed256(tokensPerStEth);
-        // Note: Assumes the stETH price feed has an equal or larger amount of decimals than this price feed
-        int256 scaledPrice = price / int256(10 ** (stETHToETHPriceFeedDecimals - decimals));
-        return (roundId_, scaledPrice, startedAt_, updatedAt_, answeredInRound_);
     }
 
     /**

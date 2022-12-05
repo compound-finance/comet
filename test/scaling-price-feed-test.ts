@@ -77,43 +77,6 @@ describe('scaling price feed', function () {
     expect(await scalingPriceFeed.description()).to.eq(await simplePriceFeed.description());
   });
 
-  describe('getRoundData', function () {
-    for (const { price, priceFeedDecimals, result } of testCases) {
-      it(`price (${price}), priceFeedDecimals (${priceFeedDecimals}) -> ${result}`, async () => {
-        const { scalingPriceFeed } = await makeScalingPriceFeed({ price, priceFeedDecimals });
-        const roundId = 999;
-        const roundData = await scalingPriceFeed.getRoundData(roundId);
-        const res = roundData.answer.toBigInt();
-
-        expect(res).to.eq(result);
-      });
-    }
-
-    it('passes along roundId, startedAt, updatedAt and answeredInRound values from underlying price feed', async () => {
-      const { simplePriceFeed, scalingPriceFeed } = await makeScalingPriceFeed({ price: exp(10, 18), priceFeedDecimals: 18 });
-
-      await simplePriceFeed.setRoundData(
-        exp(15, 18), // roundId_,
-        1,           // answer_,
-        exp(16, 8),  // startedAt_,
-        exp(17, 8),  // updatedAt_,
-        exp(18, 18)  // answeredInRound_
-      );
-
-      const {
-        roundId,
-        startedAt,
-        updatedAt,
-        answeredInRound
-      } = await scalingPriceFeed.getRoundData(exp(15, 18));
-
-      expect(roundId.toBigInt()).to.eq(exp(15, 18));
-      expect(startedAt.toBigInt()).to.eq(exp(16, 8));
-      expect(updatedAt.toBigInt()).to.eq(exp(17, 8));
-      expect(answeredInRound.toBigInt()).to.eq(exp(18, 18));
-    });
-  });
-
   describe('latestRoundData', function () {
     for (const { price, priceFeedDecimals, result } of testCases) {
       it(`price (${price}), priceFeedDecimals (${priceFeedDecimals}) -> ${result}`, async () => {

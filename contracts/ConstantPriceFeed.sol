@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "./IPriceFeed.sol";
 
-contract ConstantPriceFeed is AggregatorV3Interface {
-    /** Custom errors **/
-    error NotImplemented();
-
+contract ConstantPriceFeed is IPriceFeed {
     /// @notice Version of the price feed
     uint public constant override version = 1;
 
@@ -26,13 +23,6 @@ contract ConstantPriceFeed is AggregatorV3Interface {
     constructor(uint8 decimals_, int256 constantPrice_) {
         decimals = decimals_;
         constantPrice = constantPrice_;
-    }
-
-    /**
-     * @notice Unimplemented function required to fulfill AggregatorV3Interface; always reverts
-     **/
-    function getRoundData(uint80 _roundId) override external pure returns (uint80, int256, uint256, uint256, uint80) {
-        revert NotImplemented();
     }
 
     /**

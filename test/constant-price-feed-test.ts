@@ -46,12 +46,4 @@ describe('constant price feed', function () {
       expect(answeredInRound).to.eq(0);
     });
   });
-
-  it(`getRoundData > always reverts`, async () => {
-    const constantPriceFeed = await makeConstantPriceFeed({ decimals: 8, constantPrice: exp(1, 8) });
-
-    await expect(
-      constantPriceFeed.getRoundData(1)
-    ).to.be.revertedWith("custom error 'NotImplemented()'");
-  });
 });

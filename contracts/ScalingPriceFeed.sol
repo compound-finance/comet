@@ -2,8 +2,9 @@
 pragma solidity 0.8.15;
 
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "./IPriceFeed.sol";
 
-contract ScalingPriceFeed is AggregatorV3Interface {
+contract ScalingPriceFeed is IPriceFeed {
     /** Custom errors **/
     error InvalidInt256();
 
@@ -45,26 +46,6 @@ contract ScalingPriceFeed is AggregatorV3Interface {
     }
 
     /**
-     * @notice Price for a specific round
-     * @param _roundId The round id to fetch the price for
-     * @return roundId Round id from the underlying price feed
-     * @return answer Latest price for the asset in terms of ETH
-     * @return startedAt Timestamp when the round was started; passed on from underlying price feed
-     * @return updatedAt Timestamp when the round was last updated; passed on from underlying price feed
-     * @return answeredInRound Round id in which the answer was computed; passed on from underlying price feed
-     **/
-    function getRoundData(uint80 _roundId) external view returns (
-        uint80 roundId,
-        int256 answer,
-        uint256 startedAt,
-        uint256 updatedAt,
-        uint80 answeredInRound
-    ) {
-        (uint80 roundId_, int256 price, uint256 startedAt_, uint256 updatedAt_, uint80 answeredInRound_) = AggregatorV3Interface(underlyingPriceFeed).getRoundData(_roundId);
-        return (roundId_, scalePrice(price), startedAt_, updatedAt_, answeredInRound_);
-    }
-
-    /**
      * @notice Price for the latest round
      * @return roundId Round id from the underlying price feed
      * @return answer Latest price for the asset in terms of ETH
@@ -72,7 +53,7 @@ contract ScalingPriceFeed is AggregatorV3Interface {
      * @return updatedAt Timestamp when the round was last updated; passed on from underlying price feed
      * @return answeredInRound Round id in which the answer was computed; passed on from underlying price feed
      **/
-    function latestRoundData() external view returns (
+    function latestRoundData() override external view returns (
         uint80 roundId,
         int256 answer,
         uint256 startedAt,
