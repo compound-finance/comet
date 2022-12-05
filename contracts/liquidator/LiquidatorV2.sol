@@ -51,6 +51,23 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
         recipient = _recipient;
     }
 
+    function balanceOfAsset(address asset) internal returns (uint256, uint256) {
+        uint256 collateralBalance = comet.getCollateralReserves(asset);
+
+        console.log("balanceOfAsset asset: %s", asset);
+        console.log("balanceOfAsset collateralBalance: %s", collateralBalance);
+
+        uint256 baseScale = comet.baseScale();
+
+        uint256 quotePrice = comet.quoteCollateral(asset, QUOTE_PRICE_SCALE * baseScale);
+        uint256 collateralBalanceInBase = baseScale * QUOTE_PRICE_SCALE * collateralBalance / quotePrice;
+
+        return (
+            collateralBalance,
+            collateralBalanceInBase
+        );
+    }
+
     /**
      * @notice XXX
      * @dev for use with static call
@@ -70,6 +87,9 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
             address asset = comet.getAssetInfo(i).asset;
             assets[i] = asset;
             uint256 collateralBalance = comet.getCollateralReserves(asset);
+
+            console.log("availableCollateral asset: %s", asset);
+            console.log("availableCollateral collateralBalance: %s", collateralBalance);
             // reduce by 5%?
             collateralReserves[i] = collateralBalance;
 
@@ -101,23 +121,18 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
     function absorbAndArbitrage(
         address[] calldata liquidatableAccounts,
         address[] calldata assets,
-        uint256[] calldata assetBaseAmounts,
+        // uint256[] calldata assetBaseAmounts,
         address[] calldata swapTargets,
         bytes[] calldata swapTransactions
     ) external {
-        console.log("absorbAndArbitrage 0");
         comet.absorb(address(this), liquidatableAccounts);
         emit Absorb(msg.sender, liquidatableAccounts);
-
-        console.log("absorbAndArbitrage 1");
 
         address poolToken0 = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // XXX DAI
         address poolToken1 = comet.baseToken();
         bool reversedPair = poolToken0 > poolToken1;
         // Use Uniswap approach to determining order of tokens https://github.com/Uniswap/v3-periphery/blob/main/contracts/libraries/PoolAddress.sol#L20-L27
         if (reversedPair) (poolToken0, poolToken1) = (poolToken1, poolToken0);
-
-        console.log("absorbAndArbitrage 2");
 
         // Find the desired Uniswap pool to borrow base token from, for ex DAI-USDC
         // XXX can probably store this poolKey
@@ -129,9 +144,15 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
 
         IUniswapV3Pool pool = IUniswapV3Pool(PoolAddress.computeAddress(factory, poolKey));
 
-        uint flashLoanAmount = 0;
-        for (uint8 i = 0; i < assetBaseAmounts.length; i++) {
-            flashLoanAmount += assetBaseAmounts[i];
+        uint256 flashLoanAmount = 0;
+        uint256[] memory assetBaseAmounts = new uint256[](assets.length);
+        for (uint8 i = 0; i < assets.length; i++) {
+            (
+                uint256 _collateralBalance,
+                uint256 collateralBalanceInBase
+            ) = balanceOfAsset(assets[i]);
+            flashLoanAmount += collateralBalanceInBase;
+            assetBaseAmounts[i] = collateralBalanceInBase;
         }
 
         pool.flash(
@@ -168,36 +189,21 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
             address asset = flashCallbackData.assets[i];
             uint256 assetBaseAmount = flashCallbackData.assetBaseAmounts[i];
 
-            // console.log("asset: %s", asset);
-            // console.log("assetBaseAmount: %s", assetBaseAmount);
-
-            // if (baseAmount == 0) continue;
+            console.log("asset: %s", asset);
+            console.log("assetBaseAmount: %s", assetBaseAmount);
 
             comet.buyCollateral(asset, 0, assetBaseAmount, address(this));
 
             uint256 swapAmount = ERC20(asset).balanceOf(address(this));
 
-            console.log("swapAmount: %s", swapAmount);
+            console.log("address(this) balance of asset: %s", swapAmount);
 
             // console.log(flashCallbackData.swapTargets[i]);
             // console.logBytes(flashCallbackData.swapTransactions[i]);
 
             TransferHelper.safeApprove(asset, address(flashCallbackData.swapTargets[i]), type(uint256).max);
-            // ERC20(asset).approve(address(flashCallbackData.swapTargets[i]), type(uint256).max);
 
             (bool success, bytes memory returnData) = flashCallbackData.swapTargets[i].call(flashCallbackData.swapTransactions[i]);
-
-            // console.log("swapData:");
-            // console.logBytes(swapData);
-
-            // assembly {
-            //     let returndata_size := mload(swapData)
-            //     revert(add(32, swapData), returndata_size)
-            //     // revert(add(swapData, 0x20), returndatasize())
-            // }
-
-            // // uint256 returnAmount
-            // // XXX custom error
 
             assembly {
                 if eq(success, 0) {
@@ -207,22 +213,22 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
 
             (uint256 amountOut) = abi.decode(returnData, (uint256));
 
-            console.log("amountOut: %s", amountOut);
-
+            console.log("amountOut (in base token): %s", amountOut);
 
             // require(success, "SWAP_CALL_FAILED");
-
-
             // console.log("returnAmount: %s", returnAmount);
-
             // uint256 amountOut = swapCollateral(asset, baseAmount);
-            // totalAmountOut += amountOut;
+            totalAmountOut += amountOut;
         }
+
+        console.log("totalAmountOut: %s", totalAmountOut);
 
         address baseToken = comet.baseToken();
 
         uint256 totalAmountOwed = flashCallbackData.flashLoanAmount + fee0 + fee1;
         uint256 balance = ERC20(baseToken).balanceOf(address(this));
+
+        console.log("balance of base token (after swaps): %s", balance);
 
         console.log("flashCallbackData.flashLoanAmount: %s", flashCallbackData.flashLoanAmount);
         console.log("fee0: %s", fee0);

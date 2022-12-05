@@ -5,6 +5,7 @@ import { attemptLiquidation } from '../scripts/liquidation_bot/liquidateUnderwat
 import CometActor from './context/CometActor';
 import { CometInterface } from '../build/types';
 import { isValidAssetIndex, MAX_ASSETS, timeUntilUnderwater } from './utils';
+import { exp } from '../test/helpers';
 
 const UNISWAP_V3_FACTORY_ADDRESS = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
 const WETH9 = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
@@ -34,19 +35,18 @@ async function borrowCapacityForAsset(comet: CometInterface, actor: CometActor, 
 scenario.only(
   'LiquidationBotV2 > XXX TEST',
   {
-    cometBalances: {
+    tokenBalances: {
       albert: {
         $asset1: ' == 120'
       },
-      betty: { $base: 1000 },
-    }
+    },
   },
-  async ({ comet, actors, assets }, _context, world) => {
+  async ({ comet, actors, assets }, context, world) => {
     const { albert, betty, charles } = actors;
     const { USDC, COMP, WBTC, WETH, UNI, LINK } = assets;
 
-    console.log(`charles.address:`);
-    console.log(charles.address);
+    console.log(`await world.timestamp():`);
+    console.log(await world.timestamp());
 
     const liquidator = await world.deploymentManager.deploy(
       'liquidator',
@@ -59,40 +59,53 @@ scenario.only(
       ]
     ) as LiquidatorV2;
 
-    const baseToken = await comet.baseToken();
-    const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
+    console.log(`await world.timestamp():`);
+    console.log(await world.timestamp());
 
-    const i = 1; // XXX
+    await albert.transferErc20(WBTC.address, comet.address, exp(120, 8));
 
-    const { asset: collateralAssetAddress, scale } = await comet.getAssetInfo(i);
-    const borrowCapacity = await borrowCapacityForAsset(comet, albert, i);
-    const borrowAmount = (borrowCapacity.mul(90n)).div(100n);
+    // const baseToken = await comet.baseToken();
+    // const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
 
-    // Do a manual withdrawAsset (instead of setting $base to a negative
-    // number) so we can confirm that albert only has one type of collateral asset
-    await albert.withdrawAsset({
-      asset: baseToken,
-      amount: borrowAmount
-    });
+    // const i = 1; // XXX
 
-    await world.increaseTime(
-      await timeUntilUnderwater({
-        comet,
-        actor: albert,
-        fudgeFactor: 60n * 10n // 10 minutes past when position is underwater
-      })
-    );
+    // const { asset: collateralAssetAddress, scale } = await comet.getAssetInfo(i);
+    // const borrowCapacity = await borrowCapacityForAsset(comet, albert, i);
+    // const borrowAmount = (borrowCapacity.mul(90n)).div(100n);
 
-    await betty.withdrawAsset({ asset: baseToken, amount: baseBorrowMin }); // force accrue
+    // // Do a manual withdrawAsset (instead of setting $base to a negative
+    // // number) so we can confirm that albert only has one type of collateral asset
+    // await albert.withdrawAsset({
+    //   asset: baseToken,
+    //   amount: borrowAmount
+    // });
 
-    expect(await comet.isLiquidatable(albert.address)).to.be.true;
-    expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.be.greaterThan(0);
+    // await world.increaseTime(
+    //   await timeUntilUnderwater({
+    //     comet,
+    //     actor: albert,
+    //     fudgeFactor: 60n * 10n // 10 minutes past when position is underwater
+    //   })
+    // );
+
+    // await betty.withdrawAsset({ asset: baseToken, amount: baseBorrowMin }); // force accrue
+
+    // expect(await comet.isLiquidatable(albert.address)).to.be.true;
+    // expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.be.greaterThan(0);
+
+    // console.log(`await world.timestamp():`);
+    // console.log(await world.timestamp());
+
+    // await context.setNextBlockTimestamp(16093122);
+
+    // console.log(`await world.timestamp():`);
+    // console.log(await world.timestamp());
 
     await attemptLiquidation(
       comet,
       liquidator,
       [
-        albert.address
+        // albert.address
       ],
       {
         signer: charles.signer
