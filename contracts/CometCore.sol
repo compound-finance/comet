@@ -4,7 +4,6 @@ pragma solidity 0.8.15;
 import "./CometConfiguration.sol";
 import "./CometStorage.sol";
 import "./CometMath.sol";
-import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
     struct AssetInfo {
