@@ -31,6 +31,9 @@ contract LiquidationBotV2Test is Test {
 
     // wallets
     address public constant recipient = 0x5a13D329A193ca3B1fE2d7B459097EdDba14C28F;
+    address public constant weth_whale = 0x2F0b23f53734252Bda2277357e97e1517d6B042A;
+    address public constant uni_whale = 0x1a9C8182C09F50C8318d769245beA52c32BE35BC;
+    address public constant link_whale = 0xfB682b0dE4e0093835EA21cfABb5449cA9ac9e5e;
 
     function setUp() public {
         liquidator = new LiquidatorV2(
@@ -54,7 +57,7 @@ contract LiquidationBotV2Test is Test {
         vm.label(weth9, "WETH9");
     }
 
-    function testLargeSwaps() public {
+    function SKIPlargeSwaps() public {
         // send 120 WBTC
         // WBTC ' == 120',
         address wbtcOwner = WBTC(wbtc).owner();
@@ -66,8 +69,16 @@ contract LiquidationBotV2Test is Test {
         ERC20(comp).transfer(comet, 1000e18);
 
         // WETH ' == 5000',
+        vm.prank(weth_whale);
+        ERC20(weth9).transfer(comet, 5000e18);
+
         // UNI ' == 150000',
+        vm.prank(uni_whale);
+        ERC20(uni).transfer(comet, 150000e18);
+
         // LINK ' == 250000',
+        vm.prank(link_whale);
+        ERC20(link).transfer(comet, 250000e18);
 
         address[] memory liquidatableAccounts;
 
@@ -89,6 +100,8 @@ contract LiquidationBotV2Test is Test {
                     returnedAssets[i],
                     returnedCollateralReservesInBase[i]
                 );
+
+                console.log("actualSwapAmount: %s", actualSwapAmount);
 
                 string[] memory inputs = new string[](8);
                 inputs[0] = "yarn";
@@ -118,7 +131,115 @@ contract LiquidationBotV2Test is Test {
                     swapTargets, // swapTargets,
                     swapTransactions // swapTransactions
                 );
+
+                // make sure that you're making > 1% of the value of the swap
+                console.log("comet.getReserves():");
+                console.logInt(CometInterface(comet).getReserves());
             }
         }
+    }
+
+    function testLargeWbtcSwap() public {
+        console.log("comet.getReserves():");
+        console.logInt(CometInterface(comet).getReserves());
+
+        address wbtcOwner = WBTC(wbtc).owner();
+        vm.prank(wbtcOwner);
+        WBTC(wbtc).mint(comet, 120e8); // 120 WBTC
+        swap(wbtc);
+    }
+
+    function testLargeCompSwap() public {
+        console.log("comet.getReserves():");
+        console.logInt(CometInterface(comet).getReserves());
+
+        vm.prank(compound_reservoir);
+        ERC20(comp).transfer(comet, 1000e18); // 1,000 COMP
+        swap(comp);
+    }
+
+    function testLargeWethSwap() public {
+        console.log("comet.getReserves():");
+        console.logInt(CometInterface(comet).getReserves());
+
+        vm.prank(weth_whale);
+        ERC20(weth9).transfer(comet, 5000e18); // 5,000 WETH
+        swap(weth9);
+    }
+
+    function testLargeUniSwap() public {
+        console.log("comet.getReserves():");
+        console.logInt(CometInterface(comet).getReserves());
+
+        vm.prank(uni_whale);
+        ERC20(uni).transfer(comet, 150000e18); // 150,000 UNI
+        swap(uni);
+    }
+
+    function testLargeLinkSwap() public {
+        console.log("comet.getReserves():");
+        console.logInt(CometInterface(comet).getReserves());
+
+        vm.prank(link_whale);
+        ERC20(link).transfer(comet, 250000e18); // 250,000 LINK
+        swap(link);
+    }
+
+    function swap(address asset) public {
+        address[] memory liquidatableAccounts;
+
+        (
+            address[] memory assets,
+            uint256[] memory collateralReserves,
+            uint256[] memory collateralReservesInBase
+        ) = liquidator.availableCollateral(liquidatableAccounts);
+
+        uint collateralReserveInBase;
+
+        for (uint8 i = 0; i < assets.length; i++) {
+            if (assets[i] == asset) {
+                collateralReserveInBase = collateralReservesInBase[i];
+            }
+        }
+
+        uint actualSwapAmount = CometInterface(comet).quoteCollateral(
+            asset,
+            collateralReserveInBase
+        );
+
+        console.log("actualSwapAmount: %s", actualSwapAmount);
+
+        string[] memory inputs = new string[](8);
+        inputs[0] = "yarn";
+        inputs[1] = "-s";
+        inputs[2] = "ts-node";
+        inputs[3] = "forge/scripts/get-1inch-swap.ts";
+        inputs[4] = vm.toString(address(liquidator));
+        inputs[5] = vm.toString(asset);
+        inputs[6] = vm.toString(usdc); // XXX comet base token
+        inputs[7] = vm.toString(actualSwapAmount);
+
+        bytes memory res = vm.ffi(inputs);
+        string memory resJson = string(res);
+
+        address[] memory swapAssets = new address[](1);
+        swapAssets[0] = asset;
+
+        address[] memory swapTargets = new address[](1);
+        swapTargets[0] = abi.decode(vm.parseJson(resJson, ".target"), (address));
+
+        bytes[] memory swapTransactions = new bytes[](1);
+        swapTransactions[0] = abi.decode(vm.parseJson(resJson, ".tx"), (bytes));
+
+        liquidator.absorbAndArbitrage(
+            liquidatableAccounts, // empty list
+            swapAssets, // assets,
+            swapTargets, // swapTargets,
+            swapTransactions // swapTransactions
+        );
+
+        // make sure that you're making > 1% of the value of the swap
+        console.log("comet.getReserves():");
+        console.logInt(CometInterface(comet).getReserves());
     }
 }
