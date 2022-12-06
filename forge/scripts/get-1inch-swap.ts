@@ -29,11 +29,6 @@ async function main() {
   const url = apiRequestUrl('/swap', swapParams);
   const { data } = await axios.get(url);
 
-  // console.log({
-  //   target: data.tx.to,
-  //   tx: data.tx.data
-  // });
-
   process.stdout.write(JSON.stringify({
     target: data.tx.to,
     tx: data.tx.data
