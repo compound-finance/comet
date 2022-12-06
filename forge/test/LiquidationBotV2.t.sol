@@ -114,8 +114,6 @@ contract LiquidationBotV2Test is Test {
             collateralReserveInBase
         );
 
-        console.log("actualSwapAmount: %s", actualSwapAmount);
-
         (address swapTarget, bytes memory swapTransaction) = get1inchSwap(
             asset,
             CometInterface(comet).baseToken(),
@@ -219,11 +217,6 @@ contract LiquidationBotV2Test is Test {
 
             swapTargets[i] = swapTarget;
             swapTransactions[i] = swapTransaction;
-
-            // console.log("assets[i]: %s", assets[i]);
-            // console.log("collateralReservesInBase[i]: %s", collateralReservesInBase[i]);
-            // console.log("actualSwapAmount: %s", actualSwapAmount);
-            // console.log("swapTarget: %s", swapTarget);
         }
 
         liquidator.absorbAndArbitrage(

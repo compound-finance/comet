@@ -12,10 +12,6 @@ import "./vendor/@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "../CometInterface.sol";
 import "../ERC20.sol";
 
-/* DELETE */
-// import "hardhat/console.sol";
-import "forge-std/console.sol";
-
 /**
  * @title XXX
  * @notice XXX
@@ -54,9 +50,6 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
     function balanceOfAsset(address asset) internal returns (uint256, uint256) {
         uint256 collateralBalance = comet.getCollateralReserves(asset);
 
-        console.log("balanceOfAsset asset: %s", asset);
-        console.log("balanceOfAsset collateralBalance: %s", collateralBalance);
-
         uint256 baseScale = comet.baseScale();
 
         uint256 quotePrice = comet.quoteCollateral(asset, QUOTE_PRICE_SCALE * baseScale);
@@ -88,13 +81,11 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
             assets[i] = asset;
             uint256 collateralBalance = comet.getCollateralReserves(asset);
 
-            console.log("availableCollateral asset: %s", asset);
-            console.log("availableCollateral collateralBalance: %s", collateralBalance);
-            // reduce by 5%?
             collateralReserves[i] = collateralBalance;
 
             uint256 baseScale = comet.baseScale();
 
+            // XXX check that reserves are still under target reserves?
             uint256 quotePrice = comet.quoteCollateral(asset, QUOTE_PRICE_SCALE * baseScale);
             collateralReservesInBase[i] = baseScale * QUOTE_PRICE_SCALE * collateralBalance / quotePrice;
         }
@@ -177,34 +168,26 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
         uint256 fee1,
         bytes calldata data
     ) external override {
-        // console.log("uniswapV3FlashCallback");
-
         FlashCallbackData memory flashCallbackData = abi.decode(data, (FlashCallbackData));
         CallbackValidation.verifyCallback(factory, flashCallbackData.poolKey);
 
         TransferHelper.safeApprove(comet.baseToken(), address(comet), flashCallbackData.flashLoanAmount);
 
         uint256 totalAmountOut = 0;
+
         for (uint i = 0; i < flashCallbackData.assets.length; i++) {
             address asset = flashCallbackData.assets[i];
             uint256 assetBaseAmount = flashCallbackData.assetBaseAmounts[i];
 
-            console.log("asset: %s", asset);
-            console.log("assetBaseAmount: %s", assetBaseAmount);
-
             comet.buyCollateral(asset, 0, assetBaseAmount, address(this));
 
-            uint256 swapAmount = ERC20(asset).balanceOf(address(this));
-
-            console.log("address(this) balance of asset: %s", swapAmount);
-
-            // console.log(flashCallbackData.swapTargets[i]);
-            // console.logBytes(flashCallbackData.swapTransactions[i]);
+            // uint256 swapAmount = ERC20(asset).balanceOf(address(this));
 
             TransferHelper.safeApprove(asset, address(flashCallbackData.swapTargets[i]), type(uint256).max);
 
             (bool success, bytes memory returnData) = flashCallbackData.swapTargets[i].call(flashCallbackData.swapTransactions[i]);
 
+            // XXX review
             assembly {
                 if eq(success, 0) {
                     revert(add(returnData, 0x20), returndatasize())
@@ -213,27 +196,13 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
 
             (uint256 amountOut) = abi.decode(returnData, (uint256));
 
-            console.log("amountOut (in base token): %s", amountOut);
-
-            // require(success, "SWAP_CALL_FAILED");
-            // console.log("returnAmount: %s", returnAmount);
-            // uint256 amountOut = swapCollateral(asset, baseAmount);
             totalAmountOut += amountOut;
         }
-
-        console.log("totalAmountOut: %s", totalAmountOut);
 
         address baseToken = comet.baseToken();
 
         uint256 totalAmountOwed = flashCallbackData.flashLoanAmount + fee0 + fee1;
         uint256 balance = ERC20(baseToken).balanceOf(address(this));
-
-        console.log("balance of base token (after swaps): %s", balance);
-
-        console.log("flashCallbackData.flashLoanAmount: %s", flashCallbackData.flashLoanAmount);
-        console.log("fee0: %s", fee0);
-        console.log("fee1: %s", fee1);
-        console.log("totalAmountOwed: %s", totalAmountOwed);
 
         if (totalAmountOwed > balance) {
             revert InsufficientBalance(balance, totalAmountOwed);
@@ -249,16 +218,11 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
 
         uint256 remainingBalance = ERC20(baseToken).balanceOf(address(this));
 
-        console.log("remainingBalance: %s", remainingBalance);
-
         // If profitable, pay profits to the caller
         if (remainingBalance > 0) {
-            // uint256 profit = amountOut - amountOwed;
             TransferHelper.safeApprove(baseToken, address(this), remainingBalance);
             pay(baseToken, address(this), recipient, remainingBalance);
             emit Pay(baseToken, address(this), recipient, remainingBalance);
         }
-
-
     }
 }
