@@ -140,9 +140,6 @@ contract LiquidationBotV2Test is Test {
     }
 
     function testLargeWbtcSwap() public {
-        console.log("comet.getReserves():");
-        console.logInt(CometInterface(comet).getReserves());
-
         address wbtcOwner = WBTC(wbtc).owner();
         vm.prank(wbtcOwner);
         WBTC(wbtc).mint(comet, 120e8); // 120 WBTC
@@ -150,39 +147,51 @@ contract LiquidationBotV2Test is Test {
     }
 
     function testLargeCompSwap() public {
-        console.log("comet.getReserves():");
-        console.logInt(CometInterface(comet).getReserves());
-
         vm.prank(compound_reservoir);
         ERC20(comp).transfer(comet, 1000e18); // 1,000 COMP
         swap(comp);
     }
 
     function testLargeWethSwap() public {
-        console.log("comet.getReserves():");
-        console.logInt(CometInterface(comet).getReserves());
-
         vm.prank(weth_whale);
         ERC20(weth9).transfer(comet, 5000e18); // 5,000 WETH
         swap(weth9);
     }
 
     function testLargeUniSwap() public {
-        console.log("comet.getReserves():");
-        console.logInt(CometInterface(comet).getReserves());
-
         vm.prank(uni_whale);
         ERC20(uni).transfer(comet, 150000e18); // 150,000 UNI
         swap(uni);
     }
 
     function testLargeLinkSwap() public {
-        console.log("comet.getReserves():");
-        console.logInt(CometInterface(comet).getReserves());
-
         vm.prank(link_whale);
         ERC20(link).transfer(comet, 250000e18); // 250,000 LINK
         swap(link);
+    }
+
+    function get1inchSwap(
+        address fromTokenAddress,
+        address toTokenAddress,
+        uint swapAmount
+    ) internal returns (address, bytes memory) {
+        string[] memory inputs = new string[](8);
+        inputs[0] = "yarn";
+        inputs[1] = "-s";
+        inputs[2] = "ts-node";
+        inputs[3] = "forge/scripts/get-1inch-swap.ts";
+        inputs[4] = vm.toString(address(liquidator));
+        inputs[5] = vm.toString(fromTokenAddress);
+        inputs[6] = vm.toString(toTokenAddress);
+        inputs[7] = vm.toString(swapAmount);
+
+        bytes memory response = vm.ffi(inputs);
+        string memory responseJson = string(response);
+
+        return (
+            abi.decode(vm.parseJson(responseJson, ".target"), (address)),
+            abi.decode(vm.parseJson(responseJson, ".tx"), (bytes))
+        );
     }
 
     function swap(address asset) public {
@@ -209,37 +218,28 @@ contract LiquidationBotV2Test is Test {
 
         console.log("actualSwapAmount: %s", actualSwapAmount);
 
-        string[] memory inputs = new string[](8);
-        inputs[0] = "yarn";
-        inputs[1] = "-s";
-        inputs[2] = "ts-node";
-        inputs[3] = "forge/scripts/get-1inch-swap.ts";
-        inputs[4] = vm.toString(address(liquidator));
-        inputs[5] = vm.toString(asset);
-        inputs[6] = vm.toString(usdc); // XXX comet base token
-        inputs[7] = vm.toString(actualSwapAmount);
-
-        bytes memory res = vm.ffi(inputs);
-        string memory resJson = string(res);
+        (address swapTarget, bytes memory swapTransaction) = get1inchSwap(
+            asset,
+            CometInterface(comet).baseToken(),
+            actualSwapAmount
+        );
 
         address[] memory swapAssets = new address[](1);
         swapAssets[0] = asset;
 
         address[] memory swapTargets = new address[](1);
-        swapTargets[0] = abi.decode(vm.parseJson(resJson, ".target"), (address));
+        swapTargets[0] = swapTarget;
 
         bytes[] memory swapTransactions = new bytes[](1);
-        swapTransactions[0] = abi.decode(vm.parseJson(resJson, ".tx"), (bytes));
+        swapTransactions[0] = swapTransaction;
 
         liquidator.absorbAndArbitrage(
-            liquidatableAccounts, // empty list
-            swapAssets, // assets,
-            swapTargets, // swapTargets,
-            swapTransactions // swapTransactions
+            liquidatableAccounts,
+            swapAssets,
+            swapTargets,
+            swapTransactions
         );
 
         // make sure that you're making > 1% of the value of the swap
-        console.log("comet.getReserves():");
-        console.logInt(CometInterface(comet).getReserves());
     }
 }
