@@ -18,6 +18,7 @@ contract LiquidationBotV2Test is Test {
     address public constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
     address public constant uniswap_v3_factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
     address public constant aggregation_router_v5 = 0x1111111254EEB25477B68fb85Ed929f73A960582;
+    address public constant compound_reservoir = 0x2775b1c75658Be0F640272CCb8c72ac986009e38;
 
     // assets
     address public constant weth9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -54,10 +55,19 @@ contract LiquidationBotV2Test is Test {
     }
 
     function testLargeSwaps() public {
+        // send 120 WBTC
+        // WBTC ' == 120',
         address wbtcOwner = WBTC(wbtc).owner();
-
         vm.prank(wbtcOwner);
         WBTC(wbtc).mint(comet, 120e8);
+
+        // COMP ' == 500',
+        vm.prank(compound_reservoir);
+        ERC20(comp).transfer(comet, 1000e18);
+
+        // WETH ' == 5000',
+        // UNI ' == 150000',
+        // LINK ' == 250000',
 
         address[] memory liquidatableAccounts;
 
@@ -73,7 +83,13 @@ contract LiquidationBotV2Test is Test {
             console.log(returnedCollateralReserves[i]);
             console.log(returnedCollateralReservesInBase[i]);
 
+            // NOTE: may struggle to swap dust
             if (returnedCollateralReservesInBase[i] > 10e6) {
+                uint actualSwapAmount = CometInterface(comet).quoteCollateral(
+                    returnedAssets[i],
+                    returnedCollateralReservesInBase[i]
+                );
+
                 string[] memory inputs = new string[](8);
                 inputs[0] = "yarn";
                 inputs[1] = "-s";
@@ -81,8 +97,8 @@ contract LiquidationBotV2Test is Test {
                 inputs[3] = "forge/scripts/get-1inch-swap.ts";
                 inputs[4] = vm.toString(address(liquidator));
                 inputs[5] = vm.toString(returnedAssets[i]);
-                inputs[6] = vm.toString(usdc); // comet base token
-                inputs[7] = vm.toString(returnedCollateralReserves[i] - 1); //
+                inputs[6] = vm.toString(usdc); // XXX comet base token
+                inputs[7] = vm.toString(actualSwapAmount);
 
                 bytes memory res = vm.ffi(inputs);
                 string memory resJson = string(res);
@@ -102,26 +118,7 @@ contract LiquidationBotV2Test is Test {
                     swapTargets, // swapTargets,
                     swapTransactions // swapTransactions
                 );
-
             }
-
         }
-
     }
-
-    /*
-    function test3
-
-      send an amount of each token to the protocol
-
-      get available collateral for each amount
-
-      [wbtc, weth, comp, link] for each
-        pass fromTokenAddress, amount to get-1inch-swap.ts
-        pass swapTarget, swapTx to absorbAndArbitrage()
-
-        assert that the absorb/arbitrage went through
-
-    */
-
 }
