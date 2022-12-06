@@ -53,8 +53,7 @@ contract LiquidationBotV2Test is Test {
         vm.label(weth9, "WETH9");
     }
 
-    // rename
-    function testTwo() public {
+    function testLargeSwaps() public {
         address wbtcOwner = WBTC(wbtc).owner();
 
         vm.prank(wbtcOwner);
