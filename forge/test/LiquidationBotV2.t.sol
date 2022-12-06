@@ -15,46 +15,58 @@ contract LiquidationBotV2Test is Test {
     LiquidatorV2 public liquidator;
 
     // contracts
+    address public constant aggregation_router_v5 = 0x1111111254EEB25477B68fb85Ed929f73A960582;
     address public constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
     address public constant uniswap_v3_factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
-    address public constant aggregation_router_v5 = 0x1111111254EEB25477B68fb85Ed929f73A960582;
-    address public constant compound_reservoir = 0x2775b1c75658Be0F640272CCb8c72ac986009e38;
 
     // assets
-    address public constant weth9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address public constant usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address public constant dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address public constant wbtc = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public constant comp = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
-    address public constant uni = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
+    address public constant dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant link = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
+    address public constant uni = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
+    address public constant usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public constant wbtc = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
+    address public constant weth9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
+    // whales
+    address public constant comp_whale = 0x2775b1c75658Be0F640272CCb8c72ac986009e38;
+    address public constant link_whale = 0xfB682b0dE4e0093835EA21cfABb5449cA9ac9e5e;
+    address public constant uni_whale = 0x1a9C8182C09F50C8318d769245beA52c32BE35BC;
+    address public constant weth_whale = 0x2F0b23f53734252Bda2277357e97e1517d6B042A;
 
     // wallets
-    address public constant recipient = 0x5a13D329A193ca3B1fE2d7B459097EdDba14C28F;
-    address public constant weth_whale = 0x2F0b23f53734252Bda2277357e97e1517d6B042A;
-    address public constant uni_whale = 0x1a9C8182C09F50C8318d769245beA52c32BE35BC;
-    address public constant link_whale = 0xfB682b0dE4e0093835EA21cfABb5449cA9ac9e5e;
+    address public constant liquidator_eoa = 0x5a13D329A193ca3B1fE2d7B459097EdDba14C28F;
 
     function setUp() public {
         liquidator = new LiquidatorV2(
             CometInterface(comet),
             address(uniswap_v3_factory),
             address(weth9),
-            address(recipient)
+            address(liquidator_eoa)
         );
 
         // contracts
-        vm.label(comet, "Comet");
         vm.label(aggregation_router_v5, "AggregationRouterV5");
+        vm.label(comet, "Comet");
+        vm.label(uniswap_v3_factory, "UniswapV3 Factory");
 
         // assets
-        vm.label(dai, "DAI");
         vm.label(comp, "COMP");
+        vm.label(dai, "DAI");
         vm.label(link, "LINK");
         vm.label(uni, "UNI");
         vm.label(usdc, "USDC");
         vm.label(wbtc, "WBTC");
         vm.label(weth9, "WETH9");
+
+        // whales
+        vm.label(comp_whale, "COMP whale");
+        vm.label(link_whale, "LINK whale");
+        vm.label(uni_whale, "UNI whale");
+        vm.label(weth_whale, "WETH whale");
+
+        // wallets
+        vm.label(liquidator_eoa, "Liquidator wallet");
     }
 
     function SKIPlargeSwaps() public {
@@ -65,7 +77,7 @@ contract LiquidationBotV2Test is Test {
         WBTC(wbtc).mint(comet, 120e8);
 
         // COMP ' == 500',
-        vm.prank(compound_reservoir);
+        vm.prank(comp_whale);
         ERC20(comp).transfer(comet, 1000e18);
 
         // WETH ' == 5000',
@@ -147,7 +159,7 @@ contract LiquidationBotV2Test is Test {
     }
 
     function testLargeCompSwap() public {
-        vm.prank(compound_reservoir);
+        vm.prank(comp_whale);
         ERC20(comp).transfer(comet, 1000e18); // 1,000 COMP
         swap(comp);
     }
@@ -185,8 +197,7 @@ contract LiquidationBotV2Test is Test {
         inputs[6] = vm.toString(toTokenAddress);
         inputs[7] = vm.toString(swapAmount);
 
-        bytes memory response = vm.ffi(inputs);
-        string memory responseJson = string(response);
+        string memory responseJson = string(vm.ffi(inputs));
 
         return (
             abi.decode(vm.parseJson(responseJson, ".target"), (address)),
