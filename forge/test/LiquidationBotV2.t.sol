@@ -213,6 +213,8 @@ contract LiquidationBotV2Test is Test {
     }
 
     function testSwapsMultipleAssets() public {
+        (uint initialRecipientBalance, int initialReserves) = initialValues();
+
         // test amounts must be lower in order to avoid putting the protocol
         // above targetReserves
 
@@ -268,6 +270,15 @@ contract LiquidationBotV2Test is Test {
             swapTransactions
         );
 
-        // XXX expectations
+        // XXX expect that there is only dust (< 1 unit) left of the asset
+        // assertLt(CometInterface(comet).getCollateralReserves(asset), 10 ** ERC20(asset).decimals());
+
+        // expect the balance of the recipient to have increased
+        assertGt(ERC20(usdc).balanceOf(liquidator_eoa), initialRecipientBalance);
+
+        // expect the protocol reserves to have increased
+        assertGt(CometInterface(comet).getReserves(), initialReserves);
     }
+
+    // XXX test actually liquidating an underwater account
 }

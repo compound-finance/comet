@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const chainId = 1;
-const apiBaseUrl = 'https://api.1inch.io/v5.0/' + chainId;
+const apiBaseUrl = `https://api.1inch.io/v5.0/${chainId}`;
 
 function apiRequestUrl(methodName, queryParams) {
   return apiBaseUrl + methodName + '?' + (new URLSearchParams(queryParams)).toString();
@@ -29,6 +29,8 @@ async function main() {
   const url = apiRequestUrl('/swap', swapParams);
   const { data } = await axios.get(url);
 
+  // use process.stdout.write instead of console.log to avoid the trailing
+  // newline character, which messes with the forge's ffi command
   process.stdout.write(JSON.stringify({
     target: data.tx.to,
     tx: data.tx.data
