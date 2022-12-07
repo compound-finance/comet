@@ -135,39 +135,81 @@ contract LiquidationBotV2Test is Test {
             swapTargets,
             swapTransactions
         );
+    }
 
-        // make sure that you're making > 1% of the value of the swap
+    function initialValues() internal returns (uint, int) {
+        return (
+            ERC20(usdc).balanceOf(liquidator_eoa),
+            CometInterface(comet).getReserves()
+        );
+    }
+
+    function runSwapAssertions(
+        address asset,
+        uint initialRecipientBalance,
+        int initialReserves
+    ) internal {
+        // expect that there is only dust (< 1 unit) left of the asset
+        assertLt(CometInterface(comet).getCollateralReserves(asset), 10 ** ERC20(asset).decimals());
+
+        // expect the balance of the recipient to have increased
+        assertGt(ERC20(usdc).balanceOf(liquidator_eoa), initialRecipientBalance);
+
+        // expect the protocol reserves to have increased
+        assertGt(CometInterface(comet).getReserves(), initialReserves);
+
+        // XXX make sure that you're making > 1% of the value of the swap
     }
 
     function testLargeWbtcSwap() public {
+        (uint initialRecipientBalance, int initialReserves) = initialValues();
+
         address wbtcOwner = WBTC(wbtc).owner();
         vm.prank(wbtcOwner);
         WBTC(wbtc).mint(comet, 120e8); // 120 WBTC
         swap(wbtc);
+
+        runSwapAssertions(wbtc, initialRecipientBalance, initialReserves);
     }
 
     function testLargeCompSwap() public {
+        (uint initialRecipientBalance, int initialReserves) = initialValues();
+
         vm.prank(comp_whale);
         ERC20(comp).transfer(comet, 1000e18); // 1,000 COMP
         swap(comp);
+
+        runSwapAssertions(comp, initialRecipientBalance, initialReserves);
     }
 
     function testLargeWethSwap() public {
+        (uint initialRecipientBalance, int initialReserves) = initialValues();
+
         vm.prank(weth_whale);
         ERC20(weth9).transfer(comet, 5000e18); // 5,000 WETH
         swap(weth9);
+
+        runSwapAssertions(weth9, initialRecipientBalance, initialReserves);
     }
 
     function testLargeUniSwap() public {
+        (uint initialRecipientBalance, int initialReserves) = initialValues();
+
         vm.prank(uni_whale);
         ERC20(uni).transfer(comet, 150000e18); // 150,000 UNI
         swap(uni);
+
+        runSwapAssertions(uni, initialRecipientBalance, initialReserves);
     }
 
     function testLargeLinkSwap() public {
+        (uint initialRecipientBalance, int initialReserves) = initialValues();
+
         vm.prank(link_whale);
         ERC20(link).transfer(comet, 250000e18); // 250,000 LINK
         swap(link);
+
+        runSwapAssertions(link, initialRecipientBalance, initialReserves);
     }
 
     function testSwapsMultipleAssets() public {
@@ -226,7 +268,6 @@ contract LiquidationBotV2Test is Test {
             swapTransactions
         );
 
-        // expectations
-
+        // XXX expectations
     }
 }
