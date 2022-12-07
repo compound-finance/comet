@@ -23,15 +23,8 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
 
     /** Events **/
     event Absorb(address indexed initiator, address[] accounts);
-    event AbsorbWithoutBuyingCollateral();
     event Pay(address indexed token, address indexed payer, address indexed recipient, uint256 value);
-    event BuyAndSwap(
-        address indexed tokenIn,
-        address indexed tokenOut,
-        uint256 baseAmountPaid,
-        uint256 assetBalance,
-        uint256 amountOut
-    );
+    event BuyAndSwap(address indexed tokenIn, address indexed tokenOut, uint256 baseAmountPaid, uint256 assetBalance, uint256 amountOut);
 
     /// @notice Compound Comet protocol
     CometInterface public immutable comet;
@@ -74,6 +67,7 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
         address[] calldata liquidatableAccounts
     ) external returns (address[] memory, uint256[] memory, uint256[] memory) {
         comet.absorb(address(this), liquidatableAccounts);
+        // emit Absorb?
 
         uint8 numAssets = comet.numAssets();
 
