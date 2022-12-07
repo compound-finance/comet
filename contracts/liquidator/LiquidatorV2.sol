@@ -13,8 +13,7 @@ import "../CometInterface.sol";
 import "../ERC20.sol";
 
 /**
- * @title XXX
- * @notice XXX
+ * @title Liquidator contract compatible with 1inch DEX aggregator
  * @author Compound
  */
 contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, PeripheryPayments {
@@ -26,7 +25,13 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
     event Absorb(address indexed initiator, address[] accounts);
     event AbsorbWithoutBuyingCollateral();
     event Pay(address indexed token, address indexed payer, address indexed recipient, uint256 value);
-    // event Swap(address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut, Exchange exchange, uint24 fee);
+    event BuyAndSwap(
+        address indexed tokenIn,
+        address indexed tokenOut,
+        uint256 baseAmountPaid,
+        uint256 assetBalance,
+        uint256 amountOut
+    );
 
     /// @notice Compound Comet protocol
     CometInterface public immutable comet;
@@ -173,6 +178,8 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
 
         TransferHelper.safeApprove(comet.baseToken(), address(comet), flashCallbackData.flashLoanAmount);
 
+        address baseToken = comet.baseToken();
+
         uint256 totalAmountOut = 0;
 
         for (uint i = 0; i < flashCallbackData.assets.length; i++) {
@@ -181,7 +188,7 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
 
             comet.buyCollateral(asset, 0, assetBaseAmount, address(this));
 
-            // uint256 swapAmount = ERC20(asset).balanceOf(address(this));
+            uint256 assetBalance = ERC20(asset).balanceOf(address(this));
 
             TransferHelper.safeApprove(asset, address(flashCallbackData.swapTargets[i]), type(uint256).max);
 
@@ -196,10 +203,10 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
 
             (uint256 amountOut) = abi.decode(returnData, (uint256));
 
+            emit BuyAndSwap(asset, baseToken, assetBaseAmount, assetBalance, amountOut);
+
             totalAmountOut += amountOut;
         }
-
-        address baseToken = comet.baseToken();
 
         uint256 totalAmountOwed = flashCallbackData.flashLoanAmount + fee0 + fee1;
         uint256 balance = ERC20(baseToken).balanceOf(address(this));
