@@ -96,22 +96,10 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
         );
     }
 
-    // XXX move
-    struct FlashCallbackData {
-        uint256 flashLoanAmount;
-        PoolAddress.PoolKey poolKey;
-        address[] assets;
-        uint256[] assetBaseAmounts;
-
-        address[] swapTargets;
-        bytes[] swapTransactions;
-    }
-
     // XXX name?
     function absorbAndArbitrage(
         address[] calldata liquidatableAccounts,
         address[] calldata assets,
-        // uint256[] calldata assetBaseAmounts,
         address[] calldata swapTargets,
         bytes[] calldata swapTransactions
     ) external {
@@ -160,6 +148,15 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
                 })
             )
         );
+    }
+
+    struct FlashCallbackData {
+        uint256 flashLoanAmount;
+        PoolAddress.PoolKey poolKey;
+        address[] assets;
+        uint256[] assetBaseAmounts;
+        address[] swapTargets;
+        bytes[] swapTransactions;
     }
 
     function uniswapV3FlashCallback(
