@@ -107,28 +107,31 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
      * 1inch API)
      * @param swapTransactions Call data of the swap transactions to use
      * (generated via 1inch API)
+     * @param flashLoanPairToken Token to pair with base token for flash swap pool (e.g. DAI/USDC/100)
+     * @param flashLoanPoolFee Fee for flash swap pool (e.g. DAI/USDC/100)
      */
     function absorbAndArbitrage(
         address[] calldata liquidatableAccounts,
         address[] calldata assets,
         address[] calldata swapTargets,
-        bytes[] calldata swapTransactions
+        bytes[] calldata swapTransactions,
+        address flashLoanPairToken,
+        uint24 flashLoanPoolFee
     ) external {
         comet.absorb(address(this), liquidatableAccounts);
         emit Absorb(msg.sender, liquidatableAccounts);
 
-        address poolToken0 = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // XXX DAI
+        address poolToken0 = flashLoanPairToken;
         address poolToken1 = comet.baseToken();
         bool reversedPair = poolToken0 > poolToken1;
         // Use Uniswap approach to determining order of tokens https://github.com/Uniswap/v3-periphery/blob/main/contracts/libraries/PoolAddress.sol#L20-L27
         if (reversedPair) (poolToken0, poolToken1) = (poolToken1, poolToken0);
 
         // Find the desired Uniswap pool to borrow base token from, for ex DAI-USDC
-        // XXX can probably store this poolKey
         PoolAddress.PoolKey memory poolKey = PoolAddress.PoolKey({
             token0: poolToken0,
             token1: poolToken1,
-            fee: 100 // XXX
+            fee: flashLoanPoolFee
         });
 
         IUniswapV3Pool pool = IUniswapV3Pool(PoolAddress.computeAddress(factory, poolKey));

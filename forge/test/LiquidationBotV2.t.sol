@@ -134,7 +134,9 @@ contract LiquidationBotV2Test is Test {
             liquidatableAccounts,
             swapAssets,
             swapTargets,
-            swapTransactions
+            swapTransactions,
+            dai,
+            100
         );
     }
 
@@ -268,7 +270,9 @@ contract LiquidationBotV2Test is Test {
             liquidatableAccounts,
             assets,
             swapTargets,
-            swapTransactions
+            swapTransactions,
+            dai,
+            100
         );
 
         // XXX expect that there is only dust (< 1 unit) left of the asset
