@@ -21,7 +21,7 @@ jobs:
         run: forge install
 
       - name: Run tests
-        run: forge test -vvv --via-ir
+        run: forge test -vvv --via-ir --ffi --fork-url https://mainnet.infura.io/v3/$INFURA_KEY
         env:
           ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
           SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
