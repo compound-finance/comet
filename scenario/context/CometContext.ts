@@ -160,13 +160,13 @@ export class CometContext {
     }
   }
 
-  async allocateActor(name: string, info: object = {}): Promise<CometActor> {
+  async allocateActor(name: string): Promise<CometActor> {
     const { world } = this;
     const { signer } = this.actors;
 
     const actorAddress = getAddressFromNumber(Object.keys(this.actors).length + 1);
     const actorSigner = await world.impersonateAddress(actorAddress);
-    const actor: CometActor = new CometActor(name, actorSigner, actorAddress, this, info);
+    const actor: CometActor = new CometActor(name, actorSigner, actorAddress, this);
     this.actors[name] = actor;
 
     // When we allocate a new actor, how much eth should we warm the account with?

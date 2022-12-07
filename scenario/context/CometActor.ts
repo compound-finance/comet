@@ -24,24 +24,21 @@ export default class CometActor {
   signer: SignerWithAddress;
   address: string;
   context: CometContext;
-  info: object;
 
   constructor(
     name: string,
     signer: SignerWithAddress,
     address: string,
     context: CometContext,
-    info: object = {}
   ) {
     this.name = name;
     this.signer = signer;
     this.address = address;
     this.context = context;
-    this.info = info;
   }
 
   static fork(actor: CometActor, context: CometContext): CometActor {
-    return new CometActor(actor.name, actor.signer, actor.address, context, actor.info);
+    return new CometActor(actor.name, actor.signer, actor.address, context);
   }
 
   async getEthBalance() {
@@ -178,10 +175,6 @@ export default class CometActor {
   async invoke({ actions, calldata }, overrides?: PayableOverrides): Promise<ContractReceipt> {
     const bulker = await this.context.getBulker();
     return await (await bulker.connect(this.signer).invoke(actions, calldata, { ...overrides })).wait();
-  }
-
-  async show() {
-    return console.log(`Actor#${this.name}{${JSON.stringify(this.info)}}`);
   }
 
   /* ===== Admin-only functions ===== */

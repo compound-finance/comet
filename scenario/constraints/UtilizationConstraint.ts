@@ -64,13 +64,9 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
         let totalSupplyBase = (await comet.totalSupply()).toBigInt();
         let totalBorrowBase = (await comet.totalBorrow()).toBigInt();
 
+        // always have at least enough supply to cover current borrows
         let toBorrowBase = 0n;
-        let toSupplyBase = 0n;
-
-        // TODO: Handle units for precision, etc
-        if (totalSupplyBase == 0n) {
-          toSupplyBase = 10n * (await comet.baseScale()).toBigInt(); // Have at least 10 base units
-        }
+        let toSupplyBase = totalBorrowBase <= totalSupplyBase ? 10n : totalBorrowBase - totalSupplyBase;
 
         let expectedSupplyBase = totalSupplyBase + toSupplyBase;
         let expectedBorrowBase = utilizationFactor * expectedSupplyBase / factorScale;
@@ -107,6 +103,8 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
         }
 
         if (toBorrowBase > 0n) {
+          const borrowActor = await context.allocateActor('UtilizationConstraint{Borrower}');
+
           // To borrow as much, we need to supply some collateral.
           const numAssets = await comet.numAssets();
           for (let i = 0; i < numAssets; i++) {
@@ -127,31 +125,20 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
             collateralNeeded = (collateralNeeded * factorScale) / borrowCollateralFactor.toBigInt(); // adjust for borrowCollateralFactor
             collateralNeeded = (collateralNeeded * 11n) / 10n; // add fudge factor
 
-            const info = {
-              utilization,
-              totalSupplyBase: totalSupplyBase.toString(),
-              totalBorrowBase: totalBorrowBase.toString(),
-              toBorrowBase: toBorrowBase.toString(),
-              collateralAsset,
-              borrowCollateralFactor: borrowCollateralFactor.toString(),
-              collateralNeeded: collateralNeeded.toString(),
-            };
-
-            const borrowActor = await context.allocateActor('UtilizationConstraint{Borrower}', info);
-
             try {
               await context.sourceTokens(collateralNeeded, collateralToken, borrowActor);
               await collateralToken.approve(borrowActor, comet);
               await borrowActor.safeSupplyAsset({ asset: collateralToken.address, amount: collateralNeeded });
-
-              // XXX will also need to make sure there are enough base tokens in the protocol to withdraw
-              await comet.connect(borrowActor.signer).withdraw(baseToken.address, toBorrowBase);
               console.log(`UtilizationConstraint: successfully sourced from $asset${i}`);
-              break;
             } catch (error) {
               console.log(`UtilizationConstraint: failed to source from $asset${i} (${error.message})`);
             }
+
           }
+
+          // XXX how to make sure there are enough base tokens in the protocol to withdraw?
+          console.log(`UtilizationConstraint: attempting to borrow ${toBorrowBase} base`);
+          await comet.connect(borrowActor.signer).withdraw(baseToken.address, toBorrowBase);
         }
 
         return context;
