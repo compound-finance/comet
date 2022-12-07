@@ -196,7 +196,7 @@ contract LiquidationBotV2Test is Test {
         (uint initialRecipientBalance, int initialReserves) = initialValues();
 
         vm.prank(uni_whale);
-        ERC20(uni).transfer(comet, 150000e18); // 150,000 UNI
+        ERC20(uni).transfer(comet, 500000e18); // 500,000 UNI
         swap(uni);
 
         runSwapAssertions(uni, initialRecipientBalance, initialReserves);
