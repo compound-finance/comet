@@ -97,7 +97,16 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
         );
     }
 
-    // XXX name?
+    /**
+     * @notice Absorb a set of liquidatable accounts and then buy and sell the
+     * available collateral
+     * @param liquidatableAccounts A list of accounts to absorb
+     * @param assets The assets to buy and sell
+     * @param swapTargets Addresses of the swap router to use (generated via
+     * 1inch API)
+     * @param swapTransactions Call data of the swap transactions to use
+     * (generated via 1inch API)
+     */
     function absorbAndArbitrage(
         address[] calldata liquidatableAccounts,
         address[] calldata assets,
