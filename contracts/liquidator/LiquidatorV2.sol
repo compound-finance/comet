@@ -125,10 +125,7 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
         uint256 flashLoanAmount = 0;
         uint256[] memory assetBaseAmounts = new uint256[](assets.length);
         for (uint8 i = 0; i < assets.length; i++) {
-            (
-                uint256 _collateralBalance,
-                uint256 collateralBalanceInBase
-            ) = balanceOfAsset(assets[i]);
+            ( , uint256 collateralBalanceInBase) = balanceOfAsset(assets[i]);
             flashLoanAmount += collateralBalanceInBase;
             assetBaseAmounts[i] = collateralBalanceInBase;
         }
