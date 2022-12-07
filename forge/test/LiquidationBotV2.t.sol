@@ -177,7 +177,7 @@ contract LiquidationBotV2Test is Test {
         (uint initialRecipientBalance, int initialReserves) = initialValues();
 
         vm.prank(comp_whale);
-        ERC20(comp).transfer(comet, 1000e18); // 1,000 COMP
+        ERC20(comp).transfer(comet, 2000e18); // 2,000 COMP
         swap(comp);
 
         runSwapAssertions(comp, initialRecipientBalance, initialReserves);
