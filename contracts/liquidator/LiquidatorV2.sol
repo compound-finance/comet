@@ -60,14 +60,15 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
     }
 
     /**
-     * @notice XXX
-     * @dev for use with static call
+     * @notice Return the amount of each asset available to purchase (and how
+     * much base token it will cost to purchase it all) after absorbing a list
+     * of accounts
+     * @dev intended for use as a static call, in order to
      */
     function availableCollateral(
         address[] calldata liquidatableAccounts
     ) external returns (address[] memory, uint256[] memory, uint256[] memory) {
         comet.absorb(address(this), liquidatableAccounts);
-        // emit Absorb?
 
         uint8 numAssets = comet.numAssets();
 

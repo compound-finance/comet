@@ -95,6 +95,7 @@ contract LiquidationBotV2Test is Test {
     function swap(address asset) public {
         address[] memory liquidatableAccounts;
 
+        // XXX not a static call; will actually absorb the liquidatableAccounts
         (
             address[] memory assets,
             uint256[] memory collateralReserves,
@@ -196,7 +197,7 @@ contract LiquidationBotV2Test is Test {
         (uint initialRecipientBalance, int initialReserves) = initialValues();
 
         vm.prank(uni_whale);
-        ERC20(uni).transfer(comet, 500000e18); // 500,000 UNI
+        ERC20(uni).transfer(comet, 500000e18); // 500K UNI
         swap(uni);
 
         runSwapAssertions(uni, initialRecipientBalance, initialReserves);
