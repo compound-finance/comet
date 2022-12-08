@@ -22,6 +22,19 @@ export interface Asset {
   scale: bigint;
 }
 
+const flashLoanPools = {
+  'mainnet': {
+    // DAI pool
+    tokenAddress: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+    poolFee: 100
+  },
+  'goerli': {
+    // WETH pool
+    tokenAddress: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
+    poolFee: 3000
+  }
+};
+
 // XXX pull from network param
 const chainId = 1;
 const apiBaseUrl = `https://api.1inch.io/v5.0/${chainId}`;
@@ -37,23 +50,24 @@ export async function attemptLiquidation(
   signerWithFlashbots: SignerWithFlashbots,
   network: string
 ) {
+  const flashLoanPool = flashLoanPools[network];
+
   // get the amount of collateral available for sale (using static call)
   const [
-    addresses,
+    assets,
     collateralReserves,
     collateralReservesInBase
   ] = await liquidator.callStatic.availableCollateral(targetAddresses);
 
   const baseToken = await comet.baseToken();
 
-  let assets = [];
-  let assetBaseAmounts = [];
+  let swapAssets = [];
   let swapTargets = [];
   let swapCallDatas = [];
 
   // for each amount, if it is high enough, get a quote
-  for (const i in addresses) {
-    const address = addresses[i];
+  for (const i in assets) {
+    const asset = assets[i];
     const collateralReserveAmount = collateralReserves[i];
     const collateralReserveAmountInBase = collateralReservesInBase[i];
 
@@ -62,9 +76,9 @@ export async function attemptLiquidation(
 
     if (collateralReserveAmountInBase > liquidationThreshold) {
       const swapParams = {
-        fromTokenAddress: address,
+        fromTokenAddress: asset,
         toTokenAddress: baseToken,
-        amount: collateralReserveAmount, // XXX replace with actual amount
+        amount: collateralReserveAmount,
         fromAddress: liquidator.address,
         slippage: 2,
         disableEstimate: true,
@@ -73,59 +87,21 @@ export async function attemptLiquidation(
       const url = apiRequestUrl('/swap', swapParams);
       const { data } = await axios.get(url);
 
-      assets.push(address);
-      assetBaseAmounts.push(collateralReserveAmountInBase);
+      swapAssets.push(asset);
       swapTargets.push(data.tx.to);
       swapCallDatas.push(data.tx.data);
-
-      // console.log("sending raw transaction data");
-      // await (await signerWithFlashbots.signer.sendTransaction({
-      //   // ...data.tx,
-      //   from: data.tx.from,
-      //   to: data.tx.to,
-      //   data: data.tx.data,
-      //   gasLimit: 1e6
-      // })).wait();
-      // console.log("done sending raw transaction data");
-
     }
   }
 
   const tx = await liquidator.absorbAndArbitrage(
     targetAddresses,
-    assets,
+    swapAssets,
     swapTargets,
-    swapCallDatas
+    swapCallDatas,
+    flashLoanPool.tokenAddress,
+    flashLoanPool.poolFee
   );
 
-
-  // try {
-  //   googleCloudLog(LogSeverity.INFO, `Attempting to liquidate ${targetAddresses} via ${liquidator.address}`);
-  //   const flashLoanPool = flashLoanPools[network];
-  //   const calldata = {
-  //     accounts: targetAddresses,
-  //     pairToken: flashLoanPool.tokenAddress,
-  //     poolFee: flashLoanPool.poolFee
-  //   };
-  //   // XXX set appropriate gas price...currently we are overestimating slightly to be safe
-  //   // XXX also factor in gas price to profitability
-  //   const txn = await liquidator.connect(signerWithFlashbots.signer).populateTransaction.initFlash(calldata, {
-  //     gasLimit: Math.ceil(1.1 * (await liquidator.estimateGas.initFlash(calldata)).toNumber()),
-  //     gasPrice: Math.ceil(1.1 * (await hre.ethers.provider.getGasPrice()).toNumber()),
-  //   });
-  //   const success = await sendTxn(txn, signerWithFlashbots);
-  //   if (success) {
-  //     googleCloudLog(LogSeverity.INFO, `Successfully liquidated ${targetAddresses} via ${liquidator.address}`);
-  //   } else {
-  //     googleCloudLog(LogSeverity.ALERT, `Failed to liquidate ${targetAddresses} via ${liquidator.address}`);
-  //   }
-  // } catch (e) {
-  //   throw e;
-  //   // googleCloudLog(
-  //   //   LogSeverity.ALERT,
-  //   //   `Failed to liquidate ${targetAddresses} via ${liquidator.address}: ${e.message}`
-  //   // );
-  // }
 }
 
 async function getUniqueAddresses(comet: CometInterface): Promise<Set<string>> {
@@ -190,6 +166,7 @@ export async function arbitragePurchaseableCollateral(
   if (await hasPurchaseableCollateral(comet, assets)) {
     googleCloudLog(LogSeverity.INFO, `There is purchaseable collateral`);
     await attemptLiquidation(
+      comet,
       liquidator,
       [], // empty list means we will only buy collateral and not absorb
       signerWithFlashbots,
