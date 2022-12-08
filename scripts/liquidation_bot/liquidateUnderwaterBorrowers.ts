@@ -9,7 +9,7 @@ import { exp } from '../../test/helpers';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import { Signer } from 'ethers';
 import googleCloudLog, { LogSeverity } from './googleCloudLog';
-import {sendTxn} from './sendTransaction';
+import { sendTxn } from './sendTransaction';
 
 export interface SignerWithFlashbots {
   signer: Signer;
@@ -50,58 +50,86 @@ export async function attemptLiquidation(
   signerWithFlashbots: SignerWithFlashbots,
   network: string
 ) {
-  const flashLoanPool = flashLoanPools[network];
+  try {
+    googleCloudLog(LogSeverity.INFO, `Attempting to liquidate ${targetAddresses} via ${liquidator.address}`);
 
-  // get the amount of collateral available for sale (using static call)
-  const [
-    assets,
-    collateralReserves,
-    collateralReservesInBase
-  ] = await liquidator.callStatic.availableCollateral(targetAddresses);
+    const flashLoanPool = flashLoanPools[network];
 
-  const baseToken = await comet.baseToken();
+    // get the amount of collateral available for sale (using static call)
+    const [
+      assets,
+      collateralReserves,
+      collateralReservesInBase
+    ] = await liquidator.callStatic.availableCollateral(targetAddresses);
 
-  let swapAssets = [];
-  let swapTargets = [];
-  let swapCallDatas = [];
+    const baseToken = await comet.baseToken();
 
-  // for each amount, if it is high enough, get a quote
-  for (const i in assets) {
-    const asset = assets[i];
-    const collateralReserveAmount = collateralReserves[i];
-    const collateralReserveAmountInBase = collateralReservesInBase[i];
+    let swapAssets = [];
+    let swapTargets = [];
+    let swapCallDatas = [];
 
-    // check if collateralReserveAmountInBase is greater than threshold
-    const liquidationThreshold = 1e6; // XXX increase, denominate in base scale
+    // for each amount, if it is high enough, get a quote
+    for (const i in assets) {
+      const asset = assets[i];
+      const collateralReserveAmount = collateralReserves[i];
+      const collateralReserveAmountInBase = collateralReservesInBase[i];
 
-    if (collateralReserveAmountInBase > liquidationThreshold) {
-      const swapParams = {
-        fromTokenAddress: asset,
-        toTokenAddress: baseToken,
-        amount: collateralReserveAmount,
-        fromAddress: liquidator.address,
-        slippage: 2,
-        disableEstimate: true,
-        allowPartialFill: false,
-      };
-      const url = apiRequestUrl('/swap', swapParams);
-      const { data } = await axios.get(url);
+      // check if collateralReserveAmountInBase is greater than threshold
+      const liquidationThreshold = 1e6; // XXX increase, denominate in base scale
 
-      swapAssets.push(asset);
-      swapTargets.push(data.tx.to);
-      swapCallDatas.push(data.tx.data);
+      if (collateralReserveAmountInBase > liquidationThreshold) {
+        const swapParams = {
+          fromTokenAddress: asset,
+          toTokenAddress: baseToken,
+          amount: collateralReserveAmount,
+          fromAddress: liquidator.address,
+          slippage: 2,
+          disableEstimate: true,
+          allowPartialFill: false,
+        };
+        const url = apiRequestUrl('/swap', swapParams);
+        const { data } = await axios.get(url);
+
+        swapAssets.push(asset);
+        swapTargets.push(data.tx.to);
+        swapCallDatas.push(data.tx.data);
+      }
     }
+
+    const args = [
+      targetAddresses,
+      swapAssets,
+      swapTargets,
+      swapCallDatas,
+      flashLoanPool.tokenAddress,
+      flashLoanPool.poolFee
+    ];
+
+    // XXX set appropriate gas price...currently we are overestimating slightly to be safe
+    // XXX also factor in gas price to profitability
+    const txn = await liquidator.populateTransaction.absorbAndArbitrage(
+      ...args,
+      {
+        gasLimit: Math.ceil(1.1 * (await liquidator.estimateGas.absorbAndArbitrage(...args)).toNumber()),
+        gasPrice: Math.ceil(1.1 * (await hre.ethers.provider.getGasPrice()).toNumber()),
+      }
+    );
+
+    // ensure that .populateTransaction has not added a "from" key
+    delete txn.from;
+
+    const success = await sendTxn(txn, signerWithFlashbots);
+    if (success) {
+      googleCloudLog(LogSeverity.INFO, `Successfully liquidated ${targetAddresses} via ${liquidator.address}`);
+    } else {
+      googleCloudLog(LogSeverity.ALERT, `Failed to liquidate ${targetAddresses} via ${liquidator.address}`);
+    }
+  } catch (e) {
+    googleCloudLog(
+      LogSeverity.ALERT,
+      `Failed to liquidate ${targetAddresses} via ${liquidator.address}: ${e.message}`
+    );
   }
-
-  const tx = await liquidator.absorbAndArbitrage(
-    targetAddresses,
-    swapAssets,
-    swapTargets,
-    swapCallDatas,
-    flashLoanPool.tokenAddress,
-    flashLoanPool.poolFee
-  );
-
 }
 
 async function getUniqueAddresses(comet: CometInterface): Promise<Set<string>> {
