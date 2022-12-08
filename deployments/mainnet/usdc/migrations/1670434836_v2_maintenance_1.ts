@@ -96,7 +96,7 @@ export default migration('1670434836_v2_maintenance_1', {
         calldata: '0x',
       },
     ];
-    const description = "# XXX " // XXX
+    const description = "# Reserve Maintenance\n\n## Summary\n\nThis proposal is a series of minor maintenance actions from the list of [Protocol Maintenance Tasks](https://www.comp.xyz/t/protocol-maintenance-tasks/3824), to withdraw the reserves of deprecated markets and residual cToken balances to the governance-controlled Timelock, and migrate deprecated assets (SAI and REP).\n\nThis proposal makes no opinion of how reserves are used; it reduces technical risk, and streamlines future governance operations.\n\n## Proposal Actions\n\nFirst, the proposal withdraws the reserves of deprecated markets: SAI, REP, FEI, and WBTC (legacy) to the Timelock, in four actions.\n\nNext, the proposal redeems the Timelock\u2019s cDAI and cUNI for DAI and UNI in two actions.\n\nThen, the proposal redeems the balance of SAI held by the Timelock for WETH through MakerDAO\u2019s SaiTap contract, by calling approve and then redeeming.\n\nLast, the proposal migrates the balance of REP held by the Timelock to REPv2, by calling approve and then migrating.";
     const txn = await deploymentManager.retry(
       async () => trace((await governor.propose(...await proposal(actions, description))))
     );
