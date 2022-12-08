@@ -20,6 +20,9 @@ jobs:
       - name: Install dependencies
         run: forge install
 
+      - name: Install packages
+        run: yarn install --non-interactive --frozen-lockfile && yarn build
+
       - name: Run tests
         run: forge test -vvv --via-ir --ffi --fork-url https://mainnet.infura.io/v3/$INFURA_KEY
         env:
