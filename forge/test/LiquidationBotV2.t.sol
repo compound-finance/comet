@@ -102,23 +102,18 @@ contract LiquidationBotV2Test is Test {
             uint256[] memory collateralReservesInBase
         ) = liquidator.availableCollateral(liquidatableAccounts);
 
-        uint collateralReserveInBase;
+        uint collateralReserve;
 
         for (uint8 i = 0; i < assets.length; i++) {
             if (assets[i] == asset) {
-                collateralReserveInBase = collateralReservesInBase[i];
+                collateralReserve = collateralReserves[i];
             }
         }
-
-        uint actualSwapAmount = CometInterface(comet).quoteCollateral(
-            asset,
-            collateralReserveInBase
-        );
 
         (address swapTarget, bytes memory swapTransaction) = get1inchSwap(
             asset,
             CometInterface(comet).baseToken(),
-            actualSwapAmount
+            collateralReserve
         );
 
         address[] memory swapAssets = new address[](1);
@@ -239,6 +234,7 @@ contract LiquidationBotV2Test is Test {
 
         address[] memory liquidatableAccounts;
 
+        // XXX not a static call; will actually absorb the liquidatableAccounts
         (
             address[] memory assets,
             uint256[] memory collateralReserves,
@@ -251,15 +247,10 @@ contract LiquidationBotV2Test is Test {
         address baseToken = CometInterface(comet).baseToken();
 
         for (uint8 i = 0; i < assets.length; i++) {
-            uint actualSwapAmount = CometInterface(comet).quoteCollateral(
-                assets[i],
-                collateralReservesInBase[i]
-            );
-
             (address swapTarget, bytes memory swapTransaction) = get1inchSwap(
                 assets[i],
                 baseToken,
-                actualSwapAmount
+                collateralReserves[i]
             );
 
             swapTargets[i] = swapTarget;

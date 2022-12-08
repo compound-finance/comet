@@ -26,6 +26,9 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
     event Pay(address indexed token, address indexed payer, address indexed recipient, uint256 value);
     event BuyAndSwap(address indexed tokenIn, address indexed tokenOut, uint256 baseAmountPaid, uint256 assetBalance, uint256 amountOut);
 
+    /// @notice The admin address
+    address public immutable admin;
+
     /// @notice Compound Comet protocol
     CometInterface public immutable comet;
 
@@ -35,29 +38,55 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
     /// @notice The scale for asset price calculations
     uint256 public constant QUOTE_PRICE_SCALE = 1e18;
 
+    struct AssetConfig {
+        uint256 maxCollateralToPurchase;
+        bool isSet;
+    }
+
+    /// @notice mapping of assets to asset configs
+    mapping(address => AssetConfig) public assetConfigs;
+
+    // XXX natspecs
     constructor(
         CometInterface _comet,
         address _factory,
         address _WETH9,
         address _recipient
     ) PeripheryImmutableState(_factory, _WETH9) {
+        admin = msg.sender;
         comet = _comet;
         recipient = _recipient;
     }
 
-    function balanceOfAsset(address asset) internal returns (uint256, uint256) {
+    /**
+     * @dev Returns lesser of two values
+     */
+    function min(uint256 a, uint256 b) internal view returns (uint256) {
+        return a <= b ? a : b;
+    }
+
+    function purchasableBalanceOfAsset(address asset) internal returns (uint256, uint256) {
         uint256 collateralBalance = comet.getCollateralReserves(asset);
+
+        AssetConfig memory assetConfig = assetConfigs[asset];
+        if (assetConfig.isSet) {
+            uint256 collateralBalance = min(collateralBalance, assetConfig.maxCollateralToPurchase);
+        }
 
         uint256 baseScale = comet.baseScale();
 
         uint256 quotePrice = comet.quoteCollateral(asset, QUOTE_PRICE_SCALE * baseScale);
         uint256 collateralBalanceInBase = baseScale * QUOTE_PRICE_SCALE * collateralBalance / quotePrice;
 
+        uint256 actualCollateralAmountOut = comet.quoteCollateral(asset, collateralBalanceInBase);
+
         return (
-            collateralBalance,
+            actualCollateralAmountOut,
             collateralBalanceInBase
         );
     }
+
+    // XXX setter for assetConfig
 
     /**
      * @notice Return the amount of each asset available to purchase (and how
@@ -77,18 +106,12 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
         uint256[] memory collateralReservesInBase = new uint256[](numAssets);
 
         for (uint8 i = 0; i < numAssets; i++) {
-            // XXX reuse balanceOfAsset
             address asset = comet.getAssetInfo(i).asset;
             assets[i] = asset;
-            uint256 collateralBalance = comet.getCollateralReserves(asset);
+            (uint256 collateralBalance, uint256 collateralBalanceInBase) = purchasableBalanceOfAsset(asset);
 
             collateralReserves[i] = collateralBalance;
-
-            uint256 baseScale = comet.baseScale();
-
-            // XXX check that reserves are still under target reserves?
-            uint256 quotePrice = comet.quoteCollateral(asset, QUOTE_PRICE_SCALE * baseScale);
-            collateralReservesInBase[i] = baseScale * QUOTE_PRICE_SCALE * collateralBalance / quotePrice;
+            collateralReservesInBase[i] = collateralBalanceInBase;
         }
 
         return (
@@ -139,7 +162,7 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
         uint256 flashLoanAmount = 0;
         uint256[] memory assetBaseAmounts = new uint256[](assets.length);
         for (uint8 i = 0; i < assets.length; i++) {
-            ( , uint256 collateralBalanceInBase) = balanceOfAsset(assets[i]);
+            ( , uint256 collateralBalanceInBase) = purchasableBalanceOfAsset(assets[i]);
             flashLoanAmount += collateralBalanceInBase;
             assetBaseAmounts[i] = collateralBalanceInBase;
         }
