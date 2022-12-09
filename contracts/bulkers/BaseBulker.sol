@@ -41,7 +41,7 @@ contract BaseBulker {
     receive() external payable {}
 
     /**
-     * @notice A public function to sweep accidental ERC-20 transfers to this contract. Tokens are sent to admin (Timelock)
+     * @notice A public function to sweep accidental ERC-20 transfers to this contract.
      * @dev Note: Make sure to check that the asset being swept out is not malicious.
      * @param recipient The address that will receive the swept funds
      * @param asset The address of the ERC-20 token to sweep
@@ -54,7 +54,7 @@ contract BaseBulker {
     }
 
     /**
-     * @notice A public function to sweep accidental native token transfers to this contract. Tokens are sent to admin (Timelock)
+     * @notice A public function to sweep accidental native token transfers to this contract.
      * @param recipient The address that will receive the swept funds
      */
     function sweepNativeToken(address recipient) external {
@@ -101,7 +101,7 @@ contract BaseBulker {
             unchecked { i++; }
         }
 
-        // Refund unused ETH back to msg.sender
+        // Refund unused native token back to msg.sender
         if (unusedNativeToken > 0) {
             (bool success, ) = msg.sender.call{ value: unusedNativeToken }("");
             if (!success) revert FailedToSendNativeToken();
