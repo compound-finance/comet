@@ -37,7 +37,6 @@ contract LiquidationBotV2Test is Test {
         vm.createSelectFork(string.concat("https://mainnet.infura.io/v3/", vm.envString("INFURA_KEY")));
 
         liquidator = new LiquidatorV2(
-            CometInterface(COMET),
             address(UNISWAP_V3_FACTORY),
             address(WETH9),
             address(LIQUIDATOR_EOA)
@@ -98,7 +97,7 @@ contract LiquidationBotV2Test is Test {
             address[] memory assets,
             uint256[] memory collateralReserves,
             uint256[] memory collateralReservesInBase
-        ) = liquidator.availableCollateral(liquidatableAccounts);
+        ) = liquidator.availableCollateral(COMET, liquidatableAccounts);
 
         uint collateralReserve;
 
@@ -124,6 +123,7 @@ contract LiquidationBotV2Test is Test {
         swapTransactions[0] = swapTransaction;
 
         liquidator.absorbAndArbitrage(
+            COMET,
             liquidatableAccounts,
             swapAssets,
             swapTargets,
@@ -168,7 +168,7 @@ contract LiquidationBotV2Test is Test {
         vm.prank(whale);
         ERC20(asset).transfer(COMET, transferAmount);
 
-        liquidator.setAssetConfig(asset, maxSwapAmount, true);
+        liquidator.setAssetConfig(COMET, asset, maxSwapAmount, true);
 
         swap(asset);
 
@@ -254,7 +254,7 @@ contract LiquidationBotV2Test is Test {
         // test amounts must be lower in order to avoid putting the protocol
         // above targetReserves
         vm.prank(WBTC_WHALE);
-        ERC20(WBTC).mint(COMET, 10e8);
+        ERC20(WBTC).transfer(COMET, 10e8);
 
         vm.prank(COMP_WHALE);
         ERC20(COMP).transfer(COMET, 100e18);
@@ -275,7 +275,7 @@ contract LiquidationBotV2Test is Test {
             address[] memory assets,
             uint256[] memory collateralReserves,
             uint256[] memory collateralReservesInBase
-        ) = liquidator.availableCollateral(liquidatableAccounts);
+        ) = liquidator.availableCollateral(COMET, liquidatableAccounts);
 
         address[] memory swapTargets = new address[](assets.length);
         bytes[] memory swapTransactions = new bytes[](assets.length);
@@ -294,6 +294,7 @@ contract LiquidationBotV2Test is Test {
         }
 
         liquidator.absorbAndArbitrage(
+            COMET,
             liquidatableAccounts,
             assets,
             swapTargets,

@@ -29,9 +29,6 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
     /// @notice The admin address
     address public immutable admin;
 
-    /// @notice Compound Comet protocol
-    CometInterface public immutable comet;
-
     /// @notice Address to send liquidation proceeds to
     address public immutable recipient;
 
@@ -43,18 +40,16 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
         bool isSet;
     }
 
-    /// @notice mapping of assets to asset configs
-    mapping(address => AssetConfig) public assetConfigs;
+    /// @notice mapping of comet instance => assets => asset config
+    mapping(address => mapping(address => AssetConfig)) public assetConfigs;
 
     // XXX natspecs
     constructor(
-        CometInterface _comet,
         address _factory,
         address _WETH9,
         address _recipient
     ) PeripheryImmutableState(_factory, _WETH9) {
         admin = msg.sender;
-        comet = _comet;
         recipient = _recipient;
     }
 
@@ -65,10 +60,10 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
      * @param isSet flag for whether to use the maxCollateralToPurchase amount;
      * set to false to allow for uncapped purchases
      */
-    function setAssetConfig(address asset, uint256 maxCollateralToPurchase, bool isSet) external {
+    function setAssetConfig(address comet, address asset, uint256 maxCollateralToPurchase, bool isSet) external {
         if (msg.sender != admin) revert Unauthorized();
 
-        assetConfigs[asset] = AssetConfig({
+        assetConfigs[comet][asset] = AssetConfig({
             maxCollateralToPurchase: maxCollateralToPurchase,
             isSet: isSet
         });
@@ -81,20 +76,20 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
         return a <= b ? a : b;
     }
 
-    function purchasableBalanceOfAsset(address asset) internal returns (uint256, uint256) {
-        uint256 collateralBalance = comet.getCollateralReserves(asset);
+    function purchasableBalanceOfAsset(address comet, address asset) internal returns (uint256, uint256) {
+        uint256 collateralBalance = CometInterface(comet).getCollateralReserves(asset);
 
-        AssetConfig memory assetConfig = assetConfigs[asset];
+        AssetConfig memory assetConfig = assetConfigs[comet][asset];
         if (assetConfig.isSet) {
             collateralBalance = min(collateralBalance, assetConfig.maxCollateralToPurchase);
         }
 
-        uint256 baseScale = comet.baseScale();
+        uint256 baseScale = CometInterface(comet).baseScale();
 
-        uint256 quotePrice = comet.quoteCollateral(asset, QUOTE_PRICE_SCALE * baseScale);
+        uint256 quotePrice = CometInterface(comet).quoteCollateral(asset, QUOTE_PRICE_SCALE * baseScale);
         uint256 collateralBalanceInBase = baseScale * QUOTE_PRICE_SCALE * collateralBalance / quotePrice;
 
-        uint256 actualCollateralAmountOut = comet.quoteCollateral(asset, collateralBalanceInBase);
+        uint256 actualCollateralAmountOut = CometInterface(comet).quoteCollateral(asset, collateralBalanceInBase);
 
         return (
             actualCollateralAmountOut,
@@ -109,20 +104,21 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
      * @dev intended for use as a static call
      */
     function availableCollateral(
+        address comet,
         address[] calldata liquidatableAccounts
     ) external returns (address[] memory, uint256[] memory, uint256[] memory) {
-        comet.absorb(address(this), liquidatableAccounts);
+        CometInterface(comet).absorb(address(this), liquidatableAccounts);
 
-        uint8 numAssets = comet.numAssets();
+        uint8 numAssets = CometInterface(comet).numAssets();
 
         address[] memory assets = new address[](numAssets);
         uint256[] memory collateralReserves = new uint256[](numAssets);
         uint256[] memory collateralReservesInBase = new uint256[](numAssets);
 
         for (uint8 i = 0; i < numAssets; i++) {
-            address asset = comet.getAssetInfo(i).asset;
+            address asset = CometInterface(comet).getAssetInfo(i).asset;
             assets[i] = asset;
-            (uint256 collateralBalance, uint256 collateralBalanceInBase) = purchasableBalanceOfAsset(asset);
+            (uint256 collateralBalance, uint256 collateralBalanceInBase) = purchasableBalanceOfAsset(comet, asset);
 
             collateralReserves[i] = collateralBalance;
             collateralReservesInBase[i] = collateralBalanceInBase;
@@ -138,6 +134,7 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
     /**
      * @notice Absorb a set of liquidatable accounts and then buy and sell the
      * available collateral
+     * @param comet Address of Comet instance
      * @param liquidatableAccounts A list of accounts to absorb
      * @param assets The assets to buy and sell
      * @param swapTargets Addresses of the swap router to use (generated via
@@ -148,6 +145,7 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
      * @param flashLoanPoolFee Fee for flash swap pool (e.g. DAI/USDC/100)
      */
     function absorbAndArbitrage(
+        address comet,
         address[] calldata liquidatableAccounts,
         address[] calldata assets,
         address[] calldata swapTargets,
@@ -155,11 +153,11 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
         address flashLoanPairToken,
         uint24 flashLoanPoolFee
     ) external {
-        comet.absorb(address(this), liquidatableAccounts);
+        CometInterface(comet).absorb(address(this), liquidatableAccounts);
         emit Absorb(msg.sender, liquidatableAccounts);
 
         address poolToken0 = flashLoanPairToken;
-        address poolToken1 = comet.baseToken();
+        address poolToken1 = CometInterface(comet).baseToken();
         bool reversedPair = poolToken0 > poolToken1;
         // Use Uniswap approach to determining order of tokens https://github.com/Uniswap/v3-periphery/blob/main/contracts/libraries/PoolAddress.sol#L20-L27
         if (reversedPair) (poolToken0, poolToken1) = (poolToken1, poolToken0);
@@ -176,7 +174,7 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
         uint256 flashLoanAmount = 0;
         uint256[] memory assetBaseAmounts = new uint256[](assets.length);
         for (uint8 i = 0; i < assets.length; i++) {
-            ( , uint256 collateralBalanceInBase) = purchasableBalanceOfAsset(assets[i]);
+            ( , uint256 collateralBalanceInBase) = purchasableBalanceOfAsset(comet, assets[i]);
             flashLoanAmount += collateralBalanceInBase;
             assetBaseAmounts[i] = collateralBalanceInBase;
         }
@@ -187,6 +185,7 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
             reversedPair ? 0 : flashLoanAmount,
             abi.encode(
                 FlashCallbackData({
+                    comet: comet,
                     flashLoanAmount: flashLoanAmount,
                     poolKey: poolKey,
                     assets: assets,
@@ -199,6 +198,7 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
     }
 
     struct FlashCallbackData {
+        address comet;
         uint256 flashLoanAmount;
         PoolAddress.PoolKey poolKey;
         address[] assets;
@@ -215,9 +215,9 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
         FlashCallbackData memory flashCallbackData = abi.decode(data, (FlashCallbackData));
         CallbackValidation.verifyCallback(factory, flashCallbackData.poolKey);
 
-        TransferHelper.safeApprove(comet.baseToken(), address(comet), flashCallbackData.flashLoanAmount);
+        TransferHelper.safeApprove(CometInterface(flashCallbackData.comet).baseToken(), address(flashCallbackData.comet), flashCallbackData.flashLoanAmount);
 
-        address baseToken = comet.baseToken();
+        address baseToken = CometInterface(flashCallbackData.comet).baseToken();
 
         uint256 totalAmountOut = 0;
 
@@ -225,7 +225,7 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
             address asset = flashCallbackData.assets[i];
             uint256 assetBaseAmount = flashCallbackData.assetBaseAmounts[i];
 
-            comet.buyCollateral(asset, 0, assetBaseAmount, address(this));
+            CometInterface(flashCallbackData.comet).buyCollateral(asset, 0, assetBaseAmount, address(this));
 
             uint256 assetBalance = ERC20(asset).balanceOf(address(this));
 
