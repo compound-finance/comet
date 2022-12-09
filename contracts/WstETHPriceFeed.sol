@@ -29,13 +29,13 @@ contract WstETHPriceFeed is IPriceFeed {
     address public immutable wstETH;
 
     /// @notice Scale for WstETH contract
-    uint public immutable wstETHScale;
+    int public immutable wstETHScale;
 
     constructor(address stETHtoETHPriceFeed_, address wstETH_, uint8 decimals_) {
         stETHtoETHPriceFeed = stETHtoETHPriceFeed_;
         stETHToETHPriceFeedDecimals = AggregatorV3Interface(stETHtoETHPriceFeed_).decimals();
         wstETH = wstETH_;
-        wstETHScale = 10 ** IWstETH(wstETH).decimals();
+        wstETHScale = int256(10 ** IWstETH(wstETH).decimals());
 
         // Note: stETH / ETH price feed has 18 decimals so `decimals_` should always be less than or equals to that
         if (decimals_ > stETHToETHPriceFeedDecimals) revert BadDecimals();
@@ -64,7 +64,7 @@ contract WstETHPriceFeed is IPriceFeed {
     ) {
         (uint80 roundId_, int256 stETHPrice, uint256 startedAt_, uint256 updatedAt_, uint80 answeredInRound_) = AggregatorV3Interface(stETHtoETHPriceFeed).latestRoundData();
         uint256 tokensPerStEth = IWstETH(wstETH).tokensPerStEth();
-        int256 price = stETHPrice * int256(wstETHScale) / signed256(tokensPerStEth);
+        int256 price = stETHPrice * wstETHScale / signed256(tokensPerStEth);
         // Note: Assumes the stETH price feed has an equal or larger amount of decimals than this price feed
         int256 scaledPrice = price / int256(10 ** (stETHToETHPriceFeedDecimals - decimals));
         return (roundId_, scaledPrice, startedAt_, updatedAt_, answeredInRound_);
