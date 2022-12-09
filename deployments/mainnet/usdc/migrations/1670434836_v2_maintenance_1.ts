@@ -107,6 +107,10 @@ export default migration('1670434836_v2_maintenance_1', {
     trace(`Created proposal ${proposalId}.`);
   },
 
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
+  },
+
   async verify(deploymentManager: DeploymentManager) {
     const {
       timelock,
