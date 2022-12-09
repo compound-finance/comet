@@ -6,7 +6,7 @@ import "../../contracts/Comet.sol";
 import "../../contracts/CometConfiguration.sol";
 import "../../contracts/liquidator/LiquidatorV2.sol";
 
-interface WBTC {
+interface WbtcInterface {
     function owner() external returns (address);
     function mint(address _to, uint256 _amount) external returns (bool);
 }
@@ -15,61 +15,61 @@ contract LiquidationBotV2Test is Test {
     LiquidatorV2 public liquidator;
 
     // contracts
-    address public constant aggregation_router_v5 = 0x1111111254EEB25477B68fb85Ed929f73A960582;
-    address public constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
-    address public constant uniswap_v3_factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+    address public constant AGGREGATION_ROUTER_V5 = 0x1111111254EEB25477B68fb85Ed929f73A960582;
+    address public constant COMET = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
+    address public constant UNISWAP_V3_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
     // assets
-    address public constant comp = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
-    address public constant dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address public constant link = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
-    address public constant uni = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
-    address public constant usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address public constant wbtc = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
-    address public constant weth9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
+    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address public constant LINK = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
+    address public constant UNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
+    address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
+    address public constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     // whales
-    address public constant comp_whale = 0x2775b1c75658Be0F640272CCb8c72ac986009e38;
-    address public constant link_whale = 0xfB682b0dE4e0093835EA21cfABb5449cA9ac9e5e;
-    address public constant uni_whale = 0x1a9C8182C09F50C8318d769245beA52c32BE35BC;
-    address public constant wbtc_whale = 0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656;
-    address public constant weth_whale = 0x2F0b23f53734252Bda2277357e97e1517d6B042A;
+    address public constant COMP_WHALE = 0x2775b1c75658Be0F640272CCb8c72ac986009e38;
+    address public constant LINK_WHALE = 0xfB682b0dE4e0093835EA21cfABb5449cA9ac9e5e;
+    address public constant UNI_WHALE = 0x1a9C8182C09F50C8318d769245beA52c32BE35BC;
+    address public constant WBTC_WHALE = 0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656;
+    address public constant WETH_WHALE = 0x2F0b23f53734252Bda2277357e97e1517d6B042A;
 
     // wallets
-    address public constant liquidator_eoa = 0x5a13D329A193ca3B1fE2d7B459097EdDba14C28F;
+    address public constant LIQUIDATOR_EOA = 0x5a13D329A193ca3B1fE2d7B459097EdDba14C28F;
 
     function setUp() public {
         vm.createSelectFork(string.concat("https://mainnet.infura.io/v3/", vm.envString("INFURA_KEY")));
 
         liquidator = new LiquidatorV2(
-            CometInterface(comet),
-            address(uniswap_v3_factory),
-            address(weth9),
-            address(liquidator_eoa)
+            CometInterface(COMET),
+            address(UNISWAP_V3_FACTORY),
+            address(WETH9),
+            address(LIQUIDATOR_EOA)
         );
 
         // contracts
-        vm.label(aggregation_router_v5, "AggregationRouterV5");
-        vm.label(comet, "Comet");
-        vm.label(uniswap_v3_factory, "UniswapV3 Factory");
+        vm.label(AGGREGATION_ROUTER_V5, "AggregationRouterV5");
+        vm.label(COMET, "Comet");
+        vm.label(UNISWAP_V3_FACTORY, "UniswapV3 Factory");
 
         // assets
-        vm.label(comp, "COMP");
-        vm.label(dai, "DAI");
-        vm.label(link, "LINK");
-        vm.label(uni, "UNI");
-        vm.label(usdc, "USDC");
-        vm.label(wbtc, "WBTC");
-        vm.label(weth9, "WETH9");
+        vm.label(COMP, "COMP");
+        vm.label(DAI, "DAI");
+        vm.label(LINK, "LINK");
+        vm.label(UNI, "UNI");
+        vm.label(USDC, "USDC");
+        vm.label(WBTC, "WBTC");
+        vm.label(WETH9, "WETH9");
 
         // whales
-        vm.label(comp_whale, "COMP whale");
-        vm.label(link_whale, "LINK whale");
-        vm.label(uni_whale, "UNI whale");
-        vm.label(weth_whale, "WETH whale");
+        vm.label(COMP_WHALE, "COMP whale");
+        vm.label(LINK_WHALE, "LINK whale");
+        vm.label(UNI_WHALE, "UNI whale");
+        vm.label(WETH_WHALE, "WETH whale");
 
         // wallets
-        vm.label(liquidator_eoa, "Liquidator wallet");
+        vm.label(LIQUIDATOR_EOA, "Liquidator wallet");
     }
 
     function get1inchSwap(
@@ -115,7 +115,7 @@ contract LiquidationBotV2Test is Test {
 
         (address swapTarget, bytes memory swapTransaction) = get1inchSwap(
             asset,
-            CometInterface(comet).baseToken(),
+            CometInterface(COMET).baseToken(),
             collateralReserve
         );
 
@@ -133,15 +133,15 @@ contract LiquidationBotV2Test is Test {
             swapAssets,
             swapTargets,
             swapTransactions,
-            dai,
+            DAI,
             100
         );
     }
 
     function initialValues() internal returns (uint, int) {
         return (
-            ERC20(usdc).balanceOf(liquidator_eoa),
-            CometInterface(comet).getReserves()
+            ERC20(USDC).balanceOf(LIQUIDATOR_EOA),
+            CometInterface(COMET).getReserves()
         );
     }
 
@@ -151,13 +151,13 @@ contract LiquidationBotV2Test is Test {
         int initialReserves
     ) internal {
         // expect that there is only dust (< 1 unit) left of the asset
-        assertLt(CometInterface(comet).getCollateralReserves(asset), 10 ** ERC20(asset).decimals());
+        assertLt(CometInterface(COMET).getCollateralReserves(asset), 10 ** ERC20(asset).decimals());
 
         // expect the balance of the recipient to have increased
-        assertGt(ERC20(usdc).balanceOf(liquidator_eoa), initialRecipientBalance);
+        assertGt(ERC20(USDC).balanceOf(LIQUIDATOR_EOA), initialRecipientBalance);
 
         // expect the protocol reserves to have increased
-        assertGt(CometInterface(comet).getReserves(), initialReserves);
+        assertGt(CometInterface(COMET).getReserves(), initialReserves);
 
         // XXX make sure that you're making > 1% of the value of the swap
     }
@@ -171,7 +171,7 @@ contract LiquidationBotV2Test is Test {
         (uint initialRecipientBalance, int initialReserves) = initialValues();
 
         vm.prank(whale);
-        ERC20(asset).transfer(comet, transferAmount); // 40,000 COMP for sale (an amount we can't clear all at once)
+        ERC20(asset).transfer(COMET, transferAmount); // 40,000 COMP for sale (an amount we can't clear all at once)
 
         liquidator.setAssetConfig(asset, maxSwapAmount, true);
 
@@ -179,91 +179,91 @@ contract LiquidationBotV2Test is Test {
 
         // expect that there is still a significant amount of asset owned by the protocol
         assertApproxEqAbs(
-            CometInterface(comet).getCollateralReserves(asset),
+            CometInterface(COMET).getCollateralReserves(asset),
             transferAmount - maxSwapAmount,
             10 ** ERC20(asset).decimals() // diff should be within 1 unit of asset
         );
 
         // expect the balance of the recipient to have increased
-        assertGt(ERC20(usdc).balanceOf(liquidator_eoa), initialRecipientBalance);
+        assertGt(ERC20(USDC).balanceOf(LIQUIDATOR_EOA), initialRecipientBalance);
 
         // expect the protocol reserves to have increased
-        assertGt(CometInterface(comet).getReserves(), initialReserves);
+        assertGt(CometInterface(COMET).getReserves(), initialReserves);
     }
 
     function testCompSwapWithMaxCollateral() public {
-        swapWithMaxCollateral(comp, comp_whale, 40_000e18, 500e18);
+        swapWithMaxCollateral(COMP, COMP_WHALE, 40_000e18, 500e18);
     }
 
     // wbtc
     function testWbtcSwapWithMaxCollateral() public {
-        swapWithMaxCollateral(wbtc, wbtc_whale, 10_000e8, 120e8);
+        swapWithMaxCollateral(WBTC, WBTC_WHALE, 10_000e8, 120e8);
     }
 
     // weth
     function testWethSwapWithMaxCollateral() public {
-        swapWithMaxCollateral(weth9, weth_whale, 10_000e18, 5_000e18);
+        swapWithMaxCollateral(WETH9, WETH_WHALE, 10_000e18, 5_000e18);
     }
 
     // uni
     function testUniSwapWithMaxCollateral() public {
-        swapWithMaxCollateral(uni, uni_whale, 500_000e18, 150_000e18);
+        swapWithMaxCollateral(UNI, UNI_WHALE, 500_000e18, 150_000e18);
     }
 
     // link
     function testLinkSwapWithMaxCollateral() public {
-        swapWithMaxCollateral(link, link_whale, 500_000e18, 150_000e18);
+        swapWithMaxCollateral(LINK, LINK_WHALE, 500_000e18, 150_000e18);
     }
 
     function testLargeWbtcSwap() public {
         (uint initialRecipientBalance, int initialReserves) = initialValues();
 
-        address wbtcOwner = WBTC(wbtc).owner();
+        address wbtcOwner = WbtcInterface(WBTC).owner();
         vm.prank(wbtcOwner);
-        WBTC(wbtc).mint(comet, 120e8); // 120 WBTC
-        swap(wbtc);
+        WbtcInterface(WBTC).mint(COMET, 120e8); // 120 WBTC
+        swap(WBTC);
 
-        runSwapAssertions(wbtc, initialRecipientBalance, initialReserves);
+        runSwapAssertions(WBTC, initialRecipientBalance, initialReserves);
     }
 
     function testLargeCompSwap() public {
         (uint initialRecipientBalance, int initialReserves) = initialValues();
 
-        vm.prank(comp_whale);
-        ERC20(comp).transfer(comet, 2000e18); // 2,000 COMP
-        swap(comp);
+        vm.prank(COMP_WHALE);
+        ERC20(COMP).transfer(COMET, 2_000e18); // 2,000 COMP
+        swap(COMP);
 
-        runSwapAssertions(comp, initialRecipientBalance, initialReserves);
+        runSwapAssertions(COMP, initialRecipientBalance, initialReserves);
     }
 
     function testLargeWethSwap() public {
         (uint initialRecipientBalance, int initialReserves) = initialValues();
 
-        vm.prank(weth_whale);
-        ERC20(weth9).transfer(comet, 5_000e18); // 5,000 WETH
-        swap(weth9);
+        vm.prank(WETH_WHALE);
+        ERC20(WETH9).transfer(COMET, 5_000e18); // 5,000 WETH
+        swap(WETH9);
 
-        runSwapAssertions(weth9, initialRecipientBalance, initialReserves);
+        runSwapAssertions(WETH9, initialRecipientBalance, initialReserves);
     }
 
     function testLargeUniSwap() public {
         (uint initialRecipientBalance, int initialReserves) = initialValues();
 
-        vm.prank(uni_whale);
-        ERC20(uni).transfer(comet, 500_000e18); // 500K UNI
-        swap(uni);
+        vm.prank(UNI_WHALE);
+        ERC20(UNI).transfer(COMET, 500_000e18); // 500K UNI
+        swap(UNI);
 
-        runSwapAssertions(uni, initialRecipientBalance, initialReserves);
+        runSwapAssertions(UNI, initialRecipientBalance, initialReserves);
     }
 
     function testLargeLinkSwap() public {
         (uint initialRecipientBalance, int initialReserves) = initialValues();
 
-        vm.prank(link_whale);
-        ERC20(link).transfer(comet, 250_000e18); // 250,000 LINK
-        swap(link);
+        vm.prank(LINK_WHALE);
+        ERC20(LINK).transfer(COMET, 250_000e18); // 250,000 LINK
+        swap(LINK);
 
-        runSwapAssertions(link, initialRecipientBalance, initialReserves);
+        runSwapAssertions(LINK, initialRecipientBalance, initialReserves);
     }
 
     function testSwapsMultipleAssets() public {
@@ -272,21 +272,21 @@ contract LiquidationBotV2Test is Test {
         // test amounts must be lower in order to avoid putting the protocol
         // above targetReserves
 
-        address wbtcOwner = WBTC(wbtc).owner();
+        address wbtcOwner = WbtcInterface(WBTC).owner();
         vm.prank(wbtcOwner);
-        WBTC(wbtc).mint(comet, 10e8);
+        WbtcInterface(WBTC).mint(COMET, 10e8);
 
-        vm.prank(comp_whale);
-        ERC20(comp).transfer(comet, 100e18);
+        vm.prank(COMP_WHALE);
+        ERC20(COMP).transfer(COMET, 100e18);
 
-        vm.prank(weth_whale);
-        ERC20(weth9).transfer(comet, 500e18);
+        vm.prank(WETH_WHALE);
+        ERC20(WETH9).transfer(COMET, 500e18);
 
-        vm.prank(uni_whale);
-        ERC20(uni).transfer(comet, 15_000e18);
+        vm.prank(UNI_WHALE);
+        ERC20(UNI).transfer(COMET, 15_000e18);
 
-        vm.prank(link_whale);
-        ERC20(link).transfer(comet, 25_000e18);
+        vm.prank(LINK_WHALE);
+        ERC20(LINK).transfer(COMET, 25_000e18);
 
         address[] memory liquidatableAccounts;
 
@@ -300,7 +300,7 @@ contract LiquidationBotV2Test is Test {
         address[] memory swapTargets = new address[](assets.length);
         bytes[] memory swapTransactions = new bytes[](assets.length);
 
-        address baseToken = CometInterface(comet).baseToken();
+        address baseToken = CometInterface(COMET).baseToken();
 
         for (uint8 i = 0; i < assets.length; i++) {
             (address swapTarget, bytes memory swapTransaction) = get1inchSwap(
@@ -318,7 +318,7 @@ contract LiquidationBotV2Test is Test {
             assets,
             swapTargets,
             swapTransactions,
-            dai,
+            DAI,
             100
         );
 
@@ -326,10 +326,10 @@ contract LiquidationBotV2Test is Test {
         // assertLt(CometInterface(comet).getCollateralReserves(asset), 10 ** ERC20(asset).decimals());
 
         // expect the balance of the recipient to have increased
-        assertGt(ERC20(usdc).balanceOf(liquidator_eoa), initialRecipientBalance);
+        assertGt(ERC20(USDC).balanceOf(LIQUIDATOR_EOA), initialRecipientBalance);
 
         // expect the protocol reserves to have increased
-        assertGt(CometInterface(comet).getReserves(), initialReserves);
+        assertGt(CometInterface(COMET).getReserves(), initialReserves);
     }
 
     // XXX test actually liquidating an underwater account
