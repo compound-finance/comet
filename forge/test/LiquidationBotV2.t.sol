@@ -32,6 +32,7 @@ contract LiquidationBotV2Test is Test {
     address public constant comp_whale = 0x2775b1c75658Be0F640272CCb8c72ac986009e38;
     address public constant link_whale = 0xfB682b0dE4e0093835EA21cfABb5449cA9ac9e5e;
     address public constant uni_whale = 0x1a9C8182C09F50C8318d769245beA52c32BE35BC;
+    address public constant wbtc_whale = 0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656;
     address public constant weth_whale = 0x2F0b23f53734252Bda2277357e97e1517d6B042A;
 
     // wallets
@@ -159,6 +160,59 @@ contract LiquidationBotV2Test is Test {
         // XXX make sure that you're making > 1% of the value of the swap
     }
 
+    function swapWithMaxCollateral(
+        address asset,
+        address whale,
+        uint256 transferAmount,
+        uint maxSwapAmount
+    ) public {
+        (uint initialRecipientBalance, int initialReserves) = initialValues();
+
+        vm.prank(whale);
+        ERC20(asset).transfer(comet, transferAmount); // 40,000 COMP for sale (an amount we can't clear all at once)
+
+        liquidator.setAssetConfig(asset, maxSwapAmount, true);
+
+        swap(asset);
+
+        // expect that there is still a significant amount of asset owned by the protocol
+        assertApproxEqAbs(
+            CometInterface(comet).getCollateralReserves(asset),
+            transferAmount - maxSwapAmount,
+            10 ** ERC20(asset).decimals() // diff should be within 1 unit of asset
+        );
+
+        // expect the balance of the recipient to have increased
+        assertGt(ERC20(usdc).balanceOf(liquidator_eoa), initialRecipientBalance);
+
+        // expect the protocol reserves to have increased
+        assertGt(CometInterface(comet).getReserves(), initialReserves);
+    }
+
+    function testCompSwapWithMaxCollateral() public {
+        swapWithMaxCollateral(comp, comp_whale, 40_000e18, 500e18);
+    }
+
+    // wbtc
+    function testWbtcSwapWithMaxCollateral() public {
+        swapWithMaxCollateral(wbtc, wbtc_whale, 10_000e8, 120e8);
+    }
+
+    // weth
+    function testWethSwapWithMaxCollateral() public {
+        swapWithMaxCollateral(weth9, weth_whale, 10_000e18, 5_000e18);
+    }
+
+    // uni
+    function testUniSwapWithMaxCollateral() public {
+        swapWithMaxCollateral(uni, uni_whale, 500_000e18, 150_000e18);
+    }
+
+    // link
+    function testLinkSwapWithMaxCollateral() public {
+        swapWithMaxCollateral(link, link_whale, 500_000e18, 150_000e18);
+    }
+
     function testLargeWbtcSwap() public {
         (uint initialRecipientBalance, int initialReserves) = initialValues();
 
@@ -184,7 +238,7 @@ contract LiquidationBotV2Test is Test {
         (uint initialRecipientBalance, int initialReserves) = initialValues();
 
         vm.prank(weth_whale);
-        ERC20(weth9).transfer(comet, 5000e18); // 5,000 WETH
+        ERC20(weth9).transfer(comet, 5_000e18); // 5,000 WETH
         swap(weth9);
 
         runSwapAssertions(weth9, initialRecipientBalance, initialReserves);
@@ -194,7 +248,7 @@ contract LiquidationBotV2Test is Test {
         (uint initialRecipientBalance, int initialReserves) = initialValues();
 
         vm.prank(uni_whale);
-        ERC20(uni).transfer(comet, 500000e18); // 500K UNI
+        ERC20(uni).transfer(comet, 500_000e18); // 500K UNI
         swap(uni);
 
         runSwapAssertions(uni, initialRecipientBalance, initialReserves);
@@ -204,7 +258,7 @@ contract LiquidationBotV2Test is Test {
         (uint initialRecipientBalance, int initialReserves) = initialValues();
 
         vm.prank(link_whale);
-        ERC20(link).transfer(comet, 250000e18); // 250,000 LINK
+        ERC20(link).transfer(comet, 250_000e18); // 250,000 LINK
         swap(link);
 
         runSwapAssertions(link, initialRecipientBalance, initialReserves);
@@ -227,10 +281,10 @@ contract LiquidationBotV2Test is Test {
         ERC20(weth9).transfer(comet, 500e18);
 
         vm.prank(uni_whale);
-        ERC20(uni).transfer(comet, 15000e18);
+        ERC20(uni).transfer(comet, 15_000e18);
 
         vm.prank(link_whale);
-        ERC20(link).transfer(comet, 25000e18);
+        ERC20(link).transfer(comet, 25_000e18);
 
         address[] memory liquidatableAccounts;
 

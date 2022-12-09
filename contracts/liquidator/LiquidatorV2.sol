@@ -59,6 +59,22 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
     }
 
     /**
+     * @notice Set new value for asset config
+     * @param asset The asset to set new config for
+     * @param maxCollateralToPurchase max amount (in units of the asset) to purchase when swapping
+     * @param isSet flag for whether to use the maxCollateralToPurchase amount;
+     * set to false to allow for uncapped purchases
+     */
+    function setAssetConfig(address asset, uint256 maxCollateralToPurchase, bool isSet) external {
+        if (msg.sender != admin) revert Unauthorized();
+
+        assetConfigs[asset] = AssetConfig({
+            maxCollateralToPurchase: maxCollateralToPurchase,
+            isSet: isSet
+        });
+    }
+
+    /**
      * @dev Returns lesser of two values
      */
     function min(uint256 a, uint256 b) internal view returns (uint256) {
@@ -70,7 +86,7 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
 
         AssetConfig memory assetConfig = assetConfigs[asset];
         if (assetConfig.isSet) {
-            uint256 collateralBalance = min(collateralBalance, assetConfig.maxCollateralToPurchase);
+            collateralBalance = min(collateralBalance, assetConfig.maxCollateralToPurchase);
         }
 
         uint256 baseScale = comet.baseScale();
@@ -85,8 +101,6 @@ contract LiquidatorV2 is IUniswapV3FlashCallback, PeripheryImmutableState, Perip
             collateralBalanceInBase
         );
     }
-
-    // XXX setter for assetConfig
 
     /**
      * @notice Return the amount of each asset available to purchase (and how
