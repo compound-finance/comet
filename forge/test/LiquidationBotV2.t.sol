@@ -6,11 +6,6 @@ import "../../contracts/Comet.sol";
 import "../../contracts/CometConfiguration.sol";
 import "../../contracts/liquidator/LiquidatorV2.sol";
 
-interface WbtcInterface {
-    function owner() external returns (address);
-    function mint(address _to, uint256 _amount) external returns (bool);
-}
-
 contract LiquidationBotV2Test is Test {
     LiquidatorV2 public liquidator;
 
@@ -171,7 +166,7 @@ contract LiquidationBotV2Test is Test {
         (uint initialRecipientBalance, int initialReserves) = initialValues();
 
         vm.prank(whale);
-        ERC20(asset).transfer(COMET, transferAmount); // 40,000 COMP for sale (an amount we can't clear all at once)
+        ERC20(asset).transfer(COMET, transferAmount);
 
         liquidator.setAssetConfig(asset, maxSwapAmount, true);
 
@@ -191,79 +186,66 @@ contract LiquidationBotV2Test is Test {
         assertGt(CometInterface(COMET).getReserves(), initialReserves);
     }
 
+    function swapWithNoMax(
+        address asset,
+        address whale,
+        uint256 transferAmount
+    ) public {
+        (uint initialRecipientBalance, int initialReserves) = initialValues();
+
+        vm.prank(whale);
+        ERC20(asset).transfer(COMET, transferAmount);
+
+        swap(asset);
+
+        // expect that there is only dust (< 1 unit) left of the asset
+        assertLt(CometInterface(COMET).getCollateralReserves(asset), 10 ** ERC20(asset).decimals());
+
+        // expect the balance of the recipient to have increased
+        assertGt(ERC20(USDC).balanceOf(LIQUIDATOR_EOA), initialRecipientBalance);
+
+        // expect the protocol reserves to have increased
+        assertGt(CometInterface(COMET).getReserves(), initialReserves);
+    }
+
     function testCompSwapWithMaxCollateral() public {
         swapWithMaxCollateral(COMP, COMP_WHALE, 40_000e18, 500e18);
     }
 
-    // wbtc
     function testWbtcSwapWithMaxCollateral() public {
         swapWithMaxCollateral(WBTC, WBTC_WHALE, 10_000e8, 120e8);
     }
 
-    // weth
     function testWethSwapWithMaxCollateral() public {
         swapWithMaxCollateral(WETH9, WETH_WHALE, 10_000e18, 5_000e18);
     }
 
-    // uni
     function testUniSwapWithMaxCollateral() public {
         swapWithMaxCollateral(UNI, UNI_WHALE, 500_000e18, 150_000e18);
     }
 
-    // link
     function testLinkSwapWithMaxCollateral() public {
         swapWithMaxCollateral(LINK, LINK_WHALE, 500_000e18, 150_000e18);
     }
 
-    function testLargeWbtcSwap() public {
-        (uint initialRecipientBalance, int initialReserves) = initialValues();
-
-        address wbtcOwner = WbtcInterface(WBTC).owner();
-        vm.prank(wbtcOwner);
-        WbtcInterface(WBTC).mint(COMET, 120e8); // 120 WBTC
-        swap(WBTC);
-
-        runSwapAssertions(WBTC, initialRecipientBalance, initialReserves);
+    function testLargeCompSwap() public {
+        swapWithNoMax(COMP, COMP_WHALE, 2_000e18);
     }
 
-    function testLargeCompSwap() public {
-        (uint initialRecipientBalance, int initialReserves) = initialValues();
-
-        vm.prank(COMP_WHALE);
-        ERC20(COMP).transfer(COMET, 2_000e18); // 2,000 COMP
-        swap(COMP);
-
-        runSwapAssertions(COMP, initialRecipientBalance, initialReserves);
+    function testLargeWbtcSwap() public {
+        swapWithNoMax(WBTC, WBTC_WHALE, 120e8);
     }
 
     function testLargeWethSwap() public {
-        (uint initialRecipientBalance, int initialReserves) = initialValues();
-
-        vm.prank(WETH_WHALE);
-        ERC20(WETH9).transfer(COMET, 5_000e18); // 5,000 WETH
-        swap(WETH9);
-
-        runSwapAssertions(WETH9, initialRecipientBalance, initialReserves);
+        swapWithNoMax(WETH9, WETH_WHALE, 5_000e18);
     }
 
     function testLargeUniSwap() public {
-        (uint initialRecipientBalance, int initialReserves) = initialValues();
-
-        vm.prank(UNI_WHALE);
-        ERC20(UNI).transfer(COMET, 500_000e18); // 500K UNI
-        swap(UNI);
-
-        runSwapAssertions(UNI, initialRecipientBalance, initialReserves);
+        swapWithNoMax(UNI, UNI_WHALE, 500_000e18);
     }
 
     function testLargeLinkSwap() public {
-        (uint initialRecipientBalance, int initialReserves) = initialValues();
-
-        vm.prank(LINK_WHALE);
-        ERC20(LINK).transfer(COMET, 250_000e18); // 250,000 LINK
-        swap(LINK);
-
-        runSwapAssertions(LINK, initialRecipientBalance, initialReserves);
+        swapWithNoMax(LINK, LINK_WHALE, 250_000e18);
     }
 
     function testSwapsMultipleAssets() public {
@@ -271,10 +253,8 @@ contract LiquidationBotV2Test is Test {
 
         // test amounts must be lower in order to avoid putting the protocol
         // above targetReserves
-
-        address wbtcOwner = WbtcInterface(WBTC).owner();
-        vm.prank(wbtcOwner);
-        WbtcInterface(WBTC).mint(COMET, 10e8);
+        vm.prank(WBTC_WHALE);
+        ERC20(WBTC).mint(COMET, 10e8);
 
         vm.prank(COMP_WHALE);
         ERC20(COMP).transfer(COMET, 100e18);
