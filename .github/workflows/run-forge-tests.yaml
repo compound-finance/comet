@@ -29,7 +29,7 @@ jobs:
         run: yarn install --non-interactive --frozen-lockfile && yarn build
 
       - name: Run tests
-        run: forge test -vvv --via-ir --ffi --fork-url https://mainnet.infura.io/v3/$INFURA_KEY
+        run: forge test -vvv --via-ir --ffi
         env:
           ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
           SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}

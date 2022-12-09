@@ -39,6 +39,8 @@ contract LiquidationBotV2Test is Test {
     address public constant liquidator_eoa = 0x5a13D329A193ca3B1fE2d7B459097EdDba14C28F;
 
     function setUp() public {
+        vm.createSelectFork(string.concat("https://mainnet.infura.io/v3/", vm.envString("INFURA_KEY")));
+
         liquidator = new LiquidatorV2(
             CometInterface(comet),
             address(uniswap_v3_factory),
