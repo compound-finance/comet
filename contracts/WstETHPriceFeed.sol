@@ -35,6 +35,7 @@ contract WstETHPriceFeed is IPriceFeed {
         stETHtoETHPriceFeed = stETHtoETHPriceFeed_;
         stETHToETHPriceFeedDecimals = AggregatorV3Interface(stETHtoETHPriceFeed_).decimals();
         wstETH = wstETH_;
+        // Note: Safe to convert directly to an int256 because wstETH.decimals == 18
         wstETHScale = int256(10 ** IWstETH(wstETH).decimals());
 
         // Note: stETH / ETH price feed has 18 decimals so `decimals_` should always be less than or equals to that
