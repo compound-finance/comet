@@ -42,6 +42,7 @@ contract BaseBulker {
 
     /**
      * @notice A public function to sweep accidental ERC-20 transfers to this contract. Tokens are sent to admin (Timelock)
+     * @dev Note: Make sure to check that the asset being swept out is not malicious.
      * @param recipient The address that will receive the swept funds
      * @param asset The address of the ERC-20 token to sweep
      */
