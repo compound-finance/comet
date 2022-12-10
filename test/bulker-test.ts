@@ -1,4 +1,4 @@
-import { baseBalanceOf, ethers, expect, exp, makeProtocol, wait, makeBulker, defaultAssets, getGasUsed, makeRewards, fastForward } from './helpers';
+import { baseBalanceOf, ethers, expect, exp, makeProtocol, wait, makeBulker, defaultAssets, getGasUsed, makeRewards, fastForward, event } from './helpers';
 import { FaucetWETH__factory } from '../build/types';
 
 // XXX Improve the "no permission" tests that should expect a custom error when
@@ -364,6 +364,37 @@ describe('bulker', function () {
   });
 
   describe('admin functions', function () {
+    it('transferAdmin', async () => {
+      const protocol = await makeProtocol({});
+      const { governor, tokens: { USDC, WETH }, users: [alice] } = protocol;
+      const bulkerInfo = await makeBulker({ admin: governor, weth: WETH.address });
+      const { bulker } = bulkerInfo;
+
+      expect(await bulker.admin()).to.be.equal(governor.address);
+
+      // Admin transferred
+      const txn = await wait(bulker.connect(governor).transferAdmin(alice.address));
+
+      expect(event(txn, 0)).to.be.deep.equal({
+        AdminTransferred: {
+          oldAdmin: governor.address,
+          newAdmin: alice.address
+        }
+      });
+      expect(await bulker.admin()).to.be.equal(alice.address);
+    });
+
+    it('revert is transferAdmin called by non-admin', async () => {
+      const protocol = await makeProtocol({});
+      const { governor, tokens: { USDC, WETH }, users: [alice] } = protocol;
+      const bulkerInfo = await makeBulker({ admin: governor, weth: WETH.address });
+      const { bulker } = bulkerInfo;
+
+      await expect(
+        bulker.connect(alice).transferAdmin(alice.address)
+      ).to.be.revertedWith("custom error 'Unauthorized()'");
+    });
+
     it('sweep ERC20 token', async () => {
       const protocol = await makeProtocol({});
       const { governor, tokens: { USDC, WETH }, users: [alice] } = protocol;

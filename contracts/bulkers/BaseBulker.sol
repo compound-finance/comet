@@ -21,10 +21,14 @@ interface IClaimable {
  * @dev Note: Only intended to be used on EVM chains that have a native token and wrapped native token that implements the IWETH interface
  */
 contract BaseBulker {
+    /** Custom events **/
+
+    event AdminTransferred(address indexed oldAdmin, address indexed newAdmin);
+
     /** General configuration constants **/
 
     /// @notice The admin of the Bulker contract
-    address public immutable admin;
+    address public admin;
 
     /// @notice The address of the wrapped representation of the chain's native asset
     address payable public immutable wrappedNativeToken;
@@ -94,6 +98,17 @@ contract BaseBulker {
         uint256 balance = address(this).balance;
         (bool success, ) = recipient.call{ value: balance }("");
         if (!success) revert FailedToSendNativeToken();
+    }
+
+    /**
+     * @notice Transfers the admin rights to a new address
+     */
+    function transferAdmin(address newAdmin) external {
+        if (msg.sender != admin) revert Unauthorized();
+
+        address oldAdmin = admin;
+        admin = newAdmin;
+        emit AdminTransferred(oldAdmin, newAdmin);
     }
 
     /**
