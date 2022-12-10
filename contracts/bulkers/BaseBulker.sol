@@ -5,44 +5,75 @@ import "../CometInterface.sol";
 import "../ERC20.sol";
 import "../IWETH9.sol";
 
+/**
+ * @dev Interface for claiming rewards from the CometRewards contract
+ */
 interface IClaimable {
     function claim(address comet, address src, bool shouldAccrue) external;
 
     function claimTo(address comet, address src, address to, bool shouldAccrue) external;
 }
 
+/**
+ * @title Compound's Bulker contract
+ * @notice Executes multiple Comet-related actions in a single transaction
+ * @author Compound
+ * @dev Note: Only intended to be used on EVM chains that have a native token and wrapped native token that implements the IWETH interface
+ */
 contract BaseBulker {
     /** General configuration constants **/
+
+    /// @notice The admin of the Bulker contract
     address public immutable admin;
+
+    /// @notice The address of the wrapped representation of the chain's native asset
     address payable public immutable wrappedNativeToken;
 
     /** Actions **/
+
+    /// @notice The action for supplying an asset to Comet
     bytes32 public constant ACTION_SUPPLY_ASSET = "ACTION_SUPPLY_ASSET";
+
+    /// @notice The action for supplying a native asset (e.g. ETH on Ethereum mainnet) to Comet
     bytes32 public constant ACTION_SUPPLY_NATIVE_TOKEN = "ACTION_SUPPLY_NATIVE_TOKEN";
+
+    /// @notice The action for transferring an asset within Comet
     bytes32 public constant ACTION_TRANSFER_ASSET = "ACTION_TRANSFER_ASSET";
+
+    /// @notice The action for withdrawing an asset from Comet
     bytes32 public constant ACTION_WITHDRAW_ASSET = "ACTION_WITHDRAW_ASSET";
+
+    /// @notice The action for withdrawing a native asset from Comet
     bytes32 public constant ACTION_WITHDRAW_NATIVE_TOKEN = "ACTION_WITHDRAW_NATIVE_TOKEN";
+
+    /// @notice The action for claiming rewards from the Comet rewards contract
     bytes32 public constant ACTION_CLAIM_REWARD = "ACTION_CLAIM_REWARD";
 
     /** Custom errors **/
+
     error InvalidArgument();
     error FailedToSendNativeToken();
     error Unauthorized();
     error UnhandledAction();
 
+    /**
+     * @notice Construct a new BaseBulker instance
+     * @param admin_ The admin of the Bulker contract
+     * @param wrappedNativeToken_ The address of the wrapped representation of the chain's native asset
+     **/
     constructor(address admin_, address payable wrappedNativeToken_) {
         admin = admin_;
         wrappedNativeToken = wrappedNativeToken_;
     }
 
     /**
-     * @notice Fallback for receiving native token. Needed for ACTION_WITHDRAW_NATIVE_TOKEN.
+     * @notice Fallback for receiving native token. Needed for ACTION_WITHDRAW_NATIVE_TOKEN
      */
     receive() external payable {}
 
     /**
-     * @notice A public function to sweep accidental ERC-20 transfers to this contract.
-     * @dev Note: Make sure to check that the asset being swept out is not malicious.
+     * @notice A public function to sweep accidental ERC-20 transfers to this contract
+     * @dev Note: Make sure to check that the asset being swept out is not malicious
      * @param recipient The address that will receive the swept funds
      * @param asset The address of the ERC-20 token to sweep
      */
@@ -54,7 +85,7 @@ contract BaseBulker {
     }
 
     /**
-     * @notice A public function to sweep accidental native token transfers to this contract.
+     * @notice A public function to sweep accidental native token transfers to this contract
      * @param recipient The address that will receive the swept funds
      */
     function sweepNativeToken(address recipient) external {
@@ -108,19 +139,24 @@ contract BaseBulker {
         }
     }
 
+    /**
+     * @notice Handles any actions not handled by the BaseBulker implementation
+     * @dev Note: Meant to be overridden by contracts that extend BaseBulker and want to support more actions
+     */
     function handleAction(bytes32 action, bytes calldata data) virtual internal {
         revert UnhandledAction();
     }
 
     /**
      * @notice Supplies an asset to a user in Comet
+     * @dev Note: This contract must have permission to manage msg.sender's Comet account
      */
     function supplyTo(address comet, address to, address asset, uint amount) internal {
         CometInterface(comet).supplyFrom(msg.sender, to, asset, amount);
     }
 
     /**
-     * @notice Wraps native token and supplies wrapped native token to a user in Comet
+     * @notice Wraps the native token and supplies wrapped native token to a user in Comet
      */
     function supplyNativeTokenTo(address comet, address to, uint amount) internal {
         IWETH9(wrappedNativeToken).deposit{ value: amount }();
@@ -130,6 +166,7 @@ contract BaseBulker {
 
     /**
      * @notice Transfers an asset to a user in Comet
+     * @dev Note: This contract must have permission to manage msg.sender's Comet account
      */
     function transferTo(address comet, address to, address asset, uint amount) internal {
         CometInterface(comet).transferAssetFrom(msg.sender, to, asset, amount);
@@ -137,13 +174,15 @@ contract BaseBulker {
 
     /**
      * @notice Withdraws an asset to a user in Comet
+     * @dev Note: This contract must have permission to manage msg.sender's Comet account
      */
     function withdrawTo(address comet, address to, address asset, uint amount) internal {
         CometInterface(comet).withdrawFrom(msg.sender, to, asset, amount);
     }
 
     /**
-     * @notice Withdraws wrapped native token from Comet to a user after unwrapping it to native token
+     * @notice Withdraws wrapped native token from Comet, unwraps it to the native token, and transfers it to a user
+     * @dev Note: This contract must have permission to manage msg.sender's Comet account
      */
     function withdrawNativeTokenTo(address comet, address to, uint amount) internal {
         CometInterface(comet).withdrawFrom(msg.sender, address(this), wrappedNativeToken, amount);
@@ -153,7 +192,7 @@ contract BaseBulker {
     }
 
     /**
-     * @notice Claim reward for a user
+     * @notice Claims rewards for a user
      */
     function claimReward(address comet, address rewards, address src, bool shouldAccrue) internal {
         IClaimable(rewards).claim(comet, src, shouldAccrue);
