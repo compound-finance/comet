@@ -1,5 +1,5 @@
 import { baseBalanceOf, ethers, expect, exp, makeProtocol, wait, makeBulker, defaultAssets, getGasUsed, makeRewards, fastForward, event } from './helpers';
-import { FaucetWETH__factory } from '../build/types';
+import { FaucetWETH__factory, NonStandardFaucetToken__factory } from '../build/types';
 
 // XXX Improve the "no permission" tests that should expect a custom error when
 // when https://github.com/nomiclabs/hardhat/issues/1618 gets fixed.
@@ -395,7 +395,7 @@ describe('bulker', function () {
       ).to.be.revertedWith("custom error 'Unauthorized()'");
     });
 
-    it('sweep ERC20 token', async () => {
+    it('sweep standard ERC20 token', async () => {
       const protocol = await makeProtocol({});
       const { governor, tokens: { USDC, WETH }, users: [alice] } = protocol;
       const bulkerInfo = await makeBulker({ admin: governor, weth: WETH.address });
@@ -414,6 +414,35 @@ describe('bulker', function () {
 
       const newBulkerBalance = await USDC.balanceOf(bulker.address);
       const newGovBalance = await USDC.balanceOf(governor.address);
+
+      expect(newBulkerBalance.sub(oldBulkerBalance)).to.be.equal(-transferAmount);
+      expect(newGovBalance.sub(oldGovBalance)).to.be.equal(transferAmount);
+    });
+
+    it('sweep non-standard ERC20 token', async () => {
+      const protocol = await makeProtocol({});
+      const { governor, tokens: { USDC, WETH }, users: [alice] } = protocol;
+      const bulkerInfo = await makeBulker({ admin: governor, weth: WETH.address });
+      const { bulker } = bulkerInfo;
+
+      // Deploy non-standard token
+      const factory = (await ethers.getContractFactory('NonStandardFaucetToken')) as NonStandardFaucetToken__factory;
+      const nonStandardToken = await factory.deploy(1000e6, 'Tether', 6, 'USDT');
+      await nonStandardToken.deployed();
+
+      // Alice "accidentally" sends 10 non-standard tokens to the Bulker
+      const transferAmount = exp(10, 6);
+      await nonStandardToken.allocateTo(alice.address, transferAmount);
+      await nonStandardToken.connect(alice).transfer(bulker.address, transferAmount);
+
+      const oldBulkerBalance = await nonStandardToken.balanceOf(bulker.address);
+      const oldGovBalance = await nonStandardToken.balanceOf(governor.address);
+
+      // Governor sweeps tokens
+      await bulker.connect(governor).sweepToken(governor.address, nonStandardToken.address);
+
+      const newBulkerBalance = await nonStandardToken.balanceOf(bulker.address);
+      const newGovBalance = await nonStandardToken.balanceOf(governor.address);
 
       expect(newBulkerBalance.sub(oldBulkerBalance)).to.be.equal(-transferAmount);
       expect(newGovBalance.sub(oldGovBalance)).to.be.equal(transferAmount);
