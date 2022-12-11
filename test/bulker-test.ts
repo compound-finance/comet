@@ -366,7 +366,7 @@ describe('bulker', function () {
   describe('admin functions', function () {
     it('transferAdmin', async () => {
       const protocol = await makeProtocol({});
-      const { governor, tokens: { USDC, WETH }, users: [alice] } = protocol;
+      const { governor, tokens: { WETH }, users: [alice] } = protocol;
       const bulkerInfo = await makeBulker({ admin: governor, weth: WETH.address });
       const { bulker } = bulkerInfo;
 
@@ -386,7 +386,7 @@ describe('bulker', function () {
 
     it('revert is transferAdmin called by non-admin', async () => {
       const protocol = await makeProtocol({});
-      const { governor, tokens: { USDC, WETH }, users: [alice] } = protocol;
+      const { governor, tokens: { WETH }, users: [alice] } = protocol;
       const bulkerInfo = await makeBulker({ admin: governor, weth: WETH.address });
       const { bulker } = bulkerInfo;
 
@@ -421,7 +421,7 @@ describe('bulker', function () {
 
     it('sweep non-standard ERC20 token', async () => {
       const protocol = await makeProtocol({});
-      const { governor, tokens: { USDC, WETH }, users: [alice] } = protocol;
+      const { governor, tokens: { WETH }, users: [alice] } = protocol;
       const bulkerInfo = await makeBulker({ admin: governor, weth: WETH.address });
       const { bulker } = bulkerInfo;
 
