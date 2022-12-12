@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import "../CometInterface.sol";
-import "../ERC20.sol";
+import "../IERC20NonStandard.sol";
 import "../IWETH9.sol";
 
 /**
@@ -21,10 +21,14 @@ interface IClaimable {
  * @dev Note: Only intended to be used on EVM chains that have a native token and wrapped native token that implements the IWETH interface
  */
 contract BaseBulker {
+    /** Custom events **/
+
+    event AdminTransferred(address indexed oldAdmin, address indexed newAdmin);
+
     /** General configuration constants **/
 
     /// @notice The admin of the Bulker contract
-    address public immutable admin;
+    address public admin;
 
     /// @notice The address of the wrapped representation of the chain's native asset
     address payable public immutable wrappedNativeToken;
@@ -53,6 +57,8 @@ contract BaseBulker {
 
     error InvalidArgument();
     error FailedToSendNativeToken();
+    error TransferInFailed();
+    error TransferOutFailed();
     error Unauthorized();
     error UnhandledAction();
 
@@ -77,11 +83,11 @@ contract BaseBulker {
      * @param recipient The address that will receive the swept funds
      * @param asset The address of the ERC-20 token to sweep
      */
-    function sweepToken(address recipient, ERC20 asset) external {
+    function sweepToken(address recipient, address asset) external {
         if (msg.sender != admin) revert Unauthorized();
 
-        uint256 balance = asset.balanceOf(address(this));
-        asset.transfer(recipient, balance);
+        uint256 balance = IERC20NonStandard(asset).balanceOf(address(this));
+        doTransferOut(asset, recipient, balance);
     }
 
     /**
@@ -94,6 +100,17 @@ contract BaseBulker {
         uint256 balance = address(this).balance;
         (bool success, ) = recipient.call{ value: balance }("");
         if (!success) revert FailedToSendNativeToken();
+    }
+
+    /**
+     * @notice Transfers the admin rights to a new address
+     */
+    function transferAdmin(address newAdmin) external {
+        if (msg.sender != admin) revert Unauthorized();
+
+        address oldAdmin = admin;
+        admin = newAdmin;
+        emit AdminTransferred(oldAdmin, newAdmin);
     }
 
     /**
@@ -196,5 +213,60 @@ contract BaseBulker {
      */
     function claimReward(address comet, address rewards, address src, bool shouldAccrue) internal {
         IClaimable(rewards).claim(comet, src, shouldAccrue);
+    }
+
+    /**
+     * @notice Similar to ERC-20 transfer, except it properly handles `transferFrom` from non-standard ERC-20 tokens
+     * @param asset The ERC-20 token to transfer in
+     * @param from The address to transfer from
+     * @param amount The amount of the token to transfer
+     * @dev Note: This does not check that the amount transferred in is actually equals to the amount specified (e.g. fee tokens will not revert)
+     * @dev Note: This wrapper safely handles non-standard ERC-20 tokens that do not return a value. See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
+     */
+    function doTransferIn(address asset, address from, uint amount) internal {
+        IERC20NonStandard(asset).transferFrom(from, address(this), amount);
+
+        bool success;
+        assembly {
+            switch returndatasize()
+                case 0 {                       // This is a non-standard ERC-20
+                    success := not(0)          // set success to true
+                }
+                case 32 {                      // This is a compliant ERC-20
+                    returndatacopy(0, 0, 32)
+                    success := mload(0)        // Set `success = returndata` of override external call
+                }
+                default {                      // This is an excessively non-compliant ERC-20, revert.
+                    revert(0, 0)
+                }
+        }
+        if (!success) revert TransferInFailed();
+    }
+
+    /**
+     * @notice Similar to ERC-20 transfer, except it properly handles `transfer` from non-standard ERC-20 tokens
+     * @param asset The ERC-20 token to transfer out
+     * @param to The recipient of the token transfer
+     * @param amount The amount of the token to transfer
+     * @dev Note: This wrapper safely handles non-standard ERC-20 tokens that do not return a value. See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
+     */
+    function doTransferOut(address asset, address to, uint amount) internal {
+        IERC20NonStandard(asset).transfer(to, amount);
+
+        bool success;
+        assembly {
+            switch returndatasize()
+                case 0 {                      // This is a non-standard ERC-20
+                    success := not(0)         // set success to true
+                }
+                case 32 {                     // This is a compliant ERC-20
+                    returndatacopy(0, 0, 32)
+                    success := mload(0)       // Set `success = returndata` of override external call
+                }
+                default {                     // This is an excessively non-compliant ERC-20, revert.
+                    revert(0, 0)
+                }
+        }
+        if (!success) revert TransferOutFailed();
     }
 }

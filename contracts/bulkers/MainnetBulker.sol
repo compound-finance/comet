@@ -61,7 +61,7 @@ contract MainnetBulker is BaseBulker {
      * @dev Note: This contract must have permission to manage msg.sender's Comet account
      */
     function supplyStEthTo(address comet, address to, uint stETHAmount) internal {
-        ERC20(steth).transferFrom(msg.sender, address(this), stETHAmount);
+        doTransferIn(steth, msg.sender, stETHAmount);
         ERC20(steth).approve(wsteth, stETHAmount);
         uint wstETHAmount = IWstETH(wsteth).wrap(stETHAmount);
         ERC20(wsteth).approve(comet, wstETHAmount);
@@ -75,6 +75,6 @@ contract MainnetBulker is BaseBulker {
     function withdrawStEthTo(address comet, address to, uint wstETHAmount) internal {
         CometInterface(comet).withdrawFrom(msg.sender, address(this), wsteth, wstETHAmount);
         uint stETHAmount = IWstETH(wsteth).unwrap(wstETHAmount);
-        ERC20(steth).transfer(to, stETHAmount);
+        doTransferOut(steth, to, stETHAmount);
     }
 }
