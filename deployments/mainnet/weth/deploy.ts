@@ -31,7 +31,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'cbETH:priceFeed',
     'ScalingPriceFeed.sol',
     [
-      '0x86392dC19c0b719886221c78AB11eb8Cf5c52812', // XXX using stETH / ETH price feed until cbETH / ETH is deployed
+      '0xF017fcB346A1885194689bA23Eff2fE6fA5C483b', // cbETH / ETH price feed
       8                                             // decimals
     ]
   );
