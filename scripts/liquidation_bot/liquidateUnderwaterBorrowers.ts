@@ -2,7 +2,6 @@ import hre from 'hardhat';
 import axios from 'axios';
 import {
   CometInterface,
-  Liquidator,
   LiquidatorV2,
 } from '../../build/types';
 import { exp } from '../../test/helpers';
@@ -60,7 +59,7 @@ export async function attemptLiquidation(
       assets,
       collateralReserves,
       collateralReservesInBase
-    ] = await liquidator.callStatic.availableCollateral(targetAddresses);
+    ] = await liquidator.callStatic.availableCollateral(comet.address, targetAddresses);
 
     const baseToken = await comet.baseToken();
 
@@ -77,7 +76,7 @@ export async function attemptLiquidation(
       // check if collateralReserveAmountInBase is greater than threshold
       const liquidationThreshold = 1e6; // XXX increase, denominate in base scale
 
-      if (collateralReserveAmountInBase > liquidationThreshold) {
+      if (collateralReserveAmountInBase.toBigInt() > liquidationThreshold) {
         const swapParams = {
           fromTokenAddress: asset,
           toTokenAddress: baseToken,
@@ -96,7 +95,16 @@ export async function attemptLiquidation(
       }
     }
 
-    const args = [
+    const args: [
+      string,
+      string[],
+      string[],
+      string[],
+      string[],
+      string,
+      number
+    ] = [
+      comet.address,
       targetAddresses,
       swapAssets,
       swapTargets,
@@ -154,7 +162,7 @@ export async function hasPurchaseableCollateral(comet: CometInterface, assets: A
 
 export async function liquidateUnderwaterBorrowers(
   comet: CometInterface,
-  liquidator: Liquidator,
+  liquidator: LiquidatorV2,
   signerWithFlashbots: SignerWithFlashbots,
   network: string
 ): Promise<boolean> {
@@ -184,7 +192,7 @@ export async function liquidateUnderwaterBorrowers(
 
 export async function arbitragePurchaseableCollateral(
   comet: CometInterface,
-  liquidator: Liquidator,
+  liquidator: LiquidatorV2,
   assets: Asset[],
   signerWithFlashbots: SignerWithFlashbots,
   network: string

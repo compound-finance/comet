@@ -2,9 +2,9 @@ import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { LiquidatorV2 } from '../build/types';
 import { attemptLiquidation } from '../scripts/liquidation_bot/liquidateUnderwaterBorrowers';
-import { isValidAssetIndex, MAX_ASSETS, timeUntilUnderwater } from './utils';
+import { isValidAssetIndex, MAX_ASSETS } from './utils';
 
-const LIQUIDATOR_EOA = "0x5a13D329A193ca3B1fE2d7B459097EdDba14C28F";
+const LIQUIDATOR_EOA = '0x5a13D329A193ca3B1fE2d7B459097EdDba14C28F';
 const UNISWAP_V3_FACTORY_ADDRESS = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
 const WETH9 = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 
@@ -78,5 +78,5 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       // check that recipient balance increased
       expect(await USDC.balanceOf(LIQUIDATOR_EOA)).to.be.greaterThan(Number(initialRecipientBalance));
     }
-  )
+  );
 }
