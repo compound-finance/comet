@@ -253,7 +253,7 @@ describe('LiquidatorV2', function () {
   });
 
   it('setAssetConfig updates asset config', async () => {
-    const { comet, liquidatorV2, users: [signer, underwater], assets: { link } } = await makeLiquidatableProtocol();
+    const { comet, liquidatorV2, users: [signer], assets: { link } } = await makeLiquidatableProtocol();
 
     const assetConfig = await liquidatorV2.connect(signer).assetConfigs(comet.address, link.address);
 
