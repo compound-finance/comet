@@ -137,10 +137,10 @@ scenario(
     const { albert, betty } = actors;
 
     await world.increaseTime(
-      await timeUntilUnderwater({
+      Math.round(await timeUntilUnderwater({
         comet,
         actor: albert,
-      })
+      }) * 1.1) // XXX why is this off? better to use a price constraint?
     );
 
     const ab0 = await betty.absorb({ absorber: betty.address, accounts: [albert.address] });
