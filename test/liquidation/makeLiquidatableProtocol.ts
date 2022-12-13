@@ -5,7 +5,7 @@ import {
   CometExt__factory,
   CometHarness__factory,
   CometHarnessInterface,
-  Liquidator__factory
+  LiquidatorV2__factory
 } from '../../build/types';
 import {
   COMP,
@@ -141,41 +141,11 @@ export async function makeProtocol() {
   const [signer,, recipient] = await ethers.getSigners();
 
   // build Liquidator
-  const Liquidator = await ethers.getContractFactory('Liquidator') as Liquidator__factory;
+  const Liquidator = await ethers.getContractFactory('LiquidatorV2') as LiquidatorV2__factory;
   const liquidator = await Liquidator.deploy(
-    recipient.address,
-    ethers.utils.getAddress(UNISWAP_ROUTER),
-    ethers.utils.getAddress(SUSHISWAP_ROUTER),
-    ethers.utils.getAddress(comet.address),
     ethers.utils.getAddress(UNISWAP_V3_FACTORY),
     ethers.utils.getAddress(WETH9),
-    10e6, // min viable liquidation is for 10 USDC (base token) of collateral,
-    [
-      ethers.utils.getAddress(DAI),
-      ethers.utils.getAddress(WETH9),
-      ethers.utils.getAddress(WBTC),
-      ethers.utils.getAddress(UNI),
-      ethers.utils.getAddress(COMP),
-      ethers.utils.getAddress(LINK)
-    ],
-    [false, false, false, false, true, true],
-    [500, 500, 3000, 3000, 3000, 3000],
-    [
-      Exchange.Uniswap,
-      Exchange.Uniswap,
-      Exchange.Uniswap,
-      Exchange.Uniswap,
-      Exchange.SushiSwap,
-      Exchange.Uniswap
-    ],
-    [
-      ethers.constants.MaxUint256,
-      ethers.constants.MaxUint256,
-      ethers.constants.MaxUint256,
-      ethers.constants.MaxUint256,
-      ethers.constants.MaxUint256,
-      ethers.constants.MaxUint256
-    ]
+    recipient.address
   );
   await liquidator.deployed();
 
@@ -321,7 +291,6 @@ export async function forkMainnet() {
       {
         forking: {
           jsonRpcUrl: mainnetConfig.url,
-          blockNumber: 15125532
         },
       },
     ],

@@ -3,8 +3,8 @@ import { arbitragePurchaseableCollateral, getAssets, hasPurchaseableCollateral, 
 import { forkMainnet, makeProtocol, makeLiquidatableProtocol, resetHardhatNetwork } from './makeLiquidatableProtocol';
 
 describe('Liquidation Bot', function () {
-  before(forkMainnet);
-  after(resetHardhatNetwork);
+  beforeEach(forkMainnet);
+  afterEach(resetHardhatNetwork);
 
   describe('liquidateUnderwaterBorrowers', function () {
     it('liquidates underwater borrowers', async function () {
