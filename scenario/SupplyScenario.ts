@@ -204,7 +204,7 @@ scenario(
       albert: { $base: 1000 }
     },
     cometBalances: {
-      betty: { $base: -1000 } // in units of asset, not wei
+      betty: { $base: '<= -1000' } // in units of asset, not wei
     },
   },
   async ({ comet, actors }, context) => {
@@ -216,7 +216,7 @@ scenario(
     const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(1000n * scale);
-    expectApproximately(await betty.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 1n) + 1n);
+    expectApproximately(await betty.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 5n) + 1n);
 
     await baseAsset.approve(albert, comet.address);
     await albert.allow(betty, true);

@@ -3,7 +3,6 @@
   "symbol": "cWETHv3",
   "baseToken": "WETH",
   "baseTokenAddress": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-  "baseTokenPriceFeed": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
   "borrowMin": "100e6",
   "governor": "0x6d903f6003cca6255d85cca4d3b5e5146dc33925",
   "pauseGuardian": "0xbbf3f1421d886e9b2c5d716b5192ac998af2012c",
@@ -28,7 +27,6 @@
   "assets": {
     "cbETH": {
       "address": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
-      "priceFeed": "0x67eF3CAF8BeB93149F48e8d20920BEC9b4320510",
       "decimals": "18",
       "borrowCF": 0.90,
       "liquidateCF": 0.93,

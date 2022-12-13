@@ -26,6 +26,17 @@ export function debug(...args: any[]) {
   }
 }
 
+export function stringifyJson<K>(k: K): string {
+  return JSON.stringify(
+    k,
+    (_key, value) =>
+      typeof value === 'bigint'
+        ? value.toString()
+        : value,
+    4
+  );
+}
+
 export async function fileExists(path: string): Promise<boolean> {
   try {
     await fs.stat(path);
