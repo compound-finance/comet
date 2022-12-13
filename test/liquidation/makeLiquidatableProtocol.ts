@@ -5,6 +5,7 @@ import {
   CometExt__factory,
   CometHarness__factory,
   CometHarnessInterface,
+  Liquidator__factory,
   LiquidatorV2__factory
 } from '../../build/types';
 import {
@@ -141,13 +142,52 @@ export async function makeProtocol() {
   const [signer,, recipient] = await ethers.getSigners();
 
   // build Liquidator
-  const Liquidator = await ethers.getContractFactory('LiquidatorV2') as LiquidatorV2__factory;
-  const liquidator = await Liquidator.deploy(
+  const LiquidatorFactory = await ethers.getContractFactory('Liquidator') as Liquidator__factory;
+  const liquidator = await LiquidatorFactory.deploy(
+    recipient.address,
+    ethers.utils.getAddress(UNISWAP_ROUTER),
+    ethers.utils.getAddress(SUSHISWAP_ROUTER),
+    ethers.utils.getAddress(comet.address),
+    ethers.utils.getAddress(UNISWAP_V3_FACTORY),
+    ethers.utils.getAddress(WETH9),
+    10e6, // min viable liquidation is for 10 USDC (base token) of collateral,
+    [
+      ethers.utils.getAddress(DAI),
+      ethers.utils.getAddress(WETH9),
+      ethers.utils.getAddress(WBTC),
+      ethers.utils.getAddress(UNI),
+      ethers.utils.getAddress(COMP),
+      ethers.utils.getAddress(LINK)
+    ],
+    [false, false, false, false, true, true],
+    [500, 500, 3000, 3000, 3000, 3000],
+    [
+      Exchange.Uniswap,
+      Exchange.Uniswap,
+      Exchange.Uniswap,
+      Exchange.Uniswap,
+      Exchange.SushiSwap,
+      Exchange.Uniswap
+    ],
+    [
+      ethers.constants.MaxUint256,
+      ethers.constants.MaxUint256,
+      ethers.constants.MaxUint256,
+      ethers.constants.MaxUint256,
+      ethers.constants.MaxUint256,
+      ethers.constants.MaxUint256
+    ]
+  );
+  await liquidator.deployed();
+
+  // build LiquidatorV2
+  const LiquidatorV2Factory = await ethers.getContractFactory('LiquidatorV2') as LiquidatorV2__factory;
+  const liquidatorV2 = await LiquidatorV2Factory.deploy(
     ethers.utils.getAddress(UNISWAP_V3_FACTORY),
     ethers.utils.getAddress(WETH9),
     recipient.address
   );
-  await liquidator.deployed();
+  await liquidatorV2.deployed();
 
   const mockDai = new ethers.Contract(DAI, daiAbi, signer);
   const mockUSDC = new ethers.Contract(USDC, usdcAbi, signer);
@@ -202,6 +242,7 @@ export async function makeProtocol() {
   return {
     comet: cometHarnessInterface,
     liquidator,
+    liquidatorV2,
     users: [signer, recipient],
     assets: {
       dai: mockDai,
@@ -228,6 +269,7 @@ export async function makeLiquidatableProtocol() {
   const {
     comet,
     liquidator,
+    liquidatorV2,
     assets: { dai, usdc, weth, wbtc, uni, comp, link  },
     whales: { daiWhale, usdcWhale, wethWhale, wbtcWhale, uniWhale, compWhale, linkWhale }
   } = await makeProtocol();
@@ -260,6 +302,7 @@ export async function makeLiquidatableProtocol() {
   return {
     comet: comet,
     liquidator,
+    liquidatorV2,
     users: [signer, underwaterUser, recipient],
     assets: {
       dai,
