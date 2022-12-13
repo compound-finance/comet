@@ -78,6 +78,17 @@ export const COMP_WHALES = {
   ]
 };
 
+export const WHALES = {
+  mainnet: [
+    '0xf977814e90da44bfa03b6295a0616a897441acec',
+    '0x0548f59fee79f8832c299e01dca5c76f034f558e',
+    '0x218b95be3ed99141b0144dba6ce88807c4ad7c09',
+    '0xf04a5cc80b1e94c69b48f5ee68a08cd2f09a7c3e',
+    '0x2775b1c75658be0f640272ccb8c72ac986009e38',
+    '0x1a9c8182c09f50c8318d769245bea52c32be35bc',
+  ]
+};
+
 export async function calldata(req: Promise<PopulatedTransaction>): Promise<string> {
   // Splice out the first 4 bytes (function selector) of the tx data
   return '0x' + (await req).data.slice(2 + 8);

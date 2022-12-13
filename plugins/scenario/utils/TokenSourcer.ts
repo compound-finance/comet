@@ -57,7 +57,6 @@ export async function sourceTokens({
   blacklist,
 }: SourceTokenParameters) {
   let amount = BigNumber.from(amount_);
-
   if (amount.isZero()) {
     return;
   } else if (amount.isNegative()) {
@@ -101,6 +100,7 @@ async function addTokens(
   MAX_SEARCH_BLOCKS = 40000,
   BLOCK_SPAN = 2048
 ) {
+  // XXX we should really take min of current balance and amount and transfer that much
   let ethers = dm.hre.ethers;
   block = block ?? (await ethers.provider.getBlockNumber());
   let tokenContract = new ethers.Contract(asset, erc20, ethers.provider);

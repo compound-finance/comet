@@ -19,6 +19,7 @@ import CometActor from './../context/CometActor';
 export { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp };
 
 export const MAX_ASSETS = 15;
+export const UINT256_MAX = 2n ** 256n - 1n;
 
 export interface ComparativeAmount {
   val: number;
@@ -44,6 +45,9 @@ export function expectApproximately(expected: bigint, actual: bigint, precision:
   expect(BigNumber.from(abs(expected - actual))).to.be.lte(BigNumber.from(precision));
 }
 
+export function expectBase(expected: BigNumberish, actual: BigNumberish) {
+  expectApproximately(BigInt(expected), BigInt(actual), 2n);
+}
 
 export function expectRevertCustom(tx: Promise<ContractReceipt>, custom: string) {
   return tx

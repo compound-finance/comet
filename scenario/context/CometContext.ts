@@ -29,7 +29,7 @@ import {
 } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
-import { ProtocolConfiguration, deployComet, COMP_WHALES } from '../../src/deploy';
+import { ProtocolConfiguration, deployComet, COMP_WHALES, WHALES } from '../../src/deploy';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { Requirements } from '../constraints/Requirements';
 import { fastGovernanceExecute, mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from '../utils';
@@ -64,6 +64,14 @@ export class CometContext {
 
   async getCompWhales(): Promise<string[]> {
     return COMP_WHALES[this.world.base.name === 'mainnet' ? 'mainnet' : 'testnet'];
+  }
+
+  async getWhales(): Promise<string[]> {
+    const whales = [];
+    const fauceteer = await this.getFauceteer();
+    if (fauceteer)
+      whales.push(fauceteer.address);
+    return whales.concat(WHALES[this.world.base.name] || []);
   }
 
   async getProposer(): Promise<SignerWithAddress> {
@@ -160,13 +168,13 @@ export class CometContext {
     }
   }
 
-  async allocateActor(name: string, info: object = {}): Promise<CometActor> {
+  async allocateActor(name: string): Promise<CometActor> {
     const { world } = this;
     const { signer } = this.actors;
 
     const actorAddress = getAddressFromNumber(Object.keys(this.actors).length + 1);
     const actorSigner = await world.impersonateAddress(actorAddress);
-    const actor: CometActor = new CometActor(name, actorSigner, actorAddress, this, info);
+    const actor: CometActor = new CometActor(name, actorSigner, actorAddress, this);
     this.actors[name] = actor;
 
     // When we allocate a new actor, how much eth should we warm the account with?
@@ -188,41 +196,38 @@ export class CometContext {
 
   async sourceTokens(amount: number | bigint, asset: CometAsset | string, recipient: AddressLike) {
     const { world } = this;
+    const recipientAddress = resolveAddress(recipient);
+    const cometAsset = typeof asset === 'string' ? this.getAssetByAddress(asset) : asset;
+    const comet = await this.getComet();
 
-    let recipientAddress = resolveAddress(recipient);
-    let cometAsset = typeof asset === 'string' ? this.getAssetByAddress(asset) : asset;
-    let comet = await this.getComet();
+    const whales = await Promise.all((await this.getWhales()).map(async (w, i) => {
+      const name = `whale:${i}`;
+      const signer = await world.impersonateAddress(w);
+      return [name, await buildActor(name, signer, this)];
+    }));
 
-    // First, try to source from Fauceteer
-    const fauceteer = await this.getFauceteer();
-    const fauceteerBalance = fauceteer ? await cometAsset.balanceOf(fauceteer.address) : 0;
-    if (amount >= 0 && fauceteerBalance > amount) {
-      debug(`Source Tokens: stealing from fauceteer`, amount, cometAsset.address);
-      const fauceteerSigner = await world.impersonateAddress(fauceteer.address);
-      const fauceteerActor = await buildActor('fauceteerActor', fauceteerSigner, this);
-      // make gas fee 0 so we can source from contract addresses as well as EOAs
-      await this.setNextBaseFeeToZero();
-      await cometAsset.transfer(fauceteerActor, amount, recipientAddress, { gasPrice: 0 });
-      return;
-    }
+    let amountRemaining = BigInt(amount);
 
-    // Second, try to steal from a known actor
-    for (let [name, actor] of Object.entries(this.actors)) {
-      let actorBalance = await cometAsset.balanceOf(actor);
-      if (amount >= 0 && actorBalance > amount) {
-        debug(`Source Tokens: stealing from actor ${name}`, amount, cometAsset.address);
+    // Try to steal from a known whale or actor
+    for (const [name, actor] of whales.concat(Object.entries(this.actors))) {
+      const actorBalance = await cometAsset.balanceOf(actor);
+      const amountToTake = actorBalance > amountRemaining ? amountRemaining : actorBalance;
+      if (amountToTake > 0n) {
+        debug(`Source Tokens: stealing from actor ${name}`, amountToTake, cometAsset.address);
         // make gas fee 0 so we can source from contract addresses as well as EOAs
         await this.setNextBaseFeeToZero();
-        await cometAsset.transfer(actor, amount, recipientAddress, { gasPrice: 0 });
-        return;
+        await cometAsset.transfer(actor, amountToTake, recipientAddress, { gasPrice: 0 });
+        amountRemaining -= amountToTake;
       }
+      if (amountRemaining <= 0n)
+        break;
     }
 
-    // Third, source from logs (expensive, in terms of node API limits)
-    debug('Source Tokens: sourcing from logs...', amount, cometAsset.address);
+    // Source from logs (expensive, in terms of node API limits)
+    debug('Source Tokens: sourcing from logs...', amountRemaining, cometAsset.address);
     await sourceTokens({
       dm: this.world.deploymentManager,
-      amount,
+      amount: amountRemaining,
       asset: cometAsset.address,
       address: recipientAddress,
       blacklist: [comet.address],
