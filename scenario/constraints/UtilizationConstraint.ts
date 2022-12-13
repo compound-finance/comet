@@ -129,11 +129,10 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
               await context.sourceTokens(collateralNeeded, collateralToken, borrowActor);
               await collateralToken.approve(borrowActor, comet);
               await borrowActor.safeSupplyAsset({ asset: collateralToken.address, amount: collateralNeeded });
-              console.log(`UtilizationConstraint: successfully sourced from $asset${i}`);
+              console.log(`UtilizationConstraint: successfully sourced ${collateralNeeded} from $asset${i}`);
             } catch (error) {
-              console.log(`UtilizationConstraint: failed to source from $asset${i} (${error.message})`);
+              console.log(`UtilizationConstraint: failed to source ${collateralNeeded} from $asset${i} (${error.message.slice(0, 512)}...)`);
             }
-
           }
 
           // XXX how to make sure there are enough base tokens in the protocol to withdraw?
