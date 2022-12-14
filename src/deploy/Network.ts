@@ -146,10 +146,12 @@ export async function deployNetworkComet(
     maybeForce(deploySpec.cometMain)
   );
 
+  const existingCometImpl = (await deploymentManager.contracts()).get('comet:implementation');
+  const tempCometImpl = existingCometImpl ? existingCometImpl.address : cometFactory.address;
   const cometProxy = await deploymentManager.deploy(
     'comet',
     'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
-    [cometFactory.address, cometAdmin.address, []], // NB: temporary implementation contract
+    [tempCometImpl, cometAdmin.address, []], // NB: temporary implementation contract
     maybeForce(),
   );
 
@@ -215,17 +217,21 @@ export async function deployNetworkComet(
   const $configuratorImpl = await cometAdmin.getProxyImplementation(configurator.address);
   const $cometImpl = await cometAdmin.getProxyImplementation(comet.address);
   const isFirstDeploy = sameAddress($cometImpl, cometFactory.address);
+  // NB: If this is not the first market on a network, then we skip any admin-only actions that require a
+  // governance proposal and do those in a migration script instead
+  const isInitialMarket = !deploySpec.isNotInitialMarket;
 
   await deploymentManager.idempotent(
-    async () => !sameAddress($configuratorImpl, configuratorImpl.address),
+    async () => isInitialMarket && !sameAddress($configuratorImpl, configuratorImpl.address),
     async () => {
       trace(`Setting Configurator implementation to ${configuratorImpl.address}`);
       trace(await wait(cometAdmin.connect(admin).upgrade(configurator.address, configuratorImpl.address)));
     }
   );
 
+  // XXX create a migration script that creates a proposal with the following three actions
   await deploymentManager.idempotent(
-    async () => !sameAddress(await configurator.factory(comet.address), cometFactory.address),
+    async () => isInitialMarket && !sameAddress(await configurator.factory(comet.address), cometFactory.address),
     async () => {
       trace(`Setting factory in Configurator to ${cometFactory.address}`);
       trace(await wait(configurator.connect(admin).setFactory(comet.address, cometFactory.address)));
@@ -233,7 +239,7 @@ export async function deployNetworkComet(
   );
 
   await deploymentManager.idempotent(
-    async () => isFirstDeploy || deploySpec.all || deploySpec.cometMain || deploySpec.cometExt,
+    async () => isInitialMarket && isFirstDeploy || deploySpec.all || deploySpec.cometMain || deploySpec.cometExt,
     async () => {
       trace(`Setting configuration in Configurator for ${comet.address}`);
       trace(await wait(configurator.connect(admin).setConfiguration(comet.address, configuration)));
@@ -252,7 +258,7 @@ export async function deployNetworkComet(
   );
 
   await deploymentManager.idempotent(
-    async () => !sameAddress((await rewards.rewardConfig(comet.address)).token, rewardTokenAddress),
+    async () => isInitialMarket && !sameAddress((await rewards.rewardConfig(comet.address)).token, rewardTokenAddress),
     async () => {
       trace(`Setting reward token in CometRewards to ${rewardTokenAddress} for ${comet.address}`);
       trace(await wait(rewards.connect(admin).setRewardConfig(comet.address, rewardTokenAddress)));

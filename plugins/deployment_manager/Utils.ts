@@ -69,7 +69,7 @@ export function getPrimaryContract(buildFile: BuildFile): [string, ContractMetad
   let contractMetadata = contracts[targetContract];
   if (contractMetadata === undefined) {
     throw new Error(
-      `Could not find contract ${targetContract} in buildFile with contracts: ${JSON.stringify(
+      `Could not find contract ${targetContract} in buildFile with contracts: ${stringifyJson(
         Object.keys(contracts)
       )}`
     );

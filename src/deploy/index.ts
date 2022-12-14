@@ -34,10 +34,11 @@ export interface ProtocolConfiguration {
 // If `all` is specified, it takes precedence.
 // Other options are independent of one another.
 export interface DeploySpec {
-  all?: boolean;       // Re-deploy everything (including proxies and proxy admin)
-  cometMain?: boolean; // Re-deploy the main interface (config impl + comet factory + comet impl)
-  cometExt?: boolean;  // Re-deploy the ext interface (comet ext)
-  rewards?: boolean;   // Re-deploy the rewards contract
+  all?: boolean;                 // Re-deploy everything (including proxies and proxy admin)
+  cometMain?: boolean;           // Re-deploy the main interface (config impl + comet factory + comet impl)
+  cometExt?: boolean;            // Re-deploy the ext interface (comet ext)
+  rewards?: boolean;             // Re-deploy the rewards contract
+  isNotInitialMarket?: boolean;  // If this is not the first market on a network, skips admin-only steps that require a governance proposal
 }
 
 export interface ContractAction {

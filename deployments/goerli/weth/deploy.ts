@@ -17,10 +17,16 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const signer = await deploymentManager.getSigner();
 
   // Existing contracts
+  const cometAdmin = await deploymentManager.existing('cometAdmin', '0xdaff430Ef11f9dE7Fef5C017D040ff3f00a44831', 'goerli');
+  const tempCometImpl = await deploymentManager.existing('comet:implementation', '0x0745E16777172E7062b082C8899ABc1a1F8417f9', 'goerli');
   const timelock = await deploymentManager.existing('timelock', '0x8Fa336EB4bF58Cfc508dEA1B0aeC7336f55B1399', 'goerli');
   const fauceteer = await deploymentManager.existing('fauceteer', '0x75442Ac771a7243433e033F3F8EaB2631e22938f', 'goerli');
+  const WETH = await deploymentManager.existing('WETH', '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6', 'goerli');
   const wstETH = await deploymentManager.existing('wstETH', '0x4942BBAf745f235e525BAff49D31450810EDed5b', 'goerli');
   const fxRoot = await deploymentManager.existing('fxRoot', '0x3d1d3e34f7fb6d26245e6640e1c50710efff15ba', 'goerli');
+  const configurator = await deploymentManager.existing('configurator', '0xB28495db3eC65A0e3558F040BC4f98A0d588Ae60', 'goerli');
+  const configuratorImpl = await deploymentManager.existing('configurator:implementation', '0x4d2909A575AEFd5ABAb0B9EF19647EbD297fDbB8', 'goerli');
+  const rewards = await deploymentManager.existing('rewards', '0xef9e070044d62C38D2e316146dDe92AD02CF2c2c', 'goerli');
 
   // Clone cbETH
   const cbETHProxyAdmin = await deploymentManager.deploy('cbETH:admin', 'vendor/proxy/transparent/ProxyAdmin.sol', []);
@@ -100,21 +106,20 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   );
 
   // Deploy all Comet-related contracts
-  const deployed = await deployComet(deploymentManager, deploySpec);
-  const { comet } = deployed;
+  const deployed = await deployComet(deploymentManager, { ...deploySpec, isNotInitialMarket: true });
 
   // Deploy Bulker
   const bulker = await deploymentManager.deploy(
     'bulker',
     'bulkers/MainnetBulker.sol',
     [
-      await comet.governor(),  // admin_
-      await comet.baseToken(), // weth_
+      timelock.address,        // admin_
+      WETH.address,            // weth_
       wstETH.address           // wsteth_
     ]
   );
 
-  return { ...deployed, bulker, fauceteer, timelock, fxRoot };
+  return { ...deployed, bulker, fauceteer, timelock, fxRoot, configurator, rewards };
 }
 
 async function mintTokens(deploymentManager: DeploymentManager) {
