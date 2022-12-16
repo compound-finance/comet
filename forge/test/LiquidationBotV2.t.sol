@@ -66,20 +66,19 @@ contract LiquidationBotV2Test is Test {
         vm.label(LIQUIDATOR_EOA, "Liquidator wallet");
     }
 
-    function get1inchSwap(
+    function get0xSwap(
         address fromTokenAddress,
         address toTokenAddress,
         uint swapAmount
     ) internal returns (address, bytes memory) {
-        string[] memory inputs = new string[](8);
+        string[] memory inputs = new string[](7);
         inputs[0] = "yarn";
         inputs[1] = "-s";
         inputs[2] = "ts-node";
-        inputs[3] = "forge/scripts/get-1inch-swap.ts";
-        inputs[4] = vm.toString(address(liquidator));
-        inputs[5] = vm.toString(fromTokenAddress);
-        inputs[6] = vm.toString(toTokenAddress);
-        inputs[7] = vm.toString(swapAmount);
+        inputs[3] = "forge/scripts/get-0x-swap.ts";
+        inputs[4] = vm.toString(fromTokenAddress);
+        inputs[5] = vm.toString(toTokenAddress);
+        inputs[6] = vm.toString(swapAmount);
 
         string memory responseJson = string(vm.ffi(inputs));
 
@@ -107,7 +106,7 @@ contract LiquidationBotV2Test is Test {
             }
         }
 
-        (address swapTarget, bytes memory swapTransaction) = get1inchSwap(
+        (address swapTarget, bytes memory swapTransaction) = get0xSwap(
             asset,
             CometInterface(COMET).baseToken(),
             collateralReserve
@@ -229,19 +228,19 @@ contract LiquidationBotV2Test is Test {
     }
 
     function testLargeCompSwap() public {
-        swapWithNoMax(COMP, COMP_WHALE, 2_000e18);
+        swapWithNoMax(COMP, COMP_WHALE, 1_500e18);
     }
 
     function testLargeWbtcSwap() public {
-        swapWithNoMax(WBTC, WBTC_WHALE, 120e8);
+        swapWithNoMax(WBTC, WBTC_WHALE, 300e8);
     }
 
     function testLargeWethSwap() public {
-        swapWithNoMax(WETH9, WETH_WHALE, 5_000e18);
+        swapWithNoMax(WETH9, WETH_WHALE, 7_000e18);
     }
 
     function testLargeUniSwap() public {
-        swapWithNoMax(UNI, UNI_WHALE, 500_000e18);
+        swapWithNoMax(UNI, UNI_WHALE, 250_000e18);
     }
 
     function testLargeLinkSwap() public {
@@ -283,7 +282,7 @@ contract LiquidationBotV2Test is Test {
         address baseToken = CometInterface(COMET).baseToken();
 
         for (uint8 i = 0; i < assets.length; i++) {
-            (address swapTarget, bytes memory swapTransaction) = get1inchSwap(
+            (address swapTarget, bytes memory swapTransaction) = get0xSwap(
                 assets[i],
                 baseToken,
                 collateralReserves[i]
