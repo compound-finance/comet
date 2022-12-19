@@ -1,26 +1,14 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { isValidAssetIndex, MAX_ASSETS, timeUntilUnderwater } from './utils';
-import { event, exp, wait } from '../test/helpers';
-import { BigNumber, constants } from 'ethers';
+import { ethers, event, wait } from '../test/helpers';
 import CometActor from './context/CometActor';
-import { CometInterface } from '../build/types';
-
-const daiPool = {
-  tokenAddress: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-  poolFee: 100
-};
+import { CometInterface, OnChainLiquidator } from '../build/types';
+import { getPoolConfig, flashLoanPools } from '../scripts/liquidation_bot/liquidateUnderwaterBorrowers';
 
 const UNISWAP_V3_FACTORY_ADDRESS = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
 const WETH9 = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 const RECIPIENT = '0x5a13D329A193ca3B1fE2d7B459097EdDba14C28F';
-const UNISWAP_ROUTER = '0xe592427a0aece92de3edee1f18e0157c05861564';
-const SUSHISWAP_ROUTER = '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F';
-
-enum Exchange {
-  Uniswap,
-  SushiSwap
-}
 
 async function borrowCapacityForAsset(comet: CometInterface, actor: CometActor, assetIndex: number) {
   const {
@@ -45,6 +33,7 @@ async function borrowCapacityForAsset(comet: CometInterface, actor: CometActor, 
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
+  // XXX make this a map from asset addresses to asset amounts
   const assetAmounts = [
     // COMP
     ' == 500',
@@ -68,63 +57,18 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         albert: {
           [`$asset${i}`]: assetAmounts[i] || 0
         },
-        betty: { $base: 1000 },
       },
     },
-    async ({ comet, actors, assets }, _context, world) => {
+    async ({ comet, actors }, _context, world) => {
       const { albert, betty } = actors;
-      const { USDC, COMP, WBTC, WETH, UNI, LINK } = assets;
+      const { network, deployment } = world.deploymentManager;
+      const flashLoanPool = flashLoanPools[network][deployment];
 
       const liquidator = await world.deploymentManager.deploy(
         'liquidator',
-        'liquidator/Liquidator.sol',
-        [
-          RECIPIENT, // _recipient
-          UNISWAP_ROUTER, // _uniswapRouter
-          SUSHISWAP_ROUTER, // _sushiSwapRouter
-          comet.address, // _comet
-          UNISWAP_V3_FACTORY_ADDRESS, // _factory
-          WETH9, // _WETH9
-          10e6, // _liquidationThreshold,
-          [
-            COMP.address,
-            WBTC.address,
-            WETH.address,
-            UNI.address,
-            LINK.address,
-          ],
-          [
-            true,
-            true,
-            false,
-            true,
-            true
-          ],
-          [
-            3000,
-            3000,
-            500,
-            3000,
-            3000
-          ],
-          [
-            Exchange.SushiSwap, // COMP
-            Exchange.Uniswap,   // WBTC
-            Exchange.Uniswap,   // WETH
-            Exchange.Uniswap,   // UNI
-            Exchange.Uniswap,   // LINK
-          ],
-          [
-            constants.MaxUint256, // COMP
-            constants.MaxUint256, // WBTC
-            constants.MaxUint256, // WETH
-            constants.MaxUint256, // UNI
-            constants.MaxUint256, // LINK
-          ]
-        ]
-      );
-
-      const initialRecipientBalance = await USDC.balanceOf(RECIPIENT);
+        'liquidator/OnChainLiquidator.sol',
+        [UNISWAP_V3_FACTORY_ADDRESS, WETH9]
+      ) as OnChainLiquidator;
 
       const baseToken = await comet.baseToken();
       const baseBorrowMin = (await comet.baseBorrowMin()).toBigInt();
@@ -132,6 +76,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 
       const borrowCapacity = await borrowCapacityForAsset(comet, albert, i);
       const borrowAmount = (borrowCapacity.mul(90n)).div(100n);
+
+      const initialRecipientBalance = await betty.getErc20Balance(baseToken);
 
       // Do a manual withdrawAsset (instead of setting $base to a negative
       // number) so we can confirm that albert only has one type of collateral asset
@@ -151,16 +97,21 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       // define after increasing time, since increasing time alters reserves
       const initialReserves = (await comet.getReserves()).toBigInt();
 
-      await betty.withdrawAsset({ asset: baseToken, amount: baseBorrowMin }); // force accrue
+      await comet.connect(betty.signer).accrueAccount(albert.address); // force accrue
 
       expect(await comet.isLiquidatable(albert.address)).to.be.true;
       expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.be.greaterThan(0);
 
-      await liquidator.connect(betty.signer).initFlash({
-        accounts: [albert.address],
-        pairToken: daiPool.tokenAddress,
-        poolFee: daiPool.poolFee
-      });
+      await liquidator.connect(betty.signer).absorbAndArbitrage(
+        comet.address,
+        [albert.address],
+        [collateralAssetAddress],
+        [getPoolConfig(collateralAssetAddress)],
+        [ethers.constants.MaxUint256],
+        flashLoanPool.tokenAddress,
+        flashLoanPool.poolFee,
+        10e6
+      );
 
       // confirm that Albert position has been abosrbed
       expect(await comet.isLiquidatable(albert.address)).to.be.false;
@@ -173,7 +124,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       expect(await comet.getCollateralReserves(collateralAssetAddress)).to.be.below(scale);
 
       // check that recipient balance increased
-      expect(await USDC.balanceOf(RECIPIENT)).to.be.greaterThan(Number(initialRecipientBalance));
+      expect(await betty.getErc20Balance(baseToken)).to.be.greaterThan(Number(initialRecipientBalance));
     }
   );
 }
@@ -212,52 +163,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 
       const liquidator = await world.deploymentManager.deploy(
         'liquidator',
-        'liquidator/Liquidator.sol',
-        [
-          RECIPIENT, // _recipient
-          UNISWAP_ROUTER, // _uniswapRouter
-          SUSHISWAP_ROUTER, // _sushiSwapRouter
-          comet.address, // _comet
-          UNISWAP_V3_FACTORY_ADDRESS, // _factory
-          WETH9, // _WETH9
-          10e6, // _liquidationThreshold,
-          [
-            COMP.address,
-            WBTC.address,
-            WETH.address,
-            UNI.address,
-            LINK.address,
-          ],
-          [
-            true,
-            true,
-            false,
-            true,
-            true
-          ],
-          [
-            3000,
-            3000,
-            500,
-            3000,
-            3000
-          ],
-          [
-            Exchange.SushiSwap, // COMP
-            Exchange.Uniswap,   // WBTC
-            Exchange.Uniswap,   // WETH
-            Exchange.Uniswap,   // UNI
-            Exchange.Uniswap,   // LINK
-          ],
-          [
-            BigNumber.from(exp(500,18)),    // COMP
-            BigNumber.from(exp(120,8)),     // WBTC
-            BigNumber.from(exp(5000,18)),   // WETH
-            BigNumber.from(exp(150000,18)), // UNI
-            BigNumber.from(exp(250000,18)), // LINK
-          ]
-        ]
-      );
+        'liquidator/OnChainLiquidator.sol',
+        [UNISWAP_V3_FACTORY_ADDRESS, WETH9]
+      ) as OnChainLiquidator;
 
       const initialRecipientBalance = await USDC.balanceOf(RECIPIENT);
 
@@ -286,11 +194,16 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       expect(await comet.isLiquidatable(albert.address)).to.be.true;
       expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.be.greaterThan(0);
 
-      await liquidator.connect(betty.signer).initFlash({
-        accounts: [albert.address],
-        pairToken: daiPool.tokenAddress,
-        poolFee: daiPool.poolFee
-      });
+      await liquidator.connect(betty.signer).absorbAndArbitrage(
+        comet.address,
+        [albert.address],
+        [collateralAssetAddress],
+        [getPoolConfig(collateralAssetAddress)],
+        [ethers.constants.MaxUint256],
+        daiPool.tokenAddress,
+        daiPool.poolFee,
+        10e6
+      );
 
       // confirm that Albert position has been abosrbed
       expect(await comet.isLiquidatable(albert.address)).to.be.false;
@@ -326,52 +239,9 @@ scenario(
 
     const liquidator = await world.deploymentManager.deploy(
       'liquidator',
-      'liquidator/Liquidator.sol',
-      [
-        RECIPIENT, // _recipient
-        UNISWAP_ROUTER, // _uniswapRouter
-        SUSHISWAP_ROUTER, // _sushiSwapRouter
-        comet.address, // _comet
-        UNISWAP_V3_FACTORY_ADDRESS, // _factory
-        WETH9, // _WETH9
-        1000e6, // _liquidationThreshold,
-        [
-          COMP.address,
-          WBTC.address,
-          WETH.address,
-          UNI.address,
-          LINK.address,
-        ],
-        [
-          true,
-          true,
-          false,
-          true,
-          true
-        ],
-        [
-          3000,
-          3000,
-          500,
-          3000,
-          3000
-        ],
-        [
-          Exchange.SushiSwap, // COMP
-          Exchange.Uniswap,   // WBTC
-          Exchange.Uniswap,   // WETH
-          Exchange.Uniswap,   // UNI
-          Exchange.Uniswap,   // LINK
-        ],
-        [
-          constants.MaxUint256, // COMP
-          constants.MaxUint256, // WBTC
-          constants.MaxUint256, // WETH
-          constants.MaxUint256, // UNI
-          constants.MaxUint256, // LINK
-        ]
-      ]
-    );
+      'liquidator/OnChainLiquidator.sol',
+      [UNISWAP_V3_FACTORY_ADDRESS, WETH9]
+    ) as OnChainLiquidator;
 
     const initialRecipientBalance = await USDC.balanceOf(RECIPIENT);
 
@@ -454,52 +324,9 @@ scenario(
 
     const liquidator = await world.deploymentManager.deploy(
       'liquidator',
-      'liquidator/Liquidator.sol',
-      [
-        RECIPIENT, // _recipient
-        UNISWAP_ROUTER, // _uniswapRouter
-        SUSHISWAP_ROUTER, // _sushiSwapRouter
-        comet.address, // _comet
-        UNISWAP_V3_FACTORY_ADDRESS, // _factory
-        WETH9, // _WETH9
-        0, // _liquidationThreshold,
-        [
-          COMP.address,
-          WBTC.address,
-          WETH.address,
-          UNI.address,
-          LINK.address,
-        ],
-        [
-          true,
-          true,
-          false,
-          true,
-          true
-        ],
-        [
-          3000,
-          3000,
-          500,
-          3000,
-          3000
-        ],
-        [
-          Exchange.SushiSwap, // COMP
-          Exchange.Uniswap,   // WBTC
-          Exchange.Uniswap,   // WETH
-          Exchange.Uniswap,   // UNI
-          Exchange.Uniswap,   // LINK
-        ],
-        [
-          0, // COMP
-          0, // WBTC
-          0, // WETH
-          0, // UNI
-          0, // LINK
-        ]
-      ]
-    );
+      'liquidator/OnChainLiquidator.sol',
+      [UNISWAP_V3_FACTORY_ADDRESS, WETH9]
+    ) as OnChainLiquidator;
 
     const initialRecipientBalance = await USDC.balanceOf(RECIPIENT);
 
@@ -582,52 +409,9 @@ scenario(
 
     const liquidator = await world.deploymentManager.deploy(
       'liquidator',
-      'liquidator/Liquidator.sol',
-      [
-        RECIPIENT, // _recipient
-        UNISWAP_ROUTER, // _uniswapRouter
-        SUSHISWAP_ROUTER, // _sushiSwapRouter
-        comet.address, // _comet
-        UNISWAP_V3_FACTORY_ADDRESS, // _factory
-        WETH9, // _WETH9
-        0, // _liquidationThreshold,
-        [
-          COMP.address,
-          WBTC.address,
-          WETH.address,
-          UNI.address,
-          LINK.address,
-        ],
-        [
-          true,
-          true,
-          false,
-          true,
-          true
-        ],
-        [
-          3000,
-          3000,
-          500,
-          3000,
-          3000
-        ],
-        [
-          Exchange.SushiSwap, // COMP
-          Exchange.Uniswap,   // WBTC
-          Exchange.Uniswap,   // WETH
-          Exchange.Uniswap,   // UNI
-          Exchange.Uniswap,   // LINK
-        ],
-        [
-          constants.MaxUint256, // COMP
-          constants.MaxUint256, // WBTC
-          constants.MaxUint256, // WETH
-          constants.MaxUint256, // UNI
-          constants.MaxUint256, // LINK
-        ]
-      ]
-    );
+      'liquidator/OnChainLiquidator.sol',
+      [UNISWAP_V3_FACTORY_ADDRESS, WETH9]
+    ) as OnChainLiquidator;
 
     const initialRecipientBalance = await USDC.balanceOf(RECIPIENT);
 
