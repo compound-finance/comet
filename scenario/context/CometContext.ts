@@ -32,7 +32,7 @@ import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { ProtocolConfiguration, deployComet, COMP_WHALES, WHALES } from '../../src/deploy';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { Requirements } from '../constraints/Requirements';
-import { fastGovernanceExecute, mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from '../utils';
+import { fastGovernanceExecute, max, mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from '../utils';
 
 export type ActorMap = { [name: string]: CometActor };
 export type AssetMap = { [name: string]: CometAsset };
@@ -151,13 +151,14 @@ export class CometContext {
         const newTotalSupply = currentTotalSupply + supplyAmountPerAsset[asset];
         if (newTotalSupply > assetInfo.supplyCap.toBigInt()) {
           shouldUpgrade = true;
-          newSupplyCaps[asset] = newTotalSupply * 2n;
+          newSupplyCaps[asset] = max(newTotalSupply * 2n, assetInfo.scale.toBigInt());
         }
       }
     }
 
     // Set new supply caps in Configurator and do a deployAndUpgradeTo
     if (shouldUpgrade) {
+      debug(`Bumping supply caps...`, comet.address, newSupplyCaps);
       const gov = await this.world.impersonateAddress(await comet.governor(), 10n ** 18n);
       const cometAdmin = (await this.getCometAdmin()).connect(gov);
       const configurator = (await this.getConfigurator()).connect(gov);
