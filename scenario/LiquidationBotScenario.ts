@@ -315,7 +315,7 @@ scenario(
     },
     cometBalances: {
       albert: {
-        $asset0: ' == 5',
+        $asset0: ' == 10',
       },
       betty: { $base: 1000 },
     },
@@ -443,7 +443,7 @@ scenario(
     },
     cometBalances: {
       albert: {
-        $asset0: ' == 5',
+        $asset0: ' == 10',
       },
       betty: { $base: 1000 },
     },

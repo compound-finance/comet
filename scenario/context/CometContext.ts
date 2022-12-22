@@ -201,38 +201,35 @@ export class CometContext {
     const cometAsset = typeof asset === 'string' ? this.getAssetByAddress(asset) : asset;
     const comet = await this.getComet();
 
-    const whales = await Promise.all((await this.getWhales()).map(async (w, i) => {
-      const name = `whale:${i}`;
-      const signer = await world.impersonateAddress(w);
-      return [name, await buildActor(name, signer, this)];
-    }));
-
     let amountRemaining = BigInt(amount);
 
-    // Try to steal from a known whale or actor
-    for (const [name, actor] of whales.concat(Object.entries(this.actors))) {
-      const actorBalance = await cometAsset.balanceOf(actor);
-      const amountToTake = actorBalance > amountRemaining ? amountRemaining : actorBalance;
+    // Try to steal from a known whale
+    for (const whale of await this.getWhales()) {
+      const signer = await world.impersonateAddress(whale);
+      const balance = await cometAsset.balanceOf(whale);
+      const amountToTake = balance > amountRemaining ? amountRemaining : balance;
       if (amountToTake > 0n) {
-        debug(`Source Tokens: stealing from actor ${name}`, amountToTake, cometAsset.address);
+        debug(`Source Tokens: stealing from whale ${whale}`, amountToTake, cometAsset.address);
         // make gas fee 0 so we can source from contract addresses as well as EOAs
         await this.setNextBaseFeeToZero();
-        await cometAsset.transfer(actor, amountToTake, recipientAddress, { gasPrice: 0 });
+        await cometAsset.transfer(signer, amountToTake, recipientAddress, { gasPrice: 0 });
         amountRemaining -= amountToTake;
       }
       if (amountRemaining <= 0n)
         break;
     }
 
-    // Source from logs (expensive, in terms of node API limits)
-    debug('Source Tokens: sourcing from logs...', amountRemaining, cometAsset.address);
-    await sourceTokens({
-      dm: this.world.deploymentManager,
-      amount: amountRemaining,
-      asset: cometAsset.address,
-      address: recipientAddress,
-      blacklist: [comet.address],
-    });
+    if (amountRemaining != 0n) {
+      // Source from logs (expensive, in terms of node API limits)
+      debug('Source Tokens: sourcing from logs...', amountRemaining, cometAsset.address);
+      await sourceTokens({
+        dm: this.world.deploymentManager,
+        amount: amountRemaining,
+        asset: cometAsset.address,
+        address: recipientAddress,
+        blacklist: [comet.address],
+      });
+    }
   }
 
   async setActors(actors?: { [name: string]: CometActor }) {

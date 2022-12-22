@@ -76,5 +76,22 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     }
   );
 
+  // Mint some tokens
+  trace(`Attempting to mint as ${signer.address}...`);
+
+  await Promise.all(
+    [[DAI, 1e8], [GOLD, 2e6], [SILVER, 1e7]].map(([asset, units]) => {
+      return deploymentManager.idempotent(
+        async () => (await asset.balanceOf(fauceteer.address)).eq(0),
+        async () => {
+          trace(`Minting ${units} ${await asset.symbol()} to fauceteer`);
+          const amount = exp(units, await asset.decimals());
+          trace(await wait(asset.connect(signer).allocateTo(fauceteer.address, amount)));
+          trace(`asset.balanceOf(${signer.address}): ${await asset.balanceOf(signer.address)}`);
+        }
+      );
+    })
+  );
+
   return { ...deployed, fauceteer };
 }

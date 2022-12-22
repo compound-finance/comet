@@ -1,3 +1,4 @@
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Overrides } from 'ethers';
 import { ERC20 } from '../../build/types';
 import CometActor from './CometActor';
@@ -18,32 +19,25 @@ export default class CometAsset {
     return new CometAsset(asset.token);
   }
 
-  async balanceOf(actorOrAddress: string | CometActor): Promise<bigint> {
-    let address: string;
-    if (typeof(actorOrAddress) === 'string') {
-      address = actorOrAddress;
-    } else {
-      address = actorOrAddress.address;
-    }
-
+  async balanceOf(account: SignerWithAddress | string): Promise<bigint> {
+    const address = typeof(account) === 'string' ? account : account.address;
     return (await this.token.balanceOf(address)).toBigInt();
   }
 
-  async transfer(from: CometActor, amount: number | bigint, recipient: CometAsset | string, overrides: Overrides = {}) {
-    let recipientAddress = typeof(recipient) === 'string' ? recipient : recipient.address;
-
-    await wait(this.token.connect(from.signer).transfer(recipientAddress, amount, overrides));
+  async transfer(from: CometActor | SignerWithAddress, amount: number | bigint, recipient: CometAsset | string, overrides: Overrides = {}) {
+    const recipientAddress = typeof(recipient) === 'string' ? recipient : recipient.address;
+    await wait(this.token.connect(from.signer ?? from).transfer(recipientAddress, amount, overrides));
   }
 
-  async approve(from: CometActor, spender: AddressLike, amount?: number | bigint) {
-    let spenderAddress = resolveAddress(spender);
-    let finalAmount = amount ?? constants.MaxUint256;
-    await wait(this.token.connect(from.signer).approve(spenderAddress, finalAmount));
+  async approve(from: CometActor | SignerWithAddress, spender: AddressLike, amount?: number | bigint) {
+    const spenderAddress = resolveAddress(spender);
+    const finalAmount = amount ?? constants.MaxUint256;
+    await wait(this.token.connect(from.signer ?? from).approve(spenderAddress, finalAmount));
   }
 
   async allowance(owner: AddressLike, spender: AddressLike): Promise<bigint> {
-    let ownerAddress = resolveAddress(owner);
-    let spenderAddress = resolveAddress(spender);
+    const ownerAddress = resolveAddress(owner);
+    const spenderAddress = resolveAddress(spender);
     return (await this.token.allowance(ownerAddress, spenderAddress)).toBigInt();
   }
 
