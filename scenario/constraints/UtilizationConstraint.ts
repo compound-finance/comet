@@ -126,6 +126,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
             collateralNeeded = (collateralNeeded * 11n) / 10n; // add fudge factor
 
             try {
+              // XXX sourceTokens can silently fail, which can somehow leave borrowActor unimpersonated and an approve failure...
               await context.sourceTokens(collateralNeeded, collateralToken, borrowActor);
               await collateralToken.approve(borrowActor, comet);
               await borrowActor.safeSupplyAsset({ asset: collateralToken.address, amount: collateralNeeded });

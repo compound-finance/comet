@@ -1,6 +1,6 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, expectRevertCustom, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
+import { expectApproximately, expectBase, expectRevertCustom, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
 
 async function testTransferCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
@@ -92,8 +92,8 @@ scenario(
     const baseTransferred = getExpectedBaseBalance(50n * scale, baseIndexScale, baseSupplyIndex);
     const baseOfTransferrer = getExpectedBaseBalance(baseSupplied - toTransfer, baseIndexScale, baseSupplyIndex);
 
-    expect(await comet.balanceOf(albert.address)).to.be.equal(baseOfTransferrer);
-    expect(await comet.balanceOf(betty.address)).to.be.equal(baseTransferred);
+    expectBase(await albert.getCometBaseBalance(), baseOfTransferrer);
+    expectBase(await betty.getCometBaseBalance(), baseTransferred);
 
     return txn; // return txn to measure gas
   }
