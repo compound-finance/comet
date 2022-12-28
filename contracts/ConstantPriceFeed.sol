@@ -40,6 +40,6 @@ contract ConstantPriceFeed is IPriceFeed {
         uint256 updatedAt,
         uint80 answeredInRound
     ) {
-        return (0, constantPrice, block.timestamp, block.timestamp, 0);
+        return (1, constantPrice, block.timestamp, block.timestamp, 1);
     }
 }
