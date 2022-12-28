@@ -20,7 +20,7 @@
   },
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": "0e15",
+    "baseSupplySpeed": "447916666666",
     "baseBorrowSpeed": "0e15",
     "baseMinForRewards": "1000000e6"
   },
@@ -31,7 +31,7 @@
       "borrowCF": 0.90,
       "liquidateCF": 0.93,
       "liquidationFactor": 0.95,
-      "supplyCap": "0"
+      "supplyCap": "9000"
     },
     "wstETH": {
       "address": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
@@ -39,7 +39,7 @@
       "borrowCF": 0.90,
       "liquidateCF": 0.93,
       "liquidationFactor": 0.95,
-      "supplyCap": "0"
+      "supplyCap": "80000"
     }
   }
 }
