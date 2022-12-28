@@ -3,6 +3,11 @@ pragma solidity 0.8.15;
 
 import "./IPriceFeed.sol";
 
+/**
+ * @title Constant price feed
+ * @notice A custom price feed that always returns a constant price
+ * @author Compound
+ */
 contract ConstantPriceFeed is IPriceFeed {
     /// @notice Version of the price feed
     uint public constant override version = 1;
