@@ -146,13 +146,6 @@ export async function deployNetworkComet(
     maybeForce(deploySpec.cometMain)
   );
 
-  const cometProxy = await deploymentManager.deploy(
-    'comet',
-    'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
-    [cometFactory.address, cometAdmin.address, []], // NB: temporary implementation contract
-    maybeForce(),
-  );
-
   const configuration = {
     governor,
     pauseGuardian,
@@ -176,6 +169,19 @@ export async function deployNetworkComet(
     targetReserves,
     assetConfigs,
   };
+
+  const tmpCometImpl = await deploymentManager.deploy(
+    'comet:implementation',
+    'Comet.sol',
+    [configuration],
+    maybeForce(),
+  );
+  const cometProxy = await deploymentManager.deploy(
+    'comet',
+    'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
+    [tmpCometImpl.address, cometAdmin.address, []], // NB: temporary implementation contract
+    maybeForce(),
+  );
 
   const configuratorImpl = await deploymentManager.deploy(
     'configurator:implementation',
@@ -211,13 +217,26 @@ export async function deployNetworkComet(
   // Also get a handle for Comet, although it may not *actually* support the interface yet
   const comet = await deploymentManager.cast(cometProxy.address, 'contracts/CometInterface.sol:CometInterface');
 
-  // Get the currently impl addresses for the proxies, and determine if this is the first deploy
+  // Call initializeStorage if storage not initialized
+  // Note: we now rely on the fact that anyone may call, which helps separate the proposal
+  await deploymentManager.idempotent(
+    async () => (await comet.totalsBasic()).lastAccrualTime == 0,
+    async () => {
+      trace(`Initializing Comet at ${comet.address}`);
+      trace(await wait(comet.connect(admin).initializeStorage()));
+    }
+  );
+
+  // If we aren't admin, we'll need proposals to configure things
+  const amAdmin = sameAddress(await cometAdmin.owner(), admin.address);
+
+  // Get the current impl addresses for the proxies, and determine if we've configurated
   const $configuratorImpl = await cometAdmin.getProxyImplementation(configurator.address);
   const $cometImpl = await cometAdmin.getProxyImplementation(comet.address);
-  const isFirstDeploy = sameAddress($cometImpl, cometFactory.address);
+  const wasConfigurated = sameAddress($cometImpl, tmpCometImpl.address);
 
   await deploymentManager.idempotent(
-    async () => !sameAddress($configuratorImpl, configuratorImpl.address),
+    async () => amAdmin && !sameAddress($configuratorImpl, configuratorImpl.address),
     async () => {
       trace(`Setting Configurator implementation to ${configuratorImpl.address}`);
       trace(await wait(cometAdmin.connect(admin).upgrade(configurator.address, configuratorImpl.address)));
@@ -225,7 +244,7 @@ export async function deployNetworkComet(
   );
 
   await deploymentManager.idempotent(
-    async () => !sameAddress(await configurator.factory(comet.address), cometFactory.address),
+    async () => amAdmin && !sameAddress(await configurator.factory(comet.address), cometFactory.address),
     async () => {
       trace(`Setting factory in Configurator to ${cometFactory.address}`);
       trace(await wait(configurator.connect(admin).setFactory(comet.address, cometFactory.address)));
@@ -233,26 +252,20 @@ export async function deployNetworkComet(
   );
 
   await deploymentManager.idempotent(
-    async () => isFirstDeploy || deploySpec.all || deploySpec.cometMain || deploySpec.cometExt,
+    async () => amAdmin && deploySpec.all || deploySpec.cometMain || deploySpec.cometExt,
     async () => {
-      trace(`Setting configuration in Configurator for ${comet.address}`);
+      trace(`Setting configuration in Configurator for ${comet.address} (${wasConfigurated})`);
       trace(await wait(configurator.connect(admin).setConfiguration(comet.address, configuration)));
 
-      if (isFirstDeploy) {
-        trace(`Deploying first implementation of Comet and initializing...`);
-        const data = (await comet.populateTransaction.initializeStorage()).data;
-        trace(await wait(cometAdmin.connect(admin).deployUpgradeToAndCall(configurator.address, comet.address, data)));
-      } else {
-        trace(`Upgrading implementation of Comet...`);
-        trace(await wait(cometAdmin.connect(admin).deployAndUpgradeTo(configurator.address, comet.address)));
-      }
+      trace(`Upgrading implementation of Comet...`);
+      trace(await wait(cometAdmin.connect(admin).deployAndUpgradeTo(configurator.address, comet.address)));
 
       trace(`New Comet implementation at ${await cometAdmin.getProxyImplementation(comet.address)}`);
     }
   );
 
   await deploymentManager.idempotent(
-    async () => !sameAddress((await rewards.rewardConfig(comet.address)).token, rewardTokenAddress),
+    async () => amAdmin && !sameAddress((await rewards.rewardConfig(comet.address)).token, rewardTokenAddress),
     async () => {
       trace(`Setting reward token in CometRewards to ${rewardTokenAddress} for ${comet.address}`);
       trace(await wait(rewards.connect(admin).setRewardConfig(comet.address, rewardTokenAddress)));

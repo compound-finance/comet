@@ -1,5 +1,5 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
-import { DeploySpec, deployComet, exp } from '../../../src/deploy';
+import { DeploySpec, deployComet, exp, getConfiguration } from '../../../src/deploy';
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const stETH = await deploymentManager.existing('stETH', '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84');
@@ -36,17 +36,24 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     ]
   );
 
+  // Import shared contracts from cUSDCv3
+  const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'mainnet', 'usdc');
+  const cometFactory = await deploymentManager.fromDep('cometFactory', 'mainnet', 'usdc');
+  const $configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'mainnet', 'usdc');
+  const configurator = await deploymentManager.fromDep('configurator', 'mainnet', 'usdc');
+  const rewards = await deploymentManager.fromDep('rewards', 'mainnet', 'usdc');
+
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
-  const { comet } = deployed;
 
   // Deploy Bulker
+  const configuration = await getConfiguration(deploymentManager);
   const bulker = await deploymentManager.deploy(
     'bulker',
     'bulkers/MainnetBulker.sol',
     [
-      await comet.governor(),  // admin_
-      await comet.baseToken(), // weth_
+      configuration.governor,  // admin_
+      configuration.baseToken, // weth_
       wstETH.address           // wsteth_
     ]
   );

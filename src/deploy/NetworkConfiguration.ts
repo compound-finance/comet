@@ -1,4 +1,5 @@
 import { AssetConfigStruct } from '../../build/types/Comet';
+import { ConfigurationStruct } from '../../build/types/Configurator';
 import { ProtocolConfiguration } from './index';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
@@ -100,7 +101,7 @@ function getAssetConfigs(
     borrowCollateralFactor: percentage(assetConfig.borrowCF),
     liquidateCollateralFactor: percentage(assetConfig.liquidateCF),
     liquidationFactor: percentage(assetConfig.liquidationFactor),
-    supplyCap: number(assetConfig.supplyCap), // TODO: Decimals
+    supplyCap: BigInt(number(assetConfig.supplyCap)) * (10n ** BigInt(assetConfig.decimals)),
   }));
 }
 
@@ -154,4 +155,14 @@ export async function getConfiguration(
   const config = await deploymentManager.readConfig<NetworkConfiguration>();
   const contracts = await deploymentManager.contracts();
   return getOverridesOrConfig(configOverrides, config, contracts);
+}
+
+export async function getConfigurationStruct(
+  deploymentManager: DeploymentManager,
+  configOverrides: ProtocolConfiguration = {},
+): Promise<ConfigurationStruct> {
+  const contracts = await deploymentManager.contracts();
+  const configuration = await getConfiguration(deploymentManager, configOverrides);
+  const extensionDelegate = configOverrides.extensionDelegate ?? getContractAddress('comet:implementation:implementation', contracts);
+  return { ...configuration, extensionDelegate };
 }
