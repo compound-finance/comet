@@ -23,6 +23,8 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
     const solutions: Solution<T>[] = [];
 
     for (const migrationList of subsets(await getMigrations(context, requirements))) {
+      if (migrationList.length == 0 && process.env['MIGRATIONS_ONLY'])
+        continue;
       solutions.push(async function (ctx: T): Promise<T> {
         const proposer = await ctx.getProposer();
 

@@ -1,30 +1,18 @@
 import { Constraint } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
-import { ProtocolConfiguration } from '../../src/deploy';
 import { getFuzzedRequirements } from './Fuzzing';
 import { Requirements } from './Requirements';
 
-interface ModernConfig {
-  // Whether to upgrade or Comet config overrides to use for an upgrade
-  upgrade: ProtocolConfiguration;
-}
-
-async function getModernConfigs(context: CometContext, requirements: Requirements): Promise<ModernConfig[]> {
-  const currentConfig = await context.getConfiguration();
-  const fuzzedConfigs = getFuzzedRequirements(requirements).map((r) => ({
-    upgrade: r.upgrade && Object.assign({}, currentConfig, r.upgrade),
-  }));
-  return fuzzedConfigs;
-}
-
 export class ModernConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(requirements: R, context: T) {
-    const configs = await getModernConfigs(context, requirements);
+  async solve(requirements: R, _context: T) {
+    const fuzzed = await getFuzzedRequirements(requirements);
     const solutions = [];
-    for (const config of configs) {
-      if (config.upgrade) {
+    for (const req of fuzzed) {
+      if (req.upgrade) {
         solutions.push(async function solution(ctx: T): Promise<T> {
-          return await ctx.upgrade(config.upgrade) as T; // It's been modified
+          const current = await ctx.getConfiguration();
+          const upgrade = Object.assign({}, current, req.upgrade);
+          return await ctx.upgrade(upgrade) as T; // It's been modified
         });
       }
     }
