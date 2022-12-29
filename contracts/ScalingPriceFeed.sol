@@ -4,6 +4,11 @@ pragma solidity 0.8.15;
 import "./vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "./IPriceFeed.sol";
 
+/**
+ * @title Scaling price feed
+ * @notice A custom price feed that scales up or down the price received from an underlying Chainlink price feed and returns the result
+ * @author Compound
+ */
 contract ScalingPriceFeed is IPriceFeed {
     /** Custom errors **/
     error InvalidInt256();

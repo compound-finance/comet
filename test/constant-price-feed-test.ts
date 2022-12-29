@@ -40,10 +40,10 @@ describe('constant price feed', function () {
       } = await constantPriceFeed.latestRoundData();
       const currentTimestamp = (await getBlock()).timestamp;
 
-      expect(roundId).to.eq(0);
+      expect(roundId).to.eq(1);
       expect(startedAt).to.eq(currentTimestamp);
       expect(updatedAt).to.eq(currentTimestamp);
-      expect(answeredInRound).to.eq(0);
+      expect(answeredInRound).to.eq(1);
     });
   });
 });

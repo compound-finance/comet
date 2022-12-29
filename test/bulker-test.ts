@@ -384,7 +384,7 @@ describe('bulker', function () {
       expect(await bulker.admin()).to.be.equal(alice.address);
     });
 
-    it('revert is transferAdmin called by non-admin', async () => {
+    it('revert if transferAdmin called by non-admin', async () => {
       const protocol = await makeProtocol({});
       const { governor, tokens: { WETH }, users: [alice] } = protocol;
       const bulkerInfo = await makeBulker({ admin: governor, weth: WETH.address });
@@ -393,6 +393,17 @@ describe('bulker', function () {
       await expect(
         bulker.connect(alice).transferAdmin(alice.address)
       ).to.be.revertedWith("custom error 'Unauthorized()'");
+    });
+
+    it('revert if transferAdmin to zero address', async () => {
+      const protocol = await makeProtocol({});
+      const { governor, tokens: { WETH } } = protocol;
+      const bulkerInfo = await makeBulker({ admin: governor, weth: WETH.address });
+      const { bulker } = bulkerInfo;
+
+      await expect(
+        bulker.connect(governor).transferAdmin(ethers.constants.AddressZero)
+      ).to.be.revertedWith("custom error 'InvalidAddress()'");
     });
 
     it('sweep standard ERC20 token', async () => {
