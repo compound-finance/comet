@@ -29,7 +29,7 @@
       "borrowCF": 0.7,
       "liquidateCF": 0.75,
       "liquidationFactor": 0.93,
-      "supplyCap": "35000e8"
+      "supplyCap": "35000"
     },
     "WAVAX": {
       "priceFeed": "0x5498BB86BC934c8D34FDA08E81D444153d0D06aD",
@@ -37,7 +37,7 @@
       "borrowCF": 0.82,
       "liquidateCF": 0.85,
       "liquidationFactor": 0.93,
-      "supplyCap": "1000000e18"
+      "supplyCap": "1000000"
     }
   }
 }

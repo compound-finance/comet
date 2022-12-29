@@ -1,4 +1,5 @@
 import { AssetConfigStruct } from '../../build/types/Comet';
+import { ConfigurationStruct } from '../../build/types/Configurator';
 import { ProtocolConfiguration } from './index';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
@@ -100,7 +101,7 @@ function getAssetConfigs(
     borrowCollateralFactor: percentage(assetConfig.borrowCF),
     liquidateCollateralFactor: percentage(assetConfig.liquidateCF),
     liquidationFactor: percentage(assetConfig.liquidationFactor),
-    supplyCap: number(assetConfig.supplyCap), // TODO: Decimals
+    supplyCap: BigInt(number(assetConfig.supplyCap)) * (10n ** BigInt(assetConfig.decimals)),
   }));
 }
 
@@ -123,7 +124,7 @@ function getOverridesOrConfig(
     trackingIndexScale: _ => number(tracking.indexScale),
     baseTrackingSupplySpeed: _ => number(tracking.baseSupplySpeed),
     baseTrackingBorrowSpeed: _ => number(tracking.baseBorrowSpeed),
-    baseMinForRewards: _ => number(tracking.baseMinForRewards),
+    baseMinForRewards: _ => number(tracking.baseMinForRewards), // TODO: in token units (?)
   });
   const mapping = () => ({
     name: _ => config.name,
@@ -134,7 +135,7 @@ function getOverridesOrConfig(
     baseTokenPriceFeed: _ => getContractAddress(`${config.baseToken}:priceFeed`, contracts, config.baseTokenPriceFeed),
     baseBorrowMin: _ => number(config.borrowMin), // TODO: in token units (?)
     storeFrontPriceFactor: _ => percentage(config.storeFrontPriceFactor),
-    targetReserves: _ => number(config.targetReserves),
+    targetReserves: _ => number(config.targetReserves), // TODO: in token units (?)
     ...interestRateInfoMapping(config.rates),
     ...trackingInfoMapping(config.tracking),
     assetConfigs: _ => getAssetConfigs(config.assets, contracts),
@@ -154,4 +155,14 @@ export async function getConfiguration(
   const config = await deploymentManager.readConfig<NetworkConfiguration>();
   const contracts = await deploymentManager.contracts();
   return getOverridesOrConfig(configOverrides, config, contracts);
+}
+
+export async function getConfigurationStruct(
+  deploymentManager: DeploymentManager,
+  configOverrides: ProtocolConfiguration = {},
+): Promise<ConfigurationStruct> {
+  const contracts = await deploymentManager.contracts();
+  const configuration = await getConfiguration(deploymentManager, configOverrides);
+  const extensionDelegate = configOverrides.extensionDelegate ?? getContractAddress('comet:implementation:implementation', contracts);
+  return { ...configuration, extensionDelegate };
 }

@@ -46,6 +46,12 @@ export class Cache {
     this.writeCacheToDisk = writeCacheToDisk ?? false;
   }
 
+  asDeployment(network: string, deployment: string): Cache {
+    const cache = new Cache(network, deployment, this.writeCacheToDisk, this.deploymentDir);
+    cache.cache = this.cache;
+    return cache;
+  }
+
   private getPath(spec: FileSpec): string[] {
     if (typeof spec === 'string') {
       return [spec.toLowerCase()];
