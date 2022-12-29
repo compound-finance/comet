@@ -11,7 +11,7 @@ interface SourceTokenParameters {
   amount: number | bigint;
   asset: string;
   address: string;
-  blacklist: string[] | undefined;
+  blacklist: string[];
 }
 
 export async function fetchQuery(
@@ -62,7 +62,7 @@ export async function sourceTokens({
   } else if (amount.isNegative()) {
     await removeTokens(dm, amount.abs(), asset, address);
   } else {
-    await addTokens(dm, amount, asset, address, blacklist);
+    await addTokens(dm, amount, asset, address, [address].concat(blacklist));
   }
 }
 
@@ -94,7 +94,7 @@ async function addTokens(
   amount: BigNumber,
   asset: string,
   address: string,
-  blacklist?: string[],
+  blacklist: string[],
   block?: number,
   offsetBlocks?: number,
   MAX_SEARCH_BLOCKS = 40000,

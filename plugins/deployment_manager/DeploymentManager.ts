@@ -3,7 +3,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Contract, providers } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Alias, Address, BuildFile, TraceFn } from './Types';
-import { putAlias, storeAliases } from './Aliases';
+import { getAliases, storeAliases, putAlias } from './Aliases';
 import { Cache } from './Cache';
 import { ContractMap } from './ContractMap';
 import { DeployOpts, deploy, deployBuild } from './Deploy';
@@ -206,6 +206,25 @@ export class DeploymentManager {
     return maybeExisting;
   }
 
+  async fromDep<C extends Contract>(
+    alias: Alias,
+    network: string,
+    deployment: string,
+    otherAlias = alias
+  ): Promise<C> {
+    const maybeExisting = await this.contract<C>(alias);
+    if (!maybeExisting) {
+      const trace = this.tracer();
+      const address = await this.readAlias(network, deployment, otherAlias);
+      const buildFile = await this.import(address, network);
+      const contract = getEthersContract<C>(address, buildFile, this.hre);
+      await this.putAlias(alias, contract);
+      trace(`Loaded ${buildFile.contract} from ${network}/${deployment}:${otherAlias} (${address}) as '${alias}'`);
+      return contract;
+    }
+    return maybeExisting;
+  }
+
   /* Deploys a contract from Hardhat artifacts */
   async _deploy<C extends Contract>(contractFile: string, deployArgs: any[], retries?: number): Promise<C> {
     const contract = await this.retry(
@@ -292,6 +311,12 @@ export class DeploymentManager {
   async putAlias(alias: Alias, contract: Contract) {
     await putAlias(this.cache, alias, contract.address);
     this.contractsCache.set(alias, contract);
+  }
+
+  /* Read an alias from another deployment */
+  async readAlias(network: string, deployment: string, alias: Alias): Promise<Address> {
+    const aliases = await getAliases(this.cache.asDeployment(network, deployment));
+    return aliases.get(alias);
   }
 
   /* Returns a memory-cached map of contracts indexed by alias.
