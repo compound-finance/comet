@@ -41,7 +41,7 @@ const WST_ETH = '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0';
 const liquidationThresholds = {
   'mainnet': {
     'usdc': 10e6,
-    'weth': 10e18
+    'weth': 1e18
   },
   'goerli': {
     'usdc': 10e6
@@ -71,7 +71,8 @@ export function getPoolConfig(tokenAddress: string) {
     exchange: 0,
     uniswapPoolFee: 0,
     swapViaWeth: false,
-    balancerPoolId: ethers.utils.formatBytes32String('')
+    balancerPoolId: ethers.utils.formatBytes32String(''),
+    curvePool: ethers.constants.AddressZero
   };
 
   const poolConfigs: {[tokenAddress: string]: PoolConfigStruct} = {
@@ -172,6 +173,9 @@ async function attemptLiquidation(
   const poolConfigs = assetAddresses.map(getPoolConfig);
   const maxAmountsToPurchase = assetAddresses.map(_ => ethers.constants.MaxUint256.toBigInt());
 
+  const flashLoanPool = flashLoanPools[network][deployment];
+  const liquidationThreshold = liquidationThresholds[network][deployment];
+
   const success = await attemptLiquidationViaOnChainLiquidator(
     comet,
     liquidator,
@@ -179,9 +183,10 @@ async function attemptLiquidation(
     assetAddresses,
     poolConfigs,
     maxAmountsToPurchase,
-    signerWithFlashbots,
-    network,
-    deployment
+    flashLoanPool.tokenAddress,
+    flashLoanPool.poolFee,
+    liquidationThreshold,
+    signerWithFlashbots
   );
 
   // 2) if initial attempt fails...
@@ -205,12 +210,13 @@ async function attemptLiquidation(
           [asset.address],                // assets
           [getPoolConfig(asset.address)], // pool configs
           [amount],                       // max amounts to purchase
+          flashLoanPool.tokenAddress,
+          flashLoanPool.poolFee,
+          liquidationThreshold,
           signerWithFlashbots,
-          network,
-          deployment
         );
 
-        if (success) { break }; // stop once you've clear any amount of an asset
+        if (success) { break; } // stop once you've clear any amount of an asset
       }
     }
   }
@@ -223,18 +229,16 @@ async function attemptLiquidationViaOnChainLiquidator(
   assets: string[],
   poolConfigs: PoolConfigStruct[],
   maxAmountsToPurchase: BigNumberish[],
+  flashLoanPoolTokenAddress: string,
+  flashLoanPoolFee: number,
+  liquidationThreshold: number,
   signerWithFlashbots: SignerWithFlashbots,
-  network: string,
-  deployment: string
 ): Promise<boolean> {
   const liquidatorAddress = liquidator.address;
 
   googleCloudLog(LogSeverity.INFO, `Attempting to liquidate ${targetAddresses} via OnChainLiquidator @${liquidatorAddress}`);
 
   try {
-    const flashLoanPool = flashLoanPools[network][deployment];
-    const liquidationThreshold = liquidationThresholds[network][deployment];
-
     const args: [
       string,
       string[],
@@ -250,8 +254,8 @@ async function attemptLiquidationViaOnChainLiquidator(
       assets,
       poolConfigs,
       maxAmountsToPurchase,
-      flashLoanPool.tokenAddress,
-      flashLoanPool.poolFee,
+      flashLoanPoolTokenAddress,
+      flashLoanPoolFee,
       liquidationThreshold
     ];
 
@@ -288,14 +292,19 @@ async function getUniqueAddresses(comet: CometInterface): Promise<Set<string>> {
   return new Set(withdrawEvents.map(event => event.args.src));
 }
 
-export async function hasPurchaseableCollateral(comet: CometInterface, assets: Asset[], minUsdValue: number = 100): Promise<boolean> {
-  let totalValue = 0n;
-  const minValue = exp(minUsdValue, 8);
+export async function hasPurchaseableCollateral(comet: CometInterface, assets: Asset[], minBaseValue: number): Promise<boolean> {
+  const baseReserves = await comet.getReserves();
+  const targetReserves = await comet.targetReserves();
+
+  if (baseReserves >= targetReserves) {
+    return false;
+  }
+
   for (const asset of assets) {
     const collateralReserves = await comet.getCollateralReserves(asset.address);
     const price = await comet.getPrice(asset.priceFeed);
-    totalValue += collateralReserves.toBigInt() * price.toBigInt() / asset.scale;
-    if (totalValue >= minValue) {
+    const value = collateralReserves.toBigInt() * price.toBigInt() / asset.scale;
+    if (value >= minBaseValue) {
       return true;
     }
   }
@@ -344,7 +353,9 @@ export async function arbitragePurchaseableCollateral(
 ) {
   googleCloudLog(LogSeverity.INFO, `Checking for purchasable collateral`);
 
-  if (await hasPurchaseableCollateral(comet, assets)) {
+  const liquidationThreshold = liquidationThresholds[network][deployment];
+
+  if (await hasPurchaseableCollateral(comet, assets, liquidationThreshold)) {
     googleCloudLog(LogSeverity.WARNING, `There is purchasable collateral`);
     await attemptLiquidation(
       comet,

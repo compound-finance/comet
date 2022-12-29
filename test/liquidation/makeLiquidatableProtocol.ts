@@ -8,15 +8,17 @@ import {
   OnChainLiquidator__factory
 } from '../../build/types';
 import {
+  BALANCER_VAULT,
   COMP,
   COMP_USDC_PRICE_FEED,
   COMP_WHALE,
+  CURVE_REGISTRY,
   DAI,
-  DAI_USDC_PRICE_FEED,
   DAI_WHALE,
   LINK,
   LINK_USDC_PRICE_FEED,
   LINK_WHALE,
+  ST_ETH,
   UNISWAP_ROUTER,
   UNI,
   UNI_USDC_PRICE_FEED,
@@ -30,6 +32,7 @@ import {
   WETH9,
   ETH_USDC_PRICE_FEED,
   WETH_WHALE,
+  WST_ETH,
   UNISWAP_V3_FACTORY,
   SUSHISWAP_ROUTER
 } from './addresses';
@@ -136,8 +139,14 @@ export async function makeProtocol() {
   // build OnChainLiquidator
   const OnChainLiquidator = await ethers.getContractFactory('OnChainLiquidator') as OnChainLiquidator__factory;
   const liquidator = await OnChainLiquidator.deploy(
-    ethers.utils.getAddress(UNISWAP_V3_FACTORY),
-    ethers.utils.getAddress(WETH9),
+    BALANCER_VAULT,
+    CURVE_REGISTRY,
+    SUSHISWAP_ROUTER,
+    UNISWAP_ROUTER,
+    UNISWAP_V3_FACTORY,
+    ST_ETH,
+    WST_ETH,
+    WETH9
   );
   await liquidator.deployed();
 

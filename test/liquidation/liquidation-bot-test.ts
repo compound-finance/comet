@@ -8,7 +8,7 @@ describe('Liquidator', function () {
   after(resetHardhatNetwork);
 
   it('Should init liquidator', async function () {
-    const { comet, liquidator } = await makeLiquidatableProtocol();
+    const { liquidator } = await makeLiquidatableProtocol();
     expect(await liquidator.uniswapRouter()).to.equal(UNISWAP_ROUTER);
     expect(await liquidator.sushiSwapRouter()).to.equal(SUSHISWAP_ROUTER);
   });
@@ -30,7 +30,8 @@ describe('Liquidator', function () {
           exchange: Exchange.Uniswap,
           uniswapPoolFee: 500,
           swapViaWeth: false,
-          balancerPoolId: ethers.utils.formatBytes32String('')
+          balancerPoolId: ethers.utils.formatBytes32String(''),
+          curvePool: ethers.constants.AddressZero
         }
       ],
       [ethers.constants.MaxUint256],
@@ -68,7 +69,8 @@ describe('Liquidator', function () {
           exchange: Exchange.Uniswap,
           uniswapPoolFee: 3000,
           swapViaWeth: true,
-          balancerPoolId: ethers.utils.formatBytes32String('')
+          balancerPoolId: ethers.utils.formatBytes32String(''),
+          curvePool: ethers.constants.AddressZero
         }
       ],
       [ethers.constants.MaxUint256],
@@ -105,7 +107,8 @@ describe('Liquidator', function () {
           exchange: Exchange.Uniswap,
           uniswapPoolFee: 3000,
           swapViaWeth: true,
-          balancerPoolId: ethers.utils.formatBytes32String('')
+          balancerPoolId: ethers.utils.formatBytes32String(''),
+          curvePool: ethers.constants.AddressZero
         }
       ],
       [ethers.constants.MaxUint256],
@@ -142,7 +145,8 @@ describe('Liquidator', function () {
           exchange: Exchange.Uniswap,
           uniswapPoolFee: 3000,
           swapViaWeth: true,
-          balancerPoolId: ethers.utils.formatBytes32String('')
+          balancerPoolId: ethers.utils.formatBytes32String(''),
+          curvePool: ethers.constants.AddressZero
         }
       ],
       [ethers.constants.MaxUint256],
@@ -179,7 +183,8 @@ describe('Liquidator', function () {
           exchange: Exchange.Uniswap,
           uniswapPoolFee: 3000,
           swapViaWeth: true,
-          balancerPoolId: ethers.utils.formatBytes32String('')
+          balancerPoolId: ethers.utils.formatBytes32String(''),
+          curvePool: ethers.constants.AddressZero
         }
       ],
       [ethers.constants.MaxUint256],
