@@ -3,7 +3,7 @@ pragma solidity 0.8.15;
 
 /**
  * @title IERC20NonStandard
- * @dev Version of ERC20 with no return values for `transfer` and `transferFrom`
+ * @dev Version of ERC20 with no return values for `approve`, `transfer`, and `transferFrom`
  *  See https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
  */
 interface IERC20NonStandard {
