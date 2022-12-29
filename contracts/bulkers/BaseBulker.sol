@@ -55,6 +55,7 @@ contract BaseBulker {
 
     /** Custom errors **/
 
+    error InvalidAddress();
     error InvalidArgument();
     error FailedToSendNativeToken();
     error TransferInFailed();
@@ -104,9 +105,11 @@ contract BaseBulker {
 
     /**
      * @notice Transfers the admin rights to a new address
+     * @param newAdmin The address that will become the new admin
      */
     function transferAdmin(address newAdmin) external {
         if (msg.sender != admin) revert Unauthorized();
+        if (newAdmin == address(0)) revert InvalidAddress();
 
         address oldAdmin = admin;
         admin = newAdmin;
