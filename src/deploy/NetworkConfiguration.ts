@@ -31,6 +31,29 @@ function percentage(n: number, checkRange: boolean = true): bigint {
   return floor(n * 1e18);
 }
 
+// Note: Expects a string in scientific notation format (e.g. 100e18)
+function stringToBigInt(x: ScientificNotation) {
+  if (typeof x !== 'string') {
+    throw new Error(`expected argument to be string, got ${x}`);
+  }
+  if (!x.match(/^[0-9]+([.][0-9]+)?e[0-9]+$/)) {
+    throw new Error(`expected string in scientific notation form, got ${x}`)
+  }
+
+  const nums = x.split('e');
+  const coefficient = Number(nums[0]);
+  const exponent = Number(nums[1]);
+  // If exponent is a decimal, then just convert it directly using `number()`.
+  // Note: This does mean we could lose some precision when using a decimal coefficient
+  if (!Number.isInteger(coefficient)) {
+    return number(Number(x));
+  } else {
+    return BigInt(coefficient) * (10n ** BigInt(exponent));
+  }
+}
+
+type ScientificNotation = string;
+
 interface NetworkRateConfiguration {
   supplyKink: number;
   supplySlopeLow: number;
@@ -43,10 +66,10 @@ interface NetworkRateConfiguration {
 }
 
 interface NetworkTrackingConfiguration {
-  indexScale: number;
-  baseSupplySpeed: number;
-  baseBorrowSpeed: number;
-  baseMinForRewards: number;
+  indexScale: ScientificNotation;
+  baseSupplySpeed: ScientificNotation;
+  baseBorrowSpeed: ScientificNotation;
+  baseMinForRewards: ScientificNotation;
 }
 
 interface NetworkAssetConfiguration {
@@ -56,7 +79,7 @@ interface NetworkAssetConfiguration {
   borrowCF: number;
   liquidateCF: number;
   liquidationFactor: number;
-  supplyCap: number;
+  supplyCap: ScientificNotation;
 }
 
 export interface NetworkConfiguration {
@@ -67,9 +90,9 @@ export interface NetworkConfiguration {
   baseToken: string;
   baseTokenAddress?: string;
   baseTokenPriceFeed: string;
-  borrowMin: number;
+  borrowMin: ScientificNotation;
   storeFrontPriceFactor: number;
-  targetReserves: number;
+  targetReserves: ScientificNotation;
   rates: NetworkRateConfiguration;
   tracking: NetworkTrackingConfiguration;
   assets: { [name: string]: NetworkAssetConfiguration };
@@ -101,7 +124,7 @@ function getAssetConfigs(
     borrowCollateralFactor: percentage(assetConfig.borrowCF),
     liquidateCollateralFactor: percentage(assetConfig.liquidateCF),
     liquidationFactor: percentage(assetConfig.liquidationFactor),
-    supplyCap: BigInt(number(assetConfig.supplyCap)) * (10n ** BigInt(assetConfig.decimals)),
+    supplyCap: stringToBigInt(assetConfig.supplyCap),
   }));
 }
 
@@ -110,7 +133,7 @@ function getOverridesOrConfig(
   config: NetworkConfiguration,
   contracts: ContractMap,
 ): ProtocolConfiguration {
-  const interestRateInfoMapping = (rates) => ({
+  const interestRateInfoMapping = (rates: NetworkRateConfiguration) => ({
     supplyKink: _ => percentage(rates.supplyKink),
     supplyPerYearInterestRateSlopeLow: _ => percentage(rates.supplySlopeLow),
     supplyPerYearInterestRateSlopeHigh: _ => percentage(rates.supplySlopeHigh),
@@ -120,11 +143,11 @@ function getOverridesOrConfig(
     borrowPerYearInterestRateSlopeHigh: _ => percentage(rates.borrowSlopeHigh),
     borrowPerYearInterestRateBase: _ => percentage(rates.borrowBase),
   });
-  const trackingInfoMapping = (tracking) => ({
-    trackingIndexScale: _ => number(tracking.indexScale),
-    baseTrackingSupplySpeed: _ => number(tracking.baseSupplySpeed),
-    baseTrackingBorrowSpeed: _ => number(tracking.baseBorrowSpeed),
-    baseMinForRewards: _ => number(tracking.baseMinForRewards), // TODO: in token units (?)
+  const trackingInfoMapping = (tracking: NetworkTrackingConfiguration) => ({
+    trackingIndexScale: _ => stringToBigInt(tracking.indexScale),
+    baseTrackingSupplySpeed: _ => stringToBigInt(tracking.baseSupplySpeed),
+    baseTrackingBorrowSpeed: _ => stringToBigInt(tracking.baseBorrowSpeed),
+    baseMinForRewards: _ => stringToBigInt(tracking.baseMinForRewards),
   });
   const mapping = () => ({
     name: _ => config.name,
@@ -133,9 +156,9 @@ function getOverridesOrConfig(
     pauseGuardian: _ => config.pauseGuardian ? address(config.pauseGuardian) : getContractAddress('timelock', contracts),
     baseToken: _ => getContractAddress(config.baseToken, contracts, config.baseTokenAddress),
     baseTokenPriceFeed: _ => getContractAddress(`${config.baseToken}:priceFeed`, contracts, config.baseTokenPriceFeed),
-    baseBorrowMin: _ => number(config.borrowMin), // TODO: in token units (?)
+    baseBorrowMin: _ => stringToBigInt(config.borrowMin),
     storeFrontPriceFactor: _ => percentage(config.storeFrontPriceFactor),
-    targetReserves: _ => number(config.targetReserves), // TODO: in token units (?)
+    targetReserves: _ => stringToBigInt(config.targetReserves),
     ...interestRateInfoMapping(config.rates),
     ...trackingInfoMapping(config.tracking),
     assetConfigs: _ => getAssetConfigs(config.assets, contracts),
