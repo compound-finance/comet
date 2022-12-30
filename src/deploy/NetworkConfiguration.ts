@@ -37,7 +37,7 @@ function stringToBigInt(x: ScientificNotation) {
     throw new Error(`expected argument to be string, got ${x}`);
   }
   if (!x.match(/^[0-9]+([.][0-9]+)?e[0-9]+$/)) {
-    throw new Error(`expected string in scientific notation form, got ${x}`)
+    throw new Error(`expected string in scientific notation form, got ${x}`);
   }
 
   const nums = x.split('e');
