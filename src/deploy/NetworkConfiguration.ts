@@ -31,12 +31,12 @@ function percentage(n: number, checkRange: boolean = true): bigint {
   return floor(n * 1e18);
 }
 
-// Note: Expects a string in scientific notation format (e.g. 100e18)
+// Note: Expects a string in scientific notation format (e.g. 1000e18 or 1_000e18)
 function stringToBigInt(x: ScientificNotation) {
   if (typeof x !== 'string') {
     throw new Error(`expected argument to be string, got ${x}`);
   }
-  let sanitizedInput = x.replace(/_/g, '');
+  const sanitizedInput = x.replace(/_/g, '');
   if (!sanitizedInput.match(/^[0-9]+([.][0-9]+)?e[0-9]+$/)) {
     throw new Error(`expected string in scientific notation form, got ${x}`);
   }
