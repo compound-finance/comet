@@ -36,17 +36,18 @@ function stringToBigInt(x: ScientificNotation) {
   if (typeof x !== 'string') {
     throw new Error(`expected argument to be string, got ${x}`);
   }
-  if (!x.match(/^[0-9]+([.][0-9]+)?e[0-9]+$/)) {
+  let sanitizedInput = x.replace(/_/g, '');
+  if (!sanitizedInput.match(/^[0-9]+([.][0-9]+)?e[0-9]+$/)) {
     throw new Error(`expected string in scientific notation form, got ${x}`);
   }
 
-  const nums = x.split('e');
+  const nums = sanitizedInput.split('e');
   const coefficient = Number(nums[0]);
   const exponent = Number(nums[1]);
   // If exponent is a decimal, then just convert it directly using `number()`.
   // Note: This does mean we could lose some precision when using a decimal coefficient
   if (!Number.isInteger(coefficient)) {
-    return number(Number(x));
+    return number(Number(sanitizedInput));
   } else {
     return BigInt(coefficient) * (10n ** BigInt(exponent));
   }
