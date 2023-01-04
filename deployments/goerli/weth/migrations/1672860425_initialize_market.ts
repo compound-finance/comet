@@ -14,18 +14,6 @@ export default migration('1672860425_initialize_market', {
     const trace = deploymentManager.tracer();
 
     // Import shared contracts from cUSDCv3
-    // Note: We need to first spider the contracts on the cUSDC base. Consider moving this spider logic into `fromDep`.
-    const network = 'goerli';
-    const base = 'usdc';
-    const usdcDm = new DeploymentManager(
-      network,
-      base,
-      deploymentManager.hre,
-      {
-        writeCacheToDisk: true,
-      }
-    );
-    await usdcDm.spider();
     const cometFactory = await deploymentManager.fromDep('cometFactory', 'goerli', 'usdc');
 
     const {
