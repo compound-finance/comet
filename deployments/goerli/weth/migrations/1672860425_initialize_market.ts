@@ -13,7 +13,21 @@ export default migration('1672860425_initialize_market', {
   enact: async (deploymentManager: DeploymentManager) => {
     const trace = deploymentManager.tracer();
 
-    const cometFactory = await deploymentManager.fromDep('cometFactory', 'mainnet', 'usdc');
+    // Import shared contracts from cUSDCv3
+    // Note: We need to first spider the contracts on the cUSDC base. Consider moving this spider logic into `fromDep`.
+    const network = 'goerli';
+    const base = 'usdc';
+    const usdcDm = new DeploymentManager(
+      network,
+      base,
+      deploymentManager.hre,
+      {
+        writeCacheToDisk: true,
+      }
+    );
+    await usdcDm.spider();
+    const cometFactory = await deploymentManager.fromDep('cometFactory', 'goerli', 'usdc');
+
     const {
       governor,
       comet,
@@ -84,7 +98,7 @@ export default migration('1672860425_initialize_market', {
 
     // 4.
     const config = await rewards.rewardConfig(comet.address);
-    expect(config.token.toLowerCase()).to.be.equal(COMPAddress);
+    expect(config.token).to.be.equal(COMPAddress);
     expect(config.rescaleFactor).to.be.equal(1000000000000n);
     expect(config.shouldUpscale).to.be.equal(true);
   },
