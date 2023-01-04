@@ -150,8 +150,8 @@ async function mintTokens(deploymentManager: DeploymentManager) {
   await deploymentManager.idempotent(
     async () => (await cbETH.balanceOf(fauceteer.address)).eq(0),
     async () => {
-      debug(`Minting 10K cbETH to fauceteer`);
-      const amount = exp(10_000, await cbETH.decimals());
+      debug(`Minting 1M cbETH to fauceteer`);
+      const amount = exp(1_000_000, await cbETH.decimals());
       await wait(cbETH.connect(signer).configureMinter(signer.address, amount));
       await wait(cbETH.connect(signer).mint(fauceteer.address, amount));
       debug(`cbETH.balanceOf(${fauceteer.address}): ${await cbETH.balanceOf(fauceteer.address)}`);
