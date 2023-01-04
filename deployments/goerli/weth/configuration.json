@@ -2,7 +2,7 @@
   "name": "Compound WETH",
   "symbol": "cWETHv3",
   "baseToken": "WETH",
-  "baseTokenAddress": "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
+  "baseTokenAddress": "0x42a71137C09AE83D8d05974960fd607d40033499",
   "borrowMin": "0.1e18",
   "governor": "0x8Fa336EB4bF58Cfc508dEA1B0aeC7336f55B1399",
   "pauseGuardian": "0x8Fa336EB4bF58Cfc508dEA1B0aeC7336f55B1399",
