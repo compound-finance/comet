@@ -21,25 +21,13 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const wstETH = await deploymentManager.existing('wstETH', '0x4942BBAf745f235e525BAff49D31450810EDed5b', 'goerli');
 
   // Import shared contracts from cUSDCv3
-  // Note: We need to first spider the contracts on the cUSDC base. Consider moving this spider logic into `fromDep`.
-  const network = 'goerli';
-  const base = 'usdc';
-  const usdcDm = new DeploymentManager(
-    network,
-    base,
-    deploymentManager.hre,
-    {
-      writeCacheToDisk: true,
-    }
-  );
-  await usdcDm.spider();
-  const cometAdmin = await deploymentManager.fromDep('cometAdmin', network, base);
-  const cometFactory = await deploymentManager.fromDep('cometFactory', network, base);
-  const $configuratorImpl = await deploymentManager.fromDep('configurator:implementation', network, base);
-  const configurator = await deploymentManager.fromDep('configurator', network, base);
-  const rewards = await deploymentManager.fromDep('rewards', network, base);
-  const fauceteer = await deploymentManager.fromDep('fauceteer', network, base);
-  const fxRoot = await deploymentManager.fromDep('fxRoot', network, base);
+  const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'goerli', 'usdc');
+  const cometFactory = await deploymentManager.fromDep('cometFactory', 'goerli', 'usdc');
+  const $configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'goerli', 'usdc');
+  const configurator = await deploymentManager.fromDep('configurator', 'goerli', 'usdc');
+  const rewards = await deploymentManager.fromDep('rewards', 'goerli', 'usdc');
+  const fauceteer = await deploymentManager.fromDep('fauceteer', 'goerli', 'usdc');
+  const fxRoot = await deploymentManager.fromDep('fxRoot', 'goerli', 'usdc');
 
   // Clone cbETH
   const cbETHProxyAdmin = await deploymentManager.deploy('cbETH:admin', 'vendor/proxy/transparent/ProxyAdmin.sol', []);
