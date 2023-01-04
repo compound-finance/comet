@@ -215,6 +215,7 @@ export class DeploymentManager {
     const maybeExisting = await this.contract<C>(alias);
     if (!maybeExisting) {
       const trace = this.tracer();
+      const _other = await this.spiderOther(network, deployment);
       const address = await this.readAlias(network, deployment, otherAlias);
       const buildFile = await this.import(address, network);
       const contract = getEthersContract<C>(address, buildFile, this.hre);
@@ -282,7 +283,7 @@ export class DeploymentManager {
     return verifyContract(args, this.hre, (await this.deployOpts()).raiseOnVerificationFailure);
   }
 
-  /* Loads contract configuration by tracing from roots outwards, based on relationConfig. */
+  /* Loads contract configuration by tracing from roots outwards, based on relationConfig */
   async spider(deployed: Deployed = {}): Promise<Spider> {
     const relationConfigMap = getRelationConfig(
       this.hre.config.deploymentManager,
@@ -305,6 +306,13 @@ export class DeploymentManager {
     await storeAliases(this.cache, crawl.aliases);
     this.contractsCache = crawl.contracts;
     return crawl;
+  }
+
+  /* Spiders a different deployment, generally for a dependency on another deployment */
+  async spiderOther(network: string, deployment: string): Promise<Spider> {
+    // TODO: cache these at a higher level to avoid all the unnecessary noise/ops?
+    const dm = new DeploymentManager(network, deployment, this.hre, { writeCacheToDisk: true });
+    return await dm.spider();
   }
 
   /* Stores a new alias, which can then be referenced via `deploymentManager.contract()` */
