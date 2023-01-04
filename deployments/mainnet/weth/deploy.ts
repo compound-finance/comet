@@ -37,16 +37,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   );
 
   // Import shared contracts from cUSDCv3
-  // Note: We need to first spider the contracts on the cUSDC base. Consider moving this spider logic into `fromDep`.
-  const usdcDm = new DeploymentManager(
-    'mainnet',
-    'usdc',
-    deploymentManager.hre,
-    {
-      writeCacheToDisk: true,
-    }
-  );
-  await usdcDm.spider();
   const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'mainnet', 'usdc');
   const cometFactory = await deploymentManager.fromDep('cometFactory', 'mainnet', 'usdc');
   const $configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'mainnet', 'usdc');
