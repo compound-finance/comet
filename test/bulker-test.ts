@@ -25,6 +25,27 @@ describe('bulker', function () {
     expect(await baseBalanceOf(comet, alice.address)).to.be.equal(supplyAmount);
   });
 
+  it('supply max base asset', async () => {
+    const protocol = await makeProtocol({});
+    const { comet, tokens: { USDC, WETH }, users: [alice] } = protocol;
+    const bulkerInfo = await makeBulker({ weth: WETH.address });
+    const { bulker } = bulkerInfo;
+
+    // Alice approves 10 USDC to Comet
+    const supplyAmount = exp(10, 6);
+    await USDC.allocateTo(alice.address, supplyAmount);
+    await USDC.connect(alice).approve(comet.address, ethers.constants.MaxUint256);
+
+    // Alice gives the Bulker permission over her account
+    await comet.connect(alice).allow(bulker.address, true);
+
+    // Alice supplies 10 USDC through the bulker
+    const supplyAssetCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'address', 'uint'], [comet.address, alice.address, USDC.address, ethers.constants.MaxUint256]);
+    await bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_ASSET()], [supplyAssetCalldata]);
+
+    expect(await baseBalanceOf(comet, alice.address)).to.be.equal(supplyAmount);
+  });
+
   it('supply collateral asset', async () => {
     const protocol = await makeProtocol({});
     const { comet, tokens: { COMP, WETH }, users: [alice] } = protocol;
@@ -435,7 +456,8 @@ describe('bulker', function () {
   });
 });
 
-describe('bulker multiple actions', function () {
+// XXX add test for repay max and supply max
+describe.only('bulker multiple actions', function () {
   it('supply collateral + borrow base asset', async () => {
     const protocol = await makeProtocol({});
     const { comet, tokens: { USDC, COMP, WETH }, users: [alice] } = protocol;
