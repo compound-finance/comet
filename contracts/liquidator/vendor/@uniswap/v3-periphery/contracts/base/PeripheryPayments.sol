@@ -11,10 +11,6 @@ import '../libraries/TransferHelper.sol';
 import './PeripheryImmutableState.sol';
 
 abstract contract PeripheryPayments is IPeripheryPayments, PeripheryImmutableState {
-    receive() external payable {
-        require(msg.sender == WETH9, 'Not WETH9');
-    }
-
     /// @inheritdoc IPeripheryPayments
     function unwrapWETH9(uint256 amountMinimum, address recipient) public payable override {
         uint256 balanceWETH9 = IWETH9(WETH9).balanceOf(address(this));

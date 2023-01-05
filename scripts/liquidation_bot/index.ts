@@ -2,7 +2,7 @@ import hre from 'hardhat';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import {
   CometInterface,
-  Liquidator
+  OnChainLiquidator
 } from '../../build/types';
 import {
   arbitragePurchaseableCollateral,
@@ -94,7 +94,7 @@ async function main() {
     'Liquidator',
     liquidatorAddress,
     signer
-  ) as Liquidator;
+  ) as OnChainLiquidator;
 
   let lastBlockNumber: number;
   let loops = 0;
@@ -115,7 +115,8 @@ async function main() {
         comet,
         liquidator,
         signerWithFlashbots,
-        network
+        network,
+        deployment
       );
       if (!liquidationAttempted) {
         await arbitragePurchaseableCollateral(
@@ -123,7 +124,8 @@ async function main() {
           liquidator,
           assets,
           signerWithFlashbots,
-          network
+          network,
+          deployment
         );
       }
     } else {

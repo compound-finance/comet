@@ -7,38 +7,53 @@ describe('Liquidation Bot', function () {
   after(resetHardhatNetwork);
 
   describe('liquidateUnderwaterBorrowers', function () {
-    it('liquidates underwater borrowers', async function () {
-      const {
-        comet,
-        liquidator,
-        users: [signer, underwater],
-        assets: { dai, usdc },
-        whales: { usdcWhale }
-      } = await makeLiquidatableProtocol();
+    const assetAmounts = {
+      'comp': exp(120, 18),
+      'link': exp(200, 18), // XXX small amount; increase transfer to user
+      'uni': exp(200, 18), // XXX small amount; increase transfer to user
+      'wbtc': exp(1, 8),
+      'weth': exp(200, 18)
+    };
 
-      // transfer USDC to comet, so it has money to pay out withdraw to underwater user
-      await usdc.connect(usdcWhale).transfer(comet.address, 300000000n); // 300e6
-      await dai.connect(underwater).approve(comet.address, 120000000000000000000n);
-      await comet.connect(underwater).supply(dai.address, 120000000000000000000n);
-      // withdraw to ensure that there is a Withdraw event for the user
-      await comet.connect(underwater).withdraw(usdc.address, 10e6);
-      // put the position underwater
-      await comet.setBasePrincipal(underwater.address, -(exp(200, 6)));
+    for (const k in assetAmounts) {
+      it(`liquidates an underwater borrower of ${k}`, async function() {
+        const {
+          comet,
+          liquidator,
+          users: [signer, underwater],
+          assets,
+          whales: { usdcWhale }
+        } = await makeLiquidatableProtocol();
 
-      expect(await comet.isLiquidatable(underwater.address)).to.be.true;
+        const { usdc } = assets;
+        const asset = assets[k];
+        const supplyAmount = assetAmounts[k];
 
-      await liquidateUnderwaterBorrowers(
-        comet,
-        liquidator,
-        {signer},
-        'mainnet'
-      );
+        // transfer USDC to comet, so it has money to pay out withdraw to underwater user
+        await usdc.connect(usdcWhale).transfer(comet.address, exp(300, 6));
+        await asset.connect(underwater).approve(comet.address, supplyAmount);
+        await comet.connect(underwater).supply(asset.address, supplyAmount);
+        // withdraw to ensure that there is a Withdraw event for the user
+        await comet.connect(underwater).withdraw(usdc.address, 10e6);
+        // put the position underwater
+        await comet.setBasePrincipal(underwater.address, -(exp(20000, 6)));
 
-      expect(await comet.isLiquidatable(underwater.address)).to.be.false;
+        expect(await comet.isLiquidatable(underwater.address)).to.be.true;
 
-      const assetAddresses = await getAssets(comet);
-      expect(await hasPurchaseableCollateral(comet, assetAddresses, 1)).to.be.false;
-    });
+        await liquidateUnderwaterBorrowers(
+          comet,
+          liquidator,
+          { signer },
+          'mainnet',
+          'usdc'
+        );
+
+        expect(await comet.isLiquidatable(underwater.address)).to.be.false;
+
+        const assetAddresses = await getAssets(comet);
+        expect(await hasPurchaseableCollateral(comet, assetAddresses, 1)).to.be.false;
+      });
+    }
   });
 
   describe('arbitragePurchaseableCollateral', function () {
@@ -52,7 +67,7 @@ describe('Liquidation Bot', function () {
       } = await makeProtocol();
       const assetAddresses = await getAssets(comet);
 
-      expect(await hasPurchaseableCollateral(comet, assetAddresses)).to.be.false;
+      expect(await hasPurchaseableCollateral(comet, assetAddresses, 10e6)).to.be.false;
 
       // Transfer WETH to comet, so it has purchaseable collateral
       await weth.connect(wethWhale).transfer(comet.address, 100000000000000000000n); // 100e18
@@ -64,7 +79,8 @@ describe('Liquidation Bot', function () {
         liquidator,
         assetAddresses,
         {signer},
-        'mainnet'
+        'mainnet',
+        'usdc'
       );
 
       // There will be some dust to purchase, but we expect it to be less than $1 of worth
@@ -81,7 +97,7 @@ describe('Liquidation Bot', function () {
       } = await makeProtocol();
       const assetAddresses = await getAssets(comet);
 
-      expect(await hasPurchaseableCollateral(comet, assetAddresses)).to.be.false;
+      expect(await hasPurchaseableCollateral(comet, assetAddresses, 10e6)).to.be.false;
 
       await weth.connect(wethWhale).transfer(comet.address, 100000000000000000000n); // 100e18
       await wbtc.connect(wbtcWhale).transfer(comet.address, 100000000n); // 1e8
@@ -96,7 +112,8 @@ describe('Liquidation Bot', function () {
         liquidator,
         assetAddresses,
         {signer},
-        'mainnet'
+        'mainnet',
+        'usdc'
       );
 
       // There will be some dust to purchase, but we expect it to be less than $1 of worth
@@ -111,7 +128,7 @@ describe('Liquidation Bot', function () {
       } = await makeProtocol();
       const assetAddresses = await getAssets(comet);
 
-      expect(await hasPurchaseableCollateral(comet, assetAddresses)).to.be.false;
+      expect(await hasPurchaseableCollateral(comet, assetAddresses, 10e6)).to.be.false;
 
       // Transfer dust amount of WETH to comet, so it has purchaseable collateral
       await weth.connect(wethWhale).transfer(comet.address, 1000n);
@@ -119,7 +136,9 @@ describe('Liquidation Bot', function () {
       // Expect non-zero collateral
       expect(await hasPurchaseableCollateral(comet, assetAddresses, 0)).to.be.true;
       // There will be some dust to purchase, but we expect it to be less than $1 of worth
-      expect(await hasPurchaseableCollateral(comet, assetAddresses, 1)).to.be.false;
+      expect(await hasPurchaseableCollateral(comet, assetAddresses, 1e6)).to.be.false;
     });
+
+    // XXX hasPurchaseableCollateral returns false when reserves are above target reserves
   });
 });

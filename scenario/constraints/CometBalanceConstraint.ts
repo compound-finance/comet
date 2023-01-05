@@ -33,8 +33,12 @@ async function borrowBase(borrowActor: CometActor, toBorrowBase: bigint, context
 }
 
 export class CometBalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(requirements: R, _initialContext: T) {
-    const assetsByActor = requirements.cometBalances;
+  async solve(requirements: R, initialContext: T) {
+    let assetsByActor = requirements.cometBalances;
+    if (typeof assetsByActor === 'function') {
+      assetsByActor = await assetsByActor(initialContext);
+    }
+
     if (assetsByActor) {
       const actorsByAsset = Object.entries(assetsByActor).reduce((a, [actor, assets]) => {
         return Object.entries(assets).reduce((a, [asset, rawAmount]) => {
