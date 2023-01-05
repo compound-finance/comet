@@ -202,8 +202,7 @@ async function attemptLiquidation(
       const maxAmountToPurchase = getMaxAmountToPurchase(asset.address);
 
       for (const amount of [maxAmountToPurchase, maxAmountToPurchase / 2n, maxAmountToPurchase / 10n]) {
-        // XXX don't shadow variable name
-        const success = await attemptLiquidationViaOnChainLiquidator(
+        const success_ = await attemptLiquidationViaOnChainLiquidator(
           comet,
           liquidator,
           [],                             // target addresses
@@ -216,7 +215,7 @@ async function attemptLiquidation(
           signerWithFlashbots,
         );
 
-        if (success) { break; } // stop once you've clear any amount of an asset
+        if (success_) { break; } // stop once you've cleared any amount of an asset
       }
     }
   }
