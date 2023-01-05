@@ -15,7 +15,10 @@ export default migration('1666906000_configurate_seed_reserves_and_rewards', {
     const trace = deploymentManager.tracer();
     const ethers = deploymentManager.hre.ethers;
 
-    const comptrollerV2 = await deploymentManager.fromDep('comptrollerV2', 'mainnet', 'usdc');
+    const comptrollerV2Proxy = await deploymentManager.fromDep('comptrollerV2', 'mainnet', 'usdc');
+    const comptrollerV2Impl = await deploymentManager.fromDep('comptrollerV2:implementation', 'mainnet', 'usdc');
+    const comptrollerV2 = comptrollerV2Impl.attach(comptrollerV2Proxy.address);
+
     const cometFactory = await deploymentManager.fromDep('cometFactory', 'mainnet', 'usdc');
     const {
       governor,
@@ -91,8 +94,11 @@ export default migration('1666906000_configurate_seed_reserves_and_rewards', {
 
 
   async verify(deploymentManager: DeploymentManager) {
+    const comptrollerV2Proxy = await deploymentManager.fromDep('comptrollerV2', 'mainnet', 'usdc');
+    const comptrollerV2Impl = await deploymentManager.fromDep('comptrollerV2:implementation', 'mainnet', 'usdc');
+    const comptrollerV2 = comptrollerV2Impl.attach(comptrollerV2Proxy.address);
+
     const {
-      comptrollerV2,
       comet,
       rewards,
       WETH,
