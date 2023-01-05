@@ -14,7 +14,7 @@ const WST_ETH = '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0';
 
 async function main() {
   const network = hre.network.name;
-  const deployment = "abc"; // doesn't matter; just need a value to instantiate DeploymentManager
+  const deployment = 'abc'; // doesn't matter; just need a value to instantiate DeploymentManager
 
   const dm = new DeploymentManager(
     network,
