@@ -205,7 +205,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     {
       filter: async (ctx) => ctx.world.base.network === 'mainnet' && await isValidAssetIndex(ctx, i),
       tokenBalances: {
-        $comet: { $base: 10000 },
+        $comet: { $base: 3000 },
       },
       cometBalances: async (ctx) => (
         {
