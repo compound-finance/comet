@@ -175,8 +175,8 @@ contract OnChainLiquidatorTest is Test {
         OnChainLiquidator.PoolConfig[] memory poolConfigs = new OnChainLiquidator.PoolConfig[](1);
         poolConfigs[0] = poolConfig;
 
-        uint256[] memory maxCollateralsToPurchase = new uint256[](1);
-        maxCollateralsToPurchase[0] = type(uint256).max;
+        uint256[] memory maxAmountsToPurchase = new uint256[](1);
+        maxAmountsToPurchase[0] = type(uint256).max;
 
         address[] memory assets =  new address[](1);
         assets[0] = asset;
@@ -189,7 +189,7 @@ contract OnChainLiquidatorTest is Test {
             liquidatableAccounts,
             assets,
             poolConfigs,
-            maxCollateralsToPurchase,
+            maxAmountsToPurchase,
             USDC,
             500,
             10e18 // liquidation threshold
