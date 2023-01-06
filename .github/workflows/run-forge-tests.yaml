@@ -6,6 +6,11 @@ jobs:
   forge-tests:
     name: Forge tests
     runs-on: ubuntu-latest
+    env:
+      ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
+      SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
+      INFURA_KEY: ${{ secrets.INFURA_KEY }}
+      POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -20,8 +25,11 @@ jobs:
       - name: Install dependencies
         run: forge install
 
+      - name: Install packages
+        run: yarn install --non-interactive --frozen-lockfile && yarn build
+
       - name: Run tests
-        run: forge test -vvv --via-ir
+        run: forge test -vvv --via-ir --ffi
         env:
           ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
           SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}

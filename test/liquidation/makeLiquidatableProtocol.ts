@@ -5,7 +5,8 @@ import {
   CometExt__factory,
   CometHarness__factory,
   CometHarnessInterface,
-  Liquidator__factory
+  Liquidator__factory,
+  LiquidatorV2__factory
 } from '../../build/types';
 import {
   COMP,
@@ -141,8 +142,8 @@ export async function makeProtocol() {
   const [signer,, recipient] = await ethers.getSigners();
 
   // build Liquidator
-  const Liquidator = await ethers.getContractFactory('Liquidator') as Liquidator__factory;
-  const liquidator = await Liquidator.deploy(
+  const LiquidatorFactory = await ethers.getContractFactory('Liquidator') as Liquidator__factory;
+  const liquidator = await LiquidatorFactory.deploy(
     recipient.address,
     ethers.utils.getAddress(UNISWAP_ROUTER),
     ethers.utils.getAddress(SUSHISWAP_ROUTER),
@@ -178,6 +179,15 @@ export async function makeProtocol() {
     ]
   );
   await liquidator.deployed();
+
+  // build LiquidatorV2
+  const LiquidatorV2Factory = await ethers.getContractFactory('LiquidatorV2') as LiquidatorV2__factory;
+  const liquidatorV2 = await LiquidatorV2Factory.deploy(
+    ethers.utils.getAddress(UNISWAP_V3_FACTORY),
+    ethers.utils.getAddress(WETH9),
+    recipient.address
+  );
+  await liquidatorV2.deployed();
 
   const mockDai = new ethers.Contract(DAI, daiAbi, signer);
   const mockUSDC = new ethers.Contract(USDC, usdcAbi, signer);
@@ -232,6 +242,7 @@ export async function makeProtocol() {
   return {
     comet: cometHarnessInterface,
     liquidator,
+    liquidatorV2,
     users: [signer, recipient],
     assets: {
       dai: mockDai,
@@ -258,6 +269,7 @@ export async function makeLiquidatableProtocol() {
   const {
     comet,
     liquidator,
+    liquidatorV2,
     assets: { dai, usdc, weth, wbtc, uni, comp, link  },
     whales: { daiWhale, usdcWhale, wethWhale, wbtcWhale, uniWhale, compWhale, linkWhale }
   } = await makeProtocol();
@@ -290,6 +302,7 @@ export async function makeLiquidatableProtocol() {
   return {
     comet: comet,
     liquidator,
+    liquidatorV2,
     users: [signer, underwaterUser, recipient],
     assets: {
       dai,
@@ -321,7 +334,6 @@ export async function forkMainnet() {
       {
         forking: {
           jsonRpcUrl: mainnetConfig.url,
-          blockNumber: 15125532
         },
       },
     ],

@@ -12,12 +12,11 @@ async function sendFlashbotsBundle(
   txn: PopulatedTransaction,
   signerWithFlashbots: SignerWithFlashbots
 ): Promise<boolean> {
-  const wallet = signerWithFlashbots.signer;
-  const flashbotsProvider = signerWithFlashbots.flashbotsProvider;
+  const { flashbotsProvider, signer } = signerWithFlashbots;
   const signedBundle = await flashbotsProvider.signBundle(
     [
       {
-        signer: wallet, // ethers signer
+        signer,          // ethers signer
         transaction: txn // ethers populated transaction object
       }
     ]);

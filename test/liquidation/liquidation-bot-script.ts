@@ -3,14 +3,14 @@ import { arbitragePurchaseableCollateral, getAssets, hasPurchaseableCollateral, 
 import { forkMainnet, makeProtocol, makeLiquidatableProtocol, resetHardhatNetwork } from './makeLiquidatableProtocol';
 
 describe('Liquidation Bot', function () {
-  before(forkMainnet);
-  after(resetHardhatNetwork);
+  beforeEach(forkMainnet);
+  afterEach(resetHardhatNetwork);
 
   describe('liquidateUnderwaterBorrowers', function () {
     it('liquidates underwater borrowers', async function () {
       const {
         comet,
-        liquidator,
+        liquidatorV2,
         users: [signer, underwater],
         assets: { dai, usdc },
         whales: { usdcWhale }
@@ -29,7 +29,7 @@ describe('Liquidation Bot', function () {
 
       await liquidateUnderwaterBorrowers(
         comet,
-        liquidator,
+        liquidatorV2,
         {signer},
         'mainnet'
       );
@@ -45,7 +45,7 @@ describe('Liquidation Bot', function () {
     it('buys collateral when available', async function () {
       const {
         comet,
-        liquidator,
+        liquidatorV2,
         users: [signer],
         assets: { weth },
         whales: { wethWhale }
@@ -61,7 +61,7 @@ describe('Liquidation Bot', function () {
 
       await arbitragePurchaseableCollateral(
         comet,
-        liquidator,
+        liquidatorV2,
         assetAddresses,
         {signer},
         'mainnet'
@@ -74,7 +74,7 @@ describe('Liquidation Bot', function () {
     it('buys all collateral when available', async function () {
       const {
         comet,
-        liquidator,
+        liquidatorV2,
         users: [signer],
         assets: { weth, wbtc, comp, uni, link },
         whales: { wethWhale, wbtcWhale, compWhale, uniWhale, linkWhale }
@@ -93,7 +93,7 @@ describe('Liquidation Bot', function () {
 
       await arbitragePurchaseableCollateral(
         comet,
-        liquidator,
+        liquidatorV2,
         assetAddresses,
         {signer},
         'mainnet'

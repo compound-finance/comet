@@ -2,7 +2,7 @@ import hre from 'hardhat';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
 import {
   CometInterface,
-  Liquidator
+  LiquidatorV2
 } from '../../build/types';
 import {
   arbitragePurchaseableCollateral,
@@ -94,7 +94,7 @@ async function main() {
     'Liquidator',
     liquidatorAddress,
     signer
-  ) as Liquidator;
+  ) as LiquidatorV2;
 
   let lastBlockNumber: number;
   let loops = 0;
