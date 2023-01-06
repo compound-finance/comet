@@ -12,7 +12,6 @@ import {
   COMP,
   COMP_USDC_PRICE_FEED,
   COMP_WHALE,
-  CURVE_REGISTRY,
   DAI,
   DAI_WHALE,
   LINK,
@@ -140,7 +139,6 @@ export async function makeProtocol() {
   const OnChainLiquidator = await ethers.getContractFactory('OnChainLiquidator') as OnChainLiquidator__factory;
   const liquidator = await OnChainLiquidator.deploy(
     BALANCER_VAULT,
-    CURVE_REGISTRY,
     SUSHISWAP_ROUTER,
     UNISWAP_ROUTER,
     UNISWAP_V3_FACTORY,

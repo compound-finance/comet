@@ -57,9 +57,6 @@ contract OnChainLiquidator is IUniswapV3FlashCallback, PeripheryImmutableState, 
     /// @notice Balancer Vault used for token exchange
     address public immutable balancerVault;
 
-    /// @notice Curve contract for finding pools
-    address public immutable curveRegistry;
-
     /// @notice SushiSwap router used for token exchange
     address public immutable sushiSwapRouter;
 
@@ -86,7 +83,6 @@ contract OnChainLiquidator is IUniswapV3FlashCallback, PeripheryImmutableState, 
     /**
      * @notice Construct a new liquidator instance
      * @param balancerVault_ Address of Balancer Vault
-     * @param curveRegistry_ Address of Curve Registry
      * @param sushiSwapRouter_ Address of SushiSwap Router
      * @param uniswapRouter_ Address of Uniswap Router
      * @param uniswapV3Factory_ Address of Uniswap V3 Factory
@@ -96,7 +92,6 @@ contract OnChainLiquidator is IUniswapV3FlashCallback, PeripheryImmutableState, 
      **/
     constructor(
         address balancerVault_,
-        address curveRegistry_,
         address sushiSwapRouter_,
         address uniswapRouter_,
         address uniswapV3Factory_,
@@ -105,7 +100,6 @@ contract OnChainLiquidator is IUniswapV3FlashCallback, PeripheryImmutableState, 
         address WETH9_
     ) PeripheryImmutableState(uniswapV3Factory_, WETH9_) {
         balancerVault = balancerVault_;
-        curveRegistry = curveRegistry_;
         sushiSwapRouter = sushiSwapRouter_;
         uniswapRouter = uniswapRouter_;
         stEth = stEth_;

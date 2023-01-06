@@ -14,7 +14,6 @@ contract OnChainLiquidatorTest is Test {
     // contracts
     address public constant BALANCER_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
     address public constant COMET_EXT = 0x285617313887d43256F852cAE0Ee4de4b68D45B0;
-    address public constant CURVE_REGISTRY = 0x90E00ACe148ca3b23Ac1bC8C240C2a7Dd9c2d7f5;
     address public constant GNOSIS_SAFE = 0xbbf3f1421D886E9b2c5D716B5192aC998af2012c;
     address public constant SUSHISWAP_ROUTER = 0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F;
     address public constant TIMELOCK = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
@@ -42,7 +41,6 @@ contract OnChainLiquidatorTest is Test {
 
         liquidator = new OnChainLiquidator(
             BALANCER_VAULT,
-            CURVE_REGISTRY,
             SUSHISWAP_ROUTER,
             UNISWAP_ROUTER,
             UNISWAP_V3_FACTORY,
