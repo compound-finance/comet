@@ -13,6 +13,7 @@ import {
   VerifyMigrationConstraint,
   ProposalConstraint,
   FilterConstraint,
+  TargetReservesConstraint
 } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
@@ -31,7 +32,7 @@ import {
 } from '../../build/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
-import { ProtocolConfiguration, deployComet, COMP_WHALES, WHALES } from '../../src/deploy';
+import { ProtocolConfiguration, deployComet, COMP_WHALES, WHALES, exp } from '../../src/deploy';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { Requirements } from '../constraints/Requirements';
 import { fastGovernanceExecute, max, mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from '../utils';
@@ -181,6 +182,18 @@ export class CometContext {
       }
       await cometAdmin.deployAndUpgradeTo(configurator.address, comet.address);
     }
+  }
+
+  async bumpTargetReserves(newTargetReserves: number) {
+    const comet = await this.getComet();
+    const decimals = await comet.decimals();
+
+    const gov = await this.world.impersonateAddress(await comet.governor(), 10n ** 18n);
+    const cometAdmin = (await this.getCometAdmin()).connect(gov);
+    const configurator = (await this.getConfigurator()).connect(gov);
+
+    await configurator.setTargetReserves(comet.address, exp(newTargetReserves, decimals));
+    await cometAdmin.deployAndUpgradeTo(configurator.address, comet.address);
   }
 
   async allocateActor(name: string): Promise<CometActor> {
@@ -374,6 +387,7 @@ export const constraints = [
   new CometBalanceConstraint(),
   new TokenBalanceConstraint(),
   new UtilizationConstraint(),
+  new TargetReservesConstraint()
 ];
 
 export const scenario = buildScenarioFn<CometContext, CometProperties, Requirements>(getInitialContext, getContextProperties, forkContext, constraints);
