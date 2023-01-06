@@ -204,8 +204,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     `LiquidationBot > partially liquidates large position of $asset${i}, by setting maxAmountToPurchase`,
     {
       filter: async (ctx) => ctx.world.base.network === 'mainnet' && await isValidAssetIndex(ctx, i),
+      targetReserves: 20_000,
       tokenBalances: {
-        $comet: { $base: 3000 },
+        $comet: { $base: 10000 },
       },
       cometBalances: async (ctx) => (
         {
