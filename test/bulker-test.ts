@@ -468,7 +468,7 @@ describe('bulker multiple actions', function () {
     );
 
     expect(await comet.collateralBalanceOf(alice.address, COMP.address)).to.be.equal(supplyAmount);
-    // expect(await comet.baseBalanceOf(alice.address)).to.be.equal(-borrowAmount); // XXX uncomment once rounding bug from PR 260 is merged
+    expect(await comet.borrowBalanceOf(alice.address)).to.be.equal(borrowAmount);
     expect(await USDC.balanceOf(alice.address)).to.be.equal(borrowAmount);
   });
 
