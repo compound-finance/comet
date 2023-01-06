@@ -1,0 +1,35 @@
+@startuml
+
+rectangle "L1" {
+  rectangle Governor
+  rectangle Timelock as "Governance Timelock"
+}
+
+rectangle "L2" {
+  rectangle BridgeReceiver
+  rectangle ProxyAdmin
+  rectangle ConfiguratorProxy
+  rectangle ConfiguratorImpl
+  rectangle CometFactory
+  rectangle CometProxy
+  rectangle CometImpl
+  rectangle Bulker
+  rectangle L2Timelock as "Local Timelock"
+}
+
+Governor --> Timelock : admin
+Timelock --> BridgeReceiver : admin
+BridgeReceiver --> L2Timelock
+L2Timelock --> ProxyAdmin : admin
+L2Timelock --> Bulker : admin
+ProxyAdmin --> ConfiguratorProxy : admin
+ProxyAdmin --> CometProxy : admin
+ConfiguratorProxy --> ConfiguratorImpl : impl
+ConfiguratorImpl --> CometFactory
+CometFactory ..> CometImpl : makes
+CometProxy --> CometImpl : impl
+Bulker --> CometProxy
+L2Timelock ~~> ConfiguratorImpl : governor
+L2Timelock ~~> CometImpl : governor
+
+@enduml
