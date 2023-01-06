@@ -5,8 +5,13 @@ import { Requirements } from './Requirements';
 import { ComparisonOp, parseAmount } from '../utils';
 
 export class TargetReservesConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(requirements: R, _initialContext: T) {
-    const targetReserves = requirements.targetReserves;
+  async solve(requirements: R, initialContext: T) {
+    let targetReserves = requirements.targetReserves;
+
+    if (typeof targetReserves === 'function') {
+      targetReserves = await targetReserves(initialContext);
+    }
+
     if (targetReserves !== undefined) {
       const solutions = [];
       solutions.push(async function barelyMeet(context: T) {
@@ -21,7 +26,12 @@ export class TargetReservesConstraint<T extends CometContext, R extends Requirem
   }
 
   async check(requirements: R, context: T) {
-    const targetReserves = requirements.targetReserves;
+    let targetReserves = requirements.targetReserves;
+
+    if (typeof targetReserves === 'function') {
+      targetReserves = await targetReserves(context);
+    }
+
     if (targetReserves !== undefined) {
       const comet = await context.getComet();
       const baseScale = await comet.baseScale();

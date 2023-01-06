@@ -6,5 +6,5 @@ export interface Requirements {
     upgrade?: boolean | object; // Modern constraint
     pause?: object; // Pause constraint
     utilization?: number; // Utilization constraint
-    targetReserves?: number; // TargetReservesConstraint
+    targetReserves?: number | ((context) => Promise<number>); // TargetReservesConstraint
 }

@@ -16,6 +16,11 @@ const ST_ETH = '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84';
 const WETH9 = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 const WST_ETH = '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0';
 
+const targetReserves = {
+  'usdc': 5000000,
+  'weth': 5000
+};
+
 async function borrowCapacityForAsset(comet: CometInterface, actor: CometActor, assetIndex: number) {
   const {
     asset: collateralAssetAddress,
@@ -204,7 +209,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     `LiquidationBot > partially liquidates large position of $asset${i}, by setting maxAmountToPurchase`,
     {
       filter: async (ctx) => ctx.world.base.network === 'mainnet' && await isValidAssetIndex(ctx, i),
-      targetReserves: 20_000,
+      targetReserves: async ctx => targetReserves[ctx.world.base.deployment],
       tokenBalances: {
         $comet: { $base: 10000 },
       },
@@ -499,11 +504,12 @@ scenario(
   }
 );
 
+
 scenario(
   `LiquidationBot > reverts when price slippage is too high`,
   {
     filter: async (ctx) => ctx.world.base.network === 'mainnet',
-    targetReserves: 20_000,
+    targetReserves: async ctx => targetReserves[ctx.world.base.deployment],
     tokenBalances: {
       $comet: { $base: 10000 },
     },
