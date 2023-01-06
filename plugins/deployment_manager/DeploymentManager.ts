@@ -215,12 +215,11 @@ export class DeploymentManager {
     const maybeExisting = await this.contract<C>(alias);
     if (!maybeExisting) {
       const trace = this.tracer();
-      const _other = await this.spiderOther(network, deployment);
-      const address = await this.readAlias(network, deployment, otherAlias);
-      const buildFile = await this.import(address, network);
-      const contract = getEthersContract<C>(address, buildFile, this.hre);
+      const dm = new DeploymentManager(network, deployment, this.hre, { writeCacheToDisk: true });
+      await dm.spider();
+      const contract = await dm.contract<C>(alias);
       await this.putAlias(alias, contract);
-      trace(`Loaded ${buildFile.contract} from ${network}/${deployment}:${otherAlias} (${address}) as '${alias}'`);
+      trace(`Loaded ${alias} from ${network}/${deployment}:${otherAlias} (${contract.address}) as '${alias}'`);
       return contract;
     }
     return maybeExisting;
