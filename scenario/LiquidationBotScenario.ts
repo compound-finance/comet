@@ -62,6 +62,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
   scenario(
     `LiquidationBot > liquidates an underwater position of $asset${i} with no maxAmountToPurchase`,
     {
+      upgrade: {
+        targetReserves: exp(20_000, 18)
+      },
       filter: async (ctx) => ctx.world.base.network === 'mainnet' && await isValidAssetIndex(ctx, i),
       tokenBalances: {
         $comet: { $base: 10000 },
@@ -203,6 +206,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
   scenario(
     `LiquidationBot > partially liquidates large position of $asset${i}, by setting maxAmountToPurchase`,
     {
+      upgrade: {
+        targetReserves: exp(20_000, 18)
+      },
       filter: async (ctx) => ctx.world.base.network === 'mainnet' && await isValidAssetIndex(ctx, i),
       tokenBalances: {
         $comet: { $base: 10000 },
