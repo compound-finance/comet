@@ -11,7 +11,7 @@ export class TargetReservesConstraint<T extends CometContext, R extends Requirem
       const solutions = [];
       solutions.push(async function barelyMeet(context: T) {
         const amount = parseAmount(targetReserves);
-        expect(amount.op).to.equal(ComparisonOp.GTE, `Operation ${amount.op} not supported (yet) by supply cap constraint`);
+        expect(amount.op).to.equal(ComparisonOp.GTE, `Operation ${amount.op} not supported (yet) by TargetReservesConstraint`);
         await context.bumpTargetReserves(amount.val);
         return context;
 
@@ -24,7 +24,6 @@ export class TargetReservesConstraint<T extends CometContext, R extends Requirem
     const targetReserves = requirements.targetReserves;
     if (targetReserves !== undefined) {
       const comet = await context.getComet();
-
       const baseScale = await comet.baseScale();
 
       const amount = parseAmount(targetReserves);
