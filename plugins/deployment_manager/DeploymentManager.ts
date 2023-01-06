@@ -215,9 +215,11 @@ export class DeploymentManager {
     const maybeExisting = await this.contract<C>(alias);
     if (!maybeExisting) {
       const trace = this.tracer();
-      const dm = new DeploymentManager(network, deployment, this.hre, { writeCacheToDisk: true });
-      await dm.spider();
-      const contract = await dm.contract<C>(alias);
+      const spider = await this.spiderOther(network, deployment);
+      const contract = spider.contracts.get(otherAlias) as C;
+      if (!contract) {
+        throw new Error(`Unable to find contract ${network}/${deployment}:${otherAlias}`);
+      }
       await this.putAlias(alias, contract);
       trace(`Loaded ${alias} from ${network}/${deployment}:${otherAlias} (${contract.address}) as '${alias}'`);
       return contract;
