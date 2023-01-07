@@ -7,7 +7,6 @@ import { CometInterface, OnChainLiquidator } from '../build/types';
 import { getPoolConfig, flashLoanPools } from '../scripts/liquidation_bot/liquidateUnderwaterBorrowers';
 
 const BALANCER_VAULT = '0xBA12222222228d8Ba445958a75a0704d566BF2C8';
-const CURVE_REGISTRY = '0x90E00ACe148ca3b23Ac1bC8C240C2a7Dd9c2d7f5';
 const SUSHISWAP_ROUTER = '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F';
 const UNISWAP_ROUTER = '0xE592427A0AEce92De3Edee1F18E0157C05861564';
 const UNISWAP_V3_FACTORY = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
@@ -87,7 +86,6 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         'liquidator/OnChainLiquidator.sol',
         [
           BALANCER_VAULT,
-          CURVE_REGISTRY,
           SUSHISWAP_ROUTER,
           UNISWAP_ROUTER,
           UNISWAP_V3_FACTORY,
@@ -231,7 +229,6 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         'liquidator/OnChainLiquidator.sol',
         [
           BALANCER_VAULT,
-          CURVE_REGISTRY,
           SUSHISWAP_ROUTER,
           UNISWAP_ROUTER,
           UNISWAP_V3_FACTORY,
@@ -322,7 +319,6 @@ scenario(
       'liquidator/OnChainLiquidator.sol',
       [
         BALANCER_VAULT,
-        CURVE_REGISTRY,
         SUSHISWAP_ROUTER,
         UNISWAP_ROUTER,
         UNISWAP_V3_FACTORY,
@@ -425,7 +421,6 @@ scenario(
       'liquidator/OnChainLiquidator.sol',
       [
         BALANCER_VAULT,
-        CURVE_REGISTRY,
         SUSHISWAP_ROUTER,
         UNISWAP_ROUTER,
         UNISWAP_V3_FACTORY,
@@ -528,7 +523,6 @@ scenario(
       'liquidator/OnChainLiquidator.sol',
       [
         BALANCER_VAULT,
-        CURVE_REGISTRY,
         SUSHISWAP_ROUTER,
         UNISWAP_ROUTER,
         UNISWAP_V3_FACTORY,
