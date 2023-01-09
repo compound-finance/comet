@@ -14,7 +14,7 @@ export class PriceConstraint<T extends CometContext, R extends Requirements> imp
           const cometAsset = await getAssetFromName(assetAlias, ctx);
           assetPriceMap[cometAsset.address] = price;
         }
-        await ctx.updatePriceFeeds(assetPriceMap);
+        await ctx.changePriceFeeds(assetPriceMap);
       }
       return ctx;
     };
