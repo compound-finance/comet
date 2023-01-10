@@ -91,7 +91,7 @@ async function main() {
   }
 
   const liquidator = await hre.ethers.getContractAt(
-    'Liquidator',
+    'OnChainLiquidator',
     liquidatorAddress,
     signer
   ) as OnChainLiquidator;
