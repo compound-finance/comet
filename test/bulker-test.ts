@@ -138,12 +138,12 @@ describe('bulker', function () {
         USDC: {
           supplyCap: exp(100_000, 6)
         }
-      },),
+      }),
       // set rates at 0 to ignore effects of interest rate accrual, which are not relevant to this test
       borrowInterestRateBase: 0,
       borrowInterestRateSlopeLow: 0,
     });
-    const { comet, tokens: { USDC, WETH }, users: [alice], governor } = protocol;
+    const { comet, tokens: { USDC, WETH }, users: [alice] } = protocol;
     const bulkerInfo = await makeBulker({ weth: WETH.address });
     const { bulker } = bulkerInfo;
 
