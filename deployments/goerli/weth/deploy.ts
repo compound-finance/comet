@@ -55,32 +55,34 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     }
   );
 
+  // XXX this gets re-deployed for some reason
+  // XXX need to properly spider this (add to relations.ts)
   // Deploy stETH / ETH SimplePriceFeed
-  const stETHtoETHPriceFeed = await deploymentManager.deploy(
-    'stETHToETH:simplePriceFeed',
-    'test/SimplePriceFeed.sol',
-    [
-      exp(0.98882408, 18), // Latest answer on mainnet at block 16170924
-      18
-    ]
-  );
+  // const stETHtoETHPriceFeed = await deploymentManager.deploy(
+  //   'stETHToETH:simplePriceFeed',
+  //   'test/SimplePriceFeed.sol',
+  //   [
+  //     exp(0.98882408, 18), // Latest answer on mainnet at block 16170924
+  //     18
+  //   ]
+  // );
 
-  // Deploy cbETH / ETH SimplePriceFeed
-  const cbETHtoETHPriceFeed = await deploymentManager.deploy(
-    'cbETHToETH:simplePriceFeed',
-    'test/SimplePriceFeed.sol',
-    [
-      exp(0.97, 18),
-      18
-    ]
-  );
+  // // Deploy cbETH / ETH SimplePriceFeed
+  // const cbETHtoETHPriceFeed = await deploymentManager.deploy(
+  //   'cbETHToETH:simplePriceFeed',
+  //   'test/SimplePriceFeed.sol',
+  //   [
+  //     exp(0.97, 18),
+  //     18
+  //   ]
+  // );
 
   // Deploy WstETHPriceFeed
   const wstETHPriceFeed = await deploymentManager.deploy(
     'wstETH:priceFeed',
     'WstETHPriceFeed.sol',
     [
-      stETHtoETHPriceFeed.address,                  // stETH / ETH price feed
+      "",                  // stETH / ETH price feed
       wstETH.address,                               // wstETH
       8                                             // decimals
     ]
@@ -101,7 +103,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     'cbETH:priceFeed',
     'ScalingPriceFeed.sol',
     [
-      cbETHtoETHPriceFeed.address,                  // cbETH / ETH price feed
+      "",                  // cbETH / ETH price feed
       8                                             // decimals
     ]
   );
@@ -115,9 +117,9 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     'bulker',
     'bulkers/MainnetBulker.sol',
     [
-      comet.governor(),        // admin_
-      WETH.address,            // weth_
-      wstETH.address           // wsteth_
+      await comet.governor(),        // admin_
+      WETH.address,                  // weth_
+      wstETH.address                 // wsteth_
     ]
   );
 
