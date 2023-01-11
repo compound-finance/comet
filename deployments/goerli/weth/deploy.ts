@@ -115,9 +115,9 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
     'bulker',
     'bulkers/MainnetBulker.sol',
     [
-      comet.governor(),        // admin_
-      WETH.address,            // weth_
-      wstETH.address           // wsteth_
+      await comet.governor(),        // admin_
+      WETH.address,                  // weth_
+      wstETH.address                 // wsteth_
     ]
   );
 
