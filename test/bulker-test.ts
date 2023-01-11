@@ -127,7 +127,70 @@ describe('bulker', function () {
     const supplyAmount = exp(10, 18);
     const supplyNativeTokenCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, supplyAmount]);
     await expect(bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_NATIVE_TOKEN()], [supplyNativeTokenCalldata], { value: supplyAmount / 2n }))
-      .to.be.revertedWith('code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)');
+      .to.be.reverted; // Wrapping ETH to WETH in the Bulker reverts because there is not enough ETH in the txn
+  });
+
+  it('supplyNativeToken with max base', async () => {
+    const protocol = await makeProtocol({
+      base: 'WETH',
+      assets: defaultAssets({}, {
+        WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory },
+        USDC: {
+          supplyCap: exp(100_000, 6)
+        }
+      }),
+      // set rates at 0 to ignore effects of interest rate accrual, which are not relevant to this test
+      borrowInterestRateBase: 0,
+      borrowInterestRateSlopeLow: 0,
+    });
+    const { comet, tokens: { USDC, WETH }, users: [alice] } = protocol;
+    const bulkerInfo = await makeBulker({ weth: WETH.address });
+    const { bulker } = bulkerInfo;
+
+    const borrowAmount = exp(10, 18);
+    const supplyAmount = exp(50_000, 6);
+    await WETH.allocateTo(comet.address, borrowAmount);
+    await USDC.allocateTo(alice.address, supplyAmount);
+
+    // Alice supplies collateral to borrow the base asset
+    await USDC.connect(alice).approve(comet.address, supplyAmount);
+    await comet.connect(alice).supply(USDC.address, supplyAmount);
+    await comet.connect(alice).withdraw(WETH.address, borrowAmount);
+
+    expect(await comet.borrowBalanceOf(alice.address)).to.not.be.equal(0);
+
+    // Alice repays max ETH through the bulker
+    const aliceBalanceBefore = await alice.getBalance();
+    const borrowBalanceOf = await comet.callStatic.borrowBalanceOf(alice.address);
+    const supplyNativeTokenCalldata = ethers.utils.defaultAbiCoder.encode(
+      ['address', 'address', 'uint'],
+      [comet.address, alice.address, ethers.constants.MaxUint256]
+    );
+    const txn = await wait(bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_NATIVE_TOKEN()], [supplyNativeTokenCalldata], { value: borrowAmount * 2n }));
+    const aliceBalanceAfter = await alice.getBalance();
+
+    expect(await comet.borrowBalanceOf(alice.address)).to.be.equal(0);
+    expect(await ethers.provider.getBalance(bulker.address)).to.be.equal(0); // check extra ETH has been refunded to user
+    expect(aliceBalanceAfter.sub(aliceBalanceBefore)).to.be.equal(-borrowBalanceOf.toBigInt() - getGasUsed(txn));
+  });
+
+  it('supplyNativeToken with max collateral should revert', async () => {
+    const protocol = await makeProtocol({
+      assets: defaultAssets({}, {
+        WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
+      })
+    });
+    const { comet, tokens: { WETH }, users: [alice] } = protocol;
+    const bulkerInfo = await makeBulker({ weth: WETH.address });
+    const { bulker } = bulkerInfo;
+
+    // No approval is actually needed on the supplyEth action!
+
+    // Alice supplies max collateral (doesn't make sense) through the bulker
+    const supplyNativeTokenCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, ethers.constants.MaxUint256]);
+    await expect(
+      bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_NATIVE_TOKEN()], [supplyNativeTokenCalldata], { value: exp(1, 18) })
+    ).to.be.reverted;
   });
 
   it('transfer base asset', async () => {
@@ -272,7 +335,7 @@ describe('bulker', function () {
     // Alice gives the Bulker permission over her account
     await comet.connect(alice).allow(bulker.address, true);
 
-    // Alice supplies 10 ETH through the bulker
+    // Alice withdraws 10 ETH through the bulker
     const aliceBalanceBefore = await alice.getBalance();
     const withdrawNativeTokenCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, withdrawAmount]);
     const txn = await wait(bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_NATIVE_TOKEN()], [withdrawNativeTokenCalldata]));
@@ -280,6 +343,66 @@ describe('bulker', function () {
 
     expect(await comet.collateralBalanceOf(alice.address, WETH.address)).to.be.equal(0);
     expect(aliceBalanceAfter.sub(aliceBalanceBefore)).to.be.equal(withdrawAmount - getGasUsed(txn));
+  });
+
+  it('withdrawNativeToken max base', async () => {
+    const protocol = await makeProtocol({
+      base: 'WETH',
+      assets: defaultAssets({}, {
+        WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
+      })
+    });
+    const { comet, tokens: { WETH }, users: [alice], governor } = protocol;
+    const bulkerInfo = await makeBulker({ weth: WETH.address });
+    const { bulker } = bulkerInfo;
+
+    // Allocate WETH to Comet and Alice's Comet balance
+    const withdrawAmount = exp(10, 18);
+    await WETH.allocateTo(alice.address, withdrawAmount);
+    await governor.sendTransaction({ to: WETH.address, value: withdrawAmount }); // seed WETH contract with ether
+    await WETH.connect(alice).approve(comet.address, withdrawAmount);
+    await comet.connect(alice).supply(WETH.address, withdrawAmount);
+
+    // Alice gives the Bulker permission over her account
+    await comet.connect(alice).allow(bulker.address, true);
+
+    // Alice withdraws uin256.max ETH through the bulker
+    const aliceBalanceBefore = await alice.getBalance();
+    const withdrawNativeTokenCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, ethers.constants.MaxUint256]);
+    const txn = await wait(bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_NATIVE_TOKEN()], [withdrawNativeTokenCalldata]));
+    const aliceBalanceAfter = await alice.getBalance();
+
+    expect(await comet.collateralBalanceOf(alice.address, WETH.address)).to.be.equal(0);
+    expect(aliceBalanceAfter.sub(aliceBalanceBefore)).to.be.equal(withdrawAmount - getGasUsed(txn));
+  });
+
+  it('withdrawNativeToken max collateral reverts', async () => {
+    const protocol = await makeProtocol({
+      assets: defaultAssets({}, {
+        WETH: { factory: await ethers.getContractFactory('FaucetWETH') as FaucetWETH__factory }
+      })
+    });
+    const { comet, tokens: { WETH }, users: [alice], governor } = protocol;
+    const bulkerInfo = await makeBulker({ weth: WETH.address });
+    const { bulker } = bulkerInfo;
+
+    // Allocate WETH to Comet and Alice's Comet balance
+    const withdrawAmount = exp(10, 18);
+    await WETH.allocateTo(alice.address, withdrawAmount);
+    await governor.sendTransaction({ to: WETH.address, value: withdrawAmount }); // seed WETH contract with ether
+    await WETH.connect(alice).approve(comet.address, withdrawAmount);
+    await comet.connect(alice).supply(WETH.address, withdrawAmount);
+
+    // Alice gives the Bulker permission over her account
+    await comet.connect(alice).allow(bulker.address, true);
+
+    // Alice withdraws uin256.max ETH through the bulker
+    const withdrawNativeTokenCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, ethers.constants.MaxUint256]);
+
+    // ...but it reverts
+    await expect(
+      bulker.connect(alice).invoke([await bulker.ACTION_WITHDRAW_NATIVE_TOKEN()], [withdrawNativeTokenCalldata])
+    ).to.be.revertedWithCustomError(comet, 'InvalidUInt128');
   });
 
   it('claim rewards', async () => {
