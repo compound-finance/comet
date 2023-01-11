@@ -132,11 +132,6 @@ contract BaseBulker {
                 supplyTo(comet, to, asset, amount);
             } else if (action == ACTION_SUPPLY_NATIVE_TOKEN) {
                 (address comet, address to, uint amount) = abi.decode(data[i], (address, address, uint));
-                // subtract borrow balance?
-                // if asset to supply is base asset, and amount is uint256.max
-                //   then get the borrow balance
-                //   subtract that from unused native token
-                // else
                 uint256 nativeTokenUsed = supplyNativeTokenTo(comet, to, amount);
                 unusedNativeToken -= nativeTokenUsed;
             } else if (action == ACTION_TRANSFER_ASSET) {
@@ -183,12 +178,12 @@ contract BaseBulker {
     /**
      * @notice Wraps the native token and supplies wrapped native token to a user in Comet
      * @return The amount of the native token wrapped and supplied to Comet
+     * @dev Note: Supports `amount` of `uint256.max` only for the base asset. Should revert for a collateral asset
      */
     function supplyNativeTokenTo(address comet, address to, uint amount) internal returns (uint256) {
         uint256 wrapAmount = amount == type(uint256).max ? CometInterface(comet).borrowBalanceOf(msg.sender) : amount;
         IWETH9(wrappedNativeToken).deposit{ value: wrapAmount }();
         IWETH9(wrappedNativeToken).approve(comet, wrapAmount);
-        // calling supplyFrom with uint256.max works for the base asset, reverts for collateral assets
         CometInterface(comet).supplyFrom(address(this), to, wrappedNativeToken, amount);
         return wrapAmount;
     }
@@ -212,10 +207,10 @@ contract BaseBulker {
     /**
      * @notice Withdraws wrapped native token from Comet, unwraps it to the native token, and transfers it to a user
      * @dev Note: This contract must have permission to manage msg.sender's Comet account
+     * @dev Note: Supports `amount` of `uint256.max` only for the base asset. Should revert for a collateral asset
      */
     function withdrawNativeTokenTo(address comet, address to, uint amount) internal {
         uint256 unwrapAmount = amount == type(uint256).max ? CometInterface(comet).balanceOf(msg.sender) : amount;
-        // withdrawFrom with uint256.max works for the base asset, reverts for collateral assets
         CometInterface(comet).withdrawFrom(msg.sender, address(this), wrappedNativeToken, amount);
         IWETH9(wrappedNativeToken).withdraw(unwrapAmount);
         (bool success, ) = to.call{ value: unwrapAmount }("");
