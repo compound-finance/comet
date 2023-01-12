@@ -178,7 +178,7 @@ contract BaseBulker {
     /**
      * @notice Wraps the native token and supplies wrapped native token to a user in Comet
      * @return The amount of the native token wrapped and supplied to Comet
-     * @dev Note: Supports `amount` of `uint256.max` only for the base asset. Should revert for a collateral asset
+     * @dev Note: Supports `amount` of `uint256.max` implies max only for base asset
      */
     function supplyNativeTokenTo(address comet, address to, uint amount) internal returns (uint256) {
         uint256 supplyAmount = amount;

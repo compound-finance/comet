@@ -63,7 +63,7 @@ contract MainnetBulker is BaseBulker {
     /**
      * @notice Wraps stETH to wstETH and supplies to a user in Comet
      * @dev Note: This contract must have permission to manage msg.sender's Comet account
-     * @dev Note: Assumes wstETH is NOT the base asset
+     * @dev Note: wstETH base asset is NOT supported
      */
     function supplyStEthTo(address comet, address to, uint stETHAmount) internal {
         if (CometInterface(comet).baseToken() == wsteth) revert UnsupportedBaseAsset();
@@ -78,9 +78,8 @@ contract MainnetBulker is BaseBulker {
     /**
      * @notice Withdraws wstETH from Comet, unwraps it to stETH, and transfers it to a user
      * @dev Note: This contract must have permission to manage msg.sender's Comet account
-     * @dev Note: Assumes wstETH is NOT the base asset
-     * @dev Note: Supports `amount` of `uint256.max` to withdraw all wstETH from Comet. Otherwise,
-     *            there could be dust remaining due to loss of precision from exchange rate conversion
+     * @dev Note: wstETH base asset is NOT supported
+     * @dev Note: Supports `amount` of `uint256.max` to withdraw all wstETH from Comet
      */
     function withdrawStEthTo(address comet, address to, uint stETHAmount) internal {
         if (CometInterface(comet).baseToken() == wsteth) revert UnsupportedBaseAsset();
