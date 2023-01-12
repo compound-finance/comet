@@ -26,6 +26,10 @@ contract MainnetBulker is BaseBulker {
     /// @notice The action for withdrawing staked ETH from Comet
     bytes32 public constant ACTION_WITHDRAW_STETH = "ACTION_WITHDRAW_STETH";
 
+    /** Custom errors **/
+
+    error UnsupportedBaseAsset();
+
     /**
      * @notice Construct a new MainnetBulker instance
      * @param admin_ The admin of the Bulker contract
@@ -59,8 +63,11 @@ contract MainnetBulker is BaseBulker {
     /**
      * @notice Wraps stETH to wstETH and supplies to a user in Comet
      * @dev Note: This contract must have permission to manage msg.sender's Comet account
+     * @dev Note: Assumes wstETH is NOT the base asset
      */
     function supplyStEthTo(address comet, address to, uint stETHAmount) internal {
+        if (CometInterface(comet).baseToken() == wsteth) revert UnsupportedBaseAsset();
+
         doTransferIn(steth, msg.sender, stETHAmount);
         ERC20(steth).approve(wsteth, stETHAmount);
         uint wstETHAmount = IWstETH(wsteth).wrap(stETHAmount);
@@ -71,10 +78,18 @@ contract MainnetBulker is BaseBulker {
     /**
      * @notice Withdraws wstETH from Comet, unwraps it to stETH, and transfers it to a user
      * @dev Note: This contract must have permission to manage msg.sender's Comet account
+     * @dev Note: Assumes wstETH is NOT the base asset
+     * @dev Note: Supports `amount` of `uint256.max` to withdraw all wstETH from Comet. Otherwise,
+     *            there could be dust remaining due to loss of precision from exchange rate conversion
      */
-    function withdrawStEthTo(address comet, address to, uint wstETHAmount) internal {
+    function withdrawStEthTo(address comet, address to, uint stETHAmount) internal {
+        if (CometInterface(comet).baseToken() == wsteth) revert UnsupportedBaseAsset();
+
+        uint wstETHAmount = stETHAmount == type(uint256).max
+            ? CometInterface(comet).collateralBalanceOf(msg.sender, wsteth)
+            : IWstETH(wsteth).getWstETHByStETH(stETHAmount);
         CometInterface(comet).withdrawFrom(msg.sender, address(this), wsteth, wstETHAmount);
-        uint stETHAmount = IWstETH(wsteth).unwrap(wstETHAmount);
-        doTransferOut(steth, to, stETHAmount);
+        uint unwrappedStETHAmount = IWstETH(wsteth).unwrap(wstETHAmount);
+        doTransferOut(steth, to, unwrappedStETHAmount);
     }
 }

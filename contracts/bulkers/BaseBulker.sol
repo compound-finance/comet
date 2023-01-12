@@ -181,11 +181,15 @@ contract BaseBulker {
      * @dev Note: Supports `amount` of `uint256.max` only for the base asset. Should revert for a collateral asset
      */
     function supplyNativeTokenTo(address comet, address to, uint amount) internal returns (uint256) {
-        uint256 wrapAmount = amount == type(uint256).max ? CometInterface(comet).borrowBalanceOf(msg.sender) : amount;
-        IWETH9(wrappedNativeToken).deposit{ value: wrapAmount }();
-        IWETH9(wrappedNativeToken).approve(comet, wrapAmount);
-        CometInterface(comet).supplyFrom(address(this), to, wrappedNativeToken, amount);
-        return wrapAmount;
+        uint256 supplyAmount = amount;
+        if (wrappedNativeToken == CometInterface(comet).baseToken()) {
+            if (amount == type(uint256).max)
+                supplyAmount = CometInterface(comet).borrowBalanceOf(msg.sender);
+        }
+        IWETH9(wrappedNativeToken).deposit{ value: supplyAmount }();
+        IWETH9(wrappedNativeToken).approve(comet, supplyAmount);
+        CometInterface(comet).supplyFrom(address(this), to, wrappedNativeToken, supplyAmount);
+        return supplyAmount;
     }
 
     /**
@@ -210,10 +214,14 @@ contract BaseBulker {
      * @dev Note: Supports `amount` of `uint256.max` only for the base asset. Should revert for a collateral asset
      */
     function withdrawNativeTokenTo(address comet, address to, uint amount) internal {
-        uint256 unwrapAmount = amount == type(uint256).max ? CometInterface(comet).balanceOf(msg.sender) : amount;
-        CometInterface(comet).withdrawFrom(msg.sender, address(this), wrappedNativeToken, amount);
-        IWETH9(wrappedNativeToken).withdraw(unwrapAmount);
-        (bool success, ) = to.call{ value: unwrapAmount }("");
+        uint256 withdrawAmount = amount;
+        if (wrappedNativeToken == CometInterface(comet).baseToken()) {
+            if (amount == type(uint256).max)
+                withdrawAmount = CometInterface(comet).balanceOf(msg.sender);
+        }
+        CometInterface(comet).withdrawFrom(msg.sender, address(this), wrappedNativeToken, withdrawAmount);
+        IWETH9(wrappedNativeToken).withdraw(withdrawAmount);
+        (bool success, ) = to.call{ value: withdrawAmount }("");
         if (!success) revert FailedToSendNativeToken();
     }
 
