@@ -132,8 +132,8 @@ contract BaseBulker {
                 supplyTo(comet, to, asset, amount);
             } else if (action == ACTION_SUPPLY_NATIVE_TOKEN) {
                 (address comet, address to, uint amount) = abi.decode(data[i], (address, address, uint));
-                unusedNativeToken -= amount;
-                supplyNativeTokenTo(comet, to, amount);
+                uint256 nativeTokenUsed = supplyNativeTokenTo(comet, to, amount);
+                unusedNativeToken -= nativeTokenUsed;
             } else if (action == ACTION_TRANSFER_ASSET) {
                 (address comet, address to, address asset, uint amount) = abi.decode(data[i], (address, address, address, uint));
                 transferTo(comet, to, asset, amount);
@@ -177,11 +177,19 @@ contract BaseBulker {
 
     /**
      * @notice Wraps the native token and supplies wrapped native token to a user in Comet
+     * @return The amount of the native token wrapped and supplied to Comet
+     * @dev Note: Supports `amount` of `uint256.max` implies max only for base asset
      */
-    function supplyNativeTokenTo(address comet, address to, uint amount) internal {
-        IWETH9(wrappedNativeToken).deposit{ value: amount }();
-        IWETH9(wrappedNativeToken).approve(comet, amount);
-        CometInterface(comet).supplyFrom(address(this), to, wrappedNativeToken, amount);
+    function supplyNativeTokenTo(address comet, address to, uint amount) internal returns (uint256) {
+        uint256 supplyAmount = amount;
+        if (wrappedNativeToken == CometInterface(comet).baseToken()) {
+            if (amount == type(uint256).max)
+                supplyAmount = CometInterface(comet).borrowBalanceOf(msg.sender);
+        }
+        IWETH9(wrappedNativeToken).deposit{ value: supplyAmount }();
+        IWETH9(wrappedNativeToken).approve(comet, supplyAmount);
+        CometInterface(comet).supplyFrom(address(this), to, wrappedNativeToken, supplyAmount);
+        return supplyAmount;
     }
 
     /**
@@ -203,11 +211,17 @@ contract BaseBulker {
     /**
      * @notice Withdraws wrapped native token from Comet, unwraps it to the native token, and transfers it to a user
      * @dev Note: This contract must have permission to manage msg.sender's Comet account
+     * @dev Note: Supports `amount` of `uint256.max` only for the base asset. Should revert for a collateral asset
      */
     function withdrawNativeTokenTo(address comet, address to, uint amount) internal {
-        CometInterface(comet).withdrawFrom(msg.sender, address(this), wrappedNativeToken, amount);
-        IWETH9(wrappedNativeToken).withdraw(amount);
-        (bool success, ) = to.call{ value: amount }("");
+        uint256 withdrawAmount = amount;
+        if (wrappedNativeToken == CometInterface(comet).baseToken()) {
+            if (amount == type(uint256).max)
+                withdrawAmount = CometInterface(comet).balanceOf(msg.sender);
+        }
+        CometInterface(comet).withdrawFrom(msg.sender, address(this), wrappedNativeToken, withdrawAmount);
+        IWETH9(wrappedNativeToken).withdraw(withdrawAmount);
+        (bool success, ) = to.call{ value: withdrawAmount }("");
         if (!success) revert FailedToSendNativeToken();
     }
 
