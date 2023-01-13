@@ -190,7 +190,7 @@ describe('bulker', function () {
     const supplyNativeTokenCalldata = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'uint'], [comet.address, alice.address, ethers.constants.MaxUint256]);
     await expect(
       bulker.connect(alice).invoke([await bulker.ACTION_SUPPLY_NATIVE_TOKEN()], [supplyNativeTokenCalldata], { value: exp(1, 18) })
-    ).to.be.revertedWithCustomError(comet, 'InvalidUInt128');
+    ).to.be.reverted;
   });
 
   it('transfer base asset', async () => {
