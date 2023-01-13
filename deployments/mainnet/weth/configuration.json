@@ -32,7 +32,7 @@
       "borrowCF": 0.90,
       "liquidateCF": 0.93,
       "liquidationFactor": 0.95,
-      "supplyCap": "9_000e18"
+      "supplyCap": "7_100e18"
     },
     "wstETH": {
       "address": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
@@ -40,7 +40,7 @@
       "borrowCF": 0.90,
       "liquidateCF": 0.93,
       "liquidationFactor": 0.95,
-      "supplyCap": "80_000e18"
+      "supplyCap": "64_500e18"
     }
   }
 }
