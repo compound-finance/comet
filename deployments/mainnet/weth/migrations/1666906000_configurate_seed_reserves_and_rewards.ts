@@ -66,19 +66,29 @@ export default migration('1666906000_configurate_seed_reserves_and_rewards', {
         args: [comet.address, COMPAddress],
       },
 
-      // 6. Wrap ETH as WETH and send from Timelock to Comet to seed reserves
+      // 6. Wrap some ETH as WETH
       {
         contract: WETH,
         signature: "deposit()",
         args: [],
-        value: exp(1_000, 18)
-      }, {
+        value: 358052565869157684316n, // 500e18 - current balance
+      },
+
+      // 7. Send all Timelock's WETH to Comet to seed reserves
+      {
         contract: WETH,
         signature: "transfer(address,uint256)",
-        args: [comet.address, exp(1_000, 18)],
+        args: [comet.address, exp(500, 18)],
+      },
+
+      // 8. Transfer COMP
+      {
+        contract: comptrollerV2,
+        signature: '_grantComp(address,uint256)',
+        args: [rewards.address, exp(25_000, 18)],
       },
     ];
-    const description = "# Initialize cWETHv3 on Ethereum" // XXX fill me in
+    const description = "# Initialize cWETHv3 on Ethereum\n\nThis proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market\u2019s readiness, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario).\n\nAlthough the proposal sets the entire configuration in the Configurator, the initial deployment already has most of these same parameters already set. This proposal initializes the market with a supply cap of 64,500 wstETH and 7,100 cbETH, and 38.7 COMP per day allocated to WETH suppliers.\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/608) and [forum discussion](https://www.comp.xyz/t/initialize-compound-iii-weth-on-ethereum/3737).\n\n\n## Proposal Actions\n\nThe first proposal action sets the cETH(v2) COMP reward speeds to zero in the Comptroller.\n\nThe second action sets the CometFactory for the new Comet instance in the existing Configurator.\n\nThe third action configures the Comet instance in the Configurator.\n\nThe fourth action deploys an instance of the newly configured factory and upgrades the Comet instance to use that implementation.\n\nThe fifth action configures the existing rewards contract for the newly deployed Comet instance.\n\nThe sixth and sevenths actions are to wrap ~358.05 ETH from the Timelock, and transfer the full balance of 500 WETH to the new Comet instance, in order to seed reserves.\n\nThe eighth action is to transfer 25,000 an additional COMP to the v3 rewards contract, in order to refresh its supply.\n";
     const txn = await deploymentManager.retry(
       async () => trace((await governor.propose(...await proposal(actions, description))))
     );
@@ -89,19 +99,19 @@ export default migration('1666906000_configurate_seed_reserves_and_rewards', {
     trace(`Created proposal ${proposalId}.`);
   },
 
-
   async verify(deploymentManager: DeploymentManager) {
     const cometFactory = await deploymentManager.fromDep('cometFactory', 'mainnet', 'usdc');
     const {
+      timelock,
       comptrollerV2,
       comet,
       configurator,
       rewards,
+      COMP,
       WETH,
       wstETH,
       cbETH,
     } = await deploymentManager.getContracts();
-
 
     // 1.
     expect(await comptrollerV2.compSupplySpeeds(cETHAddress)).to.be.equal(0);
@@ -115,10 +125,10 @@ export default migration('1666906000_configurate_seed_reserves_and_rewards', {
     expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(0);
 
     const wstETHInfo = await comet.getAssetInfoByAddress(wstETH.address);
-    expect(wstETHInfo.supplyCap).to.be.equal(exp(80_000, 18)); // ~ $100M / $1225
+    expect(wstETHInfo.supplyCap).to.be.equal(exp(64_500, 18)); // ~ $100M / $1550
 
     const cbETHInfo = await comet.getAssetInfoByAddress(cbETH.address);
-    expect(cbETHInfo.supplyCap).to.be.equal(exp(9_000, 18)); // ~ $10M / $1091
+    expect(cbETHInfo.supplyCap).to.be.equal(exp(7_100, 18)); // ~ $10M / $1400
 
     // other initial params:
     expect(await comet.supplyKink()).to.be.equal(900000000000000000n);
@@ -137,7 +147,12 @@ export default migration('1666906000_configurate_seed_reserves_and_rewards', {
     expect(config.rescaleFactor).to.be.equal(1000000000000n);
     expect(config.shouldUpscale).to.be.equal(true);
 
-    // 6.
-    expect(await WETH.balanceOf(comet.address)).to.be.equal(exp(1_000, 18));
+    // 6. & 7.
+    expect(await WETH.balanceOf(timelock.address)).to.be.equal(0);
+    expect(await WETH.balanceOf(comet.address)).to.be.equal(exp(500, 18));
+    expect(await comet.getReserves()).to.be.equal(exp(500, 18));
+
+    // 8.
+    expect(await COMP.balanceOf(rewards.address)).to.be.greaterThan(exp(25_000, 18));
   },
 });

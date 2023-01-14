@@ -62,8 +62,8 @@ scenario(
       await bulker.ACTION_SUPPLY_ASSET(),
       await bulker.ACTION_WITHDRAW_ASSET(),
       await bulker.ACTION_TRANSFER_ASSET(),
-      await bulker.ACTION_SUPPLY_ETH(),
-      await bulker.ACTION_WITHDRAW_ETH(),
+      await bulker.ACTION_SUPPLY_NATIVE_TOKEN(),
+      await bulker.ACTION_WITHDRAW_NATIVE_TOKEN(),
     ];
     const txn = await albert.invoke({ actions, calldata }, { value: toSupplyEth });
 
@@ -230,8 +230,8 @@ scenario(
       await bulker.ACTION_SUPPLY_ASSET(),
       await bulker.ACTION_WITHDRAW_ASSET(),
       await bulker.ACTION_TRANSFER_ASSET(),
-      await bulker.ACTION_SUPPLY_ETH(),
-      await bulker.ACTION_WITHDRAW_ETH(),
+      await bulker.ACTION_SUPPLY_NATIVE_TOKEN(),
+      await bulker.ACTION_WITHDRAW_NATIVE_TOKEN(),
       await bulker.ACTION_CLAIM_REWARD(),
     ];
     const txn = await albert.invoke({ actions, calldata }, { value: toSupplyEth });

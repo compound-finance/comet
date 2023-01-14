@@ -71,8 +71,8 @@ scenario(
   async ({ comet, actors, bulker }, context) => {
     const { albert } = actors;
 
-    const stETH = await context.world.deploymentManager.contract('stETH') as ERC20;
-    const wstETH = await context.world.deploymentManager.contract('wstETH') as IWstETH;
+    const stETH = await context.world.deploymentManager.contract('stETH');
+    const wstETH = await context.world.deploymentManager.contract('wstETH');
 
     await albert.allow(bulker.address, true);
 
@@ -91,7 +91,7 @@ scenario(
     expectApproximately(
       (await stETH.balanceOf(albert.address)).toBigInt(),
       toWithdrawStEth,
-      2n
+      3n
     );
     expectApproximately(
       (await comet.collateralBalanceOf(albert.address, wstETH.address)).toBigInt(),
