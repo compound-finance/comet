@@ -99,6 +99,10 @@ export default migration('1666906000_configurate_seed_reserves_and_rewards', {
     trace(`Created proposal ${proposalId}.`);
   },
 
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
+  },
+
   async verify(deploymentManager: DeploymentManager) {
     const cometFactory = await deploymentManager.fromDep('cometFactory', 'mainnet', 'usdc');
     const {
