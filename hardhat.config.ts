@@ -71,7 +71,7 @@ interface NetworkConfig {
 }
 
 const networkConfigs: NetworkConfig[] = [
-  { network: 'mainnet', chainId: 1 },
+  { network: 'mainnet', chainId: 1, url: 'http://127.0.0.1:8545/' },
   { network: 'ropsten', chainId: 3 },
   { network: 'rinkeby', chainId: 4 },
   { network: 'goerli', chainId: 5 },
@@ -143,7 +143,7 @@ const config: HardhatUserConfig = {
 
   networks: {
     hardhat: {
-      chainId: 1337,
+      chainId: 1,
       loggingEnabled: !!process.env['LOGGING'],
       gas: 12000000,
       gasPrice: 'auto',
