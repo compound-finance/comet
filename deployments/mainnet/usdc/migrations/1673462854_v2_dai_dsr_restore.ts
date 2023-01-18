@@ -3,8 +3,14 @@ import { exp, proposal } from '../../../../src/deploy';
 
 import { expect } from 'chai';
 
-// XXX boilerplate for a proposal; NOT production ready
-//  must be tested and analyzed
+/*
+ * Code for setting up proposal to roll back the cDAI implementation to
+ * the state before proposal #34 passed; reinstating
+ * - old cDAI delegate contract
+ * - old DAIInterestRateModelV3
+ *
+ * This re-enables DSR usage for the underlying DAI balance of cDAI.
+ */
 const cDAIDelegateAddress = '0xbB8bE4772fAA655C255309afc3c5207aA7b896Fd';
 const ogDAIIRModelAddress = '0xfeD941d39905B23D6FAf02C8301d40bD4834E27F';
 const cDAIAddress = '0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643';
@@ -48,7 +54,7 @@ export default migration('1673462854_v2_dai_dsr_restore', {
         calldata: ethers.utils.defaultAbiCoder.encode(['address'], [ogDAIIRModelAddress]),
       },
     ];
-    const description = "# XXX DAI DSR Title\n\nXXX"; // XXX write me
+    const description = "# Reinstate Dai Savings Rate for cDAI\nOn December 21, 2020, [Proposal 34](https://compound.finance/governance/proposals/34) was created with the goal of reducing gas costs for Compound users by removing support for the MakerDAO DSR (Dai Savings Rate), as it was set at 0.01% yield by Maker Governance at the time.\nRecently, Maker [has reinstated the DSR's yield](https://vote.makerdao.com/executive/template-executive-vote-recognized-delegate-compensation-gno-onboarding-blocktower-credit-rwa-vaults-onboarding-renbtc-offboarding-mkr-vesting-momc-parameter-changes-dai-savings-rate-adjustment-starknet-bridge-parameter-changes-december-09-2022#proposal-detail) at an annualized 1%. This is independent of the amount of DAI deposited.\nWe propose rolling back cDAI’s implementation and its corresponding IRM (Interest Rate Model) to their previous deployed versions. This implementation reconnects the Dai Savings Rate to the Compound’s protocol cDAI system.\nThis will allow cDAI holders and the greater Compound community to be able to utilize the underlying yield provided by MakerDAO.\nThe end result of this proposal will be more yield for cDAI holders, at the cost of slightly higher gas usage. This proposal has been simulated on a network fork, and uses contracts that have been previously part of Compound's system.\nMore discussions might be needed in the community on whether the `DAIInterestRateModelV3` is to be updated to a newer version, but that is outside the scope of this proposal.\nFor more information, see [this post](https://www.comp.xyz/t/compound-dsr-proposal/3856) on the Compound governance forums.";
     const txn = await deploymentManager.retry(
       async () => trace((await governor.propose(...await proposal(actions, description))))
     );
@@ -60,10 +66,13 @@ export default migration('1673462854_v2_dai_dsr_restore', {
   },
 
   async verify(deploymentManager: DeploymentManager) {
-    const {
-      timelock,
-    } = await deploymentManager.getContracts();
-
-    // XXX basic sanity checks on steps 1. and 2.?
+    // 1.
+    const cDAI = await deploymentManager.existing("cDAI", cDAIAddress);
+    const implementation = await cDAI.implementation();
+    expect(implementation).to.be.equal(cDAIDelegateAddress);
+    
+    // 2.
+    const DAIInterestRateModel = await cDAI.interestRateModel();
+    expect(DAIInterestRateModel).to.be.equal(ogDAIIRModelAddress);
   },
 });
