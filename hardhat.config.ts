@@ -37,12 +37,11 @@ const {
   POLYGONSCAN_KEY,
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
-  REMOTE_ACCOUNTS = '',
+  REMOTE_ACCOUNTS = ''
 } = process.env;
 
-function *deriveAccounts(pk: string, n: number = 10) {
-  for (let i = 0; i < n; i++)
-    yield (BigInt('0x' + pk) + BigInt(i)).toString(16);
+function* deriveAccounts(pk: string, n: number = 10) {
+  for (let i = 0; i < n; i++) yield (BigInt('0x' + pk) + BigInt(i)).toString(16);
 }
 
 export function requireEnv(varName, msg?: string): string {
@@ -54,12 +53,7 @@ export function requireEnv(varName, msg?: string): string {
 }
 
 // required environment variables
-[
-  'ETHERSCAN_KEY',
-  'SNOWTRACE_KEY',
-  'INFURA_KEY',
-  'POLYGONSCAN_KEY'
-].map(v => requireEnv(v))
+['ETHERSCAN_KEY', 'SNOWTRACE_KEY', 'INFURA_KEY', 'POLYGONSCAN_KEY'].map(v => requireEnv(v));
 
 // Networks
 interface NetworkConfig {
@@ -79,23 +73,23 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'polygon',
     chainId: 137,
-    url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
+    url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`
   },
   {
     network: 'avalanche',
     chainId: 43114,
-    url: 'https://api.avax.network/ext/bc/C/rpc',
+    url: 'https://api.avax.network/ext/bc/C/rpc'
   },
   {
     network: 'fuji',
     chainId: 43113,
-    url: 'https://api.avax-test.network/ext/bc/C/rpc',
+    url: 'https://api.avax-test.network/ext/bc/C/rpc'
   },
   {
     network: 'mumbai',
     chainId: 80001,
-    url: `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`,
-  },
+    url: `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`
+  }
 ];
 
 function getDefaultProviderURL(network: string) {
@@ -109,7 +103,11 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
       url: NETWORK_PROVIDER || netConfig.url || getDefaultProviderURL(netConfig.network),
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
-      accounts: REMOTE_ACCOUNTS ? "remote" : ( ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC } ),
+      accounts: REMOTE_ACCOUNTS
+        ? 'remote'
+        : ETH_PK
+        ? [...deriveAccounts(ETH_PK)]
+        : { mnemonic: MNEMONIC }
     };
   }
 }
@@ -121,24 +119,25 @@ const config: HardhatUserConfig = {
   solidity: {
     version: '0.8.15',
     settings: {
-      optimizer: (
-        process.env['OPTIMIZER_DISABLED'] ? { enabled: false } : {
-          enabled: true,
-          runs: 1,
-          details: {
-            yulDetails: {
-              optimizerSteps: 'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul'
-            },
+      optimizer: process.env['OPTIMIZER_DISABLED']
+        ? { enabled: false }
+        : {
+            enabled: true,
+            runs: 1,
+            details: {
+              yulDetails: {
+                optimizerSteps:
+                  'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul'
+              }
+            }
           },
-        }
-      ),
       outputSelection: {
-        "*": {
-          "*": ["evm.deployedBytecode.sourceMap"]
-        },
+        '*': {
+          '*': ['evm.deployedBytecode.sourceMap']
+        }
       },
-      viaIR: process.env['OPTIMIZER_DISABLED'] ? false : true,
-    },
+      viaIR: process.env['OPTIMIZER_DISABLED'] ? false : true
+    }
   },
 
   networks: {
@@ -148,10 +147,15 @@ const config: HardhatUserConfig = {
       gas: 12000000,
       gasPrice: 'auto',
       blockGasLimit: 12000000,
-      accounts: ETH_PK ? [...deriveAccounts(ETH_PK)].map(privateKey => ({ privateKey, balance: (10n ** 36n).toString() })) : { mnemonic: MNEMONIC },
+      accounts: ETH_PK
+        ? [...deriveAccounts(ETH_PK)].map(privateKey => ({
+            privateKey,
+            balance: (10n ** 36n).toString()
+          }))
+        : { mnemonic: MNEMONIC },
       // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
-      allowUnlimitedContractSize: true,
-    },
+      allowUnlimitedContractSize: true
+    }
   },
 
   // See https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#multiple-api-keys-and-alternative-block-explorers
@@ -168,13 +172,13 @@ const config: HardhatUserConfig = {
       avalancheFujiTestnet: SNOWTRACE_KEY,
       // Polygon
       polygon: POLYGONSCAN_KEY,
-      polygonMumbai: POLYGONSCAN_KEY,
-    },
+      polygonMumbai: POLYGONSCAN_KEY
+    }
   },
 
   typechain: {
     outDir: 'build/types',
-    target: 'ethers-v5',
+    target: 'ethers-v5'
   },
 
   deploymentManager: {
@@ -190,7 +194,7 @@ const config: HardhatUserConfig = {
       mainnet: {
         weth: mainnetWethRelationConfigMap
       }
-    },
+    }
   },
 
   scenario: {
@@ -199,12 +203,12 @@ const config: HardhatUserConfig = {
         name: 'mainnet',
         network: 'mainnet',
         deployment: 'usdc',
-        allocation: 1.0, // eth
+        allocation: 1.0 // eth
       },
       {
         name: 'mainnet-weth',
         network: 'mainnet',
-        deployment: 'weth',
+        deployment: 'weth'
       },
       {
         name: 'development',
@@ -219,7 +223,7 @@ const config: HardhatUserConfig = {
       {
         name: 'kovan',
         network: 'kovan',
-        deployment: 'usdc',
+        deployment: 'usdc'
       },
       {
         name: 'goerli',
@@ -229,7 +233,7 @@ const config: HardhatUserConfig = {
       {
         name: 'goerli-weth',
         network: 'goerli',
-        deployment: 'weth',
+        deployment: 'weth'
       },
       {
         name: 'mumbai',
@@ -237,7 +241,7 @@ const config: HardhatUserConfig = {
         deployment: 'usdc',
         auxiliaryBase: 'goerli'
       }
-    ],
+    ]
   },
 
   mocha: {
@@ -245,29 +249,29 @@ const config: HardhatUserConfig = {
     reporterOptions: {
       reporterEnabled: ['spec', 'json'],
       jsonReporterOptions: {
-        output: 'test-results.json',
-      },
+        output: 'test-results.json'
+      }
     },
     timeout: 100_000
   },
 
   paths: {
-    tests: './test',
+    tests: './test'
   },
 
   contractSizer: {
     alphaSort: true,
     disambiguatePaths: false,
     runOnCompile: true,
-    strict: false, // allow tests to run anyway
+    strict: false // allow tests to run anyway
   },
 
   gasReporter: {
     enabled: REPORT_GAS === 'true' ? true : false,
     currency: 'USD',
     coinmarketcap: COINMARKETCAP_API_KEY,
-    gasPrice: 200, // gwei
-  },
+    gasPrice: 200 // gwei
+  }
 };
 
 setupDefaultNetworkProviders(config);
