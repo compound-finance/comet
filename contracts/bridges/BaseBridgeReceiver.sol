@@ -172,7 +172,7 @@ contract BaseBridgeReceiver {
         Proposal memory proposal = proposals[proposalId];
         if (proposal.executed) {
             return ProposalState.Executed;
-        } else if (block.timestamp >= (proposal.eta + ITimelock(localTimelock).GRACE_PERIOD())) {
+        } else if (block.timestamp > (proposal.eta + ITimelock(localTimelock).GRACE_PERIOD())) {
             return ProposalState.Expired;
         } else {
             return ProposalState.Queued;
