@@ -348,7 +348,7 @@ describe('BaseBridgeReceiver', function () {
     const { eta } = await baseBridgeReceiver.proposals(1);
     const gracePeriod = await localTimelock.GRACE_PERIOD();
 
-    await ethers.provider.send('evm_setNextBlockTimestamp', [eta.add(gracePeriod).toNumber()]);
+    await ethers.provider.send('evm_setNextBlockTimestamp', [eta.add(gracePeriod).toNumber() + 1]);
     await ethers.provider.send('evm_mine', []);
 
     // proposal is expired
