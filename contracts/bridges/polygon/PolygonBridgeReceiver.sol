@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import "../vendor/fx-portal/contracts/FxChild.sol";
+import "./IFxMessageProcessor.sol";
 import "../BaseBridgeReceiver.sol";
 
 contract PolygonBridgeReceiver is IFxMessageProcessor, BaseBridgeReceiver {
