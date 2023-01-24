@@ -21,10 +21,15 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
   async solve(requirements: R, context: T, world: World) {
     const label = `[${world.base.name}] {MigrationConstraint}`;
     const solutions: Solution<T>[] = [];
+    const migrationPaths = [...subsets(await getMigrations(context, requirements))];
 
-    for (const migrationList of subsets(await getMigrations(context, requirements))) {
-      if (migrationList.length == 0 && process.env['MIGRATIONS_ONLY'])
-        continue;
+    for (const migrationList of migrationPaths) {
+      if (migrationList.length == 0 && migrationPaths.length > 1) {
+        if (!process.env['WITHOUT_MIGRATIONS']) {
+          debug(`${label} Skipping empty migration`);
+          continue;
+        }
+      }
       solutions.push(async function (ctx: T): Promise<T> {
         const proposer = await ctx.getProposer();
 

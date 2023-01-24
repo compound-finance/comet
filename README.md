@@ -238,7 +238,7 @@ These simulations are extremely useful for testing deployments before actually c
 Source code verification is a relatively important part of deployments currently.
 The 'spider' tool we use to crawl relevant addresses from the root addresses by default relies on pulling verified contract ABIs.
 Verification happens normally as part of the deploy command-line task (the same command triggered by the `deploy-market` workflow).
-Since deployments are idempotent by default, the deploy command can also be used to *just* verify the existing contracts.
+Since deployments are idempotent by default, the deploy command can also be used to *just* verify the existing contracts (an explicit way to do this is via the `--no-deploy` flag).
 When all contracts are already deployed, the only actions performed will be to verify the contracts remaining in the verification cache.
 The script *always* attempts to verify the Comet implementation contract, since this is deployed via a factory and the status is relatively unknown to it.
 
