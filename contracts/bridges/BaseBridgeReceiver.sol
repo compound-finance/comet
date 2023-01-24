@@ -8,7 +8,7 @@ contract BaseBridgeReceiver {
     error AlreadyInitialized();
     error BadData();
     error InvalidProposalId();
-    error ProposalNotQueued();
+    error ProposalNotExecutable();
     error TransactionAlreadyQueued();
     error Unauthorized();
 
@@ -152,7 +152,7 @@ contract BaseBridgeReceiver {
      * @param proposalId The id of the proposal to execute
      */
     function executeProposal(uint proposalId) external {
-        if (state(proposalId) != ProposalState.Queued) revert ProposalNotQueued();
+        if (state(proposalId) != ProposalState.Queued) revert ProposalNotExecutable();
         Proposal storage proposal = proposals[proposalId];
         proposal.executed = true;
         for (uint i = 0; i < proposal.targets.length; i++) {

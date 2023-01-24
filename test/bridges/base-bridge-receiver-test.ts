@@ -356,7 +356,7 @@ describe('BaseBridgeReceiver', function () {
 
     await expect(
       baseBridgeReceiver.executeProposal(1)
-    ).to.be.revertedWith("custom error 'ProposalNotQueued()'");
+    ).to.be.revertedWith("custom error 'ProposalNotExecutable()'");
   });
 
   it('executeProposal > executes the proposal', async () => {
@@ -429,7 +429,7 @@ describe('BaseBridgeReceiver', function () {
 
     await expect(
       baseBridgeReceiver.executeProposal(1)
-    ).to.be.revertedWith("custom error 'ProposalNotQueued()'");
+    ).to.be.revertedWith("custom error 'ProposalNotExecutable()'");
   });
 
   it('state > reverts for proposal id = 0', async () => {
