@@ -5,18 +5,19 @@ import {
   CometExt__factory,
   CometHarness__factory,
   CometHarnessInterface,
-  Liquidator__factory
+  OnChainLiquidator__factory
 } from '../../build/types';
 import {
+  BALANCER_VAULT,
   COMP,
   COMP_USDC_PRICE_FEED,
   COMP_WHALE,
   DAI,
-  DAI_USDC_PRICE_FEED,
   DAI_WHALE,
   LINK,
   LINK_USDC_PRICE_FEED,
   LINK_WHALE,
+  ST_ETH,
   UNISWAP_ROUTER,
   UNI,
   UNI_USDC_PRICE_FEED,
@@ -30,6 +31,7 @@ import {
   WETH9,
   ETH_USDC_PRICE_FEED,
   WETH_WHALE,
+  WST_ETH,
   UNISWAP_V3_FACTORY,
   SUSHISWAP_ROUTER
 } from './addresses';
@@ -43,7 +45,9 @@ import linkAbi from './link-abi';
 
 export enum Exchange {
   Uniswap,
-  SushiSwap
+  SushiSwap,
+  Balancer,
+  Curve
 }
 
 export async function makeProtocol() {
@@ -78,22 +82,13 @@ export async function makeProtocol() {
     targetReserves: exp(1, 18),
     assetConfigs: [
       {
-        asset: DAI,
-        priceFeed: DAI_USDC_PRICE_FEED,
-        decimals: 18,
-        borrowCollateralFactor: 999999999999999999n,
-        liquidateCollateralFactor: exp(1, 18),
-        liquidationFactor: exp(0.9, 18),
-        supplyCap: exp(1000000, 18)
-      },
-      {
         asset: COMP,
         priceFeed: COMP_USDC_PRICE_FEED,
         decimals: 18,
         borrowCollateralFactor: 999999999999999999n,
         liquidateCollateralFactor: exp(1, 18),
         liquidationFactor: exp(0.9, 18),
-        supplyCap: exp(100, 18)
+        supplyCap: exp(1000000, 18)
       },
       {
         asset: WBTC,
@@ -140,42 +135,16 @@ export async function makeProtocol() {
 
   const [signer,, recipient] = await ethers.getSigners();
 
-  // build Liquidator
-  const Liquidator = await ethers.getContractFactory('Liquidator') as Liquidator__factory;
-  const liquidator = await Liquidator.deploy(
-    recipient.address,
-    ethers.utils.getAddress(UNISWAP_ROUTER),
-    ethers.utils.getAddress(SUSHISWAP_ROUTER),
-    ethers.utils.getAddress(comet.address),
-    ethers.utils.getAddress(UNISWAP_V3_FACTORY),
-    ethers.utils.getAddress(WETH9),
-    10e6, // min viable liquidation is for 10 USDC (base token) of collateral,
-    [
-      ethers.utils.getAddress(DAI),
-      ethers.utils.getAddress(WETH9),
-      ethers.utils.getAddress(WBTC),
-      ethers.utils.getAddress(UNI),
-      ethers.utils.getAddress(COMP),
-      ethers.utils.getAddress(LINK)
-    ],
-    [false, false, false, false, true, true],
-    [500, 500, 3000, 3000, 3000, 3000],
-    [
-      Exchange.Uniswap,
-      Exchange.Uniswap,
-      Exchange.Uniswap,
-      Exchange.Uniswap,
-      Exchange.SushiSwap,
-      Exchange.Uniswap
-    ],
-    [
-      ethers.constants.MaxUint256,
-      ethers.constants.MaxUint256,
-      ethers.constants.MaxUint256,
-      ethers.constants.MaxUint256,
-      ethers.constants.MaxUint256,
-      ethers.constants.MaxUint256
-    ]
+  // build OnChainLiquidator
+  const OnChainLiquidator = await ethers.getContractFactory('OnChainLiquidator') as OnChainLiquidator__factory;
+  const liquidator = await OnChainLiquidator.deploy(
+    BALANCER_VAULT,
+    SUSHISWAP_ROUTER,
+    UNISWAP_ROUTER,
+    UNISWAP_V3_FACTORY,
+    ST_ETH,
+    WST_ETH,
+    WETH9
   );
   await liquidator.deployed();
 

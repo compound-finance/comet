@@ -3,7 +3,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Contract, providers } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Alias, Address, BuildFile, TraceFn } from './Types';
-import { putAlias, storeAliases } from './Aliases';
+import { getAliases, storeAliases, putAlias } from './Aliases';
 import { Cache } from './Cache';
 import { ContractMap } from './ContractMap';
 import { DeployOpts, deploy, deployBuild } from './Deploy';
@@ -206,6 +206,27 @@ export class DeploymentManager {
     return maybeExisting;
   }
 
+  async fromDep<C extends Contract>(
+    alias: Alias,
+    network: string,
+    deployment: string,
+    otherAlias = alias
+  ): Promise<C> {
+    const maybeExisting = await this.contract<C>(alias);
+    if (!maybeExisting) {
+      const trace = this.tracer();
+      const spider = await this.spiderOther(network, deployment);
+      const contract = spider.contracts.get(otherAlias) as C;
+      if (!contract) {
+        throw new Error(`Unable to find contract ${network}/${deployment}:${otherAlias}`);
+      }
+      await this.putAlias(alias, contract);
+      trace(`Loaded ${alias} from ${network}/${deployment}:${otherAlias} (${contract.address}) as '${alias}'`);
+      return contract;
+    }
+    return maybeExisting;
+  }
+
   /* Deploys a contract from Hardhat artifacts */
   async _deploy<C extends Contract>(contractFile: string, deployArgs: any[], retries?: number): Promise<C> {
     const contract = await this.retry(
@@ -263,7 +284,7 @@ export class DeploymentManager {
     return verifyContract(args, this.hre, (await this.deployOpts()).raiseOnVerificationFailure);
   }
 
-  /* Loads contract configuration by tracing from roots outwards, based on relationConfig. */
+  /* Loads contract configuration by tracing from roots outwards, based on relationConfig */
   async spider(deployed: Deployed = {}): Promise<Spider> {
     const relationConfigMap = getRelationConfig(
       this.hre.config.deploymentManager,
@@ -288,10 +309,23 @@ export class DeploymentManager {
     return crawl;
   }
 
+  /* Spiders a different deployment, generally for a dependency on another deployment */
+  async spiderOther(network: string, deployment: string): Promise<Spider> {
+    // TODO: cache these at a higher level to avoid all the unnecessary noise/ops?
+    const dm = new DeploymentManager(network, deployment, this.hre, { writeCacheToDisk: true });
+    return await dm.spider();
+  }
+
   /* Stores a new alias, which can then be referenced via `deploymentManager.contract()` */
   async putAlias(alias: Alias, contract: Contract) {
     await putAlias(this.cache, alias, contract.address);
     this.contractsCache.set(alias, contract);
+  }
+
+  /* Read an alias from another deployment */
+  async readAlias(network: string, deployment: string, alias: Alias): Promise<Address> {
+    const aliases = await getAliases(this.cache.asDeployment(network, deployment));
+    return aliases.get(alias);
   }
 
   /* Returns a memory-cached map of contracts indexed by alias.
