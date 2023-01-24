@@ -17,7 +17,7 @@ contract BaseBridgeReceiver {
     event NewLocalTimelock(address indexed oldLocalTimelock, address indexed newLocalTimelock);
     event NewGovTimelock(address indexed oldGovTimelock, address indexed newGovTimelock);
     event ProposalCreated(address indexed messageSender, uint id, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, uint eta);
-    event ProposalExecuted(uint id);
+    event ProposalExecuted(uint indexed id);
 
     /** Public variables **/
 
