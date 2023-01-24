@@ -24,10 +24,10 @@ contract PolygonBridgeReceiver is IFxMessageProcessor, BaseBridgeReceiver {
 
     function processMessageFromRoot(
         uint256 stateId,
-        address messageSender,
+        address rootMessageSender,
         bytes calldata data
     ) public override {
         if (msg.sender != fxChild) revert InvalidChild();
-        processMessage(messageSender, data);
+        processMessage(rootMessageSender, data);
     }
 }
