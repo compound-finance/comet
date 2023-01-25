@@ -80,6 +80,10 @@ export class CometContext {
     return this.world.impersonateAddress((await this.getCompWhales())[0], 10n ** 18n);
   }
 
+  async getComp(): Promise<ERC20> {
+    return this.world.deploymentManager.contract('COMP');
+  }
+
   async getComet(): Promise<CometInterface> {
     return this.world.deploymentManager.contract('comet');
   }
@@ -316,18 +320,20 @@ async function getActors(context: CometContext): Promise<{ [name: string]: Comet
 async function getAssets(context: CometContext): Promise<{ [symbol: string]: CometAsset }> {
   const { deploymentManager } = context.world;
 
-  let comet = await context.getComet();
-  let signer = await deploymentManager.getSigner();
-  let numAssets = await comet.numAssets();
-  let assetAddresses = [
+  const COMP = await context.getComp();
+  const comet = await context.getComet();
+  const signer = await deploymentManager.getSigner();
+  const numAssets = await comet.numAssets();
+  const assetAddresses = [
     await comet.baseToken(),
     ...await Promise.all(Array(numAssets).fill(0).map(async (_, i) => {
       return (await comet.getAssetInfo(i)).asset;
     })),
+    COMP.address,
   ];
 
   return Object.fromEntries(await Promise.all(assetAddresses.map(async (address) => {
-    let erc20 = ERC20__factory.connect(address, signer);
+    const erc20 = ERC20__factory.connect(address, signer);
     return [await erc20.symbol(), new CometAsset(erc20)];
   })));
 }
