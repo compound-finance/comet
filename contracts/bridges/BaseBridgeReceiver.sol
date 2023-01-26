@@ -70,36 +70,6 @@ contract BaseBridgeReceiver {
     }
 
     /**
-     * @notice Accept admin role for the localTimelock
-     */
-    function acceptLocalTimelockAdmin() external {
-        if (msg.sender != localTimelock) revert Unauthorized();
-        ITimelock(localTimelock).acceptAdmin();
-    }
-
-    /**
-     * @notice Set localTimelock address
-     * @param newTimelock Address to set as the localTimelock
-     */
-    function setLocalTimelock(address newTimelock) public {
-        if (msg.sender != localTimelock) revert Unauthorized();
-        address oldLocalTimelock = localTimelock;
-        localTimelock = newTimelock;
-        emit NewLocalTimelock(oldLocalTimelock, newTimelock);
-    }
-
-    /**
-     * @notice Set govTimelock address
-     * @param newTimelock Address to set as the govTimelock
-     */
-    function setGovTimelock(address newTimelock) public {
-        if (msg.sender != localTimelock) revert Unauthorized();
-        address oldGovTimelock = govTimelock;
-        govTimelock = newTimelock;
-        emit NewGovTimelock(oldGovTimelock, newTimelock);
-    }
-
-    /**
      * @notice Process a message sent from the governing timelock (across a bridge)
      * @param rootMessageSender Address of the contract that sent the bridged message
      * @param data ABI-encoded bytes containing the transactions to be queued on the local timelock
