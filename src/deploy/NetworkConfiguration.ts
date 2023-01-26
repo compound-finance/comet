@@ -3,7 +3,6 @@ import { ConfigurationStruct } from '../../build/types/Configurator';
 import { ProtocolConfiguration } from './index';
 import { ContractMap } from '../../plugins/deployment_manager/ContractMap';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-import { ethers } from 'ethers';
 
 function address(a: string): string {
   if (!a.match(/^0x[a-fA-F0-9]{40}$/)) {
@@ -165,7 +164,7 @@ function getOverridesOrConfig(
     assetConfigs: _ => getAssetConfigs(config.assets, contracts),
     rewardTokenAddress: _ => (config.rewardToken || config.rewardTokenAddress) ?
       getContractAddress(config.rewardToken, contracts, config.rewardTokenAddress) :
-      ethers.constants.AddressZero,
+      undefined,
   });
   return Object.entries(mapping()).reduce((acc, [k, f]) => {
     return { [k]: overrides[k] ?? f(config), ...acc };
