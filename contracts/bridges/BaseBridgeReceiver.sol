@@ -8,6 +8,7 @@ contract BaseBridgeReceiver {
     error AlreadyInitialized();
     error BadData();
     error InvalidProposalId();
+    error InvalidTimelockAdmin();
     error ProposalNotExecutable();
     error TransactionAlreadyQueued();
     error Unauthorized();
@@ -63,6 +64,7 @@ contract BaseBridgeReceiver {
      */
     function initialize(address _govTimelock, address _localTimelock) external {
         if (initialized) revert AlreadyInitialized();
+        if (ITimelock(_localTimelock).admin() != address(this)) revert InvalidTimelockAdmin();
         govTimelock = _govTimelock;
         localTimelock = _localTimelock;
         initialized = true;

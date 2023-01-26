@@ -85,6 +85,18 @@ describe('BaseBridgeReceiver', function () {
     });
   });
 
+  it('reverts on initialize if local timelock admin is not the bridge receiver', async () => {
+    const {
+      baseBridgeReceiver,
+      govTimelock,
+    } = await makeBridgeReceiver({initialize: false});
+    const badLocalTimelock = await makeTimelock({ admin: ethers.constants.AddressZero });
+
+    await expect(
+      baseBridgeReceiver.initialize(govTimelock.address, badLocalTimelock.address)
+    ).to.be.revertedWith("custom error 'InvalidTimelockAdmin()'");
+  });
+
   it('cannot be reinitialized', async () => {
     const {
       baseBridgeReceiver,
