@@ -16,7 +16,7 @@ contract BaseBridgeReceiver {
     event Initialized(address indexed govTimelock, address indexed localTimelock);
     event NewLocalTimelock(address indexed oldLocalTimelock, address indexed newLocalTimelock);
     event NewGovTimelock(address indexed oldGovTimelock, address indexed newGovTimelock);
-    event ProposalCreated(address indexed messageSender, uint id, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, uint eta);
+    event ProposalCreated(address indexed rootMessageSender, uint id, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, uint eta);
     event ProposalExecuted(uint indexed id);
 
     /** Public variables **/
@@ -101,14 +101,14 @@ contract BaseBridgeReceiver {
 
     /**
      * @notice Process a message sent from the governing timelock (across a bridge)
-     * @param messageSender Address of the contract that sent the bridged message
+     * @param rootMessageSender Address of the contract that sent the bridged message
      * @param data ABI-encoded bytes containing the transactions to be queued on the local timelock
      */
     function processMessage(
-        address messageSender,
+        address rootMessageSender,
         bytes calldata data
     ) internal {
-        if (messageSender != govTimelock) revert Unauthorized();
+        if (rootMessageSender != govTimelock) revert Unauthorized();
 
         address[] memory targets;
         uint256[] memory values;
@@ -144,7 +144,7 @@ contract BaseBridgeReceiver {
         });
 
         proposals[proposal.id] = proposal;
-        emit ProposalCreated(messageSender, proposal.id, targets, values, signatures, calldatas, eta);
+        emit ProposalCreated(rootMessageSender, proposal.id, targets, values, signatures, calldatas, eta);
     }
 
     /**
