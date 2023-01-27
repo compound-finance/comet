@@ -288,7 +288,7 @@ describe('BaseBridgeReceiver', function () {
     // emits ProposalCreated event
     expect(event(tx, 2)).to.be.deep.equal({
       ProposalCreated: {
-        messageSender: govTimelock.address,
+        rootMessageSender: govTimelock.address,
         id: id.toBigInt(),
         targets,
         signatures,
@@ -348,7 +348,7 @@ describe('BaseBridgeReceiver', function () {
     const { eta } = await baseBridgeReceiver.proposals(1);
     const gracePeriod = await localTimelock.GRACE_PERIOD();
 
-    await ethers.provider.send('evm_setNextBlockTimestamp', [eta.add(gracePeriod).toNumber()]);
+    await ethers.provider.send('evm_setNextBlockTimestamp', [eta.add(gracePeriod).toNumber() + 1]);
     await ethers.provider.send('evm_mine', []);
 
     // proposal is expired
@@ -356,7 +356,7 @@ describe('BaseBridgeReceiver', function () {
 
     await expect(
       baseBridgeReceiver.executeProposal(1)
-    ).to.be.revertedWith("custom error 'ProposalNotQueued()'");
+    ).to.be.revertedWith("custom error 'ProposalNotExecutable()'");
   });
 
   it('executeProposal > executes the proposal', async () => {
@@ -429,7 +429,7 @@ describe('BaseBridgeReceiver', function () {
 
     await expect(
       baseBridgeReceiver.executeProposal(1)
-    ).to.be.revertedWith("custom error 'ProposalNotQueued()'");
+    ).to.be.revertedWith("custom error 'ProposalNotExecutable()'");
   });
 
   it('state > reverts for proposal id = 0', async () => {
