@@ -288,7 +288,7 @@ describe('BaseBridgeReceiver', function () {
     // emits ProposalCreated event
     expect(event(tx, 2)).to.be.deep.equal({
       ProposalCreated: {
-        messageSender: govTimelock.address,
+        rootMessageSender: govTimelock.address,
         id: id.toBigInt(),
         targets,
         signatures,
