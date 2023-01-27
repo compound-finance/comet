@@ -33,7 +33,7 @@ contract PolygonBridgeReceiver is IFxMessageProcessor, BaseBridgeReceiver {
 
     /**
      * @notice Receive bridged message and enqueue in the Timelock
-     * @param stateId Value provided by fxChild when function; ignored
+     * @param stateId Value provided by fxChild when function is called; ignored
      * @param rootMessageSender Mainnet address that initiated the bridged message
      * @param data ABI-encoded data of the bridged message
      */

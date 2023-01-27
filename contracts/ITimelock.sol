@@ -32,7 +32,7 @@ interface ITimelock {
     /// @notice The maximum value that the `delay` variable can be set to
     function MAXIMUM_DELAY() virtual external view returns (uint);
 
-    /// @notice Address that has admin prilileges
+    /// @notice Address that has admin privileges
     function admin() virtual external view returns (address);
 
     /// @notice The address that may become the new admin by calling `acceptAdmin()`
