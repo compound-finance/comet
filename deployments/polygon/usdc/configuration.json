@@ -24,6 +24,15 @@
     "baseMinForRewards": "1000000e6"
   },
   "assets": {
+    "WMATIC": {
+      "address": "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+      "priceFeed": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
+      "decimals": "18",
+      "borrowCF": 0.825,
+      "liquidateCF": 0.895,
+      "liquidationFactor": 0.95,
+      "supplyCap": "500000e18"
+    },
     "WETH": {
       "address": "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619",
       "priceFeed": "0xF9680D99D6C9589e2a93a78A04A279e509205945",
@@ -34,29 +43,11 @@
       "supplyCap": "500000e18"
     },
     "WBTC": {
-      "address": "0xc907E116054Ad103354f2D350FD2514433D57F6f",
-      "priceFeed": "0xDE31F8bFBD8c84b5360CFACCa3539B938dd78ae6",
+      "address": "0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6",
+      "priceFeed": "0xc907E116054Ad103354f2D350FD2514433D57F6f",
       "decimals": "8",
       "borrowCF": 0.70,
       "liquidateCF": 0.77,
-      "liquidationFactor": 0.95,
-      "supplyCap": "500000e18"
-    },
-    "DAI": {
-      "address": "0x8f3cf7ad23cd3cadbd9735aff958023239c6a063",
-      "priceFeed": "0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D",
-      "decimals": "18",
-      "borrowCF": 0.825,
-      "liquidateCF": 0.895,
-      "liquidationFactor": 0.95,
-      "supplyCap": "500000e18"
-    },
-    "USDT": {
-      "address": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
-      "priceFeed": "0x0A6513e40db6EB1b165753AD52E80663aeA50545",
-      "decimals": "6",
-      "borrowCF": 0.825,
-      "liquidateCF": 0.895,
       "liquidationFactor": 0.95,
       "supplyCap": "500000e18"
     }
