@@ -2,7 +2,7 @@ import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { BigNumberish, constants, utils } from 'ethers';
 import { exp } from '../test/helpers';
-import { BaseBridgeReceiver, CometInterface, FaucetToken, SimpleTimelock } from '../build/types';
+import { BaseBridgeReceiver, FaucetToken } from '../build/types';
 import { calldata } from '../src/deploy';
 import { COMP_WHALES } from '../src/deploy';
 import { impersonateAddress } from '../plugins/scenario/utils';
@@ -319,12 +319,12 @@ scenario(
       ]
     );
 
-    expect(await proxyAdmin.owner()).to.eq(oldLocalTimelock.address)
+    expect(await proxyAdmin.owner()).to.eq(oldLocalTimelock.address);
     expect(await comet.governor()).to.eq(oldLocalTimelock.address);
 
     await fastL1ToPolygonGovernanceExecute(upgradeL2GovContractsProposal, oldBridgeReceiver, world);
 
-    expect(await proxyAdmin.owner()).to.eq(newLocalTimelock.address)
+    expect(await proxyAdmin.owner()).to.eq(newLocalTimelock.address);
     expect(await comet.governor()).to.eq(newLocalTimelock.address);
 
     // Now, test that the new L2 governance contracts are working properly via another cross-chain proposal
