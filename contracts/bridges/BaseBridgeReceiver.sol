@@ -8,6 +8,7 @@ contract BaseBridgeReceiver {
     error AlreadyInitialized();
     error BadData();
     error InvalidProposalId();
+    error InvalidTimelockAdmin();
     error ProposalNotExecutable();
     error TransactionAlreadyQueued();
     error Unauthorized();
@@ -63,40 +64,11 @@ contract BaseBridgeReceiver {
      */
     function initialize(address _govTimelock, address _localTimelock) external {
         if (initialized) revert AlreadyInitialized();
+        if (ITimelock(_localTimelock).admin() != address(this)) revert InvalidTimelockAdmin();
         govTimelock = _govTimelock;
         localTimelock = _localTimelock;
         initialized = true;
         emit Initialized(_govTimelock, _localTimelock);
-    }
-
-    /**
-     * @notice Accept admin role for the localTimelock
-     */
-    function acceptLocalTimelockAdmin() external {
-        if (msg.sender != localTimelock) revert Unauthorized();
-        ITimelock(localTimelock).acceptAdmin();
-    }
-
-    /**
-     * @notice Set localTimelock address
-     * @param newTimelock Address to set as the localTimelock
-     */
-    function setLocalTimelock(address newTimelock) public {
-        if (msg.sender != localTimelock) revert Unauthorized();
-        address oldLocalTimelock = localTimelock;
-        localTimelock = newTimelock;
-        emit NewLocalTimelock(oldLocalTimelock, newTimelock);
-    }
-
-    /**
-     * @notice Set govTimelock address
-     * @param newTimelock Address to set as the govTimelock
-     */
-    function setGovTimelock(address newTimelock) public {
-        if (msg.sender != localTimelock) revert Unauthorized();
-        address oldGovTimelock = govTimelock;
-        govTimelock = newTimelock;
-        emit NewGovTimelock(oldGovTimelock, newTimelock);
     }
 
     /**
