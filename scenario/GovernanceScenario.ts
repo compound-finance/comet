@@ -294,7 +294,6 @@ scenario(
     // Process for upgrading L2 governance contracts (order matters):
     // 1. Update the admin of Comet in Configurator to be the new Timelock
     // 2. Update the admin of CometProxyAdmin to be the new Timelock
-    // Update admin of L2 contracts
     const transferOwnershipCalldata = utils.defaultAbiCoder.encode(
       ['address'],
       [newLocalTimelock.address]
