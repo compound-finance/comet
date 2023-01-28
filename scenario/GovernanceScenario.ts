@@ -327,6 +327,10 @@ scenario(
     expect(await proxyAdmin.owner()).to.eq(newLocalTimelock.address);
     expect(await comet.governor()).to.eq(newLocalTimelock.address);
 
+    // Update aliases now that the new Timelock and BridgeReceiver are official
+    await dm.putAlias('timelock', newLocalTimelock);
+    await dm.putAlias('bridgeReceiver', newBridgeReceiver);
+
     // Now, test that the new L2 governance contracts are working properly via another cross-chain proposal
     const currentTimelockDelay = await newLocalTimelock.delay();
     const newTimelockDelay = currentTimelockDelay.mul(2);
@@ -345,10 +349,6 @@ scenario(
 
     expect(await newLocalTimelock.delay()).to.eq(currentTimelockDelay);
     expect(currentTimelockDelay).to.not.eq(newTimelockDelay);
-
-    // Update aliases now that the new Timelock and BridgeReceiver are official
-    await dm.putAlias('timelock', newLocalTimelock);
-    await dm.putAlias('bridgeReceiver', newBridgeReceiver);
     
     await fastL1ToPolygonGovernanceExecute(l2ProposalData, newBridgeReceiver, world);
 
