@@ -10,6 +10,7 @@ scenario(
     filter: async (ctx) => await isBulkerSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, {network: 'mumbai'}]),
     supplyCaps: {
       $asset0: 3000,
+      $asset2: 1,
     },
     tokenBalances: {
       albert: { $base: '== 0', $asset0: 3000 },
