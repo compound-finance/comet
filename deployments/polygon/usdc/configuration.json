@@ -35,7 +35,7 @@
     },
     "WBTC": {
       "address": "0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6",
-      "priceFeed": "0xc907E116054Ad103354f2D350FD2514433D57F6f",
+      "priceFeed": "0xDE31F8bFBD8c84b5360CFACCa3539B938dd78ae6",
       "decimals": "8",
       "borrowCF": 0.70,
       "liquidateCF": 0.77,
