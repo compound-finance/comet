@@ -3,6 +3,7 @@ import { World, buildScenarioFn } from '../../plugins/scenario';
 import { Migration } from '../../plugins/deployment_manager';
 import { debug } from '../../plugins/deployment_manager/Utils';
 import {
+  NativeTokenConstraint,
   TokenBalanceConstraint,
   ModernConstraint,
   PauseConstraint,
@@ -73,7 +74,7 @@ export class CometContext {
     const fauceteer = await this.getFauceteer();
     if (fauceteer)
       whales.push(fauceteer.address);
-    return whales.concat(WHALES[this.world.base.name] || []);
+    return whales.concat(WHALES[this.world.base.network] || []);
   }
 
   async getProposer(): Promise<SignerWithAddress> {
@@ -329,7 +330,7 @@ async function getAssets(context: CometContext): Promise<{ [symbol: string]: Com
     ...await Promise.all(Array(numAssets).fill(0).map(async (_, i) => {
       return (await comet.getAssetInfo(i)).asset;
     })),
-    COMP.address,
+    ...(COMP ? [COMP.address] : []),
   ];
 
   return Object.fromEntries(await Promise.all(assetAddresses.map(async (address) => {
@@ -371,6 +372,7 @@ async function forkContext(c: CometContext, w: World): Promise<CometContext> {
 
 export const constraints = [
   new FilterConstraint(),
+  new NativeTokenConstraint(),
   new MigrationConstraint(),
   new ProposalConstraint(),
   new VerifyMigrationConstraint(),
