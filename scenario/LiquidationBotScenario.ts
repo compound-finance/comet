@@ -49,7 +49,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       // UNI:
       ' == 150000',
       // LINK
-      ' == 250000'
+      ' == 150000'
     ],
     'weth': [
       // CB_ETH
@@ -191,7 +191,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       // UNI:
       exp(150000, 18),
       // LINK
-      exp(250000, 18)
+      exp(150000, 18)
     ],
     'weth': [
       // CB_ETH
