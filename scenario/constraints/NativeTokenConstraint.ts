@@ -9,7 +9,7 @@ export class NativeTokenConstraint<T extends CometContext, R extends Requirement
       async function (ctx: T): Promise<T> {
         for (const symbol in ctx.assets) {
           const contract = await ctx.world.deploymentManager.contract(symbol);
-          if (contract.deposit) {
+          if (contract['deposit()']) {
             const whales = await ctx.getWhales();
             const amount = exp(200_000, await contract.decimals());
             // can make this more sophisticated as needed...
