@@ -398,6 +398,7 @@ export async function fastL2GovernanceExecute(
   signatures: string[],
   calldatas: string[]
 ) {
+  const startingBlockNumber = await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
   await fastGovernanceExecute(
     governanceDeploymentManager,
     proposer,
@@ -407,7 +408,7 @@ export async function fastL2GovernanceExecute(
     calldatas
   );
 
-  await relayMessage(governanceDeploymentManager, bridgeDeploymentManager);
+  await relayMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);
 }
 
 export async function executeOpenProposalAndRelay(
@@ -415,12 +416,15 @@ export async function executeOpenProposalAndRelay(
   bridgeDeploymentManager: DeploymentManager,
   openProposal: OpenProposal
 ) {
+  const startingBlockNumber = await governanceDeploymentManager.hre.ethers.provider.getBlockNumber();
   await executeOpenProposal(governanceDeploymentManager, openProposal);
 
   if (await isBridgeProposal(governanceDeploymentManager, bridgeDeploymentManager, openProposal)) {
-    await relayMessage(governanceDeploymentManager, bridgeDeploymentManager);
+    await relayMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);
   } else {
-    console.log(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Proposal ${openProposal.id} doesn't target bridge; not relaying`);
+    console.log(
+      `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Proposal ${openProposal.id} doesn't target bridge; not relaying`
+    );
     return;
   }
 }

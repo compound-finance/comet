@@ -4,6 +4,8 @@ import { Requirements } from './Requirements';
 import { Migration, loadMigrations, Actions } from '../../plugins/deployment_manager/Migration';
 import { modifiedPaths, subsets } from '../utils';
 import { DeploymentManager } from '../../plugins/deployment_manager';
+import { impersonateAddress } from '../../plugins/scenario/utils';
+import { exp } from '../../test/helpers';
 
 async function getMigrations<T>(context: CometContext, _requirements: Requirements): Promise<Migration<T>[]> {
   // TODO: make this configurable from cli params/env var?
@@ -13,8 +15,8 @@ async function getMigrations<T>(context: CometContext, _requirements: Requiremen
   return await loadMigrations((await modifiedPaths(pattern)).map(p => '../../' + p));
 }
 
-async function isEnacted<T>(actions: Actions<T>, deploymentManager: DeploymentManager): Promise<boolean> {
-  return actions.enacted && await actions.enacted(deploymentManager);
+async function isEnacted<T>(actions: Actions<T>, dm: DeploymentManager, govDm: DeploymentManager): Promise<boolean> {
+  return actions.enacted && await actions.enacted(dm, govDm);
 }
 
 export class MigrationConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
@@ -31,10 +33,12 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
         }
       }
       solutions.push(async function (ctx: T): Promise<T> {
-        const proposer = await ctx.getProposer();
+        const govDeploymentManager = ctx.world.auxiliaryDeploymentManager || ctx.world.deploymentManager;
+        const compWhale = (await ctx.getCompWhales())[0];
+        const proposer = await impersonateAddress(govDeploymentManager, compWhale, exp(1, 18)); // give them enough ETH to make the proposal
 
         // Make proposer the default signer
-        ctx.world.deploymentManager._signers.unshift(proposer);
+        govDeploymentManager._signers.unshift(proposer);
 
         // Order migrations deterministically and store in the context (i.e. for verification)
         migrationList.sort((a, b) => a.name.localeCompare(b.name));
@@ -42,19 +46,18 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
 
         debug(`${label} Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);
         for (const migration of migrationList) {
-          const artifact = await migration.actions.prepare(ctx.world.deploymentManager);
+          const artifact = await migration.actions.prepare(ctx.world.deploymentManager, govDeploymentManager);
           debug(`${label} Prepared migration ${migration.name}.\n  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
-          // XXX enact will take the 'gov' deployment manager instead of the 'local' one
-          if (await isEnacted(migration.actions, ctx.world.deploymentManager)) {
+          if (await isEnacted(migration.actions, ctx.world.deploymentManager, govDeploymentManager)) {
             debug(`${label} Migration ${migration.name} has already been enacted`);
           } else {
-            await migration.actions.enact(ctx.world.deploymentManager, artifact);
+            await migration.actions.enact(ctx.world.deploymentManager, govDeploymentManager, artifact);
             debug(`${label} Enacted migration ${migration.name}`);
           }
         }
 
         // Remove proposer from signers
-        ctx.world.deploymentManager._signers.shift();
+        govDeploymentManager._signers.shift();
 
         return ctx;
       });
@@ -73,10 +76,10 @@ export class VerifyMigrationConstraint<T extends CometContext, R extends Require
     const label = `[${world.base.name}] {VerifyMigrationConstraint}`;
     return [
       async function (ctx: T): Promise<T> {
+        const govDeploymentManager = ctx.world.auxiliaryDeploymentManager || ctx.world.deploymentManager;
         for (const migration of ctx.migrations) {
-          // XXX does verify get the 'gov' deployment manager as well as the 'local' one?
-          if (migration.actions.verify && !(await isEnacted(migration.actions, ctx.world.deploymentManager))) {
-            await migration.actions.verify(ctx.world.deploymentManager);
+          if (migration.actions.verify && !(await isEnacted(migration.actions, ctx.world.deploymentManager, govDeploymentManager))) {
+            await migration.actions.verify(ctx.world.deploymentManager, govDeploymentManager);
             debug(`${label} Verified migration "${migration.name}"`);
           }
         }
