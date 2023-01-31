@@ -14,6 +14,7 @@ import {
   VerifyMigrationConstraint,
   ProposalConstraint,
   FilterConstraint,
+  PriceConstraint
 } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
@@ -154,6 +155,38 @@ export class CometContext {
     debug('Upgraded comet...');
 
     return this;
+  }
+
+  async changePriceFeeds(newPrices: Record<string, number>) {
+    const comet = await this.getComet();
+    const baseToken = await comet.baseToken();
+
+    const assets = Object.entries(this.assets);
+    const newPriceFeeds: Record<string, string> = {};
+    for (const assetAddress in newPrices) {
+      const assetName = assets.find(([_name, asset]) => BigInt(asset.address) === BigInt(assetAddress))[0];
+      const priceFeed = await this.world.deploymentManager.deploy(
+        `${assetName}:priceFeed`,
+        'test/SimplePriceFeed.sol',
+        [newPrices[assetAddress] * 1e8, 8],
+        true
+      );
+      newPriceFeeds[assetAddress] = priceFeed.address;
+    }
+
+    const gov = await this.world.impersonateAddress(await comet.governor(), 10n ** 18n);
+    const cometAdmin = (await this.getCometAdmin()).connect(gov);
+    const configurator = (await this.getConfigurator()).connect(gov);
+    for (const [assetAddress, priceFeedAddress] of Object.entries(newPriceFeeds)) {
+      if (assetAddress === baseToken) {
+        debug(`Setting base token price feed to ${priceFeedAddress}`);
+        await configurator.setBaseTokenPriceFeed(comet.address, priceFeedAddress);
+      } else {
+        debug(`Setting ${assetAddress} price feed to ${priceFeedAddress}`);
+        await configurator.updateAssetPriceFeed(comet.address, assetAddress, priceFeedAddress);
+      }
+    }
+    await cometAdmin.deployAndUpgradeTo(configurator.address, comet.address);
   }
 
   async bumpSupplyCaps(supplyAmountPerAsset: Record<string, bigint>) {
@@ -382,6 +415,7 @@ export const constraints = [
   new CometBalanceConstraint(),
   new TokenBalanceConstraint(),
   new UtilizationConstraint(),
+  new PriceConstraint()
 ];
 
 export const scenario = buildScenarioFn<CometContext, CometProperties, Requirements>(getInitialContext, getContextProperties, forkContext, constraints);
