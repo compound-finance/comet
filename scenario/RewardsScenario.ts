@@ -2,6 +2,8 @@ import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { exp } from '../test/helpers';
 import { isRewardSupported, matchesDeployment } from './utils';
+import { Contract } from 'ethers';
+import { ERC20__factory } from '../build/types';
 
 function calculateRewardsOwed(
   userBalance: bigint,
@@ -33,7 +35,11 @@ scenario(
     const baseScale = (await comet.baseScale()).toBigInt();
 
     const [rewardTokenAddress, rescaleFactor] = await rewards.rewardConfig(comet.address);
-    const rewardToken = context.getAssetByAddress(rewardTokenAddress);
+    const rewardToken = new Contract(
+      rewardTokenAddress,
+      ERC20__factory.createInterface(),
+      world.deploymentManager.hre.ethers.provider
+    );
     const rewardScale = exp(1, await rewardToken.decimals());
 
     await baseAsset.approve(albert, comet.address);
@@ -92,7 +98,11 @@ scenario(
     const baseScale = (await comet.baseScale()).toBigInt();
 
     const [rewardTokenAddress, rescaleFactor] = await rewards.rewardConfig(comet.address);
-    const rewardToken = context.getAssetByAddress(rewardTokenAddress);
+    const rewardToken = new Contract(
+      rewardTokenAddress,
+      ERC20__factory.createInterface(),
+      world.deploymentManager.hre.ethers.provider
+    );
     const rewardScale = exp(1, await rewardToken.decimals());
 
     await albert.allow(betty, true); // Albert allows Betty to manage his account
