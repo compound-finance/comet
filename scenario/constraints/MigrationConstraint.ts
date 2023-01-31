@@ -4,6 +4,7 @@ import { Requirements } from './Requirements';
 import { Migration, loadMigrations, Actions } from '../../plugins/deployment_manager/Migration';
 import { modifiedPaths, subsets } from '../utils';
 import { DeploymentManager } from '../../plugins/deployment_manager';
+import { impersonateAddress } from '../../plugins/scenario/utils';
 
 async function getMigrations<T>(context: CometContext, _requirements: Requirements): Promise<Migration<T>[]> {
   // TODO: make this configurable from cli params/env var?
@@ -31,10 +32,12 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
         }
       }
       solutions.push(async function (ctx: T): Promise<T> {
-        const proposer = await ctx.getProposer();
+        const governanceDeploymentManager = ctx.world.auxiliaryDeploymentManager || ctx.world.deploymentManager;
+        const compWhale = (await ctx.getCompWhales())[0];
+        const proposer = await impersonateAddress(governanceDeploymentManager, compWhale);
 
         // Make proposer the default signer
-        ctx.world.deploymentManager._signers.unshift(proposer);
+        governanceDeploymentManager._signers.unshift(proposer);
 
         // Order migrations deterministically and store in the context (i.e. for verification)
         migrationList.sort((a, b) => a.name.localeCompare(b.name));
@@ -44,17 +47,16 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
         for (const migration of migrationList) {
           const artifact = await migration.actions.prepare(ctx.world.deploymentManager);
           debug(`${label} Prepared migration ${migration.name}.\n  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
-          // XXX enact will take the 'gov' deployment manager instead of the 'local' one
           if (await isEnacted(migration.actions, ctx.world.deploymentManager)) {
             debug(`${label} Migration ${migration.name} has already been enacted`);
           } else {
-            await migration.actions.enact(ctx.world.deploymentManager, artifact);
+            await migration.actions.enact(ctx.world.deploymentManager, governanceDeploymentManager, artifact);
             debug(`${label} Enacted migration ${migration.name}`);
           }
         }
 
         // Remove proposer from signers
-        ctx.world.deploymentManager._signers.shift();
+        governanceDeploymentManager._signers.shift();
 
         return ctx;
       });
