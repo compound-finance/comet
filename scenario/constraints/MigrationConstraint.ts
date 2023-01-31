@@ -44,11 +44,11 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
         for (const migration of migrationList) {
           const artifact = await migration.actions.prepare(ctx.world.deploymentManager);
           debug(`${label} Prepared migration ${migration.name}.\n  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
-          // XXX enact will take the 'gov' deployment manager instead of the 'local' one
           if (await isEnacted(migration.actions, ctx.world.deploymentManager)) {
             debug(`${label} Migration ${migration.name} has already been enacted`);
           } else {
-            await migration.actions.enact(ctx.world.deploymentManager, artifact);
+            const governanceDeploymentManager = ctx.world.auxiliaryDeploymentManager || ctx.world.deploymentManager;
+            await migration.actions.enact(governanceDeploymentManager, artifact);
             debug(`${label} Enacted migration ${migration.name}`);
           }
         }
