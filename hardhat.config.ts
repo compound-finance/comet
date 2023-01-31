@@ -148,7 +148,9 @@ const config: HardhatUserConfig = {
       gas: 12000000,
       gasPrice: 'auto',
       blockGasLimit: 12000000,
-      accounts: ETH_PK ? [...deriveAccounts(ETH_PK)].map(privateKey => ({ privateKey, balance: (10n ** 36n).toString() })) : { mnemonic: MNEMONIC },
+      accounts: ETH_PK ?
+        [...deriveAccounts(ETH_PK)].map(privateKey => ({ privateKey, balance: (10n ** 36n).toString() }))
+        : { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
       // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,
     },

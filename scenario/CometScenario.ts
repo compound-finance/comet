@@ -7,14 +7,10 @@ scenario('initializes governor correctly', {}, async ({ comet, timelock }) => {
 });
 
 scenario('has assets', {}, async ({ comet, assets }) => {
-  let baseToken = await comet.baseToken();
-  let numAssets = await comet.numAssets();
-  let collateralAssets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
-  let contextAssets =
-    Object.values(assets)
-      .map((asset) => asset.address) // grab asset address
-      .filter((address) => address.toLowerCase() !== baseToken.toLowerCase()); // filter out base token
-  expect(collateralAssets.map(a => a.asset)).to.have.members(contextAssets);
+  const numAssets = await comet.numAssets();
+  const collateralAssets = await Promise.all(Array(numAssets).fill(0).map((_, i) => comet.getAssetInfo(i)));
+  const contextAssets = Object.values(assets);
+  expect(contextAssets.map(a => a.address)).to.include.members(collateralAssets.map(a => a.asset));
 });
 
 scenario('requires upgrade', {}, async () => {

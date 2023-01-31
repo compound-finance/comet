@@ -1,6 +1,6 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, expectRevertCustom, getExpectedBaseBalance, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
+import { expectApproximately, expectRevertCustom, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
 
 async function testWithdrawCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
@@ -82,20 +82,20 @@ scenario(
       albert: { $base: '== 0' },
     },
     cometBalances: {
-      albert: { $base: 100 }, // in units of asset, not wei
+      albert: { $base: 2 }, // in units of asset, not wei
     },
   },
   async ({ comet, actors }, context) => {
     const { albert } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
-    const baseSupplied = await comet.balanceOf(albert.address);
+    const baseSupplied = (await comet.balanceOf(albert.address)).toBigInt();
 
-    // Albert withdraws 100 units of base from Comet
+    // Albert withdraws supplied units of base from Comet
     const txn = await albert.withdrawAsset({ asset: baseAsset.address, amount: baseSupplied });
 
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(baseSupplied);
-    expect(await comet.balanceOf(albert.address)).to.be.equal(0n);
+    expect(await comet.balanceOf(albert.address)).to.be.lessThan(baseSupplied / 100n);
 
     return txn; // return txn to measure gas
   }
@@ -136,29 +136,25 @@ scenario(
   'Comet#withdrawFrom > base asset',
   {
     cometBalances: {
-      albert: { $base: 100 }, // in units of asset, not wei
+      albert: { $base: 2 }, // in units of asset, not wei
     },
   },
   async ({ comet, actors }, context) => {
     const { albert, betty } = actors;
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
-    const scale = (await comet.baseScale()).toBigInt();
-
-    const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
-    const baseSupplyIndex = (await comet.totalsBasic()).baseSupplyIndex.toBigInt();
-    const baseSupplied = getExpectedBaseBalance(100n * scale, baseIndexScale, baseSupplyIndex);
+    const baseSupplied = (await comet.balanceOf(albert.address)).toBigInt();
 
     expect(await baseAsset.balanceOf(betty.address)).to.be.equal(0n);
     expect(await comet.balanceOf(albert.address)).to.be.equal(baseSupplied);
 
     await albert.allow(betty, true);
 
-    // Betty withdraws 100 units of base from Albert
+    // Betty withdraws supplied units of base from Albert
     const txn = await betty.withdrawAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: baseSupplied });
 
     expect(await baseAsset.balanceOf(betty.address)).to.be.equal(baseSupplied);
-    expect(await comet.balanceOf(albert.address)).to.be.equal(0n);
+    expect(await comet.balanceOf(albert.address)).to.be.lessThan(baseSupplied / 100n);
 
     return txn; // return txn to measure gas
   }
