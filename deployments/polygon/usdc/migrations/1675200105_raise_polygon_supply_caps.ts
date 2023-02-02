@@ -8,7 +8,7 @@ export default migration('1675200105_raise_polygon_supply_caps', {
     return {};
   },
 
-  enact: async (deploymentManager: DeploymentManager) => {
+  enact: async (deploymentManager: DeploymentManager, governanceDeploymentManager: DeploymentManager) => {
     const trace = deploymentManager.tracer();
     const ethers = deploymentManager.hre.ethers;
     const { utils } = ethers;
@@ -16,15 +16,17 @@ export default migration('1675200105_raise_polygon_supply_caps', {
     const {
       fxRoot,
       governor
-    } = await deploymentManager.getContracts();
+    } = await governanceDeploymentManager.getContracts();
 
-    const bridgeReceiver = await deploymentManager.fromDep('bridgeReceiver', 'polygon', 'usdc');
-    const comet = await deploymentManager.fromDep('comet', 'polygon', 'usdc');
-    const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'polygon', 'usdc');
-    const configurator = await deploymentManager.fromDep('configurator', 'polygon', 'usdc');
-    const WBTC = await deploymentManager.fromDep('WBTC', 'polygon', 'usdc');
-    const WETH = await deploymentManager.fromDep('WETH', 'polygon', 'usdc');
-    const WMATIC = await deploymentManager.fromDep('WMATIC', 'polygon', 'usdc');
+    const {
+      bridgeReceiver,
+      comet,
+      cometAdmin,
+      configurator,
+      WBTC,
+      WETH,
+      WMATIC
+    } = await deploymentManager.getContracts();
 
     const wbtcCalldata = utils.defaultAbiCoder.encode(
       ['address', 'address', 'uint128'],
@@ -47,9 +49,9 @@ export default migration('1675200105_raise_polygon_supply_caps', {
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
         [
-          bridgeReceiver.address,
-          bridgeReceiver.address,
-          bridgeReceiver.address,
+          configurator.address,
+          configurator.address,
+          configurator.address,
           cometAdmin.address
         ],
         [0, 0, 0, 0],
@@ -77,7 +79,7 @@ export default migration('1675200105_raise_polygon_supply_caps', {
     ];
 
     const description = ""; // XXX add description
-    const txn = await deploymentManager.retry(
+    const txn = await governanceDeploymentManager.retry(
       async () => trace((await governor.propose(...await proposal(mainnetActions, description))))
     );
 
