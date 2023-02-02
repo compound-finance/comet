@@ -502,6 +502,9 @@ scenario(
 scenario(
   `LiquidationBot > reverts when price slippage is too high`,
   {
+    upgrade: {
+      targetReserves: exp(20_000, 18)
+    },
     filter: async (ctx) => ctx.world.base.network === 'mainnet',
     tokenBalances: {
       $comet: { $base: 10000 },
