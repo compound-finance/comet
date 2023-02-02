@@ -11,9 +11,9 @@ export async function isBridgeProposal(
     case 'mumbai':
     case 'polygon': {
       const governor = await governanceDeploymentManager.getContractOrThrow('governor');
-      const fxChild = await bridgeDeploymentManager.getContractOrThrow('fxChild');
+      const fxRoot = await governanceDeploymentManager.getContractOrThrow('fxRoot');
       const { targets } = await governor.getActions(openProposal.id);
-      return targets.includes(fxChild.address);
+      return targets.includes(fxRoot.address);
     }
     default: {
       const tag = `[${bridgeNetwork} -> ${governanceDeploymentManager.network}]`;
