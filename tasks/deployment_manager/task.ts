@@ -52,7 +52,7 @@ async function runMigration<T>(
 
   if (enact) {
     console.log('Running enactment step with artifact...', artifact);
-    await migration.actions.enact(governanceDeploymentManager, artifact);
+    await migration.actions.enact(deploymentManager, governanceDeploymentManager, artifact);
     console.log('Enactment complete');
   }
 }
