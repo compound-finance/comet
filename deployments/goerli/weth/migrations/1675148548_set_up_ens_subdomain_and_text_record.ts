@@ -75,6 +75,10 @@ export default migration('1675148548_set_up_ens_subdomain_and_text_record', {
     trace(`Created proposal ${proposalId}.`);
   },
 
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
+  },
+
   async verify(deploymentManager: DeploymentManager) {
     const ethers = deploymentManager.hre.ethers;
 
