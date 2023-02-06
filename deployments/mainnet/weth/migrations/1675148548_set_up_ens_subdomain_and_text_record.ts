@@ -63,8 +63,7 @@ export default migration('1675148548_set_up_ens_subdomain_and_text_record', {
         )
       }
     ];
-    const description =
-      '# Set up an ENS subdomain and text record for official Comet deployments\n';
+    const description = "# Initialize ENS subdomain for official Comet deployments\n\n## Explanation\n\nWith two active Compound III markets (cUSDCv3 and cWETHv3) now on Ethereum mainnet, and with the first multi-chain deployment(s) right around the corner, now is a good time to initialize the ENS subdomain referenced by the Compound III license. Further explanation can be found on [this forum post](https://www.comp.xyz/t/ens-text-records-for-community-sanctioned-deployments).\n\nThe format for TXT records on this subdomain can be augmented over time. This proposal includes only the bare minimum required to bootstrap an official on-chain list of Compound III markets. Future deployment proposals should include an action to update this ENS record, to reflect adoption by governance.\n\n## Proposal\n\nThe proposal itself is to be made from [this pull request](https://github.com/compound-finance/comet/pull/671). \n\nThe first action establishes the `v3-additional-grants.compound-community-licenses.eth` ENS subdomain with the Timelock as the owner.\n\nThe second action creates a TXT record on the subdomain containing the cUSDCv3 and cWETHv3 market addresses.\n";
     const txn = await deploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(actions, description))))
     );
