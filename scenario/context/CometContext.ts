@@ -67,7 +67,8 @@ export class CometContext {
   }
 
   async getCompWhales(): Promise<string[]> {
-    return COMP_WHALES[this.world.base.network === 'mainnet' ? 'mainnet' : 'testnet'];
+    const useMainnetComp = ['mainnet', 'polygon'].includes(this.world.base.network);
+    return COMP_WHALES[useMainnetComp ? 'mainnet' : 'testnet'];
   }
 
   async getWhales(): Promise<string[]> {

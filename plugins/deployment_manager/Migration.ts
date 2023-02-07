@@ -3,7 +3,7 @@ import { FileSpec } from './Cache';
 
 export interface Actions<T> {
   prepare: (dm: DeploymentManager) => Promise<T>;
-  enact: (dm: DeploymentManager, t: T) => Promise<void>;
+  enact: (dm: DeploymentManager, governanceDm: DeploymentManager, t: T) => Promise<void>;
   enacted?: (dm: DeploymentManager) => Promise<boolean>;
   verify?: (dm: DeploymentManager) => Promise<void>;
 }
