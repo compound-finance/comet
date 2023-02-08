@@ -115,11 +115,10 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   );
 
   // Deploy Bulker
-  const bulker = await deploymentManager.deploy(
-    'bulker',
-    'bulkers/BaseBulker.sol',
-    [localTimelock.address, WETH.address]
-  );
+  const bulker = await deploymentManager.deploy('bulker', 'bulkers/BaseBulker.sol', [
+    localTimelock.address,
+    WMATIC.address
+  ]);
 
   // Deploy fauceteer
   const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
