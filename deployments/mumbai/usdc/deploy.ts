@@ -4,10 +4,10 @@ import { DeploySpec, deployComet, exp, sameAddress, wait } from '../../../src/de
 const clone = {
   usdcImpl: '0xa2327a938Febf5FEC13baCFb16Ae10EcBc4cbDCF',
   usdcProxy: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-  weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+  weth: '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619',
   wbtc: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
   wmatic: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
-  dai: '0x6b175474e89094c44da98b954eedeac495271d0f',
+  dai: '0x6b175474e89094c44da98b954eedeac495271d0f'
 };
 
 const FX_CHILD = "0xCf73231F28B7331BBe3124B907840A94851f9f11";
@@ -88,7 +88,12 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   );
 
   const WBTC = await deploymentManager.clone('WBTC', clone.wbtc, []);
-  const WETH = await deploymentManager.clone('WETH', clone.weth, []);
+  const WETH = await deploymentManager.clone(
+    'WETH',
+    clone.weth,
+    [signer.address],
+    'polygon' // NOTE: cloned from Polygon, not mainnet
+  );
   const WMATIC = await deploymentManager.clone(
     'WMATIC',
     clone.wmatic,
@@ -131,12 +136,11 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
 async function mintTokens(deploymentManager: DeploymentManager) {
   const trace = deploymentManager.tracer();
   const signer = await deploymentManager.getSigner();
-  const contracts = await deploymentManager.contracts();
-  const fauceteer = contracts.get('fauceteer');
+  const fauceteer = await deploymentManager.getContractOrThrow('fauceteer');
 
   trace(`Attempting to mint as ${signer.address}...`);
 
-  const WMATIC = contracts.get('WMATIC');
+  const WMATIC = await deploymentManager.getContractOrThrow('WMATIC');
   await deploymentManager.idempotent(
     async () => (await WMATIC.balanceOf(signer.address)).lt(exp(0.01, 18)),
     async () => {
@@ -146,19 +150,24 @@ async function mintTokens(deploymentManager: DeploymentManager) {
     }
   );
 
-  const WETH = contracts.get('WETH');
+  const WETH = await deploymentManager.getContractOrThrow('WETH');
   await deploymentManager.idempotent(
-    async () => (await WETH.balanceOf(signer.address)).lt(exp(0.01, 18)),
+    async () => (await WETH.balanceOf(fauceteer.address)).eq(0),
     async () => {
-      trace(`Minting 0.01 WETH for signer (this is a precious resource!)`);
-      trace(await wait(WETH.connect(signer).deposit({ value: exp(0.01, 18) })));
-      trace(`WETH.balanceOf(${signer.address}): ${await WETH.balanceOf(signer.address)}`);
+      trace(`Minting 10_000 WETH to fauceteer`);
+      const amount = ethers.utils.defaultAbiCoder.encode(
+        ['uint256'],
+        [exp(10_000, await WETH.decimals())]
+      );
+      trace(await wait(WETH.connect(signer).deposit(fauceteer.address, amount)));
+      trace(`WETH.balanceOf(${fauceteer.address}): ${await WETH.balanceOf(fauceteer.address)}`);
     }
   );
 
   // If we haven't spidered new contracts (which we could before minting, but its slow),
   //  then the proxy contract won't have the impl functions yet, so just do it explicitly
-  const usdcProxy = contracts.get('USDC'), usdcImpl = contracts.get('USDC:implementation');
+  const usdcProxy = await deploymentManager.getContractOrThrow('USDC');
+  const usdcImpl = await deploymentManager.getContractOrThrow('USDC:implementation');
   const USDC = usdcImpl.attach(usdcProxy.address);
   await deploymentManager.idempotent(
     async () => (await USDC.balanceOf(fauceteer.address)).eq(0),
@@ -171,7 +180,7 @@ async function mintTokens(deploymentManager: DeploymentManager) {
     }
   );
 
-  const WBTC = contracts.get('WBTC');
+  const WBTC = await deploymentManager.getContractOrThrow('WBTC');
   await deploymentManager.idempotent(
     async () => (await WBTC.balanceOf(fauceteer.address)).eq(0),
     async () => {
@@ -182,7 +191,7 @@ async function mintTokens(deploymentManager: DeploymentManager) {
     }
   );
 
-  const DAI = contracts.get('DAI');
+  const DAI = await deploymentManager.getContractOrThrow('DAI');
   await deploymentManager.idempotent(
     async () => (await DAI.balanceOf(fauceteer.address)).eq(0),
     async () => {
