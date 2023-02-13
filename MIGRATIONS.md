@@ -44,8 +44,19 @@ yarn hardhat migrate --network kovan --deployment usdc --prepare --simulate 1644
 
 ## Running a Migration in GitHub
 
-The preferred way to run a migration is in GitHub, via manual workflow dispatch. The goal of this approach is that it's clear to everyone the exact code that ran, which affords less opportunity for "I'm looking at <CODE X>, but what was deployed was actually <CODE Y>." Look at "Prepare Migration" and "Enact Migration" dispatches in GitHub Actions in this repo (or any fork).
+The preferred way to run a migration is in GitHub, via manual workflow dispatch. The goal of this approach is that it's clear to everyone the exact code that ran, which affords less opportunity for "I'm looking at \<CODE X\>, but what was deployed was actually \<CODE Y\>." Look at "Prepare Migration" and "Enact Migration" dispatches in GitHub Actions in this repo (or any fork).
 
 ## Migration Artifacts
 
 After preparation, a migration stores some artifacts under `deployments/kovan/usdc/artifacts/164443237_my_migration.json`. These will be loaded and can be referenced in the enact step of that migration.
+
+## Process for Managing Migrations
+
+Once a migration has been created, the next step is to create a PR on GitHub and follow the process to get it reviewed, enacted, and merged:
+
+ 1. Open up a PR with the migration script.
+ 2. Get it reviewed and approved by others.
+ 3. Prepare/enact the migration in GitHub via [manual workflow dispatch](#running-a-migration-in-github).
+ 4. If the migration creates a governance proposal on-chain, then **wait** until the proposal either executes or fails before merging the PR. Otherwise, just merge the PR.
+
+> Note: If the governance proposal fails, make sure that no changes to roots are included in the PR when merging.
