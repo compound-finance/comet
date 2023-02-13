@@ -3,6 +3,9 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
 import { expect } from 'chai';
 
+const ERC20PredicateAddress = '0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf';
+const RootChainManagerAddress = '0xA0c68C638235ee32657e8f720a23ceC1bFc77C77';
+
 export default migration('1675200105_raise_polygon_supply_caps', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
@@ -16,7 +19,7 @@ export default migration('1675200105_raise_polygon_supply_caps', {
     const ethers = deploymentManager.hre.ethers;
     const { utils } = ethers;
 
-    const { fxRoot, governor } = await governanceDeploymentManager.getContracts();
+    const { fxRoot, governor, USDC } = await governanceDeploymentManager.getContracts();
 
     const {
       bridgeReceiver,
@@ -37,7 +40,6 @@ export default migration('1675200105_raise_polygon_supply_caps', {
       ['address', 'address'],
       [configurator.address, comet.address]
     );
-
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
@@ -51,11 +53,32 @@ export default migration('1675200105_raise_polygon_supply_caps', {
       ]
     );
 
+    const RootChainManager = await deploymentManager.existing(
+      'RootChainManager',
+      RootChainManagerAddress
+    );
+    const usdcAmountToBridge = exp(100_000, 6);
+    const depositData = utils.defaultAbiCoder.encode(['uint256'], [usdcAmountToBridge]);
+    const depositForCalldata = utils.defaultAbiCoder.encode(['address','address','bytes'], [comet.address, USDC.address, depositData]);
+
     const mainnetActions = [
+      // 1. Set Comet configuration and deployAndUpgradeTo new Comet on Polygon.
       {
         contract: fxRoot,
         signature: 'sendMessageToChild(address,bytes)',
         args: [bridgeReceiver.address, l2ProposalData]
+      },
+      // 2. Approve Polygon's ERC20Predicate to take Timelock's USDC (for bridging)
+      {
+        contract: USDC,
+        signature: 'approve(address,uint256)',
+        args: [ERC20PredicateAddress, usdcAmountToBridge]
+      },
+      // 3. Bridge USDC from mainnet to Polygon Comet using RootChainManager
+      {
+        target: RootChainManager.address,
+        signature: 'depositFor(address,address,bytes)',
+        calldata: depositForCalldata
       }
     ];
 
@@ -77,8 +100,12 @@ export default migration('1675200105_raise_polygon_supply_caps', {
     const wethInfo = await comet.getAssetInfoByAddress(WETH.address);
     const wmaticInfo = await comet.getAssetInfoByAddress(WMATIC.address);
 
+    // 1.
     expect(await wbtcInfo.supplyCap).to.be.eq(exp(10_000, 8));
     expect(await wethInfo.supplyCap).to.be.eq(exp(10_000, 18));
     expect(await wmaticInfo.supplyCap).to.be.eq(exp(10_000, 18));
+
+    // 2. & 3.
+    // XXX expect Comet to have some USDC
   }
 });
