@@ -49,3 +49,14 @@ The preferred way to run a migration is in GitHub, via manual workflow dispatch.
 ## Migration Artifacts
 
 After preparation, a migration stores some artifacts under `deployments/kovan/usdc/artifacts/164443237_my_migration.json`. These will be loaded and can be referenced in the enact step of that migration.
+
+## Process for Managing Migrations
+
+Once a migration has been created, the next step is to create a PR on GitHub and follow the process to get it reviewed, enacted, and merged:
+
+ 1. Open up a PR with the migration script.
+ 2. Get it reviewed and approved by others.
+ 3. Prepare/enact the migration in GitHub via (manual workflow dispatch)[#running-a-migration-in-github].
+ 4. If the migration creates a governance proposal on-chain, then **wait** until the proposal either executes or fails before merging the PR. Otherwise, just merge the PR.
+
+> Note: If the governance proposal fails, make sure that no changes to roots are included in the PR when merging.
