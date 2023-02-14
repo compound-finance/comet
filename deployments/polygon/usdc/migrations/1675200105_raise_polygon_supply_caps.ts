@@ -59,8 +59,8 @@ export default migration('1675200105_raise_polygon_supply_caps', {
       'RootChainManager',
       RootChainManagerAddress
     );
-    const USDCAmountToBridge = exp(100_000, 6);
-    const COMPAmountToBridge = exp(10_000, 18);
+    const USDCAmountToBridge = exp(400_000, 6); // roughly half of what's currently in the Timelock
+    const COMPAmountToBridge = exp(25_000, 18);
     const depositUSDCData = utils.defaultAbiCoder.encode(['uint256'], [USDCAmountToBridge]);
     const depositForUSDCCalldata = utils.defaultAbiCoder.encode(
       ['address', 'address', 'bytes'],
@@ -134,9 +134,9 @@ export default migration('1675200105_raise_polygon_supply_caps', {
     expect(await wmaticInfo.supplyCap).to.be.eq(exp(10_000, 18));
 
     // 2. & 3.
-    expect(await comet.getReserves()).to.be.equal(exp(100_000, 6));
+    expect(await comet.getReserves()).to.be.equal(exp(400_000, 6));
 
     // 4. & 5.
-    expect(await polygonCOMP.balanceOf(rewards.address)).to.be.equal(exp(10_000, 18));
+    expect(await polygonCOMP.balanceOf(rewards.address)).to.be.equal(exp(25_000, 18));
   }
 });
