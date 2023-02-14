@@ -106,6 +106,6 @@ export default migration('1675200105_raise_polygon_supply_caps', {
     expect(await wmaticInfo.supplyCap).to.be.eq(exp(10_000, 18));
 
     // 2. & 3.
-    // XXX expect Comet to have some USDC
+    expect(await comet.getReserves()).to.be.equal(exp(100_000, 6));
   }
 });
