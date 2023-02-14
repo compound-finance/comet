@@ -1,3 +1,4 @@
+import { Contract } from 'ethers';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
@@ -19,13 +20,14 @@ export default migration('1675200105_raise_polygon_supply_caps', {
     const ethers = deploymentManager.hre.ethers;
     const { utils } = ethers;
 
-    const { fxRoot, governor, USDC } = await governanceDeploymentManager.getContracts();
+    const { fxRoot, governor, USDC, COMP } = await governanceDeploymentManager.getContracts();
 
     const {
       bridgeReceiver,
       comet,
       cometAdmin,
       configurator,
+      rewards,
       WBTC,
       WETH,
       WMATIC
@@ -57,9 +59,18 @@ export default migration('1675200105_raise_polygon_supply_caps', {
       'RootChainManager',
       RootChainManagerAddress
     );
-    const usdcAmountToBridge = exp(100_000, 6);
-    const depositData = utils.defaultAbiCoder.encode(['uint256'], [usdcAmountToBridge]);
-    const depositForCalldata = utils.defaultAbiCoder.encode(['address','address','bytes'], [comet.address, USDC.address, depositData]);
+    const USDCAmountToBridge = exp(100_000, 6);
+    const COMPAmountToBridge = exp(10_000, 18);
+    const depositUSDCData = utils.defaultAbiCoder.encode(['uint256'], [USDCAmountToBridge]);
+    const depositForUSDCCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'address', 'bytes'],
+      [comet.address, USDC.address, depositUSDCData]
+    );
+    const depositCOMPData = utils.defaultAbiCoder.encode(['uint256'], [COMPAmountToBridge]);
+    const depositForCOMPCCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'address', 'bytes'],
+      [rewards.address, COMP.address, depositCOMPData]
+    );
 
     const mainnetActions = [
       // 1. Set Comet configuration and deployAndUpgradeTo new Comet on Polygon.
@@ -72,13 +83,25 @@ export default migration('1675200105_raise_polygon_supply_caps', {
       {
         contract: USDC,
         signature: 'approve(address,uint256)',
-        args: [ERC20PredicateAddress, usdcAmountToBridge]
+        args: [ERC20PredicateAddress, USDCAmountToBridge]
       },
       // 3. Bridge USDC from mainnet to Polygon Comet using RootChainManager
       {
         target: RootChainManager.address,
         signature: 'depositFor(address,address,bytes)',
-        calldata: depositForCalldata
+        calldata: depositForUSDCCalldata
+      },
+      // 4. Approve Polygon's ERC20Predicate to take Timelock's COMP (for bridging)
+      {
+        contract: COMP,
+        signature: 'approve(address,uint256)',
+        args: [ERC20PredicateAddress, COMPAmountToBridge]
+      },
+      // 5. Bridge COMP from mainnet to Polygon CometRewards using RootChainManager
+      {
+        target: RootChainManager.address,
+        signature: 'depositFor(address,address,bytes)',
+        calldata: depositForCOMPCCalldata
       }
     ];
 
@@ -94,11 +117,16 @@ export default migration('1675200105_raise_polygon_supply_caps', {
   },
 
   async verify(deploymentManager: DeploymentManager) {
-    const { comet, WBTC, WETH, WMATIC } = await deploymentManager.getContracts();
+    const { comet, rewards, WBTC, WETH, WMATIC } = await deploymentManager.getContracts();
 
     const wbtcInfo = await comet.getAssetInfoByAddress(WBTC.address);
     const wethInfo = await comet.getAssetInfoByAddress(WETH.address);
     const wmaticInfo = await comet.getAssetInfoByAddress(WMATIC.address);
+    const polygonCOMP = new Contract(
+      '0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c',
+      ['function balanceOf(address account) external view returns (uint256)'],
+      deploymentManager.hre.ethers.provider
+    );
 
     // 1.
     expect(await wbtcInfo.supplyCap).to.be.eq(exp(10_000, 8));
@@ -107,5 +135,8 @@ export default migration('1675200105_raise_polygon_supply_caps', {
 
     // 2. & 3.
     expect(await comet.getReserves()).to.be.equal(exp(100_000, 6));
+
+    // 4. & 5.
+    expect(await polygonCOMP.balanceOf(rewards.address)).to.be.equal(exp(10_000, 18));
   }
 });
