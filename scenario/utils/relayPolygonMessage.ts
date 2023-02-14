@@ -1,7 +1,7 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
-import { Contract, Event, ethers, utils } from 'ethers';
+import { Contract, Event, ethers } from 'ethers';
 
 type BridgeERC20Data = {
   syncData: string;
