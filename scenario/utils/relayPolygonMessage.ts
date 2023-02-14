@@ -38,7 +38,7 @@ export default async function relayPolygonMessage(
   startingBlockNumber: number
 ) {
   const POLYGON_RECEIVER_ADDRESSS = '0x0000000000000000000000000000000000001001';
-  const CHILD_CHAIN_MANAGER_PROXY_ADDRESS =
+  const childChainManagerProxyAddress =
     bridgeDeploymentManager.network === 'polygon'
       ? '0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa'
       : '0xb5505a6d998549090530911180f38aC5130101c6';
@@ -47,7 +47,7 @@ export default async function relayPolygonMessage(
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
   const fxChild = await bridgeDeploymentManager.getContractOrThrow('fxChild');
   const childChainManager = new Contract(
-    CHILD_CHAIN_MANAGER_PROXY_ADDRESS,
+    childChainManagerProxyAddress,
     [
       'function rootToChildToken(address rootToken) public view returns (address)',
       'function onStateReceive(uint256, bytes calldata data) external',
@@ -57,15 +57,13 @@ export default async function relayPolygonMessage(
   );
 
   // grab all events on the StateSender contract since the `startingBlockNumber`
-  const stateSyncedEvents: Event[] = [];
   const filter = stateSender.filters.StateSynced();
-  const logs = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+  const stateSyncedEvents: Event[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
     address: stateSender.address,
     topics: filter.topics!
   });
-  stateSyncedEvents.push(...logs);
 
   for (let stateSyncedEvent of stateSyncedEvents) {
     const {
