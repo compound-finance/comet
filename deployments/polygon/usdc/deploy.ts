@@ -1,7 +1,8 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
 import { DeploySpec, deployComet } from '../../../src/deploy';
 
-const secondsPerDay = 24 * 60 * 60;
+const HOUR = 60 * 60;
+const DAY = 24 * HOUR;
 
 const MAINNET_TIMELOCK = '0x6d903f6003cca6255d85cca4d3b5e5146dc33925';
 
@@ -30,10 +31,10 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'vendor/Timelock.sol',
     [
       bridgeReceiver.address, // admin
-      2 * secondsPerDay,      // delay
-      14 * secondsPerDay,     // grace period
-      2 * secondsPerDay,      // minimum delay
-      30 * secondsPerDay      // maxiumum delay
+      1 * DAY,                // delay
+      14 * DAY,               // grace period
+      12 * HOUR,              // minimum delay
+      30 * DAY                // maxiumum delay
     ]
   );
 
