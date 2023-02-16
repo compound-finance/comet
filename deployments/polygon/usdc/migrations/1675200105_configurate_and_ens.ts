@@ -191,9 +191,10 @@ export default migration('1675200105_configurate_and_ens', {
     const wbtcInfo = await comet.getAssetInfoByAddress(WBTC.address);
     const wethInfo = await comet.getAssetInfoByAddress(WETH.address);
     const wmaticInfo = await comet.getAssetInfoByAddress(WMATIC.address);
-    expect(await wbtcInfo.supplyCap).to.be.eq(exp(10_000, 8));
-    expect(await wethInfo.supplyCap).to.be.eq(exp(10_000, 18));
-    expect(await wmaticInfo.supplyCap).to.be.eq(exp(10_000, 18));
+    expect(wbtcInfo.supplyCap).to.be.eq(exp(10_000, 8));
+    expect(wethInfo.supplyCap).to.be.eq(exp(10_000, 18));
+    expect(wmaticInfo.supplyCap).to.be.eq(exp(10_000, 18));
+    expect(await comet.pauseGuardian()).to.be.eq('0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5');
 
     // 2. & 3.
     expect(await comet.getReserves()).to.be.equal(exp(400_000, 6));
