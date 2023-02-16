@@ -314,7 +314,7 @@ async function fastL1ToPolygonGovernanceExecute(
   }
 
   const compWhale = world.base.network === 'polygon' ? COMP_WHALES.mainnet[0] : COMP_WHALES.testnet[0];
-  const proposer = await impersonateAddress(governanceDeploymentManager, compWhale);
+  const proposer = await impersonateAddress(governanceDeploymentManager, compWhale, exp(1, 18)); // give them enough ETH to make the proposal
 
   const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
     ['address', 'bytes'],
