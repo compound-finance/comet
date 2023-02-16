@@ -34,7 +34,7 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
       solutions.push(async function (ctx: T): Promise<T> {
         const govDeploymentManager = ctx.world.auxiliaryDeploymentManager || ctx.world.deploymentManager;
         const compWhale = (await ctx.getCompWhales())[0];
-        const proposer = await impersonateAddress(govDeploymentManager, compWhale);
+        const proposer = await impersonateAddress(govDeploymentManager, compWhale, 1n ** 18n); // give them enough ETH to make the proposal
 
         // Make proposer the default signer
         govDeploymentManager._signers.unshift(proposer);
