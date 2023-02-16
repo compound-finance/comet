@@ -2,10 +2,10 @@ import { DeploymentManager } from './DeploymentManager';
 import { FileSpec } from './Cache';
 
 export interface Actions<T> {
-  prepare: (dm: DeploymentManager) => Promise<T>;
-  enact: (dm: DeploymentManager, governanceDm: DeploymentManager, t: T) => Promise<void>;
-  enacted?: (dm: DeploymentManager) => Promise<boolean>;
-  verify?: (dm: DeploymentManager) => Promise<void>;
+  prepare: (dm: DeploymentManager, govDm: DeploymentManager) => Promise<T>;
+  enact: (dm: DeploymentManager, govDm: DeploymentManager, t: T) => Promise<void>;
+  enacted?: (dm: DeploymentManager, govDm: DeploymentManager) => Promise<boolean>;
+  verify?: (dm: DeploymentManager, govDm: DeploymentManager) => Promise<void>;
 }
 
 export class Migration<T> {
