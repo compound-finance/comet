@@ -6,7 +6,7 @@ import { BaseBridgeReceiver, FaucetToken } from '../build/types';
 import { calldata } from '../src/deploy';
 import { COMP_WHALES } from '../src/deploy';
 import { impersonateAddress } from '../plugins/scenario/utils';
-import { isBridgedDeployment, fastL2GovernanceExecute } from './utils';
+import { isBridgedDeployment, fastL2GovernanceExecute, matchesDeployment } from './utils';
 import { World } from '../plugins/scenario';
 
 scenario('upgrade Comet implementation and initialize', {filter: async (ctx) => !isBridgedDeployment(ctx)}, async ({ comet, configurator, proxyAdmin }, context) => {
@@ -159,7 +159,7 @@ scenario('add new asset',
 scenario(
   'execute Polygon governance proposal',
   {
-    filter: async ctx => isBridgedDeployment(ctx)
+    filter: async ctx => matchesDeployment(ctx, [{network: 'polygon'}, {network: 'mumbai'}])
   },
   async ({ comet, timelock, bridgeReceiver }, _context, world) => {
     const currentTimelockDelay = await timelock.delay();
@@ -195,7 +195,7 @@ scenario(
 scenario(
   'upgrade Polygon governance contracts and ensure they work properly',
   {
-    filter: async ctx => isBridgedDeployment(ctx)
+    filter: async ctx => matchesDeployment(ctx, [{network: 'polygon'}, {network: 'mumbai'}])
   },
   async ({ comet, configurator, proxyAdmin, timelock: oldLocalTimelock, bridgeReceiver: oldBridgeReceiver }, _context, world) => {
     const dm = world.deploymentManager;
