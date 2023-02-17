@@ -219,6 +219,15 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
+  const baseTokenBalances = {
+    'mainnet': {
+      'usdc': 2250000,
+      'weth': 20
+    },
+    'polygon': {
+      'usdc': 3000000
+    }
+  };
   const assetAmounts = {
     'mainnet': {
       'usdc': [
@@ -267,7 +276,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       ],
       'weth': [
         // CB_ETH
-        exp(1000, 18),
+        exp(750, 18),
         // WST_ETH
         exp(2000, 18)
       ]
@@ -290,10 +299,14 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{deployment: 'mainnet'}, {network: 'polygon'}]),
-      tokenBalances: {
-        $comet: { $base: 3_000_000 },
-      },
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
+      tokenBalances: async (ctx) => (
+        {
+          $comet: {
+            $base: baseTokenBalances[ctx.world.base.network]?.[ctx.world.base.deployment] || 0,
+          },
+        }
+      ),
       cometBalances: async (ctx) => (
         {
           albert: {
@@ -390,7 +403,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when value is beneath liquidationThreshold`,
   {
-    filter: async (ctx) => matchesDeployment(ctx, [{deployment: 'mainnet'}, {network: 'polygon'}]),
+    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
     tokenBalances: {
       $comet: { $base: 100000 },
     },
@@ -501,7 +514,7 @@ scenario(
 scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when maxAmountToPurchase=0`,
   {
-    filter: async (ctx) => matchesDeployment(ctx, [{deployment: 'mainnet'}, {network: 'polygon'}]),
+    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
     tokenBalances: {
       $comet: { $base: 100000 },
     },
@@ -615,7 +628,7 @@ scenario(
     upgrade: {
       targetReserves: exp(20_000, 18)
     },
-    filter: async (ctx) => matchesDeployment(ctx, [{deployment: 'mainnet'}]), // XXX enable for Polygon
+    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}]), // XXX enable for Polygon
     tokenBalances: {
       $comet: { $base: 10000 },
     },
