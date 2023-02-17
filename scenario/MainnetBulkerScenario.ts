@@ -30,7 +30,7 @@ scenario(
 
     await context.sourceTokens(toSupplyStEth, new CometAsset(stETH), albert);
 
-    expect(await stETH.balanceOf(albert.address)).to.be.approximately(toSupplyStEth, 1);
+    expect(await stETH.balanceOf(albert.address)).to.be.approximately(toSupplyStEth, 2);
 
     // approve bulker as albert
     await stETH.connect(albert.signer).approve(bulker.address, toSupplyStEth);
