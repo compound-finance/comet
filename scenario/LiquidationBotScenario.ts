@@ -89,7 +89,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // WETH
         ' == 400',
         // WBTC
-        ' == 40',
+        ' == 20',
         // WMATIC
         ' == 500000',
       ],
@@ -266,7 +266,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // WETH
         exp(400, 18),
         // WBTC
-        exp(40, 8),
+        exp(20, 8),
         // WMATIC
         exp(5000, 18),
       ]
