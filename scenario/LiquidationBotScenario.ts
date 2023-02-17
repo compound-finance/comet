@@ -95,13 +95,14 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       ],
     }
   };
+  // XXX enable for mainnet WETH
   scenario(
     `LiquidationBot > liquidates an underwater position of $asset${i} with no maxAmountToPurchase`,
     {
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'usdc'}, {network: 'polygon'}]),
       tokenBalances: {
         $comet: {
           $base: 2250000,
@@ -272,14 +273,14 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       ]
     }
   };
-
+  // XXX enable for mainnet WETH
   scenario(
     `LiquidationBot > partially liquidates large position of $asset${i}, by setting maxAmountToPurchase`,
     {
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'usdc'}, {network: 'polygon'}]),
       tokenBalances: {
         $comet: { $base: 3_000_000 },
       },
