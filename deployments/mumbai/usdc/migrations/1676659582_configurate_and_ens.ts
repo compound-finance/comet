@@ -15,7 +15,7 @@ const ENSTextRecordKey = 'v3-official-markets';
 const ERC20PredicateAddress = '0xdD6596F2029e6233DEFfaCa316e6A95217d4Dc34';
 const RootChainManagerAddress = '0xBbD7cBFA79faee899Eaf900F13C9065bF03B1A74';
 
-export default migration('1675200105_configurate_and_ens', {
+export default migration('1676659582_configurate_and_ens', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
   },
