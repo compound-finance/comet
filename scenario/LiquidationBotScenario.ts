@@ -63,6 +63,15 @@ async function borrowCapacityForAsset(comet: CometInterface, actor: CometActor, 
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
+  const baseTokenBalances = {
+    'mainnet': {
+      'usdc': 2250000,
+      'weth': 20
+    },
+    'polygon': {
+      'usdc': 2250000
+    }
+  };
   const assetAmounts = {
     'mainnet': {
       'usdc': [
@@ -79,7 +88,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       ],
       'weth': [
         // CB_ETH
-        ' == 1000',
+        ' == 750',
         // WST_ETH
         ' == 2000'
       ]
@@ -95,19 +104,20 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       ],
     }
   };
-  // XXX enable for mainnet WETH
   scenario(
     `LiquidationBot > liquidates an underwater position of $asset${i} with no maxAmountToPurchase`,
     {
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'usdc'}, {network: 'polygon'}]),
-      tokenBalances: {
-        $comet: {
-          $base: 2250000,
-        },
-      },
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
+      tokenBalances: async (ctx) => (
+        {
+          $comet: {
+            $base: baseTokenBalances[ctx.world.base.network]?.[ctx.world.base.deployment] || 0,
+          },
+        }
+      ),
       cometBalances: async (ctx) => (
         {
           albert: {
@@ -209,6 +219,15 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
+  const baseTokenBalances = {
+    'mainnet': {
+      'usdc': 2250000,
+      'weth': 20
+    },
+    'polygon': {
+      'usdc': 3000000
+    }
+  };
   const assetAmounts = {
     'mainnet': {
       'usdc': [
@@ -257,7 +276,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       ],
       'weth': [
         // CB_ETH
-        exp(1000, 18),
+        exp(750, 18),
         // WST_ETH
         exp(2000, 18)
       ]
@@ -273,17 +292,20 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       ]
     }
   };
-  // XXX enable for mainnet WETH
   scenario(
     `LiquidationBot > partially liquidates large position of $asset${i}, by setting maxAmountToPurchase`,
     {
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'usdc'}, {network: 'polygon'}]),
-      tokenBalances: {
-        $comet: { $base: 3_000_000 },
-      },
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
+      tokenBalances: async (ctx) => (
+        {
+          $comet: {
+            $base: baseTokenBalances[ctx.world.base.network]?.[ctx.world.base.deployment] || 0,
+          },
+        }
+      ),
       cometBalances: async (ctx) => (
         {
           albert: {
@@ -605,7 +627,7 @@ scenario(
     upgrade: {
       targetReserves: exp(20_000, 18)
     },
-    filter: async (ctx) => ctx.world.base.network === 'mainnet',
+    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}]), // XXX enable for Polygon
     tokenBalances: {
       $comet: { $base: 10000 },
     },
