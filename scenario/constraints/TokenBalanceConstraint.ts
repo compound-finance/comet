@@ -7,8 +7,11 @@ import { exp } from '../../test/helpers';
 import { ComparativeAmount, ComparisonOp, getActorAddressFromName, getAssetFromName, parseAmount, getToTransferAmount } from '../utils';
 
 export class TokenBalanceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(requirements: R, _initialContext: T) {
-    const assetsByActor = requirements.tokenBalances;
+  async solve(requirements: R, initialContext: T) {
+    let assetsByActor = requirements.tokenBalances;
+    if (typeof assetsByActor === 'function') {
+      assetsByActor = await assetsByActor(initialContext);
+    }
     if (assetsByActor) {
       const actorsByAsset = Object.entries(assetsByActor).reduce((a, [actor, assets]) => {
         return Object.entries(assets).reduce((a, [asset, rawAmount]) => {

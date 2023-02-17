@@ -63,6 +63,15 @@ async function borrowCapacityForAsset(comet: CometInterface, actor: CometActor, 
 }
 
 for (let i = 0; i < MAX_ASSETS; i++) {
+  const baseTokenBalances = {
+    'mainnet': {
+      'usdc': 2250000,
+      'weth': 20
+    },
+    'polygon': {
+      'usdc': 2250000
+    }
+  };
   const assetAmounts = {
     'mainnet': {
       'usdc': [
@@ -79,7 +88,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       ],
       'weth': [
         // CB_ETH
-        ' == 1000',
+        ' == 750',
         // WST_ETH
         ' == 2000'
       ]
@@ -101,12 +110,14 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{deployment: 'mainnet'}, {network: 'polygon'}]),
-      tokenBalances: {
-        $comet: {
-          $base: 2250000,
-        },
-      },
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
+      tokenBalances: async (ctx) => (
+        {
+          $comet: {
+            $base: baseTokenBalances[ctx.world.base.network]?.[ctx.world.base.deployment] || 0,
+          },
+        }
+      ),
       cometBalances: async (ctx) => (
         {
           albert: {
