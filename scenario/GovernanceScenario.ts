@@ -159,7 +159,7 @@ scenario('add new asset',
 scenario(
   'execute Polygon governance proposal',
   {
-    filter: async ctx => ctx.world.base.network === 'mumbai' || ctx.world.base.network === 'polygon'
+    filter: async ctx => isBridgedDeployment(ctx)
   },
   async ({ comet, timelock, bridgeReceiver }, _context, world) => {
     const currentTimelockDelay = await timelock.delay();
@@ -195,7 +195,7 @@ scenario(
 scenario(
   'upgrade Polygon governance contracts and ensure they work properly',
   {
-    filter: async ctx => ctx.world.base.network === 'mumbai' || ctx.world.base.network === 'polygon'
+    filter: async ctx => isBridgedDeployment(ctx)
   },
   async ({ comet, configurator, proxyAdmin, timelock: oldLocalTimelock, bridgeReceiver: oldBridgeReceiver }, _context, world) => {
     const dm = world.deploymentManager;
