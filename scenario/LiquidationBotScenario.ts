@@ -89,19 +89,20 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // WETH
         ' == 400',
         // WBTC
-        ' == 40',
+        ' == 20',
         // WMATIC
         ' == 500000',
       ],
     }
   };
+  // XXX enable for mainnet WETH
   scenario(
     `LiquidationBot > liquidates an underwater position of $asset${i} with no maxAmountToPurchase`,
     {
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{deployment: 'mainnet'}, {network: 'polygon'}]),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'usdc'}, {network: 'polygon'}]),
       tokenBalances: {
         $comet: {
           $base: 2250000,
@@ -266,20 +267,20 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // WETH
         exp(400, 18),
         // WBTC
-        exp(40, 8),
+        exp(20, 8),
         // WMATIC
         exp(5000, 18),
       ]
     }
   };
-
+  // XXX enable for mainnet WETH
   scenario(
     `LiquidationBot > partially liquidates large position of $asset${i}, by setting maxAmountToPurchase`,
     {
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{deployment: 'mainnet'}, {network: 'polygon'}]),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'usdc'}, {network: 'polygon'}]),
       tokenBalances: {
         $comet: { $base: 3_000_000 },
       },
@@ -379,7 +380,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when value is beneath liquidationThreshold`,
   {
-    filter: async (ctx) => matchesDeployment(ctx, [{deployment: 'mainnet'}, {network: 'polygon'}]),
+    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
     tokenBalances: {
       $comet: { $base: 100000 },
     },
@@ -490,7 +491,7 @@ scenario(
 scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when maxAmountToPurchase=0`,
   {
-    filter: async (ctx) => matchesDeployment(ctx, [{deployment: 'mainnet'}, {network: 'polygon'}]),
+    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
     tokenBalances: {
       $comet: { $base: 100000 },
     },

@@ -6,7 +6,7 @@ import { BaseBridgeReceiver, FaucetToken } from '../build/types';
 import { calldata } from '../src/deploy';
 import { COMP_WHALES } from '../src/deploy';
 import { impersonateAddress } from '../plugins/scenario/utils';
-import { isBridgedDeployment, fastL2GovernanceExecute } from './utils';
+import { isBridgedDeployment, fastL2GovernanceExecute, matchesDeployment } from './utils';
 import { World } from '../plugins/scenario';
 
 scenario('upgrade Comet implementation and initialize', {filter: async (ctx) => !isBridgedDeployment(ctx)}, async ({ comet, configurator, proxyAdmin }, context) => {
@@ -157,9 +157,9 @@ scenario('add new asset',
   });
 
 scenario(
-  'execute Mumbai governance proposal',
+  'execute Polygon governance proposal',
   {
-    filter: async ctx => ctx.world.base.network === 'mumbai'
+    filter: async ctx => matchesDeployment(ctx, [{network: 'polygon'}, {network: 'mumbai'}])
   },
   async ({ comet, timelock, bridgeReceiver }, _context, world) => {
     const currentTimelockDelay = await timelock.delay();
@@ -193,9 +193,9 @@ scenario(
 );
 
 scenario(
-  'upgrade Mumbai governance contracts and ensure they work properly',
+  'upgrade Polygon governance contracts and ensure they work properly',
   {
-    filter: async ctx => ctx.world.base.network === 'mumbai'
+    filter: async ctx => matchesDeployment(ctx, [{network: 'polygon'}, {network: 'mumbai'}])
   },
   async ({ comet, configurator, proxyAdmin, timelock: oldLocalTimelock, bridgeReceiver: oldBridgeReceiver }, _context, world) => {
     const dm = world.deploymentManager;
@@ -313,7 +313,8 @@ async function fastL1ToPolygonGovernanceExecute(
     throw new Error('cannot execute governance without governance deployment manager');
   }
 
-  const proposer = await impersonateAddress(governanceDeploymentManager, COMP_WHALES.testnet[0]);
+  const compWhale = world.base.network === 'polygon' ? COMP_WHALES.mainnet[0] : COMP_WHALES.testnet[0];
+  const proposer = await impersonateAddress(governanceDeploymentManager, compWhale, exp(1, 18)); // give them enough ETH to make the proposal
 
   const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
     ['address', 'bytes'],

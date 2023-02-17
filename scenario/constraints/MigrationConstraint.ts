@@ -5,6 +5,7 @@ import { Migration, loadMigrations, Actions } from '../../plugins/deployment_man
 import { modifiedPaths, subsets } from '../utils';
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
+import { exp } from '../../test/helpers';
 
 async function getMigrations<T>(context: CometContext, _requirements: Requirements): Promise<Migration<T>[]> {
   // TODO: make this configurable from cli params/env var?
@@ -34,7 +35,7 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
       solutions.push(async function (ctx: T): Promise<T> {
         const govDeploymentManager = ctx.world.auxiliaryDeploymentManager || ctx.world.deploymentManager;
         const compWhale = (await ctx.getCompWhales())[0];
-        const proposer = await impersonateAddress(govDeploymentManager, compWhale);
+        const proposer = await impersonateAddress(govDeploymentManager, compWhale, exp(1, 18)); // give them enough ETH to make the proposal
 
         // Make proposer the default signer
         govDeploymentManager._signers.unshift(proposer);
