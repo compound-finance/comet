@@ -46,6 +46,10 @@ export default migration('1674835242_bump_supply_caps', {
     trace(`Created proposal ${proposalId}.`);
   },
 
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
+  },
+
   async verify(deploymentManager: DeploymentManager) {
     const {
       comet,
