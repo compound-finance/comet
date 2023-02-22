@@ -222,7 +222,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
   const baseTokenBalances = {
     'mainnet': {
       'usdc': 2250000,
-      'weth': 20
+      'weth': 5000
     },
     'polygon': {
       'usdc': 3000000
@@ -246,7 +246,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // CB_ETH
         ' == 2000',
         // WST_ETH
-        ' == 5000'
+        ' == 3000'
       ]
     },
     'polygon': {
