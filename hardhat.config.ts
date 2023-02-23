@@ -39,7 +39,9 @@ const {
   POLYGONSCAN_KEY,
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
-  REMOTE_ACCOUNTS = '',
+  GOV_NETWORK_PROVIDER = '',
+  GOV_NETWORK = '',
+  REMOTE_ACCOUNTS = ''
 } = process.env;
 
 function *deriveAccounts(pk: string, n: number = 10) {
@@ -108,7 +110,11 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
   for (const netConfig of networkConfigs) {
     hardhatConfig.networks[netConfig.network] = {
       chainId: netConfig.chainId,
-      url: NETWORK_PROVIDER || netConfig.url || getDefaultProviderURL(netConfig.network),
+      url:
+        (netConfig.network === GOV_NETWORK ? GOV_NETWORK_PROVIDER : undefined) ||
+        NETWORK_PROVIDER ||
+        netConfig.url ||
+        getDefaultProviderURL(netConfig.network),
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
       accounts: REMOTE_ACCOUNTS ? "remote" : ( ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC } ),
