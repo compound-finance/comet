@@ -14,6 +14,8 @@ const ENSTextRecordKey = 'v3-official-markets';
 const ERC20PredicateAddress = '0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf';
 const RootChainManagerAddress = '0xA0c68C638235ee32657e8f720a23ceC1bFc77C77';
 
+const cUSDTAddress = '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9';
+
 export default migration('1675200105_configurate_and_ens', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
@@ -39,6 +41,7 @@ export default migration('1675200105_configurate_and_ens', {
       fxRoot,
       timelock,
       governor,
+      comptrollerV2,
       USDC,
       COMP,
     } = await govDeploymentManager.getContracts();
@@ -159,6 +162,17 @@ export default migration('1675200105_configurate_and_ens', {
           [subdomainHash, ENSTextRecordKey, JSON.stringify(officialMarkets)]
         )
       },
+
+      // 8. Displace v2 USDT COMP rewards
+      {
+        contract: comptrollerV2,
+        signature: '_setCompSpeeds(address[],uint256[],uint256[])',
+        args: [
+          [cUSDTAddress],
+          [0],
+          [4825000000000000],
+        ],
+      },
     ];
 
     const description = ""; // XXX add description
@@ -185,15 +199,16 @@ export default migration('1675200105_configurate_and_ens', {
 
     const {
       timelock,
+      comptrollerV2,
     } = await govDeploymentManager.getContracts();
 
     // 1.
     const wbtcInfo = await comet.getAssetInfoByAddress(WBTC.address);
     const wethInfo = await comet.getAssetInfoByAddress(WETH.address);
     const wmaticInfo = await comet.getAssetInfoByAddress(WMATIC.address);
-    expect(wbtcInfo.supplyCap).to.be.eq(exp(10_000, 8));
-    expect(wethInfo.supplyCap).to.be.eq(exp(10_000, 18));
-    expect(wmaticInfo.supplyCap).to.be.eq(exp(10_000, 18));
+    expect(wbtcInfo.supplyCap).to.be.eq(exp(400, 8));
+    expect(wethInfo.supplyCap).to.be.eq(exp(11_000, 18));
+    expect(wmaticInfo.supplyCap).to.be.eq(exp(10_000_000, 18));
     expect(await comet.pauseGuardian()).to.be.eq('0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5');
 
     // 2. & 3.
@@ -237,5 +252,11 @@ export default migration('1675200105_configurate_and_ens', {
         },
       ]
     });
+
+    // 8.
+    expect(await comptrollerV2.compBorrowSpeeds(cUSDTAddress)).to.be.equal(4825000000000000n);
+    expect(await comptrollerV2.compSupplySpeeds(cUSDTAddress)).to.be.equal(0);
+    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(0);
+    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(34.74 / 86400, 15, 18));
   }
 });
