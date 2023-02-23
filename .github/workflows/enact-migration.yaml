@@ -12,9 +12,6 @@ on:
           - goerli
           - mumbai
           - polygon
-      different_enact_network:
-        type: boolean
-        description: Use a different network to enact the migration (e.g. used for cross-chain proposals that need to be made on mainnet)
       deployment:
         description: Deployment Name (e.g. "usdc")
         required: true
@@ -42,7 +39,6 @@ jobs:
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
     steps:
       - name: Get governance network
-        if: ${{ github.event.inputs.different_enact_network == 'true' }}
         run: |
           case ${{ github.event.inputs.network }} in
             polygon)
@@ -50,7 +46,7 @@ jobs:
             mumbai)
                 echo "GOV_NETWORK=goerli" >> $GITHUB_ENV ;;
             *)
-              echo "No governance network for selected network" && exit 1 ;;
+                echo "No governance network for selected network" ;;
           esac
 
       - name: Seacrest
@@ -65,7 +61,7 @@ jobs:
         with:
           ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"kovan\":\"https://kovan.infura.io/v3/$INFURA_KEY\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\"}')[env.GOV_NETWORK] }}"
           port: 8685
-        if: github.event.inputs.eth_pk == '' && github.event.inputs.different_enact_network == 'true'
+        if: github.event.inputs.eth_pk == '' && env.GOV_NETWORK != ''
 
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -98,7 +94,7 @@ jobs:
           DEBUG: true
           ETH_PK: "${{ inputs.eth_pk }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
-          GOV_NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8685"]')[github.event.inputs.eth_pk == '' && github.event.inputs.different_enact_network == 'true'] }}
+          GOV_NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8685"]')[github.event.inputs.eth_pk == '' && env.GOV_NETWORK != ''] }}
           GOV_NETWORK: ${{ env.GOV_NETWORK }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
 
