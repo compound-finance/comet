@@ -170,7 +170,7 @@ export default migration('1675200105_configurate_and_ens', {
         args: [
           [cUSDTAddress],
           [0],
-          [0],
+          [4825000000000000],
         ],
       },
     ];
@@ -254,7 +254,7 @@ export default migration('1675200105_configurate_and_ens', {
     });
 
     // 8.
-    expect(await comptrollerV2.compBorrowSpeeds(cUSDTAddress)).to.be.equal(0);
+    expect(await comptrollerV2.compBorrowSpeeds(cUSDTAddress)).to.be.equal(4825000000000000n);
     expect(await comptrollerV2.compSupplySpeeds(cUSDTAddress)).to.be.equal(0);
     expect(await comet.baseTrackingSupplySpeed()).to.be.equal(0);
     expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(34.74 / 86400, 15, 18));
