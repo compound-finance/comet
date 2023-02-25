@@ -98,8 +98,8 @@ export default migration('1675200105_configurate_and_ens', {
       'RootChainManager',
       RootChainManagerAddress
     );
-    const USDCAmountToBridge = exp(400_000, 6); // roughly half of what's currently in the Timelock
-    const COMPAmountToBridge = exp(25_000, 18);
+    const USDCAmountToBridge = exp(10_000, 6);
+    const COMPAmountToBridge = exp(2_500, 18);
     const depositUSDCData = utils.defaultAbiCoder.encode(['uint256'], [USDCAmountToBridge]);
     const depositForUSDCCalldata = utils.defaultAbiCoder.encode(
       ['address', 'address', 'bytes'],
@@ -212,7 +212,7 @@ export default migration('1675200105_configurate_and_ens', {
     expect(await comet.pauseGuardian()).to.be.eq('0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5');
 
     // 2. & 3.
-    expect(await comet.getReserves()).to.be.equal(exp(400_000, 6));
+    expect(await comet.getReserves()).to.be.equal(exp(10_000, 6));
 
     // 4. & 5.
     const polygonCOMP = new Contract(
@@ -220,7 +220,7 @@ export default migration('1675200105_configurate_and_ens', {
       ['function balanceOf(address account) external view returns (uint256)'],
       deploymentManager.hre.ethers.provider
     );
-    expect(await polygonCOMP.balanceOf(rewards.address)).to.be.equal(exp(25_000, 18));
+    expect(await polygonCOMP.balanceOf(rewards.address)).to.be.equal(exp(2_500, 18));
 
     // 6. & 7.
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
