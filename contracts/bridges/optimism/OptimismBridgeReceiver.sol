@@ -2,10 +2,7 @@
 pragma solidity 0.8.15;
 
 import "../BaseBridgeReceiver.sol";
-
-interface OvmL2CrossDomainMessengerInterface {
-    function xDomainMessageSender() external returns (address);
-}
+import "./OvmL2CrossDomainMessengerInterface.sol";
 
 contract OptimismBridgeReceiver is BaseBridgeReceiver {
     error InvalidCrossDomainMessenger();
