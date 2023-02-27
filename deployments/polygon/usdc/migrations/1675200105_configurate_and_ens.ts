@@ -186,6 +186,10 @@ export default migration('1675200105_configurate_and_ens', {
     trace(`Created proposal ${proposalId}.`);
   },
 
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
+  },
+
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager) {
     const ethers = deploymentManager.hre.ethers;
 
