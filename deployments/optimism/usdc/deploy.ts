@@ -44,7 +44,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     ]
   );
 
-  // Initialize PolygonBridgeReceiver
+  // Initialize OptimismBridgeReceiver
   await deploymentManager.idempotent(
     async () => !(await bridgeReceiver.initialized()),
     async () => {
