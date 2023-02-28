@@ -30,6 +30,10 @@ contract CometRewards {
     /// @notice Rewards claimed per Comet instance and user account
     mapping(address => mapping(address => uint)) public rewardsClaimed;
 
+
+    /// @dev The scale for factors
+    uint256 internal constant FACTOR_SCALE = 1e18;
+
     /** Custom events **/
 
     event GovernorTransferred(address indexed oldGovernor, address indexed newGovernor);
@@ -55,27 +59,62 @@ contract CometRewards {
      * @notice Set the reward token for a Comet instance
      * @param comet The protocol instance
      * @param token The reward token address
+     * @param multiplier The multiplier to apply to convert a unit of accrued tracking to a unit of the reward token
      */
-    function setRewardConfig(address comet, address token) external {
+    function setRewardConfigWithMultiplier(address comet, address token, uint256 multiplier) public {
         if (msg.sender != governor) revert NotPermitted(msg.sender);
         if (rewardConfig[comet].token != address(0)) revert AlreadyConfigured(comet);
 
         uint64 accrualScale = CometInterface(comet).baseAccrualScale();
         uint8 tokenDecimals = ERC20(token).decimals();
         uint64 tokenScale = safe64(10 ** tokenDecimals);
+        uint64 rescaleFactor;
         if (accrualScale > tokenScale) {
-            rewardConfig[comet] = RewardConfig({
-                token: token,
-                rescaleFactor: accrualScale / tokenScale,
-                shouldUpscale: false
-            });
+            rescaleFactor = accrualScale / tokenScale;
+            // Flip from downscale to upscale if the multiplier is greater than the rescale factor
+            if (rescaleFactor * FACTOR_SCALE < multiplier) {
+                rescaleFactor = safe64(multiplier / uint256(rescaleFactor) / FACTOR_SCALE);
+                rewardConfig[comet] = RewardConfig({
+                    token: token,
+                    rescaleFactor: rescaleFactor,
+                    shouldUpscale: true
+                });
+            } else {
+                rescaleFactor = safe64(uint256(rescaleFactor) * FACTOR_SCALE / multiplier);
+                rewardConfig[comet] = RewardConfig({
+                    token: token,
+                    rescaleFactor: rescaleFactor,
+                    shouldUpscale: false
+                });
+            }
         } else {
-            rewardConfig[comet] = RewardConfig({
-                token: token,
-                rescaleFactor: tokenScale / accrualScale,
-                shouldUpscale: true
-            });
+            rescaleFactor = tokenScale / accrualScale;
+            // Flip from upscale to downscale if 1 / multiplier is greater than the rescale factor
+            if (FACTOR_SCALE / multiplier > rescaleFactor) {
+                rescaleFactor = safe64(FACTOR_SCALE / multiplier / uint256(rescaleFactor));
+                rewardConfig[comet] = RewardConfig({
+                    token: token,
+                    rescaleFactor: rescaleFactor,
+                    shouldUpscale: false
+                });
+            } else {
+                rescaleFactor = safe64(uint256(rescaleFactor) * multiplier / FACTOR_SCALE);
+                rewardConfig[comet] = RewardConfig({
+                    token: token,
+                    rescaleFactor: rescaleFactor,
+                    shouldUpscale: true
+                });
+            }
         }
+    }
+
+    /**
+     * @notice Set the reward token for a Comet instance
+     * @param comet The protocol instance
+     * @param token The reward token address
+     */
+    function setRewardConfig(address comet, address token) external {
+        setRewardConfigWithMultiplier(comet, token, FACTOR_SCALE);
     }
 
     /**
