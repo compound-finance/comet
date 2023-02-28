@@ -1,19 +1,20 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
 import { DeploySpec, deployComet } from '../../../src/deploy';
 
-const secondsPerDay = 24 * 60 * 60;
+const HOUR = 60 * 60;
+const DAY = 24 * HOUR;
 
-const CROSS_DOMAIN_MESSENGER = "0x4200000000000000000000000000000000000007";
-const MAINNET_TIMELOCK = '0x6d903f6003cca6255d85cca4d3b5e5146dc33925';
+const CROSS_DOMAIN_MESSENGER = '0x4200000000000000000000000000000000000007';
+const GOERLI_TIMELOCK = '0x8Fa336EB4bF58Cfc508dEA1B0aeC7336f55B1399';
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const trace = deploymentManager.tracer()
   const ethers = deploymentManager.hre.ethers;
 
   // pull in existing assets
-  const USDC = await deploymentManager.existing('USDC', '0x7f5c764cbc14f9669b88837ca1490cca17c31607', 'optimism');
-  const WBTC = await deploymentManager.existing('WBTC', '0x68f180fcce6836688e9084f035309e29bf0a2095', 'optimism');
-  const WETH = await deploymentManager.existing('WETH', '0x4200000000000000000000000000000000000006', 'optimism');
+  const USDC = await deploymentManager.existing('USDC', '0x7E07E15D2a87A24492740D16f5bdF58c16db0c4E', 'optimism-goerli');
+  const WBTC = await deploymentManager.existing('WBTC', '0xe0a592353e81a94db6e3226fd4a99f881751776a', 'optimism-goerli');
+  const WETH = await deploymentManager.existing('WETH', '0x4200000000000000000000000000000000000006', 'optimism-goerli');
 
   // L2CrossDomainMessenger
   const l2CrossDomainMessenger = await deploymentManager.existing(
@@ -35,20 +36,20 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'vendor/Timelock.sol',
     [
       bridgeReceiver.address, // admin
-      2 * secondsPerDay,      // delay
-      14 * secondsPerDay,     // grace period
-      2 * secondsPerDay,      // minimum delay
-      30 * secondsPerDay      // maxiumum delay
+      1 * DAY,                // delay
+      14 * DAY,               // grace period
+      12 * HOUR,              // minimum delay
+      30 * DAY                // maxiumum delay
     ]
   );
 
-  // Initialize OptimismBridgeReceiver
+  // Initialize PolygonBridgeReceiver
   await deploymentManager.idempotent(
     async () => !(await bridgeReceiver.initialized()),
     async () => {
       trace(`Initializing BridgeReceiver`);
       await bridgeReceiver.initialize(
-        MAINNET_TIMELOCK,     // govTimelock
+        GOERLI_TIMELOCK,      // govTimelock
         localTimelock.address // localTimelock
       );
       trace(`BridgeReceiver initialized`);
@@ -62,7 +63,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   // Deploy Bulker
   const bulker = await deploymentManager.deploy(
     'bulker',
-    'bulkers/BaseBulker.sol',
+    'Bulker.sol',
     [
       await comet.governor(), // admin
       WETH.address            // weth
