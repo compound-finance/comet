@@ -69,43 +69,34 @@ contract CometRewards {
         uint8 tokenDecimals = ERC20(token).decimals();
         uint64 tokenScale = safe64(10 ** tokenDecimals);
         uint64 rescaleFactor;
+        bool shouldUpscale;
         if (accrualScale > tokenScale) {
             rescaleFactor = accrualScale / tokenScale;
             // Flip from downscale to upscale if the multiplier is greater than the rescale factor
             if (rescaleFactor * FACTOR_SCALE < multiplier) {
                 rescaleFactor = safe64(multiplier / uint256(rescaleFactor) / FACTOR_SCALE);
-                rewardConfig[comet] = RewardConfig({
-                    token: token,
-                    rescaleFactor: rescaleFactor,
-                    shouldUpscale: true
-                });
+                shouldUpscale = true;
             } else {
                 rescaleFactor = safe64(uint256(rescaleFactor) * FACTOR_SCALE / multiplier);
-                rewardConfig[comet] = RewardConfig({
-                    token: token,
-                    rescaleFactor: rescaleFactor,
-                    shouldUpscale: false
-                });
+                shouldUpscale = false;
             }
         } else {
             rescaleFactor = tokenScale / accrualScale;
             // Flip from upscale to downscale if 1 / multiplier is greater than the rescale factor
             if (FACTOR_SCALE / multiplier > rescaleFactor) {
                 rescaleFactor = safe64(FACTOR_SCALE / multiplier / uint256(rescaleFactor));
-                rewardConfig[comet] = RewardConfig({
-                    token: token,
-                    rescaleFactor: rescaleFactor,
-                    shouldUpscale: false
-                });
+                shouldUpscale = false;
             } else {
                 rescaleFactor = safe64(uint256(rescaleFactor) * multiplier / FACTOR_SCALE);
-                rewardConfig[comet] = RewardConfig({
-                    token: token,
-                    rescaleFactor: rescaleFactor,
-                    shouldUpscale: true
-                });
+                shouldUpscale = true;
             }
         }
+
+        rewardConfig[comet] = RewardConfig({
+            token: token,
+            rescaleFactor: rescaleFactor,
+            shouldUpscale: shouldUpscale
+        });
     }
 
     /**
