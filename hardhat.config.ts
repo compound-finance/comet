@@ -92,6 +92,11 @@ const networkConfigs: NetworkConfig[] = [
     url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
   },
   {
+    network: 'optimism-goerli',
+    chainId: 420,
+    url: `https://optimism-goerli.infura.io/v3/${INFURA_KEY}`
+  },
+  {
     network: 'avalanche',
     chainId: 43114,
     url: 'https://api.avax.network/ext/bc/C/rpc',
@@ -213,6 +218,9 @@ const config: HardhatUserConfig = {
       optimism: {
         usdc: optimismRelationConfigMap
       },
+      "optimism-goerli": {
+        usdc: optimismRelationConfigMap
+      },
     },
   },
 
@@ -271,6 +279,12 @@ const config: HardhatUserConfig = {
         network: 'optimism',
         deployment: 'usdc',
         auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'optimism-goerli',
+        network: 'optimism-goerli',
+        deployment: 'usdc',
+        auxiliaryBase: 'goerli'
       }
     ],
   },
