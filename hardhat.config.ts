@@ -23,6 +23,7 @@ import mumbaiRelationConfigMap from './deployments/mumbai/usdc/relations';
 import mainnetRelationConfigMap from './deployments/mainnet/usdc/relations';
 import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
 import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
+import arbitrumRelationConfigMap from './deployments/arbitrum/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -100,6 +101,11 @@ const networkConfigs: NetworkConfig[] = [
     chainId: 80001,
     url: `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`,
   },
+  {
+    network: 'arbitrum-goerli',
+    chainId: 421613,
+    url: `https://arbitrum-goerli.infura.io/v3/${INFURA_KEY}`,
+  }
 ];
 
 function getDefaultProviderURL(network: string) {
@@ -204,6 +210,9 @@ const config: HardhatUserConfig = {
       polygon: {
         usdc: polygonRelationConfigMap
       },
+      "arbitrum-goerli": {
+        usdc: arbitrumRelationConfigMap
+      }
     },
   },
 
@@ -256,6 +265,12 @@ const config: HardhatUserConfig = {
         network: 'polygon',
         deployment: 'usdc',
         auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'arbitrum-goerli',
+        network: 'arbitrum-goerli',
+        deployment: 'usdc',
+        auxiliaryBase: 'goerli'
       }
     ],
   },

@@ -94,6 +94,9 @@ export const WHALES = {
     '0x2093b4281990a568c9d588b8bce3bfd7a1557ebd', // WETH whale
     '0xd814b26554204245a30f8a42c289af582421bf04', // WBTC whale
     '0x167384319b41f7094e62f7506409eb38079abff8'  // WMATIC whale
+  ],
+  'arbitrum-goerli': [
+    '0x4328330b20851a721993cfa993f8f4ad9d912876' // WETH whale
   ]
 };
 
