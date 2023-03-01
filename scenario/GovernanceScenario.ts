@@ -2,9 +2,11 @@ import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { BigNumberish, constants, utils } from 'ethers';
 import { exp } from '../test/helpers';
-import { FaucetToken } from '../build/types';
-import { calldata } from '../src/deploy';
-import { expectBase, isBridgedDeployment } from './utils';
+import { BaseBridgeReceiver, FaucetToken } from '../build/types';
+import { calldata, COMP_WHALES } from '../src/deploy';
+import { impersonateAddress } from '../plugins/scenario/utils';
+import { expectBase, isBridgedDeployment, fastL2GovernanceExecute, matchesDeployment } from './utils';
+import { World } from '../plugins/scenario';
 
 scenario('upgrade Comet implementation and initialize', {filter: async (ctx) => !isBridgedDeployment(ctx)}, async ({ comet, configurator, proxyAdmin }, context) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
