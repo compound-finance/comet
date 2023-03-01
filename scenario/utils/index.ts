@@ -58,11 +58,12 @@ export function expectRevertCustom(tx: Promise<ContractReceipt | ContractTransac
       const patterns = [
         new RegExp(`custom error '${custom.replace(/[()]/g, '\\$&')}'`),
         new RegExp(`unrecognized custom error with selector ${selector}`),
+        new RegExp(`reverted with an unrecognized custom error \\(return data: 0x${selector}\\)`),
       ];
       for (const pattern of patterns)
         if (pattern.test(e.message))
           return;
-      throw new Error(`Expected revert message in one of ${patterns}, but reverted with: ${e.message}`);
+      throw new Error(`Expected revert message in one of [${patterns}], but reverted with: ${e.message}`);
     });
 }
 
