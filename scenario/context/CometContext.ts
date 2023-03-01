@@ -1,7 +1,6 @@
 import { BigNumber, BigNumberish } from 'ethers';
-import { World, buildScenarioFn } from '../../plugins/scenario';
+import { Loader, World, debug } from '../../plugins/scenario';
 import { Migration } from '../../plugins/deployment_manager';
-import { debug } from '../../plugins/deployment_manager/Utils';
 import {
   NativeTokenConstraint,
   TokenBalanceConstraint,
@@ -403,19 +402,27 @@ async function forkContext(c: CometContext, w: World): Promise<CometContext> {
   return context;
 }
 
-export const constraints = [
-  new FilterConstraint(),
+export const staticConstraints = [
   new NativeTokenConstraint(),
   new MigrationConstraint(),
   new ProposalConstraint(),
   new VerifyMigrationConstraint(),
+];
+
+export const dynamicConstraints = [
+  new FilterConstraint(),
   new ModernConstraint(),
   new PauseConstraint(),
   new SupplyCapConstraint(),
   new CometBalanceConstraint(),
   new TokenBalanceConstraint(),
   new UtilizationConstraint(),
-  new PriceConstraint()
+  new PriceConstraint(),
 ];
 
-export const scenario = buildScenarioFn<CometContext, CometProperties, Requirements>(getInitialContext, getContextProperties, forkContext, constraints);
+export const scenarioLoader = Loader.get().configure(
+  staticConstraints,
+  getInitialContext,
+  getContextProperties,
+);
+export const scenario = scenarioLoader.scenarioFun(dynamicConstraints); // XXX

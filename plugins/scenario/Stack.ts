@@ -26,3 +26,7 @@ export function getStack(skipFrames: number = 1): StackCall[] {
 
   return trace;
 }
+
+export function getStackFile(): string | null {
+  return getStack(3)[0]?.file ?? null;
+}

@@ -1,5 +1,5 @@
 import { task } from 'hardhat/config';
-import { runScenario } from '../../plugins/scenario/Runner';
+import { runScenarios } from '../../plugins/scenario/Runner';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
 import '../../plugins/scenario/type-extensions';
 import { ForkSpec } from '../../plugins/scenario/World';
@@ -30,7 +30,7 @@ task('scenario', 'Runs scenario tests')
     if (taskArgs.spider) {
       await env.run('scenario:spider', taskArgs);
     }
-    await runScenario(env.config.scenario, bases);
+    await runScenarios(bases);
   });
 
 task('scenario:spider', 'Runs spider in preparation for scenarios')

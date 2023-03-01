@@ -1,8 +1,11 @@
 import { World } from './World';
-import { getStack } from './Stack';
+import { getStackFile } from './Stack';
 
 // A solution modifies a given context and world in a way that satisfies a constraint.
 export type Solution<T> = (T, World) => Promise<T | void>;
+
+// XXX static and dynamic constraints diff types I guess
+//  or can dynamic just have a constructor(requirements), same interface?
 
 // A constraint is capable of producing solutions for a context and world *like* the ones provided.
 // A constraint can also check a given context and world to see if they *actually* satisfy it.
@@ -20,31 +23,31 @@ export type Receipt = { cumulativeGasUsed: { toNumber: () => number } };
 export type Property<T, U> = (properties: U, context: T, world: World) => Promise<Receipt | void>;
 export type Initializer<T> = (world: World) => Promise<T>;
 export type Transformer<T, U> = (context: T) => Promise<U>;
-export type Forker<T> = (T, world: World) => Promise<T>;
+
+export interface ScenEnv<T, U, R> { // XXX drop R?
+  constraints: Constraint<T, R>[]; // XXX drop R
+  initializer: Initializer<T>;
+  transformer: Transformer<T, U>;
+}
 
 export type ScenarioFlags = null | 'only' | 'skip';
 
 export class Scenario<T, U, R> {
   name: string;
   file: string | null;
+  constraints: Constraint<T, R>[]; // XXX drop R
   requirements: R;
   property: Property<T, U>;
-  initializer: Initializer<T>;
-  transformer: Transformer<T, U>;
-  forker: Forker<T>;
-  constraints: Constraint<T, R>[];
+  env: ScenEnv<T, U, R>; // XXX
   flags: ScenarioFlags;
 
-  constructor(name, requirements, property, initializer, transformer, forker, constraints, flags) {
+  constructor(name, constraints, requirements, property, env, flags) {
     this.name = name;
+    this.constraints = constraints;
     this.requirements = requirements;
     this.property = property;
-    this.initializer = initializer;
-    this.transformer = transformer;
-    this.forker = forker;
-    this.constraints = constraints;
+    this.env = env;
     this.flags = flags;
-    let frame = getStack(3);
-    this.file = frame[0] ? frame[0].file : null;
+    this.file = getStackFile();
   }
 }

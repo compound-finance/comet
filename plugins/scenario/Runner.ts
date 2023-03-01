@@ -1,8 +1,7 @@
 import { Scenario, Solution } from './Scenario';
 import { ForkSpec, World } from './World';
-import { loadScenarios } from './Loader';
+import { Loader } from './Loader';
 import { showReport, pluralize, Result } from './Report';
-import { ScenarioConfig } from './types';
 import { AssertionError } from 'chai';
 
 export type Address = string;
@@ -34,6 +33,28 @@ function mapSolution<T>(s: Solution<T> | Solution<T>[] | null): Solution<T>[] {
   }
 }
 
+// XXX
+// async function applyStaticConstraints<T>(world: World, constraints: StaticConstraint<T>[]): XXX[] {
+//   // generate worlds which satisfy the constraints
+//   // note: constraints should be independent or conflicts will be detected
+//   const solutionChoices: Solution<T>[][] = await Promise.all(
+//     constraints.map((c) => c.solve(world).then(mapSolution))
+//   );
+//   for (const combo of combos([[identity], ...solutionChoices])) {
+//     // create a fresh copy of context that solutions can modify
+//     let ctx: T = await getContext(world);
+
+//     // apply each solution in the combo, then check they all still hold
+//     for (const solution of combo)
+//       ctx = (await solution(ctx, world)) || ctx;
+//     for (const constraint of constraints)
+//       await constraint.check(ctx, world);
+//     yield ctx;
+
+//     worldSnapshot = await world._revertAndSnapshot(worldSnapshot);
+//   }
+// }
+
 export class Runner<T, U, R> {
   base: ForkSpec;
   world: World;
@@ -46,6 +67,7 @@ export class Runner<T, U, R> {
   async run(scenario: Scenario<T, U, R>): Promise<Result> {
     const { base, world } = this;
     const { constraints = [] } = scenario;
+
     let startTime = Date.now();
     let numSolutionSets = 0;
 
@@ -53,12 +75,11 @@ export class Runner<T, U, R> {
     let worldSnapshot = await world._snapshot();
 
     // get a context to use for solving constraints
-    const getContext = (world) => scenario.initializer(world); // XXXX
+    const getContext = (world) => scenario.env.initializer(world); // XXXX
     const context = await getContext(world);
 
     // generate worlds which satisfy the constraints
-    // note: `solve` is expected not to modify context or world
-    //  and constraints should be independent or conflicts will be detected
+    //  constraints should be independent or conflicts will be detected
     const solutionChoices: Solution<T>[][] = await Promise.all(
       constraints.map((c) => c.solve(scenario.requirements, context, world).then(mapSolution))
     );
@@ -80,7 +101,7 @@ export class Runner<T, U, R> {
         }
 
         // requirements met, run the property
-        let txnReceipt = await scenario.property(await scenario.transformer(ctx), ctx, world);
+        let txnReceipt = await scenario.property(await scenario.env.transformer(ctx), ctx, world);
         if (txnReceipt) {
           cumulativeGas += txnReceipt.cumulativeGasUsed.toNumber();
         }
@@ -111,7 +132,6 @@ export class Runner<T, U, R> {
         diff = { actual, expected };
       }
     }
-
     return {
       base: base.name,
       file: scenario.file || scenario.name,
@@ -121,37 +141,17 @@ export class Runner<T, U, R> {
       elapsed: Date.now() - startTime,
       error: err || null,
       trace: err && err.stack ? err.stack : err,
-      diff, // XXX can we move this into parent?
+      diff,
     };
   }
 }
 
-function filterRunning<T, U, R>(
-  scenarios: Scenario<T, U, R>[]
-): [Scenario<T, U, R>[], Scenario<T, U, R>[]] {
-  const rest = scenarios.filter(s => s.flags === null);
-  const only = scenarios.filter(s => s.flags === 'only');
-  const skip = scenarios.filter(s => s.flags === 'skip');
-
-  if (only.length > 0) {
-    return [only, skip.concat(rest)];
-  } else {
-    return [rest, skip];
-  }
-}
-
-export async function runScenario<T, U, R>(
-  scenarioConfig: ScenarioConfig,
-  bases: ForkSpec[],
-) {
-  const scenarios: Scenario<T, U, R>[] = Object.values(await loadScenarios());
-  const [runningScenarios, skippedScenarios] = filterRunning(scenarios);
-
-  const results: Result[] = [];
+export async function runScenarios<T, U, R>(bases: ForkSpec[]) {
+  const loader = await Loader.load();
+  const [runningScenarios, skippedScenarios] = loader.splitScenarios();
 
   const startTime = Date.now();
-
-  const runners = {}; // XXX
+  const results: Result[] = [];
 
   for (const base of bases) {
     const world = new World(base), dm = world.deploymentManager;
@@ -163,39 +163,38 @@ export async function runScenario<T, U, R>(
       await world.auxiliaryDeploymentManager.spider();
     }
 
-    runners[base.name] = new Runner(base, world); // XXX
+    const world_ = world;
+    // for (const world_ of await applyStaticConstraints(world, loader.constraints)) {
+      const runner = new Runner(base, world_); // XXX
 
-    for (const scenario of skippedScenarios) {
-      results.push({
-        base: base.name,
-        file: scenario.file || scenario.name,
-        scenario: scenario.name,
-        elapsed: undefined,
-        error: undefined,
-        skipped: true,
-      });
-    }
-
-    for (const scenario of runningScenarios) { // XXX
-      console.log(`[${base.name}] Running ${scenario.name} ...`);
-      try {
-        const result = await runners[base.name].run(scenario);
-        const numSolutionSets = result.numSolutionSets ?? 0;
-        console.log(`[${base.name}] ... ran ${scenario.name} on ${pluralize(numSolutionSets, 'solution', 'solutions')}`);
-        // XXX
-        // Update the scenario name to include the number of solution sets run and average gas cost.
-        result.scenario += ` [${pluralize(numSolutionSets, 'run', 'runs')}]`;
-        if (result.gasUsed) {
-          result.scenario += ` [Avg gas: ${result.gasUsed}]`;
-        }
-        results.push(result);
-      } catch (e) {
-        console.error('Encountered worker error', e);
+      for (const scenario of skippedScenarios) {
+        results.push({
+          base: base.name,
+          file: scenario.file || scenario.name,
+          scenario: scenario.name,
+          elapsed: undefined,
+          error: undefined,
+          skipped: true,
+        });
       }
-    }
+
+      for (const scenario of runningScenarios) {
+        console.log(`[${base.name}] Running ${scenario.name} ...`);
+        try {
+          const result = await runner.run(scenario), N = result.numSolutionSets;
+          if (N) {
+            console.log(`[${base.name}] ... ran ${scenario.name}`);
+            console.log(`[${base.name}]  ⛽ consumed ${result.gasUsed} gas on average over ${pluralize(N, 'solution', 'solutions')}`);
+          } else {
+            console.log(`[${base.name}]   ∅ for ${scenario.name}, has empty constraint solution space`);
+          }
+          results.push(result);
+        } catch (e) {
+          console.error('Encountered worker error', e);
+        }
+      }
+    // }
   }
 
-  const endTime = Date.now();
-
-  await showReport(results, startTime, endTime);
+  await showReport(results, startTime, Date.now());
 }
