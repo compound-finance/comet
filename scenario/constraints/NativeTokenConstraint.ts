@@ -1,10 +1,9 @@
-import { Constraint } from '../../plugins/scenario';
+import { StaticConstraint } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
-import { Requirements } from './Requirements';
 import { exp } from '../../test/helpers';
 
-export class NativeTokenConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(_requirements: R, _context: T) {
+export class NativeTokenConstraint<T extends CometContext> implements StaticConstraint<T> {
+  async solve() {
     return [
       async function (ctx: T): Promise<T> {
         for (const symbol in ctx.assets) {
@@ -22,7 +21,7 @@ export class NativeTokenConstraint<T extends CometContext, R extends Requirement
     ];
   }
 
-  async check(_requirements: R, _context: T) {
+  async check() {
     // ...
   }
 }

@@ -60,7 +60,7 @@ async function* applyStaticConstraints<T, U>(
       ctx = (await solution(ctx, world)) || ctx;
     for (const constraint of constraints)
       await constraint.check(world); // XXX w or w/o ctx?
-    yield ctx.world; // XXX need to preserve ctx I think?
+    yield (ctx as any).world; // XXX need to preserve ctx I think?
 
     worldSnapshot = await world._revertAndSnapshot(worldSnapshot);
   }
@@ -157,7 +157,7 @@ export class Runner<T, U, R> {
   }
 }
 
-export async function runScenarios<T, U, R>(bases: ForkSpec[]) {
+export async function runScenarios(bases: ForkSpec[]) {
   const loader = await Loader.load();
   const [runningScenarios, skippedScenarios] = loader.splitScenarios();
 

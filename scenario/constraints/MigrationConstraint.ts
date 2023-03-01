@@ -1,14 +1,13 @@
-import { Constraint, Solution, World, debug } from '../../plugins/scenario';
+import { StaticConstraint, Solution, World, debug } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
-import { Requirements } from './Requirements';
 import { Migration, loadMigrations, Actions } from '../../plugins/deployment_manager/Migration';
 import { modifiedPaths, subsets } from '../utils';
 import { DeploymentManager } from '../../plugins/deployment_manager';
 
-async function getMigrations<T>(context: CometContext, _requirements: Requirements): Promise<Migration<T>[]> {
+async function getMigrations<T>(world: World): Promise<Migration<T>[]> {
   // TODO: make this configurable from cli params/env var?
-  const network = context.world.deploymentManager.network;
-  const deployment = context.world.deploymentManager.deployment;
+  const network = world.deploymentManager.network;
+  const deployment = world.deploymentManager.deployment;
   const pattern = new RegExp(`deployments/${network}/${deployment}/migrations/.*.ts`);
   return await loadMigrations((await modifiedPaths(pattern)).map(p => '../../' + p));
 }
@@ -17,11 +16,11 @@ async function isEnacted<T>(actions: Actions<T>, deploymentManager: DeploymentMa
   return actions.enacted && await actions.enacted(deploymentManager);
 }
 
-export class MigrationConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(requirements: R, context: T, world: World) {
+export class MigrationConstraint<T extends CometContext> implements StaticConstraint<T> {
+  async solve(world: World) {
     const label = `[${world.base.name}] {MigrationConstraint}`;
     const solutions: Solution<T>[] = [];
-    const migrationPaths = [...subsets(await getMigrations(context, requirements))];
+    const migrationPaths = [...subsets(await getMigrations(world))];
 
     for (const migrationList of migrationPaths) {
       if (migrationList.length == 0 && migrationPaths.length > 1) {
@@ -63,13 +62,13 @@ export class MigrationConstraint<T extends CometContext, R extends Requirements>
     return solutions;
   }
 
-  async check(_requirements: R, _context: T, _world: World) {
+  async check() {
     return; // XXX
   }
 }
 
-export class VerifyMigrationConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(requirements: R, context: T, world: World) {
+export class VerifyMigrationConstraint<T extends CometContext> implements StaticConstraint<T> {
+  async solve(world: World) {
     const label = `[${world.base.name}] {VerifyMigrationConstraint}`;
     return [
       async function (ctx: T): Promise<T> {
@@ -85,7 +84,7 @@ export class VerifyMigrationConstraint<T extends CometContext, R extends Require
     ];
   }
 
-  async check(_requirements: R, _context: T, _world: World) {
+  async check() {
     return; // XXX
   }
 }

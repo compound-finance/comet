@@ -34,7 +34,6 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { ProtocolConfiguration, deployComet, COMP_WHALES, WHALES } from '../../src/deploy';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
-import { Requirements } from '../constraints/Requirements';
 import { fastGovernanceExecute, max, mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from '../utils';
 
 export type ActorMap = { [name: string]: CometActor };
@@ -393,20 +392,11 @@ async function getContextProperties(context: CometContext): Promise<CometPropert
   };
 }
 
-async function forkContext(c: CometContext, w: World): Promise<CometContext> {
-  let context = new CometContext(w);
-  // We need to reconstruct the actors using the new deployment manager. Otherwise,
-  // the new actors will be using the old NonceManagers from the old deployment manager.
-  await context.setActors();
-  await context.setAssets(Object.entries(c.assets).reduce((a, [name, asset]) => ({ ...a, [name]: CometAsset.fork(asset) }), {}));
-  return context;
-}
-
 export const staticConstraints = [
-  // new NativeTokenConstraint(),
-  // new MigrationConstraint(),
-  // new ProposalConstraint(),
-  // new VerifyMigrationConstraint(),
+  new NativeTokenConstraint(),
+  new MigrationConstraint(),
+  new ProposalConstraint(),
+  new VerifyMigrationConstraint(),
 ];
 
 export const dynamicConstraints = [
