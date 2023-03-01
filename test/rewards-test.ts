@@ -1383,7 +1383,7 @@ describe('CometRewards with expanding multiplier', () => {
       await expect(
         rewards
           .connect(alice)
-          .setRewardConfig(comet.address, COMP.address)
+          .setRewardConfigWithMultiplier(comet.address, COMP.address, MULTIPLIER_FACTOR)
         //).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
       ).to.be.revertedWith(`custom error 'NotPermitted(address)'`);
     });
@@ -2071,7 +2071,7 @@ describe('CometRewards with shrinking multiplier', () => {
       await expect(
         rewards
           .connect(alice)
-          .setRewardConfig(comet.address, COMP.address)
+          .setRewardConfigWithMultiplier(comet.address, COMP.address, MULTIPLIER_FACTOR)
         //).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
       ).to.be.revertedWith(`custom error 'NotPermitted(address)'`);
     });
