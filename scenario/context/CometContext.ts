@@ -403,10 +403,10 @@ async function forkContext(c: CometContext, w: World): Promise<CometContext> {
 }
 
 export const staticConstraints = [
-  new NativeTokenConstraint(),
-  new MigrationConstraint(),
-  new ProposalConstraint(),
-  new VerifyMigrationConstraint(),
+  // new NativeTokenConstraint(),
+  // new MigrationConstraint(),
+  // new ProposalConstraint(),
+  // new VerifyMigrationConstraint(),
 ];
 
 export const dynamicConstraints = [

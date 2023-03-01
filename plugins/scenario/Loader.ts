@@ -1,6 +1,15 @@
 import fg from 'fast-glob';
 import * as path from 'path';
-import { Scenario, ScenarioFlags, Property, Initializer, Constraint, Transformer } from './Scenario';
+import {
+  Scenario,
+  ScenarioEnv,
+  ScenarioFlags,
+  Property,
+  Initializer,
+  StaticConstraint,
+  DynamicConstraint,
+  Transformer
+} from './Scenario';
 
 export interface ScenarioBuilder<T, U, R> {
   (name: string, requirements: R, property: Property<T, U>): void;
@@ -8,24 +17,24 @@ export interface ScenarioBuilder<T, U, R> {
   skip: (name: string, requirements: R, property: Property<T, U>) => void;
 }
 
-let loader: any; // XXX move to cls?
-
 export class Loader<T, U, R> {
   scenarios: { [name: string]: Scenario<T, U, R> };
-  constraints?: Constraint<T, U>[]; // XXX StaticConstraint<T, U>?
+  constraints?: StaticConstraint<T>[];
   initializer?: Initializer<T>;
   transformer?: Transformer<T, U>;
 
-  static get(): Loader<any, any, any> { // XXX
-    if (!loader)
+  static instance: any;
+
+  static get<T, U, R>(): Loader<T, U, R> {
+    if (!this.instance)
       throw new Error('Loader not initialized');
-    return loader;
+    return this.instance;
   }
 
-  static async load(glob = 'scenario/**.ts'): Promise<Loader<any, any, any>> { // XXX
-    if (loader)
+  static async load<T, U, R>(glob = 'scenario/**.ts'): Promise<Loader<T, U, R>> {
+    if (this.instance)
       throw new Error('Loader already initialized');
-    return await (loader = new Loader()).load(glob);
+    return await (this.instance = new Loader() as Loader<T, U, R>).load(glob);
   }
 
   async load(glob = 'scenario/**.ts'): Promise<this> {
@@ -39,18 +48,24 @@ export class Loader<T, U, R> {
   }
 
   configure(
-    constraints: Constraint<T, U>[], // XXX StaticConstraint<T, U>?
+    constraints: StaticConstraint<T>[],
     initializer: Initializer<T>,
     transformer: Transformer<T, U>,
   ): this {
     this.constraints = constraints;
     this.initializer = initializer;
     this.transformer = transformer;
-    return this; // XXX
+    return this; // XXX hmm
+  }
+
+  env(): ScenarioEnv<T, U> {
+    if (!this.constraints || !this.initializer || !this.transformer)
+      throw new Error('Loader not configured');
+    return this as ScenarioEnv<T, U>;
   }
 
   scenarioFun(
-    constraints: Constraint<T, R>[] // XXX dynamic constriants?
+    constraints: DynamicConstraint<T, R>[]
   ): ScenarioBuilder<T, U, R> {
     const addScenarioWithOpts =
       (flags: ScenarioFlags) => (name: string, requirements: R, property: Property<T, U>) => {
@@ -64,7 +79,7 @@ export class Loader<T, U, R> {
 
   addScenario(
     name: string,
-    constraints: Constraint<T, R>[],
+    constraints: DynamicConstraint<T, R>[],
     requirements: R,
     property: Property<T, U>,
     flags: ScenarioFlags = null
@@ -76,7 +91,7 @@ export class Loader<T, U, R> {
       constraints,
       requirements,
       property,
-      this,
+      this.env(),
       flags
     );
   }

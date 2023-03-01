@@ -1,4 +1,4 @@
-import { Scenario, Solution } from './Scenario';
+import { Scenario, ScenarioEnv, Solution } from './Scenario';
 import { ForkSpec, World } from './World';
 import { Loader } from './Loader';
 import { showReport, pluralize, Result } from './Report';
@@ -34,26 +34,37 @@ function mapSolution<T>(s: Solution<T> | Solution<T>[] | null): Solution<T>[] {
 }
 
 // XXX
-// async function applyStaticConstraints<T>(world: World, constraints: StaticConstraint<T>[]): XXX[] {
-//   // generate worlds which satisfy the constraints
-//   // note: constraints should be independent or conflicts will be detected
-//   const solutionChoices: Solution<T>[][] = await Promise.all(
-//     constraints.map((c) => c.solve(world).then(mapSolution))
-//   );
-//   for (const combo of combos([[identity], ...solutionChoices])) {
-//     // create a fresh copy of context that solutions can modify
-//     let ctx: T = await getContext(world);
+async function* applyStaticConstraints<T, U>(
+  world: World,
+  env: ScenarioEnv<T, U>
+): AsyncGenerator<World> {
+  const constraints = env.constraints; // XXX
+  const getContext = (world) => env.initializer(world); // XXX
 
-//     // apply each solution in the combo, then check they all still hold
-//     for (const solution of combo)
-//       ctx = (await solution(ctx, world)) || ctx;
-//     for (const constraint of constraints)
-//       await constraint.check(ctx, world);
-//     yield ctx;
+  // snapshot the world initially
+  let worldSnapshot = await world._snapshot();
 
-//     worldSnapshot = await world._revertAndSnapshot(worldSnapshot);
-//   }
-// }
+  // generate worlds which satisfy the constraints
+  // note: constraints should be independent or conflicts will be detected
+  const solutionChoices: Solution<T>[][] = await Promise.all(
+    constraints.map((c) => c.solve(world).then(mapSolution))
+  );
+  const baseSolutions: Solution<T>[][] = [[identity]];
+
+  for (const combo of combos(baseSolutions.concat(solutionChoices))) {
+    // create a fresh copy of context that solutions can modify
+    let ctx: T = await getContext(world);
+
+    // apply each solution in the combo, then check they all still hold
+    for (const solution of combo)
+      ctx = (await solution(ctx, world)) || ctx;
+    for (const constraint of constraints)
+      await constraint.check(world); // XXX w or w/o ctx?
+    yield ctx.world; // XXX need to preserve ctx I think?
+
+    worldSnapshot = await world._revertAndSnapshot(worldSnapshot);
+  }
+}
 
 export class Runner<T, U, R> {
   base: ForkSpec;
@@ -75,11 +86,11 @@ export class Runner<T, U, R> {
     let worldSnapshot = await world._snapshot();
 
     // get a context to use for solving constraints
-    const getContext = (world) => scenario.env.initializer(world); // XXXX
+    const getContext = (world) => scenario.env.initializer(world); // XXX
     const context = await getContext(world);
 
     // generate worlds which satisfy the constraints
-    //  constraints should be independent or conflicts will be detected
+    // note: constraints should be independent or conflicts will be detected
     const solutionChoices: Solution<T>[][] = await Promise.all(
       constraints.map((c) => c.solve(scenario.requirements, context, world).then(mapSolution))
     );
@@ -163,8 +174,7 @@ export async function runScenarios<T, U, R>(bases: ForkSpec[]) {
       await world.auxiliaryDeploymentManager.spider();
     }
 
-    const world_ = world;
-    // for (const world_ of await applyStaticConstraints(world, loader.constraints)) {
+    for await (const world_ of await applyStaticConstraints(world, loader.env())) { // XXX
       const runner = new Runner(base, world_); // XXX
 
       for (const scenario of skippedScenarios) {
@@ -193,7 +203,7 @@ export async function runScenarios<T, U, R>(bases: ForkSpec[]) {
           console.error('Encountered worker error', e);
         }
       }
-    // }
+    }
   }
 
   await showReport(results, startTime, Date.now());
