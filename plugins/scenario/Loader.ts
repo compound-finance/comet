@@ -55,7 +55,7 @@ export class Loader<T, U, R> {
     this.constraints = constraints;
     this.initializer = initializer;
     this.transformer = transformer;
-    return this; // XXX hmm
+    return this;
   }
 
   env(): ScenarioEnv<T, U> {

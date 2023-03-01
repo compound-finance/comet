@@ -33,39 +33,6 @@ function mapSolution<T>(s: Solution<T> | Solution<T>[] | null): Solution<T>[] {
   }
 }
 
-// XXX
-async function* applyStaticConstraints<T, U>(
-  world: World,
-  env: ScenarioEnv<T, U>
-): AsyncGenerator<World> {
-  const constraints = env.constraints; // XXX
-  const getContext = (world) => env.initializer(world); // XXX
-
-  // snapshot the world initially
-  let worldSnapshot = await world._snapshot();
-
-  // generate worlds which satisfy the constraints
-  // note: constraints should be independent or conflicts will be detected
-  const solutionChoices: Solution<T>[][] = await Promise.all(
-    constraints.map((c) => c.solve(world).then(mapSolution))
-  );
-  const baseSolutions: Solution<T>[][] = [[identity]];
-
-  for (const combo of combos(baseSolutions.concat(solutionChoices))) {
-    // create a fresh copy of context that solutions can modify
-    let ctx: T = await getContext(world);
-
-    // apply each solution in the combo, then check they all still hold
-    for (const solution of combo)
-      ctx = (await solution(ctx, world)) || ctx;
-    for (const constraint of constraints)
-      await constraint.check(world); // XXX w or w/o ctx?
-    yield (ctx as any).world; // XXX need to preserve ctx I think?
-
-    worldSnapshot = await world._revertAndSnapshot(worldSnapshot);
-  }
-}
-
 export class Runner<T, U, R> {
   base: ForkSpec;
   world: World;
@@ -75,19 +42,46 @@ export class Runner<T, U, R> {
     this.world = world;
   }
 
-  async run(scenario: Scenario<T, U, R>): Promise<Result> {
+  async *applyStaticConstraints<T, U>(env: ScenarioEnv<T, U>): AsyncGenerator<T> {
+    const { world } = this;
+    const { constraints } = env;
+
+    // snapshot the world initially
+    let worldSnapshot = await world._snapshot();
+
+    // generate worlds which satisfy the constraints
+    // note: constraints should be independent or conflicts will be detected
+    const solutionChoices: Solution<T>[][] = await Promise.all(
+      constraints.map((c) => c.solve(world).then(mapSolution))
+    );
+    const baseSolutions: Solution<T>[][] = [[identity]];
+
+    for (const combo of combos(baseSolutions.concat(solutionChoices))) {
+      // create a fresh copy of context that solutions can modify
+      // note: changes to the static ctx won't currently be shared with dynamic constraints
+      //  if context forking is added back to the env it could be supported
+      let ctx: T = await env.initializer(world);
+
+      // apply each solution in the combo, then check they all still hold
+      for (const solution of combo)
+        ctx = (await solution(ctx, world)) || ctx;
+      for (const constraint of constraints)
+        await constraint.check(world);
+      yield ctx;
+
+      worldSnapshot = await world._revertAndSnapshot(worldSnapshot);
+    }
+  }
+
+  async run(scenario: Scenario<T, U, R>, context: T): Promise<Result> {
     const { base, world } = this;
-    const { constraints = [] } = scenario;
+    const { constraints = [], env } = scenario;
 
     let startTime = Date.now();
     let numSolutionSets = 0;
 
     // snapshot the world initially
     let worldSnapshot = await world._snapshot();
-
-    // get a context to use for solving constraints
-    const getContext = (world) => scenario.env.initializer(world); // XXX
-    const context = await getContext(world);
 
     // generate worlds which satisfy the constraints
     // note: constraints should be independent or conflicts will be detected
@@ -99,7 +93,9 @@ export class Runner<T, U, R> {
     let cumulativeGas = 0;
     for (const combo of combos(baseSolutions.concat(solutionChoices))) {
       // create a fresh copy of context that solutions can modify
-      let ctx: T = await getContext(world);
+      // note: context is not 'forked' from the static constraint context
+      //  a forker could be added back to the env if needed to support that
+      let ctx: T = await env.initializer(world);
 
       try {
         // apply each solution in the combo, then check they all still hold
@@ -112,7 +108,7 @@ export class Runner<T, U, R> {
         }
 
         // requirements met, run the property
-        let txnReceipt = await scenario.property(await scenario.env.transformer(ctx), ctx, world);
+        let txnReceipt = await scenario.property(await env.transformer(ctx), ctx, world);
         if (txnReceipt) {
           cumulativeGas += txnReceipt.cumulativeGasUsed.toNumber();
         }
@@ -174,9 +170,12 @@ export async function runScenarios(bases: ForkSpec[]) {
       await world.auxiliaryDeploymentManager.spider();
     }
 
-    for await (const world_ of await applyStaticConstraints(world, loader.env())) { // XXX
-      const runner = new Runner(base, world_); // XXX
+    const runner = new Runner(base, world);
 
+    // NB: contexts are (still) a bit awkward
+    //  they prob dont even really need to get passed through here currently
+    //  and story around context and world is weird
+    for await (const context of await runner.applyStaticConstraints(loader.env())) {
       for (const scenario of skippedScenarios) {
         results.push({
           base: base.name,
@@ -191,7 +190,7 @@ export async function runScenarios(bases: ForkSpec[]) {
       for (const scenario of runningScenarios) {
         console.log(`[${base.name}] Running ${scenario.name} ...`);
         try {
-          const result = await runner.run(scenario), N = result.numSolutionSets;
+          const result = await runner.run(scenario, context), N = result.numSolutionSets;
           if (N) {
             console.log(`[${base.name}] ... ran ${scenario.name}`);
             console.log(`[${base.name}]  ⛽ consumed ${result.gasUsed} gas on average over ${pluralize(N, 'solution', 'solutions')}`);

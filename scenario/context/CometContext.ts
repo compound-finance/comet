@@ -415,4 +415,4 @@ export const scenarioLoader = Loader.get().configure(
   getInitialContext,
   getContextProperties,
 );
-export const scenario = scenarioLoader.scenarioFun(dynamicConstraints); // XXX
+export const scenario = scenarioLoader.scenarioFun(dynamicConstraints);
