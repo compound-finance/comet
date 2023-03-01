@@ -59,7 +59,7 @@ contract CometRewards {
      * @notice Set the reward token for a Comet instance
      * @param comet The protocol instance
      * @param token The reward token address
-     * @param multiplier The multiplier to apply to convert a unit of accrued tracking to a unit of the reward token
+     * @param multiplier The multiplier for converting a unit of accrued tracking to a unit of the reward token
      */
     function setRewardConfigWithMultiplier(address comet, address token, uint256 multiplier) public {
         if (msg.sender != governor) revert NotPermitted(msg.sender);
@@ -69,32 +69,36 @@ contract CometRewards {
         uint8 tokenDecimals = ERC20(token).decimals();
         uint64 tokenScale = safe64(10 ** tokenDecimals);
         uint64 rescaleFactor;
+        uint64 rescaleFactorAfterMultiplier;
         bool shouldUpscale;
         if (accrualScale > tokenScale) {
+            // Downscale as long is multiplier is not too large
             rescaleFactor = accrualScale / tokenScale;
-            // Flip from downscale to upscale if the multiplier is greater than the rescale factor
-            if (rescaleFactor * FACTOR_SCALE < multiplier) {
-                rescaleFactor = safe64(multiplier / uint256(rescaleFactor) / FACTOR_SCALE);
+            shouldUpscale = false;
+            // If multiplier is larger than rescaleFactor, then we have to flip from downscale to upscale
+            if (multiplier > rescaleFactor * FACTOR_SCALE) {
+                rescaleFactorAfterMultiplier = safe64(multiplier / uint256(rescaleFactor) / FACTOR_SCALE);
                 shouldUpscale = true;
             } else {
-                rescaleFactor = safe64(uint256(rescaleFactor) * FACTOR_SCALE / multiplier);
-                shouldUpscale = false;
+                rescaleFactorAfterMultiplier = safe64(uint256(rescaleFactor) * FACTOR_SCALE / multiplier);
             }
         } else {
+            // Upscale as long as multiplier is not too small
             rescaleFactor = tokenScale / accrualScale;
-            // Flip from upscale to downscale if 1 / multiplier is greater than the rescale factor
-            if (FACTOR_SCALE / multiplier > rescaleFactor) {
-                rescaleFactor = safe64(FACTOR_SCALE / multiplier / uint256(rescaleFactor));
+            shouldUpscale = true;
+            uint256 inverseMultiplier = FACTOR_SCALE / multiplier;
+            // If rescaleFactor is less than the inverse of the multiplier, then we have to flip from upscale to downscale
+            if (rescaleFactor < inverseMultiplier) {
+                rescaleFactorAfterMultiplier = safe64(inverseMultiplier / uint256(rescaleFactor));
                 shouldUpscale = false;
             } else {
-                rescaleFactor = safe64(uint256(rescaleFactor) * multiplier / FACTOR_SCALE);
-                shouldUpscale = true;
+                rescaleFactorAfterMultiplier = safe64(uint256(rescaleFactor) * multiplier / FACTOR_SCALE);
             }
         }
 
         rewardConfig[comet] = RewardConfig({
             token: token,
-            rescaleFactor: rescaleFactor,
+            rescaleFactor: rescaleFactorAfterMultiplier,
             shouldUpscale: shouldUpscale
         });
     }
