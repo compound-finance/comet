@@ -100,6 +100,11 @@ const networkConfigs: NetworkConfig[] = [
     chainId: 80001,
     url: `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`,
   },
+  {
+    network: 'arbitrum-goerli',
+    chainId: 421613,
+    url: `https://arbitrum-goerli.infura.io/v3/${INFURA_KEY}`,
+  }
 ];
 
 function getDefaultProviderURL(network: string) {
@@ -256,6 +261,12 @@ const config: HardhatUserConfig = {
         network: 'polygon',
         deployment: 'usdc',
         auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'arbitrum-goerli',
+        network: 'arbitrum-goerli',
+        deployment: 'usdc',
+        auxiliaryBase: 'goerli'
       }
     ],
   },
