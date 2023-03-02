@@ -125,6 +125,18 @@ const relationConfigMap: RelationConfigMap = {
       },
     },
   },
+
+  rewards: {
+    relations: {
+      rewardToken: {
+        field: async (rewards, { comet }) => {
+          const rewardToken = (await rewards.rewardConfig(comet[0].address)).token;
+          return rewardToken !== '0x0000000000000000000000000000000000000000' ? rewardToken : null;
+        },
+        alias: async (token) => token.symbol(),
+      },
+    },
+  },
 };
 
 export default relationConfigMap;
