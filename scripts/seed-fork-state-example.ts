@@ -8,7 +8,7 @@ import { requireEnv } from '../hardhat.config';
 
 // Instructions before running:
 // 1. Set the `url` (RPC url) for your target network in `hardhat.config.ts` to your EthForks URL.
-// 2. Run `DEPLOYMENT=<e.g. usdc> ACCOUNT=<YOUR_ACCOUNT> REMOTE_ACCOUNTS=true npx hardhat run scripts/seed-fork-state.ts --network <YOUR_NETWORK>>`
+// 2. Run `DEPLOYMENT=<e.g. usdc> ACCOUNT=<YOUR_ACCOUNT> REMOTE_ACCOUNTS=true npx hardhat run scripts/seed-fork-state-example.ts --network <YOUR_NETWORK>>`
 async function main() {
   const DEPLOYMENT = requireEnv('DEPLOYMENT');
   const ACCOUNT = requireEnv('ACCOUNT');
