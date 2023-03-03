@@ -1,11 +1,10 @@
 import { task } from 'hardhat/config';
-import { runScenario } from '../../plugins/scenario/worker/Parent';
+import { runScenarios } from '../../plugins/scenario/Runner';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
 import '../../plugins/scenario/type-extensions';
 import { ForkSpec } from '../../plugins/scenario/World';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeploymentManager } from '../../plugins/deployment_manager/DeploymentManager';
-import * as types from 'hardhat/internal/core/params/argumentTypes'; // TODO harhdat argument types not from internal
 
 function getBasesFromTaskArgs(givenBases: string | undefined, env: HardhatRuntimeEnvironment): ForkSpec[] {
   let bases: ForkSpec[] = env.config.scenario.bases;
@@ -26,14 +25,12 @@ function getBasesFromTaskArgs(givenBases: string | undefined, env: HardhatRuntim
 task('scenario', 'Runs scenario tests')
   .addOptionalParam('bases', 'Bases to run on [defaults to all]')
   .addFlag('spider', 'run spider persistently before scenarios')
-  .addOptionalParam('stall', 'milliseconds to wait until we fail for stalling', 240_000, types.int)
-  .addOptionalParam('workers', 'count of workers', 1, types.int) // TODO: optimize parallelized workers better (1 per base?)
   .setAction(async (taskArgs, env: HardhatRuntimeEnvironment) => {
     const bases: ForkSpec[] = getBasesFromTaskArgs(taskArgs.bases, env);
     if (taskArgs.spider) {
       await env.run('scenario:spider', taskArgs);
     }
-    await runScenario(env.config.scenario, bases, taskArgs.workers, taskArgs.workers > 1, taskArgs.stall);
+    await runScenarios(bases);
   });
 
 task('scenario:spider', 'Runs spider in preparation for scenarios')

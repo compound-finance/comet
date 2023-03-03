@@ -1,74 +1,110 @@
 import fg from 'fast-glob';
 import * as path from 'path';
-import { Scenario, ScenarioFlags, Property, Initializer, Forker, Constraint, Transformer } from './Scenario';
+import {
+  Scenario,
+  ScenarioEnv,
+  ScenarioFlags,
+  Property,
+  Initializer,
+  StaticConstraint,
+  DynamicConstraint,
+  Transformer
+} from './Scenario';
 
-class Loader<T, U, R> {
+export interface ScenarioBuilder<T, U, R> {
+  (name: string, requirements: R, property: Property<T, U>): void;
+  only: (name: string, requirements: R, property: Property<T, U>) => void;
+  skip: (name: string, requirements: R, property: Property<T, U>) => void;
+}
+
+export class Loader<T, U, R> {
   scenarios: { [name: string]: Scenario<T, U, R> };
+  constraints?: StaticConstraint<T>[];
+  initializer?: Initializer<T>;
+  transformer?: Transformer<T, U>;
+
+  static instance: any;
+
+  static get<T, U, R>(): Loader<T, U, R> {
+    if (!this.instance)
+      throw new Error('Loader not initialized');
+    return this.instance;
+  }
+
+  static async load<T, U, R>(glob = 'scenario/**.ts'): Promise<Loader<T, U, R>> {
+    if (this.instance)
+      throw new Error('Loader already initialized');
+    return await (this.instance = new Loader() as Loader<T, U, R>).load(glob);
+  }
+
+  async load(glob = 'scenario/**.ts'): Promise<this> {
+    for (let entry of await fg(glob))
+      await import(path.join(process.cwd(), entry));
+    return this;
+  }
 
   constructor() {
     this.scenarios = {};
   }
 
-  addScenario(
-    name: string,
-    requirements: R,
-    property: Property<T, U>,
+  configure(
+    constraints: StaticConstraint<T>[],
     initializer: Initializer<T>,
     transformer: Transformer<T, U>,
-    forker: Forker<T>,
-    constraints: Constraint<T, R>[],
+  ): this {
+    this.constraints = constraints;
+    this.initializer = initializer;
+    this.transformer = transformer;
+    return this;
+  }
+
+  env(): ScenarioEnv<T, U> {
+    if (!this.constraints || !this.initializer || !this.transformer)
+      throw new Error('Loader not configured');
+    return this as ScenarioEnv<T, U>;
+  }
+
+  scenarioFun(
+    constraints: DynamicConstraint<T, R>[]
+  ): ScenarioBuilder<T, U, R> {
+    const addScenarioWithOpts =
+      (flags: ScenarioFlags) => (name: string, requirements: R, property: Property<T, U>) => {
+        this.addScenario(name, constraints, requirements, property, flags);
+      };
+    return Object.assign(addScenarioWithOpts(null), {
+      only: addScenarioWithOpts('only'),
+      skip: addScenarioWithOpts('skip'),
+    });
+  }
+
+  addScenario(
+    name: string,
+    constraints: DynamicConstraint<T, R>[],
+    requirements: R,
+    property: Property<T, U>,
     flags: ScenarioFlags = null
   ) {
-    if (this.scenarios[name]) {
+    if (this.scenarios[name])
       throw new Error(`Duplicate scenarios by name: ${name}`);
-    }
     this.scenarios[name] = new Scenario<T, U, R>(
       name,
+      constraints,
       requirements,
       property,
-      initializer,
-      transformer,
-      forker,
-      constraints,
+      this.env(),
       flags
     );
   }
 
-  getScenarios(): { [name: string]: Scenario<T, U, R> } {
-    return this.scenarios;
+  splitScenarios(): [Scenario<T, U, R>[], Scenario<T, U, R>[]] {
+    const scenarios = Object.values(this.scenarios);
+    const rest = scenarios.filter(s => s.flags === null);
+    const only = scenarios.filter(s => s.flags === 'only');
+    const skip = scenarios.filter(s => s.flags === 'skip');
+    if (only.length > 0) {
+      return [only, skip.concat(rest)];
+    } else {
+      return [rest, skip];
+    }
   }
-}
-
-let loader: any;
-
-function setupLoader<T, U, R>() {
-  if (loader) {
-    throw new Error('Loader already initialized');
-  }
-
-  loader = new Loader<T, U, R>();
-}
-
-export function getLoader<T, U, R>(): Loader<T, U, R> {
-  if (!loader) {
-    throw new Error('Loader not initialized');
-  }
-
-  return <Loader<T, U, R>>loader;
-}
-
-export async function loadScenarios<T, U, R>(glob: string): Promise<{ [name: string]: Scenario<T, U, R> }> {
-  setupLoader<T, U, R>();
-
-  const entries = await fg(glob); // Grab all potential scenario files
-
-  for (let entry of entries) {
-    let entryPath = path.join(process.cwd(), entry);
-
-    /* Import scenario file */
-    await import(entryPath);
-    /* Import complete */
-  }
-
-  return loader.getScenarios();
 }

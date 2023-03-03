@@ -1,7 +1,6 @@
-import { Constraint, World, debug } from '../../plugins/scenario';
+import { StaticConstraint, debug } from '../../plugins/scenario';
 import { IGovernorBravo, ProposalState, OpenProposal } from '../context/Gov';
 import { CometContext } from '../context/CometContext';
-import { Requirements } from './Requirements';
 import { fetchLogs } from '../utils';
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { isBridgedDeployment, executeOpenProposal, executeOpenProposalAndRelay } from '../utils';
@@ -30,13 +29,13 @@ async function getOpenProposals(deploymentManager: DeploymentManager, governor: 
   return proposals;
 }
 
-export class ProposalConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
-  async solve(requirements: R, context: T, world: World) {
+export class ProposalConstraint<T extends CometContext> implements StaticConstraint<T> {
+  async solve() {
     return async function (ctx: T): Promise<T> {
       const isBridged = isBridgedDeployment(ctx);
       const label = isBridged ?
-        `[${world.base.auxiliaryBase} -> ${world.base.name}] {ProposalConstraint}`
-        : `[${world.base.name}] {ProposalConstraint}`;
+        `[${ctx.world.base.auxiliaryBase} -> ${ctx.world.base.name}] {ProposalConstraint}`
+        : `[${ctx.world.base.name}] {ProposalConstraint}`;
 
       const governanceDeploymentManager = ctx.world.auxiliaryDeploymentManager || ctx.world.deploymentManager;
       const governor = await governanceDeploymentManager.contract('governor') as IGovernorBravo;
@@ -68,7 +67,7 @@ export class ProposalConstraint<T extends CometContext, R extends Requirements> 
     };
   }
 
-  async check(_requirements: R, _context: T, _world: World) {
+  async check() {
     return; // XXX
   }
 }

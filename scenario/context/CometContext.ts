@@ -1,7 +1,6 @@
 import { BigNumber, BigNumberish } from 'ethers';
-import { World, buildScenarioFn } from '../../plugins/scenario';
+import { Loader, World, debug } from '../../plugins/scenario';
 import { Migration } from '../../plugins/deployment_manager';
-import { debug } from '../../plugins/deployment_manager/Utils';
 import {
   NativeTokenConstraint,
   TokenBalanceConstraint,
@@ -35,7 +34,6 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { ProtocolConfiguration, deployComet, COMP_WHALES, WHALES } from '../../src/deploy';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
-import { Requirements } from '../constraints/Requirements';
 import { fastGovernanceExecute, max, mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from '../utils';
 
 export type ActorMap = { [name: string]: CometActor };
@@ -394,28 +392,27 @@ async function getContextProperties(context: CometContext): Promise<CometPropert
   };
 }
 
-async function forkContext(c: CometContext, w: World): Promise<CometContext> {
-  let context = new CometContext(w);
-  // We need to reconstruct the actors using the new deployment manager. Otherwise,
-  // the new actors will be using the old NonceManagers from the old deployment manager.
-  await context.setActors();
-  await context.setAssets(Object.entries(c.assets).reduce((a, [name, asset]) => ({ ...a, [name]: CometAsset.fork(asset) }), {}));
-  return context;
-}
-
-export const constraints = [
-  new FilterConstraint(),
+export const staticConstraints = [
   new NativeTokenConstraint(),
   new MigrationConstraint(),
   new ProposalConstraint(),
   new VerifyMigrationConstraint(),
+];
+
+export const dynamicConstraints = [
+  new FilterConstraint(),
   new ModernConstraint(),
   new PauseConstraint(),
   new SupplyCapConstraint(),
   new CometBalanceConstraint(),
   new TokenBalanceConstraint(),
   new UtilizationConstraint(),
-  new PriceConstraint()
+  new PriceConstraint(),
 ];
 
-export const scenario = buildScenarioFn<CometContext, CometProperties, Requirements>(getInitialContext, getContextProperties, forkContext, constraints);
+export const scenarioLoader = Loader.get().configure(
+  staticConstraints,
+  getInitialContext,
+  getContextProperties,
+);
+export const scenario = scenarioLoader.scenarioFun(dynamicConstraints);
