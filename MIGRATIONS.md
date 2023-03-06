@@ -1,4 +1,3 @@
-
 # Migrations
 
 Migrations are simple scripts which deploy or modify contracts. The goal of migration scripts is to make sure that users can see potential changes that are run prior to creating a governance proposal. This is a "nothing up my sleeve" approach to governance preparation (as in, the magician rolls up his sleeves to show there's nothing there-- so the developer deploys scripts from GitHub to show which code was deployed or run).

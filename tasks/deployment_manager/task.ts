@@ -25,7 +25,7 @@ function getDefaultDeployment(config: HardhatConfig, network: string): string {
 
 async function runMigration<T>(
   deploymentManager: DeploymentManager,
-  governanceDeploymentManager: DeploymentManager,
+  govDeploymentManager: DeploymentManager,
   prepare: boolean,
   enact: boolean,
   migration: Migration<T>,
@@ -40,7 +40,7 @@ async function runMigration<T>(
     }
 
     console.log('Running preparation step...');
-    artifact = await migration.actions.prepare(deploymentManager);
+    artifact = await migration.actions.prepare(deploymentManager, govDeploymentManager);
     console.log('Preparation artifact', artifact);
     let outputFile = await deploymentManager.storeArtifact(migration, artifact);
     if (deploymentManager.cache.writeCacheToDisk) {
@@ -52,7 +52,7 @@ async function runMigration<T>(
 
   if (enact) {
     console.log('Running enactment step with artifact...', artifact);
-    await migration.actions.enact(governanceDeploymentManager, artifact);
+    await migration.actions.enact(deploymentManager, govDeploymentManager, artifact);
     console.log('Enactment complete');
   }
 }
