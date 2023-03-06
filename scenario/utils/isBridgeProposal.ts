@@ -13,7 +13,7 @@ export async function isBridgeProposal(
       const governor = await governanceDeploymentManager.getContractOrThrow('governor');
       const fxRoot = await governanceDeploymentManager.getContractOrThrow('fxRoot');
       const { targets } = await governor.getActions(openProposal.id);
-      return targets.includes(fxRoot.address);
+      return targets.map((x: string) => x.toLowerCase()).includes(fxRoot.address.toLowerCase());
     }
     default: {
       const tag = `[${bridgeNetwork} -> ${governanceDeploymentManager.network}]`;
