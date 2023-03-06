@@ -99,7 +99,7 @@ async function main() {
   let lastBlockNumber: number;
   let loops = 0;
   while (true) {
-    if (loops >= loopsUntilUpdateAssets) {
+    if (assets.length == 0 || loops >= loopsUntilUpdateAssets) {
       googleCloudLog(LogSeverity.INFO, 'Updating assets');
       assets = await getAssets(comet);
       loops = 0;

@@ -51,7 +51,12 @@ describe('Liquidation Bot', function () {
         expect(await comet.isLiquidatable(underwater.address)).to.be.false;
 
         const assetAddresses = await getAssets(comet);
-        expect(await hasPurchaseableCollateral(comet, assetAddresses, 1)).to.be.false;
+        expect(await hasPurchaseableCollateral(comet, assetAddresses, 1e6)).to.be.false;
+        // make sure that hasPurchaseableCollateral is false not because the
+        // protocol has exceeded target reserves
+        expect(
+          (await comet.getReserves()).lt(await comet.targetReserves())
+        ).to.be.true;
       });
     }
   });
@@ -84,7 +89,12 @@ describe('Liquidation Bot', function () {
       );
 
       // There will be some dust to purchase, but we expect it to be less than $1 of worth
-      expect(await hasPurchaseableCollateral(comet, assetAddresses, 1)).to.be.false;
+      expect(await hasPurchaseableCollateral(comet, assetAddresses, 1e6)).to.be.false;
+      // make sure that hasPurchaseableCollateral is false not because the
+      // protocol has exceeded target reserves
+      expect(
+        (await comet.getReserves()).lt(await comet.targetReserves())
+      ).to.be.true;
     });
 
     it('buys all collateral when available', async function () {
@@ -117,7 +127,12 @@ describe('Liquidation Bot', function () {
       );
 
       // There will be some dust to purchase, but we expect it to be less than $1 of worth
-      expect(await hasPurchaseableCollateral(comet, assetAddresses, 1)).to.be.false;
+      expect(await hasPurchaseableCollateral(comet, assetAddresses, 1e6)).to.be.false;
+      // make sure that hasPurchaseableCollateral is false not because the
+      // protocol has exceeded target reserves
+      expect(
+        (await comet.getReserves()).lt(await comet.targetReserves())
+      ).to.be.true;
     });
 
     it('hasPurchaseableCollateral ignores dust collateral', async function () {
@@ -137,6 +152,11 @@ describe('Liquidation Bot', function () {
       expect(await hasPurchaseableCollateral(comet, assetAddresses, 0)).to.be.true;
       // There will be some dust to purchase, but we expect it to be less than $1 of worth
       expect(await hasPurchaseableCollateral(comet, assetAddresses, 1e6)).to.be.false;
+      // make sure that hasPurchaseableCollateral is false not because the
+      // protocol has exceeded target reserves
+      expect(
+        (await comet.getReserves()).lt(await comet.targetReserves())
+      ).to.be.true;
     });
 
     // XXX hasPurchaseableCollateral returns false when reserves are above target reserves

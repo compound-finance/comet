@@ -292,8 +292,8 @@ async function getUniqueAddresses(comet: CometInterface): Promise<Set<string>> {
 }
 
 export async function hasPurchaseableCollateral(comet: CometInterface, assets: Asset[], minBaseValue: number): Promise<boolean> {
-  const baseReserves = await comet.getReserves();
-  const targetReserves = await comet.targetReserves();
+  const baseReserves = (await comet.getReserves()).toBigInt();
+  const targetReserves = (await comet.targetReserves()).toBigInt();
 
   if (baseReserves >= targetReserves) {
     return false;
@@ -364,6 +364,8 @@ export async function arbitragePurchaseableCollateral(
       network,
       deployment
     );
+  } else {
+    googleCloudLog(LogSeverity.INFO, `No purchasable collateral found`);
   }
 }
 
