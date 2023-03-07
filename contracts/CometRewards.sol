@@ -42,6 +42,7 @@ contract CometRewards {
     /** Custom errors **/
 
     error AlreadyConfigured(address);
+    error BadData();
     error InvalidUInt64(uint);
     error NotPermitted(address);
     error NotSupported(address);
@@ -110,6 +111,22 @@ contract CometRewards {
      */
     function setRewardConfig(address comet, address token) external {
         setRewardConfigWithMultiplier(comet, token, FACTOR_SCALE);
+    }
+
+    /**
+     * @notice Set the rewards claimed for a list of users
+     * @param comet The protocol instance to populate the data for
+     * @param users The list of users to populate the data for
+     * @param claimedAmounts The list of claimed amounts to populate the data with
+     */
+    function setRewardsClaimed(address comet, address[] calldata users, uint[] calldata claimedAmounts) external {
+        if (msg.sender != governor) revert NotPermitted(msg.sender);
+        if (users.length != claimedAmounts.length) revert BadData();
+
+        for (uint i = 0; i < users.length; ) {
+            rewardsClaimed[comet][users[i]] = claimedAmounts[i];
+            unchecked { i++; }
+        }
     }
 
     /**

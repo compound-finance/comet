@@ -665,6 +665,60 @@ describe('CometRewards', () => {
     });
   });
 
+  describe('setRewardsClaimed', () => {
+    it('allows governor to set rewards claimed', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { COMP },
+        users: [alice, bob],
+      } = await makeProtocol();
+      const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
+
+      const _tx = await wait(rewards.setRewardsClaimed(comet.address, [alice.address, bob.address], [exp(1, 18), exp(2, 18)]));
+      
+      expect(await rewards.rewardsClaimed(comet.address, alice.address)).to.be.equal(exp(1, 18));
+      expect(await rewards.rewardsClaimed(comet.address, bob.address)).to.be.equal(exp(2, 18));
+      // Check that reward owed still works as expected
+      const aliceRewardOwed = await rewards.callStatic.getRewardOwed(comet.address, alice.address);
+      const bobRewardOwed = await rewards.callStatic.getRewardOwed(comet.address, bob.address);
+      expect(aliceRewardOwed.owed).to.be.equal(0);
+      expect(bobRewardOwed.owed).to.be.equal(0);
+    });
+
+    it('reverts if addresses and claimedAmounts have different lengths', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { COMP },
+        users: [alice],
+      } = await makeProtocol();
+      const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
+
+      await expect(
+        rewards
+          .setRewardsClaimed(comet.address, [alice.address], [])
+      ).to.be.revertedWith(`custom error 'BadData()'`);
+    });
+
+    it('does not allow anyone but governor to set rewards claimed', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { COMP },
+        users: [alice],
+      } = await makeProtocol();
+      const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
+
+      await expect(
+        rewards
+          .connect(alice)
+          .setRewardsClaimed(comet.address, [alice.address], [exp(100, 18)])
+      //).to.be.revertedWith(`custom error 'NotPermitted("${alice.address}")'`);
+      ).to.be.revertedWith(`custom error 'NotPermitted(address)'`);
+    });
+  });
+
   describe('transferGovernor', () => {
     it('allows governor to transfer governor', async () => {
       const {
