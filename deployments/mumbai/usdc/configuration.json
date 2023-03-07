@@ -29,7 +29,7 @@
       "borrowCF": 0.79,
       "liquidateCF": 0.85,
       "liquidationFactor": 0.93,
-      "supplyCap": "500000e18"
+      "supplyCap": "1_000_000e18"
     },
     "WETH": {
       "priceFeed": "0x0715A7794a1dc8e42615F059dD6e406A6594651A",
@@ -37,7 +37,7 @@
       "borrowCF": 0.82,
       "liquidateCF": 0.85,
       "liquidationFactor": 0.93,
-      "supplyCap": "1000000e18"
+      "supplyCap": "50_000e18"
     },
     "WBTC": {
       "priceFeed": "0x007A22900a3B98143368Bd5906f8E17e9867581b",
@@ -45,7 +45,7 @@
       "borrowCF": 0.7,
       "liquidateCF": 0.75,
       "liquidationFactor": 0.93,
-      "supplyCap": "35000e8"
+      "supplyCap": "20_000e8"
     },
     "WMATIC": {
       "priceFeed": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
@@ -53,7 +53,7 @@
       "borrowCF": 0.82,
       "liquidateCF": 0.85,
       "liquidationFactor": 0.93,
-      "supplyCap": "1000000e18"
+      "supplyCap": "500_000e18"
     }
   }
 }

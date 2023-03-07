@@ -20,7 +20,9 @@ import relationConfigMap from './deployments/relations';
 import goerliRelationConfigMap from './deployments/goerli/usdc/relations';
 import goerliWethRelationConfigMap from './deployments/goerli/weth/relations';
 import mumbaiRelationConfigMap from './deployments/mumbai/usdc/relations';
+import mainnetRelationConfigMap from './deployments/mainnet/usdc/relations';
 import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
+import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -37,7 +39,9 @@ const {
   POLYGONSCAN_KEY,
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
-  REMOTE_ACCOUNTS = '',
+  GOV_NETWORK_PROVIDER = '',
+  GOV_NETWORK = '',
+  REMOTE_ACCOUNTS = ''
 } = process.env;
 
 function *deriveAccounts(pk: string, n: number = 10) {
@@ -106,7 +110,11 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
   for (const netConfig of networkConfigs) {
     hardhatConfig.networks[netConfig.network] = {
       chainId: netConfig.chainId,
-      url: NETWORK_PROVIDER || netConfig.url || getDefaultProviderURL(netConfig.network),
+      url:
+        (netConfig.network === GOV_NETWORK ? GOV_NETWORK_PROVIDER : undefined) ||
+        NETWORK_PROVIDER ||
+        netConfig.url ||
+        getDefaultProviderURL(netConfig.network),
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
       accounts: REMOTE_ACCOUNTS ? "remote" : ( ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC } ),
@@ -190,8 +198,12 @@ const config: HardhatUserConfig = {
         usdc: mumbaiRelationConfigMap
       },
       mainnet: {
+        usdc: mainnetRelationConfigMap,
         weth: mainnetWethRelationConfigMap
-      }
+      },
+      polygon: {
+        usdc: polygonRelationConfigMap
+      },
     },
   },
 
@@ -238,6 +250,12 @@ const config: HardhatUserConfig = {
         network: 'mumbai',
         deployment: 'usdc',
         auxiliaryBase: 'goerli'
+      },
+      {
+        name: 'polygon',
+        network: 'polygon',
+        deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
       }
     ],
   },

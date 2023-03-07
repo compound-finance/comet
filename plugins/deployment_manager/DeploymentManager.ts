@@ -417,7 +417,7 @@ export class DeploymentManager {
    * Call an async function with a given amount of retries
    * @param fn an async function that takes a signer as an argument. The function takes a signer
    * because a new instance of a signer needs to be used on each retry
-   * @param retries the number of times to retry the function. Default is 5 retries
+   * @param retries the number of times to retry the function. Default is 7 retries
    * @param timeLimit time limit before timeout in milliseconds
    * @param wait time to wait between tries in milliseconds
    */

@@ -1,0 +1,40 @@
+import { OpenBridgedProposal } from '../context/Gov';
+import { fetchLogs } from '../utils';
+import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
+
+export async function getOpenBridgedProposals(
+  deploymentManager: DeploymentManager,
+): Promise<OpenBridgedProposal[]> {
+  const receiver = await deploymentManager.contract('bridgeReceiver');
+  const timelockBuf = 30000; // XXX this should be timelock.delay + timelock.GRACE_PERIOD
+  const searchBlocks = timelockBuf;
+  const block = await deploymentManager.hre.ethers.provider.getBlockNumber();
+  const filter = receiver.filters.ProposalCreated();
+  const logs = await fetchLogs(receiver, filter, block - searchBlocks, block);
+  const proposals = [];
+  if (logs) {
+    for (let log of logs) {
+      const [, id, , , , , eta] = log.args;
+      const state = await receiver.state(id);
+      if ([BridgedProposalState.Queued].includes(state)) {
+        proposals.push({ id, eta });
+      }
+    }
+  }
+  return proposals;
+}
+
+export async function executeBridgedProposal(
+  deploymentManager: DeploymentManager,
+  proposal: OpenBridgedProposal,
+) {
+  const receiver = await deploymentManager.contract('bridgeReceiver');
+  const { id, eta } = proposal;
+
+  // fast forward l2 time
+  await setNextBlockTimestamp(deploymentManager, eta.toNumber() + 1);
+
+  // execute queued proposal
+  await setNextBaseFeeToZero(deploymentManager);
+  await receiver.executeProposal(id, { gasPrice: 0 });
+}
