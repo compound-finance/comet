@@ -4,6 +4,7 @@ import { CometContext } from '../context/CometContext';
 import { fetchLogs } from '../utils';
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { isBridgedDeployment, executeOpenProposal, executeOpenProposalAndRelay } from '../utils';
+import { getOpenBridgedProposals, executeBridgedProposal } from '../utils/bridgeProposal';
 
 async function getOpenProposals(deploymentManager: DeploymentManager, governor: IGovernorBravo): Promise<OpenProposal[]> {
   const timelockBuf = 30000; // XXX this should be timelock.delay + timelock.GRACE_PERIOD
@@ -18,10 +19,12 @@ async function getOpenProposals(deploymentManager: DeploymentManager, governor: 
     for (let log of logs) {
       const [id, , , , , , startBlock, endBlock] = log.args;
       const state = await governor.state(id);
-      if ([ProposalState.Pending,
+      if ([
+        ProposalState.Pending,
         ProposalState.Active,
         ProposalState.Succeeded,
-        ProposalState.Queued].includes(state)) {
+        ProposalState.Queued,
+      ].includes(state)) {
         proposals.push({ id, startBlock, endBlock });
       }
     }
@@ -37,10 +40,17 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
         `[${ctx.world.base.auxiliaryBase} -> ${ctx.world.base.name}] {ProposalConstraint}`
         : `[${ctx.world.base.name}] {ProposalConstraint}`;
 
-      const governanceDeploymentManager = ctx.world.auxiliaryDeploymentManager || ctx.world.deploymentManager;
+      const deploymentManager = ctx.world.deploymentManager;
+      if (isBridged) {
+        for (const proposal of await getOpenBridgedProposals(deploymentManager)) {
+          debug(`${label} Processing pending bridged proposal ${proposal.id}`);
+          await executeBridgedProposal(deploymentManager, proposal);
+        }
+      }
+
+      const governanceDeploymentManager = ctx.world.auxiliaryDeploymentManager || deploymentManager;
       const governor = await governanceDeploymentManager.contract('governor') as IGovernorBravo;
       const proposals = await getOpenProposals(governanceDeploymentManager, governor);
-
       for (const proposal of proposals) {
         try {
           debug(`${label} Processing pending proposal ${proposal.id}`);

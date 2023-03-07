@@ -1,6 +1,7 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
-import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
+import { executeBridgedProposal } from './bridgeProposal';
+import { setNextBaseFeeToZero } from './hreUtils';
 import { Contract, Event, ethers } from 'ethers';
 
 type BridgeERC20Data = {
@@ -117,16 +118,8 @@ export default async function relayPolygonMessage(
       const proposalCreatedEvent = onStateReceiveTxn.events.find(
         event => event.address === bridgeReceiver.address
       );
-      const {
-        args: { id, eta }
-      } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
-
-      // fast forward l2 time
-      await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
-
-      // execute queued proposal
-      await setNextBaseFeeToZero(bridgeDeploymentManager);
-      await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+      const { args } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
+      await executeBridgedProposal(bridgeDeploymentManager, args);
     }
   }
 }
