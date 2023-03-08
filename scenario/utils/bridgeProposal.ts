@@ -6,7 +6,8 @@ import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 export async function getOpenBridgedProposals(
   deploymentManager: DeploymentManager,
 ): Promise<OpenBridgedProposal[]> {
-  const receiver = await deploymentManager.getContractOrThrow('bridgeReceiver');
+  const receiver = await deploymentManager.contract('bridgeReceiver');
+  if (receiver === undefined) return [];
   const timelockBuf = 30000; // XXX this should be timelock.delay + timelock.GRACE_PERIOD
   const searchBlocks = timelockBuf;
   const block = await deploymentManager.hre.ethers.provider.getBlockNumber();
