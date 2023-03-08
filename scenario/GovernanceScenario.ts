@@ -334,10 +334,10 @@ async function fastL1ToPolygonGovernanceExecute(
   );
 }
 
-scenario(
+scenario.only(
   'execute Optimism governance proposal',
   {
-    filter: async (ctx) => isBridgedDeployment(ctx) && matchesDeployment(ctx, [{network: 'optimism'}]),
+    filter: async (ctx) => isBridgedDeployment(ctx) && matchesDeployment(ctx, [{network: 'optimism'}, {network: 'optimism-goerli'}]),
   },
   async ({ timelock, bridgeReceiver }, _context, world) => {
     const governanceDeploymentManager = world.auxiliaryDeploymentManager;
