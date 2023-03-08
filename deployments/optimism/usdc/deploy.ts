@@ -44,7 +44,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     ]
   );
 
-  // Initialize PolygonBridgeReceiver
+  // Initialize OptimismBridgeReceiver
   await deploymentManager.idempotent(
     async () => !(await bridgeReceiver.initialized()),
     async () => {
@@ -64,7 +64,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   // Deploy Bulker
   const bulker = await deploymentManager.deploy(
     'bulker',
-    'Bulker.sol',
+    'bulkers/BaseBulker.sol',
     [
       await comet.governor(), // admin
       WETH.address            // weth

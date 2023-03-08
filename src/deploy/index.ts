@@ -94,6 +94,9 @@ export const WHALES = {
     '0x2093b4281990a568c9d588b8bce3bfd7a1557ebd', // WETH whale
     '0xd814b26554204245a30f8a42c289af582421bf04', // WBTC whale
     '0x167384319b41f7094e62f7506409eb38079abff8'  // WMATIC whale
+  ],
+  optimism: [
+    '0xba12222222228d8ba445958a75a0704d566bf2c8', // WETH whale
   ]
 };
 
