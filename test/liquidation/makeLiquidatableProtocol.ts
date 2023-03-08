@@ -79,7 +79,7 @@ export async function makeProtocol() {
     baseTrackingBorrowSpeed: exp(1, 15),
     baseMinForRewards: exp(1, 6),
     baseBorrowMin: exp(1, 6),
-    targetReserves: exp(1, 18),
+    targetReserves: exp(5_000_000, 6),
     assetConfigs: [
       {
         asset: COMP,
@@ -235,8 +235,8 @@ export async function makeLiquidatableProtocol() {
   await setTotalsBasic(comet, {
     baseBorrowIndex: 2e15,
     baseSupplyIndex: 2e15,
-    totalSupplyBase: 2e13,
-    totalBorrowBase: 2e13
+    totalSupplyBase: 2e11,
+    totalBorrowBase: 2e11
   });
 
   // create underwater user
