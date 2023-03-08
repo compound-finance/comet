@@ -5,7 +5,7 @@ import { ContractReceipt } from 'ethers';
 
 // XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
 // of testing them conditionally
-async function testSupplyCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
+async function testSupplyCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
   const comet = await context.getComet();
   const { albert } = await context.actors;
   const { asset: assetAddress, scale: scaleBN, supplyCap } = await comet.getAssetInfo(assetNum);
@@ -36,7 +36,7 @@ async function testSupplyCollateral(context: CometContext, assetNum: number): Pr
   }
 }
 
-async function testSupplyFromCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
+async function testSupplyFromCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
   const comet = await context.getComet();
   const { albert, betty } = await context.actors;
   const { asset: assetAddress, scale: scaleBN, supplyCap } = await comet.getAssetInfo(assetNum);

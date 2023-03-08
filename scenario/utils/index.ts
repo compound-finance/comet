@@ -110,7 +110,7 @@ export function requireNumber(o: object, key: string, err: string): number {
   return value;
 }
 
-export function optionalNumber(o: object, key: string): number {
+export function optionalNumber(o: object, key: string): number | undefined {
   let value: unknown = o[key];
   if (value === undefined) {
     return undefined;

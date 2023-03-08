@@ -15,7 +15,7 @@ async function getMigrations<T>(world: World): Promise<Migration<T>[]> {
 }
 
 async function isEnacted<T>(actions: Actions<T>, dm: DeploymentManager, govDm: DeploymentManager): Promise<boolean> {
-  return actions.enacted && await actions.enacted(dm, govDm);
+  return actions.enacted ? await actions.enacted(dm, govDm) : false;
 }
 
 export class MigrationConstraint<T extends CometContext> implements StaticConstraint<T> {
@@ -76,10 +76,12 @@ export class VerifyMigrationConstraint<T extends CometContext> implements Static
     return [
       async function (ctx: T): Promise<T> {
         const govDeploymentManager = ctx.world.auxiliaryDeploymentManager || ctx.world.deploymentManager;
-        for (const migration of ctx.migrations) {
-          if (migration.actions.verify && !(await isEnacted(migration.actions, ctx.world.deploymentManager, govDeploymentManager))) {
-            await migration.actions.verify(ctx.world.deploymentManager, govDeploymentManager);
-            debug(`${label} Verified migration "${migration.name}"`);
+        if (ctx.migrations) {
+          for (const migration of ctx.migrations) {
+            if (migration.actions.verify && !(await isEnacted(migration.actions, ctx.world.deploymentManager, govDeploymentManager))) {
+              await migration.actions.verify(ctx.world.deploymentManager, govDeploymentManager);
+              debug(`${label} Verified migration "${migration.name}"`);
+            }
           }
         }
         return ctx;

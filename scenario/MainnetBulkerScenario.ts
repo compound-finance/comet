@@ -71,8 +71,8 @@ scenario(
   async ({ comet, actors, bulker }, context) => {
     const { albert } = actors;
 
-    const stETH = await context.world.deploymentManager.contract('stETH');
-    const wstETH = await context.world.deploymentManager.contract('wstETH');
+    const stETH = await context.world.deploymentManager.getContractOrThrow('stETH');
+    const wstETH = await context.world.deploymentManager.getContractOrThrow('wstETH');
 
     await albert.allow(bulker.address, true);
 

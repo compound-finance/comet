@@ -1,4 +1,5 @@
 import { Constraint } from '../../plugins/scenario';
+import { Solution } from '../../plugins/scenario/Scenario';
 import { CometContext } from '../context/CometContext';
 import { getFuzzedRequirements } from './Fuzzing';
 import { Requirements } from './Requirements';
@@ -6,7 +7,7 @@ import { Requirements } from './Requirements';
 export class ModernConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, _context: T) {
     const fuzzed = await getFuzzedRequirements(requirements);
-    const solutions = [];
+    const solutions: Solution<T>[] = [];
     for (const req of fuzzed) {
       if (req.upgrade) {
         solutions.push(async function solution(ctx: T): Promise<T> {
