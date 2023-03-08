@@ -40,7 +40,7 @@ export function getEtherscanUrl(network: string): string {
     mumbai: 'mumbai.polygonscan.com',
     polygon: 'polygonscan.com',
     optimism: 'optimistic.etherscan.io',
-    'optimism-goerli': 'https://goerli-optimism.etherscan.io'
+    'optimism-goerli': 'goerli-optimism.etherscan.io'
   }[network];
 
   if (!host) {
