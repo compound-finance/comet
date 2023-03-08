@@ -84,31 +84,31 @@ export class CometContext {
   }
 
   async getComp(): Promise<ERC20> {
-    return this.world.deploymentManager.getContractOrThrow('COMP');
+    return this.world.deploymentManager.contract('COMP');
   }
 
   async getComet(): Promise<CometInterface> {
-    return this.world.deploymentManager.getContractOrThrow('comet');
+    return this.world.deploymentManager.contract('comet');
   }
 
   async getCometAdmin(): Promise<CometProxyAdmin> {
-    return this.world.deploymentManager.getContractOrThrow('cometAdmin');
+    return this.world.deploymentManager.contract('cometAdmin');
   }
 
   async getConfigurator(): Promise<Configurator> {
-    return this.world.deploymentManager.getContractOrThrow('configurator');
+    return this.world.deploymentManager.contract('configurator');
   }
 
   async getTimelock(): Promise<SimpleTimelock> {
-    return this.world.deploymentManager.getContractOrThrow('timelock');
+    return this.world.deploymentManager.contract('timelock');
   }
 
   async getGovernor(): Promise<IGovernorBravo> {
-    return this.world.deploymentManager.getContractOrThrow('governor');
+    return this.world.deploymentManager.contract('governor');
   }
 
   async getRewards(): Promise<CometRewards> {
-    return this.world.deploymentManager.getContractOrThrow('rewards');
+    return this.world.deploymentManager.contract('rewards');
   }
 
   async getRewardToken(): Promise<ERC20> {
@@ -118,15 +118,15 @@ export class CometContext {
   }
 
   async getBulker(): Promise<Bulker> {
-    return this.world.deploymentManager.getContractOrThrow('bulker');
+    return this.world.deploymentManager.contract('bulker');
   }
 
   async getFauceteer(): Promise<Fauceteer> {
-    return this.world.deploymentManager.getContractOrThrow('fauceteer');
+    return this.world.deploymentManager.contract('fauceteer');
   }
 
   async getBridgeReceiver(): Promise<BaseBridgeReceiver> {
-    return this.world.deploymentManager.getContractOrThrow('bridgeReceiver');
+    return this.world.deploymentManager.contract('bridgeReceiver');
   }
 
   async getConfiguration(): Promise<ProtocolConfiguration> {
