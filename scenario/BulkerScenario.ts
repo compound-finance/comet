@@ -256,6 +256,9 @@ scenario(
   'Comet#bulker > (WETH base) all actions in one txn',
   {
     filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && matchesDeployment(ctx, [{deployment: 'weth'}]),
+    supplyCaps: {
+      $asset0: 10,
+    },
     tokenBalances: {
       albert: { $base: '== 10', $asset0: 10 },
       $comet: { $base: 5000 },
