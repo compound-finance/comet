@@ -13,6 +13,7 @@ export interface ProtocolConfiguration {
   pauseGuardian?: string;
   baseToken?: string;
   baseTokenPriceFeed?: string;
+  extensionDelegate?: string;
   supplyKink?: BigNumberish;
   supplyPerYearInterestRateBase?: BigNumberish;
   supplyPerYearInterestRateSlopeLow?: BigNumberish;
