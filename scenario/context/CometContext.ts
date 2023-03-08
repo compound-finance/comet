@@ -162,7 +162,6 @@ export class CometContext {
     const comet = await this.getComet();
     const baseToken = await comet.baseToken();
 
-    const assets = Object.entries(this.assets);
     const newPriceFeeds: Record<string, string> = {};
     for (const assetAddress in newPrices) {
       const assetName = this.getAssetByAddress(assetAddress)[0];
