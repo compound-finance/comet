@@ -12,17 +12,21 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const ethers = deploymentManager.hre.ethers;
 
   // pull in existing assets
+  console.log("geting USDC");
   const USDC = await deploymentManager.existing('USDC', '0x7E07E15D2a87A24492740D16f5bdF58c16db0c4E', 'optimism-goerli');
-  const WBTC = await deploymentManager.existing('WBTC', '0xe0a592353e81a94db6e3226fd4a99f881751776a', 'optimism-goerli');
+  // const WBTC = await deploymentManager.existing('WBTC', '0xe0a592353e81a94db6e3226fd4a99f881751776a', 'optimism-goerli');
+  console.log("geting WETH");
   const WETH = await deploymentManager.existing('WETH', '0x4200000000000000000000000000000000000006', 'optimism-goerli');
 
+  console.log("getting l2CrossDomainMessenger")
   // L2CrossDomainMessenger
   const l2CrossDomainMessenger = await deploymentManager.existing(
     'l2CrossDomainMessenger',
     CROSS_DOMAIN_MESSENGER,
-    'optimism'
+    'optimism-goerli'
   );
 
+  console.log("deploying bridgeReceiver");
   // Deploy OptimismBridgeReceiver
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
@@ -30,50 +34,52 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     [CROSS_DOMAIN_MESSENGER] // crossDomainMessenger
   );
 
+  console.log("done deploying bridgeReceiver");
   // Deploy Local Timelock
-  const localTimelock = await deploymentManager.deploy(
-    'timelock',
-    'vendor/Timelock.sol',
-    [
-      bridgeReceiver.address, // admin
-      1 * DAY,                // delay
-      14 * DAY,               // grace period
-      12 * HOUR,              // minimum delay
-      30 * DAY                // maxiumum delay
-    ]
-  );
+  // const localTimelock = await deploymentManager.deploy(
+  //   'timelock',
+  //   'vendor/Timelock.sol',
+  //   [
+  //     bridgeReceiver.address, // admin
+  //     1 * DAY,                // delay
+  //     14 * DAY,               // grace period
+  //     12 * HOUR,              // minimum delay
+  //     30 * DAY                // maxiumum delay
+  //   ]
+  // );
 
-  // Initialize PolygonBridgeReceiver
-  await deploymentManager.idempotent(
-    async () => !(await bridgeReceiver.initialized()),
-    async () => {
-      trace(`Initializing BridgeReceiver`);
-      await bridgeReceiver.initialize(
-        GOERLI_TIMELOCK,      // govTimelock
-        localTimelock.address // localTimelock
-      );
-      trace(`BridgeReceiver initialized`);
-    }
-  );
+  // // Initialize PolygonBridgeReceiver
+  // await deploymentManager.idempotent(
+  //   async () => !(await bridgeReceiver.initialized()),
+  //   async () => {
+  //     trace(`Initializing BridgeReceiver`);
+  //     await bridgeReceiver.initialize(
+  //       GOERLI_TIMELOCK,      // govTimelock
+  //       localTimelock.address // localTimelock
+  //     );
+  //     trace(`BridgeReceiver initialized`);
+  //   }
+  // );
 
-  // Deploy Comet
-  const deployed = await deployComet(deploymentManager, deploySpec);
-  const { comet } = deployed;
+  // // Deploy Comet
+  // const deployed = await deployComet(deploymentManager, deploySpec);
+  // const { comet } = deployed;
 
-  // Deploy Bulker
-  const bulker = await deploymentManager.deploy(
-    'bulker',
-    'Bulker.sol',
-    [
-      await comet.governor(), // admin
-      WETH.address            // weth
-    ]
-  );
+  // // Deploy Bulker
+  // const bulker = await deploymentManager.deploy(
+  //   'bulker',
+  //   'Bulker.sol',
+  //   [
+  //     await comet.governor(), // admin
+  //     WETH.address            // weth
+  //   ]
+  // );
 
-  return {
-    ...deployed,
-    bridgeReceiver,
-    l2CrossDomainMessenger,
-    bulker
-  };
+  // return {
+  //   ...deployed,
+  //   bridgeReceiver,
+  //   l2CrossDomainMessenger,
+  //   bulker
+  // };
+  return {};
 }
