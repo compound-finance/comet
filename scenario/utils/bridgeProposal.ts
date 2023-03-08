@@ -35,7 +35,7 @@ export async function executeBridgedProposal(
   const { id, eta } = proposal;
 
   // fast forward l2 time
-  await setNextBlockTimestamp(deploymentManager, eta + 1);
+  await setNextBlockTimestamp(deploymentManager, eta.toNumber() + 1);
 
   // execute queued proposal
   await setNextBaseFeeToZero(deploymentManager);

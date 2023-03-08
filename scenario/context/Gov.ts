@@ -1,3 +1,5 @@
+import { BigNumber } from 'ethers';
+
 export { BaseBridgeReceiver, IGovernorBravo } from '../../build/types';
 
 export enum ProposalState {
@@ -17,5 +19,5 @@ export enum BridgedProposalState {
   Executed
 }
 
-export type OpenProposal = { id: number, startBlock: number, endBlock: number };
-export type OpenBridgedProposal = { id: number, eta: number };
+export type OpenProposal = { id: BigNumber, startBlock: BigNumber, endBlock: BigNumber };
+export type OpenBridgedProposal = { id: BigNumber, eta: BigNumber };
