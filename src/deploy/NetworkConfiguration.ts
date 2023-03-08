@@ -185,7 +185,7 @@ export async function getConfigurationStruct(
   configOverrides: ProtocolConfiguration = {},
 ): Promise<ConfigurationStruct> {
   const contracts = await deploymentManager.contracts();
-  const configuration = await getConfiguration(deploymentManager, configOverrides);
+  const configuration = (await getConfiguration(deploymentManager, configOverrides)) as ConfigurationStruct;
   const extensionDelegate = configOverrides.extensionDelegate ?? getContractAddress('comet:implementation:implementation', contracts);
-  return { ...(configuration as ConfigurationStruct), extensionDelegate };
+  return { ...configuration, extensionDelegate };
 }
