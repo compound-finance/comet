@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { expectApproximately, expectBase, expectRevertCustom, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
 
-async function testTransferCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
+async function testTransferCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
   const comet = await context.getComet();
   const { albert, betty } = context.actors;
   const { asset: assetAddress, scale } = await comet.getAssetInfo(assetNum);
@@ -19,7 +19,7 @@ async function testTransferCollateral(context: CometContext, assetNum: number): 
   return txn; // return txn to measure gas
 }
 
-async function testTransferFromCollateral(context: CometContext, assetNum: number): Promise<null | ContractReceipt> {
+async function testTransferFromCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
   const comet = await context.getComet();
   const { albert, betty, charles } = context.actors;
   const { asset: assetAddress, scale } = await comet.getAssetInfo(assetNum);

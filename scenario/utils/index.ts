@@ -66,11 +66,11 @@ export function expectRevertCustom(tx: Promise<ContractReceipt>, custom: string)
     });
 }
 
-export function expectRevertMatches(tx: Promise<ContractReceipt>, patterns: RegExp | RegExp[]) {
+export function expectRevertMatches(tx: Promise<ContractReceipt>, patterns: RegExp[]) {
   return tx
     .then(_ => { throw new Error('Expected transaction to be reverted'); })
     .catch(e => {
-      for (const pattern of [].concat(patterns))
+      for (const pattern of patterns)
         if (pattern.test(e.message))
           return;
       throw new Error(`Expected revert message in one of ${patterns}, but reverted with: ${e.message}`);
@@ -149,6 +149,8 @@ export async function getActorAddressFromName(name: string, context: CometContex
     if (cometRegex.test(name)) {
       // If name matches regex, e.g. "$comet"
       actorAddress = (await context.getComet()).address;
+    } else {
+      throw new Error(`Invalid actor name: ${name}`);
     }
     return actorAddress;
   } else {
@@ -164,11 +166,13 @@ export async function getAssetFromName(name: string, context: CometContext): Pro
     let asset: string;
     if (collateralAssetRegex.test(name)) {
       // If name matches regex, e.g. "$asset10"
-      const assetIndex = name.match(/[0-9]+/g)[0];
+      const assetIndex = name.match(/[0-9]+/g)![0];
       ({ asset } = await comet.getAssetInfo(assetIndex));
     } else if (baseAssetRegex.test(name)) {
       // If name matches "base"
       asset = await comet.baseToken();
+    } else {
+      throw new Error(`Invalid asset name: ${name}`);
     }
     return context.getAssetByAddress(asset);
   } else {
@@ -322,8 +326,8 @@ export async function executeOpenProposal(
 ) {
   const governor = await dm.getContractOrThrow('governor');
   const blockNow = await dm.hre.ethers.provider.getBlockNumber();
-  const blocksUntilStart = startBlock - blockNow;
-  const blocksUntilEnd = endBlock - Math.max(startBlock, blockNow);
+  const blocksUntilStart = startBlock.toNumber() - blockNow;
+  const blocksUntilEnd = endBlock.toNumber() - Math.max(startBlock.toNumber(), blockNow);
 
   if (blocksUntilStart > 0) {
     await mineBlocks(dm, blocksUntilStart);
