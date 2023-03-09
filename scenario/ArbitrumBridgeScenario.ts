@@ -173,7 +173,7 @@ async function fastL1ToArbitrumGovernanceExecute(
   }
 
   const processMessageFromRootTxData = arbitrumBridgeReceiver.interface.encodeFunctionData(
-    "processMessageFromRoot",
+    'processMessageFromRoot',
     [l2ProposalData]
   );
 

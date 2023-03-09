@@ -19,11 +19,11 @@ export default async function relayArbitrumMessage(
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
     address: inbox.address,
-    topics: [utils.id("InboxMessageDelivered(uint256,bytes)")]
+    topics: [utils.id('InboxMessageDelivered(uint256,bytes)')]
   });
 
   const dataAndTargets = inboxMessageDeliveredEvents.map(({ data, topics }) => {
-    const header = "0x";
+    const header = '0x';
     const headerLength = header.length;
     const wordLength = 2 * 32;
     const innnerData = header + data.slice(headerLength + (11 * wordLength));
@@ -41,18 +41,18 @@ export default async function relayArbitrumMessage(
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
     address: bridge.address,
-    topics: [utils.id("MessageDelivered(uint256,bytes32,address,uint8,address,bytes32,uint256,uint64)")]
+    topics: [utils.id('MessageDelivered(uint256,bytes32,address,uint8,address,bytes32,uint256,uint64)')]
   });
 
   const senders = messageDeliveredEvents.map(({ data, topics }) => {
     const decodedData = utils.defaultAbiCoder.decode(
       [
-        "address inbox",
-        "uint8 kind",
-        "address sender",
-        "bytes32 messageDataHash",
-        "uint256 baseFeeL1",
-        "uint64 timestamp"
+        'address inbox',
+        'uint8 kind',
+        'address sender',
+        'bytes32 messageDataHash',
+        'uint256 baseFeeL1',
+        'uint64 timestamp'
       ],
       data
     );
@@ -70,7 +70,7 @@ export default async function relayArbitrumMessage(
     return {
       ...dataAndTarget,
       ...senders[i]
-    }
+    };
   });
 
   // XXX rename
