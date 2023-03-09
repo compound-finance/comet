@@ -64,7 +64,7 @@ export function requireEnv(varName, msg?: string): string {
   'SNOWTRACE_KEY',
   'INFURA_KEY',
   'POLYGONSCAN_KEY'
-].map(v => requireEnv(v))
+].map(v => requireEnv(v));
 
 // Networks
 interface NetworkConfig {
@@ -123,7 +123,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
         getDefaultProviderURL(netConfig.network),
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
-      accounts: REMOTE_ACCOUNTS ? "remote" : ( ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC } ),
+      accounts: REMOTE_ACCOUNTS ? 'remote' : ( ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC } ),
     };
   }
 }
@@ -147,8 +147,8 @@ const config: HardhatUserConfig = {
         }
       ),
       outputSelection: {
-        "*": {
-          "*": ["evm.deployedBytecode.sourceMap"]
+        '*': {
+          '*': ['evm.deployedBytecode.sourceMap']
         },
       },
       viaIR: process.env['OPTIMIZER_DISABLED'] ? false : true,
@@ -210,7 +210,7 @@ const config: HardhatUserConfig = {
       polygon: {
         usdc: polygonRelationConfigMap
       },
-      "arbitrum-goerli": {
+      'arbitrum-goerli': {
         usdc: arbitrumRelationConfigMap
       }
     },
