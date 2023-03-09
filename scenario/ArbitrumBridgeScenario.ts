@@ -172,11 +172,6 @@ async function fastL1ToArbitrumGovernanceExecute(
     throw new Error('cannot execute governance without governance deployment manager');
   }
 
-  const processMessageFromRootTxData = arbitrumBridgeReceiver.interface.encodeFunctionData(
-    'processMessageFromRoot',
-    [l2ProposalData]
-  );
-
   const isMainnetArbitrum = world.base.network === 'arbitrum';
   const compWhale = isMainnetArbitrum ? COMP_WHALES.mainnet[0] : COMP_WHALES.testnet[0];
   const proposer = await impersonateAddress(governanceDeploymentManager, compWhale, exp(1, 18)); // give them enough ETH to make the proposal
@@ -196,7 +191,7 @@ async function fastL1ToArbitrumGovernanceExecute(
       refundAddress,                  // address callValueRefundAddress,
       0,                              // uint256 gasLimit,
       0,                              // uint256 maxFeePerGas,
-      processMessageFromRootTxData    // bytes calldata data
+      l2ProposalData                  // bytes calldata data
     ]
   );
 
