@@ -18,9 +18,9 @@ describe('Migration', () => {
     let dm = new DeploymentManager('test-network', 'test-deployment', hre);
     expect(m.name).to.eql('test migration');
     expect(x).to.eql([]);
-    let v = await m.actions.prepare(dm);
+    let v = await m.actions.prepare(dm, dm);
     expect(x).to.eql(['step 1']);
-    await m.actions.enact(dm, v);
+    await m.actions.enact(dm, dm, v);
     expect(x).to.eql(['step 1', 'step 2']);
   });
 
@@ -28,8 +28,8 @@ describe('Migration', () => {
     let [m] = await loadMigrations([`${__dirname}/migration.ts`]);
     let dm = new DeploymentManager('test-network', 'test-market', hre);
     expect(m.name).to.eql('test migration');
-    expect(await m.actions.prepare(dm)).to.eql(['step 1']);
-    expect(await m.actions.enact(dm, [])).to.eql(undefined);
+    expect(await m.actions.prepare(dm, dm)).to.eql(['step 1']);
+    expect(await m.actions.enact(dm, dm, [])).to.eql(undefined);
   });
 
   it('returns proper artifact file spec', async () => {

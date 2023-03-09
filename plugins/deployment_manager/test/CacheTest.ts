@@ -61,11 +61,11 @@ describe('Cache', () => {
 
       expect(cache.cache).to.eql(new Map([['test-network', new Map([['test-deployment', new Map([['abc', new Map([['a', 5]])]])]])]]));
 
-      expect(objectFromMap(await cache.readCache({ rel: 'abc' }))).to.eql({a: 5});
+      expect(await cache.readCache({ rel: 'abc' })).to.eql({a: 5});
 
       await cache.storeMap({ rel: 'abc' }, new Map([['a', 6]]));
 
-      expect(objectFromMap(await cache.readCache({ rel: 'abc' }))).to.eql({a: 6});
+      expect(await cache.readCache({ rel: 'abc' })).to.eql({a: 6});
     });
   });
 
