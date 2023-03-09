@@ -2,7 +2,10 @@ import { DeploymentManager } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import { executeBridgedProposal } from './bridgeProposal';
 import { setNextBaseFeeToZero } from './hreUtils';
-import { Contract, Event, ethers } from 'ethers';
+import { Contract, ethers } from 'ethers';
+import { Log } from '@ethersproject/abstract-provider';
+import {OpenBridgedProposal} from '../context/Gov';
+
 
 type BridgeERC20Data = {
   syncData: string;
@@ -59,7 +62,7 @@ export default async function relayPolygonMessage(
 
   // grab all events on the StateSender contract since the `startingBlockNumber`
   const filter = stateSender.filters.StateSynced();
-  const stateSyncedEvents: Event[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+  const stateSyncedEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
     address: stateSender.address,
@@ -119,7 +122,8 @@ export default async function relayPolygonMessage(
         event => event.address === bridgeReceiver.address
       );
       const { args } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
-      await executeBridgedProposal(bridgeDeploymentManager, args);
+      const proposal = args as unknown as OpenBridgedProposal;
+      await executeBridgedProposal(bridgeDeploymentManager, proposal);
     }
   }
 }

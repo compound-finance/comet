@@ -26,7 +26,7 @@ import {
   IGovernorBravo,
   CometRewards,
   Fauceteer,
-  Bulker,
+  BaseBulker,
   BaseBridgeReceiver,
   ERC20,
 } from '../../build/types';
@@ -35,6 +35,8 @@ import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { ProtocolConfiguration, deployComet, COMP_WHALES, WHALES } from '../../src/deploy';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { fastGovernanceExecute, max, mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from '../utils';
+import { DynamicConstraint, StaticConstraint } from '../../plugins/scenario/Scenario';
+import { Requirements } from '../constraints/Requirements';
 
 export type ActorMap = { [name: string]: CometActor };
 export type AssetMap = { [name: string]: CometAsset };
@@ -48,7 +50,7 @@ export interface CometProperties {
   timelock: SimpleTimelock;
   governor: IGovernorBravo;
   rewards: CometRewards;
-  bulker: Bulker;
+  bulker: BaseBulker;
   bridgeReceiver: BaseBridgeReceiver;
 }
 
@@ -70,7 +72,7 @@ export class CometContext {
   }
 
   async getWhales(): Promise<string[]> {
-    const whales = [];
+    const whales: string[] = [];
     const fauceteer = await this.getFauceteer();
     if (fauceteer)
       whales.push(fauceteer.address);
@@ -115,7 +117,7 @@ export class CometContext {
     return ERC20__factory.connect(token, signer);
   }
 
-  async getBulker(): Promise<Bulker> {
+  async getBulker(): Promise<BaseBulker> {
     return this.world.deploymentManager.contract('bulker');
   }
 
@@ -160,10 +162,9 @@ export class CometContext {
     const comet = await this.getComet();
     const baseToken = await comet.baseToken();
 
-    const assets = Object.entries(this.assets);
     const newPriceFeeds: Record<string, string> = {};
     for (const assetAddress in newPrices) {
-      const assetName = assets.find(([_name, asset]) => BigInt(asset.address) === BigInt(assetAddress))[0];
+      const assetName = this.getAssetByAddress(assetAddress)[0];
       const priceFeed = await this.world.deploymentManager.deploy(
         `${assetName}:priceFeed`,
         'test/SimplePriceFeed.sol',
@@ -393,14 +394,14 @@ async function getContextProperties(context: CometContext): Promise<CometPropert
   };
 }
 
-export const staticConstraints = [
+export const staticConstraints: StaticConstraint<CometContext>[] = [
   new NativeTokenConstraint(),
   new MigrationConstraint(),
   new ProposalConstraint(),
   new VerifyMigrationConstraint(),
 ];
 
-export const dynamicConstraints = [
+export const dynamicConstraints: DynamicConstraint<CometContext, Requirements>[] = [
   new FilterConstraint(),
   new ModernConstraint(),
   new PauseConstraint(),
@@ -408,10 +409,10 @@ export const dynamicConstraints = [
   new CometBalanceConstraint(),
   new TokenBalanceConstraint(),
   new UtilizationConstraint(),
-  new PriceConstraint(),
+  new PriceConstraint()
 ];
 
-export const scenarioLoader = Loader.get().configure(
+export const scenarioLoader = Loader.get<CometContext, CometProperties, Requirements>().configure(
   staticConstraints,
   getInitialContext,
   getContextProperties,

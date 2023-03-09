@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import { tempDir } from './TestHelpers';
-
 import { Cache } from '../Cache';
 import { objectFromMap } from '../Utils';
 
@@ -61,11 +60,11 @@ describe('Cache', () => {
 
       expect(cache.cache).to.eql(new Map([['test-network', new Map([['test-deployment', new Map([['abc', new Map([['a', 5]])]])]])]]));
 
-      expect(objectFromMap(await cache.readCache({ rel: 'abc' }))).to.eql({a: 5});
+      expect(objectFromMap(await cache.readCache<Map<string, number>>({ rel: 'abc' }))).to.eql({a: 5});
 
       await cache.storeMap({ rel: 'abc' }, new Map([['a', 6]]));
 
-      expect(objectFromMap(await cache.readCache({ rel: 'abc' }))).to.eql({a: 6});
+      expect(objectFromMap(await cache.readCache<Map<string, number>>({ rel: 'abc' }))).to.eql({a: 6});
     });
   });
 

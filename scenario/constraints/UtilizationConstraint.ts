@@ -27,7 +27,7 @@ interface UtilizationConfig {
   utilization?: number;
 }
 
-function getUtilizationConfig(requirements: object): UtilizationConfig | null {
+function getUtilizationConfig(requirements: object): UtilizationConfig {
   return {
     utilization: optionalNumber(requirements, 'utilization'),
   };
@@ -52,7 +52,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
   async solve(requirements: R, _context: T) {
     let { utilization } = getUtilizationConfig(requirements);
 
-    if (utilization == null) {
+    if (utilization === undefined) {
       return null;
     } else {
       // utilization is target number
@@ -60,7 +60,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
         let comet = await context.getComet();
 
         let baseToken = context.getAssetByAddress(await comet.baseToken());
-        let utilizationFactor = factor(utilization);
+        let utilizationFactor = factor(utilization!);
         let totalSupplyBase = (await comet.totalSupply()).toBigInt();
         let totalBorrowBase = (await comet.totalBorrow()).toBigInt();
 
@@ -93,9 +93,7 @@ export class UtilizationConstraint<T extends CometContext, R extends Requirement
         // everything will come out as zero.
         if (toSupplyBase > 0n) {
           // Add some supply, any amount will do
-          let supplyActor = await context.allocateActor('UtilizationConstraint{Supplier}', {
-            toSupplyBase,
-          });
+          let supplyActor = await context.allocateActor('UtilizationConstraint{Supplier}');
 
           await baseToken.approve(supplyActor, comet);
           await context.sourceTokens(toSupplyBase, baseToken, supplyActor);

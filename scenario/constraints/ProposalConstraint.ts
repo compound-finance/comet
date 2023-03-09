@@ -14,9 +14,10 @@ async function getOpenProposals(deploymentManager: DeploymentManager, governor: 
   const block = await deploymentManager.hre.ethers.provider.getBlockNumber();
   const filter = governor.filters.ProposalCreated();
   const logs = await fetchLogs(governor, filter, block - searchBlocks, block);
-  const proposals = [];
+  const proposals: OpenProposal[] = [];
   if (logs) {
     for (let log of logs) {
+      if (log.args === undefined) continue;
       const [id, , , , , , startBlock, endBlock] = log.args;
       const state = await governor.state(id);
       if ([

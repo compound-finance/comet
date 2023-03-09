@@ -1,4 +1,4 @@
-import { Constraint } from '../../plugins/scenario';
+import { Constraint, Solution } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
@@ -9,7 +9,7 @@ export class SupplyCapConstraint<T extends CometContext, R extends Requirements>
   async solve(requirements: R, _initialContext: T) {
     const supplyCaps = requirements.supplyCaps;
     if (supplyCaps !== undefined) {
-      const solutions = [];
+      const solutions: Solution<T>[] = [];
       solutions.push(async function barelyMeet(context: T) {
         const supplyAmountPerAsset = {};
         for (const [assetName, rawAmount] of Object.entries(supplyCaps)) {
@@ -23,6 +23,8 @@ export class SupplyCapConstraint<T extends CometContext, R extends Requirements>
         return context;
       });
       return solutions;
+    } else {
+      return null;
     }
   }
 

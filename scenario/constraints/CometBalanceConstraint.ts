@@ -1,4 +1,4 @@
-import { Constraint } from '../../plugins/scenario';
+import { Constraint, Solution } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import CometActor from '../context/CometActor';
 import { expect } from 'chai';
@@ -56,7 +56,7 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
 
       // XXX ideally when properties fail
       //  we can report the names of the solution which were applied
-      const solutions = [];
+      const solutions: Solution<T>[] = [];
       solutions.push(async function barelyMeet(context: T) {
         const comet = await context.getComet();
         for (const assetName in actorsByAsset) {
@@ -100,6 +100,8 @@ export class CometBalanceConstraint<T extends CometContext, R extends Requiremen
         return context;
       });
       return solutions;
+    } else {
+      return null;
     }
   }
 

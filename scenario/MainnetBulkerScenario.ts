@@ -4,7 +4,8 @@ import { scenario } from './context/CometContext';
 import CometAsset from './context/CometAsset';
 import {
   ERC20,
-  IWstETH
+  IWstETH,
+  MainnetBulker
 } from '../build/types';
 import { exp } from '../test/helpers';
 import { expectApproximately, isBulkerSupported, matchesDeployment } from './utils';
@@ -40,7 +41,7 @@ scenario(
       [comet.address, albert.address, toSupplyStEth]
     );
     const calldata = [supplyStEthCalldata];
-    const actions = [await bulker.ACTION_SUPPLY_STETH()];
+    const actions = [await (bulker as MainnetBulker).ACTION_SUPPLY_STETH()];
 
     await albert.invoke({ actions, calldata });
 
@@ -71,8 +72,8 @@ scenario(
   async ({ comet, actors, bulker }, context) => {
     const { albert } = actors;
 
-    const stETH = await context.world.deploymentManager.contract('stETH');
-    const wstETH = await context.world.deploymentManager.contract('wstETH');
+    const stETH = await context.world.deploymentManager.getContractOrThrow('stETH');
+    const wstETH = await context.world.deploymentManager.getContractOrThrow('wstETH');
 
     await albert.allow(bulker.address, true);
 
@@ -83,7 +84,7 @@ scenario(
       [comet.address, albert.address, toWithdrawStEth]
     );
     const calldata = [withdrawStEthCalldata];
-    const actions = [await bulker.ACTION_WITHDRAW_STETH()];
+    const actions = [await (bulker as MainnetBulker).ACTION_WITHDRAW_STETH()];
 
     await albert.invoke({ actions, calldata });
 
@@ -130,7 +131,7 @@ scenario(
       [comet.address, albert.address, ethers.constants.MaxUint256]
     );
     const calldata = [withdrawStEthCalldata];
-    const actions = [await bulker.ACTION_WITHDRAW_STETH()];
+    const actions = [await (bulker as MainnetBulker).ACTION_WITHDRAW_STETH()];
 
     await albert.invoke({ actions, calldata });
 

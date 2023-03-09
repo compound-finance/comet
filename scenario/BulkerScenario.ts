@@ -75,8 +75,8 @@ scenario(
     expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupplyCollateral);
     expect(await comet.collateralBalanceOf(albert.address, wrappedNativeToken)).to.be.equal(toSupplyEth - toWithdrawEth);
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(toBorrowBase);
-    expectBase(await comet.balanceOf(betty.address), baseTransferred);
-    expectBase(await comet.borrowBalanceOf(albert.address), toBorrowBase + toTransferBase);
+    expectBase((await comet.balanceOf(betty.address)).toBigInt(), baseTransferred);
+    expectBase((await comet.borrowBalanceOf(albert.address)).toBigInt(), toBorrowBase + toTransferBase);
 
     return txn; // return txn to measure gas
   }
@@ -150,8 +150,8 @@ scenario(
     const baseTransferred = getExpectedBaseBalance(toTransferBase, baseIndexScale, baseSupplyIndex);
     expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupplyCollateral);
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(toBorrowBase);
-    expectBase(await comet.balanceOf(betty.address), baseTransferred);
-    expectBase(await comet.borrowBalanceOf(albert.address), toBorrowBase + toTransferBase - (toSupplyEth - toWithdrawEth));
+    expectBase((await comet.balanceOf(betty.address)).toBigInt(), baseTransferred);
+    expectBase((await comet.borrowBalanceOf(albert.address)).toBigInt(), toBorrowBase + toTransferBase - (toSupplyEth - toWithdrawEth));
 
     return txn; // return txn to measure gas
   }
@@ -245,8 +245,8 @@ scenario(
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(toBorrowBase);
     expect(await comet.collateralBalanceOf(albert.address, wrappedNativeToken)).to.be.equal(toSupplyEth - toWithdrawEth);
     expect(await albert.getErc20Balance(rewardTokenAddress)).to.be.equal(expectedFinalRewardBalance);
-    expectBase(await comet.balanceOf(betty.address), baseTransferred);
-    expectBase(await comet.borrowBalanceOf(albert.address), toBorrowBase + toTransferBase);
+    expectBase((await comet.balanceOf(betty.address)).toBigInt(), baseTransferred);
+    expectBase((await comet.borrowBalanceOf(albert.address)).toBigInt(), toBorrowBase + toTransferBase);
 
     return txn; // return txn to measure gas
   }
@@ -338,9 +338,9 @@ scenario(
     expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupplyCollateral);
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(toBorrowBase);
     expect(await albert.getErc20Balance(rewardTokenAddress)).to.be.equal(expectedFinalRewardBalance);
-    expectBase(await comet.balanceOf(betty.address), baseTransferred);
+    expectBase((await comet.balanceOf(betty.address)).toBigInt(), baseTransferred);
     // NOTE: differs from the equivalent scenario for non-ETH markets
-    expectBase(await comet.borrowBalanceOf(albert.address), toBorrowBase + toTransferBase - (toSupplyEth - toWithdrawEth));
+    expectBase((await comet.borrowBalanceOf(albert.address)).toBigInt(), toBorrowBase + toTransferBase - (toSupplyEth - toWithdrawEth));
 
     return txn; // return txn to measure gas
   }
