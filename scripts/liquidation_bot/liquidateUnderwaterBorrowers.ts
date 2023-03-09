@@ -48,6 +48,9 @@ const liquidationThresholds = {
   },
   'goerli': {
     'usdc': 10e6
+  },
+  'polygon': {
+    'usdc': 10e6
   }
 };
 
