@@ -7,11 +7,11 @@ describe('Migration', () => {
   it('test a simple migration', async () => {
     let x = [];
     let m = migration('test migration', {
-      prepare: async (_deploymentManager) => {
+      prepare: async (_deploymentManager, _govDm) => {
         x = [...x, 'step 1'];
         return 'step 2';
       },
-      enact: async (_deploymentManager, y) => {
+      enact: async (_deploymentManager, _govDm, y) => {
         x = [...x, y];
       }
     });
