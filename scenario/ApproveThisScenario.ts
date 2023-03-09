@@ -35,5 +35,5 @@ scenario('Comet#approveThis > allows governor to authorize and rescind authoriza
 });
 
 scenario('Comet#approveThis > reverts if not called by governor', {}, async ({ comet, timelock }) => {
-  await expectRevertCustom((await comet.approveThis(timelock.address, comet.address, constants.MaxUint256)).wait(), 'Unauthorized()');
+  await expectRevertCustom(comet.approveThis(timelock.address, comet.address, constants.MaxUint256), 'Unauthorized()');
 });

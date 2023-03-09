@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber, BigNumberish, Contract, ContractReceipt, Event, EventFilter, constants, utils } from 'ethers';
+import { BigNumber, BigNumberish, Contract, ContractReceipt, ContractTransaction, Event, EventFilter, constants, utils } from 'ethers';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { CometContext } from '../context/CometContext';
@@ -50,7 +50,7 @@ export function expectBase(expected: bigint, actual: bigint, precision = 2n) {
   expectApproximately(expected, actual, precision);
 }
 
-export function expectRevertCustom(tx: Promise<ContractReceipt>, custom: string) {
+export function expectRevertCustom(tx: Promise<ContractReceipt | ContractTransaction>, custom: string) {
   return tx
     .then(_ => { throw new Error('Expected transaction to be reverted'); })
     .catch(e => {
