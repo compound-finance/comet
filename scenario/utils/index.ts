@@ -46,8 +46,8 @@ export function expectApproximately(expected: bigint, actual: bigint, precision 
   expect(BigNumber.from(abs(expected - actual))).to.be.lte(BigNumber.from(precision));
 }
 
-export function expectBase(expected: BigNumberish, actual: BigNumberish, precision = 2n) {
-  expectApproximately(BigInt(expected), BigInt(actual), precision);
+export function expectBase(expected: bigint, actual: bigint, precision = 2n) {
+  expectApproximately(expected, actual, precision);
 }
 
 export function expectRevertCustom(tx: Promise<ContractReceipt>, custom: string) {

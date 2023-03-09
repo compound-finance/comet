@@ -26,13 +26,15 @@ export default class CometAsset {
 
   async transfer(from: CometActor | SignerWithAddress, amount: number | bigint, recipient: CometAsset | string, overrides: Overrides = {}) {
     const recipientAddress = typeof(recipient) === 'string' ? recipient : recipient.address;
-    await wait(this.token.connect(from.signer ?? from).transfer(recipientAddress, amount, overrides));
+    const signer = from instanceof CometActor ? from.signer : from;
+    await wait(this.token.connect(signer).transfer(recipientAddress, amount, overrides));
   }
 
   async approve(from: CometActor | SignerWithAddress, spender: AddressLike, amount?: number | bigint) {
     const spenderAddress = resolveAddress(spender);
     const finalAmount = amount ?? constants.MaxUint256;
-    await wait(this.token.connect(from.signer ?? from).approve(spenderAddress, finalAmount));
+    const signer = from instanceof CometActor ? from.signer : from;
+    await wait(this.token.connect(signer).approve(spenderAddress, finalAmount));
   }
 
   async allowance(owner: AddressLike, spender: AddressLike): Promise<bigint> {

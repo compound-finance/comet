@@ -1,8 +1,6 @@
 import { expect } from 'chai';
 import { tempDir } from './TestHelpers';
-
 import { Cache } from '../Cache';
-import { objectFromMap } from '../Utils';
 
 describe('Cache', () => {
   it('read and store values in-memory', async () => {

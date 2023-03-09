@@ -59,7 +59,7 @@ scenario(
   async ({ comet, configurator, actors }) => {
     const { albert } = actors;
     await expectRevertCustom(
-      configurator.connect(albert.signer).setGovernor(comet.address, albert.address),
+      (await configurator.connect(albert.signer).setGovernor(comet.address, albert.address)).wait(),
       'Unauthorized()'
     );
   });

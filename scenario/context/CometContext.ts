@@ -26,7 +26,7 @@ import {
   IGovernorBravo,
   CometRewards,
   Fauceteer,
-  Bulker,
+  BaseBulker,
   BaseBridgeReceiver,
   ERC20,
 } from '../../build/types';
@@ -50,7 +50,7 @@ export interface CometProperties {
   timelock: SimpleTimelock;
   governor: IGovernorBravo;
   rewards: CometRewards;
-  bulker: Bulker;
+  bulker: BaseBulker;
   bridgeReceiver: BaseBridgeReceiver;
 }
 
@@ -117,7 +117,7 @@ export class CometContext {
     return ERC20__factory.connect(token, signer);
   }
 
-  async getBulker(): Promise<Bulker> {
+  async getBulker(): Promise<BaseBulker> {
     return this.world.deploymentManager.contract('bulker');
   }
 
