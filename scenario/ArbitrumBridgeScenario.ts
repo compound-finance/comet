@@ -8,7 +8,7 @@ import { World } from '../plugins/scenario';
 import { impersonateAddress } from '../plugins/scenario/utils';
 import { exp } from '../test/helpers';
 
-scenario.only(
+scenario(
   'execute Arbitrum governance proposal',
   {
     filter: async ctx => matchesDeployment(ctx, [{network: 'arbitrum'}, {network: 'arbitrum-goerli'}])
@@ -48,7 +48,7 @@ scenario.only(
   }
 );
 
-scenario.only(
+scenario(
   'upgrade Arbitrum governance contracts and ensure they work properly',
   {
     filter: async ctx => matchesDeployment(ctx, [{network: 'arbitrum'}, {network: 'arbitrum-goerli'}])
