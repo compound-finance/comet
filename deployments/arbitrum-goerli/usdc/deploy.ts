@@ -12,7 +12,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 
   // pull in existing assets
   const USDC = await deploymentManager.existing('USDC', '0x72A9c57cD5E2Ff20450e409cF6A542f1E6c710fc', 'arbitrum-goerli');
-  const WETH = await deploymentManager.existing('WETH', '0xb83C277172198E8Ec6b841Ff9bEF2d7fa524f797', 'arbitrum-goerli');
+  const WETH = await deploymentManager.existing('WETH', '0xe39ab88f8a4777030a534146a9ca3b52bd5d43a3', 'arbitrum-goerli');
 
   // Deploy ArbitrumBridgeReceiver
   const bridgeReceiver = await deploymentManager.deploy(

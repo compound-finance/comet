@@ -25,7 +25,7 @@
   },
   "assets": {
     "WETH": {
-      "address": "0xb83C277172198E8Ec6b841Ff9bEF2d7fa524f797",
+      "address": "0xe39ab88f8a4777030a534146a9ca3b52bd5d43a3",
       "priceFeed": "0x62CAe0FA2da220f43a51F86Db2EDb36DcA9A5A08",
       "decimals": "18",
       "borrowCF": 0.775,
