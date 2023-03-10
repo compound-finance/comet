@@ -6,6 +6,9 @@ export default {
   'governor': {
     artifact: 'contracts/bridges/arbitrum/ArbitrumBridgeReceiver.sol:ArbitrumBridgeReceiver',
   },
+  ClonableBeaconProxy: {
+    artifact: 'contracts/ERC20.sol:ERC20',
+  },
   TransparentUpgradeableProxy: {
     artifact: 'contracts/ERC20.sol:ERC20',
     delegates: {
