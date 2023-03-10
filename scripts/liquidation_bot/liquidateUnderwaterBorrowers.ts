@@ -332,6 +332,7 @@ async function getUniqueAddresses(comet: CometInterface): Promise<Set<string>> {
 export async function hasPurchaseableCollateral(comet: CometInterface, assets: Asset[], minBaseValue: number): Promise<boolean> {
   const baseReserves = (await comet.getReserves()).toBigInt();
   const targetReserves = (await comet.targetReserves()).toBigInt();
+  const baseScale = (await comet.baseScale()).toBigInt();
 
   if (baseReserves >= targetReserves) {
     return false;
@@ -340,7 +341,8 @@ export async function hasPurchaseableCollateral(comet: CometInterface, assets: A
   for (const asset of assets) {
     const collateralReserves = await comet.getCollateralReserves(asset.address);
     const price = await comet.getPrice(asset.priceFeed);
-    const value = collateralReserves.toBigInt() * price.toBigInt() / asset.scale;
+    const priceScale = exp(1, 8);
+    const value = collateralReserves.toBigInt() * price.toBigInt() * baseScale / asset.scale / priceScale;
     if (value >= minBaseValue) {
       return true;
     }
