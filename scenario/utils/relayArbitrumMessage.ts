@@ -1,7 +1,8 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
-import { Event, utils, BigNumber } from 'ethers';
+import { utils, BigNumber } from 'ethers';
+import { Log } from '@ethersproject/abstract-provider';
 
 export default async function relayArbitrumMessage(
   governanceDeploymentManager: DeploymentManager,
@@ -15,7 +16,7 @@ export default async function relayArbitrumMessage(
   // L2 contracts
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
 
-  const inboxMessageDeliveredEvents: Event[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+  const inboxMessageDeliveredEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
     address: inbox.address,
@@ -37,7 +38,7 @@ export default async function relayArbitrumMessage(
     };
   });
 
-  const messageDeliveredEvents: Event[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+  const messageDeliveredEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
     address: bridge.address,
