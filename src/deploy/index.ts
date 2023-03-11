@@ -96,6 +96,7 @@ export const WHALES = {
     '0x167384319b41f7094e62f7506409eb38079abff8'  // WMATIC whale
   ],
   'arbitrum-goerli': [
+    '0x0064b4282b475f5c00ecf6a00f069ed81a50f8e0', // USDC whale
     '0x4328330b20851a721993cfa993f8f4ad9d912876', // WETH whale
     '0xd883a6a1c22fc4abfe938a5adf9b2cc31b1bf18b', // LINK whale
   ]
