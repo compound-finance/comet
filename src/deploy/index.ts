@@ -98,7 +98,9 @@ export const WHALES = {
   'arbitrum-goerli': [
     '0x0064b4282b475f5c00ecf6a00f069ed81a50f8e0', // USDC whale
     '0x4328330b20851a721993cfa993f8f4ad9d912876', // WETH whale
-    '0xd883a6a1c22fc4abfe938a5adf9b2cc31b1bf18b', // LINK whale
+    '0xd883a6a1c22fc4abfe938a5adf9b2cc31b1bf18b', // LINK whale 1
+    '0xcfefd28d3024baaa180a61e6a505f0c9bb5a9e24', // LINK whale 2
+    '0x9c2da9756540d221261d9659e3416ae1bc0309d4'  // LINK whale 3
   ]
 };
 
