@@ -87,6 +87,11 @@ const networkConfigs: NetworkConfig[] = [
     url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
   },
   {
+    network: 'arbitrum',
+    chainId: 42161,
+    url: `https://arbitrum-mainnet.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
     network: 'avalanche',
     chainId: 43114,
     url: 'https://api.avax.network/ext/bc/C/rpc',
@@ -210,6 +215,9 @@ const config: HardhatUserConfig = {
       polygon: {
         usdc: polygonRelationConfigMap
       },
+      arbitrum: {
+        usdc: arbitrumRelationConfigMap
+      },
       'arbitrum-goerli': {
         usdc: arbitrumRelationConfigMap
       }
@@ -263,6 +271,12 @@ const config: HardhatUserConfig = {
       {
         name: 'polygon',
         network: 'polygon',
+        deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'arbitrum',
+        network: 'arbitrum',
         deployment: 'usdc',
         auxiliaryBase: 'mainnet'
       },
