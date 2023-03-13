@@ -4,11 +4,11 @@ import { DeploySpec, deployComet } from '../../../src/deploy';
 const HOUR = 60 * 60;
 const DAY = 24 * HOUR;
 
+const MAINNET_TIMELOCK = '0x6d903f6003cca6255d85cca4d3b5e5146dc33925';
+
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const trace = deploymentManager.tracer()
   const ethers = deploymentManager.hre.ethers;
-
-  const mainnetTimelock = await deploymentManager.fromDep('timelock', 'mainnet', 'usdc');
 
   // pull in existing assets
   const USDC = await deploymentManager.existing('USDC', '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8', 'arbitrum');
@@ -41,8 +41,8 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     async () => {
       trace(`Initializing BridgeReceiver`);
       await bridgeReceiver.initialize(
-        mainnetTimelock.address, // govTimelock
-        localTimelock.address    // localTimelock
+        MAINNET_TIMELOCK,     // govTimelock
+        localTimelock.address // localTimelock
       );
       trace(`BridgeReceiver initialized`);
     }
