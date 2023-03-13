@@ -173,7 +173,7 @@ async function crawl(
 
   const addressConfig = relations[address.toLowerCase()];
   if (addressConfig) {
-    //trace(' ... has an address config (${address})');
+    //trace(` ... has an address config (${address})`);
     if (addressConfig.artifact) {
       //trace(`  ... has artifact specified (${addressConfig.artifact})`);
       const build = await localBuild(cache, hre, addressConfig.artifact, network, address);
