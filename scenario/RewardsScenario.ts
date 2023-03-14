@@ -213,7 +213,14 @@ scenario(
   }
 );
 
-const MULTIPLIERS = [exp(55, 18), exp(10, 18), exp(1, 18), exp(0.01, 18), exp(0.00355, 18)];
+const MULTIPLIERS = [
+  exp(55, 18),
+  exp(10, 18),
+  exp(1, 18),
+  exp(0.01, 18),
+  exp(0.00355, 18)
+];
+
 for (let i = 0; i < MULTIPLIERS.length; i++) {
   scenario(
     `Comet#rewards > can claim supply rewards on scaling rewards contract with multiplier of ${MULTIPLIERS[i]}`,

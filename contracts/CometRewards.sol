@@ -14,6 +14,8 @@ contract CometRewards {
         address token;
         uint64 rescaleFactor;
         bool shouldUpscale;
+        // Note: We define new variables after existing variables to keep interface backwards-compatible
+        uint256 multiplier;
     }
 
     struct RewardOwed {
@@ -69,39 +71,21 @@ contract CometRewards {
         uint64 accrualScale = CometInterface(comet).baseAccrualScale();
         uint8 tokenDecimals = ERC20(token).decimals();
         uint64 tokenScale = safe64(10 ** tokenDecimals);
-        uint64 rescaleFactor;
-        uint64 rescaleFactorAfterMultiplier;
-        bool shouldUpscale;
         if (accrualScale > tokenScale) {
-            // Downscale as long is multiplier is not too large
-            rescaleFactor = accrualScale / tokenScale;
-            shouldUpscale = false;
-            // If multiplier is larger than rescaleFactor, then we have to flip from downscale to upscale
-            if (multiplier > rescaleFactor * FACTOR_SCALE) {
-                rescaleFactorAfterMultiplier = safe64(multiplier / uint256(rescaleFactor) / FACTOR_SCALE);
-                shouldUpscale = true;
-            } else {
-                rescaleFactorAfterMultiplier = safe64(uint256(rescaleFactor) * FACTOR_SCALE / multiplier);
-            }
+            rewardConfig[comet] = RewardConfig({
+                token: token,
+                rescaleFactor: accrualScale / tokenScale,
+                shouldUpscale: false,
+                multiplier: multiplier
+            });
         } else {
-            // Upscale as long as multiplier is not too small
-            rescaleFactor = tokenScale / accrualScale;
-            shouldUpscale = true;
-            uint256 inverseMultiplier = FACTOR_SCALE / multiplier;
-            // If rescaleFactor is less than the inverse of the multiplier, then we have to flip from upscale to downscale
-            if (rescaleFactor < inverseMultiplier) {
-                rescaleFactorAfterMultiplier = safe64(inverseMultiplier / uint256(rescaleFactor));
-                shouldUpscale = false;
-            } else {
-                rescaleFactorAfterMultiplier = safe64(uint256(rescaleFactor) * multiplier / FACTOR_SCALE);
-            }
+            rewardConfig[comet] = RewardConfig({
+                token: token,
+                rescaleFactor: tokenScale / accrualScale,
+                shouldUpscale: true,
+                multiplier: multiplier
+            });
         }
-
-        rewardConfig[comet] = RewardConfig({
-            token: token,
-            rescaleFactor: rescaleFactorAfterMultiplier,
-            shouldUpscale: shouldUpscale
-        });
     }
 
     /**
@@ -227,7 +211,7 @@ contract CometRewards {
         } else {
             accrued /= config.rescaleFactor;
         }
-        return accrued;
+        return accrued * config.multiplier / FACTOR_SCALE;
     }
 
     /**
