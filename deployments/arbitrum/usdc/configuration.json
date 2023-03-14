@@ -24,6 +24,15 @@
     "baseMinForRewards": "10000e6"
   },
   "assets": {
+    "LINK": {
+      "address": "0xf97f4df75117a78c1a5a0dbb814af92458539fb4",
+      "priceFeed": "0x86E53CF1B870786351Da77A57575e79CB55812CB",
+      "decimals": "18",
+      "borrowCF": 0.79,
+      "liquidateCF": 0.85,
+      "liquidationFactor": 0.93,
+      "supplyCap": "0e18"
+    },
     "WETH": {
       "address": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
       "priceFeed": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
