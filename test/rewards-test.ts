@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat';
-import { defaultAssets, expect, exp, factorScale, fastForward, makeProtocol, makeRewards, objectify, wait, event } from './helpers';
+import { defaultAssets, expect, exp, factorScale, fastForward, makeProtocol, makeRewards, objectify, wait, event, getBlock } from './helpers';
 
 describe('CometRewards', () => {
   describe('claim + supply', () => {
@@ -685,6 +685,47 @@ describe('CometRewards', () => {
       const bobRewardOwed = await rewards.callStatic.getRewardOwed(comet.address, bob.address);
       expect(aliceRewardOwed.owed).to.be.equal(0);
       expect(bobRewardOwed.owed).to.be.equal(0);
+    });
+
+    it('can be used to zero out retroactive rewards for users', async () => {
+      const {
+        comet,
+        governor,
+        tokens: { COMP, USDC },
+        users: [alice],
+      } = await makeProtocol({
+        baseMinForRewards: 10e6
+      });
+      const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
+
+      // Get Alice into a state where she is owed 86400e18 rewards
+      await COMP.allocateTo(rewards.address, exp(86400, 18));
+      await USDC.allocateTo(alice.address, 10e6);
+      await USDC.connect(alice).approve(comet.address, 10e6);
+      await comet.connect(alice).supply(USDC.address, 10e6);
+      await fastForward(86400);
+      await ethers.provider.send('evm_mine', []);
+      const aliceRewardOwedBefore = await rewards.callStatic.getRewardOwed(comet.address, alice.address);
+      expect(aliceRewardOwedBefore.owed).to.be.equal(exp(86400, 18));
+      expect(await rewards.rewardsClaimed(comet.address, alice.address)).to.be.equal(0);
+
+      // Set rewards claimed for Alice to zero out the rewards owed
+      const timestampPreTxn = (await getBlock()).timestamp;
+      const _tx = await wait(rewards.setRewardsClaimed(comet.address, [alice.address], [exp(86400, 18)]));
+      const elapsed = (await getBlock()).timestamp - timestampPreTxn;
+
+      // Check that rewards owed has been zeroed out
+      const aliceRewardOwedAfter = await rewards.callStatic.getRewardOwed(comet.address, alice.address);
+      const expectedRewardOwed = exp(elapsed, 18);
+      expect(await rewards.rewardsClaimed(comet.address, alice.address)).to.be.equal(exp(86400, 18));
+      expect(aliceRewardOwedAfter.owed).to.be.equal(expectedRewardOwed);
+
+      // Make sure that claiming doesn't transfer any retroactive rewards to Alice
+      expect(await COMP.balanceOf(alice.address)).to.be.equal(0);
+      const _tx2 = await wait(rewards.claim(comet.address, alice.address, true));
+      const elapsedSinceSetRewardsClaimed = (await getBlock()).timestamp - timestampPreTxn;
+      const expectedRewardClaimed = exp(elapsedSinceSetRewardsClaimed, 18);
+      expect(await COMP.balanceOf(alice.address)).to.be.equal(expectedRewardClaimed);
     });
 
     it('reverts if addresses and claimedAmounts have different lengths', async () => {
