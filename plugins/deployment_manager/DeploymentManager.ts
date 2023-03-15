@@ -14,7 +14,7 @@ import { Spider, spider } from './Spider';
 import { Migration, getArtifactSpec } from './Migration';
 import { generateMigration } from './MigrationTemplate';
 import { ExtendedNonceManager } from './NonceManager';
-import { asyncCallWithTimeout, debug, getEthersContract, txCost } from './Utils';
+import { asyncCallWithTimeout, debug, getEthersContract, mergeIntoProxyContract, txCost } from './Utils';
 import { deleteVerifyArgs, getVerifyArgs } from './VerifyArgs';
 import { verifyContract, VerifyArgs, VerificationStrategy } from './Verify';
 
@@ -191,16 +191,22 @@ export class DeploymentManager {
 
   async existing<C extends Contract>(
     alias: Alias,
-    address: string,
+    addresses: string | string[],
     network = 'mainnet'
   ): Promise<C> {
     const maybeExisting = await this.contract<C>(alias);
     if (!maybeExisting) {
       const trace = this.tracer();
-      const buildFile = await this.import(address, network);
-      const contract = getEthersContract<C>(address, buildFile, this.hre);
+      const contracts = await Promise.all(
+        [].concat(addresses).map(async (address) => {
+          const buildFile = await this.import(address, network);
+          trace(`Loaded ${buildFile.contract} from ${address} for '${alias}'`);
+          return getEthersContract<C>(address, buildFile, this.hre);
+        })
+      );
+      const contract = mergeIntoProxyContract<C>(contracts, this.hre);
       await this.putAlias(alias, contract);
-      trace(`Loaded ${buildFile.contract} from ${address} as '${alias}'`);
+      trace(`Loaded ${alias} from ${network} @ ${addresses}`);
       return contract;
     }
     return maybeExisting;
@@ -221,7 +227,7 @@ export class DeploymentManager {
         throw new Error(`Unable to find contract ${network}/${deployment}:${otherAlias}`);
       }
       await this.putAlias(alias, contract);
-      trace(`Loaded ${alias} from ${network}/${deployment}:${otherAlias} (${contract.address}) as '${alias}'`);
+      trace(`Loaded ${alias} from ${network}/${deployment}:${otherAlias} (${contract.address})'`);
       return contract;
     }
     return maybeExisting;
