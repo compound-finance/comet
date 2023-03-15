@@ -4,13 +4,13 @@ import { DeploySpec, deployComet } from '../../../src/deploy';
 const HOUR = 60 * 60;
 const DAY = 24 * HOUR;
 
-const CROSS_DOMAIN_MESSENGER = '0x4200000000000000000000000000000000000007';
 const GOERLI_TIMELOCK = '0x8Fa336EB4bF58Cfc508dEA1B0aeC7336f55B1399';
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const trace = deploymentManager.tracer()
   const ethers = deploymentManager.hre.ethers;
 
+  // XXX
   // pull in existing assets
   console.log("geting USDC");
   const USDC = await deploymentManager.existing('USDC', '0x7E07E15D2a87A24492740D16f5bdF58c16db0c4E', 'optimism-goerli');
@@ -18,23 +18,19 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   console.log("geting WETH");
   const WETH = await deploymentManager.existing('WETH', '0x4200000000000000000000000000000000000006', 'optimism-goerli');
 
-  console.log("getting l2CrossDomainMessenger")
-  // L2CrossDomainMessenger
   const l2CrossDomainMessenger = await deploymentManager.existing(
     'l2CrossDomainMessenger',
-    CROSS_DOMAIN_MESSENGER,
-    'optimism-goerli'
+    ['0xc0d3c0d3c0d3c0d3c0d3c0d3c0d3c0d3c0d30007', '0x4200000000000000000000000000000000000007'],
+    'optimism-goerli',
   );
 
-  console.log("deploying bridgeReceiver");
   // Deploy OptimismBridgeReceiver
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
     'bridges/optimism/OptimismBridgeReceiver.sol',
-    [CROSS_DOMAIN_MESSENGER] // crossDomainMessenger
+    [l2CrossDomainMessenger.address],
   );
 
-  console.log("done deploying bridgeReceiver");
   // Deploy Local Timelock
   // const localTimelock = await deploymentManager.deploy(
   //   'timelock',
