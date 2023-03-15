@@ -17,7 +17,7 @@ import { Address, Alias, BuildFile, TraceFn } from './Types';
 import { Aliases } from './Aliases';
 import { ContractMap } from './ContractMap';
 import { Roots } from './Roots';
-import { asArray, debug, getEthersContract, mergeABI } from './Utils';
+import { asArray, debug, getEthersContract, mergeContracts } from './Utils';
 import { fetchAndCacheContract, readContract } from './Import';
 
 export interface Spider {
@@ -125,14 +125,7 @@ async function crawl(
 
           // Extend the contract ABI w/ the delegate
           //trace(`Merging ${address} <- ${implNode.address} (${alias} <- ${implAlias})`);
-          contract = new hre.ethers.Contract(
-            address,
-            mergeABI(
-              implContract.interface.format('json'),
-              contract.interface.format('json')
-            ),
-            hre.ethers.provider
-          );
+          contract = mergeContracts(address, [implContract, contract], hre);
 
           // Add the alias in place to the relative context
           (context[implAlias] = context[implAlias] || []).push(implContract);
