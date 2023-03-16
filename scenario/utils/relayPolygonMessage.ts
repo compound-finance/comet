@@ -124,6 +124,9 @@ export default async function relayPolygonMessage(
       const { args } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
       const proposal = args as unknown as OpenBridgedProposal;
       await executeBridgedProposal(bridgeDeploymentManager, proposal);
+      console.log(
+        `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${proposal.id}`
+      );
     }
   }
 }
