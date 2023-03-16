@@ -345,10 +345,16 @@ scenario.only(
       throw new Error('cannot execute governance without governance deployment manager');
     }
 
-    const proposer = await impersonateAddress(governanceDeploymentManager, COMP_WHALES.mainnet[0]);
+    const compWhale = world.base.network === 'polygon' ? COMP_WHALES.mainnet[0] : COMP_WHALES.testnet[0];
+    const proposer = await impersonateAddress(governanceDeploymentManager, compWhale);
 
     const currentTimelockDelay = await timelock.delay();
     const newTimelockDelay = currentTimelockDelay.mul(2);
+
+  //   (targets, values, signatures, calldatas) = abi.decode(
+  //     data,
+  //     (address[], uint256[], string[], bytes[])
+  // );
 
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
@@ -362,7 +368,7 @@ scenario.only(
 
     const sendMessageCalldata = utils.defaultAbiCoder.encode(
       ['address', 'bytes', 'uint32'],
-      [bridgeReceiver.address, l2ProposalData, 1000000]
+      [bridgeReceiver.address, l2ProposalData, 1_000_000] // XXX find a reliable way to estimate the gasLimit
     );
 
     const optimismL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('optimismL1CrossDomainMessenger');
