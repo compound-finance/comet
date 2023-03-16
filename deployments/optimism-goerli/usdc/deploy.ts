@@ -32,50 +32,53 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   );
 
   // Deploy Local Timelock
-  // const localTimelock = await deploymentManager.deploy(
-  //   'timelock',
-  //   'vendor/Timelock.sol',
-  //   [
-  //     bridgeReceiver.address, // admin
-  //     1 * DAY,                // delay
-  //     14 * DAY,               // grace period
-  //     12 * HOUR,              // minimum delay
-  //     30 * DAY                // maxiumum delay
-  //   ]
-  // );
+  const localTimelock = await deploymentManager.deploy(
+    'timelock',
+    'vendor/Timelock.sol',
+    [
+      bridgeReceiver.address, // admin
+      1 * DAY,                // delay
+      14 * DAY,               // grace period
+      12 * HOUR,              // minimum delay
+      30 * DAY                // maxiumum delay
+    ]
+  );
 
-  // // Initialize PolygonBridgeReceiver
-  // await deploymentManager.idempotent(
-  //   async () => !(await bridgeReceiver.initialized()),
-  //   async () => {
-  //     trace(`Initializing BridgeReceiver`);
-  //     await bridgeReceiver.initialize(
-  //       GOERLI_TIMELOCK,      // govTimelock
-  //       localTimelock.address // localTimelock
-  //     );
-  //     trace(`BridgeReceiver initialized`);
-  //   }
-  // );
+  // Initialize PolygonBridgeReceiver
+  await deploymentManager.idempotent(
+    async () => !(await bridgeReceiver.initialized()),
+    async () => {
+      trace(`Initializing BridgeReceiver`);
+      await bridgeReceiver.initialize(
+        GOERLI_TIMELOCK,      // govTimelock
+        localTimelock.address // localTimelock
+      );
+      trace(`BridgeReceiver initialized`);
+    }
+  );
 
-  // // Deploy Comet
-  // const deployed = await deployComet(deploymentManager, deploySpec);
-  // const { comet } = deployed;
+  // Deploy Comet
+  const deployed = await deployComet(deploymentManager, deploySpec);
+  const { comet } = deployed;
 
-  // // Deploy Bulker
-  // const bulker = await deploymentManager.deploy(
-  //   'bulker',
-  //   'Bulker.sol',
-  //   [
-  //     await comet.governor(), // admin
-  //     WETH.address            // weth
-  //   ]
-  // );
+  // Deploy Bulker
+  const bulker = await deploymentManager.deploy(
+    'bulker',
+    'bulkers/BaseBulker.sol',
+    [
+      await comet.governor(), // admin
+      WETH.address            // weth
+    ]
+  );
 
-  // return {
-  //   ...deployed,
-  //   bridgeReceiver,
-  //   l2CrossDomainMessenger,
-  //   bulker
-  // };
-  return {};
+  // Deploy fauceteer
+  const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
+
+  return {
+    ...deployed,
+    bridgeReceiver,
+    l2CrossDomainMessenger,
+    bulker,
+    fauceteer
+  };
 }
