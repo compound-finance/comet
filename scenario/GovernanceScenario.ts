@@ -351,11 +351,6 @@ scenario.only(
     const currentTimelockDelay = await timelock.delay();
     const newTimelockDelay = currentTimelockDelay.mul(2);
 
-  //   (targets, values, signatures, calldatas) = abi.decode(
-  //     data,
-  //     (address[], uint256[], string[], bytes[])
-  // );
-
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
