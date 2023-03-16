@@ -51,7 +51,7 @@ export default async function relayOptimismMessage(
   ]);
 
   const events = eventInterface.parseLog(sentMessageEvent);
-  const { args: { target, sender, message, messageNonce } } = events;
+  const { args: { target, sender, message, messageNonce, gasLimit } } = events;
 
   const aliasedSigner = await impersonateAddress(
     bridgeDeploymentManager,
@@ -61,11 +61,13 @@ export default async function relayOptimismMessage(
   await setNextBaseFeeToZero(bridgeDeploymentManager);
   const relayMessageTxn = await (
     await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
-      target,
-      sender,
-      message,
       messageNonce,
-      { gasPrice: 0 }
+      sender,
+      target,
+      0,
+      0,
+      message,
+      { gasPrice: 0, gasLimit }
     )
   ).wait();
 
