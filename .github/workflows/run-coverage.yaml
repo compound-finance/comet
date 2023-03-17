@@ -9,7 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NODE_OPTIONS: '--max-old-space-size=4096'
-      OPTIMIZER_DISABLED: true
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
@@ -24,10 +23,13 @@ jobs:
           node-version: '16'
 
       - name: Install packages
-        run: yarn install --non-interactive --frozen-lockfile && yarn build
+        run: yarn install --non-interactive --frozen-lockfile
+
+      - name: Compile
+        run: yarn hardhat compile
 
       - name: Run tests
-        run: yarn cover
+        run: yarn cover --no-compile
 
       - name: Upload the coverage reports to Coveralls
         uses: coverallsapp/github-action@master
