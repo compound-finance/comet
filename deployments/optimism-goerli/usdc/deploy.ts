@@ -75,10 +75,10 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
 
   return {
-    ...deployed,
     bridgeReceiver,
     l2CrossDomainMessenger,
     bulker,
-    fauceteer
+    fauceteer,
+    ...deployed,
   };
 }
