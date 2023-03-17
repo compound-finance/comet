@@ -27,6 +27,7 @@ jobs:
           SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
           INFURA_KEY: ${{ secrets.INFURA_KEY }}
           POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
+          ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
 
       - name: Build Comet with older solc versions
         run: |

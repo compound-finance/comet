@@ -35,9 +35,10 @@ const {
   ETH_PK = '',
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
+  POLYGONSCAN_KEY,
+  ARBISCAN_KEY,
   INFURA_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
-  POLYGONSCAN_KEY,
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
@@ -63,7 +64,8 @@ export function requireEnv(varName, msg?: string): string {
   'ETHERSCAN_KEY',
   'SNOWTRACE_KEY',
   'INFURA_KEY',
-  'POLYGONSCAN_KEY'
+  'POLYGONSCAN_KEY',
+  'ARBISCAN_KEY'
 ].map(v => requireEnv(v));
 
 // Networks
@@ -85,6 +87,11 @@ const networkConfigs: NetworkConfig[] = [
     network: 'polygon',
     chainId: 137,
     url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
+    network: 'arbitrum',
+    chainId: 42161,
+    url: `https://arbitrum-mainnet.infura.io/v3/${INFURA_KEY}`,
   },
   {
     network: 'avalanche',
@@ -185,6 +192,9 @@ const config: HardhatUserConfig = {
       // Polygon
       polygon: POLYGONSCAN_KEY,
       polygonMumbai: POLYGONSCAN_KEY,
+      // Arbitrum
+      arbitrumOne: ARBISCAN_KEY,
+      arbitrumGoerli: ARBISCAN_KEY
     },
   },
 
@@ -209,6 +219,9 @@ const config: HardhatUserConfig = {
       },
       polygon: {
         usdc: polygonRelationConfigMap
+      },
+      arbitrum: {
+        usdc: arbitrumRelationConfigMap
       },
       'arbitrum-goerli': {
         usdc: arbitrumRelationConfigMap
@@ -263,6 +276,12 @@ const config: HardhatUserConfig = {
       {
         name: 'polygon',
         network: 'polygon',
+        deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'arbitrum',
+        network: 'arbitrum',
         deployment: 'usdc',
         auxiliaryBase: 'mainnet'
       },
