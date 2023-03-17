@@ -9,11 +9,14 @@ export class NativeTokenConstraint<T extends CometContext> implements StaticCons
         for (const symbol in ctx.assets) {
           const contract = await ctx.world.deploymentManager.contract(symbol);
           if (contract && contract['deposit()']) {
-            const whales = await ctx.getWhales();
+            const [whale]= await ctx.getWhales();
+            if (!whale) {
+              throw new Error(`NativeTokenConstraint: no whale found for ${ctx.world.deploymentManager.network}`);
+            }
             const amount = exp(200_000, await contract.decimals());
             // can make this more sophisticated as needed...
             await contract.deposit({ value: amount });
-            await contract.transfer(whales[0], amount);
+            await contract.transfer(whale, amount);
           }
         }
         return ctx;

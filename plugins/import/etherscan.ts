@@ -17,6 +17,7 @@ export function getEtherscanApiUrl(network: string): string {
     avalanche: 'api.snowtrace.io',
     mumbai: 'api-mumbai.polygonscan.com',
     polygon: 'api.polygonscan.com',
+    arbitrum: 'api.arbiscan.io',
     'arbitrum-goerli': 'api-goerli.arbiscan.io'
   }[network];
 
@@ -38,6 +39,7 @@ export function getEtherscanUrl(network: string): string {
     avalanche: 'snowtrace.io',
     mumbai: 'mumbai.polygonscan.com',
     polygon: 'polygonscan.com',
+    arbitrum: 'arbiscan.io',
     'arbitrum-goerli': 'goerli.arbiscan.io'
   }[network];
 
@@ -59,7 +61,8 @@ export function getEtherscanApiKey(network: string): string {
     avalanche: process.env.SNOWTRACE_KEY,
     mumbai: process.env.POLYGONSCAN_KEY,
     polygon: process.env.POLYGONSCAN_KEY,
-    'arbitrum-goerli': process.env.ETHERSCAN_KEY,
+    arbitrum: process.env.ARBISCAN_KEY,
+    'arbitrum-goerli': process.env.ARBISCAN_KEY,
   }[network];
 
   if (!apiKey) {
