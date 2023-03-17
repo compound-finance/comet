@@ -1,13 +1,10 @@
-import { scenario } from './context/CometContext';
+import { scenario, CometContext } from './context/CometContext';
 import { expect } from 'chai';
 import { BigNumberish, constants, utils } from 'ethers';
 import { exp } from '../test/helpers';
 import { BaseBridgeReceiver, FaucetToken } from '../build/types';
 import { calldata } from '../src/deploy';
-import { COMP_WHALES } from '../src/deploy';
-import { impersonateAddress } from '../plugins/scenario/utils';
 import { expectBase, isBridgedDeployment, fastL2GovernanceExecute, matchesDeployment } from './utils';
-import { World } from '../plugins/scenario';
 
 scenario('upgrade Comet implementation and initialize', {filter: async (ctx) => !isBridgedDeployment(ctx)}, async ({ comet, configurator, proxyAdmin }, context) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
@@ -161,7 +158,7 @@ scenario(
   {
     filter: async ctx => matchesDeployment(ctx, [{network: 'polygon'}, {network: 'mumbai'}])
   },
-  async ({ comet, timelock, bridgeReceiver }, _context, world) => {
+  async ({ comet, timelock, bridgeReceiver }, context) => {
     const currentTimelockDelay = await timelock.delay();
     const newTimelockDelay = currentTimelockDelay.mul(2);
 
@@ -181,7 +178,7 @@ scenario(
     expect(await timelock.delay()).to.eq(currentTimelockDelay);
     expect(currentTimelockDelay).to.not.eq(newTimelockDelay);
 
-    await fastL1ToPolygonGovernanceExecute(l2ProposalData, bridgeReceiver, world);
+    await fastL1ToPolygonGovernanceExecute(l2ProposalData, bridgeReceiver, context);
 
     expect(await timelock.delay()).to.eq(newTimelockDelay);
     expect(await comet.isAbsorbPaused()).to.eq(true);
@@ -197,12 +194,9 @@ scenario(
   {
     filter: async ctx => matchesDeployment(ctx, [{network: 'polygon'}, {network: 'mumbai'}])
   },
-  async ({ comet, configurator, proxyAdmin, timelock: oldLocalTimelock, bridgeReceiver: oldBridgeReceiver }, _context, world) => {
+  async ({ comet, configurator, proxyAdmin, timelock: oldLocalTimelock, bridgeReceiver: oldBridgeReceiver }, context, world) => {
     const dm = world.deploymentManager;
-    const governanceDeploymentManager = world.auxiliaryDeploymentManager;
-    if (!governanceDeploymentManager) {
-      throw new Error('cannot execute governance without governance deployment manager');
-    }
+    const govDeploymentManager = world.auxiliaryDeploymentManager;
     const fxChild = await dm.getContractOrThrow('fxChild');
 
     // Deploy new PolygonBridgeReceiver
@@ -227,7 +221,7 @@ scenario(
     );
 
     // Initialize new PolygonBridgeReceiver
-    const mainnetTimelock = (await governanceDeploymentManager.getContractOrThrow('timelock')).address;
+    const mainnetTimelock = (await govDeploymentManager.getContractOrThrow('timelock')).address;
     await newBridgeReceiver.initialize(
       mainnetTimelock,             // govTimelock
       newLocalTimelock.address     // localTimelock
@@ -264,7 +258,7 @@ scenario(
     expect(await proxyAdmin.owner()).to.eq(oldLocalTimelock.address);
     expect(await comet.governor()).to.eq(oldLocalTimelock.address);
 
-    await fastL1ToPolygonGovernanceExecute(upgradeL2GovContractsProposal, oldBridgeReceiver, world);
+    await fastL1ToPolygonGovernanceExecute(upgradeL2GovContractsProposal, oldBridgeReceiver, context);
 
     expect(await proxyAdmin.owner()).to.eq(newLocalTimelock.address);
     expect(await comet.governor()).to.eq(newLocalTimelock.address);
@@ -292,7 +286,7 @@ scenario(
     expect(await newLocalTimelock.delay()).to.eq(currentTimelockDelay);
     expect(currentTimelockDelay).to.not.eq(newTimelockDelay);
 
-    await fastL1ToPolygonGovernanceExecute(l2ProposalData, newBridgeReceiver, world);
+    await fastL1ToPolygonGovernanceExecute(l2ProposalData, newBridgeReceiver, context);
 
     expect(await newLocalTimelock.delay()).to.eq(newTimelockDelay);
     expect(await comet.isAbsorbPaused()).to.eq(true);
@@ -306,26 +300,20 @@ scenario(
 async function fastL1ToPolygonGovernanceExecute(
   l2ProposalData: string,
   bridgeReceiver: BaseBridgeReceiver,
-  world: World
+  context: CometContext
 ) {
-  const governanceDeploymentManager = world.auxiliaryDeploymentManager;
-  if (!governanceDeploymentManager) {
-    throw new Error('cannot execute governance without governance deployment manager');
-  }
-
-  const compWhale = world.base.network === 'polygon' ? COMP_WHALES.mainnet[0] : COMP_WHALES.testnet[0];
-  const proposer = await impersonateAddress(governanceDeploymentManager, compWhale, exp(1, 18)); // give them enough ETH to make the proposal
-
+  const govDeploymentManager = context.world.auxiliaryDeploymentManager;
+  const proposer = await context.getProposer();
   const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
     ['address', 'bytes'],
     [bridgeReceiver.address, l2ProposalData]
   );
 
-  const fxRoot = await governanceDeploymentManager.getContractOrThrow('fxRoot');
+  const fxRoot = await govDeploymentManager.getContractOrThrow('fxRoot');
 
   await fastL2GovernanceExecute(
-    governanceDeploymentManager,
-    world.deploymentManager,
+    govDeploymentManager,
+    context.world.deploymentManager,
     proposer,
     [fxRoot.address],
     [0],
