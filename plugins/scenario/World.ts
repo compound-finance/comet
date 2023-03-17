@@ -83,9 +83,10 @@ export class World {
     return await this._snapshot();
   }
 
-  async impersonateAddress(address: string, value?: bigint): Promise<SignerWithAddress> {
-    const dm = this.auxiliaryDeploymentManager ?? this.deploymentManager;
-    return await impersonateAddress(dm, address, value);
+  async impersonateAddress(address: string, opts?: { value?: bigint, onGovNetwork?: boolean }): Promise<SignerWithAddress> {
+    const options = opts ?? {};
+    const dm = options.onGovNetwork ? this.auxiliaryDeploymentManager ?? this.deploymentManager : this.deploymentManager;
+    return await impersonateAddress(dm, address, options.value);
   }
 
   async timestamp() {
