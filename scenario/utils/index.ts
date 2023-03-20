@@ -428,7 +428,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
   // Create the chain-specific wrapper around the L2 proposal data
   switch (bridgeNetwork) {
     case 'optimism':
-    case 'optimism-goerli':
+    case 'optimism-goerli': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes', 'uint32'],
         [bridgeReceiver.address, l2ProposalData, 1_000_000] // XXX find a reliable way to estimate the gasLimit
@@ -442,8 +442,9 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       signatures.push('sendMessage(address,bytes,uint32)');
       calldata.push(sendMessageCalldata);
       break;
+    }
     case 'mumbai':
-    case 'polygon':
+    case 'polygon': {
       const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes'],
         [bridgeReceiver.address, l2ProposalData]
@@ -455,6 +456,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       signatures.push('sendMessageToChild(address,bytes)');
       calldata.push(sendMessageToChildCalldata);
       break;
+    }
     default:
       throw new Error(
         `No calldata constructor implementation from ${govDeploymentManager.network} -> ${bridgeNetwork}`
