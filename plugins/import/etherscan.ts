@@ -61,8 +61,8 @@ export function getEtherscanApiKey(network: string): string {
     avalanche: process.env.SNOWTRACE_KEY,
     mumbai: process.env.POLYGONSCAN_KEY,
     polygon: process.env.POLYGONSCAN_KEY,
-    optimism: process.env.ETHERSCAN_KEY,
-    'optimism-goerli': process.env.ETHERSCAN_KEY
+    optimism: process.env.OPTIMISM_ETHERSCAN_KEY,
+    'optimism-goerli': process.env.OPTIMISM_ETHERSCAN_KEY
   }[network];
 
   if (!apiKey) {
