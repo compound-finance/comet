@@ -1,10 +1,10 @@
-import { scenario, CometContext } from './context/CometContext';
+import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { BigNumberish, constants, utils } from 'ethers';
 import { exp } from '../test/helpers';
 import { BaseBridgeReceiver, FaucetToken } from '../build/types';
 import { calldata } from '../src/deploy';
-import { expectBase, isBridgedDeployment, fastL2GovernanceExecute, matchesDeployment } from './utils';
+import { expectBase, isBridgedDeployment, matchesDeployment, createCrossChainProposal } from './utils';
 
 scenario('upgrade Comet implementation and initialize', {filter: async (ctx) => !isBridgedDeployment(ctx)}, async ({ comet, configurator, proxyAdmin }, context) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
@@ -153,50 +153,14 @@ scenario('add new asset',
     expectBase(await albert.getCometBaseBalance(), -borrowAmount);
   });
 
-scenario(
-  'execute Polygon governance proposal',
-  {
-    filter: async ctx => matchesDeployment(ctx, [{network: 'polygon'}, {network: 'mumbai'}])
-  },
-  async ({ comet, timelock, bridgeReceiver }, context) => {
-    const currentTimelockDelay = await timelock.delay();
-    const newTimelockDelay = currentTimelockDelay.mul(2);
-
-    // Cross-chain proposal to change L2 timelock's delay and pause L2 Comet actions
-    const setDelayCalldata = utils.defaultAbiCoder.encode(['uint'], [newTimelockDelay]);
-    const pauseCalldata = await calldata(comet.populateTransaction.pause(true, true, true, true, true));
-    const l2ProposalData = utils.defaultAbiCoder.encode(
-      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
-      [
-        [timelock.address, comet.address],
-        [0, 0],
-        ['setDelay(uint256)', 'pause(bool,bool,bool,bool,bool)'],
-        [setDelayCalldata, pauseCalldata]
-      ]
-    );
-
-    expect(await timelock.delay()).to.eq(currentTimelockDelay);
-    expect(currentTimelockDelay).to.not.eq(newTimelockDelay);
-
-    await fastL1ToPolygonGovernanceExecute(l2ProposalData, bridgeReceiver, context);
-
-    expect(await timelock.delay()).to.eq(newTimelockDelay);
-    expect(await comet.isAbsorbPaused()).to.eq(true);
-    expect(await comet.isBuyPaused()).to.eq(true);
-    expect(await comet.isSupplyPaused()).to.eq(true);
-    expect(await comet.isTransferPaused()).to.eq(true);
-    expect(await comet.isWithdrawPaused()).to.eq(true);
-  }
-);
-
-scenario(
+scenario.only(
   'upgrade Polygon governance contracts and ensure they work properly',
   {
     filter: async ctx => matchesDeployment(ctx, [{network: 'polygon'}, {network: 'mumbai'}])
   },
   async ({ comet, configurator, proxyAdmin, timelock: oldLocalTimelock, bridgeReceiver: oldBridgeReceiver }, context, world) => {
     const dm = world.deploymentManager;
-    const govDeploymentManager = world.auxiliaryDeploymentManager;
+    const govDeploymentManager = world.auxiliaryDeploymentManager!;
     const fxChild = await dm.getContractOrThrow('fxChild');
 
     // Deploy new PolygonBridgeReceiver
@@ -258,7 +222,7 @@ scenario(
     expect(await proxyAdmin.owner()).to.eq(oldLocalTimelock.address);
     expect(await comet.governor()).to.eq(oldLocalTimelock.address);
 
-    await fastL1ToPolygonGovernanceExecute(upgradeL2GovContractsProposal, oldBridgeReceiver, context);
+    await createCrossChainProposal(context, upgradeL2GovContractsProposal, oldBridgeReceiver);
 
     expect(await proxyAdmin.owner()).to.eq(newLocalTimelock.address);
     expect(await comet.governor()).to.eq(newLocalTimelock.address);
@@ -286,7 +250,7 @@ scenario(
     expect(await newLocalTimelock.delay()).to.eq(currentTimelockDelay);
     expect(currentTimelockDelay).to.not.eq(newTimelockDelay);
 
-    await fastL1ToPolygonGovernanceExecute(l2ProposalData, newBridgeReceiver, context);
+    await createCrossChainProposal(context, l2ProposalData, newBridgeReceiver);
 
     expect(await newLocalTimelock.delay()).to.eq(newTimelockDelay);
     expect(await comet.isAbsorbPaused()).to.eq(true);
@@ -297,27 +261,39 @@ scenario(
   }
 );
 
-async function fastL1ToPolygonGovernanceExecute(
-  l2ProposalData: string,
-  bridgeReceiver: BaseBridgeReceiver,
-  context: CometContext
-) {
-  const govDeploymentManager = context.world.auxiliaryDeploymentManager;
-  const proposer = await context.getProposer();
-  const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
-    ['address', 'bytes'],
-    [bridgeReceiver.address, l2ProposalData]
-  );
+// This should run for all L2s and sidechains
+scenario.only(
+  'execute cross-chain governance proposal',
+  {
+    filter: async ctx => isBridgedDeployment(ctx)
+  },
+  async ({ comet, timelock, bridgeReceiver }, context) => {
+    const currentTimelockDelay = await timelock.delay();
+    const newTimelockDelay = currentTimelockDelay.mul(2);
 
-  const fxRoot = await govDeploymentManager.getContractOrThrow('fxRoot');
+    // Cross-chain proposal to change L2 timelock's delay and pause L2 Comet actions
+    const setDelayCalldata = utils.defaultAbiCoder.encode(['uint'], [newTimelockDelay]);
+    const pauseCalldata = await calldata(comet.populateTransaction.pause(true, true, true, true, true));
+    const l2ProposalData = utils.defaultAbiCoder.encode(
+      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
+      [
+        [timelock.address, comet.address],
+        [0, 0],
+        ['setDelay(uint256)', 'pause(bool,bool,bool,bool,bool)'],
+        [setDelayCalldata, pauseCalldata]
+      ]
+    );
 
-  await fastL2GovernanceExecute(
-    govDeploymentManager,
-    context.world.deploymentManager,
-    proposer,
-    [fxRoot.address],
-    [0],
-    ['sendMessageToChild(address,bytes)'],
-    [sendMessageToChildCalldata]
-  );
-}
+    expect(await timelock.delay()).to.eq(currentTimelockDelay);
+    expect(currentTimelockDelay).to.not.eq(newTimelockDelay);
+
+    await createCrossChainProposal(context, l2ProposalData, bridgeReceiver);
+
+    expect(await timelock.delay()).to.eq(newTimelockDelay);
+    expect(await comet.isAbsorbPaused()).to.eq(true);
+    expect(await comet.isBuyPaused()).to.eq(true);
+    expect(await comet.isSupplyPaused()).to.eq(true);
+    expect(await comet.isTransferPaused()).to.eq(true);
+    expect(await comet.isWithdrawPaused()).to.eq(true);
+  }
+);
