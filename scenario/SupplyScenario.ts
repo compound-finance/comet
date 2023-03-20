@@ -377,6 +377,7 @@ scenario(
     const { albert, betty } = actors;
     const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
+    const symbol = await collateralAsset.token.symbol();
     const scale = scaleBN.toBigInt();
 
     await collateralAsset.approve(albert, comet.address);
@@ -391,7 +392,8 @@ scenario(
       }),
       [
         /transfer amount exceeds balance/,
-        /Dai\/insufficient-balance/
+        /Dai\/insufficient-balance/,
+        symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/
       ]
     );
   }
