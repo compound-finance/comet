@@ -306,6 +306,7 @@ scenario(
       }),
       [
         /ERC20: transfer amount exceeds allowance/,
+        /ERC20: insufficient allowance/,
         /transfer amount exceeds spender allowance/,
         /Dai\/insufficient-allowance/,
         symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/
