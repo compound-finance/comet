@@ -114,7 +114,7 @@ export type ConfiguratorAndProtocol = {
 
 export type RewardsOpts = {
   governor?: SignerWithAddress;
-  configs?: [Comet, FaucetToken][];
+  configs?: [Comet, FaucetToken, Numeric?][];
 };
 
 export type Rewards = {
@@ -476,8 +476,9 @@ export async function makeRewards(opts: RewardsOpts = {}): Promise<Rewards> {
   const rewards = await RewardsFactory.deploy(governor.address);
   await rewards.deployed();
 
-  for (const [comet, token] of configs) {
-    await wait(rewards.setRewardConfig(comet.address, token.address));
+  for (const [comet, token, multiplier] of configs) {
+    if (multiplier === undefined) await wait(rewards.setRewardConfig(comet.address, token.address));
+    else await wait(rewards.setRewardConfigWithMultiplier(comet.address, token.address, multiplier));
   }
 
   return {
