@@ -459,7 +459,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
     }
     default:
       throw new Error(
-        `No calldata constructor implementation from ${govDeploymentManager.network} -> ${bridgeNetwork}`
+        `No cross-chain proposal constructor implementation for ${govDeploymentManager.network} -> ${bridgeNetwork}`
       );
   }
 
