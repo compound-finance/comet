@@ -428,6 +428,31 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
 
   // Create the chain-specific wrapper around the L2 proposal data
   switch (bridgeNetwork) {
+    case 'arbitrum':
+    case 'arbitrum-goerli': {
+      const inbox = await govDeploymentManager.getContractOrThrow('inbox');
+      const refundAddress = constants.AddressZero;
+      const createRetryableTicketCalldata = utils.defaultAbiCoder.encode(
+        [
+          'address', 'uint256', 'uint256', 'address', 'address', 'uint256', 'uint256', 'bytes'
+        ],
+        [
+          bridgeReceiver.address, // address to,
+          0,                      // uint256 l2CallValue,
+          0,                      // uint256 maxSubmissionCost,
+          refundAddress,          // address excessFeeRefundAddress,
+          refundAddress,          // address callValueRefundAddress,
+          0,                      // uint256 gasLimit,
+          0,                      // uint256 maxFeePerGas,
+          l2ProposalData,         // bytes calldata data
+        ]
+      );
+      targets.push(inbox.address);
+      values.push(0);
+      signatures.push('createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)');
+      calldata.push(createRetryableTicketCalldata);
+      break;
+    }
     case 'mumbai':
     case 'polygon': {
       const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
