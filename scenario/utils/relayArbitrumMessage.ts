@@ -65,18 +65,18 @@ export default async function relayArbitrumMessage(
     };
   });
 
-  // XXX rename
-  const combined = dataAndTargets.map((dataAndTarget, i) => {
-    // XXX throw error if message num values are different
+  const bridgedMessages = dataAndTargets.map((dataAndTarget, i) => {
+    if (dataAndTarget.messageNum !== senders[i].messageNum) {
+      throw new Error(`Mismatched message numbers in Arbitrum bridged message to ${dataAndTarget.toAddress}`);
+    }
     return {
       ...dataAndTarget,
       ...senders[i]
     };
   });
 
-  // XXX rename
-  for (let combinedData of combined) {
-    const { sender, data, toAddress } = combinedData;
+  for (let bridgedMessage of bridgedMessages) {
+    const { sender, data, toAddress } = bridgedMessage;
     const arbitrumSigner = await impersonateAddress(
       bridgeDeploymentManager,
       sender
