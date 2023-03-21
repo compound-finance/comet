@@ -97,6 +97,9 @@ export const WHALES = {
   ],
   optimism: [
     '0xba12222222228d8ba445958a75a0704d566bf2c8', // WETH whale
+  ],
+  'optimism-goerli': [
+    '0xaFC7682751d3654f34958e3fb660971BF5918367', // USDC whale
   ]
 };
 

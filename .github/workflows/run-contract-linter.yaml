@@ -11,6 +11,7 @@ jobs:
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
+      OPTIMISM_ETHERSCAN_KEY: ${{ secrets.OPTIMISM_ETHERSCAN_KEY }}
     steps:
       - uses: actions/checkout@v2
         with:

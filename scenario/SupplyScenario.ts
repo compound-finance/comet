@@ -291,6 +291,7 @@ scenario(
     const { albert, betty } = actors;
     const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
+    const symbol = await collateralAsset.token.symbol();
     const scale = scaleBN.toBigInt();
 
     await albert.allow(betty, true);
@@ -305,8 +306,10 @@ scenario(
       }),
       [
         /ERC20: transfer amount exceeds allowance/,
+        /ERC20: insufficient allowance/,
         /transfer amount exceeds spender allowance/,
-        /Dai\/insufficient-allowance/
+        /Dai\/insufficient-allowance/,
+        symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/
       ]
     );
   }
@@ -374,6 +377,7 @@ scenario(
     const { albert, betty } = actors;
     const { asset: asset0Address, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(asset0Address);
+    const symbol = await collateralAsset.token.symbol();
     const scale = scaleBN.toBigInt();
 
     await collateralAsset.approve(albert, comet.address);
@@ -388,7 +392,8 @@ scenario(
       }),
       [
         /transfer amount exceeds balance/,
-        /Dai\/insufficient-balance/
+        /Dai\/insufficient-balance/,
+        symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/
       ]
     );
   }
