@@ -145,7 +145,7 @@ export class CometContext {
     const { world } = this;
 
     const oldComet = await this.getComet();
-    const admin = await world.impersonateAddress(await oldComet.governor(), {value: 10n ** 18n});
+    const admin = await world.impersonateAddress(await oldComet.governor(), { value: 20n ** 18n });
 
     const deploySpec = { cometMain: true, cometExt: true };
     const deployed = await deployComet(this.world.deploymentManager, deploySpec, configOverrides, admin);
