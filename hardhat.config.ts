@@ -24,6 +24,7 @@ import mainnetRelationConfigMap from './deployments/mainnet/usdc/relations';
 import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
 import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
+import optimismGoerliRelationConfigMap from './deployments/optimism-goerli/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -38,6 +39,7 @@ const {
   INFURA_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   POLYGONSCAN_KEY,
+  OPTIMISM_ETHERSCAN_KEY,
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
@@ -63,7 +65,8 @@ export function requireEnv(varName, msg?: string): string {
   'ETHERSCAN_KEY',
   'SNOWTRACE_KEY',
   'INFURA_KEY',
-  'POLYGONSCAN_KEY'
+  'POLYGONSCAN_KEY',
+  'OPTIMISM_ETHERSCAN_KEY'
 ].map(v => requireEnv(v))
 
 // Networks
@@ -190,6 +193,9 @@ const config: HardhatUserConfig = {
       // Polygon
       polygon: POLYGONSCAN_KEY,
       polygonMumbai: POLYGONSCAN_KEY,
+      // Optimism
+      optimisticEthereum: OPTIMISM_ETHERSCAN_KEY,
+      optimisticKovan: OPTIMISM_ETHERSCAN_KEY,
     },
   },
 
@@ -218,8 +224,8 @@ const config: HardhatUserConfig = {
       optimism: {
         usdc: optimismRelationConfigMap
       },
-      "optimism-goerli": {
-        usdc: optimismRelationConfigMap
+      'optimism-goerli': {
+        usdc: optimismGoerliRelationConfigMap
       },
     },
   },

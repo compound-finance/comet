@@ -80,4 +80,7 @@ export default async function relayOptimismMessage(
   // execute queued proposal
   await setNextBaseFeeToZero(bridgeDeploymentManager);
   await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+  console.log(
+    `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
+  );
 }
