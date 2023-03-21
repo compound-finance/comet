@@ -80,7 +80,7 @@ export class CometContext {
   }
 
   async getProposer(): Promise<SignerWithAddress> {
-    return this.world.impersonateAddress((await this.getCompWhales())[0], 10n ** 18n);
+    return this.world.impersonateAddress((await this.getCompWhales())[0], { value: 10n ** 18n, onGovNetwork: true });
   }
 
   async getComp(): Promise<ERC20> {
@@ -145,7 +145,7 @@ export class CometContext {
     const { world } = this;
 
     const oldComet = await this.getComet();
-    const admin = await world.impersonateAddress(await oldComet.governor(), 10n ** 18n);
+    const admin = await world.impersonateAddress(await oldComet.governor(), { value: 20n ** 18n });
 
     const deploySpec = { cometMain: true, cometExt: true };
     const deployed = await deployComet(this.world.deploymentManager, deploySpec, configOverrides, admin);
@@ -174,7 +174,7 @@ export class CometContext {
       newPriceFeeds[assetAddress] = priceFeed.address;
     }
 
-    const gov = await this.world.impersonateAddress(await comet.governor(), 10n ** 18n);
+    const gov = await this.world.impersonateAddress(await comet.governor(), { value: 10n ** 18n });
     const cometAdmin = (await this.getCometAdmin()).connect(gov);
     const configurator = (await this.getConfigurator()).connect(gov);
     for (const [assetAddress, priceFeedAddress] of Object.entries(newPriceFeeds)) {
@@ -211,7 +211,7 @@ export class CometContext {
     // Set new supply caps in Configurator and do a deployAndUpgradeTo
     if (shouldUpgrade) {
       debug(`Bumping supply caps...`, comet.address, newSupplyCaps);
-      const gov = await this.world.impersonateAddress(await comet.governor(), 10n ** 18n);
+      const gov = await this.world.impersonateAddress(await comet.governor(), { value: 10n ** 18n });
       const cometAdmin = (await this.getCometAdmin()).connect(gov);
       const configurator = (await this.getConfigurator()).connect(gov);
       for (const [asset, cap] of Object.entries(newSupplyCaps)) {

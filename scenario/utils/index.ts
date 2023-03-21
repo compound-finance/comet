@@ -13,7 +13,7 @@ import { debug } from '../../plugins/deployment_manager/Utils';
 import { COMP_WHALES } from '../../src/deploy';
 import relayMessage from './relayMessage';
 import { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
-import { CometInterface } from '../../build/types';
+import { BaseBridgeReceiver, CometInterface } from '../../build/types';
 import CometActor from './../context/CometActor';
 import { isBridgeProposal } from './isBridgeProposal';
 
@@ -413,6 +413,49 @@ export async function fastL2GovernanceExecute(
   );
 
   await relayMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);
+}
+
+export async function createCrossChainProposal(context: CometContext, l2ProposalData: string, bridgeReceiver: BaseBridgeReceiver) {
+  const govDeploymentManager = context.world.auxiliaryDeploymentManager!;
+  const bridgeDeploymentManager = context.world.deploymentManager!;
+  const proposer = await context.getProposer();
+  const bridgeNetwork = bridgeDeploymentManager.network;
+  const targets: string[] = [];
+  const values: number[] = [];
+  const signatures: string[] = [];
+  const calldata: string[] = [];
+
+  // Create the chain-specific wrapper around the L2 proposal data
+  switch (bridgeNetwork) {
+    case 'mumbai':
+    case 'polygon': {
+      const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
+        ['address', 'bytes'],
+        [bridgeReceiver.address, l2ProposalData]
+      );
+      const fxRoot = await govDeploymentManager.getContractOrThrow('fxRoot');
+
+      targets.push(fxRoot.address);
+      values.push(0);
+      signatures.push('sendMessageToChild(address,bytes)');
+      calldata.push(sendMessageToChildCalldata);
+      break;
+    }
+    default:
+      throw new Error(
+        `No cross-chain proposal constructor implementation for ${govDeploymentManager.network} -> ${bridgeNetwork}`
+      );
+  }
+
+  await fastL2GovernanceExecute(
+    govDeploymentManager,
+    bridgeDeploymentManager,
+    proposer,
+    targets,
+    values,
+    signatures,
+    calldata
+  );
 }
 
 export async function executeOpenProposalAndRelay(
