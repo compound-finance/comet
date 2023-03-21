@@ -195,7 +195,7 @@ const config: HardhatUserConfig = {
       polygonMumbai: POLYGONSCAN_KEY,
       // Arbitrum
       arbitrumOne: ARBISCAN_KEY,
-      arbitrumGoerli: ARBISCAN_KEY
+      arbitrumTestnet: ARBISCAN_KEY
     },
   },
 
