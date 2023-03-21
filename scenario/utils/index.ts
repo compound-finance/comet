@@ -428,7 +428,8 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
 
   // Create the chain-specific wrapper around the L2 proposal data
   switch (bridgeNetwork) {
-    case 'optimism': {
+    case 'optimism':
+    case 'optimism-goerli': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes', 'uint32'],
         [bridgeReceiver.address, l2ProposalData, 1_000_000] // XXX find a reliable way to estimate the gasLimit
