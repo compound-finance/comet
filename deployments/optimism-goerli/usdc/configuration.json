@@ -48,7 +48,7 @@
       "borrowCF": 0.70,
       "liquidateCF": 0.75,
       "liquidationFactor": 0.95,
-      "supplyCap": "0e18"
+      "supplyCap": "0e8"
     }
   }
 }
