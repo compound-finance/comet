@@ -158,7 +158,7 @@ export class DeploymentManager {
     alias: Alias,
     address: string,
     deployArgs: any[],
-    fromNetwork = 'mainnet',
+    fromNetwork = 'mainnet', // XXX maybe we should default to the network of the deployment manager
     force?: boolean,
     retries?: number
   ): Promise<C> {
@@ -192,14 +192,20 @@ export class DeploymentManager {
   async existing<C extends Contract>(
     alias: Alias,
     addresses: string | string[],
-    network = 'mainnet'
+    network = 'mainnet',
+    artifact?: string
   ): Promise<C> {
     const maybeExisting = await this.contract<C>(alias);
     if (!maybeExisting) {
       const trace = this.tracer();
       const contracts = await Promise.all(
         [].concat(addresses).map(async (address) => {
-          const buildFile = await this.import(address, network);
+          let buildFile;
+          if (artifact !== undefined) {
+            buildFile = await readContract(this.cache, this.hre, artifact, network, address, !this.cache);
+          } else {
+            buildFile = await this.import(address, network);
+          }
           trace(`Loaded ${buildFile.contract} from ${address} for '${alias}'`);
           return getEthersContract<C>(address, buildFile, this.hre);
         })

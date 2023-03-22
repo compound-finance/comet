@@ -24,12 +24,29 @@
     "baseMinForRewards": "1000000e6"
   },
   "assets": {
+    "OP": {
+      "priceFeed": "0xE882831E58eec48B7f304482771F67e6b846733D",
+      "decimals": "18",
+      "borrowCF": 0.65,
+      "liquidateCF": 0.70,
+      "liquidationFactor": 0.93,
+      "supplyCap": "0e18"
+    },
     "WETH": {
       "address": "0x4200000000000000000000000000000000000006",
       "priceFeed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8",
       "decimals": "18",
       "borrowCF": 0.775,
       "liquidateCF": 0.825,
+      "liquidationFactor": 0.95,
+      "supplyCap": "0e18"
+    },
+    "WBTC": {
+      "address": "0xe0a592353e81a94Db6E3226fD4A99F881751776a",
+      "priceFeed": "0xC16679B963CeB52089aD2d95312A5b85E318e9d2",
+      "decimals": "8",
+      "borrowCF": 0.70,
+      "liquidateCF": 0.75,
       "liquidationFactor": 0.95,
       "supplyCap": "0e18"
     }

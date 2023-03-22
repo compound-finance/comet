@@ -358,7 +358,7 @@ export async function executeOpenProposal(
   }
 
   const proposal = await governor.proposals(id);
-  await setNextBlockTimestamp(dm, proposal.eta.toNumber() + 1);
+  await setNextBlockTimestamp(dm, proposal.eta.toNumber() + 10000);
 
   // Execute proposal (w/ gas limit so we see if exec reverts, not a gas estimation error)
   await setNextBaseFeeToZero(dm);
