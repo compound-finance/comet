@@ -350,18 +350,19 @@ export async function executeOpenProposal(
   }
 
   // Queue proposal (maybe)
-  const state = await governor.state(id);
-  if (state == ProposalState.Succeeded) {
+  if (await governor.state(id) == ProposalState.Succeeded) {
     await setNextBaseFeeToZero(dm);
     await governor.queue(id, { gasPrice: 0 });
   }
 
-  const proposal = await governor.proposals(id);
-  await setNextBlockTimestamp(dm, proposal.eta.toNumber() + 1);
-
-  // Execute proposal (w/ gas limit so we see if exec reverts, not a gas estimation error)
-  await setNextBaseFeeToZero(dm);
-  await governor.execute(id, { gasPrice: 0, gasLimit: 12000000 });
+  // Execute proposal (maybe, w/ gas limit so we see if exec reverts, not a gas estimation error)
+  if (await governor.state(id) == ProposalState.Queued) {
+    const block = await dm.hre.ethers.provider.getBlock('latest');
+    const proposal = await governor.proposals(id);
+    await setNextBlockTimestamp(dm, Math.max(block.timestamp, proposal.eta.toNumber()) + 1);
+    await setNextBaseFeeToZero(dm);
+    await governor.execute(id, { gasPrice: 0, gasLimit: 12000000 });
+  }
 }
 
 // Instantly executes some actions through the governance proposal process
