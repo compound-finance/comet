@@ -46,10 +46,16 @@ async function deployContracts(
 
   const l2CrossDomainMessenger = await deploymentManager.existing(
     'l2CrossDomainMessenger',
-    ['0xc0d3c0d3c0d3c0d3c0d3c0d3c0d3c0d3c0d30007', '0x4200000000000000000000000000000000000007'],
+    ['0xC0d3c0d3c0D3c0D3C0d3C0D3C0D3c0d3c0d30007', '0x4200000000000000000000000000000000000007'],
     'optimism-goerli'
   );
 
+  const l2StandardBridge = await deploymentManager.existing(
+    'l2StandardBridge',
+    ['0xC0d3c0d3c0D3c0d3C0D3c0D3C0d3C0D3C0D30010', '0x4200000000000000000000000000000000000010'],
+    'optimism-goerli'
+  );
+  
   // Deploy OptimismBridgeReceiver
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
@@ -104,6 +110,7 @@ async function deployContracts(
     ...deployed,
     bridgeReceiver,
     l2CrossDomainMessenger,
+    l2StandardBridge,
     bulker,
     fauceteer
   };
