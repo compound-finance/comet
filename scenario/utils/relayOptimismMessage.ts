@@ -1,9 +1,8 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
-import { Contract, ethers } from 'ethers';
+import { ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
-import { Event } from 'ethers';
 
 /*
 The Optimism relayer applies an offset to the message sender.
@@ -64,8 +63,8 @@ export default async function relayOptimismMessage(
     if (target === l2StandardBridge.address) {
       // Bridging ERC20 token
       const messageWithoutPrefix = message.slice(2); // strip out the 0x prefix
-      const messageWithoutSigHash = '0x' + messageWithoutPrefix.slice(8)
-      const { l1Token, l2Token, from, to, amount, data  } = ethers.utils.defaultAbiCoder.decode(
+      const messageWithoutSigHash = '0x' + messageWithoutPrefix.slice(8);
+      const { l1Token, _l2Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
         ['address l1Token', 'address l2Token', 'address from', 'address to', 'uint256 amount', 'bytes data'],
         messageWithoutSigHash
       );
