@@ -6,5 +6,6 @@
     "rewards": "0xef9e070044d62C38D2e316146dDe92AD02CF2c2c",
     "bulker": "0x69dD076105977c55dC2835951d287f82D54606b4",
     "fxRoot": "0x3d1d3e34f7fb6d26245e6640e1c50710efff15ba",
-    "optimismL1CrossDomainMessenger": "0x5086d1eEF304eb5284A0f6720f79403b4e9bE294"
+    "optimismL1CrossDomainMessenger": "0x5086d1eEF304eb5284A0f6720f79403b4e9bE294",
+    "optimismL1StandardBridge": "0x636Af16bf2f682dD3109e60102b8E1A089FedAa8"
 }
