@@ -1,9 +1,7 @@
-import { Contract } from 'ethers';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
 import { expect } from 'chai';
-import {ERC20__factory} from '../../../../build/types';
 
 const ENSName = 'compound-community-licenses.eth';
 const ENSResolverAddress = '0x19c2d5D0f035563344dBB7bE5fD09c8dad62b001';
