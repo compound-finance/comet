@@ -112,7 +112,7 @@ export default migration('1679592519_configurate_and_ens', {
         args: [goerliCOMP.address, optimismCOMP.address, rewards.address, COMPAmountToBridge, 1_000_000, '0x']
       },
 
-      // 7. Establish the new list of official markets
+      // 6. Update the list of official markets
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
@@ -167,7 +167,7 @@ export default migration('1679592519_configurate_and_ens', {
     // 4. & 5.
     expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(10_000, 18));
 
-    // 6. & 7.
+    // 6.
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress, 'goerli');
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
     const officialMarketsJSON = await ENSResolver.text(subdomainHash, ENSTextRecordKey);
