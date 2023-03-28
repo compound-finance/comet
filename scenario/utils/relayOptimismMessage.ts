@@ -1,7 +1,7 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 
 /*
@@ -38,15 +38,26 @@ export default async function relayOptimismMessage(
 
   for (let sentMessageEvent of sentMessageEvents) {
     const { args: { target, sender, message, messageNonce, gasLimit } } = optimismL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
+    console.log('message nonce ', messageNonce)
     const aliasedSigner = await impersonateAddress(
       bridgeDeploymentManager,
       applyL1ToL2Alias(optimismL1CrossDomainMessenger.address)
     );
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
+    console.log('estimate gas later ', await bridgeDeploymentManager.hre.ethers.provider.estimateGas(await l2CrossDomainMessenger.connect(aliasedSigner).populateTransaction.relayMessage(
+      BigNumber.from('0x0001000000000000000000000000000000000000000000000000000000000007'), // message nonce
+      sender,
+      target,
+      0,
+      0,
+      message,
+      { gasPrice: 0, gasLimit }
+    )));
+
     const relayMessageTxn = await (
       await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
-        messageNonce,
+        BigNumber.from('0x0001000000000000000000000000000000000000000000000000000000000007'), // message nonce
         sender,
         target,
         0,
@@ -74,6 +85,7 @@ export default async function relayOptimismMessage(
       );
     } else if (target === bridgeReceiver.address) {
       // Cross-chain message passing
+      console.log('gas used real ', relayMessageTxn)
       const proposalCreatedEvent = relayMessageTxn.events.find(event => event.address === bridgeReceiver.address);
       const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
 

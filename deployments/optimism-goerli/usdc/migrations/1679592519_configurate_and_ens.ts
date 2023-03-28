@@ -1,3 +1,4 @@
+import { BigNumber, Contract } from 'ethers';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
@@ -21,11 +22,13 @@ export default migration('1679592519_configurate_and_ens', {
     const { utils } = ethers;
 
     const {
+      l2CrossDomainMessenger,
       bridgeReceiver,
       comet,
       cometAdmin,
       configurator,
       rewards,
+      timelock: optimismTimelock,
       USDC: optimismUSDC,
       COMP: optimismCOMP
     } = await deploymentManager.getContracts();
@@ -34,6 +37,7 @@ export default migration('1679592519_configurate_and_ens', {
       optimismL1CrossDomainMessenger,
       optimismL1StandardBridge,
       governor,
+      timelock: goerliTimelock,
       USDC: goerliUSDC,
       COMP: goerliCOMP,
     } = await govDeploymentManager.getContracts();
@@ -75,6 +79,40 @@ export default migration('1679592519_configurate_and_ens', {
 
     const USDCAmountToBridge = exp(10, 6);
     const COMPAmountToBridge = exp(10_000, 18);
+
+    console.log('estimating gas limit')
+    // const aliasedSigner = await impersonateAddress(
+    //   bridgeDeploymentManager,
+    //   applyL1ToL2Alias(optimismL1CrossDomainMessenger.address)
+    // );
+    // const gasLimit = await deploymentManager.hre.ethers.provider.estimateGas({
+    //   from: l2CrossDomainMessenger.address,
+    //   to: bridgeReceiver.address,
+    //   data: l2ProposalData,
+    // })
+    function applyL1ToL2Alias(address: string) {
+      const offset = BigInt('0x1111000000000000000000000000000000001111');
+      return `0x${(BigInt(address) + offset).toString(16)}`;
+    }
+    
+    const l2Alias = applyL1ToL2Alias(optimismL1CrossDomainMessenger.address);
+    const relayMessageTxn = await l2CrossDomainMessenger.connect(l2Alias).populateTransaction.relayMessage(
+      BigNumber.from('0x0001000000000000000000000000000000000000000000000000000000000007'), // message nonce
+      goerliTimelock.address, // sender
+      optimismTimelock.address, // target
+      0,
+      0,
+      l2ProposalData, // message,
+      { gasLimit: 10_000_000 }
+    );
+    const gasLimit = await deploymentManager.hre.ethers.provider.estimateGas(relayMessageTxn);
+    // const gasLimit = await deploymentManager.hre.ethers.provider.estimateGas({
+    //   from: l2CrossDomainMessenger.address,
+    //   to: bridgeReceiver.address,
+    //   data: l2ProposalData,
+    // })
+    console.log('provider ', deploymentManager.hre.ethers.provider)
+    console.log('gas limit is ', gasLimit)
 
     const goerliActions = [
       // 1. Set Comet configuration and deployAndUpgradeTo new Comet on Optimism-Goerli.

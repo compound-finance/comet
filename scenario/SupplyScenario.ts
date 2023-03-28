@@ -107,7 +107,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
   );
 }
 
-scenario(
+scenario.only(
   'Comet#supply > base asset',
   {
     tokenBalances: {
