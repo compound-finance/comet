@@ -57,7 +57,7 @@
     "@compound-finance/hardhat-import": "^1.0.3",
     "@ethersproject/experimental": "^5.6.3",
     "@nomiclabs/hardhat-ethers": "^2.0.4",
-    "@nomiclabs/hardhat-etherscan": "3.0.0",
+    "@nomiclabs/hardhat-etherscan": "3.1.7",
     "@safe-global/safe-core-sdk": "^3.3.2",
     "@safe-global/safe-ethers-lib": "^1.9.2",
     "@typechain/ethers-v5": "^8.0.2",
