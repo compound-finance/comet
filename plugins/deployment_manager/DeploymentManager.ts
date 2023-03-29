@@ -272,9 +272,9 @@ export class DeploymentManager {
     const verifyArgsMap = await getVerifyArgs(this.cache);
     for (const [address, verifyArgs] of verifyArgsMap) {
       if (filter == undefined || await filter(address, verifyArgs)) {
-        await this.verifyContract(verifyArgs);
+        const success = await this.verifyContract(verifyArgs);
         // Clear from cache after successfully verifying
-        await deleteVerifyArgs(this.cache, address);
+        if (success) await deleteVerifyArgs(this.cache, address);
       }
     }
   }
