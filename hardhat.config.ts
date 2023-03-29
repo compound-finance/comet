@@ -196,6 +196,7 @@ const config: HardhatUserConfig = {
       // Optimism
       optimisticEthereum: OPTIMISM_ETHERSCAN_KEY,
       optimisticKovan: OPTIMISM_ETHERSCAN_KEY,
+      'optimism-goerli': OPTIMISM_ETHERSCAN_KEY,
     },
     customChains: [
       {
@@ -203,8 +204,8 @@ const config: HardhatUserConfig = {
         network: 'optimism-goerli',
         chainId: 420,
         urls: {
-          apiURL: 'https://api-goerli-optimistic.etherscan.io',
-          browserURL: 'goerli-optimism.etherscan.io'
+          apiURL: 'https://api-goerli-optimistic.etherscan.io/',
+          browserURL: 'https://goerli-optimism.etherscan.io/'
         }
       }
     ]
