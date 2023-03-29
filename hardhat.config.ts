@@ -197,6 +197,17 @@ const config: HardhatUserConfig = {
       optimisticEthereum: OPTIMISM_ETHERSCAN_KEY,
       optimisticKovan: OPTIMISM_ETHERSCAN_KEY,
     },
+    customChains: [
+      {
+        // Hardhat's Etherscan plugin calls the network `optimisticGoerli`, so we need to add an entry for our own network name
+        network: 'optimism-goerli',
+        chainId: 420,
+        urls: {
+          apiURL: 'https://api-goerli-optimistic.etherscan.io',
+          browserURL: 'goerli-optimism.etherscan.io'
+        }
+      }
+    ]
   },
 
   typechain: {
