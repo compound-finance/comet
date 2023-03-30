@@ -1,5 +1,5 @@
 import { StaticConstraint, Solution, World, debug } from '../../plugins/scenario';
-import { CometContext } from '../context/CometContext';
+import { CometContext, MigrationData } from '../context/CometContext';
 import { Migration, loadMigrations, Actions } from '../../plugins/deployment_manager/Migration';
 import { modifiedPaths, subsets } from '../utils';
 import { DeploymentManager } from '../../plugins/deployment_manager';
@@ -40,16 +40,18 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
         govDeploymentManager._signers.unshift(proposer);
 
         // Order migrations deterministically and store in the context (i.e. for verification)
-        migrationList.sort((a, b) => a.name.localeCompare(b.name));
-        ctx.migrations = migrationList;
+        const migrations = migrationList.sort((a, b) => a.name.localeCompare(b.name)).map(m => <MigrationData>({ migration: m }));
+        ctx.migrations = migrations;
 
-        debug(`${label} Running scenario with migrations: ${JSON.stringify(migrationList.map((m) => m.name))}`);
-        for (const migration of migrationList) {
+        debug(`${label} Running scenario with migrations: ${JSON.stringify(migrations.map((m) => m.migration.name))}`);
+        for (const migrationData of migrations) {
+          const migration = migrationData.migration;
           const artifact = await migration.actions.prepare(ctx.world.deploymentManager, govDeploymentManager);
           debug(`${label} Prepared migration ${migration.name}.\n  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
           if (await isEnacted(migration.actions, ctx.world.deploymentManager, govDeploymentManager)) {
             debug(`${label} Migration ${migration.name} has already been enacted`);
           } else {
+            migrationData.preMigrationBlockNumber = await ctx.world.deploymentManager.hre.ethers.provider.getBlockNumber();
             await migration.actions.enact(ctx.world.deploymentManager, govDeploymentManager, artifact);
             debug(`${label} Enacted migration ${migration.name}`);
           }
@@ -77,9 +79,13 @@ export class VerifyMigrationConstraint<T extends CometContext> implements Static
       async function (ctx: T): Promise<T> {
         const govDeploymentManager = ctx.world.auxiliaryDeploymentManager || ctx.world.deploymentManager;
         if (ctx.migrations) {
-          for (const migration of ctx.migrations) {
+          for (const migrationData of ctx.migrations) {
+            const migration = migrationData.migration;
             if (migration.actions.verify && !(await isEnacted(migration.actions, ctx.world.deploymentManager, govDeploymentManager))) {
-              await migration.actions.verify(ctx.world.deploymentManager, govDeploymentManager);
+              // XXX we really need to be capturing the block at which the proposal was executed instead of the migration being run
+              migrationData.postMigrationBlockNumber = await ctx.world.deploymentManager.hre.ethers.provider.getBlockNumber();
+              console.log(ctx.migrations)
+              await migration.actions.verify(ctx.world.deploymentManager, govDeploymentManager, migrationData.preMigrationBlockNumber, migrationData.postMigrationBlockNumber);
               debug(`${label} Verified migration "${migration.name}"`);
             }
           }

@@ -40,6 +40,11 @@ import { Requirements } from '../constraints/Requirements';
 
 export type ActorMap = { [name: string]: CometActor };
 export type AssetMap = { [name: string]: CometAsset };
+export type MigrationData = {
+  migration: Migration<any>;
+  preMigrationBlockNumber?: number;
+  postMigrationBlockNumber?: number;
+}
 
 export interface CometProperties {
   actors: ActorMap;
@@ -58,7 +63,7 @@ export class CometContext {
   world: World;
   actors: ActorMap;
   assets: AssetMap;
-  migrations?: Migration<any>[];
+  migrations?: MigrationData[];
 
   constructor(world: World) {
     this.world = world;
