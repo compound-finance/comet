@@ -8,7 +8,7 @@ export async function diffState(
   getState: (c: Contract, blockNumber?: number) => Promise<object>,
   oldBlockNumber: number,
   newBlockNumber: number
-): Promise<Object> {
+): Promise<object> {
   const toBigInt = n => (BigNumber.isBigNumber(n) ? n.toBigInt() : n);
   const oldConfig = mapObject(await getState(contract, oldBlockNumber), toBigInt);
   const newConfig = mapObject(await getState(contract, newBlockNumber), toBigInt);
@@ -27,7 +27,7 @@ export async function diffState(
   return JSON.parse(stringifyJson(diff(oldConfig, newConfig))); // Removes null objects for test comparison
 }
 
-export async function getCometConfig(comet: Contract, blockNumber?: number): Promise<Object> {
+export async function getCometConfig(comet: Contract, blockNumber?: number): Promise<object> {
   const blockTag = { blockTag: blockNumber === undefined ? 'latest' : blockNumber };
   const numAssets = await comet.numAssets(blockTag);
   const config = {

@@ -84,7 +84,6 @@ export class VerifyMigrationConstraint<T extends CometContext> implements Static
             if (migration.actions.verify && !(await isEnacted(migration.actions, ctx.world.deploymentManager, govDeploymentManager))) {
               // XXX we really need to be capturing the block at which the proposal was executed instead of the migration being run
               migrationData.postMigrationBlockNumber = await ctx.world.deploymentManager.hre.ethers.provider.getBlockNumber();
-              console.log(ctx.migrations)
               await migration.actions.verify(ctx.world.deploymentManager, govDeploymentManager, migrationData.preMigrationBlockNumber, migrationData.postMigrationBlockNumber);
               debug(`${label} Verified migration "${migration.name}"`);
             }
