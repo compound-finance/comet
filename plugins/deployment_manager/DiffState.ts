@@ -1,6 +1,5 @@
 import { diff as jestDiff } from 'jest-diff';
 import { diff } from 'deep-object-diff';
-import { ERC20__factory } from '../../build/types';
 import { BigNumber, Contract } from 'ethers';
 import { stringifyJson } from './Utils';
 
@@ -24,7 +23,7 @@ export async function diffState(
       bIndicator: '-'
     })
   );
-  
+
   return JSON.parse(stringifyJson(diff(oldConfig, newConfig))); // Removes null objects for test comparison
 }
 
@@ -59,7 +58,11 @@ export async function getCometConfig(comet: Contract, blockNumber?: number): Pro
   };
   for (let i = 0; i < numAssets; i++) {
     const assetInfo = await comet.getAssetInfo(i, blockTag);
-    const asset = new Contract(assetInfo.asset, ERC20__factory.createInterface(), comet.provider);
+    const asset = new Contract(
+      assetInfo.asset,
+      ['function symbol() external view returns (string memory)'],
+      comet.provider
+    );
     const symbol = await asset.symbol(blockTag);
     config[symbol] = {
       offset: assetInfo.offset,
