@@ -2,6 +2,7 @@ import { DeploymentManager, migration } from '../../../../plugins/deployment_man
 import { exp, proposal } from '../../../../src/deploy';
 
 import { expect } from 'chai';
+import * as ethers from 'ethers';
 
 /*
  * Code for setting up proposal to roll back the cDAI implementation to
@@ -74,5 +75,6 @@ export default migration('1673462854_v2_dai_dsr_restore', {
     // 2.
     const DAIInterestRateModel = await cDAI.interestRateModel();
     expect(DAIInterestRateModel).to.be.equal(ogDAIIRModelAddress);
+    expect(DAIInterestRateModel.address).to.not.be.equal(ethers.constants.AddressZero);
   },
 });
