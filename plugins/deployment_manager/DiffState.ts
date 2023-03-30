@@ -17,7 +17,7 @@ export async function diffState(
   // Informational log (can also generate a report if we think is valuable)
   console.log('State changes after migration');
   console.log(
-    jestDiff(oldConfig, newConfig, {
+    jestDiff(newConfig, oldConfig, {
       aAnnotation: 'New config',
       aIndicator: '+',
       bAnnotation: 'Old config',
