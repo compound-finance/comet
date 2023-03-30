@@ -25,7 +25,7 @@ import mainnetRelationConfigMap from './deployments/mainnet/usdc/relations';
 import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
 import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
-import optimismGoerliRelationConfigMap from './deployments/optimism-goerli/usdc/relations';
+import optimismGoerliRelationConfigMap from './deployments/optimism-goerli/usdc/relations'; // XXX delete after bedrock update
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -114,6 +114,11 @@ const networkConfigs: NetworkConfig[] = [
     network: 'mumbai',
     chainId: 80001,
     url: `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
+    network: 'base-goerli',
+    chainId: 84531,
+    url: `https://goerli.base.org/`,
   },
 ];
 
@@ -240,6 +245,9 @@ const config: HardhatUserConfig = {
       'optimism-goerli': {
         usdc: optimismGoerliRelationConfigMap
       },
+      'base-goerli': {
+        usdc: optimismRelationConfigMap
+      },
     },
   },
 
@@ -304,7 +312,13 @@ const config: HardhatUserConfig = {
         network: 'optimism-goerli',
         deployment: 'usdc',
         auxiliaryBase: 'goerli'
-      }
+      },
+      {
+        name: 'base-goerli',
+        network: 'base-goerli',
+        deployment: 'usdc',
+        auxiliaryBase: 'goerli'
+      },
     ],
   },
 

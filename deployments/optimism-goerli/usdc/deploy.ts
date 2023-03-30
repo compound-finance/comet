@@ -23,21 +23,10 @@ async function deployContracts(
   const ethers = deploymentManager.hre.ethers;
 
   // Pull in existing assets
-  const USDC = await deploymentManager.existing(
-    'USDC',
-    '0x7E07E15D2a87A24492740D16f5bdF58c16db0c4E',
-    'optimism-goerli'
-  );
   const WETH = await deploymentManager.existing(
     'WETH',
     '0x4200000000000000000000000000000000000006',
     'optimism-goerli'
-  );
-  const WBTC = await deploymentManager.existing(
-    'WBTC',
-    '0xe0a592353e81a94Db6E3226fD4A99F881751776a',
-    'optimism-goerli',
-    'contracts/ERC20.sol:ERC20'
   );
 
   // Clone OP so we can mint it
@@ -54,7 +43,7 @@ async function deployContracts(
     ['0xC0d3c0d3c0D3c0d3C0D3c0D3C0d3C0D3C0D30010', '0x4200000000000000000000000000000000000010'],
     'optimism-goerli'
   );
-  
+
   // Deploy OptimismBridgeReceiver
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
@@ -106,12 +95,12 @@ async function deployContracts(
   const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
 
   return {
-    ...deployed,
     bridgeReceiver,
     l2CrossDomainMessenger,
     l2StandardBridge,
     bulker,
-    fauceteer
+    fauceteer,
+    ...deployed
   };
 }
 

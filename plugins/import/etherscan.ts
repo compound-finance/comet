@@ -18,6 +18,7 @@ export function getEtherscanApiUrl(network: string): string {
     mumbai: 'api-mumbai.polygonscan.com',
     polygon: 'api.polygonscan.com',
     optimism: 'api-optimistic.etherscan.io',
+    'base-goerli': 'api-goerli.basescan.org',
     'optimism-goerli': 'api-goerli-optimistic.etherscan.io'
   }[network];
 
@@ -40,6 +41,7 @@ export function getEtherscanUrl(network: string): string {
     mumbai: 'mumbai.polygonscan.com',
     polygon: 'polygonscan.com',
     optimism: 'optimistic.etherscan.io',
+    'base-goerli': 'goerli.basescan.org',
     'optimism-goerli': 'goerli-optimism.etherscan.io'
   }[network];
 
@@ -62,6 +64,7 @@ export function getEtherscanApiKey(network: string): string {
     mumbai: process.env.POLYGONSCAN_KEY,
     polygon: process.env.POLYGONSCAN_KEY,
     optimism: process.env.OPTIMISM_ETHERSCAN_KEY,
+    'base-goerli': process.env.ETHERSCAN_KEY,
     'optimism-goerli': process.env.OPTIMISM_ETHERSCAN_KEY
   }[network];
 
