@@ -1,7 +1,8 @@
-import { DeploymentManager, migration } from '../../../../plugins/deployment_manager';
-import { calldata, exp, proposal } from '../../../../src/deploy';
+import { DeploymentManager, diffState, migration } from '../../../../plugins/deployment_manager';
+import { exp, proposal } from '../../../../src/deploy';
 
 import { expect } from 'chai';
+import { getCometConfig } from '../../../../plugins/deployment_manager/DiffState';
 
 export default migration('1663794398_bump_supply_caps', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -56,24 +57,39 @@ export default migration('1663794398_bump_supply_caps', {
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
-  },
+  async verify(
+    deploymentManager: DeploymentManager,
+    govDeploymentManager: DeploymentManager,
+    preMigrationBlockNumber: number,
+    postMigrationBlockNumber: number
+  ) {
+      await deploymentManager.spider();
+      const {
+        comet,
+        COMP,
+        WBTC,
+        WETH,
+      } = await deploymentManager.getContracts();
 
-  async verify(deploymentManager: DeploymentManager) {
-    const {
-      comet,
-      COMP,
-      WBTC,
-      WETH,
-    } = await deploymentManager.getContracts();
+      const compInfo = await comet.getAssetInfoByAddress(COMP.address);
+      const wbtcInfo = await comet.getAssetInfoByAddress(WBTC.address);
+      const wethInfo = await comet.getAssetInfoByAddress(WETH.address);
 
-    const compInfo = await comet.getAssetInfoByAddress(COMP.address);
-    const wbtcInfo = await comet.getAssetInfoByAddress(WBTC.address);
-    const wethInfo = await comet.getAssetInfoByAddress(WETH.address);
-
-    expect(await compInfo.supplyCap).to.be.eq(exp(600_000, 18));
-    expect(await wbtcInfo.supplyCap).to.be.eq(exp(6_000, 8));
-    expect(await wethInfo.supplyCap).to.be.eq(exp(75_000, 18));
-  },
+      const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber, postMigrationBlockNumber);
+      expect(stateChanges).to.deep.equal({
+        COMP: {
+          supplyCap: exp(600_000, 18)
+        },
+        WBTC: {
+          supplyCap: exp(6_000, 8)
+        },
+        WETH: {
+          supplyCap: exp(75_000, 18)
+        }
+      });
+      // XXX no longer needed
+      expect(await compInfo.supplyCap).to.be.eq(exp(600_000, 18));
+      expect(await wbtcInfo.supplyCap).to.be.eq(exp(6_000, 8));
+      expect(await wethInfo.supplyCap).to.be.eq(exp(75_000, 18));
+    }
 });
