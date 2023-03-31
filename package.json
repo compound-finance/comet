@@ -50,13 +50,14 @@
     "@flashbots/ethers-provider-bundle": "^0.5.0",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
-    "jest-diff": "^27.4.2"
+    "jest-diff": "^27.4.2",
+    "undici": "^5.21.0"
   },
   "devDependencies": {
     "@compound-finance/hardhat-import": "^1.0.3",
     "@ethersproject/experimental": "^5.6.3",
     "@nomiclabs/hardhat-ethers": "^2.0.4",
-    "@nomiclabs/hardhat-etherscan": "3.0.0",
+    "@nomiclabs/hardhat-etherscan": "3.1.7",
     "@typechain/ethers-v5": "^8.0.2",
     "@typechain/hardhat": "^3.0.0",
     "@types/chai": "^4.2.22",

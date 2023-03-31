@@ -65,6 +65,12 @@ jobs:
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
 
+      - uses: actions/upload-artifact@v2 # upload test results
+        if: success() || failure() # run this step even if previous step failed
+        with:
+          name: ${{ github.event.inputs.network }}-${{ github.event.inputs.deployment }}-verify-args
+          path: deployments/${{ github.event.inputs.network }}/${{ github.event.inputs.deployment }}/verify/args.json
+
       - name: Commit changes
         if: ${{ github.event.inputs.simulate == 'false' }}
         run: |

@@ -13,7 +13,7 @@ import { DeploymentManager } from '../DeploymentManager';
 import { fiatTokenBuildFile, mockImportSuccess } from './ImportTest';
 import { Migration } from '../Migration';
 import { expectedTemplate } from './MigrationTemplateTest';
-import { faucetTokenBuildFile, tokenArgs } from './DeployHelpers';
+import { buildToken, faucetTokenBuildFile, tokenArgs } from './DeployHelpers';
 import { tempDir } from './TestHelpers';
 import { VerifyArgs } from '../Verify';
 import { getVerifyArgs, putVerifyArgs } from '../VerifyArgs';
@@ -133,24 +133,26 @@ describe('DeploymentManager', () => {
   });
 
   describe('verifyContracts', () => {
-    it('should verify contracts succesfully', async () => {
+    it('should verify contracts successfully', async () => {
       let deploymentManager = new DeploymentManager('test-network', 'test-deployment', hre, {
         importRetries: 0,
         writeCacheToDisk: true,
         baseDir: tempDir(),
       });
+      // We have to deploy a contract because the Etherscan plugin checks the bytecode at the address
+      let token = await buildToken();
       let verifyArgs: VerifyArgs = {
         via: 'artifacts',
-        address: '0x0000000000000000000000000000000000000000',
-        constructorArguments: []
+        address: token.address,
+        constructorArguments: tokenArgs
       };
       await putVerifyArgs(
         deploymentManager.cache,
-        '0x0000000000000000000000000000000000000000',
+        token.address,
         verifyArgs
       );
       expect(objectFromMap(await getVerifyArgs(deploymentManager.cache))).to.eql({
-        '0x0000000000000000000000000000000000000000': verifyArgs
+        [token.address]: verifyArgs
       });
 
       mockVerifySuccess(hre);

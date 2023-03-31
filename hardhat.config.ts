@@ -196,7 +196,19 @@ const config: HardhatUserConfig = {
       // Optimism
       optimisticEthereum: OPTIMISM_ETHERSCAN_KEY,
       optimisticKovan: OPTIMISM_ETHERSCAN_KEY,
+      'optimism-goerli': OPTIMISM_ETHERSCAN_KEY,
     },
+    customChains: [
+      {
+        // Hardhat's Etherscan plugin calls the network `optimisticGoerli`, so we need to add an entry for our own network name
+        network: 'optimism-goerli',
+        chainId: 420,
+        urls: {
+          apiURL: 'https://api-goerli-optimistic.etherscan.io/api',
+          browserURL: 'https://goerli-optimism.etherscan.io/'
+        }
+      }
+    ]
   },
 
   typechain: {
@@ -303,7 +315,7 @@ const config: HardhatUserConfig = {
         output: 'test-results.json',
       },
     },
-    timeout: 100_000
+    timeout: 150_000
   },
 
   paths: {
