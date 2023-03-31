@@ -56,6 +56,6 @@ export async function verifyContract(
         success = false;
       }
     }
-    return success;
   }
+  return success;
 }

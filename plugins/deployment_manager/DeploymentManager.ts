@@ -292,8 +292,8 @@ export class DeploymentManager {
   }
 
   /* Verifies a contract with the given args and deployment manager hre/opts */
-  async verifyContract(args: VerifyArgs) {
-    return verifyContract(args, this.hre, (await this.deployOpts()).raiseOnVerificationFailure);
+  async verifyContract(args: VerifyArgs): Promise<boolean> {
+    return await verifyContract(args, this.hre, (await this.deployOpts()).raiseOnVerificationFailure);
   }
 
   /* Loads contract configuration by tracing from roots outwards, based on relationConfig */
