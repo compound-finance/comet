@@ -89,8 +89,6 @@ task('deploy', 'Deploys market')
         console.log(`[${tag}]\n${dm.diffDelta(delta)}`);
       } catch (e) {
         console.log(`[${tag}] Failed to deploy with error: ${e}`);
-        console.log(`[${tag}] VerifyArgs for deployed but unverified contracts will be uploaded if this is run in CI. VerifyArgs are:`);
-        console.log(await getVerifyArgs(dm.cache));
       }
     }
 
