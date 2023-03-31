@@ -5,7 +5,6 @@ import { HardhatRuntimeEnvironment, HardhatConfig } from 'hardhat/types';
 import { DeploymentManager, VerifyArgs } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
-import { getVerifyArgs } from '../../plugins/deployment_manager/VerifyArgs';
 
 // TODO: Don't depend on scenario's hreForBase
 function getForkEnv(env: HardhatRuntimeEnvironment): HardhatRuntimeEnvironment {
