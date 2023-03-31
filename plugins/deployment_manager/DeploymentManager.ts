@@ -284,16 +284,16 @@ export class DeploymentManager {
     const verifyArgsMap = await getVerifyArgs(this.cache);
     for (const [address, verifyArgs] of verifyArgsMap) {
       if (filter == undefined || await filter(address, verifyArgs)) {
-        await this.verifyContract(verifyArgs);
+        const success = await this.verifyContract(verifyArgs);
         // Clear from cache after successfully verifying
-        await deleteVerifyArgs(this.cache, address);
+        if (success) await deleteVerifyArgs(this.cache, address);
       }
     }
   }
 
   /* Verifies a contract with the given args and deployment manager hre/opts */
-  async verifyContract(args: VerifyArgs) {
-    return verifyContract(args, this.hre, (await this.deployOpts()).raiseOnVerificationFailure);
+  async verifyContract(args: VerifyArgs): Promise<boolean> {
+    return await verifyContract(args, this.hre, (await this.deployOpts()).raiseOnVerificationFailure);
   }
 
   /* Loads contract configuration by tracing from roots outwards, based on relationConfig */
