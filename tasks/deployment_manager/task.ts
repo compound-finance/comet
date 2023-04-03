@@ -175,6 +175,9 @@ task('migrate', 'Runs migration')
   .setAction(
     async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, deployment, impersonate }, env) => {
       const maybeForkEnv = simulate ? getForkEnv(env) : env;
+      console.log('env is ', maybeForkEnv.network)
+      console.log('env is ', maybeForkEnv.ethers.provider)
+
       const network = env.network.name;
       const dm = new DeploymentManager(
         network,

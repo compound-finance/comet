@@ -96,14 +96,14 @@ export default migration('1679592519_configurate_and_ens', {
     }
     
     const l2Alias = applyL1ToL2Alias(optimismL1CrossDomainMessenger.address);
-    const relayMessageTxn = await l2CrossDomainMessenger.connect(l2Alias).populateTransaction.relayMessage(
+    const relayMessageTxn = await l2CrossDomainMessenger.connect('0x0000000000000000000000000000000000000001').populateTransaction.relayMessage(
       BigNumber.from('0x0001000000000000000000000000000000000000000000000000000000000007'), // message nonce
       goerliTimelock.address, // sender
       optimismTimelock.address, // target
       0,
       0,
       l2ProposalData, // message,
-      { gasLimit: 10_000_000 }
+      { gasLimit: 5_000_000 }
     );
     const gasLimit = await deploymentManager.hre.ethers.provider.estimateGas(relayMessageTxn);
     // const gasLimit = await deploymentManager.hre.ethers.provider.estimateGas({
@@ -112,6 +112,8 @@ export default migration('1679592519_configurate_and_ens', {
     //   data: l2ProposalData,
     // })
     console.log('provider ', deploymentManager.hre.ethers.provider)
+    console.log('network provider ', deploymentManager.hre.network.provider)
+
     console.log('gas limit is ', gasLimit)
 
     const goerliActions = [
@@ -160,14 +162,14 @@ export default migration('1679592519_configurate_and_ens', {
     ];
 
     const description = "Configurate Optimism-Goerli cUSDCv3 market, bridge over USDC and COMP, and update ENS text record.";
-    const txn = await govDeploymentManager.retry(async () =>
-      trace(await governor.propose(...(await proposal(goerliActions, description))))
-    );
+    // const txn = await govDeploymentManager.retry(async () =>
+    //   trace(await governor.propose(...(await proposal(goerliActions, description))))
+    // );
 
-    const event = txn.events.find(event => event.event === 'ProposalCreated');
-    const [proposalId] = event.args;
+    // const event = txn.events.find(event => event.event === 'ProposalCreated');
+    // const [proposalId] = event.args;
 
-    trace(`Created proposal ${proposalId}.`);
+    // trace(`Created proposal ${proposalId}.`);
   },
 
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager) {
