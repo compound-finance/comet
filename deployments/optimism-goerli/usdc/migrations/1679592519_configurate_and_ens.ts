@@ -9,6 +9,8 @@ const ENSRegistryAddress = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
+// Optimism COMP is not spider-able until it is set as a reward token in the Rewards contract
+const optimismCOMPAddress = '0x6AF3cb766D6cd37449bfD321D961A61B0515c1BC';
 
 export default migration('1679592519_configurate_and_ens', {
   prepare: async (deploymentManager: DeploymentManager) => {
@@ -27,7 +29,6 @@ export default migration('1679592519_configurate_and_ens', {
       configurator,
       rewards,
       USDC: optimismUSDC,
-      COMP: optimismCOMP
     } = await deploymentManager.getContracts();
 
     const {
@@ -60,16 +61,21 @@ export default migration('1679592519_configurate_and_ens', {
       ['address', 'address'],
       [configurator.address, comet.address]
     );
+    const setRewardConfigCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'address'],
+      [comet.address, optimismCOMPAddress]
+    )
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
-        [configurator.address, cometAdmin.address],
-        [0, 0],
+        [configurator.address, cometAdmin.address, rewards.address],
+        [0, 0, 0],
         [
           'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
-          'deployAndUpgradeTo(address,address)'
+          'deployAndUpgradeTo(address,address)',
+          'setRewardConfig(address,address)'
         ],
-        [setConfigurationCalldata, deployAndUpgradeToCalldata]
+        [setConfigurationCalldata, deployAndUpgradeToCalldata, setRewardConfigCalldata]
       ]
     );
 
@@ -77,11 +83,11 @@ export default migration('1679592519_configurate_and_ens', {
     const COMPAmountToBridge = exp(10_000, 18);
 
     const goerliActions = [
-      // 1. Set Comet configuration and deployAndUpgradeTo new Comet on Optimism-Goerli.
+      // 1. Set Comet configuration + deployAndUpgradeTo new Comet and set reward config on Optimism-Goerli.
       {
         contract: optimismL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
-        args: [bridgeReceiver.address, l2ProposalData, 5_000_000] // XXX find a reliable way to estimate the gasLimit
+        args: [bridgeReceiver.address, l2ProposalData, 2_500_000] // XXX find a reliable way to estimate the gasLimit
       },
       // 2. Approve Goerli's L1StandardBridge to take Timelock's USDC (for bridging)
       {
@@ -94,7 +100,7 @@ export default migration('1679592519_configurate_and_ens', {
         contract: optimismL1StandardBridge,
         // function depositERC20To(address _l1Token, address _l2Token, address _to, uint256 _amount, uint32 _l2Gas,bytes calldata _data)
         signature: 'depositERC20To(address,address,address,uint256,uint32,bytes)',
-        args: [goerliUSDC.address, optimismUSDC.address, comet.address, USDCAmountToBridge, 1_000_000, '0x']
+        args: [goerliUSDC.address, optimismUSDC.address, comet.address, USDCAmountToBridge, 200_000, '0x']
       },
       // 4. Approve Goerli's L1StandardBridge to take Timelock's COMP (for bridging)
       {
@@ -107,7 +113,7 @@ export default migration('1679592519_configurate_and_ens', {
         contract: optimismL1StandardBridge,
         // function depositERC20To(address _l1Token, address _l2Token, address _to, uint256 _amount, uint32 _l2Gas,bytes calldata _data)
         signature: 'depositERC20To(address,address,address,uint256,uint32,bytes)',
-        args: [goerliCOMP.address, optimismCOMP.address, rewards.address, COMPAmountToBridge, 1_000_000, '0x']
+        args: [goerliCOMP.address, optimismCOMPAddress, rewards.address, COMPAmountToBridge, 200_000, '0x']
       },
 
       // 6. Update the list of official markets
@@ -121,7 +127,7 @@ export default migration('1679592519_configurate_and_ens', {
       },
     ];
 
-    const description = "Configurate Optimism-Goerli cUSDCv3 market, bridge over USDC and COMP, and update ENS text record.";
+    const description = "Configurate Optimism-Goerli cUSDCv3 market, set reward config, bridge over USDC and COMP, and update ENS text record.";
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(goerliActions, description))))
     );
@@ -134,6 +140,7 @@ export default migration('1679592519_configurate_and_ens', {
 
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager) {
     const ethers = deploymentManager.hre.ethers;
+    await deploymentManager.spider(); // We spider here to pull in Optimism COMP now that reward config has been set
 
     const {
       comet,
@@ -157,6 +164,11 @@ export default migration('1679592519_configurate_and_ens', {
     expect(await opInfo.supplyCap).to.be.eq(exp(1_000_000, 18));
     expect(await wbtcInfo.supplyCap).to.be.eq(exp(20_000, 8));
     expect(await wethInfo.supplyCap).to.be.eq(exp(50_000, 18));
+
+    const config = await rewards.rewardConfig(comet.address);
+    expect(config.token).to.be.equal(COMP.address);
+    expect(config.rescaleFactor).to.be.equal(exp(1, 12));
+    expect(config.shouldUpscale).to.be.equal(true);
 
     // 2. & 3.
     expect(await comet.getReserves()).to.be.equal(exp(10, 6));
