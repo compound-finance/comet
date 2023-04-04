@@ -100,7 +100,7 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
             ctx.world.deploymentManager,
             govDeploymentManager,
             migrationData.preMigrationBlockNumber
-          )
+          );
           migrationData.verified = true;
         }
       }
