@@ -60,8 +60,7 @@ export default migration('1663794398_bump_supply_caps', {
   async verify(
     deploymentManager: DeploymentManager,
     govDeploymentManager: DeploymentManager,
-    preMigrationBlockNumber: number,
-    postMigrationBlockNumber: number
+    preMigrationBlockNumber: number
   ) {
       await deploymentManager.spider();
       const {
@@ -75,7 +74,7 @@ export default migration('1663794398_bump_supply_caps', {
       const wbtcInfo = await comet.getAssetInfoByAddress(WBTC.address);
       const wethInfo = await comet.getAssetInfoByAddress(WETH.address);
 
-      const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber, postMigrationBlockNumber);
+      const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
       expect(stateChanges).to.deep.equal({
         COMP: {
           supplyCap: exp(600_000, 18)
