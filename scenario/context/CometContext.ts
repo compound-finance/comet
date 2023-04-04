@@ -10,7 +10,6 @@ import {
   SupplyCapConstraint,
   CometBalanceConstraint,
   MigrationConstraint,
-  VerifyMigrationConstraint,
   ProposalConstraint,
   FilterConstraint,
   PriceConstraint
@@ -42,8 +41,9 @@ export type ActorMap = { [name: string]: CometActor };
 export type AssetMap = { [name: string]: CometAsset };
 export type MigrationData = {
   migration: Migration<any>;
+  lastProposal?: number;
   preMigrationBlockNumber?: number;
-  postMigrationBlockNumber?: number;
+  verified?: boolean;
 }
 
 export interface CometProperties {
@@ -403,7 +403,6 @@ export const staticConstraints: StaticConstraint<CometContext>[] = [
   new NativeTokenConstraint(),
   new MigrationConstraint(),
   new ProposalConstraint(),
-  new VerifyMigrationConstraint(),
 ];
 
 export const dynamicConstraints: DynamicConstraint<CometContext, Requirements>[] = [

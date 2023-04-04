@@ -33,6 +33,7 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
       }
       solutions.push(async function (ctx: T): Promise<T> {
         const govDeploymentManager = ctx.world.auxiliaryDeploymentManager || ctx.world.deploymentManager;
+        const governor = await govDeploymentManager.getContractOrThrow('governor');
         const compWhale = (await ctx.getCompWhales())[0];
         const proposer = await impersonateAddress(govDeploymentManager, compWhale, exp(1, 18)); // give them enough ETH to make the proposal
 
@@ -52,7 +53,13 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
             debug(`${label} Migration ${migration.name} has already been enacted`);
           } else {
             migrationData.preMigrationBlockNumber = await ctx.world.deploymentManager.hre.ethers.provider.getBlockNumber();
+            const lastProposalBefore = await governor.proposalCount();
             await migration.actions.enact(ctx.world.deploymentManager, govDeploymentManager, artifact);
+            const lastProposalAfter = await governor.proposalCount();
+            // Store the latest proposal id if one was created by this migration
+            if (lastProposalAfter > lastProposalBefore) {
+              migrationData.lastProposal = lastProposalAfter.toNumber();
+            }
             debug(`${label} Enacted migration ${migration.name}`);
           }
         }
@@ -65,33 +72,6 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
     }
 
     return solutions;
-  }
-
-  async check() {
-    return; // XXX
-  }
-}
-
-export class VerifyMigrationConstraint<T extends CometContext> implements StaticConstraint<T> {
-  async solve(world: World) {
-    const label = `[${world.base.name}] {VerifyMigrationConstraint}`;
-    return [
-      async function (ctx: T): Promise<T> {
-        const govDeploymentManager = ctx.world.auxiliaryDeploymentManager || ctx.world.deploymentManager;
-        if (ctx.migrations) {
-          for (const migrationData of ctx.migrations) {
-            const migration = migrationData.migration;
-            if (migration.actions.verify && !(await isEnacted(migration.actions, ctx.world.deploymentManager, govDeploymentManager))) {
-              // XXX we really need to be capturing the block at which the proposal was executed instead of the migration being run
-              migrationData.postMigrationBlockNumber = await ctx.world.deploymentManager.hre.ethers.provider.getBlockNumber();
-              await migration.actions.verify(ctx.world.deploymentManager, govDeploymentManager, migrationData.preMigrationBlockNumber, migrationData.postMigrationBlockNumber);
-              debug(`${label} Verified migration "${migration.name}"`);
-            }
-          }
-        }
-        return ctx;
-      }
-    ];
   }
 
   async check() {

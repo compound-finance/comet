@@ -7,7 +7,7 @@ export async function diffState(
   contract: Contract,
   getState: (c: Contract, blockNumber?: number) => Promise<object>,
   oldBlockNumber: number,
-  newBlockNumber: number
+  newBlockNumber?: number
 ): Promise<object> {
   const toBigInt = n => (BigNumber.isBigNumber(n) ? n.toBigInt() : n);
   const oldConfig = mapObject(await getState(contract, oldBlockNumber), toBigInt);
