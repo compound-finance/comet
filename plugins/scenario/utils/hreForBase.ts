@@ -8,6 +8,7 @@ import { HARDHAT_PARAM_DEFINITIONS } from 'hardhat/internal/core/params/hardhat-
 import { Environment } from 'hardhat/internal/core/runtime-environment';
 import { ForkSpec } from '../World';
 import { HttpNetworkUserConfig } from 'hardhat/types';
+import { EthereumProvider } from "hardhat/types/provider";
 
 /*
 mimics https://github.com/nomiclabs/hardhat/blob/master/packages/hardhat-core/src/internal/lib/hardhat-lib.ts
@@ -24,11 +25,14 @@ additional packages that alter the HardhatRuntimeEnvironment interface.
 
 ethers type extension: https://github.com/nomiclabs/hardhat/blob/master/packages/hardhat-ethers/src/internal/type-extensions.ts
 waffle type extension: https://github.com/nomiclabs/hardhat/blob/master/packages/hardhat-waffle/src/type-extensions.ts
+change network extension: https://github.com/dmihal/hardhat-change-network/blob/master/src/type-extensions.ts
 */
 declare module 'hardhat/internal/core/runtime-environment' {
   interface Environment {
     waffle: any;
     ethers: typeof ethers & HardhatEthersHelpers;
+    changeNetwork(newNetwork: string): void;
+    getProvider(newNetwork: string): EthereumProvider;
   }
 }
 

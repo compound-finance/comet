@@ -250,6 +250,14 @@ This can also be used together with `--overwrite`, to produce the verification a
 Make sure that the deploying address has a sufficient amount of the chain's
 native asset (i.e. 2 ETH for Kovan, 2 AVAX for Fuji)
 
+### Clone Multisig
+
+The `clone-multisig` script can be used to clone the multisig and its configuration from an existing deployment, e.g.:
+
+```bash
+DST_NETWORK=optimism-goerli npx hardhat run scripts/clone-multisig.ts
+```
+
 ### Liquidation Bot
 
 This repo includes a contract (Liquidator.sol) that will absorb an underwater
