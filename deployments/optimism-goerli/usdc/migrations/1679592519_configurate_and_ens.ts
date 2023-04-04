@@ -128,7 +128,7 @@ export default migration('1679592519_configurate_and_ens', {
       },
     ];
 
-    const description = "Configurate Optimism-Goerli cUSDCv3 market, set reward config, bridge over USDC and COMP, and update ENS text record.";
+    const description = "# Configurate Optimism-Goerli cUSDCv3 market, set reward config, bridge over USDC and COMP, and update ENS text record.";
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(goerliActions, description))))
     );
