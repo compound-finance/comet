@@ -1,4 +1,5 @@
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
+import {diffState, getCometConfig} from '../../../../plugins/deployment_manager/DiffState';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
 import { expect } from 'chai';
@@ -87,7 +88,7 @@ export default migration('1679592519_configurate_and_ens', {
       {
         contract: optimismL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
-        args: [bridgeReceiver.address, l2ProposalData, 2_500_000] // XXX find a reliable way to estimate the gasLimit
+        args: [bridgeReceiver.address, l2ProposalData, 2_500_000]
       },
       // 2. Approve Goerli's L1StandardBridge to take Timelock's USDC (for bridging)
       {
@@ -138,7 +139,7 @@ export default migration('1679592519_configurate_and_ens', {
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager) {
+  async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
     const ethers = deploymentManager.hre.ethers;
     await deploymentManager.spider(); // We spider here to pull in Optimism COMP now that reward config has been set
 
@@ -146,24 +147,27 @@ export default migration('1679592519_configurate_and_ens', {
       comet,
       rewards,
       COMP,
-      OP,
-      WBTC,
-      WETH,
       USDC
     } = await deploymentManager.getContracts();
 
-    const {
-      timelock,
-    } = await govDeploymentManager.getContracts();
-
     // 1.
-    // XXX create a differ that can diff the before and after. better than checking specific fields
-    const opInfo = await comet.getAssetInfoByAddress(OP.address);
-    const wbtcInfo = await comet.getAssetInfoByAddress(WBTC.address);
-    const wethInfo = await comet.getAssetInfoByAddress(WETH.address);
-    expect(await opInfo.supplyCap).to.be.eq(exp(1_000_000, 18));
-    expect(await wbtcInfo.supplyCap).to.be.eq(exp(20_000, 8));
-    expect(await wethInfo.supplyCap).to.be.eq(exp(50_000, 18));
+    const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
+    expect(stateChanges).to.deep.equal({
+      pauseGuardian: '0xe7661C55fe281f986FA5312D57d19ADb6064462F',
+      baseTrackingSupplySpeed: exp(0.000011574074074, 15, 15).toString(),
+      baseTrackingBorrowSpeed: exp(0.001145833333333, 15, 15).toString(),
+      baseMinForRewards: exp(10_000, 6).toString(),
+      targetReserves: exp(1_000_000, 6).toString(),
+      OP: {
+        supplyCap: exp(1_000_000, 18)
+      },
+      WBTC: {
+        supplyCap: exp(20_000, 8)
+      },
+      WETH: {
+        supplyCap: exp(50_000, 18)
+      }
+    })
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(COMP.address);
@@ -206,7 +210,5 @@ export default migration('1679592519_configurate_and_ens', {
         },
       ],
     });
-
-    // XXX check ether used as gas on mainnet
   }
 });
