@@ -36,6 +36,7 @@ async function getOpenProposals(deploymentManager: DeploymentManager, governor: 
 export class ProposalConstraint<T extends CometContext> implements StaticConstraint<T> {
   async solve() {
     return async function (ctx: T): Promise<T> {
+      const govDeploymentManager = ctx.world.auxiliaryDeploymentManager || ctx.world.deploymentManager;
       const isBridged = isBridgedDeployment(ctx);
       const label = isBridged ?
         `[${ctx.world.base.auxiliaryBase} -> ${ctx.world.base.name}] {ProposalConstraint}`
@@ -53,7 +54,16 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
       const governor = await governanceDeploymentManager.contract('governor') as IGovernorBravo;
       const proposals = await getOpenProposals(governanceDeploymentManager, governor);
       for (const proposal of proposals) {
+        const preExecutionBlockNumber = await ctx.world.deploymentManager.hre.ethers.provider.getBlockNumber();
+        let migrationData;
+        if (ctx.migrations !== undefined) {
+          migrationData = ctx.migrations.find(
+            migrationData => migrationData.lastProposal === proposal.id.toNumber()
+          );
+        }
+
         try {
+          // Execute the proposal
           debug(`${label} Processing pending proposal ${proposal.id}`);
           if (isBridged) {
             await executeOpenProposalAndRelay(
@@ -65,9 +75,33 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
             await executeOpenProposal(governanceDeploymentManager, proposal);
           }
           debug(`${label} Open proposal ${proposal.id} was executed`);
-        } catch(err) {
+
+          // If there is a migration associated with this proposal, verify the migration
+          if (migrationData) {
+            await migrationData.migration.actions.verify(
+              ctx.world.deploymentManager,
+              govDeploymentManager,
+              preExecutionBlockNumber
+            );
+            migrationData.verified = true;
+            debug(`${label} Verified migration "${migrationData.migration.name}"`);
+          }
+        } catch (err) {
           debug(`${label} Failed to execute proposal ${proposal.id}`, err.message);
-          throw(err);
+          throw err;
+        }
+      }
+
+      // Verify all unverified migrations (e.g. ones that are not tied to proposals)
+      if (ctx.migrations) {
+        for (const migrationData of ctx.migrations) {
+          if (migrationData.verified === true) continue;
+          await migrationData.migration.actions.verify(
+            ctx.world.deploymentManager,
+            govDeploymentManager,
+            migrationData.preMigrationBlockNumber
+          );
+          migrationData.verified = true;
         }
       }
 

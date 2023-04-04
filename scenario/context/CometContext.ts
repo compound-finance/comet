@@ -10,7 +10,6 @@ import {
   SupplyCapConstraint,
   CometBalanceConstraint,
   MigrationConstraint,
-  VerifyMigrationConstraint,
   ProposalConstraint,
   FilterConstraint,
   PriceConstraint
@@ -40,6 +39,12 @@ import { Requirements } from '../constraints/Requirements';
 
 export type ActorMap = { [name: string]: CometActor };
 export type AssetMap = { [name: string]: CometAsset };
+export type MigrationData = {
+  migration: Migration<any>;
+  lastProposal?: number;
+  preMigrationBlockNumber?: number;
+  verified?: boolean;
+}
 
 export interface CometProperties {
   actors: ActorMap;
@@ -58,7 +63,7 @@ export class CometContext {
   world: World;
   actors: ActorMap;
   assets: AssetMap;
-  migrations?: Migration<any>[];
+  migrations?: MigrationData[];
 
   constructor(world: World) {
     this.world = world;
@@ -398,7 +403,6 @@ export const staticConstraints: StaticConstraint<CometContext>[] = [
   new NativeTokenConstraint(),
   new MigrationConstraint(),
   new ProposalConstraint(),
-  new VerifyMigrationConstraint(),
 ];
 
 export const dynamicConstraints: DynamicConstraint<CometContext, Requirements>[] = [
