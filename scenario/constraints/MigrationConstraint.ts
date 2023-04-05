@@ -50,6 +50,7 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
           const artifact = await migration.actions.prepare(ctx.world.deploymentManager, govDeploymentManager);
           debug(`${label} Prepared migration ${migration.name}.\n  Artifact\n-------\n\n${JSON.stringify(artifact, null, 2)}\n-------\n`);
           if (await isEnacted(migration.actions, ctx.world.deploymentManager, govDeploymentManager)) {
+            migrationData.verified = true; // We don't need to verify this migration
             debug(`${label} Migration ${migration.name} has already been enacted`);
           } else {
             migrationData.preMigrationBlockNumber = await ctx.world.deploymentManager.hre.ethers.provider.getBlockNumber();
