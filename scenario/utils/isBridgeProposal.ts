@@ -27,11 +27,14 @@ export async function isBridgeProposal(
       const { targets } = await governor.getActions(openProposal.id);
       return targets.some(t => bridgeAddresses.includes(t.toLowerCase()));
     }
-    case 'optimism': {
+    case 'optimism':
+    case 'optimism-goerli': {
       const governor = await governanceDeploymentManager.getContractOrThrow('governor');
       const optimismL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('optimismL1CrossDomainMessenger');
+      const optimismL1StandardBridge = await governanceDeploymentManager.getContractOrThrow('optimismL1StandardBridge');
       const { targets } = await governor.getActions(openProposal.id);
-      return targets.includes(optimismL1CrossDomainMessenger.address);
+      const bridgeContracts = [optimismL1CrossDomainMessenger.address, optimismL1StandardBridge.address];
+      return targets.some(t => bridgeContracts.includes(t));
     }
     default: {
       const tag = `[${bridgeNetwork} -> ${governanceDeploymentManager.network}]`;

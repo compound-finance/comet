@@ -27,6 +27,7 @@ import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 import arbitrumRelationConfigMap from './deployments/arbitrum/usdc/relations';
 import arbitrumGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
 import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
+import optimismGoerliRelationConfigMap from './deployments/optimism-goerli/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -40,6 +41,7 @@ const {
   SNOWTRACE_KEY,
   POLYGONSCAN_KEY,
   ARBISCAN_KEY,
+  OPTIMISM_ETHERSCAN_KEY,
   INFURA_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
@@ -68,8 +70,9 @@ export function requireEnv(varName, msg?: string): string {
   'SNOWTRACE_KEY',
   'INFURA_KEY',
   'POLYGONSCAN_KEY',
-  'ARBISCAN_KEY'
-].map(v => requireEnv(v));
+  'ARBISCAN_KEY',
+  'OPTIMISM_ETHERSCAN_KEY'
+].map(v => requireEnv(v))
 
 // Networks
 interface NetworkConfig {
@@ -95,6 +98,11 @@ const networkConfigs: NetworkConfig[] = [
     network: 'polygon',
     chainId: 137,
     url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
+    network: 'optimism-goerli',
+    chainId: 420,
+    url: `https://optimism-goerli.infura.io/v3/${INFURA_KEY}`
   },
   {
     network: 'arbitrum',
@@ -205,7 +213,11 @@ const config: HardhatUserConfig = {
       arbitrumOne: ARBISCAN_KEY,
       arbitrumTestnet: ARBISCAN_KEY,
       arbitrum: ARBISCAN_KEY,
-      'arbitrum-goerli': ARBISCAN_KEY
+      'arbitrum-goerli': ARBISCAN_KEY,
+      // Optimism
+      optimisticEthereum: OPTIMISM_ETHERSCAN_KEY,
+      optimisticKovan: OPTIMISM_ETHERSCAN_KEY,
+      'optimism-goerli': OPTIMISM_ETHERSCAN_KEY
     },
     customChains: [
       {
@@ -225,8 +237,17 @@ const config: HardhatUserConfig = {
           apiURL: 'https://api-goerli.arbiscan.io/api',
           browserURL: 'https://goerli.arbiscan.io/'
         }
+      },
+      {
+        // Hardhat's Etherscan plugin calls the network `optimisticGoerli`, so we need to add an entry for our own network name
+        network: 'optimism-goerli',
+        chainId: 420,
+        urls: {
+          apiURL: 'https://api-goerli-optimistic.etherscan.io/api',
+          browserURL: 'https://goerli-optimism.etherscan.io/'
+        }
       }
-    ],
+    ]
   },
 
   typechain: {
@@ -259,7 +280,10 @@ const config: HardhatUserConfig = {
       },
       optimism: {
         usdc: optimismRelationConfigMap
-      }
+      },
+      'optimism-goerli': {
+        usdc: optimismGoerliRelationConfigMap
+      },
     },
   },
 
@@ -330,6 +354,12 @@ const config: HardhatUserConfig = {
         network: 'optimism',
         deployment: 'usdc',
         auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'optimism-goerli',
+        network: 'optimism-goerli',
+        deployment: 'usdc',
+        auxiliaryBase: 'goerli'
       }
     ],
   },

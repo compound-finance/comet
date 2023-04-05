@@ -12,8 +12,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 
   // pull in existing assets
   const USDC = await deploymentManager.existing('USDC', '0x7f5c764cbc14f9669b88837ca1490cca17c31607', 'optimism');
-  const UNI = await deploymentManager.existing('UNI', '0x6fd9d7ad17242c41f7131d257212c54a0e816691', 'optimism');
-  const LINK = await deploymentManager.existing('LINK', '0x350a791bfc2c21f9ed5d10980dad2e2638ffa7f6', 'optimism');
   const WBTC = await deploymentManager.existing('WBTC', '0x68f180fcce6836688e9084f035309e29bf0a2095', 'optimism');
   const WETH = await deploymentManager.existing('WETH', '0x4200000000000000000000000000000000000006', 'optimism');
 

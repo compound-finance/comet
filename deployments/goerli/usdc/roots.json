@@ -7,5 +7,7 @@
     "bulker": "0x69dD076105977c55dC2835951d287f82D54606b4",
     "fxRoot": "0x3d1d3E34f7fB6D26245E6640E1c50710eFFf15bA",
     "arbitrumInbox": "0x6BEbC4925716945D46F0Ec336D5C2564F419682C",
-    "arbitrumL1GatewayRouter": "0x4c7708168395aEa569453Fc36862D2ffcDaC588c"
+    "arbitrumL1GatewayRouter": "0x4c7708168395aEa569453Fc36862D2ffcDaC588c",
+    "optimismL1CrossDomainMessenger": "0x5086d1eEF304eb5284A0f6720f79403b4e9bE294",
+    "optimismL1StandardBridge": "0x636Af16bf2f682dD3109e60102b8E1A089FedAa8"
 }

@@ -19,7 +19,8 @@ export function getEtherscanApiUrl(network: string): string {
     polygon: 'api.polygonscan.com',
     arbitrum: 'api.arbiscan.io',
     'arbitrum-goerli': 'api-goerli.arbiscan.io',
-    optimism: 'api-optimistic.etherscan.io'
+    optimism: 'api-optimistic.etherscan.io',
+    'optimism-goerli': 'api-goerli-optimistic.etherscan.io'
   }[network];
 
   if (!host) {
@@ -42,7 +43,8 @@ export function getEtherscanUrl(network: string): string {
     polygon: 'polygonscan.com',
     arbitrum: 'arbiscan.io',
     'arbitrum-goerli': 'goerli.arbiscan.io',
-    optimism: 'optimistic.etherscan.io'
+    optimism: 'optimistic.etherscan.io',
+    'optimism-goerli': 'goerli-optimism.etherscan.io'
   }[network];
 
   if (!host) {
@@ -65,7 +67,8 @@ export function getEtherscanApiKey(network: string): string {
     polygon: process.env.POLYGONSCAN_KEY,
     arbitrum: process.env.ARBISCAN_KEY,
     'arbitrum-goerli': process.env.ARBISCAN_KEY,
-    optimism: process.env.ETHERSCAN_KEY
+    optimism: process.env.OPTIMISM_ETHERSCAN_KEY,
+    'optimism-goerli': process.env.OPTIMISM_ETHERSCAN_KEY
   }[network];
 
   if (!apiKey) {
