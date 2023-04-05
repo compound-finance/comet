@@ -14,7 +14,7 @@ import { Spider, spider } from './Spider';
 import { Migration, getArtifactSpec } from './Migration';
 import { generateMigration } from './MigrationTemplate';
 import { ExtendedNonceManager } from './NonceManager';
-import { asyncCallWithTimeout, debug, getEthersContract, txCost } from './Utils';
+import { asyncCallWithTimeout, debug, getEthersContract, mergeIntoProxyContract, txCost } from './Utils';
 import { deleteVerifyArgs, getVerifyArgs } from './VerifyArgs';
 import { verifyContract, VerifyArgs, VerificationStrategy } from './Verify';
 
@@ -158,7 +158,7 @@ export class DeploymentManager {
     alias: Alias,
     address: string,
     deployArgs: any[],
-    fromNetwork = 'mainnet',
+    fromNetwork = 'mainnet', // XXX maybe we should default to the network of the deployment manager
     force?: boolean,
     retries?: number
   ): Promise<C> {
@@ -191,16 +191,28 @@ export class DeploymentManager {
 
   async existing<C extends Contract>(
     alias: Alias,
-    address: string,
-    network = 'mainnet'
+    addresses: string | string[],
+    network = 'mainnet',
+    artifact?: string
   ): Promise<C> {
     const maybeExisting = await this.contract<C>(alias);
     if (!maybeExisting) {
       const trace = this.tracer();
-      const buildFile = await this.import(address, network);
-      const contract = getEthersContract<C>(address, buildFile, this.hre);
+      const contracts = await Promise.all(
+        [].concat(addresses).map(async (address) => {
+          let buildFile;
+          if (artifact !== undefined) {
+            buildFile = await readContract(this.cache, this.hre, artifact, network, address, !this.cache);
+          } else {
+            buildFile = await this.import(address, network);
+          }
+          trace(`Loaded ${buildFile.contract} from ${address} for '${alias}'`);
+          return getEthersContract<C>(address, buildFile, this.hre);
+        })
+      );
+      const contract = mergeIntoProxyContract<C>(contracts, this.hre);
       await this.putAlias(alias, contract);
-      trace(`Loaded ${buildFile.contract} from ${address} as '${alias}'`);
+      trace(`Loaded ${alias} from ${network} @ ${addresses}`);
       return contract;
     }
     return maybeExisting;
@@ -221,7 +233,7 @@ export class DeploymentManager {
         throw new Error(`Unable to find contract ${network}/${deployment}:${otherAlias}`);
       }
       await this.putAlias(alias, contract);
-      trace(`Loaded ${alias} from ${network}/${deployment}:${otherAlias} (${contract.address}) as '${alias}'`);
+      trace(`Loaded ${alias} from ${network}/${deployment}:${otherAlias} (${contract.address})'`);
       return contract;
     }
     return maybeExisting;
@@ -272,16 +284,16 @@ export class DeploymentManager {
     const verifyArgsMap = await getVerifyArgs(this.cache);
     for (const [address, verifyArgs] of verifyArgsMap) {
       if (filter == undefined || await filter(address, verifyArgs)) {
-        await this.verifyContract(verifyArgs);
+        const success = await this.verifyContract(verifyArgs);
         // Clear from cache after successfully verifying
-        await deleteVerifyArgs(this.cache, address);
+        if (success) await deleteVerifyArgs(this.cache, address);
       }
     }
   }
 
   /* Verifies a contract with the given args and deployment manager hre/opts */
-  async verifyContract(args: VerifyArgs) {
-    return verifyContract(args, this.hre, (await this.deployOpts()).raiseOnVerificationFailure);
+  async verifyContract(args: VerifyArgs): Promise<boolean> {
+    return await verifyContract(args, this.hre, (await this.deployOpts()).raiseOnVerificationFailure);
   }
 
   /* Loads contract configuration by tracing from roots outwards, based on relationConfig */

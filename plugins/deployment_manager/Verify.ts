@@ -16,8 +16,9 @@ export async function verifyContract(
   hre: HardhatRuntimeEnvironment,
   raise = false,
   retries = 10
-) {
+): Promise<boolean> {
   let address;
+  let success;
   try {
     if (verifyArgs.via === 'artifacts') {
       address = verifyArgs.address;
@@ -34,13 +35,14 @@ export async function verifyContract(
         hre
       );
     } else {
-      throw new Error(`Unknown verfication via`);
+      throw new Error(`Unknown verification via`);
     }
     debug('Contract at address ' + address + ' verified on Etherscan.');
+    success = true;
   } catch (e) {
     if (e.message.match(/Already Verified/i)) {
       debug('Contract at address ' + address + ' is already verified on Etherscan');
-      return;
+      success = true;
     } else if (e.message.match(/does not have bytecode/i) && retries > 0) {
       debug('Waiting for ' + address + ' to propagate to Etherscan');
       await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -51,7 +53,9 @@ export async function verifyContract(
       } else {
         console.error(`Unable to verify contract at ${address}: ${e}`);
         console.error(`Continuing on anyway...`);
+        success = false;
       }
     }
   }
+  return success;
 }

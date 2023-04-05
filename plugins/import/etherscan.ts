@@ -17,7 +17,8 @@ export function getEtherscanApiUrl(network: string): string {
     avalanche: 'api.snowtrace.io',
     mumbai: 'api-mumbai.polygonscan.com',
     polygon: 'api.polygonscan.com',
-    optimism: 'api-optimistic.etherscan.io'
+    optimism: 'api-optimistic.etherscan.io',
+    'optimism-goerli': 'api-goerli-optimistic.etherscan.io'
   }[network];
 
   if (!host) {
@@ -38,7 +39,8 @@ export function getEtherscanUrl(network: string): string {
     avalanche: 'snowtrace.io',
     mumbai: 'mumbai.polygonscan.com',
     polygon: 'polygonscan.com',
-    optimism: 'optimistic.etherscan.io'
+    optimism: 'optimistic.etherscan.io',
+    'optimism-goerli': 'goerli-optimism.etherscan.io'
   }[network];
 
   if (!host) {
@@ -59,7 +61,8 @@ export function getEtherscanApiKey(network: string): string {
     avalanche: process.env.SNOWTRACE_KEY,
     mumbai: process.env.POLYGONSCAN_KEY,
     polygon: process.env.POLYGONSCAN_KEY,
-    optimism: process.env.ETHERSCAN_KEY
+    optimism: process.env.OPTIMISM_ETHERSCAN_KEY,
+    'optimism-goerli': process.env.OPTIMISM_ETHERSCAN_KEY
   }[network];
 
   if (!apiKey) {
