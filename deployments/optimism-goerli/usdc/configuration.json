@@ -5,8 +5,9 @@
   "baseTokenAddress": "0x7E07E15D2a87A24492740D16f5bdF58c16db0c4E",
   "baseTokenPriceFeed": "0x2636B223652d388721A0ED2861792DA9062D8C73",
   "borrowMin": "100e6",
+  "pauseGuardian": "0xe7661C55fe281f986FA5312D57d19ADb6064462F",
   "storeFrontPriceFactor": 0.5,
-  "targetReserves": "5000000e6",
+  "targetReserves": "1000000e6",
   "rates": {
     "supplyKink": 0.8,
     "supplySlopeLow": 0.0325,
@@ -19,10 +20,11 @@
   },
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": "0e15",
-    "baseBorrowSpeed": "0e15",
-    "baseMinForRewards": "1000000e6"
+    "baseSupplySpeed": "0.000011574074074074073e15",
+    "baseBorrowSpeed": "0.0011458333333333333e15",
+    "baseMinForRewards": "10000e6"
   },
+  "rewardTokenAddress": "0x6AF3cb766D6cd37449bfD321D961A61B0515c1BC",
   "assets": {
     "OP": {
       "priceFeed": "0xE882831E58eec48B7f304482771F67e6b846733D",
@@ -30,7 +32,7 @@
       "borrowCF": 0.65,
       "liquidateCF": 0.70,
       "liquidationFactor": 0.93,
-      "supplyCap": "0e18"
+      "supplyCap": "1_000_000e18"
     },
     "WETH": {
       "address": "0x4200000000000000000000000000000000000006",
@@ -39,7 +41,7 @@
       "borrowCF": 0.775,
       "liquidateCF": 0.825,
       "liquidationFactor": 0.95,
-      "supplyCap": "0e18"
+      "supplyCap": "50_000e18"
     },
     "WBTC": {
       "address": "0xe0a592353e81a94Db6E3226fD4A99F881751776a",
@@ -48,7 +50,7 @@
       "borrowCF": 0.70,
       "liquidateCF": 0.75,
       "liquidationFactor": 0.95,
-      "supplyCap": "0e8"
+      "supplyCap": "20_000e8"
     }
   }
 }
