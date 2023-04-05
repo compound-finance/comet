@@ -11,7 +11,8 @@ export default async function relayMessage(
   const bridgeNetwork = bridgeDeploymentManager.network;
   switch (bridgeNetwork) {
     case 'optimism':
-      await relayOptimismMessage(governanceDeploymentManager, bridgeDeploymentManager);
+    case 'optimism-goerli':
+      await relayOptimismMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);
       break;
     case 'mumbai':
     case 'polygon':
