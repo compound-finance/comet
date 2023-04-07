@@ -158,17 +158,21 @@ Deploys contracts to a specified chain using a deployment script.
 
 `yarn hardhat deploy --network mainnet --deployment usdc`
 
-### Run spider task
+### Spider
 
-Spider is a tool for programmatically fetching all protocol-related contracts from a desired network. Contracts are pulled in starting from the root set of contracts defined in `roots.json`. Then, it discovers and pulls in the web of related contracts (relations defined in `relations.json`), recursively iterating over new contracts until there are no more contracts left to discover. With spider, we can generate the comprehensive list of relevant contracts for each deployment directly from the blockchain without having to manually maintain all the addresses. 
+Spider is a tool for programmatically fetching all protocol-related contracts from a desired network. Contracts are pulled in starting from the root set of contracts defined in `roots.json`. Then, it discovers and pulls in the web of related contracts (relations defined in `relations.json`), recursively iterating over new contracts until there are no more contracts left to discover. With spider, we can generate the comprehensive list of relevant contracts for each deployment directly from the blockchain without having to manually maintain all the addresses.
 
-Spider relies on the Etherscan API to pull in contract-related info such as ABIs.
+Once run locally, the spider task will generate a list of all the relevenat contracts for a specific deployment in a file called `aliases.json`.
+
+> Note: Spider relies on the Etherscan API to pull in contract-related info such as ABIs.
+
+#### Run spider task
 
 > Note: Make sure $ETHERSCAN_KEY is set as an env variable.
 
 `npx hardhat spider --network mainnet --deployment usdc`
 
-#### Delete artifacts
+#### Delete spider artifacts
 
 You can delete all spider artifacts using the `--clean` flag:
 
