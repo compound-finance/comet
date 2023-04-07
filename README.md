@@ -160,8 +160,9 @@ Deploys contracts to a specified chain using a deployment script.
 
 ### Run spider task
 
-The spider script programmatically fetches all protocol-related contracts from mainnet.
-This is just a prototype and it currently pulls relevant contracts for V2.
+Spider is a tool for programmatically fetching all protocol-related contracts from a desired network. Contracts are pulled in starting from the root set of contracts defined in `roots.json`. Then, it discovers and pulls in the web of related contracts (relations defined in `relations.json`), recursively iterating over new contracts until there are no more contracts left to discover. With spider, we can generate the comprehensive list of relevant contracts for each deployment directly from the blockchain without having to manually maintain all the addresses. 
+
+Spider relies on the Etherscan API to pull in contract-related info such as ABIs.
 
 > Note: Make sure $ETHERSCAN_KEY is set as an env variable.
 
