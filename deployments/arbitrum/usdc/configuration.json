@@ -24,9 +24,9 @@
     "baseMinForRewards": "10000e6"
   },
   "assets": {
-    "LINK": {
-      "address": "0xf97f4df75117a78c1a5a0dbb814af92458539fb4",
-      "priceFeed": "0x86E53CF1B870786351Da77A57575e79CB55812CB",
+    "ARB": {
+      "address": "0x912ce59144191c1204e64559fe8253a0e49e6548",
+      "priceFeed": "0xb2A824043730FE05F3DA2efaFa1CBbe83fa548D6",
       "decimals": "18",
       "borrowCF": 0.79,
       "liquidateCF": 0.85,
