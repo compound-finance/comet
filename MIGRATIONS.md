@@ -49,6 +49,14 @@ The preferred way to run a migration is in GitHub, via manual workflow dispatch.
 
 After preparation, a migration stores some artifacts under `deployments/kovan/usdc/artifacts/164443237_my_migration.json`. These will be loaded and can be referenced in the enact step of that migration.
 
+## Testing Migrations
+
+Migrations can be tested using Comet's [scenario framework](https://github.com/compound-finance/comet/blob/main/SCENARIO.md). 
+
+Migrations that have been committed to a branch but not enacted yet will automatically be picked up and ran by the scenarios framework (in the [MigrationConstraint](https://github.com/compound-finance/comet/blob/main/scenario/constraints/MigrationConstraint.ts)). This ensures that any new migrations are checked against all existing scenarios and any issues with a migration can be proactively caught.
+
+Migrations should also include a `verify` function to check that the correct state-changes are made by it. This `verify` block is also run as part of the scenario framework.
+
 ## Process for Managing Migrations
 
 Once a migration has been created, the next step is to create a PR on GitHub and follow the process to get it reviewed, enacted, and merged:
