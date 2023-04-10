@@ -53,7 +53,7 @@ After preparation, a migration stores some artifacts under `deployments/kovan/us
 
 Migrations can be tested using Comet's [scenario framework](https://github.com/compound-finance/comet/blob/main/SCENARIO.md). 
 
-Migrations that have been committed to a branch but not enacted yet will automatically be picked up and ran by the scenarios framework (in the [MigrationConstraint](https://github.com/compound-finance/comet/blob/main/scenario/constraints/MigrationConstraint.ts)). This ensures that any new migrations are checked against all existing scenarios and any issues with a migration can be proactively caught.
+Migrations that have been committed to a branch but not enacted yet will automatically be picked up and run by the scenarios framework (in the [MigrationConstraint](https://github.com/compound-finance/comet/blob/main/scenario/constraints/MigrationConstraint.ts)). This ensures that any new migrations are checked against all existing scenarios and any issues with a migration can be proactively caught.
 
 Migrations should also include a `verify` function to check that the correct state-changes are made by it. This `verify` block is also run as part of the scenario framework.
 
