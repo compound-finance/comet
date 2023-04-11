@@ -5418,7 +5418,7 @@ uglify-js@^3.1.4:
   resolved "https://registry.yarnpkg.com/uglify-js/-/uglify-js-3.17.3.tgz#f0feedf019c4510f164099e8d7e72ff2d7304377"
   integrity sha512-JmMFDME3iufZnBpyKL+uS78LRiC+mK55zWfM5f/pWBJfpOttXAqYfdDGRukYhJuyRinvPVAtUhvy7rlDybNtFg==
 
-undici@^5.14.0:
+undici@^5.14.0, undici@^5.21.2:
   version "5.21.2"
   resolved "https://registry.yarnpkg.com/undici/-/undici-5.21.2.tgz#329f628aaea3f1539a28b9325dccc72097d29acd"
   integrity sha512-f6pTQ9RF4DQtwoWSaC42P/NKlUjvezVvd9r155ohqkwFNRyBKM3f3pcty3ouusefNRyM25XhIQEbeQ46sZDJfQ==
