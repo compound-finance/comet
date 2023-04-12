@@ -18,10 +18,14 @@ export async function isBridgeProposal(
     }
     case 'mumbai':
     case 'polygon': {
-      const governor = await governanceDeploymentManager.getContractOrThrow('governor');
-      const fxRoot = await governanceDeploymentManager.getContractOrThrow('fxRoot');
+      const {
+        governor,
+        fxRoot,
+        RootChainManager,
+      } = await governanceDeploymentManager.getContracts();
+      const bridgeAddresses = [fxRoot, RootChainManager].filter(x => x).map(x => x.address.toLowerCase());
       const { targets } = await governor.getActions(openProposal.id);
-      return targets.map((x: string) => x.toLowerCase()).includes(fxRoot.address.toLowerCase());
+      return targets.some(t => bridgeAddresses.includes(t.toLowerCase()));
     }
     default: {
       const tag = `[${bridgeNetwork} -> ${governanceDeploymentManager.network}]`;
