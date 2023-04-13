@@ -32,13 +32,13 @@ contract CometRewards {
     /// @notice Rewards claimed per Comet instance and user account
     mapping(address => mapping(address => uint)) public rewardsClaimed;
 
-
     /// @dev The scale for factors
     uint256 internal constant FACTOR_SCALE = 1e18;
 
     /** Custom events **/
 
     event GovernorTransferred(address indexed oldGovernor, address indexed newGovernor);
+    event RewardsClaimedSet(address indexed user, address indexed comet, uint256 amount);
     event RewardClaimed(address indexed src, address indexed recipient, address indexed token, uint256 amount);
 
     /** Custom errors **/
@@ -109,6 +109,7 @@ contract CometRewards {
 
         for (uint i = 0; i < users.length; ) {
             rewardsClaimed[comet][users[i]] = claimedAmounts[i];
+            emit RewardsClaimedSet(users[i], comet, claimedAmounts[i]);
             unchecked { i++; }
         }
     }

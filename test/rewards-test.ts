@@ -676,7 +676,7 @@ describe('CometRewards', () => {
       } = await makeProtocol();
       const { rewards } = await makeRewards({ governor, configs: [[comet, COMP]] });
 
-      const _tx = await wait(rewards.setRewardsClaimed(comet.address, [alice.address, bob.address], [exp(1, 18), exp(2, 18)]));
+      const txn = await wait(rewards.setRewardsClaimed(comet.address, [alice.address, bob.address], [exp(1, 18), exp(2, 18)]));
 
       expect(await rewards.rewardsClaimed(comet.address, alice.address)).to.be.equal(exp(1, 18));
       expect(await rewards.rewardsClaimed(comet.address, bob.address)).to.be.equal(exp(2, 18));
@@ -685,6 +685,21 @@ describe('CometRewards', () => {
       const bobRewardOwed = await rewards.callStatic.getRewardOwed(comet.address, bob.address);
       expect(aliceRewardOwed.owed).to.be.equal(0);
       expect(bobRewardOwed.owed).to.be.equal(0);
+
+      expect(event(txn, 0)).to.be.deep.equal({
+        RewardsClaimedSet: {
+          user: alice.address,
+          comet: comet.address,
+          amount: exp(1, 18)
+        }
+      });
+      expect(event(txn, 1)).to.be.deep.equal({
+        RewardsClaimedSet: {
+          user: bob.address,
+          comet: comet.address,
+          amount: exp(2, 18)
+        }
+      });
     });
 
     it('can be used to zero out retroactive rewards for users', async () => {
