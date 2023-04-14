@@ -75,7 +75,7 @@ async function deployContracts(
     ]
   );
 
-  // Initialize PolygonBridgeReceiver
+  // Initialize OptimismBridgeReceiver
   await deploymentManager.idempotent(
     async () => !(await bridgeReceiver.initialized()),
     async () => {
