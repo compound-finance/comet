@@ -1,17 +1,105 @@
-import { BigNumber, Contract, providers } from 'ethers';
+import { BigNumber, Contract, utils } from 'ethers';
 import { expect } from 'chai';
-import { L1ToL2MessageGasEstimator } from '@arbitrum/sdk';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
-
-const { INFURA_KEY } = process.env;
 
 const ENSName = 'compound-community-licenses.eth';
 const ENSResolverAddress = '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41';
 const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
+
+// https://github.com/OffchainLabs/arbitrum/blob/master/packages/arb-bridge-eth/contracts/libraries/AddressAliasHelper.sol
+function applyL1ToL2Alias(l1Address: string) {
+  const offset = BigNumber.from('0x1111000000000000000000000000000000001111');
+  return BigNumber.from(l1Address).add(offset).toHexString();
+}
+
+const gatewayInterface = new utils.Interface(
+  [
+    'function counterpartGateway() view external returns (address)',
+    'function finalizeInboundTransfer(address _token, address _from, address _to, uint256 _amount, bytes calldata _data) external payable'
+  ]
+);
+
+async function estimateL2Transaction(
+  { from, to, data }: { to: string, from: string, data: string },
+  l2DeploymentManager: DeploymentManager
+) {
+  // guess what the l1 gas price will be when the proposal is executed
+  const l1GasPrice = (utils.parseUnits('33', 'gwei')).toNumber();
+  // XXX add buffer?
+  const l2GasPrice = (utils.parseUnits('0.1', 'gwei')).toNumber();
+
+  const l2GasEstimateHex = await l2DeploymentManager.hre.network.provider.send(
+    'eth_estimateGas',
+    [{ from, to, data }]
+  );
+  const l2GasEstimate = BigNumber.from(l2GasEstimateHex);
+
+  // Add overhead to cover retryable ticket creation etc
+  const gasBuffer = 0; // XXX
+  const l2GasLimit = BigNumber.from(gasBuffer).add(l2GasEstimate.mul(3).div(2));
+
+  const bytesLength = utils.hexDataLength(data);
+  // https://etherscan.io/address/0x5aed5f8a1e3607476f1f81c3d8fe126deb0afe94#code
+  // calculateRetryableSubmissionFee
+  const submissionCost = (1400 + 6 * bytesLength) * l1GasPrice;
+  const submissionCostWithMargin = utils.parseUnits('10', 'gwei').add(submissionCost);
+
+  const deposit = submissionCostWithMargin.add(l2GasLimit.mul(l2GasPrice));
+
+  // XXX add l2CallValue?
+  return {
+    // gasLimit/maxGas
+    gasLimit: l2GasLimit,
+    // maxFeePerGas/gasPriceBid
+    maxFeePerGas: l2GasPrice,
+    // maxSubmissionCost/maxSubmissionFee
+    maxSubmissionCost: submissionCostWithMargin,
+    // deposit
+    deposit
+  };
+}
+
+async function estimateTokenBridge(
+  { to, from, token, amount }: {to: string, from: string, token: string, amount: bigint},
+  l1DeploymentManager: DeploymentManager,
+  l2DeploymentManager: DeploymentManager
+) {
+  const { l1GatewayRouter } = await l1DeploymentManager.getContracts();
+
+  const l1GatewayAddress = await l1GatewayRouter.getGateway(token);
+  const l1Gateway = new Contract(
+    l1GatewayAddress,
+    gatewayInterface,
+    l1DeploymentManager.hre.ethers.provider
+  );
+  const l2GatewayAddress = await l1Gateway.counterpartGateway();
+
+  const data = gatewayInterface.encodeFunctionData(
+    'finalizeInboundTransfer',
+    [
+      token,  // address _token,
+      from,   // address _from,
+      to,     // address _to,
+      amount, // uint256 _amount,
+      utils.defaultAbiCoder.encode(
+        ['bytes', 'bytes'], ['0x', '0x']
+      ) // bytes calldata _data
+    ]
+  );
+
+  return await estimateL2Transaction(
+    {
+      from: applyL1ToL2Alias(l1GatewayAddress),
+      to: l2GatewayAddress,
+      data
+    },
+    l2DeploymentManager
+  );
+}
 
 export default migration('1679020486_configurate_and_ens', {
   prepare: async (_deploymentManager: DeploymentManager) => {
@@ -40,68 +128,32 @@ export default migration('1679020486_configurate_and_ens', {
       COMP,
     } = await govDeploymentManager.getContracts();
 
-    const l1Provider = new providers.JsonRpcProvider(`https://mainnet.infura.io/v3/${INFURA_KEY}`);
-    const l2Provider = new providers.JsonRpcProvider(`https://arbitrum-mainnet.infura.io/v3/${INFURA_KEY}`);
-    const gasEstimator = new L1ToL2MessageGasEstimator(l2Provider);
-
-    const l1GatewayRouterInterace = l1GatewayRouter.interface;
-
     const USDCAmountToBridge = exp(10_000, 6);
     const COMPAmountToBridge = exp(2_500, 18);
     const usdcGatewayAddress = await l1GatewayRouter.getGateway(USDC.address);
     const compGatewayAddress = await l1GatewayRouter.getGateway(COMP.address);
     const refundAddress = comet.address; // XXX timelock address?
 
-    const usdcDummyCallData = l1GatewayRouterInterace.encodeFunctionData(
-      'outboundTransferCustomRefund',
-      [
-        USDC.address,                                                 // _token
-        refundAddress,                                                // _refundTo
-        comet.address,                                                // _to
-        USDCAmountToBridge,                                           // _amount
-        1,                                                            // _maxGas (aka gasLimit)
-        1,                                                            // _gasPriceBid (aka maxFeePerGas)
-        utils.defaultAbiCoder.encode(['uint256', 'bytes'], [1, '0x']) // _data
-      ]
-    );
-
-    const compDummyCallData = l1GatewayRouterInterace.encodeFunctionData(
-      'outboundTransferCustomRefund',
-      [
-        COMP.address,                                                 // _token
-        refundAddress,                                                // _refundTo
-        rewards.address,                                              // _to
-        COMPAmountToBridge,                                           // _amount
-        1,                                                            // _maxGas (aka gasLimit)
-        1,                                                            // _gasPriceBid (aka maxFeePerGas)
-        utils.defaultAbiCoder.encode(['uint256', 'bytes'], [1, '0x']) // _data
-      ]
-    );
-
-    const usdcGasParams = await gasEstimator.estimateAll(
+    const compGasParams = await estimateTokenBridge(
       {
+        token: COMP.address,
         from: timelock.address,
-        to: l1GatewayRouter.address,
-        l2CallValue: BigNumber.from(0),
-        excessFeeRefundAddress: refundAddress,
-        callValueRefundAddress: refundAddress,
-        data: usdcDummyCallData
+        to: rewards.address,
+        amount: COMPAmountToBridge
       },
-      (await l1Provider.getBlock('latest')).baseFeePerGas!, // must be the l1Provider
-      l1Provider
+      govDeploymentManager,
+      deploymentManager
     );
 
-    const compGasParams = await gasEstimator.estimateAll(
+    const usdcGasParams = await estimateTokenBridge(
       {
+        token: USDC.address,
         from: timelock.address,
-        to: l1GatewayRouter.address,
-        l2CallValue: BigNumber.from(0),
-        excessFeeRefundAddress: refundAddress,
-        callValueRefundAddress: refundAddress,
-        data: compDummyCallData
+        to: comet.address,
+        amount: USDCAmountToBridge
       },
-      (await l1Provider.getBlock('latest')).baseFeePerGas!, // must be the l1Provider
-      l1Provider
+      govDeploymentManager,
+      deploymentManager
     );
 
     const configuration = await getConfigurationStruct(deploymentManager);
@@ -126,31 +178,13 @@ export default migration('1679020486_configurate_and_ens', {
       ]
     );
 
-    const createRetryableTicketCallData = inbox.interface.encodeFunctionData(
-      'createRetryableTicket',
-      [
-        bridgeReceiver.address, // address to,
-        0,                      // uint256 l2CallValue,
-        0,                      // uint256 maxSubmissionCost,
-        refundAddress,          // address excessFeeRefundAddress,
-        refundAddress,          // address callValueRefundAddress,
-        0,                      // uint256 gasLimit,
-        0,                      // uint256 maxFeePerGas,
-        l2ProposalData          // bytes calldata data
-      ]
-    );
-
-    const createRetryableTicketGasParams = await gasEstimator.estimateAll(
+    const createRetryableTicketGasParams = await estimateL2Transaction(
       {
-        from: timelock.address,
-        to: inbox.address,
-        l2CallValue: BigNumber.from(0),
-        excessFeeRefundAddress: refundAddress,
-        callValueRefundAddress: refundAddress,
-        data: createRetryableTicketCallData
+        from: applyL1ToL2Alias(timelock.address),
+        to: bridgeReceiver.address,
+        data: l2ProposalData
       },
-      (await l1Provider.getBlock('latest')).baseFeePerGas!, // must be the l1Provider
-      l1Provider
+      deploymentManager
     );
 
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
@@ -193,7 +227,7 @@ export default migration('1679020486_configurate_and_ens', {
       // 3. Bridge USDC from mainnet to Arbitrum Comet
       {
         contract: l1GatewayRouter,
-        signature: "outboundTransferCustomRefund(address,address,address,uint256,uint256,uint256,bytes)",
+        signature: 'outboundTransferCustomRefund(address,address,address,uint256,uint256,uint256,bytes)',
         args: [
           USDC.address,                             // address _token,
           refundAddress,                            // address _refundTo
@@ -217,7 +251,7 @@ export default migration('1679020486_configurate_and_ens', {
       // 5. Bridge COMP from mainnet to Arbitrum rewards
       {
         contract: l1GatewayRouter,
-        signature: "outboundTransferCustomRefund(address,address,address,uint256,uint256,uint256,bytes)",
+        signature: 'outboundTransferCustomRefund(address,address,address,uint256,uint256,uint256,bytes)',
         args: [
           COMP.address,                             // address _token,
           refundAddress,                            // address _refundTo,
@@ -243,7 +277,7 @@ export default migration('1679020486_configurate_and_ens', {
       },
     ];
 
-    const description = "XXX"; // XXX add description
+    const description = 'XXX'; // XXX add description
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
@@ -262,16 +296,16 @@ export default migration('1679020486_configurate_and_ens', {
       rewards,
       WBTC,
       WETH,
-      LINK
+      ARB
     } = await deploymentManager.getContracts();
 
     // 1.
     const wbtcInfo = await comet.getAssetInfoByAddress(WBTC.address);
     const wethInfo = await comet.getAssetInfoByAddress(WETH.address);
-    const linkInfo = await comet.getAssetInfoByAddress(LINK.address);
+    const arbInfo = await comet.getAssetInfoByAddress(ARB.address);
     expect(wbtcInfo.supplyCap).to.be.eq(exp(400, 8));
     expect(wethInfo.supplyCap).to.be.eq(exp(11_000, 18));
-    expect(linkInfo.supplyCap).to.be.eq(exp(10_000_000, 18));
+    expect(arbInfo.supplyCap).to.be.eq(exp(10_000_000, 18));
     // XXX
     // expect(await comet.pauseGuardian()).to.be.eq('');
 
