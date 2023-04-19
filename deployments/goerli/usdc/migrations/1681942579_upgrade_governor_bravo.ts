@@ -13,10 +13,9 @@ export default migration('1681942579_upgrade_governor_bravo', {
 
   enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager) => {
     const trace = deploymentManager.tracer();
+    const ethers = deploymentManager.hre.ethers;
 
-    const {
-      governor,
-    } = await deploymentManager.getContracts();
+    const { governor } = await deploymentManager.getContracts();
 
     // Deploy new governor implementation (cloned from mainnet)
     const newGovernorImpl = await deploymentManager.clone(
@@ -29,14 +28,15 @@ export default migration('1681942579_upgrade_governor_bravo', {
     const actions = [
       // 1. Set implementation of the governor to the new governor implementation
       {
-        contract: governor,
+        target: governor.address,
         signature: '_setImplementation(address)',
-        args: [newGovernorImpl.address],
-      },
+        calldata: ethers.utils.defaultAbiCoder.encode(['address'], [newGovernorImpl.address])
+      }
     ];
-    const description = "# Update governor implementation\n\n## Explanation\n\nUpdates the governor implementation to allow for sending ETH from the Timelock. \n";
-    const txn = await deploymentManager.retry(
-      async () => governor.propose(...await proposal(actions, description))
+    const description =
+      '# Update governor implementation\n\n## Explanation\n\nUpdates the governor implementation to allow for sending ETH from the Timelock. \n';
+    const txn = await deploymentManager.retry(async () =>
+      governor.propose(...(await proposal(actions, description)))
     );
     trace(txn);
 
@@ -44,4 +44,6 @@ export default migration('1681942579_upgrade_governor_bravo', {
     const [proposalId] = event.args;
     trace(`Created proposal ${proposalId}.`);
   },
+
+  async verify(deploymentManager: DeploymentManager) {}
 });
