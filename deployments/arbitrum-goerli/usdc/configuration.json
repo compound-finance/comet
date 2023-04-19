@@ -2,7 +2,7 @@
   "name": "Compound USDC",
   "symbol": "cUSDCv3",
   "baseToken": "USDC",
-  "baseTokenAddress": "0x72A9c57cD5E2Ff20450e409cF6A542f1E6c710fc",
+  "baseTokenAddress": "0x8FB1E3fC51F3b789dED7557E680551d93Ea9d892",
   "baseTokenPriceFeed": "0x1692Bdd32F31b831caAc1b0c9fAF68613682813b",
   "borrowMin": "100e6",
   "storeFrontPriceFactor": 0.5,
@@ -31,7 +31,7 @@
       "borrowCF": 0.775,
       "liquidateCF": 0.825,
       "liquidationFactor": 0.95,
-      "supplyCap": "0e18"
+      "supplyCap": "10000000e18"
     },
     "WETH": {
       "address": "0xe39ab88f8a4777030a534146a9ca3b52bd5d43a3",
@@ -40,7 +40,7 @@
       "borrowCF": 0.775,
       "liquidateCF": 0.825,
       "liquidationFactor": 0.95,
-      "supplyCap": "0e18"
+      "supplyCap": "11000e18"
     }
   }
 }

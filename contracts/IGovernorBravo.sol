@@ -62,8 +62,8 @@ interface IGovernorBravo {
         bytes[] memory calldatas,
         string memory description
     ) external returns (uint256 proposalId);
-    function queue(uint256 proposalId) external payable;
-    function execute(uint256 proposalId) external payable;
+    function queue(uint256 proposalId);
+    function execute(uint256 proposalId);
     function castVote(uint256 proposalId, uint8 support) external returns (uint256 balance);
     function getActions(uint proposalId) external view returns (
         address[] memory targets,
