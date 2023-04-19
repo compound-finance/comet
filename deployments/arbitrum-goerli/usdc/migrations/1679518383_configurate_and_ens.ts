@@ -128,7 +128,7 @@ export default migration('1679518383_configurate_and_ens', {
       COMP,
     } = await govDeploymentManager.getContracts();
 
-    const USDCAmountToBridge = exp(10_000, 6);
+    const USDCAmountToBridge = exp(10, 6);
     const COMPAmountToBridge = exp(2_500, 18);
     const usdcGatewayAddress = await l1GatewayRouter.getGateway(USDC.address);
     const compGatewayAddress = await l1GatewayRouter.getGateway(COMP.address);
@@ -308,7 +308,7 @@ export default migration('1679518383_configurate_and_ens', {
     // expect(await comet.pauseGuardian()).to.be.eq('');
 
     // 2. & 3.
-    expect(await comet.getReserves()).to.be.equal(exp(10_000, 6));
+    expect(await comet.getReserves()).to.be.equal(exp(10, 6));
 
     // 4. & 5.
     const arbitrumCOMP = new Contract(
