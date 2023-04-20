@@ -1,3 +1,4 @@
+import { expect } from 'chai';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { proposal } from '../../../../src/deploy';
@@ -5,6 +6,8 @@ import { proposal } from '../../../../src/deploy';
 const clone = {
   governorImpl: '0xeF3B6E9e13706A8F01fe98fdCf66335dc5CfdEED'
 };
+
+const OLD_GOVERNOR_IMPL_ADDRESS = '0x9d26789c7b2492E6015B26dc75C79AeA71a7211c';
 
 export default migration('1681942579_upgrade_governor_bravo', {
   prepare: async (deploymentManager: DeploymentManager) => {
@@ -19,7 +22,7 @@ export default migration('1681942579_upgrade_governor_bravo', {
 
     // Deploy new governor implementation (cloned from mainnet)
     const newGovernorImpl = await deploymentManager.clone(
-      'governor:implementation',
+      'newGovernorImpl',
       clone.governorImpl,
       [],
       'mainnet'
@@ -45,5 +48,11 @@ export default migration('1681942579_upgrade_governor_bravo', {
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async verify(deploymentManager: DeploymentManager) {}
+  async verify(deploymentManager: DeploymentManager) {
+    await deploymentManager.spider(); // We spider here to pull in the updated governor impl address
+    const { 'governor:implementation': governorImpl } = await deploymentManager.getContracts();
+
+    // 1.
+    expect(governorImpl.address).to.not.be.eq(OLD_GOVERNOR_IMPL_ADDRESS);
+  }
 });
