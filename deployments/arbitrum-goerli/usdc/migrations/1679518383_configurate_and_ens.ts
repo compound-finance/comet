@@ -295,6 +295,7 @@ export default migration('1679518383_configurate_and_ens', {
     const {
       comet,
       rewards,
+      WBTC,
       WETH,
       LINK
     } = await deploymentManager.getContracts();
@@ -302,8 +303,10 @@ export default migration('1679518383_configurate_and_ens', {
     // 1.
     const wethInfo = await comet.getAssetInfoByAddress(WETH.address);
     const linkInfo = await comet.getAssetInfoByAddress(LINK.address);
+    const wbtcInfo = await comet.getAssetInfoByAddress(WBTC.address);
     expect(wethInfo.supplyCap).to.be.eq(exp(11_000, 18));
     expect(linkInfo.supplyCap).to.be.eq(exp(10_000_000, 18));
+    expect(wbtcInfo.supplyCap).to.be.eq(exp(400, 8));
     // XXX
     // expect(await comet.pauseGuardian()).to.be.eq('');
 
