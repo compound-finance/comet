@@ -48,6 +48,10 @@ export default migration('1681942579_upgrade_governor_bravo', {
     trace(`Created proposal ${proposalId}.`);
   },
 
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
+  },
+
   async verify(deploymentManager: DeploymentManager) {
     await deploymentManager.spider(); // We spider here to pull in the updated governor impl address
     const { 'governor:implementation': governorImpl } = await deploymentManager.getContracts();
