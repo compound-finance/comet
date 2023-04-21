@@ -97,15 +97,17 @@ export default async function relayArbitrumMessage(
     const proposalCreatedLog = tx.logs.find(
       event => event.address === bridgeReceiver.address
     );
-    const {
-      args: { id, eta }
-    } = bridgeReceiver.interface.parseLog(proposalCreatedLog!);
+    if (proposalCreatedLog) {
+      const {
+        args: { id, eta }
+      } = bridgeReceiver.interface.parseLog(proposalCreatedLog);
 
-    // fast forward l2 time
-    await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
+      // fast forward l2 time
+      await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
 
-    // execute queued proposal
-    await setNextBaseFeeToZero(bridgeDeploymentManager);
-    await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+      // execute queued proposal
+      await setNextBaseFeeToZero(bridgeDeploymentManager);
+      await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+    }
   }
 }

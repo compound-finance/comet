@@ -2,7 +2,7 @@
   "name": "Compound USDC",
   "symbol": "cUSDCv3",
   "baseToken": "USDC",
-  "baseTokenAddress": "0x72A9c57cD5E2Ff20450e409cF6A542f1E6c710fc",
+  "baseTokenAddress": "0x8FB1E3fC51F3b789dED7557E680551d93Ea9d892",
   "baseTokenPriceFeed": "0x1692Bdd32F31b831caAc1b0c9fAF68613682813b",
   "borrowMin": "100e6",
   "storeFrontPriceFactor": 0.5,
@@ -21,11 +21,11 @@
     "indexScale": "1e15",
     "baseSupplySpeed": "0e15",
     "baseBorrowSpeed": "0e15",
-    "baseMinForRewards": "1000000e6"
+    "baseMinForRewards": "10000e6"
   },
   "assets": {
     "LINK": {
-      "address": "0xd14838a68e8afbade5efb411d5871ea0011afd28",
+      "address": "0xbb7303602be1b9149b097aafb094ffce1860e532",
       "priceFeed": "0xd28Ba6CA3bB72bF371b80a2a0a33cBcf9073C954",
       "decimals": "18",
       "borrowCF": 0.775,
@@ -41,6 +41,15 @@
       "liquidateCF": 0.825,
       "liquidationFactor": 0.95,
       "supplyCap": "0e18"
+    },
+    "WBTC": {
+      "address": "0x22d5e2dE578677791f6c90e0110Ec629be9d5Fb5",
+      "priceFeed": "0x6550bc2301936011c1334555e62A87705A81C12C",
+      "decimals": "8",
+      "borrowCF": 0.7,
+      "liquidateCF": 0.75,
+      "liquidationFactor": 0.93,
+      "supplyCap": "0e8"
     }
   }
 }
