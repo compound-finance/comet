@@ -60,9 +60,9 @@ export async function estimateTokenBridge(
   l1DeploymentManager: DeploymentManager,
   l2DeploymentManager: DeploymentManager
 ) {
-  const { l1GatewayRouter } = await l1DeploymentManager.getContracts();
+  const { arbitrumL1GatewayRouter } = await l1DeploymentManager.getContracts();
 
-  const l1GatewayAddress = await l1GatewayRouter.getGateway(token);
+  const l1GatewayAddress = await arbitrumL1GatewayRouter.getGateway(token);
   const l1Gateway = new Contract(
     l1GatewayAddress,
     gatewayInterface,

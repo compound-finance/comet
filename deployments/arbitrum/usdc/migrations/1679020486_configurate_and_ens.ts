@@ -34,8 +34,8 @@ export default migration('1679020486_configurate_and_ens', {
     } = await deploymentManager.getContracts();
 
     const {
-      inbox,
-      l1GatewayRouter,
+      arbitrumInbox,
+      arbitrumL1GatewayRouter,
       timelock,
       governor,
       USDC,
@@ -44,8 +44,8 @@ export default migration('1679020486_configurate_and_ens', {
 
     const USDCAmountToBridge = exp(10_000, 6);
     const COMPAmountToBridge = exp(2_500, 18);
-    const usdcGatewayAddress = await l1GatewayRouter.getGateway(USDC.address);
-    const compGatewayAddress = await l1GatewayRouter.getGateway(COMP.address);
+    const usdcGatewayAddress = await arbitrumL1GatewayRouter.getGateway(USDC.address);
+    const compGatewayAddress = await arbitrumL1GatewayRouter.getGateway(COMP.address);
     const refundAddress = l2Timelock.address;
 
     const compGasParams = await estimateTokenBridge(
@@ -123,7 +123,7 @@ export default migration('1679020486_configurate_and_ens', {
     const mainnetActions = [
       // 1. Set Comet configuration and deployAndUpgradeTo new Comet on Arbitrum.
       {
-        contract: inbox,
+        contract: arbitrumInbox,
         signature: 'createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)',
         args: [
           bridgeReceiver.address,                           // address to,
@@ -145,7 +145,7 @@ export default migration('1679020486_configurate_and_ens', {
       },
       // 3. Bridge USDC from mainnet to Arbitrum Comet
       {
-        contract: l1GatewayRouter,
+        contract: arbitrumL1GatewayRouter,
         signature: 'outboundTransferCustomRefund(address,address,address,uint256,uint256,uint256,bytes)',
         args: [
           USDC.address,                             // address _token,
@@ -169,7 +169,7 @@ export default migration('1679020486_configurate_and_ens', {
       },
       // 5. Bridge COMP from mainnet to Arbitrum rewards
       {
-        contract: l1GatewayRouter,
+        contract: arbitrumL1GatewayRouter,
         signature: 'outboundTransferCustomRefund(address,address,address,uint256,uint256,uint256,bytes)',
         args: [
           COMP.address,                             // address _token,
