@@ -178,7 +178,7 @@ task('migrate', 'Runs migration')
         maybeForkEnv,
         {
           writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-          verificationStrategy: 'lazy',
+          verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
         }
       );
       await dm.spider();
@@ -196,7 +196,7 @@ task('migrate', 'Runs migration')
           governanceEnv,
           {
             writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-            verificationStrategy: 'lazy',
+            verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
           }
         );
         await governanceDm.spider();
