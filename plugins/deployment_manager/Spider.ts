@@ -176,7 +176,7 @@ async function crawl(
     //trace(` ... has an address config (${address})`);
     if (addressConfig.artifact) {
       //trace(`  ... has artifact specified (${addressConfig.artifact})`);
-      const build = await localBuild(cache, hre, addressConfig.artifact, network, address);
+      const build = await localBuild(null, hre, addressConfig.artifact, network, address);
       const alias = await readAlias(build.contract, aliasRender, context, path);
       return maybeProcess(alias, build, addressConfig);
     } else {
@@ -196,7 +196,7 @@ async function crawl(
     // }
     if (aliasTemplateConfig.artifact) {
       //trace(`  ... has artifact specified (${aliasTemplateConfig.artifact})`);
-      const build = await localBuild(cache, hre, aliasTemplateConfig.artifact, network, address);
+      const build = await localBuild(null, hre, aliasTemplateConfig.artifact, network, address);
       const alias = await readAlias(build.contract, aliasRender, context, path);
       return maybeProcess(alias, build, aliasTemplateConfig);
     } else {
