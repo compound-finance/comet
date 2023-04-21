@@ -209,6 +209,7 @@ export default migration('1679020486_configurate_and_ens', {
 
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
     const ethers = deploymentManager.hre.ethers;
+    await deploymentManager.spider(); // await deploymentManager.spider(); // Pull in Arbitrum COMP now that reward config has been set
 
     const {
       comet,
