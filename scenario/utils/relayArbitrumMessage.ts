@@ -10,8 +10,8 @@ export default async function relayArbitrumMessage(
   startingBlockNumber: number
 ) {
   // L1 contracts
-  const inbox = await governanceDeploymentManager.getContractOrThrow('inbox'); // Inbox -> Bridge
-  const bridge = await governanceDeploymentManager.getContractOrThrow('bridge');
+  const inbox = await governanceDeploymentManager.getContractOrThrow('arbitrumInbox'); // Inbox -> Bridge
+  const bridge = await governanceDeploymentManager.getContractOrThrow('arbitrumBridge');
 
   // L2 contracts
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');

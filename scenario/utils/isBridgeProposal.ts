@@ -11,7 +11,7 @@ export async function isBridgeProposal(
     case 'arbitrum':
     case 'arbitrum-goerli': {
       const governor = await governanceDeploymentManager.getContractOrThrow('governor');
-      const inbox = await governanceDeploymentManager.getContractOrThrow('inbox');
+      const inbox = await governanceDeploymentManager.getContractOrThrow('arbitrumInbox');
       const { targets } = await governor.getActions(openProposal.id);
       return targets.includes(inbox.address);
     }

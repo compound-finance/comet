@@ -431,7 +431,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
   switch (bridgeNetwork) {
     case 'arbitrum':
     case 'arbitrum-goerli': {
-      const inbox = await govDeploymentManager.getContractOrThrow('inbox');
+      const inbox = await govDeploymentManager.getContractOrThrow('arbitrumInbox');
       const refundAddress = constants.AddressZero;
       const createRetryableTicketCalldata = utils.defaultAbiCoder.encode(
         [
