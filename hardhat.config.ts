@@ -199,6 +199,17 @@ const config: HardhatUserConfig = {
       arbitrumOne: ARBISCAN_KEY,
       arbitrumTestnet: ARBISCAN_KEY
     },
+    customChains: [
+      {
+        // Hardhat's Etherscan plugin calls the network `arbitrumGoerli`, so we need to add an entry for our own network name
+        network: 'arbitrum-goerli',
+        chainId: 421613,
+        urls: {
+          apiURL: 'https://api-goerli.arbiscan.io/api',
+          browserURL: 'https://goerli.arbiscan.io/'
+        }
+      }
+    ],
   },
 
   typechain: {
