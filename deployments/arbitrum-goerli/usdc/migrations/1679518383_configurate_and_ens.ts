@@ -220,19 +220,19 @@ export default migration('1679518383_configurate_and_ens', {
       LINK
     } = await deploymentManager.getContracts();
 
-    // 1. XXX enable after contracts are deployed
-    // const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    // expect(stateChanges).to.deep.equal({
-    //   LINK: {
-    //     supplyCap: exp(10_000_000, 18)
-    //   },
-    //   WBTC: {
-    //     supplyCap: exp(400, 8)
-    //   },
-    //   WETH: {
-    //     supplyCap: exp(11_000, 18)
-    //   }
-    // });
+    // 1.
+    const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
+    expect(stateChanges).to.deep.equal({
+      LINK: {
+        supplyCap: exp(5_000_000, 18)
+      },
+      WBTC: {
+        supplyCap: exp(300, 8)
+      },
+      WETH: {
+        supplyCap: exp(5_000, 18)
+      }
+    });
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(arbitrumCOMPAddress);
