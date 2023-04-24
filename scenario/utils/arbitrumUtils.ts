@@ -20,9 +20,9 @@ export async function estimateL2Transaction(
   l2DeploymentManager: DeploymentManager
 ) {
   // guess what the l1 gas price will be when the proposal is executed
-  const l1GasPrice = (utils.parseUnits('33', 'gwei')).toNumber();
-  // XXX add buffer?
-  const l2GasPrice = (utils.parseUnits('0.1', 'gwei')).toNumber();
+  const l1GasPrice = (utils.parseUnits('100', 'gwei')).toNumber();
+  // overestimating standard l2 gas by 5x (usually is 0.1 gwei)
+  const l2GasPrice = (utils.parseUnits('0.5', 'gwei')).toNumber();
 
   const l2GasEstimateHex = await l2DeploymentManager.hre.network.provider.send(
     'eth_estimateGas',
@@ -31,7 +31,7 @@ export async function estimateL2Transaction(
   const l2GasEstimate = BigNumber.from(l2GasEstimateHex);
 
   // Add overhead to cover retryable ticket creation etc
-  const gasBuffer = 0; // XXX
+  const gasBuffer = 200_000;
   const l2GasLimit = BigNumber.from(gasBuffer).add(l2GasEstimate.mul(3).div(2));
 
   const bytesLength = utils.hexDataLength(data);
@@ -42,7 +42,6 @@ export async function estimateL2Transaction(
 
   const deposit = submissionCostWithMargin.add(l2GasLimit.mul(l2GasPrice));
 
-  // XXX add l2CallValue?
   return {
     // gasLimit/maxGas
     gasLimit: l2GasLimit,
