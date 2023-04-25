@@ -5,6 +5,7 @@
   "baseTokenAddress": "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8",
   "baseTokenPriceFeed": "0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3",
   "borrowMin": "100e6",
+  "pauseGuardian": "0x78E6317DD6D43DdbDa00Dce32C2CbaFc99361a9d",
   "storeFrontPriceFactor": 0.8,
   "targetReserves": "5000000e6",
   "rates": {
