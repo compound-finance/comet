@@ -1,13 +1,19 @@
 import hre from 'hardhat';
-import nock from 'nock';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import * as fs from 'fs';
 import * as path from 'path';
 import { verifyContract } from '../Verify';
 import { deployBuild } from '../Deploy';
 import { buildToken, faucetTokenBuildFile, tokenArgs } from './DeployHelpers';
+import { MockAgent, setGlobalDispatcher } from 'undici';
 
 export function mockVerifySuccess(hre: HardhatRuntimeEnvironment) {
+  // We use undici's intercepter to mock the HTTP requests because the Hardhat Etherscan plugin now uses
+  // undici instead of node-fetch
+  const mockAgent = new MockAgent();
+  mockAgent.disableNetConnect();
+  setGlobalDispatcher(mockAgent);
+
   let solcList = JSON.parse(fs.readFileSync(path.join(__dirname, './SolcList.json'), 'utf8'));
 
   // Note: we need to convince the prober task that this is goerli, which it's not.
@@ -25,36 +31,51 @@ export function mockVerifySuccess(hre: HardhatRuntimeEnvironment) {
     }
   };
 
-  nock('https://solc-bin.ethereum.org/').get('/bin/list.json').reply(200, solcList);
+  const solcMockPool = mockAgent.get('https://solc-bin.ethereum.org');
+  const etherscanMockPool = mockAgent.get('https://api-goerli.etherscan.io');
 
-  nock('https://api-goerli.etherscan.io/')
-    .post('/api', /action=verifysourcecode/)
-    .reply(200, {
-      status: 1,
-      message: 'OK',
-      result: 'MYGUID',
-    });
+  solcMockPool.intercept({
+    path: '/bin/list.json',
+    method: 'GET'
+  }).reply(200, solcList);
 
-  nock('https://api-goerli.etherscan.io/')
-    .get('/api')
-    .query({
+  etherscanMockPool.intercept({
+    path: '/api',
+    method: 'POST',
+    body: /action=verifysourcecode/
+  }).reply(200, {
+    status: 1,
+    message: 'OK',
+    result: 'MYGUID',
+  });
+
+  etherscanMockPool.intercept({
+    path: '/api',
+    method: 'GET',
+    query: {
       apikey: 'GOERLI_KEY',
       module: 'contract',
       action: 'checkverifystatus',
       guid: 'MYGUID',
-    })
-    .reply(200, {
-      status: 1,
-      message: 'OK',
-      result: 'Pass - Verified',
-    });
+    }
+  }).reply(200, {
+    status: 1,
+    message: 'OK',
+    result: 'Pass - Verified',
+  });
+
+  // Hardhat Etherscan now checks to see if a contract is already verified before verifying it
+  etherscanMockPool.intercept({
+    path: /api\?action=getsourcecode.*/,
+    method: 'GET',
+  }).reply(200, {
+    status: 1,
+    message: 'OK',
+    result: 'Source code not found',
+  });
 }
 
 describe('Verify', () => {
-  beforeEach(async () => {
-    nock.disableNetConnect();
-  });
-
   describe('via artifacts', () => {
     it('verify from artifacts [success]', async () => {
       mockVerifySuccess(hre);

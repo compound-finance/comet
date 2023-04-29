@@ -81,10 +81,14 @@ task('deploy', 'Deploys market')
     if (noDeploy) {
       // Don't run the deploy script
     } else {
-      const overrides = undefined; // TODO: pass through cli args
-      const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
-      console.log(`[${tag}] Deployed ${dm.counter} contracts, spent ${dm.spent} Ξ`);
-      console.log(`[${tag}]\n${dm.diffDelta(delta)}`);
+      try {
+        const overrides = undefined; // TODO: pass through cli args
+        const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
+        console.log(`[${tag}] Deployed ${dm.counter} contracts, spent ${dm.spent} Ξ`);
+        console.log(`[${tag}]\n${dm.diffDelta(delta)}`);
+      } catch (e) {
+        console.log(`[${tag}] Failed to deploy with error: ${e}`);
+      }
     }
 
     const verify = noVerify ? false : !simulate;
