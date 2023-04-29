@@ -7,7 +7,7 @@ import { expect } from 'chai';
 const ERC20PredicateAddress = '0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf';
 const RootChainManagerAddress = '0xA0c68C638235ee32657e8f720a23ceC1bFc77C77';
 
-export default migration('1661899622_rewards', {
+export default migration('1681313581_more_comp', {
   async prepare(deploymentManager: DeploymentManager) {
     return {};
   },
@@ -51,7 +51,7 @@ export default migration('1661899622_rewards', {
         calldata: depositForCOMPCalldata
       },
     ];
-    const description = "# Refresh Polygon COMP\n\n## Explanation\n\nSince the launch of cUSDCv3 on Polygon mainnet a month ago, the market has grown steadily and proven to be in good order. The initial seeding of rewards only provisioned enough for a few months, as a conservative starting point. Now is a good time to renew the COMP rewards going to the market.\n\nThis proposal bridges an additional 12,500 COMP to sustain the current rewards speeds of the market for an additional year (approximately).\n\n## Proposal\n\nThe proposal itself is to be made from [this pull request](https://github.com/compound-finance/comet/pull/735). \n\nThe first action approves the transfer of COMP by the Polygon bridge contract.\n\nThe second action triggers the transfer across the bridge to the rewards contract.";
+    const description = "# Refresh Polygon COMP\n\nThis is a repost of [Proposal 158](https://compound.finance/governance/proposals/158), given that the proposal failed to reach quorum. More discussions can be found on this [forum thread](https://www.comp.xyz/t/refresh-comp-rewards-on-polygon/4253).\n\n## Explanation\n\nSince the launch of cUSDCv3 on Polygon mainnet a month ago, the market has grown steadily and proven to be in good order. The initial seeding of rewards only provisioned enough for a few months, as a conservative starting point. Now is a good time to renew the COMP rewards going to the market.\n\nThis proposal bridges an additional 12,500 COMP to sustain the current rewards speeds of the market for an additional year (approximately).\n\n## Proposal\n\nThe proposal itself is to be made from [this pull request](https://github.com/compound-finance/comet/pull/735). \n\nThe first action approves the transfer of COMP by the Polygon bridge contract.\n\nThe second action triggers the transfer across the bridge to the rewards contract.";
     const txn = await deploymentManager.retry(
       async () => governor.propose(...await proposal(actions, description))
     );
