@@ -14,6 +14,8 @@ const ENSTextRecordKey = 'v3-official-markets';
 
 const arbitrumCOMPAddress = '0x354A6dA3fcde098F8389cad84b0182725c6C91dE';
 
+const cUSDTAddress = '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9';
+
 export default migration('1679020486_configurate_and_ens', {
   prepare: async (_deploymentManager: DeploymentManager) => {
     return {};
@@ -37,6 +39,7 @@ export default migration('1679020486_configurate_and_ens', {
       arbitrumInbox,
       arbitrumL1GatewayRouter,
       timelock,
+      comptrollerV2,
       governor,
       USDC,
       COMP,
@@ -194,9 +197,19 @@ export default migration('1679020486_configurate_and_ens', {
           [subdomainHash, ENSTextRecordKey, JSON.stringify(updatedMarkets)]
         )
       },
+      // 7. Displace v2 USDT COMP rewards
+      {
+        contract: comptrollerV2,
+        signature: '_setCompSpeeds(address[],uint256[],uint256[])',
+        args: [
+          [cUSDTAddress],
+          [0],
+          [0],
+        ],
+      },
     ];
 
-    const description = "# Initialize cUSDCv3 on Arbitrum\n\nThis proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Arbitrum; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market's readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). Although real tests have also been run over the Goerli/Arbitrum Goerli bridge, this proposal requires estimating gas costs in advance of executing the bridge proposal, and therefore includes risks not present in previous proposals.\n\nAlthough the proposal sets the entire configuration in the Configurator, the initial deployment already has most of these same parameters already set. The new parameters are limited to increasing the supply caps of the collateral assets from their initial values of 0. The risk parameters and supply caps are based off of [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-v3-on-arbitrum/4100/15).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/719) and [forum discussion](https://www.comp.xyz/t/deploy-compound-v3-on-arbitrum/4100).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Arbitrum. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Arbitrum. It also calls `setRewardConfig` on the Arbitrum rewards contract, to establish Arbitrum's bridged version of COMP as the reward token for the deployment.\n\nThe second action approves Arbitrum's [L1 Arb-Custom Gateway](https://etherscan.io/address/0xcEe284F754E854890e311e3280b767F80797180d) to take Timelock's USDC, in order to seed the market reserves through the bridge.\n\nThe third action bridges USDC from mainnet to the Compound instance on Arbitrum, via Arbitrum's [L1GatewayRouter contract](https://etherscan.io/address/0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef).\n\nThe fourth action approves Arbitrum's [L1 ERC20 Gateway](https://etherscan.io/address/0xa3A7B6F88361F48403514059F1F16C8E78d60EeC) to take Timelock's COMP, in order to seed the rewards contract through the bridge.\n\nThe fifth action transfers COMP from mainnet to the rewards contract on Arbitrum, via Arbitrum's [L1GatewayRouter contract](https://etherscan.io/address/0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef).\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Arbitrum cUSDCv3 market.";
+    const description = "# Initialize cUSDCv3 on Arbitrum\n\nThis proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Arbitrum; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market's readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). Although real tests have also been run over the Goerli/Arbitrum Goerli bridge, this proposal requires estimating gas costs in advance of executing the bridge proposal, and therefore includes risks not present in previous proposals.\n\nAlthough the proposal sets the entire configuration in the Configurator, the initial deployment already has most of these same parameters already set. The new parameters are limited to increasing the supply caps of the collateral assets from their initial values of 0. The risk parameters and supply caps are based off of [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-v3-on-arbitrum/4100/15).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/719) and [forum discussion](https://www.comp.xyz/t/deploy-compound-v3-on-arbitrum/4100).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Arbitrum. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Arbitrum. It also calls `setRewardConfig` on the Arbitrum rewards contract, to establish Arbitrum's bridged version of COMP as the reward token for the deployment.\n\nThe second action approves Arbitrum's [L1 Arb-Custom Gateway](https://etherscan.io/address/0xcEe284F754E854890e311e3280b767F80797180d) to take Timelock's USDC, in order to seed the market reserves through the bridge.\n\nThe third action bridges USDC from mainnet to the Compound instance on Arbitrum, via Arbitrum's [L1GatewayRouter contract](https://etherscan.io/address/0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef).\n\nThe fourth action approves Arbitrum's [L1 ERC20 Gateway](https://etherscan.io/address/0xa3A7B6F88361F48403514059F1F16C8E78d60EeC) to take Timelock's COMP, in order to seed the rewards contract through the bridge.\n\nThe fifth action transfers COMP from mainnet to the rewards contract on Arbitrum, via Arbitrum's [L1GatewayRouter contract](https://etherscan.io/address/0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef).\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Arbitrum cUSDCv3 market.\n\nThe seventh action turns off COMP distributions on Compound v2 USDT borrows.";
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
@@ -216,6 +229,10 @@ export default migration('1679020486_configurate_and_ens', {
       rewards
     } = await deploymentManager.getContracts();
 
+    const {
+      comptrollerV2
+    } = await govDeploymentManager.getContracts();
+
     // 1.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     expect(stateChanges).to.deep.equal({
@@ -231,6 +248,7 @@ export default migration('1679020486_configurate_and_ens', {
       WBTC: {
         supplyCap: exp(300, 8)
       },
+      baseTrackingSupplySpeed: exp(34.74 / 86400, 15, 18)
     });
 
     const config = await rewards.rewardConfig(comet.address);
@@ -280,5 +298,11 @@ export default migration('1679020486_configurate_and_ens', {
         }
       ],
     });
+
+    // 7.
+    expect(await comptrollerV2.compBorrowSpeeds(cUSDTAddress)).to.be.equal(0);
+    expect(await comptrollerV2.compSupplySpeeds(cUSDTAddress)).to.be.equal(0);
+    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(34.74 / 86400, 15, 18) );
+    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(0);
   }
 });
