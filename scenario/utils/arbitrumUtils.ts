@@ -20,7 +20,7 @@ export async function estimateL2Transaction(
   l2DeploymentManager: DeploymentManager
 ) {
   // guess what the l1 gas price will be when the proposal is executed
-  const l1GasPrice = (utils.parseUnits('100', 'gwei')).toNumber();
+  const l1GasPrice = (utils.parseUnits('200', 'gwei')).toNumber();
   // overestimating standard l2 gas by 5x (usually is 0.1 gwei)
   const l2GasPrice = (utils.parseUnits('0.5', 'gwei')).toNumber();
 
