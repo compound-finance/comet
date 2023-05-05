@@ -95,7 +95,7 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
       // Verify all unverified migrations (e.g. ones that are not tied to proposals)
       if (ctx.migrations) {
         for (const migrationData of ctx.migrations) {
-          if (migrationData.verified === true) continue;
+          if (migrationData.verified === true || migrationData.skip === true) continue;
           await migrationData.migration.actions.verify(
             ctx.world.deploymentManager,
             govDeploymentManager,
