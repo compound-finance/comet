@@ -109,7 +109,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // WBTC
         ' == 20',
         // WMATIC
-        ' == 500000',
+        ' == 300000',
       ],
     },
     arbitrum: {
