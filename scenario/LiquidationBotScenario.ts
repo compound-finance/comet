@@ -23,20 +23,26 @@ const sharedAddresses = {
 };
 
 const addresses: {[chain: string]: LiquidationAddresses} = {
-  'mainnet': {
+  mainnet: {
     ...sharedAddresses,
     sushiswapRouter: '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F',
     stakedNativeToken: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
     weth9: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
     wrappedStakedNativeToken: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0'
-
   },
-  'polygon': {
+  polygon: {
     ...sharedAddresses,
     sushiswapRouter: '0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506',
     stakedNativeToken: '0x3a58a54c066fdc0f2d55fc9c89f0415c92ebf3c4', // stMatic
     weth9: '0x7ceb23fd6bc0add59e62ac25578270cff1b9f619',
     wrappedStakedNativeToken: ethers.constants.AddressZero // wstMatic does not exist
+  },
+  arbitrum: {
+    ...sharedAddresses,
+    sushiswapRouter: '0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506',
+    stakedNativeToken: ethers.constants.AddressZero,
+    weth9: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
+    wrappedStakedNativeToken: ethers.constants.AddressZero
   }
 };
 
@@ -64,17 +70,20 @@ async function borrowCapacityForAsset(comet: CometInterface, actor: CometActor, 
 
 for (let i = 0; i < MAX_ASSETS; i++) {
   const baseTokenBalances = {
-    'mainnet': {
-      'usdc': 2250000,
-      'weth': 20
+    mainnet: {
+      usdc: 2250000,
+      weth: 20
     },
-    'polygon': {
-      'usdc': 2250000
+    polygon: {
+      usdc: 2250000
+    },
+    arbitrum: {
+      usdc: 10000000
     }
   };
   const assetAmounts = {
-    'mainnet': {
-      'usdc': [
+    mainnet: {
+      usdc: [
         // COMP
         ' == 500',
         // WBTC
@@ -86,15 +95,15 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // LINK
         ' == 150000'
       ],
-      'weth': [
+      weth: [
         // CB_ETH
         ' == 750',
         // WST_ETH
         ' == 2000'
       ]
     },
-    'polygon': {
-      'usdc': [
+    polygon: {
+      usdc: [
         // WETH
         ' == 400',
         // WBTC
@@ -102,6 +111,18 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // WMATIC
         ' == 500000',
       ],
+    },
+    arbitrum: {
+      usdc: [
+        // ARB
+        ' == 500000',
+        // GMX
+        ' == 4000',
+        // WETH
+        ' == 2000',
+        // WBTC
+        ' == 100'
+      ]
     }
   };
   scenario(
@@ -110,7 +131,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
       tokenBalances: async (ctx) => (
         {
           $comet: {
