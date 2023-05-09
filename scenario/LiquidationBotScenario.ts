@@ -561,13 +561,13 @@ scenario(
 scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when maxAmountToPurchase=0`,
   {
-    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
+    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
     tokenBalances: {
       $comet: { $base: 100000 },
     },
     cometBalances: {
       albert: {
-        $asset0: ' == 10',
+        $asset0: ' == 200',
       },
       betty: { $base: 1000 },
     },
