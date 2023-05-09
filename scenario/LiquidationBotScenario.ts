@@ -669,103 +669,129 @@ scenario(
   }
 );
 
-scenario(
-  `LiquidationBot > reverts when price slippage is too high`,
-  {
-    upgrade: {
-      targetReserves: exp(20_000, 18)
+{
+  const baseTokenBalances = {
+    mainnet: {
+      usdc: 2250000,
+      weth: 20
     },
-    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}]), // XXX enable for Polygon
-    tokenBalances: {
-      $comet: { $base: 10000 },
+    arbitrum: {
+      usdc: 10000000
+    }
+  };
+  const assetAmounts = {
+    mainnet: {
+      usdc: ' == 5000', // COMP
+      weth: ' == 10000', // CB_ETH
     },
-    cometBalances: {
-      albert: {
-        $asset0: ' == 10000',
-      },
-      betty: { $base: 1000 },
-    },
-  },
-  async ({ comet, actors }, _context, world) => {
-    const { albert, betty } = actors;
-    const { network, deployment } = world.deploymentManager;
-    const flashLoanPool = flashLoanPools[network][deployment];
-    const {
-      balancerVault,
-      uniswapRouter,
-      uniswapV3Factory,
-      sushiswapRouter,
-      stakedNativeToken,
-      weth9,
-      wrappedStakedNativeToken
-    } = addresses[network];
+    arbitrum: {
+      usdc: ' == 2000000', // ARB
+    }
+  };
 
-    const liquidator = await world.deploymentManager.deploy(
-      'liquidator',
-      'liquidator/OnChainLiquidator.sol',
-      [
+  scenario(
+    `LiquidationBot > reverts when price slippage is too high`,
+    {
+      upgrade: {
+        targetReserves: exp(20_000, 18)
+      },
+      filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'arbitrum'}]),
+      tokenBalances: async (ctx) => (
+        {
+          $comet: {
+            $base: baseTokenBalances[ctx.world.base.network]?.[ctx.world.base.deployment] || 0,
+          },
+        }
+      ),
+      cometBalances: async (ctx) => (
+        {
+          albert: {
+            $asset0: assetAmounts[ctx.world.base.network]?.[ctx.world.base.deployment] || 0
+          },
+        }
+      ),
+    },
+    async ({ comet, actors }, _context, world) => {
+      const { albert, betty } = actors;
+      const { network, deployment } = world.deploymentManager;
+      const flashLoanPool = flashLoanPools[network][deployment];
+      const {
         balancerVault,
-        sushiswapRouter,
         uniswapRouter,
         uniswapV3Factory,
+        sushiswapRouter,
         stakedNativeToken,
-        wrappedStakedNativeToken,
-        weth9
-      ]
-    ) as OnChainLiquidator;
+        weth9,
+        wrappedStakedNativeToken
+      } = addresses[network];
 
-    const baseToken = await comet.baseToken();
-    const { asset: collateralAssetAddress } = await comet.getAssetInfo(0);
+      const liquidator = await world.deploymentManager.deploy(
+        'liquidator',
+        'liquidator/OnChainLiquidator.sol',
+        [
+          balancerVault,
+          sushiswapRouter,
+          uniswapRouter,
+          uniswapV3Factory,
+          stakedNativeToken,
+          wrappedStakedNativeToken,
+          weth9
+        ]
+      ) as OnChainLiquidator;
 
-    const initialRecipientBalance = await betty.getErc20Balance(baseToken);
-    const [initialNumAbsorbs, initialNumAbsorbed] = await comet.liquidatorPoints(betty.address);
+      const baseToken = await comet.baseToken();
+      const { asset: collateralAssetAddress } = await comet.getAssetInfo(0);
 
-    const borrowCapacity = await borrowCapacityForAsset(comet, albert, 0);
-    const borrowAmount = (borrowCapacity.mul(90n)).div(100n);
+      const initialRecipientBalance = await betty.getErc20Balance(baseToken);
+      const [initialNumAbsorbs, initialNumAbsorbed] = await comet.liquidatorPoints(betty.address);
 
-    await albert.withdrawAsset({
-      asset: baseToken,
-      amount: borrowAmount
-    });
+      const borrowCapacity = await borrowCapacityForAsset(comet, albert, 0);
+      const borrowAmount = (borrowCapacity.mul(90n)).div(100n);
 
-    await world.increaseTime(
-      await timeUntilUnderwater({
-        comet,
-        actor: albert,
-        fudgeFactor: 60n * 10n // 10 minutes past when position is underwater
-      })
-    );
+      await albert.withdrawAsset({
+        asset: baseToken,
+        amount: borrowAmount
+      });
 
-    await comet.connect(betty.signer).accrueAccount(albert.address); // force accrue
+      await world.increaseTime(
+        await timeUntilUnderwater({
+          comet,
+          actor: albert,
+          fudgeFactor: 60n * 10n // 10 minutes past when position is underwater
+        })
+      );
 
-    expect(await comet.isLiquidatable(albert.address)).to.be.true;
-    expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.be.greaterThan(0);
+      await comet.connect(betty.signer).accrueAccount(albert.address); // force accrue
 
-    await expect(
-      liquidator.connect(betty.signer).absorbAndArbitrage(
-        comet.address,
-        [albert.address],
-        [collateralAssetAddress],
-        [getPoolConfig(collateralAssetAddress)],
-        [ethers.constants.MaxUint256],
-        flashLoanPool.tokenAddress,
-        flashLoanPool.poolFee,
-        10e6
-      )
-    ).to.be.revertedWithCustomError(liquidator, 'InsufficientAmountOut');
+      expect(await comet.isLiquidatable(albert.address)).to.be.true;
+      expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.be.greaterThan(0);
 
-    // confirm that Albert position has not been abosrbed
-    expect(await comet.isLiquidatable(albert.address)).to.be.true;
-    expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.be.greaterThan(0);
+      await expect(
+        liquidator.connect(betty.signer).absorbAndArbitrage(
+          comet.address,
+          [albert.address],
+          [collateralAssetAddress],
+          [getPoolConfig(collateralAssetAddress)],
+          [ethers.constants.MaxUint256],
+          flashLoanPool.tokenAddress,
+          flashLoanPool.poolFee,
+          10e6
+        )
+      ).to.be.revertedWithCustomError(liquidator, 'InsufficientAmountOut');
 
-    // confirm that liquidator points have not increased
-    const [finalNumAbsorbs, finalNumAbsorbed] = await comet.liquidatorPoints(betty.address);
-    expect(finalNumAbsorbs).to.eq(initialNumAbsorbs);
-    expect(finalNumAbsorbed).to.eq(initialNumAbsorbed);
+      // confirm that Albert position has not been abosrbed
+      expect(await comet.isLiquidatable(albert.address)).to.be.true;
+      expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.be.greaterThan(0);
 
-    // check that recipient balance has stayed the same
-    expect(await betty.getErc20Balance(baseToken)).to.be.eq(Number(initialRecipientBalance));
-  }
-);
+      // confirm that liquidator points have not increased
+      const [finalNumAbsorbs, finalNumAbsorbed] = await comet.liquidatorPoints(betty.address);
+      expect(finalNumAbsorbs).to.eq(initialNumAbsorbs);
+      expect(finalNumAbsorbed).to.eq(initialNumAbsorbed);
+
+      // check that recipient balance has stayed the same
+      expect(await betty.getErc20Balance(baseToken)).to.be.eq(Number(initialRecipientBalance));
+    }
+  );
+}
 
 // XXX test that Liquidator liquidates up to the max amount for that asset
