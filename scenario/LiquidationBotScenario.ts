@@ -450,13 +450,13 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when value is beneath liquidationThreshold`,
   {
-    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
+    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
     tokenBalances: {
       $comet: { $base: 100000 },
     },
     cometBalances: {
       albert: {
-        $asset0: ' == 10',
+        $asset0: ' == 200',
       },
       betty: { $base: 1000 },
     },
