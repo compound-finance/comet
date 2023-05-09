@@ -241,17 +241,20 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 
 for (let i = 0; i < MAX_ASSETS; i++) {
   const baseTokenBalances = {
-    'mainnet': {
-      'usdc': 2250000,
-      'weth': 5000
+    mainnet: {
+      usdc: 2250000,
+      weth: 5000
     },
-    'polygon': {
-      'usdc': 3000000
+    polygon: {
+      usdc: 3000000
+    },
+    arbitrum: {
+      usdc: 10000000
     }
   };
   const assetAmounts = {
-    'mainnet': {
-      'usdc': [
+    mainnet: {
+      usdc: [
         // COMP
         ' == 40000',
         // WBTC
@@ -263,15 +266,15 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // LINK
         ' == 500000',
       ],
-      'weth': [
+      weth: [
         // CB_ETH
         ' == 2000',
         // WST_ETH
         ' == 3000'
       ]
     },
-    'polygon': {
-      'usdc': [
+    polygon: {
+      usdc: [
         // WETH
         ' == 1000',
         // WBTC
@@ -279,11 +282,23 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // WMATIC
         ' == 2500000',
       ]
+    },
+    arbitrum: {
+      usdc: [
+        // ARB
+        ' == 1000000',
+        // GMX
+        ' == 10000',
+        // WETH
+        ' == 5000',
+        // WBTC
+        ' == 300'
+      ]
     }
   };
   const maxAmountsToPurchase = {
-    'mainnet': {
-      'usdc': [
+    mainnet: {
+      usdc: [
         // COMP
         exp(500, 18),
         // WBTC
@@ -295,21 +310,33 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // LINK
         exp(150000, 18)
       ],
-      'weth': [
+      weth: [
         // CB_ETH
         exp(750, 18),
         // WST_ETH
         exp(2000, 18)
       ]
     },
-    'polygon': {
-      'usdc': [
+    polygon: {
+      usdc: [
         // WETH
         exp(400, 18),
         // WBTC
         exp(20, 8),
         // WMATIC
         exp(5000, 18),
+      ]
+    },
+    arbitrum: {
+      usdc: [
+        // ARB
+        exp(300000, 18),
+        // GMX
+        exp(3000, 18),
+        // WETH
+        exp(1000, 18),
+        // WBTC
+        exp(50, 8),
       ]
     }
   };
@@ -319,7 +346,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
       tokenBalances: async (ctx) => (
         {
           $comet: {
