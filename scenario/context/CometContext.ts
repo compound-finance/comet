@@ -43,6 +43,7 @@ export type MigrationData = {
   migration: Migration<any>;
   lastProposal?: number;
   preMigrationBlockNumber?: number;
+  skipVerify?: boolean;
   verified?: boolean;
 }
 

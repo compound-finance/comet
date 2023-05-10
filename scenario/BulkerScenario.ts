@@ -168,6 +168,10 @@ scenario(
       albert: { $base: '== 1000000', $asset0: 100 },
       $comet: { $base: 5000 },
     },
+    prices: {
+      $base: 1,
+      $asset0: 50
+    }
   },
   async ({ comet, actors, rewards, bulker }, context, world) => {
     const { albert, betty } = actors;

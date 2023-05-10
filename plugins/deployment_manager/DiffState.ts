@@ -1,7 +1,6 @@
 import { diff as jestDiff } from 'jest-diff';
 import { diff } from 'deep-object-diff';
 import { BigNumber, Contract } from 'ethers';
-import { stringifyJson } from './Utils';
 
 export async function diffState(
   contract: Contract,
@@ -10,21 +9,21 @@ export async function diffState(
   newBlockNumber?: number
 ): Promise<object> {
   const toBigInt = n => (BigNumber.isBigNumber(n) ? n.toBigInt() : n);
-  const oldConfig = mapObject(await getState(contract, oldBlockNumber), toBigInt);
-  const newConfig = mapObject(await getState(contract, newBlockNumber), toBigInt);
+  const oldState = mapObject(await getState(contract, oldBlockNumber), toBigInt);
+  const newState = mapObject(await getState(contract, newBlockNumber), toBigInt);
 
   // Informational log (can also generate a report if we think is valuable)
   console.log('State changes after migration');
   console.log(
-    jestDiff(newConfig, oldConfig, {
-      aAnnotation: 'New config',
+    jestDiff(newState, oldState, {
+      aAnnotation: 'New state',
       aIndicator: '+',
-      bAnnotation: 'Old config',
+      bAnnotation: 'Old state',
       bIndicator: '-'
     })
   );
 
-  return JSON.parse(stringifyJson(diff(oldConfig, newConfig))); // Removes null objects for test comparison
+  return diff(oldState, newState);
 }
 
 export async function getCometConfig(comet: Contract, blockNumber?: number): Promise<object> {
