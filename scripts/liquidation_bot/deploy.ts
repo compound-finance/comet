@@ -20,7 +20,7 @@ const sharedAddresses = {
 };
 
 const addresses: {[network: string]: LiquidationAddresses} = {
-  'mainnet': {
+  mainnet: {
     ...sharedAddresses,
     sushiswapRouter: '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F',
     stakedNativeToken: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
@@ -28,12 +28,19 @@ const addresses: {[network: string]: LiquidationAddresses} = {
     wrappedStakedNativeToken: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0'
 
   },
-  'polygon': {
+  polygon: {
     ...sharedAddresses,
     sushiswapRouter: '0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506',
     stakedNativeToken: '0x3a58a54c066fdc0f2d55fc9c89f0415c92ebf3c4',
     weth9: '0x7ceb23fd6bc0add59e62ac25578270cff1b9f619',
     wrappedStakedNativeToken: ethers.constants.AddressZero // wstMatic does not exist
+  },
+  arbitrum: {
+    ...sharedAddresses,
+    sushiswapRouter: '0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506',
+    stakedNativeToken: ethers.constants.AddressZero,
+    weth9: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
+    wrappedStakedNativeToken: ethers.constants.AddressZero
   }
 };
 
@@ -41,7 +48,7 @@ async function main() {
   const network = hre.network.name;
   const deployment = 'abc'; // doesn't matter; just need a value to instantiate DeploymentManager
 
-  if (!['mainnet', 'polygon'].includes(network)) {
+  if (!['mainnet', 'polygon', 'arbitrum'].includes(network)) {
     throw new Error(`unable to deploy Liquidator to network: ${network}`);
   }
 
