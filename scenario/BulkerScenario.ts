@@ -10,7 +10,7 @@ scenario(
     filter: async (ctx) => await isBulkerSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, {network: 'mumbai'}]),
     supplyCaps: {
       $asset0: 3000,
-      $asset2: 1,
+      $asset1: 3000,
     },
     tokenBalances: {
       albert: { $base: '== 0', $asset0: 3000 },
@@ -27,7 +27,7 @@ scenario(
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const collateralScale = scaleBN.toBigInt();
     const toSupplyCollateral = 3000n * collateralScale;
-    const toBorrowBase = 1500n * baseScale;
+    const toBorrowBase = 1000n * baseScale;
     const toTransferBase = 500n * baseScale;
     const toSupplyEth = exp(0.01, 18);
     const toWithdrawEth = exp(0.005, 18);
@@ -43,7 +43,7 @@ scenario(
 
     // Albert's actions:
     // 1. Supplies 3000 units of collateral
-    // 2. Borrows 1500 base
+    // 2. Borrows 1000 base
     // 3. Transfers 500 base to Betty
     // 4. Supplies 0.01 ETH
     // 5. Withdraws 0.005 ETH
@@ -165,9 +165,9 @@ scenario(
       $asset0: 100,
     },
     tokenBalances: {
-      albert: { $base: '== 1000000', $asset0: 100 },
+      albert: { $base: '== 1000000', $asset0: 3000 },
       $comet: { $base: 5000 },
-    },
+    }
   },
   async ({ comet, actors, rewards, bulker }, context, world) => {
     const { albert, betty } = actors;
@@ -180,8 +180,8 @@ scenario(
     const collateralScale = scaleBN.toBigInt();
     const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
     const toSupplyBase = 1_000_000n * baseScale;
-    const toSupplyCollateral = 100n * collateralScale;
-    const toBorrowBase = 1500n * baseScale;
+    const toSupplyCollateral = 3000n * collateralScale;
+    const toBorrowBase = 1000n * baseScale;
     const toTransferBase = 500n * baseScale;
     const toSupplyEth = exp(0.01, 18);
     const toWithdrawEth = exp(0.005, 18);
@@ -207,8 +207,8 @@ scenario(
       startingRewardBalance + rewardOwed;
 
     // Albert's actions:
-    // 1. Supplies 100 units of collateral
-    // 2. Borrows 1500 base
+    // 1. Supplies 3000 units of collateral
+    // 2. Borrows 1000 base
     // 3. Transfers 500 base to Betty
     // 4. Supplies 0.01 ETH
     // 5. Withdraws 0.005 ETH

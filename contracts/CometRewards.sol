@@ -14,6 +14,8 @@ contract CometRewards {
         address token;
         uint64 rescaleFactor;
         bool shouldUpscale;
+        // Note: We define new variables after existing variables to keep interface backwards-compatible
+        uint256 multiplier;
     }
 
     struct RewardOwed {
@@ -30,14 +32,19 @@ contract CometRewards {
     /// @notice Rewards claimed per Comet instance and user account
     mapping(address => mapping(address => uint)) public rewardsClaimed;
 
+    /// @dev The scale for factors
+    uint256 internal constant FACTOR_SCALE = 1e18;
+
     /** Custom events **/
 
     event GovernorTransferred(address indexed oldGovernor, address indexed newGovernor);
+    event RewardsClaimedSet(address indexed user, address indexed comet, uint256 amount);
     event RewardClaimed(address indexed src, address indexed recipient, address indexed token, uint256 amount);
 
     /** Custom errors **/
 
     error AlreadyConfigured(address);
+    error BadData();
     error InvalidUInt64(uint);
     error NotPermitted(address);
     error NotSupported(address);
@@ -55,8 +62,9 @@ contract CometRewards {
      * @notice Set the reward token for a Comet instance
      * @param comet The protocol instance
      * @param token The reward token address
+     * @param multiplier The multiplier for converting a unit of accrued tracking to a unit of the reward token
      */
-    function setRewardConfig(address comet, address token) external {
+    function setRewardConfigWithMultiplier(address comet, address token, uint256 multiplier) public {
         if (msg.sender != governor) revert NotPermitted(msg.sender);
         if (rewardConfig[comet].token != address(0)) revert AlreadyConfigured(comet);
 
@@ -67,14 +75,42 @@ contract CometRewards {
             rewardConfig[comet] = RewardConfig({
                 token: token,
                 rescaleFactor: accrualScale / tokenScale,
-                shouldUpscale: false
+                shouldUpscale: false,
+                multiplier: multiplier
             });
         } else {
             rewardConfig[comet] = RewardConfig({
                 token: token,
                 rescaleFactor: tokenScale / accrualScale,
-                shouldUpscale: true
+                shouldUpscale: true,
+                multiplier: multiplier
             });
+        }
+    }
+
+    /**
+     * @notice Set the reward token for a Comet instance
+     * @param comet The protocol instance
+     * @param token The reward token address
+     */
+    function setRewardConfig(address comet, address token) external {
+        setRewardConfigWithMultiplier(comet, token, FACTOR_SCALE);
+    }
+
+    /**
+     * @notice Set the rewards claimed for a list of users
+     * @param comet The protocol instance to populate the data for
+     * @param users The list of users to populate the data for
+     * @param claimedAmounts The list of claimed amounts to populate the data with
+     */
+    function setRewardsClaimed(address comet, address[] calldata users, uint[] calldata claimedAmounts) external {
+        if (msg.sender != governor) revert NotPermitted(msg.sender);
+        if (users.length != claimedAmounts.length) revert BadData();
+
+        for (uint i = 0; i < users.length; ) {
+            rewardsClaimed[comet][users[i]] = claimedAmounts[i];
+            emit RewardsClaimedSet(users[i], comet, claimedAmounts[i]);
+            unchecked { i++; }
         }
     }
 
@@ -176,7 +212,7 @@ contract CometRewards {
         } else {
             accrued /= config.rescaleFactor;
         }
-        return accrued;
+        return accrued * config.multiplier / FACTOR_SCALE;
     }
 
     /**

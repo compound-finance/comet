@@ -24,6 +24,8 @@ import mumbaiRelationConfigMap from './deployments/mumbai/usdc/relations';
 import mainnetRelationConfigMap from './deployments/mainnet/usdc/relations';
 import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
 import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
+import arbitrumRelationConfigMap from './deployments/arbitrum/usdc/relations';
+import arbitrumGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -35,9 +37,10 @@ const {
   ETH_PK = '',
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
+  POLYGONSCAN_KEY,
+  ARBISCAN_KEY,
   INFURA_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
-  POLYGONSCAN_KEY,
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
@@ -63,8 +66,9 @@ export function requireEnv(varName, msg?: string): string {
   'ETHERSCAN_KEY',
   'SNOWTRACE_KEY',
   'INFURA_KEY',
-  'POLYGONSCAN_KEY'
-].map(v => requireEnv(v))
+  'POLYGONSCAN_KEY',
+  'ARBISCAN_KEY'
+].map(v => requireEnv(v));
 
 // Networks
 interface NetworkConfig {
@@ -87,6 +91,11 @@ const networkConfigs: NetworkConfig[] = [
     url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
   },
   {
+    network: 'arbitrum',
+    chainId: 42161,
+    url: `https://arbitrum-mainnet.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
     network: 'avalanche',
     chainId: 43114,
     url: 'https://api.avax.network/ext/bc/C/rpc',
@@ -101,6 +110,11 @@ const networkConfigs: NetworkConfig[] = [
     chainId: 80001,
     url: `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`,
   },
+  {
+    network: 'arbitrum-goerli',
+    chainId: 421613,
+    url: `https://arbitrum-goerli.infura.io/v3/${INFURA_KEY}`,
+  }
 ];
 
 function getDefaultProviderURL(network: string) {
@@ -118,7 +132,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
         getDefaultProviderURL(netConfig.network),
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
-      accounts: REMOTE_ACCOUNTS ? "remote" : ( ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC } ),
+      accounts: REMOTE_ACCOUNTS ? 'remote' : ( ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC } ),
     };
   }
 }
@@ -142,8 +156,8 @@ const config: HardhatUserConfig = {
         }
       ),
       outputSelection: {
-        "*": {
-          "*": ["evm.deployedBytecode.sourceMap"]
+        '*': {
+          '*': ['evm.deployedBytecode.sourceMap']
         },
       },
       viaIR: process.env['OPTIMIZER_DISABLED'] ? false : true,
@@ -162,6 +176,7 @@ const config: HardhatUserConfig = {
         : { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
       // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,
+      hardfork: "shanghai"
     },
   },
 
@@ -180,7 +195,32 @@ const config: HardhatUserConfig = {
       // Polygon
       polygon: POLYGONSCAN_KEY,
       polygonMumbai: POLYGONSCAN_KEY,
+      // Arbitrum
+      arbitrumOne: ARBISCAN_KEY,
+      arbitrumTestnet: ARBISCAN_KEY,
+      arbitrum: ARBISCAN_KEY,
+      'arbitrum-goerli': ARBISCAN_KEY
     },
+    customChains: [
+      {
+        // Hardhat's Etherscan plugin calls the network `arbitrumOne`, so we need to add an entry for our own network name
+        network: 'arbitrum',
+        chainId: 42161,
+        urls: {
+          apiURL: 'https://api.arbiscan.io/api',
+          browserURL: 'https://arbiscan.io/'
+        }
+      },
+      {
+        // Hardhat's Etherscan plugin calls the network `arbitrumGoerli`, so we need to add an entry for our own network name
+        network: 'arbitrum-goerli',
+        chainId: 421613,
+        urls: {
+          apiURL: 'https://api-goerli.arbiscan.io/api',
+          browserURL: 'https://goerli.arbiscan.io/'
+        }
+      }
+    ],
   },
 
   typechain: {
@@ -205,6 +245,12 @@ const config: HardhatUserConfig = {
       polygon: {
         usdc: polygonRelationConfigMap
       },
+      arbitrum: {
+        usdc: arbitrumRelationConfigMap
+      },
+      'arbitrum-goerli': {
+        usdc: arbitrumGoerliRelationConfigMap
+      }
     },
   },
 
@@ -257,6 +303,18 @@ const config: HardhatUserConfig = {
         network: 'polygon',
         deployment: 'usdc',
         auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'arbitrum',
+        network: 'arbitrum',
+        deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'arbitrum-goerli',
+        network: 'arbitrum-goerli',
+        deployment: 'usdc',
+        auxiliaryBase: 'goerli'
       }
     ],
   },

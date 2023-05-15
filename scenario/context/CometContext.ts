@@ -43,6 +43,7 @@ export type MigrationData = {
   migration: Migration<any>;
   lastProposal?: number;
   preMigrationBlockNumber?: number;
+  skipVerify?: boolean;
   verified?: boolean;
 }
 
@@ -72,7 +73,7 @@ export class CometContext {
   }
 
   async getCompWhales(): Promise<string[]> {
-    const useMainnetComp = ['mainnet', 'polygon'].includes(this.world.base.network);
+    const useMainnetComp = ['mainnet', 'polygon', 'arbitrum'].includes(this.world.base.network);
     return COMP_WHALES[useMainnetComp ? 'mainnet' : 'testnet'];
   }
 

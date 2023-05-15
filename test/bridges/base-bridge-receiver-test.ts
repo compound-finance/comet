@@ -13,7 +13,7 @@ enum ProposalState {
   Executed = 2
 }
 
-async function makeTimelock({ admin }: { admin: string }) {
+export async function makeTimelock({ admin }: { admin: string }) {
   const TimelockFactory = (await ethers.getContractFactory('Timelock')) as Timelock__factory;
   const timelock = await TimelockFactory.deploy(
     admin,              // admin
@@ -51,7 +51,7 @@ async function makeBridgeReceiver({ initialize } = { initialize: true }) {
   };
 }
 
-function encodeBridgeReceiverCalldata({ targets, values, signatures, calldatas }) {
+export function encodeBridgeReceiverCalldata({ targets, values, signatures, calldatas }) {
   return utils.defaultAbiCoder.encode(BRIDGE_RECEIVER_CALLDATA_ABI, [targets, values, signatures, calldatas]);
 }
 

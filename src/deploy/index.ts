@@ -94,6 +94,16 @@ export const WHALES = {
     '0x2093b4281990a568c9d588b8bce3bfd7a1557ebd', // WETH whale
     '0xd814b26554204245a30f8a42c289af582421bf04', // WBTC whale
     '0x167384319b41f7094e62f7506409eb38079abff8'  // WMATIC whale
+  ],
+  'arbitrum': [
+    '0xf89d7b9c864f589bbf53a82105107622b35eaa40', // USDC whale
+    '0x7b7b957c284c2c227c980d6e2f804311947b84d0', // WBTC whale
+    '0x88730d254A2f7e6AC8388c3198aFd694bA9f7fae'  // COMP whale
+  ],
+  'arbitrum-goerli': [
+    '0x4984cbfa5b199e5920995883d345bbe14b005db7', // USDC whale
+    '0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46', // LINK whale
+    '0x8DA65F8E3Aa22A498211fc4204C498ae9050DAE4', // COMP whale
   ]
 };
 

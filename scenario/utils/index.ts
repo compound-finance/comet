@@ -58,11 +58,12 @@ export function expectRevertCustom(tx: Promise<ContractReceipt | ContractTransac
       const patterns = [
         new RegExp(`custom error '${custom.replace(/[()]/g, '\\$&')}'`),
         new RegExp(`unrecognized custom error with selector ${selector}`),
+        new RegExp(`reverted with an unrecognized custom error \\(return data: 0x${selector}\\)`),
       ];
       for (const pattern of patterns)
         if (pattern.test(e.message))
           return;
-      throw new Error(`Expected revert message in one of ${patterns}, but reverted with: ${e.message}`);
+      throw new Error(`Expected revert message in one of [${patterns}], but reverted with: ${e.message}`);
     });
 }
 
@@ -428,6 +429,31 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
 
   // Create the chain-specific wrapper around the L2 proposal data
   switch (bridgeNetwork) {
+    case 'arbitrum':
+    case 'arbitrum-goerli': {
+      const inbox = await govDeploymentManager.getContractOrThrow('arbitrumInbox');
+      const refundAddress = constants.AddressZero;
+      const createRetryableTicketCalldata = utils.defaultAbiCoder.encode(
+        [
+          'address', 'uint256', 'uint256', 'address', 'address', 'uint256', 'uint256', 'bytes'
+        ],
+        [
+          bridgeReceiver.address, // address to,
+          0,                      // uint256 l2CallValue,
+          0,                      // uint256 maxSubmissionCost,
+          refundAddress,          // address excessFeeRefundAddress,
+          refundAddress,          // address callValueRefundAddress,
+          0,                      // uint256 gasLimit,
+          0,                      // uint256 maxFeePerGas,
+          l2ProposalData,         // bytes calldata data
+        ]
+      );
+      targets.push(inbox.address);
+      values.push(0);
+      signatures.push('createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)');
+      calldata.push(createRetryableTicketCalldata);
+      break;
+    }
     case 'mumbai':
     case 'polygon': {
       const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(

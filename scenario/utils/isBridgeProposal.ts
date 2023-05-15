@@ -8,6 +8,14 @@ export async function isBridgeProposal(
 ) {
   const bridgeNetwork = bridgeDeploymentManager.network;
   switch (bridgeNetwork) {
+    case 'arbitrum':
+    case 'arbitrum-goerli': {
+      const governor = await governanceDeploymentManager.getContractOrThrow('governor');
+      const inbox = await governanceDeploymentManager.getContractOrThrow('arbitrumInbox');
+      const l1GatewayRouter = await governanceDeploymentManager.getContractOrThrow('arbitrumL1GatewayRouter');
+      const { targets } = await governor.getActions(openProposal.id);
+      return targets.includes(inbox.address) || targets.includes(l1GatewayRouter.address);
+    }
     case 'mumbai':
     case 'polygon': {
       const governor = await governanceDeploymentManager.getContractOrThrow('governor');
