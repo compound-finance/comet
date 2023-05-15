@@ -738,7 +738,7 @@ contract Comet is CometMainInterface {
     /**
      * @dev Write updated principal to store and tracking participation
      */
-    function updateBasePrincipal(address account, UserBasic memory basic, int104 principalNew) internal {
+    function updateBasePrincipal(address account, UserBasic memory basic, int104 principalNew) internal virtual {
         int104 principal = basic.principal;
         basic.principal = principalNew;
 
