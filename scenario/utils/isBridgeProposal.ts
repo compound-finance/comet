@@ -24,12 +24,12 @@ export async function isBridgeProposal(
       return targets.map((x: string) => x.toLowerCase()).includes(fxRoot.address.toLowerCase());
     }
     case 'optimism':
-    case 'optimism-goerli': {
+    case 'base-goerli': {
       const governor = await governanceDeploymentManager.getContractOrThrow('governor');
-      const optimismL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('optimismL1CrossDomainMessenger');
-      const optimismL1StandardBridge = await governanceDeploymentManager.getContractOrThrow('optimismL1StandardBridge');
+      const baseL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('baseL1CrossDomainMessenger');
+      const baseL1StandardBridge = await governanceDeploymentManager.getContractOrThrow('baseL1StandardBridge');
       const { targets } = await governor.getActions(openProposal.id);
-      const bridgeContracts = [optimismL1CrossDomainMessenger.address, optimismL1StandardBridge.address];
+      const bridgeContracts = [baseL1CrossDomainMessenger.address, baseL1StandardBridge.address];
       return targets.some(t => bridgeContracts.includes(t));
     }
     default: {
