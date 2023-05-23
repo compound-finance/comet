@@ -1,7 +1,7 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import relayPolygonMessage from './relayPolygonMessage';
 import relayArbitrumMessage from './relayArbitrumMessage';
-import relayOptimismMessage from './relayOptimismMessage';
+import relayBaseMessage from './relayBaseMessage';
 
 export default async function relayMessage(
   governanceDeploymentManager: DeploymentManager,
@@ -12,7 +12,7 @@ export default async function relayMessage(
   switch (bridgeNetwork) {
     case 'optimism':
     case 'base-goerli':
-      await relayOptimismMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);
+      await relayBaseMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);
       break;
     case 'mumbai':
     case 'polygon':
