@@ -5,42 +5,42 @@ import { ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 
 /*
-The Optimism relayer applies an offset to the message sender.
+The Base relayer applies an offset to the message sender.
 
 applyL1ToL2Alias mimics the AddressAliasHelper.applyL1ToL2Alias fn that converts
 an L1 address to its offset, L2 equivalent.
 
-https://optimistic.etherscan.io/address/0x4200000000000000000000000000000000000007#code
+https://goerli.basescan.org/address/0x4200000000000000000000000000000000000007#code
 */
 function applyL1ToL2Alias(address: string) {
   const offset = BigInt('0x1111000000000000000000000000000000001111');
   return `0x${(BigInt(address) + offset).toString(16)}`;
 }
 
-export default async function relayOptimismMessage(
+export default async function relayBaseMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
   startingBlockNumber: number
 ) {
-  const optimismL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('baseL1CrossDomainMessenger');
+  const baseL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('baseL1CrossDomainMessenger');
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
   const l2CrossDomainMessenger = await bridgeDeploymentManager.getContractOrThrow('l2CrossDomainMessenger');
   const l2StandardBridge = await bridgeDeploymentManager.getContractOrThrow('l2StandardBridge');
 
   // Grab all events on the L1CrossDomainMessenger contract since the `startingBlockNumber`
-  const filter = optimismL1CrossDomainMessenger.filters.SentMessage();
+  const filter = baseL1CrossDomainMessenger.filters.SentMessage();
   const sentMessageEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
-    address: optimismL1CrossDomainMessenger.address,
+    address: baseL1CrossDomainMessenger.address,
     topics: filter.topics!
   });
 
   for (let sentMessageEvent of sentMessageEvents) {
-    const { args: { target, sender, message, messageNonce, gasLimit } } = optimismL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
+    const { args: { target, sender, message, messageNonce, gasLimit } } = baseL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
     const aliasedSigner = await impersonateAddress(
       bridgeDeploymentManager,
-      applyL1ToL2Alias(optimismL1CrossDomainMessenger.address)
+      applyL1ToL2Alias(baseL1CrossDomainMessenger.address)
     );
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);

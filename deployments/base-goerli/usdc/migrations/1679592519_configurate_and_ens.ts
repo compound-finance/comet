@@ -1,5 +1,5 @@
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
-import {diffState, getCometConfig} from '../../../../plugins/deployment_manager/DiffState';
+import {diffState, getCometConfig } from '../../../../plugins/deployment_manager/DiffState';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
 import { expect } from 'chai';
@@ -77,7 +77,6 @@ export default migration('1679592519_configurate_and_ens', {
       ]
     );
 
-    // const USDCAmountToBridge = exp(10, 6);
     const COMPAmountToBridge = exp(10_000, 18);
 
     // Note: We aren't bridging USDC over to Base Goerli because they don't use a bridged version of USDC there,
@@ -133,7 +132,6 @@ export default migration('1679592519_configurate_and_ens', {
       comet,
       rewards,
       COMP,
-      USDC
     } = await deploymentManager.getContracts();
 
     // 1.
