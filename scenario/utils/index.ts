@@ -455,13 +455,13 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       break;
     }
     case 'optimism':
-    case 'optimism-goerli': {
+    case 'base-goerli': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes', 'uint32'],
         [bridgeReceiver.address, l2ProposalData, 1_000_000] // XXX find a reliable way to estimate the gasLimit
       );
       const optimismL1CrossDomainMessenger = await govDeploymentManager.getContractOrThrow(
-        'optimismL1CrossDomainMessenger'
+        'baseL1CrossDomainMessenger'
       );
 
       targets.push(optimismL1CrossDomainMessenger.address);
