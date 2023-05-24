@@ -216,7 +216,6 @@ const config: HardhatUserConfig = {
       'arbitrum-goerli': ARBISCAN_KEY,
       // Optimism
       optimisticEthereum: OPTIMISM_ETHERSCAN_KEY,
-      optimisticKovan: OPTIMISM_ETHERSCAN_KEY,
       // Base
       'base-goerli': ETHERSCAN_KEY,
     },
