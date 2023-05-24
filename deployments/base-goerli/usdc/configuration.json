@@ -32,7 +32,16 @@
       "borrowCF": 0.775,
       "liquidateCF": 0.825,
       "liquidationFactor": 0.95,
-      "supplyCap": "100e18"
+      "supplyCap": "0e18"
+    },
+    "cbETH": {
+      "address": "0x7c6b91D9Be155A6Db01f749217d76fF02A7227F2",
+      "priceFeed": "0xcD2A119bD1F7DF95d706DE6F2057fDD45A0503E2",
+      "decimals": "18",
+      "borrowCF": 0.75,
+      "liquidateCF": 0.8,
+      "liquidationFactor": 0.93,
+      "supplyCap": "0e18"
     }
   }
 }
