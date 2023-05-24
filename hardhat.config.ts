@@ -26,7 +26,6 @@ import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
 import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 import arbitrumRelationConfigMap from './deployments/arbitrum/usdc/relations';
 import arbitrumGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
-import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
@@ -41,7 +40,6 @@ const {
   SNOWTRACE_KEY,
   POLYGONSCAN_KEY,
   ARBISCAN_KEY,
-  OPTIMISM_ETHERSCAN_KEY,
   INFURA_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
@@ -70,8 +68,7 @@ export function requireEnv(varName, msg?: string): string {
   'SNOWTRACE_KEY',
   'INFURA_KEY',
   'POLYGONSCAN_KEY',
-  'ARBISCAN_KEY',
-  'OPTIMISM_ETHERSCAN_KEY'
+  'ARBISCAN_KEY'
 ].map(v => requireEnv(v));
 
 // Networks
@@ -88,11 +85,6 @@ const networkConfigs: NetworkConfig[] = [
   { network: 'ropsten', chainId: 3 },
   { network: 'rinkeby', chainId: 4 },
   { network: 'goerli', chainId: 5 },
-  {
-    network: 'optimism',
-    chainId: 10,
-    url: `https://optimism-mainnet.infura.io/v3/${INFURA_KEY}`
-  },
   { network: 'kovan', chainId: 42 },
   {
     network: 'polygon',
@@ -214,9 +206,6 @@ const config: HardhatUserConfig = {
       arbitrumTestnet: ARBISCAN_KEY,
       arbitrum: ARBISCAN_KEY,
       'arbitrum-goerli': ARBISCAN_KEY,
-      // Optimism
-      optimisticEthereum: OPTIMISM_ETHERSCAN_KEY,
-      optimisticKovan: OPTIMISM_ETHERSCAN_KEY,
       // Base
       'base-goerli': ETHERSCAN_KEY,
     },
@@ -278,9 +267,6 @@ const config: HardhatUserConfig = {
       },
       'arbitrum-goerli': {
         usdc: arbitrumGoerliRelationConfigMap
-      },
-      optimism: {
-        usdc: optimismRelationConfigMap
       },
       'base-goerli': {
         usdc: baseGoerliRelationConfigMap
@@ -349,12 +335,6 @@ const config: HardhatUserConfig = {
         network: 'arbitrum-goerli',
         deployment: 'usdc',
         auxiliaryBase: 'goerli'
-      },
-      {
-        name: 'optimism',
-        network: 'optimism',
-        deployment: 'usdc',
-        auxiliaryBase: 'mainnet'
       },
       {
         name: 'base-goerli',

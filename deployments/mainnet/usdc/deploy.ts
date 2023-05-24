@@ -12,12 +12,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   // Mainnet -> Polygon bridge contract
   const fxRoot = await deploymentManager.existing('fxRoot', '0xfe5e5D361b2ad62c541bAb87C45a0B9B018389a2');
 
-  // Mainnet -> Optimism bridge contract
-  const optimismL1CrossDomainMessenger = await deploymentManager.existing(
-    'optimismL1CrossDomainMessenger',
-    '0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1'
-  );
-
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
   const { comet } = deployed;
@@ -29,10 +23,5 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     [await comet.governor(), WETH.address]
   );
 
-  return {
-    ...deployed,
-    bulker,
-    fxRoot,
-    optimismL1CrossDomainMessenger
-  };
+  return { ...deployed, bulker, fxRoot };
 }

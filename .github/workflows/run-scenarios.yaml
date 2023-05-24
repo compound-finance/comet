@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bases: [ development, mainnet, mainnet-weth, goerli, goerli-weth, fuji, mumbai, polygon, arbitrum, arbitrum-goerli, optimism, base-goerli ]
+        bases: [ development, mainnet, mainnet-weth, goerli, goerli-weth, fuji, mumbai, polygon, arbitrum, arbitrum-goerli, base-goerli ]
     name: Run scenarios
     env:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
@@ -15,7 +15,6 @@ jobs:
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
       ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
-      OPTIMISM_ETHERSCAN_KEY: ${{ secrets.OPTIMISM_ETHERSCAN_KEY }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

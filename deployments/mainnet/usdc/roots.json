@@ -6,6 +6,5 @@
     "bulker": "0xa397a8C2086C554B531c02E29f3291c9704B00c7",
     "fxRoot": "0xfe5e5D361b2ad62c541bAb87C45a0B9B018389a2",
     "arbitrumInbox": "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f",
-    "arbitrumL1GatewayRouter": "0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef",
-    "optimismL1CrossDomainMessenger": "0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1"
+    "arbitrumL1GatewayRouter": "0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef"
 }

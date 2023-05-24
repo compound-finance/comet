@@ -10,7 +10,6 @@ export default async function relayMessage(
 ) {
   const bridgeNetwork = bridgeDeploymentManager.network;
   switch (bridgeNetwork) {
-    case 'optimism':
     case 'base-goerli':
       await relayBaseMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);
       break;

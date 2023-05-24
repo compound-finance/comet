@@ -14,7 +14,6 @@ on:
           - polygon
           - arbitrum
           - arbitrum-goerli
-          - optimism
           - base-goerli
       deployment:
         description: Deployment Name (e.g. "usdc")
@@ -37,12 +36,11 @@ jobs:
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
       ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
-      OPTIMISM_ETHERSCAN_KEY: ${{ secrets.OPTIMISM_ETHERSCAN_KEY }}
     steps:
       - name: Seacrest
         uses: hayesgm/seacrest@v1
         with:
-          ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"kovan\":\"https://kovan.infura.io/v3/$INFURA_KEY\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum-goerli\":\"https://arbitrum-goerli.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://optimism-mainnet.infura.io/v3/$INFURA_KEY\",\"base-goerli\":\"https://base-goerli.infura.io/v3/$INFURA_KEY\"}')[inputs.network] }}"
+          ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"kovan\":\"https://kovan.infura.io/v3/$INFURA_KEY\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum-goerli\":\"https://arbitrum-goerli.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base-goerli\":\"https://base-goerli.infura.io/v3/$INFURA_KEY\"}')[inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
 

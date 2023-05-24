@@ -14,7 +14,6 @@ jobs:
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
       ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
-      OPTIMISM_ETHERSCAN_KEY: ${{ secrets.OPTIMISM_ETHERSCAN_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
