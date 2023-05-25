@@ -49,7 +49,7 @@ async function main() {
   await dm.spider();
 
   const contracts = await dm.contracts();
-  const comet = contracts.get('comet') as CometInterface;
+  let comet = contracts.get('comet') as CometInterface;
 
   // Flashbots provider requires passing in a standard provider
   let flashbotsProvider: FlashbotsBundleProvider;
@@ -85,6 +85,9 @@ async function main() {
   }
 
   const signerWithFlashbots = { signer, flashbotsProvider };
+
+  // connect Comet instance to the signer, so direct calls to Comet functions have a signer
+  comet = comet.connect(signer);
 
   if (!comet) {
     throw new Error(`no deployed Comet found for ${network}/${deployment}`);

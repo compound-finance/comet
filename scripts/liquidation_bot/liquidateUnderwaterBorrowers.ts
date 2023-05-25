@@ -299,13 +299,15 @@ async function attemptLiquidationViaOnChainLiquidator(
     const txn = await liquidator.populateTransaction.absorbAndArbitrage(
       ...args,
       {
-        gasLimit: Math.ceil(1.1 * (await liquidator.estimateGas.absorbAndArbitrage(...args)).toNumber()),
-        gasPrice: Math.ceil(1.1 * (await hre.ethers.provider.getGasPrice()).toNumber()),
+        gasLimit: Math.ceil(1.3 * (await liquidator.estimateGas.absorbAndArbitrage(...args)).toNumber()),
+        gasPrice: Math.ceil(1.3 * (await hre.ethers.provider.getGasPrice()).toNumber()),
       }
     );
 
     // ensure that .populateTransaction has not added a "from" key
     delete txn.from;
+
+    txn.chainId = hre.ethers.provider.network.chainId;
 
     const success = await sendTxn(txn, signerWithFlashbots);
 
