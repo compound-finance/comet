@@ -74,7 +74,7 @@ export const flashLoanPools = {
   },
   'polygon': {
     'usdc': {
-      tokenAddress: '0xc2132d05d31c914a87c6611c10748aeb04b58e8f', // USDT
+      tokenAddress: '0xb0b195aefa3650a6908f15cdac7d92f8a5791b0b', // BOB
       poolFee: 100
     }
   }
@@ -299,13 +299,15 @@ async function attemptLiquidationViaOnChainLiquidator(
     const txn = await liquidator.populateTransaction.absorbAndArbitrage(
       ...args,
       {
-        gasLimit: Math.ceil(1.1 * (await liquidator.estimateGas.absorbAndArbitrage(...args)).toNumber()),
-        gasPrice: Math.ceil(1.1 * (await hre.ethers.provider.getGasPrice()).toNumber()),
+        gasLimit: Math.ceil(1.3 * (await liquidator.estimateGas.absorbAndArbitrage(...args)).toNumber()),
+        gasPrice: Math.ceil(1.3 * (await hre.ethers.provider.getGasPrice()).toNumber()),
       }
     );
 
     // ensure that .populateTransaction has not added a "from" key
     delete txn.from;
+
+    txn.chainId = hre.network.config.chainId;
 
     const success = await sendTxn(txn, signerWithFlashbots);
 
