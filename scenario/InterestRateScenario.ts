@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import { annualize, defactor, exp } from '../test/helpers';
 import { BigNumber } from 'ethers';
 import { FuzzType } from './constraints/Fuzzing';
+import { matchesDeployment } from './utils';
 
 function calculateInterestRate(
   utilization: BigNumber,
@@ -91,6 +92,9 @@ scenario(
       borrowPerYearInterestRateSlopeHigh: exp(0.3, 18),
     },
     utilization: 0.5,
+    // XXX this scenario fails for Goerli cUSDCv3 because someone supplied 100bn USDC and it's no longer
+    // possible to increase the utilization up to the target amount
+    filter: async (ctx) => !matchesDeployment(ctx, [{network: 'goerli', deployment: 'usdc'}])
   },
   async ({ comet }) => {
     const utilization = await comet.getUtilization();
@@ -114,6 +118,9 @@ scenario(
       borrowPerYearInterestRateSlopeHigh: exp(0.3, 18),
     },
     utilization: 0.85,
+    // XXX this scenario fails for Goerli cUSDCv3 because someone supplied 100bn USDC and it's no longer
+    // possible to increase the utilization up to the target amount
+    filter: async (ctx) => !matchesDeployment(ctx, [{network: 'goerli', deployment: 'usdc'}])
   },
   async ({ comet }) => {
     const utilization = await comet.getUtilization();
