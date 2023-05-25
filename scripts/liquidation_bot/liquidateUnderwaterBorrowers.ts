@@ -74,7 +74,7 @@ export const flashLoanPools = {
   },
   'polygon': {
     'usdc': {
-      tokenAddress: '0xc2132d05d31c914a87c6611c10748aeb04b58e8f', // USDT
+      tokenAddress: '0xb0b195aefa3650a6908f15cdac7d92f8a5791b0b', // BOB
       poolFee: 100
     }
   }
