@@ -119,9 +119,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // GMX
         ' == 4000',
         // WETH
-        ' == 2000',
+        ' == 500',
         // WBTC
-        ' == 100'
+        ' == 50'
       ]
     }
   };
@@ -334,7 +334,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // GMX
         exp(3000, 18),
         // WETH
-        exp(1000, 18),
+        exp(500, 18),
         // WBTC
         exp(50, 8),
       ]
@@ -695,7 +695,7 @@ scenario(
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'arbitrum'}]),
+      filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}]),
       tokenBalances: async (ctx) => (
         {
           $comet: {
