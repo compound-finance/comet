@@ -307,7 +307,7 @@ async function attemptLiquidationViaOnChainLiquidator(
     // ensure that .populateTransaction has not added a "from" key
     delete txn.from;
 
-    txn.chainId = hre.ethers.provider.network.chainId;
+    txn.chainId = hre.network.config.chainId;
 
     const success = await sendTxn(txn, signerWithFlashbots);
 
