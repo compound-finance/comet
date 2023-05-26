@@ -675,18 +675,12 @@ scenario(
       usdc: 2250000,
       weth: 20
     },
-    arbitrum: {
-      usdc: 10000000
-    }
   };
   const assetAmounts = {
     mainnet: {
       usdc: ' == 5000', // COMP
       weth: ' == 10000', // CB_ETH
     },
-    arbitrum: {
-      usdc: ' == 2000000', // ARB
-    }
   };
 
   scenario(
