@@ -114,6 +114,11 @@ const networkConfigs: NetworkConfig[] = [
     network: 'arbitrum-goerli',
     chainId: 421613,
     url: `https://arbitrum-goerli.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
+    network: 'linea-goerli',
+    chainId: 59140,
+    url: `https://linea-goerli.infura.io/v3/${INFURA_KEY}`,
   }
 ];
 
@@ -199,7 +204,8 @@ const config: HardhatUserConfig = {
       arbitrumOne: ARBISCAN_KEY,
       arbitrumTestnet: ARBISCAN_KEY,
       arbitrum: ARBISCAN_KEY,
-      'arbitrum-goerli': ARBISCAN_KEY
+      'arbitrum-goerli': ARBISCAN_KEY,
+      'linea-goerli': ETHERSCAN_KEY
     },
     customChains: [
       {
