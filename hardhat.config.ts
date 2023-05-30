@@ -225,8 +225,16 @@ const config: HardhatUserConfig = {
           apiURL: 'https://api-goerli.arbiscan.io/api',
           browserURL: 'https://goerli.arbiscan.io/'
         }
+      },
+      {
+        network: 'linea-goerli',
+        chainId: 59140,
+        urls: {
+          apiURL: 'https://api-goerli.lineascan.build/api',
+          browserURL: 'https://wwstage-goerli.lineascan.build'
+        }
       }
-    ],
+    ]
   },
 
   typechain: {
@@ -256,8 +264,11 @@ const config: HardhatUserConfig = {
       },
       'arbitrum-goerli': {
         usdc: arbitrumGoerliRelationConfigMap
+      },
+      'linea-goerli': {
+        usdc: lineaGoerliRelationConfigMap
       }
-    },
+    }
   },
 
   scenario: {
@@ -319,6 +330,12 @@ const config: HardhatUserConfig = {
       {
         name: 'arbitrum-goerli',
         network: 'arbitrum-goerli',
+        deployment: 'usdc',
+        auxiliaryBase: 'goerli'
+      },
+      {
+        name: 'linea-goerli',
+        network: 'linea-goerli',
         deployment: 'usdc',
         auxiliaryBase: 'goerli'
       }
