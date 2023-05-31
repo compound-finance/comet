@@ -300,7 +300,7 @@ async function attemptLiquidation(
     // absorb addresses...
     if (targetAddresses.length > 0) {
       const signerAddress = await signerWithFlashbots.signer.getAddress();
-      await comet.absorb(signerAddress, targetAddresses);
+      await comet.connect(signerWithFlashbots.signer).absorb(signerAddress, targetAddresses);
     }
 
     // 3) buy smaller and smaller quantities of assets individually

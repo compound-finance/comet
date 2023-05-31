@@ -86,9 +86,6 @@ async function main() {
 
   const signerWithFlashbots = { signer, flashbotsProvider };
 
-  // connect Comet instance to the signer, so direct calls to Comet functions have a signer
-  comet = comet.connect(signer);
-
   if (!comet) {
     throw new Error(`no deployed Comet found for ${network}/${deployment}`);
   }
