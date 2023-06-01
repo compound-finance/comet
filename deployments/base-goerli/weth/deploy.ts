@@ -15,7 +15,7 @@ async function deployContracts(
   // Deploy constant price feed for WETH
   const wethConstantPriceFeed = await deploymentManager.deploy(
     'WETH:priceFeed',
-    'ConstantPriceFeed.sol',
+    'pricefeeds/ConstantPriceFeed.sol',
     [
       8,                                             // decimals
       exp(1, 8)                                      // constantPrice
@@ -34,7 +34,7 @@ async function deployContracts(
   // );
   const cbETHScalingPriceFeed = await deploymentManager.deploy(
     'cbETH:priceFeed',
-    'ConstantPriceFeed.sol',
+    'pricefeeds/ConstantPriceFeed.sol',
     [
       8,                                             // decimals
       exp(1, 8)                                      // constantPrice

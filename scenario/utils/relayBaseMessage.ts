@@ -44,7 +44,6 @@ export default async function relayBaseMessage(
     );
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
-    // XXX need to relay with VALUE
     const relayMessageTxn = await (
       await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
         messageNonce,
