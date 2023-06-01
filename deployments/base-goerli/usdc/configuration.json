@@ -4,8 +4,8 @@
   "baseToken": "USDC",
   "baseTokenAddress": "0x31D3A7711a74b4Ec970F50c3eaf1ee47ba803A95",
   "baseTokenPriceFeed": "0xb85765935B4d9Ab6f841c9a00690Da5F34368bc0",
-  "borrowMin": "10e6",
-  "pauseGuardian": "0xe7661C55fe281f986FA5312D57d19ADb6064462F",
+  "borrowMin": "1e6",
+  "pauseGuardian": "0xBA5e81fD6811E2699b478d1Bcde62a585bC9b6f7",
   "storeFrontPriceFactor": 0.5,
   "targetReserves": "1000000e6",
   "rates": {
@@ -20,8 +20,8 @@
   },
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": "0e15",
-    "baseBorrowSpeed": "0e15",
+    "baseSupplySpeed": "0.000402083333333e15",
+    "baseBorrowSpeed": "0.000402083333333e15",
     "baseMinForRewards": "10000e6"
   },
   "assets": {
@@ -32,7 +32,7 @@
       "borrowCF": 0.75,
       "liquidateCF": 0.8,
       "liquidationFactor": 0.93,
-      "supplyCap": "0e18"
+      "supplyCap": "800e18"
     },
     "WETH": {
       "address": "0x4200000000000000000000000000000000000006",
@@ -41,7 +41,7 @@
       "borrowCF": 0.775,
       "liquidateCF": 0.825,
       "liquidationFactor": 0.95,
-      "supplyCap": "0e18"
+      "supplyCap": "1000e18"
     }
   }
 }
