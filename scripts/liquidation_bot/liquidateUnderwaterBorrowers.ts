@@ -9,6 +9,7 @@ import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import { BigNumberish, Signer } from 'ethers';
 import googleCloudLog, { LogSeverity } from './googleCloudLog';
 import {sendTxn} from './sendTransaction';
+import { Sleuth } from '@compound-finance/sleuth';
 
 export interface SignerWithFlashbots {
   signer: Signer;
@@ -421,19 +422,25 @@ export async function hasPurchaseableCollateral(comet: CometInterface, assets: A
 }
 
 export async function liquidateUnderwaterBorrowers(
+  sleuth: Sleuth,
+  liquidatableQuery: any, // TODO: make sure sleuth exports query type
   comet: CometInterface,
   liquidator: OnChainLiquidator,
   signerWithFlashbots: SignerWithFlashbots,
   network: string,
   deployment: string
-): Promise<boolean> {
+): Promise<[number, boolean]> {
+  // TODO: Only refresh this every so often, like every 100 blocks
   const uniqueAddresses = await getUniqueAddresses(comet);
 
-  googleCloudLog(LogSeverity.INFO, `${uniqueAddresses.size} unique addresses found`);
+  googleCloudLog(LogSeverity.INFO, `${uniqueAddresses.size} unique addresses found for ${comet.address}`);
+
+  let addressesToCheck = [...uniqueAddresses]; // TODO: Shuffle and select 100?
+  let [blockNumber, checks] = await sleuth.fetch<[BigNumberish, boolean[]], [string, string[]]>(liquidatableQuery, [comet.address, addressesToCheck]);
 
   let liquidationAttempted = false;
-  for (const address of uniqueAddresses) {
-    const isLiquidatable = await comet.isLiquidatable(address);
+  for (const [i, isLiquidatable] of Object.entries(checks)) {
+    let address = addressesToCheck[i];
 
     googleCloudLog(LogSeverity.INFO, `${address} isLiquidatable=${isLiquidatable}`);
 
@@ -449,7 +456,7 @@ export async function liquidateUnderwaterBorrowers(
       liquidationAttempted = true;
     }
   }
-  return liquidationAttempted;
+  return [Number(blockNumber), liquidationAttempted];
 }
 
 export async function arbitragePurchaseableCollateral(

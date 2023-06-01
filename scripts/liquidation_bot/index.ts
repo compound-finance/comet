@@ -13,6 +13,8 @@ import {
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import { Signer, Wallet } from 'ethers';
 import googleCloudLog, { LogSeverity } from './googleCloudLog';
+import { Sleuth } from '@compound-finance/sleuth';
+import * as liquidatableQuerySol from '../../artifacts/contracts/LiquidatableQuery.sol/LiquidatableQuery.json';
 
 const loopDelay = 5000;
 const loopsUntilUpdateAssets = 1000;
@@ -54,6 +56,7 @@ async function main() {
   // Flashbots provider requires passing in a standard provider
   let flashbotsProvider: FlashbotsBundleProvider;
   let signer: Signer;
+
   if (useFlashbots && useFlashbots.toLowerCase() === 'true') {
     // XXX use a designated auth signer
     // `authSigner` is an Ethereum private key that does NOT store funds and is NOT your bot's primary key.
@@ -93,6 +96,14 @@ async function main() {
     throw new Error(`no deployed Comet found for ${network}/${deployment}`);
   }
 
+  let sleuth = new Sleuth(hre.ethers.provider);
+  // Hardhat's output seems to not match Forge's, but it's a small tweak
+  let liquidatableQuerySolFixed = {
+    ...liquidatableQuerySol,
+    evm: { bytecode: { object: liquidatableQuerySol.bytecode } }
+  };
+  let liquidatableQuery = await Sleuth.querySol<[string, string[]], [string[]]>(liquidatableQuerySolFixed);
+
   const liquidator = await hre.ethers.getContractAt(
     'OnChainLiquidator',
     liquidatorAddress,
@@ -100,6 +111,7 @@ async function main() {
   ) as OnChainLiquidator;
 
   let lastBlockNumber: number;
+  let lastCheckedBlockNumber: number;
   let loops = 0;
   while (true) {
     if (assets.length == 0 || loops >= loopsUntilUpdateAssets) {
@@ -108,19 +120,23 @@ async function main() {
       loops = 0;
     }
 
+    // TODO: Remove this line entirely
     const currentBlockNumber = await hre.ethers.provider.getBlockNumber();
 
-    googleCloudLog(LogSeverity.INFO, `currentBlockNumber: ${currentBlockNumber}`);
+    googleCloudLog(LogSeverity.INFO, `currentBlockNumber: ${currentBlockNumber} [checked=${lastCheckedBlockNumber}]`);
 
     if (currentBlockNumber !== lastBlockNumber) {
       lastBlockNumber = currentBlockNumber;
-      const liquidationAttempted = await liquidateUnderwaterBorrowers(
+      const [checkedBlockNumber, liquidationAttempted] = await liquidateUnderwaterBorrowers(
+        sleuth,
+        liquidatableQuery,
         comet,
         liquidator,
         signerWithFlashbots,
         network,
         deployment
       );
+      lastCheckedBlockNumber = checkedBlockNumber;
       if (!liquidationAttempted) {
         await arbitragePurchaseableCollateral(
           comet,
