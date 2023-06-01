@@ -1,5 +1,5 @@
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
-import {diffState, getCometConfig } from '../../../../plugins/deployment_manager/DiffState';
+import { diffState, getCometConfig } from '../../../../plugins/deployment_manager/DiffState';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
 import { expect } from 'chai';
@@ -62,7 +62,7 @@ export default migration('1679592519_configurate_and_ens', {
     const setRewardConfigCalldata = utils.defaultAbiCoder.encode(
       ['address', 'address'],
       [comet.address, baseCOMPAddress]
-    )
+    );
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
