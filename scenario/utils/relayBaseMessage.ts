@@ -1,7 +1,7 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 
 /*
@@ -44,6 +44,7 @@ export default async function relayBaseMessage(
     );
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
+    // XXX need to relay with VALUE
     const relayMessageTxn = await (
       await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
         messageNonce,
@@ -58,20 +59,41 @@ export default async function relayBaseMessage(
 
     // Try to decode the SentMessage data to determine what type of cross-chain activity this is. So far,
     // there are two types:
-    // 1. Bridging ERC20 token
+    // 1. Bridging ERC20 token or ETH
     // 2. Cross-chain message passing
     if (target === l2StandardBridge.address) {
       // Bridging ERC20 token
       const messageWithoutPrefix = message.slice(2); // strip out the 0x prefix
       const messageWithoutSigHash = '0x' + messageWithoutPrefix.slice(8);
-      const { l1Token, _l2Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
-        ['address l1Token', 'address l2Token', 'address from', 'address to', 'uint256 amount', 'bytes data'],
-        messageWithoutSigHash
-      );
+      try {
+        // 1a. Bridging ERC20 token
+        const { l1Token, _l2Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
+          ['address l1Token', 'address l2Token', 'address from', 'address to', 'uint256 amount', 'bytes data'],
+          messageWithoutSigHash
+        );
 
-      console.log(
-        `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged over ${amount} of ${l1Token} to user ${to}`
-      );
+        console.log(
+          `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged over ${amount} of ${l1Token} to user ${to}`
+        );
+      } catch (e) {
+        // 1a. Bridging ETH
+        const { _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
+          ['address from', 'address to', 'uint256 amount', 'bytes data'],
+          messageWithoutSigHash
+        );
+
+        const oldBalance = await bridgeDeploymentManager.hre.ethers.provider.getBalance(to);
+        const newBalance = oldBalance.add(BigNumber.from(amount));
+        // This is our best attempt to mimic the deposit transaction type (not supported in Hardhat) that Optimism uses to deposit ETH to an L2 address
+        await bridgeDeploymentManager.hre.ethers.provider.send('hardhat_setBalance', [
+          to,
+          ethers.utils.hexStripZeros(newBalance.toHexString()),
+        ]);
+
+        console.log(
+          `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged over ${amount} of ETH to user ${to}`
+        );
+      }
     } else if (target === bridgeReceiver.address) {
       // Cross-chain message passing
       const proposalCreatedEvent = relayMessageTxn.events.find(event => event.address === bridgeReceiver.address);

@@ -23,12 +23,21 @@ async function deployContracts(
   );
 
   // Deploy scaling price feed for cbETH
+  // XXX there is no cbETH / ETH pricefeed on testnet
+  // const cbETHScalingPriceFeed = await deploymentManager.deploy(
+  //   'cbETH:priceFeed',
+  //   'ScalingPriceFeed.sol',
+  //   [
+  //     '0xcD2A119bD1F7DF95d706DE6F2057fDD45A0503E2', // cbETH / ETH price feed
+  //     8                                             // decimals
+  //   ]
+  // );
   const cbETHScalingPriceFeed = await deploymentManager.deploy(
     'cbETH:priceFeed',
-    'ScalingPriceFeed.sol',
+    'ConstantPriceFeed.sol',
     [
-      '0xcD2A119bD1F7DF95d706DE6F2057fDD45A0503E2', // cbETH / ETH price feed
-      8                                             // decimals
+      8,                                             // decimals
+      exp(1, 8)                                      // constantPrice
     ]
   );
 
