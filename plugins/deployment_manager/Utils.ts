@@ -98,6 +98,20 @@ export function mergeABI(abi0: ABI, abi1: ABI): ABIEntry[] {
   return Object.values(entries);
 }
 
+export function mergeContracts<C extends Contract>(address: string, contracts: Contract[], hre: HRE): C {
+  return contracts.slice(1).reduce((merged, contract) => {
+    return new hre.ethers.Contract(
+      address,
+      mergeABI(merged.interface.format('json'), contract.interface.format('json')),
+      hre.ethers.provider
+    );
+  }, new hre.ethers.Contract(address, contracts[0].interface, hre.ethers.provider)) as C;
+}
+
+export function mergeIntoProxyContract<C extends Contract>(contracts: Contract[], hre: HRE): C {
+  return mergeContracts(contracts.slice(-1)[0].address, contracts, hre);
+}
+
 export function objectToMap<V>(obj: object | { [k: string]: V }): Map<string, V> {
   if (obj === undefined) {
     return new Map();

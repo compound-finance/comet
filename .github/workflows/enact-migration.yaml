@@ -14,6 +14,8 @@ on:
           - polygon
           - arbitrum
           - arbitrum-goerli
+          - optimism
+          - optimism-goerli
       deployment:
         description: Deployment Name (e.g. "usdc")
         required: true
@@ -40,13 +42,14 @@ jobs:
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
       ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
+      OPTIMISM_ETHERSCAN_KEY: ${{ secrets.OPTIMISM_ETHERSCAN_KEY }}
     steps:
       - name: Get governance network
         run: |
           case ${{ github.event.inputs.network }} in
-            polygon | arbitrum)
+            polygon | arbitrum | optimism)
                 echo "GOV_NETWORK=mainnet" >> $GITHUB_ENV ;;
-            mumbai | arbitrum-goerli)
+            mumbai | arbitrum-goerli | optimism-goerli)
                 echo "GOV_NETWORK=goerli" >> $GITHUB_ENV ;;
             *)
                 echo "No governance network for selected network" ;;
@@ -55,7 +58,7 @@ jobs:
       - name: Seacrest
         uses: hayesgm/seacrest@v1
         with:
-          ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"kovan\":\"https://kovan.infura.io/v3/$INFURA_KEY\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum-goerli\":\"https://arbitrum-goerli.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\"}')[inputs.network] }}"
+          ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"kovan\":\"https://kovan.infura.io/v3/$INFURA_KEY\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum-goerli\":\"https://arbitrum-goerli.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism\":\"https://optimism-mainnet.infura.io/v3/$INFURA_KEY\",\"optimism-goerli\":\"https://optimism-goerli.infura.io/v3/$INFURA_KEY\"}')[inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
 

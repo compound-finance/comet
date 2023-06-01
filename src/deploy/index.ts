@@ -104,6 +104,12 @@ export const WHALES = {
     '0x4984cbfa5b199e5920995883d345bbe14b005db7', // USDC whale
     '0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46', // LINK whale
     '0x8DA65F8E3Aa22A498211fc4204C498ae9050DAE4', // COMP whale
+  ],
+  optimism: [
+    '0xba12222222228d8ba445958a75a0704d566bf2c8', // WETH whale
+  ],
+  'optimism-goerli': [
+    '0xaFC7682751d3654f34958e3fb660971BF5918367', // USDC whale
   ]
 };
 
