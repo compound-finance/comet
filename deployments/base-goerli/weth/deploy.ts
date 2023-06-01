@@ -23,7 +23,7 @@ async function deployContracts(
   );
 
   // Deploy scaling price feed for cbETH
-  // XXX there is no cbETH / ETH pricefeed on testnet
+  // XXX There is no cbETH / ETH pricefeed on testnet. Remember to change this for mainnet.
   // const cbETHScalingPriceFeed = await deploymentManager.deploy(
   //   'cbETH:priceFeed',
   //   'ScalingPriceFeed.sol',
@@ -32,7 +32,7 @@ async function deployContracts(
   //     8                                             // decimals
   //   ]
   // );
-  const cbETHScalingPriceFeed = await deploymentManager.deploy(
+  const cbETHConstantPriceFeed = await deploymentManager.deploy(
     'cbETH:priceFeed',
     'pricefeeds/ConstantPriceFeed.sol',
     [

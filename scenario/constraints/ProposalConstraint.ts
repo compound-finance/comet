@@ -75,8 +75,7 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
             await executeOpenProposal(governanceDeploymentManager, proposal);
           }
           debug(`${label} Open proposal ${proposal.id} was executed`);
-        }
-        catch (err) {
+        } catch (err) {
           debug(`${label} Failed to execute proposal ${proposal.id}`, err.message);
           throw err;
         }
