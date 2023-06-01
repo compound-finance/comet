@@ -58,10 +58,10 @@ export function expectRevertCustom(tx: Promise<ContractReceipt | ContractTransac
       const patterns = [
         new RegExp(`custom error '${custom.replace(/[()]/g, '\\$&')}'`),
         new RegExp(`unrecognized custom error with selector ${selector}`),
-        new RegExp(`reverted with an unrecognized custom error \\(return data: 0x${selector}\\)`),
+        new RegExp(`unrecognized custom error \\(return data: 0x${selector}\\)`)
       ];
       for (const pattern of patterns)
-        if (pattern.test(e.message))
+        if (pattern.test(e.message) || pattern.test(e.reason))
           return;
       throw new Error(`Expected revert message in one of [${patterns}], but reverted with: ${e.message}`);
     });
@@ -452,6 +452,21 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       values.push(0);
       signatures.push('createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)');
       calldata.push(createRetryableTicketCalldata);
+      break;
+    }
+    case 'base-goerli': {
+      const sendMessageCalldata = utils.defaultAbiCoder.encode(
+        ['address', 'bytes', 'uint32'],
+        [bridgeReceiver.address, l2ProposalData, 1_000_000] // XXX find a reliable way to estimate the gasLimit
+      );
+      const baseL1CrossDomainMessenger = await govDeploymentManager.getContractOrThrow(
+        'baseL1CrossDomainMessenger'
+      );
+
+      targets.push(baseL1CrossDomainMessenger.address);
+      values.push(0);
+      signatures.push('sendMessage(address,bytes,uint32)');
+      calldata.push(sendMessageCalldata);
       break;
     }
     case 'mumbai':

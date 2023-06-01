@@ -26,6 +26,7 @@ import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
 import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 import arbitrumRelationConfigMap from './deployments/arbitrum/usdc/relations';
 import arbitrumGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
+import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -114,7 +115,12 @@ const networkConfigs: NetworkConfig[] = [
     network: 'arbitrum-goerli',
     chainId: 421613,
     url: `https://arbitrum-goerli.infura.io/v3/${INFURA_KEY}`,
-  }
+  },
+  {
+    network: 'base-goerli',
+    chainId: 84531,
+    url: `https://goerli.base.org/`,
+  },
 ];
 
 function getDefaultProviderURL(network: string) {
@@ -199,7 +205,9 @@ const config: HardhatUserConfig = {
       arbitrumOne: ARBISCAN_KEY,
       arbitrumTestnet: ARBISCAN_KEY,
       arbitrum: ARBISCAN_KEY,
-      'arbitrum-goerli': ARBISCAN_KEY
+      'arbitrum-goerli': ARBISCAN_KEY,
+      // Base
+      'base-goerli': ETHERSCAN_KEY,
     },
     customChains: [
       {
@@ -219,8 +227,17 @@ const config: HardhatUserConfig = {
           apiURL: 'https://api-goerli.arbiscan.io/api',
           browserURL: 'https://goerli.arbiscan.io/'
         }
+      },
+      {
+        // Hardhat's Etherscan plugin calls the network `baseGoerli`, so we need to add an entry for our own network name
+        network: 'base-goerli',
+        chainId: 84531,
+        urls: {
+          apiURL: 'https://api-goerli.basescan.org/api',
+          browserURL: 'https://api-goerli.basescan.org/'
+        }
       }
-    ],
+    ]
   },
 
   typechain: {
@@ -250,6 +267,9 @@ const config: HardhatUserConfig = {
       },
       'arbitrum-goerli': {
         usdc: arbitrumGoerliRelationConfigMap
+      },
+      'base-goerli': {
+        usdc: baseGoerliRelationConfigMap
       }
     },
   },
@@ -313,6 +333,12 @@ const config: HardhatUserConfig = {
       {
         name: 'arbitrum-goerli',
         network: 'arbitrum-goerli',
+        deployment: 'usdc',
+        auxiliaryBase: 'goerli'
+      },
+      {
+        name: 'base-goerli',
+        network: 'base-goerli',
         deployment: 'usdc',
         auxiliaryBase: 'goerli'
       }
