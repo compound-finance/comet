@@ -11,6 +11,8 @@ import googleCloudLog, { LogSeverity } from './googleCloudLog';
 import {sendTxn} from './sendTransaction';
 import { Sleuth } from '@compound-finance/sleuth';
 
+const addressChunkSize = 1000;
+
 export interface SignerWithFlashbots {
   signer: Signer;
   flashbotsProvider?: FlashbotsBundleProvider;
@@ -395,7 +397,7 @@ async function attemptLiquidationViaOnChainLiquidator(
   }
 }
 
-async function getUniqueAddresses(comet: CometInterface): Promise<Set<string>> {
+export async function getUniqueAddresses(comet: CometInterface): Promise<Set<string>> {
   const withdrawEvents = await comet.queryFilter(comet.filters.Withdraw());
   return new Set(withdrawEvents.map(event => event.args.src));
 }
@@ -421,7 +423,15 @@ export async function hasPurchaseableCollateral(comet: CometInterface, assets: A
   return false;
 }
 
+function chunkBy<T>(arr: T[], chunkSize: number): T[][] {
+  let chunks = Math.ceil(arr.length / chunkSize);
+  return [...new Array(chunks)].map((_, i) =>
+    arr.slice(i * chunkSize, ( i + 1 ) * chunkSize )
+  );
+}
+
 export async function liquidateUnderwaterBorrowers(
+  uniqueAddresses: Set<string>,
   sleuth: Sleuth,
   liquidatableQuery: any, // TODO: make sure sleuth exports query type
   comet: CometInterface,
@@ -430,31 +440,35 @@ export async function liquidateUnderwaterBorrowers(
   network: string,
   deployment: string
 ): Promise<[number, boolean]> {
-  // TODO: Only refresh this every so often, like every 100 blocks
-  const uniqueAddresses = await getUniqueAddresses(comet);
-
   googleCloudLog(LogSeverity.INFO, `${uniqueAddresses.size} unique addresses found for ${comet.address}`);
 
-  let addressesToCheck = [...uniqueAddresses]; // TODO: Shuffle and select 100?
-  let [blockNumber, checks] = await sleuth.fetch<[BigNumberish, boolean[]], [string, string[]]>(liquidatableQuery, [comet.address, addressesToCheck]);
-
   let liquidationAttempted = false;
-  for (const [i, isLiquidatable] of Object.entries(checks)) {
-    let address = addressesToCheck[i];
+  let blockNumber;
 
-    googleCloudLog(LogSeverity.INFO, `${address} isLiquidatable=${isLiquidatable}`);
+  for (let chunk of chunkBy([...uniqueAddresses], addressChunkSize)) {
+    googleCloudLog(LogSeverity.INFO, `Checking ${chunk.length} addresses [${chunk.slice(0, 3)}...]`);
+    let [chunkBlockNumber, checks] = await sleuth.fetch<[BigNumberish, boolean[]], [string, string[]]>(liquidatableQuery, [comet.address, chunk]);
+    blockNumber = chunkBlockNumber;
 
-    if (isLiquidatable) {
-      await attemptLiquidation(
-        comet,
-        liquidator,
-        [address],
-        signerWithFlashbots,
-        network,
-        deployment
-      );
-      liquidationAttempted = true;
+    for (const [i, isLiquidatable] of Object.entries(checks)) {
+      let address = chunk[i];
+
+      googleCloudLog(LogSeverity.INFO, `${address} isLiquidatable=${isLiquidatable}`);
+
+      if (isLiquidatable) {
+        await attemptLiquidation(
+          comet,
+          liquidator,
+          [address],
+          signerWithFlashbots,
+          network,
+          deployment
+        );
+        liquidationAttempted = true;
+      }
     }
+
+    await new Promise(resolve => setTimeout(resolve, 2000));
   }
   return [Number(blockNumber), liquidationAttempted];
 }

@@ -7,6 +7,7 @@ import {
 import {
   arbitragePurchaseableCollateral,
   liquidateUnderwaterBorrowers,
+  getUniqueAddresses,
   getAssets,
   Asset
 } from './liquidateUnderwaterBorrowers';
@@ -16,8 +17,8 @@ import googleCloudLog, { LogSeverity } from './googleCloudLog';
 import { Sleuth } from '@compound-finance/sleuth';
 import * as liquidatableQuerySol from '../../artifacts/contracts/LiquidatableQuery.sol/LiquidatableQuery.json';
 
-const loopDelay = 5000;
-const loopsUntilUpdateAssets = 1000;
+const loopDelay = 20000;
+const loopsUntilDataRefresh = 1000;
 let assets: Asset[] = [];
 
 async function main() {
@@ -110,49 +111,44 @@ async function main() {
     signer
   ) as OnChainLiquidator;
 
-  let lastBlockNumber: number;
-  let lastCheckedBlockNumber: number;
-  let loops = 0;
-  while (true) {
-    if (assets.length == 0 || loops >= loopsUntilUpdateAssets) {
+  let lastAddressRefresh: number | undefined;
+  let uniqueAddresses: Set<string> = new Set();
+
+  for (let loops = 0; true; loops++) {
+    if (assets.length == 0 || loops >= loopsUntilDataRefresh) {
       googleCloudLog(LogSeverity.INFO, 'Updating assets');
       assets = await getAssets(comet);
+
+      googleCloudLog(LogSeverity.INFO, `Updating unique addresses`);
+      uniqueAddresses = await getUniqueAddresses(comet);
+
       loops = 0;
     }
 
-    // TODO: Remove this line entirely
-    const currentBlockNumber = await hre.ethers.provider.getBlockNumber();
+    // Note, the first time is effectively a nop
+    const [blockNumber, liquidationAttempted] = await liquidateUnderwaterBorrowers(
+      uniqueAddresses,
+      sleuth,
+      liquidatableQuery,
+      comet,
+      liquidator,
+      signerWithFlashbots,
+      network,
+      deployment
+    );
 
-    googleCloudLog(LogSeverity.INFO, `currentBlockNumber: ${currentBlockNumber} [checked=${lastCheckedBlockNumber}]`);
-
-    if (currentBlockNumber !== lastBlockNumber) {
-      lastBlockNumber = currentBlockNumber;
-      const [checkedBlockNumber, liquidationAttempted] = await liquidateUnderwaterBorrowers(
-        sleuth,
-        liquidatableQuery,
+    if (!liquidationAttempted) {
+      await arbitragePurchaseableCollateral(
         comet,
         liquidator,
+        assets,
         signerWithFlashbots,
         network,
         deployment
       );
-      lastCheckedBlockNumber = checkedBlockNumber;
-      if (!liquidationAttempted) {
-        await arbitragePurchaseableCollateral(
-          comet,
-          liquidator,
-          assets,
-          signerWithFlashbots,
-          network,
-          deployment
-        );
-      }
-    } else {
-      googleCloudLog(LogSeverity.INFO, `block already checked; waiting ${loopDelay}ms`);
-      await new Promise(resolve => setTimeout(resolve, loopDelay));
     }
 
-    loops += 1;
+    await new Promise(resolve => setTimeout(resolve, loopDelay));
   }
 }
 
