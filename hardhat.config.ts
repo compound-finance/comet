@@ -39,6 +39,7 @@ const {
   SNOWTRACE_KEY,
   POLYGONSCAN_KEY,
   ARBISCAN_KEY,
+  LINEASCAN_KEY,
   INFURA_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
@@ -67,7 +68,8 @@ export function requireEnv(varName, msg?: string): string {
   'SNOWTRACE_KEY',
   'INFURA_KEY',
   'POLYGONSCAN_KEY',
-  'ARBISCAN_KEY'
+  'ARBISCAN_KEY',
+  'LINEASCAN_KEY'
 ].map(v => requireEnv(v));
 
 // Networks
@@ -205,7 +207,7 @@ const config: HardhatUserConfig = {
       arbitrumTestnet: ARBISCAN_KEY,
       arbitrum: ARBISCAN_KEY,
       'arbitrum-goerli': ARBISCAN_KEY,
-      'linea-goerli': ETHERSCAN_KEY
+      'linea-goerli': LINEASCAN_KEY
     },
     customChains: [
       {
