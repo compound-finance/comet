@@ -68,7 +68,7 @@ interface ITelepathyReceiver {
 }
 
 interface ITelepathyHandler {
-    function handleTelepathy(uint32 _sourceChainId, address _sourceAddress, bytes memory _data)
+    function handleTelepathy(uint32 _sourceChainId, address _sourceAddress, bytes calldata _data)
         external
         returns (bytes4);
 }

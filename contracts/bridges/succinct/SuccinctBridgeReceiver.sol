@@ -16,17 +16,18 @@ contract SuccinctBridgeReceiver is BaseBridgeReceiver, ITelepathyHandler {
         telepathyRouter = _telepathyRouter;
     }
 
-    function handleTelepathy(uint16 _sourceChainId, address _senderAddress, bytes memory _data) {
+    function handleTelepathy(uint32 _sourceChainId, address _sourceAddress, bytes calldata _data) external returns (bytes4)  {
         require (msg.sender == telepathyRouter, "SuccinctBridgeReceiver: only telepathyRouter can call this function");
         require (_sourceChainId == sourceChainId, "SuccinctBridgeReceiver: sourceChainId mismatch");
-        require (_senderAddress == govTimelock, "SuccinctBridgeReceiver: senderAddress mismatch")
-        processMessage(_senderAddress, _data);
+        require (_sourceAddress == govTimelock, "SuccinctBridgeReceiver: senderAddress mismatch");
+        processMessage(_sourceAddress, _data);
+        return ITelepathyHandler.handleTelepathy.selector;
     }
 
     function setTelepathyRouter(address newTelepathyRouter) public {
         if (msg.sender != localTimelock) revert Unauthorized();
         address oldTelepathyRouter = telepathyRouter;
         telepathyRouter = newTelepathyRouter;
-        emit NewCrossDomainMessenger(oldTelepathyRouter, telepathyRouter);
+        emit NewTelepathyRouter(oldTelepathyRouter, telepathyRouter);
     }
 }
