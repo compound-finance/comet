@@ -23,20 +23,26 @@ const sharedAddresses = {
 };
 
 const addresses: {[chain: string]: LiquidationAddresses} = {
-  'mainnet': {
+  mainnet: {
     ...sharedAddresses,
     sushiswapRouter: '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F',
     stakedNativeToken: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
     weth9: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
     wrappedStakedNativeToken: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0'
-
   },
-  'polygon': {
+  polygon: {
     ...sharedAddresses,
     sushiswapRouter: '0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506',
     stakedNativeToken: '0x3a58a54c066fdc0f2d55fc9c89f0415c92ebf3c4', // stMatic
     weth9: '0x7ceb23fd6bc0add59e62ac25578270cff1b9f619',
     wrappedStakedNativeToken: ethers.constants.AddressZero // wstMatic does not exist
+  },
+  arbitrum: {
+    ...sharedAddresses,
+    sushiswapRouter: '0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506',
+    stakedNativeToken: ethers.constants.AddressZero,
+    weth9: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
+    wrappedStakedNativeToken: ethers.constants.AddressZero
   }
 };
 
@@ -64,17 +70,20 @@ async function borrowCapacityForAsset(comet: CometInterface, actor: CometActor, 
 
 for (let i = 0; i < MAX_ASSETS; i++) {
   const baseTokenBalances = {
-    'mainnet': {
-      'usdc': 2250000,
-      'weth': 20
+    mainnet: {
+      usdc: 2250000,
+      weth: 20
     },
-    'polygon': {
-      'usdc': 2250000
+    polygon: {
+      usdc: 2250000
+    },
+    arbitrum: {
+      usdc: 10000000
     }
   };
   const assetAmounts = {
-    'mainnet': {
-      'usdc': [
+    mainnet: {
+      usdc: [
         // COMP
         ' == 500',
         // WBTC
@@ -86,22 +95,34 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // LINK
         ' == 150000'
       ],
-      'weth': [
+      weth: [
         // CB_ETH
         ' == 750',
         // WST_ETH
         ' == 2000'
       ]
     },
-    'polygon': {
-      'usdc': [
+    polygon: {
+      usdc: [
         // WETH
         ' == 400',
         // WBTC
         ' == 20',
         // WMATIC
-        ' == 500000',
+        ' == 300000',
       ],
+    },
+    arbitrum: {
+      usdc: [
+        // ARB
+        ' == 500000',
+        // GMX
+        ' == 4000',
+        // WETH
+        ' == 500',
+        // WBTC
+        ' == 50'
+      ]
     }
   };
   scenario(
@@ -110,7 +131,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
       tokenBalances: async (ctx) => (
         {
           $comet: {
@@ -220,17 +241,20 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 
 for (let i = 0; i < MAX_ASSETS; i++) {
   const baseTokenBalances = {
-    'mainnet': {
-      'usdc': 2250000,
-      'weth': 5000
+    mainnet: {
+      usdc: 2250000,
+      weth: 5000
     },
-    'polygon': {
-      'usdc': 3000000
+    polygon: {
+      usdc: 3000000
+    },
+    arbitrum: {
+      usdc: 10000000
     }
   };
   const assetAmounts = {
-    'mainnet': {
-      'usdc': [
+    mainnet: {
+      usdc: [
         // COMP
         ' == 40000',
         // WBTC
@@ -242,15 +266,15 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // LINK
         ' == 500000',
       ],
-      'weth': [
+      weth: [
         // CB_ETH
         ' == 2000',
         // WST_ETH
         ' == 3000'
       ]
     },
-    'polygon': {
-      'usdc': [
+    polygon: {
+      usdc: [
         // WETH
         ' == 1000',
         // WBTC
@@ -258,11 +282,23 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // WMATIC
         ' == 2500000',
       ]
+    },
+    arbitrum: {
+      usdc: [
+        // ARB
+        ' == 1000000',
+        // GMX
+        ' == 10000',
+        // WETH
+        ' == 5000',
+        // WBTC
+        ' == 300'
+      ]
     }
   };
   const maxAmountsToPurchase = {
-    'mainnet': {
-      'usdc': [
+    mainnet: {
+      usdc: [
         // COMP
         exp(500, 18),
         // WBTC
@@ -274,21 +310,33 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // LINK
         exp(150000, 18)
       ],
-      'weth': [
+      weth: [
         // CB_ETH
         exp(750, 18),
         // WST_ETH
         exp(2000, 18)
       ]
     },
-    'polygon': {
-      'usdc': [
+    polygon: {
+      usdc: [
         // WETH
         exp(400, 18),
         // WBTC
         exp(20, 8),
         // WMATIC
         exp(5000, 18),
+      ]
+    },
+    arbitrum: {
+      usdc: [
+        // ARB
+        exp(300000, 18),
+        // GMX
+        exp(3000, 18),
+        // WETH
+        exp(500, 18),
+        // WBTC
+        exp(50, 8),
       ]
     }
   };
@@ -298,7 +346,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
       tokenBalances: async (ctx) => (
         {
           $comet: {
@@ -402,13 +450,13 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when value is beneath liquidationThreshold`,
   {
-    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
+    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
     tokenBalances: {
       $comet: { $base: 100000 },
     },
     cometBalances: {
       albert: {
-        $asset0: ' == 10',
+        $asset0: ' == 200',
       },
       betty: { $base: 1000 },
     },
@@ -513,13 +561,13 @@ scenario(
 scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when maxAmountToPurchase=0`,
   {
-    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}]),
+    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
     tokenBalances: {
       $comet: { $base: 100000 },
     },
     cometBalances: {
       albert: {
-        $asset0: ' == 10',
+        $asset0: ' == 200',
       },
       betty: { $base: 1000 },
     },
@@ -621,103 +669,123 @@ scenario(
   }
 );
 
-scenario(
-  `LiquidationBot > reverts when price slippage is too high`,
-  {
-    upgrade: {
-      targetReserves: exp(20_000, 18)
+{
+  const baseTokenBalances = {
+    mainnet: {
+      usdc: 2250000,
+      weth: 20
     },
-    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}]), // XXX enable for Polygon
-    tokenBalances: {
-      $comet: { $base: 10000 },
+  };
+  const assetAmounts = {
+    mainnet: {
+      usdc: ' == 5000', // COMP
+      weth: ' == 10000', // CB_ETH
     },
-    cometBalances: {
-      albert: {
-        $asset0: ' == 10000',
-      },
-      betty: { $base: 1000 },
-    },
-  },
-  async ({ comet, actors }, _context, world) => {
-    const { albert, betty } = actors;
-    const { network, deployment } = world.deploymentManager;
-    const flashLoanPool = flashLoanPools[network][deployment];
-    const {
-      balancerVault,
-      uniswapRouter,
-      uniswapV3Factory,
-      sushiswapRouter,
-      stakedNativeToken,
-      weth9,
-      wrappedStakedNativeToken
-    } = addresses[network];
+  };
 
-    const liquidator = await world.deploymentManager.deploy(
-      'liquidator',
-      'liquidator/OnChainLiquidator.sol',
-      [
+  scenario(
+    `LiquidationBot > reverts when price slippage is too high`,
+    {
+      upgrade: {
+        targetReserves: exp(20_000, 18)
+      },
+      filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}]),
+      tokenBalances: async (ctx) => (
+        {
+          $comet: {
+            $base: baseTokenBalances[ctx.world.base.network]?.[ctx.world.base.deployment] || 0,
+          },
+        }
+      ),
+      cometBalances: async (ctx) => (
+        {
+          albert: {
+            $asset0: assetAmounts[ctx.world.base.network]?.[ctx.world.base.deployment] || 0
+          },
+        }
+      ),
+    },
+    async ({ comet, actors }, _context, world) => {
+      const { albert, betty } = actors;
+      const { network, deployment } = world.deploymentManager;
+      const flashLoanPool = flashLoanPools[network][deployment];
+      const {
         balancerVault,
-        sushiswapRouter,
         uniswapRouter,
         uniswapV3Factory,
+        sushiswapRouter,
         stakedNativeToken,
-        wrappedStakedNativeToken,
-        weth9
-      ]
-    ) as OnChainLiquidator;
+        weth9,
+        wrappedStakedNativeToken
+      } = addresses[network];
 
-    const baseToken = await comet.baseToken();
-    const { asset: collateralAssetAddress } = await comet.getAssetInfo(0);
+      const liquidator = await world.deploymentManager.deploy(
+        'liquidator',
+        'liquidator/OnChainLiquidator.sol',
+        [
+          balancerVault,
+          sushiswapRouter,
+          uniswapRouter,
+          uniswapV3Factory,
+          stakedNativeToken,
+          wrappedStakedNativeToken,
+          weth9
+        ]
+      ) as OnChainLiquidator;
 
-    const initialRecipientBalance = await betty.getErc20Balance(baseToken);
-    const [initialNumAbsorbs, initialNumAbsorbed] = await comet.liquidatorPoints(betty.address);
+      const baseToken = await comet.baseToken();
+      const { asset: collateralAssetAddress } = await comet.getAssetInfo(0);
 
-    const borrowCapacity = await borrowCapacityForAsset(comet, albert, 0);
-    const borrowAmount = (borrowCapacity.mul(90n)).div(100n);
+      const initialRecipientBalance = await betty.getErc20Balance(baseToken);
+      const [initialNumAbsorbs, initialNumAbsorbed] = await comet.liquidatorPoints(betty.address);
 
-    await albert.withdrawAsset({
-      asset: baseToken,
-      amount: borrowAmount
-    });
+      const borrowCapacity = await borrowCapacityForAsset(comet, albert, 0);
+      const borrowAmount = (borrowCapacity.mul(90n)).div(100n);
 
-    await world.increaseTime(
-      await timeUntilUnderwater({
-        comet,
-        actor: albert,
-        fudgeFactor: 60n * 10n // 10 minutes past when position is underwater
-      })
-    );
+      await albert.withdrawAsset({
+        asset: baseToken,
+        amount: borrowAmount
+      });
 
-    await comet.connect(betty.signer).accrueAccount(albert.address); // force accrue
+      await world.increaseTime(
+        await timeUntilUnderwater({
+          comet,
+          actor: albert,
+          fudgeFactor: 60n * 10n // 10 minutes past when position is underwater
+        })
+      );
 
-    expect(await comet.isLiquidatable(albert.address)).to.be.true;
-    expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.be.greaterThan(0);
+      await comet.connect(betty.signer).accrueAccount(albert.address); // force accrue
 
-    await expect(
-      liquidator.connect(betty.signer).absorbAndArbitrage(
-        comet.address,
-        [albert.address],
-        [collateralAssetAddress],
-        [getPoolConfig(collateralAssetAddress)],
-        [ethers.constants.MaxUint256],
-        flashLoanPool.tokenAddress,
-        flashLoanPool.poolFee,
-        10e6
-      )
-    ).to.be.revertedWithCustomError(liquidator, 'InsufficientAmountOut');
+      expect(await comet.isLiquidatable(albert.address)).to.be.true;
+      expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.be.greaterThan(0);
 
-    // confirm that Albert position has not been abosrbed
-    expect(await comet.isLiquidatable(albert.address)).to.be.true;
-    expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.be.greaterThan(0);
+      await expect(
+        liquidator.connect(betty.signer).absorbAndArbitrage(
+          comet.address,
+          [albert.address],
+          [collateralAssetAddress],
+          [getPoolConfig(collateralAssetAddress)],
+          [ethers.constants.MaxUint256],
+          flashLoanPool.tokenAddress,
+          flashLoanPool.poolFee,
+          10e6
+        )
+      ).to.be.revertedWithCustomError(liquidator, 'InsufficientAmountOut');
 
-    // confirm that liquidator points have not increased
-    const [finalNumAbsorbs, finalNumAbsorbed] = await comet.liquidatorPoints(betty.address);
-    expect(finalNumAbsorbs).to.eq(initialNumAbsorbs);
-    expect(finalNumAbsorbed).to.eq(initialNumAbsorbed);
+      // confirm that Albert position has not been abosrbed
+      expect(await comet.isLiquidatable(albert.address)).to.be.true;
+      expect(await comet.collateralBalanceOf(albert.address, collateralAssetAddress)).to.be.greaterThan(0);
 
-    // check that recipient balance has stayed the same
-    expect(await betty.getErc20Balance(baseToken)).to.be.eq(Number(initialRecipientBalance));
-  }
-);
+      // confirm that liquidator points have not increased
+      const [finalNumAbsorbs, finalNumAbsorbed] = await comet.liquidatorPoints(betty.address);
+      expect(finalNumAbsorbs).to.eq(initialNumAbsorbs);
+      expect(finalNumAbsorbed).to.eq(initialNumAbsorbed);
+
+      // check that recipient balance has stayed the same
+      expect(await betty.getErc20Balance(baseToken)).to.be.eq(Number(initialRecipientBalance));
+    }
+  );
+}
 
 // XXX test that Liquidator liquidates up to the max amount for that asset
