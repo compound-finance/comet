@@ -27,6 +27,7 @@ import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 import arbitrumRelationConfigMap from './deployments/arbitrum/usdc/relations';
 import arbitrumGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
+import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -269,7 +270,8 @@ const config: HardhatUserConfig = {
         usdc: arbitrumGoerliRelationConfigMap
       },
       'base-goerli': {
-        usdc: baseGoerliRelationConfigMap
+        usdc: baseGoerliRelationConfigMap,
+        weth: baseGoerliWethRelationConfigMap
       }
     },
   },
@@ -340,6 +342,12 @@ const config: HardhatUserConfig = {
         name: 'base-goerli',
         network: 'base-goerli',
         deployment: 'usdc',
+        auxiliaryBase: 'goerli'
+      },
+      {
+        name: 'base-goerli-weth',
+        network: 'base-goerli',
+        deployment: 'weth',
         auxiliaryBase: 'goerli'
       }
     ],
