@@ -95,7 +95,15 @@ export default migration('1685486850_configurate_and_ens', {
     const COMPAmountToBridge = exp(10_000, 18);
 
     const goerliActions = [
-      // 1. Bridge ETH to the L2 timelock
+
+      // 1. Set Comet configuration + deployAndUpgradeTo new Comet, set reward config on Base-Goerli, wrap ETH to WETH and transfer to Comet as reserves.
+      {
+        contract: baseL1CrossDomainMessenger,
+        signature: 'sendMessage(address,bytes,uint32)',
+        args: [bridgeReceiver.address, l2ProposalData, 3_500_000]
+      },
+
+      // 2. Bridge ETH to the L2 timelock
       {
         contract: baseL1StandardBridge,
         value: amountETHToWrap,
@@ -103,25 +111,18 @@ export default migration('1685486850_configurate_and_ens', {
         args: [localTimelock.address, 200_000, '0x']
       },
 
-      // 2. Approve Goerli's L1StandardBridge to take Timelock's COMP (for bridging)
+      // 3. Approve Goerli's L1StandardBridge to take Timelock's COMP (for bridging)
       {
         contract: goerliCOMP,
         signature: 'approve(address,uint256)',
         args: [baseL1StandardBridge.address, COMPAmountToBridge]
       },
-      // 3. Bridge COMP from Goerli to Base-Goerli Comet using L1StandardBridge
+      // 4. Bridge COMP from Goerli to Base-Goerli Comet using L1StandardBridge
       {
         contract: baseL1StandardBridge,
         // function depositERC20To(address _l1Token, address _l2Token, address _to, uint256 _amount, uint32 _l2Gas,bytes calldata _data)
         signature: 'depositERC20To(address,address,address,uint256,uint32,bytes)',
         args: [goerliCOMP.address, baseCOMPAddress, rewards.address, COMPAmountToBridge, 200_000, '0x']
-      },
-
-      // 4. Set Comet configuration + deployAndUpgradeTo new Comet, set reward config on Base-Goerli, wrap ETH to WETH and transfer to Comet as reserves.
-      {
-        contract: baseL1CrossDomainMessenger,
-        signature: 'sendMessage(address,bytes,uint32)',
-        args: [bridgeReceiver.address, l2ProposalData, 3_500_000]
       },
 
       // 5. Update the list of official markets
@@ -158,37 +159,28 @@ export default migration('1685486850_configurate_and_ens', {
     } = await deploymentManager.getContracts();
 
     // 1.
-    
-    // 2. & 3.
-    expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(10_000, 18));
-
-    // 4.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    // XXX uncomment once contracts are actually deployed so there will be a diff
-    // expect(stateChanges).to.deep.equal({
-    //   pauseGuardian: '0xe7661C55fe281f986FA5312D57d19ADb6064462F',
-    //   baseTrackingSupplySpeed: exp(0.000011574074074, 15, 15).toString(),
-    //   baseTrackingBorrowSpeed: exp(0.001145833333333, 15, 15).toString(),
-    //   baseMinForRewards: exp(10_000, 6).toString(),
-    //   targetReserves: exp(1_000_000, 6).toString(),
-    //   OP: {
-    //     supplyCap: exp(1_000_000, 18)
-    //   },
-    //   WBTC: {
-    //     supplyCap: exp(20_000, 8)
-    //   },
-    //   WETH: {
-    //     supplyCap: exp(50_000, 18)
-    //   }
-    // })
+    expect(stateChanges).to.deep.equal({
+      pauseGuardian: '0xBA5e81fD6811E2699b478d1Bcde62a585bC9b6f7',
+      baseTrackingSupplySpeed: exp(34.74 / 86400, 15, 18),
+      baseTrackingBorrowSpeed: exp(34.74 / 86400, 15, 18),
+      cbETH: {
+        supplyCap: exp(1000, 18)
+      }
+    })
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(COMP.address);
     expect(config.rescaleFactor).to.be.equal(exp(1, 12));
     expect(config.shouldUpscale).to.be.equal(true);
+
+    // 1. & 2.
     expect(await comet.getReserves()).to.be.equal(amountETHToWrap);
     expect(await WETH.balanceOf(comet.address)).to.be.equal(amountETHToWrap);
     
+    // 3. & 4.
+    expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(20_000, 18));
+
     // 5.
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress, 'goerli');
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
@@ -225,6 +217,10 @@ export default migration('1685486850_configurate_and_ens', {
         }
       ],
       84531: [
+        {
+          baseSymbol: 'USDC',
+          cometAddress: '0xe78Fc55c884704F9485EDa042fb91BfE16fD55c1'
+        },
         {
           baseSymbol: 'WETH',
           cometAddress: comet.address,

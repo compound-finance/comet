@@ -3,6 +3,7 @@ import { impersonateAddress } from '../../plugins/scenario/utils';
 import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 import { BigNumber, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
+import { OpenBridgedProposal } from '../context/Gov';
 
 /*
 The Base relayer applies an offset to the message sender.
@@ -26,6 +27,8 @@ export default async function relayBaseMessage(
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
   const l2CrossDomainMessenger = await bridgeDeploymentManager.getContractOrThrow('l2CrossDomainMessenger');
   const l2StandardBridge = await bridgeDeploymentManager.getContractOrThrow('l2StandardBridge');
+
+  const openBridgedProposals: OpenBridgedProposal[] = [];
 
   // Grab all events on the L1CrossDomainMessenger contract since the `startingBlockNumber`
   const filter = baseL1CrossDomainMessenger.filters.SentMessage();
@@ -98,17 +101,24 @@ export default async function relayBaseMessage(
       const proposalCreatedEvent = relayMessageTxn.events.find(event => event.address === bridgeReceiver.address);
       const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
 
-      // fast forward l2 time
-      await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
-
-      // execute queued proposal
-      await setNextBaseFeeToZero(bridgeDeploymentManager);
-      await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
-      console.log(
-        `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
-      );
+      // Add the proposal to the list of open bridged proposals to be executed after all the messages have been relayed
+      openBridgedProposals.push({ id, eta });
     } else {
       throw new Error(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Unrecognized target for cross-chain message`);
     }
+  }
+
+  // Execute open bridged proposals now that all messages have been bridged
+  for (let proposal of openBridgedProposals) {
+    const { eta, id } = proposal;
+    // Fast forward l2 time
+    await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
+
+    // Execute queued proposal
+    await setNextBaseFeeToZero(bridgeDeploymentManager);
+    await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+    console.log(
+      `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Executed bridged proposal ${id}`
+    );
   }
 }
