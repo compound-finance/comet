@@ -75,7 +75,12 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
             await executeOpenProposal(governanceDeploymentManager, proposal);
           }
           debug(`${label} Open proposal ${proposal.id} was executed`);
+        } catch (err) {
+          debug(`${label} Failed to execute proposal ${proposal.id}`, err.message);
+          throw err;
+        }
 
+        try {
           // If there is a migration associated with this proposal, verify the migration
           if (migrationData) {
             await migrationData.migration.actions.verify(
@@ -87,7 +92,7 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
             debug(`${label} Verified migration "${migrationData.migration.name}"`);
           }
         } catch (err) {
-          debug(`${label} Failed to execute proposal ${proposal.id}`, err.message);
+          debug(`${label} Failed to verify migration "${migrationData.migration.name}"`, err.message);
           throw err;
         }
       }

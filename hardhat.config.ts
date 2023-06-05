@@ -27,6 +27,7 @@ import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 import arbitrumRelationConfigMap from './deployments/arbitrum/usdc/relations';
 import arbitrumGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
+import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
@@ -294,10 +295,11 @@ const config: HardhatUserConfig = {
         usdc: arbitrumGoerliRelationConfigMap
       },
       'base-goerli': {
-        usdc: baseGoerliRelationConfigMap
+        usdc: baseGoerliRelationConfigMap,
+        weth: baseGoerliWethRelationConfigMap
       },
       'linea-goerli': {
-        usdc: lineaGoerliRelationConfigMap
+        usdc: lineaGoerliRelationConfigMap,
       }
     }
   },
@@ -371,10 +373,15 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'goerli'
       },
       {
+        name: 'base-goerli-weth',
+        network: 'base-goerli',
+        deployment: 'weth',
+        auxiliaryBase: 'goerli'
+      },
+      {
         name: 'linea-goerli',
         network: 'linea-goerli',
         deployment: 'usdc',
-        auxiliaryBase: 'goerli'
       }
     ]
   },
