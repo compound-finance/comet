@@ -20,7 +20,7 @@ export function getEtherscanApiUrl(network: string): string {
     arbitrum: 'api.arbiscan.io',
     'arbitrum-goerli': 'api-goerli.arbiscan.io',
     'base-goerli': 'api-goerli.basescan.org',
-    'linea-goerli': 'api-goerli.lineascan.build',
+    'linea-goerli': 'api-goerli.lineascan.build'
   }[network];
 
   if (!host) {
@@ -44,7 +44,7 @@ export function getEtherscanUrl(network: string): string {
     arbitrum: 'arbiscan.io',
     'arbitrum-goerli': 'goerli.arbiscan.io',
     'base-goerli': 'goerli.basescan.org',
-    'linea-goerli': 'wwstage-goerli.lineascan.build',
+    'linea-goerli': 'wwstage-goerli.lineascan.build'
   }[network];
 
   if (!host) {
@@ -68,7 +68,7 @@ export function getEtherscanApiKey(network: string): string {
     arbitrum: process.env.ARBISCAN_KEY,
     'arbitrum-goerli': process.env.ARBISCAN_KEY,
     'base-goerli': process.env.ETHERSCAN_KEY,
-    'linea-goerli': process.env.LINEASCAN_KEY,
+    'linea-goerli': process.env.LINEASCAN_KEY
   }[network];
 
   if (!apiKey) {
@@ -78,7 +78,26 @@ export function getEtherscanApiKey(network: string): string {
   return apiKey;
 }
 
-export async function get(url, data) {
-  const res = (await axios.get(url, { params: data }))['data'];
-  return res;
+export async function get(url, data, network = '') {
+  try {
+    let res;
+    // TODO remove this condition
+    if (network === 'linea-goerli') {
+      res = (
+        await axios.get(url, {
+          params: data,
+          auth: {
+            username: 'eslineastage',
+            password: 'QW$eKsy3J%~v'
+          }
+        })
+      )['data'];
+    } else {
+      res = (await axios.get(url, { params: data }))['data'];
+    }
+
+    return res;
+  } catch (err) {
+    console.log({ err });
+  }
 }

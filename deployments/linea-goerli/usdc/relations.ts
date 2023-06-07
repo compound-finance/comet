@@ -3,26 +3,18 @@ import baseRelationConfig from '../../relations';
 export default {
   ...baseRelationConfig,
   governor: {
-    artifact: 'contracts/bridges/optimism/OptimismBridgeReceiver.sol:OptimismBridgeReceiver'
+    artifact: 'contracts/bridges/arbitrum/LineaBridgeReceiver.sol:LineaBridgeReceiver'
   },
-
-  l2CrossDomainMessenger: {
-    delegates: {
-      field: {
-        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
-      }
-    }
-  },
-  
-  l2StandardBridge: {
-    delegates: {
-      field: {
-        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
-      }
-    }
-  },
-  // Canonical L2 WBTC is not verified on Etherscan
-  '0xe0a592353e81a94db6e3226fd4a99f881751776a': {
+  ClonableBeaconProxy: {
     artifact: 'contracts/ERC20.sol:ERC20'
+  },
+  // WETH
+  '0x2C1b868d6596a18e32E61B901E4060C872647b6C': {
+    artifact: 'contracts/ERC20.sol:ERC20',
+    delegates: {
+      field: {
+        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
   }
 };
