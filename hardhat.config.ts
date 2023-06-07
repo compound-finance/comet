@@ -27,6 +27,7 @@ import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 import arbitrumRelationConfigMap from './deployments/arbitrum/usdc/relations';
 import arbitrumGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
+import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -47,7 +48,7 @@ const {
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
   GOV_NETWORK = '',
-  REMOTE_ACCOUNTS = '',
+  REMOTE_ACCOUNTS = ''
 } = process.env;
 
 function* deriveAccounts(pk: string, n: number = 10) {
@@ -69,8 +70,8 @@ export function requireEnv(varName, msg?: string): string {
   'INFURA_KEY',
   'POLYGONSCAN_KEY',
   'ARBISCAN_KEY',
-  'LINEASCAN_KEY',
-].map((v) => requireEnv(v));
+  'LINEASCAN_KEY'
+].map(v => requireEnv(v));
 
 // Networks
 interface NetworkConfig {
@@ -90,43 +91,43 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'polygon',
     chainId: 137,
-    url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
+    url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`
   },
   {
     network: 'arbitrum',
     chainId: 42161,
-    url: `https://arbitrum-mainnet.infura.io/v3/${INFURA_KEY}`,
+    url: `https://arbitrum-mainnet.infura.io/v3/${INFURA_KEY}`
   },
   {
     network: 'avalanche',
     chainId: 43114,
-    url: 'https://api.avax.network/ext/bc/C/rpc',
+    url: 'https://api.avax.network/ext/bc/C/rpc'
   },
   {
     network: 'fuji',
     chainId: 43113,
-    url: 'https://api.avax-test.network/ext/bc/C/rpc',
+    url: 'https://api.avax-test.network/ext/bc/C/rpc'
   },
   {
     network: 'mumbai',
     chainId: 80001,
-    url: `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`,
+    url: `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`
   },
   {
     network: 'arbitrum-goerli',
     chainId: 421613,
-    url: `https://arbitrum-goerli.infura.io/v3/${INFURA_KEY}`,
+    url: `https://arbitrum-goerli.infura.io/v3/${INFURA_KEY}`
   },
   {
     network: 'base-goerli',
     chainId: 84531,
-    url: `https://goerli.base.org/`,
+    url: `https://goerli.base.org/`
   },
   {
     network: 'linea-goerli',
     chainId: 59140,
-    url: `https://linea-goerli.infura.io/v3/${INFURA_KEY}`,
-  },
+    url: `https://linea-goerli.infura.io/v3/${INFURA_KEY}`
+  }
 ];
 
 function getDefaultProviderURL(network: string) {
@@ -148,7 +149,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
         ? 'remote'
         : ETH_PK
         ? [...deriveAccounts(ETH_PK)]
-        : { mnemonic: MNEMONIC },
+        : { mnemonic: MNEMONIC }
     };
   }
 }
@@ -168,17 +169,17 @@ const config: HardhatUserConfig = {
             details: {
               yulDetails: {
                 optimizerSteps:
-                  'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul',
-              },
-            },
+                  'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul'
+              }
+            }
           },
       outputSelection: {
         '*': {
-          '*': ['evm.deployedBytecode.sourceMap'],
-        },
+          '*': ['evm.deployedBytecode.sourceMap']
+        }
       },
-      viaIR: process.env['OPTIMIZER_DISABLED'] ? false : true,
-    },
+      viaIR: process.env['OPTIMIZER_DISABLED'] ? false : true
+    }
   },
 
   networks: {
@@ -189,15 +190,15 @@ const config: HardhatUserConfig = {
       gasPrice: 'auto',
       blockGasLimit: 12000000,
       accounts: ETH_PK
-        ? [...deriveAccounts(ETH_PK)].map((privateKey) => ({
+        ? [...deriveAccounts(ETH_PK)].map(privateKey => ({
             privateKey,
-            balance: (10n ** 36n).toString(),
+            balance: (10n ** 36n).toString()
           }))
         : { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
       // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,
-      hardfork: 'shanghai',
-    },
+      hardfork: 'shanghai'
+    }
   },
 
   // See https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#multiple-api-keys-and-alternative-block-explorers
@@ -223,7 +224,7 @@ const config: HardhatUserConfig = {
       // Base
       'base-goerli': ETHERSCAN_KEY,
       // Linea
-      'linea-goerli': LINEASCAN_KEY,
+      'linea-goerli': LINEASCAN_KEY
     },
     customChains: [
       {
@@ -232,8 +233,8 @@ const config: HardhatUserConfig = {
         chainId: 42161,
         urls: {
           apiURL: 'https://api.arbiscan.io/api',
-          browserURL: 'https://arbiscan.io/',
-        },
+          browserURL: 'https://arbiscan.io/'
+        }
       },
       {
         // Hardhat's Etherscan plugin calls the network `arbitrumGoerli`, so we need to add an entry for our own network name
@@ -241,8 +242,8 @@ const config: HardhatUserConfig = {
         chainId: 421613,
         urls: {
           apiURL: 'https://api-goerli.arbiscan.io/api',
-          browserURL: 'https://goerli.arbiscan.io/',
-        },
+          browserURL: 'https://goerli.arbiscan.io/'
+        }
       },
       {
         // Hardhat's Etherscan plugin calls the network `baseGoerli`, so we need to add an entry for our own network name
@@ -250,23 +251,23 @@ const config: HardhatUserConfig = {
         chainId: 84531,
         urls: {
           apiURL: 'https://api-goerli.basescan.org/api',
-          browserURL: 'https://api-goerli.basescan.org/',
-        },
+          browserURL: 'https://api-goerli.basescan.org/'
+        }
       },
       {
         network: 'linea-goerli',
         chainId: 59140,
         urls: {
           apiURL: 'https://api-goerli.lineascan.build/api',
-          browserURL: 'https://wwstage-goerli.lineascan.build/',
-        },
-      },
-    ],
+          browserURL: 'https://wwstage-goerli.lineascan.build/'
+        }
+      }
+    ]
   },
 
   typechain: {
     outDir: 'build/types',
-    target: 'ethers-v5',
+    target: 'ethers-v5'
   },
 
   deploymentManager: {
@@ -274,31 +275,31 @@ const config: HardhatUserConfig = {
     networks: {
       goerli: {
         usdc: goerliRelationConfigMap,
-        weth: goerliWethRelationConfigMap,
+        weth: goerliWethRelationConfigMap
       },
       mumbai: {
-        usdc: mumbaiRelationConfigMap,
+        usdc: mumbaiRelationConfigMap
       },
       mainnet: {
         usdc: mainnetRelationConfigMap,
-        weth: mainnetWethRelationConfigMap,
+        weth: mainnetWethRelationConfigMap
       },
       polygon: {
-        usdc: polygonRelationConfigMap,
+        usdc: polygonRelationConfigMap
       },
       arbitrum: {
-        usdc: arbitrumRelationConfigMap,
+        usdc: arbitrumRelationConfigMap
       },
       'arbitrum-goerli': {
-        usdc: arbitrumGoerliRelationConfigMap,
+        usdc: arbitrumGoerliRelationConfigMap
       },
       'base-goerli': {
-        usdc: baseGoerliRelationConfigMap,
+        usdc: baseGoerliRelationConfigMap
       },
       'linea-goerli': {
-        usdc: lineaGoerliRelationConfigMap,
-      },
-    },
+        usdc: lineaGoerliRelationConfigMap
+      }
+    }
   },
 
   scenario: {
@@ -307,75 +308,75 @@ const config: HardhatUserConfig = {
         name: 'mainnet',
         network: 'mainnet',
         deployment: 'usdc',
-        allocation: 1.0, // eth
+        allocation: 1.0 // eth
       },
       {
         name: 'mainnet-weth',
         network: 'mainnet',
-        deployment: 'weth',
+        deployment: 'weth'
       },
       {
         name: 'development',
         network: 'hardhat',
-        deployment: 'dai',
+        deployment: 'dai'
       },
       {
         name: 'fuji',
         network: 'fuji',
-        deployment: 'usdc',
+        deployment: 'usdc'
       },
       {
         name: 'kovan',
         network: 'kovan',
-        deployment: 'usdc',
+        deployment: 'usdc'
       },
       {
         name: 'goerli',
         network: 'goerli',
-        deployment: 'usdc',
+        deployment: 'usdc'
       },
       {
         name: 'goerli-weth',
         network: 'goerli',
-        deployment: 'weth',
+        deployment: 'weth'
       },
       {
         name: 'mumbai',
         network: 'mumbai',
         deployment: 'usdc',
-        auxiliaryBase: 'goerli',
+        auxiliaryBase: 'goerli'
       },
       {
         name: 'polygon',
         network: 'polygon',
         deployment: 'usdc',
-        auxiliaryBase: 'mainnet',
+        auxiliaryBase: 'mainnet'
       },
       {
         name: 'arbitrum',
         network: 'arbitrum',
         deployment: 'usdc',
-        auxiliaryBase: 'mainnet',
+        auxiliaryBase: 'mainnet'
       },
       {
         name: 'arbitrum-goerli',
         network: 'arbitrum-goerli',
         deployment: 'usdc',
-        auxiliaryBase: 'goerli',
+        auxiliaryBase: 'goerli'
       },
       {
         name: 'base-goerli',
         network: 'base-goerli',
         deployment: 'usdc',
-        auxiliaryBase: 'goerli',
+        auxiliaryBase: 'goerli'
       },
       {
         name: 'linea-goerli',
         network: 'linea-goerli',
         deployment: 'usdc',
-        auxiliaryBase: 'goerli',
-      },
-    ],
+        auxiliaryBase: 'goerli'
+      }
+    ]
   },
 
   mocha: {
@@ -383,29 +384,29 @@ const config: HardhatUserConfig = {
     reporterOptions: {
       reporterEnabled: ['spec', 'json'],
       jsonReporterOptions: {
-        output: 'test-results.json',
-      },
+        output: 'test-results.json'
+      }
     },
-    timeout: 150_000,
+    timeout: 150_000
   },
 
   paths: {
-    tests: './test',
+    tests: './test'
   },
 
   contractSizer: {
     alphaSort: true,
     disambiguatePaths: false,
     runOnCompile: true,
-    strict: false, // allow tests to run anyway
+    strict: false // allow tests to run anyway
   },
 
   gasReporter: {
     enabled: REPORT_GAS === 'true' ? true : false,
     currency: 'USD',
     coinmarketcap: COINMARKETCAP_API_KEY,
-    gasPrice: 200, // gwei
-  },
+    gasPrice: 200 // gwei
+  }
 };
 
 setupDefaultNetworkProviders(config);

@@ -46,7 +46,9 @@ async function runMigration<T>(
     if (deploymentManager.cache.writeCacheToDisk) {
       console.log(`Migration preparation artifact stored in ${outputFile}.`);
     } else {
-      console.log(`Migration preparation artifact would have been stored in ${outputFile}, but not writing to disk in a simulation.`);
+      console.log(
+        `Migration preparation artifact would have been stored in ${outputFile}, but not writing to disk in a simulation.`
+      );
     }
   }
 
@@ -68,15 +70,10 @@ task('deploy', 'Deploys market')
     const maybeForkEnv = simulate ? getForkEnv(env) : env;
     const network = env.network.name;
     const tag = `${network}/${deployment}`;
-    const dm = new DeploymentManager(
-      network,
-      deployment,
-      maybeForkEnv,
-      {
-        writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-        verificationStrategy: 'lazy',
-      }
-    );
+    const dm = new DeploymentManager(network, deployment, maybeForkEnv, {
+      writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
+      verificationStrategy: 'lazy'
+    });
 
     if (noDeploy) {
       // Don't run the deploy script
@@ -139,7 +136,7 @@ task('publish', 'Verifies a known contract at an address, given its args')
     const args: VerifyArgs = {
       via: 'artifacts',
       address,
-      constructorArguments,
+      constructorArguments
     };
     console.log(`[${tag} ${address}:`, args);
     await dm.verifyContract(args);
@@ -150,22 +147,20 @@ task('gen:migration', 'Generates a new migration')
   .addParam('deployment', 'The deployment to generate the migration for')
   .setAction(async ({ name, deployment }, env) => {
     const network = env.network.name;
-    const dm = new DeploymentManager(
-      network,
-      deployment,
-      env,
-      {
-        writeCacheToDisk: true,
-        verificationStrategy: 'lazy',
-      }
-    );
+    const dm = new DeploymentManager(network, deployment, env, {
+      writeCacheToDisk: true,
+      verificationStrategy: 'lazy'
+    });
     const file = await dm.generateMigration(name);
     console.log(`Generated migration ${network}/${deployment}/${file}`);
   });
 
 task('migrate', 'Runs migration')
   .addPositionalParam('migration', 'name of migration')
-  .addOptionalParam('impersonate', 'the governor will impersonate the passed account for proposals [only when simulating]')
+  .addOptionalParam(
+    'impersonate',
+    'the governor will impersonate the passed account for proposals [only when simulating]'
+  )
   .addParam('deployment', 'The deployment to apply the migration to')
   .addFlag('prepare', 'runs preparation [defaults to true if enact not specified]')
   .addFlag('enact', 'enacts migration [implies prepare]')
@@ -173,24 +168,35 @@ task('migrate', 'Runs migration')
   .addFlag('simulate', 'only simulates the blockchain effects')
   .addFlag('overwrite', 'overwrites artifact if exists, fails otherwise')
   .setAction(
-    async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, deployment, impersonate }, env) => {
+    async (
+      {
+        migration: migrationName,
+        prepare,
+        enact,
+        noEnacted,
+        simulate,
+        overwrite,
+        deployment,
+        impersonate
+      },
+      env
+    ) => {
       const maybeForkEnv = simulate ? getForkEnv(env) : env;
       const network = env.network.name;
-      const dm = new DeploymentManager(
-        network,
-        deployment,
-        maybeForkEnv,
-        {
-          writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-          verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
-        }
-      );
+      const dm = new DeploymentManager(network, deployment, maybeForkEnv, {
+        writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
+        verificationStrategy: 'eager' // We use eager here to verify contracts right after they are deployed
+      });
       await dm.spider();
 
       let governanceDm: DeploymentManager;
-      const base = env.config.scenario.bases.find(b => b.network === network && b.deployment === deployment);
+      const base = env.config.scenario.bases.find(
+        b => b.network === network && b.deployment === deployment
+      );
       const isBridgedDeployment = base.auxiliaryBase !== undefined;
-      const governanceBase = isBridgedDeployment ? env.config.scenario.bases.find(b => b.name === base.auxiliaryBase) : undefined;
+      const governanceBase = isBridgedDeployment
+        ? env.config.scenario.bases.find(b => b.name === base.auxiliaryBase)
+        : undefined;
 
       if (governanceBase) {
         const governanceEnv = hreForBase(governanceBase, simulate);
@@ -200,7 +206,7 @@ task('migrate', 'Runs migration')
           governanceEnv,
           {
             writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-            verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
+            verificationStrategy: 'eager' // We use eager here to verify contracts right after they are deployed
           }
         );
         await governanceDm.spider();
@@ -209,7 +215,9 @@ task('migrate', 'Runs migration')
       }
 
       if (impersonate && !simulate) {
-        throw new Error('Cannot impersonate an address if not simulating a migration. Please specify --simulate to simulate.');
+        throw new Error(
+          'Cannot impersonate an address if not simulating a migration. Please specify --simulate to simulate.'
+        );
       } else if (impersonate && simulate) {
         const signer = await impersonateAddress(governanceDm, impersonate, 10n ** 18n);
         governanceDm._signers.unshift(signer);
@@ -218,7 +226,9 @@ task('migrate', 'Runs migration')
       const migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
       const [migration] = await loadMigrations([migrationPath]);
       if (!migration) {
-        throw new Error(`Unknown migration for network ${network}/${deployment}: \`${migrationName}\`.`);
+        throw new Error(
+          `Unknown migration for network ${network}/${deployment}: \`${migrationName}\`.`
+        );
       }
       if (!prepare && !enact) {
         prepare = true;

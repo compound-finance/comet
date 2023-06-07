@@ -13,34 +13,33 @@ export default async function deploy(
   const ethers = deploymentManager.hre.ethers;
 
   // Pull in existing assets
-  const USDC = await deploymentManager.existing('USDC', '0x5F4c18bF60F2A757E058EfB1A155637A596347cE', 'linea-goerli');
-  const WETH = await deploymentManager.existing('WETH', '0x2C1b868d6596a18e32E61B901E4060C872647b6C', 'linea-goerli');
+  const WETH = await deploymentManager.existing(
+    'WETH',
+    '0x2C1b868d6596a18e32E61B901E4060C872647b6C',
+    'linea-goerli'
+  );
 
   const l2MessageService = await deploymentManager.existing(
     'l2MessageService',
-    '0xA59477f7742Ba7d51bb1E487a8540aB339d6801d',
+    '0xC499a572640B64eA1C8c194c43Bc3E19940719dC',
     'linea-goerli'
   );
 
   // Deploy LineaBridgeReceiver
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
-    'bridges/linea-goerli/LineaBridgeReceiver.sol',
+    'bridges/linea/LineaBridgeReceiver.sol',
     [l2MessageService.address]
   );
 
   // Deploy Local Timelock
-  const localTimelock = await deploymentManager.deploy(
-    'timelock',
-    'vendor/Timelock.sol',
-    [
-      bridgeReceiver.address, // admin
-      10 * 60,                // delay
-      14 * secondsPerDay,     // grace period
-      10 * 60,                // minimum delay
-      30 * secondsPerDay      // maximum delay
-    ]
-  );
+  const localTimelock = await deploymentManager.deploy('timelock', 'vendor/Timelock.sol', [
+    bridgeReceiver.address, // admin
+    10 * 60, // delay
+    14 * secondsPerDay, // grace period
+    10 * 60, // minimum delay
+    30 * secondsPerDay // maximum delay
+  ]);
 
   // Initialize BridgeReceiver
   await deploymentManager.idempotent(
@@ -48,7 +47,7 @@ export default async function deploy(
     async () => {
       trace(`Initializing BridgeReceiver`);
       await bridgeReceiver.initialize(
-        GOERLI_TIMELOCK,      // govTimelock
+        GOERLI_TIMELOCK, // govTimelock
         localTimelock.address // localTimelock
       );
       trace(`BridgeReceiver initialized`);
@@ -60,14 +59,10 @@ export default async function deploy(
   const { comet } = deployed;
 
   // Deploy Bulker
-  const bulker = await deploymentManager.deploy(
-    'bulker',
-    'bulkers/BaseBulker.sol',
-    [
-      await comet.governor(), // admin
-      WETH.address            // weth
-    ]
-  );
+  const bulker = await deploymentManager.deploy('bulker', 'bulkers/BaseBulker.sol', [
+    await comet.governor(), // admin
+    WETH.address // weth
+  ]);
 
   return {
     ...deployed,
