@@ -1,6 +1,16 @@
 import { expect } from 'chai';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber, BigNumberish, Contract, ContractReceipt, ContractTransaction, Event, EventFilter, constants, utils } from 'ethers';
+import {
+  BigNumber,
+  BigNumberish,
+  Contract,
+  ContractReceipt,
+  ContractTransaction,
+  Event,
+  EventFilter,
+  constants,
+  utils
+} from 'ethers';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { CometContext } from '../context/CometContext';
@@ -35,8 +45,8 @@ export enum ComparisonOp {
   EQ
 }
 
-export const max = (...args) => args.reduce((m, e) => e > m ? e : m);
-export const min = (...args) => args.reduce((m, e) => e < m ? e : m);
+export const max = (...args) => args.reduce((m, e) => (e > m ? e : m));
+export const min = (...args) => args.reduce((m, e) => (e < m ? e : m));
 
 export function abs(x: bigint): bigint {
   return x < 0n ? -x : x;
@@ -50,31 +60,40 @@ export function expectBase(expected: bigint, actual: bigint, precision = 2n) {
   expectApproximately(expected, actual, precision);
 }
 
-export function expectRevertCustom(tx: Promise<ContractReceipt | ContractTransaction>, custom: string) {
+export function expectRevertCustom(
+  tx: Promise<ContractReceipt | ContractTransaction>,
+  custom: string
+) {
   return tx
-    .then(_ => { throw new Error('Expected transaction to be reverted'); })
+    .then(_ => {
+      throw new Error('Expected transaction to be reverted');
+    })
     .catch(e => {
-      const selector = utils.keccak256(custom.split('').reduce((a, s) => a + s.charCodeAt(0).toString(16), '0x')).slice(2, 2 + 8);
+      const selector = utils
+        .keccak256(custom.split('').reduce((a, s) => a + s.charCodeAt(0).toString(16), '0x'))
+        .slice(2, 2 + 8);
       const patterns = [
         new RegExp(`custom error '${custom.replace(/[()]/g, '\\$&')}'`),
         new RegExp(`unrecognized custom error with selector ${selector}`),
         new RegExp(`unrecognized custom error \\(return data: 0x${selector}\\)`)
       ];
-      for (const pattern of patterns)
-        if (pattern.test(e.message) || pattern.test(e.reason))
-          return;
-      throw new Error(`Expected revert message in one of [${patterns}], but reverted with: ${e.message}`);
+      for (const pattern of patterns) if (pattern.test(e.message) || pattern.test(e.reason)) return;
+      throw new Error(
+        `Expected revert message in one of [${patterns}], but reverted with: ${e.message}`
+      );
     });
 }
 
 export function expectRevertMatches(tx: Promise<ContractReceipt>, patterns: RegExp[]) {
   return tx
-    .then(_ => { throw new Error('Expected transaction to be reverted'); })
+    .then(_ => {
+      throw new Error('Expected transaction to be reverted');
+    })
     .catch(e => {
-      for (const pattern of patterns)
-        if (pattern.test(e.message))
-          return;
-      throw new Error(`Expected revert message in one of ${patterns}, but reverted with: ${e.message}`);
+      for (const pattern of patterns) if (pattern.test(e.message)) return;
+      throw new Error(
+        `Expected revert message in one of ${patterns}, but reverted with: ${e.message}`
+      );
     });
 }
 
@@ -133,17 +152,24 @@ export function* subsets<T>(array: T[], offset = 0): Generator<T[]> {
   yield [];
 }
 
-export function getExpectedBaseBalance(balance: bigint, baseIndexScale: bigint, borrowOrSupplyIndex: bigint): bigint {
-  const principalValue = balance * baseIndexScale / borrowOrSupplyIndex;
-  const baseBalanceOf = principalValue * borrowOrSupplyIndex / baseIndexScale;
+export function getExpectedBaseBalance(
+  balance: bigint,
+  baseIndexScale: bigint,
+  borrowOrSupplyIndex: bigint
+): bigint {
+  const principalValue = (balance * baseIndexScale) / borrowOrSupplyIndex;
+  const baseBalanceOf = (principalValue * borrowOrSupplyIndex) / baseIndexScale;
   return baseBalanceOf;
 }
 
 export function getInterest(balance: bigint, rate: bigint, seconds: bigint) {
-  return balance * rate * seconds / (10n ** 18n);
+  return (balance * rate * seconds) / 10n ** 18n;
 }
 
-export async function getActorAddressFromName(name: string, context: CometContext): Promise<string> {
+export async function getActorAddressFromName(
+  name: string,
+  context: CometContext
+): Promise<string> {
   if (name.startsWith('$')) {
     const cometRegex = /comet/;
     let actorAddress: string;
@@ -183,7 +209,11 @@ export async function getAssetFromName(name: string, context: CometContext): Pro
 }
 
 // Returns the amount that needs to be transferred to satisfy a constraint
-export function getToTransferAmount(amount: ComparativeAmount, existingBalance: bigint, decimals: number): bigint {
+export function getToTransferAmount(
+  amount: ComparativeAmount,
+  existingBalance: bigint,
+  decimals: number
+): bigint {
   let toTransfer = 0n;
   switch (amount.op) {
     case ComparisonOp.EQ:
@@ -213,16 +243,20 @@ export function getToTransferAmount(amount: ComparativeAmount, existingBalance: 
 export function parseAmount(amount): ComparativeAmount {
   switch (typeof amount) {
     case 'bigint':
-      return amount >= 0n ? { val: Number(amount), op: ComparisonOp.GTE } : { val: Number(amount), op: ComparisonOp.LTE };
+      return amount >= 0n
+        ? { val: Number(amount), op: ComparisonOp.GTE }
+        : { val: Number(amount), op: ComparisonOp.LTE };
     case 'number':
-      return amount >= 0 ? { val: amount, op: ComparisonOp.GTE } : { val: amount, op: ComparisonOp.LTE };
+      return amount >= 0
+        ? { val: amount, op: ComparisonOp.GTE }
+        : { val: amount, op: ComparisonOp.LTE };
     case 'string':
       return matchGroup(amount, {
-        'GTE': />=\s*(-?\d+)/,
-        'GT': />\s*(-?\d+)/,
-        'LTE': /<=\s*(-?\d+)/,
-        'LT': /<\s*(-?\d+)/,
-        'EQ': /==\s*(-?\d+)/,
+        GTE: />=\s*(-?\d+)/,
+        GT: />\s*(-?\d+)/,
+        LTE: /<=\s*(-?\d+)/,
+        LT: /<\s*(-?\d+)/,
+        EQ: /==\s*(-?\d+)/
       });
     case 'object':
       return amount;
@@ -239,19 +273,29 @@ function matchGroup(str, patterns): ComparativeAmount {
   throw new Error(`No match for ${str} in ${patterns}`);
 }
 
-export async function modifiedPaths(pattern: RegExp, against: string = 'origin/main'): Promise<string[]> {
+export async function modifiedPaths(
+  pattern: RegExp,
+  against: string = 'origin/main'
+): Promise<string[]> {
   const output = execSync(`git diff --numstat $(git merge-base ${against} HEAD)`);
-  const paths = output.toString().split('\n').map(l => l.split(/\s+/)[2]);
+  const paths = output
+    .toString()
+    .split('\n')
+    .map(l => l.split(/\s+/)[2]);
   const modified = paths.filter(p => pattern.test(p) && existsSync(p));
   return modified;
 }
 
 export async function isValidAssetIndex(ctx: CometContext, assetNum: number): Promise<boolean> {
   const comet = await ctx.getComet();
-  return assetNum < await comet.numAssets();
+  return assetNum < (await comet.numAssets());
 }
 
-export async function isTriviallySourceable(ctx: CometContext, assetNum: number, amount: number): Promise<boolean> {
+export async function isTriviallySourceable(
+  ctx: CometContext,
+  assetNum: number,
+  amount: number
+): Promise<boolean> {
   const fauceteer = await ctx.getFauceteer();
   // If fauceteer does not exist (e.g. mainnet), then token is likely sourceable from events
   if (fauceteer == null) return true;
@@ -261,7 +305,7 @@ export async function isTriviallySourceable(ctx: CometContext, assetNum: number,
   const asset = ctx.getAssetByAddress(assetInfo.asset);
   const amountInWei = BigInt(amount) * assetInfo.scale.toBigInt();
   // Fauceteer should have greater than the expected amount of the asset
-  return await asset.balanceOf(fauceteer.address) > amountInWei;
+  return (await asset.balanceOf(fauceteer.address)) > amountInWei;
 }
 
 export async function isBulkerSupported(ctx: CometContext): Promise<boolean> {
@@ -272,9 +316,12 @@ export async function isBulkerSupported(ctx: CometContext): Promise<boolean> {
 type DeploymentCriterion = {
   network?: string;
   deployment?: string;
-}
+};
 
-export function matchesDeployment(ctx: CometContext, deploymentCriteria: DeploymentCriterion[]): boolean {
+export function matchesDeployment(
+  ctx: CometContext,
+  deploymentCriteria: DeploymentCriterion[]
+): boolean {
   const currentDeployment = {
     network: ctx.world.base.network,
     deployment: ctx.world.base.deployment
@@ -351,13 +398,13 @@ export async function executeOpenProposal(
   }
 
   // Queue proposal (maybe)
-  if (await governor.state(id) == ProposalState.Succeeded) {
+  if ((await governor.state(id)) == ProposalState.Succeeded) {
     await setNextBaseFeeToZero(dm);
     await governor.queue(id, { gasPrice: 0 });
   }
 
   // Execute proposal (maybe, w/ gas limit so we see if exec reverts, not a gas estimation error)
-  if (await governor.state(id) == ProposalState.Queued) {
+  if ((await governor.state(id)) == ProposalState.Queued) {
     const block = await dm.hre.ethers.provider.getBlock('latest');
     const proposal = await governor.proposals(id);
     await setNextBlockTimestamp(dm, Math.max(block.timestamp, proposal.eta.toNumber()) + 1);
@@ -380,14 +427,9 @@ export async function fastGovernanceExecute(
   await setNextBaseFeeToZero(dm);
 
   const proposeTxn = await (
-    await governor.connect(proposer).propose(
-      targets,
-      values,
-      signatures,
-      calldatas,
-      'FastExecuteProposal',
-      { gasPrice: 0 }
-    )
+    await governor
+      .connect(proposer)
+      .propose(targets, values, signatures, calldatas, 'FastExecuteProposal', { gasPrice: 0 })
   ).wait();
   const proposeEvent = proposeTxn.events.find(event => event.event === 'ProposalCreated');
   const [id, , , , , , startBlock, endBlock] = proposeEvent.args;
@@ -417,7 +459,11 @@ export async function fastL2GovernanceExecute(
   await relayMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);
 }
 
-export async function createCrossChainProposal(context: CometContext, l2ProposalData: string, bridgeReceiver: BaseBridgeReceiver) {
+export async function createCrossChainProposal(
+  context: CometContext,
+  l2ProposalData: string,
+  bridgeReceiver: BaseBridgeReceiver
+) {
   const govDeploymentManager = context.world.auxiliaryDeploymentManager!;
   const bridgeDeploymentManager = context.world.deploymentManager!;
   const proposer = await context.getProposer();
@@ -434,23 +480,23 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       const inbox = await govDeploymentManager.getContractOrThrow('arbitrumInbox');
       const refundAddress = constants.AddressZero;
       const createRetryableTicketCalldata = utils.defaultAbiCoder.encode(
-        [
-          'address', 'uint256', 'uint256', 'address', 'address', 'uint256', 'uint256', 'bytes'
-        ],
+        ['address', 'uint256', 'uint256', 'address', 'address', 'uint256', 'uint256', 'bytes'],
         [
           bridgeReceiver.address, // address to,
-          0,                      // uint256 l2CallValue,
-          0,                      // uint256 maxSubmissionCost,
-          refundAddress,          // address excessFeeRefundAddress,
-          refundAddress,          // address callValueRefundAddress,
-          0,                      // uint256 gasLimit,
-          0,                      // uint256 maxFeePerGas,
-          l2ProposalData,         // bytes calldata data
+          0, // uint256 l2CallValue,
+          0, // uint256 maxSubmissionCost,
+          refundAddress, // address excessFeeRefundAddress,
+          refundAddress, // address callValueRefundAddress,
+          0, // uint256 gasLimit,
+          0, // uint256 maxFeePerGas,
+          l2ProposalData // bytes calldata data
         ]
       );
       targets.push(inbox.address);
       values.push(0);
-      signatures.push('createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)');
+      signatures.push(
+        'createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)'
+      );
       calldata.push(createRetryableTicketCalldata);
       break;
     }
@@ -480,6 +526,19 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       targets.push(fxRoot.address);
       values.push(0);
       signatures.push('sendMessageToChild(address,bytes)');
+      calldata.push(sendMessageToChildCalldata);
+      break;
+    }
+    case 'linea-goerli': {
+      const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
+        ['address', 'uint256', 'bytes'],
+        [bridgeReceiver.address, 0, l2ProposalData]
+      );
+      const zkEvm2 = await govDeploymentManager.getContractOrThrow('ZkEvmV2');
+
+      targets.push(zkEvm2.address);
+      values.push(0);
+      signatures.push('sendMessage(address,uint256,bytes)');
       calldata.push(sendMessageToChildCalldata);
       break;
     }
@@ -525,8 +584,8 @@ async function getLiquidationMargin({ comet, actor, baseLiquidity, factorScale }
     const { asset, priceFeed, scale, liquidateCollateralFactor } = await comet.getAssetInfo(i);
     const collatBalance = (await comet.collateralBalanceOf(actor.address, asset)).toBigInt();
     const collatPrice = (await comet.getPrice(priceFeed)).toBigInt();
-    const collatValue = collatBalance * collatPrice / scale.toBigInt();
-    liquidity += collatValue * liquidateCollateralFactor.toBigInt() / factorScale;
+    const collatValue = (collatBalance * collatPrice) / scale.toBigInt();
+    liquidity += (collatValue * liquidateCollateralFactor.toBigInt()) / factorScale;
   }
 
   return liquidity;
@@ -539,20 +598,33 @@ invariant:
 isolating for timeElapsed:
 timeElapsed = -liquidationMargin / (baseBalanceOf * price / baseScale) / (borrowRate / factorScale);
 */
-export async function timeUntilUnderwater({ comet, actor, fudgeFactor = 0n }: { comet: CometInterface, actor: CometActor, fudgeFactor?: bigint }): Promise<number> {
+export async function timeUntilUnderwater({
+  comet,
+  actor,
+  fudgeFactor = 0n
+}: {
+  comet: CometInterface;
+  actor: CometActor;
+  fudgeFactor?: bigint;
+}): Promise<number> {
   const baseBalance = await actor.getCometBaseBalance();
   const baseScale = (await comet.baseScale()).toBigInt();
   const basePrice = (await comet.getPrice(await comet.baseTokenPriceFeed())).toBigInt();
-  const baseLiquidity = baseBalance * basePrice / baseScale;
+  const baseLiquidity = (baseBalance * basePrice) / baseScale;
   const utilization = await comet.getUtilization();
   const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
   const factorScale = (await comet.factorScale()).toBigInt();
-  const liquidationMargin = await getLiquidationMargin({ comet, actor, baseLiquidity, factorScale });
+  const liquidationMargin = await getLiquidationMargin({
+    comet,
+    actor,
+    baseLiquidity,
+    factorScale
+  });
 
   if (liquidationMargin < 0) {
     return 0; // already underwater
   }
 
   // XXX throw error if baseBalanceOf is positive and liquidationMargin is positive
-  return Number((-liquidationMargin * factorScale / baseLiquidity / borrowRate) + fudgeFactor);
+  return Number((-liquidationMargin * factorScale) / baseLiquidity / borrowRate + fudgeFactor);
 }
