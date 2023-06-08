@@ -25,6 +25,12 @@ export default async function deploy(
     'linea-goerli'
   );
 
+  const l2TokenBridge = await deploymentManager.existing(
+    'l2TokenBridge',
+    '0xB191E3d98074f92584E5205B99c3F17fB2068927',
+    'linea-goerli'
+  );
+
   // Deploy LineaBridgeReceiver
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
@@ -64,9 +70,15 @@ export default async function deploy(
     WETH.address // weth
   ]);
 
+  // Deploy fauceteer
+  const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
+
   return {
     ...deployed,
     bridgeReceiver,
-    bulker
+    l2MessageService,
+    l2TokenBridge,
+    bulker,
+    fauceteer
   };
 }
