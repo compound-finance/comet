@@ -1,7 +1,7 @@
-import { ethers, exp, expect, getBlock } from './helpers';
+import { ethers, exp, expect, getBlock } from '../helpers';
 import {
   ConstantPriceFeed__factory
-} from '../build/types';
+} from '../../build/types';
 
 export async function makeConstantPriceFeed({ decimals, constantPrice }) {
   const constantPriceFeedFactory = (await ethers.getContractFactory('ConstantPriceFeed')) as ConstantPriceFeed__factory;
