@@ -61,68 +61,73 @@ async function runMigration<T>(
 
 task('deploy', 'Deploys market')
   .addFlag('simulate', 'only simulates the blockchain effects')
-  .addFlag('noDeploy', 'skip the actual deploy step')
+  .addFlag('nodeploy', 'skip the actual deploy step')
   .addFlag('noVerify', 'do not verify any contracts')
   .addFlag('noVerifyImpl', 'do not verify the impl contract')
   .addFlag('overwrite', 'overwrites cache')
   .addParam('deployment', 'The deployment to deploy')
-  .setAction(async ({ simulate, noDeploy, noVerify, noVerifyImpl, overwrite, deployment }, env) => {
-    const maybeForkEnv = simulate ? getForkEnv(env) : env;
-    const network = env.network.name;
-    const tag = `${network}/${deployment}`;
-    const dm = new DeploymentManager(network, deployment, maybeForkEnv, {
-      writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-      verificationStrategy: 'lazy'
-    });
-
-    if (noDeploy) {
-      // Don't run the deploy script
-    } else {
-      try {
-        const overrides = undefined; // TODO: pass through cli args
-        const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
-        console.log(`[${tag}] Deployed ${dm.counter} contracts, spent ${dm.spent} Ξ`);
-        console.log(`[${tag}]\n${dm.diffDelta(delta)}`);
-      } catch (e) {
-        console.log(`[${tag}] Failed to deploy with error: ${e}`);
-      }
-    }
-
-    const verify = noVerify ? false : !simulate;
-    const desc = verify ? 'Verify' : 'Would verify';
-    if (noVerify && simulate) {
-      // Don't even print if --no-verify is set with --simulate
-    } else {
-      await dm.verifyContracts(async (address, args) => {
-        if (args.via === 'buildfile') {
-          const { contract: _, ...rest } = args;
-          console.log(`[${tag}] ${desc} ${address}:`, rest);
-        } else {
-          console.log(`[${tag}] ${desc} ${address}:`, args);
-        }
-        return verify;
+  .setAction(
+    async (
+      { simulate, noDeploy: nodeploy, noVerify, noVerifyImpl, overwrite, deployment },
+      env
+    ) => {
+      const maybeForkEnv = simulate ? getForkEnv(env) : env;
+      const network = env.network.name;
+      const tag = `${network}/${deployment}`;
+      const dm = new DeploymentManager(network, deployment, maybeForkEnv, {
+        writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
+        verificationStrategy: 'lazy'
       });
 
-      if (noVerifyImpl) {
-        // Don't even try if --no-verify-impl
+      if (nodeploy) {
+        // Don't run the deploy script
       } else {
-        // Maybe verify the comet impl too
-        const comet = await dm.contract('comet');
-        const cometImpl = await dm.contract('comet:implementation');
-        const configurator = await dm.contract('configurator');
-        const config = await configurator.getConfiguration(comet.address);
-        const args: VerifyArgs = {
-          via: 'artifacts',
-          address: cometImpl.address,
-          constructorArguments: [config]
-        };
-        console.log(`[${tag}] ${desc} ${cometImpl.address}:`, args);
-        if (verify) {
-          await dm.verifyContract(args);
+        try {
+          const overrides = undefined; // TODO: pass through cli args
+          const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
+          console.log(`[${tag}] Deployed ${dm.counter} contracts, spent ${dm.spent} Ξ`);
+          console.log(`[${tag}]\n${dm.diffDelta(delta)}`);
+        } catch (e) {
+          console.log(`[${tag}] Failed to deploy with error: ${e}`);
+        }
+      }
+
+      const verify = noVerify ? false : !simulate;
+      const desc = verify ? 'Verify' : 'Would verify';
+      if (noVerify && simulate) {
+        // Don't even print if --no-verify is set with --simulate
+      } else {
+        await dm.verifyContracts(async (address, args) => {
+          if (args.via === 'buildfile') {
+            const { contract: _, ...rest } = args;
+            console.log(`[${tag}] ${desc} ${address}:`, rest);
+          } else {
+            console.log(`[${tag}] ${desc} ${address}:`, args);
+          }
+          return verify;
+        });
+
+        if (noVerifyImpl) {
+          // Don't even try if --no-verify-impl
+        } else {
+          // Maybe verify the comet impl too
+          const comet = await dm.contract('comet');
+          const cometImpl = await dm.contract('comet:implementation');
+          const configurator = await dm.contract('configurator');
+          const config = await configurator.getConfiguration(comet.address);
+          const args: VerifyArgs = {
+            via: 'artifacts',
+            address: cometImpl.address,
+            constructorArguments: [config]
+          };
+          console.log(`[${tag}] ${desc} ${cometImpl.address}:`, args);
+          if (verify) {
+            await dm.verifyContract(args);
+          }
         }
       }
     }
-  });
+  );
 
 task('publish', 'Verifies a known contract at an address, given its args')
   .addParam('address', 'The address to publish')

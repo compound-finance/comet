@@ -6,8 +6,8 @@ import { BuildFile } from './Types';
 import { debug } from './Utils';
 
 export type VerifyArgs =
-  | { via: 'artifacts', address: string, constructorArguments: any }
-  | { via: 'buildfile', contract: Contract, buildFile: BuildFile, deployArgs: any[] };
+  | { via: 'artifacts'; address: string; constructorArguments: any }
+  | { via: 'buildfile'; contract: Contract; buildFile: BuildFile; deployArgs: any[] };
 
 export type VerificationStrategy = 'none' | 'eager' | 'lazy';
 
@@ -24,7 +24,7 @@ export async function verifyContract(
       address = verifyArgs.address;
       await hre.run('verify:verify', {
         address: verifyArgs.address,
-        constructorArguments: verifyArgs.constructorArguments,
+        constructorArguments: verifyArgs.constructorArguments
       });
     } else if (verifyArgs.via === 'buildfile') {
       address = verifyArgs.contract.address;
@@ -45,7 +45,7 @@ export async function verifyContract(
       success = true;
     } else if (e.message.match(/does not have bytecode/i) && retries > 0) {
       debug('Waiting for ' + address + ' to propagate to Etherscan');
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise(resolve => setTimeout(resolve, 5000));
       return await verifyContract(verifyArgs, hre, raise, retries - 1);
     } else {
       if (raise) {
