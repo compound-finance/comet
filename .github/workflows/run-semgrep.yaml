@@ -1,0 +1,52 @@
+# Name of this GitHub Actions workflow.
+name: Run Semgrep
+
+on:
+  # Scan changed files in PRs (diff-aware scanning):
+  pull_request: {}
+  # On-demand 
+  workflow_dispatch: {}
+
+jobs:
+  semgrep:
+    # User-definable name of this GitHub Actions job:
+    name: Scan
+    # If you are self-hosting, change the following `runs-on` value: 
+    runs-on: ubuntu-latest
+    env:
+      ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
+      SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
+      INFURA_KEY: ${{ secrets.INFURA_KEY }}
+      POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
+    container:
+      # A Docker image with Semgrep installed. Do not change this.
+      image: returntocorp/semgrep
+
+    # Skip any PR created by dependabot to avoid permission issues:
+    if: (github.actor != 'dependabot[bot]')
+
+    steps:
+      # Fetch project source with GitHub Actions Checkout.
+      - uses: actions/checkout@v3
+      # Fetch generic rules
+      - name: Fetch generic semgrep rules
+        uses: actions/checkout@v3
+        with:
+          repository: decurity/semgrep-smart-contracts
+          path: rules
+      # Fetch Compound rules
+      - name: Fetch Compound semgrep rules
+        uses: actions/checkout@v3
+        with:
+          repository: decurity/compound-semgrep-rules
+          path: compound
+      # Run security, performance & Compound specific rules
+      - run: semgrep ci --sarif --output=semgrep.sarif || true
+        env:
+           SEMGREP_RULES: rules/solidity/security rules/solidity/performance compound/solidity
+      # Upload findings to GitHub Advanced Security Dashboard
+      - name: Upload findings to GitHub Advanced Security Dashboard
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: semgrep.sarif
+        if: always()
