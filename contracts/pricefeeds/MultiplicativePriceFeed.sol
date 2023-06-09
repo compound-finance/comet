@@ -15,7 +15,7 @@ contract MultiplicativePriceFeed is IPriceFeed {
     error InvalidInt256();
 
     /// @notice Version of the price feed
-    uint public constant override version = 1;
+    uint public constant VERSION = 1;
 
     /// @notice Description of the price feed
     string public override description;
@@ -56,7 +56,7 @@ contract MultiplicativePriceFeed is IPriceFeed {
     }
 
     /**
-     * @notice Price for the latest round
+     * @notice Calculates the latest round data using data from the two price feeds
      * @return roundId Round id from price feed B
      * @return answer Latest price
      * @return startedAt Timestamp when the round was started; passed on from price feed B
@@ -77,5 +77,13 @@ contract MultiplicativePriceFeed is IPriceFeed {
     function signed256(uint256 n) internal pure returns (int256) {
         if (n > uint256(type(int256).max)) revert InvalidInt256();
         return int256(n);
+    }
+
+    /**
+     * @notice Price for the latest round
+     * @return The version of the price feed contract
+     **/
+    function version() external pure returns (uint256) {
+        return VERSION;
     }
 }
