@@ -61,7 +61,7 @@ async function runMigration<T>(
 
 task('deploy', 'Deploys market')
   .addFlag('simulate', 'only simulates the blockchain effects')
-  .addFlag('nodeploy', 'skip the actual deploy step')
+  .addFlag('noDeploy', 'skip the actual deploy step')
   .addFlag('noVerify', 'do not verify any contracts')
   .addFlag('noVerifyImpl', 'do not verify the impl contract')
   .addFlag('overwrite', 'overwrites cache')
