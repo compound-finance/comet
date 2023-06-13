@@ -304,11 +304,13 @@ scenario(
       throw new Error('cannot execute governance without governance deployment manager');
     }
 
+    const l2MessageService = await dm.getContractOrThrow('l2MessageService');
+
     // Deploy new LineaBridgeReceiver
-    const newBridgeReceiver = await dm.deploy<LineaBridgeReceiver, []>(
+    const newBridgeReceiver = await dm.deploy<LineaBridgeReceiver, [string]>(
       'newBridgeReceiver',
       'bridges/Linea/LineaBridgeReceiver.sol',
-      []
+      [l2MessageService.address]
     );
 
     // Deploy new local Timelock

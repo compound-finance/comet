@@ -3,46 +3,55 @@ import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 import { constants, ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
+import { impersonateAddress } from '../../plugins/scenario/utils';
+
+const LINEA_SETTER_ROLE_ACCOUNT = '0x0f2b2747d1861f8fc016bf5b60d95f1a511b7e08';
 
 export default async function relayLineaMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
   startingBlockNumber: number
 ) {
-  const zkEvm2 = await governanceDeploymentManager.getContractOrThrow('zkEvm2');
+  const zkEvmV2 = await governanceDeploymentManager.getContractOrThrow('zkEvmV2');
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
   const l2MessageService = await bridgeDeploymentManager.getContractOrThrow('l2MessageService');
   const l2TokenBridge = await bridgeDeploymentManager.getContractOrThrow('l2TokenBridge');
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
-
   // Grab all events on the L1CrossDomainMessenger contract since the `startingBlockNumber`
-  const filter = zkEvm2.filters.MessageSent();
+  const filter = zkEvmV2.filters.MessageSent();
   const messageSentEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
-    address: zkEvm2.address,
+    address: zkEvmV2.address,
     topics: filter.topics!
   });
-
   for (let messageSentEvent of messageSentEvents) {
     const {
-      args: { target, sender, message, messageNonce, gasLimit }
-    } = zkEvm2.interface.parseLog(messageSentEvent);
+      args: { _from, _to, _fee, _value, _nonce, _calldata, _messageHash }
+    } = zkEvmV2.interface.parseLog(messageSentEvent);
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
+
+    const aliasSetterRoleAccount = await impersonateAddress(
+      bridgeDeploymentManager,
+      LINEA_SETTER_ROLE_ACCOUNT
+    );
+    // First the message's hash has to be added by a specific account in the "contract's queue"
+    await l2MessageService.connect(aliasSetterRoleAccount).addL1L2MessageHashes([_messageHash]);
+
     const relayMessageTxn = await (
       await l2MessageService.claimMessage(
-        sender,
-        target,
-        0,
-        0,
+        _from,
+        _to,
+        _fee,
+        _value,
         constants.AddressZero,
-        message,
-        messageNonce,
+        _calldata,
+        _nonce,
         {
           gasPrice: 0,
-          gasLimit
+          gasLimit: 10000000
         }
       )
     ).wait();
@@ -51,21 +60,21 @@ export default async function relayLineaMessage(
     // there are two types:
     // 1. Bridging ERC20 token
     // 2. Cross-chain message passing
-    if (target === l2TokenBridge.address) {
+    if (_to === l2TokenBridge.address) {
       // Bridging ERC20 token
-      const messageWithoutPrefix = message.slice(2); // strip out the 0x prefix
+      const messageWithoutPrefix = _calldata.slice(2); // strip out the 0x prefix
       const messageWithoutSigHash = '0x' + messageWithoutPrefix.slice(8);
 
       // Bridging ERC20 token
       const { l1Token, amount, to, _data } = ethers.utils.defaultAbiCoder.decode(
-        ['address l1Token', 'address to', 'uint256 amount', 'bytes data'],
+        ['address _nativeToken', 'address _amount', 'uint256 _recipient', 'bytes _tokenMetadata'],
         messageWithoutSigHash
       );
 
       console.log(
         `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged over ${amount} of ${l1Token} to user ${to}`
       );
-    } else if (target === bridgeReceiver.address) {
+    } else if (_to === bridgeReceiver.address) {
       // Cross-chain message passing
       const proposalCreatedEvent = relayMessageTxn.events.find(
         event => event.address === bridgeReceiver.address

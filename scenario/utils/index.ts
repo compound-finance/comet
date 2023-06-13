@@ -530,16 +530,15 @@ export async function createCrossChainProposal(
       break;
     }
     case 'linea-goerli': {
-      const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(
+      const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'uint256', 'bytes'],
         [bridgeReceiver.address, 0, l2ProposalData]
       );
-      const zkEvm2 = await govDeploymentManager.getContractOrThrow('ZkEvmV2');
-
-      targets.push(zkEvm2.address);
+      const zkEvmV2 = await govDeploymentManager.getContractOrThrow('zkEvmV2');
+      targets.push(zkEvmV2.address);
       values.push(0);
       signatures.push('sendMessage(address,uint256,bytes)');
-      calldata.push(sendMessageToChildCalldata);
+      calldata.push(sendMessageCalldata);
       break;
     }
     default:
