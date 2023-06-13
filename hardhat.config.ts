@@ -260,7 +260,7 @@ const config: HardhatUserConfig = {
         chainId: 59140,
         urls: {
           apiURL: 'https://api-goerli.lineascan.build/api',
-          browserURL: 'https://wwstage-goerli.lineascan.build/'
+          browserURL: 'https://goerli.lineascan.build/'
         }
       }
     ]
@@ -381,7 +381,8 @@ const config: HardhatUserConfig = {
       {
         name: 'linea-goerli',
         network: 'linea-goerli',
-        deployment: 'usdc'
+        deployment: 'usdc',
+        auxiliaryBase: 'goerli'
       }
     ]
   },
