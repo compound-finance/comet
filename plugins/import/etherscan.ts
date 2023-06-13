@@ -44,7 +44,7 @@ export function getEtherscanUrl(network: string): string {
     arbitrum: 'arbiscan.io',
     'arbitrum-goerli': 'goerli.arbiscan.io',
     'base-goerli': 'goerli.basescan.org',
-    'linea-goerli': 'wwstage-goerli.lineascan.build'
+    'linea-goerli': 'goerli.lineascan.build'
   }[network];
 
   if (!host) {
