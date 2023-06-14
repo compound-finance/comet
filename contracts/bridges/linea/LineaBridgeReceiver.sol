@@ -2,9 +2,9 @@
 pragma solidity 0.8.15;
 
 import './IMessageService.sol';
-import '../BaseBridgeReceiver.sol';
+import '../SweepableBridgeReceiver.sol';
 
-contract LineaBridgeReceiver is BaseBridgeReceiver {
+contract LineaBridgeReceiver is SweepableBridgeReceiver {
     /// @notice Address of Linea Message Service
     IMessageService public messageService;
 

@@ -46,9 +46,7 @@ async function runMigration<T>(
     if (deploymentManager.cache.writeCacheToDisk) {
       console.log(`Migration preparation artifact stored in ${outputFile}.`);
     } else {
-      console.log(
-        `Migration preparation artifact would have been stored in ${outputFile}, but not writing to disk in a simulation.`
-      );
+      console.log(`Migration preparation artifact would have been stored in ${outputFile}, but not writing to disk in a simulation.`);
     }
   }
 
@@ -66,68 +64,68 @@ task('deploy', 'Deploys market')
   .addFlag('noVerifyImpl', 'do not verify the impl contract')
   .addFlag('overwrite', 'overwrites cache')
   .addParam('deployment', 'The deployment to deploy')
-  .setAction(
-    async (
-      { simulate, noDeploy: nodeploy, noVerify, noVerifyImpl, overwrite, deployment },
-      env
-    ) => {
-      const maybeForkEnv = simulate ? getForkEnv(env) : env;
-      const network = env.network.name;
-      const tag = `${network}/${deployment}`;
-      const dm = new DeploymentManager(network, deployment, maybeForkEnv, {
+  .setAction(async ({ simulate, noDeploy, noVerify, noVerifyImpl, overwrite, deployment }, env) => {
+    const maybeForkEnv = simulate ? getForkEnv(env) : env;
+    const network = env.network.name;
+    const tag = `${network}/${deployment}`;
+    const dm = new DeploymentManager(
+      network,
+      deployment,
+      maybeForkEnv,
+      {
         writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-        verificationStrategy: 'lazy'
+        verificationStrategy: 'lazy',
+      }
+    );
+
+    if (noDeploy) {
+      // Don't run the deploy script
+    } else {
+      try {
+        const overrides = undefined; // TODO: pass through cli args
+        const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
+        console.log(`[${tag}] Deployed ${dm.counter} contracts, spent ${dm.spent} Ξ`);
+        console.log(`[${tag}]\n${dm.diffDelta(delta)}`);
+      } catch (e) {
+        console.log(`[${tag}] Failed to deploy with error: ${e}`);
+      }
+    }
+
+    const verify = noVerify ? false : !simulate;
+    const desc = verify ? 'Verify' : 'Would verify';
+    if (noVerify && simulate) {
+      // Don't even print if --no-verify is set with --simulate
+    } else {
+      await dm.verifyContracts(async (address, args) => {
+        if (args.via === 'buildfile') {
+          const { contract: _, ...rest } = args;
+          console.log(`[${tag}] ${desc} ${address}:`, rest);
+        } else {
+          console.log(`[${tag}] ${desc} ${address}:`, args);
+        }
+        return verify;
       });
 
-      if (nodeploy) {
-        // Don't run the deploy script
+      if (noVerifyImpl) {
+        // Don't even try if --no-verify-impl
       } else {
-        try {
-          const overrides = undefined; // TODO: pass through cli args
-          const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
-          console.log(`[${tag}] Deployed ${dm.counter} contracts, spent ${dm.spent} Ξ`);
-          console.log(`[${tag}]\n${dm.diffDelta(delta)}`);
-        } catch (e) {
-          console.log(`[${tag}] Failed to deploy with error: ${e}`);
-        }
-      }
-
-      const verify = noVerify ? false : !simulate;
-      const desc = verify ? 'Verify' : 'Would verify';
-      if (noVerify && simulate) {
-        // Don't even print if --no-verify is set with --simulate
-      } else {
-        await dm.verifyContracts(async (address, args) => {
-          if (args.via === 'buildfile') {
-            const { contract: _, ...rest } = args;
-            console.log(`[${tag}] ${desc} ${address}:`, rest);
-          } else {
-            console.log(`[${tag}] ${desc} ${address}:`, args);
-          }
-          return verify;
-        });
-
-        if (noVerifyImpl) {
-          // Don't even try if --no-verify-impl
-        } else {
-          // Maybe verify the comet impl too
-          const comet = await dm.contract('comet');
-          const cometImpl = await dm.contract('comet:implementation');
-          const configurator = await dm.contract('configurator');
-          const config = await configurator.getConfiguration(comet.address);
-          const args: VerifyArgs = {
-            via: 'artifacts',
-            address: cometImpl.address,
-            constructorArguments: [config]
-          };
-          console.log(`[${tag}] ${desc} ${cometImpl.address}:`, args);
-          if (verify) {
-            await dm.verifyContract(args);
-          }
+        // Maybe verify the comet impl too
+        const comet = await dm.contract('comet');
+        const cometImpl = await dm.contract('comet:implementation');
+        const configurator = await dm.contract('configurator');
+        const config = await configurator.getConfiguration(comet.address);
+        const args: VerifyArgs = {
+          via: 'artifacts',
+          address: cometImpl.address,
+          constructorArguments: [config]
+        };
+        console.log(`[${tag}] ${desc} ${cometImpl.address}:`, args);
+        if (verify) {
+          await dm.verifyContract(args);
         }
       }
     }
-  );
+  });
 
 task('publish', 'Verifies a known contract at an address, given its args')
   .addParam('address', 'The address to publish')
@@ -141,7 +139,7 @@ task('publish', 'Verifies a known contract at an address, given its args')
     const args: VerifyArgs = {
       via: 'artifacts',
       address,
-      constructorArguments
+      constructorArguments,
     };
     console.log(`[${tag} ${address}:`, args);
     await dm.verifyContract(args);
@@ -152,20 +150,22 @@ task('gen:migration', 'Generates a new migration')
   .addParam('deployment', 'The deployment to generate the migration for')
   .setAction(async ({ name, deployment }, env) => {
     const network = env.network.name;
-    const dm = new DeploymentManager(network, deployment, env, {
-      writeCacheToDisk: true,
-      verificationStrategy: 'lazy'
-    });
+    const dm = new DeploymentManager(
+      network,
+      deployment,
+      env,
+      {
+        writeCacheToDisk: true,
+        verificationStrategy: 'lazy',
+      }
+    );
     const file = await dm.generateMigration(name);
     console.log(`Generated migration ${network}/${deployment}/${file}`);
   });
 
 task('migrate', 'Runs migration')
   .addPositionalParam('migration', 'name of migration')
-  .addOptionalParam(
-    'impersonate',
-    'the governor will impersonate the passed account for proposals [only when simulating]'
-  )
+  .addOptionalParam('impersonate', 'the governor will impersonate the passed account for proposals [only when simulating]')
   .addParam('deployment', 'The deployment to apply the migration to')
   .addFlag('prepare', 'runs preparation [defaults to true if enact not specified]')
   .addFlag('enact', 'enacts migration [implies prepare]')
@@ -173,35 +173,24 @@ task('migrate', 'Runs migration')
   .addFlag('simulate', 'only simulates the blockchain effects')
   .addFlag('overwrite', 'overwrites artifact if exists, fails otherwise')
   .setAction(
-    async (
-      {
-        migration: migrationName,
-        prepare,
-        enact,
-        noEnacted,
-        simulate,
-        overwrite,
-        deployment,
-        impersonate
-      },
-      env
-    ) => {
+    async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, deployment, impersonate }, env) => {
       const maybeForkEnv = simulate ? getForkEnv(env) : env;
       const network = env.network.name;
-      const dm = new DeploymentManager(network, deployment, maybeForkEnv, {
-        writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-        verificationStrategy: 'eager' // We use eager here to verify contracts right after they are deployed
-      });
+      const dm = new DeploymentManager(
+        network,
+        deployment,
+        maybeForkEnv,
+        {
+          writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
+          verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
+        }
+      );
       await dm.spider();
 
       let governanceDm: DeploymentManager;
-      const base = env.config.scenario.bases.find(
-        b => b.network === network && b.deployment === deployment
-      );
+      const base = env.config.scenario.bases.find(b => b.network === network && b.deployment === deployment);
       const isBridgedDeployment = base.auxiliaryBase !== undefined;
-      const governanceBase = isBridgedDeployment
-        ? env.config.scenario.bases.find(b => b.name === base.auxiliaryBase)
-        : undefined;
+      const governanceBase = isBridgedDeployment ? env.config.scenario.bases.find(b => b.name === base.auxiliaryBase) : undefined;
 
       if (governanceBase) {
         const governanceEnv = hreForBase(governanceBase, simulate);
@@ -211,7 +200,7 @@ task('migrate', 'Runs migration')
           governanceEnv,
           {
             writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
-            verificationStrategy: 'eager' // We use eager here to verify contracts right after they are deployed
+            verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
           }
         );
         await governanceDm.spider();
@@ -220,9 +209,7 @@ task('migrate', 'Runs migration')
       }
 
       if (impersonate && !simulate) {
-        throw new Error(
-          'Cannot impersonate an address if not simulating a migration. Please specify --simulate to simulate.'
-        );
+        throw new Error('Cannot impersonate an address if not simulating a migration. Please specify --simulate to simulate.');
       } else if (impersonate && simulate) {
         const signer = await impersonateAddress(governanceDm, impersonate, 10n ** 18n);
         governanceDm._signers.unshift(signer);
@@ -231,9 +218,7 @@ task('migrate', 'Runs migration')
       const migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
       const [migration] = await loadMigrations([migrationPath]);
       if (!migration) {
-        throw new Error(
-          `Unknown migration for network ${network}/${deployment}: \`${migrationName}\`.`
-        );
+        throw new Error(`Unknown migration for network ${network}/${deployment}: \`${migrationName}\`.`);
       }
       if (!prepare && !enact) {
         prepare = true;

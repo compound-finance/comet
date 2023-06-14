@@ -92,7 +92,7 @@ async function getEtherscanApiData(
 async function scrapeContractCreationCodeFromEtherscan(network: string, address: string) {
   const url = `${getEtherscanUrl(network)}/address/${address}#code`;
   debug(`Attempting to scrape Contract Creation code at ${url}`);
-  const result = <string>await get(url, {}, network);
+  const result = <string>await get(url, {});
   const regex = /<div id='verifiedbytecode2'>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
   const matches = [...result.matchAll(regex)];
   if (matches.length === 0) {
