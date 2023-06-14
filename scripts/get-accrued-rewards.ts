@@ -37,10 +37,10 @@ async function main() {
     addressesAndRewardOwed.push({
       address: address,
       owed: rewardOwed?.owed
-    })
+    });
   }
 
-  console.log(`✨ Fetched accrued rewards for ${addressesAndRewardOwed.length} accounts`)
+  console.log(`✨ Fetched accrued rewards for ${addressesAndRewardOwed.length} accounts`);
 }
 
 main()
@@ -48,4 +48,4 @@ main()
   .catch(error => {
     console.error(error);
     process.exit(1);
-  })
+  });
