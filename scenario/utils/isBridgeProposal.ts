@@ -45,9 +45,11 @@ export async function isBridgeProposal(
     }
     case 'linea-goerli': {
       const governor = await governanceDeploymentManager.getContractOrThrow('governor');
-      const zkEvmV2 = await governanceDeploymentManager.getContractOrThrow('zkEvmV2');
+      const lineaMessageService = await governanceDeploymentManager.getContractOrThrow(
+        'lineaMessageService'
+      );
       const { targets } = await governor.getActions(openProposal.id);
-      return targets.includes(zkEvmV2.address);
+      return targets.includes(lineaMessageService.address);
     }
     default: {
       const tag = `[${bridgeNetwork} -> ${governanceDeploymentManager.network}]`;

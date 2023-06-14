@@ -14,19 +14,13 @@ import { Spider, spider } from './Spider';
 import { Migration, getArtifactSpec } from './Migration';
 import { generateMigration } from './MigrationTemplate';
 import { ExtendedNonceManager } from './NonceManager';
-import {
-  asyncCallWithTimeout,
-  debug,
-  getEthersContract,
-  mergeIntoProxyContract,
-  txCost
-} from './Utils';
+import { asyncCallWithTimeout, debug, getEthersContract, mergeIntoProxyContract, txCost } from './Utils';
 import { deleteVerifyArgs, getVerifyArgs } from './VerifyArgs';
 import { verifyContract, VerifyArgs, VerificationStrategy } from './Verify';
 
 interface DeploymentDelta {
-  old: { start: Date; count: number; spider: Spider };
-  new: { start: Date; count: number; spider: Spider };
+  old: { start: Date, count: number, spider: Spider };
+  new: { start: Date, count: number, spider: Spider };
 }
 
 interface DeploymentManagerConfig {
@@ -40,7 +34,7 @@ interface DeploymentManagerConfig {
 export type Deployed = { [alias: Alias]: Contract };
 
 async function getManagedSigner(signer): Promise<SignerWithAddress> {
-  const managedSigner = (new ExtendedNonceManager(signer) as unknown) as providers.JsonRpcSigner;
+  const managedSigner = new ExtendedNonceManager(signer) as unknown as providers.JsonRpcSigner;
   return SignerWithAddress.create(managedSigner);
 }
 
@@ -136,8 +130,7 @@ export class DeploymentManager {
   async idempotent<T>(
     condition: () => Promise<any>,
     action: () => Promise<T>,
-    retries?: number
-  ): Promise<T> {
+    retries?: number): Promise<T> {
     if (await condition()) {
       return this.retry(action, retries);
     }
@@ -156,14 +149,7 @@ export class DeploymentManager {
 
   /* Unconditionally casts a contract as the given artifact type, without caching */
   async cast<C extends Contract>(address: string, artifact: string): Promise<C> {
-    const buildFile = await readContract(
-      this.cache,
-      this.hre,
-      artifact,
-      this.network,
-      address,
-      true
-    );
+    const buildFile = await readContract(this.cache, this.hre, artifact, this.network, address, true);
     return getEthersContract<C>(address, buildFile, this.hre);
   }
 
@@ -213,17 +199,10 @@ export class DeploymentManager {
     if (!maybeExisting) {
       const trace = this.tracer();
       const contracts = await Promise.all(
-        [].concat(addresses).map(async address => {
+        [].concat(addresses).map(async (address) => {
           let buildFile;
           if (artifact !== undefined) {
-            buildFile = await readContract(
-              this.cache,
-              this.hre,
-              artifact,
-              network,
-              address,
-              !this.cache
-            );
+            buildFile = await readContract(this.cache, this.hre, artifact, network, address, !this.cache);
           } else {
             buildFile = await this.import(address, network);
           }
@@ -261,11 +240,7 @@ export class DeploymentManager {
   }
 
   /* Deploys a contract from Hardhat artifacts */
-  async _deploy<C extends Contract>(
-    contractFile: string,
-    deployArgs: any[],
-    retries?: number
-  ): Promise<C> {
+  async _deploy<C extends Contract>(contractFile: string, deployArgs: any[], retries?: number): Promise<C> {
     const contract = await this.retry(
       async () => deploy(contractFile, deployArgs, this.hre, await this.deployOpts()),
       retries
@@ -275,11 +250,7 @@ export class DeploymentManager {
   }
 
   /* Deploys a contract from a build file, e.g. an one imported contract */
-  async _deployBuild<C extends Contract>(
-    buildFile: BuildFile,
-    deployArgs: any[],
-    retries?: number
-  ): Promise<C> {
+  async _deployBuild<C extends Contract>(buildFile: BuildFile, deployArgs: any[], retries?: number): Promise<C> {
     const contract = await this.retry(
       async () => deployBuild(buildFile, deployArgs, this.hre, await this.deployOpts()),
       retries
@@ -290,7 +261,7 @@ export class DeploymentManager {
 
   /* Deploys missing contracts from the deployment, using the user-space deploy.ts script */
   async runDeployScript(deploySpec: object): Promise<DeploymentDelta> {
-    const oldStart = new Date();
+    const oldStart = new Date;
     const oldCount = this.counter;
     const oldSpider = await this.spider();
     const deployScript = this.cache.getFilePath({ rel: 'deploy.ts' });
@@ -299,7 +270,7 @@ export class DeploymentManager {
       throw new Error(`Missing deploy function in ${deployScript}.`);
     }
     const deployed = await deployFn(this, deploySpec);
-    const newStart = new Date();
+    const newStart = new Date;
     const newCount = this.counter;
     const newSpider = await this.spider(deployed);
     return {
@@ -312,7 +283,7 @@ export class DeploymentManager {
   async verifyContracts(filter?: (address: string, args: VerifyArgs) => Promise<boolean>) {
     const verifyArgsMap = await getVerifyArgs(this.cache);
     for (const [address, verifyArgs] of verifyArgsMap) {
-      if (filter == undefined || (await filter(address, verifyArgs))) {
+      if (filter == undefined || await filter(address, verifyArgs)) {
         const success = await this.verifyContract(verifyArgs);
         // Clear from cache after successfully verifying
         if (success) await deleteVerifyArgs(this.cache, address);
@@ -322,11 +293,7 @@ export class DeploymentManager {
 
   /* Verifies a contract with the given args and deployment manager hre/opts */
   async verifyContract(args: VerifyArgs): Promise<boolean> {
-    return await verifyContract(
-      args,
-      this.hre,
-      (await this.deployOpts()).raiseOnVerificationFailure
-    );
+    return await verifyContract(args, this.hre, (await this.deployOpts()).raiseOnVerificationFailure);
   }
 
   /* Loads contract configuration by tracing from roots outwards, based on relationConfig */
@@ -337,7 +304,7 @@ export class DeploymentManager {
       this.deployment
     );
     const roots = new Map([
-      ...(await getRoots(this.cache)),
+      ...await getRoots(this.cache),
       ...Object.entries(deployed).map(([a, c]): [Alias, Address] => [a, c.address])
     ]);
     const crawl = await spider(
@@ -396,7 +363,7 @@ export class DeploymentManager {
   /* Gets all the contracts, connected to signer, as an object */
   async getContracts(signer?: SignerWithAddress): Promise<{ [alias: Alias]: Contract }> {
     const contracts = await this.contracts();
-    const signer_ = signer ?? (await this.getSigner());
+    const signer_ = signer ?? await this.getSigner();
     return Object.fromEntries([...contracts].map(([a, c]) => [a, c.connect(signer_)]));
   }
 
@@ -410,19 +377,13 @@ export class DeploymentManager {
    * "Compound Comet"
    * ```
    **/
-  async contract<T extends Contract>(
-    alias: string,
-    signer?: SignerWithAddress
-  ): Promise<T | undefined> {
+  async contract<T extends Contract>(alias: string, signer?: SignerWithAddress): Promise<T | undefined> {
     const contracts = await this.contracts();
     const contract = contracts.get(alias);
-    return contract && (contract.connect(signer ?? (await this.getSigner())) as T);
+    return contract && contract.connect(signer ?? await this.getSigner()) as T;
   }
 
-  async getContractOrThrow<T extends Contract>(
-    alias: string,
-    signer?: SignerWithAddress
-  ): Promise<T> {
+  async getContractOrThrow<T extends Contract>(alias: string, signer?: SignerWithAddress): Promise<T> {
     const tag = `${this.network}/${this.deployment}`;
     const contract = await this.contract<T>(alias, signer);
     if (!contract) {
@@ -491,8 +452,8 @@ export class DeploymentManager {
       if (typeof first === 'string') {
         debug(`[${this.network}] ${first}`, ...rest);
       } else {
-        return first.wait().then(async tx => {
-          const cost = Number(txCost(tx) / 10n ** 12n) / 1e6;
+        return first.wait().then(async (tx) => {
+          const cost = Number(txCost(tx) / (10n ** 12n)) / 1e6;
           const logs = tx.events.map(e => `${e.event ?? 'unknown'}(${e.args ?? '?'})`).join(' ');
           const info = `@ ${tx.transactionHash}[${tx.transactionIndex}]`;
           const desc = `${info} in blockNumber: ${tx.blockNumber} emits: ${logs}`;
@@ -512,7 +473,7 @@ export class DeploymentManager {
       aAnnotation: 'New addresses',
       aIndicator: '+',
       bAnnotation: 'Old addresses',
-      bIndicator: '-'
+      bIndicator: '-',
     });
   }
 

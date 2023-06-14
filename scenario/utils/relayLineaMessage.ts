@@ -12,24 +12,26 @@ export default async function relayLineaMessage(
   bridgeDeploymentManager: DeploymentManager,
   startingBlockNumber: number
 ) {
-  const zkEvmV2 = await governanceDeploymentManager.getContractOrThrow('zkEvmV2');
+  const lineaMessageService = await governanceDeploymentManager.getContractOrThrow(
+    'lineaMessageService'
+  );
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
   const l2MessageService = await bridgeDeploymentManager.getContractOrThrow('l2MessageService');
   const l2TokenBridge = await bridgeDeploymentManager.getContractOrThrow('l2TokenBridge');
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
   // Grab all events on the L1CrossDomainMessenger contract since the `startingBlockNumber`
-  const filter = zkEvmV2.filters.MessageSent();
+  const filter = lineaMessageService.filters.MessageSent();
   const messageSentEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
-    address: zkEvmV2.address,
+    address: lineaMessageService.address,
     topics: filter.topics!
   });
   for (let messageSentEvent of messageSentEvents) {
     const {
       args: { _from, _to, _fee, _value, _nonce, _calldata, _messageHash }
-    } = zkEvmV2.interface.parseLog(messageSentEvent);
+    } = lineaMessageService.interface.parseLog(messageSentEvent);
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
 

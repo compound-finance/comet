@@ -534,8 +534,10 @@ export async function createCrossChainProposal(
         ['address', 'uint256', 'bytes'],
         [bridgeReceiver.address, 0, l2ProposalData]
       );
-      const zkEvmV2 = await govDeploymentManager.getContractOrThrow('zkEvmV2');
-      targets.push(zkEvmV2.address);
+      const lineaMessageService = await govDeploymentManager.getContractOrThrow(
+        'lineaMessageService'
+      );
+      targets.push(lineaMessageService.address);
       values.push(0);
       signatures.push('sendMessage(address,uint256,bytes)');
       calldata.push(sendMessageCalldata);

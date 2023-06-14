@@ -78,26 +78,7 @@ export function getEtherscanApiKey(network: string): string {
   return apiKey;
 }
 
-export async function get(url, data, network = '') {
-  try {
-    let res;
-    // TODO remove this condition
-    if (network === 'linea-goerli') {
-      res = (
-        await axios.get(url, {
-          params: data,
-          auth: {
-            username: 'eslineastage',
-            password: 'QW$eKsy3J%~v'
-          }
-        })
-      )['data'];
-    } else {
-      res = (await axios.get(url, { params: data }))['data'];
-    }
-
-    return res;
-  } catch (err) {
-    console.log({ err });
-  }
+export async function get(url, data) {
+  const res = (await axios.get(url, { params: data }))['data'];
+  return res;
 }

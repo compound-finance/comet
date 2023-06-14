@@ -5,9 +5,6 @@ export default {
   governor: {
     artifact: 'contracts/bridges/linea/LineaBridgeReceiver.sol:LineaBridgeReceiver'
   },
-  ClonableBeaconProxy: {
-    artifact: 'contracts/ERC20.sol:ERC20'
-  },
   // WETH
   '0x2C1b868d6596a18e32E61B901E4060C872647b6C': {
     artifact: 'contracts/ERC20.sol:ERC20',
