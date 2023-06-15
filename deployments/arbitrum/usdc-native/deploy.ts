@@ -11,7 +11,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const ethers = deploymentManager.hre.ethers;
 
   // pull in existing assets
-  const USDC = await deploymentManager.existing('USDC', '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8', 'arbitrum');
+  const USDC = await deploymentManager.existing('USDC', '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', 'arbitrum');
   const ARB = await deploymentManager.existing('ARB', '0x912ce59144191c1204e64559fe8253a0e49e6548', 'arbitrum');
   const GMX = await deploymentManager.existing('GMX', '0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a', 'arbitrum');
   const WETH = await deploymentManager.existing('WETH', '0x82af49447d8a07e3bd95bd0d56f35241523fbab1', 'arbitrum');
