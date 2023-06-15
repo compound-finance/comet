@@ -1,13 +1,8 @@
 import hre from 'hardhat';
 import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
 import { CometInterface, CometRewards } from '../build/types';
-import { BigNumber } from 'ethers';
+import { BigNumberish } from 'ethers';
 import { requireEnv } from '../hardhat.config';
-
-type AddressAndRewardOwed = {
-  address: string;
-  owed: BigNumber;
-}
 
 // Pulls in all addresses that have supplied or borrowed the base asset from Comet
 async function getUniqueAddresses(comet: CometInterface): Promise<Set<string>> {
@@ -30,17 +25,20 @@ async function main() {
 
   const uniqueAddresses = await getUniqueAddresses(comet);
 
-  const addressesAndRewardOwed: AddressAndRewardOwed[] = [];
+  const users: string[] = [];
+  const accruedAmounts: BigNumberish[] = [];
 
   for (const address of uniqueAddresses) {
     const rewardOwed = await rewards.callStatic.getRewardOwed(comet?.address, address, blockTag);
-    addressesAndRewardOwed.push({
-      address: address,
-      owed: rewardOwed?.owed
-    });
+    users.push(address);
+    accruedAmounts.push(rewardOwed?.owed);
   }
 
-  console.log(`✨ Fetched accrued rewards for ${addressesAndRewardOwed.length} accounts`);
+  console.log(`✨ Fetched accrued rewards for ${users.length} users`);
+
+  /* To set accrued rewards as the users' claimed rewards --
+    await rewards.setRewardsClaimed(comet?.address, users, accruedAmounts);
+  */
 }
 
 main()
