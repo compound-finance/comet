@@ -111,17 +111,14 @@ export default migration('1686953660_configurate_and_ens', {
 
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
-    const officialMarketsJSON = await ENSResolver.text(subdomainHash, ENSTextRecordKey);
-    const officialMarkets = JSON.parse(officialMarketsJSON);
-    const updatedMarkets = {
-      ...officialMarkets,
-      42161: [
-        {
-          baseSymbol: 'USDC',
-          cometAddress: comet.address,
-        }
-      ],
-    };
+    const arbitrumChainId = (await deploymentManager.hre.ethers.provider.getNetwork()).chainId.toString();
+    const newMarketObject = { baseSymbol: 'USDC.n', cometAddress: comet.address };
+    const officialMarketsJSON = JSON.parse(await ENSResolver.text(subdomainHash, ENSTextRecordKey));
+    if (officialMarketsJSON[arbitrumChainId]) {
+      officialMarketsJSON[arbitrumChainId].push(newMarketObject);
+    } else {
+      officialMarketsJSON[arbitrumChainId] = [newMarketObject];
+    }
 
     const mainnetActions = [
       // 1. Set Comet configuration and deployAndUpgradeTo new Comet on Arbitrum.
@@ -140,37 +137,13 @@ export default migration('1686953660_configurate_and_ens', {
         ],
         value: createRetryableTicketGasParams.deposit
       },
-      // 2. Approve the USDC gateway to take Timelock's USDC for bridging
-      {
-        contract: USDC,
-        signature: 'approve(address,uint256)',
-        args: [usdcGatewayAddress, USDCAmountToBridge]
-      },
-      // 3. Bridge USDC from mainnet to Arbitrum Comet
-      {
-        contract: arbitrumL1GatewayRouter,
-        signature: 'outboundTransferCustomRefund(address,address,address,uint256,uint256,uint256,bytes)',
-        args: [
-          USDC.address,                             // address _token,
-          refundAddress,                            // address _refundTo
-          comet.address,                            // address _to,
-          USDCAmountToBridge,                       // uint256 _amount,
-          usdcGasParams.gasLimit,                   // uint256 _maxGas,
-          usdcGasParams.maxFeePerGas,               // uint256 _gasPriceBid,
-          utils.defaultAbiCoder.encode(
-            ['uint256', 'bytes'],
-            [usdcGasParams.maxSubmissionCost, '0x']
-          )                                         // bytes calldata _data
-        ],
-        value: usdcGasParams.deposit
-      },
-      // 4. Approve the COMP gateway to take Timelock's COMP for bridging
+      // 2. Approve the COMP gateway to take Timelock's COMP for bridging
       {
         contract: COMP,
         signature: 'approve(address,uint256)',
         args: [compGatewayAddress, COMPAmountToBridge]
       },
-      // 5. Bridge COMP from mainnet to Arbitrum rewards
+      // 3. Bridge COMP from mainnet to Arbitrum rewards
       {
         contract: arbitrumL1GatewayRouter,
         signature: 'outboundTransferCustomRefund(address,address,address,uint256,uint256,uint256,bytes)',
@@ -188,16 +161,16 @@ export default migration('1686953660_configurate_and_ens', {
         ],
         value: compGasParams.deposit
       },
-      // 6. Update the list of official markets
+      // 4. Update the list of official markets
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
         calldata: ethers.utils.defaultAbiCoder.encode(
           ['bytes32', 'string', 'string'],
-          [subdomainHash, ENSTextRecordKey, JSON.stringify(updatedMarkets)]
+          [subdomainHash, ENSTextRecordKey, JSON.stringify(officialMarketsJSON)]
         )
       },
-      // 7. Displace v2 USDT COMP rewards
+      // 5. Displace v2 USDT COMP rewards
       {
         contract: comptrollerV2,
         signature: '_setCompSpeeds(address[],uint256[],uint256[])',
@@ -209,7 +182,7 @@ export default migration('1686953660_configurate_and_ens', {
       },
     ];
 
-    const description = "# Initialize cUSDCv3 on Arbitrum\n\nThis proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Arbitrum; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market's readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). Although real tests have also been run over the Goerli/Arbitrum Goerli bridge, this proposal requires estimating gas costs in advance of executing the bridge proposal, and therefore includes risks not present in previous proposals.\n\nAlthough the proposal sets the entire configuration in the Configurator, the initial deployment already has most of these same parameters already set. The new parameters are limited to increasing the supply caps of the collateral assets from their initial values of 0. The risk parameters and supply caps are based off of [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-v3-on-arbitrum/4100/15).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/719) and [forum discussion](https://www.comp.xyz/t/deploy-compound-v3-on-arbitrum/4100).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Arbitrum. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Arbitrum. It also calls `setRewardConfig` on the Arbitrum rewards contract, to establish Arbitrum's bridged version of COMP as the reward token for the deployment and set the initial supply speed to be ~34.74 COMP/day.\n\nThe second action approves Arbitrum's [L1 Arb-Custom Gateway](https://etherscan.io/address/0xcEe284F754E854890e311e3280b767F80797180d) to take Timelock's USDC, in order to seed the market reserves through the bridge.\n\nThe third action bridges USDC from mainnet to the Compound instance on Arbitrum, via Arbitrum's [L1GatewayRouter contract](https://etherscan.io/address/0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef).\n\nThe fourth action approves Arbitrum's [L1 ERC20 Gateway](https://etherscan.io/address/0xa3A7B6F88361F48403514059F1F16C8E78d60EeC) to take Timelock's COMP, in order to seed the rewards contract through the bridge.\n\nThe fifth action transfers COMP from mainnet to the rewards contract on Arbitrum, via Arbitrum's [L1GatewayRouter contract](https://etherscan.io/address/0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef).\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Arbitrum cUSDCv3 market.\n\nThe seventh action turns off COMP distributions on Compound v2 USDT borrows (~34.74 COMP/day) as they are being shifted to Arbitrum.";
+    const description = "# Configurate Arbitrum cUSDCNv3 market, set reward config, USDC native and COMP, and update ENS text record.";    
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
@@ -280,7 +253,7 @@ export default migration('1686953660_configurate_and_ens', {
       1: [
         {
           baseSymbol: 'USDC',
-          cometAddress: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+          cometAddress: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
         },
         {
           baseSymbol: 'WETH',
@@ -298,6 +271,10 @@ export default migration('1686953660_configurate_and_ens', {
       42161: [
         {
           baseSymbol: 'USDC',
+          cometAddress: '0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA',
+        }, 
+        {
+          baseSymbol: 'USDC.n',
           cometAddress: comet.address,
         }
       ],
