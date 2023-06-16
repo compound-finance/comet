@@ -7,7 +7,7 @@ import { exp } from '../test/helpers';
 scenario(
   'Comet#bulker > (non-WETH base) all non-reward actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, {network: 'mumbai'}]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, {network: 'mumbai'}, { network: 'linea-goerli' }]),
     supplyCaps: {
       $asset0: 3000,
       $asset1: 3000,

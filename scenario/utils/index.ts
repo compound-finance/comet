@@ -483,6 +483,20 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageToChildCalldata);
       break;
     }
+    case 'linea-goerli': {
+      const sendMessageCalldata = utils.defaultAbiCoder.encode(
+        ['address', 'uint256', 'bytes'],
+        [bridgeReceiver.address, 0, l2ProposalData]
+      );
+      const lineaMessageService = await govDeploymentManager.getContractOrThrow(
+        'lineaMessageService'
+      );
+      targets.push(lineaMessageService.address);
+      values.push(0);
+      signatures.push('sendMessage(address,uint256,bytes)');
+      calldata.push(sendMessageCalldata);
+      break;
+    }
     default:
       throw new Error(
         `No cross-chain proposal constructor implementation for ${govDeploymentManager.network} -> ${bridgeNetwork}`
