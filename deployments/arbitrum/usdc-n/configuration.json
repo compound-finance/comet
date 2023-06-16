@@ -1,6 +1,6 @@
 {
   "name": "Compound USDC(native)",
-  "symbol": "cUSDCv3-native",
+  "symbol": "cUSDCNv3",
   "baseToken": "USDC",
   "baseTokenAddress": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
   "baseTokenPriceFeed": "0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3",
