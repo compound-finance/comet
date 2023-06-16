@@ -333,6 +333,12 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'mainnet'
       },
       {
+        name: 'arbitrum-usdc-native',
+        network: 'arbitrum',
+        deployment: 'usdc-n',
+        auxiliaryBase: 'mainnet'
+      },
+      {
         name: 'arbitrum-goerli',
         network: 'arbitrum-goerli',
         deployment: 'usdc',
