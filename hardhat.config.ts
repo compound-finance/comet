@@ -335,7 +335,7 @@ const config: HardhatUserConfig = {
       {
         name: 'arbitrum-usdc-native',
         network: 'arbitrum',
-        deployment: 'usdc-n',
+        deployment: 'usdc.n',
         auxiliaryBase: 'mainnet'
       },
       {
