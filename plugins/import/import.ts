@@ -19,9 +19,7 @@ export function debug(...args: any[]) {
 
 export async function loadContract(source: string, network: string, address: string) {
   if (address === '0x0000000000000000000000000000000000000000') {
-    throw new Error(
-      `Cannot load ${source} contract for address ${address} on network ${network}. Address invalid.`
-    );
+    throw new Error(`Cannot load ${source} contract for address ${address} on network ${network}. Address invalid.`);
   }
   switch (source) {
     case 'etherscan':
@@ -54,18 +52,14 @@ interface EtherscanData {
   constructorArgs: string;
 }
 
-async function getEtherscanApiData(
-  network: string,
-  address: string,
-  apiKey: string
-): Promise<EtherscanData> {
+async function getEtherscanApiData(network: string, address: string, apiKey: string): Promise<EtherscanData> {
   let apiUrl = await getEtherscanApiUrl(network);
 
   let result = await get(apiUrl, {
     module: 'contract',
     action: 'getsourcecode',
     address,
-    apikey: apiKey
+    apikey: apiKey,
   });
 
   if (result.status !== '1') {
@@ -85,7 +79,7 @@ async function getEtherscanApiData(
     compiler: s.CompilerVersion,
     optimized: s.OptimizationUsed !== '0',
     optimizationRuns: Number(s.Runs),
-    constructorArgs: s.ConstructorArguments
+    constructorArgs: s.ConstructorArguments,
   };
 }
 
@@ -107,9 +101,7 @@ async function scrapeContractCreationCodeFromEtherscan(network: string, address:
 }
 
 function paramString(params: { [k: string]: string | number }) {
-  return Object.entries(params)
-    .map(([k, v]) => `${k}=${v}`)
-    .join('&');
+  return Object.entries(params).map(([k,v]) => `${k}=${v}`).join('&');
 }
 
 async function pullFirstTransactionForContract(network: string, address: string) {
@@ -125,10 +117,7 @@ async function pullFirstTransactionForContract(network: string, address: string)
     apikey: getEtherscanApiKey(network)
   };
   const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
-  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({
-    ...params,
-    ...{ apikey: '[API_KEY]' }
-  })}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]'}})}`;
 
   debug(`Attempting to pull Contract Creation code from first tx at ${debugUrl}`);
   const result = await get(url, {});
@@ -141,7 +130,10 @@ async function pullFirstTransactionForContract(network: string, address: string)
 }
 
 async function getContractCreationCode(network: string, address: string) {
-  const strategies = [scrapeContractCreationCodeFromEtherscan, pullFirstTransactionForContract];
+  const strategies = [
+    scrapeContractCreationCodeFromEtherscan,
+    pullFirstTransactionForContract
+  ];
   let errors = [];
   for (const strategy of strategies) {
     try {
@@ -164,7 +156,7 @@ function parseSources({ source, contract, optimized, optimizationRuns }: Ethersc
         settings: {
           optimizer: {
             enabled: optimized,
-            runs: optimizationRuns
+            runs: optimizationRuns,
           }
         },
         sources: JSON.parse(source)
@@ -177,13 +169,13 @@ function parseSources({ source, contract, optimized, optimizationRuns }: Ethersc
       settings: {
         optimizer: {
           enabled: optimized,
-          runs: optimizationRuns
+          runs: optimizationRuns,
         }
       },
       sources: {
         [`contracts/${contract}.sol`]: {
           content: source,
-          keccak256: ''
+          keccak256: '',
         }
       }
     };
@@ -194,19 +186,22 @@ export async function loadEtherscanContract(network: string, address: string) {
   const apiKey = getEtherscanApiKey(network);
   const networkName = network;
   const etherscanData = await getEtherscanApiData(networkName, address, apiKey);
-  const { abi, contract, compiler, constructorArgs } = etherscanData;
+  const {
+    abi,
+    contract,
+    compiler,
+    constructorArgs
+  } = etherscanData;
   const { language, settings, sources } = parseSources(etherscanData);
   const contractPath = Object.keys(sources)[0];
   const contractFQN = `${contractPath}:${contract}`;
 
   let contractCreationCode = await getContractCreationCode(networkName, address);
-
   if (constructorArgs.length > 0 && contractCreationCode.endsWith(constructorArgs)) {
     contractCreationCode = contractCreationCode.slice(0, -constructorArgs.length);
   }
 
   const encodedABI = JSON.stringify(abi);
-
   const contractBuild = {
     contract,
     contracts: {
@@ -219,20 +214,20 @@ export async function loadEtherscanContract(network: string, address: string) {
         constructorArgs,
         metadata: JSON.stringify({
           compiler: {
-            version: compiler
+            version: compiler,
           },
           language,
           output: {
-            abi: encodedABI
+            abi: encodedABI,
           },
           devdoc: {},
           sources,
           settings,
-          version: 1
-        })
-      }
+          version: 1,
+        }),
+      },
     },
-    version: compiler
+    version: compiler,
   };
 
   return contractBuild;

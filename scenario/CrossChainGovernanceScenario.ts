@@ -18,9 +18,7 @@ scenario(
 
     // Cross-chain proposal to change L2 timelock's delay and pause L2 Comet actions
     const setDelayCalldata = utils.defaultAbiCoder.encode(['uint'], [newTimelockDelay]);
-    const pauseCalldata = await calldata(
-      comet.populateTransaction.pause(true, true, true, true, true)
-    );
+    const pauseCalldata = await calldata(comet.populateTransaction.pause(true, true, true, true, true));
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
@@ -49,19 +47,9 @@ scenario(
 scenario(
   'upgrade Polygon governance contracts and ensure they work properly',
   {
-    filter: async ctx => matchesDeployment(ctx, [{ network: 'polygon' }, { network: 'mumbai' }])
+    filter: async ctx => matchesDeployment(ctx, [{network: 'polygon'}, {network: 'mumbai'}])
   },
-  async (
-    {
-      comet,
-      configurator,
-      proxyAdmin,
-      timelock: oldLocalTimelock,
-      bridgeReceiver: oldBridgeReceiver
-    },
-    context,
-    world
-  ) => {
+  async ({ comet, configurator, proxyAdmin, timelock: oldLocalTimelock, bridgeReceiver: oldBridgeReceiver }, context, world) => {
     const dm = world.deploymentManager;
     const govDeploymentManager = world.auxiliaryDeploymentManager!;
     const fxChild = await dm.getContractOrThrow('fxChild');
@@ -70,24 +58,28 @@ scenario(
     const newBridgeReceiver = await dm.deploy<BaseBridgeReceiver, [string]>(
       'newBridgeReceiver',
       'bridges/polygon/PolygonBridgeReceiver.sol',
-      [fxChild.address] // fxChild
+      [fxChild.address]           // fxChild
     );
 
     // Deploy new local Timelock
     const secondsPerDay = 24 * 60 * 60;
-    const newLocalTimelock = await dm.deploy('newTimelock', 'vendor/Timelock.sol', [
-      newBridgeReceiver.address, // admin
-      2 * secondsPerDay, // delay
-      14 * secondsPerDay, // grace period
-      2 * secondsPerDay, // minimum delay
-      30 * secondsPerDay // maxiumum delay
-    ]);
+    const newLocalTimelock = await dm.deploy(
+      'newTimelock',
+      'vendor/Timelock.sol',
+      [
+        newBridgeReceiver.address, // admin
+        2 * secondsPerDay,         // delay
+        14 * secondsPerDay,        // grace period
+        2 * secondsPerDay,         // minimum delay
+        30 * secondsPerDay         // maxiumum delay
+      ]
+    );
 
     // Initialize new PolygonBridgeReceiver
     const mainnetTimelock = (await govDeploymentManager.getContractOrThrow('timelock')).address;
     await newBridgeReceiver.initialize(
-      mainnetTimelock, // govTimelock
-      newLocalTimelock.address // localTimelock
+      mainnetTimelock,             // govTimelock
+      newLocalTimelock.address     // localTimelock
     );
 
     // Process for upgrading L2 governance contracts (order matters):
@@ -135,9 +127,7 @@ scenario(
     const newTimelockDelay = currentTimelockDelay.mul(2);
 
     const setDelayCalldata = utils.defaultAbiCoder.encode(['uint'], [newTimelockDelay]);
-    const pauseCalldata = await calldata(
-      comet.populateTransaction.pause(true, true, true, true, true)
-    );
+    const pauseCalldata = await calldata(comet.populateTransaction.pause(true, true, true, true, true));
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
@@ -165,20 +155,9 @@ scenario(
 scenario(
   'upgrade Arbitrum governance contracts and ensure they work properly',
   {
-    filter: async ctx =>
-      matchesDeployment(ctx, [{ network: 'arbitrum' }, { network: 'arbitrum-goerli' }])
+    filter: async ctx => matchesDeployment(ctx, [{network: 'arbitrum'}, {network: 'arbitrum-goerli'}])
   },
-  async (
-    {
-      comet,
-      configurator,
-      proxyAdmin,
-      timelock: oldLocalTimelock,
-      bridgeReceiver: oldBridgeReceiver
-    },
-    context,
-    world
-  ) => {
+  async ({ comet, configurator, proxyAdmin, timelock: oldLocalTimelock, bridgeReceiver: oldBridgeReceiver }, context, world) => {
     const dm = world.deploymentManager;
     const governanceDeploymentManager = world.auxiliaryDeploymentManager;
     if (!governanceDeploymentManager) {
@@ -194,20 +173,23 @@ scenario(
 
     // Deploy new local Timelock
     const secondsPerDay = 24 * 60 * 60;
-    const newLocalTimelock = await dm.deploy('newTimelock', 'vendor/Timelock.sol', [
-      newBridgeReceiver.address, // admin
-      2 * secondsPerDay, // delay
-      14 * secondsPerDay, // grace period
-      2 * secondsPerDay, // minimum delay
-      30 * secondsPerDay // maxiumum delay
-    ]);
+    const newLocalTimelock = await dm.deploy(
+      'newTimelock',
+      'vendor/Timelock.sol',
+      [
+        newBridgeReceiver.address, // admin
+        2 * secondsPerDay,         // delay
+        14 * secondsPerDay,        // grace period
+        2 * secondsPerDay,         // minimum delay
+        30 * secondsPerDay         // maxiumum delay
+      ]
+    );
 
     // Initialize new ArbitrumBridgeReceiver
-    const mainnetTimelock = (await governanceDeploymentManager.getContractOrThrow('timelock'))
-      .address;
+    const mainnetTimelock = (await governanceDeploymentManager.getContractOrThrow('timelock')).address;
     await newBridgeReceiver.initialize(
-      mainnetTimelock, // govTimelock
-      newLocalTimelock.address // localTimelock
+      mainnetTimelock,             // govTimelock
+      newLocalTimelock.address     // localTimelock
     );
 
     // Process for upgrading L2 governance contracts (order matters):
@@ -255,9 +237,7 @@ scenario(
     const newTimelockDelay = currentTimelockDelay.mul(2);
 
     const setDelayCalldata = utils.defaultAbiCoder.encode(['uint'], [newTimelockDelay]);
-    const pauseCalldata = await calldata(
-      comet.populateTransaction.pause(true, true, true, true, true)
-    );
+    const pauseCalldata = await calldata(comet.populateTransaction.pause(true, true, true, true, true));
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
