@@ -9,8 +9,7 @@ const ENSResolverAddress = '0x19c2d5D0f035563344dBB7bE5fD09c8dad62b001';
 const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
-//TODO change to linea COMP address once there is an address on Linea
-const baseCOMPAddress = '0xA29b548056c3fD0f68BAd9d4829EC4E66f22f796';
+const lineaCOMPAddress = '0x33ABC695A89Cf33a5997378d474a9BDB11bc2b5d';
 
 export default migration('1686918613_configurate_and_ens', {
   prepare: async (deploymentManager: DeploymentManager) => {
@@ -46,15 +45,15 @@ export default migration('1686918613_configurate_and_ens', {
       'goerli'
     );
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
-    const baseGoerliChainId = (
+    const lineaGoerliChainId = (
       await deploymentManager.hre.ethers.provider.getNetwork()
     ).chainId.toString();
     const newMarketObject = { baseSymbol: 'USDC', cometAddress: comet.address };
     const officialMarketsJSON = JSON.parse(await ENSResolver.text(subdomainHash, ENSTextRecordKey));
-    if (officialMarketsJSON[baseGoerliChainId]) {
-      officialMarketsJSON[baseGoerliChainId].push(newMarketObject);
+    if (officialMarketsJSON[lineaGoerliChainId]) {
+      officialMarketsJSON[lineaGoerliChainId].push(newMarketObject);
     } else {
-      officialMarketsJSON[baseGoerliChainId] = [newMarketObject];
+      officialMarketsJSON[lineaGoerliChainId] = [newMarketObject];
     }
 
     const configuration = await getConfigurationStruct(deploymentManager);
@@ -68,7 +67,7 @@ export default migration('1686918613_configurate_and_ens', {
     );
     const setRewardConfigCalldata = utils.defaultAbiCoder.encode(
       ['address', 'address'],
-      [comet.address, baseCOMPAddress]
+      [comet.address, lineaCOMPAddress]
     );
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],

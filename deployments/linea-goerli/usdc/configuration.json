@@ -23,16 +23,7 @@
     "baseBorrowSpeed": "0.0011458333333333333e15",
     "baseMinForRewards": "1000e6"
   },
-  "rewardToken": "COMP",
   "assets": {
-    "COMP": {
-      "priceFeed": "0x68169ed3fbea61ee3c1631b5c696cac10c147232",
-      "decimals": "18",
-      "borrowCF": 0.65,
-      "liquidateCF": 0.7,
-      "liquidationFactor": 0.92,
-      "supplyCap": "500000e18"
-    },
     "WETH": {
       "address": "0x2C1b868d6596a18e32E61B901E4060C872647b6C",
       "priceFeed": "0x45A61d74eaa5F78a6e1919Ca74Db2615743190Ad",
