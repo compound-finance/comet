@@ -5,29 +5,21 @@ import "../BaseBridgeReceiver.sol";
 import "./ITelepathy.sol";
 
 contract SuccinctBridgeReceiver is BaseBridgeReceiver, ITelepathyHandler {
-    address public telepathyRouter;
+    ITelepathyReceiver public telepathyReceiver;
 
-    // Mainnet Chain ID
-    uint16 public constant sourceChainId = 1;
-
-    event NewTelepathyRouter(address indexed oldTelepathyRouter, address indexed newTelepathyRouter);
-
-    constructor(address _telepathyRouter) {
-        telepathyRouter = _telepathyRouter;
+    constructor(address _telepathyReceiver) {
+        telepathyReceiver = ITelepathyReceiver(_telepathyReceiver);
     }
 
     function handleTelepathy(uint32 _sourceChainId, address _sourceAddress, bytes calldata _data) external returns (bytes4)  {
-        require (msg.sender == telepathyRouter, "SuccinctBridgeReceiver: only telepathyRouter can call this function");
-        require (_sourceChainId == sourceChainId, "SuccinctBridgeReceiver: sourceChainId mismatch");
-        require (_sourceAddress == govTimelock, "SuccinctBridgeReceiver: senderAddress mismatch");
         processMessage(_sourceAddress, _data);
         return ITelepathyHandler.handleTelepathy.selector;
     }
 
-    function setTelepathyRouter(address newTelepathyRouter) public {
-        if (msg.sender != localTimelock) revert Unauthorized();
-        address oldTelepathyRouter = telepathyRouter;
-        telepathyRouter = newTelepathyRouter;
-        emit NewTelepathyRouter(oldTelepathyRouter, telepathyRouter);
+    receive() external payable {
+    }
+
+    fallback() external payable {
+        processMessage(msg.sender, msg.data);
     }
 }

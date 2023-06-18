@@ -469,6 +469,20 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageCalldata);
       break;
     }
+    case 'fuji': {
+      const fujiChainId = 43113;
+      const sendMessageToTelepathyRouter = utils.defaultAbiCoder.encode(
+        ['uint32', 'address', 'bytes'],
+        [fujiChainId, bridgeReceiver.address, l2ProposalData]
+      );
+      const telepathyRouter = await govDeploymentManager.getContractOrThrow('telepathyRouter');
+
+      targets.push(telepathyRouter.address);
+      values.push(0);
+      signatures.push('send(uint32, address,bytes)');
+      calldata.push(sendMessageToTelepathyRouter);
+      break;
+    }
     case 'mumbai':
     case 'polygon': {
       const sendMessageToChildCalldata = utils.defaultAbiCoder.encode(

@@ -1,7 +1,7 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { utils } from 'ethers';
-import { BaseBridgeReceiver, SuccinctBridgeReceiver } from '../build/types';
+import { BaseBridgeReceiver } from '../build/types';
 import { calldata } from '../src/deploy';
 import { isBridgedDeployment, matchesDeployment, createCrossChainProposal } from './utils';
 import { ArbitrumBridgeReceiver } from '../build/types';
@@ -269,16 +269,14 @@ scenario(
   },
   async ({ comet, configurator, proxyAdmin, timelock: oldLocalTimelock, bridgeReceiver: oldBridgeReceiver }, context, world) => {
     const dm = world.deploymentManager;
-    const governanceDeploymentManager = world.auxiliaryDeploymentManager;
-    if (!governanceDeploymentManager) {
-      throw new Error('cannot execute governance without governance deployment manager');
-    }
+    const govDeploymentManager = world.auxiliaryDeploymentManager!;
+    const telepathyRouter = await dm.getContractOrThrow('telepathyRouter');
 
-    // Deploy new Succinct Bridge Receiver
-    const newBridgeReceiver = await dm.deploy<SuccinctBridgeReceiver, []>(
+    // Deploy new SuccinctBridgeReceiver
+    const newBridgeReceiver = await dm.deploy<BaseBridgeReceiver, [string]>(
       'newBridgeReceiver',
       'bridges/succinct/SuccinctBridgeReceiver.sol',
-      []
+      [telepathyRouter.address]           // telepathyRouter
     );
 
     // Deploy new local Timelock
@@ -296,13 +294,13 @@ scenario(
     );
 
     // Initialize new SuccinctBridgeReceiver
-    const mainnetTimelock = (await governanceDeploymentManager.getContractOrThrow('timelock')).address;
+    const mainnetTimelock = (await govDeploymentManager.getContractOrThrow('timelock')).address;
     await newBridgeReceiver.initialize(
       mainnetTimelock,             // govTimelock
       newLocalTimelock.address     // localTimelock
     );
 
-    // Process for upgrading L1 governance contracts on Avalanche (order matters):
+    // Process for upgrading L2 governance contracts (order matters):
     // 1. Update the admin of Comet in Configurator to be the new Timelock
     // 2. Update the admin of CometProxyAdmin to be the new Timelock
     const transferOwnershipCalldata = utils.defaultAbiCoder.encode(
@@ -316,7 +314,7 @@ scenario(
       ['address', 'address'],
       [configurator.address, comet.address]
     );
-    const upgradeL1GovContractsProposal = utils.defaultAbiCoder.encode(
+    const upgradeL2GovContractsProposal = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
         [configurator.address, proxyAdmin.address, proxyAdmin.address],
@@ -333,7 +331,7 @@ scenario(
     expect(await proxyAdmin.owner()).to.eq(oldLocalTimelock.address);
     expect(await comet.governor()).to.eq(oldLocalTimelock.address);
 
-    await createCrossChainProposal(context, upgradeL1GovContractsProposal, oldBridgeReceiver);
+    await createCrossChainProposal(context, upgradeL2GovContractsProposal, oldBridgeReceiver);
 
     expect(await proxyAdmin.owner()).to.eq(newLocalTimelock.address);
     expect(await comet.governor()).to.eq(newLocalTimelock.address);
@@ -342,13 +340,13 @@ scenario(
     await dm.putAlias('timelock', newLocalTimelock);
     await dm.putAlias('bridgeReceiver', newBridgeReceiver);
 
-    // Now, test that the new L1 governance contracts are working properly via another cross-chain proposal
+    // Now, test that the new L2 governance contracts are working properly via another cross-chain proposal
     const currentTimelockDelay = await newLocalTimelock.delay();
     const newTimelockDelay = currentTimelockDelay.mul(2);
 
     const setDelayCalldata = utils.defaultAbiCoder.encode(['uint'], [newTimelockDelay]);
     const pauseCalldata = await calldata(comet.populateTransaction.pause(true, true, true, true, true));
-    const l1ProposalData = utils.defaultAbiCoder.encode(
+    const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
         [newLocalTimelock.address, comet.address],
@@ -361,7 +359,10 @@ scenario(
     expect(await newLocalTimelock.delay()).to.eq(currentTimelockDelay);
     expect(currentTimelockDelay).to.not.eq(newTimelockDelay);
 
-    await createCrossChainProposal(context, l1ProposalData, newBridgeReceiver);
+
+    await createCrossChainProposal(context, l2ProposalData, newBridgeReceiver);
+
+    console.log("=====Second cross chain governance proposal succeeded=====");
 
     expect(await newLocalTimelock.delay()).to.eq(newTimelockDelay);
     expect(await comet.isAbsorbPaused()).to.eq(true);
