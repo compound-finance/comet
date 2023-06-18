@@ -90,7 +90,7 @@ export default migration('1686918613_configurate_and_ens', {
       // 1. Set Comet configuration + deployAndUpgradeTo new Comet and set reward config on Linea-Goerli.
       {
         contract: lineaMessageService,
-        signature: 'sendMessage(address,unit256,bytes)',
+        signature: 'sendMessage(address,uint256,bytes)',
         args: [bridgeReceiver.address, 0, l2ProposalData]
       },
 
