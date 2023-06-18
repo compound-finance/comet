@@ -297,7 +297,8 @@ const config: HardhatUserConfig = {
       {
         name: 'fuji',
         network: 'fuji',
-        deployment: 'usdc'
+        deployment: 'usdc',
+        auxiliaryBase: 'goerli'
       },
       {
         name: 'kovan',
