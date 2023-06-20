@@ -45,9 +45,7 @@ export default migration('1686953660_configurate_and_ens', {
       COMP,
     } = await govDeploymentManager.getContracts();
 
-    const USDCAmountToBridge = exp(10_000, 6);
     const COMPAmountToBridge = exp(12_500, 18);
-    const usdcGatewayAddress = await arbitrumL1GatewayRouter.getGateway(USDC.address);
     const compGatewayAddress = await arbitrumL1GatewayRouter.getGateway(COMP.address);
     const refundAddress = l2Timelock.address;
 
@@ -57,17 +55,6 @@ export default migration('1686953660_configurate_and_ens', {
         from: timelock.address,
         to: rewards.address,
         amount: COMPAmountToBridge
-      },
-      govDeploymentManager,
-      deploymentManager
-    );
-
-    const usdcGasParams = await estimateTokenBridge(
-      {
-        token: USDC.address,
-        from: timelock.address,
-        to: comet.address,
-        amount: USDCAmountToBridge
       },
       govDeploymentManager,
       deploymentManager
