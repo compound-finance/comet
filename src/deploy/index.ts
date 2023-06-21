@@ -96,8 +96,8 @@ export const WHALES = {
   arbitrum: [
     '0xf89d7b9c864f589bbf53a82105107622b35eaa40', // USDC whale
     '0x7b7b957c284c2c227c980d6e2f804311947b84d0', // WBTC whale
-    '0x88730d254A2f7e6AC8388c3198aFd694bA9f7fae',  // COMP whale
-    '0xe68ee8a12c611fd043fb05d65e1548dc1383f2b9' // native USDC whale
+    '0x88730d254A2f7e6AC8388c3198aFd694bA9f7fae', // COMP whale
+    '0xe68ee8a12c611fd043fb05d65e1548dc1383f2b9'  // native USDC whale
   ],
   'arbitrum-goerli': [
     '0x4984cbfa5b199e5920995883d345bbe14b005db7', // USDC whale
