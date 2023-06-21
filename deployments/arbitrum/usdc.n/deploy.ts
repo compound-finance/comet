@@ -55,19 +55,11 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const deployed = await deployComet(deploymentManager, deploySpec);
   const { comet } = deployed;
 
-  // Deploy Bulker
-  const bulker = await deploymentManager.deploy(
-    'bulker',
-    'bulkers/BaseBulker.sol',
-    [
-      await comet.governor(), // admin
-      USDC.address            // usdc native
-    ]
-  );
+  const bulker = await deploymentManager.fromDep('bulker', 'arbitrum', 'usdc');
 
   return {
     ...deployed,
-    bridgeReceiver,
+    bridgeReceiver, 
     bulker
   };
 }
