@@ -32,6 +32,7 @@ export default migration('1686918613_configurate_and_ens', {
     const {
       lineaMessageService,
       lineaL1TokenBridge,
+      lineaL1usdcBridge,
       governor,
       COMP,
       USDC
@@ -110,13 +111,13 @@ export default migration('1686918613_configurate_and_ens', {
       {
         contract: USDC,
         signature: 'approve(address,uint256)',
-        args: [lineaL1TokenBridge.address, USDCAmountToBridge]
+        args: [lineaL1usdcBridge.address, USDCAmountToBridge]
       },
       // 5. Bridge USDC from Goerli to Linea-Goerli Comet using L1StandardBridge
       {
-        contract: lineaL1TokenBridge,
-        signature: 'bridgeToken(address,uint256,address)',
-        args: [USDC.address, USDCAmountToBridge, comet.address]
+        contract: lineaL1usdcBridge,
+        signature: 'deposit(uint256)',
+        args: [USDCAmountToBridge]
       },
       // 6. Update the list of official markets
       {

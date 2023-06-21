@@ -9,6 +9,10 @@ export default {
   '0xab3134fa5edfb3dc64aa790e8bb6448117d18fe9': {
     artifact: 'contracts/ERC20.sol:ERC20',
   },
+  // WBTC
+  '0x121c57317378ac67ca0a8c60915da37dfcc4c066': {
+    artifact: 'contracts/ERC20.sol:ERC20',
+  },
   l2MessageService: {
     delegates: {
       field: {
