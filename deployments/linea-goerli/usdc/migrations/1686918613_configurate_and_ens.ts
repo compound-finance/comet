@@ -107,13 +107,13 @@ export default migration('1686918613_configurate_and_ens', {
         signature: 'bridgeToken(address,uint256,address)',
         args: [COMP.address, COMPAmountToBridge, rewards.address]
       },
-      // 4. Approve Goerli's L1StandardBridge to take Timelock's USDC (for bridging)
+      // 4. Approve Goerli's L1usdcBridge to take Timelock's USDC (for bridging)
       {
         contract: USDC,
         signature: 'approve(address,uint256)',
         args: [lineaL1usdcBridge.address, USDCAmountToBridge]
       },
-      // 5. Bridge USDC from Goerli to Linea-Goerli Comet using L1StandardBridge
+      // 5. Bridge USDC from Goerli to Linea-Goerli Comet using L1usdcBridge
       {
         contract: lineaL1usdcBridge,
         signature: 'deposit(uint256)',
