@@ -116,8 +116,8 @@ export default migration('1686918613_configurate_and_ens', {
       // 5. Bridge USDC from Goerli to Linea-Goerli Comet using L1usdcBridge
       {
         contract: lineaL1usdcBridge,
-        signature: 'deposit(uint256)',
-        args: [USDCAmountToBridge]
+        signature: 'depositTo(uint256,address)',
+        args: [USDCAmountToBridge, rewards.address]
       },
       // 6. Update the list of official markets
       {
@@ -158,12 +158,17 @@ export default migration('1686918613_configurate_and_ens', {
       baseTrackingSupplySpeed: exp(34.74 / 86400, 15, 18),
       baseTrackingBorrowSpeed: exp(34.74 / 86400, 15, 18),
       baseMinForRewards: exp(1000, 6),
+      numAssets: 2,
       WETH: {
         borrowCollateralFactor: exp(0.775, 18),
         liquidationFactor: exp(0.95, 18),
         supplyCap: exp(1000, 18)
       },
       WBTC: {
+        offset: 1,
+        asset: '0xdbcd5bafbaa8c1b326f14ec0c8b125db57a5cc4c',
+        priceFeed: '0x625e78891611D5A6227Ff78548C373b56B0C8ea0',
+        scale: 1000000000000000000n,
         borrowCollateralFactor: exp(0.7, 18),
         liquidateCollateralFactor: exp(0.75, 18),
         liquidationFactor: exp(0.93, 18),
@@ -176,6 +181,7 @@ export default migration('1686918613_configurate_and_ens', {
     expect(config.rescaleFactor).to.be.equal(exp(1, 12));
     expect(config.shouldUpscale).to.be.equal(true);
 
+    console.log("TEST");
     // 2. & 3.
     expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(1_000, 18));
 

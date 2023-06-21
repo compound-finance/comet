@@ -10,7 +10,7 @@ export default {
     artifact: 'contracts/ERC20.sol:ERC20',
   },
   // WBTC
-  '0xDbcd5BafBAA8c1B326f14EC0c8B125DB57A5cC4c': {
+  '0xdbcd5bafbaa8c1b326f14ec0c8b125db57a5cc4c': {
     artifact: 'contracts/ERC20.sol:ERC20',
   },
   l2MessageService: {
