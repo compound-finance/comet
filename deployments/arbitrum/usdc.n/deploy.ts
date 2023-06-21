@@ -55,11 +55,8 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const deployed = await deployComet(deploymentManager, deploySpec);
   const { comet } = deployed;
 
-  const bulker = await deploymentManager.fromDep('bulker', 'arbitrum', 'usdc');
-
   return {
     ...deployed,
     bridgeReceiver, 
-    bulker
   };
 }
