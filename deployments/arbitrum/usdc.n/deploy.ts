@@ -11,6 +11,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const ethers = deploymentManager.hre.ethers;
 
   // pull in existing assets
+  // USDC native
   const USDC = await deploymentManager.existing('USDC', '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', 'arbitrum');
   const ARB = await deploymentManager.existing('ARB', '0x912ce59144191c1204e64559fe8253a0e49e6548', 'arbitrum');
   const GMX = await deploymentManager.existing('GMX', '0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a', 'arbitrum');
@@ -60,7 +61,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'bulkers/BaseBulker.sol',
     [
       await comet.governor(), // admin
-      WETH.address            // weth
+      USDC.address            // usdc native
     ]
   );
 
