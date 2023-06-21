@@ -83,10 +83,12 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
         try {
           // If there is a migration associated with this proposal, verify the migration
           if (migrationData) {
+            const migrationArtifact = await deploymentManager.readArtifact(migrationData.migration);
             await migrationData.migration.actions.verify(
               ctx.world.deploymentManager,
               govDeploymentManager,
-              preExecutionBlockNumber
+              preExecutionBlockNumber,
+              migrationArtifact
             );
             migrationData.verified = true;
             debug(`${label} Verified migration "${migrationData.migration.name}"`);
@@ -101,10 +103,12 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
       if (ctx.migrations) {
         for (const migrationData of ctx.migrations) {
           if (migrationData.verified === true || migrationData.skipVerify === true) continue;
+          const migrationArtifact = await deploymentManager.readArtifact(migrationData.migration);
           await migrationData.migration.actions.verify(
             ctx.world.deploymentManager,
             govDeploymentManager,
-            migrationData.preMigrationBlockNumber
+            migrationData.preMigrationBlockNumber,
+            migrationArtifact
           );
           migrationData.verified = true;
         }

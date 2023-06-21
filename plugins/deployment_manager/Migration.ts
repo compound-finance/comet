@@ -5,7 +5,7 @@ export interface Actions<T> {
   prepare: (dm: DeploymentManager, govDm: DeploymentManager) => Promise<T>;
   enact: (dm: DeploymentManager, govDm: DeploymentManager, t: T) => Promise<void>;
   enacted?: (dm: DeploymentManager, govDm: DeploymentManager) => Promise<boolean>;
-  verify?: (dm: DeploymentManager, govDm: DeploymentManager, preMigrationBlockNumber: number) => Promise<void>;
+  verify?: (dm: DeploymentManager, govDm: DeploymentManager, preMigrationBlockNumber: number, t: T) => Promise<void>;
 }
 
 export class Migration<T> {
