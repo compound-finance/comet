@@ -164,6 +164,7 @@ export default migration('1686918613_configurate_and_ens', {
       },
       WBTC: {
         borrowCollateralFactor: exp(0.7, 18),
+        liquidateCollateralFactor: exp(0.75, 18),
         liquidationFactor: exp(0.93, 18),
         supplyCap: exp(300, 18)
       },
