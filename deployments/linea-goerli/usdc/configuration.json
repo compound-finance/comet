@@ -30,8 +30,17 @@
       "decimals": "18",
       "borrowCF": 0,
       "liquidateCF": 0.825,
-      "liquidationFactor": 0,
-      "supplyCap": "0e18"
+      "liquidationFactor": 0.95,
+      "supplyCap": "1000e18"
+    },
+    "WBTC": {
+      "address": "0x121C57317378ac67cA0a8C60915Da37DfcC4c066",
+      "priceFeed": "0x625e78891611d5a6227ff78548c373b56b0c8ea0",
+      "decimals": "18",
+      "borrowCF": 0.7,
+      "liquidateCF": 0.75,
+      "liquidationFactor": 0.93,
+      "supplyCap": "300e18"
     }
   }
 }

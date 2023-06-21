@@ -161,7 +161,12 @@ export default migration('1686918613_configurate_and_ens', {
         borrowCollateralFactor: exp(0.775, 18),
         liquidationFactor: exp(0.95, 18),
         supplyCap: exp(1000, 18)
-      }
+      },
+      WBTC: {
+        borrowCollateralFactor: exp(0.7, 18),
+        liquidationFactor: exp(0.93, 18),
+        supplyCap: exp(300, 18)
+      },
     });
 
     const config = await rewards.rewardConfig(comet.address);
