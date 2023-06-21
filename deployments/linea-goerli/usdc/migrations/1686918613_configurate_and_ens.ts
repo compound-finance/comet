@@ -85,7 +85,7 @@ export default migration('1686918613_configurate_and_ens', {
     );
 
     const COMPAmountToBridge = exp(1_000, 18);
-    const USDCAmountToBridge = exp(100_000, 18);
+    const USDCAmountToBridge = exp(100_000, 6);
 
     const goerliActions = [
       // 1. Set Comet configuration + deployAndUpgradeTo new Comet and set reward config on Linea-Goerli.
