@@ -141,10 +141,6 @@ export default migration('1686918613_configurate_and_ens', {
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
-  },
-
   async verify(
     deploymentManager: DeploymentManager,
     govDeploymentManager: DeploymentManager,
@@ -160,8 +156,10 @@ export default migration('1686918613_configurate_and_ens', {
     expect(stateChanges).to.deep.equal({
       baseTrackingSupplySpeed: exp(34.74 / 86400, 15, 18),
       baseTrackingBorrowSpeed: exp(34.74 / 86400, 15, 18),
-      baseBorrowMin: exp(1, 6),
+      baseMinForRewards: exp(1000, 6),
       WETH: {
+        borrowCollateralFactor: exp(0.775, 18),
+        liquidationFactor: exp(0.95, 18),
         supplyCap: exp(1000, 18)
       }
     });
@@ -213,6 +211,16 @@ export default migration('1686918613_configurate_and_ens', {
         {
           baseSymbol: 'USDC',
           cometAddress: '0x1d573274E19174260c5aCE3f2251598959d24456'
+        }
+      ],
+      84531: [
+        {
+          baseSymbol: 'USDC',
+          cometAddress: '0xe78Fc55c884704F9485EDa042fb91BfE16fD55c1'
+        },
+        {
+          baseSymbol: 'WETH',
+          cometAddress: '0xED94f3052638620fE226a9661ead6a39C2a265bE'
         }
       ],
       59140: [
