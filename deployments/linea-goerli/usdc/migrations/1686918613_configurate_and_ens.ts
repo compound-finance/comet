@@ -168,7 +168,7 @@ export default migration('1686918613_configurate_and_ens', {
         offset: 1,
         asset: '0xdbcd5bafbaa8c1b326f14ec0c8b125db57a5cc4c',
         priceFeed: '0x625e78891611D5A6227Ff78548C373b56B0C8ea0',
-        scale: 1000000000000000000n,
+        scale: exp(1, 18),
         borrowCollateralFactor: exp(0.7, 18),
         liquidateCollateralFactor: exp(0.75, 18),
         liquidationFactor: exp(0.93, 18),
@@ -181,7 +181,6 @@ export default migration('1686918613_configurate_and_ens', {
     expect(config.rescaleFactor).to.be.equal(exp(1, 12));
     expect(config.shouldUpscale).to.be.equal(true);
 
-    console.log("TEST");
     // 2. & 3.
     expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(1_000, 18));
 
