@@ -142,6 +142,10 @@ export default migration('1686918613_configurate_and_ens', {
     trace(`Created proposal ${proposalId}.`);
   },
 
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
+  },
+
   async verify(
     deploymentManager: DeploymentManager,
     govDeploymentManager: DeploymentManager,
