@@ -289,7 +289,7 @@ scenario(
     // Deploy new LineaBridgeReceiver
     const newBridgeReceiver = await dm.deploy<LineaBridgeReceiver, [string]>(
       'newBridgeReceiver',
-      'bridges/linea/LineaBridgeReceiver.sol',
+      'bridges/Linea/LineaBridgeReceiver.sol',
       [l2MessageService.address]
     );
 

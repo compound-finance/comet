@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import "./IMessageService.sol";
-import "../SweepableBridgeReceiver.sol";
+import './IMessageService.sol';
+import '../SweepableBridgeReceiver.sol';
 
 contract LineaBridgeReceiver is SweepableBridgeReceiver {
     /// @notice Address of Linea Message Service

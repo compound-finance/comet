@@ -31,12 +31,6 @@ export default async function deploy(
     'linea-goerli'
   );
 
-  const l2usdcBridge = await deploymentManager.existing(
-    'l2usdcBridge',
-    '0x2aeD4D02fD76EeC1580cCDbA158b16F4A0Ad2B60',
-    'linea-goerli'
-  );
-
   // Deploy LineaBridgeReceiver
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
@@ -85,7 +79,6 @@ export default async function deploy(
     l2MessageService,
     l2TokenBridge,
     bulker,
-    fauceteer,
-    l2usdcBridge
+    fauceteer
   };
 }
