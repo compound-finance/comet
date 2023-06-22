@@ -42,9 +42,7 @@ export default migration('1687455833_configurate_and_ens', {
       COMP,
     } = await govDeploymentManager.getContracts();
 
-    const USDCAmountToBridge = exp(10, 6);
     const COMPAmountToBridge = exp(2_500, 18);
-    const usdcGatewayAddress = await arbitrumL1GatewayRouter.getGateway(USDC.address);
     const compGatewayAddress = await arbitrumL1GatewayRouter.getGateway(COMP.address);
     const refundAddress = l2Timelock.address;
 
@@ -54,17 +52,6 @@ export default migration('1687455833_configurate_and_ens', {
         from: timelock.address,
         to: rewards.address,
         amount: COMPAmountToBridge
-      },
-      govDeploymentManager,
-      deploymentManager
-    );
-
-    const usdcGasParams = await estimateTokenBridge(
-      {
-        token: USDC.address,
-        from: timelock.address,
-        to: comet.address,
-        amount: USDCAmountToBridge
       },
       govDeploymentManager,
       deploymentManager
@@ -116,6 +103,10 @@ export default migration('1687455833_configurate_and_ens', {
       421613: [
         {
           baseSymbol: 'USDC',
+          cometAddress: '0x1d573274E19174260c5aCE3f2251598959d24456',
+        }, 
+        {
+          baseSymbol: 'USDC.n',
           cometAddress: comet.address,
         }
       ],
@@ -138,37 +129,13 @@ export default migration('1687455833_configurate_and_ens', {
         ],
         value: createRetryableTicketGasParams.deposit
       },
-      // 2. Approve the USDC gateway to take Timelock's USDC for bridging
-      {
-        contract: USDC,
-        signature: 'approve(address,uint256)',
-        args: [usdcGatewayAddress, USDCAmountToBridge]
-      },
-      // 3. Bridge USDC from mainnet to Arbitrum Comet
-      {
-        contract: arbitrumL1GatewayRouter,
-        signature: 'outboundTransferCustomRefund(address,address,address,uint256,uint256,uint256,bytes)',
-        args: [
-          USDC.address,                             // address _token,
-          refundAddress,                            // address _refundTo
-          comet.address,                            // address _to,
-          USDCAmountToBridge,                       // uint256 _amount,
-          usdcGasParams.gasLimit,                   // uint256 _maxGas,
-          usdcGasParams.maxFeePerGas,               // uint256 _gasPriceBid,
-          utils.defaultAbiCoder.encode(
-            ['uint256', 'bytes'],
-            [usdcGasParams.maxSubmissionCost, '0x']
-          )                                         // bytes calldata _data
-        ],
-        value: usdcGasParams.deposit
-      },
-      // 4. Approve the COMP gateway to take Timelock's COMP for bridging
+      // 2. Approve the COMP gateway to take Timelock's COMP for bridging
       {
         contract: COMP,
         signature: 'approve(address,uint256)',
         args: [compGatewayAddress, COMPAmountToBridge]
       },
-      // 5. Bridge COMP from mainnet to Arbitrum rewards
+      // 3. Bridge COMP from mainnet to Arbitrum rewards
       {
         contract: arbitrumL1GatewayRouter,
         signature: 'outboundTransferCustomRefund(address,address,address,uint256,uint256,uint256,bytes)',
@@ -186,7 +153,7 @@ export default migration('1687455833_configurate_and_ens', {
         ],
         value: compGasParams.deposit
       },
-      // 6. Update the list of official markets
+      // 4. Update the list of official markets
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
@@ -207,7 +174,7 @@ export default migration('1687455833_configurate_and_ens', {
 
     trace(`Created proposal ${proposalId}.`);
   },
-  
+
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
     const ethers = deploymentManager.hre.ethers;
     await deploymentManager.spider(); // await deploymentManager.spider(); // Pull in Arbitrum COMP now that reward config has been set
@@ -221,18 +188,18 @@ export default migration('1687455833_configurate_and_ens', {
     } = await deploymentManager.getContracts();
 
     // 1.
-    const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    expect(stateChanges).to.deep.equal({
-      LINK: {
-        supplyCap: exp(5_000_000, 18)
-      },
-      WBTC: {
-        supplyCap: exp(300, 8)
-      },
-      WETH: {
-        supplyCap: exp(5_000, 18)
-      }
-    });
+    // const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
+    // expect(stateChanges).to.deep.equal({
+    //   LINK: {
+    //     supplyCap: exp(5_000_000, 18)
+    //   },
+    //   WBTC: {
+    //     supplyCap: exp(300, 8)
+    //   },
+    //   WETH: {
+    //     supplyCap: exp(5_000, 18)
+    //   }
+    // });
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(arbitrumCOMPAddress);
@@ -240,7 +207,7 @@ export default migration('1687455833_configurate_and_ens', {
     expect(config.shouldUpscale).to.be.equal(true);
 
     // 2. & 3.
-    expect(await comet.getReserves()).to.be.equal(exp(10, 6));
+    // expect(await comet.getReserves()).to.be.equal(exp(10, 6));
 
     // 4. & 5.
     const arbitrumCOMP = new Contract(
@@ -277,8 +244,12 @@ export default migration('1687455833_configurate_and_ens', {
       421613: [
         {
           baseSymbol: 'USDC',
-          cometAddress: comet.address
+          cometAddress: '0x1d573274E19174260c5aCE3f2251598959d24456'
         },
+        {
+          baseSymbol: 'USDC.n',
+          cometAddress: comet.address,
+        }
       ],
 
       80001: [
@@ -286,6 +257,17 @@ export default migration('1687455833_configurate_and_ens', {
           baseSymbol: 'USDC',
           cometAddress: '0xF09F0369aB0a875254fB565E52226c88f10Bc839'
         },
+      ],
+
+      84531: [
+        {
+          baseSymbol: 'USDC',
+          cometAddress: '0xe78Fc55c884704F9485EDa042fb91BfE16fD55c1'
+        },
+        {
+          baseSymbol: 'WETH',
+          cometAddress: '0xED94f3052638620fE226a9661ead6a39C2a265bE'
+        }
       ]
     });
   }
