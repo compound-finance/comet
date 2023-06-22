@@ -32,7 +32,7 @@
       "borrowCF": 0.55,
       "liquidateCF": 0.60,
       "liquidationFactor": 0.93,
-      "supplyCap": "4000000e18"
+      "supplyCap": "0e18"
     },
     "GMX": {
       "address": "0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a",
@@ -41,7 +41,7 @@
       "borrowCF": 0.40,
       "liquidateCF": 0.45,
       "liquidationFactor": 0.93,
-      "supplyCap": "50000e18"
+      "supplyCap": "0e18"
     },
     "WETH": {
       "address": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
@@ -50,7 +50,7 @@
       "borrowCF": 0.78,
       "liquidateCF": 0.85,
       "liquidationFactor": 0.95,
-      "supplyCap": "5000e18"
+      "supplyCap": "0e18"
     },
     "WBTC": {
       "address": "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f",
@@ -59,7 +59,7 @@
       "borrowCF": 0.70,
       "liquidateCF": 0.77,
       "liquidationFactor": 0.95,
-      "supplyCap": "300e8"
+      "supplyCap": "0e18"
     }
   }
 }
