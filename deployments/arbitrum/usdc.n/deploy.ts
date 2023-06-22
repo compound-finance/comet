@@ -18,45 +18,17 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const WETH = await deploymentManager.existing('WETH', '0x82af49447d8a07e3bd95bd0d56f35241523fbab1', 'arbitrum');
   const WBTC = await deploymentManager.existing('WBTC', '0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f', 'arbitrum');
 
-  // Deploy ArbitrumBridgeReceiver
-  const bridgeReceiver = await deploymentManager.deploy(
-    'bridgeReceiver',
-    'bridges/arbitrum/ArbitrumBridgeReceiver.sol',
-    []
-  );
-
-  // Deploy Local Timelock
-  const localTimelock = await deploymentManager.deploy(
-    'timelock',
-    'vendor/Timelock.sol',
-    [
-      bridgeReceiver.address, // admin
-      1 * DAY,                // delay
-      14 * DAY,               // grace period
-      12 * HOUR,              // minimum delay
-      30 * DAY                // maxiumum delay
-    ]
-  );
-
-  // Initialize ArbitrumBridgeReceiver
-  await deploymentManager.idempotent(
-    async () => !(await bridgeReceiver.initialized()),
-    async () => {
-      trace(`Initializing BridgeReceiver`);
-      await bridgeReceiver.initialize(
-        MAINNET_TIMELOCK,     // govTimelock
-        localTimelock.address // localTimelock
-      );
-      trace(`BridgeReceiver initialized`);
-    }
-  );
+  // Import shared contracts from original usdc deployment
+  const bulker = await deploymentManager.fromDep('bulker', 'arbitrum', 'usdc');
+  const localTimelock = await deploymentManager.fromDep('timelock', 'arbitrum', 'usdc');
+  const bridgeReceiver = await deploymentManager.fromDep('bridgeReceiver', 'arbitrum', 'usdc');
 
   // Deploy Comet
   const deployed = await deployComet(deploymentManager, deploySpec);
-  const { comet } = deployed;
-
+  
   return {
     ...deployed,
     bridgeReceiver, 
+    bulker
   };
 }
