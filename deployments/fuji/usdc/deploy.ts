@@ -15,18 +15,17 @@ async function deployContracts(
   deploySpec: DeploySpec
 ): Promise<Deployed> {
   const trace = deploymentManager.tracer();
-  const ethers = deploymentManager.hre.ethers;
 
   // Pull in existing assets
   const WETH = await deploymentManager.existing(
-    'WETH',
-    '0x4200000000000000000000000000000000000006',
+    'BridgeToken',
+    '0xB767287A7143759f294CfB7b1Adbca1140F3de71',
     'fuji'
   );
 
   const l2TelepathyRouter = await deploymentManager.existing(
-    'l2CrossDomainMessenger',
-    ['0xC0d3c0d3c0D3c0D3C0d3C0D3C0D3c0d3c0d30007', '0x4200000000000000000000000000000000000007'],
+    'TelepathyRouter',
+    ['0x4D2DFD0Df230927A4C93DF6bcc4d720377343aA7', '0x677b79C9ec8FC287C10d8dE70384a4C5e3999b5c'],
     'fuji'
   );
 
