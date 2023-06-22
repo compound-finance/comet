@@ -18,6 +18,7 @@ export default async function relayLineaMessage(
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
   const l2MessageService = await bridgeDeploymentManager.getContractOrThrow('l2MessageService');
   const l2TokenBridge = await bridgeDeploymentManager.getContractOrThrow('l2TokenBridge');
+  const l2usdcBridge = await bridgeDeploymentManager.getContractOrThrow('l2usdcBridge');
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
   // Grab all events on the L1CrossDomainMessenger contract since the `startingBlockNumber`
@@ -75,6 +76,10 @@ export default async function relayLineaMessage(
 
       console.log(
         `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged over ${amount} of ${l1Token} to user ${to}`
+      );
+    } else if (_to === l2usdcBridge.address) {
+      console.log(
+        `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged USDC`
       );
     } else if (_to === bridgeReceiver.address) {
       // Cross-chain message passing
