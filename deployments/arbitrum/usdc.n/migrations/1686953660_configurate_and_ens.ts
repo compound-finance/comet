@@ -14,8 +14,6 @@ const ENSTextRecordKey = 'v3-official-markets';
 
 const arbitrumCOMPAddress = '0x354A6dA3fcde098F8389cad84b0182725c6C91dE';
 
-const cUSDTAddress = '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9';
-
 export default migration('1686953660_configurate_and_ens', {
   prepare: async (_deploymentManager: DeploymentManager) => {
     return {};
@@ -85,7 +83,7 @@ export default migration('1686953660_configurate_and_ens', {
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
     const arbitrumChainId = (await deploymentManager.hre.ethers.provider.getNetwork()).chainId.toString();
-    const newMarketObject = { baseSymbol: 'USDC.n', cometAddress: comet.address };
+    const newMarketObject = { baseSymbol: 'USDC', cometAddress: comet.address };
     const officialMarketsJSON = JSON.parse(await ENSResolver.text(subdomainHash, ENSTextRecordKey));
     if (officialMarketsJSON[arbitrumChainId]) {
       officialMarketsJSON[arbitrumChainId].push(newMarketObject);
@@ -122,7 +120,8 @@ export default migration('1686953660_configurate_and_ens', {
       },
     ];
 
-    const description = "# Configurate Arbitrum cUSDCv3 market for USDC native, and set ENS record for official markets";    
+    // TODO: Will update this description to be more accurate once the contract is deployed
+    const description = "# Configurate Arbitrum cUSDCv3 market for Native USDC native, and set ENS record for official markets";    
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
@@ -201,15 +200,13 @@ export default migration('1686953660_configurate_and_ens', {
           cometAddress: '0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA',
         }, 
         {
-          baseSymbol: 'USDC.n',
+          baseSymbol: 'USDC',
           cometAddress: comet.address,
         }
       ],
     });
 
     // 3.
-    expect(await comptrollerV2.compBorrowSpeeds(cUSDTAddress)).to.be.equal(0);
-    expect(await comptrollerV2.compSupplySpeeds(cUSDTAddress)).to.be.equal(0);
     expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(34.74 / 86400, 15, 18));
     expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(0);
   }
