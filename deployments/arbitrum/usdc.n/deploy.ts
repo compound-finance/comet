@@ -22,6 +22,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const bulker = await deploymentManager.fromDep('bulker', 'arbitrum', 'usdc');
   const localTimelock = await deploymentManager.fromDep('timelock', 'arbitrum', 'usdc');
   const bridgeReceiver = await deploymentManager.fromDep('bridgeReceiver', 'arbitrum', 'usdc');
+  const rewards = await deploymentManager.fromDep('rewards', 'arbitrum', 'usdc');
 
   // Deploy Comet
   const deployed = await deployComet(deploymentManager, deploySpec);
@@ -29,6 +30,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   return {
     ...deployed,
     bridgeReceiver, 
-    bulker
+    bulker, 
+    rewards
   };
 }
