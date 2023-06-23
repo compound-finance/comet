@@ -157,16 +157,6 @@ export default migration('1686953660_configurate_and_ens', {
           [subdomainHash, ENSTextRecordKey, JSON.stringify(officialMarketsJSON)]
         )
       },
-      // 5. Displace v2 USDT COMP rewards
-      {
-        contract: comptrollerV2,
-        signature: '_setCompSpeeds(address[],uint256[],uint256[])',
-        args: [
-          [cUSDTAddress],
-          [0],
-          [0],
-        ],
-      },
     ];
 
     const description = "# Configurate Arbitrum cUSDCNv3 market, set reward config, USDC native and COMP, and update ENS text record.";    
