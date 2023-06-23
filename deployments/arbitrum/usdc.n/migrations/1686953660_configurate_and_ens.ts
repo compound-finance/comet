@@ -159,7 +159,7 @@ export default migration('1686953660_configurate_and_ens', {
       },
     ];
 
-    const description = "# Configurate Arbitrum cUSDCNv3 market, set reward config, USDC native and COMP, and update ENS text record.";    
+    const description = "# Configurate Arbitrum cUSDCv3 market for USDC native, and set ENS record for official markets";    
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
@@ -169,10 +169,6 @@ export default migration('1686953660_configurate_and_ens', {
 
     trace(`Created proposal ${proposalId}.`);
   },
-
-  // async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-  //   return true;
-  // },
 
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
     const ethers = deploymentManager.hre.ethers;
