@@ -45,21 +45,7 @@ export default migration('1686953660_configurate_and_ens', {
       COMP,
     } = await govDeploymentManager.getContracts();
 
-    const COMPAmountToBridge = exp(12_500, 18);
-    const compGatewayAddress = await arbitrumL1GatewayRouter.getGateway(COMP.address);
     const refundAddress = l2Timelock.address;
-
-    const compGasParams = await estimateTokenBridge(
-      {
-        token: COMP.address,
-        from: timelock.address,
-        to: rewards.address,
-        amount: COMPAmountToBridge
-      },
-      govDeploymentManager,
-      deploymentManager
-    );
-
     const configuration = await getConfigurationStruct(deploymentManager);
 
     const setConfigurationCalldata = await calldata(
@@ -124,31 +110,8 @@ export default migration('1686953660_configurate_and_ens', {
         ],
         value: createRetryableTicketGasParams.deposit
       },
-      // 2. Approve the COMP gateway to take Timelock's COMP for bridging
-      {
-        contract: COMP,
-        signature: 'approve(address,uint256)',
-        args: [compGatewayAddress, COMPAmountToBridge]
-      },
-      // 3. Bridge COMP from mainnet to Arbitrum rewards
-      {
-        contract: arbitrumL1GatewayRouter,
-        signature: 'outboundTransferCustomRefund(address,address,address,uint256,uint256,uint256,bytes)',
-        args: [
-          COMP.address,                             // address _token,
-          refundAddress,                            // address _refundTo,
-          rewards.address,                          // address _to,
-          COMPAmountToBridge,                       // uint256 _amount,
-          compGasParams.gasLimit,                   // uint256 _maxGas,
-          compGasParams.maxFeePerGas,               // uint256 _gasPriceBid,
-          utils.defaultAbiCoder.encode(
-            ['uint256', 'bytes'],
-            [compGasParams.maxSubmissionCost, '0x']
-          )                                         // bytes calldata _data
-        ],
-        value: compGasParams.deposit
-      },
-      // 4. Update the list of official markets
+
+      // 2. Update the list of official markets
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
@@ -208,18 +171,7 @@ export default migration('1686953660_configurate_and_ens', {
     expect(config.rescaleFactor).to.be.equal(exp(1, 12));
     expect(config.shouldUpscale).to.be.equal(true);
 
-    // 2. & 3.
-    // expect(await comet.getReserves()).to.be.equal(exp(10_000, 6));
-
-    // 4. & 5.
-    const arbitrumCOMP = new Contract(
-      arbitrumCOMPAddress,
-      ['function balanceOf(address account) external view returns (uint256)'],
-      deploymentManager.hre.ethers.provider
-    );
-    expect(await arbitrumCOMP.balanceOf(rewards.address)).to.be.equal(exp(12_500, 18));
-
-    // 6.
+    // 2.
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
     const officialMarketsJSON = await ENSResolver.text(subdomainHash, ENSTextRecordKey);
@@ -255,7 +207,7 @@ export default migration('1686953660_configurate_and_ens', {
       ],
     });
 
-    // 7.
+    // 3.
     expect(await comptrollerV2.compBorrowSpeeds(cUSDTAddress)).to.be.equal(0);
     expect(await comptrollerV2.compSupplySpeeds(cUSDTAddress)).to.be.equal(0);
     expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(34.74 / 86400, 15, 18));
