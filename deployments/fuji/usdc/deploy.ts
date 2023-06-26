@@ -63,7 +63,6 @@ async function deployContracts(
     }
   );
 
-  console.log("Deploying Comet");
   // Deploy Comet
   const deployed = await deployComet(deploymentManager, deploySpec);
   const { comet } = deployed;
