@@ -18,8 +18,8 @@ async function deployContracts(
 
   // Pull in existing assets
   const WETH = await deploymentManager.existing(
-    'BridgeToken',
-    '0xB767287A7143759f294CfB7b1Adbca1140F3de71',
+    'MintableERC20',
+    '0x9668f5f55f2712Dd2dfa316256609b516292D554',
     'fuji'
   );
 
@@ -46,7 +46,8 @@ async function deployContracts(
       14 * SECONDS_PER_DAY,   // grace period
       10 * 60,                // minimum delay
       30 * SECONDS_PER_DAY    // maximum delay
-    ]
+    ],
+    true // force
   );
 
   // Initialize OptimismBridgeReceiver
@@ -62,6 +63,7 @@ async function deployContracts(
     }
   );
 
+  console.log("Deploying Comet");
   // Deploy Comet
   const deployed = await deployComet(deploymentManager, deploySpec);
   const { comet } = deployed;
