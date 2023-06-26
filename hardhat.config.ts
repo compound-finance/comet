@@ -199,6 +199,7 @@ const config: HardhatUserConfig = {
       // Avalanche
       avalanche: SNOWTRACE_KEY,
       avalancheFujiTestnet: SNOWTRACE_KEY,
+      'fuji': SNOWTRACE_KEY,
       // Polygon
       polygon: POLYGONSCAN_KEY,
       polygonMumbai: POLYGONSCAN_KEY,
@@ -211,6 +212,15 @@ const config: HardhatUserConfig = {
       'base-goerli': ETHERSCAN_KEY,
     },
     customChains: [
+      {
+        // Hardhat's Etherscan plugin calls the network `avalancheFujiTestnet`, so we need to add an entry for our own network name
+        network: 'fuji',
+        chainId: 43113,
+        urls: {
+          apiURL: 'https://api-testnet.snowtrace.io/api',
+          browserURL: 'https://testnet.snowtrace.io/'
+        }
+      },
       {
         // Hardhat's Etherscan plugin calls the network `arbitrumOne`, so we need to add an entry for our own network name
         network: 'arbitrum',
