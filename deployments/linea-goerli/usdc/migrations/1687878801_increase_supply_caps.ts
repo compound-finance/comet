@@ -100,7 +100,7 @@ export default migration('1687878801_increase_supply_caps', {
     // 1.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     expect(stateChanges).to.deep.equal({
-      baseBorrowMin: exp(0.001, 18),
+      baseBorrowMin: exp(0.001, 6),
       WETH: {
         supplyCap: exp(10_000_000, 18)
       },
