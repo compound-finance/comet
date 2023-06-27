@@ -1,11 +1,9 @@
 import { Constraint, Solution } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
-import CometActor from '../context/CometActor';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
-import { baseBalanceOf, exp, factorScale } from '../../test/helpers';
-import { ComparativeAmount, ComparisonOp, getAssetFromName, parseAmount, getExpectedBaseBalance, getToTransferAmount } from '../utils';
-import { BigNumber } from 'ethers';
+import { exp } from '../../test/helpers';
+import { ComparisonOp, parseAmount, getToTransferAmount } from '../utils';
 
 export class ReservesConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, initialContext: T) {

@@ -8,5 +8,5 @@ export interface Requirements {
     tokenBalances?: object; // Token balance constraint
     utilization?: number; // Utilization constraint
     prices?: object; // Price constraint
-    reserves?: number | string // Reserves constraint
+    reserves?: number | string; // Reserves constraint
 }
