@@ -12,7 +12,7 @@ import {
 } from '../../../../src/deploy';
 import { expect } from 'chai';
 
-export default migration('1687878801_increase-supply-caps', {
+export default migration('1687878801_increase_supply_caps', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
   },
@@ -29,6 +29,7 @@ export default migration('1687878801_increase-supply-caps', {
     const {
       bridgeReceiver,
       comet,
+      cometAdmin,
       configurator,
     } = await deploymentManager.getContracts();
 
@@ -45,15 +46,20 @@ export default migration('1687878801_increase-supply-caps', {
         configuration
       )
     );
+    const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'address'],
+      [configurator.address, comet.address]
+    );
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
-        [configurator.address],
-        [0],
+        [configurator.address, cometAdmin.address],
+        [0, 0],
         [
           'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
+          'deployAndUpgradeTo(address,address)',
         ],
-        [setConfigurationCalldata],
+        [setConfigurationCalldata, deployAndUpgradeToCalldata],
       ]
     );
 
@@ -94,11 +100,12 @@ export default migration('1687878801_increase-supply-caps', {
     // 1.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     expect(stateChanges).to.deep.equal({
+      baseBorrowMin: exp(0.001, 18),
       WETH: {
-        supplyCap: exp(10000000, 18)
+        supplyCap: exp(10_000_000, 18)
       },
       WBTC: {
-        supplyCap: exp(300000, 18)
+        supplyCap: exp(30_000, 18)
       },
     });
   }
