@@ -66,8 +66,7 @@ export default migration('1687878801_increase-supply-caps', {
       },
     ];
 
-    const description =
-      '# Increase supply caps for Linea-Goerli cUSDCv3 market';
+    const description = '# Increase supply caps for Linea-Goerli cUSDCv3 market';
     const txn = await govDeploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(goerliActions, description)))
@@ -89,7 +88,6 @@ export default migration('1687878801_increase-supply-caps', {
     govDeploymentManager: DeploymentManager,
     preMigrationBlockNumber: number
   ) {
-    await deploymentManager.spider(); // We spider here to pull in Linea COMP now that reward config has been set
 
     const { comet } = await deploymentManager.getContracts();
 
