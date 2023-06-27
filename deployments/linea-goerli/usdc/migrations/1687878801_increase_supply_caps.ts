@@ -86,7 +86,7 @@ export default migration('1687878801_increase_supply_caps', {
   },
 
   async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(
