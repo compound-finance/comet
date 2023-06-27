@@ -2,10 +2,10 @@ import { scenario } from './context/CometContext';
 import { expectRevertCustom } from './utils';
 import { expect } from 'chai';
 
-// XXX we could use a Comet reserves constraint here
 scenario(
   'Comet#withdrawReserves > governor withdraw reserves',
   {
+    reserves: '>= 150000',
     tokenBalances: {
       betty: { $base: '== 100000' },
       albert: { $base: '== 0' },

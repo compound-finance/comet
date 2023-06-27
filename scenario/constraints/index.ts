@@ -9,3 +9,4 @@ export { MigrationConstraint } from './MigrationConstraint';
 export { ProposalConstraint } from './ProposalConstraint';
 export { FilterConstraint } from './FilterConstraint';
 export { PriceConstraint } from './PriceConstraint';
+export { ReservesConstraint } from './ReservesConstraint';

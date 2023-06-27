@@ -191,11 +191,11 @@ export function getToTransferAmount(amount: ComparativeAmount, existingBalance: 
       break;
     case ComparisonOp.GTE:
       // `toTransfer` should not be negative
-      toTransfer = max(exp(amount.val, decimals) - existingBalance, 0);
+      toTransfer = max(exp(amount.val, decimals) - existingBalance, 0n);
       break;
     case ComparisonOp.LTE:
       // `toTransfer` should not be positive
-      toTransfer = min(exp(amount.val, decimals) - existingBalance, 0);
+      toTransfer = min(exp(amount.val, decimals) - existingBalance, 0n);
       break;
     case ComparisonOp.GT:
       toTransfer = exp(amount.val, decimals) - existingBalance + 1n;
