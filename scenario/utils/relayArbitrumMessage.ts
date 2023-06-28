@@ -110,4 +110,76 @@ export default async function relayArbitrumMessage(
       await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
     }
   }
+
+  // CCTP relay
+  // L1 contracts
+  const MainnetTokenMessenger = await governanceDeploymentManager.getContractOrThrow('mainnetCCTPTokenMessenger');
+  // Arbitrum TokenMinter
+  const TokenMinter = await governanceDeploymentManager.getContractOrThrow('arbitrumCCTPTokenMinter');
+  
+  const depositForBurnEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+    fromBlock: startingBlockNumber,
+    toBlock: 'latest',
+    address: MainnetTokenMessenger.address,
+    topics: [utils.id('MessageSent(bytes)')]
+  });
+
+  // Decode message body
+  const burnEvents = depositForBurnEvents.map(({ data }) => {
+    const decodedData = utils.defaultAbiCoder.decode(
+      [
+        'uint32 _msgVersion',
+        'uint32 _msgSourceDomain',
+        'uint32 _msgDestinationDomain',
+        'uint64 _msgNonce',
+        'bytes32 _msgSender',
+        'bytes32 _msgRecipient', 
+        'bytes32 _msgDestinationCaller',
+        'bytes _msgRawBody'
+      ],
+      data
+    );
+
+    // Another decode to from _msgRawBody to get the amount
+    const decodedMsgRawBody = utils.defaultAbiCoder.decode(
+      [
+        'uint32 _version',
+        'bytes32 _burnToken',
+        'bytes32 _mintRecipient',
+        'uint256 _amount',
+        'bytes32 _messageSender'
+      ], 
+      decodedData._msgRawBody
+    );
+    const { _msgSender, _MsgRecipient, _msgSourceDomain } = decodedData;
+    const { _amount, _burnToken } = decodedMsgRawBody;
+    return {
+      sender: _msgSender,
+      recipient: _MsgRecipient,
+      amount: _amount,
+      sourceDomain: _msgSourceDomain,
+      burnToken: _burnToken
+    }
+  });
+
+  // Impersonate the Arbitrum TokenMinter and mint token to recipient
+  for (let burnEvent of burnEvents) {
+    const { sender, recipient, amount, sourceDomain, burnToken } = burnEvent;
+    const localTokenMessengerSigner = await impersonateAddress(
+      bridgeDeploymentManager,
+      '0x19330d10d9cc8751218eaf51e8885d058642e08a'
+    );
+    const transactionRequest = await localTokenMessengerSigner.populateTransaction({
+      to: TokenMinter.address,
+      from: '0x19330d10d9cc8751218eaf51e8885d058642e08a',
+      data: TokenMinter.interface.encodeFunctionData('mint', [sourceDomain, burnToken, recipient, amount]),
+      gasPrice: 0
+    });
+
+    await setNextBaseFeeToZero(bridgeDeploymentManager);
+
+    const tx = await (
+      await localTokenMessengerSigner.sendTransaction(transactionRequest)
+    ).wait();
+  }
 }
