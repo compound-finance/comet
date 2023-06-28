@@ -114,8 +114,8 @@ export default async function relayArbitrumMessage(
   // CCTP relay
   // L1 contracts
   const MainnetTokenMessenger = await governanceDeploymentManager.getContractOrThrow('mainnetCCTPTokenMessenger');
-  // Arbitrum TokenMinter
-  const TokenMinter = await governanceDeploymentManager.getContractOrThrow('arbitrumCCTPTokenMinter');
+  // Arbitrum TokenMinter which is L2 contracts
+  const TokenMinter = await bridgeDeploymentManager.getContractOrThrow('arbitrumCCTPTokenMinter');
   
   const depositForBurnEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
