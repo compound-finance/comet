@@ -41,11 +41,14 @@ export default migration('1686953660_configurate_and_ens', {
       governor,
       USDC,
       COMP,
+      mainnetCCTPTokenMessenger,
     } = await govDeploymentManager.getContracts();
 
     const refundAddress = l2Timelock.address;
     const configuration = await getConfigurationStruct(deploymentManager);
-
+    const USDCAmountToBridge = exp(10_000, 6);
+    // CCTP destination domain for Arbitrum
+    const ArbitrumDestinationDomain = 3;
     const setConfigurationCalldata = await calldata(
       configurator.populateTransaction.setConfiguration(comet.address, configuration)
     );
@@ -108,8 +111,19 @@ export default migration('1686953660_configurate_and_ens', {
         ],
         value: createRetryableTicketGasParams.deposit
       },
-
-      // 2. Update the list of official markets
+      // 2. Approve USDC to CCTP
+      {
+        contract: USDC,
+        signature: 'approve(address,uint256)',
+        args: [mainnetCCTPTokenMessenger.address, USDCAmountToBridge]
+      }, 
+      // 3. Burn USDC to Arbitrum via CCTP
+      {
+        contract: mainnetCCTPTokenMessenger,
+        signature: 'depositForBurn(uint256,uint32,bytes32,address)',
+        args: [USDCAmountToBridge, ArbitrumDestinationDomain, utils.hexZeroPad(comet.address, 32), USDC.address],
+      },
+      // 4. Update the list of official markets
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
@@ -170,7 +184,10 @@ export default migration('1686953660_configurate_and_ens', {
     expect(config.rescaleFactor).to.be.equal(exp(1, 12));
     expect(config.shouldUpscale).to.be.equal(true);
 
-    // 2.
+    // 2 & 3.
+    expect(await comet.getReserves()).to.be.equal(exp(10_000, 6));
+
+    // 4.
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
     const officialMarketsJSON = await ENSResolver.text(subdomainHash, ENSTextRecordKey);
