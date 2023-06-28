@@ -12,6 +12,7 @@ jobs:
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
       ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
+      LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
     steps:
       - uses: actions/checkout@v2
         with:

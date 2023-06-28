@@ -2,6 +2,7 @@ import { DeploymentManager } from '../../plugins/deployment_manager';
 import relayPolygonMessage from './relayPolygonMessage';
 import relayArbitrumMessage from './relayArbitrumMessage';
 import relayBaseMessage from './relayBaseMessage';
+import relayLineaMessage from './relayLineaMessage';
 
 export default async function relayMessage(
   governanceDeploymentManager: DeploymentManager,
@@ -11,17 +12,38 @@ export default async function relayMessage(
   const bridgeNetwork = bridgeDeploymentManager.network;
   switch (bridgeNetwork) {
     case 'base-goerli':
-      await relayBaseMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);
+      await relayBaseMessage(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        startingBlockNumber
+      );
       break;
     case 'mumbai':
     case 'polygon':
-      await relayPolygonMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);
+      await relayPolygonMessage(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        startingBlockNumber
+      );
       break;
     case 'arbitrum':
     case 'arbitrum-goerli':
-      await relayArbitrumMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);
+      await relayArbitrumMessage(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        startingBlockNumber
+      );
+      break;
+    case 'linea-goerli':
+      await relayLineaMessage(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        startingBlockNumber
+      );
       break;
     default:
-      throw new Error(`No message relay implementation from ${bridgeNetwork} -> ${governanceDeploymentManager.network}`);
+      throw new Error(
+        `No message relay implementation from ${bridgeNetwork} -> ${governanceDeploymentManager.network}`
+      );
   }
 }

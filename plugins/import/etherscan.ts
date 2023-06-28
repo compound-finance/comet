@@ -19,7 +19,8 @@ export function getEtherscanApiUrl(network: string): string {
     polygon: 'api.polygonscan.com',
     arbitrum: 'api.arbiscan.io',
     'arbitrum-goerli': 'api-goerli.arbiscan.io',
-    'base-goerli': 'api-goerli.basescan.org'
+    'base-goerli': 'api-goerli.basescan.org',
+    'linea-goerli': 'api-goerli.lineascan.build'
   }[network];
 
   if (!host) {
@@ -42,7 +43,8 @@ export function getEtherscanUrl(network: string): string {
     polygon: 'polygonscan.com',
     arbitrum: 'arbiscan.io',
     'arbitrum-goerli': 'goerli.arbiscan.io',
-    'base-goerli': 'goerli.basescan.org'
+    'base-goerli': 'goerli.basescan.org',
+    'linea-goerli': 'goerli.lineascan.build'
   }[network];
 
   if (!host) {
@@ -65,7 +67,8 @@ export function getEtherscanApiKey(network: string): string {
     polygon: process.env.POLYGONSCAN_KEY,
     arbitrum: process.env.ARBISCAN_KEY,
     'arbitrum-goerli': process.env.ARBISCAN_KEY,
-    'base-goerli': process.env.ETHERSCAN_KEY
+    'base-goerli': process.env.ETHERSCAN_KEY,
+    'linea-goerli': process.env.LINEASCAN_KEY
   }[network];
 
   if (!apiKey) {
