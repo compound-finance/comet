@@ -124,6 +124,10 @@ export default async function relayArbitrumMessage(
     topics: [utils.id('MessageSent(bytes)')]
   });
 
+  console.log('***************MainnetTokenMessenger***************');
+  console.log(utils.id('MessageSent(bytes)'));
+  console.log(depositForBurnEvents);
+
   // Decode message body
   const burnEvents = depositForBurnEvents.map(({ data }) => {
     const decodedData = utils.defaultAbiCoder.decode(
@@ -152,10 +156,10 @@ export default async function relayArbitrumMessage(
       decodedData._msgRawBody
     );
     const { _msgSender, _MsgRecipient, _msgSourceDomain } = decodedData;
-    const { _amount, _burnToken } = decodedMsgRawBody;
+    const { _amount, _burnToken, _mintRecipient } = decodedMsgRawBody;
     return {
       sender: _msgSender,
-      recipient: _MsgRecipient,
+      recipient: _mintRecipient,
       amount: _amount,
       sourceDomain: _msgSourceDomain,
       burnToken: _burnToken
@@ -172,7 +176,7 @@ export default async function relayArbitrumMessage(
     const transactionRequest = await localTokenMessengerSigner.populateTransaction({
       to: TokenMinter.address,
       from: '0x19330d10d9cc8751218eaf51e8885d058642e08a',
-      data: TokenMinter.interface.encodeFunctionData('mint', [sourceDomain, burnToken, recipient, amount]),
+      data: TokenMinter.interface.encodeFunctionData('mint', [sourceDomain, burnToken, utils.getAddress(recipient), amount]),
       gasPrice: 0
     });
 
@@ -181,5 +185,7 @@ export default async function relayArbitrumMessage(
     const tx = await (
       await localTokenMessengerSigner.sendTransaction(transactionRequest)
     ).wait();
+
+    console.log('tx: ', tx);
   }
 }
