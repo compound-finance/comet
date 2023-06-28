@@ -11,7 +11,7 @@ scenario(
     },
   },
   async ({ comet, timelock, actors }, context) => {
-    const { admin, albert, betty } = actors;
+    const { admin, albert } = actors;
 
     const baseToken = context.getAssetByAddress(await comet.baseToken());
     const scale = (await comet.baseScale()).toBigInt();
