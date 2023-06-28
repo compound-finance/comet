@@ -17,7 +17,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const GMX = await deploymentManager.existing('GMX', '0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a', 'arbitrum');
   const WETH = await deploymentManager.existing('WETH', '0x82af49447d8a07e3bd95bd0d56f35241523fbab1', 'arbitrum');
   const WBTC = await deploymentManager.existing('WBTC', '0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f', 'arbitrum');
-
+  const arbitrumCCTPTokenMinter = await deploymentManager.existing('arbitrumCCTPTokenMinter', '0xE7Ed1fa7f45D05C508232aa32649D89b73b8bA48', 'arbitrum');
   // Import shared contracts from original usdc deployment
   const bulker = await deploymentManager.fromDep('bulker', 'arbitrum', 'usdc');
   const localTimelock = await deploymentManager.fromDep('timelock', 'arbitrum', 'usdc');
@@ -30,6 +30,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   return {
     ...deployed,
     bridgeReceiver, 
+    arbitrumCCTPTokenMinter,
     bulker, 
     rewards
   };
