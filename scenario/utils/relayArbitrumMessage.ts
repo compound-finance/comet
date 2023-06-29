@@ -197,16 +197,19 @@ export default async function relayArbitrumMessage(
   });
 
   // Impersonate the Arbitrum TokenMinter and mint token to recipient
+  const ImpersonateLocalTokenMessager = '0x19330d10d9cc8751218eaf51e8885d058642e08a';
+
+  // Impersonate the Arbitrum TokenMinter and mint token to recipient
   for (let burnEvent of burnEvents) {
     const { recipient, amount, sourceDomain, burnToken } = burnEvent;
     const localTokenMessengerSigner = await impersonateAddress(
       bridgeDeploymentManager,
-      '0x19330d10d9cc8751218eaf51e8885d058642e08a'
+      ImpersonateLocalTokenMessager
     );
 
     const transactionRequest = await localTokenMessengerSigner.populateTransaction({
       to: TokenMinter.address,
-      from: '0x19330d10d9cc8751218eaf51e8885d058642e08a',
+      from: ImpersonateLocalTokenMessager,
       data: TokenMinter.interface.encodeFunctionData('mint', [sourceDomain, burnToken, utils.getAddress(recipient), amount]),
       gasPrice: 0
     });
