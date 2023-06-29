@@ -1,5 +1,6 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
+import { impersonateAddress } from '../../plugins/scenario/utils';
 import { ethers } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
@@ -45,6 +46,11 @@ export default async function relaySuccinctMessage(
       args: { _nonce, _msgHash, _message }
     } = L1TelepathyRouter.interface.parseLog(sentMessageEvent);
 
+    const aliasedSigner = await impersonateAddress(
+      bridgeDeploymentManager,
+      L2TelepathyRouter.address
+    );
+
     const decodedMessage = decodeMessage(_message);
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
@@ -58,7 +64,7 @@ export default async function relaySuccinctMessage(
     const logIndex = 0;
 
     const relayMessageTxn = await (
-      await L2TelepathyRouter.executeMessage(
+      await L2TelepathyRouter.connect(aliasedSigner).executeMessage(
         srcSlotTxSlotPack,
         _message,
         receiptsRootProof,
