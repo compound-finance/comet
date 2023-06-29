@@ -28,6 +28,7 @@ import arbitrumRelationConfigMap from './deployments/arbitrum/usdc/relations';
 import arbitrumGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
+import fujiRelationConfigMap from './deployments/fuji/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -282,6 +283,9 @@ const config: HardhatUserConfig = {
       'base-goerli': {
         usdc: baseGoerliRelationConfigMap,
         weth: baseGoerliWethRelationConfigMap
+      },
+      'fuji': {
+        usdc: fujiRelationConfigMap
       }
     },
   },
