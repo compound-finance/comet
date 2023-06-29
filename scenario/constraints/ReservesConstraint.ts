@@ -9,11 +9,9 @@ export class ReservesConstraint<T extends CometContext, R extends Requirements> 
   async solve(requirements: R, initialContext: T) {
     const reservesRequirement = requirements.reserves;
     if (reservesRequirement !== undefined) {
-
-      const comet = await initialContext.getComet();
-
       const solutions: Solution<T>[] = [];
       solutions.push(async function barelyMeet(context: T) {
+        const comet = await context.getComet();
         const baseToken = await comet.baseToken();
         const currentReserves = (await comet.getReserves()).toBigInt();
         const amount = parseAmount(reservesRequirement);
