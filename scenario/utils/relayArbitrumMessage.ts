@@ -114,65 +114,96 @@ export default async function relayArbitrumMessage(
   // CCTP relay
   // L1 contracts
   const MainnetTokenMessenger = await governanceDeploymentManager.getContractOrThrow('mainnetCCTPTokenMessenger');
+  const MainnetMessageTransmitter = await governanceDeploymentManager.getContractOrThrow('mainnetCCTPMessageTransmitter');
   // Arbitrum TokenMinter which is L2 contracts
   const TokenMinter = await bridgeDeploymentManager.getContractOrThrow('arbitrumCCTPTokenMinter');
   
   const depositForBurnEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
-    address: MainnetTokenMessenger.address,
+    address: MainnetMessageTransmitter.address,
     topics: [utils.id('MessageSent(bytes)')]
   });
 
-  console.log('***************MainnetTokenMessenger***************');
-  console.log(utils.id('MessageSent(bytes)'));
-  console.log(depositForBurnEvents);
-
   // Decode message body
   const burnEvents = depositForBurnEvents.map(({ data }) => {
-    const decodedData = utils.defaultAbiCoder.decode(
-      [
-        'uint32 _msgVersion',
-        'uint32 _msgSourceDomain',
-        'uint32 _msgDestinationDomain',
-        'uint64 _msgNonce',
-        'bytes32 _msgSender',
-        'bytes32 _msgRecipient', 
-        'bytes32 _msgDestinationCaller',
-        'bytes _msgRawBody'
-      ],
-      data
-    );
+    const dataBytes = utils.arrayify(data);
+    // Since data is encodePacked, so can't simply decode via AbiCoder.decode
+    const offset = 64;
+    const length = {
+      uint32: 4,
+      uint64: 8,
+      bytes32: 32,
+      uint256: 32,
+    };
+    let start = offset;
+    let end = start + length.uint32;
+    // msgVersion, skip won't use
+    start = end;
+    end = start + length.uint32;
+    // msgSourceDomain
+    const msgSourceDomain = BigNumber.from(dataBytes.slice(start, end)).toNumber();
 
-    // Another decode to from _msgRawBody to get the amount
-    const decodedMsgRawBody = utils.defaultAbiCoder.decode(
-      [
-        'uint32 _version',
-        'bytes32 _burnToken',
-        'bytes32 _mintRecipient',
-        'uint256 _amount',
-        'bytes32 _messageSender'
-      ], 
-      decodedData._msgRawBody
-    );
-    const { _msgSender, _MsgRecipient, _msgSourceDomain } = decodedData;
-    const { _amount, _burnToken, _mintRecipient } = decodedMsgRawBody;
+    start = end;
+    end = start + length.uint32;
+    // msgDestinationDomain, skip won't use
+
+    start = end;
+    end = start + length.uint64;
+    // msgNonce, skip won't use
+
+    start = end;
+    end = start + length.bytes32;
+    // msgSender, skip won't use
+
+    start = end;
+    end = start + length.bytes32;
+    // msgRecipient, skip won't use
+
+    start = end;
+    end = start + length.bytes32;
+    // msgDestination, skip won't use
+
+    start = end;
+    end = start + length.uint32;
+    // rawMsgBody version, skip won't use
+
+    start = end;
+    end = start + length.bytes32;
+    // rawMsgBody burnToken
+    const burnToken = utils.hexlify(dataBytes.slice(start, end));
+
+    start = end;
+    end = start + length.bytes32;
+    // rawMsgBody mintRecipient
+    const mintRecipient = utils.getAddress(utils.hexlify(dataBytes.slice(start, end)).slice(-40));
+
+    start = end;
+    end = start + length.uint256;
+
+    // rawMsgBody amount
+    const amount = BigNumber.from(dataBytes.slice(start, end)).toNumber();
+
+    start = end;
+    end = start + length.bytes32;
+    // rawMsgBody messageSender, skip won't use
+
     return {
-      sender: _msgSender,
-      recipient: _mintRecipient,
-      amount: _amount,
-      sourceDomain: _msgSourceDomain,
-      burnToken: _burnToken
+      recipient: mintRecipient,
+      amount: amount,
+      sourceDomain: msgSourceDomain,
+      burnToken: burnToken
     }
   });
 
   // Impersonate the Arbitrum TokenMinter and mint token to recipient
   for (let burnEvent of burnEvents) {
-    const { sender, recipient, amount, sourceDomain, burnToken } = burnEvent;
+    const { recipient, amount, sourceDomain, burnToken } = burnEvent;
     const localTokenMessengerSigner = await impersonateAddress(
       bridgeDeploymentManager,
       '0x19330d10d9cc8751218eaf51e8885d058642e08a'
     );
+
     const transactionRequest = await localTokenMessengerSigner.populateTransaction({
       to: TokenMinter.address,
       from: '0x19330d10d9cc8751218eaf51e8885d058642e08a',
@@ -185,7 +216,5 @@ export default async function relayArbitrumMessage(
     const tx = await (
       await localTokenMessengerSigner.sendTransaction(transactionRequest)
     ).wait();
-
-    console.log('tx: ', tx);
   }
 }
