@@ -16,6 +16,24 @@ async function deployContracts(
 ): Promise<Deployed> {
   const trace = deploymentManager.tracer();
 
+  const USDC = await deploymentManager.existing(
+    'USDC',
+    '0x4fed3d02d095f7d92af161311fa6ef23dc8da040',
+    'fuji'
+  );
+
+  const WBTC_E = await deploymentManager.existing(
+    'WBTC.e',
+    '0xfa78400e01Fc9da830Cb2F13B3e7E18F813414Ff',
+    'fuji'
+  );
+
+  const WAVAX = await deploymentManager.existing(
+    'WAVAX',
+    '0xA2c25E48269e3f89A60b2CC8e02AAfEeB3BAb761',
+    'fuji'
+  );
+
   // Pull in existing assets
   const WETH = await deploymentManager.existing(
     'MintableERC20',
