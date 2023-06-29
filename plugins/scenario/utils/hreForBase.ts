@@ -8,7 +8,7 @@ import { HARDHAT_PARAM_DEFINITIONS } from 'hardhat/internal/core/params/hardhat-
 import { Environment } from 'hardhat/internal/core/runtime-environment';
 import { ForkSpec } from '../World';
 import { HttpNetworkUserConfig } from 'hardhat/types';
-import { EthereumProvider } from "hardhat/types/provider";
+import { EthereumProvider } from 'hardhat/types/provider';
 
 /*
 mimics https://github.com/nomiclabs/hardhat/blob/master/packages/hardhat-core/src/internal/lib/hardhat-lib.ts

@@ -191,11 +191,11 @@ export function getToTransferAmount(amount: ComparativeAmount, existingBalance: 
       break;
     case ComparisonOp.GTE:
       // `toTransfer` should not be negative
-      toTransfer = max(exp(amount.val, decimals) - existingBalance, 0);
+      toTransfer = max(exp(amount.val, decimals) - existingBalance, 0n);
       break;
     case ComparisonOp.LTE:
       // `toTransfer` should not be positive
-      toTransfer = min(exp(amount.val, decimals) - existingBalance, 0);
+      toTransfer = min(exp(amount.val, decimals) - existingBalance, 0n);
       break;
     case ComparisonOp.GT:
       toTransfer = exp(amount.val, decimals) - existingBalance + 1n;
@@ -310,7 +310,7 @@ export async function fetchLogs(
   filter: EventFilter,
   fromBlock: number,
   toBlock: number,
-  BLOCK_SPAN = 2048 // NB: sadly max for fuji
+  BLOCK_SPAN = 2047 // NB: sadly max for fuji is LESS than 2048
 ): Promise<Event[]> {
   if (toBlock - fromBlock > BLOCK_SPAN) {
     const midBlock = fromBlock + BLOCK_SPAN;

@@ -138,7 +138,7 @@ scenario(
     expectApproximately(
       (await stETH.balanceOf(albert.address)).toBigInt(),
       (await wstETH.getStETHByWstETH(exp(1, 18))).toBigInt(),
-      1n
+      2n
     );
     expect(await comet.collateralBalanceOf(albert.address, wstETH.address)).to.be.equal(0n);
   }

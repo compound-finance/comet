@@ -17,8 +17,8 @@ async function main() {
 
   // Get owners and threshold from existing multisig
   const GnosisABI = [
-    {"constant":true,"inputs":[],"name":"getOwners","outputs":[{"internalType":"address[]","name":"","type":"address[]"}],"payable":false,"stateMutability":"view","type":"function"},
-    {"constant":true,"inputs":[],"name":"getThreshold","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},
+    {'constant':true,'inputs':[],'name':'getOwners','outputs':[{'internalType':'address[]','name':'','type':'address[]'}],'payable':false,'stateMutability':'view','type':'function'},
+    {'constant':true,'inputs':[],'name':'getThreshold','outputs':[{'internalType':'uint256','name':'','type':'uint256'}],'payable':false,'stateMutability':'view','type':'function'},
   ];
   const GnosisSafeContract = new hre.ethers.Contract(guardian, GnosisABI, hre.ethers.provider);
   const owners = await GnosisSafeContract.getOwners();
