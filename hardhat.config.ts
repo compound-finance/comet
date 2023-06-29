@@ -90,7 +90,6 @@ const networkConfigs: NetworkConfig[] = [
   { network: 'ropsten', chainId: 3 },
   { network: 'rinkeby', chainId: 4 },
   { network: 'goerli', chainId: 5 },
-  { network: 'kovan', chainId: 42 },
   {
     network: 'polygon',
     chainId: 137,
@@ -204,7 +203,6 @@ const config: HardhatUserConfig = {
       ropsten: ETHERSCAN_KEY,
       rinkeby: ETHERSCAN_KEY,
       goerli: ETHERSCAN_KEY,
-      kovan: ETHERSCAN_KEY,
       // Avalanche
       avalanche: SNOWTRACE_KEY,
       avalancheFujiTestnet: SNOWTRACE_KEY,
@@ -320,11 +318,6 @@ const config: HardhatUserConfig = {
         name: 'fuji',
         network: 'fuji',
         deployment: 'usdc'
-      },
-      {
-        name: 'kovan',
-        network: 'kovan',
-        deployment: 'usdc',
       },
       {
         name: 'goerli',
