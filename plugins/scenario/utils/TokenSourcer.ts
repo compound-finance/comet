@@ -21,7 +21,7 @@ export async function fetchQuery(
   toBlock: number,
   originalBlock: number,
   MAX_SEARCH_BLOCKS = 40000,
-  BLOCK_SPAN = 2048
+  BLOCK_SPAN = 2047
 ): Promise<{ recentLogs: Event[], blocksDelta: number }> {
   if (originalBlock - fromBlock > MAX_SEARCH_BLOCKS) {
     throw(new Error(`No events found within ${MAX_SEARCH_BLOCKS} blocks for ${contract.address}`));
@@ -98,7 +98,7 @@ async function addTokens(
   block?: number,
   offsetBlocks?: number,
   MAX_SEARCH_BLOCKS = 40000,
-  BLOCK_SPAN = 2048
+  BLOCK_SPAN = 2047
 ) {
   // XXX we should really take min of current balance and amount and transfer that much
   let ethers = dm.hre.ethers;
