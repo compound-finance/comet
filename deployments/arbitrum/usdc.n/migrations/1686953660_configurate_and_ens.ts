@@ -24,6 +24,7 @@ export default migration('1686953660_configurate_and_ens', {
     const ethers = deploymentManager.hre.ethers;
     const { utils } = ethers;
 
+    const cometFactory = await deploymentManager.fromDep('cometFactory', 'arbitrum', 'usdc');
     const {
       bridgeReceiver,
       timelock: l2Timelock,
@@ -31,27 +32,29 @@ export default migration('1686953660_configurate_and_ens', {
       cometAdmin,
       configurator,
       rewards,
+      bridgedComet,
     } = await deploymentManager.getContracts();
 
     const {
       arbitrumInbox,
       arbitrumL1GatewayRouter,
       timelock,
-      comptrollerV2,
       governor,
       USDC,
-      COMP,
       mainnetCCTPTokenMessenger,
     } = await govDeploymentManager.getContracts();
 
     const refundAddress = l2Timelock.address;
     const configuration = await getConfigurationStruct(deploymentManager);
-    const USDCAmountToBridge = exp(10_000, 6);
-    // CCTP destination domain for Arbitrum
-    const ArbitrumDestinationDomain = 3;
+    const setFactoryCalldata = await calldata(
+      configurator.populateTransaction.setFactory(comet.address, cometFactory.address)
+    );
     const setConfigurationCalldata = await calldata(
       configurator.populateTransaction.setConfiguration(comet.address, configuration)
     );
+    const USDCAmountToBridge = exp(10_000, 6);
+    // CCTP destination domain for Arbitrum
+    const ArbitrumDestinationDomain = 3;
     const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(
       ['address', 'address'],
       [configurator.address, comet.address]
@@ -60,17 +63,31 @@ export default migration('1686953660_configurate_and_ens', {
       ['address', 'address'],
       [comet.address, arbitrumCOMPAddress]
     );
+
+    const turnOffBridgeCometSupplySpeedCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'uint64'],
+      [bridgedComet.address, 0]
+    );
+
+    const turnOffBridgedCometBorrowSpeedCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'uint64'],
+      [bridgedComet.address, 0]
+    );
+
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
-        [configurator.address, cometAdmin.address, rewards.address],
-        [0, 0, 0],
+        [configurator.address, configurator.address, cometAdmin.address, rewards.address, configurator.address, configurator.address],
+        [0, 0, 0, 0, 0, 0],
         [
+          'setFactory(address,address)',
           'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
           'deployAndUpgradeTo(address,address)',
-          'setRewardConfig(address,address)'
+          'setRewardConfig(address,address)', 
+          'setBaseTrackingSupplySpeed(address,uint64)',
+          'setBaseTrackingBorrowSpeed(address,uint64)',
         ],
-        [setConfigurationCalldata, deployAndUpgradeToCalldata, setRewardConfigCalldata]
+        [setFactoryCalldata, setConfigurationCalldata, deployAndUpgradeToCalldata, setRewardConfigCalldata, turnOffBridgeCometSupplySpeedCalldata, turnOffBridgedCometBorrowSpeedCalldata]
       ]
     );
 
@@ -131,7 +148,7 @@ export default migration('1686953660_configurate_and_ens', {
           ['bytes32', 'string', 'string'],
           [subdomainHash, ENSTextRecordKey, JSON.stringify(officialMarketsJSON)]
         )
-      },
+      }
     ];
 
     // TODO: Will update this description to be more accurate once the contract is deployed
@@ -152,7 +169,8 @@ export default migration('1686953660_configurate_and_ens', {
 
     const {
       comet,
-      rewards
+      rewards, 
+      bridgedComet,
     } = await deploymentManager.getContracts();
 
     const {
@@ -226,5 +244,9 @@ export default migration('1686953660_configurate_and_ens', {
     // 3.
     expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(34.74 / 86400, 15, 18));
     expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(0);
+    
+    // 4.
+    expect(await bridgedComet.baseTrackingSupplySpeed()).to.be.equal(0);
+    expect(await bridgedComet.baseTrackingBorrowSpeed()).to.be.equal(0);
   }
 });

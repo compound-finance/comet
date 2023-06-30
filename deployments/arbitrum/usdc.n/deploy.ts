@@ -18,20 +18,27 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const WETH = await deploymentManager.existing('WETH', '0x82af49447d8a07e3bd95bd0d56f35241523fbab1', 'arbitrum');
   const WBTC = await deploymentManager.existing('WBTC', '0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f', 'arbitrum');
   const arbitrumCCTPTokenMinter = await deploymentManager.existing('arbitrumCCTPTokenMinter', '0xE7Ed1fa7f45D05C508232aa32649D89b73b8bA48', 'arbitrum');
-  // Import shared contracts from original usdc deployment
+
+  // Import shared contracts from cUSDCv3
+  const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'arbitrum', 'usdc');
+  const cometFactory = await deploymentManager.fromDep('cometFactory', 'arbitrum', 'usdc');
+  const $configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'arbitrum', 'usdc');
+  const configurator = await deploymentManager.fromDep('configurator', 'arbitrum', 'usdc');
+  const rewards = await deploymentManager.fromDep('rewards', 'arbitrum', 'usdc');
   const bulker = await deploymentManager.fromDep('bulker', 'arbitrum', 'usdc');
   const localTimelock = await deploymentManager.fromDep('timelock', 'arbitrum', 'usdc');
   const bridgeReceiver = await deploymentManager.fromDep('bridgeReceiver', 'arbitrum', 'usdc');
-  const rewards = await deploymentManager.fromDep('rewards', 'arbitrum', 'usdc');
+  const bridgedComet = await deploymentManager.fromDep('bridgedComet', 'arbitrum', 'usdc', 'comet');
 
   // Deploy Comet
   const deployed = await deployComet(deploymentManager, deploySpec);
-  
+
   return {
     ...deployed,
     bridgeReceiver, 
     arbitrumCCTPTokenMinter,
     bulker, 
-    rewards
+    rewards, 
+    bridgedComet
   };
 }
