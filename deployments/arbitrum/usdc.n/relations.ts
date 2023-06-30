@@ -17,6 +17,15 @@ export default {
       }
     }
   },
+  // Bridged USDC
+  '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8': {
+    artifact: 'contracts/ERC20.sol:ERC20',
+    delegates: {
+      field: {
+        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
+  },
   // ARB
   '0x912ce59144191c1204e64559fe8253a0e49e6548': {
     artifact: 'contracts/ERC20.sol:ERC20',
@@ -34,5 +43,56 @@ export default {
         slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
       }
     }
-  }
+  },
+  bridgedComet: {
+    delegates: {
+      field: {
+        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc',
+      },
+    },
+    relations: {
+      baseToken: {
+        alias: async (nativetoken) => nativetoken.symbol()+'.e',
+      },
+      baseTokenPriceFeed: {
+        field: async (bridgedComet) => bridgedComet.baseTokenPriceFeed(),
+        alias: async (_, { baseToken }) => `${await baseToken[0].symbol()+'.e'}:priceFeed`,
+      },
+      assets: {
+        field: async (bridgedComet) => {
+          const n = await bridgedComet.numAssets();
+          return Promise.all(
+            Array(n).fill(0).map(async (_, i) => {
+              const assetInfo = await bridgedComet.getAssetInfo(i);
+              return assetInfo.asset;
+            })
+          );
+        },
+        alias: async (token) => token.symbol(),
+      },
+      assetPriceFeeds: {
+        field: async (bridgedComet) => {
+          const n = await bridgedComet.numAssets();
+          return Promise.all(
+            Array(n).fill(0).map(async (_, i) => {
+              const assetInfo = await bridgedComet.getAssetInfo(i);
+              return assetInfo.priceFeed;
+            })
+          );
+        },
+        alias: async (_, { assets }, i) => `${await assets[i].symbol()}:priceFeed`,
+      },
+      cometAdmin: {
+        field: {
+          slot: '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103',
+        },
+      },
+    },
+  },
+  'bridgedComet:implementation': {
+    artifact: 'contracts/Comet.sol:Comet',
+    delegates: {
+      field: async (bridgedComet) => bridgedComet.extensionDelegate(),
+    },
+  },
 };
