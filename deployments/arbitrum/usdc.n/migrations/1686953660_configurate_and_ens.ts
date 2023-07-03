@@ -59,6 +59,7 @@ export default migration('1686953660_configurate_and_ens', {
       ['address', 'address'],
       [configurator.address, comet.address]
     );
+    
     const setRewardConfigCalldata = utils.defaultAbiCoder.encode(
       ['address', 'address'],
       [comet.address, arbitrumCOMPAddress]
@@ -74,11 +75,16 @@ export default migration('1686953660_configurate_and_ens', {
       [bridgedComet.address, 0]
     );
 
+    const deployAndUpgradeToBridgedCometCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'address'],
+      [configurator.address, bridgedComet.address]
+    );
+
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
-        [configurator.address, configurator.address, cometAdmin.address, rewards.address, configurator.address, configurator.address],
-        [0, 0, 0, 0, 0, 0],
+        [configurator.address, configurator.address, cometAdmin.address, rewards.address, configurator.address, configurator.address, cometAdmin.address],
+        [0, 0, 0, 0, 0, 0, 0],
         [
           'setFactory(address,address)',
           'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
@@ -86,8 +92,9 @@ export default migration('1686953660_configurate_and_ens', {
           'setRewardConfig(address,address)', 
           'setBaseTrackingSupplySpeed(address,uint64)',
           'setBaseTrackingBorrowSpeed(address,uint64)',
+          'deployAndUpgradeTo(address,address)',
         ],
-        [setFactoryCalldata, setConfigurationCalldata, deployAndUpgradeToCalldata, setRewardConfigCalldata, turnOffBridgeCometSupplySpeedCalldata, turnOffBridgedCometBorrowSpeedCalldata]
+        [setFactoryCalldata, setConfigurationCalldata, deployAndUpgradeToCalldata, setRewardConfigCalldata, turnOffBridgeCometSupplySpeedCalldata, turnOffBridgedCometBorrowSpeedCalldata, deployAndUpgradeToBridgedCometCalldata]
       ]
     );
 
@@ -244,7 +251,6 @@ export default migration('1686953660_configurate_and_ens', {
     // 3.
     expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(34.74 / 86400, 15, 18));
     expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(0);
-    
     // 4.
     expect(await bridgedComet.baseTrackingSupplySpeed()).to.be.equal(0);
     expect(await bridgedComet.baseTrackingBorrowSpeed()).to.be.equal(0);
