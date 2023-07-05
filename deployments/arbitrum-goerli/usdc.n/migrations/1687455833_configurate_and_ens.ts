@@ -24,6 +24,7 @@ export default migration('1687455833_configurate_and_ens', {
     const ethers = deploymentManager.hre.ethers;
     const { utils } = ethers;
 
+    const cometFactory = await deploymentManager.fromDep('cometFactory', 'arbitrum-goerli', 'usdc');
     const {
       bridgeReceiver,
       timelock: l2Timelock,
@@ -40,11 +41,15 @@ export default migration('1687455833_configurate_and_ens', {
       governor,
       USDC,
       COMP,
+      mainnetCCTPTokenMessenger,
     } = await govDeploymentManager.getContracts();
 
     const COMPAmountToBridge = exp(2_500, 18);
     const compGatewayAddress = await arbitrumL1GatewayRouter.getGateway(COMP.address);
     const refundAddress = l2Timelock.address;
+    const USDCAmountToBridge = exp(10, 6);
+    // CCTP destination domain for Arbitrum
+    const ArbitrumDestinationDomain = 3;
 
     const compGasParams = await estimateTokenBridge(
       {
@@ -70,17 +75,21 @@ export default migration('1687455833_configurate_and_ens', {
       ['address', 'address'],
       [comet.address, arbitrumCOMPAddress]
     );
+    const setFactoryCalldata = await calldata(
+      configurator.populateTransaction.setFactory(comet.address, cometFactory.address)
+    );
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
-        [configurator.address, cometAdmin.address, rewards.address],
-        [0, 0, 0],
+        [configurator.address, configurator.address, cometAdmin.address, rewards.address],
+        [0, 0, 0, 0],
         [
+          'setFactory(address,address)',
           'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
           'deployAndUpgradeTo(address,address)',
           'setRewardConfig(address,address)'
         ],
-        [setConfigurationCalldata, deployAndUpgradeToCalldata, setRewardConfigCalldata]
+        [setFactoryCalldata, setConfigurationCalldata, deployAndUpgradeToCalldata, setRewardConfigCalldata]
       ]
     );
 
@@ -106,7 +115,7 @@ export default migration('1687455833_configurate_and_ens', {
           cometAddress: '0x1d573274E19174260c5aCE3f2251598959d24456',
         }, 
         {
-          baseSymbol: 'USDC.n',
+          baseSymbol: 'USDC',
           cometAddress: comet.address,
         }
       ],
@@ -129,29 +138,17 @@ export default migration('1687455833_configurate_and_ens', {
         ],
         value: createRetryableTicketGasParams.deposit
       },
-      // 2. Approve the COMP gateway to take Timelock's COMP for bridging
+      // 2. Approve USDC to CCTP
       {
-        contract: COMP,
+        contract: USDC,
         signature: 'approve(address,uint256)',
-        args: [compGatewayAddress, COMPAmountToBridge]
+        args: [mainnetCCTPTokenMessenger.address, USDCAmountToBridge]
       },
-      // 3. Bridge COMP from mainnet to Arbitrum rewards
+      // 3. Burn USDC to Arbitrum via CCTP
       {
-        contract: arbitrumL1GatewayRouter,
-        signature: 'outboundTransferCustomRefund(address,address,address,uint256,uint256,uint256,bytes)',
-        args: [
-          COMP.address,                             // address _token,
-          refundAddress,                            // address _refundTo,
-          rewards.address,                          // address _to,
-          COMPAmountToBridge,                       // uint256 _amount,
-          compGasParams.gasLimit,                   // uint256 _maxGas,
-          compGasParams.maxFeePerGas,               // uint256 _gasPriceBid,
-          utils.defaultAbiCoder.encode(
-            ['uint256', 'bytes'],
-            [compGasParams.maxSubmissionCost, '0x']
-          )                                         // bytes calldata _data
-        ],
-        value: compGasParams.deposit
+        contract: mainnetCCTPTokenMessenger,
+        signature: 'depositForBurn(uint256,uint32,bytes32,address)',
+        args: [USDCAmountToBridge, ArbitrumDestinationDomain, utils.hexZeroPad(comet.address, 32), USDC.address],
       },
       // 4. Update the list of official markets
       {
@@ -187,37 +184,11 @@ export default migration('1687455833_configurate_and_ens', {
       LINK
     } = await deploymentManager.getContracts();
 
-    // 1.
-    // const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    // expect(stateChanges).to.deep.equal({
-    //   LINK: {
-    //     supplyCap: exp(5_000_000, 18)
-    //   },
-    //   WBTC: {
-    //     supplyCap: exp(300, 8)
-    //   },
-    //   WETH: {
-    //     supplyCap: exp(5_000, 18)
-    //   }
-    // });
-
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(arbitrumCOMPAddress);
     expect(config.rescaleFactor).to.be.equal(exp(1, 12));
     expect(config.shouldUpscale).to.be.equal(true);
 
-    // 2. & 3.
-    // expect(await comet.getReserves()).to.be.equal(exp(10, 6));
-
-    // 4. & 5.
-    const arbitrumCOMP = new Contract(
-      arbitrumCOMPAddress,
-      ['function balanceOf(address account) external view returns (uint256)'],
-      deploymentManager.hre.ethers.provider
-    );
-    expect(await arbitrumCOMP.balanceOf(rewards.address)).to.be.equal(exp(2_500, 18));
-
-    // 6.
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
     const officialMarketsJSON = await ENSResolver.text(subdomainHash, ENSTextRecordKey);
@@ -247,8 +218,15 @@ export default migration('1687455833_configurate_and_ens', {
           cometAddress: '0x1d573274E19174260c5aCE3f2251598959d24456'
         },
         {
-          baseSymbol: 'USDC.n',
+          baseSymbol: 'USDC',
           cometAddress: comet.address,
+        }
+      ],
+
+      59140: [
+        {
+          baseSymbol: 'USDC',
+          cometAddress: '0xa84b24A43ba1890A165f94Ad13d0196E5fD1023a'
         }
       ],
 

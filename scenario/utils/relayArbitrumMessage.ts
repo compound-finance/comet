@@ -110,4 +110,115 @@ export default async function relayArbitrumMessage(
       await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
     }
   }
+
+  // CCTP relay
+  // L1 contracts
+  const MainnetTokenMessenger = await governanceDeploymentManager.getContractOrThrow('mainnetCCTPTokenMessenger');
+  const MainnetMessageTransmitter = await governanceDeploymentManager.getContractOrThrow('mainnetCCTPMessageTransmitter');
+  // Arbitrum TokenMinter which is L2 contracts
+  const TokenMinter = await bridgeDeploymentManager.getContractOrThrow('arbitrumCCTPTokenMinter');
+
+  const depositForBurnEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
+    fromBlock: startingBlockNumber,
+    toBlock: 'latest',
+    address: MainnetMessageTransmitter.address,
+    topics: [utils.id('MessageSent(bytes)')]
+  });
+
+  // Decode message body
+  const burnEvents = depositForBurnEvents.map(({ data }) => {
+    const dataBytes = utils.arrayify(data);
+    // Since data is encodePacked, so can't simply decode via AbiCoder.decode
+    const offset = 64;
+    const length = {
+      uint32: 4,
+      uint64: 8,
+      bytes32: 32,
+      uint256: 32,
+    };
+    let start = offset;
+    let end = start + length.uint32;
+    // msgVersion, skip won't use
+    start = end;
+    end = start + length.uint32;
+    // msgSourceDomain
+    const msgSourceDomain = BigNumber.from(dataBytes.slice(start, end)).toNumber();
+
+    start = end;
+    end = start + length.uint32;
+    // msgDestinationDomain, skip won't use
+
+    start = end;
+    end = start + length.uint64;
+    // msgNonce, skip won't use
+
+    start = end;
+    end = start + length.bytes32;
+    // msgSender, skip won't use
+
+    start = end;
+    end = start + length.bytes32;
+    // msgRecipient, skip won't use
+
+    start = end;
+    end = start + length.bytes32;
+    // msgDestination, skip won't use
+
+    start = end;
+    end = start + length.uint32;
+    // rawMsgBody version, skip won't use
+
+    start = end;
+    end = start + length.bytes32;
+    // rawMsgBody burnToken
+    const burnToken = utils.hexlify(dataBytes.slice(start, end));
+
+    start = end;
+    end = start + length.bytes32;
+    // rawMsgBody mintRecipient
+    const mintRecipient = utils.getAddress(utils.hexlify(dataBytes.slice(start, end)).slice(-40));
+
+    start = end;
+    end = start + length.uint256;
+
+    // rawMsgBody amount
+    const amount = BigNumber.from(dataBytes.slice(start, end)).toNumber();
+
+    start = end;
+    end = start + length.bytes32;
+    // rawMsgBody messageSender, skip won't use
+
+    return {
+      recipient: mintRecipient,
+      amount: amount,
+      sourceDomain: msgSourceDomain,
+      burnToken: burnToken
+    }
+  });
+
+  // Impersonate the Arbitrum TokenMinter and mint token to recipient
+  const ImpersonateLocalTokenMessenger = 
+    bridgeDeploymentManager.network === 'arbitrum' ? '0x19330d10d9cc8751218eaf51e8885d058642e08a' :
+                                        'arbitrum-goerli' ? '0x12dcfd3fe2e9eac2859fd1ed86d2ab8c5a2f9352': '0x0';
+  // Impersonate the Arbitrum TokenMinter and mint token to recipient
+  for (let burnEvent of burnEvents) {
+    const { recipient, amount, sourceDomain, burnToken } = burnEvent;
+    const localTokenMessengerSigner = await impersonateAddress(
+      bridgeDeploymentManager,
+      ImpersonateLocalTokenMessenger
+    );
+
+    const transactionRequest = await localTokenMessengerSigner.populateTransaction({
+      to: TokenMinter.address,
+      from: ImpersonateLocalTokenMessenger,
+      data: TokenMinter.interface.encodeFunctionData('mint', [sourceDomain, burnToken, utils.getAddress(recipient), amount]),
+      gasPrice: 0
+    });
+
+    await setNextBaseFeeToZero(bridgeDeploymentManager);
+
+    const tx = await (
+      await localTokenMessengerSigner.sendTransaction(transactionRequest)
+    ).wait();
+  }
 }
