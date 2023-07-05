@@ -362,13 +362,13 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       ], 
       'usdc.n': [
         // ARB
-        exp(200000, 18),
+        exp(300000, 18),
         // GMX
-        exp(2000, 18),
+        exp(3000, 18),
         // WETH
-        exp(300, 18),
+        exp(500, 18),
         // WBTC
-        exp(30, 8),
+        exp(50, 8),
       ]
     }
   };
