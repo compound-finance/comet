@@ -19,14 +19,14 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const WBTC = await deploymentManager.existing('WBTC', '0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f', 'arbitrum');
 
   // Import shared contracts from cUSDCv3
-  const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'arbitrum', 'usdc');
-  const cometFactory = await deploymentManager.fromDep('cometFactory', 'arbitrum', 'usdc');
-  const $configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'arbitrum', 'usdc');
-  const configurator = await deploymentManager.fromDep('configurator', 'arbitrum', 'usdc');
-  const rewards = await deploymentManager.fromDep('rewards', 'arbitrum', 'usdc');
-  const bulker = await deploymentManager.fromDep('bulker', 'arbitrum', 'usdc');
-  const localTimelock = await deploymentManager.fromDep('timelock', 'arbitrum', 'usdc');
-  const bridgeReceiver = await deploymentManager.fromDep('bridgeReceiver', 'arbitrum', 'usdc');
+  const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'arbitrum', 'usdc.e');
+  const cometFactory = await deploymentManager.fromDep('cometFactory', 'arbitrum', 'usdc.e');
+  const $configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'arbitrum', 'usdc.e');
+  const configurator = await deploymentManager.fromDep('configurator', 'arbitrum', 'usdc.e');
+  const rewards = await deploymentManager.fromDep('rewards', 'arbitrum', 'usdc.e');
+  const bulker = await deploymentManager.fromDep('bulker', 'arbitrum', 'usdc.e');
+  const localTimelock = await deploymentManager.fromDep('timelock', 'arbitrum', 'usdc.e');
+  const bridgeReceiver = await deploymentManager.fromDep('bridgeReceiver', 'arbitrum', 'usdc.e');
 
   // Deploy Comet
   const deployed = await deployComet(deploymentManager, deploySpec);
