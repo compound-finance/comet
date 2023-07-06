@@ -4,7 +4,7 @@ import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 import { utils, BigNumber } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
 
-export default async function relayArbitrumMessage(
+export async function relayArbitrumMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
   startingBlockNumber: number
@@ -110,18 +110,27 @@ export default async function relayArbitrumMessage(
       await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
     }
   }
+}
 
+export async function relayCCTPMint(
+  governanceDeploymentManager: DeploymentManager,
+  bridgeDeploymentManager: DeploymentManager,
+  startingBlockNumber: number
+){
   // CCTP relay
   // L1 contracts
-  const MainnetTokenMessenger = await governanceDeploymentManager.getContractOrThrow('mainnetCCTPTokenMessenger');
-  const MainnetMessageTransmitter = await governanceDeploymentManager.getContractOrThrow('mainnetCCTPMessageTransmitter');
+  const L1MessageTransmitter = await governanceDeploymentManager.getContractOrThrow('CCTPMessageTransmitter');
   // Arbitrum TokenMinter which is L2 contracts
-  const TokenMinter = await bridgeDeploymentManager.getContractOrThrow('arbitrumCCTPTokenMinter');
-  
+  const TokenMinter = 
+    bridgeDeploymentManager.network === 'arbitrum' ? 
+      await bridgeDeploymentManager.existing('TokenMinter', '0xE7Ed1fa7f45D05C508232aa32649D89b73b8bA48', 'arbitrum') : 
+      await bridgeDeploymentManager.existing('TokenMinter', '0xE997d7d2F6E065a9A93Fa2175E878Fb9081F1f0A', 'arbitrum-goerli');
+
+
   const depositForBurnEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
     toBlock: 'latest',
-    address: MainnetMessageTransmitter.address,
+    address: L1MessageTransmitter.address,
     topics: [utils.id('MessageSent(bytes)')]
   });
 
@@ -197,19 +206,21 @@ export default async function relayArbitrumMessage(
   });
 
   // Impersonate the Arbitrum TokenMinter and mint token to recipient
-  const ImpersonateLocalTokenMessager = '0x19330d10d9cc8751218eaf51e8885d058642e08a';
-
+  const ImpersonateLocalTokenMessenger =
+    bridgeDeploymentManager.network === 'arbitrum' ? '0x19330d10d9cc8751218eaf51e8885d058642e08a' :
+                                        'arbitrum-goerli' ? '0x12dcfd3fe2e9eac2859fd1ed86d2ab8c5a2f9352' : 
+                                        '0x0';
   // Impersonate the Arbitrum TokenMinter and mint token to recipient
   for (let burnEvent of burnEvents) {
     const { recipient, amount, sourceDomain, burnToken } = burnEvent;
     const localTokenMessengerSigner = await impersonateAddress(
       bridgeDeploymentManager,
-      ImpersonateLocalTokenMessager
+      ImpersonateLocalTokenMessenger
     );
 
     const transactionRequest = await localTokenMessengerSigner.populateTransaction({
       to: TokenMinter.address,
-      from: ImpersonateLocalTokenMessager,
+      from: ImpersonateLocalTokenMessenger,
       data: TokenMinter.interface.encodeFunctionData('mint', [sourceDomain, burnToken, utils.getAddress(recipient), amount]),
       gasPrice: 0
     });

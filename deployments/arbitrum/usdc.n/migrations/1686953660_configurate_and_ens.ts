@@ -25,6 +25,7 @@ export default migration('1686953660_configurate_and_ens', {
     const { utils } = ethers;
 
     const cometFactory = await deploymentManager.fromDep('cometFactory', 'arbitrum', 'usdc');
+    const bridgedComet = await deploymentManager.fromDep('comet.e', 'arbitrum', 'usdc', 'comet');
     const {
       bridgeReceiver,
       timelock: l2Timelock,
@@ -32,16 +33,15 @@ export default migration('1686953660_configurate_and_ens', {
       cometAdmin,
       configurator,
       rewards,
-      bridgedComet,
     } = await deploymentManager.getContracts();
-
+    
     const {
       arbitrumInbox,
       arbitrumL1GatewayRouter,
       timelock,
       governor,
       USDC,
-      mainnetCCTPTokenMessenger,
+      CCTPTokenMessenger,
     } = await govDeploymentManager.getContracts();
 
     const refundAddress = l2Timelock.address;
@@ -139,11 +139,11 @@ export default migration('1686953660_configurate_and_ens', {
       {
         contract: USDC,
         signature: 'approve(address,uint256)',
-        args: [mainnetCCTPTokenMessenger.address, USDCAmountToBridge]
+        args: [CCTPTokenMessenger.address, USDCAmountToBridge]
       }, 
       // 3. Burn USDC to Arbitrum via CCTP
       {
-        contract: mainnetCCTPTokenMessenger,
+        contract: CCTPTokenMessenger,
         signature: 'depositForBurn(uint256,uint32,bytes32,address)',
         args: [USDCAmountToBridge, ArbitrumDestinationDomain, utils.hexZeroPad(comet.address, 32), USDC.address],
       },
@@ -173,11 +173,10 @@ export default migration('1686953660_configurate_and_ens', {
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
     const ethers = deploymentManager.hre.ethers;
     await deploymentManager.spider(); // Pull in Arbitrum COMP now that reward config has been set
-
+    const bridgedComet = await deploymentManager.fromDep('bridgedComet', 'arbitrum', 'usdc', 'comet');
     const {
       comet,
       rewards, 
-      bridgedComet,
     } = await deploymentManager.getContracts();
 
     const {
@@ -248,10 +247,10 @@ export default migration('1686953660_configurate_and_ens', {
       ],
     });
 
-    // 3.
+    // Ensure proposal has set speed correctly
     expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(34.74 / 86400, 15, 18));
     expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(0);
-    // 4.
+    // Ensure proposal has set bridged market to 0
     expect(await bridgedComet.baseTrackingSupplySpeed()).to.be.equal(0);
     expect(await bridgedComet.baseTrackingBorrowSpeed()).to.be.equal(0);
   }
