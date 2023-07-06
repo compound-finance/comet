@@ -2,24 +2,20 @@ import { scenario } from './context/CometContext';
 import { expectRevertCustom } from './utils';
 import { expect } from 'chai';
 
-// XXX we could use a Comet reserves constraint here
 scenario(
-  'Comet#withdrawReserves > governor withdraw reserves',
+  'Comet#withdrawReserves > governor withdraws reserves',
   {
+    reserves: '>= 10000',
     tokenBalances: {
-      betty: { $base: '== 100000' },
       albert: { $base: '== 0' },
     },
   },
   async ({ comet, timelock, actors }, context) => {
-    const { admin, albert, betty } = actors;
+    const { admin, albert } = actors;
 
     const baseToken = context.getAssetByAddress(await comet.baseToken());
     const scale = (await comet.baseScale()).toBigInt();
 
-    // Since we don't have a constraint to set Comet reserves, we'll be transferring 100K base tokens to Comet from an actor
-    // XXX however, this wouldn't work if reserves on testnet are too negative
-    await betty.transferErc20(baseToken.address, comet.address, 100000n * scale);
     const cometBaseBalance = await baseToken.balanceOf(comet.address);
 
     expect(await comet.governor()).to.equal(timelock.address);

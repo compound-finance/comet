@@ -29,6 +29,8 @@ import arbitrumGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc/
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import fujiRelationConfigMap from './deployments/fuji/usdc/relations';
+import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
+
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -42,6 +44,7 @@ const {
   SNOWTRACE_KEY,
   POLYGONSCAN_KEY,
   ARBISCAN_KEY,
+  LINEASCAN_KEY,
   INFURA_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
@@ -70,7 +73,8 @@ export function requireEnv(varName, msg?: string): string {
   'SNOWTRACE_KEY',
   'INFURA_KEY',
   'POLYGONSCAN_KEY',
-  'ARBISCAN_KEY'
+  'ARBISCAN_KEY',
+  'LINEASCAN_KEY'
 ].map(v => requireEnv(v));
 
 // Networks
@@ -87,7 +91,6 @@ const networkConfigs: NetworkConfig[] = [
   { network: 'ropsten', chainId: 3 },
   { network: 'rinkeby', chainId: 4 },
   { network: 'goerli', chainId: 5 },
-  { network: 'kovan', chainId: 42 },
   {
     network: 'polygon',
     chainId: 137,
@@ -122,6 +125,11 @@ const networkConfigs: NetworkConfig[] = [
     network: 'base-goerli',
     chainId: 84531,
     url: `https://goerli.base.org/`,
+  },
+  {
+    network: 'linea-goerli',
+    chainId: 59140,
+    url: `https://linea-goerli.infura.io/v3/${INFURA_KEY}`,
   },
 ];
 
@@ -196,7 +204,6 @@ const config: HardhatUserConfig = {
       ropsten: ETHERSCAN_KEY,
       rinkeby: ETHERSCAN_KEY,
       goerli: ETHERSCAN_KEY,
-      kovan: ETHERSCAN_KEY,
       // Avalanche
       avalanche: SNOWTRACE_KEY,
       avalancheFujiTestnet: SNOWTRACE_KEY,
@@ -211,6 +218,8 @@ const config: HardhatUserConfig = {
       'arbitrum-goerli': ARBISCAN_KEY,
       // Base
       'base-goerli': ETHERSCAN_KEY,
+      // Linea
+      'linea-goerli': LINEASCAN_KEY,
     },
     customChains: [
       {
@@ -247,6 +256,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: 'https://api-goerli.basescan.org/api',
           browserURL: 'https://api-goerli.basescan.org/'
+        }
+      },
+      {
+        network: 'linea-goerli',
+        chainId: 59140,
+        urls: {
+          apiURL: 'https://api-goerli.lineascan.build/api',
+          browserURL: 'https://goerli.lineascan.build/'
         }
       }
     ]
@@ -286,6 +303,9 @@ const config: HardhatUserConfig = {
       },
       'fuji': {
         usdc: fujiRelationConfigMap
+      },
+      'linea-goerli': {
+        usdc: lineaGoerliRelationConfigMap
       }
     },
   },
@@ -313,11 +333,6 @@ const config: HardhatUserConfig = {
         network: 'fuji',
         deployment: 'usdc',
         auxiliaryBase: 'goerli'
-      },
-      {
-        name: 'kovan',
-        network: 'kovan',
-        deployment: 'usdc',
       },
       {
         name: 'goerli',
@@ -363,6 +378,12 @@ const config: HardhatUserConfig = {
         name: 'base-goerli-weth',
         network: 'base-goerli',
         deployment: 'weth',
+        auxiliaryBase: 'goerli'
+      },
+      {
+        name: 'linea-goerli',
+        network: 'linea-goerli',
+        deployment: 'usdc',
         auxiliaryBase: 'goerli'
       }
     ],

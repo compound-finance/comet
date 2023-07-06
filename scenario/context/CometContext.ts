@@ -12,7 +12,8 @@ import {
   MigrationConstraint,
   ProposalConstraint,
   FilterConstraint,
-  PriceConstraint
+  PriceConstraint,
+  ReservesConstraint
 } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
@@ -414,7 +415,8 @@ export const dynamicConstraints: DynamicConstraint<CometContext, Requirements>[]
   new CometBalanceConstraint(),
   new TokenBalanceConstraint(),
   new UtilizationConstraint(),
-  new PriceConstraint()
+  new PriceConstraint(),
+  new ReservesConstraint()
 ];
 
 export const scenarioLoader = Loader.get<CometContext, CometProperties, Requirements>().configure(
