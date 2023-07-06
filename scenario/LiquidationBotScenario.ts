@@ -79,7 +79,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     },
     arbitrum: {
       'usdc.e': 10000000, 
-      'usdc.n': 10000000
+      usdc: 10000000
     }
   };
   const assetAmounts = {
@@ -124,7 +124,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // WBTC
         ' == 50'
       ], 
-      'usdc.n': [
+      usdc: [
         // ARB
         ' == 500000',
         // GMX
@@ -261,7 +261,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     },
     arbitrum: {
       'usdc.e': 10000000, 
-      'usdc.n': 10000000
+      usdc: 10000000
     }
   };
   const assetAmounts = {
@@ -306,7 +306,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // WBTC
         ' == 300'
       ], 
-      'usdc.n': [
+      usdc: [
         // ARB
         ' == 1000000',
         // GMX
@@ -360,7 +360,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // WBTC
         exp(50, 8),
       ], 
-      'usdc.n': [
+      usdc: [
         // ARB
         exp(300000, 18),
         // GMX

@@ -74,7 +74,7 @@ const liquidationThresholds = {
   },
   arbitrum: {
     'usdc.e': 10e6, 
-    'usdc.n': 10e6
+    usdc: 10e6
   }
 };
 
@@ -106,7 +106,7 @@ export const flashLoanPools = {
       tokenAddress: addresses.arbitrum.USDC, // USDC/USDC_E/.01% pool
       poolFee: 100
     }, 
-    'usdc.n': {
+    usdc: {
       tokenAddress: addresses.arbitrum.USDC_E,
       poolFee: 100
     },
