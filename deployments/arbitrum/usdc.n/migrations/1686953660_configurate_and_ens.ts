@@ -24,8 +24,8 @@ export default migration('1686953660_configurate_and_ens', {
     const ethers = deploymentManager.hre.ethers;
     const { utils } = ethers;
 
-    const cometFactory = await deploymentManager.fromDep('cometFactory', 'arbitrum', 'usdc');
-    const usdceComet = await deploymentManager.fromDep('comet.e', 'arbitrum', 'usdc', 'comet');
+    const cometFactory = await deploymentManager.fromDep('cometFactory', 'arbitrum', 'usdc.e');
+    const usdceComet = await deploymentManager.fromDep('usdceComet', 'arbitrum', 'usdc.e', 'comet');
     const {
       bridgeReceiver,
       timelock: l2Timelock,
@@ -112,6 +112,10 @@ export default migration('1686953660_configurate_and_ens', {
     const arbitrumChainId = (await deploymentManager.hre.ethers.provider.getNetwork()).chainId.toString();
     const newMarketObject = { baseSymbol: 'USDC', cometAddress: comet.address };
     const officialMarketsJSON = JSON.parse(await ENSResolver.text(subdomainHash, ENSTextRecordKey));
+
+    // Rename old USDC market into USDC.e
+    officialMarketsJSON[arbitrumChainId][0].baseSymbol = 'USDC.e';
+
     if (officialMarketsJSON[arbitrumChainId]) {
       officialMarketsJSON[arbitrumChainId].push(newMarketObject);
     } else {
@@ -173,7 +177,7 @@ export default migration('1686953660_configurate_and_ens', {
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
     const ethers = deploymentManager.hre.ethers;
     await deploymentManager.spider(); // Pull in Arbitrum COMP now that reward config has been set
-    const usdceComet = await deploymentManager.fromDep('usdceComet', 'arbitrum', 'usdc', 'comet');
+    const usdceComet = await deploymentManager.fromDep('usdceComet', 'arbitrum', 'usdc.e', 'comet');
     const {
       comet,
       rewards, 
@@ -237,7 +241,7 @@ export default migration('1686953660_configurate_and_ens', {
 
       42161: [
         {
-          baseSymbol: 'USDC',
+          baseSymbol: 'USDC.e',
           cometAddress: '0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA',
         }, 
         {
