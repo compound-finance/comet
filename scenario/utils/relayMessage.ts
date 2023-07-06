@@ -2,6 +2,7 @@ import { DeploymentManager } from '../../plugins/deployment_manager';
 import relayPolygonMessage from './relayPolygonMessage';
 import relayArbitrumMessage from './relayArbitrumMessage';
 import relayBaseMessage from './relayBaseMessage';
+import relaySuccinctMessage from './relaySuccinctMessage';
 import relayLineaMessage from './relayLineaMessage';
 
 export default async function relayMessage(
@@ -25,6 +26,9 @@ export default async function relayMessage(
         bridgeDeploymentManager,
         startingBlockNumber
       );
+      break;
+    case 'fuji':
+      await relaySuccinctMessage(governanceDeploymentManager, bridgeDeploymentManager, startingBlockNumber);
       break;
     case 'arbitrum':
     case 'arbitrum-goerli':
