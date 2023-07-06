@@ -202,14 +202,14 @@ export async function relayCCTPMint(
       amount: amount,
       sourceDomain: msgSourceDomain,
       burnToken: burnToken
-    }
+    };
   });
 
   // Impersonate the Arbitrum TokenMinter and mint token to recipient
-  const ImpersonateLocalTokenMessenger =
-    bridgeDeploymentManager.network === 'arbitrum' ? '0x19330d10d9cc8751218eaf51e8885d058642e08a' :
-                                        'arbitrum-goerli' ? '0x12dcfd3fe2e9eac2859fd1ed86d2ab8c5a2f9352' : 
-                                        '0x0';
+  const ImpersonateLocalTokenMessenger = 
+  bridgeDeploymentManager.network === 'arbitrum' ? '0x19330d10d9cc8751218eaf51e8885d058642e08a' : 
+    bridgeDeploymentManager.network === 'arbitrum-goerli' ? '0x12dcfd3fe2e9eac2859fd1ed86d2ab8c5a2f9352' : 
+      '0x0';
   // Impersonate the Arbitrum TokenMinter and mint token to recipient
   for (let burnEvent of burnEvents) {
     const { recipient, amount, sourceDomain, burnToken } = burnEvent;
@@ -227,7 +227,7 @@ export async function relayCCTPMint(
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
 
-    const tx = await (
+    await (
       await localTokenMessengerSigner.sendTransaction(transactionRequest)
     ).wait();
   }
