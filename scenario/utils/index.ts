@@ -479,7 +479,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
 
       targets.push(telepathyRouter.address);
       values.push(0);
-      signatures.push('send(uint32, address,bytes)');
+      signatures.push('send(uint32,address,bytes)');
       calldata.push(sendMessageToTelepathyRouter);
       break;
     }

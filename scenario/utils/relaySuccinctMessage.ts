@@ -12,11 +12,11 @@ function decodeMessage(message: string) {
     sourceChainId: ethers.BigNumber.from(
       ethers.utils.hexDataSlice(message, 9, 13)
     ).toNumber(),
-    senderAddress: ethers.utils.hexDataSlice(message, 13, 33).toLowerCase(),
-    recipientChainId: ethers.BigNumber.from(
+    sourceAddress: ethers.utils.hexDataSlice(message, 13, 33).toLowerCase(),
+    destinationChainId: ethers.BigNumber.from(
       ethers.utils.hexDataSlice(message, 33, 37)
     ).toNumber(),
-    recipientAddress: ethers.utils.hexDataSlice(message, 37, 69).toLowerCase(),
+    destinationAddress: ethers.utils.hexDataSlice(message, 37, 69).toLowerCase(),
     data: ethers.utils.hexDataSlice(message, 69).toLowerCase()
   };
 }
@@ -26,14 +26,16 @@ export default async function relaySuccinctMessage(
   bridgeDeploymentManager: DeploymentManager,
   startingBlockNumber: number
 ) {
+  const FUJI_TEST_WALLET = '0xDEd0000E32f8F40414d3ab3a830f735a3553E18e';
+
   const L1TelepathyRouter = await governanceDeploymentManager.getContractOrThrow(
-    'L1TelepathyRouter'
+    'telepathyRouter'
   );
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
-  const L2TelepathyRouter = await bridgeDeploymentManager.getContractOrThrow('L2TelepathyRouter');
+  const L2TelepathyRouter = await bridgeDeploymentManager.getContractOrThrow('telepathyRouter');
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
-  // Grab all events on the L1CrossDomainMessenger contract since the `startingBlockNumber`
+  // Grab all events on the L1TelepathyRouter contract since the `startingBlockNumber`
   const filter = L1TelepathyRouter.filters.SentMessage();
   const sentMessageEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
@@ -43,48 +45,31 @@ export default async function relaySuccinctMessage(
   });
   for (let sentMessageEvent of sentMessageEvents) {
     const {
-      args: { _nonce, _msgHash, _message }
+      args: { message }
     } = L1TelepathyRouter.interface.parseLog(sentMessageEvent);
 
     const aliasedSigner = await impersonateAddress(
       bridgeDeploymentManager,
-      L2TelepathyRouter.address
+      FUJI_TEST_WALLET
     );
 
-    const decodedMessage = decodeMessage(_message);
+    const decodedMessage = decodeMessage(message);
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
 
-    // TODO: Fill in the following variables with the correct values
-    const srcSlotTxSlotPack = "";
-    const receiptsRootProof = "";
-    const receiptsRoot = "";
-    const receiptProof = "";
-    const txIndexRLPEncoded = "";
-    const logIndex = 0;
 
     const relayMessageTxn = await (
-      await L2TelepathyRouter.connect(aliasedSigner).executeMessage(
-        srcSlotTxSlotPack,
-        _message,
-        receiptsRootProof,
-        receiptsRoot,
-        receiptProof,
-        txIndexRLPEncoded,
-        logIndex,
-        {
-          gasPrice: 0,
-          gasLimit: 10000000
-        }
+      await L2TelepathyRouter.connect(aliasedSigner)._executeMessage(
+        decodedMessage
       )
     ).wait();
 
     // Try to decode the SentMessage data to determine what type of cross-chain activity this is. So far,
     // there is one type:
     // 1. Cross-chain message passing to bridgeReceiver
-    if (decodedMessage.recipientAddress == bridgeReceiver.address) {
+    if (ethers.utils.hexDataSlice(decodedMessage.destinationAddress, 12) == bridgeReceiver.address.toLowerCase()) {
       const proposalCreatedEvent = relayMessageTxn.events.find(
-        event => event.address === bridgeReceiver.address
+        event => event.address.toLowerCase() === bridgeReceiver.address.toLowerCase()
       );
       const {
         args: { id, eta }

@@ -1,7 +1,7 @@
 import { scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { utils } from 'ethers';
-import { BaseBridgeReceiver } from '../build/types';
+import { BaseBridgeReceiver, SuccinctBridgeReceiver } from '../build/types';
 import { calldata } from '../src/deploy';
 import { isBridgedDeployment, matchesDeployment, createCrossChainProposal } from './utils';
 import { ArbitrumBridgeReceiver } from '../build/types';
@@ -273,7 +273,7 @@ scenario(
     const telepathyRouter = await dm.getContractOrThrow('telepathyRouter');
 
     // Deploy new SuccinctBridgeReceiver
-    const newBridgeReceiver = await dm.deploy<BaseBridgeReceiver, [string]>(
+    const newBridgeReceiver = await dm.deploy<SuccinctBridgeReceiver, [string]>(
       'newBridgeReceiver',
       'bridges/succinct/SuccinctBridgeReceiver.sol',
       [telepathyRouter.address]           // telepathyRouter
@@ -359,10 +359,7 @@ scenario(
     expect(await newLocalTimelock.delay()).to.eq(currentTimelockDelay);
     expect(currentTimelockDelay).to.not.eq(newTimelockDelay);
 
-
     await createCrossChainProposal(context, l2ProposalData, newBridgeReceiver);
-
-    console.log("=====Second cross chain governance proposal succeeded=====");
 
     expect(await newLocalTimelock.delay()).to.eq(newTimelockDelay);
     expect(await comet.isAbsorbPaused()).to.eq(true);
