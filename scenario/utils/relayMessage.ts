@@ -37,7 +37,7 @@ export default async function relayMessage(
         governanceDeploymentManager, 
         bridgeDeploymentManager, 
         startingBlockNumber
-        );
+      );
       break;
     case 'linea-goerli':
       await relayLineaMessage(
