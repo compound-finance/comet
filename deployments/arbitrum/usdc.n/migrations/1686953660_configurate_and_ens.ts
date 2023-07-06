@@ -25,7 +25,7 @@ export default migration('1686953660_configurate_and_ens', {
     const { utils } = ethers;
 
     const cometFactory = await deploymentManager.fromDep('cometFactory', 'arbitrum', 'usdc');
-    const bridgedComet = await deploymentManager.fromDep('comet.e', 'arbitrum', 'usdc', 'comet');
+    const usdceComet = await deploymentManager.fromDep('comet.e', 'arbitrum', 'usdc', 'comet');
     const {
       bridgeReceiver,
       timelock: l2Timelock,
@@ -65,19 +65,19 @@ export default migration('1686953660_configurate_and_ens', {
       [comet.address, arbitrumCOMPAddress]
     );
 
-    const turnOffBridgeCometSupplySpeedCalldata = utils.defaultAbiCoder.encode(
+    const turnOffUSDCeCometSupplySpeedCalldata = utils.defaultAbiCoder.encode(
       ['address', 'uint64'],
-      [bridgedComet.address, 0]
+      [usdceComet.address, 0]
     );
 
-    const turnOffBridgedCometBorrowSpeedCalldata = utils.defaultAbiCoder.encode(
+    const turnOffUSDCeCometBorrowSpeedCalldata = utils.defaultAbiCoder.encode(
       ['address', 'uint64'],
-      [bridgedComet.address, 0]
+      [usdceComet.address, 0]
     );
 
-    const deployAndUpgradeToBridgedCometCalldata = utils.defaultAbiCoder.encode(
+    const deployAndUpgradeToUSDCeCometCalldata = utils.defaultAbiCoder.encode(
       ['address', 'address'],
-      [configurator.address, bridgedComet.address]
+      [configurator.address, usdceComet.address]
     );
 
     const l2ProposalData = utils.defaultAbiCoder.encode(
@@ -94,7 +94,7 @@ export default migration('1686953660_configurate_and_ens', {
           'setBaseTrackingBorrowSpeed(address,uint64)',
           'deployAndUpgradeTo(address,address)',
         ],
-        [setFactoryCalldata, setConfigurationCalldata, deployAndUpgradeToCalldata, setRewardConfigCalldata, turnOffBridgeCometSupplySpeedCalldata, turnOffBridgedCometBorrowSpeedCalldata, deployAndUpgradeToBridgedCometCalldata]
+        [setFactoryCalldata, setConfigurationCalldata, deployAndUpgradeToCalldata, setRewardConfigCalldata, turnOffUSDCeCometSupplySpeedCalldata, turnOffUSDCeCometBorrowSpeedCalldata, deployAndUpgradeToUSDCeCometCalldata]
       ]
     );
 
@@ -173,7 +173,7 @@ export default migration('1686953660_configurate_and_ens', {
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
     const ethers = deploymentManager.hre.ethers;
     await deploymentManager.spider(); // Pull in Arbitrum COMP now that reward config has been set
-    const bridgedComet = await deploymentManager.fromDep('bridgedComet', 'arbitrum', 'usdc', 'comet');
+    const usdceComet = await deploymentManager.fromDep('usdceComet', 'arbitrum', 'usdc', 'comet');
     const {
       comet,
       rewards, 
@@ -250,8 +250,8 @@ export default migration('1686953660_configurate_and_ens', {
     // Ensure proposal has set speed correctly
     expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(34.74 / 86400, 15, 18));
     expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(0);
-    // Ensure proposal has set bridged market to 0
-    expect(await bridgedComet.baseTrackingSupplySpeed()).to.be.equal(0);
-    expect(await bridgedComet.baseTrackingBorrowSpeed()).to.be.equal(0);
+    // Ensure proposal has set usdce market to 0
+    expect(await usdceComet.baseTrackingSupplySpeed()).to.be.equal(0);
+    expect(await usdceComet.baseTrackingBorrowSpeed()).to.be.equal(0);
   }
 });

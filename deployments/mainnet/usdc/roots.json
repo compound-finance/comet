@@ -7,6 +7,6 @@
     "fxRoot": "0xfe5e5D361b2ad62c541bAb87C45a0B9B018389a2",
     "arbitrumInbox": "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f",
     "arbitrumL1GatewayRouter": "0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef", 
-    "mainnetCCTPTokenMessenger": "0xbd3fa81b58ba92a82136038b25adec7066af3155", 
-    "mainnetCCTPMessageTransmitter": "0x0a992d191deec32afe36203ad87d7d289a738f81"
+    "CCTPTokenMessenger": "0xbd3fa81b58ba92a82136038b25adec7066af3155", 
+    "CCTPMessageTransmitter": "0x0a992d191deec32afe36203ad87d7d289a738f81"
 }
