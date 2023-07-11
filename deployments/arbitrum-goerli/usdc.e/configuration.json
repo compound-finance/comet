@@ -1,7 +1,7 @@
 {
   "name": "Compound USDC",
   "symbol": "cUSDCv3",
-  "baseToken": "USDC",
+  "baseToken": "USDC.e",
   "baseTokenAddress": "0x8FB1E3fC51F3b789dED7557E680551d93Ea9d892",
   "baseTokenPriceFeed": "0x1692Bdd32F31b831caAc1b0c9fAF68613682813b",
   "borrowMin": "100e6",
