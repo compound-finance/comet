@@ -45,9 +45,6 @@ export default migration('1689112067_configurate_and_ens', {
       CCTPTokenMessenger,
     } = await govDeploymentManager.getContracts();
 
-    console.log("*************GEORLI DEBUG");
-    console.log(timelock.address);
-    console.log("*************GEORLI DEBUG");
     // CCTP destination domain for Arbitrum
     const ArbitrumDestinationDomain = 3;
     const USDCAmountToBridge = exp(10, 6);
@@ -230,6 +227,24 @@ export default migration('1689112067_configurate_and_ens', {
         },
       ],
 
+      59140: [
+        {
+          baseSymbol: 'USDC',
+          cometAddress: '0xa84b24A43ba1890A165f94Ad13d0196E5fD1023a'
+        }
+      ],
+
+      84531: [
+        {
+          baseSymbol: 'USDC',
+          cometAddress: '0xe78Fc55c884704F9485EDa042fb91BfE16fD55c1'
+        },
+        {
+          baseSymbol: 'WETH',
+          cometAddress: '0xED94f3052638620fE226a9661ead6a39C2a265bE'
+        }
+      ],
+
       80001: [
         {
           baseSymbol: 'USDC',
@@ -239,7 +254,7 @@ export default migration('1689112067_configurate_and_ens', {
     });
 
     // Ensure proposal has set speed correctly
-    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(34.74 / 86400, 15, 18));
+    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(0);
     expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(0);
     // Ensure proposal has set usdce market to 0
     expect(await usdceComet.baseTrackingSupplySpeed()).to.be.equal(0);

@@ -16,10 +16,10 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const WBTC = await deploymentManager.existing('WBTC', '0x22d5e2dE578677791f6c90e0110Ec629be9d5Fb5', 'arbitrum-goerli');
 
   // Import shared contracts from cUSDCv3
-  // const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'arbitrum-goerli', 'usdc.e');
+  const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'arbitrum-goerli', 'usdc.e');
   const cometFactory = await deploymentManager.fromDep('cometFactory', 'arbitrum-goerli', 'usdc.e');
-  // const $configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'arbitrum-goerli', 'usdc.e');
-  // const configurator = await deploymentManager.fromDep('configurator', 'arbitrum-goerli', 'usdc.e');
+  const $configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'arbitrum-goerli', 'usdc.e');
+  const configurator = await deploymentManager.fromDep('configurator', 'arbitrum-goerli', 'usdc.e');
   const rewards = await deploymentManager.fromDep('rewards', 'arbitrum-goerli', 'usdc.e');
   const bulker = await deploymentManager.fromDep('bulker', 'arbitrum-goerli', 'usdc.e');
   const localTimelock = await deploymentManager.fromDep('timelock', 'arbitrum-goerli', 'usdc.e');
@@ -31,5 +31,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   return {
     ...deployed,
     bridgeReceiver,
+    bulker,
+    rewards,
   };
 }
