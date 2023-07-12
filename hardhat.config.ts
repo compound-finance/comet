@@ -45,6 +45,7 @@ const {
   ARBISCAN_KEY,
   LINEASCAN_KEY,
   INFURA_KEY,
+  NODEREAL_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
@@ -93,7 +94,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'polygon',
     chainId: 137,
-    url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
+    url: `https://polygon-mainnet.nodereal.io/v1/${NODEREAL_KEY}`,
   },
   {
     network: 'arbitrum',
