@@ -32,7 +32,7 @@
       "borrowCF": 0.775,
       "liquidateCF": 0.825,
       "liquidationFactor": 0.95,
-      "supplyCap": "5000000e18"
+      "supplyCap": "0e18"
     },
     "WETH": {
       "address": "0xe39ab88f8a4777030a534146a9ca3b52bd5d43a3",
@@ -41,7 +41,7 @@
       "borrowCF": 0.775,
       "liquidateCF": 0.825,
       "liquidationFactor": 0.95,
-      "supplyCap": "5000e18"
+      "supplyCap": "0e18"
     },
     "WBTC": {
       "address": "0x22d5e2dE578677791f6c90e0110Ec629be9d5Fb5",
@@ -50,7 +50,7 @@
       "borrowCF": 0.7,
       "liquidateCF": 0.75,
       "liquidationFactor": 0.93,
-      "supplyCap": "300e8"
+      "supplyCap": "0e8"
     }
   }
 }
