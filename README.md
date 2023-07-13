@@ -241,7 +241,7 @@ These simulations are extremely useful for testing deployments before actually c
 ##### Deploy Script Gotchas and Tips
 
 - If the deploy script is for a new market on a chain with an existing market, make sure to call 'setFactory(address,address)' in the initialization migration script.
-(TODO: Scenarios will fail because the factory will not be set during deployment, will need to figure out a better way)
+(TODO: Scenarios will fail prior to running the migration script because the factory will not be set during deployment, will need to figure out a better way)
 
 ##### Verifying Deployments
 
