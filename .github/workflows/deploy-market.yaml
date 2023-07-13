@@ -23,9 +23,6 @@ on:
         description: Simulate
       eth_pk:
         description: Ignore if you plan to use WalletConnect, otherwise, you can paste in a Ethereum private key
-      wallet_connect_project_id:
-        description: WalletConnect Project ID
-        required: true
 jobs:
   deploy-market:
     name: Deploy Market
