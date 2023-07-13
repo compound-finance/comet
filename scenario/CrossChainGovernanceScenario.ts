@@ -272,10 +272,10 @@ scenario(
     const telepathyRouter = await dm.getContractOrThrow('telepathyRouter');
 
     // Deploy new SuccinctBridgeReceiver
-    const newBridgeReceiver = await dm.deploy<SuccinctBridgeReceiver, [string]>(
+    const newBridgeReceiver = await dm.deploy<SuccinctBridgeReceiver, [string, number]>(
       'newBridgeReceiver',
       'bridges/succinct/SuccinctBridgeReceiver.sol',
-      [telepathyRouter.address]           // telepathyRouter
+      [telepathyRouter.address, 5]           // telepathyRouter, Goerli chainId
     );
 
     // Deploy new local Timelock
