@@ -207,7 +207,7 @@ const config: HardhatUserConfig = {
       // Avalanche
       avalanche: SNOWTRACE_KEY,
       avalancheFujiTestnet: SNOWTRACE_KEY,
-      'fuji': SNOWTRACE_KEY,
+      fuji: SNOWTRACE_KEY,
       // Polygon
       polygon: POLYGONSCAN_KEY,
       polygonMumbai: POLYGONSCAN_KEY,
@@ -301,7 +301,7 @@ const config: HardhatUserConfig = {
         usdc: baseGoerliRelationConfigMap,
         weth: baseGoerliWethRelationConfigMap
       },
-      'fuji': {
+      fuji: {
         usdc: fujiRelationConfigMap
       },
       'linea-goerli': {

@@ -57,7 +57,6 @@ export default async function relaySuccinctMessage(
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
 
-
     const relayMessageTxn = await (
       await L2TelepathyRouter.connect(aliasedSigner)._executeMessage(
         decodedMessage
