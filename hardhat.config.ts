@@ -93,7 +93,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'polygon',
     chainId: 137,
-       url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
+    url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
   },
   {
     network: 'arbitrum',
