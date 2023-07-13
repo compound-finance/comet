@@ -5,21 +5,22 @@ import "../BaseBridgeReceiver.sol";
 import "./ITelepathy.sol";
 
 contract SuccinctBridgeReceiver is BaseBridgeReceiver, ITelepathyHandler {
-    ITelepathyReceiver public telepathyReceiver;
+    error InvalidSourceChain();
 
-    constructor(address _telepathyReceiver) {
+    ITelepathyReceiver public telepathyReceiver;
+    uint32 public sourceChainId;
+
+    constructor(address _telepathyReceiver, uint32 _sourceChainId) {
         telepathyReceiver = ITelepathyReceiver(_telepathyReceiver);
+        sourceChainId = _sourceChainId;
     }
 
     function handleTelepathy(uint32 _sourceChainId, address _sourceAddress, bytes calldata _data) external returns (bytes4)  {
+        if (msg.sender != address(telepathyReceiver)) revert Unauthorized();
+
+        if (_sourceChainId != sourceChainId) revert InvalidSourceChain();
+
         processMessage(_sourceAddress, _data);
         return ITelepathyHandler.handleTelepathy.selector;
-    }
-
-    receive() external payable {
-    }
-
-    fallback() external payable {
-        processMessage(msg.sender, msg.data);
     }
 }

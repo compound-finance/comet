@@ -106,9 +106,9 @@ export const WHALES = {
   'base-goerli': [
     '0x21856935e5689490c72865f34CC665D0FF25664b', // USDC whale
   ],
-  'fuji': [
+  fuji: [
     '0x45d3465046b72d319ef0090b431678b160b1e628', // WBTC.e whale
-    '0x21856935e5689490c72865f34CC665D0FF25664b'  // USDC whale
+    '0x7039BC43b78A7135F82567C1f973BfAa30F5b8Ab'  // USDC whale
   ],
   'linea-goerli': [
     '0xC858966280Da3Fa0348E51D2c3B892EcC889fC98', // USDC whale
