@@ -23,6 +23,9 @@ on:
         description: Simulate
       eth_pk:
         description: Ignore if you plan to use WalletConnect, otherwise, you can paste in a Ethereum private key
+      wallet_connect_project_id:
+        description: WalletConnect Project ID
+        required: true
 jobs:
   deploy-market:
     name: Deploy Market
@@ -36,8 +39,10 @@ jobs:
       LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
     steps:
       - name: Seacrest
-        uses: hayesgm/seacrest@v1
+        uses: hayesgm/seacrest@c3eef919c8ac21cf077aad0513ad8a493885ce6d
         with:
+          wallet_connect_project_id: ${{ github.event.inputs.wallet_connect_project_id }}
+          requested_network: ${{ github.event.inputs.network }}
           ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet-eth.compound.finance\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum-goerli\":\"https://arbitrum-goerli.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base-goerli\":\"https://base-goerli.infura.io/v3/$INFURA_KEY\",\"linea-goerli\":\"https://linea-goerli.infura.io/v3/$INFURA_KEY\"}')[inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
