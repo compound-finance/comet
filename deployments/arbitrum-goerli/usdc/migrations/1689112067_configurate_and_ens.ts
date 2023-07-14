@@ -187,6 +187,24 @@ export default migration('1689112067_configurate_and_ens', {
     } = await deploymentManager.getContracts();
 
     const config = await rewards.rewardConfig(comet.address);
+    // 1.
+    const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
+    expect(stateChanges).to.deep.equal({
+      ARB: {
+        supplyCap: exp(4_000_000, 18)
+      },
+      GMX: {
+        supplyCap: exp(50_000, 18)
+      },
+      WETH: {
+        supplyCap: exp(5_000, 18)
+      },
+      WBTC: {
+        supplyCap: exp(300, 8)
+      },
+      baseTrackingSupplySpeed: exp(34.74 / 86400, 15, 18)
+    });
+
     expect(config.token).to.be.equal(arbitrumCOMPAddress);
     expect(config.rescaleFactor).to.be.equal(exp(1, 12));
     expect(config.shouldUpscale).to.be.equal(true);
