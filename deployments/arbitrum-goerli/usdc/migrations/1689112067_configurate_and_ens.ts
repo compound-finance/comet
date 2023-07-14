@@ -190,11 +190,8 @@ export default migration('1689112067_configurate_and_ens', {
     // 1.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     expect(stateChanges).to.deep.equal({
-      ARB: {
-        supplyCap: exp(4_000_000, 18)
-      },
-      GMX: {
-        supplyCap: exp(50_000, 18)
+      LINK: {
+        supplyCap: exp(5_000_000, 18)
       },
       WETH: {
         supplyCap: exp(5_000, 18)
@@ -202,7 +199,8 @@ export default migration('1689112067_configurate_and_ens', {
       WBTC: {
         supplyCap: exp(300, 8)
       },
-      baseTrackingSupplySpeed: exp(34.74 / 86400, 15, 18)
+      baseTrackingSupplySpeed: exp(34.74 / 86400, 15, 18), 
+      baseTrackingBorrowSpeed: exp(34.74 / 86400, 15, 18),
     });
 
     expect(config.token).to.be.equal(arbitrumCOMPAddress);
