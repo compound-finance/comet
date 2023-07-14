@@ -262,7 +262,7 @@ scenario(
 );
 
 scenario(
-  'test Succinct cross-chain governance proposals',
+  'upgrade Succinct bridge governance contracts and ensure they work properly',
   {
     filter: async ctx => matchesDeployment(ctx, [{network: 'fuji'}])
   },

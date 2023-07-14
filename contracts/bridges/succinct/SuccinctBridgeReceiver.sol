@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import "../BaseBridgeReceiver.sol";
+import "../SweepableBridgeReceiver.sol";
 import "./ITelepathy.sol";
 
-contract SuccinctBridgeReceiver is BaseBridgeReceiver, ITelepathyHandler {
+contract SuccinctBridgeReceiver is SweepableBridgeReceiver, ITelepathyHandler {
     error InvalidSourceChain();
 
     ITelepathyReceiver public telepathyReceiver;
