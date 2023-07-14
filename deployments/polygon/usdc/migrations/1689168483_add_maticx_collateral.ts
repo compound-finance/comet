@@ -91,7 +91,7 @@ export default migration("1689168483_add_maticx_collateral", {
       )
     );
 
-    const event = (await txn.wait()).events.find(
+    const event = txn.events.find(
       (event) => event.event === "ProposalCreated"
     );
     const [proposalId] = event.args;
