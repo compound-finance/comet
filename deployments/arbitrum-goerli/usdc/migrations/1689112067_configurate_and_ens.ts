@@ -187,7 +187,8 @@ export default migration('1689112067_configurate_and_ens', {
     } = await deploymentManager.getContracts();
 
     const config = await rewards.rewardConfig(comet.address);
-    // 1.
+
+    // 1. Verify state changes
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     expect(stateChanges).to.deep.equal({
       LINK: {
@@ -207,12 +208,15 @@ export default migration('1689112067_configurate_and_ens', {
     expect(config.rescaleFactor).to.be.equal(exp(1, 12));
     expect(config.shouldUpscale).to.be.equal(true);
 
+    // 2. & 3. Verify the seeded USDC reaches Comet reserve
     expect(await comet.getReserves()).to.be.equal(exp(10, 6));
 
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
     const officialMarketsJSON = await ENSResolver.text(subdomainHash, ENSTextRecordKey);
     const officialMarkets = JSON.parse(officialMarketsJSON);
+
+    // 4. Verify the official markets are updated
     expect(officialMarkets).to.deep.equal({
       5: [
         {
