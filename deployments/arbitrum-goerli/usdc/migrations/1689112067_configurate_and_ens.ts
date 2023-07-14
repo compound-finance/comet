@@ -274,8 +274,8 @@ export default migration('1689112067_configurate_and_ens', {
     });
 
     // Ensure proposal has set speed correctly
-    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(0);
-    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(0);
+    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(34.74 / 86400, 15, 18));
+    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(34.74 / 86400, 15, 18));
     // Ensure proposal has set usdce market to 0
     expect(await usdceComet.baseTrackingSupplySpeed()).to.be.equal(0);
     expect(await usdceComet.baseTrackingBorrowSpeed()).to.be.equal(0);
