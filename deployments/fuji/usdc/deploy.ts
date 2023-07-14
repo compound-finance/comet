@@ -41,8 +41,8 @@ async function deployContracts(
     'fuji'
   );
 
-  const l2TelepathyRouter = await deploymentManager.existing(
-    'TelepathyRouter',
+  const telepathyRouter = await deploymentManager.existing(
+    'telepathyRouter',
     ['0x75d02F008ce008bCC6307784135760795726F281'],
     'fuji'
   );
@@ -52,7 +52,7 @@ async function deployContracts(
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
     'bridges/succinct/SuccinctBridgeReceiver.sol',
-    [l2TelepathyRouter.address, srcChainId]
+    [telepathyRouter.address, srcChainId]
   );
 
   // Deploy Local Timelock
@@ -102,7 +102,7 @@ async function deployContracts(
   return {
     ...deployed,
     bridgeReceiver,
-    l2TelepathyRouter,
+    telepathyRouter,
     bulker,
     fauceteer
   };
