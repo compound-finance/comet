@@ -26,7 +26,7 @@ async function main() {
   console.log(`Message hash: ${messageHash}`);
   let attestationResponse = { status: 'pending', attestation: ''};
   while (attestationResponse.status != 'complete') {
-    console.log(`Polling... ${circleAttestationApiHost}/attestations/${messageHash}`)
+    console.log(`Polling... ${circleAttestationApiHost}/attestations/${messageHash}`);
     const response = await fetch(`${circleAttestationApiHost}/attestations/${messageHash}`);
     attestationResponse = await response.json();
     console.log(`Response: ${JSON.stringify(attestationResponse)}`);
