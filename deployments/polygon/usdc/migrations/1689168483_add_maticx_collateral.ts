@@ -49,8 +49,8 @@ export default migration("1689168483_add_maticx_collateral", {
       priceFeed: maticxPricefeed.address,
       decimals: await maticx.decimals(),
       borrowCollateralFactor: exp(0.55, 18),
-      liquidateCollateralFactor: exp(0.65, 18),
-      liquidationFactor: exp(0.9, 18),
+      liquidateCollateralFactor: exp(0.60, 18),
+      liquidationFactor: exp(0.93, 18),
       supplyCap: exp(6_000_000, 18),
     };
 
@@ -108,8 +108,8 @@ export default migration("1689168483_add_maticx_collateral", {
       priceFeed: MATICX_PRICE_FEED_ADDRESS,
       decimals: 18,
       borrowCollateralFactor: exp(0.55, 18),
-      liquidateCollateralFactor: exp(0.65, 18),
-      liquidationFactor: exp(0.9, 18),
+      liquidateCollateralFactor: exp(0.60, 18),
+      liquidationFactor: exp(0.93, 18),
       supplyCap: exp(6_000_000, 18),
     };
 
