@@ -5,15 +5,13 @@
 */
 import hre from 'hardhat';
 import { DeploymentManager } from '../plugins/deployment_manager/DeploymentManager';
-import { default as config, requireEnv } from '../hardhat.config';
-import { Signer, Wallet, providers } from 'ethers';
+import { requireEnv } from '../hardhat.config';
 
 async function main() {
   const DEPLOYMENT = requireEnv('DEPLOYMENT');
   const BURN_TXN_HASH = requireEnv('BURN_TXN_HASH');
   const SOURCE_NETWORK = requireEnv('SOURCE_NETWORK');
   const DEST_NETWORK = requireEnv('DEST_NETWORK');
-  const ETH_PK = requireEnv('ETH_PK');
   await hre.changeNetwork(SOURCE_NETWORK);
   const src_dm = new DeploymentManager(SOURCE_NETWORK, DEPLOYMENT, hre, {
     writeCacheToDisk: true
