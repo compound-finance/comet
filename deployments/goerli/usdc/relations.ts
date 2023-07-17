@@ -43,11 +43,12 @@ export default {
     }
   },
   lineaMessageService: {
-    delegates: {
-      field: {
-        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
-      }
-    }
+    artifact: 'contracts/bridges/linea/IMessageService.sol:IMessageService',
+    // delegates: {
+    //   field: {
+    //     slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+    //   }
+    // }
   },
   lineaL1TokenBridge: {
     delegates: {
