@@ -41,6 +41,12 @@ Also, you can simulate either of the previous steps to see what effect they woul
 yarn hardhat migrate --network goerli --deployment usdc --prepare --simulate 164443237_my_migration
 ```
 
+When simulating a migration, you can also impersonate an address to run the migration as. This can be helpful when trying to test a migration that makes a proposal, which requires an address with enough COMP:
+
+```sh
+yarn hardhat migrate --network goerli --deployment usdc --prepare --simulate --impersonate ADDRESS_TO_IMPERSONATE 164443237_my_migration
+```
+
 ## Running a Migration in GitHub
 
 The preferred way to run a migration is in GitHub, via manual workflow dispatch. The goal of this approach is that it's clear to everyone the exact code that ran, which affords less opportunity for "I'm looking at \<CODE X\>, but what was deployed was actually \<CODE Y\>." Look at "Prepare Migration" and "Enact Migration" dispatches in GitHub Actions in this repo (or any fork).
