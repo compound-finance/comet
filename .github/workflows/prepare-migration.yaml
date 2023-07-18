@@ -38,8 +38,10 @@ jobs:
       LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
     steps:
       - name: Seacrest
-        uses: hayesgm/seacrest@v1
+        uses: hayesgm/seacrest@v2
         with:
+          wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
+          requested_network: "${{ inputs.network }}"
           ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum-goerli\":\"https://arbitrum-goerli.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base-goerli\":\"https://base-goerli.infura.io/v3/$INFURA_KEY\",\"linea-goerli\":\"https://linea-goerli.infura.io/v3/$INFURA_KEY\"}')[inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
