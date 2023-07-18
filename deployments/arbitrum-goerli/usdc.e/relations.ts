@@ -8,8 +8,8 @@ export default {
   ClonableBeaconProxy: {
     artifact: 'contracts/ERC20.sol:ERC20'
   },
-  // Native USDC
-  '0xfd064A18f3BF249cf1f87FC203E90D8f650f2d63': {
+  // USDC
+  '0x8FB1E3fC51F3b789dED7557E680551d93Ea9d892': {
     artifact: 'contracts/ERC20.sol:ERC20',
     delegates: {
       field: {
