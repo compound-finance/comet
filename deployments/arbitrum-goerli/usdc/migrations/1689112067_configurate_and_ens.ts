@@ -175,6 +175,10 @@ export default migration('1689112067_configurate_and_ens', {
     const [proposalId] = event.args;
 
     trace(`Created proposal ${proposalId}.`);
+  },
+
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
   }, 
 
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
