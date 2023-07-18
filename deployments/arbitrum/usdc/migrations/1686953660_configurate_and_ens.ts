@@ -187,16 +187,11 @@ export default migration('1686953660_configurate_and_ens', {
       comptrollerV2
     } = await govDeploymentManager.getContracts();
 
-    // 1.
-    // TODO: Once contract is deploy and migrate to the right cap amount, will uncomment this to verify
-
+    // 1. Verify state changes
     // const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     // expect(stateChanges).to.deep.equal({
-    //   ARB: {
-    //     supplyCap: exp(4_000_000, 18)
-    //   },
-    //   GMX: {
-    //     supplyCap: exp(50_000, 18)
+    //   LINK: {
+    //     supplyCap: exp(5_000_000, 18)
     //   },
     //   WETH: {
     //     supplyCap: exp(5_000, 18)
@@ -204,13 +199,17 @@ export default migration('1686953660_configurate_and_ens', {
     //   WBTC: {
     //     supplyCap: exp(300, 8)
     //   },
-    //   baseTrackingSupplySpeed: exp(34.74 / 86400, 15, 18)
+    //   baseTrackingSupplySpeed: exp(34.74 / 86400, 15, 18),
+    //   baseTrackingBorrowSpeed: exp(34.74 / 86400, 15, 18),
     // });
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(arbitrumCOMPAddress);
     expect(config.rescaleFactor).to.be.equal(exp(1, 12));
     expect(config.shouldUpscale).to.be.equal(true);
+    // Ensure proposal has set usdce market to 0
+    expect(await usdceComet.baseTrackingSupplySpeed()).to.be.equal(0);
+    expect(await usdceComet.baseTrackingBorrowSpeed()).to.be.equal(0);
 
     // 2 & 3.
     expect(await comet.getReserves()).to.be.equal(exp(10_000, 6));
@@ -250,12 +249,5 @@ export default migration('1686953660_configurate_and_ens', {
         }
       ],
     });
-
-    // Ensure proposal has set speed correctly
-    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(0);
-    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(0);
-    // Ensure proposal has set usdce market to 0
-    expect(await usdceComet.baseTrackingSupplySpeed()).to.be.equal(0);
-    expect(await usdceComet.baseTrackingBorrowSpeed()).to.be.equal(0);
   }
 });
