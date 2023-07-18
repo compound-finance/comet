@@ -31,7 +31,7 @@
       "borrowCF": 0.75,
       "liquidateCF": 0.8,
       "liquidationFactor": 0.93,
-      "supplyCap": "0e18"
+      "supplyCap": "7500e18"
     },
     "WETH": {
       "address": "0x4200000000000000000000000000000000000006",
@@ -40,7 +40,7 @@
       "borrowCF": 0.79,
       "liquidateCF": 0.84,
       "liquidationFactor": 0.95,
-      "supplyCap": "0e18"
+      "supplyCap": "11000e18"
     }
   }
 }
