@@ -76,7 +76,7 @@ async function canBeLiquidatedByBot(ctx: CometContext, assetNum: number): Promis
       network: 'polygon',
       deployments: ['usdc']
     }
-  }
+  };
   const comet = await ctx.getComet();
   const assetInfo = await comet.getAssetInfo(assetNum);
   const asset = await ctx.getAssetByAddress(assetInfo.asset);
