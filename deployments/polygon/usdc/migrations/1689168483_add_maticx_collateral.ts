@@ -101,7 +101,7 @@ export default migration("1689168483_add_maticx_collateral", {
   async verify(deploymentManager: DeploymentManager) {
     const { comet, configurator } = await deploymentManager.getContracts();
 
-    const maticxAssetIndex = 3; // TODO
+    const maticxAssetIndex = Number(await comet.numAssets()) - 1;
 
     const maticxAssetConfig = {
       asset: MATICX_ADDRESS,
