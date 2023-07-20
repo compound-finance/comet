@@ -80,6 +80,7 @@ export default migration('1679592519_configurate_and_ens', {
     const COMPAmountToBridge = exp(12_500, 18);
 
     // TODO: Bridge over USDC as well
+    // TODO: Move incentives from v2
     const actions = [
       // 1. Set Comet configuration + deployAndUpgradeTo new Comet and set reward config on Base.
       {
