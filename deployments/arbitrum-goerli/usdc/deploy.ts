@@ -10,61 +10,28 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const ethers = deploymentManager.hre.ethers;
 
   // pull in existing assets
-  const USDC = await deploymentManager.existing('USDC', '0x8FB1E3fC51F3b789dED7557E680551d93Ea9d892', 'arbitrum-goerli');
+  const USDC = await deploymentManager.existing('USDC', '0xfd064A18f3BF249cf1f87FC203E90D8f650f2d63', 'arbitrum-goerli');
   const LINK = await deploymentManager.existing('LINK', '0xbb7303602be1b9149b097aafb094ffce1860e532', 'arbitrum-goerli');
   const WETH = await deploymentManager.existing('WETH', '0xe39ab88f8a4777030a534146a9ca3b52bd5d43a3', 'arbitrum-goerli');
   const WBTC = await deploymentManager.existing('WBTC', '0x22d5e2dE578677791f6c90e0110Ec629be9d5Fb5', 'arbitrum-goerli');
 
-  // Deploy ArbitrumBridgeReceiver
-  const bridgeReceiver = await deploymentManager.deploy(
-    'bridgeReceiver',
-    'bridges/arbitrum/ArbitrumBridgeReceiver.sol',
-    []
-  );
-
-  // Deploy Local Timelock
-  const localTimelock = await deploymentManager.deploy(
-    'timelock',
-    'vendor/Timelock.sol',
-    [
-      bridgeReceiver.address, // admin
-      10 * 60,                // delay
-      14 * SECONDS_PER_DAY,   // grace period
-      10 * 60,                // minimum delay
-      30 * SECONDS_PER_DAY    // maximum delay
-    ]
-  );
-
-  // Initialize ArbitrumBridgeReceiver
-  await deploymentManager.idempotent(
-    async () => !(await bridgeReceiver.initialized()),
-    async () => {
-      trace(`Initializing BridgeReceiver`);
-      await bridgeReceiver.initialize(
-        GOERLI_TIMELOCK,      // govTimelock
-        localTimelock.address // localTimelock
-      );
-      trace(`BridgeReceiver initialized`);
-    }
-  );
+  // Import shared contracts from cUSDCv3
+  const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'arbitrum-goerli', 'usdc.e');
+  const cometFactory = await deploymentManager.fromDep('cometFactory', 'arbitrum-goerli', 'usdc.e');
+  const $configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'arbitrum-goerli', 'usdc.e');
+  const configurator = await deploymentManager.fromDep('configurator', 'arbitrum-goerli', 'usdc.e');
+  const rewards = await deploymentManager.fromDep('rewards', 'arbitrum-goerli', 'usdc.e');
+  const bulker = await deploymentManager.fromDep('bulker', 'arbitrum-goerli', 'usdc.e');
+  const localTimelock = await deploymentManager.fromDep('timelock', 'arbitrum-goerli', 'usdc.e');
+  const bridgeReceiver = await deploymentManager.fromDep('bridgeReceiver', 'arbitrum-goerli', 'usdc.e');
 
   // Deploy Comet
   const deployed = await deployComet(deploymentManager, deploySpec);
-  const { comet } = deployed;
-
-  // Deploy Bulker
-  const bulker = await deploymentManager.deploy(
-    'bulker',
-    'bulkers/BaseBulker.sol',
-    [
-      await comet.governor(), // admin
-      WETH.address            // weth
-    ]
-  );
 
   return {
     ...deployed,
     bridgeReceiver,
-    bulker
+    bulker,
+    rewards,
   };
 }
