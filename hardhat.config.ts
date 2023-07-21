@@ -285,8 +285,8 @@ const config: HardhatUserConfig = {
         usdc: arbitrumRelationConfigMap
       },
       'arbitrum-goerli': {
-        'usdc.e': arbitrumGoerliRelationConfigMap, 
-        usdc: arbitrumGoerliNativeRelationConfigMap
+        'usdc.e': arbitrumBridgedUsdcGoerliRelationConfigMap, 
+        usdc: arbitrumGoerliNativeUsdcRelationConfigMap
       },
       'base-goerli': {
         usdc: baseGoerliRelationConfigMap,
