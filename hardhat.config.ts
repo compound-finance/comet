@@ -26,7 +26,7 @@ import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
 import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 import arbitrumRelationConfigMap from './deployments/arbitrum/usdc/relations';
 import arbitrumBridgedUsdcGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc.e/relations';
-import arbitrumGoerliNativeRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
+import arbitrumGoerliNativeUsdcRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
