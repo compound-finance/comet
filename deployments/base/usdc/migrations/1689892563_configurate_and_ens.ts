@@ -12,6 +12,8 @@ const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 const baseCOMPAddress = '0x9e1028F5F1D5eDE59748FFceE5532509976840E0';
 
+const cUSDCAddress = '0x39AA39c021dfbaE8faC545936693aC917d5E7563';
+
 export default migration('1679592519_configurate_and_ens', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
@@ -34,6 +36,7 @@ export default migration('1679592519_configurate_and_ens', {
       baseL1CrossDomainMessenger,
       baseL1StandardBridge,
       governor,
+      comptrollerV2,
       COMP: mainnetCOMP,
     } = await govDeploymentManager.getContracts();
 
@@ -112,6 +115,17 @@ export default migration('1679592519_configurate_and_ens', {
           [subdomainHash, ENSTextRecordKey, JSON.stringify(officialMarketsJSON)]
         )
       },
+
+      // 5. Displace v2 USDC COMP rewards
+      {
+        contract: comptrollerV2,
+        signature: '_setCompSpeeds(address[],uint256[],uint256[])',
+        args: [
+          [cUSDCAddress],
+          [10583333330000000],
+          [15444444444444444],
+        ],
+      },
     ];
 
     const description = "TODO"; // TODO
@@ -138,6 +152,10 @@ export default migration('1679592519_configurate_and_ens', {
       rewards,
       COMP,
     } = await deploymentManager.getContracts();
+
+    const {
+      comptrollerV2,
+    } = await govDeploymentManager.getContracts();
 
     // 1.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
@@ -198,5 +216,11 @@ export default migration('1679592519_configurate_and_ens', {
         },
       ],
     });
+
+    // 5.
+    expect(await comptrollerV2.compBorrowSpeeds(cUSDCAddress)).to.be.equal(10583333330000000n);
+    expect(await comptrollerV2.compSupplySpeeds(cUSDCAddress)).to.be.equal(15444444444444444n);
+    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(25 / 86400, 15, 18));
+    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(10 / 86400, 15, 18));
   }
 });
