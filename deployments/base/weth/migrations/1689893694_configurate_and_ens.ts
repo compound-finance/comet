@@ -10,7 +10,7 @@ const ENSRegistryAddress = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
-const baseCOMPAddress = '0xA29b548056c3fD0f68BAd9d4829EC4E66f22f796'; // TODO
+const baseCOMPAddress = '0x9e1028F5F1D5eDE59748FFceE5532509976840E0';
 const amountETHToWrap = exp(0.1, 18); // TODO
 
 export default migration('1685486850_configurate_and_ens', {
