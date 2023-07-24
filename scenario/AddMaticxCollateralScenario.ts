@@ -6,6 +6,8 @@ import { calldata } from '../src/deploy';
 import { impersonateAddress } from '../plugins/scenario/utils';
 import { createCrossChainProposal, matchesDeployment } from './utils';
 
+const MATICX_ADDRESS = "0xfa68FB4628DFF1028CFEc22b4162FCcd0d45efb6";
+const MATICX_PRICE_FEED_ADDRESS = "0x5d37E4b374E6907de8Fc7fb33EE3b0af403C7403";
 const MATICX_WHALES = {
   polygon: ['0x68B9220B8E617b7700aCAE1a5Ff43F3eb29257F3'],
 };
@@ -29,13 +31,13 @@ scenario(
     const dm = context.world.deploymentManager;
     const maticx = await dm.existing(
       'MATICX',
-      '0xfa68FB4628DFF1028CFEc22b4162FCcd0d45efb6',
+      MATICX_ADDRESS,
       context.world.base.network,
       'contracts/ERC20.sol:ERC20'
     );
     const maticxPricefeed = await dm.existing(
       'MATICX:priceFeed',
-      '0x5d37E4b374E6907de8Fc7fb33EE3b0af403C7403',
+      MATICX_PRICE_FEED_ADDRESS,
       context.world.base.network
     );
 
