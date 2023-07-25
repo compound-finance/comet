@@ -20,8 +20,6 @@ export default migration("1689168483_add_maticx_collateral", {
     vars: Vars
   ) => {
     const trace = deploymentManager.tracer();
-    // const ethers = deploymentManager.hre.ethers; // ethers is not available
-    // const { utils } = ethers;
 
     const maticx = await deploymentManager.existing(
       "MATICX",
