@@ -86,7 +86,11 @@ export const WHALES = {
     '0xf04a5cc80b1e94c69b48f5ee68a08cd2f09a7c3e',
     '0x2775b1c75658be0f640272ccb8c72ac986009e38',
     '0x1a9c8182c09f50c8318d769245bea52c32be35bc',
-    '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b'
+    '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b', 
+  ],
+  'goerli': [
+    '0x4A26dE45BD65ef6e5535846b92a8575E0A0e5CEd', // USDT whale
+    '0x75442Ac771a7243433e033F3F8EaB2631e22938f', // WBTC whale
   ],
   polygon: [
     '0x2093b4281990a568c9d588b8bce3bfd7a1557ebd', // WETH whale

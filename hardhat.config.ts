@@ -312,6 +312,11 @@ const config: HardhatUserConfig = {
         deployment: 'weth',
       },
       {
+        name: 'mainnet-usdt',
+        network: 'mainnet',
+        deployment: 'usdt',
+      },
+      {
         name: 'development',
         network: 'hardhat',
         deployment: 'dai'
@@ -330,6 +335,11 @@ const config: HardhatUserConfig = {
         name: 'goerli-weth',
         network: 'goerli',
         deployment: 'weth',
+      },
+      {
+        name: 'goerli-usdt',
+        network: 'goerli',
+        deployment: 'usdt',
       },
       {
         name: 'mumbai',

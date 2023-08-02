@@ -72,6 +72,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
   const baseTokenBalances = {
     mainnet: {
       usdc: 2250000,
+      usdt: 2250000,
       weth: 20
     },
     polygon: {
@@ -84,6 +85,18 @@ for (let i = 0; i < MAX_ASSETS; i++) {
   const assetAmounts = {
     mainnet: {
       usdc: [
+        // COMP
+        ' == 500',
+        // WBTC
+        ' == 120',
+        // WETH9
+        ' == 5000',
+        // UNI:
+        ' == 150000',
+        // LINK
+        ' == 150000'
+      ],
+      usdt: [
         // COMP
         ' == 500',
         // WBTC
