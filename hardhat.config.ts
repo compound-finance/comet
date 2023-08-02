@@ -97,6 +97,11 @@ const networkConfigs: NetworkConfig[] = [
     url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
   },
   {
+    network: 'scroll',
+    chainId: 534353,
+    url: `https://scroll-alphanet.public.blastapi.io`,
+  },
+  {
     network: 'arbitrum',
     chainId: 42161,
     url: `https://arbitrum-mainnet.infura.io/v3/${INFURA_KEY}`,
@@ -133,8 +138,11 @@ const networkConfigs: NetworkConfig[] = [
   },
 ];
 
+// function getDefaultProviderURL(network: string) {
+//   return `https://${network}.infura.io/v3/${INFURA_KEY}`;
+// }
 function getDefaultProviderURL(network: string) {
-  return `https://${network}.infura.io/v3/${INFURA_KEY}`;
+  return `https://eth-${network}.g.alchemy.com/v2/${INFURA_KEY}`;
 }
 
 function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
@@ -204,6 +212,7 @@ const config: HardhatUserConfig = {
       ropsten: ETHERSCAN_KEY,
       rinkeby: ETHERSCAN_KEY,
       goerli: ETHERSCAN_KEY,
+      scroll:'abc',
       // Avalanche
       avalanche: SNOWTRACE_KEY,
       avalancheFujiTestnet: SNOWTRACE_KEY,
@@ -228,6 +237,15 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: 'https://api.arbiscan.io/api',
           browserURL: 'https://arbiscan.io/'
+        }
+      },
+      {
+        // Hardhat's Etherscan plugin calls the network `arbitrumOne`, so we need to add an entry for our own network name
+        network: 'scroll',
+        chainId: 534353,
+        urls: {
+          apiURL: 'https://blockscout.scroll.io/api',
+          browserURL: 'https://blockscout.scroll.io'
         }
       },
       {
