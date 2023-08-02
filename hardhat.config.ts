@@ -312,11 +312,6 @@ const config: HardhatUserConfig = {
         deployment: 'weth',
       },
       {
-        name: 'mainnet-usdt',
-        network: 'mainnet',
-        deployment: 'usdt',
-      },
-      {
         name: 'development',
         network: 'hardhat',
         deployment: 'dai'

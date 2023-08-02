@@ -24,6 +24,10 @@ export default migration('1690845932_configurate_and_ens', {
       rewards,
     } = await deploymentManager.getContracts();
 
+    console.log("cometFactory", cometFactory.address);
+    console.log("comet", comet.address);
+    console.log("configurator", configurator.address);
+    console.log("**************");
     const configuration = await getConfigurationStruct(deploymentManager);
 
     const actions = [
@@ -42,11 +46,11 @@ export default migration('1690845932_configurate_and_ens', {
       },
 
       // 3. Deploy and upgrade to a new version of Comet
-      {
-        contract: cometAdmin,
-        signature: "deployAndUpgradeTo(address,address)",
-        args: [configurator.address, comet.address],
-      },
+      // {
+      //   contract: cometAdmin,
+      //   signature: "deployAndUpgradeTo(address,address)",
+      //   args: [configurator.address, comet.address],
+      // },
 
       // 4. Set the rewards configuration to COMP
       {

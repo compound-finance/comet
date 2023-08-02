@@ -4,6 +4,7 @@ import { DeploySpec, cloneGov, deployComet, exp, sameAddress, wait } from '../..
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const trace = deploymentManager.tracer()
   const ethers = deploymentManager.hre.ethers;
+  const signer = await deploymentManager.getSigner();
 
   // Declare existing assets as aliases
   const USDT = await deploymentManager.existing('USDT', '0xfad6367E97217cC51b4cd838Cc086831f81d38C2', 'goerli');
@@ -21,6 +22,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const timelock = await deploymentManager.fromDep('timelock', 'goerli', 'usdc');
   const fauceteer = await deploymentManager.fromDep('fauceteer', 'goerli', 'usdc');
   const fxRoot = await deploymentManager.fromDep('fxRoot', 'goerli', 'usdc');
+  const governor = await deploymentManager.fromDep('timelock', 'goerli', 'usdc');
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);

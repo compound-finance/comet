@@ -170,6 +170,8 @@ export async function deployNetworkComet(
     assetConfigs,
   };
 
+  console.log('configuration', configuration);
+  console.log("**************");
   const tmpCometImpl = await deploymentManager.deploy(
     'comet:implementation',
     'Comet.sol',
@@ -259,6 +261,12 @@ export async function deployNetworkComet(
       trace(await wait(configurator.connect(admin).setConfiguration(comet.address, configuration)));
 
       trace(`Upgrading implementation of Comet...`);
+      console.log("************");
+      console.log('cometAdmin', cometAdmin.address);
+      console.log('admin', admin.address);
+      console.log('configurator.address', configurator.address);
+      console.log('comet.address', comet.address);
+      console.log("************");
       trace(await wait(cometAdmin.connect(admin).deployAndUpgradeTo(configurator.address, comet.address)));
 
       trace(`New Comet implementation at ${await cometAdmin.getProxyImplementation(comet.address)}`);
