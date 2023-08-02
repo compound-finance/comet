@@ -15,6 +15,7 @@ on:
           - arbitrum-goerli
           - base-goerli
           - linea-goerli
+          - scroll
       deployment:
         description: Deployment Name (e.g. "usdc")
         required: true
@@ -40,7 +41,7 @@ jobs:
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
-          ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet-eth.compound.finance\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum-goerli\":\"https://arbitrum-goerli.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base-goerli\":\"https://base-goerli.infura.io/v3/$INFURA_KEY\",\"linea-goerli\":\"https://linea-goerli.infura.io/v3/$INFURA_KEY\"}')[inputs.network] }}"
+          ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet-eth.compound.finance\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum-goerli\":\"https://arbitrum-goerli.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base-goerli\":\"https://base-goerli.infura.io/v3/$INFURA_KEY\",\"scroll\":\"https://scroll-alphanet.public.blastapi.io\",\"linea-goerli\":\"https://linea-goerli.infura.io/v3/$INFURA_KEY\"}')[inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
 
