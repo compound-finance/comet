@@ -22,9 +22,9 @@
   "rewardToken": "COMP",
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": "447916666666e0",
-    "baseBorrowSpeed": "0e15",
-    "baseMinForRewards": "1000e18"
+    "baseSupplySpeed": "0.000402083333333e15",
+    "baseBorrowSpeed": "0.000402083333333e15",
+    "baseMinForRewards": "10000e6"
   },
   "assets": {
     "COMP": {
@@ -33,7 +33,7 @@
       "borrowCF": 0.65,
       "liquidateCF": 0.7,
       "liquidationFactor": 0.92,
-      "supplyCap": "500000e18"
+      "supplyCap": "0e18"
     },
     "WBTC": {
       "priceFeed": "0xA39434A63A52E749F02807ae27335515BA4b07F7",
@@ -41,7 +41,7 @@
       "borrowCF": 0.7,
       "liquidateCF": 0.75,
       "liquidationFactor": 0.93,
-      "supplyCap": "35000e8"
+      "supplyCap": "0e8"
     },
     "WETH": {
       "priceFeed": "0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e",
@@ -49,7 +49,7 @@
       "borrowCF": 0.82,
       "liquidateCF": 0.85,
       "liquidationFactor": 0.93,
-      "supplyCap": "1000000e18"
+      "supplyCap": "0e18"
     }
   }
 }
