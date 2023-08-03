@@ -20,6 +20,7 @@ import './tasks/scenario/task.ts';
 import relationConfigMap from './deployments/relations';
 import goerliRelationConfigMap from './deployments/goerli/usdc/relations';
 import goerliWethRelationConfigMap from './deployments/goerli/weth/relations';
+import goerliUsdtRelationConfigMap from './deployments/goerli/usdt/relations';
 import mumbaiRelationConfigMap from './deployments/mumbai/usdc/relations';
 import mainnetRelationConfigMap from './deployments/mainnet/usdc/relations';
 import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
@@ -269,7 +270,8 @@ const config: HardhatUserConfig = {
     networks: {
       goerli: {
         usdc: goerliRelationConfigMap,
-        weth: goerliWethRelationConfigMap
+        weth: goerliWethRelationConfigMap, 
+        usdt: goerliUsdtRelationConfigMap,
       },
       mumbai: {
         usdc: mumbaiRelationConfigMap
@@ -330,6 +332,11 @@ const config: HardhatUserConfig = {
         name: 'goerli-weth',
         network: 'goerli',
         deployment: 'weth',
+      },
+      {
+        name: 'goerli-usdt',
+        network: 'goerli',
+        deployment: 'usdt',
       },
       {
         name: 'mumbai',
