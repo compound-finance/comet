@@ -12,7 +12,7 @@ const ENSRegistryAddress = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const ENSTextRecordKey = 'v3-official-markets';
 const USDCAmountToSeed = exp(5, 6);
 
-export default migration('1691098888_configurate_and_ens', {
+export default migration('1691102322_configurate_and_ens', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
   },
