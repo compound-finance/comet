@@ -6,6 +6,10 @@ export default {
     artifact: 'contracts/bridges/optimism/OptimismBridgeReceiver.sol:OptimismBridgeReceiver'
   },
 
+  Proxy: {
+    artifact: 'contracts/ERC20.sol:ERC20'
+  },
+
   l2CrossDomainMessenger: {
     delegates: {
       field: {
@@ -13,7 +17,7 @@ export default {
       }
     }
   },
-  
+
   l2StandardBridge: {
     delegates: {
       field: {
