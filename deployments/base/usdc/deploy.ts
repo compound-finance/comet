@@ -66,8 +66,6 @@ async function deployContracts(
     ]
   );
 
-  console.log(await cbETHMultiplicativePriceFeed.latestRoundData())
-
   // Initialize OptimismBridgeReceiver
   await deploymentManager.idempotent(
     async () => !(await bridgeReceiver.initialized()),
