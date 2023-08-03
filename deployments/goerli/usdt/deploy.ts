@@ -16,7 +16,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
   const signer = await deploymentManager.getSigner();
 
   // Declare existing assets as aliases
-  const USDT = await deploymentManager.existing('USDT', '0xfad6367E97217cC51b4cd838Cc086831f81d38C2', 'goerli');
+  const USDT = await deploymentManager.existing('USDT', '0x79C950C7446B234a6Ad53B908fBF342b01c4d446', 'goerli');
   const COMP = await deploymentManager.existing('COMP', '0x3587b2F7E0E2D6166d6C14230e7Fe160252B0ba4', 'goerli');
   const WBTC = await deploymentManager.existing('WBTC', '0xAAD4992D949f9214458594dF92B44165Fb84dC19', 'goerli');
   const WETH = await deploymentManager.existing('WETH', '0x42a71137C09AE83D8d05974960fd607d40033499', 'goerli');
