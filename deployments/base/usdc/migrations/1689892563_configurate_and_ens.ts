@@ -30,6 +30,7 @@ export default migration('1679592519_configurate_and_ens', {
       cometAdmin,
       configurator,
       rewards,
+      USDbC
     } = await deploymentManager.getContracts();
 
     const {
@@ -38,6 +39,7 @@ export default migration('1679592519_configurate_and_ens', {
       governor,
       comptrollerV2,
       COMP: mainnetCOMP,
+      USDC: mainnetUSDC
     } = await govDeploymentManager.getContracts();
 
     // ENS Setup
@@ -45,7 +47,7 @@ export default migration('1679592519_configurate_and_ens', {
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
     const baseChainId = (await deploymentManager.hre.ethers.provider.getNetwork()).chainId.toString();
-    const newMarketObject = { baseSymbol: 'USDC', cometAddress: comet.address };
+    const newMarketObject = { baseSymbol: 'USDbC', cometAddress: comet.address };
     const officialMarketsJSON = JSON.parse(await ENSResolver.text(subdomainHash, ENSTextRecordKey));
     if (officialMarketsJSON[baseChainId]) {
       officialMarketsJSON[baseChainId].push(newMarketObject);
@@ -81,9 +83,8 @@ export default migration('1679592519_configurate_and_ens', {
     );
 
     const COMPAmountToBridge = exp(12_500, 18);
+    const USDCAmountToBridge = exp(10_000, 6);
 
-    // TODO: Bridge over USDC as well
-    // TODO: Move incentives from v2
     const actions = [
       // 1. Set Comet configuration + deployAndUpgradeTo new Comet and set reward config on Base.
       {
@@ -92,13 +93,27 @@ export default migration('1679592519_configurate_and_ens', {
         args: [bridgeReceiver.address, l2ProposalData, 2_500_000]
       },
 
-      // 2. Approve Ethereum's L1StandardBridge to take Timelock's COMP (for bridging)
+      // 2. Approve Ethereum's L1StandardBridge to take Timelock's USDC (for bridging)
+      {
+        contract: mainnetUSDC,
+        signature: 'approve(address,uint256)',
+        args: [baseL1StandardBridge.address, USDCAmountToBridge]
+      },
+      // 3. Bridge USDC from Ethereum to Base Comet using L1StandardBridge
+      {
+        contract: baseL1StandardBridge,
+        // function depositERC20To(address _l1Token, address _l2Token, address _to, uint256 _amount, uint32 _l2Gas,bytes calldata _data)
+        signature: 'depositERC20To(address,address,address,uint256,uint32,bytes)',
+        args: [mainnetUSDC.address, USDbC.address, comet.address, USDCAmountToBridge, 200_000, '0x']
+      },
+
+      // 4. Approve Ethereum's L1StandardBridge to take Timelock's COMP (for bridging)
       {
         contract: mainnetCOMP,
         signature: 'approve(address,uint256)',
         args: [baseL1StandardBridge.address, COMPAmountToBridge]
       },
-      // 3. Bridge COMP from Ethereum to Base Comet using L1StandardBridge
+      // 5. Bridge COMP from Ethereum to Base Rewards using L1StandardBridge
       {
         contract: baseL1StandardBridge,
         // function depositERC20To(address _l1Token, address _l2Token, address _to, uint256 _amount, uint32 _l2Gas,bytes calldata _data)
@@ -106,7 +121,7 @@ export default migration('1679592519_configurate_and_ens', {
         args: [mainnetCOMP.address, baseCOMPAddress, rewards.address, COMPAmountToBridge, 200_000, '0x']
       },
 
-      // 4. Update the list of official markets
+      // 6. Update the list of official markets
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
@@ -116,14 +131,14 @@ export default migration('1679592519_configurate_and_ens', {
         )
       },
 
-      // 5. Displace v2 USDC COMP rewards
+      // 7. Displace v2 USDC COMP rewards
       {
         contract: comptrollerV2,
         signature: '_setCompSpeeds(address[],uint256[],uint256[])',
         args: [
           [cUSDCAddress],
-          [10583333330000000],
-          [15444444444444444],
+          [10583333330000000n],
+          [15444444444444444n],
         ],
       },
     ];
@@ -139,10 +154,6 @@ export default migration('1679592519_configurate_and_ens', {
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
-  },
-
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
     const ethers = deploymentManager.hre.ethers;
     await deploymentManager.spider(); // We spider here to pull in Base COMP now that reward config has been set
@@ -151,6 +162,7 @@ export default migration('1679592519_configurate_and_ens', {
       comet,
       rewards,
       COMP,
+      USDbC
     } = await deploymentManager.getContracts();
 
     const {
@@ -159,19 +171,18 @@ export default migration('1679592519_configurate_and_ens', {
 
     // 1.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    // TODO
-    expect(stateChanges).to.deep.equal({
-      pauseGuardian: '0xBA5e81fD6811E2699b478d1Bcde62a585bC9b6f7',
-      baseTrackingSupplySpeed: exp(34.74 / 86400, 15, 18),
-      baseTrackingBorrowSpeed: exp(34.74 / 86400, 15, 18),
-      baseBorrowMin: exp(1, 6),
-      WETH: {
-        supplyCap: exp(1000, 18)
-      },
-      cbETH: {
-        supplyCap: exp(800, 18)
-      }
-    })
+    // TODO: uncomment when contracts are deployed
+    // expect(stateChanges).to.deep.equal({
+    //   baseTrackingSupplySpeed: exp(30 / 86400, 15, 18),
+    //   baseTrackingBorrowSpeed: exp(15 / 86400, 15, 18),
+    //   baseBorrowMin: 1,
+    //   WETH: {
+    //     supplyCap: exp(11000, 18)
+    //   },
+    //   cbETH: {
+    //     supplyCap: exp(7500, 18)
+    //   }
+    // })
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(COMP.address);
@@ -179,9 +190,12 @@ export default migration('1679592519_configurate_and_ens', {
     expect(config.shouldUpscale).to.be.equal(true);
 
     // 2. & 3.
+    expect(await USDbC.balanceOf(comet.address)).to.be.equal(exp(10_000, 6));
+
+    // 4. & 5.
     expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(12_500, 18));
 
-    // 4.
+    // 6.
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
     const officialMarketsJSON = await ENSResolver.text(subdomainHash, ENSTextRecordKey);
@@ -211,16 +225,16 @@ export default migration('1679592519_configurate_and_ens', {
       ],
       8453: [
         {
-          baseSymbol: 'USDC',
+          baseSymbol: 'USDbC',
           cometAddress: comet.address,
         },
       ],
     });
 
-    // 5.
-    expect(await comptrollerV2.compBorrowSpeeds(cUSDCAddress)).to.be.equal(10583333330000000n);
-    expect(await comptrollerV2.compSupplySpeeds(cUSDCAddress)).to.be.equal(15444444444444444n);
-    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(25 / 86400, 15, 18));
-    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(10 / 86400, 15, 18));
+    // 7.
+    expect(await comptrollerV2.compSupplySpeeds(cUSDCAddress)).to.be.equal(10583333330000000n);
+    expect(await comptrollerV2.compBorrowSpeeds(cUSDCAddress)).to.be.equal(15444444444444444n);
+    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(30 / 86400, 15, 18));
+    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(15 / 86400, 15, 18));
   }
 });
