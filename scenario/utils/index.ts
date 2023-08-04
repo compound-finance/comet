@@ -427,7 +427,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
   const govDeploymentManager = context.world.auxiliaryDeploymentManager!;
   const bridgeDeploymentManager = context.world.deploymentManager!;
   const proposer = await context.getProposer();
-  console.log('proposer is ', proposer.address)
+  console.log('proposer is ', proposer.address);
   const bridgeNetwork = bridgeDeploymentManager.network;
   const targets: string[] = [];
   const values: number[] = [];
