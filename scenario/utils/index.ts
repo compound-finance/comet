@@ -269,6 +269,12 @@ export async function isBulkerSupported(ctx: CometContext): Promise<boolean> {
   return bulker == null ? false : true;
 }
 
+export async function hasMinBorrowGreaterThanOne(ctx: CometContext): Promise<boolean> {
+  const comet = await ctx.getComet();
+  const minBorrow = (await comet.baseBorrowMin()).toBigInt();
+  return minBorrow > 1n;
+}
+
 type DeploymentCriterion = {
   network?: string;
   deployment?: string;
@@ -421,6 +427,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
   const govDeploymentManager = context.world.auxiliaryDeploymentManager!;
   const bridgeDeploymentManager = context.world.deploymentManager!;
   const proposer = await context.getProposer();
+  console.log('proposer is ', proposer.address)
   const bridgeNetwork = bridgeDeploymentManager.network;
   const targets: string[] = [];
   const values: number[] = [];
