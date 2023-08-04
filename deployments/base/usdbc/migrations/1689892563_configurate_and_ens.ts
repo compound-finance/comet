@@ -14,7 +14,7 @@ const baseCOMPAddress = '0x9e1028F5F1D5eDE59748FFceE5532509976840E0';
 
 const cUSDCAddress = '0x39AA39c021dfbaE8faC545936693aC917d5E7563';
 
-export default migration('1679592519_configurate_and_ens', {
+export default migration('1689892563_configurate_and_ens', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
   },
