@@ -171,18 +171,16 @@ export default migration('1679592519_configurate_and_ens', {
 
     // 1.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    // TODO: uncomment when contracts are deployed
-    // expect(stateChanges).to.deep.equal({
-    //   baseTrackingSupplySpeed: exp(30 / 86400, 15, 18),
-    //   baseTrackingBorrowSpeed: exp(15 / 86400, 15, 18),
-    //   baseBorrowMin: 1,
-    //   WETH: {
-    //     supplyCap: exp(11000, 18)
-    //   },
-    //   cbETH: {
-    //     supplyCap: exp(7500, 18)
-    //   }
-    // })
+    expect(stateChanges).to.deep.equal({
+      baseTrackingSupplySpeed: exp(30 / 86400, 15, 18),
+      baseTrackingBorrowSpeed: exp(15 / 86400, 15, 18),
+      WETH: {
+        supplyCap: exp(11000, 18)
+      },
+      cbETH: {
+        supplyCap: exp(7500, 18)
+      }
+    })
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(COMP.address);
