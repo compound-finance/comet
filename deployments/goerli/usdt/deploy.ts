@@ -1,17 +1,7 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
 import { debug, DeploySpec, deployComet, exp, sameAddress, wait } from '../../../src/deploy';
 
-const clone = {
-  cbETHImpl: '0x31724cA0C982A31fbb5C57f4217AB585271fc9a5',
-  cbETHProxy: '0xBe9895146f7AF43049ca1c1AE358B0541Ea49704',
-};
-
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
-  const deployed = await deployContracts(deploymentManager, deploySpec);
-  return deployed;
-}
-
-async function deployContracts(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const ethers = deploymentManager.hre.ethers;
   const signer = await deploymentManager.getSigner();
 
@@ -34,7 +24,5 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
-  const { comet } = deployed;
-
   return { ...deployed, bulker, fauceteer, fxRoot };
 }
