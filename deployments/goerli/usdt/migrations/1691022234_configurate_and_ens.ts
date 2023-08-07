@@ -103,7 +103,7 @@ export default migration('1691022234_configurate_and_ens', {
     trace(`Created proposal ${proposalId}.`);
   }, 
 
-  async verify(deploymentManager: DeploymentManager) {
+  async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
     const ethers = deploymentManager.hre.ethers;
     await deploymentManager.spider(); // Pull in Arbitrum COMP now that reward config has been set
     const {
