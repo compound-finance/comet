@@ -58,17 +58,17 @@ These are steps for enacting a migration. The steps for preparing a migration ar
  1. Click on `Enact Migration` on the left-hand side of the Github Actions tab.
  2. Click on `Run Workflow`, which should bring up a dropdown with some fields to fill out:
     - a. Select the branch that you will run your workflow from. Make sure that your migration exists on that branch.
-    - b. Select the network from the `Network` dropdown.
-    - c. Fill in the `Deployment` (e.g. `usdc`, `weth`) that your migration scripts is targetting.
-    - d. Fill in the `Migration Name`, which is the string specified at the top of your migration. [Example](https://github.com/compound-finance/comet/blob/main/deployments/mainnet/usdc/migrations/1659582050_raise_supply_caps_and_seed_reserves.ts#L4)
-    - e. Fill in the `Run ID for Artifact` with the run id of your recently run job for `prepare`. If your migration does not have a `prepare` step, leave this field blank.
-    - f. You can leave the rest of the fields blank. There is an optional field for providing a private key for signing transactions, but this is discouraged because you can run the workflow without exposing your private key by using WalletConnect.
+    - b. Select the network you plan to run the migration for from the `Network` dropdown.
+    - c. Fill in the `Deployment` (e.g. `usdc`, `weth`) that your migration script is targetting.
+    - d. Fill in the `Migration Name`, which is the string specified at the [top of your migration](https://github.com/compound-finance/comet/blob/main/deployments/mainnet/usdc/migrations/1659582050_raise_supply_caps_and_seed_reserves.ts#L4).
+    - e. (Optional) Fill in the `Run ID for Artifact` with the run id of your `prepare` job. If your migration does not have a `prepare` step, leave this field blank.
+    - f. (Optional) There is an optional field for providing a private key for signing transactions, but this is discouraged because you can run the workflow without exposing your private key by using WalletConnect.
 3. Start the migration by clicking the green `Run Workflow` button at the bottom of the dropdown.
 4. Click on the newly spun-up Github action once it appears in the list of workflow runs.
 5. Click on `Enact Migration`, which should appear as a pending job.
-6. If you did not input your private key when starting the action, the next steps will ask you to connect a wallet to the job using WalletConnect QR codes (Seacrest). Generally, you'll need a mobile wallet like Metamask to scan the QR codes.
-    a. The first QR code to pop up should be under a task called `Seacrest`. In your mobile wallet, make sure you are connected to the network you specified in section 2b. Scan the QR code and accept the WalletConnect connection in your mobile wallet. Scanning the QR code can take some time, try scanning with different angles.
-    b. If your migration is targetting an L2 that is governed by another network (e.g. Ethereum mainnet governs Polygon, Arbitrum, Base, etc.), a second task called `Seacrest (governance network)` will run and also ask you to scan a QR code. Change the network in your mobile wallet to the governance network, which is usually going to be Ethereum mainnet. Then, scan the QR code.
+6. If you did not input your private key when starting the action, the next steps will ask you to connect a wallet to the job using WalletConnect QR codes via [Seacrest](https://github.com/hayesgm/seacrest). You'll likely need a mobile wallet like Metamask to scan the QR codes.
+    - a. The first QR code to pop up should be under a task called `Seacrest`. In your mobile wallet, make sure you are connected to the network you specified in section 2b. Scan the QR code and accept the WalletConnect connection in your mobile wallet. Scanning the QR code can take some time since the QR code can be difficult to recognize, so try scanning with different angles.
+    - b. If your migration is targetting an L2 that is governed by another network (e.g. Ethereum mainnet governs Polygon, Arbitrum, Base, etc.), a second task called `Seacrest (governance network)` will run and also ask you to scan a QR code. Change the network in your mobile wallet to the governance network, which is usually going to be Ethereum mainnet. Then, scan the QR code.
 7. Once your address has been connected to the job (either via Seacrest or inputting your private key), the job will run your migration script. If you used Seacrest/WalletConnect, make sure to keep your mobile wallet open to accept any transactions it may ask you to sign (e.g. when making a proposal on-chain).
 8. After your migration script is run, the job should complete succesfully.
 
