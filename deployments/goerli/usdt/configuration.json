@@ -2,7 +2,6 @@
   "name": "Compound USDT",
   "symbol": "cUSDTv3",
   "baseToken": "USDT",
-  "baseTokenAddress": "0x79C950C7446B234a6Ad53B908fBF342b01c4d446",
   "baseTokenPriceFeed": "0xAb5c49580294Aff77670F839ea425f5b78ab3Ae7",
   "borrowMin": "10e6",
   "governor": "0x8Fa336EB4bF58Cfc508dEA1B0aeC7336f55B1399",
