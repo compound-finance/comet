@@ -3,9 +3,9 @@
   "symbol": "cWETHv3",
   "baseToken": "WETH",
   "baseTokenAddress": "0x4200000000000000000000000000000000000006",
-  "borrowMin": "0.000001e18",
-  "pauseGuardian": "0xBA5e81fD6811E2699b478d1Bcde62a585bC9b6f7", todo
-  "storeFrontPriceFactor": 0.5, todo
+  "borrowMin": "1e0",
+  "pauseGuardian": "0x3cb4653f3b45f448d9100b118b75a1503281d2ee",
+  "storeFrontPriceFactor": 0.5,
   "targetReserves": "5000e18",
   "rates": {
     "supplyKink": 0.9,
@@ -21,17 +21,16 @@
     "indexScale": "1e15",
     "baseSupplySpeed": "0e15",
     "baseBorrowSpeed": "0e15",
-    "baseMinForRewards": "100e18" todo
+    "baseMinForRewards": "100e18"
   },
   "assets": {
-    "cbETH": { todo
-      "address": "0x7c6b91D9Be155A6Db01f749217d76fF02A7227F2",
-      "priceFeed": "0xcD2A119bD1F7DF95d706DE6F2057fDD45A0503E2",
+    "cbETH": {
+      "address": "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22",
       "decimals": "18",
       "borrowCF": 0.90,
       "liquidateCF": 0.93,
       "liquidationFactor": 0.95,
-      "supplyCap": "1000e18"
+      "supplyCap": "0e18"
     }
   }
 }

@@ -10,8 +10,6 @@ async function deployContracts(
   deploymentManager: DeploymentManager,
   deploySpec: DeploySpec
 ): Promise<Deployed> {
-  const trace = deploymentManager.tracer();
-
   // Deploy constant price feed for WETH
   const wethConstantPriceFeed = await deploymentManager.deploy(
     'WETH:priceFeed',
@@ -23,28 +21,27 @@ async function deployContracts(
   );
 
   // Deploy scaling price feed for cbETH
-  // TODO update price feed address
   const cbETHScalingPriceFeed = await deploymentManager.deploy(
     'cbETH:priceFeed',
-    'ScalingPriceFeed.sol',
+    'pricefeeds/ScalingPriceFeed.sol',
     [
-      '0xcD2A119bD1F7DF95d706DE6F2057fDD45A0503E2', // TODO // cbETH / ETH price feed
+      '0x806b4Ac04501c29769051e42783cF04dCE41440b', // cbETH / ETH price feed
       8                                             // decimals
     ]
   );
 
-  // Import shared contracts from cUSDCv3
-  const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'base', 'usdc');
-  const cometFactory = await deploymentManager.fromDep('cometFactory', 'base', 'usdc');
-  const $configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'base', 'usdc');
-  const configurator = await deploymentManager.fromDep('configurator', 'base', 'usdc');
-  const rewards = await deploymentManager.fromDep('rewards', 'base', 'usdc');
-  const bulker = await deploymentManager.fromDep('bulker', 'base', 'usdc');
-  const fauceteer = await deploymentManager.fromDep('fauceteer', 'base', 'usdc');
-  const l2CrossDomainMessenger = await deploymentManager.fromDep('l2CrossDomainMessenger', 'base', 'usdc');
-  const l2StandardBridge = await deploymentManager.fromDep('l2StandardBridge', 'base', 'usdc');
-  const localTimelock = await deploymentManager.fromDep('timelock', 'base', 'usdc');
-  const bridgeReceiver = await deploymentManager.fromDep('bridgeReceiver', 'base', 'usdc');
+  // Import shared contracts from cUSDbCv3
+  const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'base', 'usdbc');
+  const cometFactory = await deploymentManager.fromDep('cometFactory', 'base', 'usdbc');
+  const $configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'base', 'usdbc');
+  const configurator = await deploymentManager.fromDep('configurator', 'base', 'usdbc');
+  const rewards = await deploymentManager.fromDep('rewards', 'base', 'usdbc');
+  const bulker = await deploymentManager.fromDep('bulker', 'base', 'usdbc');
+  const fauceteer = await deploymentManager.fromDep('fauceteer', 'base', 'usdbc');
+  const l2CrossDomainMessenger = await deploymentManager.fromDep('l2CrossDomainMessenger', 'base', 'usdbc');
+  const l2StandardBridge = await deploymentManager.fromDep('l2StandardBridge', 'base', 'usdbc');
+  const localTimelock = await deploymentManager.fromDep('timelock', 'base', 'usdbc');
+  const bridgeReceiver = await deploymentManager.fromDep('bridgeReceiver', 'base', 'usdbc');
 
   // Deploy Comet
   const deployed = await deployComet(deploymentManager, deploySpec);
