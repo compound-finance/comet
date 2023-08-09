@@ -37,7 +37,6 @@ async function deployContracts(
   const configurator = await deploymentManager.fromDep('configurator', 'base', 'usdbc');
   const rewards = await deploymentManager.fromDep('rewards', 'base', 'usdbc');
   const bulker = await deploymentManager.fromDep('bulker', 'base', 'usdbc');
-  const fauceteer = await deploymentManager.fromDep('fauceteer', 'base', 'usdbc');
   const l2CrossDomainMessenger = await deploymentManager.fromDep('l2CrossDomainMessenger', 'base', 'usdbc');
   const l2StandardBridge = await deploymentManager.fromDep('l2StandardBridge', 'base', 'usdbc');
   const localTimelock = await deploymentManager.fromDep('timelock', 'base', 'usdbc');
