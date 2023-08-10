@@ -13,6 +13,8 @@ const ENSTextRecordKey = 'v3-official-markets';
 const baseCOMPAddress = '0x9e1028F5F1D5eDE59748FFceE5532509976840E0';
 const amountETHToWrap = exp(10, 18);
 
+const cUSDCAddress = '0x39AA39c021dfbaE8faC545936693aC917d5E7563';
+
 export default migration('1689893694_configurate_and_ens', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
@@ -38,7 +40,7 @@ export default migration('1689893694_configurate_and_ens', {
       baseL1CrossDomainMessenger,
       baseL1StandardBridge,
       governor,
-      COMP: mainnetCOMP,
+      comptrollerV2
     } = await govDeploymentManager.getContracts();
 
     // ENS Setup
@@ -117,6 +119,17 @@ export default migration('1689893694_configurate_and_ens', {
           [subdomainHash, ENSTextRecordKey, JSON.stringify(officialMarketsJSON)]
         )
       },
+
+      // 4. Displace v2 USDC COMP rewards
+      {
+        contract: comptrollerV2,
+        signature: '_setCompSpeeds(address[],uint256[],uint256[])',
+        args: [
+          [cUSDCAddress],
+          [9194444444444444n],
+          [12666666666666667n]
+        ],
+      },
     ];
 
     // TODO
@@ -142,11 +155,15 @@ export default migration('1689893694_configurate_and_ens', {
       WETH
     } = await deploymentManager.getContracts();
 
+    const {
+      comptrollerV2,
+    } = await govDeploymentManager.getContracts();
+
     // 1.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     // TODO: uncomment after contracts are deployed
     // expect(stateChanges).to.deep.equal({
-    //   baseTrackingSupplySpeed: exp(30 / 86400, 15, 18),
+    //   baseTrackingSupplySpeed: exp(20 / 86400, 15, 18),
     //   cbETH: {
     //     supplyCap: exp(7500, 18)
     //   }
@@ -191,7 +208,7 @@ export default migration('1689893694_configurate_and_ens', {
         }
       ],
       8453: [
-        // TODO: uncomment
+        // TODO: uncomment after proposal 171 goes through
         // {
         //   baseSymbol: 'USDbC',
         //   cometAddress: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf',
@@ -202,5 +219,11 @@ export default migration('1689893694_configurate_and_ens', {
         },
       ],
     });
+
+    // 4.
+    expect(await comptrollerV2.compSupplySpeeds(cUSDCAddress)).to.be.equal(9194444444444444n);  // 66.2 COMP/day
+    expect(await comptrollerV2.compBorrowSpeeds(cUSDCAddress)).to.be.equal(12666666666666667n); // 91.2 COMP/day
+    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(20 / 86400, 15, 18));
+    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(0 / 86400, 15, 18));
   }
 });
