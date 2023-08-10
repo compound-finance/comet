@@ -19,7 +19,7 @@
   },
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": "0e15",
+    "baseSupplySpeed": "231_481_481_481e0",
     "baseBorrowSpeed": "0e15",
     "baseMinForRewards": "100e18"
   },
@@ -30,7 +30,7 @@
       "borrowCF": 0.90,
       "liquidateCF": 0.93,
       "liquidationFactor": 0.95,
-      "supplyCap": "0e18"
+      "supplyCap": "7500e18"
     }
   }
 }
