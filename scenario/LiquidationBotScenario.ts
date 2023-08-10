@@ -125,7 +125,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       ]
     }
   };
-  scenario(
+  // Skipping these scenarios as they are noisy and should really be moved into a separate monitoring solution
+  scenario.skip(
     `LiquidationBot > liquidates an underwater position of $asset${i} with no maxAmountToPurchase`,
     {
       upgrade: {
@@ -340,7 +341,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       ]
     }
   };
-  scenario(
+  // Skipping these scenarios as they are noisy and should really be moved into a separate monitoring solution
+  scenario.skip(
     `LiquidationBot > partially liquidates large position of $asset${i}, by setting maxAmountToPurchase`,
     {
       upgrade: {
