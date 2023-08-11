@@ -5,7 +5,7 @@
   "baseTokenAddress": "0x4200000000000000000000000000000000000006",
   "borrowMin": "1e0",
   "pauseGuardian": "0x3cb4653f3b45f448d9100b118b75a1503281d2ee",
-  "storeFrontPriceFactor": 0.5,
+  "storeFrontPriceFactor": 1,
   "targetReserves": "5000e18",
   "rates": {
     "supplyKink": 0.9,
@@ -13,13 +13,13 @@
     "supplySlopeHigh": 0.6066567706,
     "supplyBase": 0,
     "borrowKink": 0.9,
-    "borrowSlopeLow": 0.05171500002,
+    "borrowSlopeLow": 0.037,
     "borrowSlopeHigh": 0.5171500339,
     "borrowBase": 0.009945209674
   },
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": "0e15",
+    "baseSupplySpeed": "231_481_481_481e0",
     "baseBorrowSpeed": "0e15",
     "baseMinForRewards": "100e18"
   },
@@ -29,8 +29,8 @@
       "decimals": "18",
       "borrowCF": 0.90,
       "liquidateCF": 0.93,
-      "liquidationFactor": 0.95,
-      "supplyCap": "0e18"
+      "liquidationFactor": 0.975,
+      "supplyCap": "7500e18"
     }
   }
 }
