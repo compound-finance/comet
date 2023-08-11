@@ -144,6 +144,10 @@ export default migration('1689893694_configurate_and_ens', {
     trace(`Created proposal ${proposalId}.`);
   },
 
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
+  },
+
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
     const ethers = deploymentManager.hre.ethers;
     await deploymentManager.spider(); // We spider here to pull in Base COMP now that reward config has been set
