@@ -4,6 +4,7 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
 import { expect } from 'chai';
 
+const SECONDS_PER_YEAR = 31_536_000n;
 const ENSName = 'compound-community-licenses.eth';
 const ENSResolverAddress = '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41';
 const ENSRegistryAddress = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
@@ -160,13 +161,15 @@ export default migration('1689893694_configurate_and_ens', {
 
     // 1.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    // TODO: uncomment after contracts are deployed
-    // expect(stateChanges).to.deep.equal({
-    //   baseTrackingSupplySpeed: exp(20 / 86400, 15, 18),
-    //   cbETH: {
-    //     supplyCap: exp(7500, 18)
-    //   }
-    // });
+    expect(stateChanges).to.deep.equal({
+      baseTrackingSupplySpeed: exp(20 / 86400, 15, 18),
+      storeFrontPriceFactor: exp(1, 18),
+      borrowPerSecondInterestRateSlopeLow: exp(0.037, 18) / SECONDS_PER_YEAR,
+      cbETH: {
+        liquidationFactor: exp(0.975, 18),
+        supplyCap: exp(7500, 18)
+      }
+    });
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(COMP.address);
@@ -207,11 +210,10 @@ export default migration('1689893694_configurate_and_ens', {
         }
       ],
       8453: [
-        // TODO: uncomment after proposal 171 goes through
-        // {
-        //   baseSymbol: 'USDbC',
-        //   cometAddress: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf',
-        // },
+        {
+          baseSymbol: 'USDbC',
+          cometAddress: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf',
+        },
         {
           baseSymbol: 'WETH',
           cometAddress: comet.address,
