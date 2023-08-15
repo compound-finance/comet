@@ -230,7 +230,12 @@ export default migration('1686953660_configurate_and_ens', {
           cometAddress: '0xA17581A9E3356d9A858b789D68B4d866e593aE94',
         },
       ],
-
+      8453: [
+        {
+          baseSymbol: 'USDbC',
+          cometAddress: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf'
+        }
+      ],
       137: [
         {
           baseSymbol: 'USDC',

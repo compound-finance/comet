@@ -34,8 +34,9 @@ export async function executeBridgedProposal(
   const receiver = await deploymentManager.getContractOrThrow('bridgeReceiver');
   const { id, eta } = proposal;
 
+  const blockNow = await deploymentManager.hre.ethers.provider.getBlock('latest');
   // fast forward l2 time
-  await setNextBlockTimestamp(deploymentManager, eta.toNumber() + 1);
+  await setNextBlockTimestamp(deploymentManager, Math.max(eta.toNumber() + 1, blockNow.timestamp + 1));
 
   // execute queued proposal
   await setNextBaseFeeToZero(deploymentManager);
