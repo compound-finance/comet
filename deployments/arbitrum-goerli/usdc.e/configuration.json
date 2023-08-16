@@ -1,10 +1,10 @@
 {
   "name": "Compound USDC",
   "symbol": "cUSDCv3",
-  "baseToken": "USDC",
-  "baseTokenAddress": "0xfd064A18f3BF249cf1f87FC203E90D8f650f2d63",
+  "baseToken": "USDC.e",
+  "baseTokenAddress": "0x8FB1E3fC51F3b789dED7557E680551d93Ea9d892",
   "baseTokenPriceFeed": "0x1692Bdd32F31b831caAc1b0c9fAF68613682813b",
-  "borrowMin": "1e6",
+  "borrowMin": "100e6",
   "pauseGuardian": "0x6C2fD6738e43ce0cc4A6f23a37e3a733516794A0",
   "storeFrontPriceFactor": 0.5,
   "targetReserves": "5000000e6",
@@ -20,8 +20,8 @@
   },
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": "0.000402083333333e15",
-    "baseBorrowSpeed": "0.000402083333333e15",
+    "baseSupplySpeed": "0e15",
+    "baseBorrowSpeed": "0e15",
     "baseMinForRewards": "10000e6"
   },
   "assets": {

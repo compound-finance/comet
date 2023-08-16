@@ -7,8 +7,8 @@ import { impersonateAddress } from '../../plugins/scenario/utils';
 import hreForBase from '../../plugins/scenario/utils/hreForBase';
 
 // TODO: Don't depend on scenario's hreForBase
-function getForkEnv(env: HardhatRuntimeEnvironment): HardhatRuntimeEnvironment {
-  const base = env.config.scenario.bases.find(b => b.name == env.network.name);
+function getForkEnv(env: HardhatRuntimeEnvironment, deployment: string): HardhatRuntimeEnvironment {
+  const base = env.config.scenario.bases.find(b => b.network == env.network.name && b.deployment == deployment);
   if (!base) {
     throw new Error(`No fork spec for ${env.network.name}`);
   }
@@ -65,7 +65,7 @@ task('deploy', 'Deploys market')
   .addFlag('overwrite', 'overwrites cache')
   .addParam('deployment', 'The deployment to deploy')
   .setAction(async ({ simulate, noDeploy, noVerify, noVerifyImpl, overwrite, deployment }, env) => {
-    const maybeForkEnv = simulate ? getForkEnv(env) : env;
+    const maybeForkEnv = simulate ? getForkEnv(env, deployment) : env;
     const network = env.network.name;
     const tag = `${network}/${deployment}`;
     const dm = new DeploymentManager(
@@ -174,7 +174,7 @@ task('migrate', 'Runs migration')
   .addFlag('overwrite', 'overwrites artifact if exists, fails otherwise')
   .setAction(
     async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, deployment, impersonate }, env) => {
-      const maybeForkEnv = simulate ? getForkEnv(env) : env;
+      const maybeForkEnv = simulate ? getForkEnv(env, deployment) : env;
       const network = env.network.name;
       const dm = new DeploymentManager(
         network,
