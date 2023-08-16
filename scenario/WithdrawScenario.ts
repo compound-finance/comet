@@ -1,6 +1,6 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, expectRevertCustom, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
+import { expectApproximately, expectRevertCustom, hasMinBorrowGreaterThanOne, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
 
 async function testWithdrawCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
@@ -318,6 +318,7 @@ scenario(
 scenario(
   'Comet#withdraw reverts if borrow is less than minimum borrow',
   {
+    filter: async (ctx) => await hasMinBorrowGreaterThanOne(ctx),
     cometBalances: {
       albert: { $base: 0, $asset0: 100 }
     }

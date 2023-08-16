@@ -8,5 +8,7 @@
     "arbitrumInbox": "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f",
     "arbitrumL1GatewayRouter": "0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef", 
     "CCTPTokenMessenger": "0xbd3fa81b58ba92a82136038b25adec7066af3155", 
-    "CCTPMessageTransmitter": "0x0a992d191deec32afe36203ad87d7d289a738f81"
+    "CCTPMessageTransmitter": "0x0a992d191deec32afe36203ad87d7d289a738f81",
+    "baseL1CrossDomainMessenger": "0x866E82a600A1414e583f7F13623F1aC5d58b0Afa",
+    "baseL1StandardBridge": "0x3154Cf16ccdb4C6d922629664174b904d80F2C35"
 }

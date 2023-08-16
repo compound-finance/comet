@@ -99,6 +99,10 @@ export const WHALES = {
     '0x88730d254A2f7e6AC8388c3198aFd694bA9f7fae', // COMP whale
     '0xe68ee8a12c611fd043fb05d65e1548dc1383f2b9'  // native USDC whale
   ],
+  base: [
+    '0x6D3c5a4a7aC4B1428368310E4EC3bB1350d01455', // USDbC whale
+    '0x07CFA5Df24fB17486AF0CBf6C910F24253a674D3'  // cbETH whale TODO: need to update this whale, not enough
+  ],
   'arbitrum-goerli': [
     '0x4984cbfa5b199e5920995883d345bbe14b005db7', // USDC whale
     '0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46', // LINK whale
