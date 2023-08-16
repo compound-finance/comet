@@ -18,7 +18,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const WETH = await deploymentManager.existing('WETH', '0x82af49447d8a07e3bd95bd0d56f35241523fbab1', 'arbitrum');
   const WBTC = await deploymentManager.existing('WBTC', '0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f', 'arbitrum');
 
-  // Import shared contracts from cUSDCv3
+  // Import shared contracts from the USDC.e market
   const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'arbitrum', 'usdc.e');
   const cometFactory = await deploymentManager.fromDep('cometFactory', 'arbitrum', 'usdc.e');
   const $configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'arbitrum', 'usdc.e');
