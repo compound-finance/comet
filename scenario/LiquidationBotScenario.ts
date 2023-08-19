@@ -1,4 +1,4 @@
-import { scenario } from './context/CometContext';
+import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { isValidAssetIndex, matchesDeployment, MAX_ASSETS, timeUntilUnderwater } from './utils';
 import { ethers, event, exp, wait } from '../test/helpers';
@@ -68,6 +68,26 @@ async function borrowCapacityForAsset(comet: CometInterface, actor: CometActor, 
   return collateralValue.mul(borrowCollateralFactor).mul(baseScale).div(factorScale).div(priceScale);
 }
 
+// Filters out assets on networks that cannot be liquidated by the open-source liquidation bot
+async function canBeLiquidatedByBot(ctx: CometContext, assetNum: number): Promise<boolean> {
+  const unsupportedAssets = {
+    // Reason: Most liquidity lives in STMATIC / MATIC pools, which the liquidation bot cannot use if the base asset is not MATIC
+    StMatic: {
+      network: 'polygon',
+      deployments: ['usdc']
+    }
+  };
+  const comet = await ctx.getComet();
+  const assetInfo = await comet.getAssetInfo(assetNum);
+  const asset = await ctx.getAssetByAddress(assetInfo.asset);
+  const symbol = await asset.token.symbol();
+  if (symbol in unsupportedAssets) {
+    if (unsupportedAssets[symbol].network === ctx.world.base.network
+      && unsupportedAssets[symbol].deployments.includes(ctx.world.base.deployment)) return false;
+  }
+  return true;
+}
+
 for (let i = 0; i < MAX_ASSETS; i++) {
   const baseTokenBalances = {
     mainnet: {
@@ -110,6 +130,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         ' == 20',
         // WMATIC
         ' == 300000',
+        // STMATIC
+        ' == 0',
       ],
     },
     arbitrum: {
@@ -132,7 +154,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]) && canBeLiquidatedByBot(ctx, i),
       tokenBalances: async (ctx) => (
         {
           $comet: {
@@ -282,6 +304,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         ' == 100',
         // WMATIC
         ' == 2500000',
+        // STMATIC
+        ' == 0',
       ]
     },
     arbitrum: {
@@ -326,6 +350,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         exp(20, 8),
         // WMATIC
         exp(5000, 18),
+        // STMATIC
+        exp(5, 18),
       ]
     },
     arbitrum: {
@@ -348,7 +374,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]) && canBeLiquidatedByBot(ctx, i),
       tokenBalances: async (ctx) => (
         {
           $comet: {
