@@ -764,21 +764,7 @@ contract Comet is CometMainInterface {
      * @dev Safe ERC20 transfer in, assumes no fee is charged and amount is transferred
      */
     function doTransferIn(address asset, address from, uint amount) internal {
-        IERC20NonStandard(asset).transferFrom(from, address(this), amount);
-        bool success;
-        assembly {
-            switch returndatasize()
-                case 0 {                      // This is a non-standard ERC-20
-                    success := not(0)          // set success to true
-                }
-                case 32 {                     // This is a compliant ERC-20
-                    returndatacopy(0, 0, 32)
-                    success := mload(0)        // Set `success = returndata` of override external call
-                }
-                default {                     // This is an excessively non-compliant ERC-20, revert.
-                    revert(0, 0)
-                }
-        }
+        bool success = _erc20OptionalReturnTransfer(asset, from, address(this), amount);
         if (!success) revert TransferInFailed();
     }
 
@@ -786,7 +772,25 @@ contract Comet is CometMainInterface {
      * @dev Safe ERC20 transfer out
      */
     function doTransferOut(address asset, address to, uint amount) internal {
-        IERC20NonStandard(asset).transfer(to, amount);
+        bool success = _erc20OptionalReturnTransfer(asset, address(this), to, amount);
+        if (!success) revert TransferOutFailed();
+    }
+
+    /**
+     * @dev A Helper functions that supports transfer functions on ERC20 (return bool) and ERC20NonStandard (no return) together, and will return bool indicating 
+     * if the transfer is successful or not.
+     * @param asset The token targeted by the call.
+     * @param from token sender
+     * @param to token receipient
+     * @param amount amount to send
+     */
+    function _erc20OptionalReturnTransfer(address asset, address from, address to, uint amount) private returns (bool) {
+        if (from == address(this)){
+            IERC20NonStandard(asset).transfer(to, amount);
+        } else {
+            IERC20NonStandard(asset).transferFrom(from, to, amount);
+        }
+
         bool success;
         assembly {
             switch returndatasize()
@@ -801,7 +805,7 @@ contract Comet is CometMainInterface {
                     revert(0, 0)
                 }
         }
-        if (!success) revert TransferOutFailed();
+        return success;
     }
 
     /**
