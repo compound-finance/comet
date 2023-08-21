@@ -188,20 +188,20 @@ export default migration('1686953660_configurate_and_ens', {
     } = await govDeploymentManager.getContracts();
 
     // 1. Verify state changes
-    // const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    // expect(stateChanges).to.deep.equal({
-    //   LINK: {
-    //     supplyCap: exp(5_000_000, 18)
-    //   },
-    //   WETH: {
-    //     supplyCap: exp(5_000, 18)
-    //   },
-    //   WBTC: {
-    //     supplyCap: exp(300, 8)
-    //   },
-    //   baseTrackingSupplySpeed: exp(34.74 / 86400, 15, 18),
-    //   baseTrackingBorrowSpeed: exp(34.74 / 86400, 15, 18),
-    // });
+    const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
+    expect(stateChanges).to.deep.equal({
+      LINK: {
+        supplyCap: exp(5_000_000, 18)
+      },
+      WETH: {
+        supplyCap: exp(5_000, 18)
+      },
+      WBTC: {
+        supplyCap: exp(300, 8)
+      },
+      baseTrackingSupplySpeed: exp(10 / 86400, 15, 18),
+      baseTrackingBorrowSpeed: exp(0 / 86400, 15, 18),
+    });
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(arbitrumCOMPAddress);
