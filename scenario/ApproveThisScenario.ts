@@ -17,7 +17,7 @@ scenario('Comet#approveThis > allows governor to authorize and rescind authoriza
   expect(await comet.isAllowed(comet.address, timelock.address)).to.be.false;
 });
 
-scenario.only('Comet#approveThis > allows governor to authorize and rescind authorization for non-Comet ERC20', {}, async ({ comet, timelock, actors }, context) => {
+scenario('Comet#approveThis > allows governor to authorize and rescind authorization for non-Comet ERC20', {}, async ({ comet, timelock, actors }, context) => {
   const { admin } = actors;
   const baseTokenAddress = await comet.baseToken();
   const baseToken = context.getAssetByAddress(baseTokenAddress);
