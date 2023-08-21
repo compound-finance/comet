@@ -105,10 +105,10 @@ export default migration('1692456764_add_stmatic_collateral', {
       asset: STMATIC_ADDRESS,
       priceFeed: STMATIC_PRICE_FEED_ADDRESS,
       decimals: 18,
-      borrowCollateralFactor: exp(0.55, 18),
-      liquidateCollateralFactor: exp(0.60, 18),
-      liquidationFactor: exp(0.93, 18),
-      supplyCap: exp(6_000_000, 18),
+      borrowCollateralFactor: exp(0.60, 18),
+      liquidateCollateralFactor: exp(0.65, 18),
+      liquidationFactor: exp(0.07, 18),
+      supplyCap: exp(8_000_000, 18)
     };
 
     // 1. Compare proposed asset config with Comet asset info
