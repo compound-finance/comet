@@ -190,8 +190,11 @@ export default migration('1686953660_configurate_and_ens', {
     // 1. Verify state changes
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     expect(stateChanges).to.deep.equal({
-      LINK: {
-        supplyCap: exp(5_000_000, 18)
+      ARB: {
+        supplyCap: exp(4_000_000, 18)
+      },
+      GMX: {
+        supplyCap: exp(5_0_000, 18)
       },
       WETH: {
         supplyCap: exp(5_000, 18)
@@ -200,7 +203,6 @@ export default migration('1686953660_configurate_and_ens', {
         supplyCap: exp(300, 8)
       },
       baseTrackingSupplySpeed: exp(10 / 86400, 15, 18),
-      baseTrackingBorrowSpeed: exp(0 / 86400, 15, 18),
     });
 
     const config = await rewards.rewardConfig(comet.address);
@@ -234,6 +236,10 @@ export default migration('1686953660_configurate_and_ens', {
         {
           baseSymbol: 'USDbC',
           cometAddress: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf'
+        }, 
+        {
+          baseSymbol: 'WETH',
+          cometAddress: '0x46e6b214b524310239732D51387075E0e70970bf'
         }
       ],
       137: [
