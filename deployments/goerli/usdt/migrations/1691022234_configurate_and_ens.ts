@@ -12,16 +12,17 @@ const ENSTextRecordKey = 'v3-official-markets';
 const USDCAmountToSeed = exp(5, 6);
 
 export default migration('1691022234_configurate_and_ens', {
-  prepare: async (deploymentManager: DeploymentManager) => {
-    return {};
+  async prepare(deploymentManager: DeploymentManager) {
+    const cometFactory = await deploymentManager.deploy('cometFactory', 'CometFactory.sol', [], true);
+    return { newFactoryAddress: cometFactory.address };
   },
 
-  enact: async (deploymentManager: DeploymentManager) => {
+  enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, { newFactoryAddress }) => {
     const trace = deploymentManager.tracer();
 
     // Import shared contracts from cUSDCv3
-    const cometFactory = await deploymentManager.fromDep('cometFactory', 'goerli', 'usdc');
 
+    const AllContracts = await deploymentManager.getContracts();
     const {
       governor,
       comet,
@@ -29,7 +30,7 @@ export default migration('1691022234_configurate_and_ens', {
       cometAdmin,
       rewards,
       USDT,
-    } = await deploymentManager.getContracts();
+    } = AllContracts;
 
     const configuration = await getConfigurationStruct(deploymentManager);
 
@@ -49,7 +50,7 @@ export default migration('1691022234_configurate_and_ens', {
       {
         contract: configurator,
         signature: 'setFactory(address,address)',
-        args: [comet.address, cometFactory.address],
+        args: [comet.address, newFactoryAddress],
       },
 
       // 2. Set the configuration in the Configurator
@@ -88,7 +89,7 @@ export default migration('1691022234_configurate_and_ens', {
       {
         contract: USDT,
         signature: "transfer(address,uint256)",
-        args: [comet.address, exp(5, 6)],
+        args: [comet.address, exp(20_000_000, 6)],
       },
     ];
 
@@ -135,7 +136,7 @@ export default migration('1691022234_configurate_and_ens', {
     expect(config.shouldUpscale).to.be.equal(true);
 
     // Verify the seeded USDT reaches Comet reserve
-    expect(await comet.getReserves()).to.be.equal(exp(5, 6));
+    expect(await comet.getReserves()).to.be.equal(exp(20_000_000, 6));
 
     // Verify the official markets are updated
     const ENSResolver = await deploymentManager.existing('ENSResolver', ENSResolverAddress, 'goerli');

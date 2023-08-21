@@ -20,7 +20,8 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 
   // Import shared contracts from cUSDCv3
   const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'goerli', 'usdc');
-  const cometFactory = await deploymentManager.fromDep('cometFactory', 'goerli', 'usdc');
+  // Purposely don't use the factory because Comet implementation changed.
+  // const cometFactory = await deploymentManager.fromDep('cometFactory', 'goerli', 'usdc');
   const $configuratorImpl = await deploymentManager.fromDep('configurator:implementation', 'goerli', 'usdc');
   const configurator = await deploymentManager.fromDep('configurator', 'goerli', 'usdc');
   const rewards = await deploymentManager.fromDep('rewards', 'goerli', 'usdc');
@@ -28,6 +29,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const fxRoot = await deploymentManager.fromDep('fxRoot', 'goerli', 'usdc');
   const bulker = await deploymentManager.fromDep('bulker', 'goerli', 'usdc');
   const timelock = await deploymentManager.fromDep('timelock', 'goerli', 'usdc');
+
 
   // Send some forked USDT to timelock
   await deploymentManager.idempotent(
@@ -44,5 +46,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
+
   return { ...deployed, bulker, fauceteer, fxRoot };
 }
