@@ -269,6 +269,12 @@ export async function isBulkerSupported(ctx: CometContext): Promise<boolean> {
   return bulker == null ? false : true;
 }
 
+export async function hasMinBorrowGreaterThanOne(ctx: CometContext): Promise<boolean> {
+  const comet = await ctx.getComet();
+  const minBorrow = (await comet.baseBorrowMin()).toBigInt();
+  return minBorrow > 1n;
+}
+
 type DeploymentCriterion = {
   network?: string;
   deployment?: string;
@@ -454,6 +460,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(createRetryableTicketCalldata);
       break;
     }
+    case 'base':
     case 'base-goerli': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes', 'uint32'],

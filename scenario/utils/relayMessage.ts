@@ -11,6 +11,7 @@ export default async function relayMessage(
 ) {
   const bridgeNetwork = bridgeDeploymentManager.network;
   switch (bridgeNetwork) {
+    case 'base':
     case 'base-goerli':
       await relayBaseMessage(
         governanceDeploymentManager,
