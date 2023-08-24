@@ -31,6 +31,7 @@ export async function isBridgeProposal(
       const { targets } = await governor.getActions(openProposal.id);
       return targets.some(t => bridgeAddresses.includes(t.toLowerCase()));
     }
+    case 'base':
     case 'base-goerli': {
       const governor = await governanceDeploymentManager.getContractOrThrow('governor');
       const baseL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow(
