@@ -4,16 +4,24 @@ import { exp, proposal } from '../../../../src/deploy'
 
 import { expect } from 'chai';
 
-interface Vars {};
+interface Vars { rETHPriceFeedAddress: string };
+
+// Gauntlet Initial Parameter Recommendations
+// https://www.comp.xyz/t/add-reth-as-collateral-to-wethv3-on-mainnet/4498/5
+const BORROW_COLLATERAL_FACTOR = exp(0.9, 18);
+const LIQUIDATE_COLLATERAL_FACTOR = exp(0.93, 18);
+const LIQUIDATION_FACTOR = exp(0.975, 18);
+const SUPPLY_CAP = exp(30000, 18);
 
 export default migration('1692063589_add_reth_collateral', {
+
   prepare: async (deploymentManager: DeploymentManager) => {
     // Deploy scaling price feed for rETH
     const rETHScalingPriceFeed = await deploymentManager.deploy(
       'rETH:priceFeed',
       'pricefeeds/ScalingPriceFeed.sol',
       [
-        '0x536218f9E9Eb48863970252233c8F271f554C2d0', // rETH / ETH price feed
+        '0x536218f9E9Eb48863970252233c8F271f554C2d0', // rETH / ETH Chainlink price feed
         8                                             // decimals
       ]
     );
@@ -23,6 +31,8 @@ export default migration('1692063589_add_reth_collateral', {
   enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, vars: Vars) => {
     const trace = deploymentManager.tracer();
 
+    // rETH token address
+    // https://etherscan.io/token/0xae78736cd615f374d3085123a210448e74fc6393
     const rETH = await deploymentManager.existing('rETH', '0xae78736Cd615f374D3085123A210448E74Fc6393');
     const rETHPricefeed = await deploymentManager.existing('rETH:priceFeed', vars.rETHPriceFeedAddress);
 
@@ -37,10 +47,10 @@ export default migration('1692063589_add_reth_collateral', {
       asset: rETH.address,
       priceFeed: rETHPricefeed.address,
       decimals: await rETH.decimals(),
-      borrowCollateralFactor: exp(0.9, 18),
-      liquidateCollateralFactor: exp(0.93, 18),
-      liquidationFactor: exp(0.975, 18),
-      supplyCap: exp(30000, 18),
+      borrowCollateralFactor: BORROW_COLLATERAL_FACTOR,
+      liquidateCollateralFactor: LIQUIDATE_COLLATERAL_FACTOR,
+      liquidationFactor: LIQUIDATION_FACTOR,
+      supplyCap: SUPPLY_CAP,
     };
 
     const actions = [
@@ -82,15 +92,15 @@ export default migration('1692063589_add_reth_collateral', {
       'rETH:priceFeed': rETHPriceFeed
     } = await deploymentManager.getContracts();
 
-    const rethInfo = await comet.getAssetInfoByAddress(rETH.address);
+    const rETHInfo = await comet.getAssetInfoByAddress(rETH.address);
 
     // check pricefeed
-    expect(await rethInfo.priceFeed).to.be.eq(rETHPriceFeed.address);
+    expect(await rETHInfo.priceFeed).to.be.eq(rETHPriceFeed.address);
     expect(await rETHPriceFeed.decimals()).to.be.eq(8);
     // check config
-    expect(await rethInfo.borrowCollateralFactor).to.be.eq(exp(0.9, 18));
-    expect(await rethInfo.liquidateCollateralFactor).to.be.eq(exp(0.93, 18));
-    expect(await rethInfo.liquidationFactor).to.be.eq(exp(0.975, 18));
-    expect(await rethInfo.supplyCap).to.be.eq(exp(30_000, 18));
+    expect(await rETHInfo.borrowCollateralFactor).to.be.eq(BORROW_COLLATERAL_FACTOR);
+    expect(await rETHInfo.liquidateCollateralFactor).to.be.eq(LIQUIDATE_COLLATERAL_FACTOR);
+    expect(await rETHInfo.liquidationFactor).to.be.eq(LIQUIDATION_FACTOR);
+    expect(await rETHInfo.supplyCap).to.be.eq(SUPPLY_CAP);
   },
 });
