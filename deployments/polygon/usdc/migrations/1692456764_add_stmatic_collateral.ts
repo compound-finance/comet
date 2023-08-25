@@ -22,13 +22,13 @@ export default migration('1692456764_add_stmatic_collateral', {
     const trace = deploymentManager.tracer();
 
     const stmatic = await deploymentManager.existing(
-      "STMATIC",
+      "stMATIC",
       STMATIC_ADDRESS,
       "polygon",
       "contracts/ERC20.sol:ERC20"
     );
     const stmaticPricefeed = await deploymentManager.existing(
-      "STMATIC:priceFeed",
+      "stMATIC:priceFeed",
       STMATIC_PRICE_FEED_ADDRESS,
       "polygon"
     );

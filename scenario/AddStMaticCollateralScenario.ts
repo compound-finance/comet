@@ -30,13 +30,13 @@ scenario(
     const { albert } = actors;
     const dm = context.world.deploymentManager;
     const stmatic = await dm.existing(
-      'STMATIC',
+      'stMATIC',
       STMATIC_ADDRESS,
       context.world.base.network,
       'contracts/ERC20.sol:ERC20'
     );
     const stmaticPricefeed = await dm.existing(
-      'STMATIC:priceFeed',
+      'stMATIC:priceFeed',
       STMATIC_PRICE_FEED_ADDRESS,
       context.world.base.network
     );
