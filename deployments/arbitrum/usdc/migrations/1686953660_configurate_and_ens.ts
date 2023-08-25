@@ -198,7 +198,7 @@ export default migration('1686953660_configurate_and_ens', {
         supplyCap: exp(4_000_000, 18)
       },
       GMX: {
-        supplyCap: exp(5_0_000, 18)
+        supplyCap: exp(50_000, 18)
       },
       WETH: {
         supplyCap: exp(5_000, 18)
