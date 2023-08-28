@@ -779,10 +779,10 @@ contract Comet is CometMainInterface {
     /**
      * @dev A Helper functions that supports transfer functions on ERC20 (return bool) and ERC20NonStandard (no return) together, and will return bool indicating 
      * if the transfer is successful or not.
-     * @param asset The token targeted by the call.
-     * @param from token sender
-     * @param to token receipient
-     * @param amount amount to send
+     * @param asset The ERC-20 token to transfer
+     * @param from The address to transfer from
+     * @param from The address to transfer from
+     * @param amount The amount of the token to transfer
      */
     function safeTransfer(address asset, address from, address to, uint amount) private returns (bool) {
         if (from == address(this)){
