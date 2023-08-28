@@ -764,7 +764,7 @@ contract Comet is CometMainInterface {
      * @dev Safe ERC20 transfer in, assumes no fee is charged and amount is transferred
      */
     function doTransferIn(address asset, address from, uint amount) internal {
-        bool success = _erc20OptionalReturnTransfer(asset, from, address(this), amount);
+        bool success = safeTransfer(asset, from, address(this), amount);
         if (!success) revert TransferInFailed();
     }
 
@@ -772,7 +772,7 @@ contract Comet is CometMainInterface {
      * @dev Safe ERC20 transfer out
      */
     function doTransferOut(address asset, address to, uint amount) internal {
-        bool success = _erc20OptionalReturnTransfer(asset, address(this), to, amount);
+        bool success = safeTransfer(asset, address(this), to, amount);
         if (!success) revert TransferOutFailed();
     }
 
@@ -784,7 +784,7 @@ contract Comet is CometMainInterface {
      * @param to token receipient
      * @param amount amount to send
      */
-    function _erc20OptionalReturnTransfer(address asset, address from, address to, uint amount) private returns (bool) {
+    function safeTransfer(address asset, address from, address to, uint amount) private returns (bool) {
         if (from == address(this)){
             IERC20NonStandard(asset).transfer(to, amount);
         } else {
