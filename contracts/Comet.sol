@@ -779,6 +779,8 @@ contract Comet is CometMainInterface {
     /**
      * @dev Helper function that properly supports `transfer` and `transferFrom` for non-standard ERC-20 tokens, returning a bool of the transfer's success
      * if the transfer is successful or not.
+     * @dev Note: This does not check that the amount transferred in is actually equals to the amount specified (e.g. fee tokens will not revert)
+     * @dev Note: This wrapper safely handles non-standard ERC-20 tokens that do not return a value. See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      * @param asset The ERC-20 token to transfer
      * @param from The address to transfer from
      * @param from The address to transfer from
