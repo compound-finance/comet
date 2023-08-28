@@ -1339,7 +1339,7 @@ contract Comet is CometMainInterface {
         int104 principal = userBasic[account].principal;
         return principal < 0 ? presentValueBorrow(baseBorrowIndex_, unsigned104(-principal)) : 0;
     }
-     
+
     /**
      * @notice Fallback to calling the extension delegate for everything else
      */
