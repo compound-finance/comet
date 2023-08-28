@@ -777,7 +777,7 @@ contract Comet is CometMainInterface {
     }
 
     /**
-     * @dev A Helper functions that supports transfer functions on ERC20 (return bool) and ERC20NonStandard (no return) together, and will return bool indicating 
+     * @dev Helper function that properly supports `transfer` and `transferFrom` for non-standard ERC-20 tokens, returning a bool of the transfer's success
      * if the transfer is successful or not.
      * @param asset The ERC-20 token to transfer
      * @param from The address to transfer from
