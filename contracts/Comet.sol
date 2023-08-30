@@ -783,7 +783,6 @@ contract Comet is CometMainInterface {
      * @dev Note: This wrapper safely handles non-standard ERC-20 tokens that do not return a value. See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      * @param asset The ERC-20 token to transfer
      * @param from The address to transfer from
-     * @param from The address to transfer from
      * @param amount The amount of the token to transfer
      */
     function safeTransfer(address asset, address from, address to, uint amount) private returns (bool) {
@@ -1295,6 +1294,7 @@ contract Comet is CometMainInterface {
      */
     function approveThis(address manager, address asset, uint amount) override external {
         if (msg.sender != governor) revert Unauthorized();
+        
         IERC20NonStandard(asset).approve(manager, amount);
     }
 
