@@ -39,14 +39,14 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
 /* note: boolean environment variables are imported as strings */
 const {
   COINMARKETCAP_API_KEY,
-  ETH_PK = '',
+  ETH_PK,
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
   POLYGONSCAN_KEY,
   ARBISCAN_KEY,
   LINEASCAN_KEY,
   INFURA_KEY,
-  MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
+  MNEMONIC = '',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
@@ -70,11 +70,11 @@ export function requireEnv(varName, msg?: string): string {
 // required environment variables
 [
   'ETHERSCAN_KEY',
-  'SNOWTRACE_KEY',
+  // 'SNOWTRACE_KEY',
   'INFURA_KEY',
-  'POLYGONSCAN_KEY',
-  'ARBISCAN_KEY',
-  'LINEASCAN_KEY'
+  // 'POLYGONSCAN_KEY',
+  // 'ARBISCAN_KEY',
+  // 'LINEASCAN_KEY'
 ].map(v => requireEnv(v));
 
 // Networks
@@ -131,6 +131,11 @@ const networkConfigs: NetworkConfig[] = [
     chainId: 59140,
     url: `https://linea-goerli.infura.io/v3/${INFURA_KEY}`,
   },
+  {
+    network: 'scroll-goerli',
+    chainId: 534353,
+    url: "https://alpha-rpc.scroll.io/l2",
+  }
 ];
 
 function getDefaultProviderURL(network: string) {
@@ -184,9 +189,9 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: 1337,
       loggingEnabled: !!process.env['LOGGING'],
-      gas: 12000000,
+      gas: 120000000,
       gasPrice: 'auto',
-      blockGasLimit: 12000000,
+      blockGasLimit: 120000000,
       accounts: ETH_PK ?
         [...deriveAccounts(ETH_PK)].map(privateKey => ({ privateKey, balance: (10n ** 36n).toString() }))
         : { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
@@ -219,6 +224,8 @@ const config: HardhatUserConfig = {
       'base-goerli': ETHERSCAN_KEY,
       // Linea
       'linea-goerli': LINEASCAN_KEY,
+      // Scroll
+      'scroll-goerli': ETHERSCAN_KEY
     },
     customChains: [
       {
