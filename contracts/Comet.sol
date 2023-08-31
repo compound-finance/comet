@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import "./CometMainInterface.sol";
-import "./ERC20.sol";
+import "./IERC20NonStandard.sol";
 import "./IPriceFeed.sol";
 
 /**
@@ -139,7 +139,7 @@ contract Comet is CometMainInterface {
      **/
     constructor(Configuration memory config) {
         // Sanity checks
-        uint8 decimals_ = ERC20(config.baseToken).decimals();
+        uint8 decimals_ = IERC20NonStandard(config.baseToken).decimals();
         if (decimals_ > MAX_BASE_DECIMALS) revert BadDecimals();
         if (config.storeFrontPriceFactor > FACTOR_SCALE) revert BadDiscount();
         if (config.assetConfigs.length > MAX_ASSETS) revert TooManyAssets();
@@ -241,7 +241,7 @@ contract Comet is CometMainInterface {
 
         // Sanity check price feed and asset decimals
         if (IPriceFeed(priceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
-        if (ERC20(asset).decimals() != decimals_) revert BadDecimals();
+        if (IERC20NonStandard(asset).decimals() != decimals_) revert BadDecimals();
 
         // Ensure collateral factors are within range
         if (assetConfig.borrowCollateralFactor >= assetConfig.liquidateCollateralFactor) revert BorrowCFTooLarge();
@@ -482,7 +482,7 @@ contract Comet is CometMainInterface {
      * @param asset The collateral asset
      */
     function getCollateralReserves(address asset) override public view returns (uint) {
-        return ERC20(asset).balanceOf(address(this)) - totalsCollateral[asset].totalSupplyAsset;
+        return IERC20NonStandard(asset).balanceOf(address(this)) - totalsCollateral[asset].totalSupplyAsset;
     }
 
     /**
@@ -490,7 +490,7 @@ contract Comet is CometMainInterface {
      */
     function getReserves() override public view returns (int) {
         (uint64 baseSupplyIndex_, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
-        uint balance = ERC20(baseToken).balanceOf(address(this));
+        uint balance = IERC20NonStandard(baseToken).balanceOf(address(this));
         uint totalSupply_ = presentValueSupply(baseSupplyIndex_, totalSupplyBase);
         uint totalBorrow_ = presentValueBorrow(baseBorrowIndex_, totalBorrowBase);
         return signed256(balance) - signed256(totalSupply_) + signed256(totalBorrow_);
@@ -760,18 +760,49 @@ contract Comet is CometMainInterface {
     }
 
     /**
-     * @dev Safe ERC20 transfer in, assumes no fee is charged and amount is transferred
+     * @dev Safe ERC20 transfer in, if fee is charged the final amount transferred to comet will be returned
+     * @dev Note: Safely handles non-standard ERC-20 tokens that do not return a value. See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      */
-    function doTransferIn(address asset, address from, uint amount) internal {
-        bool success = ERC20(asset).transferFrom(from, address(this), amount);
+    function doTransferIn(address asset, address from, uint amount) internal returns (uint) {
+        uint256 preTransferBalance = IERC20NonStandard(asset).balanceOf(address(this));
+        IERC20NonStandard(asset).transferFrom(from, address(this), amount);
+        bool success;
+        assembly {
+            switch returndatasize()
+                case 0 {                       // This is a non-standard ERC-20
+                    success := not(0)          // set success to true
+                }
+                case 32 {                      // This is a compliant ERC-20
+                    returndatacopy(0, 0, 32)
+                    success := mload(0)        // Set `success = returndata` of override external call
+                }
+                default {                      // This is an excessively non-compliant ERC-20, revert.
+                    revert(0, 0)
+                }
+        }
         if (!success) revert TransferInFailed();
+        return IERC20NonStandard(asset).balanceOf(address(this)) - preTransferBalance;
     }
 
     /**
      * @dev Safe ERC20 transfer out
      */
     function doTransferOut(address asset, address to, uint amount) internal {
-        bool success = ERC20(asset).transfer(to, amount);
+        IERC20NonStandard(asset).transfer(to, amount);
+        bool success;
+        assembly {
+            switch returndatasize()
+                case 0 {                       // This is a non-standard ERC-20
+                    success := not(0)          // set success to true
+                }
+                case 32 {                      // This is a compliant ERC-20
+                    returndatacopy(0, 0, 32)
+                    success := mload(0)        // Set `success = returndata` of override external call
+                }
+                default {                      // This is an excessively non-compliant ERC-20, revert.
+                    revert(0, 0)
+                }
+        }
         if (!success) revert TransferOutFailed();
     }
 
@@ -827,7 +858,7 @@ contract Comet is CometMainInterface {
      * @dev Supply an amount of base asset from `from` to dst
      */
     function supplyBase(address from, address dst, uint256 amount) internal {
-        doTransferIn(baseToken, from, amount);
+        amount = doTransferIn(baseToken, from, amount);
 
         accrueInternal();
 
@@ -854,7 +885,7 @@ contract Comet is CometMainInterface {
      * @dev Supply an amount of collateral asset from `from` to dst
      */
     function supplyCollateral(address from, address dst, address asset, uint128 amount) internal {
-        doTransferIn(asset, from, amount);
+        amount = safe128(doTransferIn(asset, from, amount));
 
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         TotalsCollateral memory totals = totalsCollateral[asset];
@@ -1199,7 +1230,7 @@ contract Comet is CometMainInterface {
         if (reserves >= 0 && uint(reserves) >= targetReserves) revert NotForSale();
 
         // Note: Re-entrancy can skip the reserves check above on a second buyCollateral call.
-        doTransferIn(baseToken, msg.sender, baseAmount);
+        baseAmount = doTransferIn(baseToken, msg.sender, baseAmount);
 
         uint collateralAmount = quoteCollateral(asset, baseAmount);
         if (collateralAmount < minAmount) revert TooMuchSlippage();
@@ -1261,7 +1292,7 @@ contract Comet is CometMainInterface {
     function approveThis(address manager, address asset, uint amount) override external {
         if (msg.sender != governor) revert Unauthorized();
 
-        ERC20(asset).approve(manager, amount);
+        IERC20NonStandard(asset).approve(manager, amount);
     }
 
     /**
