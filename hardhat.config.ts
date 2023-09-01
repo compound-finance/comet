@@ -262,6 +262,14 @@ const config: HardhatUserConfig = {
           apiURL: 'https://api-goerli.lineascan.build/api',
           browserURL: 'https://goerli.lineascan.build/'
         }
+      },
+      {
+        network: 'scroll-goerli',
+        chainId: 534353,
+        urls: {
+          apiURL: 'https://blockscout.scroll.io/api',
+          browserURL: 'https://blockscout.scroll.io/'
+        }
       }
     ]
   },
