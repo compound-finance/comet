@@ -1,4 +1,4 @@
-#依存関係（継承）のまとめ
+# 依存関係（継承）のまとめ
 ## 1.cometの主なコントラクト(その1)
 ```mermaid
 graph TD;
@@ -23,7 +23,7 @@ graph TD;
     4-->ConfiguratorStorage;
     ConfiguratorStorage-->CometConfiguration;
 ```
-##1.cometの主なコントラクト(その2)
+## 1.cometの主なコントラクト(その2)
 ```mermaid
 graph TD;
     1(CometProxyAdmin)
@@ -32,7 +32,7 @@ graph TD;
     1-->ProxyAdmin;
     2-->TransparentUpgradeableProxy;
 ```
-##2.精算・リワードに関するコントラクト
+## 2.精算・リワードに関するコントラクト
 ```mermaid
 graph TD;
 0(CometRewards)
@@ -43,7 +43,7 @@ graph TD;
 1--->PeripheryPayments;
 ```
 
-##3.プライスフィードに関するコントラクト
+## 3.プライスフィードに関するコントラクト
 ```mermaid
 graph TD;
     MultiplicativePriceFeed--->IPriceFeed;
@@ -62,7 +62,7 @@ graph TD;
 ```
 
 
-##4.トークンに関するコントラクト
+## 4.トークンに関するコントラクト
 ```mermaid
 graph TD;
     subgraph 実装するトークン次第で必要なもの
@@ -77,7 +77,7 @@ graph TD;
     IERC20NonStandard;
 
 ```
-##5.補助的なコントラクト
+## 5.補助的なコントラクト
 ```mermaid
 graph TD;
     1(MainnetBulker)
@@ -90,7 +90,7 @@ graph TD;
     SweepableBridgeReceiver-->BaseBridgeReceiver;
     end
 ```
-##6.ガバナンスに関するコントラクト
+## 6.ガバナンスに関するコントラクト
 ```mermaid
 graph TD;
     subgraph 不要と考えられるもの

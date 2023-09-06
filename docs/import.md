@@ -1,4 +1,4 @@
-##依存関係（インポート）のまとめ
+## 依存関係（インポート）のまとめ
 ```mermaid
 graph TD;
     Comet--->CometMainInterface;
