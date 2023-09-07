@@ -12,6 +12,9 @@ export default {
       }
     }
   },
+  'l2MessageService:implementation': {
+    artifact: 'contracts/bridges/scroll/IMessageService.sol:IMessageService'
+  },
   l2TokenBridge: {
     delegates: {
       field: {

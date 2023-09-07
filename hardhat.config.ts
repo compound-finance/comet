@@ -30,6 +30,7 @@ import arbitrumGoerliNativeUsdcRelationConfigMap from './deployments/arbitrum-go
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
+import scrollGoerliRelationConfigMap from './deployments/scroll-goerli/usdc/relations';
 
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
@@ -300,7 +301,7 @@ const config: HardhatUserConfig = {
         usdc: arbitrumRelationConfigMap
       },
       'arbitrum-goerli': {
-        'usdc.e': arbitrumBridgedUsdcGoerliRelationConfigMap, 
+        'usdc.e': arbitrumBridgedUsdcGoerliRelationConfigMap,
         usdc: arbitrumGoerliNativeUsdcRelationConfigMap
       },
       'base-goerli': {
@@ -309,6 +310,9 @@ const config: HardhatUserConfig = {
       },
       'linea-goerli': {
         usdc: lineaGoerliRelationConfigMap
+      },
+      'scroll-goerli': {
+        usdc: scrollGoerliRelationConfigMap
       }
     },
   },
@@ -391,6 +395,12 @@ const config: HardhatUserConfig = {
       {
         name: 'linea-goerli',
         network: 'linea-goerli',
+        deployment: 'usdc',
+        auxiliaryBase: 'goerli'
+      },
+      {
+        name: 'scroll-goerli',
+        network: 'scroll-goerli',
         deployment: 'usdc',
         auxiliaryBase: 'goerli'
       }
