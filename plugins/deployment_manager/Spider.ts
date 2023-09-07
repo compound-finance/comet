@@ -94,6 +94,7 @@ async function crawl(
   contracts: ContractMap,
   trace: TraceFn
 ): Promise<Alias> {
+  try{
   const { aliasRender, address, path } = node;
   const { template: aliasTemplate } = aliasRender;
   trace(`Crawling ${address}`, aliasRender);
@@ -234,6 +235,9 @@ async function crawl(
       return maybeStore(alias, address, aliases), alias;
     }
   }
+} catch(e) {
+  trace(`error crawling ${node.address}, skipping this contract: ${e}`)
+}
 }
 
 export async function spider(
