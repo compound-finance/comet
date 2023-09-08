@@ -159,7 +159,7 @@ scenario(
 
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(1000n * scale);
 
-    // Albert supplies 100 units of base to Comet
+    // Albert supplies 1000 units of base to Comet
     await baseAsset.approve(albert, comet.address);
     const txn = await albert.supplyAsset({ asset: baseAsset.address, amount: 1000n * scale });
 
