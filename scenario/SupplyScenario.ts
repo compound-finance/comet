@@ -235,9 +235,6 @@ scenario(
     await baseAsset.approve(albert, comet.address);
     const txn = await albert.supplyAsset({ asset: baseAsset.address, amount: 1000n * scale });
 
-    const alberBal = await comet.balanceOf(albert.address);
-    const alberBorrow = await comet.borrowBalanceOf(albert.address);
-
     // XXX all these timings are crazy
     // Expect to have -1000000, due to token fee, alber only repay 999 USDT instead of 1000 USDT, thus alber still owe 1 USDT which is 1000000
     expectApproximately(await albert.getCometBaseBalance(), -1000000n, getInterest(1000n * scale, borrowRate, 4n) + 2n);
