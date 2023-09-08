@@ -302,7 +302,7 @@ scenario(
     await baseAsset.approve(albert, comet.address);
     await albert.allow(betty, true);
 
-    // Betty supplies 100 units of base from Albert
+    // Betty supplies 1000 units of base from Albert
     const txn = await betty.supplyAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: 1000n * scale });
 
     const baseIndexScale = (await comet.baseIndexScale()).toBigInt();
