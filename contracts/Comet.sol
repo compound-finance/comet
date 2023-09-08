@@ -760,7 +760,7 @@ contract Comet is CometMainInterface {
     }
 
     /**
-     * @dev Safe ERC20 transfer in, if fee is charged the final amount transferred to comet will be returned
+     * @dev Safe ERC20 transfer in and returns the final amount transferred (taking into account any fees)
      * @dev Note: Safely handles non-standard ERC-20 tokens that do not return a value. See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      */
     function doTransferIn(address asset, address from, uint amount) internal returns (uint) {
