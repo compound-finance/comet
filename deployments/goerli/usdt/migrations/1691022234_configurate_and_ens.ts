@@ -9,6 +9,7 @@ const ENSResolverAddress = '0x19c2d5D0f035563344dBB7bE5fD09c8dad62b001';
 const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
+const USDCAmountToSeed = exp(5, 6);
 
 export default migration('1691022234_configurate_and_ens', {
   async prepare(deploymentManager: DeploymentManager) {
