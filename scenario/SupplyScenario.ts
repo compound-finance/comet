@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import { expectApproximately, expectBase, expectRevertCustom, expectRevertMatches, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS, UINT256_MAX } from './utils';
 import { ContractReceipt } from 'ethers';
 import { matchesDeployment } from './utils';
+import { exp } from '../test/helpers';
 
 // XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
 // of testing them conditionally
@@ -148,7 +149,7 @@ scenario(
   async ({ comet, actors }, context, world) => {
     // Set fees for USDT for testing
     const USDTAdmin = await world.deploymentManager.getSigner();
-    const USDT = await world.deploymentManager.existing('USDT', await comet.baseToken(), 'goerli');
+    const USDT = await world.deploymentManager.existing('USDT', await comet.baseToken(), world.base.network);
     // 10 basis points, and max 10 USDT
     await USDT.connect(USDTAdmin).setParams(10, 10);
 
@@ -218,7 +219,7 @@ scenario(
   async ({ comet, actors }, context, world) => {
     // Set fees for USDT for testing
     const USDTAdmin = await world.deploymentManager.getSigner();
-    const USDT = await world.deploymentManager.existing('USDT', await comet.baseToken(), 'goerli');
+    const USDT = await world.deploymentManager.existing('USDT', await comet.baseToken(), world.base.network);
     // 10 basis points, and max 10 USDT
     await USDT.connect(USDTAdmin).setParams(10, 10);
 
@@ -237,7 +238,46 @@ scenario(
 
     // XXX all these timings are crazy
     // Expect to have -1000000, due to token fee, alber only repay 999 USDT instead of 1000 USDT, thus alber still owe 1 USDT which is 1000000
-    expectApproximately(await albert.getCometBaseBalance(), -1000000n, getInterest(1000n * scale, borrowRate, 4n) + 2n);
+    expectApproximately(await albert.getCometBaseBalance(), -1n * exp(1, 6), getInterest(1000n * scale, borrowRate, 4n) + 2n);
+
+    return txn; // return txn to measure gas
+  }
+);
+
+scenario(
+  'Comet#supply > repay all borrow with token fees',
+  {
+    tokenBalances: {
+      albert: { $base: '==1000' }
+    },
+    cometBalances: {
+      albert: { $base: -999 } // in units of asset, not wei
+    },
+    filter: async (ctx) => matchesDeployment(ctx, [{ deployment: 'usdt' }]),
+  },
+  async ({ comet, actors }, context, world) => {
+    // Set fees for USDT for testing
+    const USDTAdmin = await world.deploymentManager.getSigner();
+    const USDT = await world.deploymentManager.existing('USDT', await comet.baseToken(), world.base.network);
+    // 10 basis points, and max 10 USDT
+    await USDT.connect(USDTAdmin).setParams(10, 10);
+
+    const { albert } = actors;
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = context.getAssetByAddress(baseAssetAddress);
+    const scale = (await comet.baseScale()).toBigInt();
+    const utilization = await comet.getUtilization();
+    const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
+
+    expectApproximately(await albert.getCometBaseBalance(), -999n * scale, getInterest(999n * scale, borrowRate, 1n) + 1n);
+
+    // Albert repays 1000 units of base borrow
+    await baseAsset.approve(albert, comet.address);
+    const txn = await albert.supplyAsset({ asset: baseAsset.address, amount: 1000n * scale });
+
+    // XXX all these timings are crazy
+    // albert supply 1000 USDT to repay, 1000USDT * (99.9%) = 999 USDT, thus albert should have just enough to repay his debt of 999 USDT.
+    expectApproximately(await albert.getCometBaseBalance(), 0n, getInterest(1000n * scale, borrowRate, 4n) + 2n);
 
     return txn; // return txn to measure gas
   }
@@ -287,7 +327,7 @@ scenario(
   async ({ comet, actors }, context, world) => {
     // Set fees for USDT for testing
     const USDTAdmin = await world.deploymentManager.getSigner();
-    const USDT = await world.deploymentManager.existing('USDT', await comet.baseToken(), 'goerli');
+    const USDT = await world.deploymentManager.existing('USDT', await comet.baseToken(), world.base.network);
     // 10 basis points, and max 10 USDT
     await USDT.connect(USDTAdmin).setParams(10, 10);
 
@@ -359,7 +399,7 @@ scenario(
   async ({ comet, actors }, context, world) => {
     // Set fees for USDT for testing
     const USDTAdmin = await world.deploymentManager.getSigner();
-    const USDT = await world.deploymentManager.existing('USDT', await comet.baseToken(), 'goerli');
+    const USDT = await world.deploymentManager.existing('USDT', await comet.baseToken(), world.base.network);
     // 10 basis points, and max 10 USDT
     await USDT.connect(USDTAdmin).setParams(10, 10);
 
@@ -377,7 +417,7 @@ scenario(
     expect(await baseAsset.balanceOf(albert.address)).to.be.lessThan(10n * scale);
     // This is expected as default behavior is setting amount to be betty borrowBalance, 
     // But when supplying asset, toke fees takes 0.1% away, which betty will still owe 1 USDT
-    expectBase(await betty.getCometBaseBalance(), -1000000n);
+    expectBase(await betty.getCometBaseBalance(), -1n * exp(1, 6));
 
     return txn; // return txn to measure gas
   }
