@@ -231,7 +231,7 @@ scenario(
 
     expectApproximately(await albert.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 1n) + 1n);
 
-    // Albert repays 100 units of base borrow
+    // Albert repays 1000 units of base borrow
     await baseAsset.approve(albert, comet.address);
     const txn = await albert.supplyAsset({ asset: baseAsset.address, amount: 1000n * scale });
 
