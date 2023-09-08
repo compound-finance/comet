@@ -13,7 +13,7 @@ export default {
     }
   },
   'l2MessageService:implementation': {
-    artifact: 'contracts/bridges/scroll/IMessageService.sol:IMessageService'
+    artifact: 'contracts/bridges/scroll/IScrollMessenger.sol:IScrollMessenger'
   },
   l2TokenBridge: {
     delegates: {
