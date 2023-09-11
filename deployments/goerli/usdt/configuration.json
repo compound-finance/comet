@@ -3,7 +3,7 @@
   "symbol": "cUSDTv3",
   "baseToken": "USDT",
   "baseTokenPriceFeed": "0xAb5c49580294Aff77670F839ea425f5b78ab3Ae7",
-  "borrowMin": "10e6",
+  "borrowMin": "1e0",
   "governor": "0x8Fa336EB4bF58Cfc508dEA1B0aeC7336f55B1399",
   "pauseGuardian": "0x8Fa336EB4bF58Cfc508dEA1B0aeC7336f55B1399",
   "storeFrontPriceFactor": 0.5,
@@ -21,9 +21,9 @@
   "rewardToken": "COMP",
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": "0.000402083333333e15",
-    "baseBorrowSpeed": "0.000402083333333e15",
-    "baseMinForRewards": "10000e6"
+    "baseSupplySpeed": "0",
+    "baseBorrowSpeed": "0",
+    "baseMinForRewards": "500e6"
   },
   "assets": {
     "COMP": {
