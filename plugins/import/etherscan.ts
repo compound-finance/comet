@@ -82,7 +82,6 @@ export function getEtherscanApiKey(network: string): string {
 }
 
 export async function get(url, data) {
-  console.log(data)
   const res = (await axios.get(url, { params: data }))['data'];
   return res;
 }
