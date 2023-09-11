@@ -19,8 +19,8 @@ export default async function deploy(
     'scroll-goerli'
   );
 
-  const l2MessageService = await deploymentManager.existing(
-    'l2MessageService',
+  const l2Messenger = await deploymentManager.existing(
+    'l2Messenger',
     '0xb75d7e84517e1504C151B270255B087Fd746D34C',
     'scroll-goerli'
   );
@@ -41,7 +41,7 @@ export default async function deploy(
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
     'bridges/scroll/ScrollBridgeReceiver.sol',
-    [l2MessageService.address]
+    [l2Messenger.address]
   );
 
   // Deploy Local Timelock
@@ -82,7 +82,7 @@ export default async function deploy(
   return {
     ...deployed,
     bridgeReceiver,
-    l2MessageService,
+    l2Messenger,
     l2TokenBridge,
     bulker,
     fauceteer,
