@@ -504,6 +504,20 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageCalldata);
       break;
     }
+    case 'scroll-goerli': {
+      const sendMessageCalldata = utils.defaultAbiCoder.encode(
+        ['address', 'uint256', 'bytes'],
+        [bridgeReceiver.address, 0, l2ProposalData]
+      );
+      const scrollMessenger = await govDeploymentManager.getContractOrThrow(
+        'scrollMessenger'
+      );
+      targets.push(scrollMessenger.address);
+      values.push(0);
+      signatures.push('sendMessage(address,uint256,bytes)');
+      calldata.push(sendMessageCalldata);
+      break;
+    }
     default:
       throw new Error(
         `No cross-chain proposal constructor implementation for ${govDeploymentManager.network} -> ${bridgeNetwork}`
