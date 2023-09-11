@@ -30,6 +30,8 @@ import {
   Configurator__factory,
   CometHarnessInterface,
   CometInterface,
+  NonStandardFaucetFeeToken,
+  NonStandardFaucetFeeToken__factory,
 } from '../build/types';
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
@@ -58,7 +60,7 @@ export type ProtocolOpts = {
       supplyCap?: Numeric;
       initialPrice?: number;
       priceFeedDecimals?: number;
-      factory?: FaucetToken__factory | EvilToken__factory | FaucetWETH__factory;
+      factory?: FaucetToken__factory | EvilToken__factory | FaucetWETH__factory | NonStandardFaucetFeeToken__factory;
     };
   };
   name?: string;
@@ -96,7 +98,7 @@ export type Protocol = {
   reward: string;
   comet: Comet;
   tokens: {
-    [symbol: string]: FaucetToken;
+    [symbol: string]: FaucetToken | NonStandardFaucetFeeToken;
   };
   unsupportedToken: FaucetToken;
   priceFeeds: {
