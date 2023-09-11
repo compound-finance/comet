@@ -27,6 +27,8 @@ import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 import arbitrumRelationConfigMap from './deployments/arbitrum/usdc/relations';
 import arbitrumBridgedUsdcGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc.e/relations';
 import arbitrumGoerliNativeUsdcRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
+import baseUsdbcRelationConfigMap from './deployments/base/usdbc/relations';
+import baseWethRelationConfigMap from './deployments/base/weth/relations';
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
@@ -45,9 +47,11 @@ const {
   SNOWTRACE_KEY,
   POLYGONSCAN_KEY,
   ARBISCAN_KEY,
+  BASESCAN_KEY,
   LINEASCAN_KEY,
   INFURA_KEY,
-  MNEMONIC = '',
+  QUICKNODE_KEY,
+  MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
@@ -96,6 +100,11 @@ const networkConfigs: NetworkConfig[] = [
     network: 'polygon',
     chainId: 137,
     url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
+    network: 'base',
+    chainId: 8453,
+    url: `https://clean-spring-wind.base-mainnet.discover.quiknode.pro/${QUICKNODE_KEY}`,
   },
   {
     network: 'arbitrum',
@@ -222,7 +231,8 @@ const config: HardhatUserConfig = {
       arbitrum: ARBISCAN_KEY,
       'arbitrum-goerli': ARBISCAN_KEY,
       // Base
-      'base-goerli': ETHERSCAN_KEY,
+      base: BASESCAN_KEY,
+      'base-goerli': BASESCAN_KEY,
       // Linea
       'linea-goerli': LINEASCAN_KEY,
       // Scroll
@@ -248,12 +258,21 @@ const config: HardhatUserConfig = {
         }
       },
       {
+        // Hardhat's Etherscan plugin doesn't have support Base, so we need to add an entry for our own network name
+        network: 'base',
+        chainId: 8453,
+        urls: {
+          apiURL: 'https://api.basescan.org/api',
+          browserURL: 'https://basescan.org/'
+        }
+      },
+      {
         // Hardhat's Etherscan plugin calls the network `baseGoerli`, so we need to add an entry for our own network name
         network: 'base-goerli',
         chainId: 84531,
         urls: {
           apiURL: 'https://api-goerli.basescan.org/api',
-          browserURL: 'https://api-goerli.basescan.org/'
+          browserURL: 'https://goerli.basescan.org/'
         }
       },
       {
@@ -303,6 +322,10 @@ const config: HardhatUserConfig = {
       'arbitrum-goerli': {
         'usdc.e': arbitrumBridgedUsdcGoerliRelationConfigMap,
         usdc: arbitrumGoerliNativeUsdcRelationConfigMap
+      },
+      'base': {
+        usdbc: baseUsdbcRelationConfigMap,
+        weth: baseWethRelationConfigMap
       },
       'base-goerli': {
         usdc: baseGoerliRelationConfigMap,
@@ -379,6 +402,18 @@ const config: HardhatUserConfig = {
         network: 'arbitrum-goerli',
         deployment: 'usdc',
         auxiliaryBase: 'goerli'
+      },
+      {
+        name: 'base-usdbc',
+        network: 'base',
+        deployment: 'usdbc',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'base-weth',
+        network: 'base',
+        deployment: 'weth',
+        auxiliaryBase: 'mainnet'
       },
       {
         name: 'base-goerli',
