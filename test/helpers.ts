@@ -116,7 +116,7 @@ export type ConfiguratorAndProtocol = {
 
 export type RewardsOpts = {
   governor?: SignerWithAddress;
-  configs?: [Comet, FaucetToken, Numeric?][];
+  configs?: [Comet, FaucetToken | NonStandardFaucetFeeToken, Numeric?][];
 };
 
 export type Rewards = {
@@ -505,7 +505,7 @@ export async function makeBulker(opts: BulkerOpts): Promise<BulkerInfo> {
     bulker
   };
 }
-export async function bumpTotalsCollateral(comet: CometHarnessInterface, token: FaucetToken, delta: bigint): Promise<TotalsCollateralStructOutput> {
+export async function bumpTotalsCollateral(comet: CometHarnessInterface, token: FaucetToken | NonStandardFaucetFeeToken, delta: bigint): Promise<TotalsCollateralStructOutput> {
   const t0 = await comet.totalsCollateral(token.address);
   const t1 = Object.assign({}, t0, { totalSupplyAsset: t0.totalSupplyAsset.toBigInt() + delta });
   await token.allocateTo(comet.address, delta);
