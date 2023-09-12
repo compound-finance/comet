@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
+import "../IERC20NonStandard.sol";
 /**
  * @title Non-standard ERC20 token
  * @dev Implementation of the basic standard token.
@@ -8,7 +9,7 @@ pragma solidity 0.8.15;
  * @dev With USDT fee token mechanism
  * @dev Note: `transfer` and `transferFrom` do not return a boolean
  */
-contract NonStandardFeeToken {
+contract NonStandardFeeToken is IERC20NonStandard {
     string public name;
     string public symbol;
     uint8 public decimals;
@@ -69,10 +70,9 @@ contract NonStandardFeeToken {
         emit Transfer(src, dst, sendAmount);
     }
 
-    function approve(address _spender, uint256 amount) external returns (bool) {
+    function approve(address _spender, uint256 amount) external {
         allowance[msg.sender][_spender] = amount;
         emit Approval(msg.sender, _spender, amount);
-        return true;
     }
 
     // For testing, just don't limit access on setting fees
