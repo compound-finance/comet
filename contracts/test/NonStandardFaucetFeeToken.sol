@@ -13,7 +13,7 @@ contract NonStandardFeeToken {
     string public symbol;
     uint8 public decimals;
     uint256 public totalSupply;
-    mapping (address => mapping (address => uint256)) public allowance;
+    mapping(address => mapping (address => uint256)) public allowance;
     mapping(address => uint256) public balanceOf;
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
