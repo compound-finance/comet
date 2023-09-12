@@ -382,7 +382,7 @@ describe('buyCollateral', function () {
     expect(p0.internal).to.be.deep.equal({ USDT: 0n, COMP: 0n });
     expect(p0.external).to.be.deep.equal({ USDT: exp(100, 6), COMP: 0n });
     expect(p1.internal).to.be.deep.equal({ USDT: 0n, COMP: 0n });
-    expect(p1.external).to.be.deep.equal({ USDT: exp(50, 6), COMP: 54450000000000000000n });
+    expect(p1.external).to.be.deep.equal({ USDT: exp(50, 6), COMP: exp(54.45, 18) });
     expect(r1).to.be.equal(exp(49.5, 6)); // 50 * 0.99 = 49.5
     expect(event(txn, 0)).to.be.deep.equal({
       Transfer: {
@@ -395,7 +395,7 @@ describe('buyCollateral', function () {
       Transfer: {
         from: comet.address,
         to: alice.address,
-        amount: 54450000000000000000n,
+        amount: exp(54.45, 18),
       }
     });
     expect(event(txn, 2)).to.be.deep.equal({
@@ -403,7 +403,7 @@ describe('buyCollateral', function () {
         buyer: alice.address,
         asset: COMP.address,
         baseAmount: exp(49.5, 6),
-        collateralAmount: 55000000000000000000n,
+        collateralAmount: exp(55, 18),
       }
     });
   });

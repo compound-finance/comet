@@ -478,7 +478,6 @@ describe('supplyTo', function () {
       factory: (await ethers.getContractFactory('NonStandardFaucetFeeToken')) as NonStandardFaucetFeeToken__factory,
     };
 
-
     const protocol = await makeProtocol({ base: 'USDC', assets: assets });
     const { comet, tokens, users: [alice, bob] } = protocol;
     const { FeeToken } = tokens;
