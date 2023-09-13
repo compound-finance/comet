@@ -557,7 +557,9 @@ describe('buyCollateral', function () {
       const normalBobPortfolio = await portfolio(normalProtocol, normalBob.address);
       const evilBobPortfolio = await portfolio(evilProtocol, evilBob.address);
 
-      expect(normalBobPortfolio.internal.USDC).to.equal(evilBobPortfolio.internal.EVIL);
+      expect(normalBobPortfolio.internal.USDC).to.equal(1000000n);
+      // EvilToken never transfer actual token to Comet, the new Comet credit user based on the actual token reaches to Comet, so it always gives 0 credit
+      expect(evilBobPortfolio.internal.EVIL).to.equal(0n);
     });
   });
 });
