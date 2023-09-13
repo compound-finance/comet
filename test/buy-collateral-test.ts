@@ -541,7 +541,9 @@ describe('buyCollateral', function () {
       expect(normalTotalsBasic.baseBorrowIndex).to.equal(evilTotalsBasic.baseBorrowIndex);
       expect(normalTotalsBasic.trackingSupplyIndex).to.equal(evilTotalsBasic.trackingSupplyIndex);
       expect(normalTotalsBasic.trackingBorrowIndex).to.equal(evilTotalsBasic.trackingBorrowIndex);
-      expect(normalTotalsBasic.totalSupplyBase).to.equal(evilTotalsBasic.totalSupplyBase);
+      expect(normalTotalsBasic.totalSupplyBase).to.equal(1000000n);
+      // Since EvilToken never transfer actual token to Comet, Comet always gives 0 credit
+      expect(evilTotalsBasic.totalBorrowBase).to.equal(0n);
       expect(normalTotalsBasic.totalBorrowBase).to.equal(evilTotalsBasic.totalBorrowBase);
 
       expect(normalTotalsCollateral.totalSupplyAsset).to.eq(evilTotalsCollateral.totalSupplyAsset);

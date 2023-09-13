@@ -554,10 +554,9 @@ describe('supplyTo', function () {
     await EVIL.setAttack(attack);
 
     await comet.connect(alice).allow(EVIL.address, true);
-
-    await expect(
-      comet.connect(alice).supplyTo(bob.address, EVIL.address, 75e6)
-    ).to.be.revertedWith("custom error 'SupplyCapExceeded()'");
+    await comet.connect(alice).supplyTo(bob.address, EVIL.address, 75e6);
+    // Since EvilToken never actually transfer token, so Comet always credit it with 0
+    expect(await comet.balanceOf(bob.address)).to.be.equal(0n);
   });
 });
 
