@@ -94,13 +94,14 @@ async function crawl(
   contracts: ContractMap,
   trace: TraceFn
 ): Promise<Alias> {
+  try{
   const { aliasRender, address, path } = node;
   const { template: aliasTemplate } = aliasRender;
-  //trace(`Crawling ${address}`, aliasRender);
+  trace(`Crawling ${address}`, aliasRender);
 
   async function maybeProcess(alias: Alias, build: Build, config: RelationConfig): Promise<Alias> {
     if (maybeStore(alias, address, aliases)) {
-      //trace(`Processing ${address}: ${alias} using ${build.buildFile.contract} ...`);
+      trace(`Processing ${address}: ${alias} using ${build.buildFile.contract} ...`);
       let contract = build.contract;
 
       if (config.delegates) {
@@ -124,7 +125,7 @@ async function crawl(
           }
 
           // Extend the contract ABI w/ the delegate
-          //trace(`Merging ${address} <- ${implNode.address} (${alias} <- ${implAlias})`);
+          trace(`Merging ${address} <- ${implNode.address} (${alias} <- ${implAlias})`);
           contract = mergeContracts(address, [implContract, contract], hre);
 
           // Add the alias in place to the relative context
@@ -166,14 +167,14 @@ async function crawl(
 
   const addressConfig = relations[address.toLowerCase()];
   if (addressConfig) {
-    //trace(` ... has an address config (${address})`);
+    trace(` ... has an address config (${address})`);
     if (addressConfig.artifact) {
-      //trace(`  ... has artifact specified (${addressConfig.artifact})`);
+      trace(`  ... has artifact specified (${addressConfig.artifact})`);
       const build = await localBuild(null, hre, addressConfig.artifact, network, address);
       const alias = await readAlias(build.contract, aliasRender, context, path);
       return maybeProcess(alias, build, addressConfig);
     } else {
-      //trace('  ... no artifact specified');
+      trace('  ... no artifact specified');
       const build = await remoteBuild(cache, hre, network, address);
       const alias = await readAlias(build.contract, aliasRender, context, path);
       return maybeProcess(alias, build, addressConfig);
@@ -182,58 +183,61 @@ async function crawl(
 
   const aliasTemplateConfig = relations[aliasTemplateKey(aliasTemplate)];
   if (aliasTemplateConfig) {
-    //trace(' ... has alias template config');
+    trace(' ... has alias template config');
     // Note: skipping this check, since it adds a brittle network call and isn't strictly necessary
     // if (!await isContract(hre, address)) {
     //   throw new Error(`Found config for '${aliasTemplate}' but no contract at ${address}`);
     // }
     if (aliasTemplateConfig.artifact) {
-      //trace(`  ... has artifact specified (${aliasTemplateConfig.artifact})`);
+      trace(`  ... has artifact specified (${aliasTemplateConfig.artifact})`);
       const build = await localBuild(null, hre, aliasTemplateConfig.artifact, network, address);
       const alias = await readAlias(build.contract, aliasRender, context, path);
       return maybeProcess(alias, build, aliasTemplateConfig);
     } else {
-      //trace('  ... no artifact specified');
+      trace('  ... no artifact specified');
       const build = await remoteBuild(cache, hre, network, address);
       const alias = await readAlias(build.contract, aliasRender, context, path);
       return maybeProcess(alias, build, aliasTemplateConfig);
     }
   } else {
-    //trace(' ... no alias template config');
+    trace(' ... no alias template config');
     if (await isContract(hre, address)) {
-      //trace('  ... is a contract');
+      trace('  ... is a contract');
       const build = await remoteBuild(cache, hre, network, address);
       const contractConfig = relations[build.buildFile.contract];
       if (contractConfig) {
-        //trace(`   ... has contract config (${build.buildFile.contract})`);
+        trace(`   ... has contract config (${build.buildFile.contract})`);
         if (contractConfig.artifact) {
-          //trace(`    ... has artifact specified (${contractConfig.artifact})`);
+          trace(`    ... has artifact specified (${contractConfig.artifact})`);
           const build_ = await localBuild(null, hre, contractConfig.artifact, network, address);
           const alias = await readAlias(build_.contract, aliasRender, context, path);
           return maybeProcess(alias, build_, contractConfig);
         } else {
-          //trace('    ... no artifact specified');
+          trace('    ... no artifact specified');
           const alias = await readAlias(build.contract, aliasRender, context, path);
           return maybeProcess(alias, build, contractConfig);
         }
       } else {
-        //trace(`   ... no contract config (${build.buildFile.contract})`);
+        trace(`   ... no contract config (${build.buildFile.contract})`);
         const alias = await readAlias(build.contract, aliasRender, context, path);
         const aliasConfig = relations[alias];
         if (aliasConfig) {
-          //trace(`    ... has alias config (${alias})`);
+          trace(`    ... has alias config (${alias})`);
           return maybeProcess(alias, build, aliasConfig);
         } else {
-          //trace(`    ... no alias config (${alias})`);
+          trace(`    ... no alias config (${alias})`);
           return maybeProcess(alias, build, {});
         }
       }
     } else {
-      //trace('  ... is not a contract');
+      trace('  ... is not a contract');
       const alias = await readAlias(undefined, aliasRender, context, path);
       return maybeStore(alias, address, aliases), alias;
     }
   }
+} catch(e) {
+  trace(`error crawling ${node.address}, skipping this contract: ${e}`)
+}
 }
 
 export async function spider(

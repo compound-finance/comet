@@ -16,6 +16,7 @@ on:
           - base
           - base-goerli
           - linea-goerli
+          - scroll-goerli
       deployment:
         description: Deployment Name (e.g. "usdc")
         required: true
@@ -51,7 +52,7 @@ jobs:
           case ${{ github.event.inputs.network }} in
             polygon | arbitrum | base)
                 echo "GOV_NETWORK=mainnet" >> $GITHUB_ENV ;;
-            mumbai | arbitrum-goerli | base-goerli | linea-goerli)
+            mumbai | arbitrum-goerli | base-goerli | linea-goerli | scroll-goerli)
                 echo "GOV_NETWORK=goerli" >> $GITHUB_ENV ;;
             *)
                 echo "No governance network for selected network" ;;
@@ -62,7 +63,7 @@ jobs:
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
-          ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum-goerli\":\"https://arbitrum-goerli.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base\":\"https://clean-spring-wind.base-mainnet.discover.quiknode.pro/$QUICKNODE_KEY\",\"base-goerli\":\"https://base-goerli.infura.io/v3/$INFURA_KEY\",\"linea-goerli\":\"https://linea-goerli.infura.io/v3/$INFURA_KEY\"}')[inputs.network] }}"
+          ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum-goerli\":\"https://arbitrum-goerli.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base\":\"https://clean-spring-wind.base-mainnet.discover.quiknode.pro/$QUICKNODE_KEY\",\"base-goerli\":\"https://base-goerli.infura.io/v3/$INFURA_KEY\",\"linea-goerli\":\"https://linea-goerli.infura.io/v3/$INFURA_KEY\",\"scroll-goerli\":\"https://alpha-rpc.scroll.io/l2\"}')[inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
 
