@@ -3,6 +3,7 @@ import relayPolygonMessage from './relayPolygonMessage';
 import { relayArbitrumMessage, relayCCTPMint } from './relayArbitrumMessage';
 import relayBaseMessage from './relayBaseMessage';
 import relayLineaMessage from './relayLineaMessage';
+import relayScrollMessage from './relayScrollMessage';
 
 export default async function relayMessage(
   governanceDeploymentManager: DeploymentManager,
@@ -47,6 +48,13 @@ export default async function relayMessage(
         startingBlockNumber
       );
       break;
+    case 'scroll-goerli':
+        await relayScrollMessage(
+          governanceDeploymentManager,
+          bridgeDeploymentManager,
+          startingBlockNumber
+        );
+        break;
     default:
       throw new Error(
         `No message relay implementation from ${bridgeNetwork} -> ${governanceDeploymentManager.network}`
