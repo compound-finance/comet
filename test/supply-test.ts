@@ -554,9 +554,51 @@ describe('supplyTo', function () {
     await EVIL.setAttack(attack);
 
     await comet.connect(alice).allow(EVIL.address, true);
+    await wait(EVIL.connect(alice).approve(comet.address, 75e6));
+    await EVIL.allocateTo(alice.address, 75e6);
+    await expect(
+      comet.connect(alice).supplyTo(bob.address, EVIL.address, 75e6)
+    ).to.be.revertedWith("custom error 'SupplyCapExceeded()'");
+  });
+
+  // This test is purposely test the edge case where comet internal accounting will be incorrect when EvilToken re-entrancy attack
+  // is performed. The attack will cause comet to have inflated supply amount of token. 
+  //
+  // We decided that this won't be a concern for Comet, as in order to pull off this attack, the governance has to propose and vote to 
+  // add suspicious token in to Comet's market. As long as governance doesn't add suspicious token contract or erc-777 token to market, the 
+  // Comet should not be vulnerable to this type of attack.
+  it('incorrect accounting via re-entrancy', async () => {
+    const { comet, tokens, users: [alice, bob] } = await makeProtocol({
+      assets: {
+        USDC: {
+          decimals: 6
+        },
+        EVIL: {
+          decimals: 6,
+          initialPrice: 2,
+          factory: await ethers.getContractFactory('EvilToken') as EvilToken__factory,
+          supplyCap: 250e6
+        }
+      }
+    });
+    const { EVIL } = <{ EVIL: EvilToken }>tokens;
+
+    const attack = Object.assign({}, await EVIL.getAttack(), {
+      attackType: ReentryAttack.SupplyFrom,
+      source: alice.address,
+      destination: bob.address,
+      asset: EVIL.address,
+      amount: 75e6,
+      maxCalls: 1
+    });
+    await EVIL.setAttack(attack);
+
+    await comet.connect(alice).allow(EVIL.address, true);
+    await wait(EVIL.connect(alice).approve(comet.address, 75e6));
+    await EVIL.allocateTo(alice.address, 75e6);
     await comet.connect(alice).supplyTo(bob.address, EVIL.address, 75e6);
-    // Since EvilToken never actually transfer token, so Comet always credit it with 0
-    expect(await comet.balanceOf(bob.address)).to.be.equal(0n);
+    // Re-entrancy attack 2 loops, expect to have 2X accounting balance 75*2 = 150
+    expect(await comet.collateralBalanceOf(bob.address, EVIL.address)).to.be.equal(150e6);
   });
 });
 

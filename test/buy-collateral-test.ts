@@ -460,7 +460,7 @@ describe('buyCollateral', function () {
         source: evilAlice.address,
         destination: evilBob.address,
         asset: EVIL.address,
-        amount: 1e6,
+        amount: 3000e6,
         maxCalls: 1
       });
       await EVIL.setAttack(attack);
@@ -490,7 +490,7 @@ describe('buyCollateral', function () {
       // approve Comet to move funds
       await normalUSDC.connect(normalAlice).approve(normalComet.address, exp(5000, 6));
       await EVIL.connect(evilAlice).approve(EVIL.address, exp(5000, 6));
-
+      await EVIL.connect(evilAlice).approve(evilComet.address, exp(5000, 6));
       // perform the supplies for each protocol in the same block, so that the
       // same amount of time elapses for each when calculating interest
       await ethers.provider.send('evm_setAutomine', [false]);
@@ -522,10 +522,11 @@ describe('buyCollateral', function () {
         .connect(evilAlice)
         .buyCollateral(
           evilWETH.address,
-          exp(.5, 18),
+          exp(0, 18),
           exp(3000, 6),
           evilAlice.address
         );
+
       await evilComet.accrueAccount(evilAlice.address);
 
       // !important; reenable automine
@@ -541,9 +542,9 @@ describe('buyCollateral', function () {
       expect(normalTotalsBasic.baseBorrowIndex).to.equal(evilTotalsBasic.baseBorrowIndex);
       expect(normalTotalsBasic.trackingSupplyIndex).to.equal(evilTotalsBasic.trackingSupplyIndex);
       expect(normalTotalsBasic.trackingBorrowIndex).to.equal(evilTotalsBasic.trackingBorrowIndex);
-      expect(normalTotalsBasic.totalSupplyBase).to.equal(1000000n);
-      // Since EvilToken never transfer actual token to Comet, Comet always gives 0 credit
-      expect(evilTotalsBasic.totalBorrowBase).to.equal(0n);
+      expect(normalTotalsBasic.totalSupplyBase).to.equal(1e6);
+      // EvilToken attack is using 3000 EVIL tokens, so totalSupplyBase should have 3000e6
+      expect(evilTotalsBasic.totalSupplyBase).to.equal(3000e6);
       expect(normalTotalsBasic.totalBorrowBase).to.equal(evilTotalsBasic.totalBorrowBase);
 
       expect(normalTotalsCollateral.totalSupplyAsset).to.eq(evilTotalsCollateral.totalSupplyAsset);
@@ -557,9 +558,9 @@ describe('buyCollateral', function () {
       const normalBobPortfolio = await portfolio(normalProtocol, normalBob.address);
       const evilBobPortfolio = await portfolio(evilProtocol, evilBob.address);
 
-      expect(normalBobPortfolio.internal.USDC).to.equal(1000000n);
-      // EvilToken never transfer actual token to Comet, the new Comet credit user based on the actual token reaches to Comet, so it always gives 0 credit
-      expect(evilBobPortfolio.internal.EVIL).to.equal(0n);
+      expect(normalBobPortfolio.internal.USDC).to.equal(1e6);
+      // EvilToken attack is using 3000 EVIL tokens, so totalSupplyBase should be 3000e6 (under Bob's name)
+      expect(evilBobPortfolio.internal.EVIL).to.equal(3000e6);
     });
   });
 });
