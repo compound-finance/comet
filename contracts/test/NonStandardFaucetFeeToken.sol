@@ -2,6 +2,7 @@
 pragma solidity 0.8.15;
 
 import "../IERC20NonStandard.sol";
+
 /**
  * @title Non-standard ERC20 token
  * @dev Implementation of the basic standard token.
