@@ -4,13 +4,14 @@ pragma solidity 0.8.15;
 import "./CometMainInterface.sol";
 import "./IERC20NonStandard.sol";
 import "./IPriceFeed.sol";
+import "./ReentrancyGuard.sol";
 
 /**
  * @title Compound's Comet Contract
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-contract Comet is CometMainInterface {
+contract Comet is CometMainInterface, ReentrancyGuard {
     /** General configuration constants **/
 
     /// @notice The admin of the protocol
@@ -841,7 +842,7 @@ contract Comet is CometMainInterface {
      * @dev Supply either collateral or base asset, depending on the asset, if operator is allowed
      * @dev Note: Specifying an `amount` of uint256.max will repay all of `dst`'s accrued base borrow balance
      */
-    function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal {
+    function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal nonReentrant {
         if (isSupplyPaused()) revert Paused();
         if (!hasPermission(from, operator)) revert Unauthorized();
 
@@ -952,7 +953,7 @@ contract Comet is CometMainInterface {
      * @dev Transfer either collateral or base asset, depending on the asset, if operator is allowed
      * @dev Note: Specifying an `amount` of uint256.max will transfer all of `src`'s accrued base balance
      */
-    function transferInternal(address operator, address src, address dst, address asset, uint amount) internal {
+    function transferInternal(address operator, address src, address dst, address asset, uint amount) internal nonReentrant {
         if (isTransferPaused()) revert Paused();
         if (!hasPermission(src, operator)) revert Unauthorized();
         if (src == dst) revert NoSelfTransfer();
@@ -1063,7 +1064,7 @@ contract Comet is CometMainInterface {
      * @dev Withdraw either collateral or base asset, depending on the asset, if operator is allowed
      * @dev Note: Specifying an `amount` of uint256.max will withdraw all of `src`'s accrued base balance
      */
-    function withdrawInternal(address operator, address src, address to, address asset, uint amount) internal {
+    function withdrawInternal(address operator, address src, address to, address asset, uint amount) internal nonReentrant {
         if (isWithdrawPaused()) revert Paused();
         if (!hasPermission(src, operator)) revert Unauthorized();
 
@@ -1224,7 +1225,7 @@ contract Comet is CometMainInterface {
      * @param baseAmount The amount of base tokens used to buy the collateral
      * @param recipient The recipient address
      */
-    function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) override external {
+    function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) override external nonReentrant {
         if (isBuyPaused()) revert Paused();
 
         int reserves = getReserves();
@@ -1270,7 +1271,7 @@ contract Comet is CometMainInterface {
      * @param to An address of the receiver of withdrawn reserves
      * @param amount The amount of reserves to be withdrawn from the protocol
      */
-    function withdrawReserves(address to, uint amount) override external {
+    function withdrawReserves(address to, uint amount) override external nonReentrant {
         if (msg.sender != governor) revert Unauthorized();
 
         int reserves = getReserves();
