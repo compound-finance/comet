@@ -26,7 +26,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const configurator = await deploymentManager.fromDep('configurator', 'goerli', 'usdc');
   const rewards = await deploymentManager.fromDep('rewards', 'goerli', 'usdc');
   const fauceteer = await deploymentManager.fromDep('fauceteer', 'goerli', 'usdc');
-  const fxRoot = await deploymentManager.fromDep('fxRoot', 'goerli', 'usdc');
   const bulker = await deploymentManager.fromDep('bulker', 'goerli', 'usdc');
   const timelock = await deploymentManager.fromDep('timelock', 'goerli', 'usdc');
 
@@ -35,17 +34,17 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   await deploymentManager.idempotent(
     async () => await USDT.connect(signer).balanceOf(timelock.address) == 0,
     async () => {
-      trace(`Sending USDC to timelock`);
+      trace(`Sending USDT to timelock`);
       await USDT.connect(signer).transfer(
         timelock.address,
         exp(50_000_000, 6),
       );
-      trace(`Sent USDC to timelock completed`);
+      trace(`Sent USDT to timelock completed`);
     }
   );
 
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
 
-  return { ...deployed, bulker, fauceteer, fxRoot };
+  return { ...deployed, bulker, fauceteer };
 }

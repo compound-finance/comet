@@ -73,4 +73,7 @@ contract CometStorage {
 
     /// @notice Mapping of magic liquidator points
     mapping(address => LiquidatorPoints) public liquidatorPoints;
+
+    /// @dev Reentrancy guard mutex status
+    uint256 internal reentrancyGuardStatus;
 }

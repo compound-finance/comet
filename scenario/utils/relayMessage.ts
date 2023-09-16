@@ -1,6 +1,6 @@
 import { DeploymentManager } from '../../plugins/deployment_manager';
 import relayPolygonMessage from './relayPolygonMessage';
-import relayArbitrumMessage from './relayArbitrumMessage';
+import { relayArbitrumMessage, relayCCTPMint } from './relayArbitrumMessage';
 import relayBaseMessage from './relayBaseMessage';
 import relayLineaMessage from './relayLineaMessage';
 
@@ -32,6 +32,11 @@ export default async function relayMessage(
       await relayArbitrumMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
+        startingBlockNumber
+      );
+      await relayCCTPMint(
+        governanceDeploymentManager, 
+        bridgeDeploymentManager, 
         startingBlockNumber
       );
       break;
