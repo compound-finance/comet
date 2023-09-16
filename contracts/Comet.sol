@@ -4,14 +4,13 @@ pragma solidity 0.8.15;
 import "./CometMainInterface.sol";
 import "./IERC20NonStandard.sol";
 import "./IPriceFeed.sol";
-import "./ReentrancyGuard.sol";
 
 /**
  * @title Compound's Comet Contract
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-contract Comet is CometMainInterface, ReentrancyGuard {
+contract Comet is CometMainInterface {
     /** General configuration constants **/
 
     /// @notice The admin of the protocol
@@ -213,7 +212,7 @@ contract Comet is CometMainInterface, ReentrancyGuard {
         lastAccrualTime = getNowInternal();
         baseSupplyIndex = BASE_INDEX_SCALE;
         baseBorrowIndex = BASE_INDEX_SCALE;
-
+        reentrancyGuardStatus = REENTRANCY_GUARD_MUTEX_NOT_ENTERED;
         // Implicit initialization (not worth increasing contract size)
         // trackingSupplyIndex = 0;
         // trackingBorrowIndex = 0;
@@ -1341,6 +1340,28 @@ contract Comet is CometMainInterface, ReentrancyGuard {
         return principal < 0 ? presentValueBorrow(baseBorrowIndex_, unsigned104(-principal)) : 0;
     }
 
+    /**
+     * @notice Reentrancy guard function and modifier for nonReentrant functions    
+     * @dev Note: reference: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.3/contracts/security/ReentrancyGuard.sol
+     */
+    modifier nonReentrant() {
+        _nonReentrantBefore();
+        _;
+        _nonReentrantAfter();
+    }
+
+    function _nonReentrantBefore() private {
+        if (reentrancyGuardStatus == REENTRANCY_GUARD_MUTEX_ENTERED) {
+            revert ReentrancyGuardReentrantCall();
+        }
+
+        reentrancyGuardStatus = REENTRANCY_GUARD_MUTEX_ENTERED;
+    }
+
+    function _nonReentrantAfter() private {
+        reentrancyGuardStatus = REENTRANCY_GUARD_MUTEX_NOT_ENTERED;
+    }
+    
     /**
      * @notice Fallback to calling the extension delegate for everything else
      */
