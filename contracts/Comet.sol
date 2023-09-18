@@ -212,7 +212,7 @@ contract Comet is CometMainInterface {
         lastAccrualTime = getNowInternal();
         baseSupplyIndex = BASE_INDEX_SCALE;
         baseBorrowIndex = BASE_INDEX_SCALE;
-        reentrancyGuardStatus = REENTRANCY_GUARD_MUTEX_NOT_ENTERED;
+
         // Implicit initialization (not worth increasing contract size)
         // trackingSupplyIndex = 0;
         // trackingBorrowIndex = 0;
@@ -841,7 +841,7 @@ contract Comet is CometMainInterface {
      * @dev Supply either collateral or base asset, depending on the asset, if operator is allowed
      * @dev Note: Specifying an `amount` of uint256.max will repay all of `dst`'s accrued base borrow balance
      */
-    function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal nonReentrant {
+    function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal {
         if (isSupplyPaused()) revert Paused();
         if (!hasPermission(from, operator)) revert Unauthorized();
 
@@ -952,7 +952,7 @@ contract Comet is CometMainInterface {
      * @dev Transfer either collateral or base asset, depending on the asset, if operator is allowed
      * @dev Note: Specifying an `amount` of uint256.max will transfer all of `src`'s accrued base balance
      */
-    function transferInternal(address operator, address src, address dst, address asset, uint amount) internal nonReentrant {
+    function transferInternal(address operator, address src, address dst, address asset, uint amount) internal {
         if (isTransferPaused()) revert Paused();
         if (!hasPermission(src, operator)) revert Unauthorized();
         if (src == dst) revert NoSelfTransfer();
@@ -1063,7 +1063,7 @@ contract Comet is CometMainInterface {
      * @dev Withdraw either collateral or base asset, depending on the asset, if operator is allowed
      * @dev Note: Specifying an `amount` of uint256.max will withdraw all of `src`'s accrued base balance
      */
-    function withdrawInternal(address operator, address src, address to, address asset, uint amount) internal nonReentrant {
+    function withdrawInternal(address operator, address src, address to, address asset, uint amount) internal {
         if (isWithdrawPaused()) revert Paused();
         if (!hasPermission(src, operator)) revert Unauthorized();
 
@@ -1224,7 +1224,7 @@ contract Comet is CometMainInterface {
      * @param baseAmount The amount of base tokens used to buy the collateral
      * @param recipient The recipient address
      */
-    function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) override external nonReentrant {
+    function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) override external {
         if (isBuyPaused()) revert Paused();
 
         int reserves = getReserves();
@@ -1270,7 +1270,7 @@ contract Comet is CometMainInterface {
      * @param to An address of the receiver of withdrawn reserves
      * @param amount The amount of reserves to be withdrawn from the protocol
      */
-    function withdrawReserves(address to, uint amount) override external nonReentrant {
+    function withdrawReserves(address to, uint amount) override external {
         if (msg.sender != governor) revert Unauthorized();
 
         int reserves = getReserves();
@@ -1340,28 +1340,6 @@ contract Comet is CometMainInterface {
         return principal < 0 ? presentValueBorrow(baseBorrowIndex_, unsigned104(-principal)) : 0;
     }
 
-    /**
-     * @notice Reentrancy guard function and modifier for nonReentrant functions    
-     * @dev Note: reference: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.3/contracts/security/ReentrancyGuard.sol
-     */
-    modifier nonReentrant() {
-        _nonReentrantBefore();
-        _;
-        _nonReentrantAfter();
-    }
-
-    function _nonReentrantBefore() private {
-        if (reentrancyGuardStatus == REENTRANCY_GUARD_MUTEX_ENTERED) {
-            revert ReentrancyGuardReentrantCall();
-        }
-
-        reentrancyGuardStatus = REENTRANCY_GUARD_MUTEX_ENTERED;
-    }
-
-    function _nonReentrantAfter() private {
-        reentrancyGuardStatus = REENTRANCY_GUARD_MUTEX_NOT_ENTERED;
-    }
-    
     /**
      * @notice Fallback to calling the extension delegate for everything else
      */

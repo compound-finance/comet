@@ -511,7 +511,7 @@ describe('withdraw', function () {
       // in callback, EVIL token calls transferFrom(alice.address, bob.address, 1e6)
       await expect(
         comet.connect(alice).withdraw(EVIL.address, 1e6)
-      ).to.be.revertedWith("custom error 'ReentrancyGuardReentrantCall()'");
+      ).to.be.revertedWith("custom error 'NotCollateralized()'");
 
       // no USDC transferred
       expect(await USDC.balanceOf(comet.address)).to.eq(100e6);
@@ -558,7 +558,7 @@ describe('withdraw', function () {
       // in callback, EvilToken attempts to withdraw USDC to bob's address
       await expect(
         comet.connect(alice).withdraw(EVIL.address, 1e6)
-      ).to.be.revertedWith("custom error 'ReentrancyGuardReentrantCall()'");
+      ).to.be.revertedWith("custom error 'NotCollateralized()'");
 
       // no USDC transferred
       expect(await USDC.balanceOf(comet.address)).to.eq(100e6);
