@@ -543,8 +543,8 @@ describe('buyCollateral', function () {
       expect(normalTotalsBasic.trackingSupplyIndex).to.equal(evilTotalsBasic.trackingSupplyIndex);
       expect(normalTotalsBasic.trackingBorrowIndex).to.equal(evilTotalsBasic.trackingBorrowIndex);
       expect(normalTotalsBasic.totalSupplyBase).to.equal(1e6);
-      // EvilToken attack will be blocked by re-entrancy guard, so totalSupplyBase should be 0e6 (under Bob's name)
-      expect(evilTotalsBasic.totalSupplyBase).to.equal(0e6);
+      // EvilToken attack is using 3000 EVIL tokens, so totalSupplyBase should have 3000e6
+      expect(evilTotalsBasic.totalSupplyBase).to.equal(3000e6);
       expect(normalTotalsBasic.totalBorrowBase).to.equal(evilTotalsBasic.totalBorrowBase);
 
       expect(normalTotalsCollateral.totalSupplyAsset).to.eq(evilTotalsCollateral.totalSupplyAsset);
@@ -559,8 +559,8 @@ describe('buyCollateral', function () {
       const evilBobPortfolio = await portfolio(evilProtocol, evilBob.address);
 
       expect(normalBobPortfolio.internal.USDC).to.equal(1e6);
-      // EvilToken attack will be blocked by re-entrancy guard, so totalSupplyBase should be 0e6 (under Bob's name)
-      expect(evilBobPortfolio.internal.EVIL).to.equal(0e6);
+      // EvilToken attack is using 3000 EVIL tokens, so totalSupplyBase should be 3000e6 (under Bob's name)
+      expect(evilBobPortfolio.internal.EVIL).to.equal(3000e6);
     });
   });
 });
