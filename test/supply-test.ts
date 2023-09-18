@@ -558,7 +558,7 @@ describe('supplyTo', function () {
     await EVIL.allocateTo(alice.address, 75e6);
     await expect(
       comet.connect(alice).supplyTo(bob.address, EVIL.address, 75e6)
-    ).to.be.revertedWith("custom error 'ReentrancyGuardReentrantCall()'");
+    ).to.be.revertedWith("ReentrancyGuard: reentrant call");
   });
 });
 

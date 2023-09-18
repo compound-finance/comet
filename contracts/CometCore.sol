@@ -56,10 +56,6 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
     /// @dev The scale for factors
     uint64 internal constant FACTOR_SCALE = 1e18;
 
-    /// @dev Reentrancy guard mutex status
-    uint256 internal constant REENTRANCY_GUARD_MUTEX_NOT_ENTERED = 1;
-    uint256 internal constant REENTRANCY_GUARD_MUTEX_ENTERED = 2;
-
     /**
      * @notice Determine if the manager has permission to act on behalf of the owner
      * @param owner The owner account
