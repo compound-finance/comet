@@ -145,7 +145,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'scroll-goerli',
     chainId: 534353,
-    url: "https://alpha-rpc.scroll.io/l2",
+    url: 'https://alpha-rpc.scroll.io/l2',
   }
 ];
 
