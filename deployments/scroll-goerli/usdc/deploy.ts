@@ -25,15 +25,21 @@ export default async function deploy(
     'scroll-goerli'
   );
 
-  const l2TokenBridge = await deploymentManager.existing(
-    'l2TokenBridge',
-    '0x6d79Aa2e4Fbf80CF8543Ad97e294861853fb0649',
+  const l2ERC20Gateway = await deploymentManager.existing(
+    'l2ERC20Gateway',
+    '0xB878F37BB278bf0e4974856fFe86f5e6F66BD725',
     'scroll-goerli'
   );
 
-  const l2usdcBridge = await deploymentManager.existing(
-    'l2usdcBridge',
-    '0x6d79Aa2e4Fbf80CF8543Ad97e294861853fb0649',
+  const l2ETHGateway = await deploymentManager.existing(
+    'l2ETHGateway',
+    '0x32139B5C8838E94fFcD83E60dff95Daa7F0bA14c',
+    'scroll-goerli'
+  );
+
+  const l2WETHGateway = await deploymentManager.existing(
+    'l2WETHGateway',
+    '0xBb88bF582F2BBa46702621dae5CB9271057bC85b',
     'scroll-goerli'
   );
 
@@ -83,9 +89,9 @@ export default async function deploy(
     ...deployed,
     bridgeReceiver,
     l2Messenger,
-    l2TokenBridge,
+    l2ERC20Gateway,
+    l2ETHGateway,
     bulker,
     fauceteer,
-    l2usdcBridge
   };
 }
