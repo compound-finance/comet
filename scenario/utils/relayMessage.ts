@@ -49,12 +49,12 @@ export default async function relayMessage(
       );
       break;
     case 'scroll-goerli':
-        await relayScrollMessage(
-          governanceDeploymentManager,
-          bridgeDeploymentManager,
-          startingBlockNumber
-        );
-        break;
+      await relayScrollMessage(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        startingBlockNumber
+      );
+      break;
     default:
       throw new Error(
         `No message relay implementation from ${bridgeNetwork} -> ${governanceDeploymentManager.network}`
