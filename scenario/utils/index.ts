@@ -506,15 +506,15 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
     }
     case 'scroll-goerli': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
-        ['address', 'uint256', 'bytes'],
-        [bridgeReceiver.address, 0, l2ProposalData]
+        ['address', 'uint256', 'bytes', 'uint256'],
+        [bridgeReceiver.address, 0, l2ProposalData, 10000]
       );
       const scrollMessenger = await govDeploymentManager.getContractOrThrow(
         'scrollMessenger'
       );
       targets.push(scrollMessenger.address);
       values.push(0);
-      signatures.push('sendMessage(address,uint256,bytes)');
+      signatures.push('sendMessage(address,uint256,bytes,uint256)');
       calldata.push(sendMessageCalldata);
       break;
     }
