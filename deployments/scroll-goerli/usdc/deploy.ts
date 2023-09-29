@@ -91,6 +91,7 @@ export default async function deploy(
     l2Messenger,
     l2ERC20Gateway,
     l2ETHGateway,
+    l2WETHGateway,
     bulker,
     fauceteer,
   };
