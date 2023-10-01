@@ -429,7 +429,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
   const proposer = await context.getProposer();
   const bridgeNetwork = bridgeDeploymentManager.network;
   const targets: string[] = [];
-  const values: number[] = [];
+  const values: BigNumberish[] = [];
   const signatures: string[] = [];
   const calldata: string[] = [];
 
@@ -507,13 +507,13 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
     case 'scroll-goerli': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'uint256', 'bytes', 'uint256'],
-        [bridgeReceiver.address, 0, l2ProposalData, 10000]
+        [bridgeReceiver.address, 0, l2ProposalData, 1_000_000] // XXX find a reliable way to estimate the gasLimit
       );
       const scrollMessenger = await govDeploymentManager.getContractOrThrow(
         'scrollMessenger'
       );
       targets.push(scrollMessenger.address);
-      values.push(0);
+      values.push(exp(1, 18)); // XXX fees are paid via msg.value
       signatures.push('sendMessage(address,uint256,bytes,uint256)');
       calldata.push(sendMessageCalldata);
       break;
