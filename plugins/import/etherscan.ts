@@ -21,7 +21,7 @@ export function getEtherscanApiUrl(network: string): string {
     base: 'api.basescan.org',
     'base-goerli': 'api-goerli.basescan.org',
     'linea-goerli': 'api-goerli.lineascan.build',
-    'scroll-goerli': 'blockscout.scroll.io',
+    'scroll-goerli': 'alpha-blockscout.scroll.io',
   }[network];
 
   if (!host) {
@@ -46,7 +46,7 @@ export function getEtherscanUrl(network: string): string {
     base: 'basescan.org',
     'base-goerli': 'goerli.basescan.org',
     'linea-goerli': 'goerli.lineascan.build',
-    'scroll-goerli': 'blockscout.scroll.io',
+    'scroll-goerli': 'alpha-blockscout.scroll.io',
   }[network];
 
   if (!host) {

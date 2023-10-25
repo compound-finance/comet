@@ -288,8 +288,8 @@ const config: HardhatUserConfig = {
         network: 'scroll-goerli',
         chainId: 534353,
         urls: {
-          apiURL: 'https://blockscout.scroll.io/api',
-          browserURL: 'https://blockscout.scroll.io/'
+          apiURL: 'https://alpha-blockscout.scroll.io/api',
+          browserURL: 'https://alpha-blockscout.scroll.io/'
         }
       }
     ]
