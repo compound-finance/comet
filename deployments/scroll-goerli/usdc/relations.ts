@@ -12,9 +12,6 @@ export default {
       }
     }
   },
-  'l2Messenger:implementation': {
-    artifact: 'contracts/bridges/scroll/IScrollMessenger.sol:IScrollMessenger'
-  },
   l2ERC20Gateway: {
     delegates: {
       field: {
