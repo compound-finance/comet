@@ -49,7 +49,7 @@ export default async function relayScrollMessage(
 
     const aliasAccount = await impersonateAddress(
       bridgeDeploymentManager,
-      applyL1ToL2Alias(scrollMessenger.address)
+      "0xD69c917c7F1C0a724A51c189B4A8F4F8C8E8cA0a"
     );
 
     const relayMessageTxn = await (
