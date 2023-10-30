@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import "./CometMainInterface.sol";
-import "./IERC20NonStandard.sol";
+import "./ERC20.sol";
 import "./IPriceFeed.sol";
 
 /**
@@ -139,7 +139,7 @@ contract Comet is CometMainInterface {
      **/
     constructor(Configuration memory config) {
         // Sanity checks
-        uint8 decimals_ = IERC20NonStandard(config.baseToken).decimals();
+        uint8 decimals_ = ERC20(config.baseToken).decimals();
         if (decimals_ > MAX_BASE_DECIMALS) revert BadDecimals();
         if (config.storeFrontPriceFactor > FACTOR_SCALE) revert BadDiscount();
         if (config.assetConfigs.length > MAX_ASSETS) revert TooManyAssets();
@@ -277,7 +277,7 @@ contract Comet is CometMainInterface {
 
         // Sanity check price feed and asset decimals
         if (IPriceFeed(priceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
-        if (IERC20NonStandard(asset).decimals() != decimals_) revert BadDecimals();
+        if (ERC20(asset).decimals() != decimals_) revert BadDecimals();
 
         // Ensure collateral factors are within range
         if (assetConfig.borrowCollateralFactor >= assetConfig.liquidateCollateralFactor) revert BorrowCFTooLarge();
@@ -518,7 +518,7 @@ contract Comet is CometMainInterface {
      * @param asset The collateral asset
      */
     function getCollateralReserves(address asset) override public view returns (uint) {
-        return IERC20NonStandard(asset).balanceOf(address(this)) - totalsCollateral[asset].totalSupplyAsset;
+        return ERC20(asset).balanceOf(address(this)) - totalsCollateral[asset].totalSupplyAsset;
     }
 
     /**
@@ -526,7 +526,7 @@ contract Comet is CometMainInterface {
      */
     function getReserves() override public view returns (int) {
         (uint64 baseSupplyIndex_, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
-        uint balance = IERC20NonStandard(baseToken).balanceOf(address(this));
+        uint balance = ERC20(baseToken).balanceOf(address(this));
         uint totalSupply_ = presentValueSupply(baseSupplyIndex_, totalSupplyBase);
         uint totalBorrow_ = presentValueBorrow(baseBorrowIndex_, totalBorrowBase);
         return signed256(balance) - signed256(totalSupply_) + signed256(totalBorrow_);
@@ -800,12 +800,12 @@ contract Comet is CometMainInterface {
      * @dev Note: Safely handles non-standard ERC-20 tokens that do not return a value. See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      */
     function doTransferIn(address asset, address from, uint amount) internal returns (uint) {
-        uint256 preTransferBalance = IERC20NonStandard(asset).balanceOf(address(this));
-        (bool success, bytes memory returndata) = asset.call(abi.encodeWithSelector(IERC20NonStandard.transferFrom.selector, from, address(this), amount));
+        uint256 preTransferBalance = ERC20(asset).balanceOf(address(this));
+        (bool success, bytes memory returndata) = asset.call(abi.encodeWithSelector(ERC20.transferFrom.selector, from, address(this), amount));
         if (!success || !(returndata.length == 0 || abi.decode(returndata, (bool)))) {
             revert TransferInFailed();
         }
-        return IERC20NonStandard(asset).balanceOf(address(this)) - preTransferBalance;
+        return ERC20(asset).balanceOf(address(this)) - preTransferBalance;
     }
 
     /**
@@ -813,7 +813,7 @@ contract Comet is CometMainInterface {
      * @dev Note: Safely handles non-standard ERC-20 tokens that do not return a value. See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      */
     function doTransferOut(address asset, address to, uint amount) internal {
-        (bool success, bytes memory returndata) = asset.call(abi.encodeWithSelector(IERC20NonStandard.transfer.selector, to, amount));
+        (bool success, bytes memory returndata) = asset.call(abi.encodeWithSelector(ERC20.transfer.selector, to, amount));
         if (!success || !(returndata.length == 0 || abi.decode(returndata, (bool)))) {
             revert TransferOutFailed();
         }
@@ -1306,7 +1306,7 @@ contract Comet is CometMainInterface {
     function approveThis(address manager, address asset, uint amount) override external {
         if (msg.sender != governor) revert Unauthorized();
 
-        IERC20NonStandard(asset).approve(manager, amount);
+        ERC20(asset).approve(manager, amount);
     }
 
     /**

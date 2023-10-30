@@ -21,23 +21,23 @@ interface IERC20NonStandard {
     function approve(address spender, uint256 amount) external;
 
     /**
-     * @notice Transfer `value` tokens from `msg.sender` to `to`
-     * @param to The address of the destination account
-     * @param value The number of tokens to transfer
+     * @notice Transfer `amount` tokens from `msg.sender` to `dst`
+     * @param dst The address of the destination account
+     * @param amount The number of tokens to transfer
      */
     function transfer(address to, uint256 value) external;
 
     /**
-     * @notice Transfer `value` tokens from `from` to `to`
-     * @param from The address of the source account
-     * @param to The address of the destination account
-     * @param value The number of tokens to transfer
+     * @notice Transfer `amount` tokens from `src` to `dst`
+     * @param src The address of the source account
+     * @param dst The address of the destination account
+     * @param amount The number of tokens to transfer
      */
     function transferFrom(address from, address to, uint256 value) external;
 
     /**
      * @notice Gets the balance of the specified address
-     * @param account The address from which the balance will be retrieved
+     * @param owner The address from which the balance will be retrieved
      */
     function balanceOf(address account) external view returns (uint256);
 }
