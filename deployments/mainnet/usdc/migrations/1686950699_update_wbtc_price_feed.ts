@@ -5,7 +5,7 @@ interface Vars {
   newWBTCPriceFeed: string
 };
 
-export default migration('1687890699_temp', {
+export default migration('1686950699_update_wbtc_price_feed', {
   prepare: async (deploymentManager: DeploymentManager) => {
     // Hardcoded price feed address because artifact from 5 months ago has expired
     return { newWBTCPriceFeed: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581" };
