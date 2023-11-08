@@ -60,7 +60,7 @@ abstract contract CometCore is CometConfiguration, CometStorage, CometMath {
     bytes32 internal constant COMET_REENTRANCY_GUARD_FLAG_SLOT = bytes32(keccak256("comet.reentrancy.guard"));
 
     /// @dev The reentrancy guard status
-    uint256 internal constant COMET_REENTRANCY_GUARD_NOT_ENTERED = 1;
+    uint256 internal constant COMET_REENTRANCY_GUARD_NOT_ENTERED = 0;
     uint256 internal constant COMET_REENTRANCY_GUARD_ENTERED = 2;
 
     /**

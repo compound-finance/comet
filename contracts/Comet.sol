@@ -214,7 +214,7 @@ contract Comet is CometMainInterface {
             status := sload(slot)
         }
 
-        if(status == COMET_REENTRANCY_GUARD_ENTERED) revert ReentrantCallBlocked();
+        if (status == COMET_REENTRANCY_GUARD_ENTERED) revert ReentrantCallBlocked();
         assembly {
             sstore(slot, COMET_REENTRANCY_GUARD_ENTERED)
         }
