@@ -698,5 +698,5 @@ describe('supplyFrom', function () {
     await EVIL.allocateTo(alice.address, 75e6);
     await comet.connect(alice).supplyTo(bob.address, EVIL.address, 75e6);
     expect(await comet.collateralBalanceOf(bob.address, EVIL.address)).to.be.revertedWith("custom error 'TransferInFailed()'");
-});
+  });
 });
