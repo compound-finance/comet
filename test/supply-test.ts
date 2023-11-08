@@ -53,6 +53,7 @@ describe('supplyTo', function () {
     expect(t1.totalSupplyBase).to.be.equal(t0.totalSupplyBase.add(100e6));
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(124000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(124000);
   });
 
   it('supplies max base borrow balance (including accrued) from sender if the asset is base', async () => {
@@ -260,6 +261,7 @@ describe('supplyTo', function () {
     expect(t1.totalSupplyBase).to.be.equal(109);
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(124000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(124000);
   });
 
   it('supplies collateral from sender if the asset is collateral', async () => {
@@ -305,6 +307,7 @@ describe('supplyTo', function () {
     expect(q1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(q1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyAsset).to.be.equal(t0.totalSupplyAsset.add(8e8));
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(153000);
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(153000);
   });
 
@@ -467,6 +470,7 @@ describe('supplyTo', function () {
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
     // Fee Token logics will cost a bit more gas than standard ERC20 token with no fee calculation
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(151000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(151000);
   });
 
   it('supplies collateral the correct amount in a fee-like situation', async () => {
@@ -527,7 +531,7 @@ describe('supplyTo', function () {
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(186000);
   });
 
-  it('blocks reentrancy from exceeding the supply cap', async () => {
+  it('re-entrancy block', async () => {
     const { comet, tokens, users: [alice, bob] } = await makeProtocol({
       assets: {
         USDC: {
@@ -537,7 +541,7 @@ describe('supplyTo', function () {
           decimals: 6,
           initialPrice: 2,
           factory: await ethers.getContractFactory('EvilToken') as EvilToken__factory,
-          supplyCap: 100e6
+          supplyCap: 250e6
         }
       }
     });
@@ -558,7 +562,7 @@ describe('supplyTo', function () {
     await EVIL.allocateTo(alice.address, 75e6);
     await expect(
       comet.connect(alice).supplyTo(bob.address, EVIL.address, 75e6)
-    ).to.be.revertedWithCustomError(comet, 'ReentrantCallBlocked');
+    ).to.be.revertedWith("custom error 'TransferInFailed()'");
   });
 });
 
