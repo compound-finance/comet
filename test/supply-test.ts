@@ -541,7 +541,7 @@ describe('supplyTo', function () {
           decimals: 6,
           initialPrice: 2,
           factory: await ethers.getContractFactory('EvilToken') as EvilToken__factory,
-          supplyCap: 250e6
+          supplyCap: 100e6
         }
       }
     });
@@ -696,7 +696,6 @@ describe('supplyFrom', function () {
     await comet.connect(alice).allow(EVIL.address, true);
     await wait(EVIL.connect(alice).approve(comet.address, 75e6));
     await EVIL.allocateTo(alice.address, 75e6);
-    await comet.connect(alice).supplyTo(bob.address, EVIL.address, 75e6);
-    expect(await comet.collateralBalanceOf(bob.address, EVIL.address)).to.be.revertedWith("custom error 'TransferInFailed()'");
+    await expect(comet.connect(alice).supplyTo(bob.address, EVIL.address, 75e6)).to.be.revertedWith("custom error 'TransferInFailed()'");
   });
 });
