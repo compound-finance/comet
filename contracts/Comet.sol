@@ -783,7 +783,7 @@ contract Comet is CometMainInterface {
     function doTransferIn(address asset, address from, uint amount) nonReentrant internal returns (uint) {
         uint256 preTransferBalance = ERC20(asset).balanceOf(address(this));
         (bool success, bytes memory returndata) = asset.call(abi.encodeWithSelector(ERC20.transferFrom.selector, from, address(this), amount));
-        if (!success || !(returndata.length == 0 || abi.decode(returndata, (bool)))) {
+        if (!success || (returndata.length != 0 && !abi.decode(returndata, (bool)))) {
             revert TransferInFailed();
         }
         return ERC20(asset).balanceOf(address(this)) - preTransferBalance;
@@ -795,7 +795,7 @@ contract Comet is CometMainInterface {
      */
     function doTransferOut(address asset, address to, uint amount) nonReentrant internal {
         (bool success, bytes memory returndata) = asset.call(abi.encodeWithSelector(ERC20.transfer.selector, to, amount));
-        if (!success || !(returndata.length == 0 || abi.decode(returndata, (bool)))) {
+        if (!success || (returndata.length != 0 && !abi.decode(returndata, (bool)))) {
             revert TransferOutFailed();
         }
     }
@@ -1287,7 +1287,10 @@ contract Comet is CometMainInterface {
     function approveThis(address manager, address asset, uint amount) override external {
         if (msg.sender != governor) revert Unauthorized();
 
-        ERC20(asset).approve(manager, amount);
+        (bool success, bytes memory returndata) = asset.call(abi.encodeWithSelector(ERC20.approve.selector, manager, amount));
+        if (!success || (returndata.length != 0 && !abi.decode(returndata, (bool)))) {
+            revert ApproveFailed();
+        }
     }
 
     /**
