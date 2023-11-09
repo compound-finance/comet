@@ -531,7 +531,7 @@ describe('supplyTo', function () {
     expect(Number(s0.receipt.gasUsed)).to.be.lessThan(186000);
   });
 
-  it('re-entrancy block', async () => {
+  it('blocks reentrancy from exceeding the supply cap', async () => {
     const { comet, tokens, users: [alice, bob] } = await makeProtocol({
       assets: {
         USDC: {
