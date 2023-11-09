@@ -3,7 +3,7 @@ import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 import { Log } from '@ethersproject/abstract-provider';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 import { OpenBridgedProposal } from '../context/Gov';
-import { BigNumber } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 
 /*
 The Scroll relayer applies an offset to the message sender.
@@ -49,7 +49,7 @@ export default async function relayScrollMessage(
 
     const aliasAccount = await impersonateAddress(
       bridgeDeploymentManager,
-      applyL1ToL2Alias(scrollMessenger.address)
+      "0xD69c917c7F1C0a724A51c189B4A8F4F8C8E8cA0a"
     );
 
     const relayMessageTxn = await (
