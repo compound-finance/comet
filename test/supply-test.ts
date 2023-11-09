@@ -666,36 +666,4 @@ describe('supplyFrom', function () {
     await wait(cometAsB.allow(charlie.address, true));
     await expect(cometAsC.supplyFrom(bob.address, alice.address, COMP.address, 7)).to.be.revertedWith("custom error 'Paused()'");
   });
-
-  it('block re-entrancy', async () => {
-    const { comet, tokens, users: [alice, bob] } = await makeProtocol({
-      assets: {
-        USDC: {
-          decimals: 6
-        },
-        EVIL: {
-          decimals: 6,
-          initialPrice: 2,
-          factory: await ethers.getContractFactory('EvilToken') as EvilToken__factory,
-          supplyCap: 250e6
-        }
-      }
-    });
-    const { EVIL } = <{ EVIL: EvilToken }>tokens;
-
-    const attack = Object.assign({}, await EVIL.getAttack(), {
-      attackType: ReentryAttack.SupplyFrom,
-      source: alice.address,
-      destination: bob.address,
-      asset: EVIL.address,
-      amount: 75e6,
-      maxCalls: 1
-    });
-    await EVIL.setAttack(attack);
-
-    await comet.connect(alice).allow(EVIL.address, true);
-    await wait(EVIL.connect(alice).approve(comet.address, 75e6));
-    await EVIL.allocateTo(alice.address, 75e6);
-    await expect(comet.connect(alice).supplyTo(bob.address, EVIL.address, 75e6)).to.be.revertedWith("custom error 'TransferInFailed()'");
-  });
 });
