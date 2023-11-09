@@ -409,7 +409,7 @@ describe('buyCollateral', function () {
   });
 
   describe('reentrancy', function() {
-    it('block reentrancy supply ', async () => {
+    it('is blocked during reentrant supply', async () => {
       const wethArgs = {
         initial: 1e4,
         decimals: 18,
