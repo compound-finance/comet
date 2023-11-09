@@ -1121,7 +1121,6 @@ contract Comet is CometMainInterface {
         LiquidatorPoints memory points = liquidatorPoints[absorber];
         points.numAbsorbs++;
         points.numAbsorbed += safe64(accounts.length);
-        points.approxSpend += safe128(gasUsed * block.basefee);
         liquidatorPoints[absorber] = points;
     }
 
