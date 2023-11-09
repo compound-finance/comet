@@ -475,7 +475,7 @@ describe('withdraw', function () {
   });
 
   describe('reentrancy', function () {
-    it('block malicious reentrancy transferFrom', async () => {
+    it('blocks malicious reentrant transferFrom', async () => {
       const { comet, tokens, users: [alice, bob] } = await makeProtocol({
         assets: {
           USDC: {
