@@ -780,7 +780,7 @@ contract Comet is CometMainInterface {
      * @dev Safe ERC20 transfer in and returns the final amount transferred (taking into account any fees)
      * @dev Note: Safely handles non-standard ERC-20 tokens that do not return a value. See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      */
-    function doTransferIn(address asset, address from, uint amount) nonReentrant internal returns (uint) {
+    function doTransferIn(address asset, address from, uint amount) internal returns (uint) {
         uint256 preTransferBalance = ERC20(asset).balanceOf(address(this));
         (bool success, bytes memory returndata) = asset.call(abi.encodeWithSelector(ERC20.transferFrom.selector, from, address(this), amount));
         if (!success || (returndata.length != 0 && !abi.decode(returndata, (bool)))) {
@@ -793,7 +793,7 @@ contract Comet is CometMainInterface {
      * @dev Safe ERC20 transfer out
      * @dev Note: Safely handles non-standard ERC-20 tokens that do not return a value. See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      */
-    function doTransferOut(address asset, address to, uint amount) nonReentrant internal {
+    function doTransferOut(address asset, address to, uint amount) internal {
         (bool success, bytes memory returndata) = asset.call(abi.encodeWithSelector(ERC20.transfer.selector, to, amount));
         if (!success || (returndata.length != 0 && !abi.decode(returndata, (bool)))) {
             revert TransferOutFailed(returndata);
@@ -834,7 +834,7 @@ contract Comet is CometMainInterface {
      * @dev Supply either collateral or base asset, depending on the asset, if operator is allowed
      * @dev Note: Specifying an `amount` of uint256.max will repay all of `dst`'s accrued base borrow balance
      */
-    function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal {
+    function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal nonReentrant {
         if (isSupplyPaused()) revert Paused();
         if (!hasPermission(from, operator)) revert Unauthorized();
 
@@ -945,7 +945,7 @@ contract Comet is CometMainInterface {
      * @dev Transfer either collateral or base asset, depending on the asset, if operator is allowed
      * @dev Note: Specifying an `amount` of uint256.max will transfer all of `src`'s accrued base balance
      */
-    function transferInternal(address operator, address src, address dst, address asset, uint amount) internal {
+    function transferInternal(address operator, address src, address dst, address asset, uint amount) internal nonReentrant {
         if (isTransferPaused()) revert Paused();
         if (!hasPermission(src, operator)) revert Unauthorized();
         if (src == dst) revert NoSelfTransfer();
@@ -1056,7 +1056,7 @@ contract Comet is CometMainInterface {
      * @dev Withdraw either collateral or base asset, depending on the asset, if operator is allowed
      * @dev Note: Specifying an `amount` of uint256.max will withdraw all of `src`'s accrued base balance
      */
-    function withdrawInternal(address operator, address src, address to, address asset, uint amount) internal {
+    function withdrawInternal(address operator, address src, address to, address asset, uint amount) internal nonReentrant {
         if (isWithdrawPaused()) revert Paused();
         if (!hasPermission(src, operator)) revert Unauthorized();
 
@@ -1217,7 +1217,7 @@ contract Comet is CometMainInterface {
      * @param baseAmount The amount of base tokens used to buy the collateral
      * @param recipient The recipient address
      */
-    function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) override external {
+    function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) override external nonReentrant {
         if (isBuyPaused()) revert Paused();
 
         int reserves = getReserves();
