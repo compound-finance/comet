@@ -525,7 +525,7 @@ describe('withdraw', function () {
       expect(await USDC.balanceOf(bob.address)).to.eq(0);
     });
 
-    it('block malicious reentrancy withdrawFrom', async () => {
+    it('blocks malicious reentrant withdrawFrom', async () => {
       const { comet, tokens, users: [alice, bob] } = await makeProtocol({
         assets: {
           USDC: {
