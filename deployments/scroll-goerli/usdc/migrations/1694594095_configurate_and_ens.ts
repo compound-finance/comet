@@ -163,10 +163,7 @@ export default migration('1694594095_configurate_and_ens', {
     // 2. & 3.
     expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(1_000, 18));
 
-    // 4 & 5,
-    expect(await USDC.balanceOf(rewards.address)).to.be.equal(exp(100_000, 6));
-
-    // 6.
+    // 4
     const ENSResolver = await govDeploymentManager.existing(
       'ENSResolver',
       ENSResolverAddress,
