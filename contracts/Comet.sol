@@ -816,7 +816,7 @@ contract Comet is CometMainInterface {
      * @dev Safe ERC20 transfer in and returns the final amount transferred (taking into account any fees)
      * @dev Note: Safely handles non-standard ERC-20 tokens that do not return a value. See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      */
-    function doTransferIn(address asset, address from, uint amount) nonReentrant internal returns (uint) {
+    function doTransferIn(address asset, address from, uint amount) internal returns (uint) {
         uint256 preTransferBalance = ERC20(asset).balanceOf(address(this));
         (bool success, bytes memory returndata) = asset.call(abi.encodeWithSelector(ERC20.transferFrom.selector, from, address(this), amount));
         if (!success || (returndata.length != 0 && !abi.decode(returndata, (bool)))) {
@@ -829,7 +829,7 @@ contract Comet is CometMainInterface {
      * @dev Safe ERC20 transfer out
      * @dev Note: Safely handles non-standard ERC-20 tokens that do not return a value. See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      */
-    function doTransferOut(address asset, address to, uint amount) nonReentrant internal {
+    function doTransferOut(address asset, address to, uint amount) internal {
         (bool success, bytes memory returndata) = asset.call(abi.encodeWithSelector(ERC20.transfer.selector, to, amount));
         if (!success || (returndata.length != 0 && !abi.decode(returndata, (bool)))) {
             revert TransferOutFailed(returndata);
