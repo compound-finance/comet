@@ -82,7 +82,7 @@ export default migration('1692063589_add_reth_collateral', {
   },
 
   async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
