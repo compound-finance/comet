@@ -560,7 +560,7 @@ describe('supplyTo', function () {
     const ReentrantCallBlockedErrorSelector = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('ReentrantCallBlocked()')).slice(0,10);
     await expect(
       comet.connect(alice).supplyTo(bob.address, EVIL.address, 75e6)
-    ).to.be.revertedWithCustomError(comet, 'TransferInFailed').withArgs(ReentrantCallBlockedErrorSelector);
+    ).to.be.revertedWithCustomError(comet, 'TransferFailed').withArgs(ReentrantCallBlockedErrorSelector);
   });
 });
 

@@ -512,7 +512,7 @@ describe('withdraw', function () {
       const ReentrantCallBlockedErrorSelector = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('ReentrantCallBlocked()')).slice(0, 10);
       await expect(
         comet.connect(alice).withdraw(EVIL.address, 1e6)
-      ).to.be.revertedWithCustomError(comet, 'TransferOutFailed').withArgs(ReentrantCallBlockedErrorSelector);
+      ).to.be.revertedWithCustomError(comet, 'TransferFailed').withArgs(ReentrantCallBlockedErrorSelector);
 
       // no USDC transferred
       expect(await USDC.balanceOf(comet.address)).to.eq(100e6);
@@ -560,7 +560,7 @@ describe('withdraw', function () {
       const ReentrantCallBlockedErrorSelector = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('ReentrantCallBlocked()')).slice(0, 10);
       await expect(
         comet.connect(alice).withdraw(EVIL.address, 1e6)
-      ).to.be.revertedWithCustomError(comet, 'TransferOutFailed').withArgs(ReentrantCallBlockedErrorSelector);
+      ).to.be.revertedWithCustomError(comet, 'TransferFailed').withArgs(ReentrantCallBlockedErrorSelector);
 
       // no USDC transferred
       expect(await USDC.balanceOf(comet.address)).to.eq(100e6);
