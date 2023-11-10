@@ -783,9 +783,7 @@ contract Comet is CometMainInterface {
     function doTransferIn(address asset, address from, uint amount) internal returns (uint) {
         uint256 preTransferBalance = ERC20(asset).balanceOf(address(this));
         (bool success, bytes memory returndata) = asset.call(abi.encodeWithSelector(ERC20.transferFrom.selector, from, address(this), amount));
-        if (!success || (returndata.length != 0 && !abi.decode(returndata, (bool)))) {
-            revert TransferInFailed(returndata);
-        }
+        optionalReturnBoolCall(success, returndata);
         return ERC20(asset).balanceOf(address(this)) - preTransferBalance;
     }
 
@@ -795,8 +793,16 @@ contract Comet is CometMainInterface {
      */
     function doTransferOut(address asset, address to, uint amount) internal {
         (bool success, bytes memory returndata) = asset.call(abi.encodeWithSelector(ERC20.transfer.selector, to, amount));
-        if (!success || (returndata.length != 0 && !abi.decode(returndata, (bool)))) {
-            revert TransferOutFailed(returndata);
+        optionalReturnBoolCall(success, returndata);
+    }
+
+    function optionalReturnBoolCall(bool success, bytes memory returndata) private pure {
+        if (!success) {
+            revert TransferFailed(returndata);
+        } else if (returndata.length != 0) {
+            if (!abi.decode(returndata, (bool))) {
+                revert TransferFailed(returndata);
+            }
         }
     }
 
@@ -1287,10 +1293,7 @@ contract Comet is CometMainInterface {
     function approveThis(address manager, address asset, uint amount) override external {
         if (msg.sender != governor) revert Unauthorized();
 
-        (bool success, bytes memory returndata) = asset.call(abi.encodeWithSelector(ERC20.approve.selector, manager, amount));
-        if (!success || (returndata.length != 0 && !abi.decode(returndata, (bool)))) {
-            revert ApproveFailed();
-        }
+        asset.call(abi.encodeWithSelector(ERC20.approve.selector, manager, amount));
     }
 
     /**
