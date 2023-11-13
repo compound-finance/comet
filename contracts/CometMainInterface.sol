@@ -30,7 +30,8 @@ abstract contract CometMainInterface is CometCore {
     error TimestampTooLarge();
     error TooManyAssets();
     error TooMuchSlippage();
-    error TransferFailed(bytes error);
+    error TransferInFailed();
+    error TransferOutFailed();
     error Unauthorized();
 
     event Supply(address indexed from, address indexed dst, uint amount);
