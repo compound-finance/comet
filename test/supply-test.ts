@@ -556,10 +556,9 @@ describe('supplyTo', function () {
     await comet.connect(alice).allow(EVIL.address, true);
     await wait(EVIL.connect(alice).approve(comet.address, 75e6));
     await EVIL.allocateTo(alice.address, 75e6);
-    const ReentrantCallBlockedErrorSelector = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('ReentrantCallBlocked()')).slice(0,10);
     await expect(
       comet.connect(alice).supplyTo(bob.address, EVIL.address, 75e6)
-    ).to.be.revertedWithCustomError(comet, 'TransferFailed').withArgs(ReentrantCallBlockedErrorSelector);
+    ).to.be.revertedWithCustomError(comet, 'ReentrantCallBlocked');
   });
 });
 
