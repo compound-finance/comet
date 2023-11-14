@@ -784,7 +784,7 @@ contract Comet is CometMainInterface {
         uint256 preTransferBalance = IERC20NonStandard(asset).balanceOf(address(this));
         IERC20NonStandard(asset).transferFrom(from, address(this), amount);
         bool success;
-        assembly {
+        assembly ("memory-safe") {
             switch returndatasize()
                 case 0 {                       // This is a non-standard ERC-20
                     success := not(0)          // set success to true
@@ -808,7 +808,7 @@ contract Comet is CometMainInterface {
     function doTransferOut(address asset, address to, uint amount) internal {
         IERC20NonStandard(asset).transfer(to, amount);
         bool success;
-        assembly {
+        assembly ("memory-safe") {
             switch returndatasize()
                 case 0 {                       // This is a non-standard ERC-20
                     success := not(0)          // set success to true
@@ -1310,8 +1310,7 @@ contract Comet is CometMainInterface {
      */
     function approveThis(address manager, address asset, uint amount) override external {
         if (msg.sender != governor) revert Unauthorized();
-
-        asset.call(abi.encodeWithSelector(IERC20NonStandard.approve.selector, manager, amount));
+        IERC20NonStandard(asset).approve(manager, amount);
     }
 
     /**
