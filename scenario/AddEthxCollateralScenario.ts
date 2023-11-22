@@ -14,7 +14,7 @@ const ETHX_WHALES = {
 
 // TODO: add ability to run ad hoc scenarios against a single migration, to avoid needing the scenario to do all this setup of
 // listing an asset
-scenario.only(
+scenario(
   'add new asset ethx',
   {
     filter: async (ctx) => !isBridgedDeployment(ctx),
