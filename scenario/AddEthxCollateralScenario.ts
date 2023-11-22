@@ -7,7 +7,7 @@ import { impersonateAddress } from '../plugins/scenario/utils';
 import { isBridgedDeployment } from './utils';
 
 const ETHX_ADDRESS = '0xA35b1B31Ce002FBF2058D22F30f95D405200A15b';
-const ETHX_PRICE_FEED_ADDRESS = '0xED65C5085a18Fa160Af0313E60dcc7905E944Dc7';
+const ETHX_PRICE_FEED_ADDRESS = '0xFaBEb1474C2Ab34838081BFdDcE4132f640E7D2d';
 const ETHX_WHALES = {
   mainnet: ['0x0E8123B792f627b2C95a352a892AC9D9D04C2237'],
 };
