@@ -210,12 +210,12 @@ contract Comet is CometMainInterface {
     function nonReentrantBefore() internal {
         bytes32 slot = REENTRANCY_GUARD_FLAG_SLOT;
         uint256 status;
-        assembly {
+        assembly ("memory-safe") {
             status := sload(slot)
         }
 
         if (status == REENTRANCY_GUARD_ENTERED) revert ReentrantCallBlocked();
-        assembly {
+        assembly ("memory-safe") {
             sstore(slot, REENTRANCY_GUARD_ENTERED)
         }
     }
@@ -223,7 +223,7 @@ contract Comet is CometMainInterface {
     function nonReentrantAfter() internal {
         bytes32 slot = REENTRANCY_GUARD_FLAG_SLOT;
         uint256 status;
-        assembly {
+        assembly ("memory-safe") {
             sstore(slot, REENTRANCY_GUARD_NOT_ENTERED)
         }
     }
