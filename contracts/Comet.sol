@@ -208,23 +208,23 @@ contract Comet is CometMainInterface {
     }
 
     function nonReentrantBefore() internal {
-        bytes32 slot = COMET_REENTRANCY_GUARD_FLAG_SLOT;
+        bytes32 slot = REENTRANCY_GUARD_FLAG_SLOT;
         uint256 status;
         assembly {
             status := sload(slot)
         }
 
-        if (status == COMET_REENTRANCY_GUARD_ENTERED) revert ReentrantCallBlocked();
+        if (status == REENTRANCY_GUARD_ENTERED) revert ReentrantCallBlocked();
         assembly {
-            sstore(slot, COMET_REENTRANCY_GUARD_ENTERED)
+            sstore(slot, REENTRANCY_GUARD_ENTERED)
         }
     }
 
     function nonReentrantAfter() internal {
-        bytes32 slot = COMET_REENTRANCY_GUARD_FLAG_SLOT;
+        bytes32 slot = REENTRANCY_GUARD_FLAG_SLOT;
         uint256 status;
         assembly {
-            sstore(slot, COMET_REENTRANCY_GUARD_NOT_ENTERED)
+            sstore(slot, REENTRANCY_GUARD_NOT_ENTERED)
         }
     }
 
@@ -1356,6 +1356,7 @@ contract Comet is CometMainInterface {
      */
     function approveThis(address manager, address asset, uint amount) override external {
         if (msg.sender != governor) revert Unauthorized();
+
         IERC20NonStandard(asset).approve(manager, amount);
     }
 
