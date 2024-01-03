@@ -16,6 +16,7 @@ contract ScrollBridgeReceiver is SweepableBridgeReceiver {
     /// @param l2Messenger_ Address of Scroll L2 Messenger contract
     constructor(address l2Messenger_) {
         l2Messenger = l2Messenger_;
+        emit Newl2Messenger(address(0), l2Messenger_);
     }
 
     /// @notice Update the L2 Messenger address
