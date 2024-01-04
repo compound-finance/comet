@@ -5,7 +5,7 @@ import "../SweepableBridgeReceiver.sol";
 import "./IScrollMessenger.sol";
 
 /// @title Scroll Bridge Receiver
-/// @notice Contract to facilitate message passing from the Comet protocol to Scroll's bridge
+/// @notice Contract that processes messages passed from Compound governance using the Scroll bridge
 contract ScrollBridgeReceiver is SweepableBridgeReceiver {
     error InvalidL2Messenger();
 
