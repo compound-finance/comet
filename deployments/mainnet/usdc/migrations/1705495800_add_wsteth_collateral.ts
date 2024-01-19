@@ -7,11 +7,11 @@ import { expect } from 'chai';
 interface Vars { wstETHUSDPriceFeedAddress: string };
 
 // https://docs.lido.fi/deployed-contracts/#core-protocol
-const WSTETH_MAINNET_ADDRESS: string = '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0'
+const WSTETH_MAINNET_ADDRESS: string = '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0';
 
-// ETH/USD price feed
-// ENS: eth-usd.data.eth
-const ETH_USD_PRICEFEED: string = '0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419'
+// ETH/USD mainnet price feed
+// https://data.chain.link/ethereum/mainnet/crypto-usd/eth-usd
+const ETH_USD_PRICEFEED: string = '0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419';
 
 // Gauntlet Initial Parameter Recommendations
 // https://www.comp.xyz/t/temp-check-add-wsteth-as-a-collateral-on-base-eth-market-usdc-market-on-arbitrum-and-ethereum-mainnet/4867/12
@@ -35,8 +35,8 @@ export default migration('1705495800_add_wsteth_collateral', {
     // - https://github.com/bgd-labs/aave-address-book/blob/main/src/AaveV3Ethereum.sol#L150
     // can't be re-used here diverging by interface (latestAnswer vs latestRoundData)
     //
-    const wstETHUSDPriceFeedAddress: Contract = await deploymentManager.deploy(
-      'wstETHUSD:priceFeed',
+    const wstETHUSDPriceFeed = await deploymentManager.deploy(
+      'wstETH:priceFeed',
       'pricefeeds/WstETHPriceFeed.sol',
       [
         ETH_USD_PRICEFEED,      // ETH/USD Chainlink price feed (ENS: eth-usd.data.eth)
@@ -44,7 +44,7 @@ export default migration('1705495800_add_wsteth_collateral', {
         8                       // decimals
       ]
     );
-    return { wstETHUSDPriceFeedAddress: wstETHUSDPriceFeedAddress.address };
+    return { wstETHUSDPriceFeedAddress: wstETHUSDPriceFeed.address };
   },
 
   enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, vars: Vars) => {
@@ -53,7 +53,7 @@ export default migration('1705495800_add_wsteth_collateral', {
     // wstETH token address
     // https://etherscan.io/address/0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0
     const wstETH = await deploymentManager.existing('wstETH', WSTETH_MAINNET_ADDRESS);
-    const wstETHUSDPriceFeed = await deploymentManager.existing('wstETHUSD:priceFeed', vars.wstETHUSDPriceFeedAddress);
+    const wstETHUSDPriceFeed = await deploymentManager.existing('wstETH:priceFeed', vars.wstETHUSDPriceFeedAddress);
 
     const {
       governor,
@@ -108,7 +108,7 @@ export default migration('1705495800_add_wsteth_collateral', {
     const {
       comet,
       wstETH,
-      'wstETHUSD:priceFeed': wstETHUSDPriceFeed
+      'wstETH:priceFeed': wstETHUSDPriceFeed
     } = await deploymentManager.getContracts();
 
     const wstETHInfo = await comet.getAssetInfoByAddress(wstETH.address);
