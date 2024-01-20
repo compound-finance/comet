@@ -72,7 +72,6 @@ export default migration('1705687478_add_wsteth_collateral', {
 
     const {
       arbitrumInbox,
-      arbitrumL1GatewayRouter,
       timelock,
       governor
     } = await govDeploymentManager.getContracts();
@@ -136,13 +135,18 @@ export default migration('1705687478_add_wsteth_collateral', {
         value: createRetryableTicketGasParams.deposit
       },
     ];
-    const description = '# Add wstETH as Collateral to cUSDCv3 Arbitrum\nSee the proposal and parameter recommendations here: https://www.comp.xyz/t/temp-check-add-wsteth-as-a-collateral-on-base-eth-market-usdc-market-on-arbitrum-and-ethereum-mainnet/4867';
-    const txn = await deploymentManager.retry(
-      async () => governor.propose(...await proposal(actions, description))
-    );
-    trace(txn);
 
-    const event = (await txn.wait()).events.find(event => event.event === 'ProposalCreated');
+    const description = '# Add wstETH as Collateral to cUSDCv3 Arbitrum\nSee the proposal and parameter recommendations here: https://www.comp.xyz/t/temp-check-add-wsteth-as-a-collateral-on-base-eth-market-usdc-market-on-arbitrum-and-ethereum-mainnet/4867';
+
+    const txn = await govDeploymentManager.retry(async () =>
+      trace(
+        await governor.propose(...(await proposal(mainnetActions, description)))
+      )
+    );
+
+    const event = txn.events.find(
+      (event) => event.event === "ProposalCreated"
+    );
     const [proposalId] = event.args;
     trace(`Created proposal ${proposalId}.`);
   },
