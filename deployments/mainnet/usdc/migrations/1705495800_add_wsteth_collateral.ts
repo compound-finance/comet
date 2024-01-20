@@ -119,8 +119,8 @@ export default migration('1705495800_add_wsteth_collateral', {
 
     // check price composition
     const ethUSDPriceFeed = await deploymentManager.existing('ETHUSDPriceFeed', ETH_USD_PRICEFEED);
-    const { r_, ethUSDPrice, s_, u_, a_ } = await ethUSDPriceFeed.latestRoundData();
-    const { r__, wstETHUSDPrice, s__, u__, a__ } = await wstETHUSDPriceFeed.latestRoundData();
+    const { 'answer': ethUSDPrice } = await ethUSDPriceFeed.latestRoundData();
+    const { 'answer': wstETHUSDPrice } = await wstETHUSDPriceFeed.latestRoundData();
     const wstETHPerStETH = BigInt(await wstETH.tokensPerStEth());
 
     expect(BigInt(wstETHUSDPrice)).to.be.eq(BigInt(ethUSDPrice) * exp(10, 18) / wstETHPerStETH);
