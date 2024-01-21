@@ -57,8 +57,6 @@ export default migration('1705687478_add_wsteth_collateral', {
   enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, vars: Vars) => {
     const trace = deploymentManager.tracer();
 
-    // wstETH token address
-    // https://etherscan.io/address/0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0
     const wstETH = await deploymentManager.existing('wstETH', WSTETH_ARBITRUM_ADDRESS, "arbitrum", "contracts/ERC20.sol:ERC20");
     const wstETHUSDPriceFeed = await deploymentManager.existing('wstETH:priceFeed', vars.wstETHUSDPriceFeedAddress, "arbitrum");
 
@@ -136,7 +134,7 @@ export default migration('1705687478_add_wsteth_collateral', {
       },
     ];
 
-    const description = '# Add wstETH as Collateral to cUSDCv3 Arbitrum\nSee the proposal and parameter recommendations here: https://www.comp.xyz/t/temp-check-add-wsteth-as-a-collateral-on-base-eth-market-usdc-market-on-arbitrum-and-ethereum-mainnet/4867';
+    const description = '# Add wstETH as Collateral to cUSDCv3 on Arbitrum\nSee the proposal and parameter recommendations here: https://www.comp.xyz/t/temp-check-add-wsteth-as-a-collateral-on-base-eth-market-usdc-market-on-arbitrum-and-ethereum-mainnet/4867';
 
     const txn = await govDeploymentManager.retry(async () =>
       trace(
@@ -172,9 +170,9 @@ export default migration('1705687478_add_wsteth_collateral', {
     const ethUSDPriceFeed = await deploymentManager.existing('ETHUSDPriceFeed', ETH_USD_PRICEFEED);
     const wstETHstETHRateFeed = await deploymentManager.existing('wstETHstETHRateFeed', WSTETH_STETH_EXCHANGE_RATE);
 
-    const { r_, ethUSDPrice, s_, u_, a_ } = await ethUSDPriceFeed.latestRoundData();
-    const { r__, wstETHstETHRate, s__, u__, a__ } = await wstETHstETHRateFeed.latestRoundData();
-    const { r___, wstETHUSDPrice, s___, u___, a___ } = await wstETHUSDPriceFeed.latestRoundData();
+    const { 'answer': ethUSDPrice } = await ethUSDPriceFeed.latestRoundData();
+    const { 'answer': wstETHstETHRate } = await wstETHstETHRateFeed.latestRoundData();
+    const { 'answer': wstETHUSDPrice } = await wstETHUSDPriceFeed.latestRoundData();
 
     expect(BigInt(wstETHUSDPrice)).to.be.eq(BigInt(ethUSDPrice) * BigInt(wstETHstETHRate) / exp(10, 18));
 
