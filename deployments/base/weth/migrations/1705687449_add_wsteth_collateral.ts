@@ -6,14 +6,14 @@ import { utils } from "ethers";
 
 import { expect } from 'chai';
 
-interface Vars { };
+interface Vars { wstETHRateFeedAddress: string };
 
 // https://docs.lido.fi/deployed-contracts/#base
 const WSTETH_BASE_ADDRESS: string = '0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452';
 
 // wstETH:stETH exchange rate feed
 // https://data.chain.link/base/base/crypto-eth/wsteth-steth%20exchangerate
-const WSTETH_STETH_EXCHANGE_RATE: string = '0xb88bac61a4ca37c43a3725912b1f472c9a5bc061';
+const WSTETH_STETH_EXCHANGE_RATE_FEED_E18: string = '0xb88bac61a4ca37c43a3725912b1f472c9a5bc061';
 
 // Gauntlet Initial Parameter Recommendations
 // https://www.comp.xyz/t/temp-check-add-wsteth-as-a-collateral-on-base-eth-market-usdc-market-on-arbitrum-and-ethereum-mainnet/4867/12
@@ -24,7 +24,23 @@ const SUPPLY_CAP = exp(100, 18);
 
 export default migration('1705687449_add_wsteth_collateral', {
   prepare: async (deploymentManager: DeploymentManager) => {
-    return {};
+    // Deploy a scaled rate feed for wstETH/stETH exchange rate
+    //
+    //! invariant: presumes 1:1 stETH/ETH
+    //! as the Lido on Ethereum protocol has primary market for withdrawal redemptions
+    //
+    // similar to AAVE v3 approach:
+    // https://governance.aave.com/t/bgd-operational-oracles-update/13213/9
+    //
+    const wstETHScalingRateFeed = await deploymentManager.deploy(
+      'wstETH:priceFeed',
+      'pricefeeds/ScalingPriceFeed.sol',
+      [
+        WSTETH_STETH_EXCHANGE_RATE_FEED_E18, // wstETH / stETH Chainlink price feed
+        8                                    // new decimals (18 -> 8)
+      ]
+    );
+    return { wstETHRateFeedAddress: wstETHScalingRateFeed.address };
   },
 
   enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, vars: Vars) => {
@@ -32,7 +48,7 @@ export default migration('1705687449_add_wsteth_collateral', {
 
     // wstETH token address
     const wstETH = await deploymentManager.existing('wstETH', WSTETH_BASE_ADDRESS, "base", "contracts/ERC20.sol:ERC20");
-    const wstETHStETHRateFeed = await deploymentManager.existing('wstETH:priceFeed', WSTETH_STETH_EXCHANGE_RATE, "base");
+    const wstETHStETHRateFeed = await deploymentManager.existing('wstETH:priceFeed', vars.wstETHRateFeedAddress, "base");
 
     const {
       bridgeReceiver,

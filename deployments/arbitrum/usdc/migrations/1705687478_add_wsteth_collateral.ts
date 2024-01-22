@@ -17,7 +17,7 @@ const ETH_USD_PRICEFEED: string = '0x639fe6ab55c921f74e7fac1ee960c0b6293ba612';
 
 // wstETH/stETH exchange rate feed
 // https://data.chain.link/arbitrum/mainnet/crypto-eth/wsteth-steth%20exchangerate
-const WSTETH_STETH_EXCHANGE_RATE: string = '0xb1552c5e96b312d0bf8b554186f846c40614a540';
+const WSTETH_STETH_EXCHANGE_RATE_E18: string = '0xb1552c5e96b312d0bf8b554186f846c40614a540';
 
 // Gauntlet Initial Parameter Recommendations
 // https://www.comp.xyz/t/temp-check-add-wsteth-as-a-collateral-on-base-eth-market-usdc-market-on-arbitrum-and-ethereum-mainnet/4867/12
@@ -45,7 +45,7 @@ export default migration('1705687478_add_wsteth_collateral', {
       'wstETH:priceFeed',
       'pricefeeds/MultiplicativePriceFeed.sol',
       [
-        WSTETH_STETH_EXCHANGE_RATE,
+        WSTETH_STETH_EXCHANGE_RATE_E18,
         ETH_USD_PRICEFEED,
         8,
         'wstETH/ETH/USD'
@@ -168,7 +168,7 @@ export default migration('1705687478_add_wsteth_collateral', {
 
     // check price composition
     const ethUSDPriceFeed = await deploymentManager.existing('ETHUSDPriceFeed', ETH_USD_PRICEFEED);
-    const wstETHstETHRateFeed = await deploymentManager.existing('wstETHstETHRateFeed', WSTETH_STETH_EXCHANGE_RATE);
+    const wstETHstETHRateFeed = await deploymentManager.existing('wstETHstETHRateFeed', WSTETH_STETH_EXCHANGE_RATE_E18);
 
     const { 'answer': ethUSDPrice } = await ethUSDPriceFeed.latestRoundData();
     const { 'answer': wstETHstETHRate } = await wstETHstETHRateFeed.latestRoundData();
