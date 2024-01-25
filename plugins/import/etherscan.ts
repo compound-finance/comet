@@ -22,6 +22,7 @@ export function getEtherscanApiUrl(network: string): string {
     'base-goerli': 'api-goerli.basescan.org',
     'linea-goerli': 'api-goerli.lineascan.build',
     'scroll-goerli': 'alpha-blockscout.scroll.io',
+    scroll: 'api.scrollscan.com'
   }[network];
 
   if (!host) {
@@ -47,6 +48,7 @@ export function getEtherscanUrl(network: string): string {
     'base-goerli': 'goerli.basescan.org',
     'linea-goerli': 'goerli.lineascan.build',
     'scroll-goerli': 'alpha-blockscout.scroll.io',
+    scroll: 'scrollscan.com'
   }[network];
 
   if (!host) {
@@ -72,6 +74,7 @@ export function getEtherscanApiKey(network: string): string {
     'base-goerli': process.env.BASESCAN_KEY,
     'linea-goerli': process.env.LINEASCAN_KEY,
     'scroll-goerli': process.env.ETHERSCAN_KEY,
+    scroll: process.env.ETHERSCAN_KEY
   }[network];
 
   if (!apiKey) {
