@@ -23,7 +23,7 @@ const SUPPLY_CAP = exp(40000, 18);
 export default migration('1705495800_add_wsteth_collateral', {
   prepare: async (deploymentManager: DeploymentManager) => {
     // Deploy a composed price feed for wstETH
-    // wstETH/USDC = wstETH/stETH Mainnet exchange rate adapter + ETH/USD
+    // wstETH/USDC = wstETH/stETH Mainnet exchange rate adapter x ETH/USD
     //
     //! invariant: presumes 1:1 stETH/ETH
     //! as the Lido on Ethereum protocol has primary market for withdrawal redemptions
@@ -47,13 +47,17 @@ export default migration('1705495800_add_wsteth_collateral', {
     return { wstETHUSDPriceFeedAddress: wstETHUSDPriceFeed.address };
   },
 
-  enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, vars: Vars) => {
+  enact: async (
+    deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, vars: Vars
+  ) => {
     const trace = deploymentManager.tracer();
 
     // wstETH token address
     // https://etherscan.io/address/0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0
     const wstETH = await deploymentManager.existing('wstETH', WSTETH_MAINNET_ADDRESS);
-    const wstETHUSDPriceFeed = await deploymentManager.existing('wstETH:priceFeed', vars.wstETHUSDPriceFeedAddress);
+    const wstETHUSDPriceFeed = await deploymentManager.existing(
+      'wstETH:priceFeed', vars.wstETHUSDPriceFeedAddress
+    );
 
     const {
       governor,
@@ -100,11 +104,7 @@ export default migration('1705495800_add_wsteth_collateral', {
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
-  },
-
-  async verify(deploymentManager: DeploymentManager) {
+  verify: async (deploymentManager: DeploymentManager) => {
     const {
       comet,
       wstETH,
@@ -117,13 +117,19 @@ export default migration('1705495800_add_wsteth_collateral', {
     expect(await wstETHInfo.priceFeed).to.be.eq(wstETHUSDPriceFeed.address);
     expect(await wstETHUSDPriceFeed.decimals()).to.be.eq(8);
 
+    // check token
+    expect(await wstETHInfo.asset).to.be.eq(wstETH.address)
+    expect(await wstETH.symbol()).to.be.eq('wstETH')
+    expect(await wstETH.decimals()).to.be.eq(18n)
+
     // check price composition
     const ethUSDPriceFeed = await deploymentManager.existing('ETHUSDPriceFeed', ETH_USD_PRICEFEED);
     const { 'answer': ethUSDPrice } = await ethUSDPriceFeed.latestRoundData();
     const { 'answer': wstETHUSDPrice } = await wstETHUSDPriceFeed.latestRoundData();
     const wstETHPerStETH = BigInt(await wstETH.tokensPerStEth());
 
-    expect(BigInt(wstETHUSDPrice)).to.be.eq(BigInt(ethUSDPrice) * exp(10, 18) / wstETHPerStETH);
+    // ethUSDPrice has 8 decimals, wstETHPerStETH has 18 decimals
+    expect(BigInt(wstETHUSDPrice)).to.be.eq(BigInt(ethUSDPrice) * exp(1, 18) / wstETHPerStETH);
 
     // check config
     expect(await wstETHInfo.borrowCollateralFactor).to.be.eq(BORROW_COLLATERAL_FACTOR);

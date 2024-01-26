@@ -43,12 +43,18 @@ export default migration('1705687449_add_wsteth_collateral', {
     return { wstETHRateFeedAddress: wstETHScalingRateFeed.address };
   },
 
-  enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, vars: Vars) => {
+  enact: async (
+    deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, vars: Vars
+  ) => {
     const trace = deploymentManager.tracer();
 
     // wstETH token address
-    const wstETH = await deploymentManager.existing('wstETH', WSTETH_BASE_ADDRESS, "base", "contracts/ERC20.sol:ERC20");
-    const wstETHStETHRateFeed = await deploymentManager.existing('wstETH:priceFeed', vars.wstETHRateFeedAddress, "base");
+    const wstETH = await deploymentManager.existing(
+      'wstETH', WSTETH_BASE_ADDRESS, "base", "contracts/ERC20.sol:ERC20"
+    );
+    const wstETHStETHRateFeed = await deploymentManager.existing(
+      'wstETH:priceFeed', vars.wstETHRateFeedAddress, "base"
+    );
 
     const {
       bridgeReceiver,
@@ -56,8 +62,6 @@ export default migration('1705687449_add_wsteth_collateral', {
       comet,
       cometAdmin,
       configurator,
-      rewards,
-      WETH
     } = await deploymentManager.getContracts();
 
     const {
@@ -112,7 +116,6 @@ export default migration('1705687449_add_wsteth_collateral', {
     ];
 
     const description = '# Add wstETH as Collateral to cWETHv3 on Base\nSee the proposal and parameter recommendations here: https://www.comp.xyz/t/temp-check-add-wsteth-as-a-collateral-on-base-eth-market-usdc-market-on-arbitrum-and-ethereum-mainnet/4867';
-
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
@@ -123,11 +126,7 @@ export default migration('1705687449_add_wsteth_collateral', {
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
-  },
-
-  async verify(deploymentManager: DeploymentManager) {
+  verify: async (deploymentManager: DeploymentManager) => {
     const {
       comet,
       wstETH,
@@ -139,6 +138,11 @@ export default migration('1705687449_add_wsteth_collateral', {
     // check pricefeed
     expect(await wstETHInfo.priceFeed).to.be.eq(wstETHRateFeed.address);
     expect(await wstETHRateFeed.decimals()).to.be.eq(8);
+
+    // check token
+    expect(await wstETHInfo.asset).to.be.eq(wstETH.address)
+    expect(await wstETH.symbol()).to.be.eq('wstETH')
+    expect(await wstETH.decimals()).to.be.eq(18n)
 
     // check config
     expect(await wstETHInfo.borrowCollateralFactor).to.be.eq(BORROW_COLLATERAL_FACTOR);
