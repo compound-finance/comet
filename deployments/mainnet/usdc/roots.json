@@ -10,5 +10,7 @@
     "CCTPTokenMessenger": "0xbd3fa81b58ba92a82136038b25adec7066af3155", 
     "CCTPMessageTransmitter": "0x0a992d191deec32afe36203ad87d7d289a738f81",
     "baseL1CrossDomainMessenger": "0x866E82a600A1414e583f7F13623F1aC5d58b0Afa",
-    "baseL1StandardBridge": "0x3154Cf16ccdb4C6d922629664174b904d80F2C35"
+    "baseL1StandardBridge": "0x3154Cf16ccdb4C6d922629664174b904d80F2C35",
+    "scrollMessenger": "0x6774Bcbd5ceCeF1336b5300fb5186a12DDD8b367",
+    "scrollL1TokenBridge": "0xF8B1378579659D8F7EE5f3C929c2f3E332E41Fd6"
 }
