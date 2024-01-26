@@ -20,6 +20,7 @@ export default async function deploy(
   const l2ERC20Gateway = await deploymentManager.existing('l2ERC20Gateway','0xE2b4795039517653c5Ae8C2A9BFdd783b48f447A','scroll');
   const l2ETHGateway = await deploymentManager.existing('l2ETHGateway', '0x6EA73e05AdC79974B931123675ea8F78FfdacDF0', 'scroll');
   const l2WETHGateway = await deploymentManager.existing('l2WETHGateway','0x7003E7B7186f0E6601203b99F7B8DECBfA391cf9','scroll');
+  const l2WstETHGateway = await deploymentManager.existing('l2WstETHGateway', '0x8aE8f22226B9d789A36AC81474e633f8bE2856c9', 'scroll');
 
   // Deploy ScrollBridgeReceiver
   const bridgeReceiver = await deploymentManager.deploy(
@@ -67,15 +68,10 @@ export default async function deploy(
   const { comet } = deployed;
 
   // Deploy Bulker
-  const bulker = await deploymentManager.deploy(
-    'bulker',
-    'bulkers/MainnetBulker.sol',
-    [
-      await comet.governor(),        // admin_
-      WETH.address,                  // weth_
-      wstETH.address                 // wsteth_
-    ]
-  );
+  const bulker = await deploymentManager.deploy('bulker','bulkers/BaseBulker.sol', [
+    await comet.governor(),        // admin_
+    WETH.address,                  // weth_
+  ]);
 
   return {
     ...deployed,
@@ -84,6 +80,7 @@ export default async function deploy(
     l2ERC20Gateway,
     l2ETHGateway,
     l2WETHGateway,
+    l2WstETHGateway,
     bulker,
   };
 }

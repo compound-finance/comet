@@ -29,6 +29,7 @@ export default async function relayScrollMessage(
   const l2ERC20Gateway = await bridgeDeploymentManager.getContractOrThrow('l2ERC20Gateway');
   const l2ETHGateway = await bridgeDeploymentManager.getContractOrThrow('l2ETHGateway');
   const l2WETHGateway = await bridgeDeploymentManager.getContractOrThrow('l2WETHGateway');
+  const l2WstETHGateway = await bridgeDeploymentManager.getContractOrThrow('l2WstETHGateway');
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
 
@@ -116,7 +117,17 @@ export default async function relayScrollMessage(
       console.log(
         `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged over ${amount} of WETH to user ${to}`
       );
-    } else if (target === bridgeReceiver.address) {
+    } else if (target === l2WstETHGateway.address){
+      // 1d. Bridging WstETH
+      const { l1Token, _l2Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
+        ['address _l1Token', 'address _l2Token','address _from', 'address _to','uint256 _amount', 'bytes _data'],
+        messageWithoutSigHash
+      );
+  
+      console.log(
+        `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged over ${amount} of WstETH to user ${to}`
+      );
+    }else if (target === bridgeReceiver.address) {
       // Cross-chain message passing
       const proposalCreatedEvent = relayMessageTxn.events.find(event => event.address === bridgeReceiver.address);
       const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
