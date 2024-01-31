@@ -265,7 +265,7 @@ scenario(
 scenario(
   'upgrade Linea governance contracts and ensure they work properly',
   {
-    filter: async ctx => matchesDeployment(ctx, [{ network: 'linea-goerli' }])
+    filter: async ctx => matchesDeployment(ctx, [{ network: 'linea-goerli' },{ network: 'linea' }])
   },
   async (
     {

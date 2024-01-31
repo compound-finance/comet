@@ -112,6 +112,9 @@ export const WHALES = {
   'base-goerli': [
     '0x21856935e5689490c72865f34CC665D0FF25664b'  // USDC whale
   ],
+  linea: [
+    '0xf96116e124eb3f62ddc6a9cfbdc58d7f8a37c50a', // USDC whale
+  ],
   'linea-goerli': [
     '0xC858966280Da3Fa0348E51D2c3B892EcC889fC98', // USDC whale
     '0x44411c605eb7e009cad03f3847cfbbfcf8895130'  // COMP whale

@@ -20,6 +20,7 @@ export function getEtherscanApiUrl(network: string): string {
     'arbitrum-goerli': 'api-goerli.arbiscan.io',
     base: 'api.basescan.org',
     'base-goerli': 'api-goerli.basescan.org',
+    linea: 'api.lineascan.build',
     'linea-goerli': 'api-goerli.lineascan.build'
   }[network];
 
@@ -44,6 +45,7 @@ export function getEtherscanUrl(network: string): string {
     'arbitrum-goerli': 'goerli.arbiscan.io',
     base: 'basescan.org',
     'base-goerli': 'goerli.basescan.org',
+    linea: 'lineascan.build',
     'linea-goerli': 'goerli.lineascan.build'
   }[network];
 
@@ -68,6 +70,7 @@ export function getEtherscanApiKey(network: string): string {
     'arbitrum-goerli': process.env.ARBISCAN_KEY,
     base: process.env.BASESCAN_KEY,
     'base-goerli': process.env.BASESCAN_KEY,
+    linea: process.env.LINEASCAN_KEY,
     'linea-goerli': process.env.LINEASCAN_KEY
   }[network];
 
