@@ -562,5 +562,68 @@ describe('buyCollateral', function () {
       // EvilToken attack should be blocked, so totalSupplyBase should be 0
       expect(evilBobPortfolio.internal.EVIL).to.equal(0);
     });
+
+    it('reentrant supply is reverted', async () => {
+      const wethArgs = {
+        initial: 1e4,
+        decimals: 18,
+        initialPrice: 3000,
+      };
+      const baseTokenArgs = {
+        decimals: 6,
+        initial: 1e6,
+        initialPrice: 1,
+      };
+
+      // malicious scenario, EVIL token is base
+      const evilProtocol = await makeProtocol({
+        base: 'EVIL',
+        assets: {
+          EVIL: {
+            ...baseTokenArgs,
+            factory: await ethers.getContractFactory('EvilToken') as EvilToken__factory,
+          },
+          WETH: wethArgs,
+        },
+        targetReserves: 1
+      });
+      const {
+        comet: evilComet,
+        tokens: evilTokens,
+        users: [evilAlice, evilBob]
+      } = evilProtocol;
+      const { WETH: evilWETH, EVIL } = <{ WETH: FaucetToken, EVIL: EvilToken }>evilTokens;
+     
+      // add attack to EVIL token
+      const attack = Object.assign({}, await EVIL.getAttack(), {
+        attackType: ReentryAttack.SupplyFrom,
+        source: evilAlice.address,
+        destination: evilBob.address,
+        asset: EVIL.address,
+        amount: 3000e6,
+        maxCalls: 1
+      });
+      await EVIL.setAttack(attack);
+
+      // allocate tokens (evil)
+      await evilWETH.allocateTo(evilComet.address, exp(100, 18));
+      await EVIL.allocateTo(evilAlice.address, exp(5000, 6));
+
+      // approve Comet to move funds
+      await EVIL.connect(evilAlice).approve(EVIL.address, exp(5000, 6));
+      await EVIL.connect(evilAlice).approve(evilComet.address, exp(5000, 6));
+
+      // authorize EVIL, since callback will originate from EVIL token address
+      await evilComet.connect(evilAlice).allow(EVIL.address, true);
+      // call buyCollateral; supplyFrom is called in in callback
+      await expect(evilComet
+        .connect(evilAlice)
+        .buyCollateral(
+          evilWETH.address,
+          exp(0, 18),
+          exp(3000, 6),
+          evilAlice.address
+      )).to.be.revertedWith("custom error 'ReentrantCallBlocked()'");
+    });
   });
 });

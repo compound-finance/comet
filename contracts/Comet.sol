@@ -201,12 +201,18 @@ contract Comet is CometMainInterface {
         (asset14_a, asset14_b) = getPackedAssetInternal(config.assetConfigs, 14);
     }
 
+    /**
+     * @dev Non-reentrant modifier
+     */
     modifier nonReentrant() {
         nonReentrantBefore();
         _;
         nonReentrantAfter();
     }
 
+    /**
+     * @dev This will set the flag before the call and revert if it is already set
+     */
     function nonReentrantBefore() internal {
         bytes32 slot = REENTRANCY_GUARD_FLAG_SLOT;
         uint256 status;
@@ -220,6 +226,9 @@ contract Comet is CometMainInterface {
         }
     }
 
+    /**
+     * @dev This will unset the flag after the call
+     */
     function nonReentrantAfter() internal {
         bytes32 slot = REENTRANCY_GUARD_FLAG_SLOT;
         uint256 status;
