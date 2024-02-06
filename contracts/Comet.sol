@@ -211,7 +211,7 @@ contract Comet is CometMainInterface {
     }
 
     /**
-     * @dev This will set the flag before the call and revert if it is already set
+     * @dev Checks that the reentrancy flag is not set and then sets the flag
      */
     function nonReentrantBefore() internal {
         bytes32 slot = REENTRANCY_GUARD_FLAG_SLOT;
