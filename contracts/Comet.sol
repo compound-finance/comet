@@ -227,7 +227,7 @@ contract Comet is CometMainInterface {
     }
 
     /**
-     * @dev This will unset the flag after the call
+     * @dev Unsets the reentrancy flag
      */
     function nonReentrantAfter() internal {
         bytes32 slot = REENTRANCY_GUARD_FLAG_SLOT;
