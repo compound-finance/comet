@@ -563,7 +563,7 @@ describe('buyCollateral', function () {
       expect(evilBobPortfolio.internal.EVIL).to.equal(0);
     });
 
-    it('reentrant supply is reverted', async () => {
+    it('reentrant buyCollateral is reverted', async () => {
       const wethArgs = {
         initial: 1e4,
         decimals: 18,
@@ -615,6 +615,7 @@ describe('buyCollateral', function () {
 
       // authorize EVIL, since callback will originate from EVIL token address
       await evilComet.connect(evilAlice).allow(EVIL.address, true);
+      
       // call buyCollateral; supplyFrom is called in callback
       await expect(evilComet
         .connect(evilAlice)
