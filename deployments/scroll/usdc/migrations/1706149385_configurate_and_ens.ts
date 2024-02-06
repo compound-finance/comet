@@ -89,7 +89,7 @@ export default migration('1694594095_configurate_and_ens', {
         args: [bridgeReceiver.address, 0, l2ProposalData, 600_000]
       },
 
-      // 2. Approve Ethereum's StandardERC20Gateway to take Timelock's COMP (for bridging)
+      // 2. Approve Scroll's L1StandardERC20Gateway to take Timelock's COMP (for bridging)
       {
         contract: COMP,
         signature: 'approve(address,uint256)',
