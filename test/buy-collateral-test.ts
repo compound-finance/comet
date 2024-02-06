@@ -409,7 +409,7 @@ describe('buyCollateral', function () {
   });
 
   describe('reentrancy', function() {
-    it('is blocked during reentrant supply', async () => {
+    it('is not broken by reentrancy supply', async () => {
       const wethArgs = {
         initial: 1e4,
         decimals: 18,
@@ -596,12 +596,13 @@ describe('buyCollateral', function () {
      
       // add attack to EVIL token
       const attack = Object.assign({}, await EVIL.getAttack(), {
-        attackType: ReentryAttack.SupplyFrom,
+        attackType: ReentryAttack.BuyCollateral,
         source: evilAlice.address,
         destination: evilBob.address,
         asset: EVIL.address,
         amount: 3000e6,
-        maxCalls: 1
+        maxCalls: 1,
+        collateralAsset: evilWETH.address,
       });
       await EVIL.setAttack(attack);
 
