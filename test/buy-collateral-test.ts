@@ -623,7 +623,7 @@ describe('buyCollateral', function () {
           exp(0, 18),
           exp(3000, 6),
           evilAlice.address
-      )).to.be.revertedWith("custom error 'ReentrantCallBlocked()'");
+        )).to.be.revertedWith("custom error 'ReentrantCallBlocked()'");
     });
   });
 });
