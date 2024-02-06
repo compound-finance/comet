@@ -202,7 +202,7 @@ contract Comet is CometMainInterface {
     }
 
     /**
-     * @dev Non-reentrant modifier
+     * @dev Prevents marked functions from being reentered 
      */
     modifier nonReentrant() {
         nonReentrantBefore();
