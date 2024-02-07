@@ -20,8 +20,8 @@
   },
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": "0",
-    "baseBorrowSpeed": "0",
+    "baseSupplySpeed": "0e15",
+    "baseBorrowSpeed": "0e15",
     "baseMinForRewards": "1000e6"
   },
   "assets": {
