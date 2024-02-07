@@ -599,10 +599,9 @@ describe('buyCollateral', function () {
         attackType: ReentryAttack.BuyCollateral,
         source: evilAlice.address,
         destination: evilBob.address,
-        asset: EVIL.address,
+        asset: evilWETH.address,
         amount: 3000e6,
-        maxCalls: 1,
-        collateralAsset: evilWETH.address,
+        maxCalls: 1
       });
       await EVIL.setAttack(attack);
 

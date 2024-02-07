@@ -24,7 +24,6 @@ contract EvilToken is FaucetToken {
         address asset;
         uint amount;
         uint maxCalls;
-        address collateralAsset;
     }
 
     ReentryAttack public attack;
@@ -42,8 +41,7 @@ contract EvilToken is FaucetToken {
             destination: address(this),
             asset: address(this),
             amount: 1e6,
-            maxCalls: type(uint).max,
-            collateralAsset: address(0)
+            maxCalls: type(uint).max
         });
     }
 
@@ -97,7 +95,7 @@ contract EvilToken is FaucetToken {
             );
         }  else if (reentryAttack.attackType == AttackType.BUY_COLLATERAL) {
             Comet(payable(msg.sender)).buyCollateral(
-                reentryAttack.collateralAsset,
+                reentryAttack.asset,
                 0,
                 reentryAttack.amount,
                 reentryAttack.destination
