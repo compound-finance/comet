@@ -467,7 +467,7 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'goerli'
       },
       {
-        name: 'scroll',
+        name: 'scroll-usdc',
         network: 'scroll',
         deployment: 'usdc',
         auxiliaryBase: 'mainnet'

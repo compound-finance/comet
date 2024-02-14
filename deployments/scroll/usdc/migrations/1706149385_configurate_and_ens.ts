@@ -12,7 +12,7 @@ const ENSTextRecordKey = 'v3-official-markets';
 const scrollCOMPAddress = '0x643e160a3C3E2B7eae198f0beB1BfD2441450e86';
 const scrollL1StandardERC20GatewayAddress = "0xD8A791fE2bE73eb6E6cF1eb0cb3F36adC9B3F8f9"
 
-export default migration('1694594095_configurate_and_ens', {
+export default migration('1706149385_configurate_and_ens', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
   },
