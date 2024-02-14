@@ -31,15 +31,15 @@
       "decimals": "18",
       "borrowCF": 0.75,
       "liquidateCF": 0.8,
-      "liquidationFactor": 0.93,
+      "liquidationFactor": 0.85,
       "supplyCap": "7500e18"
     },
     "WETH": {
       "address": "0x4200000000000000000000000000000000000006",
       "priceFeed": "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70",
       "decimals": "18",
-      "borrowCF": 0.79,
-      "liquidateCF": 0.84,
+      "borrowCF": 0.80,
+      "liquidateCF": 0.90,
       "liquidationFactor": 0.95,
       "supplyCap": "11000e18"
     }
