@@ -490,6 +490,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageToChildCalldata);
       break;
     }
+    case 'linea':
     case 'linea-goerli': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'uint256', 'bytes'],

@@ -5,13 +5,16 @@ import { Log } from '@ethersproject/abstract-provider';
 import { OpenBridgedProposal } from '../context/Gov';
 import { impersonateAddress } from '../../plugins/scenario/utils';
 
-const LINEA_SETTER_ROLE_ACCOUNT = '0x0f2b2747d1861f8fc016bf5b60d95f1a511b7e08';
+const LINEA_SETTER_ROLE_ACCOUNT = '0xc1C6B09D1eB6fCA0fF3cA11027E5Bc4AeDb47F67';
+const LINEA_GOERLI_SETTER_ROLE_ACCOUNT = '0x0f2b2747d1861f8fc016bf5b60d95f1a511b7e08';
+
 
 export default async function relayLineaMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
   startingBlockNumber: number
 ) {
+  const setterRoleAccount = bridgeDeploymentManager.network === 'linea' ? LINEA_SETTER_ROLE_ACCOUNT : LINEA_GOERLI_SETTER_ROLE_ACCOUNT;
   const lineaMessageService = await governanceDeploymentManager.getContractOrThrow(
     'lineaMessageService'
   );
@@ -21,7 +24,7 @@ export default async function relayLineaMessage(
   const l2usdcBridge = await bridgeDeploymentManager.getContractOrThrow('l2usdcBridge');
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
-  // Grab all events on the L1CrossDomainMessenger contract since the `startingBlockNumber`
+  // Grab all events on the lineaMessageService contract since the `startingBlockNumber`
   const filter = lineaMessageService.filters.MessageSent();
   const messageSentEvents: Log[] = await governanceDeploymentManager.hre.ethers.provider.getLogs({
     fromBlock: startingBlockNumber,
@@ -38,7 +41,7 @@ export default async function relayLineaMessage(
 
     const aliasSetterRoleAccount = await impersonateAddress(
       bridgeDeploymentManager,
-      LINEA_SETTER_ROLE_ACCOUNT
+      setterRoleAccount
     );
     // First the message's hash has to be added by a specific account in the "contract's queue"
     await l2MessageService.connect(aliasSetterRoleAccount).addL1L2MessageHashes([_messageHash]);

@@ -33,6 +33,7 @@ import baseWethRelationConfigMap from './deployments/base/weth/relations';
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
+import lineaRelationConfigMap from './deployments/linea/usdc/relations';
 
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
@@ -115,6 +116,11 @@ const networkConfigs: NetworkConfig[] = [
     network: 'avalanche',
     chainId: 43114,
     url: 'https://api.avax.network/ext/bc/C/rpc',
+  },
+  {
+    network: 'linea',
+    chainId: 59144,
+    url: `https://linea-mainnet.infura.io/v3/${INFURA_KEY}`,
   },
   {
     network: 'fuji',
@@ -229,6 +235,7 @@ const config: HardhatUserConfig = {
       base: BASESCAN_KEY,
       'base-goerli': BASESCAN_KEY,
       // Linea
+      linea: LINEASCAN_KEY,
       'linea-goerli': LINEASCAN_KEY,
     },
     customChains: [
@@ -275,6 +282,14 @@ const config: HardhatUserConfig = {
           apiURL: 'https://api-goerli.lineascan.build/api',
           browserURL: 'https://goerli.lineascan.build/'
         }
+      },
+      {
+        network: 'linea',
+        chainId: 59144,
+        urls: {
+          apiURL: 'https://api.lineascan.build/api',
+          browserURL: 'https://lineascan.build/'
+        }
       }
     ]
   },
@@ -319,6 +334,9 @@ const config: HardhatUserConfig = {
       },
       'linea-goerli': {
         usdc: lineaGoerliRelationConfigMap
+      },
+      'linea': {
+        usdc: lineaRelationConfigMap
       }
     },
   },
@@ -402,6 +420,12 @@ const config: HardhatUserConfig = {
         name: 'base-weth',
         network: 'base',
         deployment: 'weth',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'linea-usdc',
+        network: 'linea',
+        deployment: 'usdc',
         auxiliaryBase: 'mainnet'
       },
       {
