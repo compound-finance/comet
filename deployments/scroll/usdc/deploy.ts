@@ -44,7 +44,7 @@ export default async function deploy(
     'wstETH:priceFeed',
     'pricefeeds/MultiplicativePriceFeed.sol',
     [
-      '0xe428fbdbd61CC1be6C273dC0E27a1F43124a86F3', // wstETH / ETH price feed
+      '0xE61Da4C909F7d86797a0D06Db63c34f76c9bCBDC', // wstETH-stETH price feed
       '0x6bF14CB0A831078629D993FDeBcB182b21A8774C', // ETH / USD price feed
       8,                                            // decimals
       'wstETH / USD price feed'                      // description
