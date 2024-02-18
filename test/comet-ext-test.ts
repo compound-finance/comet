@@ -1,11 +1,11 @@
-import { CometHarnessInterface, FaucetToken } from '../build/types';
+import { CometHarnessInterface, FaucetToken, NonStandardFaucetFeeToken } from '../build/types';
 import { expect, exp, makeProtocol, setTotalsBasic } from './helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 describe('CometExt', function () {
   let comet: CometHarnessInterface;
   let user: SignerWithAddress;
-  let tokens: { [symbol: string]: FaucetToken };
+  let tokens: { [symbol: string]: FaucetToken | NonStandardFaucetFeeToken };
 
   beforeEach(async () => {
     ({

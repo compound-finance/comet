@@ -1,6 +1,7 @@
 import { scenario } from './context/CometContext';
 import { event, expect } from '../test/helpers';
 import { expectRevertCustom, timeUntilUnderwater } from './utils';
+import { matchesDeployment } from './utils';
 
 scenario(
   'Comet#liquidation > isLiquidatable=true for underwater position',
@@ -83,6 +84,65 @@ scenario(
     },
   },
   async ({ comet, actors }, context, world) => {
+    const { albert, betty } = actors;
+
+    await world.increaseTime(
+      await timeUntilUnderwater({
+        comet,
+        actor: albert,
+        fudgeFactor: 60n * 10n // 10 minutes past when position is underwater
+      })
+    );
+
+    const lp0 = await comet.liquidatorPoints(betty.address);
+
+    await betty.absorb({ absorber: betty.address, accounts: [albert.address] });
+
+    const lp1 = await comet.liquidatorPoints(betty.address);
+
+    // increments absorber's numAbsorbs
+    expect(lp1.numAbsorbs).to.eq(lp0.numAbsorbs + 1);
+    // increases absorber's numAbsorbed
+    expect(lp1.numAbsorbed.toNumber()).to.eq(lp0.numAbsorbed.toNumber() + 1);
+    // XXX test approxSpend?
+
+    const baseBalance = await albert.getCometBaseBalance();
+    expect(Number(baseBalance)).to.be.greaterThanOrEqual(0);
+
+    // clears out all of liquidated user's collateral
+    const numAssets = await comet.numAssets();
+    for (let i = 0; i < numAssets; i++) {
+      const { asset } = await comet.getAssetInfo(i);
+      expect(await comet.collateralBalanceOf(albert.address, asset)).to.eq(0);
+    }
+
+    // clears assetsIn
+    expect((await comet.userBasic(albert.address)).assetsIn).to.eq(0);
+  }
+);
+
+scenario(
+  'Comet#liquidation > allows liquidation of underwater positions with token fees',
+  {
+    tokenBalances: {
+      $comet: { $base: 1000 },
+    },
+    cometBalances: {
+      albert: {
+        $base: -1000,
+        $asset0: .001
+      },
+      betty: { $base: 10 }
+    },
+    filter: async (ctx) => matchesDeployment(ctx, [{ deployment: 'usdt' }]),
+  },
+  async ({ comet, actors }, context, world) => {
+    // Set fees for USDT for testing
+    const USDTAdmin = await world.deploymentManager.getSigner();
+    const USDT = await world.deploymentManager.existing('USDT', await comet.baseToken(), world.base.network);
+    // 10 basis points, and max 10 USDT
+    await USDT.connect(USDTAdmin).setParams(10, 10);
+
     const { albert, betty } = actors;
 
     await world.increaseTime(

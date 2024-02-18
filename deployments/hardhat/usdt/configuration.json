@@ -1,0 +1,26 @@
+{
+  "name": "Compound USDT",
+  "symbol": "cUSDTv3",
+  "baseToken": "USDT",
+  "borrowMin": "100e6",
+  "storeFrontPriceFactor": 0.5,
+  "targetReserves": "5000000e6",
+  "rates": {
+    "supplyKink": 0.8,
+    "supplySlopeLow": 0.0325,
+    "supplySlopeHigh": 0.4,
+    "supplyBase": 0,
+    "borrowKink": 0.8,
+    "borrowSlopeLow": 0.035,
+    "borrowSlopeHigh": 0.25,
+    "borrowBase": 0.015
+  },
+  "tracking": {
+    "indexScale": "1e15",
+    "baseSupplySpeed": "0",
+    "baseBorrowSpeed": "0",
+    "baseMinForRewards": "1000000e6"
+  },
+  "rewardToken": "COMP",
+  "assets": {}
+}
