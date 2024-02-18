@@ -71,15 +71,6 @@
       "liquidateCF": 0.85,
       "liquidationFactor": 0.95,
       "supplyCap": "5000e18"
-    },
-    "LDO": {
-      "address": "0x13Ad51ed4F1B7e9Dc168d8a00cB3f4dDD85EfA60",
-      "priceFeed": "0xA43A34030088E6510FecCFb77E88ee5e7ed0fE64",
-      "decimals": "18",
-      "borrowCF": 0.78,
-      "liquidateCF": 0.85,
-      "liquidationFactor": 0.95,
-      "supplyCap": "5000e18"
     }
   }
 }
