@@ -10,7 +10,6 @@ const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 const scrollCOMPAddress = '0x643e160a3C3E2B7eae198f0beB1BfD2441450e86';
-const scrollL1StandardERC20GatewayAddress = "0xD8A791fE2bE73eb6E6cF1eb0cb3F36adC9B3F8f9"
 
 export default migration('1706149385_configurate_and_ens', {
   prepare: async (deploymentManager: DeploymentManager) => {
@@ -32,9 +31,9 @@ export default migration('1706149385_configurate_and_ens', {
 
     const {
       scrollMessenger,
-      scrollL1TokenBridge,
+      scrollL1USDCGateway,
       governor,
-      COMP,
+      USDC
     } = await govDeploymentManager.getContracts();
 
     // ENS Setup
@@ -79,7 +78,7 @@ export default migration('1706149385_configurate_and_ens', {
       ]
     );
 
-    const COMPAmountToBridge = exp(10_000, 18);
+    const USDCAmountToBridge = exp(10_000, 18);
 
     const actions = [
       // 1. Set Comet configuration + deployAndUpgradeTo new Comet and set reward config on Scroll
@@ -89,17 +88,17 @@ export default migration('1706149385_configurate_and_ens', {
         args: [bridgeReceiver.address, 0, l2ProposalData, 600_000]
       },
 
-      // 2. Approve Scroll's L1StandardERC20Gateway to take Timelock's COMP (for bridging)
+      // 2. Approve Scroll's L1 USDC Gateway to take Timelock's USDC (for bridging)
       {
-        contract: COMP,
+        contract: USDC,
         signature: 'approve(address,uint256)',
-        args: [scrollL1StandardERC20GatewayAddress, COMPAmountToBridge]
+        args: [scrollL1USDCGateway.address, USDCAmountToBridge]
       },
-      // 3. Bridge COMP from Ethereum to Scroll Comet using L1GatewayRouter
+      // 3. Bridge USDC from Ethereum to Scroll Comet using L1 USDC Gateway
       {
-        contract: scrollL1TokenBridge,
+        contract: scrollL1USDCGateway,
         signature: 'depositERC20(address,address,uint256,uint256)',
-        args: [COMP.address, rewards.address, COMPAmountToBridge, 300_000]
+        args: [USDC.address, comet.address, USDCAmountToBridge, 300_000]
       },
       // 4. Update the list of official markets
       {
@@ -113,7 +112,7 @@ export default migration('1706149385_configurate_and_ens', {
     ];
 
     const description =
-      "# Initialize cUSDCv3 on Scroll\n\nThis proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Scroll; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). Although real tests have also been run over the Goerli/Scroll Alpha bridge, this will be the first proposal to actually bridge from Ethereum mainnet to Scroll mainnet, and therefore includes risks not present in previous proposals.\n\nAlthough the proposal sets the entire configuration in the Configurator, with parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-scroll/4917/3).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/824) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-scroll/4917).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Scroll. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Scroll. It also calls `setRewardConfig` on the Scroll rewards contract, to establish Scroll’s bridged version of COMP as the reward token for the deployment (note that rewards speeds have been set to 0, as Gauntlet has recommended to hold off on including rewards in the comet deployment for now).\n\nThe second action approves Scroll’s [L1StandardERC20Gateway](https://etherscan.io/address/0xD8A791fE2bE73eb6E6cF1eb0cb3F36adC9B3F8f9) to take the Timelock's USDC, in order to seed the market reserves through the bridge.\n\nThe third action deposits 10K USDC from mainnet to the Scroll [L1GatewayRouter](https://etherscan.io/address/0xF8B1378579659D8F7EE5f3C929c2f3E332E41Fd6) contract to bridge to Comet.\n\nThe fourth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Scroll cUSDCv3 market.";
+      "# Initialize cUSDCv3 on Scroll\n\nThis proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Scroll; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). Although real tests have also been run over the Goerli/Scroll Alpha bridge, this will be the first proposal to actually bridge from Ethereum mainnet to Scroll mainnet, and therefore includes risks not present in previous proposals.\n\nAlthough the proposal sets the entire configuration in the Configurator, with parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-scroll/4917/3).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/824) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-scroll/4917).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Scroll. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Scroll. It also calls `setRewardConfig` on the Scroll rewards contract to establish Scroll’s bridged version of COMP as the reward token for the deployment (note that rewards speeds have been set to 0, as Gauntlet has recommended to hold off on including rewards in the comet deployment for now).\n\nThe second action approves Scroll’s [L1USDCGateway](https://etherscan.io/address/0xf1AF3b23DE0A5Ca3CAb7261cb0061C0D779A5c7B) to take Timelock's USDC, in order to seed the market reserves through the bridge.\n\nThe third action deposits 10K USDC from mainnet to the Scroll L1USDCGateway contract to bridge to Comet.\n\nThe fourth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Scroll cUSDCv3 market.";
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(actions, description))))
     );
