@@ -18,7 +18,7 @@ export async function cloneGov(
   const admin = adminSigner ?? await deploymentManager.getSigner();
   const clone = {
     comp: '0xc00e94cb662c3520282e6f5717214004a7f26888',
-    governorBravoImpl: '0x30065b703de5d473975a2db5bbb790a23fd6efbd',
+    governorBravoImpl: '0xef3b6e9e13706a8f01fe98fdcf66335dc5cfdeed',
     governorBravo: '0xc0da02939e1441f497fd74f78ce7decb17b66529',
   };
 
