@@ -78,7 +78,7 @@ export default migration('1706149385_configurate_and_ens', {
       ]
     );
 
-    const USDCAmountToBridge = exp(10_000, 18);
+    const USDCAmountToBridge = exp(10_000, 6);
 
     const actions = [
       // 1. Set Comet configuration + deployAndUpgradeTo new Comet and set reward config on Scroll
