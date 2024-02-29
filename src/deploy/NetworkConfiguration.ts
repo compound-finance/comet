@@ -136,11 +136,11 @@ function getOverridesOrConfig(
   const interestRateInfoMapping = (rates: NetworkRateConfiguration) => ({
     supplyKink: _ => percentage(rates.supplyKink),
     supplyPerYearInterestRateSlopeLow: _ => percentage(rates.supplySlopeLow),
-    supplyPerYearInterestRateSlopeHigh: _ => percentage(rates.supplySlopeHigh),
+    supplyPerYearInterestRateSlopeHigh: _ => percentage(rates.supplySlopeHigh, false),
     supplyPerYearInterestRateBase: _ => percentage(rates.supplyBase),
     borrowKink: _ => percentage(rates.borrowKink),
     borrowPerYearInterestRateSlopeLow: _ => percentage(rates.borrowSlopeLow),
-    borrowPerYearInterestRateSlopeHigh: _ => percentage(rates.borrowSlopeHigh),
+    borrowPerYearInterestRateSlopeHigh: _ => percentage(rates.borrowSlopeHigh, false),
     borrowPerYearInterestRateBase: _ => percentage(rates.borrowBase),
   });
   const trackingInfoMapping = (tracking: NetworkTrackingConfiguration) => ({
