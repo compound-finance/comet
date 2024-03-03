@@ -21,6 +21,7 @@ import relationConfigMap from './deployments/relations';
 import goerliRelationConfigMap from './deployments/goerli/usdc/relations';
 import goerliWethRelationConfigMap from './deployments/goerli/weth/relations';
 import sepoliaUsdcRelationConfigMap from './deployments/sepolia/usdc/relations';
+import sepoliaWethRelationConfigMap from './deployments/sepolia/weth/relations';
 import mumbaiRelationConfigMap from './deployments/mumbai/usdc/relations';
 import mainnetRelationConfigMap from './deployments/mainnet/usdc/relations';
 import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
@@ -295,7 +296,8 @@ const config: HardhatUserConfig = {
         weth: goerliWethRelationConfigMap
       },
       sepolia: {
-        usdc: sepoliaUsdcRelationConfigMap
+        usdc: sepoliaUsdcRelationConfigMap,
+        weth: sepoliaWethRelationConfigMap
       },
       mumbai: {
         usdc: mumbaiRelationConfigMap
@@ -366,6 +368,11 @@ const config: HardhatUserConfig = {
         name: 'sepolia-usdc',
         network: 'sepolia',
         deployment: 'usdc'
+      },
+      {
+        name: 'sepolia-weth',
+        network: 'sepolia',
+        deployment: 'weth'
       },
       {
         name: 'mumbai',
