@@ -19,6 +19,13 @@ export default async function relayMessage(
         startingBlockNumber
       );
       break;
+    case 'optimism':
+      await relayBaseMessage(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        startingBlockNumber
+      );
+      break;
     case 'mumbai':
     case 'polygon':
       await relayPolygonMessage(
@@ -35,8 +42,8 @@ export default async function relayMessage(
         startingBlockNumber
       );
       await relayCCTPMint(
-        governanceDeploymentManager, 
-        bridgeDeploymentManager, 
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
         startingBlockNumber
       );
       break;

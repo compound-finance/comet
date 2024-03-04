@@ -33,10 +33,11 @@ import baseWethRelationConfigMap from './deployments/base/weth/relations';
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
-
+import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
-  for (const account of await hre.ethers.getSigners()) console.log(account.address);
+  for (const account of await hre.ethers.getSigners())
+    console.log(account.address);
 });
 
 /* note: boolean environment variables are imported as strings */
@@ -49,6 +50,7 @@ const {
   ARBISCAN_KEY,
   BASESCAN_KEY,
   LINEASCAN_KEY,
+  OPTIMISMSCAN_KEY,
   INFURA_KEY,
   QUICKNODE_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
@@ -56,10 +58,10 @@ const {
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
   GOV_NETWORK = '',
-  REMOTE_ACCOUNTS = ''
+  REMOTE_ACCOUNTS = '',
 } = process.env;
 
-function *deriveAccounts(pk: string, n: number = 10) {
+function* deriveAccounts(pk: string, n: number = 10) {
   for (let i = 0; i < n; i++)
     yield (BigInt('0x' + pk) + BigInt(i)).toString(16);
 }
@@ -67,7 +69,9 @@ function *deriveAccounts(pk: string, n: number = 10) {
 export function requireEnv(varName, msg?: string): string {
   const varVal = process.env[varName];
   if (!varVal) {
-    throw new Error(msg ?? `Missing required environment variable '${varName}'`);
+    throw new Error(
+      msg ?? `Missing required environment variable '${varName}'`
+    );
   }
   return varVal;
 }
@@ -79,8 +83,9 @@ export function requireEnv(varName, msg?: string): string {
   'INFURA_KEY',
   'POLYGONSCAN_KEY',
   'ARBISCAN_KEY',
-  'LINEASCAN_KEY'
-].map(v => requireEnv(v));
+  'LINEASCAN_KEY',
+  'OPTIMISMSCAN_KEY',
+].map((v) => requireEnv(v));
 
 // Networks
 interface NetworkConfig {
@@ -100,6 +105,11 @@ const networkConfigs: NetworkConfig[] = [
     network: 'polygon',
     chainId: 137,
     url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
+    network: 'optimism',
+    chainId: 10,
+    url: `https://optimism-mainnet.infura.io/v3/${INFURA_KEY}`,
   },
   {
     network: 'base',
@@ -152,13 +162,19 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
     hardhatConfig.networks[netConfig.network] = {
       chainId: netConfig.chainId,
       url:
-        (netConfig.network === GOV_NETWORK ? GOV_NETWORK_PROVIDER : undefined) ||
+        (netConfig.network === GOV_NETWORK
+          ? GOV_NETWORK_PROVIDER
+          : undefined) ||
         NETWORK_PROVIDER ||
         netConfig.url ||
         getDefaultProviderURL(netConfig.network),
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
-      accounts: REMOTE_ACCOUNTS ? 'remote' : ( ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC } ),
+      accounts: REMOTE_ACCOUNTS
+        ? 'remote'
+        : ETH_PK
+        ? [...deriveAccounts(ETH_PK)]
+        : { mnemonic: MNEMONIC },
     };
   }
 }
@@ -170,20 +186,21 @@ const config: HardhatUserConfig = {
   solidity: {
     version: '0.8.15',
     settings: {
-      optimizer: (
-        process.env['OPTIMIZER_DISABLED'] ? { enabled: false } : {
-          enabled: true,
-          runs: 1,
-          details: {
-            yulDetails: {
-              optimizerSteps: 'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul'
+      optimizer: process.env['OPTIMIZER_DISABLED']
+        ? { enabled: false }
+        : {
+            enabled: true,
+            runs: 1,
+            details: {
+              yulDetails: {
+                optimizerSteps:
+                  'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul',
+              },
             },
           },
-        }
-      ),
       outputSelection: {
         '*': {
-          '*': ['evm.deployedBytecode.sourceMap']
+          '*': ['evm.deployedBytecode.sourceMap'],
         },
       },
       viaIR: process.env['OPTIMIZER_DISABLED'] ? false : true,
@@ -197,12 +214,15 @@ const config: HardhatUserConfig = {
       gas: 12000000,
       gasPrice: 'auto',
       blockGasLimit: 12000000,
-      accounts: ETH_PK ?
-        [...deriveAccounts(ETH_PK)].map(privateKey => ({ privateKey, balance: (10n ** 36n).toString() }))
+      accounts: ETH_PK
+        ? [...deriveAccounts(ETH_PK)].map((privateKey) => ({
+            privateKey,
+            balance: (10n ** 36n).toString(),
+          }))
         : { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
       // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,
-      hardfork: 'shanghai'
+      hardfork: 'shanghai',
     },
   },
 
@@ -230,6 +250,7 @@ const config: HardhatUserConfig = {
       'base-goerli': BASESCAN_KEY,
       // Linea
       'linea-goerli': LINEASCAN_KEY,
+      optimism: OPTIMISMSCAN_KEY,
     },
     customChains: [
       {
@@ -238,8 +259,8 @@ const config: HardhatUserConfig = {
         chainId: 42161,
         urls: {
           apiURL: 'https://api.arbiscan.io/api',
-          browserURL: 'https://arbiscan.io/'
-        }
+          browserURL: 'https://arbiscan.io/',
+        },
       },
       {
         // Hardhat's Etherscan plugin calls the network `arbitrumGoerli`, so we need to add an entry for our own network name
@@ -247,8 +268,8 @@ const config: HardhatUserConfig = {
         chainId: 421613,
         urls: {
           apiURL: 'https://api-goerli.arbiscan.io/api',
-          browserURL: 'https://goerli.arbiscan.io/'
-        }
+          browserURL: 'https://goerli.arbiscan.io/',
+        },
       },
       {
         // Hardhat's Etherscan plugin doesn't have support Base, so we need to add an entry for our own network name
@@ -256,8 +277,8 @@ const config: HardhatUserConfig = {
         chainId: 8453,
         urls: {
           apiURL: 'https://api.basescan.org/api',
-          browserURL: 'https://basescan.org/'
-        }
+          browserURL: 'https://basescan.org/',
+        },
       },
       {
         // Hardhat's Etherscan plugin calls the network `baseGoerli`, so we need to add an entry for our own network name
@@ -265,18 +286,18 @@ const config: HardhatUserConfig = {
         chainId: 84531,
         urls: {
           apiURL: 'https://api-goerli.basescan.org/api',
-          browserURL: 'https://goerli.basescan.org/'
-        }
+          browserURL: 'https://goerli.basescan.org/',
+        },
       },
       {
         network: 'linea-goerli',
         chainId: 59140,
         urls: {
           apiURL: 'https://api-goerli.lineascan.build/api',
-          browserURL: 'https://goerli.lineascan.build/'
-        }
-      }
-    ]
+          browserURL: 'https://goerli.lineascan.build/',
+        },
+      },
+    ],
   },
 
   typechain: {
@@ -289,37 +310,40 @@ const config: HardhatUserConfig = {
     networks: {
       goerli: {
         usdc: goerliRelationConfigMap,
-        weth: goerliWethRelationConfigMap
+        weth: goerliWethRelationConfigMap,
       },
       mumbai: {
-        usdc: mumbaiRelationConfigMap
+        usdc: mumbaiRelationConfigMap,
       },
       mainnet: {
         usdc: mainnetRelationConfigMap,
-        weth: mainnetWethRelationConfigMap
+        weth: mainnetWethRelationConfigMap,
       },
       polygon: {
-        usdc: polygonRelationConfigMap
+        usdc: polygonRelationConfigMap,
       },
       arbitrum: {
         'usdc.e': arbitrumBridgedUsdcRelationConfigMap,
-        usdc: arbitrumNativeUsdcRelationConfigMap
+        usdc: arbitrumNativeUsdcRelationConfigMap,
       },
       'arbitrum-goerli': {
         'usdc.e': arbitrumBridgedUsdcGoerliRelationConfigMap,
-        usdc: arbitrumGoerliNativeUsdcRelationConfigMap
+        usdc: arbitrumGoerliNativeUsdcRelationConfigMap,
       },
-      'base': {
+      base: {
         usdbc: baseUsdbcRelationConfigMap,
-        weth: baseWethRelationConfigMap
+        weth: baseWethRelationConfigMap,
       },
       'base-goerli': {
         usdc: baseGoerliRelationConfigMap,
-        weth: baseGoerliWethRelationConfigMap
+        weth: baseGoerliWethRelationConfigMap,
       },
       'linea-goerli': {
-        usdc: lineaGoerliRelationConfigMap
-      }
+        usdc: lineaGoerliRelationConfigMap,
+      },
+      optimism: {
+        usdc: optimismRelationConfigMap,
+      },
     },
   },
 
@@ -339,17 +363,17 @@ const config: HardhatUserConfig = {
       {
         name: 'development',
         network: 'hardhat',
-        deployment: 'dai'
+        deployment: 'dai',
       },
       {
         name: 'fuji',
         network: 'fuji',
-        deployment: 'usdc'
+        deployment: 'usdc',
       },
       {
         name: 'goerli',
         network: 'goerli',
-        deployment: 'usdc'
+        deployment: 'usdc',
       },
       {
         name: 'goerli-weth',
@@ -360,68 +384,74 @@ const config: HardhatUserConfig = {
         name: 'mumbai',
         network: 'mumbai',
         deployment: 'usdc',
-        auxiliaryBase: 'goerli'
+        auxiliaryBase: 'goerli',
       },
       {
         name: 'polygon',
         network: 'polygon',
         deployment: 'usdc',
-        auxiliaryBase: 'mainnet'
+        auxiliaryBase: 'mainnet',
       },
       {
         name: 'arbitrum-usdc.e',
         network: 'arbitrum',
         deployment: 'usdc.e',
-        auxiliaryBase: 'mainnet'
+        auxiliaryBase: 'mainnet',
       },
       {
         name: 'arbitrum-usdc',
         network: 'arbitrum',
         deployment: 'usdc',
-        auxiliaryBase: 'mainnet'
+        auxiliaryBase: 'mainnet',
       },
       {
         name: 'arbitrum-goerli-usdc.e',
         network: 'arbitrum-goerli',
         deployment: 'usdc.e',
-        auxiliaryBase: 'goerli'
+        auxiliaryBase: 'goerli',
       },
       {
         name: 'arbitrum-goerli-usdc',
         network: 'arbitrum-goerli',
         deployment: 'usdc',
-        auxiliaryBase: 'goerli'
+        auxiliaryBase: 'goerli',
       },
       {
         name: 'base-usdbc',
         network: 'base',
         deployment: 'usdbc',
-        auxiliaryBase: 'mainnet'
+        auxiliaryBase: 'mainnet',
       },
       {
         name: 'base-weth',
         network: 'base',
         deployment: 'weth',
-        auxiliaryBase: 'mainnet'
+        auxiliaryBase: 'mainnet',
       },
       {
         name: 'base-goerli',
         network: 'base-goerli',
         deployment: 'usdc',
-        auxiliaryBase: 'goerli'
+        auxiliaryBase: 'goerli',
       },
       {
         name: 'base-goerli-weth',
         network: 'base-goerli',
         deployment: 'weth',
-        auxiliaryBase: 'goerli'
+        auxiliaryBase: 'goerli',
       },
       {
         name: 'linea-goerli',
         network: 'linea-goerli',
         deployment: 'usdc',
-        auxiliaryBase: 'goerli'
-      }
+        auxiliaryBase: 'goerli',
+      },
+      {
+        name: 'optimism',
+        network: 'optimism',
+        deployment: 'usdc',
+        auxiliaryBase: 'mainnet',
+      },
     ],
   },
 
@@ -433,7 +463,7 @@ const config: HardhatUserConfig = {
         output: 'test-results.json',
       },
     },
-    timeout: 150_000
+    timeout: 150_000,
   },
 
   paths: {
