@@ -9,6 +9,7 @@ const ENSResolverAddress = '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41';
 const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
+const baseCOMPAddress = '0x9e1028F5F1D5eDE59748FFceE5532509976840E0';
 
 export default migration('1689892563_configurate_and_ens', {
   prepare: async (deploymentManager: DeploymentManager) => {
@@ -60,17 +61,22 @@ export default migration('1689892563_configurate_and_ens', {
       ['address', 'address'],
       [configurator.address, comet.address]
     );
+    const setRewardConfigCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'address'],
+      [comet.address, baseCOMPAddress]
+    );
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
-        [configurator.address, configurator.address, cometAdmin.address],
-        [0, 0, 0],
+        [configurator.address, configurator.address, cometAdmin.address, rewards.address],
+        [0, 0, 0, 0],
         [
           'setFactory(address,address)',
           'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
-          'deployAndUpgradeTo(address,address)'
+          'deployAndUpgradeTo(address,address)',
+          'setRewardConfig(address,address)'
         ],
-        [setFactoryCalldata, setConfigurationCalldata, deployAndUpgradeToCalldata]
+        [setFactoryCalldata, setConfigurationCalldata, deployAndUpgradeToCalldata, setRewardConfigCalldata]
       ]
     );
 
@@ -115,15 +121,14 @@ export default migration('1689892563_configurate_and_ens', {
     const {
       comet,
       rewards,
-      COMP,
-      USDC
+      COMP
     } = await deploymentManager.getContracts();
 
     // 1.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     expect(stateChanges).to.deep.equal({
-      baseTrackingSupplySpeed: exp(30 / 86400, 15, 18),
-      baseTrackingBorrowSpeed: exp(15 / 86400, 15, 18),
+      baseTrackingSupplySpeed: exp(20 / 86400, 15, 18),
+      baseTrackingBorrowSpeed: exp(8 / 86400, 15, 18),
       WETH: {
         supplyCap: exp(11000, 18)
       },
@@ -132,11 +137,10 @@ export default migration('1689892563_configurate_and_ens', {
       }
     });
   
-    // TODO: Validate the reward config
-    // const config = await rewards.rewardConfig(comet.address);
-    // expect(config.token).to.be.equal(COMP.address);
-    // expect(config.rescaleFactor).to.be.equal(exp(1, 12));
-    // expect(config.shouldUpscale).to.be.equal(true);
+    const config = await rewards.rewardConfig(comet.address);
+    expect(config.token).to.be.equal(COMP.address);
+    expect(config.rescaleFactor).to.be.equal(exp(1, 12));
+    expect(config.shouldUpscale).to.be.equal(true);
 
     // 2.
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
@@ -186,7 +190,9 @@ export default migration('1689892563_configurate_and_ens', {
       ],
     });
 
-    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(30 / 86400, 15, 18));
-    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(15 / 86400, 15, 18));
+    // 20 comp per day to suppliers
+    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(20 / 86400, 15, 18));
+    // 8 comp per day to borrowers
+    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(8 / 86400, 15, 18));
   }
 });
