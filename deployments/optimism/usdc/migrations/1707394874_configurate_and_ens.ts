@@ -19,7 +19,7 @@ const ENSRegistryAddress = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e";
 const ENSSubdomainLabel = "v3-additional-grants";
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = "v3-official-markets";
-const opCOMPAddress = "0x9e1028F5F1D5eDE59748FFceE5532509976840E0"; /// TODO : should be deployed before migration.
+const opCOMPAddress = "0x7e7d4467112689329f7E06571eD0E8CbAd4910eE";
 
 export default migration("1707394874_configurate_and_ens", {
   prepare: async (deploymentManager: DeploymentManager) => {
