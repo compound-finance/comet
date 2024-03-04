@@ -181,8 +181,8 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
       accounts: REMOTE_ACCOUNTS
         ? 'remote'
         : ETH_PK
-        ? [...deriveAccounts(ETH_PK)]
-        : { mnemonic: MNEMONIC },
+          ? [...deriveAccounts(ETH_PK)]
+          : { mnemonic: MNEMONIC },
     };
   }
 }
@@ -197,15 +197,15 @@ const config: HardhatUserConfig = {
       optimizer: process.env['OPTIMIZER_DISABLED']
         ? { enabled: false }
         : {
-            enabled: true,
-            runs: 1,
-            details: {
-              yulDetails: {
-                optimizerSteps:
+          enabled: true,
+          runs: 1,
+          details: {
+            yulDetails: {
+              optimizerSteps:
                   'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul',
-              },
             },
           },
+        },
       outputSelection: {
         '*': {
           '*': ['evm.deployedBytecode.sourceMap'],
@@ -224,9 +224,9 @@ const config: HardhatUserConfig = {
       blockGasLimit: 12000000,
       accounts: ETH_PK
         ? [...deriveAccounts(ETH_PK)].map((privateKey) => ({
-            privateKey,
-            balance: (10n ** 36n).toString(),
-          }))
+          privateKey,
+          balance: (10n ** 36n).toString(),
+        }))
         : { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
       // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,

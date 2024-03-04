@@ -107,7 +107,7 @@ jobs:
           yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }}
         env:
           DEBUG: true
-          ETH_PK: '${{ inputs.eth_pk }}'
+          ETH_PK: "${{ inputs.eth_pk }}"
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
           GOV_NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8685"]')[github.event.inputs.eth_pk == '' && env.GOV_NETWORK != ''] }}
           GOV_NETWORK: ${{ env.GOV_NETWORK }}
