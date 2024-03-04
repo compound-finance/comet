@@ -20,6 +20,8 @@ import './tasks/scenario/task.ts';
 import relationConfigMap from './deployments/relations';
 import goerliRelationConfigMap from './deployments/goerli/usdc/relations';
 import goerliWethRelationConfigMap from './deployments/goerli/weth/relations';
+import sepoliaUsdcRelationConfigMap from './deployments/sepolia/usdc/relations';
+import sepoliaWethRelationConfigMap from './deployments/sepolia/weth/relations';
 import mumbaiRelationConfigMap from './deployments/mumbai/usdc/relations';
 import mainnetRelationConfigMap from './deployments/mainnet/usdc/relations';
 import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
@@ -104,6 +106,7 @@ const networkConfigs: NetworkConfig[] = [
   { network: 'ropsten', chainId: 3 },
   { network: 'rinkeby', chainId: 4 },
   { network: 'goerli', chainId: 5 },
+  { network: 'sepolia', chainId: 11155111 },
   {
     network: 'polygon',
     chainId: 137,
@@ -242,6 +245,7 @@ const config: HardhatUserConfig = {
       ropsten: ETHERSCAN_KEY,
       rinkeby: ETHERSCAN_KEY,
       goerli: ETHERSCAN_KEY,
+      sepolia: ETHERSCAN_KEY,
       // Avalanche
       avalanche: SNOWTRACE_KEY,
       avalancheFujiTestnet: SNOWTRACE_KEY,
@@ -329,6 +333,10 @@ const config: HardhatUserConfig = {
         usdc: goerliRelationConfigMap,
         weth: goerliWethRelationConfigMap,
       },
+      sepolia: {
+        usdc: sepoliaUsdcRelationConfigMap,
+        weth: sepoliaWethRelationConfigMap
+      },
       mumbai: {
         usdc: mumbaiRelationConfigMap,
       },
@@ -401,6 +409,16 @@ const config: HardhatUserConfig = {
         name: 'goerli-weth',
         network: 'goerli',
         deployment: 'weth',
+      },
+      {
+        name: 'sepolia-usdc',
+        network: 'sepolia',
+        deployment: 'usdc'
+      },
+      {
+        name: 'sepolia-weth',
+        network: 'sepolia',
+        deployment: 'weth'
       },
       {
         name: 'mumbai',
