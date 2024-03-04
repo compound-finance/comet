@@ -13,8 +13,7 @@ export default {
   arbitrumInbox: {
     delegates: {
       field: {
-        slot:
-          '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
       }
     },
     relations: {
@@ -26,8 +25,7 @@ export default {
   arbitrumL1GatewayRouter: {
     delegates: {
       field: {
-        slot:
-          '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
       }
     }
   },
@@ -40,8 +38,7 @@ export default {
   baseL1StandardBridge: {
     delegates: {
       field: {
-        slot:
-          '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
       }
     },
   },
@@ -69,16 +66,14 @@ export default {
   lineaL1TokenBridge: {
     delegates: {
       field: {
-        slot:
-          '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
       }
     }
   },
   lineaL1usdcBridge: {
     delegates: {
       field: {
-        slot:
-          '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+        slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
       }
     }
   },
