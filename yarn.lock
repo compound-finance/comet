@@ -85,6 +85,16 @@
     ts-node "^8.1.0"
     typescript "~4.0.3"
 
+"@compound-finance/sleuth@^1.0.1-alpha8":
+  version "1.0.1-alpha8"
+  resolved "https://registry.yarnpkg.com/@compound-finance/sleuth/-/sleuth-1.0.1-alpha8.tgz#89cc4c3f8b8f7f45728f6014aea239f8551ab992"
+  integrity sha512-hf0myqOzUSZl74nYoi5o2gGb7KC/vp/EcIiczcJO2cA8vI8lylA98S2epgFS9eYtkp5EHE/GutnY8u3WyicfBw==
+  dependencies:
+    "@ethersproject/contracts" "^5.7.0"
+    "@ethersproject/providers" "^5.7.2"
+  optionalDependencies:
+    solc "^0.8.17"
+
 "@cspotcode/source-map-support@^0.8.0":
   version "0.8.1"
   resolved "https://registry.yarnpkg.com/@cspotcode/source-map-support/-/source-map-support-0.8.1.tgz#00629c35a688e05a88b1cda684fb9d5e73f000a1"
@@ -2065,6 +2075,11 @@ commander@3.0.2:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/commander/-/commander-3.0.2.tgz#6837c3fb677ad9933d1cfba42dd14d5117d6b39e"
   integrity sha512-Gar0ASD4BDyKC4hl4DwHqDrmvjoxWKZigVnAbn5H1owvm4CxCPdb0HQDehwNYMJpla5+M2tPmPARzhtYuwpHow==
+
+commander@^8.1.0:
+  version "8.3.0"
+  resolved "https://registry.yarnpkg.com/commander/-/commander-8.3.0.tgz#4837ea1b2da67b9c616a67afbb0fafee567bca66"
+  integrity sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==
 
 concat-map@0.0.1:
   version "0.0.1"
@@ -4921,6 +4936,19 @@ solc@0.7.3:
     js-sha3 "0.8.0"
     memorystream "^0.3.1"
     require-from-string "^2.0.0"
+    semver "^5.5.0"
+    tmp "0.0.33"
+
+solc@^0.8.17:
+  version "0.8.20"
+  resolved "https://registry.yarnpkg.com/solc/-/solc-0.8.20.tgz#b49151cf5ecc8de088d3d32b0afb607b3522ba8d"
+  integrity sha512-fPRnGspIEqmhu63RFO3pc79sLA7ZmzO0Uy0L5l6hEt2wAsq0o7UV6pXkAp3Mfv9IBhg7Px/oTu3a+y4gs3BWrQ==
+  dependencies:
+    command-exists "^1.2.8"
+    commander "^8.1.0"
+    follow-redirects "^1.12.1"
+    js-sha3 "0.8.0"
+    memorystream "^0.3.1"
     semver "^5.5.0"
     tmp "0.0.33"
 
