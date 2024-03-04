@@ -20,6 +20,7 @@ export default async function relayMessage(
       );
       break;
     case 'optimism':
+    case 'optimism-goerli':
       await relayBaseMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,

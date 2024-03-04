@@ -27,6 +27,9 @@ jobs:
             base-goerli-weth,
             linea-goerli,
             optimism-usdc,
+            optimism-usdt,
+            optimism-goerli-usdc,
+            optimism-goerli-usdt,
           ]
     name: Run scenarios
     env:
