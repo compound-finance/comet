@@ -234,6 +234,9 @@ export default migration('1707394874_configurate_and_ens', {
       WBTC: {
         supplyCap: exp(500, 8),
       },
+      wstETH: {
+        supplyCap: exp(500, 18) /// TODO : should be changed after we know the exact value.
+      }
     });
 
     const config = await rewards.rewardConfig(comet.address);
