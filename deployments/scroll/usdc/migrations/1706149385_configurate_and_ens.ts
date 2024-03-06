@@ -85,7 +85,8 @@ export default migration('1706149385_configurate_and_ens', {
       {
         contract: scrollMessenger,
         signature: 'sendMessage(address,uint256,bytes,uint256)',
-        args: [bridgeReceiver.address, 0, l2ProposalData, 600_000]
+        args: [bridgeReceiver.address, 0, l2ProposalData, 600_000],
+        value: exp(0.1, 18)
       },
 
       // 2. Approve Scroll's L1 USDC Gateway to take Timelock's USDC (for bridging)
@@ -98,7 +99,8 @@ export default migration('1706149385_configurate_and_ens', {
       {
         contract: scrollL1USDCGateway,
         signature: 'depositERC20(address,address,uint256,uint256)',
-        args: [USDC.address, comet.address, USDCAmountToBridge, 300_000]
+        args: [USDC.address, comet.address, USDCAmountToBridge, 300_000],
+        value: exp(0.1, 18)
       },
       // 4. Update the list of official markets
       {
