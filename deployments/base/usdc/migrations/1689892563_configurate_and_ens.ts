@@ -27,13 +27,13 @@ export default migration('1689892563_configurate_and_ens', {
       comet,
       cometAdmin,
       configurator,
-      rewards,
-      USDC
+      rewards
     } = await deploymentManager.getContracts();
 
     const {
       baseL1CrossDomainMessenger,
       governor,
+      COMP: mainnetCOMP
     } = await govDeploymentManager.getContracts();
 
     // ENS Setup
@@ -97,9 +97,16 @@ export default migration('1689892563_configurate_and_ens', {
           [subdomainHash, ENSTextRecordKey, JSON.stringify(officialMarketsJSON)]
         )
       },
+      
+      // 3. Send 108 COMP to arr00
+      {
+        contract: mainnetCOMP,
+        signature: 'transfer(address,uint256)',
+        args: ['0x2B384212EDc04Ae8bB41738D05BA20E33277bf33', exp(115, 18)]
+      }
     ];
 
-    const description = "# Initialize cUSDCv3 on Base\n\nThis proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Base; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). Although real tests have also been run over the Goerli/Base Goerli bridge, this will be the first proposal to actually bridge from Ethereum mainnet to Base mainnet, and therefore includes risks not present in previous proposals.\n\nAlthough the proposal sets the entire configuration in the Configurator, the initial deployment already has most of these same parameters already set. The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-base/4402/2). Finally, the parameters include a modest reallocation of some of the v2 USDC supply-side COMP incentives to users in the new market.\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/792) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-base/4402).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Base. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Base. It also calls `setRewardConfig` on the Base rewards contract, to establish Base’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 30 COMP/day and borrow speed to be 15 COMP/day.\n\nThe second action approves Base’s [L1StandardBridge](https://etherscan.io/address/0x3154Cf16ccdb4C6d922629664174b904d80F2C35) to take the Timelock's USDC, in order to seed the market reserves through the bridge.\n\nThe third action deposits 10K USDC from mainnet to the Base L1StandardBridge contract to bridge to Comet.\n\nThe fourth action approves Base’s [L1StandardBridge](https://etherscan.io/address/0x3154Cf16ccdb4C6d922629664174b904d80F2C35) to take Timelock's COMP, in order to seed the rewards contract through the bridge.\n\nThe fifth action deposits 12.5K COMP from mainnet to the Base L1StandardBridge contract to bridge to CometRewards.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Base cUSDbCv3 market.\n\nThe seventh action reduces the COMP distribution to v2 cUSDC suppliers by 45 COMP/day, so as to keep the total COMP distribution constant.";
+    const description = '# Initialize cUSDCv3 on Base\n\nThis proposal initializes the Compound III USDC market on Base as a first step to fully migrating to native USDC on base. The entirety of this proposal was simulated and indicates success. The [parameters for this deployment](https://www.comp.xyz/t/gauntlet-usdc-native-comet-market-to-compound-base-02-09-24/4982) and the [rewards configuration](https://www.comp.xyz/t/gauntlet-native-usdc-base-comet-incentives-recommendations/5009) were recommended by Gauntlet.\n\nSee links for more details:\n- [proposal pull request](https://github.com/compound-finance/comet/pull/828)\n- [forum discussion](https://www.comp.xyz/t/gauntlet-usdc-native-comet-market-to-compound-base-02-09-24/4982)\n\n## Proposal Actions\n1) The first proposal action sets the configurator factory address, sets Comet configuration, and deploys a new Comet implementation on Base. It also sets the rewards config for the new market to 20 COMP/Day for suppliers and 8 COMP/Day for borrowers.\n2) The second action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Base cUSDCv3 market.\n3) The third action pays arr00 115 COMP for the development effort for this proposal.';
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(actions, description))))
     );
