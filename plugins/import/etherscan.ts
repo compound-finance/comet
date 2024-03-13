@@ -23,7 +23,6 @@ export function getEtherscanApiUrl(network: string): string {
     'base-goerli': 'api-goerli.basescan.org',
     'linea-goerli': 'api-goerli.lineascan.build',
     optimism: 'api-optimistic.etherscan.io',
-    'optimism-goerli': 'api-goerli-optimistic.etherscan.io',
   }[network];
 
   if (!host) {
@@ -50,7 +49,6 @@ export function getEtherscanUrl(network: string): string {
     'base-goerli': 'goerli.basescan.org',
     'linea-goerli': 'goerli.lineascan.build',
     optimism: 'optimistic.etherscan.io',
-    'optimism-goerli': 'goerli-optimistic.etherscan.io',
   }[network];
 
   if (!host) {
@@ -77,7 +75,6 @@ export function getEtherscanApiKey(network: string): string {
     'base-goerli': process.env.BASESCAN_KEY,
     'linea-goerli': process.env.LINEASCAN_KEY,
     optimism: process.env.OPTIMISMSCAN_KEY,
-    'optimism-goerli': process.env.OPTIMISMSCAN_KEY,
   }[network];
 
   if (!apiKey) {

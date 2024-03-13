@@ -37,8 +37,6 @@ import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/rela
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
 import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
 import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations';
-import optimismGoerliRelationConfigMap from './deployments/optimism-goerli/usdc/relations';
-import optimismGoerliUsdtRelationConfigMap from './deployments/optimism-goerli/usdt/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners())
@@ -116,11 +114,6 @@ const networkConfigs: NetworkConfig[] = [
     network: 'optimism',
     chainId: 10,
     url: `https://optimism-mainnet.infura.io/v3/${INFURA_KEY}`,
-  },
-  {
-    network: 'optimism-goerli',
-    chainId: 420,
-    url: `https://optimism-goerli.infura.io/v3/${INFURA_KEY}`,
   },
   {
     network: 'base',
@@ -263,7 +256,6 @@ const config: HardhatUserConfig = {
       // Linea
       'linea-goerli': LINEASCAN_KEY,
       optimism: OPTIMISMSCAN_KEY,
-      'optimism-goerli': OPTIMISMSCAN_KEY,
     },
     customChains: [
       {
@@ -308,14 +300,6 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: 'https://api-goerli.lineascan.build/api',
           browserURL: 'https://goerli.lineascan.build/',
-        },
-      },
-      {
-        network: 'optimism-goerli',
-        chainId: 420,
-        urls: {
-          apiURL: 'https://api-goerli-optimistic.etherscan.io/api',
-          browserURL: 'https://goerli-optimism.etherscan.io/',
         },
       },
     ],
@@ -369,10 +353,6 @@ const config: HardhatUserConfig = {
       optimism: {
         usdc: optimismRelationConfigMap,
         usdt: optimismUsdtRelationConfigMap,
-      },
-      'optimism-goerli': {
-        usdc: optimismGoerliRelationConfigMap,
-        usdt: optimismGoerliUsdtRelationConfigMap,
       },
     },
   },
@@ -497,18 +477,6 @@ const config: HardhatUserConfig = {
         network: 'optimism',
         deployment: 'usdt',
         auxiliaryBase: 'mainnet',
-      },
-      {
-        name: 'optimism-goerli',
-        network: 'optimism-goerli',
-        deployment: 'usdc',
-        auxiliaryBase: 'goerli',
-      },
-      {
-        name: 'optimism-goerli-usdt',
-        network: 'optimism-goerli',
-        deployment: 'usdt',
-        auxiliaryBase: 'goerli',
       },
     ],
   },
