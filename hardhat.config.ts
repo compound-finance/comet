@@ -256,6 +256,7 @@ const config: HardhatUserConfig = {
       // Linea
       'linea-goerli': LINEASCAN_KEY,
       optimism: OPTIMISMSCAN_KEY,
+      optimisticEthereum: OPTIMISMSCAN_KEY,
     },
     customChains: [
       {

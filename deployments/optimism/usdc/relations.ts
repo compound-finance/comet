@@ -24,4 +24,7 @@ export default {
       },
     },
   },
+  '0x1f32b1c2345538c0c6f582fcb022739c4a194ebb': {
+    artifact: 'contracts/ERC20.sol:ERC20'
+  },
 };
