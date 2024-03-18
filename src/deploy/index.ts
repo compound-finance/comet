@@ -115,6 +115,9 @@ export const WHALES = {
   'linea-goerli': [
     '0xC858966280Da3Fa0348E51D2c3B892EcC889fC98', // USDC whale
     '0x44411c605eb7e009cad03f3847cfbbfcf8895130'  // COMP whale
+  ],
+  optimism: [
+    '0x2A82Ae142b2e62Cb7D10b55E323ACB1Cab663a26' // TODO: add whales
   ]
 };
 
