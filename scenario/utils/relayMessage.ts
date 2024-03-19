@@ -3,6 +3,7 @@ import relayPolygonMessage from './relayPolygonMessage';
 import { relayArbitrumMessage, relayCCTPMint } from './relayArbitrumMessage';
 import relayBaseMessage from './relayBaseMessage';
 import relayLineaMessage from './relayLineaMessage';
+import relayOptimismMessage from './relayOptimismMessage';
 
 export default async function relayMessage(
   governanceDeploymentManager: DeploymentManager,
@@ -20,7 +21,7 @@ export default async function relayMessage(
       );
       break;
     case 'optimism':
-      await relayBaseMessage(
+      await relayOptimismMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber
