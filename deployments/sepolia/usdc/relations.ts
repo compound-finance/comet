@@ -43,7 +43,7 @@ export default {
   baseL1CrossDomainMessenger: {
     delegates: {
       // Not great, but this address shouldn't change and is very difficult to grab on-chain (private methods)
-      field: async () => '0xa042e16781484716c1Ef448c919af7BCd9607467'
+      field: async () => '0xC34855F4De64F1840e5686e64278da901e261f20'
     }
   },
   baseL1StandardBridge: {

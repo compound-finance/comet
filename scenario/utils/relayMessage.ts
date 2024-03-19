@@ -19,6 +19,13 @@ export default async function relayMessage(
         startingBlockNumber
       );
       break;
+    case 'base-sepolia':
+      await relayBaseMessage(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        startingBlockNumber
+      );
+      break;
     case 'mumbai':
     case 'polygon':
       await relayPolygonMessage(
