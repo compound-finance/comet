@@ -343,7 +343,7 @@ const config: HardhatUserConfig = {
         weth: baseGoerliWethRelationConfigMap
       },
       'base-sepolia': {
-        usdc: baseGoerliRelationConfigMap
+        usdc: baseSepoliaRelationConfigMap
       },
       'linea-goerli': {
         usdc: lineaGoerliRelationConfigMap
