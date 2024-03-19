@@ -4,7 +4,7 @@
   "baseToken": "USDC",
   "baseTokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   "baseTokenPriceFeed": "",
-  "pauseGuardian": "",
+  "pauseGuardian": "0x6106DA3AcFdEB341808f4DC3D2483eC67c98E728",
   "borrowMin": "1e0",
   "storeFrontPriceFactor": 0.5,
   "targetReserves": "5000000e6",

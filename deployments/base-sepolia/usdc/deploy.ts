@@ -66,7 +66,16 @@ async function deployContracts(
 
   // Deploy ETH / USD SimplePriceFeed
   const ethToUSDPriceFeed = await deploymentManager.deploy(
-    'ethToUSD:simplePriceFeed',
+    'WETH:simplePriceFeed',
+    'test/SimplePriceFeed.sol',
+    [
+      exp(3477.28, 8), // Latest answer on mainnet at block 19463076
+      8
+    ]
+  );
+
+  const cbethToUSDPriceFeed = await deploymentManager.deploy(
+    'cbETH:simplePriceFeed',
     'test/SimplePriceFeed.sol',
     [
       exp(3477.28, 8), // Latest answer on mainnet at block 19463076
