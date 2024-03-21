@@ -6,6 +6,16 @@ export default {
     artifact: 'contracts/bridges/optimism/OptimismBridgeReceiver.sol:OptimismBridgeReceiver'
   },
 
+  // cbETH
+  '0x774ed9edb0c5202df9a86183804b5d9e99dc6ca3': {
+    artifact: 'contracts/ERC20.sol:ERC20',
+  },
+
+  // COMP
+  '0x2f535da74048c0874400f0371fba20df983a56e2': {
+    artifact: 'contracts/ERC20.sol:ERC20',
+  },
+
   l2CrossDomainMessenger: {
     delegates: {
       field: {
@@ -13,7 +23,7 @@ export default {
       }
     }
   },
-  
+
   l2StandardBridge: {
     delegates: {
       field: {
