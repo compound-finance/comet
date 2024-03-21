@@ -1,5 +1,5 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
-import { DeploySpec, deployComet } from '../../../src/deploy';
+import { DeploySpec, deployComet, exp } from '../../../src/deploy';
 
 const SECONDS_PER_DAY = 24 * 60 * 60;
 
@@ -27,7 +27,8 @@ async function deployContracts(
   const cbETH = await deploymentManager.existing(
     'cbETH',
     '0x774eD9EDB0C5202dF9A86183804b5D9E99dC6CA3',
-    'base-sepolia'
+    'base-sepolia',
+    'contracts/ERC20.sol:ERC20'
   );
 
   const USDC = await deploymentManager.existing(
@@ -39,7 +40,8 @@ async function deployContracts(
   const COMP = await deploymentManager.existing(
     'COMP',
     '0x2f535da74048c0874400f0371Fba20DF983A56e2',
-    'base-sepolia'
+    'base-sepolia',
+    'contracts/ERC20.sol:ERC20'
   );
 
   const l2CrossDomainMessenger = await deploymentManager.existing(
@@ -66,7 +68,7 @@ async function deployContracts(
 
   // Deploy ETH / USD SimplePriceFeed
   const ethToUSDPriceFeed = await deploymentManager.deploy(
-    'WETH:simplePriceFeed',
+    'WETH:priceFeed',
     'test/SimplePriceFeed.sol',
     [
       exp(3477.28, 8), // Latest answer on mainnet at block 19463076
@@ -75,7 +77,7 @@ async function deployContracts(
   );
 
   const cbethToUSDPriceFeed = await deploymentManager.deploy(
-    'cbETH:simplePriceFeed',
+    'cbETH:priceFeed',
     'test/SimplePriceFeed.sol',
     [
       exp(3477.28, 8), // Latest answer on mainnet at block 19463076
