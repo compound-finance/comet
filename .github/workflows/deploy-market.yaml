@@ -41,7 +41,7 @@ jobs:
       LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
     steps:
       - name: Seacrest
-        uses: hayesgm/seacrest@5748b3a066f517973ca2ca03d0af39bbf2b82d10
+        uses: hayesgm/seacrest@1dc2d6e3750d5f5589173555220695a09b913071
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
