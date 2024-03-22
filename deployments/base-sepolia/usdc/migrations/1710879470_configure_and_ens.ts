@@ -103,14 +103,14 @@ export default migration('1710879470_configure_and_ens', {
       },
 
       // 4. Update the list of official markets
-      {
-        target: ENSResolverAddress,
-        signature: 'setText(bytes32,string,string)',
-        calldata: ethers.utils.defaultAbiCoder.encode(
-          ['bytes32', 'string', 'string'],
-          [subdomainHash, ENSTextRecordKey, JSON.stringify(officialMarketsJSON)]
-        )
-      },
+      // {
+      //   target: ENSResolverAddress,
+      //   signature: 'setText(bytes32,string,string)',
+      //   calldata: ethers.utils.defaultAbiCoder.encode(
+      //     ['bytes32', 'string', 'string'],
+      //     [subdomainHash, ENSTextRecordKey, JSON.stringify(officialMarketsJSON)]
+      //   )
+      // },
     ];
 
     const description = "# Configurate Base-Sepolia cUSDCv3 market, set reward config, bridge over USDC and COMP, and update ENS text record.";
