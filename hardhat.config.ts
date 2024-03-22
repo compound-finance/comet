@@ -461,7 +461,7 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'goerli'
       },
       {
-        name: 'base-sepolia',
+        name: 'base-sepolia-usdc',
         network: 'base-sepolia',
         deployment: 'usdc',
         auxiliaryBase: 'sepolia'
