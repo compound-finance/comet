@@ -6,8 +6,8 @@ interface IL1CrossDomainMessenger {
     event Initialized(uint8 version);
     event RelayedMessage(bytes32 indexed msgHash);
     event SentMessage(
-        address target,
-        address sender,
+        address indexed target,
+        address indexed sender,
         bytes message,
         uint256 messageNonce,
         uint256 gasLimit
