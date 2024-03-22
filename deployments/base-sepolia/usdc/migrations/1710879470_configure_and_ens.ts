@@ -10,7 +10,7 @@ const ENSRegistryAddress = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
-const baseSepoliaCOMPAddress = '';
+const baseSepoliaCOMPAddress = '0x2f535da74048c0874400f0371Fba20DF983A56e2';
 
 export default migration('1710879470_configure_and_ens', {
   prepare: async (deploymentManager: DeploymentManager) => {
@@ -37,18 +37,18 @@ export default migration('1710879470_configure_and_ens', {
       COMP: sepoliaCOMP,
     } = await govDeploymentManager.getContracts();
 
-    // ENS Setup
-    // See also: https://docs.ens.domains/contract-api-reference/name-processing
-    const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress, 'sepolia');
-    const subdomainHash = ethers.utils.namehash(ENSSubdomain);
-    const chainId = (await deploymentManager.hre.ethers.provider.getNetwork()).chainId.toString();
-    const newMarketObject = { baseSymbol: 'USDC', cometAddress: comet.address };
-    const officialMarketsJSON = JSON.parse(await ENSResolver.text(subdomainHash, ENSTextRecordKey));
-    if (officialMarketsJSON[chainId]) {
-      officialMarketsJSON[chainId].push(newMarketObject);
-    } else {
-      officialMarketsJSON[chainId] = [newMarketObject];
-    }
+    // // ENS Setup
+    // // See also: https://docs.ens.domains/contract-api-reference/name-processing
+    // const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress, 'sepolia');
+    // const subdomainHash = ethers.utils.namehash(ENSSubdomain);
+    // const chainId = (await deploymentManager.hre.ethers.provider.getNetwork()).chainId.toString();
+    // const newMarketObject = { baseSymbol: 'USDC', cometAddress: comet.address };
+    // const officialMarketsJSON = JSON.parse(await ENSResolver.text(subdomainHash, ENSTextRecordKey));
+    // if (officialMarketsJSON[chainId]) {
+    //   officialMarketsJSON[chainId].push(newMarketObject);
+    // } else {
+    //   officialMarketsJSON[chainId] = [newMarketObject];
+    // }
 
     const configuration = await getConfigurationStruct(deploymentManager);
 
