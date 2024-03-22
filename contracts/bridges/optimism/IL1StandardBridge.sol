@@ -3,33 +3,33 @@ pragma solidity ^0.8.15;
 
 interface IL1StandardBridge {
     event ERC20BridgeFinalized(
-        address indexed localToken,
-        address indexed remoteToken,
-        address indexed from,
+        address localToken,
+        address remoteToken,
+        address from,
         address to,
         uint256 amount,
         bytes extraData
     );
     event ERC20BridgeInitiated(
-        address indexed localToken,
-        address indexed remoteToken,
-        address indexed from,
+        address localToken,
+        address remoteToken,
+        address from,
         address to,
         uint256 amount,
         bytes extraData
     );
     event ERC20DepositInitiated(
-        address indexed l1Token,
-        address indexed l2Token,
-        address indexed from,
+        address l1Token,
+        address l2Token,
+        address from,
         address to,
         uint256 amount,
         bytes extraData
     );
     event ERC20WithdrawalFinalized(
-        address indexed l1Token,
-        address indexed l2Token,
-        address indexed from,
+        address l1Token,
+        address l2Token,
+        address from,
         address to,
         uint256 amount,
         bytes extraData
