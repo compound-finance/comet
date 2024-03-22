@@ -144,7 +144,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'base-sepolia',
     chainId: 84532,
-    url: `https://sepolia.base.org/`,
+    url: `https://clean-spring-wind.base-sepolia.discover.quiknode.pro/${QUICKNODE_KEY}`,
   },
   {
     network: 'linea-goerli',
