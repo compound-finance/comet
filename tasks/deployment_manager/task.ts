@@ -190,7 +190,7 @@ task('migrate', 'Runs migration')
       let governanceDm: DeploymentManager;
       const base = env.config.scenario.bases.find(b => b.network === network && b.deployment === deployment);
       const isBridgedDeployment = base.auxiliaryBase !== undefined;
-      const governanceBase = isBridgedDeployment ? env.config.scenario.bases.find(b => b.network === base.auxiliaryBase) : undefined;
+      const governanceBase = isBridgedDeployment ? env.config.scenario.bases.find(b => b.name === base.auxiliaryBase) : undefined;
 
       if (governanceBase) {
         const governanceEnv = hreForBase(governanceBase, simulate);
@@ -226,7 +226,7 @@ task('migrate', 'Runs migration')
 
       await runMigration(dm, governanceDm, prepare, enact, migration, overwrite);
 
-      if (enact && !noEnacted) {
+      if (enact && !noEnacted && !simulate) {
         await writeEnacted(migration, dm, true);
       }
     }

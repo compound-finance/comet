@@ -464,7 +464,7 @@ const config: HardhatUserConfig = {
         name: 'base-sepolia-usdc',
         network: 'base-sepolia',
         deployment: 'usdc',
-        auxiliaryBase: 'sepolia'
+        auxiliaryBase: 'sepolia-usdc'
       },
       {
         name: 'linea-goerli',
