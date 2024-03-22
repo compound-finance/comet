@@ -190,7 +190,7 @@ task('migrate', 'Runs migration')
       let governanceDm: DeploymentManager;
       const base = env.config.scenario.bases.find(b => b.network === network && b.deployment === deployment);
       const isBridgedDeployment = base.auxiliaryBase !== undefined;
-      const governanceBase = isBridgedDeployment ? env.config.scenario.bases.find(b => b.name === base.auxiliaryBase) : undefined;
+      const governanceBase = isBridgedDeployment ? env.config.scenario.bases.find(b => b.network === base.auxiliaryBase) : undefined;
 
       if (governanceBase) {
         const governanceEnv = hreForBase(governanceBase, simulate);
