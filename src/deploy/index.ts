@@ -69,13 +69,15 @@ export type Proposal = [
 // Ideally these wouldn't be hardcoded, but other solutions are much more complex, and slower
 export const COMP_WHALES = {
   mainnet: [
-    '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
-    '0x61258f12c459984f32b83c86a6cc10aa339396de',
     '0x9aa835bc7b8ce13b9b0c9764a52fbf71ac62ccf1',
-    '0x683a4f9915d6216f73d6df50151725036bd26c02'
+    '0x683a4f9915d6216f73d6df50151725036bd26c02',
+    '0x8169522c2C57883E8EF80C498aAB7820dA539806',
+    '0x8d07D225a769b7Af3A923481E1FdF49180e6A265',
+    '0x7d1a02C0ebcF06E1A36231A54951E061673ab27f',
+    '0x54A37d93E57c5DA659F508069Cf65A381b61E189'
   ],
 
-  testnet: ['0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46']
+  testnet: ['0x683a4F9915D6216f73d6Df50151725036bD26C02']
 };
 
 export const WHALES = {
