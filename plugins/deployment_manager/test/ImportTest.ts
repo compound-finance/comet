@@ -61,7 +61,7 @@ export function mockImportSuccess(address: string) {
     );
 }
 
-describe.only('Import', () => {
+describe('Import', () => {
   beforeEach(async () => {
     nock.disableNetConnect();
   });
