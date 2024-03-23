@@ -37,7 +37,6 @@ import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relation
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
 import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
-import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners())
@@ -355,7 +354,6 @@ const config: HardhatUserConfig = {
       },
       optimism: {
         usdc: optimismRelationConfigMap,
-        usdt: optimismUsdtRelationConfigMap,
       },
     },
   },
@@ -479,12 +477,6 @@ const config: HardhatUserConfig = {
         name: 'optimism-usdc',
         network: 'optimism',
         deployment: 'usdc',
-        auxiliaryBase: 'mainnet',
-      },
-      {
-        name: 'optimism-usdt',
-        network: 'optimism',
-        deployment: 'usdt',
         auxiliaryBase: 'mainnet',
       },
     ],
