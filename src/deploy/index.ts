@@ -77,7 +77,7 @@ export const COMP_WHALES = {
     '0x54A37d93E57c5DA659F508069Cf65A381b61E189'
   ],
 
-  testnet: ['0x683a4F9915D6216f73d6Df50151725036bD26C02']
+  testnet: ['0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46']
 };
 
 export const WHALES = {
@@ -119,7 +119,8 @@ export const WHALES = {
     '0x44411c605eb7e009cad03f3847cfbbfcf8895130'  // COMP whale
   ],
   optimism: [
-    '0x2A82Ae142b2e62Cb7D10b55E323ACB1Cab663a26' // TODO: add whales
+    '0x2A82Ae142b2e62Cb7D10b55E323ACB1Cab663a26', // OP whale
+    '0x8af3827a41c26c7f32c81e93bb66e837e0210d5c' // USDC whale
   ]
 };
 
