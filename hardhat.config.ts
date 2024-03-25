@@ -187,7 +187,7 @@ const config: HardhatUserConfig = {
           runs: 1,
           details: {
             yulDetails: {
-              optimizerSteps: 'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul',
+              optimizerSteps: 'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul'
             },
           },
         }
@@ -208,7 +208,8 @@ const config: HardhatUserConfig = {
       gas: 12000000,
       gasPrice: 'auto',
       blockGasLimit: 12000000,
-      accounts: ETH_PK ? [...deriveAccounts(ETH_PK)].map((privateKey) => ({ privateKey, balance: (10n ** 36n).toString() }))
+      accounts: ETH_PK ?
+        [...deriveAccounts(ETH_PK)].map((privateKey) => ({ privateKey, balance: (10n ** 36n).toString() }))
         : { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
       // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,
@@ -288,8 +289,8 @@ const config: HardhatUserConfig = {
           apiURL: 'https://api-goerli.lineascan.build/api',
           browserURL: 'https://goerli.lineascan.build/'
         }
-      },
-    ],
+      }
+    ]
   },
 
   typechain: {
@@ -326,7 +327,7 @@ const config: HardhatUserConfig = {
         'usdc.e': arbitrumBridgedUsdcGoerliRelationConfigMap,
         usdc: arbitrumGoerliNativeUsdcRelationConfigMap
       },
-      base: {
+      'base': {
         usdbc: baseUsdbcRelationConfigMap,
         weth: baseWethRelationConfigMap,
         usdc: baseUsdcRelationConfigMap
