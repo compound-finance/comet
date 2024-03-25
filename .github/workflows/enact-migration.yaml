@@ -34,7 +34,6 @@ on:
         description: Run ID for Artifact
       eth_pk:
         description: Ignore if you plan to use WalletConnect, otherwise, you can paste in a Ethereum private key
-  pull_request:
 jobs:
   enact-migration:
     name: Enact Migration
