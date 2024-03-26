@@ -63,17 +63,31 @@ export default migration('1710879470_configure_and_ens', {
       ['address', 'address'],
       [comet.address, baseSepoliaCOMPAddress]
     );
+
+    // Note reawrd config was already set in deploy, so it's not needed here
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
-        [configurator.address, cometAdmin.address, rewards.address],
-        [0, 0, 0],
+        [
+          configurator.address,
+          cometAdmin.address,
+          // rewards.address
+        ],
+        [
+          0,
+          0,
+          // 0
+        ],
         [
           'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
           'deployAndUpgradeTo(address,address)',
-          'setRewardConfig(address,address)'
+          // 'setRewardConfig(address,address)'
         ],
-        [setConfigurationCalldata, deployAndUpgradeToCalldata, setRewardConfigCalldata]
+        [
+          setConfigurationCalldata,
+          deployAndUpgradeToCalldata,
+          // setRewardConfigCalldata
+        ]
       ]
     );
 
@@ -94,6 +108,7 @@ export default migration('1710879470_configure_and_ens', {
         signature: 'approve(address,uint256)',
         args: [baseL1StandardBridge.address, COMPAmountToBridge]
       },
+
       // 3. Bridge COMP from Sepolia to Base-Sepolia Comet using L1StandardBridge
       {
         contract: baseL1StandardBridge,
@@ -102,6 +117,7 @@ export default migration('1710879470_configure_and_ens', {
         args: [sepoliaCOMP.address, baseSepoliaCOMPAddress, rewards.address, COMPAmountToBridge, 200_000, '0x']
       },
 
+      // Note, no ENS set up on Sepolia
       // 4. Update the list of official markets
       // {
       //   target: ENSResolverAddress,
@@ -113,7 +129,8 @@ export default migration('1710879470_configure_and_ens', {
       // },
     ];
 
-    const description = "# Configurate Base-Sepolia cUSDCv3 market, set reward config, bridge over USDC and COMP, and update ENS text record.";
+    // const description = "# Configurate Base-Sepolia cUSDCv3 market, set reward config, bridge over USDC and COMP, and update ENS text record.";
+    const description = "# Configure Base-Sepolia cUSDCv3 market, set reward config, and bridge over COMP.";
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(sepoliaActions, description))))
     );
@@ -136,18 +153,22 @@ export default migration('1710879470_configure_and_ens', {
 
     // 1.
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    expect(stateChanges).to.deep.equal({
-      pauseGuardian: '0x6106DA3AcFdEB341808f4DC3D2483eC67c98E728',
-      baseTrackingSupplySpeed: exp(34.74 / 86400, 15, 18),
-      baseTrackingBorrowSpeed: exp(34.74 / 86400, 15, 18),
-      baseBorrowMin: exp(1, 6),
-      WETH: {
-        supplyCap: exp(1000, 18)
-      },
-      cbETH: {
-        supplyCap: exp(800, 18)
-      }
-    })
+
+    //// Config was already set during deployment instead of subsequently with proposal.
+    // expect(stateChanges).to.deep.equal({
+    //   pauseGuardian: '0x6106DA3AcFdEB341808f4DC3D2483eC67c98E728',
+    //   baseTrackingSupplySpeed: exp(34.74 / 86400, 15, 18),
+    //   baseTrackingBorrowSpeed: exp(34.74 / 86400, 15, 18),
+    //   baseBorrowMin: exp(1, 6),
+    //   WETH: {
+    //     supplyCap: exp(1000, 18)
+    //   },
+    //   cbETH: {
+    //     supplyCap: exp(800, 18)
+    //   }
+    // })
+
+    expect(stateChanges).to.deep.equal({});
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(COMP.address);
