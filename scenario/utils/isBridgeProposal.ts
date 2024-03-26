@@ -52,6 +52,18 @@ export async function isBridgeProposal(
       const { targets } = await governor.getActions(openProposal.id);
       return targets.includes(lineaMessageService.address);
     }
+    case 'optimism': {
+      const governor = await governanceDeploymentManager.getContractOrThrow('governor');
+      const opL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow(
+        'opL1CrossDomainMessenger'
+      );
+      const opL1StandardBridge = await governanceDeploymentManager.getContractOrThrow(
+        'opL1StandardBridge'
+      );
+      const { targets } = await governor.getActions(openProposal.id);
+      const bridgeContracts = [opL1CrossDomainMessenger.address, opL1StandardBridge.address];
+      return targets.some(t => bridgeContracts.includes(t));
+    }
     default: {
       const tag = `[${bridgeNetwork} -> ${governanceDeploymentManager.network}]`;
       throw new Error(`${tag} Unable to determine whether to relay Proposal ${openProposal.id}`);
