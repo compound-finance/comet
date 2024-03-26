@@ -44,11 +44,6 @@ async function deployContracts(
     '0x4200000000000000000000000000000000000042',
     'optimism'
   );
-  const wstETH = await await deploymentManager.existing(
-    'wstETH',
-    '0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb',
-    'optimism'
-  );
 
   const l2CrossDomainMessenger = await deploymentManager.existing(
     'l2CrossDomainMessenger',
