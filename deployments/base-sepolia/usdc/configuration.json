@@ -27,7 +27,7 @@
   "rewardToken": "COMP",
   "assets": {
     "cbETH": {
-      "address": "0x7c6b91D9Be155A6Db01f749217d76fF02A7227F2",
+      "address": "0x774eD9EDB0C5202dF9A86183804b5D9E99dC6CA3",
       "priceFeed": "",
       "decimals": "18",
       "borrowCF": 0.75,
