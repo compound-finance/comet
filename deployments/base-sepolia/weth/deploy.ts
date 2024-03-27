@@ -41,6 +41,13 @@ async function deployContracts(
     ]
   );
 
+  const COMP = await deploymentManager.existing(
+    'COMP',
+    '0x2f535da74048c0874400f0371Fba20DF983A56e2',
+    'base-sepolia',
+    'contracts/ERC20.sol:ERC20'
+  );
+
   // Import shared contracts from cUSDCv3
   const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'base-sepolia', 'usdc');
   const cometFactory = await deploymentManager.fromDep('cometFactory', 'base-sepolia', 'usdc');
