@@ -35,6 +35,7 @@ import baseWethRelationConfigMap from './deployments/base/weth/relations';
 import baseUsdcRelationConfigMap from './deployments/base/usdc/relations';
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
 import baseSepoliaRelationConfigMap from './deployments/base-sepolia/usdc/relations';
+import baseSepoliaWethRelationConfigMap from './deployments/base-sepolia/weth/relations';
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
 
@@ -343,7 +344,8 @@ const config: HardhatUserConfig = {
         weth: baseGoerliWethRelationConfigMap
       },
       'base-sepolia': {
-        usdc: baseSepoliaRelationConfigMap
+        usdc: baseSepoliaRelationConfigMap,
+        weth: baseSepoliaWethRelationConfigMap
       },
       'linea-goerli': {
         usdc: lineaGoerliRelationConfigMap
@@ -465,6 +467,12 @@ const config: HardhatUserConfig = {
         network: 'base-sepolia',
         deployment: 'usdc',
         auxiliaryBase: 'sepolia-usdc'
+      },
+      {
+        name: 'base-sepolia-weth',
+        network: 'base-sepolia',
+        deployment: 'weth',
+        auxiliaryBase: 'sepolia-weth'
       },
       {
         name: 'linea-goerli',
