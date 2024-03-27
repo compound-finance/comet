@@ -3,13 +3,35 @@
   "symbol": "cWETHv3",
   "baseToken": "WETH",
   "baseTokenAddress": "0x4200000000000000000000000000000000000006",
+  "baseTokenPriceFeed": "",
+  "pauseGuardian": "",
+  "borrowMin": "0e0",
+  "storeFrontPriceFactor": 1,
+  "targetReserves": "5000e18",
+  "rates": {
+    "supplyKink": 0.9,
+    "supplySlopeLow": 0.0283824,
+    "supplySlopeHigh": 0.6066567706,
+    "supplyBase": 0,
+    "borrowKink": 0.9,
+    "borrowSlopeLow": 0.037,
+    "borrowSlopeHigh": 0.5171500339,
+    "borrowBase": 0.009945209674
+  },
+  "tracking": {
+    "indexScale": "1e15",
+    "baseSupplySpeed": "0e0",
+    "baseBorrowSpeed": "0e0",
+    "baseMinForRewards": "100e18"
+  },
+  "rewardToken": "COMP",
   "assets": {
     "cbETH": {
       "address": "0x774eD9EDB0C5202dF9A86183804b5D9E99dC6CA3",
       "decimals": "18",
-      "borrowCF": 0,
-      "liquidateCF": 0,
-      "liquidationFactor": 0,
+      "borrowCF": 0.90,
+      "liquidateCF": 0.93,
+      "liquidationFactor": 0.975,
       "supplyCap": "0e18"
     }
   }

@@ -11,6 +11,11 @@ export default {
     artifact: 'contracts/ERC20.sol:ERC20',
   },
 
+  // WETH
+  '0x4200000000000000000000000000000000000006': {
+    artifact: 'contracts/ERC20.sol:ERC20',
+  },
+
   // COMP
   '0x2f535da74048c0874400f0371fba20df983a56e2': {
     artifact: 'contracts/ERC20.sol:ERC20',
