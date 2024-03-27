@@ -24,7 +24,6 @@
     "baseBorrowSpeed": "0e15",
     "baseMinForRewards": "100e18"
   },
-  "rewardToken": "COMP",
   "assets": {
     "cbETH": {
       "address": "0x7c6b91D9Be155A6Db01f749217d76fF02A7227F2",
