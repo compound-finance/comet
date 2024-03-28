@@ -14,5 +14,7 @@
     "lineaL1TokenBridge": "0xaA012D038E6440535Ec66eDf2DA592F4F8398133",
     "lineaL1usdcBridge": "0x9c556D2cCfb6157E4A6305aa9963EdD6ca5047cB", 
     "CCTPTokenMessenger": "0xd0c3da58f55358142b8d3e06c1c30c5c6114efe8",
-    "CCTPMessageTransmitter": "0x26413e8157cd32011e726065a5462e97dd4d03d9"
+    "CCTPMessageTransmitter": "0x26413e8157cd32011e726065a5462e97dd4d03d9",
+    "scrollMessenger": "0x5260e38080BFe97e6C4925d9209eCc5f964373b6",
+    "scrollL1TokenBridge": "0xe5E30E7c24e4dFcb281A682562E53154C15D3332"
 }

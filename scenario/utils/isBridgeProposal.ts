@@ -52,6 +52,15 @@ export async function isBridgeProposal(
       const { targets } = await governor.getActions(openProposal.id);
       return targets.includes(lineaMessageService.address);
     }
+    case 'scroll':
+    case 'scroll-goerli': {
+      const governor = await governanceDeploymentManager.getContractOrThrow('governor');
+      const scrollMessenger = await governanceDeploymentManager.getContractOrThrow(
+        'scrollMessenger'
+      );
+      const { targets } = await governor.getActions(openProposal.id);
+      return targets.includes(scrollMessenger.address);
+    }
     default: {
       const tag = `[${bridgeNetwork} -> ${governanceDeploymentManager.network}]`;
       throw new Error(`${tag} Unable to determine whether to relay Proposal ${openProposal.id}`);
