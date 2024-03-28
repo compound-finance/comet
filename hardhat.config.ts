@@ -47,7 +47,7 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
 /* note: boolean environment variables are imported as strings */
 const {
   COINMARKETCAP_API_KEY,
-  ETH_PK,
+  ETH_PK = '',
   ETHERSCAN_KEY,
   SNOWTRACE_KEY,
   POLYGONSCAN_KEY,
@@ -80,11 +80,11 @@ export function requireEnv(varName, msg?: string): string {
 // required environment variables
 [
   'ETHERSCAN_KEY',
-  // 'SNOWTRACE_KEY',
+  'SNOWTRACE_KEY',
   'INFURA_KEY',
-  // 'POLYGONSCAN_KEY',
-  // 'ARBISCAN_KEY',
-  // 'LINEASCAN_KEY'
+  'POLYGONSCAN_KEY',
+  'ARBISCAN_KEY',
+  'LINEASCAN_KEY'
 ].map(v => requireEnv(v));
 
 // Networks
