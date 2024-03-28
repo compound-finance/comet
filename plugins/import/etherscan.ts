@@ -21,6 +21,7 @@ export function getEtherscanApiUrl(network: string): string {
     'arbitrum-goerli': 'api-goerli.arbiscan.io',
     base: 'api.basescan.org',
     'base-goerli': 'api-goerli.basescan.org',
+    'base-sepolia': 'api-sepolia.basescan.org',
     'linea-goerli': 'api-goerli.lineascan.build'
   }[network];
 
@@ -46,6 +47,7 @@ export function getEtherscanUrl(network: string): string {
     'arbitrum-goerli': 'goerli.arbiscan.io',
     base: 'basescan.org',
     'base-goerli': 'goerli.basescan.org',
+    'base-sepolia': 'sepolia.basescan.org',
     'linea-goerli': 'goerli.lineascan.build'
   }[network];
 
@@ -71,6 +73,7 @@ export function getEtherscanApiKey(network: string): string {
     'arbitrum-goerli': process.env.ARBISCAN_KEY,
     base: process.env.BASESCAN_KEY,
     'base-goerli': process.env.BASESCAN_KEY,
+    'base-sepolia': process.env.BASESCAN_KEY,
     'linea-goerli': process.env.LINEASCAN_KEY
   }[network];
 
