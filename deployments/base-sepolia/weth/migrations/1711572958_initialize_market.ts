@@ -1,5 +1,6 @@
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
+import { diffState, getCometConfig } from '../../../../plugins/deployment_manager/DiffState';
 import { calldata, exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
 
 const baseSepoliaCOMPAddress = '0x2f535da74048c0874400f0371Fba20DF983A56e2';
