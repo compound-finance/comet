@@ -48,6 +48,7 @@ export default async function relayMessage(
         startingBlockNumber
       );
       break;
+    case 'scroll':
     case 'scroll-goerli':
       await relayScrollMessage(
         governanceDeploymentManager,

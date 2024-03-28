@@ -37,6 +37,7 @@ import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relation
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
 import scrollGoerliRelationConfigMap from './deployments/scroll-goerli/usdc/relations';
+import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
@@ -150,6 +151,11 @@ const networkConfigs: NetworkConfig[] = [
     network: 'scroll-goerli',
     chainId: 534353,
     url: 'https://alpha-rpc.scroll.io/l2',
+  },
+  {
+    network: 'scroll',
+    chainId: 534352,
+    url: 'https://rpc.scroll.io',
   }
 ];
 
@@ -241,8 +247,10 @@ const config: HardhatUserConfig = {
       'base-goerli': BASESCAN_KEY,
       // Linea
       'linea-goerli': LINEASCAN_KEY,
+      // Scroll Testnet
+      'scroll-goerli': ETHERSCAN_KEY,
       // Scroll
-      'scroll-goerli': ETHERSCAN_KEY
+      'scroll': ETHERSCAN_KEY,
     },
     customChains: [
       {
@@ -296,6 +304,14 @@ const config: HardhatUserConfig = {
           apiURL: 'https://alpha-blockscout.scroll.io/api',
           browserURL: 'https://alpha-blockscout.scroll.io/'
         }
+      },
+      {
+        network: 'scroll',
+        chainId: 534352,
+        urls: {
+          apiURL: 'https://api.scrollscan.com/api',
+          browserURL: 'https://scrollscan.com/'
+        }
       }
     ]
   },
@@ -348,6 +364,9 @@ const config: HardhatUserConfig = {
       },
       'scroll-goerli': {
         usdc: scrollGoerliRelationConfigMap
+      },
+      'scroll': {
+        usdc: scrollRelationConfigMap
       }
     },
   },
@@ -472,6 +491,12 @@ const config: HardhatUserConfig = {
         network: 'scroll-goerli',
         deployment: 'usdc',
         auxiliaryBase: 'goerli'
+      },
+      {
+        name: 'scroll-usdc',
+        network: 'scroll',
+        deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
       }
     ],
   },

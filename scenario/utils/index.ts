@@ -504,6 +504,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageCalldata);
       break;
     }
+    case 'scroll': 
     case 'scroll-goerli': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'uint256', 'bytes', 'uint256'],

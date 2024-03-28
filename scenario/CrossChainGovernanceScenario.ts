@@ -386,7 +386,7 @@ scenario(
 scenario(
   'upgrade Scroll governance contracts and ensure they work properly',
   {
-    filter: async ctx => matchesDeployment(ctx, [{ network: 'scroll-goerli' }])
+    filter: async ctx => matchesDeployment(ctx, [{ network: 'scroll-goerli' }, {network: 'scroll'}])
   },
   async (
     {

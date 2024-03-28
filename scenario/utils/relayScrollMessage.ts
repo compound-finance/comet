@@ -29,6 +29,7 @@ export default async function relayScrollMessage(
   const l2ERC20Gateway = await bridgeDeploymentManager.getContractOrThrow('l2ERC20Gateway');
   const l2ETHGateway = await bridgeDeploymentManager.getContractOrThrow('l2ETHGateway');
   const l2WETHGateway = await bridgeDeploymentManager.getContractOrThrow('l2WETHGateway');
+  const l2WstETHGateway = await bridgeDeploymentManager.getContractOrThrow('l2WstETHGateway');
 
   const openBridgedProposals: OpenBridgedProposal[] = [];
 
@@ -47,10 +48,18 @@ export default async function relayScrollMessage(
 
     await setNextBaseFeeToZero(bridgeDeploymentManager);
 
-    const aliasAccount = await impersonateAddress(
-      bridgeDeploymentManager,
-      "0xD69c917c7F1C0a724A51c189B4A8F4F8C8E8cA0a"
-    );
+    let aliasAccount;
+    if (bridgeDeploymentManager.network == 'scroll-goerli'){
+      aliasAccount = await impersonateAddress(
+        bridgeDeploymentManager,
+        '0xD69c917c7F1C0a724A51c189B4A8F4F8C8E8cA0a'
+      );
+    } else {
+      aliasAccount = await impersonateAddress(
+        bridgeDeploymentManager,
+        applyL1ToL2Alias(scrollMessenger.address)
+      );
+    }    
 
     const relayMessageTxn = await (
       await l2Messenger.connect(aliasAccount).relayMessage(
@@ -99,7 +108,7 @@ export default async function relayScrollMessage(
         `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged over ${amount} of ETH to user ${to}`
       );
     }else if (target === l2WETHGateway.address){
-      // Bridging WETH
+      // 1c. Bridging WETH
       const { _l1Token, _l2Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
         ['address _l1Token', 'address _l2Token','address _from', 'address _to','uint256 _amount', 'bytes _data'],
         messageWithoutSigHash
@@ -107,6 +116,16 @@ export default async function relayScrollMessage(
   
       console.log(
         `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged over ${amount} of WETH to user ${to}`
+      );
+    } else if (target === l2WstETHGateway.address){
+      // 1d. Bridging WstETH
+      const { _l1Token, _l2Token, _from, to, amount, _data } = ethers.utils.defaultAbiCoder.decode(
+        ['address _l1Token', 'address _l2Token','address _from', 'address _to','uint256 _amount', 'bytes _data'],
+        messageWithoutSigHash
+      );
+  
+      console.log(
+        `[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Bridged over ${amount} of WstETH to user ${to}`
       );
     } else if (target === bridgeReceiver.address) {
       // Cross-chain message passing
