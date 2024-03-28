@@ -6,11 +6,11 @@ import "./ERC20.sol";
 import "./IPriceFeed.sol";
 
 /**
- * @title Compound's Comet Contract
+ * @title Compound's Comet Contract on Scroll
  * @notice An efficient monolithic money market protocol
  * @author Compound
  */
-contract Comet is CometMainInterface {
+contract ScrollComet is CometMainInterface {
     /** General configuration constants **/
 
     /// @notice The admin of the protocol
@@ -1121,7 +1121,6 @@ contract Comet is CometMainInterface {
         LiquidatorPoints memory points = liquidatorPoints[absorber];
         points.numAbsorbs++;
         points.numAbsorbed += safe64(accounts.length);
-        points.approxSpend += safe128(gasUsed * block.basefee);
         liquidatorPoints[absorber] = points;
     }
 
