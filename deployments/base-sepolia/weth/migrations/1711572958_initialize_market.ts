@@ -2,6 +2,7 @@ import { DeploymentManager } from '../../../../plugins/deployment_manager/Deploy
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { diffState, getCometConfig } from '../../../../plugins/deployment_manager/DiffState';
 import { calldata, exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
+import { expect } from 'chai';
 
 const baseSepoliaCOMPAddress = '0x2f535da74048c0874400f0371Fba20DF983A56e2';
 
@@ -15,6 +16,7 @@ export default migration('1711572958_initialize_market', {
     const ethers = deploymentManager.hre.ethers;
     const { utils } = ethers;
 
+    const cometFactory = await deploymentManager.fromDep('cometFactory', 'base-sepolia', 'usdc');
     const {
       bridgeReceiver,
       comet,
@@ -29,7 +31,9 @@ export default migration('1711572958_initialize_market', {
     } = await govDeploymentManager.getContracts();
 
     const configuration = await getConfigurationStruct(deploymentManager);
-
+    const setFactoryCalldata = await calldata(
+      configurator.populateTransaction.setFactory(comet.address, cometFactory.address)
+    );
     const setConfigurationCalldata = await calldata(
       configurator.populateTransaction.setConfiguration(comet.address, configuration)
     );
@@ -44,14 +48,16 @@ export default migration('1711572958_initialize_market', {
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
-        [ configurator.address, cometAdmin.address, rewards.address ],
-        [ 0, 0, 0 ],
+        [ configurator.address, configurator.address, cometAdmin.address, rewards.address ],
+        [ 0, 0, 0, 0 ],
         [
+          'setFactory(address,address)',
           'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
           'deployAndUpgradeTo(address,address)',
           'setRewardConfig(address,address)',
         ],
         [
+          setFactoryCalldata,
           setConfigurationCalldata,
           deployAndUpgradeToCalldata,
           setRewardConfigCalldata
@@ -95,8 +101,8 @@ export default migration('1711572958_initialize_market', {
     expect(stateChanges).to.deep.equal({
       pauseGuardian: '0x6106DA3AcFdEB341808f4DC3D2483eC67c98E728',
       baseTrackingSupplySpeed: exp(2 / 86400, 16, 18),
-      baseTrackingBorrowSpeed: exp(2 / 86400, 16, 18),
-      baseBorrowMin: exp(100, 18),
+      // baseTrackingBorrowSpeed: exp(0, 16, 18),
+      baseBorrowMin: exp(0.000001, 18),
       cbETH: {
         supplyCap: exp(7500, 18)
       },
