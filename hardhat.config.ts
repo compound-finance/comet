@@ -34,6 +34,8 @@ import baseUsdbcRelationConfigMap from './deployments/base/usdbc/relations';
 import baseWethRelationConfigMap from './deployments/base/weth/relations';
 import baseUsdcRelationConfigMap from './deployments/base/usdc/relations';
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
+import baseSepoliaRelationConfigMap from './deployments/base-sepolia/usdc/relations';
+import baseSepoliaWethRelationConfigMap from './deployments/base-sepolia/weth/relations';
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
 import scrollGoerliRelationConfigMap from './deployments/scroll-goerli/usdc/relations';
@@ -143,6 +145,11 @@ const networkConfigs: NetworkConfig[] = [
     url: `https://goerli.base.org/`,
   },
   {
+    network: 'base-sepolia',
+    chainId: 84532,
+    url: `https://clean-spring-wind.base-sepolia.discover.quiknode.pro/${QUICKNODE_KEY}`,
+  },
+  {
     network: 'linea-goerli',
     chainId: 59140,
     url: `https://linea-goerli.infura.io/v3/${INFURA_KEY}`,
@@ -245,6 +252,7 @@ const config: HardhatUserConfig = {
       // Base
       base: BASESCAN_KEY,
       'base-goerli': BASESCAN_KEY,
+      'base-sepolia': BASESCAN_KEY,
       // Linea
       'linea-goerli': LINEASCAN_KEY,
       // Scroll Testnet
@@ -287,6 +295,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: 'https://api-goerli.basescan.org/api',
           browserURL: 'https://goerli.basescan.org/'
+        }
+      },
+      {
+        network: 'base-sepolia',
+        chainId: 84532,
+        urls: {
+          apiURL: 'https://api-sepolia.basescan.org/api',
+          browserURL: 'https://sepolia.basescan.org/'
         }
       },
       {
@@ -358,6 +374,10 @@ const config: HardhatUserConfig = {
       'base-goerli': {
         usdc: baseGoerliRelationConfigMap,
         weth: baseGoerliWethRelationConfigMap
+      },
+      'base-sepolia': {
+        usdc: baseSepoliaRelationConfigMap,
+        weth: baseSepoliaWethRelationConfigMap
       },
       'linea-goerli': {
         usdc: lineaGoerliRelationConfigMap
@@ -479,6 +499,18 @@ const config: HardhatUserConfig = {
         network: 'base-goerli',
         deployment: 'weth',
         auxiliaryBase: 'goerli'
+      },
+      {
+        name: 'base-sepolia-usdc',
+        network: 'base-sepolia',
+        deployment: 'usdc',
+        auxiliaryBase: 'sepolia-usdc'
+      },
+      {
+        name: 'base-sepolia-weth',
+        network: 'base-sepolia',
+        deployment: 'weth',
+        auxiliaryBase: 'sepolia-weth'
       },
       {
         name: 'linea-goerli',

@@ -226,7 +226,7 @@ task('migrate', 'Runs migration')
 
       await runMigration(dm, governanceDm, prepare, enact, migration, overwrite);
 
-      if (enact && !noEnacted) {
+      if (enact && !noEnacted && !simulate) {
         await writeEnacted(migration, dm, true);
       }
     }
