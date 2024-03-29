@@ -1,0 +1,46 @@
+{
+  "name": "Compound USDC",
+  "symbol": "cUSDCv3",
+  "baseToken": "USDC",
+  "baseTokenAddress": "0x06eFdBFf2a14a7c8E15944D1F4A48F9F95F663A4",
+  "baseTokenPriceFeed": "0x43d12Fb3AfCAd5347fA764EeAB105478337b7200",
+  "borrowMin": "0.001e6",
+  "pauseGuardian": "0x0747a435b8a60070A7a111D015046d765098e4cc",
+  "storeFrontPriceFactor": 0.6,
+  "targetReserves": "1000000e6",
+  "rates": {
+    "supplyKink": 0.85,
+    "supplySlopeLow": 0.048,
+    "supplySlopeHigh": 1.6,
+    "supplyBase": 0,
+    "borrowKink": 0.85,
+    "borrowSlopeLow": 0.053,
+    "borrowSlopeHigh": 1.8,
+    "borrowBase": 0.015
+  },
+  "tracking": {
+    "indexScale": "1e15",
+    "baseSupplySpeed": "0e15",
+    "baseBorrowSpeed": "0e15",
+    "baseMinForRewards": "1000e6"
+  },
+  "assets": {
+    "WETH": {
+      "address": "0x5300000000000000000000000000000000000004",
+      "priceFeed": "0x6bF14CB0A831078629D993FDeBcB182b21A8774C",
+      "decimals": "18",
+      "borrowCF": 0.8,
+      "liquidateCF": 0.85,
+      "liquidationFactor": 0.9,
+      "supplyCap": "300e18"
+    },
+    "wstETH": {
+      "address": "0xf610A9dfB7C89644979b4A0f27063E9e7d7Cda32",
+      "decimals": "18",
+      "borrowCF": 0.75,
+      "liquidateCF": 0.8,
+      "liquidationFactor": 0.85,
+      "supplyCap": "50e18"
+    }
+  }
+}
