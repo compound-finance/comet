@@ -4,6 +4,7 @@ import { relayArbitrumMessage, relayCCTPMint } from './relayArbitrumMessage';
 import relayBaseMessage from './relayBaseMessage';
 import relayLineaMessage from './relayLineaMessage';
 import relayOptimismMessage from './relayOptimismMessage';
+import relayScrollMessage from './relayScrollMessage';
 
 export default async function relayMessage(
   governanceDeploymentManager: DeploymentManager,
@@ -50,6 +51,14 @@ export default async function relayMessage(
       break;
     case 'linea-goerli':
       await relayLineaMessage(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        startingBlockNumber
+      );
+      break;
+    case 'scroll':
+    case 'scroll-goerli':
+      await relayScrollMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber

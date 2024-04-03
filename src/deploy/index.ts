@@ -105,6 +105,9 @@ export const WHALES = {
     '0x6D3c5a4a7aC4B1428368310E4EC3bB1350d01455', // USDbC whale
     '0x07CFA5Df24fB17486AF0CBf6C910F24253a674D3'  // cbETH whale TODO: need to update this whale, not enough
   ],
+  scroll: [
+    '0xaaaaAAAACB71BF2C8CaE522EA5fa455571A74106'  // USDC whale
+  ],
   'arbitrum-goerli': [
     '0x4984cbfa5b199e5920995883d345bbe14b005db7', // USDC whale
     '0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46', // LINK whale

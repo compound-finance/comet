@@ -37,6 +37,8 @@ import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relation
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
 import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
+import scrollGoerliRelationConfigMap from './deployments/scroll-goerli/usdc/relations';
+import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -152,6 +154,16 @@ const networkConfigs: NetworkConfig[] = [
     chainId: 59140,
     url: `https://linea-goerli.infura.io/v3/${INFURA_KEY}`,
   },
+  {
+    network: 'scroll-goerli',
+    chainId: 534353,
+    url: 'https://alpha-rpc.scroll.io/l2',
+  },
+  {
+    network: 'scroll',
+    chainId: 534352,
+    url: 'https://rpc.scroll.io',
+  }
 ];
 
 function getDefaultProviderURL(network: string) {
@@ -205,9 +217,9 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: 1337,
       loggingEnabled: !!process.env['LOGGING'],
-      gas: 12000000,
+      gas: 120000000,
       gasPrice: 'auto',
-      blockGasLimit: 12000000,
+      blockGasLimit: 120000000,
       accounts: ETH_PK ?
         [...deriveAccounts(ETH_PK)].map(privateKey => ({ privateKey, balance: (10n ** 36n).toString() }))
         : { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
@@ -244,6 +256,10 @@ const config: HardhatUserConfig = {
       'linea-goerli': LINEASCAN_KEY,
       optimism: OPTIMISMSCAN_KEY,
       optimisticEthereum: OPTIMISMSCAN_KEY,
+      // Scroll Testnet
+      'scroll-goerli': ETHERSCAN_KEY,
+      // Scroll
+      'scroll': ETHERSCAN_KEY,
     },
     customChains: [
       {
@@ -288,6 +304,22 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: 'https://api-goerli.lineascan.build/api',
           browserURL: 'https://goerli.lineascan.build/'
+        }
+      },
+      {
+        network: 'scroll-goerli',
+        chainId: 534353,
+        urls: {
+          apiURL: 'https://alpha-blockscout.scroll.io/api',
+          browserURL: 'https://alpha-blockscout.scroll.io/'
+        }
+      },
+      {
+        network: 'scroll',
+        chainId: 534352,
+        urls: {
+          apiURL: 'https://api.scrollscan.com/api',
+          browserURL: 'https://scrollscan.com/'
         }
       }
     ]
@@ -341,6 +373,12 @@ const config: HardhatUserConfig = {
       },
       optimism: {
         usdc: optimismRelationConfigMap
+      },
+      'scroll-goerli': {
+        usdc: scrollGoerliRelationConfigMap
+      },
+      'scroll': {
+        usdc: scrollRelationConfigMap
       }
     },
   },
@@ -466,6 +504,18 @@ const config: HardhatUserConfig = {
         deployment: 'usdc',
         auxiliaryBase: 'mainnet'
       },
+      {
+        name: 'scroll-goerli',
+        network: 'scroll-goerli',
+        deployment: 'usdc',
+        auxiliaryBase: 'goerli'
+      },
+      {
+        name: 'scroll-usdc',
+        network: 'scroll',
+        deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
+      }
     ],
   },
 
