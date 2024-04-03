@@ -330,6 +330,10 @@ const config: HardhatUserConfig = {
         weth: goerliWethRelationConfigMap, 
         usdt: goerliUsdtRelationConfigMap,
       },
+      sepolia: {
+        usdc: sepoliaUsdcRelationConfigMap,
+        weth: sepoliaWethRelationConfigMap
+      },
       mumbai: {
         usdc: mumbaiRelationConfigMap
       },

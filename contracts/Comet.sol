@@ -201,33 +201,6 @@ contract Comet is CometMainInterface {
         (asset14_a, asset14_b) = getPackedAssetInternal(config.assetConfigs, 14);
     }
 
-    modifier nonReentrant() {
-        nonReentrantBefore();
-        _;
-        nonReentrantAfter();
-    }
-
-    function nonReentrantBefore() internal {
-        bytes32 slot = REENTRANCY_GUARD_FLAG_SLOT;
-        uint256 status;
-        assembly ("memory-safe") {
-            status := sload(slot)
-        }
-
-        if (status == REENTRANCY_GUARD_ENTERED) revert ReentrantCallBlocked();
-        assembly ("memory-safe") {
-            sstore(slot, REENTRANCY_GUARD_ENTERED)
-        }
-    }
-
-    function nonReentrantAfter() internal {
-        bytes32 slot = REENTRANCY_GUARD_FLAG_SLOT;
-        uint256 status;
-        assembly ("memory-safe") {
-            sstore(slot, REENTRANCY_GUARD_NOT_ENTERED)
-        }
-    }
-
     /**
      * @dev Prevents marked functions from being reentered 
      */
