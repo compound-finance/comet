@@ -190,7 +190,7 @@ const config: HardhatUserConfig = {
       optimizer: (
         process.env['OPTIMIZER_DISABLED'] ? { enabled: false } : {
           enabled: true,
-          runs: 1,
+          runs: 2,
           details: {
             yulDetails: {
               optimizerSteps: 'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul'
