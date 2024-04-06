@@ -103,6 +103,9 @@ async function scrapeContractCreationCodeFromEtherscanApi(network: string, addre
   return contractCreationCode.slice(2);
 }
 
+/**
+ * @description Does not work for 0x566511a1A09561e2896F8c0fD77E8544E59bFDB0 as etherscan starts using some firewall
+ */
 async function scrapeContractCreationCodeFromEtherscan(network: string, address: string) {
   const url = `${getEtherscanUrl(network)}/address/${address}#code`;
   debug(`Attempting to scrape Contract Creation code at ${url}`);

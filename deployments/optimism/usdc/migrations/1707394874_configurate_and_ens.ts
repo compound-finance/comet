@@ -265,6 +265,10 @@ export default migration("1707394874_configurate_and_ens", {
           baseSymbol: "WETH",
           cometAddress: "0x46e6b214b524310239732D51387075E0e70970bf",
         },
+        {
+          baseSymbol: "USDC",
+          cometAddress: "0xb125E6687d4313864e53df431d5425969c15Eb2F",
+        },
       ],
       42161: [
         {
@@ -274,6 +278,12 @@ export default migration("1707394874_configurate_and_ens", {
         {
           baseSymbol: "USDC",
           cometAddress: "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
+        },
+      ],
+      534352: [
+        {
+          baseSymbol: "USDC",
+          cometAddress: "0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44",
         },
       ],
       10: [
