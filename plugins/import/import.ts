@@ -83,6 +83,26 @@ async function getEtherscanApiData(network: string, address: string, apiKey: str
   };
 }
 
+async function scrapeContractCreationCodeFromEtherscanApi(network: string, address: string) {
+  const params = {
+    module: 'proxy',
+    action: 'eth_getCode',
+    address,
+    apikey: getEtherscanApiKey(network)
+  };
+  const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]'}})}`;
+
+  debug(`Attempting to pull Contract Creation code from API at ${debugUrl}`);
+  const result = await get(url, {});
+  const contractCreationCode = result.result;
+  if (!contractCreationCode) {
+    throw new Error(`Unable to find Contract Creation code from API at ${debugUrl}`);
+  }
+  debug(`Creation Code found in first tx at ${debugUrl}`);
+  return contractCreationCode.slice(2);
+}
+
 async function scrapeContractCreationCodeFromEtherscan(network: string, address: string) {
   const url = `${getEtherscanUrl(network)}/address/${address}#code`;
   debug(`Attempting to scrape Contract Creation code at ${url}`);
@@ -133,7 +153,8 @@ async function pullFirstTransactionForContract(network: string, address: string)
 async function getContractCreationCode(network: string, address: string) {
   const strategies = [
     scrapeContractCreationCodeFromEtherscan,
-    pullFirstTransactionForContract
+    scrapeContractCreationCodeFromEtherscanApi,
+    pullFirstTransactionForContract,
   ];
   let errors = [];
   for (const strategy of strategies) {
