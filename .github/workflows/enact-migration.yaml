@@ -63,7 +63,7 @@ jobs:
           esac
 
       - name: Seacrest
-        uses: hayesgm/seacrest@5748b3a066f517973ca2ca03d0af39bbf2b82d10
+        uses: hayesgm/seacrest@0cab0fa2a2a8bf5b005956d70e3dad697d9fe013
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
@@ -72,7 +72,7 @@ jobs:
         if: github.event.inputs.eth_pk == ''
 
       - name: Seacrest (governance network)
-        uses: hayesgm/seacrest@5748b3a066f517973ca2ca03d0af39bbf2b82d10
+        uses: hayesgm/seacrest@0cab0fa2a2a8bf5b005956d70e3dad697d9fe013
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ env.GOV_NETWORK }}"
