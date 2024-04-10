@@ -126,12 +126,6 @@ contract Comet is CometMainInterface {
     uint256 internal immutable asset10_b;
     uint256 internal immutable asset11_a;
     uint256 internal immutable asset11_b;
-    uint256 internal immutable asset12_a;
-    uint256 internal immutable asset12_b;
-    uint256 internal immutable asset13_a;
-    uint256 internal immutable asset13_b;
-    uint256 internal immutable asset14_a;
-    uint256 internal immutable asset14_b;
 
     /**
      * @notice Construct a new protocol instance
@@ -196,9 +190,6 @@ contract Comet is CometMainInterface {
         (asset09_a, asset09_b) = getPackedAssetInternal(config.assetConfigs, 9);
         (asset10_a, asset10_b) = getPackedAssetInternal(config.assetConfigs, 10);
         (asset11_a, asset11_b) = getPackedAssetInternal(config.assetConfigs, 11);
-        (asset12_a, asset12_b) = getPackedAssetInternal(config.assetConfigs, 12);
-        (asset13_a, asset13_b) = getPackedAssetInternal(config.assetConfigs, 13);
-        (asset14_a, asset14_b) = getPackedAssetInternal(config.assetConfigs, 14);
     }
 
     /**
@@ -355,15 +346,6 @@ contract Comet is CometMainInterface {
         } else if (i == 11) {
             word_a = asset11_a;
             word_b = asset11_b;
-        } else if (i == 12) {
-            word_a = asset12_a;
-            word_b = asset12_b;
-        } else if (i == 13) {
-            word_a = asset13_a;
-            word_b = asset13_b;
-        } else if (i == 14) {
-            word_a = asset14_a;
-            word_b = asset14_b;
         } else {
             revert Absurd();
         }
