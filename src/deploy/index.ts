@@ -69,10 +69,12 @@ export type Proposal = [
 // Ideally these wouldn't be hardcoded, but other solutions are much more complex, and slower
 export const COMP_WHALES = {
   mainnet: [
-    '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
-    '0x61258f12c459984f32b83c86a6cc10aa339396de',
     '0x9aa835bc7b8ce13b9b0c9764a52fbf71ac62ccf1',
-    '0x683a4f9915d6216f73d6df50151725036bd26c02'
+    '0x683a4f9915d6216f73d6df50151725036bd26c02',
+    '0x8169522c2C57883E8EF80C498aAB7820dA539806',
+    '0x8d07D225a769b7Af3A923481E1FdF49180e6A265',
+    '0x7d1a02C0ebcF06E1A36231A54951E061673ab27f',
+    '0x54A37d93E57c5DA659F508069Cf65A381b61E189'
   ],
 
   testnet: ['0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46']
@@ -118,6 +120,10 @@ export const WHALES = {
   'linea-goerli': [
     '0xC858966280Da3Fa0348E51D2c3B892EcC889fC98', // USDC whale
     '0x44411c605eb7e009cad03f3847cfbbfcf8895130'  // COMP whale
+  ],
+  optimism: [
+    '0x2A82Ae142b2e62Cb7D10b55E323ACB1Cab663a26', // OP whale
+    '0x8af3827a41c26c7f32c81e93bb66e837e0210d5c' // USDC whale
   ]
 };
 

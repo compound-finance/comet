@@ -36,9 +36,9 @@ import baseUsdcRelationConfigMap from './deployments/base/usdc/relations';
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
+import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
 import scrollGoerliRelationConfigMap from './deployments/scroll-goerli/usdc/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
-
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -54,6 +54,7 @@ const {
   ARBISCAN_KEY,
   BASESCAN_KEY,
   LINEASCAN_KEY,
+  OPTIMISMSCAN_KEY,
   INFURA_KEY,
   QUICKNODE_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
@@ -84,8 +85,9 @@ export function requireEnv(varName, msg?: string): string {
   'INFURA_KEY',
   'POLYGONSCAN_KEY',
   'ARBISCAN_KEY',
-  'LINEASCAN_KEY'
-].map(v => requireEnv(v));
+  'LINEASCAN_KEY',
+  'OPTIMISMSCAN_KEY'
+].map((v) => requireEnv(v));
 
 // Networks
 interface NetworkConfig {
@@ -106,6 +108,11 @@ const networkConfigs: NetworkConfig[] = [
     network: 'polygon',
     chainId: 137,
     url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
+    network: 'optimism',
+    chainId: 10,
+    url: `https://optimism-mainnet.infura.io/v3/${INFURA_KEY}`,
   },
   {
     network: 'base',
@@ -247,6 +254,8 @@ const config: HardhatUserConfig = {
       'base-goerli': BASESCAN_KEY,
       // Linea
       'linea-goerli': LINEASCAN_KEY,
+      optimism: OPTIMISMSCAN_KEY,
+      optimisticEthereum: OPTIMISMSCAN_KEY,
       // Scroll Testnet
       'scroll-goerli': ETHERSCAN_KEY,
       // Scroll
@@ -361,6 +370,9 @@ const config: HardhatUserConfig = {
       },
       'linea-goerli': {
         usdc: lineaGoerliRelationConfigMap
+      },
+      optimism: {
+        usdc: optimismRelationConfigMap
       },
       'scroll-goerli': {
         usdc: scrollGoerliRelationConfigMap
@@ -485,6 +497,12 @@ const config: HardhatUserConfig = {
         network: 'linea-goerli',
         deployment: 'usdc',
         auxiliaryBase: 'goerli'
+      },
+      {
+        name: 'optimism-usdc',
+        network: 'optimism',
+        deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
       },
       {
         name: 'scroll-goerli',
