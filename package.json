@@ -48,10 +48,12 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@flashbots/ethers-provider-bundle": "^0.5.0",
+    "@openzeppelin/merkle-tree": "^1.0.6",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "deep-object-diff": "^1.1.9",
     "jest-diff": "^27.4.2",
+    "solidity-coverage": "^0.8.11",
     "undici": "^5.21.2"
   },
   "devDependencies": {

@@ -11,7 +11,9 @@ import {
   CometHarness__factory,
   CometHarnessInterface as Comet,
   CometRewards,
+  CometRewardsV2,
   CometRewards__factory,
+  CometRewardsV2__factory,
   EvilToken__factory,
   FaucetToken,
   FaucetToken__factory,
@@ -31,9 +33,17 @@ import {
   CometHarnessInterface,
   CometInterface,
 } from '../build/types';
-import { BigNumber } from 'ethers';
-import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
-import { TotalsBasicStructOutput, TotalsCollateralStructOutput } from '../build/types/CometHarness';
+import { BigNumber, BigNumberish } from 'ethers';
+import {
+  TransactionReceipt,
+  TransactionResponse,
+} from '@ethersproject/abstract-provider';
+import {
+  TotalsBasicStructOutput,
+  TotalsCollateralStructOutput,
+} from '../build/types/CometHarness';
+import { StandardMerkleTree } from '@openzeppelin/merkle-tree';
+import { TokenMultiplierStruct } from '../build/types/CometRewardsV2';
 
 export { Comet, ethers, expect, hre };
 
@@ -42,7 +52,7 @@ export type Numeric = number | bigint;
 export enum ReentryAttack {
   TransferFrom = 0,
   WithdrawFrom = 1,
-  SupplyFrom = 2
+  SupplyFrom = 2,
 }
 
 export type ProtocolOpts = {
@@ -117,10 +127,37 @@ export type RewardsOpts = {
   configs?: [Comet, FaucetToken, Numeric?][];
 };
 
+export type RewardsV2Opts = {
+  governor?: SignerWithAddress;
+  configs?: [Comet, FaucetToken[], Numeric[]?][];
+  accountsPrepared?: [string, string][];
+};
+
 export type Rewards = {
   opts: RewardsOpts;
   governor: SignerWithAddress;
   rewards: CometRewards;
+};
+
+export type RewardsV2 = {
+  opts: RewardsOpts;
+  governor: SignerWithAddress;
+  rewards: CometRewards;
+  rewardsV2: CometRewardsV2;
+  tree:  StandardMerkleTree<[string, string, string]>;
+};
+
+export type GetRewardsOwed = {
+  comet: Comet;
+  accountPrepared: AccountPrepared;
+  tokens: FaucetToken[];
+  config: (CometHarnessInterface | FaucetToken[] | bigint[])[][];
+  claimed?: BigNumberish[];
+};
+
+export type AccountPrepared = {
+  account: SignerWithAddress;
+  startAccrued: Numeric;
 };
 
 export type BulkerOpts = {
@@ -138,7 +175,10 @@ export function dfn<T>(x: T | undefined | null, dflt: T): T {
 }
 
 export function exp(i: number, d: Numeric = 0, r: Numeric = 6): bigint {
-  return (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) / 10n ** BigInt(r);
+  return (
+    (BigInt(Math.floor(i * 10 ** Number(r))) * 10n ** BigInt(d)) /
+    10n ** BigInt(r)
+  );
 }
 
 export function factor(f: number): bigint {
@@ -152,11 +192,15 @@ export function defactor(f: bigint | BigNumber): number {
 // Truncates a factor to a certain number of decimals
 export function truncateDecimals(factor: bigint | BigNumber, decimals = 4) {
   const descaleFactor = factorScale / exp(1, decimals);
-  return toBigInt(factor) / descaleFactor * descaleFactor;
+  return (toBigInt(factor) / descaleFactor) * descaleFactor;
 }
 
-export function mulPrice(n: bigint, price: bigint | BigNumber, fromScale: bigint | BigNumber): bigint {
-  return n * toBigInt(price) / toBigInt(fromScale);
+export function mulPrice(
+  n: bigint,
+  price: bigint | BigNumber,
+  fromScale: bigint | BigNumber
+): bigint {
+  return (n * toBigInt(price)) / toBigInt(fromScale);
 }
 
 function toBigInt(f: bigint | BigNumber): bigint {
@@ -167,7 +211,10 @@ function toBigInt(f: bigint | BigNumber): bigint {
   }
 }
 
-export function annualize(n: bigint | BigNumber, secondsPerYear = 31536000n): number {
+export function annualize(
+  n: bigint | BigNumber,
+  secondsPerYear = 31536000n
+): number {
   return defactor(toBigInt(n) * secondsPerYear);
 }
 
@@ -177,25 +224,41 @@ export function toYears(seconds: number, secondsPerYear = 31536000): number {
 
 export function defaultAssets(overrides = {}, perAssetOverrides = {}) {
   return {
-    COMP: Object.assign({
-      initial: 1e7,
-      decimals: 18,
-      initialPrice: 175,
-    }, overrides, perAssetOverrides['COMP'] || {}),
-    USDC: Object.assign({
-      initial: 1e6,
-      decimals: 6,
-    }, overrides, perAssetOverrides['USDC'] || {}),
-    WETH: Object.assign({
-      initial: 1e4,
-      decimals: 18,
-      initialPrice: 3000,
-    }, overrides, perAssetOverrides['WETH'] || {}),
-    WBTC: Object.assign({
-      initial: 1e3,
-      decimals: 8,
-      initialPrice: 41000,
-    }, overrides, perAssetOverrides['WBTC'] || {}),
+    COMP: Object.assign(
+      {
+        initial: 1e7,
+        decimals: 18,
+        initialPrice: 175,
+      },
+      overrides,
+      perAssetOverrides['COMP'] || {}
+    ),
+    USDC: Object.assign(
+      {
+        initial: 1e6,
+        decimals: 6,
+      },
+      overrides,
+      perAssetOverrides['USDC'] || {}
+    ),
+    WETH: Object.assign(
+      {
+        initial: 1e4,
+        decimals: 18,
+        initialPrice: 3000,
+      },
+      overrides,
+      perAssetOverrides['WETH'] || {}
+    ),
+    WBTC: Object.assign(
+      {
+        initial: 1e3,
+        decimals: 8,
+        initialPrice: 41000,
+      },
+      overrides,
+      perAssetOverrides['WBTC'] || {}
+    ),
   };
 }
 
@@ -205,13 +268,19 @@ export const ONE = factorScale;
 export const ZERO = factor(0);
 
 export async function getBlock(n?: number, ethers_ = ethers): Promise<Block> {
-  const blockNumber = n == undefined ? await ethers_.provider.getBlockNumber() : n;
+  const blockNumber =
+    n == undefined ? await ethers_.provider.getBlockNumber() : n;
   return ethers_.provider.getBlock(blockNumber);
 }
 
-export async function fastForward(seconds: number, ethers_ = ethers): Promise<Block> {
+export async function fastForward(
+  seconds: number,
+  ethers_ = ethers
+): Promise<Block> {
   const block = await getBlock();
-  await ethers_.provider.send('evm_setNextBlockTimestamp', [block.timestamp + seconds]);
+  await ethers_.provider.send('evm_setNextBlockTimestamp', [
+    block.timestamp + seconds,
+  ]);
   return block;
 }
 
@@ -220,39 +289,75 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
   const assets = opts.assets || defaultAssets();
   let priceFeeds = {};
-  const PriceFeedFactory = (await ethers.getContractFactory('SimplePriceFeed')) as SimplePriceFeed__factory;
+  const PriceFeedFactory = (await ethers.getContractFactory(
+    'SimplePriceFeed'
+  )) as SimplePriceFeed__factory;
   for (const asset in assets) {
     const initialPrice = exp(assets[asset].initialPrice || 1, 8);
     const priceFeedDecimals = assets[asset].priceFeedDecimals || 8;
-    const priceFeed = await PriceFeedFactory.deploy(initialPrice, priceFeedDecimals);
+    const priceFeed = await PriceFeedFactory.deploy(
+      initialPrice,
+      priceFeedDecimals
+    );
     await priceFeed.deployed();
     priceFeeds[asset] = priceFeed;
   }
 
-  const name32 = ethers.utils.formatBytes32String((opts.name || 'Compound Comet'));
-  const symbol32 = ethers.utils.formatBytes32String((opts.symbol || '📈BASE'));
+  const name32 = ethers.utils.formatBytes32String(
+    opts.name || 'Compound Comet'
+  );
+  const symbol32 = ethers.utils.formatBytes32String(opts.symbol || '📈BASE');
   const governor = opts.governor || signers[0];
   const pauseGuardian = opts.pauseGuardian || signers[1];
   const users = signers.slice(2); // guaranteed to not be governor or pause guardian
   const base = opts.base || 'USDC';
   const reward = opts.reward || 'COMP';
   const supplyKink = dfn(opts.supplyKink, exp(0.8, 18));
-  const supplyPerYearInterestRateBase = dfn(opts.supplyInterestRateBase, exp(0.0, 18));
-  const supplyPerYearInterestRateSlopeLow = dfn(opts.supplyInterestRateSlopeLow, exp(0.05, 18));
-  const supplyPerYearInterestRateSlopeHigh = dfn(opts.supplyInterestRateSlopeHigh, exp(2, 18));
+  const supplyPerYearInterestRateBase = dfn(
+    opts.supplyInterestRateBase,
+    exp(0.0, 18)
+  );
+  const supplyPerYearInterestRateSlopeLow = dfn(
+    opts.supplyInterestRateSlopeLow,
+    exp(0.05, 18)
+  );
+  const supplyPerYearInterestRateSlopeHigh = dfn(
+    opts.supplyInterestRateSlopeHigh,
+    exp(2, 18)
+  );
   const borrowKink = dfn(opts.borrowKink, exp(0.8, 18));
-  const borrowPerYearInterestRateBase = dfn(opts.borrowInterestRateBase, exp(0.005, 18));
-  const borrowPerYearInterestRateSlopeLow = dfn(opts.borrowInterestRateSlopeLow, exp(0.1, 18));
-  const borrowPerYearInterestRateSlopeHigh = dfn(opts.borrowInterestRateSlopeHigh, exp(3, 18));
+  const borrowPerYearInterestRateBase = dfn(
+    opts.borrowInterestRateBase,
+    exp(0.005, 18)
+  );
+  const borrowPerYearInterestRateSlopeLow = dfn(
+    opts.borrowInterestRateSlopeLow,
+    exp(0.1, 18)
+  );
+  const borrowPerYearInterestRateSlopeHigh = dfn(
+    opts.borrowInterestRateSlopeHigh,
+    exp(3, 18)
+  );
   const storeFrontPriceFactor = dfn(opts.storeFrontPriceFactor, ONE);
   const trackingIndexScale = opts.trackingIndexScale || exp(1, 15);
-  const baseTrackingSupplySpeed = dfn(opts.baseTrackingSupplySpeed, trackingIndexScale);
-  const baseTrackingBorrowSpeed = dfn(opts.baseTrackingBorrowSpeed, trackingIndexScale);
-  const baseMinForRewards = dfn(opts.baseMinForRewards, exp(1, assets[base].decimals));
+  const baseTrackingSupplySpeed = dfn(
+    opts.baseTrackingSupplySpeed,
+    trackingIndexScale
+  );
+  const baseTrackingBorrowSpeed = dfn(
+    opts.baseTrackingBorrowSpeed,
+    trackingIndexScale
+  );
+  const baseMinForRewards = dfn(
+    opts.baseMinForRewards,
+    exp(1, assets[base].decimals)
+  );
   const baseBorrowMin = dfn(opts.baseBorrowMin, exp(1, assets[base].decimals));
   const targetReserves = dfn(opts.targetReserves, 0);
 
-  const FaucetFactory = (await ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
+  const FaucetFactory = (await ethers.getContractFactory(
+    'FaucetToken'
+  )) as FaucetToken__factory;
   const tokens = {};
   for (const symbol in assets) {
     const config = assets[symbol];
@@ -261,20 +366,34 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     const name = config.name || symbol;
     const factory = config.factory || FaucetFactory;
     let token;
-    token = (tokens[symbol] = await factory.deploy(initial, name, decimals, symbol));
+    token = tokens[symbol] = await factory.deploy(
+      initial,
+      name,
+      decimals,
+      symbol
+    );
     await token.deployed();
   }
 
-  const unsupportedToken = await FaucetFactory.deploy(1e6, 'Unsupported Token', 6, 'USUP');
+  const unsupportedToken = await FaucetFactory.deploy(
+    1e6,
+    'Unsupported Token',
+    6,
+    'USUP'
+  );
 
   let extensionDelegate = opts.extensionDelegate;
   if (extensionDelegate === undefined) {
-    const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
+    const CometExtFactory = (await ethers.getContractFactory(
+      'CometExt'
+    )) as CometExt__factory;
     extensionDelegate = await CometExtFactory.deploy({ name32, symbol32 });
     await extensionDelegate.deployed();
   }
 
-  const CometFactory = (await ethers.getContractFactory('CometHarness')) as CometHarness__factory;
+  const CometFactory = (await ethers.getContractFactory(
+    'CometHarness'
+  )) as CometHarness__factory;
   const comet = await CometFactory.deploy({
     governor: governor.address,
     pauseGuardian: pauseGuardian.address,
@@ -313,7 +432,8 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   });
   await comet.deployed();
 
-  if (opts.start) await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
+  if (opts.start)
+    await ethers.provider.send('evm_setNextBlockTimestamp', [opts.start]);
   await comet.initializeStorage();
 
   const baseTokenBalance = opts.baseTokenBalance;
@@ -330,7 +450,10 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     users,
     base,
     reward,
-    comet: await ethers.getContractAt('CometHarnessInterface', comet.address) as Comet,
+    comet: (await ethers.getContractAt(
+      'CometHarnessInterface',
+      comet.address
+    )) as Comet,
     tokens,
     unsupportedToken,
     priceFeeds,
@@ -338,7 +461,9 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 }
 
 // Only for testing configurator. Non-configurator tests need to deploy the CometHarness instead.
-export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<ConfiguratorAndProtocol> {
+export async function makeConfigurator(
+  opts: ProtocolOpts = {}
+): Promise<ConfiguratorAndProtocol> {
   const assets = opts.assets || defaultAssets();
 
   const {
@@ -355,28 +480,50 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   } = await makeProtocol(opts);
 
   // Deploy ProxyAdmin
-  const ProxyAdmin = (await ethers.getContractFactory('CometProxyAdmin')) as CometProxyAdmin__factory;
+  const ProxyAdmin = (await ethers.getContractFactory(
+    'CometProxyAdmin'
+  )) as CometProxyAdmin__factory;
   const proxyAdmin = await ProxyAdmin.connect(governor).deploy();
   await proxyAdmin.deployed();
 
   // Deploy Comet proxy
-  const CometProxy = (await ethers.getContractFactory('TransparentUpgradeableProxy')) as TransparentUpgradeableProxy__factory;
+  const CometProxy = (await ethers.getContractFactory(
+    'TransparentUpgradeableProxy'
+  )) as TransparentUpgradeableProxy__factory;
   const cometProxy = await CometProxy.deploy(
     comet.address,
     proxyAdmin.address,
-    (await comet.populateTransaction.initializeStorage()).data,
+    (await comet.populateTransaction.initializeStorage()).data
   );
   await cometProxy.deployed();
 
   // Derive the rest of the Configurator configuration values
   const supplyKink = dfn(opts.supplyKink, exp(0.8, 18));
-  const supplyPerYearInterestRateBase = dfn(opts.supplyInterestRateBase, exp(0.0, 18));
-  const supplyPerYearInterestRateSlopeLow = dfn(opts.supplyInterestRateSlopeLow, exp(0.05, 18));
-  const supplyPerYearInterestRateSlopeHigh = dfn(opts.supplyInterestRateSlopeHigh, exp(2, 18));
+  const supplyPerYearInterestRateBase = dfn(
+    opts.supplyInterestRateBase,
+    exp(0.0, 18)
+  );
+  const supplyPerYearInterestRateSlopeLow = dfn(
+    opts.supplyInterestRateSlopeLow,
+    exp(0.05, 18)
+  );
+  const supplyPerYearInterestRateSlopeHigh = dfn(
+    opts.supplyInterestRateSlopeHigh,
+    exp(2, 18)
+  );
   const borrowKink = dfn(opts.borrowKink, exp(0.8, 18));
-  const borrowPerYearInterestRateBase = dfn(opts.borrowInterestRateBase, exp(0.005, 18));
-  const borrowPerYearInterestRateSlopeLow = dfn(opts.borrowInterestRateSlopeLow, exp(0.1, 18));
-  const borrowPerYearInterestRateSlopeHigh = dfn(opts.borrowInterestRateSlopeHigh, exp(3, 18));
+  const borrowPerYearInterestRateBase = dfn(
+    opts.borrowInterestRateBase,
+    exp(0.005, 18)
+  );
+  const borrowPerYearInterestRateSlopeLow = dfn(
+    opts.borrowInterestRateSlopeLow,
+    exp(0.1, 18)
+  );
+  const borrowPerYearInterestRateSlopeHigh = dfn(
+    opts.borrowInterestRateSlopeHigh,
+    exp(3, 18)
+  );
   const storeFrontPriceFactor = await comet.storeFrontPriceFactor();
   const trackingIndexScale = await comet.trackingIndexScale();
   const baseTrackingSupplySpeed = await comet.baseTrackingSupplySpeed();
@@ -386,12 +533,16 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   const targetReserves = await comet.targetReserves();
 
   // Deploy CometFactory
-  const CometFactoryFactory = (await ethers.getContractFactory('CometFactory')) as CometFactory__factory;
+  const CometFactoryFactory = (await ethers.getContractFactory(
+    'CometFactory'
+  )) as CometFactory__factory;
   const cometFactory = await CometFactoryFactory.deploy();
   await cometFactory.deployed();
 
   // Deploy Configurator
-  const ConfiguratorFactory = (await ethers.getContractFactory('Configurator')) as Configurator__factory;
+  const ConfiguratorFactory = (await ethers.getContractFactory(
+    'Configurator'
+  )) as Configurator__factory;
   const configurator = await ConfiguratorFactory.deploy();
   await configurator.deployed();
   const configuration = {
@@ -432,19 +583,26 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   };
 
   // Deploy Configurator proxy
-  const initializeCalldata = (await configurator.populateTransaction.initialize(governor.address)).data;
-  const ConfiguratorProxy = (await ethers.getContractFactory('ConfiguratorProxy')) as ConfiguratorProxy__factory;
+  const initializeCalldata = (
+    await configurator.populateTransaction.initialize(governor.address)
+  ).data;
+  const ConfiguratorProxy = (await ethers.getContractFactory(
+    'ConfiguratorProxy'
+  )) as ConfiguratorProxy__factory;
   const configuratorProxy = await ConfiguratorProxy.deploy(
     configurator.address,
     proxyAdmin.address,
-    initializeCalldata,
+    initializeCalldata
   );
   await configuratorProxy.deployed();
 
   // Set the initial factory and configuration for Comet in Configurator
   const configuratorAsProxy = configurator.attach(configuratorProxy.address);
   await configuratorAsProxy.setConfiguration(cometProxy.address, configuration);
-  await configuratorAsProxy.setFactory(cometProxy.address, cometFactory.address);
+  await configuratorAsProxy.setFactory(
+    cometProxy.address,
+    cometFactory.address
+  );
 
   return {
     opts,
@@ -472,20 +630,145 @@ export async function makeRewards(opts: RewardsOpts = {}): Promise<Rewards> {
   const governor = opts.governor || signers[0];
   const configs = opts.configs || [];
 
-  const RewardsFactory = (await ethers.getContractFactory('CometRewards')) as CometRewards__factory;
+  const RewardsFactory = (await ethers.getContractFactory(
+    'CometRewards'
+  )) as CometRewards__factory;
   const rewards = await RewardsFactory.deploy(governor.address);
   await rewards.deployed();
 
   for (const [comet, token, multiplier] of configs) {
-    if (multiplier === undefined) await wait(rewards.setRewardConfig(comet.address, token.address));
-    else await wait(rewards.setRewardConfigWithMultiplier(comet.address, token.address, multiplier));
+    if (multiplier === undefined)
+      await wait(rewards.setRewardConfig(comet.address, token.address));
+    else
+      await wait(
+        rewards.setRewardConfigWithMultiplier(
+          comet.address,
+          token.address,
+          multiplier
+        )
+      );
   }
 
   return {
     opts,
     governor,
-    rewards
+    rewards,
   };
+}
+
+export async function generateTree(accountsPrepared: [string, string][]) {
+  if(accountsPrepared.length <= 1) throw new Error('Tree must have at least 2 leaves');
+
+  // add zero address and max address to the ends of the array
+  accountsPrepared.unshift([ethers.constants.AddressZero, '0']);
+  accountsPrepared.push(['0xffffffffffffffffffffffffffffffffffffffff', '0']);
+
+  // sort accounts by address (compare as bigints)
+  accountsPrepared.sort((a, b) => {
+    const addressA = BigInt(a[0]);
+    const addressB = BigInt(b[0]);
+    if (addressA < addressB) return -1;
+    if (addressA > addressB) return 1;
+    return 0;
+  });
+  // index all accounts
+  let accountsIndexed: [string, string, string][] = [];
+  for (let i = 0; i < accountsPrepared.length; i++) {
+    accountsIndexed.push([accountsPrepared[i][0], i.toString(), accountsPrepared[i][1],]);
+  }
+
+  return StandardMerkleTree.of(accountsIndexed, ['address', 'uint256', 'uint256']);
+}
+
+export async function getProof(address : string, tree) {
+  for (const [i, v] of tree.entries()) {
+    if (v[0] === address) {
+      const proof = tree.getProof(i);
+      return { proof, v };
+    }
+  }
+  return undefined;
+}
+
+export async function makeRewardsV2(
+  opts: RewardsOpts = {},
+  optsV2: RewardsV2Opts = {}
+): Promise<RewardsV2> {
+  const signers = await ethers.getSigners();
+
+  const governor = optsV2.governor || signers[0];
+  const configs = optsV2.configs || [];
+
+  const { rewards } = await makeRewards(opts);
+
+  const RewardsV2Factory = (await ethers.getContractFactory(
+    'CometRewardsV2'
+  )) as CometRewardsV2__factory;
+  const rewardsV2 = await RewardsV2Factory.deploy(
+    governor.address
+  );
+  
+  await rewardsV2.deployed();
+  const tree = await generateTree(optsV2.accountsPrepared);
+  for (const [comet, tokens, multipliers] of configs) {
+    if (multipliers === undefined) {
+      const _tokens = [];
+      for (const token of tokens) {
+        _tokens.push(token.address);
+      }
+
+      await wait(rewardsV2.setCompaign(comet.address, tree.root, _tokens));
+    } else {
+      if(tokens.length !== multipliers.length) throw new Error('Arrays length mismatch');
+      let assets: TokenMultiplierStruct[] = [];
+
+      for (let i = 0; i < tokens.length; i++) {
+        assets.push({ token: tokens[i].address, multiplier: multipliers[i].toString()});
+      }
+
+      await wait(rewardsV2.setCompaignExt(comet.address, tree.root, assets));
+    }
+  }
+
+  return {
+    opts,
+    governor,
+    rewards,
+    rewardsV2,
+    tree
+  };
+}
+
+export async function getRewardsOwed(params: GetRewardsOwed) {
+  let expectedRewards: BigNumber[] = [];
+  for(let i = 0; i < params.tokens.length; i++){
+    let accrued = (await params.comet.baseTrackingAccrued(params.accountPrepared.account.address))
+      .sub(params.accountPrepared.startAccrued);
+ 
+    let expectedReward: BigNumber;
+    let rescaleFactor: BigNumber;
+    let shouldUpscale = (await params.comet.baseAccrualScale()).lt(exp(1, await params.tokens[i].decimals()));
+    if(shouldUpscale){
+      rescaleFactor = BigNumber.from(exp(1, await params.tokens[i].decimals()))
+        .div(await params.comet.baseAccrualScale());
+      expectedReward = accrued.mul(rescaleFactor);
+    }
+    else{
+      rescaleFactor = (await params.comet.baseAccrualScale())
+        .div(exp(1, await params.tokens[i].decimals()));
+      expectedReward = accrued.div(rescaleFactor);
+    }
+    expectedReward = expectedReward.mul(params.config[0][2][i]).div(exp(1, 18));
+    expectedRewards.push(expectedReward);
+  }
+  if(!params.claimed)
+    return expectedRewards;
+  else{
+    if(expectedRewards.length != params.claimed.length) throw new Error('Length mismatch');
+    for(let i = 0; i < expectedRewards.length; i ++)
+      expectedRewards[i] = expectedRewards[i].sub(params.claimed[i]);
+    return expectedRewards;
+  }
 }
 
 export async function makeBulker(opts: BulkerOpts): Promise<BulkerInfo> {
@@ -494,24 +777,35 @@ export async function makeBulker(opts: BulkerOpts): Promise<BulkerInfo> {
   const admin = opts.admin || signers[0];
   const weth = opts.weth;
 
-  const BulkerFactory = (await ethers.getContractFactory('BaseBulker')) as BaseBulker__factory;
+  const BulkerFactory = (await ethers.getContractFactory(
+    'BaseBulker'
+  )) as BaseBulker__factory;
   const bulker = await BulkerFactory.deploy(admin.address, weth);
   await bulker.deployed();
 
   return {
     opts,
-    bulker
+    bulker,
   };
 }
-export async function bumpTotalsCollateral(comet: CometHarnessInterface, token: FaucetToken, delta: bigint): Promise<TotalsCollateralStructOutput> {
+export async function bumpTotalsCollateral(
+  comet: CometHarnessInterface,
+  token: FaucetToken,
+  delta: bigint
+): Promise<TotalsCollateralStructOutput> {
   const t0 = await comet.totalsCollateral(token.address);
-  const t1 = Object.assign({}, t0, { totalSupplyAsset: t0.totalSupplyAsset.toBigInt() + delta });
+  const t1 = Object.assign({}, t0, {
+    totalSupplyAsset: t0.totalSupplyAsset.toBigInt() + delta,
+  });
   await token.allocateTo(comet.address, delta);
   await wait(comet.setTotalsCollateral(token.address, t1));
   return t1;
 }
 
-export async function setTotalsBasic(comet: CometHarnessInterface, overrides = {}): Promise<TotalsBasicStructOutput> {
+export async function setTotalsBasic(
+  comet: CometHarnessInterface,
+  overrides = {}
+): Promise<TotalsBasicStructOutput> {
   const t0 = await comet.totalsBasic();
   const t1 = Object.assign({}, t0, overrides);
   await wait(comet.setTotalsBasic(t1));
@@ -533,7 +827,10 @@ export function objectify(arrayObject) {
   return obj;
 }
 
-export async function baseBalanceOf(comet: CometInterface, account: string): Promise<bigint> {
+export async function baseBalanceOf(
+  comet: CometInterface,
+  account: string
+): Promise<bigint> {
   const balanceOf = await comet.balanceOf(account);
   const borrowBalanceOf = await comet.borrowBalanceOf(account);
   return balanceOf.sub(borrowBalanceOf).toBigInt();
@@ -546,7 +843,7 @@ type Portfolio = {
   external: {
     [symbol: string]: bigint;
   };
-}
+};
 
 type TotalsAndReserves = {
   totals: {
@@ -555,27 +852,42 @@ type TotalsAndReserves = {
   reserves: {
     [symbol: string]: bigint;
   };
-}
+};
 
-export async function portfolio({ comet, base, tokens }, account): Promise<Portfolio> {
+export async function portfolio(
+  { comet, base, tokens },
+  account
+): Promise<Portfolio> {
   const internal = { [base]: await baseBalanceOf(comet, account) };
   const external = { [base]: BigInt(await tokens[base].balanceOf(account)) };
   for (const symbol in tokens) {
     if (symbol != base) {
-      internal[symbol] = BigInt(await comet.collateralBalanceOf(account, tokens[symbol].address));
+      internal[symbol] = BigInt(
+        await comet.collateralBalanceOf(account, tokens[symbol].address)
+      );
       external[symbol] = BigInt(await tokens[symbol].balanceOf(account));
     }
   }
   return { internal, external };
 }
 
-export async function totalsAndReserves({ comet, base, tokens }): Promise<TotalsAndReserves> {
-  const totals = { [base]: BigInt((await comet.totalsBasic()).totalSupplyBase) };
+export async function totalsAndReserves({
+  comet,
+  base,
+  tokens,
+}): Promise<TotalsAndReserves> {
+  const totals = {
+    [base]: BigInt((await comet.totalsBasic()).totalSupplyBase),
+  };
   const reserves = { [base]: BigInt(await comet.getReserves()) };
   for (const symbol in tokens) {
     if (symbol != base) {
-      totals[symbol] = BigInt((await comet.totalsCollateral(tokens[symbol].address)).totalSupplyAsset);
-      reserves[symbol] = BigInt(await comet.getCollateralReserves(tokens[symbol].address));
+      totals[symbol] = BigInt(
+        (await comet.totalsCollateral(tokens[symbol].address)).totalSupplyAsset
+      );
+      reserves[symbol] = BigInt(
+        await comet.getCollateralReserves(tokens[symbol].address)
+      );
     }
   }
   return { totals, reserves };
@@ -597,7 +909,8 @@ export async function wait(
 }
 
 export function event(tx, index) {
-  const ev = tx.receipt.events[index], args = {};
+  const ev = tx.receipt.events[index],
+    args = {};
   for (const k in ev.args) {
     const v = ev.args[k];
     if (isNaN(Number(k))) {
