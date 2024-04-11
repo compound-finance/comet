@@ -733,13 +733,15 @@ scenario(
   const baseTokenBalances = {
     mainnet: {
       usdc: 2250000,
-      weth: 20
+      weth: 20,
+      'weth-lrt': 1
     },
   };
   const assetAmounts = {
     mainnet: {
       usdc: ' == 5000', // COMP
       weth: ' == 10000', // CB_ETH
+      'weth-lrt': ' == 1' // EZ_ETH
     },
   };
 

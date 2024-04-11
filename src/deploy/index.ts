@@ -69,10 +69,12 @@ export type Proposal = [
 // Ideally these wouldn't be hardcoded, but other solutions are much more complex, and slower
 export const COMP_WHALES = {
   mainnet: [
-    '0xea6c3db2e7fca00ea9d7211a03e83f568fc13bf7',
-    '0x61258f12c459984f32b83c86a6cc10aa339396de',
     '0x9aa835bc7b8ce13b9b0c9764a52fbf71ac62ccf1',
-    '0x683a4f9915d6216f73d6df50151725036bd26c02'
+    '0x683a4f9915d6216f73d6df50151725036bd26c02',
+    '0x8169522c2C57883E8EF80C498aAB7820dA539806',
+    '0x8d07D225a769b7Af3A923481E1FdF49180e6A265',
+    '0x7d1a02C0ebcF06E1A36231A54951E061673ab27f',
+    '0x54A37d93E57c5DA659F508069Cf65A381b61E189'
   ],
 
   testnet: ['0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46']
@@ -84,9 +86,13 @@ export const WHALES = {
     '0x0548f59fee79f8832c299e01dca5c76f034f558e',
     '0x218b95be3ed99141b0144dba6ce88807c4ad7c09',
     '0xf04a5cc80b1e94c69b48f5ee68a08cd2f09a7c3e',
+    '0x2F0b23f53734252Bda2277357e97e1517d6B042A',
     '0x2775b1c75658be0f640272ccb8c72ac986009e38',
     '0x1a9c8182c09f50c8318d769245bea52c32be35bc',
-    '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b'
+    '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b',
+    '0x22162DbBa43fE0477cdC5234E248264eC7C6EA7c', // ezETH
+    '0x267ed5f71EE47D3E45Bb1569Aa37889a2d10f91e', // ezETH
+    '0x3A0ee670EE34D889B52963bD20728dEcE4D9f8FE'  // ezETH
   ],
   polygon: [
     '0x2093b4281990a568c9d588b8bce3bfd7a1557ebd', // WETH whale

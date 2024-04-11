@@ -8,7 +8,8 @@ import { exp } from '../test/helpers';
 scenario(
   'Comet#bulker > (non-WETH base) all non-reward actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, {network: 'mumbai'}, { network: 'linea-goerli' }]),
+    filter: async (ctx) =>
+      await isBulkerSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, {network: 'mumbai'}, { network: 'linea-goerli' }, {deployment: 'weth-lrt', network: 'mainnet'}]),
     supplyCaps: {
       $asset0: 3000,
       $asset1: 3000,
@@ -162,7 +163,7 @@ scenario(
 scenario(
   'Comet#bulker > (non-WETH base) all actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, { network: 'linea-goerli' }]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, { network: 'linea-goerli' }, {deployment: 'weth-lrt', network: 'mainnet'}]),
     supplyCaps: {
       $asset0: 3000,
     },

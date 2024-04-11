@@ -38,7 +38,8 @@ const addresses = {
     WBTC: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
     WETH9: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     CB_ETH: '0xBe9895146f7AF43049ca1c1AE358B0541Ea49704',
-    WST_ETH: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0'
+    WST_ETH: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
+    EZ_ETH: '0xbf5495Efe5DB9ce00f80364C8B423567e58d2110'
   },
   goerli: {
     WETH: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d'
@@ -86,6 +87,10 @@ export const flashLoanPools = {
     },
     weth: {
       tokenAddress: addresses.mainnet.USDC,
+      poolFee: 500
+    },
+    'weth-lrt': {
+      tokenAddress: addresses.mainnet.WETH9,
       poolFee: 500
     }
   },
@@ -177,6 +182,13 @@ export function getPoolConfig(tokenAddress: string) {
         balancerPoolId: '0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080'
       }
     },
+    [addresses.mainnet.EZ_ETH.toLowerCase()]: {
+      ...defaultPoolConfig,
+      ...{
+        exchange: Exchange.Balancer,
+        balancerPoolId: '0x596192bb6e41802428ac943d2f1476c1af25cc0e000000000000000000000659'
+      }
+    },
     [addresses.polygon.WMATIC.toLowerCase()]: {
       ...defaultPoolConfig,
       ...{
@@ -252,6 +264,7 @@ function getMaxAmountToPurchase(tokenAddress: string): bigint {
     [addresses.mainnet.UNI.toLowerCase()]: exp(100_000, 18),
     [addresses.mainnet.WBTC.toLowerCase()]: exp(120, 8),
     [addresses.mainnet.WETH9.toLowerCase()]: exp(5000, 18),
+    [addresses.mainnet.EZ_ETH.toLowerCase()]: exp(5000, 18),
     // Polygon
     [addresses.polygon.WETH.toLowerCase()]: exp(400, 18),
     [addresses.polygon.WBTC.toLowerCase()]: exp(20, 8),
