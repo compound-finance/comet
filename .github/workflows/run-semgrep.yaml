@@ -4,20 +4,21 @@ name: Run Semgrep
 on:
   # Scan changed files in PRs (diff-aware scanning):
   pull_request: {}
-  # On-demand 
+  # On-demand
   workflow_dispatch: {}
 
 jobs:
   semgrep:
     # User-definable name of this GitHub Actions job:
     name: Scan
-    # If you are self-hosting, change the following `runs-on` value: 
+    # If you are self-hosting, change the following `runs-on` value:
     runs-on: ubuntu-latest
     env:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
       SNOWTRACE_KEY: ${{ secrets.SNOWTRACE_KEY }}
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
+      OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
     container:
       # A Docker image with Semgrep installed. Do not change this.
       image: returntocorp/semgrep
@@ -43,7 +44,7 @@ jobs:
       # Run security, performance & Compound specific rules
       - run: semgrep ci --sarif --output=semgrep.sarif || true
         env:
-           SEMGREP_RULES: rules/solidity/security rules/solidity/performance compound/solidity
+          SEMGREP_RULES: rules/solidity/security rules/solidity/performance compound/solidity
       # Upload findings to GitHub Advanced Security Dashboard
       - name: Upload findings to GitHub Advanced Security Dashboard
         uses: github/codeql-action/upload-sarif@v2

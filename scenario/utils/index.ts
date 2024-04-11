@@ -504,6 +504,21 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageCalldata);
       break;
     }
+    case 'optimism': {
+      const sendMessageCalldata = utils.defaultAbiCoder.encode(
+        ['address', 'bytes', 'uint32'],
+        [bridgeReceiver.address, l2ProposalData, 2_500_000]
+      );
+      const opL1CrossDomainMessenger = await govDeploymentManager.getContractOrThrow(
+        'opL1CrossDomainMessenger'
+      );
+
+      targets.push(opL1CrossDomainMessenger.address);
+      values.push(0);
+      signatures.push('sendMessage(address,bytes,uint32)');
+      calldata.push(sendMessageCalldata);
+      break;
+    }
     case 'scroll': 
     case 'scroll-goerli': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(

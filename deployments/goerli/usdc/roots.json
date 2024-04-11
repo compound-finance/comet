@@ -12,9 +12,11 @@
     "baseL1StandardBridge": "0xfA6D8Ee5BE770F84FC001D098C4bD604Fe01284a",
     "lineaMessageService": "0x70BaD09280FD342D02fe64119779BC1f0791BAC2",
     "lineaL1TokenBridge": "0xaA012D038E6440535Ec66eDf2DA592F4F8398133",
-    "lineaL1usdcBridge": "0x9c556D2cCfb6157E4A6305aa9963EdD6ca5047cB", 
+    "lineaL1usdcBridge": "0x9c556D2cCfb6157E4A6305aa9963EdD6ca5047cB",
     "CCTPTokenMessenger": "0xd0c3da58f55358142b8d3e06c1c30c5c6114efe8",
     "CCTPMessageTransmitter": "0x26413e8157cd32011e726065a5462e97dd4d03d9",
+    "opL1CrossDomainMessenger": "0x5086d1eEF304eb5284A0f6720f79403b4e9bE294",
+    "opL1StandardBridge": "0x636Af16bf2f682dD3109e60102b8E1A089FedAa8",
     "scrollMessenger": "0x5260e38080BFe97e6C4925d9209eCc5f964373b6",
     "scrollL1TokenBridge": "0xe5E30E7c24e4dFcb281A682562E53154C15D3332"
 }
