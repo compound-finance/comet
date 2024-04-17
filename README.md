@@ -265,7 +265,7 @@ native asset (i.e. 2 ETH for Goerli, 2 AVAX for Fuji)
 The `clone-multisig` script can be used to clone the multisig and its configuration from an existing deployment, e.g.:
 
 ```bash
-DST_NETWORK=optimism-goerli npx hardhat run scripts/clone-multisig.ts
+DST_NETWORK=optimism npx hardhat run scripts/clone-multisig.ts
 ```
 
 ### Liquidation Bot
