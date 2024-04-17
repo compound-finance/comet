@@ -169,7 +169,7 @@ async function pullFirstInternalTransactionForContract(network: string, address:
   const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]'}})}`;
   debug(`Attempting to pull Contract Creation code from first internal tx at ${debugUrl}`);
   const response = await get(url, {});
-  return response.result.find(tx => tx.isError == "0")
+  return response.result.find(tx => tx.isError == "0").input
 }
 
 
