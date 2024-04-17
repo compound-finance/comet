@@ -17,6 +17,7 @@ on:
           - base
           - base-goerli
           - linea-goerli
+          - optimism
           - scroll-goerli
           - scroll
       deployment:
@@ -40,13 +41,14 @@ jobs:
       ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
       BASESCAN_KEY: ${{ secrets.BASESCAN_KEY }}
       LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
+      OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
     steps:
       - name: Seacrest
         uses: hayesgm/seacrest@5748b3a066f517973ca2ca03d0af39bbf2b82d10
         with:
           wallet_connect_project_id: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
           requested_network: "${{ inputs.network }}"
-          ethereum_url: "${{ fromJSON('{\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum-goerli\":\"https://arbitrum-goerli.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base\":\"https://clean-spring-wind.base-mainnet.discover.quiknode.pro/$QUICKNODE_KEY\",\"base-goerli\":\"https://base-goerli.infura.io/v3/$INFURA_KEY\",\"linea-goerli\":\"https://linea-goerli.infura.io/v3/$INFURA_KEY\",\"scroll-goerli\":\"https://alpha-rpc.scroll.io/l2\",\"scroll\":\"https://rpc.scroll.io\"}')[inputs.network] }}"
+          ethereum_url: "${{ fromJSON('{\"optimism\":\"https://optimism-mainnet.infura.io/v3/$INFURA_KEY\",\"fuji\":\"https://api.avax-test.network/ext/bc/C/rpc\",\"mainnet\":\"https://mainnet.infura.io/v3/$INFURA_KEY\",\"goerli\":\"https://goerli.infura.io/v3/$INFURA_KEY\",\"sepolia\":\"https://sepolia.infura.io/v3/$INFURA_KEY\",\"mumbai\":\"https://polygon-mumbai.infura.io/v3/$INFURA_KEY\",\"polygon\":\"https://polygon-mainnet.infura.io/v3/$INFURA_KEY\",\"arbitrum-goerli\":\"https://arbitrum-goerli.infura.io/v3/$INFURA_KEY\",\"arbitrum\":\"https://arbitrum-mainnet.infura.io/v3/$INFURA_KEY\",\"base\":\"https://clean-spring-wind.base-mainnet.discover.quiknode.pro/$QUICKNODE_KEY\",\"base-goerli\":\"https://base-goerli.infura.io/v3/$INFURA_KEY\",\"linea-goerli\":\"https://linea-goerli.infura.io/v3/$INFURA_KEY\",\"scroll-goerli\":\"https://alpha-rpc.scroll.io/l2\",\"scroll\":\"https://rpc.scroll.io\"}')[inputs.network] }}"
           port: 8585
         if: github.event.inputs.eth_pk == ''
 

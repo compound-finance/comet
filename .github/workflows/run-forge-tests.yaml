@@ -29,6 +29,7 @@ jobs:
           POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
           ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
           LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
+          OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
 
       - name: Build Comet with older solc versions
         run: |
