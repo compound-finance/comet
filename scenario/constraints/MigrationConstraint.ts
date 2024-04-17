@@ -9,8 +9,11 @@ import { exp } from '../../test/helpers';
 async function getMigrations<T>(world: World): Promise<Migration<T>[]> {
   // TODO: make this configurable from cli params/env var?
   const network = world.deploymentManager.network;
+  console.log({network})
   const deployment = world.deploymentManager.deployment;
+  console.log({deployment})
   const pattern = new RegExp(`deployments/${network}/${deployment}/migrations/.*.ts`);
+  console.log({pattern})
   return await loadMigrations((await modifiedPaths(pattern)).map(p => '../../' + p));
 }
 
@@ -23,6 +26,8 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
     const label = `[${world.base.name}] {MigrationConstraint}`;
     const solutions: Solution<T>[] = [];
     const migrationPaths = [...subsets(await getMigrations(world))];
+
+    migrationPaths.forEach(console.log)
 
     for (const migrationList of migrationPaths) {
       if (migrationList.length == 0 && migrationPaths.length > 1) {
@@ -43,6 +48,8 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
         // Order migrations deterministically and store in the context (i.e. for verification)
         const migrations = migrationList.sort((a, b) => a.name.localeCompare(b.name)).map(m => <MigrationData>({ migration: m }));
         ctx.migrations = migrations;
+
+        console.log({migration: migrations[0]?.migration})
 
         debug(`${label} Running scenario with migrations: ${JSON.stringify(migrations.map((m) => m.migration.name))}`);
         for (const migrationData of migrations) {
