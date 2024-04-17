@@ -194,6 +194,8 @@ contract Comet is CometMainInterface {
 
     /**
      * @dev Prevents marked functions from being reentered 
+     * Note: this restrict contracts from calling comet functions in their hooks.
+     * Doing so will cause the transaction to revert.
      */
     modifier nonReentrant() {
         nonReentrantBefore();
