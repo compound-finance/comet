@@ -156,9 +156,6 @@ export default migration('1712610251_configurate_and_ens', {
     // 1.
     expect(await configurator.factory(comet.address)).to.be.equal(cometFactory.address);
 
-    console.log({cometAddress: comet.address})
-    console.log({getCometConfig: await getCometConfig(comet)})
-    console.log({getCometConfig2: await getCometConfig(comet, preMigrationBlockNumber)})
     // 2. & 3.
     const stateChanges = await diffState(
       comet,
@@ -259,14 +256,12 @@ export default migration('1712610251_configurate_and_ens', {
           cometAddress: "0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44",
         },
       ],
-      // uncomment when Optimisim proposal will be executed
-      // https://compound.finance/governance/proposals/238
-      // 10: [
-      //   {
-      //     baseSymbol: "USDC",
-      //     cometAddress: "",
-      //   },
-      // ],
+      10: [
+        {
+          baseSymbol: "USDC",
+          cometAddress: "0x2e44e174f7D53F0212823acC11C01A11d58c5bCB",
+        },
+      ],
     });
   }
 });
