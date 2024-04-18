@@ -57,6 +57,7 @@ const {
   OPTIMISMSCAN_KEY,
   INFURA_KEY,
   BASE_RPC_URL,
+  SCROLL_RPC_URL,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
@@ -162,7 +163,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'scroll',
     chainId: 534352,
-    url: 'https://rpc.scroll.io',
+    url: `${SCROLL_RPC_URL}`,
   }
 ];
 
