@@ -544,7 +544,7 @@ scenario(
   {
     filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
     tokenBalances: {
-      $comet: { $base: 100000 },
+      $comet: { $base: 1000000 },
     },
     cometBalances: {
       albert: {
@@ -589,11 +589,6 @@ scenario(
 
     const borrowCapacity = await borrowCapacityForAsset(comet, albert, 0);
     const borrowAmount = (borrowCapacity.mul(90n)).div(100n);
-    const baseAssetAddress = await comet.baseToken();
-    const baseAsset = _context.getAssetByAddress(baseAssetAddress);
-    if(ethers.BigNumber.from(await baseAsset.balanceOf(comet.address)).lt(borrowAmount)) {
-      await _context.sourceTokens(ethers.BigNumber.from(await baseAsset.balanceOf(comet.address)).sub(borrowAmount).toBigInt(), baseToken, comet.address);
-    }
 
     await albert.withdrawAsset({
       asset: baseToken,
@@ -660,7 +655,7 @@ scenario(
   {
     filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
     tokenBalances: {
-      $comet: { $base: 100000 },
+      $comet: { $base: 1000000 },
     },
     cometBalances: {
       albert: {
@@ -706,9 +701,6 @@ scenario(
     const borrowCapacity = await borrowCapacityForAsset(comet, albert, 0);
     const borrowAmount = (borrowCapacity.mul(90n)).div(100n);
 
-    if(baseToken === '0xc2132D05D31c914a87C6611C10748AEb04B58e8F') {
-      await _context.sourceTokens(borrowAmount.toBigInt(), baseToken, comet.address);
-    }
     await albert.withdrawAsset({
       asset: baseToken,
       amount: borrowAmount
