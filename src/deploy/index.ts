@@ -77,7 +77,13 @@ export const COMP_WHALES = {
     '0x54A37d93E57c5DA659F508069Cf65A381b61E189'
   ],
 
-  testnet: ['0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46']
+  testnet: ['0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46'],
+
+  polygon: [
+    '0x52A258ED593C793251a89bfd36caE158EE9fC4F8',
+    '0xdE5167C19A5286889752Cb0f31a1c7f28A99feFB',
+    '0xC35D800aD559c481dDa73D0b89dbC12774945512'
+  ],
 };
 
 export const WHALES = {
@@ -93,7 +99,8 @@ export const WHALES = {
   polygon: [
     '0x2093b4281990a568c9d588b8bce3bfd7a1557ebd', // WETH whale
     '0xd814b26554204245a30f8a42c289af582421bf04', // WBTC whale
-    '0x167384319b41f7094e62f7506409eb38079abff8'  // WMATIC whale
+    '0x167384319b41f7094e62f7506409eb38079abff8', // WMATIC whale
+    '0xF977814e90dA44bFA03b6295A0616a897441aceC'
   ],
   arbitrum: [
     '0xf89d7b9c864f589bbf53a82105107622b35eaa40', // USDC whale

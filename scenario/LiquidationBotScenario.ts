@@ -95,7 +95,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       weth: 20
     },
     polygon: {
-      usdc: 2250000
+      usdc: 2250000,
+      usdt: 2250000
     },
     arbitrum: {
       'usdc.e': 10000000, 
@@ -125,6 +126,16 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     },
     polygon: {
       usdc: [
+        // WETH
+        ' == 400',
+        // WBTC
+        ' == 20',
+        // WMATIC
+        ' == 300000',
+        // MATICX
+        ' == 0',
+      ],
+      usdt: [
         // WETH
         ' == 400',
         // WBTC
@@ -280,7 +291,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       weth: 5000
     },
     polygon: {
-      usdc: 3000000
+      usdc: 3000000,
+      usdt: 3000000
     },
     arbitrum: {
       'usdc.e': 10000000, 
@@ -310,6 +322,16 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     },
     polygon: {
       usdc: [
+        // WETH
+        ' == 1000',
+        // WBTC
+        ' == 100',
+        // WMATIC
+        ' == 2500000',
+        // MATICX
+        ' == 0',
+      ],
+      usdt: [
         // WETH
         ' == 1000',
         // WBTC
@@ -366,6 +388,16 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     },
     polygon: {
       usdc: [
+        // WETH
+        exp(400, 18),
+        // WBTC
+        exp(20, 8),
+        // WMATIC
+        exp(5000, 18),
+        // MATICX
+        exp(5, 18)
+      ],
+      usdt: [
         // WETH
         exp(400, 18),
         // WBTC
@@ -557,6 +589,11 @@ scenario(
 
     const borrowCapacity = await borrowCapacityForAsset(comet, albert, 0);
     const borrowAmount = (borrowCapacity.mul(90n)).div(100n);
+    const baseAssetAddress = await comet.baseToken();
+    const baseAsset = _context.getAssetByAddress(baseAssetAddress);
+    if(ethers.BigNumber.from(await baseAsset.balanceOf(comet.address)).lt(borrowAmount)) {
+      await _context.sourceTokens(ethers.BigNumber.from(await baseAsset.balanceOf(comet.address)).sub(borrowAmount).toBigInt(), baseToken, comet.address);
+    }
 
     await albert.withdrawAsset({
       asset: baseToken,
@@ -669,6 +706,9 @@ scenario(
     const borrowCapacity = await borrowCapacityForAsset(comet, albert, 0);
     const borrowAmount = (borrowCapacity.mul(90n)).div(100n);
 
+    if(baseToken === '0xc2132D05D31c914a87C6611C10748AEb04B58e8F') {
+      await _context.sourceTokens(borrowAmount.toBigInt(), baseToken, comet.address);
+    }
     await albert.withdrawAsset({
       asset: baseToken,
       amount: borrowAmount
