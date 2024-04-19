@@ -3,11 +3,11 @@ import {
   getEtherscanApiKey,
   getEtherscanApiUrl,
   getEtherscanUrl,
-} from "./etherscan";
+} from './etherscan';
 
 export function debug(...args: any[]) {
-  if (process.env["DEBUG"]) {
-    if (typeof args[0] === "function") {
+  if (process.env['DEBUG']) {
+    if (typeof args[0] === 'function') {
       console.log(...args[0]());
     } else {
       console.log(...args);
@@ -27,13 +27,13 @@ export async function loadContract(
   network: string,
   address: string
 ) {
-  if (address === "0x0000000000000000000000000000000000000000") {
+  if (address === '0x0000000000000000000000000000000000000000') {
     throw new Error(
       `Cannot load ${source} contract for address ${address} on network ${network}. Address invalid.`
     );
   }
   switch (source) {
-    case "etherscan":
+    case 'etherscan':
       return await loadEtherscanContract(network, address);
     default:
       throw new Error(
@@ -73,20 +73,20 @@ async function getEtherscanApiData(
   let apiUrl = await getEtherscanApiUrl(network);
 
   let result = await get(apiUrl, {
-    module: "contract",
-    action: "getsourcecode",
+    module: 'contract',
+    action: 'getsourcecode',
     address,
     apikey: apiKey,
   });
 
-  if (result.status !== "1") {
+  if (result.status !== '1') {
     throw new Error(`Etherscan Error: ${result.message} - ${result.result}`);
   }
 
   let s = <EtherscanSource>(<unknown>result.result[0]);
 
-  if (s.ABI === "Contract source code not verified") {
-    throw new Error("Contract source code not verified");
+  if (s.ABI === 'Contract source code not verified') {
+    throw new Error('Contract source code not verified');
   }
 
   return {
@@ -94,7 +94,7 @@ async function getEtherscanApiData(
     abi: JSON.parse(s.ABI),
     contract: s.ContractName,
     compiler: s.CompilerVersion,
-    optimized: s.OptimizationUsed !== "0",
+    optimized: s.OptimizationUsed !== '0',
     optimizationRuns: Number(s.Runs),
     constructorArgs: s.ConstructorArguments,
   };
@@ -105,15 +105,15 @@ async function scrapeContractCreationCodeFromEtherscanApi(
   address: string
 ) {
   const params = {
-    module: "proxy",
-    action: "eth_getCode",
+    module: 'proxy',
+    action: 'eth_getCode',
     address,
     apikey: getEtherscanApiKey(network),
   };
   const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
   const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({
     ...params,
-    ...{ apikey: "[API_KEY]" },
+    ...{ apikey: '[API_KEY]' },
   })}`;
 
   debug(`Attempting to pull Contract Creation code from API at ${debugUrl}`);
@@ -163,7 +163,7 @@ async function scrapeContractCreationCodeFromEtherscan(
 function paramString(params: { [k: string]: string | number }) {
   return Object.entries(params)
     .map(([k, v]) => `${k}=${v}`)
-    .join("&");
+    .join('&');
 }
 
 async function pullFirstTransactionForContract(
@@ -173,20 +173,20 @@ async function pullFirstTransactionForContract(
   endblock = 99999999
 ) {
   const params = {
-    module: "account",
-    action: "txlist",
+    module: 'account',
+    action: 'txlist',
     address,
     startblock: startblock,
     endblock: endblock,
     page: 1,
     offset: 10,
-    sort: "asc",
+    sort: 'asc',
     apikey: getEtherscanApiKey(network),
   };
   const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
   const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({
     ...params,
-    ...{ apikey: "[API_KEY]" },
+    ...{ apikey: '[API_KEY]' },
   })}`;
 
   debug(
@@ -208,26 +208,26 @@ async function pullFirstInternalTransactionForContract(
   endblock = 99999999
 ) {
   const params = {
-    module: "account",
-    action: "txlistinternal",
+    module: 'account',
+    action: 'txlistinternal',
     address,
     startblock: startblock,
     endblock: endblock,
     page: 1,
     offset: 10,
-    sort: "asc",
+    sort: 'asc',
     apikey: getEtherscanApiKey(network),
   };
   const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
   const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({
     ...params,
-    ...{ apikey: "[API_KEY]" },
+    ...{ apikey: '[API_KEY]' },
   })}`;
   debug(
     `Attempting to pull Contract Creation code from first internal tx at ${debugUrl}`
   );
   const response = await get(url, {});
-  return response.result.find((tx) => tx.isError == "0").input;
+  return response.result.find((tx) => tx.isError == '0').input;
 }
 
 async function getContractCreationCode(network: string, address: string) {
@@ -245,7 +245,7 @@ async function getContractCreationCode(network: string, address: string) {
       errors.push(error);
     }
   }
-  throw new Error(errors.join("; "));
+  throw new Error(errors.join('; '));
 }
 
 function parseSources({
@@ -254,13 +254,13 @@ function parseSources({
   optimized,
   optimizationRuns,
 }: EtherscanData) {
-  if (source.startsWith("{") && source.endsWith("}")) {
+  if (source.startsWith('{') && source.endsWith('}')) {
     const sliced = source.slice(1, -1);
-    if (sliced.startsWith("{") && sliced.endsWith("}")) {
+    if (sliced.startsWith('{') && sliced.endsWith('}')) {
       return JSON.parse(sliced);
     } else {
       return {
-        language: "Solidity",
+        language: 'Solidity',
         settings: {
           optimizer: {
             enabled: optimized,
@@ -273,7 +273,7 @@ function parseSources({
   } else {
     // Note: legacy for tests, but is this even right?
     return {
-      language: "Solidity",
+      language: 'Solidity',
       settings: {
         optimizer: {
           enabled: optimized,
@@ -283,7 +283,7 @@ function parseSources({
       sources: {
         [`contracts/${contract}.sol`]: {
           content: source,
-          keccak256: "",
+          keccak256: '',
         },
       },
     };
