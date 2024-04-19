@@ -19,9 +19,7 @@ export function debug(...args: any[]) {
 
 export async function loadContract(source: string, network: string, address: string) {
   if (address === "0x0000000000000000000000000000000000000000") {
-    throw new Error(
-      `Cannot load ${source} contract for address ${address} on network ${network}. Address invalid.`
-    );
+    throw new Error(`Cannot load ${source} contract for address ${address} on network ${network}. Address invalid.`);
   }
   switch (source) {
     case "etherscan":
@@ -54,11 +52,7 @@ interface EtherscanData {
   constructorArgs: string;
 }
 
-async function getEtherscanApiData(
-  network: string,
-  address: string,
-  apiKey: string
-): Promise<EtherscanData> {
+async function getEtherscanApiData(network: string, address: string, apiKey: string): Promise<EtherscanData> {
   let apiUrl = await getEtherscanApiUrl(network);
 
   let result = await get(apiUrl, {
@@ -139,12 +133,7 @@ function paramString(params: { [k: string]: string | number }) {
     .join("&");
 }
 
-async function pullFirstTransactionForContract(
-  network: string,
-  address: string,
-  startblock = 0,
-  endblock = 99999999
-) {
+async function pullFirstTransactionForContract(network: string, address: string, startblock = 0, endblock = 99999999) {
   const params = {
     module: "account",
     action: "txlist",
