@@ -91,10 +91,7 @@ async function scrapeContractCreationCodeFromEtherscanApi(network: string, addre
     apikey: getEtherscanApiKey(network)
   };
   const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
-  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({
-    ...params,
-    ...{ apikey: '[API_KEY]' },
-  })}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]' }})}`;
 
   debug(`Attempting to pull Contract Creation code from API at ${debugUrl}`);
   const result = await get(url, {});
@@ -128,9 +125,7 @@ async function scrapeContractCreationCodeFromEtherscan(network: string, address:
 }
 
 function paramString(params: { [k: string]: string | number }) {
-  return Object.entries(params)
-    .map(([k, v]) => `${k}=${v}`)
-    .join('&');
+  return Object.entries(params).map(([k, v]) => `${k}=${v}`).join('&');
 }
 
 async function pullFirstTransactionForContract(network: string, address: string, startblock = 0, endblock = 99999999) {
@@ -146,10 +141,7 @@ async function pullFirstTransactionForContract(network: string, address: string,
     apikey: getEtherscanApiKey(network)
   };
   const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
-  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({
-    ...params,
-    ...{ apikey: '[API_KEY]' },
-  })}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]' }})}`;
 
   debug(`Attempting to pull Contract Creation code from first tx at ${debugUrl}`);
   const result = await get(url, {});
@@ -217,8 +209,8 @@ function parseSources({ source, contract, optimized, optimizationRuns }: Ethersc
         settings: {
           optimizer: {
             enabled: optimized,
-            runs: optimizationRuns
-          },
+            runs: optimizationRuns,
+          }
         },
         sources: JSON.parse(source)
       };
