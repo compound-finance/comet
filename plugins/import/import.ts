@@ -128,13 +128,13 @@ function paramString(params: { [k: string]: string | number }) {
   return Object.entries(params).map(([k,v]) => `${k}=${v}`).join('&');
 }
 
-async function pullFirstTransactionForContract(network: string, address: string, startblock = 0, endblock = 99999999) {
+async function pullFirstTransactionForContract(network: string, address: string) {
   const params = {
     module: 'account',
     action: 'txlist',
     address,
-    startblock: startblock,
-    endblock: endblock,
+    startblock: 0,
+    endblock: 99999999,
     page: 1,
     offset: 10,
     sort: 'asc',
