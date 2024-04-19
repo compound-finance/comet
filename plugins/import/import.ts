@@ -125,7 +125,7 @@ async function scrapeContractCreationCodeFromEtherscan(network: string, address:
 }
 
 function paramString(params: { [k: string]: string | number }) {
-  return Object.entries(params).map(([k, v]) => `${k}=${v}`).join('&');
+  return Object.entries(params).map(([k,v]) => `${k}=${v}`).join('&');
 }
 
 async function pullFirstTransactionForContract(network: string, address: string, startblock = 0, endblock = 99999999) {
