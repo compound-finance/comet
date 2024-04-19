@@ -88,7 +88,7 @@ async function scrapeContractCreationCodeFromEtherscanApi(network: string, addre
     module: 'proxy',
     action: 'eth_getCode',
     address,
-    apikey: getEtherscanApiKey(network),
+    apikey: getEtherscanApiKey(network)
   };
   const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
   const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({
@@ -143,7 +143,7 @@ async function pullFirstTransactionForContract(network: string, address: string,
     page: 1,
     offset: 10,
     sort: 'asc',
-    apikey: getEtherscanApiKey(network),
+    apikey: getEtherscanApiKey(network)
   };
   const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
   const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({
@@ -193,7 +193,7 @@ async function getContractCreationCode(network: string, address: string) {
     scrapeContractCreationCodeFromEtherscan,
     scrapeContractCreationCodeFromEtherscanApi,
     pullFirstTransactionForContract,
-    pullFirstInternalTransactionForContract,
+    pullFirstInternalTransactionForContract
   ];
   let errors = [];
   for (const strategy of strategies) {
@@ -217,10 +217,10 @@ function parseSources({ source, contract, optimized, optimizationRuns }: Ethersc
         settings: {
           optimizer: {
             enabled: optimized,
-            runs: optimizationRuns,
+            runs: optimizationRuns
           },
         },
-        sources: JSON.parse(source),
+        sources: JSON.parse(source)
       };
     }
   } else {
@@ -231,14 +231,14 @@ function parseSources({ source, contract, optimized, optimizationRuns }: Ethersc
         optimizer: {
           enabled: optimized,
           runs: optimizationRuns,
-        },
+        }
       },
       sources: {
         [`contracts/${contract}.sol`]: {
           content: source,
           keccak256: '',
-        },
-      },
+        }
+      }
     };
   }
 }
@@ -247,7 +247,12 @@ export async function loadEtherscanContract(network: string, address: string) {
   const apiKey = getEtherscanApiKey(network);
   const networkName = network;
   const etherscanData = await getEtherscanApiData(networkName, address, apiKey);
-  const { abi, contract, compiler, constructorArgs } = etherscanData;
+  const {
+    abi,
+    contract,
+    compiler,
+    constructorArgs
+  } = etherscanData;
   const { language, settings, sources } = parseSources(etherscanData);
   const contractPath = Object.keys(sources)[0];
   const contractFQN = `${contractPath}:${contract}`;
