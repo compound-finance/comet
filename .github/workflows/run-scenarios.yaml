@@ -19,6 +19,9 @@ jobs:
       BASESCAN_KEY: ${{ secrets.BASESCAN_KEY }}
       LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
+      SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
+      BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
+      SCROLL_RPC_URL: ${{ secrets.SCROLL_RPC_URL }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
