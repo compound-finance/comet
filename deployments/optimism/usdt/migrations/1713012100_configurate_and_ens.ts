@@ -61,9 +61,6 @@ export default migration('1713012100_my_migration', {
       CCTPTokenMessenger,
     } = await govDeploymentManager.getContracts();
 
-    console.log('USDT', (await govDeploymentManager.getContracts())['USDT'])
-    console.log('USDT', (await deploymentManager.getContracts())['USDT'])
-
     // CCTP destination domain for Optimism
     const OptimismDestinationDomain = 2;
 
