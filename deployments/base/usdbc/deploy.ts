@@ -50,7 +50,7 @@ async function deployContracts(
       1 * DAY,                // delay
       14 * DAY,               // grace period
       12 * HOUR,              // minimum delay
-      30 * DAY                // maxiumum delay
+      30 * DAY                // maximum delay
     ]
   );
 

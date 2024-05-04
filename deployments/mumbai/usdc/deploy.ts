@@ -44,7 +44,7 @@ async function deployContracts(deploymentManager: DeploymentManager, deploySpec:
       10 * 60,                // delay
       14 * secondsPerDay,     // grace period
       10 * 60,                // minimum delay
-      30 * secondsPerDay      // maxiumum delay
+      30 * secondsPerDay      // maximum delay
     ]
   );
 

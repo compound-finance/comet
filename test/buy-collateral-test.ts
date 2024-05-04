@@ -436,7 +436,7 @@ describe('buyCollateral', function () {
 
       // authorize EVIL, since callback will originate from EVIL token address
       await evilComet.connect(evilAlice).allow(EVIL.address, true);
-      // call buyCollateral; supplyFrom is called in in callback
+      // call buyCollateral; supplyFrom is called in callback
       await evilComet
         .connect(evilAlice)
         .buyCollateral(
