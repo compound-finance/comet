@@ -71,7 +71,7 @@ scenario(
         2 * secondsPerDay,         // delay
         14 * secondsPerDay,        // grace period
         2 * secondsPerDay,         // minimum delay
-        30 * secondsPerDay         // maxiumum delay
+        30 * secondsPerDay         // maximum delay
       ]
     );
 
@@ -181,7 +181,7 @@ scenario(
         2 * secondsPerDay,         // delay
         14 * secondsPerDay,        // grace period
         2 * secondsPerDay,         // minimum delay
-        30 * secondsPerDay         // maxiumum delay
+        30 * secondsPerDay         // maximum delay
       ]
     );
 
@@ -300,7 +300,7 @@ scenario(
       2 * secondsPerDay, // delay
       14 * secondsPerDay, // grace period
       2 * secondsPerDay, // minimum delay
-      30 * secondsPerDay // maxiumum delay
+      30 * secondsPerDay // maximum delay
     ]);
 
     // Initialize new LineaBridgeReceiver
@@ -421,7 +421,7 @@ scenario(
       2 * secondsPerDay, // delay
       14 * secondsPerDay, // grace period
       2 * secondsPerDay, // minimum delay
-      30 * secondsPerDay // maxiumum delay
+      30 * secondsPerDay // maximum delay
     ]);
 
     // Initialize new ScrollBridgeReceiver
