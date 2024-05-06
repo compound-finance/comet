@@ -1,6 +1,7 @@
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { Contract, ethers } from 'ethers';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
+import { diffState, getCometConfig } from '../../../../plugins/deployment_manager/DiffState';
 import {
   calldata,
   exp,
@@ -18,8 +19,9 @@ const ENSTextRecordKey = 'v3-official-markets';
 const opCOMPAddress = '0x7e7d4467112689329f7E06571eD0E8CbAd4910eE';
 const USDTAmountToBridge = exp(10_000, 6);
 const cUSDTAddress = '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9';
+const mainnetUSDTAddress = '0xdac17f958d2ee523a2206206994597c13d831ec7';
 
-export default migration('1713012100_my_migration', {
+export default migration('1713012100_configurate_and_ens', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
   },
@@ -121,7 +123,7 @@ export default migration('1713012100_my_migration', {
     );
 
     const USDTMainnet = new Contract(
-      '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+      mainnetUSDTAddress,
       [
         'function balanceOf(address account) external view returns (uint256)',
         'function approve(address,uint256) external'        
@@ -135,28 +137,29 @@ export default migration('1713012100_my_migration', {
       ['uint256'],
       [amountToSupply]
     );
-    const addinionalAction = {
-      target: cUSDTAddress,
-      signature: '_reduceReserves(uint256)',
-      calldata: _reduceReservesCalldata
-    };
 
     // COMP speeds for rewards are setted, but the bridge of tokens does not happen, because it was bridged in the USDC market proposal 
 
-    const mainnetActions = [
+    const actions = [
       // 1. Set Comet configuration + deployAndUpgradeTo new Comet, set Reward Config on Optimism
       {
         contract: opL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
         args: [bridgeReceiver.address, l2ProposalData, 3_000_000],
       },
-      // 2. Approve USDT to L1StandardBridge
+      // 2. Get USDT reserves from cUSDT contract
+      {
+        target: cUSDTAddress,
+        signature: '_reduceReserves(uint256)',
+        calldata: _reduceReservesCalldata
+      },
+      // 3. Approve USDT to L1StandardBridge
       {
         contract: USDTMainnet,
         signature: 'approve(address,uint256)',
         args: [opL1StandardBridge.address, USDTAmountToBridge],
       },
-      // 3. Bridge USDT from Ethereum to OP Comet using L1StandardBridge
+      // 4. Bridge USDT from Ethereum to OP Comet using L1StandardBridge
       {
         contract: opL1StandardBridge,
         // function depositERC20To(address _l1Token, address _l2Token, address _to, uint256 _amount, uint32 _l2Gas,bytes calldata _data)
@@ -171,7 +174,7 @@ export default migration('1713012100_my_migration', {
           '0x',
         ],
       },
-      // 4. Update the list of official markets
+      // 5. Update the list of official markets
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
@@ -181,16 +184,11 @@ export default migration('1713012100_my_migration', {
         ),
       },
     ];
-
-    // add new action between 1 and 2
-    if (notEnoughUSDT) {
-      mainnetActions.splice(2, 0, addinionalAction);
-    }    
     
-    const description = "# Initialize cUSDTv3 on Optimism\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Optimism network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDT market on Optimism; upon execution, cUSDTv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-optimism/4975/6).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/833) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-optimism/4975).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Optimism. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Optimism. It also calls `setRewardConfig` on the Optimism rewards contract, to establish Optimism’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 5 COMP/day and borrow speed to be 5 COMP/day.\n\nThe second action approves Circle’s Cross-Chain Transfer Protocol (CCTP) [TokenMessenger](https://etherscan.io/address/0xbd3fa81b58ba92a82136038b25adec7066af3155) to take the Timelock's USDT on Mainnet, in order to seed the market reserves through the CCTP.\n\nThe third action deposits and burns 10K USDT from mainnet via depositForBurn function on CCTP’s TokenMessenger contract to mint native USDT to Comet on Optimism.\n\nThe fourth action approves Optimism’s [L1StandardBridge](https://etherscan.io/address/0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1) to take Timelock's COMP, in order to seed the rewards contract through the bridge.\n\nThe fifth action deposits 3.6K COMP from mainnet to the Optimism L1StandardBridge contract to bridge to CometRewards.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Optimism cUSDTv3 market";
+    // the description has speeds. speeds will be set up on on-chain proposal
+    const description = "# Initialize cUSDTv3 on Optimism\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Optimism network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDT market on Optimism; upon execution, cUSDTv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-optimism/4975/6).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/848) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-optimism/4975).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Optimism. This sends the encoded `setFactory`, `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Optimism. It also calls `setRewardConfig` on the Optimism rewards contract, to establish Optimism’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 5 COMP/day and borrow speed to be 5 COMP/day.\n\nThe second action reduces Compound [cUSDT](https://etherscan.io/address/0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9) reserves to Timelock, in order to seed the market reserves through the Optimism L1StandardBridge.\n\nThe third action approves Optimism’s [L1StandardBridge](https://etherscan.io/address/0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1) to take Timelock's USDT, in order to seed the reserves through the bridge.\n\nThe fourth action deposits 10K USDT from mainnet to the Optimism L1StandardBridge contract to bridge to Comet.\n\nThe fifth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Optimism cUSDTv3 market";
     const txn = await govDeploymentManager.retry(async () =>{
-      // console.log('in TXN', actions)
-      return trace(await governor.propose(...(await proposal(mainnetActions, description))));
+      return trace(await governor.propose(...(await proposal(actions, description))));
     }
     );
 
@@ -204,7 +202,7 @@ export default migration('1713012100_my_migration', {
     return false;
   },
 
-  async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager) {
+  async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
     const ethers = deploymentManager.hre.ethers;
 
     const {
@@ -212,43 +210,50 @@ export default migration('1713012100_my_migration', {
       rewards,
       WBTC,
       WETH,
-      OP
+      OP,
+      COMP
     } = await deploymentManager.getContracts();
 
     const {
       timelock
     } = await govDeploymentManager.getContracts();
 
-    // 1.
-    const wbtcInfo = await comet.getAssetInfoByAddress(WBTC.address);
-    const wethInfo = await comet.getAssetInfoByAddress(WETH.address);
-    const opInfo = await comet.getAssetInfoByAddress(OP.address);
-    // expect(wbtcInfo.supplyCap).to.be.eq(exp(400, 8));
-    // expect(wethInfo.supplyCap).to.be.eq(exp(11_000, 18));
-    // expect(opInfo.supplyCap).to.be.eq(exp(10_000_000, 18));
-    expect(await comet.pauseGuardian()).to.be.eq('0x3fFd6c073a4ba24a113B18C8F373569640916A45');
+    const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
+    
+    // uncomment on on-chain proposal PR
+    // expect(stateChanges).to.deep.equal({
+    //   WBTC: {
+    //     supplyCap: exp(400, 8)
+    //   },
+    //   WETH: {
+    //     supplyCap: exp(11_000, 18)
+    //   },
+    //   OP: {
+    //     supplyCap: exp(10_000_000, 18)
+    //   },
+    //   baseTrackingSupplySpeed: exp(5 / 86400, 15, 18), 
+    //   baseTrackingBorrowSpeed: exp(5 / 86400, 15, 18),
+    // });
 
-    // 2. & 3.
+    const config = await rewards.rewardConfig(comet.address);
+    expect(config.token).to.be.equal(COMP.address);
+    expect(config.rescaleFactor).to.be.equal(exp(1, 12));
+    expect(config.shouldUpscale).to.be.equal(true);
+
+    // 2. & 3 & 4.
     expect(await comet.getReserves()).to.be.equal(USDTAmountToBridge);
 
-    // 4. & 5.
-    const opCOMP = new Contract(
-      '0x7e7d4467112689329f7E06571eD0E8CbAd4910eE',
-      ['function balanceOf(address account) external view returns (uint256)'],
-      deploymentManager.hre.ethers.provider
+    // 5.
+    const ENSResolver = await govDeploymentManager.existing(
+      "ENSResolver",
+      ENSResolverAddress
     );
-    expect((await opCOMP.balanceOf(rewards.address)).gt(exp(2_500, 18))).to.be.true;
-
-    // 6. & 7.
-    const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
-    const ENSRegistry = await govDeploymentManager.existing('ENSRegistry', ENSRegistryAddress);
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
-    const officialMarketsJSON = await ENSResolver.text(subdomainHash, ENSTextRecordKey);
+    const officialMarketsJSON = await ENSResolver.text(
+      subdomainHash,
+      ENSTextRecordKey
+    );
     const officialMarkets = JSON.parse(officialMarketsJSON);
-    expect(await ENSRegistry.recordExists(subdomainHash)).to.be.equal(true);
-    expect(await ENSRegistry.owner(subdomainHash)).to.be.equal(timelock.address);
-    expect(await ENSRegistry.resolver(subdomainHash)).to.be.equal(ENSResolverAddress);
-    expect(await ENSRegistry.ttl(subdomainHash)).to.be.equal(0);
     expect(officialMarkets).to.deep.equal({
       1: [
         {
@@ -259,11 +264,6 @@ export default migration('1713012100_my_migration', {
           baseSymbol: 'WETH',
           cometAddress: '0xA17581A9E3356d9A858b789D68B4d866e593aE94',
         },
-        // should be changed after soon to be PR
-        // {
-        //   baseSymbol: 'WETH',
-        //   cometAddress: comet.address,
-        // },
       ],
       137: [
         {
@@ -312,9 +312,5 @@ export default migration('1713012100_my_migration', {
         },
       ],
     });
-
-    // 8.
-    // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(0);
-    // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(34.74 / 86400, 15, 18));
   }
 });

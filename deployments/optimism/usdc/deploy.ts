@@ -116,6 +116,5 @@ async function deployContracts(
     l2CrossDomainMessenger, // TODO: don't have to part of roots. can be pulled via relations
     l2StandardBridge,
     bulker,
-    COMP
   };
 }

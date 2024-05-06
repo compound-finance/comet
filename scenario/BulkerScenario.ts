@@ -5,7 +5,7 @@ import { expectBase, isRewardSupported, isBulkerSupported, getExpectedBaseBalanc
 import { exp } from '../test/helpers';
 
 // XXX properly handle cases where asset0 is WETH
-scenario.only(
+scenario(
   'Comet#bulker > (non-WETH base) all non-reward actions in one txn',
   {
     filter: async (ctx) => await isBulkerSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, {network: 'mumbai'}, { network: 'linea-goerli' }]),
@@ -159,7 +159,7 @@ scenario(
 );
 
 // XXX properly handle cases where asset0 is WETH
-scenario.only(
+scenario(
   'Comet#bulker > (non-WETH base) all actions in one txn',
   {
     filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, { network: 'linea-goerli' }]),
