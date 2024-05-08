@@ -19,7 +19,7 @@ scenario(
   'add new asset maticx',
   {
     filter: async (ctx) =>
-      matchesDeployment(ctx, [{ network: 'polygon' }]),
+      matchesDeployment(ctx, [{ network: 'polygon' }]) && !matchesDeployment(ctx, [{deployment: 'usdt'}, { network: 'polygon' }]),
     tokenBalances: {
       $comet: { $base: '>= 1' },
     },

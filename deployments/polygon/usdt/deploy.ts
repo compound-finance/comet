@@ -15,6 +15,8 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const WBTC = await deploymentManager.existing('WBTC', '0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6', 'polygon');
   const WETH = await deploymentManager.existing('WETH', '0x7ceb23fd6bc0add59e62ac25578270cff1b9f619', 'polygon');
   const WMATIC = await deploymentManager.existing('WMATIC', '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', 'polygon');
+  const MATICX = await deploymentManager.existing('aPolMATICX', '0x80cA0d8C38d2e2BcbaB66aA1648Bd1C7160500FE', 'polygon');
+  const stMATIC = await deploymentManager.existing('stMATIC', '0x3A58a54C066FdC0f2D55FC9C89F0415C92eBf3C4', 'polygon');
   const COMP = await deploymentManager.existing('COMP', '0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c', 'polygon');
 
   const fxChild = await deploymentManager.existing('fxChild', '0x8397259c983751DAf40400790063935a11afa28a', 'polygon');
