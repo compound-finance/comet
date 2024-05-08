@@ -5,6 +5,7 @@ import { expectBase, isRewardSupported, isBulkerSupported, getExpectedBaseBalanc
 import { exp } from '../test/helpers';
 
 // XXX properly handle cases where asset0 is WETH
+// TODO: should properly handle cases where asset1 isn't WETH (wrapped native token)
 scenario(
   'Comet#bulker > (non-WETH base) all non-reward actions in one txn',
   {
@@ -165,6 +166,7 @@ scenario(
     filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, { network: 'linea-goerli' }]),
     supplyCaps: {
       $asset0: 3000,
+      $asset1: 3000,
     },
     tokenBalances: {
       albert: { $base: '== 1000000', $asset0: 3000 },

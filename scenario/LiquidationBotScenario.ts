@@ -95,7 +95,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       weth: 20
     },
     polygon: {
-      usdc: 2250000
+      usdc: 2250000,
+      usdt: 2250000
     },
     arbitrum: {
       'usdc.e': 10000000, 
@@ -125,6 +126,16 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     },
     polygon: {
       usdc: [
+        // WETH
+        ' == 400',
+        // WBTC
+        ' == 20',
+        // WMATIC
+        ' == 300000',
+        // MATICX
+        ' == 0',
+      ],
+      usdt: [
         // WETH
         ' == 400',
         // WBTC
@@ -280,7 +291,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       weth: 5000
     },
     polygon: {
-      usdc: 3000000
+      usdc: 3000000,
+      usdt: 3000000
     },
     arbitrum: {
       'usdc.e': 10000000, 
@@ -310,6 +322,16 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     },
     polygon: {
       usdc: [
+        // WETH
+        ' == 1000',
+        // WBTC
+        ' == 100',
+        // WMATIC
+        ' == 2500000',
+        // MATICX
+        ' == 0',
+      ],
+      usdt: [
         // WETH
         ' == 1000',
         // WBTC
@@ -366,6 +388,16 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     },
     polygon: {
       usdc: [
+        // WETH
+        exp(400, 18),
+        // WBTC
+        exp(20, 8),
+        // WMATIC
+        exp(5000, 18),
+        // MATICX
+        exp(5, 18)
+      ],
+      usdt: [
         // WETH
         exp(400, 18),
         // WBTC
@@ -512,7 +544,7 @@ scenario(
   {
     filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
     tokenBalances: {
-      $comet: { $base: 100000 },
+      $comet: { $base: 1000000 },
     },
     cometBalances: {
       albert: {
@@ -623,7 +655,7 @@ scenario(
   {
     filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
     tokenBalances: {
-      $comet: { $base: 100000 },
+      $comet: { $base: 1000000 },
     },
     cometBalances: {
       albert: {

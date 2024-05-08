@@ -9,7 +9,8 @@ import { createCrossChainProposal, matchesDeployment } from './utils';
 const MATICX_ADDRESS = '0xfa68FB4628DFF1028CFEc22b4162FCcd0d45efb6';
 const MATICX_PRICE_FEED_ADDRESS = '0x5d37E4b374E6907de8Fc7fb33EE3b0af403C7403';
 const MATICX_WHALES = {
-  polygon: ['0x68B9220B8E617b7700aCAE1a5Ff43F3eb29257F3'],
+  polygon: [
+    '0x54d983f6A163d7e8b2363CDb41FE2E568B8766aD'],
 };
 
 // TODO: add ability to run ad hoc scenarios against a single migration, to avoid needing the scenario to do all this setup of
@@ -32,7 +33,7 @@ scenario(
     const maticx = await dm.existing(
       'MATICX',
       MATICX_ADDRESS,
-      context.world.base.network,
+      '',
       'contracts/ERC20.sol:ERC20'
     );
     const maticxPricefeed = await dm.existing(
