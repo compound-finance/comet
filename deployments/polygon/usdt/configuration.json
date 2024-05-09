@@ -27,6 +27,15 @@
   },
   "rewardTokenAddress": "0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c",
   "assets": {
+    "WMATIC": {
+      "address": "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+      "priceFeed": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
+      "decimals": "18",
+      "borrowCF": 0.65,
+      "liquidateCF": 0.80,
+      "liquidationFactor": 0.85,
+      "supplyCap": "0e18"
+    },
     "aPolMATICX": {
       "address": "0x80cA0d8C38d2e2BcbaB66aA1648Bd1C7160500FE",
       "priceFeed": "0x5d37E4b374E6907de8Fc7fb33EE3b0af403C7403",
@@ -52,15 +61,6 @@
       "borrowCF": 0.80,
       "liquidateCF": 0.85,
       "liquidationFactor": 0.95,
-      "supplyCap": "0e18"
-    },
-    "WMATIC": {
-      "address": "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
-      "priceFeed": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
-      "decimals": "18",
-      "borrowCF": 0.65,
-      "liquidateCF": 0.80,
-      "liquidationFactor": 0.85,
       "supplyCap": "0e18"
     },
     "WBTC": {
