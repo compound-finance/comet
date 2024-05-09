@@ -33,7 +33,7 @@ scenario(
     const maticx = await dm.existing(
       'MATICX',
       MATICX_ADDRESS,
-      '',
+      context.world.base.network,
       'contracts/ERC20.sol:ERC20'
     );
     const maticxPricefeed = await dm.existing(

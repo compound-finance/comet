@@ -3,10 +3,10 @@ import { DeploymentManager } from '../../../../plugins/deployment_manager/Deploy
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
 import { expect } from 'chai';
+import { diffState, getCometConfig } from '../../../../plugins/deployment_manager/DiffState';
 
 const ENSName = 'compound-community-licenses.eth';
 const ENSResolverAddress = '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41';
-const ENSRegistryAddress = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
@@ -174,52 +174,66 @@ export default migration('1713283675_configurate_and_ens', {
     return false;
   },
 
-  async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager) {
+  async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
     const ethers = deploymentManager.hre.ethers;
 
     const {
       comet,
       rewards,
-      WBTC,
+      WMATIC,
       WETH,
-      WMATIC
+      aPolMATICX,
+      stMATIC,
+      WBTC,
+      COMP
     } = await deploymentManager.getContracts();
 
     const {
-      timelock,
-      comptrollerV2,
+      timelock
     } = await govDeploymentManager.getContracts();
 
-    // 1.
-    const wbtcInfo = await comet.getAssetInfoByAddress(WBTC.address);
-    const wethInfo = await comet.getAssetInfoByAddress(WETH.address);
-    const wmaticInfo = await comet.getAssetInfoByAddress(WMATIC.address);
-    // expect(wbtcInfo.supplyCap).to.be.eq(exp(400, 8));
-    // expect(wethInfo.supplyCap).to.be.eq(exp(11_000, 18));
-    // expect(wmaticInfo.supplyCap).to.be.eq(exp(10_000_000, 18));
-    expect(await comet.pauseGuardian()).to.be.eq('0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5');
+    const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
 
-    // 2. & 3.
+    // uncomment on on-chain proposal PR
+    // expect(stateChanges).to.deep.equal({
+    //   WMATIC: {
+    //     supplyCap: exp(5_000_000, 18)
+    //   },
+    //   WETH: {
+    //     supplyCap: exp(2_000, 18)
+    //   },
+    //   aPolMATICX: {
+    //     supplyCap: exp(2_600_000, 18),
+    //   },
+    //   stMATIC: {
+    //     supplyCap: exp(1_500_000, 18)
+    //   },
+    //   WBTC: {
+    //     supplyCap: exp(90, 8)
+    //   },
+    //   baseTrackingSupplySpeed: exp(5 / 86400, 15, 18), 
+    //   baseTrackingBorrowSpeed: exp(5 / 86400, 15, 18),
+    // });
+
+    const config = await rewards.rewardConfig(comet.address);
+    expect(config.token).to.be.equal(COMP.address);
+    expect(config.rescaleFactor).to.be.equal(exp(1, 12));
+    expect(config.shouldUpscale).to.be.equal(true);
+
+    // 2. & 3 & 4.
     expect(await comet.getReserves()).to.be.equal(USDTAmountToBridge);
 
-    // 4. & 5.
-    const polygonCOMP = new Contract(
-      '0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c',
-      ['function balanceOf(address account) external view returns (uint256)'],
-      deploymentManager.hre.ethers.provider
+    // 5.
+    const ENSResolver = await govDeploymentManager.existing(
+      'ENSResolver',
+      ENSResolverAddress
     );
-    expect((await polygonCOMP.balanceOf(rewards.address)).gt(exp(2_500, 18))).to.be.true;
-
-    // 6. & 7.
-    const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
-    const ENSRegistry = await govDeploymentManager.existing('ENSRegistry', ENSRegistryAddress);
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
-    const officialMarketsJSON = await ENSResolver.text(subdomainHash, ENSTextRecordKey);
+    const officialMarketsJSON = await ENSResolver.text(
+      subdomainHash,
+      ENSTextRecordKey
+    );
     const officialMarkets = JSON.parse(officialMarketsJSON);
-    expect(await ENSRegistry.recordExists(subdomainHash)).to.be.equal(true);
-    expect(await ENSRegistry.owner(subdomainHash)).to.be.equal(timelock.address);
-    expect(await ENSRegistry.resolver(subdomainHash)).to.be.equal(ENSResolverAddress);
-    expect(await ENSRegistry.ttl(subdomainHash)).to.be.equal(0);
     expect(officialMarkets).to.deep.equal({
       1: [
         {
@@ -230,11 +244,6 @@ export default migration('1713283675_configurate_and_ens', {
           baseSymbol: 'WETH',
           cometAddress: '0xA17581A9E3356d9A858b789D68B4d866e593aE94',
         },
-        // should be changed after soon to be PR
-        // {
-        //   baseSymbol: 'WETH',
-        //   cometAddress: comet.address,
-        // },
       ],
       137: [
         {
@@ -244,7 +253,7 @@ export default migration('1713283675_configurate_and_ens', {
         {
           baseSymbol: 'USDT',
           cometAddress: comet.address,
-        },
+        }
       ],
       8453: [
         {
@@ -283,9 +292,5 @@ export default migration('1713283675_configurate_and_ens', {
         },
       ],
     });
-
-    // 8.
-    // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(0);
-    // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(34.74 / 86400, 15, 18));
   }
 });

@@ -5,7 +5,6 @@ import { expectBase, isRewardSupported, isBulkerSupported, getExpectedBaseBalanc
 import { exp } from '../test/helpers';
 
 // XXX properly handle cases where asset0 is WETH
-// TODO: should properly handle cases where asset1 isn't WETH (wrapped native token)
 scenario(
   'Comet#bulker > (non-WETH base) all non-reward actions in one txn',
   {
@@ -15,7 +14,7 @@ scenario(
       $asset1: 3000,
     },
     tokenBalances: {
-      albert: { $base: '== 0', $asset0: 3000 },
+      albert: { $base: '== 0', $asset0: 3000, $asset1: 3000 },
       $comet: { $base: 5000 },
     },
   },
@@ -25,8 +24,12 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const baseScale = (await comet.baseScale()).toBigInt();
-    const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
+    // if asset 0 is native token we took asset 1
+    const { asset: asset0, scale: scale0 } = await comet.getAssetInfo(0);
+    const { asset: asset1, scale: scale1 } = await comet.getAssetInfo(1);
+    const { asset: collateralAssetAddress, scale: scaleBN } = asset0 === wrappedNativeToken ? { asset: asset1, scale: scale1 } : { asset: asset0, scale: scale0 };
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
+    console.log('collateralAsset', collateralAsset);
     const collateralScale = scaleBN.toBigInt();
     const toSupplyCollateral = 3000n * collateralScale;
     const toBorrowBase = 1000n * baseScale;
@@ -169,7 +172,7 @@ scenario(
       $asset1: 3000,
     },
     tokenBalances: {
-      albert: { $base: '== 1000000', $asset0: 3000 },
+      albert: { $base: '== 1000000', $asset0: 3000, $asset1: 3000},
       $comet: { $base: 5000 },
     }
   },
@@ -179,7 +182,10 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const baseScale = (await comet.baseScale()).toBigInt();
-    const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
+    // if asset 0 is native token we took asset 1
+    const { asset: asset0, scale: scale0 } = await comet.getAssetInfo(0);
+    const { asset: asset1, scale: scale1 } = await comet.getAssetInfo(1);
+    const { asset: collateralAssetAddress, scale: scaleBN } = asset0 === wrappedNativeToken ? { asset: asset1, scale: scale1 } : { asset: asset0, scale: scale0 };
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const collateralScale = scaleBN.toBigInt();
     const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);

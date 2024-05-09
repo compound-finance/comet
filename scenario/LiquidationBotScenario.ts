@@ -74,8 +74,9 @@ async function canBeLiquidatedByBot(ctx: CometContext, assetNum: number): Promis
     // Reason: Most liquidity lives in MATICX / MATIC pools, which the liquidation bot cannot use if the base asset is not MATIC
     MaticX: {
       network: 'polygon',
-      deployments: ['usdc']
-    }
+      deployments: ['usdc', 'usdt']
+    },
+    
   };
   const comet = await ctx.getComet();
   const assetInfo = await comet.getAssetInfo(assetNum);
@@ -136,14 +137,16 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         ' == 0',
       ],
       usdt: [
-        // WETH
-        ' == 400',
-        // WBTC
-        ' == 20',
         // WMATIC
         ' == 300000',
+        // WETH
+        ' == 400',
         // MATICX
-        ' == 0',
+        ' == 300000',
+        // stMATIC
+        ' == 300000',
+        // WBTC
+        ' == 20'
       ],
     },
     arbitrum: {
@@ -332,14 +335,16 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         ' == 0',
       ],
       usdt: [
-        // WETH
-        ' == 1000',
-        // WBTC
-        ' == 100',
         // WMATIC
-        ' == 2500000',
+        ' == 25000000',
+        // WETH
+        ' == 10000',
         // MATICX
-        ' == 0',
+        ' == 25000000',
+        // stMATIC
+        ' == 25000000',
+        // WBTC
+        ' == 1000'
       ]
     },
     arbitrum: {
@@ -398,14 +403,16 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         exp(5, 18)
       ],
       usdt: [
-        // WETH
-        exp(400, 18),
-        // WBTC
-        exp(20, 8),
         // WMATIC
-        exp(5000, 18),
+        exp(50000, 18),
+        // WETH
+        exp(4000, 18),
         // MATICX
-        exp(5, 18)
+        exp(50000, 18),
+        // stMATIC
+        exp(50000, 18),
+        // WBTC
+        exp(200, 8)
       ]
     },
     arbitrum: {
@@ -544,14 +551,16 @@ scenario(
   {
     filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
     tokenBalances: {
-      $comet: { $base: 1000000 },
+      $comet: { $base: 100000 },
     },
-    cometBalances: {
-      albert: {
-        $asset0: ' == 200',
-      },
-      betty: { $base: 1000 },
-    },
+    cometBalances: async (ctx) => (
+      {
+        albert: {
+          $asset0: ctx.world.base.network == 'polygon' && ctx.world.base.deployment == 'usdt'? ' == 20000': ' == 200'
+        },
+        betty: { $base: 1000 },
+      }
+    ),
   },
   async ({ comet, actors }, _context, world) => {
     const { albert, betty } = actors;
@@ -655,14 +664,16 @@ scenario(
   {
     filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
     tokenBalances: {
-      $comet: { $base: 1000000 },
+      $comet: { $base: 100000 },
     },
-    cometBalances: {
-      albert: {
-        $asset0: ' == 200',
-      },
-      betty: { $base: 1000 },
-    },
+    cometBalances: async (ctx) => (
+      {
+        albert: {
+          $asset0: ctx.world.base.network == 'polygon' && ctx.world.base.deployment == 'usdt'? ' == 20000': ' == 200'
+        },
+        betty: { $base: 1000 },
+      }
+    ),
   },
   async ({ comet, actors }, _context, world) => {
     const { albert, betty } = actors;

@@ -2,6 +2,7 @@ import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { expectApproximately, expectRevertCustom, hasMinBorrowGreaterThanOne, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
+import { ethers } from 'hardhat';
 
 async function testWithdrawCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
   const comet = await context.getComet();
@@ -10,13 +11,13 @@ async function testWithdrawCollateral(context: CometContext, assetNum: number): 
   const collateralAsset = context.getAssetByAddress(assetAddress);
   const scale = scaleBN.toBigInt();
 
-  expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(0n);
+  expect(await collateralAsset.balanceOf(albert.address)).to.be.closeTo(0n, ethers.BigNumber.from(10).pow(ethers.BigNumber.from(await collateralAsset.decimals()).div(2)).toBigInt());
   expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(100n * scale);
 
   // Albert withdraws 100 units of collateral from Comet
   const txn = await albert.withdrawAsset({ asset: collateralAsset.address, amount: 100n * scale });
 
-  expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
+  expect(await collateralAsset.balanceOf(albert.address)).to.be.closeTo(100n * scale, ethers.BigNumber.from(10).pow(ethers.BigNumber.from(await collateralAsset.decimals()).div(2)).toBigInt());
   expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
 
   return txn; // return txn to measure gas

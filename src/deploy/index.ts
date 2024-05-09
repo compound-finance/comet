@@ -79,11 +79,6 @@ export const COMP_WHALES = {
 
   testnet: ['0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46'],
 
-  polygon: [
-    '0x52A258ED593C793251a89bfd36caE158EE9fC4F8',
-    '0xdE5167C19A5286889752Cb0f31a1c7f28A99feFB',
-    '0xC35D800aD559c481dDa73D0b89dbC12774945512'
-  ],
 };
 
 export const WHALES = {

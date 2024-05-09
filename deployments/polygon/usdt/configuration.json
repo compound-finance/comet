@@ -36,6 +36,15 @@
       "liquidationFactor": 0.85,
       "supplyCap": "0e18"
     },
+    "WETH": {
+      "address": "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619",
+      "priceFeed": "0xF9680D99D6C9589e2a93a78A04A279e509205945",
+      "decimals": "18",
+      "borrowCF": 0.80,
+      "liquidateCF": 0.85,
+      "liquidationFactor": 0.95,
+      "supplyCap": "0e18"
+    },
     "aPolMATICX": {
       "address": "0x80cA0d8C38d2e2BcbaB66aA1648Bd1C7160500FE",
       "priceFeed": "0x5d37E4b374E6907de8Fc7fb33EE3b0af403C7403",
@@ -52,15 +61,6 @@
       "borrowCF": 0.60,
       "liquidateCF": 0.70,
       "liquidationFactor": 0.80,
-      "supplyCap": "0e18"
-    },
-    "WETH": {
-      "address": "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619",
-      "priceFeed": "0xF9680D99D6C9589e2a93a78A04A279e509205945",
-      "decimals": "18",
-      "borrowCF": 0.80,
-      "liquidateCF": 0.85,
-      "liquidationFactor": 0.95,
       "supplyCap": "0e18"
     },
     "WBTC": {
