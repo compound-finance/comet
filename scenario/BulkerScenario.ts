@@ -29,7 +29,6 @@ scenario(
     const { asset: asset1, scale: scale1 } = await comet.getAssetInfo(1);
     const { asset: collateralAssetAddress, scale: scaleBN } = asset0 === wrappedNativeToken ? { asset: asset1, scale: scale1 } : { asset: asset0, scale: scale0 };
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
-    console.log('collateralAsset', collateralAsset);
     const collateralScale = scaleBN.toBigInt();
     const toSupplyCollateral = 3000n * collateralScale;
     const toBorrowBase = 1000n * baseScale;

@@ -10,7 +10,7 @@ const MATICX_ADDRESS = '0xfa68FB4628DFF1028CFEc22b4162FCcd0d45efb6';
 const MATICX_PRICE_FEED_ADDRESS = '0x5d37E4b374E6907de8Fc7fb33EE3b0af403C7403';
 const MATICX_WHALES = {
   polygon: [
-    '0x1e5b92c66e4CAd7963E8dAcF1E8D642304C172C8'],
+    '0x68B9220B8E617b7700aCAE1a5Ff43F3eb29257F3'],
 };
 
 // TODO: add ability to run ad hoc scenarios against a single migration, to avoid needing the scenario to do all this setup of

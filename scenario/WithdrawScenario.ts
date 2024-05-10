@@ -11,6 +11,25 @@ async function testWithdrawCollateral(context: CometContext, assetNum: number): 
   const collateralAsset = context.getAssetByAddress(assetAddress);
   const scale = scaleBN.toBigInt();
 
+  expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(0n);
+  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(100n * scale);
+
+  // Albert withdraws 100 units of collateral from Comet
+  const txn = await albert.withdrawAsset({ asset: collateralAsset.address, amount: 100n * scale });
+
+  expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
+  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
+
+  return txn; // return txn to measure gas
+}
+
+async function testWithdrawCollateralMaticxSpecific(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
+  const comet = await context.getComet();
+  const { albert } = context.actors;
+  const { asset: assetAddress, scale: scaleBN } = await comet.getAssetInfo(assetNum);
+  const collateralAsset = context.getAssetByAddress(assetAddress);
+  const scale = scaleBN.toBigInt();
+
   expect(await collateralAsset.balanceOf(albert.address)).to.be.closeTo(0n, ethers.BigNumber.from(10).pow(ethers.BigNumber.from(await collateralAsset.decimals()).div(2)).toBigInt());
   expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(100n * scale);
 
@@ -44,6 +63,16 @@ async function testWithdrawFromCollateral(context: CometContext, assetNum: numbe
   return txn; // return txn to measure gas
 }
 
+const isScenarioWithMaticxAsset = (context: CometContext) => {
+  return context.world.deploymentManager.network === 'polygon' && context.world.deploymentManager.deployment === 'usdt';
+};
+
+const isMaticxAsset = async (context: CometContext, i: number) => {
+  const { asset: assetAddress, } = await (await context.getComet()).getAssetInfo(i);
+  const collateralAsset = context.getAssetByAddress(assetAddress);
+  return await collateralAsset.token.symbol() === 'aPolMATICX';
+};
+
 for (let i = 0; i < MAX_ASSETS; i++) {
   const amountToWithdraw = 100; // in units of asset, not wei
   scenario(
@@ -55,6 +84,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       },
     },
     async (_properties, context) => {
+      if(isScenarioWithMaticxAsset(context) && await isMaticxAsset(context, i)) {
+        return await testWithdrawCollateralMaticxSpecific(context, i);
+      }
       return await testWithdrawCollateral(context, i);
     }
   );
