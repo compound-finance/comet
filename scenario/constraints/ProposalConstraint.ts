@@ -66,11 +66,11 @@ export class ProposalConstraint<T extends CometContext> implements StaticConstra
           // Execute the proposal
           debug(`${label} Processing pending proposal ${proposal.id}`);
           if (isBridged) {
-              await executeOpenProposalAndRelay(
-                governanceDeploymentManager,
-                ctx.world.deploymentManager,
-                proposal
-              );
+            await executeOpenProposalAndRelay(
+              governanceDeploymentManager,
+              ctx.world.deploymentManager,
+              proposal
+            );
           } else {
             await executeOpenProposal(governanceDeploymentManager, proposal);
           }

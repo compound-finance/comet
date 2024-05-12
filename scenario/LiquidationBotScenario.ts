@@ -5,6 +5,7 @@ import { ethers, event, exp, wait } from '../test/helpers';
 import CometActor from './context/CometActor';
 import { CometInterface, OnChainLiquidator } from '../build/types';
 import { getPoolConfig, flashLoanPools } from '../scripts/liquidation_bot/liquidateUnderwaterBorrowers';
+import { isScenarioWithMaticxAssetUsdtDeployment } from './WithdrawScenario';
 
 interface LiquidationAddresses {
   balancerVault: string;
@@ -556,7 +557,7 @@ scenario(
     cometBalances: async (ctx) => (
       {
         albert: {
-          $asset0: ctx.world.base.network == 'polygon' && ctx.world.base.deployment == 'usdt'? ' == 20000': ' == 200'
+          $asset0: isScenarioWithMaticxAssetUsdtDeployment(ctx) ? ' == 20000': ' == 200'
         },
         betty: { $base: 1000 },
       }
@@ -669,7 +670,7 @@ scenario(
     cometBalances: async (ctx) => (
       {
         albert: {
-          $asset0: ctx.world.base.network == 'polygon' && ctx.world.base.deployment == 'usdt'? ' == 20000': ' == 200'
+          $asset0: isScenarioWithMaticxAssetUsdtDeployment(ctx) ? ' == 20000': ' == 200'
         },
         betty: { $base: 1000 },
       }

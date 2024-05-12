@@ -1,6 +1,6 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, expectRevertCustom, hasMinBorrowGreaterThanOne, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
+import { expectApproximately, expectRevertCustom, hasMinBorrowGreaterThanOne, isTriviallySourceable, isValidAssetIndex, matchesDeployment, MAX_ASSETS } from './utils';
 import { ContractReceipt, BigNumber } from 'ethers';
 
 async function testWithdrawCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
@@ -63,7 +63,7 @@ async function testWithdrawFromCollateral(context: CometContext, assetNum: numbe
   return txn; // return txn to measure gas
 }
 
-const isScenarioWithMaticxAsset = (context: CometContext) => {
+export const isScenarioWithMaticxAssetUsdtDeployment = (context: CometContext) => {
   return context.world.deploymentManager.network === 'polygon' && context.world.deploymentManager.deployment === 'usdt';
 };
 
@@ -84,7 +84,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       },
     },
     async (_properties, context) => {
-      if(isScenarioWithMaticxAsset(context) && await isMaticxAsset(context, i)) {
+      if(isScenarioWithMaticxAssetUsdtDeployment(context) && await isMaticxAsset(context, i)) {
         return await testWithdrawCollateralMaticxSpecific(context, i);
       }
       return await testWithdrawCollateral(context, i);
