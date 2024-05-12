@@ -14,7 +14,6 @@ export default {
       }
     }
   },
-  // InitializableImmutableAdminUpgradeabilityProxy: {
   aPolMATICX: {
     artifact: 'contracts/ERC20.sol:ERC20',
     delegates: {
