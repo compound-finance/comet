@@ -14,7 +14,7 @@ scenario(
       $asset1: 3000,
     },
     tokenBalances: {
-      albert: { $base: '== 0', $asset0: 3000, $asset1: 3000 },
+      albert: { $base: '== 0', $asset0: 3000, $asset1: 3000 }, // todo
       $comet: { $base: 5000 },
     },
   },
@@ -171,7 +171,7 @@ scenario(
       $asset1: 3000,
     },
     tokenBalances: {
-      albert: { $base: '== 1000000', $asset0: 3000, $asset1: 3000},
+      albert: { $base: '== 1000000', $asset0: 3000, $asset1: 3000}, // todo!!
       $comet: { $base: 5000 },
     }
   },
