@@ -1,6 +1,6 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
-import { expectApproximately, expectRevertCustom, hasMinBorrowGreaterThanOne, isTriviallySourceable, isValidAssetIndex, matchesDeployment, MAX_ASSETS } from './utils';
+import { expectApproximately, expectRevertCustom, hasMinBorrowGreaterThanOne, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
 import { ContractReceipt, BigNumber } from 'ethers';
 
 async function testWithdrawCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
