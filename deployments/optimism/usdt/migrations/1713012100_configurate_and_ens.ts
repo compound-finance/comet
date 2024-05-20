@@ -220,20 +220,19 @@ export default migration('1713012100_configurate_and_ens', {
 
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     
-    // uncomment on on-chain proposal PR
-    // expect(stateChanges).to.deep.equal({
-    //   WBTC: {
-    //     supplyCap: exp(400, 8)
-    //   },
-    //   WETH: {
-    //     supplyCap: exp(11_000, 18)
-    //   },
-    //   OP: {
-    //     supplyCap: exp(10_000_000, 18)
-    //   },
-    //   baseTrackingSupplySpeed: exp(5 / 86400, 15, 18), 
-    //   baseTrackingBorrowSpeed: exp(5 / 86400, 15, 18),
-    // });
+    expect(stateChanges).to.deep.equal({
+      WBTC: {
+        supplyCap: exp(60, 8)
+      },
+      WETH: {
+        supplyCap: exp(1600, 18)
+      },
+      OP: {
+        supplyCap: exp(400000, 18)
+      },
+      baseTrackingSupplySpeed: exp(5 / 86400, 15, 18), 
+      baseTrackingBorrowSpeed: exp(5 / 86400, 15, 18),
+    });
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(COMP.address);
