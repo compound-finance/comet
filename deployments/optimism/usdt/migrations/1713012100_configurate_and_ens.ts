@@ -228,7 +228,7 @@ export default migration('1713012100_configurate_and_ens', {
         supplyCap: exp(1600, 18)
       },
       OP: {
-        supplyCap: exp(400000, 18)
+        supplyCap: exp(500000, 18)
       },
       baseTrackingSupplySpeed: exp(5 / 86400, 15, 18), 
       baseTrackingBorrowSpeed: exp(5 / 86400, 15, 18),
