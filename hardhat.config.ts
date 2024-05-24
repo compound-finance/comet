@@ -37,6 +37,7 @@ import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relation
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
 import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
+import optimismWethRelationConfigMap from './deployments/optimism/weth/relations';
 import scrollGoerliRelationConfigMap from './deployments/scroll-goerli/usdc/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 
@@ -372,7 +373,8 @@ const config: HardhatUserConfig = {
         usdc: lineaGoerliRelationConfigMap
       },
       optimism: {
-        usdc: optimismRelationConfigMap
+        usdc: optimismRelationConfigMap,
+        weth: optimismWethRelationConfigMap
       },
       'scroll-goerli': {
         usdc: scrollGoerliRelationConfigMap
@@ -502,6 +504,12 @@ const config: HardhatUserConfig = {
         name: 'optimism-usdc',
         network: 'optimism',
         deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'optimism-weth',
+        network: 'optimism',
+        deployment: 'weth',
         auxiliaryBase: 'mainnet'
       },
       {

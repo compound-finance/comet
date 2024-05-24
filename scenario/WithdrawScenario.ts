@@ -2,6 +2,7 @@ import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { expectApproximately, expectRevertCustom, hasMinBorrowGreaterThanOne, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
+import { isOptimismWethDeploymentWithCbEETHAsCollateral } from './SupplyScenario';
 
 async function testWithdrawCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
   const comet = await context.getComet();
@@ -49,9 +50,11 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     `Comet#withdraw > collateral asset ${i}`,
     {
       filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToWithdraw),
-      cometBalances: {
-        albert: { [`$asset${i}`]: amountToWithdraw },
-      },
+      cometBalances: async (ctx) => (
+        {
+          albert: { [`$asset${i}`]: (await isOptimismWethDeploymentWithCbEETHAsCollateral(ctx, i))? 50 : amountToWithdraw },
+        }
+      ),
     },
     async (_properties, context) => {
       return await testWithdrawCollateral(context, i);
@@ -65,9 +68,11 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     `Comet#withdrawFrom > collateral asset ${i}`,
     {
       filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToWithdraw),
-      cometBalances: {
-        albert: { [`$asset${i}`]: amountToWithdraw },
-      },
+      cometBalances: async (ctx) => (
+        {
+          albert: { [`$asset${i}`]: (await isOptimismWethDeploymentWithCbEETHAsCollateral(ctx, i))? 50 : amountToWithdraw },
+        }
+      ),
     },
     async (_properties, context) => {
       return await testWithdrawFromCollateral(context, i);
