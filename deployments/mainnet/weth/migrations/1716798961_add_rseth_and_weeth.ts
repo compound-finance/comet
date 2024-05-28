@@ -1,41 +1,42 @@
-import { DeploymentManager, migration } from '../../../../plugins/deployment_manager';
-import { calldata, exp, proposal } from '../../../../src/deploy';
-
 import { expect } from 'chai';
-import { utils } from 'ethers';
+import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
+import { migration } from '../../../../plugins/deployment_manager/Migration';
+import { exp, proposal } from '../../../../src/deploy';
 
-const cometAddress = '0xA17581A9E3356d9A858b789D68B4d866e593aE94';
 
 const RSETH_ADDRESS = '0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7';
 const RSETH_PRICE_FEED_ADDRESS = '0x03c68933f7a3F76875C0bc670a58e69294cDFD01';
-const PROPOSED_RSETH_ASSET_INFO = {
-  asset: RSETH_ADDRESS,
-  priceFeed: RSETH_PRICE_FEED_ADDRESS,
-  decimals: 18,
-  borrowCollateralFactor: exp(0.90, 18),
-  liquidateCollateralFactor: exp(0.93, 18),
-  liquidationFactor: exp(0.92, 18),
-  supplyCap: exp(0, 18)
-};
 
 const WEETH_ADDRESS = '0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee';
 const WEETH_PRICE_FEED_ADDRESS = '0x5c9C449BbC9a6075A2c061dF312a35fd1E05fF22';
-const PROPOSED_WEETH_ASSET_INFO = {
-  asset: WEETH_ADDRESS,
-  priceFeed: WEETH_PRICE_FEED_ADDRESS,
-  decimals: 18,
-  borrowCollateralFactor: exp(0.90, 18),
-  liquidateCollateralFactor: exp(0.93, 18),
-  liquidationFactor: exp(0.92, 18),
-  supplyCap: exp(0, 18)
-};
 
+let rsETHScalingPriceFeed = '';
+let weETHScalingPriceFeed = '';
 export default migration('1716798961_add_rseth_and_weeth', {
   prepare: async (deploymentManager: DeploymentManager) => {
-    return {};
+    const _rsETHScalingPriceFeed = await deploymentManager.deploy(
+      'rsETH:priceFeed',
+      'pricefeeds/ScalingPriceFeed.sol',
+      [
+        RSETH_PRICE_FEED_ADDRESS, // rsETH / ETH price feed
+        8                                             // decimals
+      ]
+    );
+    const _weETHScalingPriceFeed = await deploymentManager.deploy(
+      'weETH:priceFeed',
+      'pricefeeds/ScalingPriceFeed.sol',
+      [
+        WEETH_PRICE_FEED_ADDRESS, // weETH / ETH price feed
+        8                                             // decimals
+      ]
+    );
+    rsETHScalingPriceFeed = _rsETHScalingPriceFeed.address;
+    weETHScalingPriceFeed = _weETHScalingPriceFeed.address;
+    return { };
   },
 
   async enact(deploymentManager: DeploymentManager) {
+
     const trace = deploymentManager.tracer();
 
     const rsETH = await deploymentManager.existing(
@@ -46,7 +47,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
     );
     const rsethPricefeed = await deploymentManager.existing(
       'rsETH:priceFeed',
-      RSETH_PRICE_FEED_ADDRESS,
+      rsETHScalingPriceFeed,
       'mainnet'
     );
 
@@ -56,98 +57,202 @@ export default migration('1716798961_add_rseth_and_weeth', {
       'mainnet',
       'contracts/ERC20.sol:ERC20'
     );
-
     const weethPricefeed = await deploymentManager.existing(
       'weETH:priceFeed',
-      WEETH_PRICE_FEED_ADDRESS,
+      weETHScalingPriceFeed,
       'mainnet'
     );
 
     const {
       governor,
       comet,
-      configurator,
       cometAdmin,
-      timelock,
-      cbETH
+      configurator,
     } = await deploymentManager.getContracts();
 
-    const newAssetConfig = {
+    const rsETHAssetConfig = {
+      asset: rsETH.address,
+      priceFeed: rsethPricefeed.address,
+      decimals: await rsETH.decimals(),
+      borrowCollateralFactor: exp(0.90, 18),
+      liquidateCollateralFactor: exp(0.93, 18),
+      liquidationFactor: exp(0.975, 18),
+      supplyCap: exp(30_000, 18),
+    };
+    
+    const weETTHAssetConfig = {
       asset: weETH.address,
       priceFeed: weethPricefeed.address,
       decimals: await weETH.decimals(),
-      borrowCollateralFactor: exp(0.55, 18),
-      liquidateCollateralFactor: exp(0.60, 18),
-      liquidationFactor: exp(0.93, 18),
-      supplyCap: exp(6_000_000, 18),
+      borrowCollateralFactor: exp(0.90, 18),
+      liquidateCollateralFactor: exp(0.93, 18),
+      liquidationFactor: exp(0.975, 18),
+      supplyCap: exp(30_000, 18),
     };
-    const addAssetCalldata = await calldata(
-      configurator.populateTransaction.addAsset(cometAddress, newAssetConfig)
-    );
-    const deployAndUpgradeToCalldata = utils.defaultAbiCoder.encode(
-      ['address', 'address'],
-      [configurator.address, cometAddress]
-    );
 
-    // await governor
-
-    const actions = [
-      // 1. Add rsETH in Configurator
+    const mainnetActions = [
+      // 1. Add rsETH as asset
       {
-        target: configurator.address,
+        contract: configurator,
         signature: 'addAsset(address,(address,address,uint8,uint64,uint64,uint64,uint128))',
-        calldata: addAssetCalldata,
+        args: [comet.address, rsETHAssetConfig],
       },
-      // {
-      //   contract: configurator,
-      //   signature: "updateAssetSupplyCap(address,address,uint128)",
-      //   args: [comet.address, cbETH.address, exp(35_000, 18)],
-      // },
-      // 2. Add weETH in Configurator
-      
+      // 2. Add weETH as asset
+      {
+        contract: configurator,
+        signature: 'addAsset(address,(address,address,uint8,uint64,uint64,uint64,uint128))',
+        args: [comet.address, weETTHAssetConfig],
+      },
       // 3. Deploy and upgrade to a new version of Comet
       {
-        target: cometAdmin.address,
+        contract: cometAdmin,
         signature: 'deployAndUpgradeTo(address,address)',
-        calldata: deployAndUpgradeToCalldata,
+        args: [configurator.address, comet.address],
       },
     ];
-    const description = '# Increase cbETH Supply Cap in cWETHv3\n\n## Explanation\n\nThe cWETHv3 market is currently limited by the cbETH supply cap, which has been reached.\n\nThe associated forum post for this proposal can be found [here](https://www.comp.xyz/t/compound-v3-usdc-comet-risk-parameter-updates-2023-02-08).\n\n## Proposal\n\nThe proposal itself is to be made from [this pull request](https://github.com/compound-finance/comet/pull/678).\n\nThe first action of the proposal sets the configurator supply cap for cbETH to 30,000 from the current cap of 20,000.\n\nThe second action deploys and upgrades to a new implementation of Comet, using the newly configured parameters.';
-    const txn = await deploymentManager.retry(
-      async () => governor.propose(...await proposal(actions, description))
-    );
-    trace(txn);
 
-    const event = (await txn.wait()).events.find(event => event.event === 'ProposalCreated');
+    const description = 'DESCRIPTION HERE';
+    const txn = await deploymentManager.retry(async () =>
+      trace(
+        await governor.propose(...(await proposal(mainnetActions, description)))
+      )
+    );
+
+    const event = txn.events.find(
+      (event) => event.event === 'ProposalCreated'
+    );
     const [proposalId] = event.args;
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async verify(deploymentManager: DeploymentManager) {
-    const {
-      comet
-    } = await deploymentManager.getContracts();
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
+  }, 
 
-    const rsETHAssetIndex = 3;
-    const rsETHInfo = await comet.getAssetInfoByAddress(RSETH_ADDRESS);
-    expect(rsETHInfo.offset).to.be.eq(rsETHAssetIndex);
-    expect(rsETHInfo.asset).to.be.eq(RSETH_ADDRESS);
-    expect(rsETHInfo.priceFeed).to.be.eq(RSETH_PRICE_FEED_ADDRESS);
-    expect(rsETHInfo.scale).to.be.eq(exp(1, PROPOSED_RSETH_ASSET_INFO.decimals));
-    expect(rsETHInfo.borrowCollateralFactor).to.be.eq(PROPOSED_RSETH_ASSET_INFO.borrowCollateralFactor);
-    expect(rsETHInfo.liquidateCollateralFactor).to.be.eq(PROPOSED_RSETH_ASSET_INFO.liquidateCollateralFactor);
-    expect(rsETHInfo.liquidationFactor).to.be.eq(PROPOSED_RSETH_ASSET_INFO.liquidationFactor);
-    expect(rsETHInfo.supplyCap).to.be.eq(PROPOSED_RSETH_ASSET_INFO.supplyCap);
+  async verify(deploymentManager: DeploymentManager) {
+    const { comet, configurator } = await deploymentManager.getContracts();
+
+    const rsETHAssetIndex = Number(await comet.numAssets()) - 2;
+    const weETHAssetIndex = Number(await comet.numAssets()) - 1;
+
+    const rsETHAssetConfig = {
+      asset: RSETH_ADDRESS,
+      priceFeed: rsETHScalingPriceFeed,
+      decimals: 18,
+      borrowCollateralFactor: exp(0.90, 18),
+      liquidateCollateralFactor: exp(0.93, 18),
+      liquidationFactor: exp(0.975, 18),
+      supplyCap: exp(30_000, 18),
+    };
+
+    const weETHAssetConfig = {
+      asset: WEETH_ADDRESS,
+      priceFeed: weETHScalingPriceFeed,
+      decimals: 18,
+      borrowCollateralFactor: exp(0.90, 18),
+      liquidateCollateralFactor: exp(0.93, 18),
+      liquidationFactor: exp(0.975, 18),
+      supplyCap: exp(30_000, 18),
+    };
+
+    // 1. Compare proposed asset config with Comet asset info
+    const cometRsETHAssetInfo = await comet.getAssetInfoByAddress(
+      RSETH_ADDRESS
+    );
+    expect(rsETHAssetIndex).to.be.equal(cometRsETHAssetInfo.offset);
+    expect(rsETHAssetConfig.asset).to.be.equal(cometRsETHAssetInfo.asset);
+    expect(rsETHAssetConfig.priceFeed).to.be.equal(
+      cometRsETHAssetInfo.priceFeed
+    );
+    expect(exp(1, rsETHAssetConfig.decimals)).to.be.equal(
+      cometRsETHAssetInfo.scale
+    );
+    expect(rsETHAssetConfig.borrowCollateralFactor).to.be.equal(
+      cometRsETHAssetInfo.borrowCollateralFactor
+    );
+    expect(rsETHAssetConfig.liquidateCollateralFactor).to.be.equal(
+      cometRsETHAssetInfo.liquidateCollateralFactor
+    );
+    expect(rsETHAssetConfig.liquidationFactor).to.be.equal(
+      cometRsETHAssetInfo.liquidationFactor
+    );
+    expect(rsETHAssetConfig.supplyCap).to.be.equal(
+      cometRsETHAssetInfo.supplyCap
+    );
     
-    const weETHAssetIndex = 4;
-    const weETHInfo = await comet.getAssetInfoByAddress(WEETH_ADDRESS);
-    expect(weETHInfo.offset).to.be.eq(weETHAssetIndex);
-    expect(weETHInfo.asset).to.be.eq(WEETH_ADDRESS);
-    expect(weETHInfo.priceFeed).to.be.eq(WEETH_PRICE_FEED_ADDRESS);
-    expect(weETHInfo.scale).to.be.eq(exp(1, PROPOSED_WEETH_ASSET_INFO.decimals));
-    expect(weETHInfo.borrowCollateralFactor).to.be.eq(PROPOSED_WEETH_ASSET_INFO.borrowCollateralFactor);
-    expect(weETHInfo.liquidateCollateralFactor).to.be.eq(PROPOSED_WEETH_ASSET_INFO.liquidateCollateralFactor);
-    expect(weETHInfo.liquidationFactor).to.be.eq(PROPOSED_WEETH_ASSET_INFO.liquidationFactor);
-    expect(weETHInfo.supplyCap).to.be.eq(PROPOSED_WEETH_ASSET_INFO.supplyCap);
+    const cometWeETHAssetInfo = await comet.getAssetInfoByAddress(
+      WEETH_ADDRESS
+    );
+    expect(weETHAssetIndex).to.be.equal(cometWeETHAssetInfo.offset);
+    expect(weETHAssetConfig.asset).to.be.equal(cometWeETHAssetInfo.asset);
+    expect(weETHAssetConfig.priceFeed).to.be.equal(
+      cometWeETHAssetInfo.priceFeed
+    );
+    expect(exp(1, weETHAssetConfig.decimals)).to.be.equal(
+      cometWeETHAssetInfo.scale
+    );
+    expect(weETHAssetConfig.borrowCollateralFactor).to.be.equal(
+      cometWeETHAssetInfo.borrowCollateralFactor
+    );
+    expect(weETHAssetConfig.liquidateCollateralFactor).to.be.equal(
+      cometWeETHAssetInfo.liquidateCollateralFactor
+    );
+    expect(weETHAssetConfig.liquidationFactor).to.be.equal(
+      cometWeETHAssetInfo.liquidationFactor
+    );
+    expect(weETHAssetConfig.supplyCap).to.be.equal(
+      cometWeETHAssetInfo.supplyCap
+    );
+
+    // 2. Compare proposed asset config with Configurator asset config
+    const configuratorRsETHAssetConfig = (
+      await configurator.getConfiguration(comet.address)
+    ).assetConfigs[rsETHAssetIndex];
+    expect(rsETHAssetConfig.asset).to.be.equal(
+      configuratorRsETHAssetConfig.asset
+    );
+    expect(rsETHAssetConfig.priceFeed).to.be.equal(
+      configuratorRsETHAssetConfig.priceFeed
+    );
+    expect(rsETHAssetConfig.decimals).to.be.equal(
+      configuratorRsETHAssetConfig.decimals
+    );
+    expect(rsETHAssetConfig.borrowCollateralFactor).to.be.equal(
+      configuratorRsETHAssetConfig.borrowCollateralFactor
+    );
+    expect(rsETHAssetConfig.liquidateCollateralFactor).to.be.equal(
+      configuratorRsETHAssetConfig.liquidateCollateralFactor
+    );
+    expect(rsETHAssetConfig.liquidationFactor).to.be.equal(
+      configuratorRsETHAssetConfig.liquidationFactor
+    );
+    expect(rsETHAssetConfig.supplyCap).to.be.equal(
+      configuratorRsETHAssetConfig.supplyCap
+    );
+
+    const configuratorWeETHAssetConfig = (
+      await configurator.getConfiguration(comet.address)
+    ).assetConfigs[weETHAssetIndex];
+    expect(weETHAssetConfig.asset).to.be.equal(
+      configuratorWeETHAssetConfig.asset
+    );
+    expect(weETHAssetConfig.priceFeed).to.be.equal(
+      configuratorWeETHAssetConfig.priceFeed
+    );
+    expect(weETHAssetConfig.decimals).to.be.equal(
+      configuratorWeETHAssetConfig.decimals
+    );
+    expect(weETHAssetConfig.borrowCollateralFactor).to.be.equal(
+      configuratorWeETHAssetConfig.borrowCollateralFactor
+    );
+    expect(weETHAssetConfig.liquidateCollateralFactor).to.be.equal(
+      configuratorWeETHAssetConfig.liquidateCollateralFactor
+    );
+    expect(weETHAssetConfig.liquidationFactor).to.be.equal(
+      configuratorWeETHAssetConfig.liquidationFactor
+    );
+    expect(weETHAssetConfig.supplyCap).to.be.equal(
+      configuratorWeETHAssetConfig.supplyCap
+    );
   },
 });
