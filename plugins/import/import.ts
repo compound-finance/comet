@@ -157,7 +157,7 @@ async function getContractCreationCode(network: string, address: string) {
   const strategies = [
     scrapeContractCreationCodeFromEtherscan,
     scrapeContractCreationCodeFromEtherscanApi,
-    pullFirstTransactionForContract,
+    pullFirstTransactionForContract
   ];
   let errors = [];
   for (const strategy of strategies) {
