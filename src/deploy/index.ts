@@ -96,9 +96,21 @@ export const WHALES = {
     '0x167384319b41f7094e62f7506409eb38079abff8'  // WMATIC whale
   ],
   arbitrum: [
+    '0x8eb270e296023e9d92081fdf967ddd7878724424', // rETH whales:
+    '0x78e88887d80451cb08fdc4b9046c9d01fb8d048d',
+    '0xc0cf4b266be5b3229c49590b59e67a09c15b22f4',
+    '0x84446698694b348eaece187b55df06ab4ce72b35',
+    '0x42c248d137512907048021b30d9da17f48b5b7b2', // wstETH whale
+    '0xc3e5607cd4ca0d5fe51e09b60ed97a0ae6f874dd', // WETH whale
     '0xf89d7b9c864f589bbf53a82105107622b35eaa40', // USDC whale
     '0x7b7b957c284c2c227c980d6e2f804311947b84d0', // WBTC whale
-    '0x88730d254A2f7e6AC8388c3198aFd694bA9f7fae', // COMP whale
+    '0x1c6b5795be43ddff8812b3e577ac752764635bc5', // COMP whales:
+    '0xdead767ba9f8072c986a4619c27ae46bcc226c13',	
+    '0xde5167c19a5286889752cb0f31a1c7f28a99fefb',
+    '0xdfa19e743421c394d904f5a113121c2227d2364b',
+    '0xee3273f6d29ddfff08ffd9d513cff314734f01a2',
+    '0x9e786a8fc88ee74b758b125071d45853356024c3',
+    '0xd93f76944e870900779c09ddf1c46275f9d8bf9b',
     '0xe68ee8a12c611fd043fb05d65e1548dc1383f2b9'  // native USDC whale
   ],
   base: [
