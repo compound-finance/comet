@@ -20,6 +20,7 @@ import './tasks/scenario/task.ts';
 import relationConfigMap from './deployments/relations';
 import goerliRelationConfigMap from './deployments/goerli/usdc/relations';
 import goerliWethRelationConfigMap from './deployments/goerli/weth/relations';
+import goerliUsdtRelationConfigMap from './deployments/goerli/usdt/relations';
 import sepoliaUsdcRelationConfigMap from './deployments/sepolia/usdc/relations';
 import sepoliaWethRelationConfigMap from './deployments/sepolia/weth/relations';
 import mumbaiRelationConfigMap from './deployments/mumbai/usdc/relations';
@@ -196,7 +197,7 @@ const config: HardhatUserConfig = {
       optimizer: (
         process.env['OPTIMIZER_DISABLED'] ? { enabled: false } : {
           enabled: true,
-          runs: 1,
+          runs: 2,
           details: {
             yulDetails: {
               optimizerSteps: 'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul'
@@ -335,7 +336,8 @@ const config: HardhatUserConfig = {
     networks: {
       goerli: {
         usdc: goerliRelationConfigMap,
-        weth: goerliWethRelationConfigMap
+        weth: goerliWethRelationConfigMap, 
+        usdt: goerliUsdtRelationConfigMap,
       },
       sepolia: {
         usdc: sepoliaUsdcRelationConfigMap,
@@ -425,6 +427,11 @@ const config: HardhatUserConfig = {
         name: 'sepolia-weth',
         network: 'sepolia',
         deployment: 'weth'
+      },
+      {
+        name: 'goerli-usdt',
+        network: 'goerli',
+        deployment: 'usdt',
       },
       {
         name: 'mumbai',

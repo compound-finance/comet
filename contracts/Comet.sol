@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import "./CometMainInterface.sol";
-import "./ERC20.sol";
+import "./IERC20NonStandard.sol";
 import "./IPriceFeed.sol";
 
 /**
@@ -126,12 +126,6 @@ contract Comet is CometMainInterface {
     uint256 internal immutable asset10_b;
     uint256 internal immutable asset11_a;
     uint256 internal immutable asset11_b;
-    uint256 internal immutable asset12_a;
-    uint256 internal immutable asset12_b;
-    uint256 internal immutable asset13_a;
-    uint256 internal immutable asset13_b;
-    uint256 internal immutable asset14_a;
-    uint256 internal immutable asset14_b;
 
     /**
      * @notice Construct a new protocol instance
@@ -139,7 +133,7 @@ contract Comet is CometMainInterface {
      **/
     constructor(Configuration memory config) {
         // Sanity checks
-        uint8 decimals_ = ERC20(config.baseToken).decimals();
+        uint8 decimals_ = IERC20NonStandard(config.baseToken).decimals();
         if (decimals_ > MAX_BASE_DECIMALS) revert BadDecimals();
         if (config.storeFrontPriceFactor > FACTOR_SCALE) revert BadDiscount();
         if (config.assetConfigs.length > MAX_ASSETS) revert TooManyAssets();
@@ -196,9 +190,44 @@ contract Comet is CometMainInterface {
         (asset09_a, asset09_b) = getPackedAssetInternal(config.assetConfigs, 9);
         (asset10_a, asset10_b) = getPackedAssetInternal(config.assetConfigs, 10);
         (asset11_a, asset11_b) = getPackedAssetInternal(config.assetConfigs, 11);
-        (asset12_a, asset12_b) = getPackedAssetInternal(config.assetConfigs, 12);
-        (asset13_a, asset13_b) = getPackedAssetInternal(config.assetConfigs, 13);
-        (asset14_a, asset14_b) = getPackedAssetInternal(config.assetConfigs, 14);
+    }
+
+    /**
+     * @dev Prevents marked functions from being reentered 
+     * Note: this restrict contracts from calling comet functions in their hooks.
+     * Doing so will cause the transaction to revert.
+     */
+    modifier nonReentrant() {
+        nonReentrantBefore();
+        _;
+        nonReentrantAfter();
+    }
+
+    /**
+     * @dev Checks that the reentrancy flag is not set and then sets the flag
+     */
+    function nonReentrantBefore() internal {
+        bytes32 slot = REENTRANCY_GUARD_FLAG_SLOT;
+        uint256 status;
+        assembly ("memory-safe") {
+            status := sload(slot)
+        }
+
+        if (status == REENTRANCY_GUARD_ENTERED) revert ReentrantCallBlocked();
+        assembly ("memory-safe") {
+            sstore(slot, REENTRANCY_GUARD_ENTERED)
+        }
+    }
+
+    /**
+     * @dev Unsets the reentrancy flag
+     */
+    function nonReentrantAfter() internal {
+        bytes32 slot = REENTRANCY_GUARD_FLAG_SLOT;
+        uint256 status;
+        assembly ("memory-safe") {
+            sstore(slot, REENTRANCY_GUARD_NOT_ENTERED)
+        }
     }
 
     /**
@@ -241,7 +270,7 @@ contract Comet is CometMainInterface {
 
         // Sanity check price feed and asset decimals
         if (IPriceFeed(priceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
-        if (ERC20(asset).decimals() != decimals_) revert BadDecimals();
+        if (IERC20NonStandard(asset).decimals() != decimals_) revert BadDecimals();
 
         // Ensure collateral factors are within range
         if (assetConfig.borrowCollateralFactor >= assetConfig.liquidateCollateralFactor) revert BorrowCFTooLarge();
@@ -319,15 +348,6 @@ contract Comet is CometMainInterface {
         } else if (i == 11) {
             word_a = asset11_a;
             word_b = asset11_b;
-        } else if (i == 12) {
-            word_a = asset12_a;
-            word_b = asset12_b;
-        } else if (i == 13) {
-            word_a = asset13_a;
-            word_b = asset13_b;
-        } else if (i == 14) {
-            word_a = asset14_a;
-            word_b = asset14_b;
         } else {
             revert Absurd();
         }
@@ -482,7 +502,7 @@ contract Comet is CometMainInterface {
      * @param asset The collateral asset
      */
     function getCollateralReserves(address asset) override public view returns (uint) {
-        return ERC20(asset).balanceOf(address(this)) - totalsCollateral[asset].totalSupplyAsset;
+        return IERC20NonStandard(asset).balanceOf(address(this)) - totalsCollateral[asset].totalSupplyAsset;
     }
 
     /**
@@ -490,7 +510,7 @@ contract Comet is CometMainInterface {
      */
     function getReserves() override public view returns (int) {
         (uint64 baseSupplyIndex_, uint64 baseBorrowIndex_) = accruedInterestIndices(getNowInternal() - lastAccrualTime);
-        uint balance = ERC20(baseToken).balanceOf(address(this));
+        uint balance = IERC20NonStandard(baseToken).balanceOf(address(this));
         uint totalSupply_ = presentValueSupply(baseSupplyIndex_, totalSupplyBase);
         uint totalBorrow_ = presentValueBorrow(baseBorrowIndex_, totalBorrowBase);
         return signed256(balance) - signed256(totalSupply_) + signed256(totalBorrow_);
@@ -760,18 +780,50 @@ contract Comet is CometMainInterface {
     }
 
     /**
-     * @dev Safe ERC20 transfer in, assumes no fee is charged and amount is transferred
+     * @dev Safe ERC20 transfer in and returns the final amount transferred (taking into account any fees)
+     * @dev Note: Safely handles non-standard ERC-20 tokens that do not return a value. See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      */
-    function doTransferIn(address asset, address from, uint amount) internal {
-        bool success = ERC20(asset).transferFrom(from, address(this), amount);
+    function doTransferIn(address asset, address from, uint amount) internal returns (uint) {
+        uint256 preTransferBalance = IERC20NonStandard(asset).balanceOf(address(this));
+        IERC20NonStandard(asset).transferFrom(from, address(this), amount);
+        bool success;
+        assembly ("memory-safe") {
+            switch returndatasize()
+                case 0 {                       // This is a non-standard ERC-20
+                    success := not(0)          // set success to true
+                }
+                case 32 {                      // This is a compliant ERC-20
+                    returndatacopy(0, 0, 32)
+                    success := mload(0)        // Set `success = returndata` of override external call
+                }
+                default {                      // This is an excessively non-compliant ERC-20, revert.
+                    revert(0, 0)
+                }
+        }
         if (!success) revert TransferInFailed();
+        return IERC20NonStandard(asset).balanceOf(address(this)) - preTransferBalance;
     }
 
     /**
      * @dev Safe ERC20 transfer out
+     * @dev Note: Safely handles non-standard ERC-20 tokens that do not return a value. See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      */
     function doTransferOut(address asset, address to, uint amount) internal {
-        bool success = ERC20(asset).transfer(to, amount);
+        IERC20NonStandard(asset).transfer(to, amount);
+        bool success;
+        assembly ("memory-safe") {
+            switch returndatasize()
+                case 0 {                       // This is a non-standard ERC-20
+                    success := not(0)          // set success to true
+                }
+                case 32 {                      // This is a compliant ERC-20
+                    returndatacopy(0, 0, 32)
+                    success := mload(0)        // Set `success = returndata` of override external call
+                }
+                default {                      // This is an excessively non-compliant ERC-20, revert.
+                    revert(0, 0)
+                }
+        }
         if (!success) revert TransferOutFailed();
     }
 
@@ -809,7 +861,7 @@ contract Comet is CometMainInterface {
      * @dev Supply either collateral or base asset, depending on the asset, if operator is allowed
      * @dev Note: Specifying an `amount` of uint256.max will repay all of `dst`'s accrued base borrow balance
      */
-    function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal {
+    function supplyInternal(address operator, address from, address dst, address asset, uint amount) internal nonReentrant {
         if (isSupplyPaused()) revert Paused();
         if (!hasPermission(from, operator)) revert Unauthorized();
 
@@ -827,7 +879,7 @@ contract Comet is CometMainInterface {
      * @dev Supply an amount of base asset from `from` to dst
      */
     function supplyBase(address from, address dst, uint256 amount) internal {
-        doTransferIn(baseToken, from, amount);
+        amount = doTransferIn(baseToken, from, amount);
 
         accrueInternal();
 
@@ -854,7 +906,7 @@ contract Comet is CometMainInterface {
      * @dev Supply an amount of collateral asset from `from` to dst
      */
     function supplyCollateral(address from, address dst, address asset, uint128 amount) internal {
-        doTransferIn(asset, from, amount);
+        amount = safe128(doTransferIn(asset, from, amount));
 
         AssetInfo memory assetInfo = getAssetInfoByAddress(asset);
         TotalsCollateral memory totals = totalsCollateral[asset];
@@ -920,7 +972,7 @@ contract Comet is CometMainInterface {
      * @dev Transfer either collateral or base asset, depending on the asset, if operator is allowed
      * @dev Note: Specifying an `amount` of uint256.max will transfer all of `src`'s accrued base balance
      */
-    function transferInternal(address operator, address src, address dst, address asset, uint amount) internal {
+    function transferInternal(address operator, address src, address dst, address asset, uint amount) internal nonReentrant {
         if (isTransferPaused()) revert Paused();
         if (!hasPermission(src, operator)) revert Unauthorized();
         if (src == dst) revert NoSelfTransfer();
@@ -1031,7 +1083,7 @@ contract Comet is CometMainInterface {
      * @dev Withdraw either collateral or base asset, depending on the asset, if operator is allowed
      * @dev Note: Specifying an `amount` of uint256.max will withdraw all of `src`'s accrued base balance
      */
-    function withdrawInternal(address operator, address src, address to, address asset, uint amount) internal {
+    function withdrawInternal(address operator, address src, address to, address asset, uint amount) internal nonReentrant {
         if (isWithdrawPaused()) revert Paused();
         if (!hasPermission(src, operator)) revert Unauthorized();
 
@@ -1192,14 +1244,14 @@ contract Comet is CometMainInterface {
      * @param baseAmount The amount of base tokens used to buy the collateral
      * @param recipient The recipient address
      */
-    function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) override external {
+    function buyCollateral(address asset, uint minAmount, uint baseAmount, address recipient) override external nonReentrant {
         if (isBuyPaused()) revert Paused();
 
         int reserves = getReserves();
         if (reserves >= 0 && uint(reserves) >= targetReserves) revert NotForSale();
 
         // Note: Re-entrancy can skip the reserves check above on a second buyCollateral call.
-        doTransferIn(baseToken, msg.sender, baseAmount);
+        baseAmount = doTransferIn(baseToken, msg.sender, baseAmount);
 
         uint collateralAmount = quoteCollateral(asset, baseAmount);
         if (collateralAmount < minAmount) revert TooMuchSlippage();
@@ -1254,6 +1306,7 @@ contract Comet is CometMainInterface {
      * @dev Only callable by governor
      * @dev Note: Setting the `asset` as Comet's address will allow the manager
      * to withdraw from Comet's Comet balance
+     * @dev Note: For USDT, if there is non-zero prior allowance, it must be reset to 0 first before setting a new value in proposal
      * @param asset The asset that the manager will gain approval of
      * @param manager The account which will be allowed or disallowed
      * @param amount The amount of an asset to approve
@@ -1261,7 +1314,7 @@ contract Comet is CometMainInterface {
     function approveThis(address manager, address asset, uint amount) override external {
         if (msg.sender != governor) revert Unauthorized();
 
-        ERC20(asset).approve(manager, amount);
+        IERC20NonStandard(asset).approve(manager, amount);
     }
 
     /**
