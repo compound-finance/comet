@@ -74,20 +74,20 @@ export default migration('1716798961_add_rseth_and_weeth', {
       asset: rsETH.address,
       priceFeed: rsethPricefeed.address,
       decimals: await rsETH.decimals(),
-      borrowCollateralFactor: exp(0.90, 18),
-      liquidateCollateralFactor: exp(0.93, 18),
-      liquidationFactor: exp(0.975, 18),
-      supplyCap: exp(30_000, 18),
+      borrowCollateralFactor: exp(0.80, 18),
+      liquidateCollateralFactor: exp(0.85, 18),
+      liquidationFactor: exp(0.9, 18),
+      supplyCap: exp(0, 18), // 5_000
     };
     
-    const weETTHAssetConfig = {
+    const weETHAssetConfig = {
       asset: weETH.address,
       priceFeed: weethPricefeed.address,
       decimals: await weETH.decimals(),
-      borrowCollateralFactor: exp(0.90, 18),
-      liquidateCollateralFactor: exp(0.93, 18),
-      liquidationFactor: exp(0.975, 18),
-      supplyCap: exp(30_000, 18),
+      borrowCollateralFactor: exp(0.82, 18),
+      liquidateCollateralFactor: exp(0.87, 18),
+      liquidationFactor: exp(0.92, 18),
+      supplyCap: exp(0, 18), // 22_500
     };
 
     const mainnetActions = [
@@ -101,7 +101,25 @@ export default migration('1716798961_add_rseth_and_weeth', {
       {
         contract: configurator,
         signature: 'addAsset(address,(address,address,uint8,uint64,uint64,uint64,uint128))',
-        args: [comet.address, weETTHAssetConfig],
+        args: [comet.address, weETHAssetConfig],
+      },
+      // 3. Set new Annual Supply Interest Rate Slope High to 100%
+      {
+        contract: configurator,
+        signature: 'setSupplyPerYearInterestRateSlopeHigh(address,uint64)',
+        args: [
+          comet.address,
+          exp(1, 18)  // newSupplyPerYearInterestRateSlopeHigh
+        ],
+      },
+      // 4. Set new Annual Borrow Interest Rate Slope High to 115%
+      {
+        contract: configurator,
+        signature: 'setBorrowPerYearInterestRateSlopeHigh(address,uint64)',
+        args: [
+          comet.address,
+          exp(1.15, 18)  // newBorrowPerYearInterestRateSlopeHigh
+        ],
       },
       // 3. Deploy and upgrade to a new version of Comet
       {
@@ -126,7 +144,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
   },
 
   async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
+    return false;
   }, 
 
   async verify(deploymentManager: DeploymentManager) {
@@ -135,24 +153,37 @@ export default migration('1716798961_add_rseth_and_weeth', {
     const rsETHAssetIndex = Number(await comet.numAssets()) - 2;
     const weETHAssetIndex = Number(await comet.numAssets()) - 1;
 
+    const rsETH = await deploymentManager.existing(
+      'rsETH',
+      RSETH_ADDRESS,
+      'mainnet',
+      'contracts/ERC20.sol:ERC20'
+    );
+    const weETH = await deploymentManager.existing(
+      'weETH',
+      WEETH_ADDRESS,
+      'mainnet',
+      'contracts/ERC20.sol:ERC20'
+    );
+    
     const rsETHAssetConfig = {
-      asset: RSETH_ADDRESS,
+      asset: rsETH.address,
       priceFeed: rsETHScalingPriceFeed,
-      decimals: 18,
-      borrowCollateralFactor: exp(0.90, 18),
-      liquidateCollateralFactor: exp(0.93, 18),
-      liquidationFactor: exp(0.975, 18),
-      supplyCap: exp(30_000, 18),
+      decimals: await rsETH.decimals(),
+      borrowCollateralFactor: exp(0.80, 18),
+      liquidateCollateralFactor: exp(0.85, 18),
+      liquidationFactor: exp(0.9, 18),
+      supplyCap: exp(0, 18), // 5_000
     };
-
+    
     const weETHAssetConfig = {
-      asset: WEETH_ADDRESS,
+      asset: weETH.address,
       priceFeed: weETHScalingPriceFeed,
-      decimals: 18,
-      borrowCollateralFactor: exp(0.90, 18),
-      liquidateCollateralFactor: exp(0.93, 18),
-      liquidationFactor: exp(0.975, 18),
-      supplyCap: exp(30_000, 18),
+      decimals: await weETH.decimals(),
+      borrowCollateralFactor: exp(0.82, 18),
+      liquidateCollateralFactor: exp(0.87, 18),
+      liquidationFactor: exp(0.92, 18),
+      supplyCap: exp(0, 18), // 22_500
     };
 
     // 1. Compare proposed asset config with Comet asset info
@@ -254,5 +285,11 @@ export default migration('1716798961_add_rseth_and_weeth', {
     expect(weETHAssetConfig.supplyCap).to.be.equal(
       configuratorWeETHAssetConfig.supplyCap
     );
+
+    // 3. Check new Annual Supply Interest Rate Slope High
+    expect(exp(1, 18) / BigInt(31_536_000)).to.be.equal(await comet.supplyPerSecondInterestRateSlopeHigh());
+
+    // 4. Check new Annual Borrow Interest Rate Slope High
+    expect(exp(1.15, 18) / BigInt(31_536_000)).to.be.equal(await comet.borrowPerSecondInterestRateSlopeHigh());
   },
 });
