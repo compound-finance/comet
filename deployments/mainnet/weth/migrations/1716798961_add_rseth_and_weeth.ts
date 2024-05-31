@@ -77,7 +77,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
       borrowCollateralFactor: exp(0.80, 18),
       liquidateCollateralFactor: exp(0.85, 18),
       liquidationFactor: exp(0.9, 18),
-      supplyCap: exp(0, 18), // 5_000
+      supplyCap: exp(5_000, 18), 
     };
     
     const weETHAssetConfig = {
@@ -87,7 +87,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
       borrowCollateralFactor: exp(0.82, 18),
       liquidateCollateralFactor: exp(0.87, 18),
       liquidationFactor: exp(0.92, 18),
-      supplyCap: exp(0, 18), // 22_500
+      supplyCap: exp(22_500, 18), 
     };
 
     const mainnetActions = [
