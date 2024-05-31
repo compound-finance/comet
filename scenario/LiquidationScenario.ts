@@ -10,8 +10,8 @@ scenario(
     },
     cometBalances: {
       albert: { $base: -1000 },
-      betty: { $base: 1000 }
-    }
+      betty: { $base: 1000 },
+    },
   },
   async ({ comet, actors }, context, world) => {
     const { albert, betty } = actors;

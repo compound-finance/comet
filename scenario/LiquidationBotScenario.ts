@@ -515,7 +515,9 @@ scenario(
       $comet: { $base: 100000 },
     },
     cometBalances: {
-      albert: { $asset0: ' == 200' },
+      albert: {
+        $asset0: ' == 200',
+      },
       betty: { $base: 1000 },
     },
   },
@@ -624,7 +626,9 @@ scenario(
       $comet: { $base: 100000 },
     },
     cometBalances: {
-      albert: { $asset0: ' == 200' },
+      albert: {
+        $asset0: ' == 200',
+      },
       betty: { $base: 1000 },
     },
   },
