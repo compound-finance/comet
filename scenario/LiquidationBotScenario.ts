@@ -514,15 +514,10 @@ scenario(
     tokenBalances: {
       $comet: { $base: 100000 },
     },
-    cometBalances: async (ctx) => (
-      {
-        albert: {
-          $asset0: ' == 200',
-        },
-        betty: 
-          (ctx.world.base.network === 'arbitrum' && ctx.world.base.deployment === 'weth')?  {$base: 900} : {$base: 1000}
-      }
-    )
+    cometBalances: {
+      albert: { $asset0: ' == 200' },
+      betty: { $base: 1000 },
+    },
   },
   async ({ comet, actors }, _context, world) => {
     const { albert, betty } = actors;
@@ -628,15 +623,10 @@ scenario(
     tokenBalances: {
       $comet: { $base: 100000 },
     },
-    cometBalances: async (ctx) => (
-      {
-        albert: {
-          $asset0: ' == 200',
-        },
-        betty: 
-          (ctx.world.base.network === 'arbitrum' && ctx.world.base.deployment === 'weth')?  {$base: 900} : {$base: 1000}
-      }
-    ),
+    cometBalances: {
+      albert: { $asset0: ' == 200' },
+      betty: { $base: 1000 },
+    },
   },
   async ({ comet, actors }, _context, world) => {
     const { albert, betty } = actors;

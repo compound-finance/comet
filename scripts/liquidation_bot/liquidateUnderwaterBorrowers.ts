@@ -59,7 +59,8 @@ const addresses = {
     USDC: '0xaf88d065e77c8cc2239327c5edb3a432268e5831',
     USDC_E: '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8',
     rETH: '0xEC70Dcb4A1EFa46b8F2D97C310C9c4790ba5ffA8',
-    wstETH: '0x5979D7b546E38E414F7E9822514be443A4800529'
+    wstETH: '0x5979D7b546E38E414F7E9822514be443A4800529',
+    weETH: '0x35751007a407ca6FEFfE80b3cB397736D2cf4dbe'
   }
 };
 
@@ -252,7 +253,14 @@ export function getPoolConfig(tokenAddress: string) {
         exchange: Exchange.Balancer,
         balancerPoolId: '0x9791d590788598535278552eecd4b211bfc790cb000000000000000000000498'
       }
-    }
+    },
+    [addresses.arbitrum.weETH.toLowerCase()]: {
+      ...defaultPoolConfig,
+      ...{
+        exchange: Exchange.Balancer,
+        balancerPoolId: '0x026a586b3fe3b3d07375b4a11a505c8b4ef07eec000200000000000000000533'
+      }
+    },
   };
 
   const poolConfig = poolConfigs[tokenAddress.toLowerCase()];

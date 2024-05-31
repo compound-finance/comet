@@ -198,9 +198,9 @@ export default migration('1713517203_configurate_and_ens', {
     const {
       comet,
       rewards,
-      WETH,
       wstETH,
-      rETH
+      rETH,
+      weETH
     } = await deploymentManager.getContracts();
 
     const {
@@ -208,10 +208,13 @@ export default migration('1713517203_configurate_and_ens', {
     } = await govDeploymentManager.getContracts();
 
     // 1.
-    const wstETHInfo = await comet.getAssetInfoByAddress(wstETH.address);
+    const weETHInfo = await comet.getAssetInfoByAddress(weETH.address);
     const rETHInfo = await comet.getAssetInfoByAddress(rETH.address);
-    // expect(wstETHInfo.supplyCap).to.be.eq(exp(400, 8));
-    // expect(rETHInfo.supplyCap).to.be.eq(exp(10_000_000, 18));
+    const wstETHInfo = await comet.getAssetInfoByAddress(wstETH.address);
+    // expect(weETHInfo.supplyCap).to.be.eq(exp(550, 18));
+    // expect(wstETHInfo.supplyCap).to.be.eq(exp(2000, 18));
+    // expect(rETHInfo.supplyCap).to.be.eq(exp(800, 18));
+    
     expect(await comet.pauseGuardian()).to.be.eq('0x78E6317DD6D43DdbDa00Dce32C2CbaFc99361a9d');
 
     // 2. & 3.
@@ -244,11 +247,6 @@ export default migration('1713517203_configurate_and_ens', {
           baseSymbol: 'WETH',
           cometAddress: '0xA17581A9E3356d9A858b789D68B4d866e593aE94',
         },
-        // should be changed after soon to be PR
-        // {
-        //   baseSymbol: 'WETH',
-        //   cometAddress: comet.address,
-        // },
       ],
       137: [
         {
@@ -299,7 +297,7 @@ export default migration('1713517203_configurate_and_ens', {
     });
 
     // 8.
-    // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(0);
-    // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(34.74 / 86400, 15, 18));
+    // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(6, 15));
+    // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(4, 15));
   }
 });
