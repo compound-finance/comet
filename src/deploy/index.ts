@@ -105,7 +105,7 @@ export const WHALES = {
     '0xf89d7b9c864f589bbf53a82105107622b35eaa40', // USDC whale
     '0x7b7b957c284c2c227c980d6e2f804311947b84d0', // WBTC whale
     '0x1c6b5795be43ddff8812b3e577ac752764635bc5', // COMP whale
-    '0xdead767ba9f8072c986a4619c27ae46bcc226c13',	// COMP whale
+    '0xdead767ba9f8072c986a4619c27ae46bcc226c13', // COMP whale
     '0xde5167c19a5286889752cb0f31a1c7f28a99fefb', // COMP whale
     '0xdfa19e743421c394d904f5a113121c2227d2364b', // COMP whale
     '0xee3273f6d29ddfff08ffd9d513cff314734f01a2', // COMP whale
