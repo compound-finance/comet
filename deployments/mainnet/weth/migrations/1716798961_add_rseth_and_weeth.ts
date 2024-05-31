@@ -45,7 +45,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
       'mainnet',
       'contracts/ERC20.sol:ERC20'
     );
-    const rsethPricefeed = await deploymentManager.existing(
+    const rsEthPricefeed = await deploymentManager.existing(
       'rsETH:priceFeed',
       rsETHScalingPriceFeed,
       'mainnet'
@@ -57,7 +57,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
       'mainnet',
       'contracts/ERC20.sol:ERC20'
     );
-    const weethPricefeed = await deploymentManager.existing(
+    const weEthPricefeed = await deploymentManager.existing(
       'weETH:priceFeed',
       weETHScalingPriceFeed,
       'mainnet'
@@ -72,7 +72,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
 
     const rsETHAssetConfig = {
       asset: rsETH.address,
-      priceFeed: rsethPricefeed.address,
+      priceFeed: rsEthPricefeed.address,
       decimals: await rsETH.decimals(),
       borrowCollateralFactor: exp(0.80, 18),
       liquidateCollateralFactor: exp(0.85, 18),
@@ -82,7 +82,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
     
     const weETHAssetConfig = {
       asset: weETH.address,
-      priceFeed: weethPricefeed.address,
+      priceFeed: weEthPricefeed.address,
       decimals: await weETH.decimals(),
       borrowCollateralFactor: exp(0.82, 18),
       liquidateCollateralFactor: exp(0.87, 18),
@@ -121,7 +121,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
           exp(1.15, 18)  // newBorrowPerYearInterestRateSlopeHigh
         ],
       },
-      // 3. Deploy and upgrade to a new version of Comet
+      // 5. Deploy and upgrade to a new version of Comet
       {
         contract: cometAdmin,
         signature: 'deployAndUpgradeTo(address,address)',
