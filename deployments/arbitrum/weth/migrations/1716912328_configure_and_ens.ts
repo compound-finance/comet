@@ -153,20 +153,20 @@ export default migration('1713517203_configurate_and_ens', {
         args: [],
         value: WETHAmountToBridge,
       },
-      // 2. Approve the WETH gateway to take Timelock's WETH for bridging
+      // 3. Approve the WETH gateway to take Timelock's WETH for bridging
       {
         contract: WETH,
         signature: 'approve(address,uint256)',
         args: [wethGatewayAddress, WETHAmountToBridge]
       },
-      // 3. Bridge WETH from mainnet to Arbitrum Comet
+      // 4. Bridge WETH from mainnet to Arbitrum Comet
       {
         target: arbitrumL1GatewayRouter.address,
         signature: 'outboundTransfer(address,address,uint256,uint256,uint256,bytes)',
         calldata: outboundTransferCalldata,
         value: wethGasParams.deposit
       },
-      // 4. Update the list of official markets
+      // 5. Update the list of official markets
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
@@ -177,7 +177,7 @@ export default migration('1713517203_configurate_and_ens', {
       }
     ];
 
-    const description = "# Initialize cUSDCv3 on Polygon\n\nThis proposal takes the governance steps recommended and necessary to initialize a Compound III USDC market on Polygon; upon execution, cUSDCv3 will be ready for use. Simulations have confirmed the market\u2019s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). Although real tests have also been run over the Goerli/Mumbai bridge, this will be the first proposal to actually bridge from Ethereum mainnet to another chain, and therefore includes risks not present in previous proposals.\n\nAlthough the proposal sets the entire configuration in the Configurator, the initial deployment already has most of these same parameters already set. The new parameters include setting the pause guardian to a Gnosis [multisig](https://app.safe.global/matic:0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5/home), which has been created on Polygon to match the same set of signers as currently on Ethereum mainnet. They also include risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/initialize-compound-iii-usdc-on-polygon-pos/3611/12). Finally, the parameters include a modest reallocation of some of the v2 USDT COMP rewards to borrowers in the new market.\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/672) and [forum discussion](https://www.comp.xyz/t/initialize-compound-iii-usdc-on-polygon-pos/3611/11).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Polygon. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Polygon.\n\nThe second action approves Polygon's ERC20Predicate to take Timelock's USDC, in order to seed the market reserves through the bridge.\n\nThe third action deposits USDC from mainnet to the Polygon RootChainManager contract to bridge to Comet.\n\nThe fourth action approves Polygon's ERC20Predicate to take Timelock's COMP, in order to seed the rewards contract through the bridge.\n\nThe fifth action deposits COMP from mainnet to the Polygon RootChainManager contract to bridge to CometRewards. \n\nThe sixth action sets up the ENS subdomain `v3-additional-grants.compound-community-licenses.eth`,  with the Timelock as the owner.\n\nThe seventh action writes the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, containing the official markets JSON.\n\nThe eighth action migrates the COMP distribution for v2 cUSDT suppliers, so as to keep the total COMP distribution constant.\n";
+    const description = "# Initialize cWETHv3 on Arbitrum\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to the Arbitrum network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Arbitrum; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/add-eth-market-on-arbitrum/5252/2).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/853), [deploy market GitHub action run]() and [forum discussion](https://www.comp.xyz/t/add-eth-market-on-arbitrum/5252).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Arbitrum. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo` calls across the bridge to the governance receiver on Arbitrum. It also calls `setRewardConfig` on the Arbitrum rewards contract, to establish Artitrum’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 6 COMP/day and borrow speed to be 4 COMP/day.\n\nThe second action wraps ETH as WETH so it can be then transferred.\n\nThe third action approves (ArbitrumL1GatewayRouter) [TokenMessenger](https://etherscan.io/address/0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef) to take the Timelock's WETH on Mainnet, in order to seed the market reserves through the arbitrumL1GatewayRouter.\n\nThe fourth action bridges WETH from mainnet via ‘outboundTransfer’ function on ArbitrumL1GatewayRouter’s contract to mint native WETH to Comet on Arbitrum.\n\nThe fifth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Arbitrum cUSDCv3 market.\n";
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
@@ -217,17 +217,10 @@ export default migration('1713517203_configurate_and_ens', {
     
     expect(await comet.pauseGuardian()).to.be.eq('0x78E6317DD6D43DdbDa00Dce32C2CbaFc99361a9d');
 
-    // 2. & 3.
+    // 2. & 3. & 4.
     expect(await comet.getReserves()).to.be.equal(WETHAmountToBridge);
 
-    // 4. & 5.
-    const arbitrumCOMP = new Contract(
-      arbitrumCOMPAddress,
-      ['function balanceOf(address account) external view returns (uint256)'],
-      deploymentManager.hre.ethers.provider
-    );
-    expect((await arbitrumCOMP.balanceOf(rewards.address)).gt(exp(2_000, 18))).to.be.true;
-    // 6. & 7.
+    // 5.
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
     const ENSRegistry = await govDeploymentManager.existing('ENSRegistry', ENSRegistryAddress);
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
