@@ -12,7 +12,7 @@ const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 
-const WETHAmountToBridge = ethers.BigNumber.from(exp(500, 18));
+const WETHAmountToBridge = ethers.BigNumber.from(exp(10, 18));
 const arbitrumCOMPAddress = '0x354A6dA3fcde098F8389cad84b0182725c6C91dE';
 
 export default migration('1713517203_configurate_and_ens', {
