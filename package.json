@@ -57,6 +57,7 @@
   "devDependencies": {
     "@arbitrum/sdk": "^3.1.2",
     "@compound-finance/hardhat-import": "^1.0.3",
+    "@compound-finance/sleuth": "^1.0.1-alpha8",
     "@ethersproject/experimental": "^5.6.3",
     "@nomiclabs/hardhat-ethers": "^2.0.4",
     "@nomiclabs/hardhat-etherscan": "3.1.7",
