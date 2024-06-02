@@ -3,8 +3,9 @@ import { expect } from 'chai';
 import { exp } from '../test/helpers';
 import { isRewardSupported, matchesDeployment } from './utils';
 import { Contract, ContractReceipt } from 'ethers';
-import { CometRewards, ERC20__factory } from '../build/types';
-import {World} from '../plugins/scenario';
+import { CometRewards, ERC20, ERC20__factory } from '../build/types';
+import { World } from '../plugins/scenario';
+import CometAsset from './context/CometAsset';
 
 function calculateRewardsOwed(
   userBalance: bigint,
@@ -153,8 +154,8 @@ scenario(
   {
     filter: async (ctx) => await isRewardSupported(ctx),
     tokenBalances: {
-      albert: { $asset0: ' == 10000' }, // in units of asset, not wei
-      $comet: { $base: ' >= 1000 ' }
+      albert: { $asset0: ' == 100' }, // in units of asset, not wei
+      $comet: { $base: ' >= 10 ' }
     },
   },
   async ({ comet, rewards, actors }, context, world) => {
@@ -162,10 +163,10 @@ scenario(
     const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const scale = scaleBN.toBigInt();
-    const toSupply = 10_000n * scale;
+    const toSupply = 100n * scale;
     const baseAssetAddress = await comet.baseToken();
     const baseScale = (await comet.baseScale()).toBigInt();
-    const toBorrow = 1_000n * baseScale;
+    const toBorrow = 10n * baseScale;
 
     const { rescaleFactor } = await context.getRewardConfig();
     const rewardToken = await context.getRewardToken();
@@ -249,7 +250,7 @@ async function testScalingReward(properties: CometProperties, context: CometCont
     rewardTokenAddress,
     ERC20__factory.createInterface(),
     world.deploymentManager.hre.ethers.provider
-  );
+  ) as ERC20;
   const rewardDecimals = await rewardToken.decimals();
   const rewardScale = exp(1, rewardDecimals);
 
@@ -260,7 +261,7 @@ async function testScalingReward(properties: CometProperties, context: CometCont
     [albert.address]
   );
   await newRewards.connect(albert.signer).setRewardConfigWithMultiplier(comet.address, rewardTokenAddress, multiplier);
-  await context.sourceTokens(exp(1_000, rewardDecimals), rewardTokenAddress, newRewards.address);
+  await context.sourceTokens(exp(1_000, rewardDecimals), new CometAsset(rewardToken), newRewards.address);
 
   await baseAsset.approve(albert, comet.address);
   await albert.safeSupplyAsset({ asset: baseAssetAddress, amount: 100n * baseScale });

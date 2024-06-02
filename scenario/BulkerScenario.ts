@@ -10,12 +10,12 @@ scenario(
   {
     filter: async (ctx) => await isBulkerSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, {network: 'mumbai'}, { network: 'linea-goerli' }]),
     supplyCaps: {
-      $asset0: 3000,
-      $asset1: 3000,
+      $asset0: 300,
+      $asset1: 300,
     },
     tokenBalances: {
-      albert: { $base: '== 0', $asset0: 3000 },
-      $comet: { $base: 5000 },
+      albert: { $base: '== 0', $asset0: 300 },
+      $comet: { $base: 500 },
     },
   },
   async ({ comet, actors, bulker }, context) => {
@@ -27,9 +27,9 @@ scenario(
     const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const collateralScale = scaleBN.toBigInt();
-    const toSupplyCollateral = 3000n * collateralScale;
-    const toBorrowBase = 1000n * baseScale;
-    const toTransferBase = 500n * baseScale;
+    const toSupplyCollateral = 300n * collateralScale;
+    const toBorrowBase = 100n * baseScale;
+    const toTransferBase = 50n * baseScale;
     const toSupplyEth = exp(0.01, 18);
     const toWithdrawEth = exp(0.005, 18);
 
@@ -43,9 +43,9 @@ scenario(
     expect(await comet.balanceOf(albert.address)).to.be.equal(0n);
 
     // Albert's actions:
-    // 1. Supplies 3000 units of collateral
-    // 2. Borrows 1000 base
-    // 3. Transfers 500 base to Betty
+    // 1. Supplies 300 units of collateral
+    // 2. Borrows 100 base
+    // 3. Transfers 50 base to Betty
     // 4. Supplies 0.01 ETH
     // 5. Withdraws 0.005 ETH
     const supplyAssetCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'address', 'uint'], [comet.address, albert.address, collateralAsset.address, toSupplyCollateral]);
@@ -88,11 +88,11 @@ scenario(
   {
     filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{deployment: 'weth'}]),
     supplyCaps: {
-      $asset0: 3000,
+      $asset0: 300,
     },
     tokenBalances: {
-      albert: { $base: '== 0', $asset0: 3000 },
-      $comet: { $base: 5000 },
+      albert: { $base: '== 0', $asset0: 300 },
+      $comet: { $base: 500 },
     },
   },
   async ({ comet, actors, bulker }, context) => {
@@ -103,9 +103,9 @@ scenario(
     const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const collateralScale = scaleBN.toBigInt();
-    const toSupplyCollateral = 3000n * collateralScale;
-    const toBorrowBase = 1500n * baseScale;
-    const toTransferBase = 500n * baseScale;
+    const toSupplyCollateral = 300n * collateralScale;
+    const toBorrowBase = 150n * baseScale;
+    const toTransferBase = 50n * baseScale;
     const toSupplyEth = exp(0.01, 18);
     const toWithdrawEth = exp(0.005, 18);
 
@@ -119,9 +119,9 @@ scenario(
     expect(await comet.balanceOf(albert.address)).to.be.equal(0n);
 
     // Albert's actions:
-    // 1. Supplies 3000 units of collateral
-    // 2. Borrows 1500 base
-    // 3. Transfers 500 base to Betty
+    // 1. Supplies 300 units of collateral
+    // 2. Borrows 150 base
+    // 3. Transfers 50 base to Betty
     // 4. Supplies 0.01 ETH
     // 5. Withdraws 0.005 ETH
     const supplyAssetCalldata = utils.defaultAbiCoder.encode(['address', 'address', 'address', 'uint'], [comet.address, albert.address, collateralAsset.address, toSupplyCollateral]);
@@ -164,11 +164,11 @@ scenario(
   {
     filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, { network: 'linea-goerli' }]),
     supplyCaps: {
-      $asset0: 3000,
+      $asset0: 300,
     },
     tokenBalances: {
-      albert: { $base: '== 1000000', $asset0: 3000 },
-      $comet: { $base: 5000 },
+      albert: { $base: '== 100000', $asset0: 300 },
+      $comet: { $base: 500 },
     }
   },
   async ({ comet, actors, rewards, bulker }, context, world) => {
@@ -181,10 +181,10 @@ scenario(
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const collateralScale = scaleBN.toBigInt();
     const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
-    const toSupplyBase = 1_000_000n * baseScale;
-    const toSupplyCollateral = 3000n * collateralScale;
-    const toBorrowBase = 1000n * baseScale;
-    const toTransferBase = 500n * baseScale;
+    const toSupplyBase = 100_000n * baseScale;
+    const toSupplyCollateral = 300n * collateralScale;
+    const toBorrowBase = 100n * baseScale;
+    const toTransferBase = 50n * baseScale;
     const toSupplyEth = exp(0.01, 18);
     const toWithdrawEth = exp(0.005, 18);
 
@@ -209,9 +209,9 @@ scenario(
       startingRewardBalance + rewardOwed;
 
     // Albert's actions:
-    // 1. Supplies 3000 units of collateral
-    // 2. Borrows 1000 base
-    // 3. Transfers 500 base to Betty
+    // 1. Supplies 300 units of collateral
+    // 2. Borrows 100 base
+    // 3. Transfers 50 base to Betty
     // 4. Supplies 0.01 ETH
     // 5. Withdraws 0.005 ETH
     // 6. Claim rewards
