@@ -13,11 +13,11 @@ const WEETH_PRICE_FEED_ADDRESS = '0x5c9C449BbC9a6075A2c061dF312a35fd1E05fF22';
 const OSETH_ADDRESS = '0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38';
 const OSETH_PRICE_FEED_ADDRESS = '0x66ac817f997Efd114EDFcccdce99F3268557B32C';
 
-let rsETHScalingPriceFeed = '';
-let weETHScalingPriceFeed = '';
-let osETHScalingPriceFeed = '';
+let rsETHScalingPriceFeedAddress = '';
+let weETHScalingPriceFeedAddress = '';
+let osETHScalingPriceFeedAddress = '';
 export default migration('1716798961_add_rseth_and_weeth', {
-  prepare: async (deploymentManager: DeploymentManager) => {
+  async prepare(deploymentManager: DeploymentManager) {
     const _rsETHScalingPriceFeed = await deploymentManager.deploy(
       'rsETH:priceFeed',
       'pricefeeds/ScalingPriceFeed.sol',
@@ -42,13 +42,10 @@ export default migration('1716798961_add_rseth_and_weeth', {
         8                                             // decimals
       ]
     );
-    rsETHScalingPriceFeed = _rsETHScalingPriceFeed.address;
-    weETHScalingPriceFeed = _weETHScalingPriceFeed.address;
-    osETHScalingPriceFeed = _osETHScalingPriceFeed.address;
-    return { };
+    return {rsETHScalingPriceFeed: _rsETHScalingPriceFeed.address, weETHScalingPriceFeed: _weETHScalingPriceFeed.address, osETHScalingPriceFeed: _osETHScalingPriceFeed.address};
   },
 
-  async enact(deploymentManager: DeploymentManager) {
+  async enact(deploymentManager: DeploymentManager, { rsETHScalingPriceFeed, weETHScalingPriceFeed, osETHScalingPriceFeed }) {
 
     const trace = deploymentManager.tracer();
 
@@ -124,6 +121,10 @@ export default migration('1716798961_add_rseth_and_weeth', {
       liquidationFactor: exp(0.9, 18),
       supplyCap: exp(10_000, 18), 
     };
+
+    rsETHScalingPriceFeedAddress = rsETHScalingPriceFeed;
+    weETHScalingPriceFeedAddress = weETHScalingPriceFeed;
+    osETHScalingPriceFeedAddress = osETHScalingPriceFeed;
 
     const mainnetActions = [
       // 1. Add rsETH as asset
@@ -216,7 +217,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
     
     const rsETHAssetConfig = {
       asset: rsETH.address,
-      priceFeed: rsETHScalingPriceFeed,
+      priceFeed: rsETHScalingPriceFeedAddress,
       decimals: await rsETH.decimals(),
       borrowCollateralFactor: exp(0.80, 18),
       liquidateCollateralFactor: exp(0.85, 18),
@@ -226,7 +227,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
     
     const weETHAssetConfig = {
       asset: weETH.address,
-      priceFeed: weETHScalingPriceFeed,
+      priceFeed: weETHScalingPriceFeedAddress,
       decimals: await weETH.decimals(),
       borrowCollateralFactor: exp(0.82, 18),
       liquidateCollateralFactor: exp(0.87, 18),
@@ -236,7 +237,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
 
     const osETHAssetConfig = {
       asset: osETH.address,
-      priceFeed: osETHScalingPriceFeed,
+      priceFeed: osETHScalingPriceFeedAddress,
       decimals: await osETH.decimals(),
       borrowCollateralFactor: exp(0.80, 18),
       liquidateCollateralFactor: exp(0.85, 18),
