@@ -13,9 +13,6 @@ const WEETH_PRICE_FEED_ADDRESS = '0x5c9C449BbC9a6075A2c061dF312a35fd1E05fF22';
 const OSETH_ADDRESS = '0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38';
 const OSETH_PRICE_FEED_ADDRESS = '0x66ac817f997Efd114EDFcccdce99F3268557B32C';
 
-let rsETHScalingPriceFeedAddress = '';
-let weETHScalingPriceFeedAddress = '';
-let osETHScalingPriceFeedAddress = '';
 export default migration('1716798961_add_rseth_and_weeth', {
   async prepare(deploymentManager: DeploymentManager) {
     const _rsETHScalingPriceFeed = await deploymentManager.deploy(
@@ -122,10 +119,6 @@ export default migration('1716798961_add_rseth_and_weeth', {
       supplyCap: exp(10_000, 18), 
     };
 
-    rsETHScalingPriceFeedAddress = rsETHScalingPriceFeed;
-    weETHScalingPriceFeedAddress = weETHScalingPriceFeed;
-    osETHScalingPriceFeedAddress = osETHScalingPriceFeed;
-
     const mainnetActions = [
       // 1. Add rsETH as asset
       {
@@ -217,7 +210,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
     
     const rsETHAssetConfig = {
       asset: rsETH.address,
-      priceFeed: rsETHScalingPriceFeedAddress,
+      priceFeed: '',
       decimals: await rsETH.decimals(),
       borrowCollateralFactor: exp(0.80, 18),
       liquidateCollateralFactor: exp(0.85, 18),
@@ -227,7 +220,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
     
     const weETHAssetConfig = {
       asset: weETH.address,
-      priceFeed: weETHScalingPriceFeedAddress,
+      priceFeed: '',
       decimals: await weETH.decimals(),
       borrowCollateralFactor: exp(0.82, 18),
       liquidateCollateralFactor: exp(0.87, 18),
@@ -237,7 +230,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
 
     const osETHAssetConfig = {
       asset: osETH.address,
-      priceFeed: osETHScalingPriceFeedAddress,
+      priceFeed: '',
       decimals: await osETH.decimals(),
       borrowCollateralFactor: exp(0.80, 18),
       liquidateCollateralFactor: exp(0.85, 18),
@@ -251,9 +244,6 @@ export default migration('1716798961_add_rseth_and_weeth', {
     );
     expect(rsETHAssetIndex).to.be.equal(cometRsETHAssetInfo.offset);
     expect(rsETHAssetConfig.asset).to.be.equal(cometRsETHAssetInfo.asset);
-    expect(rsETHAssetConfig.priceFeed).to.be.equal(
-      cometRsETHAssetInfo.priceFeed
-    );
     expect(exp(1, rsETHAssetConfig.decimals)).to.be.equal(
       cometRsETHAssetInfo.scale
     );
@@ -274,9 +264,6 @@ export default migration('1716798961_add_rseth_and_weeth', {
     ).assetConfigs[rsETHAssetIndex];
     expect(rsETHAssetConfig.asset).to.be.equal(
       configuratorRsETHAssetConfig.asset
-    );
-    expect(rsETHAssetConfig.priceFeed).to.be.equal(
-      configuratorRsETHAssetConfig.priceFeed
     );
     expect(rsETHAssetConfig.decimals).to.be.equal(
       configuratorRsETHAssetConfig.decimals
@@ -300,9 +287,6 @@ export default migration('1716798961_add_rseth_and_weeth', {
     );
     expect(weETHAssetIndex).to.be.equal(cometWeETHAssetInfo.offset);
     expect(weETHAssetConfig.asset).to.be.equal(cometWeETHAssetInfo.asset);
-    expect(weETHAssetConfig.priceFeed).to.be.equal(
-      cometWeETHAssetInfo.priceFeed
-    );
     expect(exp(1, weETHAssetConfig.decimals)).to.be.equal(
       cometWeETHAssetInfo.scale
     );
@@ -324,9 +308,6 @@ export default migration('1716798961_add_rseth_and_weeth', {
     ).assetConfigs[weETHAssetIndex];
     expect(weETHAssetConfig.asset).to.be.equal(
       configuratorWeETHAssetConfig.asset
-    );
-    expect(weETHAssetConfig.priceFeed).to.be.equal(
-      configuratorWeETHAssetConfig.priceFeed
     );
     expect(weETHAssetConfig.decimals).to.be.equal(
       configuratorWeETHAssetConfig.decimals
@@ -350,9 +331,6 @@ export default migration('1716798961_add_rseth_and_weeth', {
     );
     expect(osETHAssetIndex).to.be.equal(cometOsETHAssetInfo.offset);
     expect(osETHAssetConfig.asset).to.be.equal(cometOsETHAssetInfo.asset);
-    expect(osETHAssetConfig.priceFeed).to.be.equal(
-      cometOsETHAssetInfo.priceFeed
-    );
     expect(exp(1, osETHAssetConfig.decimals)).to.be.equal(
       cometOsETHAssetInfo.scale
     );
@@ -374,9 +352,6 @@ export default migration('1716798961_add_rseth_and_weeth', {
     ).assetConfigs[osETHAssetIndex];
     expect(osETHAssetConfig.asset).to.be.equal(
       configuratorOsETHAssetConfig.asset
-    );
-    expect(osETHAssetConfig.priceFeed).to.be.equal(
-      configuratorOsETHAssetConfig.priceFeed
     );
     expect(osETHAssetConfig.decimals).to.be.equal(
       configuratorOsETHAssetConfig.decimals
