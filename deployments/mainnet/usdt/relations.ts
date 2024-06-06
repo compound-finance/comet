@@ -12,7 +12,10 @@ export default {
     }
   },
   'USDT': {
-    artifact: 'contracts/test/NonStandardToken.sol:NonStandardToken',
+    artifact: 'contracts/test/NonStandardFaucetToken.sol:NonStandardToken',
+  },
+  'TetherToken': {
+    artifact: 'contracts/test/NonStandardFaucetToken.sol:NonStandardToken',
   },
   'AppProxyUpgradeable': {
     artifact: 'contracts/ERC20.sol:ERC20',

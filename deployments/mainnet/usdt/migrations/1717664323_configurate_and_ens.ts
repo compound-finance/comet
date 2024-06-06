@@ -13,17 +13,16 @@ const ENSTextRecordKey = 'v3-official-markets';
 
 const cUSDTAddress = '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9';
 const USDTAmount = ethers.BigNumber.from(exp(500_000, 6));
-
 export default migration('1713517203_configurate_and_ens', {
-  prepare: async (_deploymentManager: DeploymentManager) => {
-    return {};
+  async prepare(deploymentManager: DeploymentManager) {
+    const cometFactory = await deploymentManager.deploy('cometFactory', 'CometFactory.sol', [], true);
+    return { newFactoryAddress: cometFactory.address };
   },
 
-  enact: async (deploymentManager: DeploymentManager) => {
+  async enact(deploymentManager: DeploymentManager, _, { newFactoryAddress }) {
     const trace = deploymentManager.tracer();
     const ethers = deploymentManager.hre.ethers;
 
-    const cometFactory = await deploymentManager.fromDep('cometFactory', 'mainnet', 'usdc');
     const {
       comet,
       cometAdmin,
@@ -52,13 +51,13 @@ export default migration('1713517203_configurate_and_ens', {
       ['uint256'],
       [USDTAmount]
     );
-
+    console.log('factory', newFactoryAddress);
     const actions = [
       // 1. Set the Comet factory in configuration
       {
         contract: configurator,
         signature: 'setFactory(address,address)',
-        args: [comet.address, cometFactory.address],
+        args: [comet.address, newFactoryAddress],
       },
       // 2. Set the Comet configuration
       {

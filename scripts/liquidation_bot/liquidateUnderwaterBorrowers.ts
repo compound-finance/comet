@@ -38,7 +38,8 @@ const addresses = {
     WBTC: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
     WETH9: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     CB_ETH: '0xBe9895146f7AF43049ca1c1AE358B0541Ea49704',
-    WST_ETH: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0'
+    WST_ETH: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
+    USDT: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
   },
   goerli: {
     WETH: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d'
@@ -87,6 +88,10 @@ export const flashLoanPools = {
     weth: {
       tokenAddress: addresses.mainnet.USDC,
       poolFee: 500
+    },
+    usdt: {
+      tokenAddress: addresses.mainnet.DAI,
+      poolFee: 100
     }
   },
   goerli: {
