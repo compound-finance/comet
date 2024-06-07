@@ -21,8 +21,8 @@
   },
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": "810185185185n",
-    "baseBorrowSpeed": "578703703703n",
+    "baseSupplySpeed": "810185185185e0",
+    "baseBorrowSpeed": "578703703703e0",
     "baseMinForRewards": "1000000e6"
   },
   "rewardTokenAddress": "0xc00e94Cb662C3520282E6f5717214004A7f26888",
