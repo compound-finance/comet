@@ -32,7 +32,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'rETH:priceFeed',
     'pricefeeds/ScalingPriceFeed.sol',
     [
-      '0xF3272CAfe65b190e76caAF483db13424a3e23dD2', // rETH / ETH price feed
+      '0xD6aB2298946840262FcC278fF31516D39fF611eF', // rETH / ETH price feed
       8                                             // decimals
     ]
   );

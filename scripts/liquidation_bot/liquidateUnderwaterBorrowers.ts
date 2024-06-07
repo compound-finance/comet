@@ -257,8 +257,9 @@ export function getPoolConfig(tokenAddress: string) {
     [addresses.arbitrum.weETH.toLowerCase()]: {
       ...defaultPoolConfig,
       ...{
-        exchange: Exchange.Balancer,
-        balancerPoolId: '0x026a586b3fe3b3d07375b4a11a505c8b4ef07eec000200000000000000000533'
+        exchange: Exchange.Uniswap,
+        swapViaWeth: false,
+        uniswapPoolFee: 100
       }
     },
   };

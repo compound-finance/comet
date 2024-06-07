@@ -148,35 +148,24 @@ scenario(
   }
 );
 
-function getAmountForSpecificDeployment(ctx: CometContext, num: number) : number {
-  switch (ctx.world.base.network + '-'+ ctx.world.base.deployment) {
-    case 'arbitrum-weth':
-      return num / 100;
-    default:
-      return num;
-  }
-}
-
 scenario(
   'Comet#rewards > can claim borrow rewards for self',
   {
     filter: async (ctx) => await isRewardSupported(ctx),
-    tokenBalances: async (ctx) => (
-      {
-        albert: { $asset0: ` == ${getAmountForSpecificDeployment(ctx, 10000)}` }, // in units of asset, not wei
-        $comet: { $base: ' >= 1000 ' }
-      }
-    ),
+    tokenBalances: {
+      albert: { $asset0: ' == 10000' }, // in units of asset, not wei
+      $comet: { $base: ' >= 1000 ' }
+    },
   },
   async ({ comet, rewards, actors }, context, world) => {
     const { albert } = actors;
     const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const scale = scaleBN.toBigInt();
-    const toSupply = BigInt(getAmountForSpecificDeployment(context, 10_000)) * scale;
+    const toSupply = 10_000n * scale;
     const baseAssetAddress = await comet.baseToken();
     const baseScale = (await comet.baseScale()).toBigInt();
-    const toBorrow = BigInt(getAmountForSpecificDeployment(context, 1_000)) * baseScale;
+    const toBorrow = 1_000n * baseScale;
 
     const { rescaleFactor } = await context.getRewardConfig();
     const rewardToken = await context.getRewardToken();
