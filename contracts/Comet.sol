@@ -192,12 +192,20 @@ contract Comet is CometMainInterface {
         (asset11_a, asset11_b) = getPackedAssetInternal(config.assetConfigs, 11);
     }
 
+    /**
+     * @dev Prevents marked functions from being reentered 
+     * Note: this restrict contracts from calling comet functions in their hooks.
+     * Doing so will cause the transaction to revert.
+     */
     modifier nonReentrant() {
         nonReentrantBefore();
         _;
         nonReentrantAfter();
     }
 
+    /**
+     * @dev Checks that the reentrancy flag is not set and then sets the flag
+     */
     function nonReentrantBefore() internal {
         bytes32 slot = REENTRANCY_GUARD_FLAG_SLOT;
         uint256 status;
@@ -211,6 +219,9 @@ contract Comet is CometMainInterface {
         }
     }
 
+    /**
+     * @dev Unsets the reentrancy flag
+     */
     function nonReentrantAfter() internal {
         bytes32 slot = REENTRANCY_GUARD_FLAG_SLOT;
         uint256 status;
