@@ -102,7 +102,7 @@ export default migration('1713517203_configurate_and_ens', {
       }
     ];
 
-    const description = '# Initialize cUSDTv3 on Ethereum Mainnet\n\n## Proposal summary\n\nFranklinDAO team with advice support from Woof Software team proposes deployment of Compound III to the Ethereum Mainnet network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDT market on Ethereum Mainnet; upon execution, cUSDTv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/launch-usdt-market-on-compound-v3-ethereum/4977/5).\n\nFurther detailed information can be found on the corresponding [deployment pull request](https://github.com/compound-finance/comet/pull/<>), [proposal pull request](https://github.com/compound-finance/comet/pull/<>), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/<>) and [forum discussion](https://www.comp.xyz/t/launch-usdt-market-on-compound-v3-ethereum/4977).\n\n\n## Proposal Actions\n\nThe first proposal action sets the CometFactory for the new Comet instance in the existing Configurator.\n\nThe second action configures the Comet instance in the Configurator.\n\nThe third action deploys an instance of the newly configured factory and upgrades the Comet instance to use that implementation.\n\nThe fourth action configures the existing rewards contract for the newly deployed Comet instance.\n\nThe fifth action reduces Compound’s [cUSDT](https://etherscan.io/address/0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9) reserves and transfers it to Timelock, in order to seed the market reserves for the cUSDTv3 Comet.\n\nThe sixth action transfers reserves from Timelock to the cUSDTv3 Comet.\n\nThe seventh action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ethereum Mainnet cUSDTv3 market.';
+    const description = '# Initialize cUSDTv3 on Ethereum Mainnet\n\n## Proposal summary\n\nFranklinDAO team with advice support from Woof Software team proposes deployment of Compound III to the Ethereum Mainnet network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDT market on Ethereum Mainnet; upon execution, cUSDTv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/launch-usdt-market-on-compound-v3-ethereum/4977/5).\n\nFurther detailed information can be found on the corresponding [deployment pull request](https://github.com/compound-finance/comet/pull/861), [proposal pull request](https://github.com/compound-finance/comet/pull/862), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/9421836814/job/25956794627) and [forum discussion](https://www.comp.xyz/t/launch-usdt-market-on-compound-v3-ethereum/4977).\n\n\n## Proposal Actions\n\nThe first proposal action sets the CometFactory for the new Comet instance in the existing Configurator.\n\nThe second action configures the Comet instance in the Configurator.\n\nThe third action deploys an instance of the newly configured factory and upgrades the Comet instance to use that implementation.\n\nThe fourth action configures the existing rewards contract for the newly deployed Comet instance.\n\nThe fifth action reduces Compound’s [cUSDT](https://etherscan.io/address/0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9) reserves and transfers it to Timelock, in order to seed the market reserves for the cUSDTv3 Comet.\n\nThe sixth action transfers reserves from Timelock to the cUSDTv3 Comet.\n\nThe seventh action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ethereum Mainnet cUSDTv3 market.';
     const txn = await deploymentManager.retry(
       async () => trace((await governor.propose(...await proposal(actions, description))))
     );
@@ -140,12 +140,12 @@ export default migration('1713517203_configurate_and_ens', {
     const linkInfo = await comet.getAssetInfoByAddress(LINK.address);
     const wstETHInfo = await comet.getAssetInfoByAddress(wstETH.address);
 
-    // expect(compInfo.supplyCap).to.be.eq(exp(100000, 18));
-    // expect(wbtcInfo.borrowCap).to.be.eq(exp(18000, 8));
-    // expect(wethInfo.borrowCap).to.be.eq(exp(500000, 18));
-    // expect(uniInfo.supplyCap).to.be.eq(exp(3000000, 18));
-    // expect(linkInfo.supplyCap).to.be.eq(exp(2000000, 18));
-    // expect(wstETHInfo.supplyCap).to.be.eq(exp(9000, 18));
+    expect(compInfo.supplyCap).to.be.eq(exp(100000, 18));
+    expect(wbtcInfo.borrowCap).to.be.eq(exp(18000, 8));
+    expect(wethInfo.borrowCap).to.be.eq(exp(500000, 18));
+    expect(uniInfo.supplyCap).to.be.eq(exp(3000000, 18));
+    expect(linkInfo.supplyCap).to.be.eq(exp(2000000, 18));
+    expect(wstETHInfo.supplyCap).to.be.eq(exp(9000, 18));
 
     // 4
     const config = await rewards.rewardConfig(comet.address);
@@ -228,7 +228,7 @@ export default migration('1713517203_configurate_and_ens', {
     });
 
     // 8.
-    // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(70 / 86400, 15, 18));
-    // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(50 / 86400, 15, 18));
+    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(70 / 86400, 15, 18));
+    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(50 / 86400, 15, 18));
   }
 });
