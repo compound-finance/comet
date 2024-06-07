@@ -13,7 +13,8 @@ contract EvilToken is FaucetToken {
     enum AttackType {
         TRANSFER_FROM,
         WITHDRAW_FROM,
-        SUPPLY_FROM
+        SUPPLY_FROM,
+        BUY_COLLATERAL
     }
 
     struct ReentryAttack {
@@ -91,6 +92,13 @@ contract EvilToken is FaucetToken {
                 reentryAttack.destination,
                 reentryAttack.asset,
                 reentryAttack.amount
+            );
+        }  else if (reentryAttack.attackType == AttackType.BUY_COLLATERAL) {
+            Comet(payable(msg.sender)).buyCollateral(
+                reentryAttack.asset,
+                0,
+                reentryAttack.amount,
+                reentryAttack.destination
             );
         } else {
             revert("invalid reentry attack");

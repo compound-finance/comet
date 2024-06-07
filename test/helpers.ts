@@ -44,7 +44,8 @@ export type Numeric = number | bigint;
 export enum ReentryAttack {
   TransferFrom = 0,
   WithdrawFrom = 1,
-  SupplyFrom = 2
+  SupplyFrom = 2,
+  BuyCollateral = 3,
 }
 
 export type ProtocolOpts = {

@@ -14,6 +14,7 @@ contract NonStandardFeeToken is IERC20NonStandard {
     string public name;
     string public symbol;
     uint8 public decimals;
+    address public owner;
     uint256 public totalSupply;
     mapping(address => mapping (address => uint256)) public allowance;
     mapping(address => uint256) public balanceOf;
