@@ -4,6 +4,7 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
 import { expect } from 'chai';
 
+const SECONDS_PER_YEAR = 31_536_000n;
 const ENSName = 'compound-community-licenses.eth';
 const ENSResolverAddress = '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41';
 const ENSRegistryAddress = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
@@ -12,7 +13,8 @@ const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 
 const cUSDTAddress = '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9';
-const USDTAmount = ethers.BigNumber.from(exp(500_000, 6));
+const USDTAmount = ethers.BigNumber.from(exp(250_000, 6));
+
 export default migration('1713517203_configurate_and_ens', {
   async prepare(deploymentManager: DeploymentManager) {
     const cometFactory = await deploymentManager.deploy('cometFactory', 'CometFactory.sol', [], true);
@@ -120,6 +122,7 @@ export default migration('1713517203_configurate_and_ens', {
 
     const {
       comet,
+      rewards,
       timelock,
       COMP,
       WBTC,
@@ -129,8 +132,7 @@ export default migration('1713517203_configurate_and_ens', {
       wstETH
     } = await deploymentManager.getContracts();
 
-
-    // 1.
+    // 1. & 2. & 3.
     const compInfo = await comet.getAssetInfoByAddress(COMP.address);
     const wbtcInfo = await comet.getAssetInfoByAddress(WBTC.address);
     const wethInfo = await comet.getAssetInfoByAddress(WETH.address);
@@ -144,13 +146,19 @@ export default migration('1713517203_configurate_and_ens', {
     // expect(uniInfo.supplyCap).to.be.eq(exp(3000000, 18));
     // expect(linkInfo.supplyCap).to.be.eq(exp(2000000, 18));
     // expect(wstETHInfo.supplyCap).to.be.eq(exp(9000, 18));
+
+    // 4
+    const config = await rewards.rewardConfig(comet.address);
+    expect(config.token).to.be.equal(COMP.address);
+    expect(config.rescaleFactor).to.be.equal(exp(1, 12));
+    expect(config.shouldUpscale).to.be.equal(true);
     
     expect((await comet.pauseGuardian()).toLowerCase()).to.be.eq('0xbbf3f1421d886e9b2c5d716b5192ac998af2012c');
 
-    // 2. & 3. & 4.
+    // 5. & 6.
     expect(await comet.getReserves()).to.be.equal(USDTAmount);
 
-    // 5.
+    // 7.
     const ENSResolver = await deploymentManager.existing('ENSResolver', ENSResolverAddress);
     const ENSRegistry = await deploymentManager.existing('ENSRegistry', ENSRegistryAddress);
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);

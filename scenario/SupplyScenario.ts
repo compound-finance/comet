@@ -4,7 +4,7 @@ import { expectApproximately, expectBase, expectRevertCustom, expectRevertMatche
 import { ContractReceipt } from 'ethers';
 import { matchesDeployment } from './utils';
 import { exp } from '../test/helpers';
-import hre, { ethers } from 'hardhat';
+import { ethers } from 'hardhat';
 
 // XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
 // of testing them conditionally
