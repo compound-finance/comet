@@ -51,7 +51,7 @@ export default migration('1713517203_configurate_and_ens', {
       ['uint256'],
       [USDTAmount]
     );
-    console.log('factory', newFactoryAddress);
+
     const actions = [
       // 1. Set the Comet factory in configuration
       {
@@ -77,7 +77,7 @@ export default migration('1713517203_configurate_and_ens', {
         signature: 'setRewardConfig(address,address)',
         args: [comet.address, COMP.address],
       },
-      // 2. Get USDT reserves from cUSDT contract
+      // 5. Get USDT reserves from cUSDT contract
       {
         target: cUSDTAddress,
         signature: '_reduceReserves(uint256)',
