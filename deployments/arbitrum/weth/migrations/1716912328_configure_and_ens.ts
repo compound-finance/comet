@@ -177,7 +177,7 @@ export default migration('1713517203_configurate_and_ens', {
       }
     ];
 
-    const description = "# Initialize cWETHv3 on Arbitrum\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to the Arbitrum network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Arbitrum; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/add-eth-market-on-arbitrum/5252/2).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/856), [deploy market GitHub action run]() and [forum discussion](https://www.comp.xyz/t/add-eth-market-on-arbitrum/5252).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Arbitrum. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo` calls across the bridge to the governance receiver on Arbitrum. It also calls `setRewardConfig` on the Arbitrum rewards contract, to establish Artitrum’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 6 COMP/day and borrow speed to be 4 COMP/day.\n\nThe second action wraps ETH as WETH so it can be then transferred.\n\nThe third action approves (ArbitrumL1GatewayRouter) [TokenMessenger](https://etherscan.io/address/0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef) to take the Timelock's WETH on Mainnet, in order to seed the market reserves through the arbitrumL1GatewayRouter.\n\nThe fourth action bridges WETH from mainnet via ‘outboundTransfer’ function on ArbitrumL1GatewayRouter’s contract to mint native WETH to Comet on Arbitrum.\n\nThe fifth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Arbitrum cUSDCv3 market.\n";
+    const description = "# Initialize cWETHv3 on Arbitrum\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to the Arbitrum network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Arbitrum; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/add-eth-market-on-arbitrum/5252/2).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull60), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/9419069237/job/25948008428) and [forum discussion](https://www.comp.xyz/t/add-eth-market-on-arbitrum/5252).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Arbitrum. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo` calls across the bridge to the governance receiver on Arbitrum. It also calls `setRewardConfig` on the Arbitrum rewards contract, to establish Artitrum’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 6 COMP/day and borrow speed to be 4 COMP/day.\n\nThe second action wraps ETH as WETH so it can be then transferred.\n\nThe third action approves (ArbitrumL1GatewayRouter) [TokenMessenger](https://etherscan.io/address/0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef) to take the Timelock's WETH on Mainnet, in order to seed the market reserves through the arbitrumL1GatewayRouter.\n\nThe fourth action bridges WETH from mainnet via ‘outboundTransfer’ function on ArbitrumL1GatewayRouter’s contract to mint native WETH to Comet on Arbitrum.\n\nThe fifth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Arbitrum cWETHv3 market.\n";
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
@@ -211,9 +211,9 @@ export default migration('1713517203_configurate_and_ens', {
     const weETHInfo = await comet.getAssetInfoByAddress(weETH.address);
     const rETHInfo = await comet.getAssetInfoByAddress(rETH.address);
     const wstETHInfo = await comet.getAssetInfoByAddress(wstETH.address);
-    // expect(weETHInfo.supplyCap).to.be.eq(exp(550, 18));
-    // expect(wstETHInfo.supplyCap).to.be.eq(exp(2000, 18));
-    // expect(rETHInfo.supplyCap).to.be.eq(exp(800, 18));
+    expect(weETHInfo.supplyCap).to.be.eq(exp(550, 18));
+    expect(wstETHInfo.supplyCap).to.be.eq(exp(2000, 18));
+    expect(rETHInfo.supplyCap).to.be.eq(exp(800, 18));
     
     expect(await comet.pauseGuardian()).to.be.eq('0x78E6317DD6D43DdbDa00Dce32C2CbaFc99361a9d');
 
@@ -290,7 +290,7 @@ export default migration('1713517203_configurate_and_ens', {
     });
 
     // 8.
-    // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(6, 15));
-    // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(4, 15));
+    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(6 / 86400, 15, 18));
+    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(4 / 86400, 15, 18));
   }
 });
