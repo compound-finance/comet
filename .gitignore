@@ -7,7 +7,6 @@ yarn-error.log
 
 # Build files
 artifacts/
-!*/**/artifacts
 build/
 cache/
 dist/
