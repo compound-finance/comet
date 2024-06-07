@@ -141,8 +141,8 @@ export default migration('1713517203_configurate_and_ens', {
     const wstETHInfo = await comet.getAssetInfoByAddress(wstETH.address);
 
     expect(compInfo.supplyCap).to.be.eq(exp(100000, 18));
-    expect(wbtcInfo.borrowCap).to.be.eq(exp(18000, 8));
-    expect(wethInfo.borrowCap).to.be.eq(exp(500000, 18));
+    expect(wbtcInfo.supplyCap).to.be.eq(exp(18000, 8));
+    expect(wethInfo.supplyCap).to.be.eq(exp(500000, 18));
     expect(uniInfo.supplyCap).to.be.eq(exp(3000000, 18));
     expect(linkInfo.supplyCap).to.be.eq(exp(2000000, 18));
     expect(wstETHInfo.supplyCap).to.be.eq(exp(9000, 18));
