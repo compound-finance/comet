@@ -46,7 +46,7 @@ scenario(
       },
       betty: { $base: 10 }
     },
-    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet', deployment: 'usdt' }]),
+    filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet', deployment: 'usdt' }]),
   },
   async ({ comet, actors }, context, world) => {
     // Set fees for USDT for testing

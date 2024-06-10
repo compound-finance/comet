@@ -13,7 +13,7 @@ const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 
-const USDTAmountToBridge = exp(10_000, 6);
+const USDTAmountToBridge = exp(50_000, 6);
 const arbitrumCOMPAddress = '0x354A6dA3fcde098F8389cad84b0182725c6C91dE';
 const mainnetUSDTAddress = '0xdac17f958d2ee523a2206206994597c13d831ec7';
 const cUSDTAddress = '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9';
@@ -246,10 +246,10 @@ export default migration('1717936901_configurate_and_end', {
 
     expect(await comet.pauseGuardian()).to.be.eq('0x78E6317DD6D43DdbDa00Dce32C2CbaFc99361a9d');
 
-    // 2. & 3. & 4.
+    // 2. & 3. & 4. & 5.
     expect(await comet.getReserves()).to.be.equal(USDTAmountToBridge);
 
-    // 5.
+    // 6.
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
     const ENSRegistry = await govDeploymentManager.existing('ENSRegistry', ENSRegistryAddress);
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
