@@ -30,6 +30,7 @@ import arbitrumBridgedUsdcRelationConfigMap from './deployments/arbitrum/usdc.e/
 import arbitrumNativeUsdcRelationConfigMap from './deployments/arbitrum/usdc/relations';
 import arbitrumBridgedUsdcGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc.e/relations';
 import arbitrumGoerliNativeUsdcRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
+import arbitrumUsdtRelationConfigMap from './deployments/arbitrum/usdt/relations';
 import baseUsdbcRelationConfigMap from './deployments/base/usdbc/relations';
 import baseWethRelationConfigMap from './deployments/base/weth/relations';
 import baseUsdcRelationConfigMap from './deployments/base/usdc/relations';
@@ -353,7 +354,8 @@ const config: HardhatUserConfig = {
       },
       arbitrum: {
         'usdc.e': arbitrumBridgedUsdcRelationConfigMap,
-        usdc: arbitrumNativeUsdcRelationConfigMap
+        usdc: arbitrumNativeUsdcRelationConfigMap,
+        usdt: arbitrumUsdtRelationConfigMap
       },
       'arbitrum-goerli': {
         'usdc.e': arbitrumBridgedUsdcGoerliRelationConfigMap,
@@ -442,6 +444,12 @@ const config: HardhatUserConfig = {
         name: 'arbitrum-usdc.e',
         network: 'arbitrum',
         deployment: 'usdc.e',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'arbitrum-usdt',
+        network: 'arbitrum',
+        deployment: 'usdt',
         auxiliaryBase: 'mainnet'
       },
       {
