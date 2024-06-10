@@ -55,7 +55,8 @@ const addresses = {
     WETH: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
     WBTC: '0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f',
     USDC: '0xaf88d065e77c8cc2239327c5edb3a432268e5831',
-    USDC_E: '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8'
+    USDC_E: '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8',
+    USDT: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'
   }
 };
 
@@ -108,6 +109,10 @@ export const flashLoanPools = {
       tokenAddress: addresses.arbitrum.USDC_E,
       poolFee: 100
     },
+    usdt: {
+      tokenAddress: addresses.arbitrum.USDT,
+      poolFee: 100
+    }
   }
 };
 

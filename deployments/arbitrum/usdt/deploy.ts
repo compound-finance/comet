@@ -14,6 +14,17 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const USDT = await deploymentManager.existing('USDT', '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', 'arbitrum');
   const ARB = await deploymentManager.existing('ARB', '0x912ce59144191c1204e64559fe8253a0e49e6548', 'arbitrum');
   const GMX = await deploymentManager.existing('GMX', '0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a', 'arbitrum');
+  const COMP = await deploymentManager.existing('COMP', '0x354A6dA3fcde098F8389cad84b0182725c6C91dE', 'arbitrum');
+
+  // Deploy scaling price feed for cbETH
+  const wstETHScalingPriceFeed = await deploymentManager.deploy(
+    'wstETH:priceFeed',
+    'pricefeeds/ScalingPriceFeed.sol',
+    [
+      '0xb523AE262D20A936BC152e6023996e46FDC2A95D', // wstETH / USD price feed
+      8                                             // decimals
+    ]
+  );
 
   // Import shared contracts from the USDC.e market
   const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'arbitrum', 'usdc.e');
@@ -32,6 +43,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     ...deployed,
     bridgeReceiver, 
     bulker, 
-    rewards, 
+    rewards,
+    COMP
   };
 }
