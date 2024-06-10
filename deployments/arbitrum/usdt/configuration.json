@@ -20,8 +20,8 @@
   },
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": "0e15",
-    "baseBorrowSpeed": "0e15",
+    "baseSupplySpeed": "138888888888e0",
+    "baseBorrowSpeed": "115740740740e0",
     "baseMinForRewards": "10000e6"
   },
   "assets": {
@@ -32,7 +32,7 @@
       "borrowCF": 0.7,
       "liquidateCF": 0.8,
       "liquidationFactor": 0.9,
-      "supplyCap": "0e18"
+      "supplyCap": "7_500_000e18"
     },
     "WETH": {
       "address": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
@@ -41,7 +41,7 @@
       "borrowCF": 0.78,
       "liquidateCF": 0.85,
       "liquidationFactor": 0.95,
-      "supplyCap": "0e18"
+      "supplyCap": "7_500e18"
     },
     "wstETH": {
       "address": "0x5979D7b546E38E414F7E9822514be443A4800529",
@@ -49,7 +49,7 @@
       "borrowCF": 0.7,
       "liquidateCF": 0.8,
       "liquidationFactor": 0.9,
-      "supplyCap": "0e18"
+      "supplyCap": "1_500e18"
     },
     "WBTC": {
       "address": "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f",
@@ -58,7 +58,7 @@
       "borrowCF": 0.7,
       "liquidateCF": 0.8,
       "liquidationFactor": 0.9,
-      "supplyCap": "0e8"
+      "supplyCap": "250e8"
     },
     "GMX": {
       "address": "0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a",
@@ -67,7 +67,7 @@
       "borrowCF": 0.6,
       "liquidateCF": 0.7,
       "liquidationFactor": 0.8,
-      "supplyCap": "0e18"
+      "supplyCap": "100_000e18"
     }
   }
 }
