@@ -5,17 +5,17 @@
     "baseTokenAddress": "0x4200000000000000000000000000000000000006",
     "borrowMin": "0.1e18",
     "pauseGuardian": "0x3fFd6c073a4ba24a113B18C8F373569640916A45",
-    "storeFrontPriceFactor": 0.5,
+    "storeFrontPriceFactor": 0.7,
     "targetReserves": "5000e18",
     "rates": {
-      "supplyKink": 0.9,
-      "supplySlopeLow": 0.0283824,
-      "supplySlopeHigh": 0.6066567706,
+      "supplyKink": 0.85,
+      "supplySlopeLow": 0.014,
+      "supplySlopeHigh": 1,
       "supplyBase": 0,
-      "borrowKink": 0.9,
-      "borrowSlopeLow": 0.05171500002,
-      "borrowSlopeHigh": 0.5171500339,
-      "borrowBase": 0.009945209674
+      "borrowKink": 0.85,
+      "borrowSlopeLow": 0.014,
+      "borrowSlopeHigh": 1,
+      "borrowBase": 0.01
     },
     "tracking": {
       "indexScale": "1e15",
@@ -27,9 +27,9 @@
       "wstETH": {
         "address": "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb",
         "decimals": "18",
-        "borrowCF": 0.90,
+        "borrowCF": 0.88,
         "liquidateCF": 0.93,
-        "liquidationFactor": 0.95,
+        "liquidationFactor": 0.97,
         "supplyCap": "0e18"
       },
       "rETH": {
@@ -37,16 +37,16 @@
         "decimals": "18",
         "borrowCF": 0.90,
         "liquidateCF": 0.93,
-        "liquidationFactor": 0.95,
+        "liquidationFactor": 0.97,
         "supplyCap": "0e18"
       },
-      "cbETH": {
-        "address": "0xadDb6A0412DE1BA0F936DCaeb8Aaa24578dcF3B2",
-        "decimals": "18",
-        "borrowCF": 0.90,
-        "liquidateCF": 0.93,
-        "liquidationFactor": 0.95,
-        "supplyCap": "0e18"
+      "WBTC": {
+        "address": "0x68f180fcCe6836688e9084f035309E29Bf0A2095",
+        "decimals": "8",
+        "borrowCF": 0.80,
+        "liquidateCF": 0.85,
+        "liquidationFactor": 0.90,
+        "supplyCap": "0e8"
       }
     }
   }
