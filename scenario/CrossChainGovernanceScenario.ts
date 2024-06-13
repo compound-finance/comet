@@ -152,24 +152,30 @@ scenario(
   }
 );
 
-scenario(
+scenario.only(
   'upgrade Arbitrum governance contracts and ensure they work properly',
   {
     filter: async ctx => matchesDeployment(ctx, [{network: 'arbitrum'}, {network: 'arbitrum-goerli'}])
   },
   async ({ comet, configurator, proxyAdmin, timelock: oldLocalTimelock, bridgeReceiver: oldBridgeReceiver }, context, world) => {
+    console.log('debug')
     const dm = world.deploymentManager;
     const governanceDeploymentManager = world.auxiliaryDeploymentManager;
+    console.log('governanceDeploymentManager', !!governanceDeploymentManager)
     if (!governanceDeploymentManager) {
       throw new Error('cannot execute governance without governance deployment manager');
     }
 
+    console.log('before new bridge receiver')
     // Deploy new ArbitrumBridgeReceiver
     const newBridgeReceiver = await dm.deploy<ArbitrumBridgeReceiver, []>(
       'newBridgeReceiver',
       'bridges/arbitrum/ArbitrumBridgeReceiver.sol',
       []
     );
+    console.log('after new bridge receiver')
+    console.log({address: newBridgeReceiver.address})
+    console.log({newBridgeReceiver})
 
     // Deploy new local Timelock
     const secondsPerDay = 24 * 60 * 60;
