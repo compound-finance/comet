@@ -244,10 +244,6 @@ export default migration('1717936901_configurate_and_end', {
     expect(await WBTCInfo.supplyCap).to.be.eq(exp(250, 8));
     expect(await GMXInfo.supplyCap).to.be.eq(exp(100_000, 18));
 
-    // check speeds
-    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(12 / 86400, 15, 18));
-    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(10 / 86400, 15, 18));
-
     expect(await comet.pauseGuardian()).to.be.eq('0x78E6317DD6D43DdbDa00Dce32C2CbaFc99361a9d');
 
     // 2. & 3. & 4. & 5.
@@ -321,5 +317,8 @@ export default migration('1717936901_configurate_and_end', {
         },
       ],
     });
+
+    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(12 / 86400, 15, 18));
+    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(10 / 86400, 15, 18));
   }
 });

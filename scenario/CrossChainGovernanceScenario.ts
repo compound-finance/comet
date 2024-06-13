@@ -152,7 +152,7 @@ scenario(
   }
 );
 
-scenario.only(
+scenario(
   'upgrade Arbitrum governance contracts and ensure they work properly',
   {
     filter: async ctx => matchesDeployment(ctx, [{network: 'arbitrum'}, {network: 'arbitrum-goerli'}])
