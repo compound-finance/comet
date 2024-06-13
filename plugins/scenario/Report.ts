@@ -76,7 +76,8 @@ async function showReportConsole(results: Result[], _consoleOptions: ConsoleForm
   }
 
   for (const { base, scenario, error, trace, diff } of errors) {
-    const m = trace || error.message, msg = m.length > 1024 ? `${m.slice(0, 1024)}...` : m;
+    // const m = trace || error.message, msg = m.length > 1024 ? `${m.slice(0, 1024)}...` : m;
+    const m = trace || error.message, msg = m;
     console.error(`[${base}] ❌ ${scenario}: Error ${msg}`);
     if (diff) {
       console.error(showDiff(diff.expected, diff.actual));
