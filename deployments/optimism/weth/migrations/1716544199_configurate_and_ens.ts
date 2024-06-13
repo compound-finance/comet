@@ -20,22 +20,15 @@ const opCOMPAddress = '0x7e7d4467112689329f7E06571eD0E8CbAd4910eE';
 const wethAmountToBridge = exp(500, 18);
 
 export default migration('1713012100_configurate_and_ens', {
-  prepare: async (deploymentManager: DeploymentManager) => {
-    return {};
+  async prepare(deploymentManager: DeploymentManager) {
+    const cometFactory = await deploymentManager.deploy('cometFactory', 'CometFactory.sol', [], true);
+    return { newFactoryAddress: cometFactory.address };
   },
 
-  enact: async (
-    deploymentManager: DeploymentManager,
-    govDeploymentManager: DeploymentManager
-  ) => {
+  enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, { newFactoryAddress }) => {
     const trace = deploymentManager.tracer();
     const { utils } = ethers;
 
-    const cometFactory = await deploymentManager.fromDep(
-      'cometFactory',
-      'optimism',
-      'usdc'
-    );
     const {
       bridgeReceiver,
       timelock: localTimelock,
@@ -76,7 +69,7 @@ export default migration('1713012100_configurate_and_ens', {
     const setFactoryCalldata = await calldata(
       configurator.populateTransaction.setFactory(
         comet.address,
-        cometFactory.address
+        newFactoryAddress
       )
     );
     const setConfigurationCalldata = await calldata(
