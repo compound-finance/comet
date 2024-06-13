@@ -159,7 +159,7 @@ export default migration('1713012100_configurate_and_ens', {
       },
     ];  
 
-    const description = "# Initialize cUSDTv3 on Optimism\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Optimism network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDT market on Optimism; upon execution, cUSDTv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-optimism/4975/6).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/833) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-optimism/4975).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Optimism. This sends the encoded `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Optimism. It also calls `setRewardConfig` on the Optimism rewards contract, to establish Optimism’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 5 COMP/day and borrow speed to be 5 COMP/day.\n\nThe second action approves Circle’s Cross-Chain Transfer Protocol (CCTP) [TokenMessenger](https://etherscan.io/address/0xbd3fa81b58ba92a82136038b25adec7066af3155) to take the Timelock's USDT on Mainnet, in order to seed the market reserves through the CCTP.\n\nThe third action deposits and burns 10K USDT from mainnet via depositForBurn function on CCTP’s TokenMessenger contract to mint native USDT to Comet on Optimism.\n\nThe fourth action approves Optimism’s [L1StandardBridge](https://etherscan.io/address/0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1) to take Timelock's COMP, in order to seed the rewards contract through the bridge.\n\nThe fifth action deposits 3.6K COMP from mainnet to the Optimism L1StandardBridge contract to bridge to CometRewards.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Optimism cUSDTv3 market";
+    const description = '# Initialize cWETHv3 on Optimism\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to the Optimism network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Optimism; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/add-market-eth-on-optimism/5274/5).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/865), [deploy market GitHub action run]() and [forum discussion](https://www.comp.xyz/t/add-market-eth-on-optimism/5274).\n\n\n## Proposal Actions\n\nThe first action sends mainnet ETH to Arbitrum’s Timelock in order to transfer it to the new Comet and thus seed the market reserves.\n\nThe second proposal action sets the Comet configuration and deploys a new Comet implementation on Optimism. This sends the encoded `setFactory`, `setConfiguration`, `deployAndUpgradeTo` calls across the bridge to the governance receiver on Optimism. It also calls `setRewardConfig` on the Optimism rewards contract, to establish Optimism’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 4 COMP/day and borrow speed to be 3 COMP/day. Also it wraps received ETH and transfers it to the new Comet.\n\nThe third action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Arbitrum cUSDCv3 market.';
     const txn = await govDeploymentManager.retry(async () =>{
       // console.log('in TXN', actions)
       return trace(await governor.propose(...(await proposal(mainnetActions, description))));
@@ -191,7 +191,7 @@ export default migration('1713012100_configurate_and_ens', {
       timelock
     } = await govDeploymentManager.getContracts();
 
-    // 1.
+    // 1. & 2
     const wstethInfo = await comet.getAssetInfoByAddress(wstETH.address);
     const rethInfo = await comet.getAssetInfoByAddress(rETH.address);
     const wbtcInfo = await comet.getAssetInfoByAddress(WBTC.address);
@@ -199,19 +199,18 @@ export default migration('1713012100_configurate_and_ens', {
     // expect(wstethInfo.supplyCap).to.be.eq(exp(1_300, 18));
     // expect(wbtcInfo.supplyCap).to.be.eq(exp(60, 8));
     expect(await comet.pauseGuardian()).to.be.eq('0x3fFd6c073a4ba24a113B18C8F373569640916A45');
-
-    // 2. & 3.
     expect(await comet.getReserves()).to.be.equal(wethAmountToBridge);
 
-    // 4. & 5.
     const opCOMP = new Contract(
-      '0x7e7d4467112689329f7E06571eD0E8CbAd4910eE',
+      opCOMPAddress,
       ['function balanceOf(address account) external view returns (uint256)'],
       deploymentManager.hre.ethers.provider
     );
     expect((await opCOMP.balanceOf(rewards.address)).gt(exp(2_500, 18))).to.be.true;
+    // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(4 / 86400, 15, 18)); // 46296296296
+    // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(3 / 86400, 15, 18)); // 34722222222
 
-    // 6. & 7.
+    // 3.
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
     const ENSRegistry = await govDeploymentManager.existing('ENSRegistry', ENSRegistryAddress);
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
@@ -279,9 +278,5 @@ export default migration('1713012100_configurate_and_ens', {
         },
       ],
     });
-
-    // 8.
-    // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(4 / 86400, 15, 18)); // 46296296296
-    // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(3 / 86400, 15, 18)); // 34722222222
   }
 });
