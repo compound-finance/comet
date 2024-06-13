@@ -16,6 +16,7 @@ const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 const opCOMPAddress = '0x7e7d4467112689329f7E06571eD0E8CbAd4910eE';
+
 const wethAmountToBridge = exp(500, 18);
 
 export default migration('1713012100_configurate_and_ens', {
@@ -126,8 +127,6 @@ export default migration('1713012100_configurate_and_ens', {
         ],
       ]
     );
-
-    // COMP speeds for rewards are setted, but the bridge of tokens does not happen, because it was bridged in the USDC market proposal 
 
     const mainnetActions = [
       // 1. Bridge ETH from Ethereum to OP timelock using L1StandardBridge

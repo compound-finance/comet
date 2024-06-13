@@ -2,7 +2,6 @@ import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { expectApproximately, expectBase, expectRevertCustom, getInterest, hasMinBorrowGreaterThanOne, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
 import { ContractReceipt } from 'ethers';
-import { isOptimismWethDeploymentWithCbEETHAsCollateral } from './SupplyScenario';
 
 async function testTransferCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
   const comet = await context.getComet();
@@ -44,11 +43,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     `Comet#transfer > collateral asset ${i}, enough balance`,
     {
       filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToTransfer),
-      cometBalances: async (ctx) => (
-        {
-          albert: { [`$asset${i}`]: (await isOptimismWethDeploymentWithCbEETHAsCollateral(ctx, i))? 50 : amountToTransfer },
-        }
-      ),
+      cometBalances: {
+        albert: { [`$asset${i}`]: amountToTransfer },
+      },
     },
     async (_properties, context) => {
       return await testTransferCollateral(context, i);
@@ -62,11 +59,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     `Comet#transferFrom > collateral asset ${i}, enough balance`,
     {
       filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToTransfer),
-      cometBalances: async (ctx) => (
-        {
-          albert: { [`$asset${i}`]: (await isOptimismWethDeploymentWithCbEETHAsCollateral(ctx, i))? 50 : amountToTransfer },
-        }
-      ),
+      cometBalances: {
+        albert: { [`$asset${i}`]: amountToTransfer },
+      },
     },
     async (_properties, context) => {
       return await testTransferFromCollateral(context, i);

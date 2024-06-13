@@ -72,20 +72,6 @@ async function testSupplyFromCollateral(context: CometContext, assetNum: number)
   }
 }
 
-export async function isOptimismWethDeploymentWithCbEETHAsCollateral(context: CometContext, assetNum: number): Promise<boolean>  {
-  const matchedDeployment = context.world.deploymentManager.network === 'optimism' && context.world.deploymentManager.deployment === 'weth';
-  if (!matchedDeployment) {
-    return false;
-  }  
-  const comet = await context.getComet();
-
-  console.log('num', assetNum);
-  const assetInfo = await comet.getAssetInfo(assetNum);
-  const asset = context.getAssetByAddress(assetInfo.asset);
-  const symbol = await asset.token.symbol();
-  return symbol === 'cbETH';
-}
-
 for (let i = 0; i < MAX_ASSETS; i++) {
   const amountToSupply = 100; // in units of asset, not wei
   scenario(
@@ -95,11 +81,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       // hypothetical assets added during the migration/proposal constraint because those assets don't exist
       // yet
       filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToSupply),
-      tokenBalances: async (ctx) => (
-        {
-          albert: { [`$asset${i}`]: (await isOptimismWethDeploymentWithCbEETHAsCollateral(ctx, i))? 50 : amountToSupply },
-        }
-      ),
+      tokenBalances: {
+        albert: { [`$asset${i}`]: amountToSupply },
+      },
     },
     async (_properties, context) => {
       return await testSupplyCollateral(context, i);
@@ -113,11 +97,9 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     `Comet#supplyFrom > collateral asset ${i}`,
     {
       filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToSupply),
-      tokenBalances: async (ctx) => (
-        {
-          albert: { [`$asset${i}`]: (await isOptimismWethDeploymentWithCbEETHAsCollateral(ctx, i))? 50 : amountToSupply },
-        }
-      ),
+      tokenBalances: {
+        albert: { [`$asset${i}`]: amountToSupply },
+      },
     },
     async (_properties, context) => {
       return await testSupplyFromCollateral(context, i);
