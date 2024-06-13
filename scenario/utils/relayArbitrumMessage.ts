@@ -29,7 +29,13 @@ export async function relayArbitrumMessage(
     const wordLength = 2 * 32;
     const innnerData = header + data.slice(headerLength + (11 * wordLength));
     const toValue = data.slice(headerLength + (2 * wordLength), headerLength + (3 * wordLength));
-    const toAddress = BigNumber.from(`0x${toValue}`).toHexString();
+    let toAddress = BigNumber.from(`0x${toValue}`).toHexString();
+    
+    // if lenght of toAddress is less than 42, then it is padded with 0s and we need to add them after 0x
+    if(toAddress.length < 42) {
+      toAddress = `0x${toAddress.slice(2).padStart(40, '0')}`;
+    }
+
     const messageNum = topics[1];
     return {
       data: innnerData,
