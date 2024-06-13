@@ -185,7 +185,7 @@ export default migration('1713012100_configurate_and_ens', {
       rewards,
       wstETH,
       rETH,
-      cbETH
+      WBTC
     } = await deploymentManager.getContracts();
 
     const {
@@ -195,10 +195,10 @@ export default migration('1713012100_configurate_and_ens', {
     // 1.
     const wstethInfo = await comet.getAssetInfoByAddress(wstETH.address);
     const rethInfo = await comet.getAssetInfoByAddress(rETH.address);
-    const cbethInfo = await comet.getAssetInfoByAddress(cbETH.address);
-    // expect(wstethInfo.supplyCap).to.be.eq(exp(400, 8));
-    // expect(rethInfo.supplyCap).to.be.eq(exp(11_000, 18));
-    // expect(cbethInfo.supplyCap).to.be.eq(exp(1_000, 18));
+    const wbtcInfo = await comet.getAssetInfoByAddress(WBTC.address);
+    // expect(rethInfo.supplyCap).to.be.eq(exp(470, 18));
+    // expect(wstethInfo.supplyCap).to.be.eq(exp(1_300, 18));
+    // expect(wbtcInfo.supplyCap).to.be.eq(exp(60, 8));
     expect(await comet.pauseGuardian()).to.be.eq('0x3fFd6c073a4ba24a113B18C8F373569640916A45');
 
     // 2. & 3.
@@ -282,7 +282,7 @@ export default migration('1713012100_configurate_and_ens', {
     });
 
     // 8.
-    // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(0);
-    // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(34.74 / 86400, 15, 18));
+    // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(4 / 86400, 15, 18)); // 46296296296
+    // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(3 / 86400, 15, 18)); // 34722222222
   }
 });

@@ -5,7 +5,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const WETH = await deploymentManager.existing('WETH', '0x4200000000000000000000000000000000000006', 'optimism');
   const rETH = await deploymentManager.existing('rETH', '0x9Bcef72be871e61ED4fBbc7630889beE758eb81D', 'optimism');
   const wstETH = await deploymentManager.existing('wstETH', '0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb', 'optimism');
-  const cbETH = await deploymentManager.existing('cbETH', '0xadDb6A0412DE1BA0F936DCaeb8Aaa24578dcF3B2', 'optimism');
+  const WBTC = await deploymentManager.existing('WBTC', '0x68f180fcCe6836688e9084f035309E29Bf0A2095', 'optimism');
   const COMP = await deploymentManager.existing('COMP', '0x7e7d4467112689329f7E06571eD0E8CbAd4910eE', 'optimism');
 
   // Deploy WstETHPriceFeed
@@ -38,13 +38,15 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     ]
   );
 
-  // Deploy scaling price feed for cbETH
-  const cbETHScalingPriceFeed = await deploymentManager.deploy(
-    'cbETH:priceFeed',
-    'pricefeeds/ScalingPriceFeed.sol',
+  // Deploy scaling price feed for WBTC
+  const WBTCReverseMultiplicativePriceFeed = await deploymentManager.deploy(
+    'WBTC:priceFeed',
+    'pricefeeds/ReverseMultiplicativePriceFeed.sol',
     [
-      '0x138b809B8472fF09Cd3E075E6EcbB2e42D41d870', // cbETH / ETH price feed
-      8                                             // decimals
+      '0x718A5788b89454aAE3A028AE9c111A29Be6c2a6F', // WBTC / USD price feed
+      '0x13e3Ee699D1909E989722E753853AE30b17e08c5', // ETH / USD price feed
+      8,                                            // decimals
+      'WBTC / USD, USD / ETH'                       // description
     ]
   );
 
