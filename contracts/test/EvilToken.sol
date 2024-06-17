@@ -13,7 +13,8 @@ contract EvilToken is FaucetToken {
     enum AttackType {
         TRANSFER_FROM,
         WITHDRAW_FROM,
-        SUPPLY_FROM
+        SUPPLY_FROM,
+        BUY_COLLATERAL
     }
 
     struct ReentryAttack {
@@ -52,20 +53,27 @@ contract EvilToken is FaucetToken {
         attack = attack_;
     }
 
-    function transfer(address, uint256) external override returns (bool) {
-        return performAttack();
-    }
-
-    function transferFrom(address, address, uint256) external override returns (bool) {
-        return performAttack();
-    }
-
-    function performAttack() internal returns (bool) {
-        ReentryAttack memory reentryAttack = attack;
+    function transfer(address dst, uint256 amount) public override returns (bool) {
         numberOfCalls++;
-        if (numberOfCalls > reentryAttack.maxCalls) {
-            // do nothing
-        } else if (reentryAttack.attackType == AttackType.TRANSFER_FROM) {
+        if (numberOfCalls > attack.maxCalls){
+            return super.transfer(dst, amount);
+        } else {
+            return performAttack(address(this), dst, amount);
+        }
+    }
+
+    function transferFrom(address src, address dst, uint256 amount) public override returns (bool) {
+        numberOfCalls++;
+        if (numberOfCalls > attack.maxCalls) {
+            return super.transferFrom(src, dst, amount);
+        } else {
+            return performAttack(src, dst, amount);
+        }
+    }
+
+    function performAttack(address src, address dst, uint256 amount) internal returns (bool) {
+        ReentryAttack memory reentryAttack = attack;
+       if (reentryAttack.attackType == AttackType.TRANSFER_FROM) {
             Comet(payable(msg.sender)).transferFrom(
                 reentryAttack.source,
                 reentryAttack.destination,
@@ -84,6 +92,13 @@ contract EvilToken is FaucetToken {
                 reentryAttack.destination,
                 reentryAttack.asset,
                 reentryAttack.amount
+            );
+        }  else if (reentryAttack.attackType == AttackType.BUY_COLLATERAL) {
+            Comet(payable(msg.sender)).buyCollateral(
+                reentryAttack.asset,
+                0,
+                reentryAttack.amount,
+                reentryAttack.destination
             );
         } else {
             revert("invalid reentry attack");
