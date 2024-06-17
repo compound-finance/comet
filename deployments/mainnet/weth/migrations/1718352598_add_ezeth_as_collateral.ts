@@ -5,7 +5,7 @@ import { exp, proposal } from '../../../../src/deploy';
 
 
 const EZETH_ADDRESS = '0xbf5495Efe5DB9ce00f80364C8B423567e58d2110';
-const EZETH_PRICE_FEED_ADDRESS = '0x636A000262F6aA9e1F094ABF0aD8f645C44f641C';
+const EZETH_PRICE_FEED_ADDRESS = '0x387dBc0fB00b26fb085aa658527D5BE98302c84C';
 
 export default migration('1718352598_add_ezeth_as_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
@@ -68,6 +68,7 @@ export default migration('1718352598_add_ezeth_as_collateral', {
         args: [configurator.address, comet.address],
       },
     ];
+    console.log('initial', (await deploymentManager.hre.ethers.provider.getBlock('latest')).timestamp);
 
     const description = '# Add rsETH, weETH and osETH as collaterals into cWETHv3 on Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add rsETH, weETH  and osETH into cWETHv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III WETH market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet weETH](https://www.comp.xyz/t/add-weeth-market-on-ethereum/5179/3), [recommendations from Gauntlet rsETH](https://www.comp.xyz/t/add-rseth-market-on-ethereum-mainnet/5118/8) and [recommendations from Gauntlet osETH](https://www.comp.xyz/t/add-oseth-as-a-collateral-on-ethereum-mainnet/5272/2).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/854), [deploy market GitHub action run]() and [forum discussion weETH](https://www.comp.xyz/t/add-weeth-market-on-ethereum/5179), [forum discussion rsETH](https://www.comp.xyz/t/add-rseth-market-on-ethereum-mainnet/5118) and [forum discussion osETH](https://www.comp.xyz/t/add-oseth-as-a-collateral-on-ethereum-mainnet/5272).\n\n\n## Proposal Actions\n\nThe first proposal action adds rsETH asset as collateral with corresponding configurations.\n\nThe second action adds weETH asset as collateral with corresponding configurations.\n\nThe third action adds osETH asset as collateral with corresponding configurations.\n\nThe fourth action sets new Annual Supply Interest Rate Slope High to 100%.\n\nThe fifth action sets new Annual Borrow Interest Rate Slope High to 115%.\n\nThe sixth action deploys and upgrades Comet to a new version.';
     const txn = await deploymentManager.retry(async () =>
@@ -113,6 +114,8 @@ export default migration('1718352598_add_ezeth_as_collateral', {
     const cometEzETHAssetInfo = await comet.getAssetInfoByAddress(
       EZETH_ADDRESS
     );
+    console.log(await comet.getPrice(cometEzETHAssetInfo.priceFeed));
+
     expect(ezETHAssetIndex).to.be.equal(cometEzETHAssetInfo.offset);
     expect(ezETHAssetConfig.asset).to.be.equal(cometEzETHAssetInfo.asset);
     expect(exp(1, ezETHAssetConfig.decimals)).to.be.equal(

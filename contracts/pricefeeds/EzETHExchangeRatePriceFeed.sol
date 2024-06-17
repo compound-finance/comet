@@ -66,6 +66,8 @@ contract EzETHExchangeRatePriceFeed is IPriceFeed {
         uint80 answeredInRound
     ) {
         uint256 rate = IBalancerRateProvider(underlyingPriceFeed).getRate();
+        // protocol uses only the answer value. Other data fields are not provided by the underlying pricefeed and are not used in Comet protocol
+        // https://etherscan.io/address/0x387dBc0fB00b26fb085aa658527D5BE98302c84C#readProxyContract
         return (0, scalePrice(int256(rate)), 0, 0, 0);
     }
 
