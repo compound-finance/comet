@@ -87,6 +87,7 @@ export default migration('1713012100_configurate_and_ens', {
       [comet.address, opCOMPAddress]
     );
 
+    // wrap and transfer eth to comet on optimism to save on gas
     const depositCalldata = await calldata(WETH.populateTransaction.deposit());
     const transferCalldata = await calldata(WETH.populateTransaction.transfer(comet.address, wethAmountToBridge));
 
