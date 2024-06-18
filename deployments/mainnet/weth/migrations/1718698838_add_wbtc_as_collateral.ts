@@ -70,7 +70,7 @@ export default migration('1718698838_add_wbtc_as_collateral', {
       },
     ];
 
-    const description = 'DESCRIPTION';
+    const description = '# Add WBTC as collateral into cWETHv3 on Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add WBTC into cWETHv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III WETH market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/add-wbtc-to-weth-comets-on-ethereum-and-arbitrum/5332/1).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/868), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/9562411576/job/26358732848) and [forum discussion](https://www.comp.xyz/t/add-wbtc-to-weth-comets-on-ethereum-and-arbitrum/5332).\n\n\n## Proposal Actions\n\nThe first proposal action adds WBTC asset as collateral with the corresponding configuration.\n\nThe second action deploys and upgrades Comet to a new version.';
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
