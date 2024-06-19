@@ -17,12 +17,14 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const COMP = await deploymentManager.existing('COMP', '0x354A6dA3fcde098F8389cad84b0182725c6C91dE', 'arbitrum');
 
   // Deploy scaling price feed for cbETH
-  const wstETHScalingPriceFeed = await deploymentManager.deploy(
+  const wstETHMultiplicativePriceFeed = await deploymentManager.deploy(
     'wstETH:priceFeed',
-    'pricefeeds/ScalingPriceFeed.sol',
+    'pricefeeds/MultiplicativePriceFeed.sol',
     [
-      '0xb523AE262D20A936BC152e6023996e46FDC2A95D', // wstETH / USD price feed
-      8                                             // decimals
+      '0xb523AE262D20A936BC152e6023996e46FDC2A95D', // wstETH / ETH price feed
+      '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612', // ETH / USD price feed
+      8,                                            // decimals
+      'wstETH/USD price feed'                       // description
     ]
   );
 
