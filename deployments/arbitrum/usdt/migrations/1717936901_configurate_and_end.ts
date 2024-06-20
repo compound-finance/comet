@@ -339,7 +339,7 @@ export default migration('1717936901_configurate_and_end', {
       ],
     });
 
-    // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(12 / 86400, 15, 18));
-    // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(10 / 86400, 15, 18));
+    expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(12 / 86400, 15, 18)); // 138888888888
+    expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(10 / 86400, 15, 18)); // 115740740740
   }
 });
