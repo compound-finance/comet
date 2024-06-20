@@ -100,6 +100,19 @@ export default migration('1717936901_configurate_and_end', {
     const newMarketObject = { baseSymbol: 'USDT', cometAddress: comet.address };
     const officialMarketsJSON = JSON.parse(await ENSResolver.text(subdomainHash, ENSTextRecordKey));
 
+    // add optimism-usdt comet (0x995E394b8B2437aC8Ce61Ee0bC610D617962B214)
+    // optimism chain id is 10
+    // and arbitrum-weth comet (0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486)
+    // arbitrum chain id is 42161
+    // if there is no usdt comet on optimism chain, add it
+    if (!officialMarketsJSON[10].find(market => market.baseSymbol === 'USDT')){
+      officialMarketsJSON[10].push({ baseSymbol: 'USDT', cometAddress: '0x995E394b8B2437aC8Ce61Ee0bC610D617962B214' });
+    }
+
+    if (!officialMarketsJSON[42161].find(market => market.baseSymbol === 'WETH')) {
+      officialMarketsJSON[42161].push({ baseSymbol: 'WETH', cometAddress: '0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486' });
+    }
+
     if (officialMarketsJSON[ArbitrumChainId]) {
       officialMarketsJSON[ArbitrumChainId].push(newMarketObject);
     } else {
@@ -300,6 +313,10 @@ export default migration('1717936901_configurate_and_end', {
           cometAddress: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf',
         },
         {
+          baseSymbol: 'WETH',
+          cometAddress: '0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486',
+        },
+        {
           baseSymbol: 'USDT',
           cometAddress: comet.address,
         },
@@ -314,6 +331,10 @@ export default migration('1717936901_configurate_and_end', {
         {
           baseSymbol: 'USDC',
           cometAddress: '0x2e44e174f7D53F0212823acC11C01A11d58c5bCB',
+        },
+        {
+          baseSymbol: 'USDT',
+          cometAddress: '0x995E394b8B2437aC8Ce61Ee0bC610D617962B214',
         },
       ],
     });
