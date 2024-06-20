@@ -251,11 +251,11 @@ export default migration('1717936901_configurate_and_end', {
     const GMXInfo = await comet.getAssetInfoByAddress(GMX.address);
 
     // check suplly caps
-    // expect(await ARBInfo.supplyCap).to.be.eq(exp(7_500_000, 18));
-    // expect(await WETHInfo.supplyCap).to.be.eq(exp(7_500, 18));
-    // expect(await wstETHInfo.supplyCap).to.be.eq(exp(1_500, 18));
-    // expect(await WBTCInfo.supplyCap).to.be.eq(exp(250, 8));
-    // expect(await GMXInfo.supplyCap).to.be.eq(exp(100_000, 18));
+    expect(await ARBInfo.supplyCap).to.be.eq(exp(7_500_000, 18));
+    expect(await WETHInfo.supplyCap).to.be.eq(exp(7_500, 18));
+    expect(await wstETHInfo.supplyCap).to.be.eq(exp(1_500, 18));
+    expect(await WBTCInfo.supplyCap).to.be.eq(exp(250, 8));
+    expect(await GMXInfo.supplyCap).to.be.eq(exp(100_000, 18));
 
     expect(await comet.pauseGuardian()).to.be.eq('0x78E6317DD6D43DdbDa00Dce32C2CbaFc99361a9d');
 
