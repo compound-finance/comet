@@ -13,7 +13,7 @@ const WEETH_PRICE_FEED_ADDRESS = '0x5c9C449BbC9a6075A2c061dF312a35fd1E05fF22';
 const OSETH_ADDRESS = '0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38';
 const OSETH_PRICE_FEED_ADDRESS = '0x66ac817f997Efd114EDFcccdce99F3268557B32C';
 
-export default migration('1716798961_add_rseth_and_weeth', {
+export default migration('1718881256_add_rseth_oseth_and_weeth.ts', {
   async prepare(deploymentManager: DeploymentManager) {
     const _rsETHScalingPriceFeed = await deploymentManager.deploy(
       'rsETH:priceFeed',
@@ -23,6 +23,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
         8                                             // decimals
       ]
     );
+
     const _weETHScalingPriceFeed = await deploymentManager.deploy(
       'weETH:priceFeed',
       'pricefeeds/ScalingPriceFeed.sol',
@@ -31,6 +32,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
         8                                             // decimals
       ]
     );
+
     const _osETHScalingPriceFeed = await deploymentManager.deploy(
       'osETH:priceFeed',
       'pricefeeds/ScalingPriceFeed.sol',
@@ -39,10 +41,17 @@ export default migration('1716798961_add_rseth_and_weeth', {
         8                                             // decimals
       ]
     );
-    return {rsETHScalingPriceFeed: _rsETHScalingPriceFeed.address, weETHScalingPriceFeed: _weETHScalingPriceFeed.address, osETHScalingPriceFeed: _osETHScalingPriceFeed.address};
+    return { rsETHScalingPriceFeed: _rsETHScalingPriceFeed.address, weETHScalingPriceFeed: _weETHScalingPriceFeed.address, osETHScalingPriceFeed: _osETHScalingPriceFeed.address };
   },
 
-  async enact(deploymentManager: DeploymentManager, { rsETHScalingPriceFeed, weETHScalingPriceFeed, osETHScalingPriceFeed }) {
+  async enact(
+    deploymentManager: DeploymentManager,
+    _,
+    {
+      rsETHScalingPriceFeed,
+      weETHScalingPriceFeed,
+      osETHScalingPriceFeed
+    }) {
 
     const trace = deploymentManager.tracer();
 
@@ -164,7 +173,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
       },
     ];
 
-    const description = '# Add rsETH, weETH and osETH as collaterals into cWETHv3 on Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add rsETH, weETH  and osETH into cWETHv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III WETH market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet weETH](https://www.comp.xyz/t/add-weeth-market-on-ethereum/5179/3), [recommendations from Gauntlet rsETH](https://www.comp.xyz/t/add-rseth-market-on-ethereum-mainnet/5118/8) and [recommendations from Gauntlet osETH](https://www.comp.xyz/t/add-oseth-as-a-collateral-on-ethereum-mainnet/5272/2).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/854), [deploy market GitHub action run]() and [forum discussion weETH](https://www.comp.xyz/t/add-weeth-market-on-ethereum/5179), [forum discussion rsETH](https://www.comp.xyz/t/add-rseth-market-on-ethereum-mainnet/5118) and [forum discussion osETH](https://www.comp.xyz/t/add-oseth-as-a-collateral-on-ethereum-mainnet/5272).\n\n\n## Proposal Actions\n\nThe first proposal action adds rsETH asset as collateral with corresponding configurations.\n\nThe second action adds weETH asset as collateral with corresponding configurations.\n\nThe third action adds osETH asset as collateral with corresponding configurations.\n\nThe fourth action sets new Annual Supply Interest Rate Slope High to 100%.\n\nThe fifth action sets new Annual Borrow Interest Rate Slope High to 115%.\n\nThe sixth action deploys and upgrades Comet to a new version.';
+    const description = '# Add rsETH, weETH and osETH as collaterals into cWETHv3 on Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add rsETH, weETH  and osETH into cWETHv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III WETH market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet weETH](https://www.comp.xyz/t/add-weeth-market-on-ethereum/5179/3), [recommendations from Gauntlet rsETH](https://www.comp.xyz/t/add-rseth-market-on-ethereum-mainnet/5118/8) and [recommendations from Gauntlet osETH](https://www.comp.xyz/t/add-oseth-as-a-collateral-on-ethereum-mainnet/5272/2).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/854), [deploy market GitHub action run](<>) and [forum discussion weETH](https://www.comp.xyz/t/add-weeth-market-on-ethereum/5179), [forum discussion rsETH](https://www.comp.xyz/t/add-rseth-market-on-ethereum-mainnet/5118) and [forum discussion osETH](https://www.comp.xyz/t/add-oseth-as-a-collateral-on-ethereum-mainnet/5272).\n\n\n## Proposal Actions\n\nThe first proposal action adds rsETH asset as collateral with corresponding configurations.\n\nThe second action adds weETH asset as collateral with corresponding configurations.\n\nThe third action adds osETH asset as collateral with corresponding configurations.\n\nThe fourth action sets new Annual Supply Interest Rate Slope High to 100%.\n\nThe fifth action sets new Annual Borrow Interest Rate Slope High to 115%.\n\nThe sixth action deploys and upgrades Comet to a new version.';
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
@@ -180,7 +189,7 @@ export default migration('1716798961_add_rseth_and_weeth', {
 
   async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
     return false;
-  }, 
+  },
 
   async verify(deploymentManager: DeploymentManager) {
     const { comet, configurator } = await deploymentManager.getContracts();
