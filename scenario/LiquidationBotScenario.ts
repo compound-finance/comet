@@ -98,7 +98,6 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     },
     polygon: {
       usdc: 2250000,
-      usdt: 2250000
     },
     arbitrum: {
       'usdc.e': 10000000, 
@@ -136,18 +135,6 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         ' == 300000',
         // MATICX
         ' == 0',
-      ],
-      usdt: [
-        // WMATIC
-        ' == 300000',
-        // WETH
-        ' == 400',
-        // MATICX
-        ' == 300000',
-        // stMATIC
-        ' == 300000',
-        // WBTC
-        ' == 20'
       ],
     },
     arbitrum: {
@@ -296,7 +283,6 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     },
     polygon: {
       usdc: 3000000,
-      usdt: 3000000
     },
     arbitrum: {
       'usdc.e': 10000000, 
@@ -335,18 +321,6 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // MATICX
         ' == 0',
       ],
-      usdt: [
-        // WMATIC
-        ' == 25000000',
-        // WETH
-        ' == 10000',
-        // MATICX
-        ' == 25000000',
-        // stMATIC
-        ' == 25000000',
-        // WBTC
-        ' == 1000'
-      ]
     },
     arbitrum: {
       'usdc.e': [
@@ -403,18 +377,6 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         // MATICX
         exp(5, 18)
       ],
-      usdt: [
-        // WMATIC
-        exp(50000, 18),
-        // WETH
-        exp(4000, 18),
-        // MATICX
-        exp(50000, 18),
-        // stMATIC
-        exp(50000, 18),
-        // WBTC
-        exp(200, 8)
-      ]
     },
     arbitrum: {
       'usdc.e': [

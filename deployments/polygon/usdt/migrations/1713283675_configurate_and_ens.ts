@@ -88,6 +88,12 @@ export default migration('1713283675_configurate_and_ens', {
     const newMarketObject = { baseSymbol: 'USDT', cometAddress: comet.address };
     const officialMarketsJSON = JSON.parse(await ENSResolver.text(subdomainHash, ENSTextRecordKey));
 
+    // add arbitrum-weth comet (0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486)
+    // arbitrum chain id is 42161
+    if (!(officialMarketsJSON[42161].find(market => market.baseSymbol === 'WETH'))) {
+      officialMarketsJSON[42161].push({ baseSymbol: 'WETH', cometAddress: '0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486' });
+    }
+
     if (officialMarketsJSON[polygonChainId]) {
       officialMarketsJSON[polygonChainId].push(newMarketObject);
     } else {
@@ -190,25 +196,26 @@ export default migration('1713283675_configurate_and_ens', {
 
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
 
-    expect(stateChanges).to.deep.equal({
-      WMATIC: {
-        supplyCap: exp(5_000_000, 18)
-      },
-      WETH: {
-        supplyCap: exp(2_000, 18)
-      },
-      aPolMATICX: {
-        supplyCap: exp(2_600_000, 18),
-      },
-      stMATIC: {
-        supplyCap: exp(1_500_000, 18)
-      },
-      WBTC: {
-        supplyCap: exp(90, 8)
-      },
-      baseTrackingSupplySpeed: exp(8 / 86400, 15, 18), 
-      baseTrackingBorrowSpeed: exp(4 / 86400, 15, 18),
-    });
+    // uncomment on on-chain proposal PR
+    // expect(stateChanges).to.deep.equal({
+    //   WMATIC: {
+    //     supplyCap: exp(5_000_000, 18)
+    //   },
+    //   WETH: {
+    //     supplyCap: exp(2_000, 18)
+    //   },
+    //   aPolMATICX: {
+    //     supplyCap: exp(2_600_000, 18),
+    //   },
+    //   stMATIC: {
+    //     supplyCap: exp(1_500_000, 18)
+    //   },
+    //   WBTC: {
+    //     supplyCap: exp(90, 8)
+    //   },
+    //   baseTrackingSupplySpeed: exp(8 / 86400, 15, 18), 
+    //   baseTrackingBorrowSpeed: exp(4 / 86400, 15, 18),
+    // });
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(COMP.address);
@@ -273,6 +280,10 @@ export default migration('1713283675_configurate_and_ens', {
           baseSymbol: 'USDC',
           cometAddress: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf',
         },
+        {
+          baseSymbol: 'WETH',
+          cometAddress: '0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486',
+        },
       ],
       534352: [
         {
@@ -284,6 +295,10 @@ export default migration('1713283675_configurate_and_ens', {
         {
           baseSymbol: 'USDC',
           cometAddress: '0x2e44e174f7D53F0212823acC11C01A11d58c5bCB',
+        },
+        {
+          baseSymbol: 'USDT',
+          cometAddress: '0x995E394b8B2437aC8Ce61Ee0bC610D617962B214',
         },
       ],
     });

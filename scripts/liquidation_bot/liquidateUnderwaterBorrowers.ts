@@ -70,8 +70,7 @@ const liquidationThresholds = {
     'usdc': 10e6
   },
   polygon: {
-    'usdc': 10e6,
-    'usdt': 10e6
+    'usdc': 10e6
   },
   arbitrum: {
     'usdc.e': 10e6, 
