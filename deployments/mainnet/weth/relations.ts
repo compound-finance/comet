@@ -14,7 +14,7 @@ export default {
   'AppProxyUpgradeable': {
     artifact: 'contracts/ERC20.sol:ERC20',
   },
-  UUPSProxy: {
+  TransparentUpgradeableProxy: {
     artifact: 'contracts/ERC20.sol:ERC20',
     delegates: {
       field: {
