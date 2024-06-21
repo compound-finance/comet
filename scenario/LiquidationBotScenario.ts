@@ -97,7 +97,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       weth: 20
     },
     polygon: {
-      usdc: 2250000,
+      usdc: 2250000
     },
     arbitrum: {
       'usdc.e': 10000000, 
@@ -282,7 +282,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       weth: 5000
     },
     polygon: {
-      usdc: 3000000,
+      usdc: 3000000
     },
     arbitrum: {
       'usdc.e': 10000000, 
@@ -320,7 +320,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         ' == 2500000',
         // MATICX
         ' == 0',
-      ],
+      ]
     },
     arbitrum: {
       'usdc.e': [
@@ -376,7 +376,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         exp(5000, 18),
         // MATICX
         exp(5, 18)
-      ],
+      ]
     },
     arbitrum: {
       'usdc.e': [
