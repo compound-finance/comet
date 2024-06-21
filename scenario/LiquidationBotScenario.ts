@@ -5,6 +5,7 @@ import { ethers, event, exp, wait } from '../test/helpers';
 import CometActor from './context/CometActor';
 import { CometInterface, OnChainLiquidator } from '../build/types';
 import { getPoolConfig, flashLoanPools } from '../scripts/liquidation_bot/liquidateUnderwaterBorrowers';
+import { isScenarioWithMaticxAssetUsdtDeployment } from './WithdrawScenario';
 
 interface LiquidationAddresses {
   balancerVault: string;
@@ -74,8 +75,9 @@ async function canBeLiquidatedByBot(ctx: CometContext, assetNum: number): Promis
     // Reason: Most liquidity lives in MATICX / MATIC pools, which the liquidation bot cannot use if the base asset is not MATIC
     MaticX: {
       network: 'polygon',
-      deployments: ['usdc']
-    }
+      deployments: ['usdc', 'usdt']
+    },
+    
   };
   const comet = await ctx.getComet();
   const assetInfo = await comet.getAssetInfo(assetNum);
@@ -95,7 +97,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       weth: 20
     },
     polygon: {
-      usdc: 2250000
+      usdc: 2250000,
     },
     arbitrum: {
       'usdc.e': 10000000, 
@@ -280,7 +282,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       weth: 5000
     },
     polygon: {
-      usdc: 3000000
+      usdc: 3000000,
     },
     arbitrum: {
       'usdc.e': 10000000, 
@@ -318,7 +320,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         ' == 2500000',
         // MATICX
         ' == 0',
-      ]
+      ],
     },
     arbitrum: {
       'usdc.e': [
@@ -374,7 +376,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         exp(5000, 18),
         // MATICX
         exp(5, 18)
-      ]
+      ],
     },
     arbitrum: {
       'usdc.e': [
@@ -514,12 +516,14 @@ scenario(
     tokenBalances: {
       $comet: { $base: 100000 },
     },
-    cometBalances: {
-      albert: {
-        $asset0: ' == 200',
-      },
-      betty: { $base: 1000 },
-    },
+    cometBalances: async (ctx) => (
+      {
+        albert: {
+          $asset0: isScenarioWithMaticxAssetUsdtDeployment(ctx) ? ' == 20000': ' == 200'
+        },
+        betty: { $base: 1000 },
+      }
+    ),
   },
   async ({ comet, actors }, _context, world) => {
     const { albert, betty } = actors;
@@ -625,12 +629,14 @@ scenario(
     tokenBalances: {
       $comet: { $base: 100000 },
     },
-    cometBalances: {
-      albert: {
-        $asset0: ' == 200',
-      },
-      betty: { $base: 1000 },
-    },
+    cometBalances: async (ctx) => (
+      {
+        albert: {
+          $asset0: isScenarioWithMaticxAssetUsdtDeployment(ctx) ? ' == 20000': ' == 200'
+        },
+        betty: { $base: 1000 },
+      }
+    ),
   },
   async ({ comet, actors }, _context, world) => {
     const { albert, betty } = actors;
