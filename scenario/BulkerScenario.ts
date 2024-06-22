@@ -165,6 +165,7 @@ scenario(
     filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, { network: 'linea-goerli' }]),
     supplyCaps: {
       $asset0: 3000,
+      $asset1: 3000,
     },
     tokenBalances: {
       albert: { $base: '== 1000000', $asset0: 3000 },
@@ -177,7 +178,10 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const baseScale = (await comet.baseScale()).toBigInt();
-    const { asset: collateralAssetAddress, scale: scaleBN } = await comet.getAssetInfo(0);
+    // if asset 0 is native token we took asset 1
+    const { asset: asset0, scale: scale0 } = await comet.getAssetInfo(0);
+    const { asset: asset1, scale: scale1 } = await comet.getAssetInfo(1);
+    const { asset: collateralAssetAddress, scale: scaleBN } = asset0 === wrappedNativeToken ? { asset: asset1, scale: scale1 } : { asset: asset0, scale: scale0 };
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const collateralScale = scaleBN.toBigInt();
     const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
