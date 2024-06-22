@@ -5,7 +5,6 @@ import { ethers, event, exp, wait } from '../test/helpers';
 import CometActor from './context/CometActor';
 import { CometInterface, OnChainLiquidator } from '../build/types';
 import { getPoolConfig, flashLoanPools } from '../scripts/liquidation_bot/liquidateUnderwaterBorrowers';
-import { isScenarioWithMaticxAssetUsdtDeployment } from './WithdrawScenario';
 
 interface LiquidationAddresses {
   balancerVault: string;
@@ -516,14 +515,12 @@ scenario(
     tokenBalances: {
       $comet: { $base: 100000 },
     },
-    cometBalances: async (ctx) => (
-      {
-        albert: {
-          $asset0: isScenarioWithMaticxAssetUsdtDeployment(ctx) ? ' == 20000': ' == 200'
-        },
-        betty: { $base: 1000 },
-      }
-    ),
+    cometBalances: {
+      albert: {
+        $asset0: ' == 200',
+      },
+      betty: { $base: 1000 },
+    },
   },
   async ({ comet, actors }, _context, world) => {
     const { albert, betty } = actors;
@@ -629,14 +626,12 @@ scenario(
     tokenBalances: {
       $comet: { $base: 100000 },
     },
-    cometBalances: async (ctx) => (
-      {
-        albert: {
-          $asset0: isScenarioWithMaticxAssetUsdtDeployment(ctx) ? ' == 20000': ' == 200'
-        },
-        betty: { $base: 1000 },
-      }
-    ),
+    cometBalances: {
+      albert: {
+        $asset0: ' == 200',
+      },
+      betty: { $base: 1000 },
+    },
   },
   async ({ comet, actors }, _context, world) => {
     const { albert, betty } = actors;

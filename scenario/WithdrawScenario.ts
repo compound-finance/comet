@@ -1,7 +1,7 @@
 import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { expectApproximately, expectRevertCustom, hasMinBorrowGreaterThanOne, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS } from './utils';
-import { ContractReceipt, BigNumber } from 'ethers';
+import { ContractReceipt } from 'ethers';
 
 async function testWithdrawCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
   const comet = await context.getComet();
@@ -17,26 +17,6 @@ async function testWithdrawCollateral(context: CometContext, assetNum: number): 
   const txn = await albert.withdrawAsset({ asset: collateralAsset.address, amount: 100n * scale });
 
   expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
-  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
-
-  return txn; // return txn to measure gas
-}
-
-// some dust left in case of maticx asset
-async function testWithdrawCollateralMaticxSpecific(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
-  const comet = await context.getComet();
-  const { albert } = context.actors;
-  const { asset: assetAddress, scale: scaleBN } = await comet.getAssetInfo(assetNum);
-  const collateralAsset = context.getAssetByAddress(assetAddress);
-  const scale = scaleBN.toBigInt();
-
-  expect(await collateralAsset.balanceOf(albert.address)).to.be.closeTo(0n, BigNumber.from(10).pow(BigNumber.from(await collateralAsset.decimals()).div(2)).toBigInt());
-  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(100n * scale);
-
-  // Albert withdraws 100 units of collateral from Comet
-  const txn = await albert.withdrawAsset({ asset: collateralAsset.address, amount: 100n * scale });
-
-  expect(await collateralAsset.balanceOf(albert.address)).to.be.closeTo(100n * scale, BigNumber.from(10).pow(BigNumber.from(await collateralAsset.decimals()).div(2)).toBigInt());
   expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
 
   return txn; // return txn to measure gas
@@ -63,16 +43,6 @@ async function testWithdrawFromCollateral(context: CometContext, assetNum: numbe
   return txn; // return txn to measure gas
 }
 
-export const isScenarioWithMaticxAssetUsdtDeployment = (context: CometContext) => {
-  return context.world.deploymentManager.network === 'polygon' && context.world.deploymentManager.deployment === 'usdt';
-};
-
-const isMaticxAsset = async (context: CometContext, i: number) => {
-  const { asset: assetAddress, } = await (await context.getComet()).getAssetInfo(i);
-  const collateralAsset = context.getAssetByAddress(assetAddress);
-  return await collateralAsset.token.symbol() === 'aPolMATICX';
-};
-
 for (let i = 0; i < MAX_ASSETS; i++) {
   const amountToWithdraw = 100; // in units of asset, not wei
   scenario(
@@ -84,9 +54,6 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       },
     },
     async (_properties, context) => {
-      if(isScenarioWithMaticxAssetUsdtDeployment(context) && await isMaticxAsset(context, i)) {
-        return await testWithdrawCollateralMaticxSpecific(context, i);
-      }
       return await testWithdrawCollateral(context, i);
     }
   );

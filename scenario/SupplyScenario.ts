@@ -2,7 +2,6 @@ import { CometContext, scenario } from './context/CometContext';
 import { expect } from 'chai';
 import { expectApproximately, expectBase, expectRevertCustom, expectRevertMatches, getExpectedBaseBalance, getInterest, isTriviallySourceable, isValidAssetIndex, MAX_ASSETS, UINT256_MAX } from './utils';
 import { ContractReceipt } from 'ethers';
-import { BigNumber } from 'ethers';
 
 // XXX introduce a SupplyCapConstraint to separately test the happy path and revert path instead
 // of testing them conditionally
@@ -32,42 +31,6 @@ async function testSupplyCollateral(context: CometContext, assetNum: number): Pr
     const txn = await albert.supplyAsset({ asset: collateralAsset.address, amount: toSupply });
 
     expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupply);
-
-    return txn; // return txn to measure gas
-  }
-}
-
-async function testSupplyFromCollateralMaticxSpecific(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
-  const comet = await context.getComet();
-  const { albert, betty } = await context.actors;
-  const { asset: assetAddress, scale: scaleBN, supplyCap } = await comet.getAssetInfo(assetNum);
-  const collateralAsset = context.getAssetByAddress(assetAddress);
-  const scale = scaleBN.toBigInt();
-  const toSupply = 100n * scale;
-
-  expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(toSupply);
-  expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(0n);
-
-  await collateralAsset.approve(albert, comet.address);
-  await albert.allow(betty, true);
-
-  const totalCollateralSupply = (await comet.totalsCollateral(collateralAsset.address)).totalSupplyAsset.toBigInt();
-  if (totalCollateralSupply + toSupply > supplyCap.toBigInt()) {
-    await expectRevertCustom(
-      betty.supplyAssetFrom({
-        src: albert.address,
-        dst: betty.address,
-        asset: collateralAsset.address,
-        amount: toSupply,
-      }),
-      'SupplyCapExceeded()'
-    );
-  } else {
-    // Betty supplies 100 units of collateral from Albert
-    const txn = await betty.supplyAssetFrom({ src: albert.address, dst: betty.address, asset: collateralAsset.address, amount: toSupply });
-
-    expect(await collateralAsset.balanceOf(albert.address)).to.be.closeTo(0n, BigNumber.from(10).pow(BigNumber.from(await collateralAsset.decimals() - 1).div(2)).toBigInt());
-    expect(await comet.collateralBalanceOf(betty.address, collateralAsset.address)).to.be.equal(toSupply);
 
     return txn; // return txn to measure gas
   }
@@ -128,17 +91,6 @@ for (let i = 0; i < MAX_ASSETS; i++) {
   );
 }
 
-
-export const isScenarioWithMaticxAssetUsdtDeployment = (context: CometContext) => {
-  return context.world.deploymentManager.network === 'polygon' && context.world.deploymentManager.deployment === 'usdt';
-};
-
-const isMaticxAsset = async (context: CometContext, i: number) => {
-  const { asset: assetAddress, } = await (await context.getComet()).getAssetInfo(i);
-  const collateralAsset = context.getAssetByAddress(assetAddress);
-  return await collateralAsset.token.symbol() === 'aPolMATICX';
-};
-
 for (let i = 0; i < MAX_ASSETS; i++) {
   const amountToSupply = 100; // in units of asset, not wei
   scenario(
@@ -150,9 +102,6 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       },
     },
     async (_properties, context) => {
-      if(isScenarioWithMaticxAssetUsdtDeployment(context) && await isMaticxAsset(context, i)) {
-        return await testSupplyFromCollateralMaticxSpecific(context, i);
-      }
       return await testSupplyFromCollateral(context, i);
     }
   );
