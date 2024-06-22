@@ -223,7 +223,7 @@ export default migration('1717936901_configurate_and_end', {
   },
 
   async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager) {
