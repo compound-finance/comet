@@ -172,7 +172,7 @@ export default migration('1713283675_configurate_and_ens', {
       }
     ];
 
-    const description = "# Initialize cUSDTv3 on Polygon\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Polygon network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDT market on Polygon; upon execution, cUSDTv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/add-market-usdt-on-polygon/5190/3).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/858), [market deployment action](https://github.com/woof-software/comet/actions/runs/9365232640) and [forum discussion](https://www.comp.xyz/t/add-market-usdt-on-polygon/5190).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Polygon. This sends the encoded `setFactory`, `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Polygon. It also calls `setRewardConfig` on the Polygon rewards contract, to establish Polygon’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 8 COMP/day and borrow speed to be 4 COMP/day.\n\nThe second action reduces Compound [cUSDT](https://etherscan.io/address/0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9) reserves to Timelock, in order to seed the market reserves through the Polygon RootChainManager.\n\nThe third action approves Polygon’s [RootChainManager](https://etherscan.io/address/0xA0c68C638235ee32657e8f720a23ceC1bFc77C77) to take Timelock's USDT, in order to seed the reserves through the bridge.\n\nThe fourth action deposits 10K USDT from mainnet to the Polygon RootChainManager contract to bridge to Comet.\n\nThe fifth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Polygon cUSDTv3 market";
+    const description = "# Initialize cUSDTv3 on Polygon\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Polygon network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDT market on Polygon; upon execution, cUSDTv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/add-market-usdt-on-polygon/5190/3).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/858), [market deployment action](https://github.com/woof-software/comet/actions/runs/9627561011) and [forum discussion](https://www.comp.xyz/t/add-market-usdt-on-polygon/5190).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Polygon. This sends the encoded `setFactory`, `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Polygon. It also calls `setRewardConfig` on the Polygon rewards contract, to establish Polygon’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 8 COMP/day and borrow speed to be 4 COMP/day.\n\nThe second action reduces Compound [cUSDT](https://etherscan.io/address/0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9) reserves to Timelock, in order to seed the market reserves through the Polygon RootChainManager.\n\nThe third action approves Polygon’s [RootChainManager](https://etherscan.io/address/0xA0c68C638235ee32657e8f720a23ceC1bFc77C77) to take Timelock's USDT, in order to seed the reserves through the bridge.\n\nThe fourth action deposits 10K USDT from mainnet to the Polygon RootChainManager contract to bridge to Comet.\n\nThe fifth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Polygon cUSDTv3 market.";
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
@@ -206,25 +206,25 @@ export default migration('1713283675_configurate_and_ens', {
     } = await govDeploymentManager.getContracts();
 
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    // expect(stateChanges).to.deep.equal({
-    //   WMATIC: {
-    //     supplyCap: exp(5_000_000, 18)
-    //   },
-    //   WETH: {
-    //     supplyCap: exp(2_000, 18)
-    //   },
-    //   MaticX: {
-    //     supplyCap: exp(2_600_000, 18),
-    //   },
-    //   stMATIC: {
-    //     supplyCap: exp(1_500_000, 18)
-    //   },
-    //   WBTC: {
-    //     supplyCap: exp(90, 8)
-    //   },
-    //   baseTrackingSupplySpeed: exp(8 / 86400, 15, 18), 
-    //   baseTrackingBorrowSpeed: exp(4 / 86400, 15, 18),
-    // });
+    expect(stateChanges).to.deep.equal({
+      WMATIC: {
+        supplyCap: exp(5_000_000, 18)
+      },
+      WETH: {
+        supplyCap: exp(2_000, 18)
+      },
+      MaticX: {
+        supplyCap: exp(2_600_000, 18),
+      },
+      stMATIC: {
+        supplyCap: exp(1_500_000, 18)
+      },
+      WBTC: {
+        supplyCap: exp(90, 8)
+      },
+      baseTrackingSupplySpeed: exp(8 / 86400, 15, 18), 
+      baseTrackingBorrowSpeed: exp(4 / 86400, 15, 18),
+    });
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(COMP.address);
