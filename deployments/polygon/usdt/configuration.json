@@ -23,7 +23,7 @@
     "indexScale": "1e15",
     "baseSupplySpeed": "0e0",
     "baseBorrowSpeed": "0e0",
-    "baseMinForRewards": "10000e6"
+    "baseMinForRewards": "1000e6"
   },
   "rewardTokenAddress": "0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c",
   "assets": {
