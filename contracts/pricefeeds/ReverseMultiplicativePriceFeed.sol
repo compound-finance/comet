@@ -7,6 +7,7 @@ import "../IPriceFeed.sol";
 /**
  * @title Reverse multiplicative price feed
  * @notice A custom price feed that multiplies the price from one price feed and the inverse price from another price feed and returns the result
+ * @dev for example if we need tokenX to eth, but there is only tokenX to usd, we can use this price feed to get tokenX to eth: tokenX to usd * reversed(eth to usd)
  * @author Compound
  */
 contract ReverseMultiplicativePriceFeed is IPriceFeed {
