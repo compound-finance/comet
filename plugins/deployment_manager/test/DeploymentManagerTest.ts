@@ -326,7 +326,7 @@ describe('DeploymentManager', () => {
       expect(await deploymentManager.readArtifact(migration)).to.eql({ dog: 'cool' });
     });
   });
-  describe.only('Tracer prints output to terminal', ()  => {
+  describe('Tracer prints output to terminal', ()  => {
     let originalConsoleLog;
     let beforeTestDebugEnv;
     let console_state;
