@@ -449,11 +449,11 @@ export class DeploymentManager {
   }
 
   private proposalTracer = (tx: ContractReceipt) => {
-    debug(JSON.stringify(tx.events, null, 2));
-     let abi = [
-        'event ProposalCreated(uint256,address,address[],uint256[],string[],bytes[],uint256,uint256,string)',
-        'function Propose(uint256, address, address[],uint256[],string[],bytes[], uint256, uint256, string)',
-      ];
+    tx?.events && debug(JSON.stringify(tx.events, null, 2));
+    let abi = [
+      'event ProposalCreated(uint256,address,address[],uint256[],string[],bytes[],uint256,uint256,string)',
+      'function Propose(uint256, address, address[],uint256[],string[],bytes[], uint256, uint256, string)',
+    ];
     let iface = new ethers.utils.Interface(abi);
     tx.events.forEach((evt) => {
       try {
