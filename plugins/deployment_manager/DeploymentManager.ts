@@ -449,23 +449,26 @@ export class DeploymentManager {
   }
 
   private proposalTracer = (tx: ContractReceipt) => {
-    tx?.events && debug(JSON.stringify(tx.events, null, 2));
-    let abi = [
-      'event ProposalCreated(uint256,address,address[],uint256[],string[],bytes[],uint256,uint256,string)',
-      'function Propose(uint256, address, address[],uint256[],string[],bytes[], uint256, uint256, string)',
-    ];
-    let iface = new ethers.utils.Interface(abi);
-    tx.events.forEach((evt) => {
-      try {
-        let decoded = iface.parseLog(evt);
-        let calldata = iface.encodeFunctionData('Propose', decoded.args);
-        debug(['calldata:', calldata].join(' '));
-      } catch (e) {
-        debug(
-          `could not decode event ${evt?.event} - likely be unknown event type`
-        );
-      }
-    });
+    if(tx?.events)
+    {
+      debug(JSON.stringify(tx.events, null, 2));
+      let abi = [
+        'event ProposalCreated(uint256,address,address[],uint256[],string[],bytes[],uint256,uint256,string)',
+        'function Propose(uint256, address, address[],uint256[],string[],bytes[], uint256, uint256, string)',
+      ];
+      let iface = new ethers.utils.Interface(abi);
+      tx.events.forEach((evt) => {
+        try {
+          let decoded = iface.parseLog(evt);
+          let calldata = iface.encodeFunctionData('Propose', decoded.args);
+          debug(['calldata:', calldata].join(' '));
+        } catch (e) {
+          debug(
+            `could not decode event ${evt?.event} - likely be unknown event type`
+          );
+        }
+      });
+    }
   };
 
   tracer(): TraceFn {
