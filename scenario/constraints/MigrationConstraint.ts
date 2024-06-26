@@ -42,7 +42,7 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
 
         // Order migrations deterministically and store in the context (i.e. for verification)
         const migrations = migrationList.sort((a, b) => a.name.localeCompare(b.name)).map(m => <MigrationData>({ migration: m }));
-        ctx.migrations = migrations;
+        ctx.migrations = [];
 
         debug(`${label} Running scenario with migrations: ${JSON.stringify(migrations.map((m) => m.migration.name))}`);
         for (const migrationData of migrations) {
@@ -53,6 +53,7 @@ export class MigrationConstraint<T extends CometContext> implements StaticConstr
             migrationData.skipVerify = true;
             debug(`${label} Migration ${migration.name} has already been enacted`);
           } else {
+            ctx.migrations.push(migrationData);
             migrationData.preMigrationBlockNumber = await ctx.world.deploymentManager.hre.ethers.provider.getBlockNumber();
             const lastProposalBefore = await governor.proposalCount();
             await migration.actions.enact(ctx.world.deploymentManager, govDeploymentManager, artifact);

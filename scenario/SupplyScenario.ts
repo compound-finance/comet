@@ -200,12 +200,18 @@ scenario(
   }
 );
 
+function isArbitrumWeth(context: CometContext): boolean {
+  return context.world.base.network === 'arbitrum' && context.world.base.deployment === 'weth';
+}
+
 scenario(
   'Comet#supplyFrom > repay borrow',
   {
-    tokenBalances: {
-      albert: { $base: 1010 }
-    },
+    tokenBalances: async (ctx) => (
+      {
+        albert: isArbitrumWeth(ctx)? { $base: 1160 } : { $base: 1010 }
+      }
+    ),
     cometBalances: {
       betty: { $base: '<= -1000' } // in units of asset, not wei
     },

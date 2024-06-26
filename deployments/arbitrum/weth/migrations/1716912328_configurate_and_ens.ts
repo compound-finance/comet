@@ -15,7 +15,7 @@ const ENSTextRecordKey = 'v3-official-markets';
 const WETHAmountToBridge = ethers.BigNumber.from(exp(10, 18));
 const arbitrumCOMPAddress = '0x354A6dA3fcde098F8389cad84b0182725c6C91dE';
 
-export default migration('1713517203_configurate_and_ens', {
+export default migration('1716912328_configurate_and_ens', {
   prepare: async (_deploymentManager: DeploymentManager) => {
     return {};
   },
