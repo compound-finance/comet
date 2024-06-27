@@ -16,7 +16,18 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'pricefeeds/WBTCPriceFeed.sol',
     [
       '0xfdFD9C85aD200c506Cf9e21F1FD8dd01932FBB23', // WBTC / BTC price feed
-      '0xdeb288F737066589598e9214E782fa5A8eD689e8', // BTC / USD price feed
+      '0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c', // BTC / USD price feed
+      8                                             // decimals
+    ]
+  );
+
+  // Deploy WstETHPriceFeed
+  const wstETHPriceFeed = await deploymentManager.deploy(
+    'wstETH:priceFeed',
+    'pricefeeds/WstETHPriceFeed.sol',
+    [
+      '0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8', // stETHtoUSDPriceFeed
+      wstETH.address,                               // wstETH
       8                                             // decimals
     ]
   );
@@ -27,7 +38,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const configurator = await deploymentManager.fromDep('configurator', 'mainnet', 'usdc');
   const rewards = await deploymentManager.fromDep('rewards', 'mainnet', 'usdc');
   const bulker = await deploymentManager.fromDep('bulker', 'mainnet', 'weth');
-  const wstETHPriceFeed = await deploymentManager.fromDep('wstETH:priceFeed', 'mainnet', 'weth');
 
   // Deploy Comet
   const deployed = await deployComet(deploymentManager, deploySpec);
