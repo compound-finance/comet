@@ -22,6 +22,10 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   );
 
   // Deploy WstETHPriceFeed
+  /*
+   This price feed can be used, although the contract mentions the stETH / ETH price feed,
+    this does not affect the logic in any way since correct price feed (stETH / USD) is used
+  */
   const wstETHPriceFeed = await deploymentManager.deploy(
     'wstETH:priceFeed',
     'pricefeeds/WstETHPriceFeed.sol',
