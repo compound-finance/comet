@@ -58,7 +58,8 @@ const {
   LINEASCAN_KEY,
   OPTIMISMSCAN_KEY,
   INFURA_KEY,
-  QUICKNODE_KEY,
+  BASE_RPC_URL,
+  SCROLL_RPC_URL,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
@@ -119,7 +120,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'base',
     chainId: 8453,
-    url: `https://clean-spring-wind.base-mainnet.discover.quiknode.pro/${QUICKNODE_KEY}`,
+    url: `${BASE_RPC_URL}`,
   },
   {
     network: 'arbitrum',
@@ -164,7 +165,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'scroll',
     chainId: 534352,
-    url: 'https://rpc.scroll.io',
+    url: `${SCROLL_RPC_URL}`,
   }
 ];
 

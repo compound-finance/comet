@@ -80,7 +80,7 @@ export function getEtherscanApiKey(network: string): string {
     'linea-goerli': process.env.LINEASCAN_KEY,
     optimism: process.env.OPTIMISMSCAN_KEY,
     'scroll-goerli': process.env.ETHERSCAN_KEY,
-    scroll: process.env.ETHERSCAN_KEY
+    scroll: process.env.SCROLLSCAN_KEY
   }[network];
 
   if (!apiKey) {
