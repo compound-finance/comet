@@ -24,7 +24,7 @@ contract StandardToken {
         decimals = _decimalUnits;
     }
 
-    function transfer(address dst, uint256 amount) external virtual returns (bool) {
+    function transfer(address dst, uint256 amount) public virtual returns (bool) {
         require(amount <= balanceOf[msg.sender], "ERC20: transfer amount exceeds balance");
         balanceOf[msg.sender] = balanceOf[msg.sender] - amount;
         balanceOf[dst] = balanceOf[dst] + amount;
@@ -32,7 +32,7 @@ contract StandardToken {
         return true;
     }
 
-    function transferFrom(address src, address dst, uint256 amount) external virtual returns (bool) {
+    function transferFrom(address src, address dst, uint256 amount) public virtual returns (bool) {
         require(amount <= allowance[src][msg.sender], "ERC20: transfer amount exceeds allowance");
         require(amount <= balanceOf[src], "ERC20: transfer amount exceeds balance");
         allowance[src][msg.sender] = allowance[src][msg.sender] - amount;
