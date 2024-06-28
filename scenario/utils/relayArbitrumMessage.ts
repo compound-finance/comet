@@ -3,6 +3,7 @@ import { impersonateAddress } from '../../plugins/scenario/utils';
 import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 import { utils, BigNumber } from 'ethers';
 import { Log } from '@ethersproject/abstract-provider';
+import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 
 export async function relayArbitrumMessage(
   governanceDeploymentManager: DeploymentManager,
@@ -81,6 +82,25 @@ export async function relayArbitrumMessage(
       bridgeDeploymentManager,
       sender
     );
+    // if method name == finalizeInboundTransfer(address,address,address,uint256,bytes)
+    if(data.slice(0, 10) == '0x2e567b36'){
+      const _data = '0x' + data.slice(10, 266);
+      const [token,, to, amount] = utils.defaultAbiCoder.decode(
+        ['address', 'address', 'address', 'uint256'],
+        _data
+      );
+      // if token is mainnet ETH -> than source arbitrum weth
+      if(token == '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'){
+        await sourceTokens({
+          dm: bridgeDeploymentManager,
+          amount: amount,
+          asset: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
+          address: to,
+          blacklist: [],
+        });
+        continue;
+      }
+    }
     const transactionRequest = await arbitrumSigner.populateTransaction({
       to: toAddress,
       from: sender,
