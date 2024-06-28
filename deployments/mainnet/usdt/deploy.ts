@@ -21,18 +21,17 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     ]
   );
 
-  // Deploy WstETHPriceFeed
-  /*
-   This price feed can be used, although the contract mentions the stETH / ETH price feed,
-    this does not affect the logic in any way since correct price feed (stETH / USD) is used
-  */
-  const wstETHPriceFeed = await deploymentManager.deploy(
+  // WETH Mainnet makret uses custom price feed wstETH / ETH (WstETHPriceFeed.sol)
+  // We uses this already existing price feed on address https://etherscan.io/address/0x4F67e4d9BD67eFa28236013288737D39AeF48e79
+  // As we have wstETH / ETH, we just need ETH / USD to receive wstETH / USD price feed
+  const wstETHtoUsdPriceFeed = await deploymentManager.deploy(
     'wstETH:priceFeed',
-    'pricefeeds/WstETHPriceFeed.sol',
+    'pricefeeds/MultiplicativePriceFeed.sol',
     [
-      '0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8', // stETHtoUSDPriceFeed
-      wstETH.address,                               // wstETH
-      8                                             // decimals
+      '0x4F67e4d9BD67eFa28236013288737D39AeF48e79', // stETH / ETH price feed
+      '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419', // ETH / USD price feed
+      8,
+      "Custom price feed for wstETH / USD"
     ]
   );
 
