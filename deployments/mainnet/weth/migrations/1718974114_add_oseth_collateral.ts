@@ -59,25 +59,7 @@ export default migration('1718974114_add_oseth_collateral', {
         signature: 'addAsset(address,(address,address,uint8,uint64,uint64,uint64,uint128))',
         args: [comet.address, osETHAssetConfig],
       },
-      // 2. Set new Annual Supply Interest Rate Slope High to 100%
-      {
-        contract: configurator,
-        signature: 'setSupplyPerYearInterestRateSlopeHigh(address,uint64)',
-        args: [
-          comet.address,
-          exp(1, 18)  // newSupplyPerYearInterestRateSlopeHigh
-        ],
-      },
-      // 3. Set new Annual Borrow Interest Rate Slope High to 115%
-      {
-        contract: configurator,
-        signature: 'setBorrowPerYearInterestRateSlopeHigh(address,uint64)',
-        args: [
-          comet.address,
-          exp(1.15, 18)  // newBorrowPerYearInterestRateSlopeHigh
-        ],
-      },
-      // 4. Deploy and upgrade to a new version of Comet
+      // 2. Deploy and upgrade to a new version of Comet
       {
         contract: cometAdmin,
         signature: 'deployAndUpgradeTo(address,address)',
@@ -85,7 +67,7 @@ export default migration('1718974114_add_oseth_collateral', {
       },
     ];
 
-    const description = '# Add osETH as collateral into cWETHv3 on Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add osETH into cWETHv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III WETH market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet osETH](https://www.comp.xyz/t/add-oseth-as-a-collateral-on-ethereum-mainnet/5272/2).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/871) and [forum discussion osETH](https://www.comp.xyz/t/add-oseth-as-a-collateral-on-ethereum-mainnet/5272).\n\n## Price feed\n\nChainlink does not have osETH/ETH price feed on their website, however, Chainlink team ensured us that this address is the native price feed https://etherscan.io/address/0x8023518b2192FB5384DAdc596765B3dD1cdFe471\n\n\n## Proposal Actions\n\nThe first action adds osETH asset as collateral with corresponding configurations.\n\nThe second action sets new Annual Supply Interest Rate Slope High to 100%.\n\nThe third action sets new Annual Borrow Interest Rate Slope High to 115%.\n\nThe fourth action deploys and upgrades Comet to a new version.';
+    const description = '# Add osETH as collateral into cWETHv3 on Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add osETH into cWETHv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III WETH market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet osETH](https://www.comp.xyz/t/add-oseth-as-a-collateral-on-ethereum-mainnet/5272/2).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/871) and [forum discussion osETH](https://www.comp.xyz/t/add-oseth-as-a-collateral-on-ethereum-mainnet/5272).\n\n## Price feed\n\nChainlink does not have osETH/ETH price feed on their website, however, Chainlink team ensured us that this address is the native exchange rate [price feed](https://etherscan.io/address/0x8023518b2192FB5384DAdc596765B3dD1cdFe471)\n\n\n## Proposal Actions\n\nThe first action adds osETH asset as collateral with corresponding configurations.\n\nThe second action deploys and upgrades Comet to a new version.';
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
@@ -167,11 +149,5 @@ export default migration('1718974114_add_oseth_collateral', {
     expect(osETHAssetConfig.supplyCap).to.be.equal(
       configuratorOsETHAssetConfig.supplyCap
     );
-
-    // 2. Check new Annual Supply Interest Rate Slope High
-    expect(exp(1, 18) / BigInt(31_536_000)).to.be.equal(await comet.supplyPerSecondInterestRateSlopeHigh());
-
-    // 3. Check new Annual Borrow Interest Rate Slope High
-    expect(exp(1.15, 18) / BigInt(31_536_000)).to.be.equal(await comet.borrowPerSecondInterestRateSlopeHigh());
   },
 });
