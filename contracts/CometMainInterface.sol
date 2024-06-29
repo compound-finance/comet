@@ -25,6 +25,7 @@ abstract contract CometMainInterface is CometCore {
     error NotForSale();
     error NotLiquidatable();
     error Paused();
+    error ReentrantCallBlocked();
     error SupplyCapExceeded();
     error TimestampTooLarge();
     error TooManyAssets();
