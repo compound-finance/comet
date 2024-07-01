@@ -1,5 +1,5 @@
-import { ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, setTotalsBasic, wait, fastForward } from './helpers';
-import { EvilToken, EvilToken__factory } from '../build/types';
+import { ethers, event, expect, exp, makeProtocol, portfolio, ReentryAttack, setTotalsBasic, wait, fastForward, defaultAssets } from './helpers';
+import { EvilToken, EvilToken__factory, NonStandardFaucetFeeToken__factory, NonStandardFaucetFeeToken } from '../build/types';
 
 describe('supplyTo', function () {
   it('supplies base from sender if the asset is base', async () => {
@@ -52,7 +52,7 @@ describe('supplyTo', function () {
     expect(q1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyBase).to.be.equal(t0.totalSupplyBase.add(100e6));
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
-    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(120000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(124000);
   });
 
   it('supplies max base borrow balance (including accrued) from sender if the asset is base', async () => {
@@ -259,7 +259,7 @@ describe('supplyTo', function () {
     expect(p1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyBase).to.be.equal(109);
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
-    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(120000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(124000);
   });
 
   it('supplies collateral from sender if the asset is collateral', async () => {
@@ -305,7 +305,7 @@ describe('supplyTo', function () {
     expect(q1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(q1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyAsset).to.be.equal(t0.totalSupplyAsset.add(8e8));
-    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(140000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(153000);
   });
 
   it('calculates base principal correctly', async () => {
@@ -405,11 +405,129 @@ describe('supplyTo', function () {
     await expect(cometAsB.supplyTo(alice.address, COMP.address, ethers.constants.MaxUint256)).to.be.revertedWith("custom error 'InvalidUInt128()'");
   });
 
-  it.skip('supplies the correct amount in a fee-like situation', async () => {
-    // Note: fee-tokens are not currently supported (for efficiency) and should not be added
+  it('supplies base the correct amount in a fee-like situation', async () => {
+    const assets = defaultAssets();
+    // Add USDT to assets on top of default assets
+    assets['USDT'] = {
+      initial: 1e6,
+      decimals: 6,
+      factory: (await ethers.getContractFactory('NonStandardFaucetFeeToken')) as NonStandardFaucetFeeToken__factory,
+    };
+    const protocol = await makeProtocol({ base: 'USDT', assets: assets });
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { USDT } = tokens;
+
+    // Set fee to 0.1%
+    await (USDT as NonStandardFaucetFeeToken).setParams(10, 10);
+
+    const _i0 = await USDT.allocateTo(bob.address, 1000e6);
+    const baseAsB = USDT.connect(bob);
+    const cometAsB = comet.connect(bob);
+
+    const t0 = await comet.totalsBasic();
+    const p0 = await portfolio(protocol, alice.address);
+    const q0 = await portfolio(protocol, bob.address);
+    const _a0 = await wait(baseAsB.approve(comet.address, 1000e6));
+    const s0 = await wait(cometAsB.supplyTo(alice.address, USDT.address, 1000e6));
+    const t1 = await comet.totalsBasic();
+    const p1 = await portfolio(protocol, alice.address);
+    const q1 = await portfolio(protocol, bob.address);
+
+    expect(event(s0, 0)).to.be.deep.equal({
+      Transfer: {
+        from: bob.address,
+        to: comet.address,
+        amount: BigInt(999e6),
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      Supply: {
+        from: bob.address,
+        dst: alice.address,
+        amount: BigInt(999e6),
+      }
+    });
+    expect(event(s0, 2)).to.be.deep.equal({
+      Transfer: {
+        from: ethers.constants.AddressZero,
+        to: alice.address,
+        amount: BigInt(999e6),
+      }
+    });
+
+    expect(p0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n, USDT: 0n });
+    expect(p0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n, USDT: 0n });
+    expect(q0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n, USDT: 0n });
+    expect(q0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n, USDT: exp(1000, 6) });
+    expect(p1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n, USDT: exp(999, 6) });
+    expect(p1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n, USDT: 0n });
+    expect(q1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n, USDT: 0n });
+    expect(q1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n, USDT: 0n });
+    expect(t1.totalSupplyBase).to.be.equal(t0.totalSupplyBase.add(999e6));
+    expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
+    // Fee Token logics will cost a bit more gas than standard ERC20 token with no fee calculation
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(151000);
   });
 
-  it('prevents exceeding the supply cap via re-entrancy', async () => {
+  it('supplies collateral the correct amount in a fee-like situation', async () => {
+    const assets = defaultAssets();
+    // Add FeeToken Collateral to assets on top of default assets
+    assets['FeeToken'] = {
+      initial: 1e8,
+      decimals: 18,
+      factory: (await ethers.getContractFactory('NonStandardFaucetFeeToken')) as NonStandardFaucetFeeToken__factory,
+    };
+
+    const protocol = await makeProtocol({ base: 'USDC', assets: assets });
+    const { comet, tokens, users: [alice, bob] } = protocol;
+    const { FeeToken } = tokens;
+
+    // Set fee to 0.1%
+    await (FeeToken as NonStandardFaucetFeeToken).setParams(10, 10);
+
+    const _i0 = await FeeToken.allocateTo(bob.address, 2000e8);
+    const baseAsB = FeeToken.connect(bob);
+    const cometAsB = comet.connect(bob);
+
+    const t0 = await comet.totalsCollateral(FeeToken.address);
+    const p0 = await portfolio(protocol, alice.address);
+    const q0 = await portfolio(protocol, bob.address);
+    const _a0 = await wait(baseAsB.approve(comet.address, 2000e8));
+    const s0 = await wait(cometAsB.supplyTo(alice.address, FeeToken.address, 2000e8));
+    const t1 = await comet.totalsCollateral(FeeToken.address);
+    const p1 = await portfolio(protocol, alice.address);
+    const q1 = await portfolio(protocol, bob.address);
+
+    expect(event(s0, 0)).to.be.deep.equal({
+      Transfer: {
+        from: bob.address,
+        to: comet.address,
+        amount: BigInt(1998e8),
+      }
+    });
+    expect(event(s0, 1)).to.be.deep.equal({
+      SupplyCollateral: {
+        from: bob.address,
+        dst: alice.address,
+        asset: FeeToken.address,
+        amount: BigInt(1998e8),
+      }
+    });
+
+    expect(p0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n, FeeToken: 0n });
+    expect(p0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n, FeeToken: 0n });
+    expect(q0.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n, FeeToken: 0n });
+    expect(q0.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n, FeeToken: exp(2000, 8) });
+    expect(p1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n, FeeToken: exp(1998, 8) });
+    expect(p1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n, FeeToken: 0n });
+    expect(q1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n, FeeToken: 0n });
+    expect(q1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n, FeeToken: 0n });
+    expect(t1.totalSupplyAsset).to.be.equal(t0.totalSupplyAsset.add(1998e8));
+    // Fee Token logics will cost a bit more gas than standard ERC20 token with no fee calculation
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(186000);
+  });
+
+  it('blocks reentrancy from exceeding the supply cap', async () => {
     const { comet, tokens, users: [alice, bob] } = await makeProtocol({
       assets: {
         USDC: {
@@ -436,10 +554,11 @@ describe('supplyTo', function () {
     await EVIL.setAttack(attack);
 
     await comet.connect(alice).allow(EVIL.address, true);
-
+    await wait(EVIL.connect(alice).approve(comet.address, 75e6));
+    await EVIL.allocateTo(alice.address, 75e6);
     await expect(
       comet.connect(alice).supplyTo(bob.address, EVIL.address, 75e6)
-    ).to.be.revertedWith("custom error 'SupplyCapExceeded()'");
+    ).to.be.revertedWithCustomError(comet, 'ReentrantCallBlocked');
   });
 });
 

@@ -100,7 +100,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     },
     arbitrum: {
       'usdc.e': 10000000, 
-      usdc: 10000000
+      usdc: 10000000,
+      usdt: 10000000
     }
   };
   const assetAmounts = {
@@ -285,7 +286,8 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     },
     arbitrum: {
       'usdc.e': 10000000, 
-      usdc: 10000000
+      usdc: 10000000,
+      usdt: 10000000
     }
   };
   const assetAmounts = {
@@ -341,6 +343,18 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         ' == 5000',
         // WBTC
         ' == 300'
+      ],
+      usdt: [
+        // ARB
+        ' == 1000000',
+        // WETH
+        ' == 5000',
+        // wstETH
+        ' == 5000',
+        // WBTC
+        ' == 300',
+        // GMX
+        ' == 10000'
       ]
     }
   };
@@ -397,6 +411,18 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         exp(500, 18),
         // WBTC
         exp(50, 8),
+      ],
+      usdt: [
+        // ARB
+        exp(300000, 18),
+        // WETH
+        exp(500, 18),
+        // wstETH
+        exp(500, 18),
+        // WBTC
+        exp(50, 8),
+        // GMX
+        exp(3000, 18)
       ]
     }
   };
@@ -740,7 +766,7 @@ scenario(
   const assetAmounts = {
     mainnet: {
       usdc: ' == 5000', // COMP
-      weth: ' == 10000', // CB_ETH
+      weth: ' == 7000', // CB_ETH
     },
   };
 
