@@ -1,24 +1,19 @@
 import { DeploymentManager, migration } from '../../../../plugins/deployment_manager';
-import { calldata, exp, proposal } from '../../../../src/deploy';
+import { proposal } from '../../../../src/deploy';
 
 import { expect } from 'chai';
+import { ethers } from 'ethers';
 
 const RSETH_ADDRESS = '0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7';
 const RSETH_PRICEFEED_ADDRESS = '0x349A73444b1a310BAe67ef67973022020d70020d';
 const WEETH_ADDRESS = '0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee';
 const WEETH_PRICEFEED_ADDRESS = '0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee';
 
+let newRsETHPriceFeed: string;
+let newWeETHPriceFeed: string;
+
 export default migration('1719835184_update_rseth_and_weth_pricefeed', {
   async prepare(deploymentManager: DeploymentManager) {
-    // const _wbtcScalingPriceFeed = await deploymentManager.deploy(
-    //   'WBTC:priceFeed',
-    //   'pricefeeds/WBTCPriceFeed.sol',
-    //   [
-    //     WBTC_BTC_PRICE_FEED_ADDRESS,  // WBTC / BTC price feed
-    //     BTC_ETH_PRICE_FEED_ADDRESS,   // BTC / ETH price feed 
-    //     8,                            // decimals
-    //   ]
-    // );
     const _rsETHPriceFeed = await deploymentManager.deploy(
       'rsETH:priceFeed',
       'pricefeeds/RsETHScalingPriceFeed.sol',
@@ -43,6 +38,8 @@ export default migration('1719835184_update_rseth_and_weth_pricefeed', {
       cometAdmin,
     } = await deploymentManager.getContracts();
 
+    newRsETHPriceFeed = rsETHPriceFeed;
+    newWeETHPriceFeed = weETHPriceFeed;
     const actions = [
       // 1. Update the price feed for rsETH
       {
@@ -74,8 +71,8 @@ export default migration('1719835184_update_rseth_and_weth_pricefeed', {
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
+  async enacted(): Promise<boolean> {
+    return false;
   },
 
   async verify(deploymentManager: DeploymentManager) {
@@ -84,18 +81,20 @@ export default migration('1719835184_update_rseth_and_weth_pricefeed', {
       configurator
     } = await deploymentManager.getContracts();
 
-    const rsETH = new deploymentManager.hre.ethers.Contract(RSETH_ADDRESS, [
+    const rsETH = new ethers.Contract(RSETH_ADDRESS, [
       'function symbol() view returns (string)',
-    ]);
+    ], deploymentManager.hre.ethers.provider);
 
-    const weETH = new deploymentManager.hre.ethers.Contract(WEETH_ADDRESS, [
+    const weETH = new ethers.Contract(WEETH_ADDRESS, [
       'function symbol() view returns (string)',
-    ]);
+    ], deploymentManager.hre.ethers.provider);
 
     expect(await rsETH.symbol()).to.eq('rsETH');
+    const rsETHId = await configurator.getAssetIndex(comet.address, RSETH_ADDRESS);
     expect(await weETH.symbol()).to.eq('weETH');
+    const weETHId = await configurator.getAssetIndex(comet.address, WEETH_ADDRESS);
     const configuration = await configurator.getConfiguration(comet.address);
-    expect(configuration.priceFeed.assetConfigs[RSETH_ADDRESS]).to.eq(RSETH_PRICEFEED_ADDRESS);
-    expect(configuration.priceFeed.assetConfigs[WEETH_ADDRESS]).to.eq(WEETH_PRICEFEED_ADDRESS);
+    expect(configuration.assetConfigs[rsETHId].priceFeed).to.eq(newRsETHPriceFeed);
+    expect(configuration.assetConfigs[weETHId].priceFeed).to.eq(newWeETHPriceFeed);
   },
 });

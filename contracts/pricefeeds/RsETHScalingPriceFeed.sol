@@ -10,7 +10,7 @@ import "../IPriceFeed.sol";
  * @notice A custom price feed that scales up or down the price received from an underlying Kelp price feed and returns the result
  * @author Compound
  */
-contract rsETHScalingPriceFeed is IPriceFeed {
+contract RsETHScalingPriceFeed is IPriceFeed {
     /** Custom errors **/
     error InvalidInt256();
 
