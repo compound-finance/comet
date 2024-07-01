@@ -1,0 +1,73 @@
+{
+  "name": "Compound USDT",
+  "symbol": "cUSDTv3",
+  "baseToken": "USDT",
+  "baseTokenAddress": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+  "baseTokenPriceFeed": "0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7",
+  "borrowMin": "1e6",
+  "pauseGuardian": "0x78E6317DD6D43DdbDa00Dce32C2CbaFc99361a9d",
+  "storeFrontPriceFactor": 0.6,
+  "targetReserves": "20000000e6",
+  "rates": {
+    "supplyKink": 0.9,
+    "supplySlopeLow": 0.059,
+    "supplySlopeHigh": 2.9,
+    "supplyBase": 0,
+    "borrowKink": 0.9,
+    "borrowSlopeLow": 0.061,
+    "borrowSlopeHigh": 3.2,
+    "borrowBase": 0.015
+  },
+  "tracking": {
+    "indexScale": "1e15",
+    "baseSupplySpeed": "138888888888e0",
+    "baseBorrowSpeed": "115740740740e0",
+    "baseMinForRewards": "10000e6"
+  },
+  "assets": {
+    "ARB": {
+      "address": "0x912ce59144191c1204e64559fe8253a0e49e6548",
+      "priceFeed": "0xb2A824043730FE05F3DA2efaFa1CBbe83fa548D6",
+      "decimals": "18",
+      "borrowCF": 0.7,
+      "liquidateCF": 0.8,
+      "liquidationFactor": 0.9,
+      "supplyCap": "7_500_000e18"
+    },
+    "WETH": {
+      "address": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+      "priceFeed": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+      "decimals": "18",
+      "borrowCF": 0.78,
+      "liquidateCF": 0.85,
+      "liquidationFactor": 0.95,
+      "supplyCap": "7_500e18"
+    },
+    "wstETH": {
+      "address": "0x5979D7b546E38E414F7E9822514be443A4800529",
+      "decimals": "18",
+      "borrowCF": 0.7,
+      "liquidateCF": 0.8,
+      "liquidationFactor": 0.9,
+      "supplyCap": "1_500e18"
+    },
+    "WBTC": {
+      "address": "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f",
+      "priceFeed": "0xd0C7101eACbB49F3deCcCc166d238410D6D46d57",
+      "decimals": "8",
+      "borrowCF": 0.7,
+      "liquidateCF": 0.8,
+      "liquidationFactor": 0.9,
+      "supplyCap": "250e8"
+    },
+    "GMX": {
+      "address": "0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a",
+      "priceFeed": "0xDB98056FecFff59D032aB628337A4887110df3dB",
+      "decimals": "18",
+      "borrowCF": 0.6,
+      "liquidateCF": 0.7,
+      "liquidationFactor": 0.8,
+      "supplyCap": "100_000e18"
+    }
+  }
+}
