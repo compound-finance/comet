@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import "../vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
-import "../vendor/kelp/IrsETHOracle.sol";
+import "../vendor/kelp/ILRTOracle.sol";
 import "../IPriceFeed.sol";
 
 /**
@@ -42,12 +42,12 @@ contract rsETHScalingPriceFeed is IPriceFeed {
         decimals = decimals_;
         description = description_;
 
-        uint8 kelpPriceFeedDecimals = 18;
+        uint8 underlyingPriceFeedDecimals = 18;
         // Note: Solidity does not allow setting immutables in if/else statements
-        shouldUpscale = kelpPriceFeedDecimals < decimals_ ? true : false;
+        shouldUpscale = underlyingPriceFeedDecimals < decimals_ ? true : false;
         rescaleFactor = (shouldUpscale
-            ? signed256(10 ** (decimals_ - kelpPriceFeedDecimals))
-            : signed256(10 ** (kelpPriceFeedDecimals - decimals_))
+            ? signed256(10 ** (decimals_ - underlyingPriceFeedDecimals))
+            : signed256(10 ** (underlyingPriceFeedDecimals - decimals_))
         );
     }
 
@@ -66,7 +66,7 @@ contract rsETHScalingPriceFeed is IPriceFeed {
         uint256 updatedAt,
         uint80 answeredInRound
     ) {
-        int256 price = int256(IrsETHOracle(underlyingPriceFeed).rsETHPrice());
+        int256 price = int256(ILRTOracle(underlyingPriceFeed).rsETHPrice());
         return (roundId, scalePrice(price), startedAt, updatedAt, answeredInRound);
     }
 

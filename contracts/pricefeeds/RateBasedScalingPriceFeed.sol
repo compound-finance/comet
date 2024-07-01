@@ -3,10 +3,7 @@ pragma solidity 0.8.15;
 
 import "../vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../IPriceFeed.sol";
-
-interface IRateProvider {
-    function getRate() external view returns (uint256);
-}
+import "../IRateProvider.sol";
 
 /**
  * @title Scaling price feed for rate based oracles
