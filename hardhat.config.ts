@@ -28,6 +28,7 @@ import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
 import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 import arbitrumBridgedUsdcRelationConfigMap from './deployments/arbitrum/usdc.e/relations';
 import arbitrumNativeUsdcRelationConfigMap from './deployments/arbitrum/usdc/relations';
+import arbitrumWETHRelationConfigMap from './deployments/arbitrum/weth/relations';
 import arbitrumBridgedUsdcGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc.e/relations';
 import arbitrumGoerliNativeUsdcRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
 import arbitrumUsdtRelationConfigMap from './deployments/arbitrum/usdt/relations';
@@ -38,6 +39,7 @@ import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relation
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
 import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
+import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations';
 import scrollGoerliRelationConfigMap from './deployments/scroll-goerli/usdc/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 
@@ -355,7 +357,8 @@ const config: HardhatUserConfig = {
       arbitrum: {
         'usdc.e': arbitrumBridgedUsdcRelationConfigMap,
         usdc: arbitrumNativeUsdcRelationConfigMap,
-        usdt: arbitrumUsdtRelationConfigMap
+        usdt: arbitrumUsdtRelationConfigMap,
+        weth: arbitrumWETHRelationConfigMap
       },
       'arbitrum-goerli': {
         'usdc.e': arbitrumBridgedUsdcGoerliRelationConfigMap,
@@ -374,7 +377,8 @@ const config: HardhatUserConfig = {
         usdc: lineaGoerliRelationConfigMap
       },
       optimism: {
-        usdc: optimismRelationConfigMap
+        usdc: optimismRelationConfigMap,
+        usdt: optimismUsdtRelationConfigMap
       },
       'scroll-goerli': {
         usdc: scrollGoerliRelationConfigMap
@@ -459,6 +463,12 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'mainnet'
       },
       {
+        name: 'arbitrum-weth',
+        network: 'arbitrum',
+        deployment: 'weth',
+        auxiliaryBase: 'mainnet'
+      },
+      {
         name: 'arbitrum-goerli-usdc.e',
         network: 'arbitrum-goerli',
         deployment: 'usdc.e',
@@ -511,6 +521,12 @@ const config: HardhatUserConfig = {
         network: 'optimism',
         deployment: 'usdc',
         auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'optimism-usdt',
+        network: 'optimism',
+        deployment: 'usdt',
+        auxiliaryBase: 'mainnet',
       },
       {
         name: 'scroll-goerli',

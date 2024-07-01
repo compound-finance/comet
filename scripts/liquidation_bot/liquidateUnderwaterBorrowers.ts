@@ -56,7 +56,10 @@ const addresses = {
     WBTC: '0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f',
     USDC: '0xaf88d065e77c8cc2239327c5edb3a432268e5831',
     USDC_E: '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8',
-    USDT: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'
+    USDT: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
+    rETH: '0xEC70Dcb4A1EFa46b8F2D97C310C9c4790ba5ffA8',
+    wstETH: '0x5979D7b546E38E414F7E9822514be443A4800529',
+    weETH: '0x35751007a407ca6FEFfE80b3cB397736D2cf4dbe'
   }
 };
 
@@ -112,6 +115,10 @@ export const flashLoanPools = {
     usdt: {
       tokenAddress: addresses.arbitrum.USDT,
       poolFee: 100
+    },
+    weth: {
+      tokenAddress: addresses.arbitrum.USDC,
+      poolFee: 500
     }
   }
 };
@@ -236,6 +243,28 @@ export function getPoolConfig(tokenAddress: string) {
         uniswapPoolFee: 500
       }
     },
+    [addresses.arbitrum.rETH.toLowerCase()]: {
+      ...defaultPoolConfig,
+      ...{
+        exchange: Exchange.Balancer,
+        balancerPoolId: '0xd0ec47c54ca5e20aaae4616c25c825c7f48d40690000000000000000000004ef'
+      }
+    },
+    [addresses.arbitrum.wstETH.toLowerCase()]: {
+      ...defaultPoolConfig,
+      ...{
+        exchange: Exchange.Balancer,
+        balancerPoolId: '0x9791d590788598535278552eecd4b211bfc790cb000000000000000000000498'
+      }
+    },
+    [addresses.arbitrum.weETH.toLowerCase()]: {
+      ...defaultPoolConfig,
+      ...{
+        exchange: Exchange.Uniswap,
+        swapViaWeth: false,
+        uniswapPoolFee: 100
+      }
+    },
   };
 
   const poolConfig = poolConfigs[tokenAddress.toLowerCase()];
@@ -263,7 +292,9 @@ function getMaxAmountToPurchase(tokenAddress: string): bigint {
     [addresses.arbitrum.ARB.toLowerCase()]: exp(500000, 18),
     [addresses.arbitrum.GMX.toLowerCase()]: exp(4000, 18),
     [addresses.arbitrum.WETH.toLowerCase()]: exp(2000, 18),
-    [addresses.arbitrum.WBTC.toLowerCase()]: exp(100, 8)
+    [addresses.arbitrum.WBTC.toLowerCase()]: exp(100, 8),
+    [addresses.arbitrum.rETH.toLowerCase()]: exp(2000, 18),
+    [addresses.arbitrum.wstETH.toLowerCase()]: exp(2000, 18)
   };
 
   const max = maxAmountsToPurchase[tokenAddress.toLowerCase()];
