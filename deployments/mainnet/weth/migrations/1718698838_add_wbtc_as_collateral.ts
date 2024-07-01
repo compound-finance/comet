@@ -10,20 +10,20 @@ const BTC_ETH_PRICE_FEED_ADDRESS = '0xdeb288F737066589598e9214E782fa5A8eD689e8';
 
 export default migration('1718698838_add_wbtc_as_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
-    // We can use this price feed, although the contract mentions the BTC / ETH price feed, this does not affect the logic in any way since we use correct price feed (BTC / USD)
-    const _wbtcScalingPriceFeed = await deploymentManager.deploy(
+    const wbtcMultiplicativePriceFeed = await deploymentManager.deploy(
       'WBTC:priceFeed',
-      'pricefeeds/WBTCPriceFeed.sol',
+      'pricefeeds/MultiplicativePriceFeed.sol',
       [
         WBTC_BTC_PRICE_FEED_ADDRESS,  // WBTC / BTC price feed
         BTC_ETH_PRICE_FEED_ADDRESS,   // BTC / ETH price feed 
         8,                            // decimals
+        'WBTC / USD price feed'
       ]
     );
-    return { wbtcScalingPriceFeed: _wbtcScalingPriceFeed.address };
+    return { wbtcPriceFeedAddress: wbtcMultiplicativePriceFeed.address };
   },
 
-  async enact(deploymentManager: DeploymentManager, _, { wbtcScalingPriceFeed }) {
+  async enact(deploymentManager: DeploymentManager, _, { wbtcPriceFeedAddress }) {
     const trace = deploymentManager.tracer();
 
     const WBTC = await deploymentManager.existing(
@@ -35,7 +35,7 @@ export default migration('1718698838_add_wbtc_as_collateral', {
 
     const wbtcPricefeed = await deploymentManager.existing(
       'WBTC:priceFeed',
-      wbtcScalingPriceFeed,
+      wbtcPriceFeedAddress,
       'mainnet'
     );
 
