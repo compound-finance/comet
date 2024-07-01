@@ -112,13 +112,10 @@ export const flashLoanPools = {
       tokenAddress: addresses.arbitrum.USDC_E,
       poolFee: 100
     },
-<<<<<<< HEAD
-=======
     usdt: {
       tokenAddress: addresses.arbitrum.USDT,
       poolFee: 100
     },
->>>>>>> 8108fa6c0e0da35bbc3ae6bc690422b93ab671f9
     weth: {
       tokenAddress: addresses.arbitrum.USDC,
       poolFee: 500
