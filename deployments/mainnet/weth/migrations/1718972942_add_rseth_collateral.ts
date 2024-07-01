@@ -100,7 +100,7 @@ export default migration('1718972942_add_rseth_collateral', {
   },
 
   async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return false;
+    return true;
   }, 
 
   async verify(deploymentManager: DeploymentManager) {
