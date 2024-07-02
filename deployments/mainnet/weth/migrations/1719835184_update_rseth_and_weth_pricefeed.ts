@@ -60,7 +60,7 @@ export default migration('1719835184_update_rseth_and_weth_pricefeed', {
         args: [configurator.address, comet.address],
       },
     ];
-    const description = 'DESCRIPTION';
+    const description = '# Update rsETH and weETH price feeds in cWETHv3 on Mainnet\n\n## Proposal summary\n\nThis proposal updates existing price feeds for rsETH and weETH collaterals in the WETH market on Mainnet from market rates to exchange rates. If exchange rate oracles are implemented, Gauntlet can recommend more capital efficient parameters as the asset remains insulated from market movements, although this exposes it to tail-end risks. The exchange rate based risk parameters could facilitate higher caps and Liquidation Factors along with more conservative Liquidation Penalties.\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/878),  [forum discussion for rsETH](https://www.comp.xyz/t/add-rseth-market-on-ethereum-mainnet/5118) and [forum discussion for weETH](https://www.comp.xyz/t/add-weeth-market-on-ethereum/5179).\n\n\n## Proposal Actions\n\nThe first proposal action updates rsETH price feed from market rate to exchange rate.\n\nThe second proposal action updates weETH price feed from market rate to exchange rate.\n\nThe third action deploys and upgrades Comet to a new version.';
     const txn = await deploymentManager.retry(
       async () => trace((await governor.propose(...await proposal(actions, description))))
     );
