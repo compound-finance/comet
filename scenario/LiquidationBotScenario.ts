@@ -74,8 +74,9 @@ async function canBeLiquidatedByBot(ctx: CometContext, assetNum: number): Promis
     // Reason: Most liquidity lives in MATICX / MATIC pools, which the liquidation bot cannot use if the base asset is not MATIC
     MaticX: {
       network: 'polygon',
-      deployments: ['usdc']
-    }
+      deployments: ['usdc', 'usdt']
+    },
+    
   };
   const comet = await ctx.getComet();
   const assetInfo = await comet.getAssetInfo(assetNum);

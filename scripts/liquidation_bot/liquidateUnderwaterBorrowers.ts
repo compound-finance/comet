@@ -101,6 +101,10 @@ export const flashLoanPools = {
     usdc: {
       tokenAddress: addresses.polygon.BOB,
       poolFee: 100
+    },
+    usdt: {
+      tokenAddress: addresses.polygon.WBTC,
+      poolFee: 500
     }
   },
   arbitrum: {
