@@ -153,11 +153,39 @@ async function pullFirstTransactionForContract(network: string, address: string)
   return contractCreationCode.slice(2);
 }
 
+async function pullFirstInternalTransactionForContract(
+  network: string,
+  address: string,
+  startblock = 0,
+  endblock = 99999999
+) {
+  const params = {
+    module: 'account',
+    action: 'txlistinternal',
+    address,
+    startblock: startblock,
+    endblock: endblock,
+    page: 1,
+    offset: 10,
+    sort: 'asc',
+    apikey: getEtherscanApiKey(network),
+  };
+  const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({
+    ...params,
+    ...{ apikey: '[API_KEY]' },
+  })}`;
+  debug(`Attempting to pull Contract Creation code from first internal tx at ${debugUrl}`);
+  const response = await get(url, {});
+  return response.result.find((tx) => tx.isError == '0').input;
+}
+
 async function getContractCreationCode(network: string, address: string) {
   const strategies = [
     scrapeContractCreationCodeFromEtherscan,
     scrapeContractCreationCodeFromEtherscanApi,
     pullFirstTransactionForContract,
+    pullFirstInternalTransactionForContract
   ];
   let errors = [];
   for (const strategy of strategies) {

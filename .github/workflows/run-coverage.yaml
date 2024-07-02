@@ -16,6 +16,9 @@ jobs:
       ARBISCAN_KEY: ${{ secrets.ARBISCAN_KEY }}
       LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
+      SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
+      BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
+      SCROLL_RPC_URL: ${{ secrets.SCROLL_RPC_URL }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
