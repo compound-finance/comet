@@ -13,11 +13,12 @@ export default migration('1718791267_add_wbtc_as_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
     const _wbtcScalingPriceFeed = await deploymentManager.deploy(
       'WBTC:priceFeed',
-      'pricefeeds/WBTCPriceFeed.sol',
+      'pricefeeds/MultiplicativePriceFeed.sol',
       [
         WBTC_BTC_PRICE_FEED_ADDRESS,  // WBTC / BTC price feed
         BTC_ETH_PRICE_FEED_ADDRESS,   // BTC / ETH price feed 
         8,                            // decimals
+        'WBTC / BTC  BTC / ETH',      // description
       ]
     );
 
