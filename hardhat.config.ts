@@ -25,6 +25,7 @@ import sepoliaWethRelationConfigMap from './deployments/sepolia/weth/relations';
 import mumbaiRelationConfigMap from './deployments/mumbai/usdc/relations';
 import mainnetRelationConfigMap from './deployments/mainnet/usdc/relations';
 import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
+import mainnetDaiRelationConfigMap from './deployments/mainnet/dai/relations';
 import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 import arbitrumBridgedUsdcRelationConfigMap from './deployments/arbitrum/usdc.e/relations';
 import arbitrumNativeUsdcRelationConfigMap from './deployments/arbitrum/usdc/relations';
@@ -348,7 +349,8 @@ const config: HardhatUserConfig = {
       },
       mainnet: {
         usdc: mainnetRelationConfigMap,
-        weth: mainnetWethRelationConfigMap
+        weth: mainnetWethRelationConfigMap,
+        dai: mainnetDaiRelationConfigMap
       },
       polygon: {
         usdc: polygonRelationConfigMap
@@ -399,6 +401,11 @@ const config: HardhatUserConfig = {
         name: 'mainnet-weth',
         network: 'mainnet',
         deployment: 'weth',
+      },
+      {
+        name: 'mainnet-dai',
+        network: 'mainnet',
+        deployment: 'dai',
       },
       {
         name: 'development',
