@@ -1,0 +1,218 @@
+import { expect } from 'chai';
+import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
+import { migration } from '../../../../plugins/deployment_manager/Migration';
+import { exp, proposal } from '../../../../src/deploy';
+import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
+import { ethers } from 'ethers';
+
+const WBTC_ADDRESS = '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f';
+const WBTC_BTC_PRICE_FEED_ADDRESS = '0x0017abAc5b6f291F9164e35B1234CA1D697f9CF4';
+const BTC_ETH_PRICE_FEED_ADDRESS = '0xc5a90A6d7e4Af242dA238FFe279e9f2BA0c64B2e';
+
+export default migration('1718791267_add_wbtc_as_collateral', {
+  async prepare(deploymentManager: DeploymentManager) {
+    const _wbtcScalingPriceFeed = await deploymentManager.deploy(
+      'WBTC:priceFeed',
+      'pricefeeds/WBTCPriceFeed.sol',
+      [
+        WBTC_BTC_PRICE_FEED_ADDRESS,  // WBTC / BTC price feed
+        BTC_ETH_PRICE_FEED_ADDRESS,   // BTC / ETH price feed 
+        8,                            // decimals
+      ]
+    );
+
+    return { wbtcScalingPriceFeed: _wbtcScalingPriceFeed.address };
+  },
+
+  enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, { wbtcScalingPriceFeed }) => {
+    const trace = deploymentManager.tracer();
+    const {
+      bridgeReceiver,
+      timelock: l2Timelock,
+      comet,
+      cometAdmin,
+      configurator
+    } = await deploymentManager.getContracts();
+
+    const {
+      arbitrumInbox,
+      timelock,
+      governor
+    } = await govDeploymentManager.getContracts();
+
+    const WBTC = await deploymentManager.existing(
+      'WBTC',
+      WBTC_ADDRESS,
+      'arbitrum',
+      'contracts/ERC20.sol:ERC20'
+    );
+
+    const wbtcPricefeed = await deploymentManager.existing(
+      'WBTC:priceFeed',
+      wbtcScalingPriceFeed,
+      'arbitrum'
+    );
+
+    const wbtcAssetConfig = {
+      asset: WBTC.address,
+      priceFeed: wbtcPricefeed.address,
+      decimals: 8n,
+      borrowCollateralFactor: exp(0.80, 18),
+      liquidateCollateralFactor: exp(0.85, 18),
+      liquidationFactor: exp(0.95, 18),
+      supplyCap: exp(1_000, 8), 
+    };
+
+    const addAssetCalldata = ethers.utils.defaultAbiCoder.encode(
+      ['address', 'tuple(address,address,uint8,uint64,uint64,uint64,uint128)'],
+      [comet.address,
+        [
+          wbtcAssetConfig.asset,
+          wbtcAssetConfig.priceFeed,
+          wbtcAssetConfig.decimals,
+          wbtcAssetConfig.borrowCollateralFactor,
+          wbtcAssetConfig.liquidateCollateralFactor,
+          wbtcAssetConfig.liquidationFactor,
+          wbtcAssetConfig.supplyCap
+        ]
+      ]
+    );
+
+    const deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(
+      ['address', 'address'],
+      [configurator.address, comet.address]
+    );
+
+    const l2ProposalData = ethers.utils.defaultAbiCoder.encode(
+      ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
+      [
+        [
+          configurator.address,
+          cometAdmin.address
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          'addAsset(address,(address,address,uint8,uint64,uint64,uint64,uint128))',
+          'deployAndUpgradeTo(address,address)',
+        ],
+        [
+          addAssetCalldata,
+          deployAndUpgradeToCalldata,
+        ]
+      ]
+    );
+
+    const createRetryableTicketGasParams = await estimateL2Transaction(
+      {
+        from: applyL1ToL2Alias(timelock.address),
+        to: bridgeReceiver.address,
+        data: l2ProposalData
+      },
+      deploymentManager
+    );
+    const refundAddress = l2Timelock.address;
+
+    const mainnetActions = [
+      // 1. Set Comet configuration and deployAndUpgradeTo WETH Comet on Arbitrum.
+      {
+        contract: arbitrumInbox,
+        signature: 'createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)',
+        args: [
+          bridgeReceiver.address,                           // address to,
+          0,                                                // uint256 l2CallValue,
+          createRetryableTicketGasParams.maxSubmissionCost, // uint256 maxSubmissionCost,
+          refundAddress,                                    // address excessFeeRefundAddress,
+          refundAddress,                                    // address callValueRefundAddress,
+          createRetryableTicketGasParams.gasLimit,          // uint256 gasLimit,
+          createRetryableTicketGasParams.maxFeePerGas,      // uint256 maxFeePerGas,
+          l2ProposalData,                                   // bytes calldata data
+        ],
+        value: createRetryableTicketGasParams.deposit
+      },
+    ];
+
+    const description = 'DESCRIPTION';
+    const txn = await govDeploymentManager.retry(async () =>
+      trace(await governor.propose(...(await proposal(mainnetActions, description))))
+    );
+
+    const event = txn.events.find(event => event.event === 'ProposalCreated');
+
+    const [proposalId] = event.args;
+
+    trace(`Created proposal ${proposalId}.`);
+  },
+
+  async enacted(): Promise<boolean> {
+    return false;
+  }, 
+
+  async verify(deploymentManager: DeploymentManager) {
+    const { comet, configurator } = await deploymentManager.getContracts();
+
+    const wbtcAssetIndex = Number(await comet.numAssets()) - 1;
+
+    const WBTC = await deploymentManager.existing(
+      'WBTC',
+      WBTC_ADDRESS,
+      'arbitrum',
+      'contracts/ERC20.sol:ERC20'
+    );
+
+    const wbtcAssetConfig = {
+      asset: WBTC.address,
+      priceFeed: '',
+      decimals: 8n,
+      borrowCollateralFactor: exp(0.80, 18),
+      liquidateCollateralFactor: exp(0.85, 18),
+      liquidationFactor: exp(0.95, 18),
+      supplyCap: exp(1_000, 8),
+    };
+
+    // 1. & 2. Compare WBTC asset config with Comet and Configurator asset info
+    const cometWBTCHAssetInfo = await comet.getAssetInfoByAddress(
+      WBTC_ADDRESS
+    );
+    expect(wbtcAssetIndex).to.be.equal(cometWBTCHAssetInfo.offset);
+    expect(wbtcAssetConfig.asset).to.be.equal(cometWBTCHAssetInfo.asset);
+    expect(exp(1, wbtcAssetConfig.decimals)).to.be.equal(
+      cometWBTCHAssetInfo.scale
+    );
+    expect(wbtcAssetConfig.borrowCollateralFactor).to.be.equal(
+      cometWBTCHAssetInfo.borrowCollateralFactor
+    );
+    expect(wbtcAssetConfig.liquidateCollateralFactor).to.be.equal(
+      cometWBTCHAssetInfo.liquidateCollateralFactor
+    );
+    expect(wbtcAssetConfig.liquidationFactor).to.be.equal(
+      cometWBTCHAssetInfo.liquidationFactor
+    );
+    expect(wbtcAssetConfig.supplyCap).to.be.equal(
+      cometWBTCHAssetInfo.supplyCap
+    );
+    const configuratorEsETHAssetConfig = (
+      await configurator.getConfiguration(comet.address)
+    ).assetConfigs[wbtcAssetIndex];
+    expect(wbtcAssetConfig.asset).to.be.equal(
+      configuratorEsETHAssetConfig.asset
+    );
+    expect(wbtcAssetConfig.decimals).to.be.equal(
+      configuratorEsETHAssetConfig.decimals
+    );
+    expect(wbtcAssetConfig.borrowCollateralFactor).to.be.equal(
+      configuratorEsETHAssetConfig.borrowCollateralFactor
+    );
+    expect(wbtcAssetConfig.liquidateCollateralFactor).to.be.equal(
+      configuratorEsETHAssetConfig.liquidateCollateralFactor
+    );
+    expect(wbtcAssetConfig.liquidationFactor).to.be.equal(
+      configuratorEsETHAssetConfig.liquidationFactor
+    );
+    expect(wbtcAssetConfig.supplyCap).to.be.equal(
+      configuratorEsETHAssetConfig.supplyCap
+    );
+  },
+});
