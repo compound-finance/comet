@@ -48,7 +48,6 @@ const addresses = {
     WBTC: '0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6',
     WETH: '0x7ceb23fd6bc0add59e62ac25578270cff1b9f619',
     WMATIC: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
-    USDT: '0xc2132d05d31c914a87c6611c10748aeb04b58e8f',
     BOB: '0xb0b195aefa3650a6908f15cdac7d92f8a5791b0b'
   },
   arbitrum: {
@@ -56,9 +55,9 @@ const addresses = {
     GMX: '0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a',
     WETH: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
     WBTC: '0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f',
-    USDT: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9',
     USDC: '0xaf88d065e77c8cc2239327c5edb3a432268e5831',
     USDC_E: '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8',
+    USDT: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
     rETH: '0xEC70Dcb4A1EFa46b8F2D97C310C9c4790ba5ffA8',
     wstETH: '0x5979D7b546E38E414F7E9822514be443A4800529',
     weETH: '0x35751007a407ca6FEFfE80b3cB397736D2cf4dbe'
@@ -117,6 +116,10 @@ export const flashLoanPools = {
     }, 
     usdc: {
       tokenAddress: addresses.arbitrum.USDC_E,
+      poolFee: 100
+    },
+    usdt: {
+      tokenAddress: addresses.arbitrum.USDT,
       poolFee: 100
     },
     weth: {
