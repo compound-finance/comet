@@ -36,7 +36,8 @@ export default migration('1719910152_configurate_and_ens', {
     const cometFactory = await deploymentManager.fromDep(
       'cometFactory',
       'mainnet',
-      'usdc'
+      // 'usdt' // Uncomment this line after deployment of the cUSDTv3 will be finished
+      'usdc' // Comment this line after deployment of the cUSDTv3 will be finished
     );
     const configuration = await getConfigurationStruct(deploymentManager);
 
@@ -45,6 +46,12 @@ export default migration('1719910152_configurate_and_ens', {
     const currentChainId = 1;
     const newMarketObject = { baseSymbol: 'DAI', cometAddress: comet.address };
     const officialMarketsJSON = JSON.parse(await ENSResolver.text(subdomainHash, ENSTextRecordKey));
+
+    // add mainnet-usdt comet (0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840)
+    // mainnet chain id is 1
+    if (!(officialMarketsJSON[1].find(market => market.baseSymbol === 'USDT'))) {
+      officialMarketsJSON[1].push({ baseSymbol: 'USDT', cometAddress: '0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840'});
+    }
 
     if (officialMarketsJSON[currentChainId]) {
       officialMarketsJSON[currentChainId].push(newMarketObject);
@@ -105,7 +112,7 @@ export default migration('1719910152_configurate_and_ens', {
       }
     ];
 
-    const description = 'DESCRIPTION';
+    const description = '# Initialize cDAIv3 on Ethereum Mainnet\n\n## Proposal summary\n\nFranklinDAO team with advice support from Woof Software team proposes deployment of Compound III to the Ethereum Mainnet network. This proposal takes the governance steps recommended and necessary to initialize a Compound III DAI market on Ethereum Mainnet; upon execution, cDAIv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/gauntlet-dai-v3-comet-on-mainnet-recommendation/5380/1).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/879), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/gauntlet-dai-v3-comet-on-mainnet-recommendation/5380).\n\n\n## Proposal Actions\n\nThe first proposal action sets the CometFactory for the new Comet instance in the existing Configurator.\n\nThe second action configures the Comet instance in the Configurator.\n\nThe third action deploys an instance of the newly configured factory and upgrades the Comet instance to use that implementation.\n\nThe fourth action configures the existing rewards contract for the newly deployed Comet instance.\n\nThe fifth action reduces Compound’s [cDAI](https://etherscan.io/address/0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643) reserves and transfers it to Timelock, in order to seed the market reserves for the cDAIv3 Comet.\n\nThe sixth action transfers reserves from Timelock to the cDAIv3 Comet.\n\nThe seventh action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ethereum Mainnet cDAIv3 market.';
     const txn = await deploymentManager.retry(
       async () => trace((await governor.propose(...await proposal(actions, description))))
     );
@@ -177,6 +184,10 @@ export default migration('1719910152_configurate_and_ens', {
         {
           baseSymbol: 'WETH',
           cometAddress: '0xA17581A9E3356d9A858b789D68B4d866e593aE94',
+        },
+        {
+          baseSymbol: 'USDT',
+          cometAddress: '0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840',
         },
         {
           baseSymbol: 'DAI',
