@@ -148,8 +148,8 @@ export default migration('1719910152_configurate_and_ens', {
 
     // expect(wbtcInfo.borrowCap).to.be.eq(exp(7_200, 8));
     // expect(wethInfo.borrowCap).to.be.eq(exp(175_000 , 18));
-    // expect(usdeInfo.supplyCap).to.be.eq(exp(66_000_000, 6));
-    // expect(susdeInfo.borrowCap).to.be.eq(exp(35_000_000, 6));
+    // expect(usdeInfo.supplyCap).to.be.eq(exp(66_000_000, 18));
+    // expect(susdeInfo.borrowCap).to.be.eq(exp(35_000_000, 18));
 
     // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(25 / 86400, 15, 18)); // 289351851851
     // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(15 / 86400, 15, 18)); // 173611111111
