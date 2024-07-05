@@ -12,7 +12,7 @@ const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 
 const cDAIAddress = '0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643';
-const DAIAmount = ethers.BigNumber.from(exp(250_000, 18));
+const DAIAmount = ethers.BigNumber.from(exp(200_000, 18));
 
 export default migration('1719910152_configurate_and_ens', {
   async prepare() {
