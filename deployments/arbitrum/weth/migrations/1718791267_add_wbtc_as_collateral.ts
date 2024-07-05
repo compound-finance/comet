@@ -61,7 +61,7 @@ export default migration('1718791267_add_wbtc_as_collateral', {
       borrowCollateralFactor: exp(0.80, 18),
       liquidateCollateralFactor: exp(0.85, 18),
       liquidationFactor: exp(0.95, 18),
-      supplyCap: exp(1_000, 8), 
+      supplyCap: exp(300, 8), 
     };
 
     const addAssetCalldata = ethers.utils.defaultAbiCoder.encode(
@@ -170,7 +170,7 @@ export default migration('1718791267_add_wbtc_as_collateral', {
       borrowCollateralFactor: exp(0.80, 18),
       liquidateCollateralFactor: exp(0.85, 18),
       liquidationFactor: exp(0.95, 18),
-      supplyCap: exp(1_000, 8),
+      supplyCap: exp(300, 8),
     };
 
     // 1. & 2. Compare WBTC asset config with Comet and Configurator asset info
