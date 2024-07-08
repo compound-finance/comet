@@ -13,6 +13,7 @@ import "../IPriceFeed.sol";
 contract RsETHScalingPriceFeed is IPriceFeed {
     /** Custom errors **/
     error InvalidInt256();
+    error BadDecimals();
 
     /// @notice Version of the price feed
     uint public constant VERSION = 1;
@@ -39,6 +40,7 @@ contract RsETHScalingPriceFeed is IPriceFeed {
      **/
     constructor(address underlyingPriceFeed_, uint8 decimals_, string memory description_) {
         underlyingPriceFeed = underlyingPriceFeed_;
+        if (decimals_ > 18) revert BadDecimals();
         decimals = decimals_;
         description = description_;
 
