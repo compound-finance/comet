@@ -15,7 +15,7 @@ contract EzETHExchangeRatePriceFeed is IPriceFeed {
     error BadDecimals();
 
     /// @notice Version of the price feed
-    uint public constant override version = 1;
+    uint public constant VERSION = 1;
 
     /// @notice Description of the price feed
     string public description;
@@ -86,5 +86,13 @@ contract EzETHExchangeRatePriceFeed is IPriceFeed {
             scaledPrice = price / rescaleFactor;
         }
         return scaledPrice;
+    }
+
+    /**
+     * @notice Price for the latest round
+     * @return The version of the price feed contract
+     **/
+    function version() external pure returns (uint256) {
+        return VERSION;
     }
 }
