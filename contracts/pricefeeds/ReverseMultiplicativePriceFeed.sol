@@ -30,8 +30,11 @@ contract ReverseMultiplicativePriceFeed is IPriceFeed {
     /// @notice Chainlink price feed B
     address public immutable priceFeedB;
 
-    /// @notice Combined scale of the two underlying Chainlink price feeds
-    int public immutable priceFeedAScalling;
+    /// @notice Price feed A scale
+    int public immutable priceFeedAScale;
+
+    /// @notice Price feed B scale
+    int public immutable priceFeedBScale;
 
     /// @notice Scale of this price feed
     int public immutable priceFeedScale;
@@ -47,7 +50,9 @@ contract ReverseMultiplicativePriceFeed is IPriceFeed {
         priceFeedA = priceFeedA_;
         priceFeedB = priceFeedB_;
         uint8 priceFeedADecimals = AggregatorV3Interface(priceFeedA_).decimals();
-        priceFeedAScalling = signed256(10 ** (priceFeedADecimals));
+        uint8 priceFeedBDecimals = AggregatorV3Interface(priceFeedB_).decimals();
+        priceFeedAScale = signed256(10 ** (priceFeedADecimals));
+        priceFeedBScale = signed256(10 ** (priceFeedBDecimals));
 
         if (decimals_ > 18) revert BadDecimals();
         decimals = decimals_;
@@ -70,8 +75,8 @@ contract ReverseMultiplicativePriceFeed is IPriceFeed {
 
         if (priceA <= 0 || priceB <= 0) return (roundId_, 0, startedAt_, updatedAt_, answeredInRound_);
 
-        // int256 price = priceA * priceB * priceFeedScale / combinedScale;
-        int256 price = priceA * int256(10**(AggregatorV3Interface(priceFeedB).decimals())) * priceFeedScale / priceB / priceFeedAScalling;
+        // int256 price = priceA * (priceFeedBScale/priceB) * priceFeedScale / priceFeedAScale;
+        int256 price = priceA * priceFeedBScale * priceFeedScale / priceB / priceFeedAScale;
         return (roundId_, price, startedAt_, updatedAt_, answeredInRound_);
     }
 
