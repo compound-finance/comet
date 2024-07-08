@@ -8,7 +8,7 @@ import { exp } from '../test/helpers';
 scenario(
   'Comet#bulker > (non-WETH base) all non-reward actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, {network: 'mumbai'}, { network: 'linea-goerli' }]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && !matchesDeployment(ctx, [{ deployment: 'weth' }, { network: 'mumbai' }, { network: 'linea-goerli' }]),
     supplyCaps: {
       $asset0: 3000,
       $asset1: 3000,
@@ -89,7 +89,7 @@ scenario(
 scenario(
   'Comet#bulker > (WETH base) all non-reward actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{deployment: 'weth'}]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{ deployment: 'weth' }]),
     supplyCaps: {
       $asset0: 3000,
     },
@@ -165,13 +165,13 @@ scenario(
 scenario(
   'Comet#bulker > (non-WETH base) all actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, { network: 'linea-goerli' }]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && !matchesDeployment(ctx, [{ deployment: 'weth' }, { network: 'linea-goerli' }]),
     supplyCaps: {
       $asset0: 3000,
       $asset1: 3000,
     },
     tokenBalances: {
-      albert: { $base: '== 1000000', $asset0: 3000, $asset1: 3000},
+      albert: { $base: '== 1000000', $asset0: 3000, $asset1: 3000 },
       $comet: { $base: 5000 },
     }
   },
@@ -264,7 +264,7 @@ scenario(
 scenario(
   'Comet#bulker > (WETH base) all actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && matchesDeployment(ctx, [{deployment: 'weth'}]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && matchesDeployment(ctx, [{ deployment: 'weth' }]),
     supplyCaps: {
       $asset0: 10,
     },
