@@ -145,7 +145,7 @@ scenario(
     tokenBalances: {
       albert: { $base: 1000 }, // in units of asset, not wei
     },
-    filter: async (ctx) => matchesDeployment(ctx, [{ deployment: 'usdt' }])
+    filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet', deployment: 'usdt' }])
   },
   async ({ comet, actors }, context, world) => {
     // Set fees for USDT for testing
@@ -225,7 +225,7 @@ scenario(
     cometBalances: {
       albert: { $base: -1000 } // in units of asset, not wei
     },
-    filter: async (ctx) => matchesDeployment(ctx, [{ deployment: 'usdt' }]),
+    filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet', deployment: 'usdt' }]),
   },
   async ({ comet, actors }, context, world) => {
     // Set fees for USDT for testing
@@ -274,7 +274,7 @@ scenario(
     cometBalances: {
       albert: { $base: -999 } // in units of asset, not wei
     },
-    filter: async (ctx) => matchesDeployment(ctx, [{ deployment: 'usdt' }]),
+    filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet', deployment: 'usdt' }]),
   },
   async ({ comet, actors }, context, world) => {
     // Set fees for USDT for testing
@@ -353,7 +353,7 @@ scenario(
     tokenBalances: {
       albert: { $base: 1000 }, // in units of asset, not wei
     },
-    filter: async (ctx) => matchesDeployment(ctx, [{ deployment: 'usdt' }]),
+    filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet', deployment: 'usdt' }]),
   },
   async ({ comet, actors }, context, world) => {
     // Set fees for USDT for testing
@@ -506,7 +506,8 @@ scenario(
         /ERC20: insufficient allowance/,
         /transfer amount exceeds spender allowance/,
         /Dai\/insufficient-allowance/,
-        symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/
+        symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/,
+        symbol === 'WMATIC' ? /Transaction reverted without a reason string/ : /.^/
       ]
     );
   }
@@ -590,7 +591,8 @@ scenario(
       [
         /transfer amount exceeds balance/,
         /Dai\/insufficient-balance/,
-        symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/
+        symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/,
+        symbol === 'WMATIC' ? /Transaction reverted without a reason string/ : /.^/
       ]
     );
   }

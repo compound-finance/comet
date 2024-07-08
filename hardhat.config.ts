@@ -27,11 +27,13 @@ import mainnetRelationConfigMap from './deployments/mainnet/usdc/relations';
 import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
 import mainnetUsdtRelationConfigMap from './deployments/mainnet/usdt/relations';
 import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
+import polygonUsdtRelationConfigMap from './deployments/polygon/usdt/relations';
 import arbitrumBridgedUsdcRelationConfigMap from './deployments/arbitrum/usdc.e/relations';
 import arbitrumNativeUsdcRelationConfigMap from './deployments/arbitrum/usdc/relations';
 import arbitrumWETHRelationConfigMap from './deployments/arbitrum/weth/relations';
 import arbitrumBridgedUsdcGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc.e/relations';
 import arbitrumGoerliNativeUsdcRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
+import arbitrumUsdtRelationConfigMap from './deployments/arbitrum/usdt/relations';
 import baseUsdbcRelationConfigMap from './deployments/base/usdbc/relations';
 import baseWethRelationConfigMap from './deployments/base/weth/relations';
 import baseUsdcRelationConfigMap from './deployments/base/usdc/relations';
@@ -353,11 +355,13 @@ const config: HardhatUserConfig = {
         usdt: mainnetUsdtRelationConfigMap
       },
       polygon: {
-        usdc: polygonRelationConfigMap
+        usdc: polygonRelationConfigMap,
+        usdt: polygonUsdtRelationConfigMap
       },
       arbitrum: {
         'usdc.e': arbitrumBridgedUsdcRelationConfigMap,
         usdc: arbitrumNativeUsdcRelationConfigMap,
+        usdt: arbitrumUsdtRelationConfigMap,
         weth: arbitrumWETHRelationConfigMap
       },
       'arbitrum-goerli': {
@@ -450,9 +454,21 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'mainnet'
       },
       {
+        name: 'polygon-usdt',
+        network: 'polygon',
+        deployment: 'usdt',
+        auxiliaryBase: 'mainnet'
+      },
+      {
         name: 'arbitrum-usdc.e',
         network: 'arbitrum',
         deployment: 'usdc.e',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'arbitrum-usdt',
+        network: 'arbitrum',
+        deployment: 'usdt',
         auxiliaryBase: 'mainnet'
       },
       {
