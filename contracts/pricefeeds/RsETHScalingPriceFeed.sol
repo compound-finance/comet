@@ -15,7 +15,7 @@ contract RsETHScalingPriceFeed is IPriceFeed {
     error InvalidInt256();
 
     /// @notice Version of the price feed
-    uint public constant override version = 1;
+    uint public constant VERSION = 1;
 
     /// @notice Description of the price feed
     string public description;
@@ -66,8 +66,8 @@ contract RsETHScalingPriceFeed is IPriceFeed {
         uint256 updatedAt,
         uint80 answeredInRound
     ) {
-        int256 price = int256(ILRTOracle(underlyingPriceFeed).rsETHPrice());
-        return (roundId, scalePrice(price), startedAt, updatedAt, answeredInRound);
+        int256 price = signed256(ILRTOracle(underlyingPriceFeed).rsETHPrice());
+        return (1, scalePrice(price), block.timestamp, block.timestamp, 1);
     }
 
     function signed256(uint256 n) internal pure returns (int256) {
@@ -83,5 +83,13 @@ contract RsETHScalingPriceFeed is IPriceFeed {
             scaledPrice = price / rescaleFactor;
         }
         return scaledPrice;
+    }
+    
+    /**
+     * @notice Current version of the price feed
+     * @return The version of the price feed contract
+     **/
+    function version() external pure returns (uint256) {
+        return VERSION;
     }
 }
