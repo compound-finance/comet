@@ -309,7 +309,8 @@ scenario(
         /ERC20: insufficient allowance/,
         /transfer amount exceeds spender allowance/,
         /Dai\/insufficient-allowance/,
-        symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/
+        symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/,
+        symbol === 'wstETH' ? /0xc2139725/ : /.^/
       ]
     );
   }
@@ -393,7 +394,8 @@ scenario(
       [
         /transfer amount exceeds balance/,
         /Dai\/insufficient-balance/,
-        symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/
+        symbol === 'WETH' ? /Transaction reverted without a reason string/ : /.^/,
+        symbol === 'wstETH' ? /0x00b284f2/ : /.^/
       ]
     );
   }
