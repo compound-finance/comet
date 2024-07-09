@@ -54,7 +54,7 @@ describe('withdrawTo', function () {
     expect(q1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyBase).to.be.equal(0n);
     expect(t1.totalBorrowBase).to.be.equal(0n);
-    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(100000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(106000);
   });
 
   it('does not emit Transfer for 0 burn', async () => {
@@ -144,7 +144,7 @@ describe('withdrawTo', function () {
     expect(b1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyBase).to.be.equal(0n);
     expect(t1.totalBorrowBase).to.be.equal(exp(50, 6));
-    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(110000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(115000);
   });
 
   it('withdraw max base should withdraw 0 if user has a borrow position', async () => {
@@ -190,7 +190,7 @@ describe('withdrawTo', function () {
     expect(b1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyBase).to.be.equal(t0.totalSupplyBase);
     expect(t1.totalBorrowBase).to.be.equal(t0.totalBorrowBase);
-    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(110000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(121000);
   });
 
   // This demonstrates a weird quirk of the present value/principal value rounding down math.
@@ -279,7 +279,7 @@ describe('withdrawTo', function () {
     expect(q1.internal).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(q1.external).to.be.deep.equal({ USDC: 0n, COMP: 0n, WETH: 0n, WBTC: 0n });
     expect(t1.totalSupplyAsset).to.be.equal(0n);
-    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(80000);
+    expect(Number(s0.receipt.gasUsed)).to.be.lessThan(85000);
   });
 
   it('calculates base principal correctly', async () => {
@@ -475,7 +475,7 @@ describe('withdraw', function () {
   });
 
   describe('reentrancy', function () {
-    it('is not broken by malicious reentrancy transferFrom', async () => {
+    it('blocks malicious reentrant transferFrom', async () => {
       const { comet, tokens, users: [alice, bob] } = await makeProtocol({
         assets: {
           USDC: {
@@ -508,10 +508,10 @@ describe('withdraw', function () {
       await comet.setCollateralBalance(alice.address, EVIL.address, exp(1, 6));
       await comet.connect(alice).allow(EVIL.address, true);
 
-      // in callback, EVIL token calls transferFrom(alice.address, bob.address, 1e6)
+      // In callback, EVIL token calls transferFrom(alice.address, bob.address, 1e6)
       await expect(
         comet.connect(alice).withdraw(EVIL.address, 1e6)
-      ).to.be.revertedWith("custom error 'NotCollateralized()'");
+      ).to.be.revertedWithCustomError(comet, 'ReentrantCallBlocked');
 
       // no USDC transferred
       expect(await USDC.balanceOf(comet.address)).to.eq(100e6);
@@ -521,7 +521,7 @@ describe('withdraw', function () {
       expect(await USDC.balanceOf(bob.address)).to.eq(0);
     });
 
-    it('is not broken by malicious reentrancy withdrawFrom', async () => {
+    it('blocks malicious reentrant withdrawFrom', async () => {
       const { comet, tokens, users: [alice, bob] } = await makeProtocol({
         assets: {
           USDC: {
@@ -558,7 +558,7 @@ describe('withdraw', function () {
       // in callback, EvilToken attempts to withdraw USDC to bob's address
       await expect(
         comet.connect(alice).withdraw(EVIL.address, 1e6)
-      ).to.be.revertedWith("custom error 'NotCollateralized()'");
+      ).to.be.revertedWithCustomError(comet, 'ReentrantCallBlocked');
 
       // no USDC transferred
       expect(await USDC.balanceOf(comet.address)).to.eq(100e6);
