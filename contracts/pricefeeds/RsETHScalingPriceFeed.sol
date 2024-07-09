@@ -13,9 +13,10 @@ import "../IPriceFeed.sol";
 contract rsETHScalingPriceFeed is IPriceFeed {
     /** Custom errors **/
     error InvalidInt256();
+    error BadDecimals();
 
     /// @notice Version of the price feed
-    uint public constant override version = 1;
+    uint public constant VERSION = 1;
 
     /// @notice Description of the price feed
     string public description;
@@ -39,6 +40,7 @@ contract rsETHScalingPriceFeed is IPriceFeed {
      **/
     constructor(address underlyingPriceFeed_, uint8 decimals_, string memory description_) {
         underlyingPriceFeed = underlyingPriceFeed_;
+        if (decimals_ > 18) revert BadDecimals();
         decimals = decimals_;
         description = description_;
 
@@ -66,8 +68,8 @@ contract rsETHScalingPriceFeed is IPriceFeed {
         uint256 updatedAt,
         uint80 answeredInRound
     ) {
-        int256 price = int256(ILRTOracle(underlyingPriceFeed).rsETHPrice());
-        return (roundId, scalePrice(price), startedAt, updatedAt, answeredInRound);
+        int256 price = signed256(ILRTOracle(underlyingPriceFeed).rsETHPrice());
+        return (1, scalePrice(price), block.timestamp, block.timestamp, 1);        
     }
 
     function signed256(uint256 n) internal pure returns (int256) {
@@ -83,5 +85,13 @@ contract rsETHScalingPriceFeed is IPriceFeed {
             scaledPrice = price / rescaleFactor;
         }
         return scaledPrice;
+    }
+
+    /**
+     * @notice Contract version
+     * @return The version of the price feed contract
+     **/
+    function version() external pure returns (uint256) {
+        return VERSION;
     }
 }

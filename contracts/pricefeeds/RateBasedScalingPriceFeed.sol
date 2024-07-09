@@ -13,9 +13,10 @@ import "../IRateProvider.sol";
 contract RateBasedScalingPriceFeed is IPriceFeed {
     /** Custom errors **/
     error InvalidInt256();
+    error BadDecimals();
 
     /// @notice Version of the price feed
-    uint public constant override version = 1;
+    uint public constant VERSION = 1;
 
     /// @notice Description of the price feed
     string public description;
@@ -39,6 +40,7 @@ contract RateBasedScalingPriceFeed is IPriceFeed {
      **/
     constructor(address underlyingPriceFeed_, uint8 decimals_, uint8 underlyingDecimals_, string memory description_) {
         underlyingPriceFeed = underlyingPriceFeed_;
+        if (decimals_ > 18) revert BadDecimals();
         decimals = decimals_;
         description = description_;
 
@@ -67,7 +69,7 @@ contract RateBasedScalingPriceFeed is IPriceFeed {
         uint80 answeredInRound
     ) {
         uint256 rate = IRateProvider(underlyingPriceFeed).getRate();
-        return (roundId, scalePrice(int256(rate)), startedAt, updatedAt, answeredInRound);
+        return (1, scalePrice(signed256(rate)), block.timestamp, block.timestamp, 1);
     }
 
     function signed256(uint256 n) internal pure returns (int256) {
@@ -83,5 +85,13 @@ contract RateBasedScalingPriceFeed is IPriceFeed {
             scaledPrice = price / rescaleFactor;
         }
         return scaledPrice;
+    }
+
+    /**
+     * @notice Contract version
+     * @return The version of the price feed contract
+     **/
+    function version() external pure returns (uint256) {
+        return VERSION;
     }
 }
