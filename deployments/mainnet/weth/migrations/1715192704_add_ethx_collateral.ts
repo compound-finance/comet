@@ -6,10 +6,10 @@ import { exp, proposal } from '../../../../src/deploy';
 
 interface Vars { };
 
-const BORROW_COLLATERAL_FACTOR = exp(0.9, 18);
-const LIQUIDATE_COLLATERAL_FACTOR = exp(0.93, 18);
-const LIQUIDATION_FACTOR = exp(0.975, 18);
-const SUPPLY_CAP = exp(5_000, 18);
+const BORROW_COLLATERAL_FACTOR = exp(0.85, 18);
+const LIQUIDATE_COLLATERAL_FACTOR = exp(0.90, 18);
+const LIQUIDATION_FACTOR = exp(0.95, 18);
+const SUPPLY_CAP = exp(2100, 18);
 
 const ETHX_ADDRESS = '0xA35b1B31Ce002FBF2058D22F30f95D405200A15b';
 const ETHX_PRICE_FEED_ADDRESS = '0xdd487947c579af433AeeF038Bf1573FdBB68d2d3';
