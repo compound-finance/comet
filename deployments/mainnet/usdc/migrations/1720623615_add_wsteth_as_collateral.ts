@@ -15,8 +15,7 @@ export default migration('1720623615_add_wsteth_as_collateral', {
       [
         STETH_ETH_PRICE_FEED_ADDRESS,   // stETH / USD price feed
         WSTETH_ADDRESS,                 // wstETH address
-        8,                              // decimals
-        'wstETH / USD price feed'       // description
+        8                              // decimals
       ]
     );
     return { wstETHScalingPriceFeed: _wstETHScalingPriceFeed.address };
