@@ -8,13 +8,13 @@ import { exp } from '../test/helpers';
 scenario(
   'Comet#bulker > (non-WETH base) all non-reward actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, {network: 'mumbai'}, { network: 'linea-goerli' }]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && !matchesDeployment(ctx, [{ deployment: 'weth' }, { network: 'mumbai' }, { network: 'linea-goerli' }]),
     supplyCaps: {
       $asset0: 5000,
       $asset1: 5000,
     },
     tokenBalances: {
-      albert: { $base: '== 0', $asset0: 5000 },
+      albert: { $base: '== 0', $asset0: 5000, $asset1: 5000 },
       $comet: { $base: 5000 },
     },
   },
@@ -24,9 +24,11 @@ scenario(
     const baseAssetAddress = await comet.baseToken();
     const baseAsset = context.getAssetByAddress(baseAssetAddress);
     const baseScale = (await comet.baseScale()).toBigInt();
+    // if asset 0 is native token we took asset 1
     const { asset: asset0, scale: scale0 } = await comet.getAssetInfo(0);
     const { asset: asset1, scale: scale1 } = await comet.getAssetInfo(1);
-    const { asset: collateralAssetAddress, scale: scaleBN } = asset0 === wrappedNativeToken ? { asset: asset1, scale: scale1 } : { asset: asset0, scale: scale0 };    const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
+    const { asset: collateralAssetAddress, scale: scaleBN } = asset0 === wrappedNativeToken ? { asset: asset1, scale: scale1 } : { asset: asset0, scale: scale0 };
+    const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const collateralScale = scaleBN.toBigInt();
     const toSupplyCollateral = 5000n * collateralScale;
     const toBorrowBase = 1000n * baseScale;
@@ -87,7 +89,7 @@ scenario(
 scenario(
   'Comet#bulker > (WETH base) all non-reward actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{deployment: 'weth'}]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{ deployment: 'weth' }]),
     supplyCaps: {
       $asset0: 3000,
     },
@@ -163,13 +165,13 @@ scenario(
 scenario(
   'Comet#bulker > (non-WETH base) all actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && !matchesDeployment(ctx, [{deployment: 'weth'}, { network: 'linea-goerli' }]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && !matchesDeployment(ctx, [{ deployment: 'weth' }, { network: 'linea-goerli' }]),
     supplyCaps: {
       $asset0: 5000,
       $asset1: 5000,
     },
     tokenBalances: {
-      albert: { $base: '== 1000000', $asset0: 5000 },
+      albert: { $base: '== 1000000', $asset0: 5000, $asset1: 5000 },
       $comet: { $base: 5000 },
     }
   },
@@ -262,7 +264,7 @@ scenario(
 scenario(
   'Comet#bulker > (WETH base) all actions in one txn',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && matchesDeployment(ctx, [{deployment: 'weth'}]),
+    filter: async (ctx) => await isBulkerSupported(ctx) && await isRewardSupported(ctx) && matchesDeployment(ctx, [{ deployment: 'weth' }]),
     supplyCaps: {
       $asset0: 10,
     },
