@@ -14,11 +14,14 @@ const MATICX_WHALES = {
 
 // TODO: add ability to run ad hoc scenarios against a single migration, to avoid needing the scenario to do all this setup of
 // listing an asset
+
+// This scenario should only run for polygon usdc, cause it simulates adding of the new asset
+// It could be removed at all, because all scenarios will run for new collateral. For that should be crated migration script with enacted: false
+// While running the scenario, it checks all not enacted migrations, creates proposal, executes it and only after it starts simulations
 scenario(
   'add new asset maticx',
   {
-    filter: async (ctx) =>
-      matchesDeployment(ctx, [{ network: 'polygon' }]),
+    filter: async (ctx) => matchesDeployment(ctx, [{ network: 'polygon', deployment: 'usdc' }]),
     tokenBalances: {
       $comet: { $base: '>= 1' },
     },
