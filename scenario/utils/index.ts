@@ -327,6 +327,36 @@ export async function fetchLogs(
   }
 }
 
+async function redeployRenzoOracle(dm: DeploymentManager){
+  if(dm.network === 'mainnet' && dm.deployment === 'weth') {
+    // renzo admin 	0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A
+    const renzoOracle = new Contract(
+      '0x5a12796f7e7EBbbc8a402667d266d2e65A814042',
+      [
+        'function setOracleAddress(address _token, address _oracleAddress) external',
+      ],
+      dm.hre.ethers.provider
+    );
+
+    const admin = await impersonateAddress(dm, '0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A');
+    // set balance
+    await dm.hre.ethers.provider.send('hardhat_setBalance', [
+      admin.address,
+      dm.hre.ethers.utils.hexStripZeros(dm.hre.ethers.utils.parseUnits('100', 'ether').toHexString()),
+    ]);
+
+    const newOracle = await dm.deploy(
+      'stETH:Oracle',
+      'test/MockOracle.sol',
+      [
+        '0x86392dC19c0b719886221c78AB11eb8Cf5c52812',    // stETH / ETH oracle address
+      ]
+    );
+
+    await renzoOracle.connect(admin).setOracleAddress('0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84', newOracle.address);
+  }
+}
+
 export async function executeOpenProposal(
   dm: DeploymentManager,
   { id, startBlock, endBlock }: OpenProposal
@@ -370,6 +400,7 @@ export async function executeOpenProposal(
     await setNextBaseFeeToZero(dm);
     await governor.execute(id, { gasPrice: 0, gasLimit: 12000000 });
   }
+  await redeployRenzoOracle(dm);
 }
 
 // Instantly executes some actions through the governance proposal process
