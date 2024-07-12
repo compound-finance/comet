@@ -21,7 +21,7 @@
     "indexScale": "1e15",
     "baseSupplySpeed": "0e15",
     "baseBorrowSpeed": "0e15",
-    "baseMinForRewards": "1000e18"
+    "baseMinForRewards": "1e18"
   },
   "assets": {
     "wstETH": {
