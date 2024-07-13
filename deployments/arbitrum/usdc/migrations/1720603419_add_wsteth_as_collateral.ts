@@ -8,11 +8,14 @@ import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/ut
 const WSTETH_ADDRESS = '0x5979D7b546E38E414F7E9822514be443A4800529';
 const WSTETH_STETH_PRICE_FEED_ADDRESS = '0xB1552C5e96B312d0Bf8b554186F846C40614a540';
 const STETH_ETH_PRICE_FEED_ADDRESS = '0xded2c52b75B24732e9107377B7Ba93eC1fFa4BAf';
+const ETH_USD_PRICE_FEED_ADDRESS = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612';
+
 let newPriceFeedAddress: string;
+let existingPriceFeedAddress: string;
 
 export default migration('1720603419_add_wsteth_as_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
-    const _wstETHScalingPriceFeed = await deploymentManager.deploy(
+    const _wstETHToEthScalingPriceFeed = await deploymentManager.deploy(
       'wstETH:priceFeed',
       'pricefeeds/MultiplicativePriceFeed.sol',
       [
@@ -22,27 +25,44 @@ export default migration('1720603419_add_wsteth_as_collateral', {
         'wstETH / ETH price feed'        // description
       ]
     );
-    return { wstETHScalingPriceFeed: _wstETHScalingPriceFeed.address };
+
+    const _wstETHToUsdScalingPriceFeed = await deploymentManager.deploy(
+      'wstETH:priceFeed',
+      'pricefeeds/MultiplicativePriceFeed.sol',
+      [
+        _wstETHToEthScalingPriceFeed.address, // wstETH / stETH / ETH price feed
+        ETH_USD_PRICE_FEED_ADDRESS,           // ETH / USD price feed
+        8,                                    // decimals
+        'wstETH / USD price feed'             // description
+      ],
+      true
+    );
+
+    return { wstETHToUsdScalingPriceFeed: _wstETHToUsdScalingPriceFeed.address };
   },
 
   enact: async (
     deploymentManager: DeploymentManager,
     govDeploymentManager: DeploymentManager,
-    { wstETHScalingPriceFeed }
+    { wstETHToUsdScalingPriceFeed }
   ) => {
     const trace = deploymentManager.tracer();
 
     const wstETH = await deploymentManager.existing(
       'wstETH',
       WSTETH_ADDRESS,
-      'base',
+      'arbitrum',
       'contracts/ERC20.sol:ERC20'
     );
+
     const wstETHPricefeed = await deploymentManager.existing(
       'wstETH:priceFeed',
-      wstETHScalingPriceFeed,
-      'base'
+      wstETHToUsdScalingPriceFeed,
+      'arbitrum'
     );
+
+    newPriceFeedAddress = wstETHToUsdScalingPriceFeed;
+    existingPriceFeedAddress = wstETHPricefeed.address;
 
     const {
       bridgeReceiver,
@@ -63,13 +83,11 @@ export default migration('1720603419_add_wsteth_as_collateral', {
       asset: wstETH.address,
       priceFeed: wstETHPricefeed.address,
       decimals: await wstETH.decimals(),
-      borrowCollateralFactor: exp(0.78, 18),
-      liquidateCollateralFactor: exp(0.83, 18),
+      borrowCollateralFactor: exp(0.8, 18),
+      liquidateCollateralFactor: exp(0.85, 18),
       liquidationFactor: exp(0.90, 18),
-      supplyCap: exp(2_000, 18),
+      supplyCap: exp(1_500, 18),
     };
-
-    newPriceFeedAddress = wstETHPricefeed.address;
 
     const addAssetCalldata = await calldata(
       configurator.populateTransaction.addAsset(comet.address, newAssetConfig)
@@ -120,7 +138,7 @@ export default migration('1720603419_add_wsteth_as_collateral', {
       },
     ];
 
-    const description = '# Add wstETH as collateral into cUSDCv3 on Arbitrum\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add wstETH into cUSDCv3 on Arbitrum network. This proposal takes the governance steps recommended and necessary to update a Compound III USDC market on Arbitrum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/temp-check-add-wsteth-as-a-collateral-on-base-eth-market-usdc-market-on-arbitrum-and-ethereum-mainnet/4867/11).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/883) and [forum discussion](https://www.comp.xyz/t/temp-check-add-wsteth-as-a-collateral-on-base-eth-market-usdc-market-on-arbitrum-and-ethereum-mainnet/4867/).\n\n\n## Proposal Actions\n\nThe first proposal action adds wstETH to the USDC Comet on Arbitrum. This sends the encoded `addAsset` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Arbitrum.';
+    const description = '# Add wstETH as collateral into cUSDCv3 on Arbitrum\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add wstETH into cUSDCv3 on Arbitrum network. This proposal takes the governance steps recommended and necessary to update a Compound III USDC market on Arbitrum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/gauntlet-wsteth-and-ezeth-asset-listing/5404).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/883) and [forum discussion](https://www.comp.xyz/t/temp-check-add-wsteth-as-a-collateral-on-base-eth-market-usdc-market-on-arbitrum-and-ethereum-mainnet/4867/).\n\n\n## Proposal Actions\n\nThe first proposal action adds wstETH to the USDC Comet on Arbitrum. This sends the encoded `addAsset` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Arbitrum.';
     const txn = await govDeploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
@@ -147,11 +165,14 @@ export default migration('1720603419_add_wsteth_as_collateral', {
       asset: WSTETH_ADDRESS,
       priceFeed: newPriceFeedAddress,
       decimals: 18,
-      borrowCollateralFactor: exp(0.78, 18),
-      liquidateCollateralFactor: exp(0.83, 18),
+      borrowCollateralFactor: exp(0.8, 18),
+      liquidateCollateralFactor: exp(0.85, 18),
       liquidationFactor: exp(0.90, 18),
-      supplyCap: exp(2_000, 18),
+      supplyCap: exp(1_500, 18),
     };
+
+    // check that we set up correct new deployed price feed
+    expect(newPriceFeedAddress).to.be.equal(existingPriceFeedAddress)
 
     // 1. Compare proposed asset config with Comet asset info
     const wstETHAssetInfo = await comet.getAssetInfoByAddress(
