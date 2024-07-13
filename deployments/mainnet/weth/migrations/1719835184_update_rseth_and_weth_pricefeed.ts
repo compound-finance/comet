@@ -17,15 +17,17 @@ export default migration('1719835184_update_rseth_and_weth_pricefeed', {
     const _rsETHPriceFeed = await deploymentManager.deploy(
       'rsETH:priceFeed',
       'pricefeeds/RsETHScalingPriceFeed.sol',
-      [RSETH_PRICEFEED_ADDRESS, 8, 'rsETH / ETH exchange rate']
+      [RSETH_PRICEFEED_ADDRESS, 8, 'rsETH / ETH exchange rate'],
+      true
     );
-    
+
     const _weETHPriceFeed = await deploymentManager.deploy(
       'weETH:priceFeed',
       'pricefeeds/RateBasedScalingPriceFeed.sol',
-      [WEETH_PRICEFEED_ADDRESS, 8, 18, 'weETH / ETH exchange rate']
+      [WEETH_PRICEFEED_ADDRESS, 8, 18, 'weETH / ETH exchange rate'],
+      true
     );
-    return { rsETHPriceFeed: _rsETHPriceFeed.address, weETHPriceFeed: _weETHPriceFeed.address};
+    return { rsETHPriceFeed: _rsETHPriceFeed.address, weETHPriceFeed: _weETHPriceFeed.address };
   },
 
   async enact(deploymentManager: DeploymentManager, _, { rsETHPriceFeed, weETHPriceFeed }) {
