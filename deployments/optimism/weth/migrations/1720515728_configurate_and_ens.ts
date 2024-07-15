@@ -19,7 +19,7 @@ const ENSTextRecordKey = 'v3-official-markets';
 const opCOMPAddress = '0x7e7d4467112689329f7E06571eD0E8CbAd4910eE';
 const wethAmountToBridge = exp(10, 18);
 
-export default migration('1720515728_my_migration', {
+export default migration('1720515728_configurate_and_ens', {
   prepare: async () => {
     return {};
   },
@@ -144,7 +144,7 @@ export default migration('1720515728_my_migration', {
         signature: 'sendMessage(address,bytes,uint32)',
         args: [bridgeReceiver.address, l2ProposalData, 3_000_000],
       },
-      // 5. Update the list of official markets
+      // 3. Update the list of official markets
       {
         target: ENSResolverAddress,
         signature: 'setText(bytes32,string,string)',
@@ -154,10 +154,10 @@ export default migration('1720515728_my_migration', {
         ),
       },
     ];
-    
+
     // the description has speeds. speeds will be set up on on-chain proposal
-    const description = 'DESCRIPTION';
-    const txn = await govDeploymentManager.retry(async () =>{
+    const description = '# Initialize cWETHv3 on Optimism\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Optimism network. This proposal takes the governance steps recommended and necessary to initialize a Compound III WETH market on Optimism; upon execution, cWETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/add-market-eth-on-optimism/5274/5).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/882) and [forum discussion](https://www.comp.xyz/t/add-market-eth-on-optimism/5274).\n\n\n## Proposal Actions\n\nThe first action bridges 10 ETH as seed reserves from Mainnet Timelock to Optimism L2 Timelock using OpL1StandardBridge.\n\nThe second action sets the Comet configuration and deploys a new Comet implementation on Optimism. This sends the encoded `setFactory`, `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Optimism. It also calls `setRewardConfig` on the Optimism rewards contract, to establish Optimism’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 4 COMP/day and borrow speed to be 3 COMP/day. The last two steps are to wrap ETH into WETH and transfer seed reserves into Comet\n\nThe third action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Optimism cWETHv3 market.';
+    const txn = await govDeploymentManager.retry(async () => {
       return trace(await governor.propose(...(await proposal(actions, description))));
     }
     );
@@ -183,6 +183,7 @@ export default migration('1720515728_my_migration', {
       timelock
     } = await govDeploymentManager.getContracts();
 
+    // 2.
     // uncomment on on-chain proposal PR
     // const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
     // expect(stateChanges).to.deep.equal({
@@ -204,10 +205,10 @@ export default migration('1720515728_my_migration', {
     expect(config.rescaleFactor).to.be.equal(exp(1, 12));
     expect(config.shouldUpscale).to.be.equal(true);
 
-    // 2. & 3 & 4.
+    // 1.
     expect(await comet.getReserves()).to.be.equal(wethAmountToBridge);
 
-    // 5.
+    // 3.
     const ENSResolver = await govDeploymentManager.existing(
       'ENSResolver',
       ENSResolverAddress

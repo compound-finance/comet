@@ -4,7 +4,7 @@
   "baseToken": "WETH",
   "baseTokenAddress": "0x4200000000000000000000000000000000000006",
   "pauseGuardian": "0x3fFd6c073a4ba24a113B18C8F373569640916A45",
-  "borrowMin": "0.1e18",
+  "borrowMin": "0.000001e18",
   "storeFrontPriceFactor": 0.7,
   "targetReserves": "5000e18",
   "rates": {
