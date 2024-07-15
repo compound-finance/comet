@@ -122,7 +122,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'base',
     chainId: 8453,
-    url: `https://clean-spring-wind.base-mainnet.discover.quiknode.pro/${QUICKNODE_KEY}`,
+    url: `https://fluent-prettiest-scion.base-mainnet.quiknode.pro/${QUICKNODE_KEY}`,
   },
   {
     network: 'arbitrum',
