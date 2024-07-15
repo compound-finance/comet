@@ -51,10 +51,10 @@ export default migration('1720623615_add_wsteth_as_collateral', {
       asset: wstETH.address,
       priceFeed: wstETHPricefeed.address,
       decimals: await wstETH.decimals(),
-      borrowCollateralFactor: exp(0.83, 18),
-      liquidateCollateralFactor: exp(0.88, 18),
+      borrowCollateralFactor: exp(0.82, 18),
+      liquidateCollateralFactor: exp(0.87, 18),
       liquidationFactor: exp(0.92, 18),
-      supplyCap: exp(40_000, 18),
+      supplyCap: exp(15_000, 18),
     };
 
     newPriceFeedAddress = wstETHPricefeed.address;
@@ -74,7 +74,7 @@ export default migration('1720623615_add_wsteth_as_collateral', {
       },
     ];
     
-    const description = '# Add wstETH as collateral into cUSDCv3 on Ethereum Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add wstETH into cUSDCv3 on Ethereum Mainnet network. This proposal takes the governance steps recommended and necessary to update a Compound III USDC market on Ethereum Mainnet. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/temp-check-add-wsteth-as-a-collateral-on-base-eth-market-usdc-market-on-arbitrum-and-ethereum-mainnet/4867/11).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/884) and [forum discussion](https://www.comp.xyz/t/temp-check-add-wsteth-as-a-collateral-on-base-eth-market-usdc-market-on-arbitrum-and-ethereum-mainnet/4867/).\n\n\n## Proposal Actions\n\nThe first proposal action adds wstETH asset as collateral with corresponding configurations.\n\nThe second action deploys and upgrades Comet to a new version.';
+    const description = '# Add wstETH as collateral into cUSDCv3 on Ethereum Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add wstETH into cUSDCv3 on Ethereum Mainnet network. This proposal takes the governance steps recommended and necessary to update a Compound III USDC market on Ethereum Mainnet. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/gauntlet-wsteth-and-ezeth-asset-listing/5404/1).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/884) and [forum discussion](https://www.comp.xyz/t/gauntlet-wsteth-and-ezeth-asset-listing/5404).\n\n\n## Proposal Actions\n\nThe first proposal action adds wstETH asset as collateral with corresponding configurations.\n\nThe second action deploys and upgrades Comet to a new version.';
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
@@ -101,10 +101,10 @@ export default migration('1720623615_add_wsteth_as_collateral', {
       asset: WSTETH_ADDRESS,
       priceFeed: newPriceFeedAddress,
       decimals: 18,
-      borrowCollateralFactor: exp(0.83, 18),
-      liquidateCollateralFactor: exp(0.88, 18),
+      borrowCollateralFactor: exp(0.82, 18),
+      liquidateCollateralFactor: exp(0.87, 18),
       liquidationFactor: exp(0.92, 18),
-      supplyCap: exp(40_000, 18),
+      supplyCap: exp(15_000, 18),
     };
 
     // 1. Compare proposed asset config with Comet asset info
