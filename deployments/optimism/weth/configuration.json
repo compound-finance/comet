@@ -19,8 +19,8 @@
   },
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": "0e15",
-    "baseBorrowSpeed": "0e15",
+    "baseSupplySpeed": "46296296296e0",
+    "baseBorrowSpeed": "34722222222e0",
     "baseMinForRewards": "1e18"
   },
   "assets": {
@@ -30,7 +30,7 @@
       "borrowCF": 0.88,
       "liquidateCF": 0.93,
       "liquidationFactor": 0.97,
-      "supplyCap": "0e18"
+      "supplyCap": "1_300e18"
     },
     "rETH": {
       "address": "0x9Bcef72be871e61ED4fBbc7630889beE758eb81D",
@@ -38,7 +38,7 @@
       "borrowCF": 0.9,
       "liquidateCF": 0.93,
       "liquidationFactor": 0.97,
-      "supplyCap": "0e18"
+      "supplyCap": "470e18"
     },
     "WBTC": {
       "address": "0x68f180fcCe6836688e9084f035309E29Bf0A2095",
@@ -46,7 +46,7 @@
       "borrowCF": 0.8,
       "liquidateCF": 0.85,
       "liquidationFactor": 0.90,
-      "supplyCap": "0e8"
+      "supplyCap": "60e8"
     }
   }
 }
