@@ -147,8 +147,8 @@ export default migration('1718791267_add_wbtc_as_collateral', {
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(): Promise<boolean> {
-    return false;
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
   }, 
 
   async verify(deploymentManager: DeploymentManager) {
