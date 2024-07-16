@@ -150,29 +150,29 @@ export default migration('1721029777_add_ezeth_as_collateral', {
     );
 
     // 2. Compare proposed asset config with Configurator asset config
-    const configuratorWstETHAssetConfig = (
+    const configuratorEzETHAssetConfig = (
       await configurator.getConfiguration(comet.address)
     ).assetConfigs[ezETHAssetIndex];
     expect(ezETHAssetConfig.asset).to.be.equal(
-      configuratorWstETHAssetConfig.asset
+      configuratorEzETHAssetConfig.asset
     );
     expect(ezETHAssetConfig.priceFeed).to.be.equal(
-      configuratorWstETHAssetConfig.priceFeed
+      configuratorEzETHAssetConfig.priceFeed
     );
     expect(ezETHAssetConfig.decimals).to.be.equal(
-      configuratorWstETHAssetConfig.decimals
+      configuratorEzETHAssetConfig.decimals
     );
     expect(ezETHAssetConfig.borrowCollateralFactor).to.be.equal(
-      configuratorWstETHAssetConfig.borrowCollateralFactor
+      configuratorEzETHAssetConfig.borrowCollateralFactor
     );
     expect(ezETHAssetConfig.liquidateCollateralFactor).to.be.equal(
-      configuratorWstETHAssetConfig.liquidateCollateralFactor
+      configuratorEzETHAssetConfig.liquidateCollateralFactor
     );
     expect(ezETHAssetConfig.liquidationFactor).to.be.equal(
-      configuratorWstETHAssetConfig.liquidationFactor
+      configuratorEzETHAssetConfig.liquidationFactor
     );
     expect(ezETHAssetConfig.supplyCap).to.be.equal(
-      configuratorWstETHAssetConfig.supplyCap
+      configuratorEzETHAssetConfig.supplyCap
     );
   },
 });
