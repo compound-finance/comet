@@ -59,7 +59,7 @@ export default migration('1720603419_add_wsteth_as_collateral', {
       borrowCollateralFactor: exp(0.90, 18),
       liquidateCollateralFactor: exp(0.93, 18),
       liquidationFactor: exp(0.975, 18),
-      supplyCap: exp(100, 18),
+      supplyCap: exp(1200, 18),
     };
 
     newPriceFeedAddress = wstETHPricefeed.address;
@@ -124,7 +124,7 @@ export default migration('1720603419_add_wsteth_as_collateral', {
       borrowCollateralFactor: exp(0.90, 18),
       liquidateCollateralFactor: exp(0.93, 18),
       liquidationFactor: exp(0.975, 18),
-      supplyCap: exp(100, 18),
+      supplyCap: exp(1200, 18),
     };
 
     // 1. Compare proposed asset config with Comet asset info
