@@ -9,7 +9,7 @@ const WSTETH_STETH_PRICE_FEED_ADDRESS = '0xB88BAc61a4Ca37C43a3725912B1f472c9A5bc
 const STETH_ETH_PRICE_FEED_ADDRESS = '0xf586d0728a47229e747d824a939000Cf21dEF5A0';
 let newPriceFeedAddress: string;
 
-export default migration('1721034240_add_wsteth_as_collateral.ts', {
+export default migration('1721034240_add_wsteth_as_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
     const _wstETHToETHPriceFeed = await deploymentManager.deploy(
       'wstETH:priceFeed to ETH',
