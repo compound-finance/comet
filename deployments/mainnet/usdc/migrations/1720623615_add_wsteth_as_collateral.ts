@@ -4,28 +4,13 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { exp, proposal } from '../../../../src/deploy';
 
 const WSTETH_ADDRESS = '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0';
-const STETH_USD_PRICE_FEED_ADDRESS = '0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8';
-let newPriceFeedAddress: string;
 
 export default migration('1720623615_add_wsteth_as_collateral', {
-  async prepare(deploymentManager: DeploymentManager) {
-    const _wstETHScalingPriceFeed = await deploymentManager.deploy(
-      'wstETH:priceFeed',
-      'pricefeeds/WstETHPriceFeed.sol',
-      [
-        STETH_USD_PRICE_FEED_ADDRESS,   // stETH / USD price feed
-        WSTETH_ADDRESS,                 // wstETH address
-        8                               // decimals
-      ]
-    );
-    return { wstETHScalingPriceFeed: _wstETHScalingPriceFeed.address };
+  async prepare() {
+    return {};
   },
 
-  enact: async (
-    deploymentManager: DeploymentManager,
-    _,
-    { wstETHScalingPriceFeed }
-  ) => {
+  enact: async (deploymentManager: DeploymentManager) => {
     const trace = deploymentManager.tracer();
 
     const wstETH = await deploymentManager.existing(
@@ -34,12 +19,7 @@ export default migration('1720623615_add_wsteth_as_collateral', {
       'mainnet',
       'contracts/ERC20.sol:ERC20'
     );
-    const wstETHPricefeed = await deploymentManager.existing(
-      'wstETH:priceFeed',
-      wstETHScalingPriceFeed,
-      'mainnet'
-    );
-
+    const wstETHPricefeed = await deploymentManager.fromDep('wstETH:priceFeed', 'mainnet', 'usdt');
     const {
       governor,
       comet,
@@ -56,8 +36,6 @@ export default migration('1720623615_add_wsteth_as_collateral', {
       liquidationFactor: exp(0.92, 18),
       supplyCap: exp(15_000, 18),
     };
-
-    newPriceFeedAddress = wstETHPricefeed.address;
 
     const mainnetActions = [
       // 1. Add weETH as asset
@@ -99,7 +77,7 @@ export default migration('1720623615_add_wsteth_as_collateral', {
 
     const wstETHAssetConfig = {
       asset: WSTETH_ADDRESS,
-      priceFeed: newPriceFeedAddress,
+      priceFeed: '',
       decimals: 18,
       borrowCollateralFactor: exp(0.82, 18),
       liquidateCollateralFactor: exp(0.87, 18),
@@ -113,9 +91,6 @@ export default migration('1720623615_add_wsteth_as_collateral', {
     );
     expect(wstETHAssetIndex).to.be.equal(wstETHAssetInfo.offset);
     expect(wstETHAssetConfig.asset).to.be.equal(wstETHAssetInfo.asset);
-    expect(wstETHAssetConfig.priceFeed).to.be.equal(
-      wstETHAssetInfo.priceFeed
-    );
     expect(exp(1, wstETHAssetConfig.decimals)).to.be.equal(
       wstETHAssetInfo.scale
     );
@@ -138,9 +113,6 @@ export default migration('1720623615_add_wsteth_as_collateral', {
     ).assetConfigs[wstETHAssetIndex];
     expect(wstETHAssetConfig.asset).to.be.equal(
       configuratorWstETHAssetConfig.asset
-    );
-    expect(wstETHAssetConfig.priceFeed).to.be.equal(
-      configuratorWstETHAssetConfig.priceFeed
     );
     expect(wstETHAssetConfig.decimals).to.be.equal(
       configuratorWstETHAssetConfig.decimals
