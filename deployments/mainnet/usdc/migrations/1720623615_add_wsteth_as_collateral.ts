@@ -4,6 +4,7 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { exp, proposal } from '../../../../src/deploy';
 
 const WSTETH_ADDRESS = '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0';
+let priceFeedAddress: string;
 
 export default migration('1720623615_add_wsteth_as_collateral', {
   async prepare() {
@@ -20,6 +21,7 @@ export default migration('1720623615_add_wsteth_as_collateral', {
       'contracts/ERC20.sol:ERC20'
     );
     const wstETHPricefeed = await deploymentManager.fromDep('wstETH:priceFeed', 'mainnet', 'usdt');
+    priceFeedAddress = wstETHPricefeed.address;
     const {
       governor,
       comet,
@@ -77,7 +79,7 @@ export default migration('1720623615_add_wsteth_as_collateral', {
 
     const wstETHAssetConfig = {
       asset: WSTETH_ADDRESS,
-      priceFeed: '',
+      priceFeed: priceFeedAddress,
       decimals: 18,
       borrowCollateralFactor: exp(0.82, 18),
       liquidateCollateralFactor: exp(0.87, 18),
@@ -91,6 +93,9 @@ export default migration('1720623615_add_wsteth_as_collateral', {
     );
     expect(wstETHAssetIndex).to.be.equal(wstETHAssetInfo.offset);
     expect(wstETHAssetConfig.asset).to.be.equal(wstETHAssetInfo.asset);
+    expect(wstETHAssetConfig.priceFeed).to.be.equal(
+      wstETHAssetInfo.priceFeed
+    );
     expect(exp(1, wstETHAssetConfig.decimals)).to.be.equal(
       wstETHAssetInfo.scale
     );
@@ -113,6 +118,9 @@ export default migration('1720623615_add_wsteth_as_collateral', {
     ).assetConfigs[wstETHAssetIndex];
     expect(wstETHAssetConfig.asset).to.be.equal(
       configuratorWstETHAssetConfig.asset
+    );
+    expect(wstETHAssetConfig.priceFeed).to.be.equal(
+      configuratorWstETHAssetConfig.priceFeed
     );
     expect(wstETHAssetConfig.decimals).to.be.equal(
       configuratorWstETHAssetConfig.decimals
