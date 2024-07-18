@@ -12,23 +12,25 @@ let newPriceFeedAddress: string;
 export default migration('1721034240_add_wsteth_as_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
     const _wstETHToETHPriceFeed = await deploymentManager.deploy(
-      'wstETH:priceFeed to ETH',
+      'wstETH:priceFeed',
       'pricefeeds/MultiplicativePriceFeed.sol',
       [
         WSTETH_STETH_PRICE_FEED_ADDRESS, // wstETH / stETH price feed
         STETH_ETH_PRICE_FEED_ADDRESS,    // stETH / ETH price feed
         8,                               // decimals
         'wstETH / ETH price feed'        // description
-      ]
+      ],
+      true
     );
+    const _ETHToUSDPriceFeed = await deploymentManager.fromDep('WETH:priceFeed', 'base', 'usdc');
     const _wstETHScalingPriceFeed = await deploymentManager.deploy(
       'wstETH:priceFeed',
       'pricefeeds/MultiplicativePriceFeed.sol',
       [
-        _wstETHToETHPriceFeed.address,                                                 // wstETH / ETH price feed
-        (await deploymentManager.fromDep('WETH:priceFeed', 'base', 'usdc')).address,   // ETH / USD price feed
-        8,                                                                             // decimals
-        'wstETH / USD price feed'                                                      // description
+        _wstETHToETHPriceFeed.address, // wstETH / ETH price feed
+        _ETHToUSDPriceFeed.address,    // ETH / USD price feed
+        8,                             // decimals
+        'wstETH / USD price feed'      // description
       ]
     );
     return { wstETHScalingPriceFeed: _wstETHScalingPriceFeed.address };
