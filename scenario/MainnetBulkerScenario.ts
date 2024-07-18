@@ -22,10 +22,11 @@ async function getWstETHIndex(context: any): Promise<number> {
       return i;
     }
   }
+  return -1;
 }
 
 async function hasWstETH(context: any): Promise<boolean> {
-  return(await getWstETHIndex(context) !== undefined);
+  return(await getWstETHIndex(context) > -1);
 }
 
 scenario(
