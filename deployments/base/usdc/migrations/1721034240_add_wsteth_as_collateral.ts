@@ -19,8 +19,7 @@ export default migration('1721034240_add_wsteth_as_collateral', {
         STETH_ETH_PRICE_FEED_ADDRESS,    // stETH / ETH price feed
         8,                               // decimals
         'wstETH / ETH price feed'        // description
-      ],
-      true
+      ]
     );
     const _ETHToUSDPriceFeed = await deploymentManager.fromDep('WETH:priceFeed', 'base', 'usdc');
     const _wstETHScalingPriceFeed = await deploymentManager.deploy(
