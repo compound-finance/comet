@@ -31,7 +31,8 @@ export default migration('1721034240_add_wsteth_as_collateral', {
         _ETHToUSDPriceFeed.address,    // ETH / USD price feed
         8,                             // decimals
         'wstETH / USD price feed'      // description
-      ]
+      ],
+      true
     );
     return { wstETHScalingPriceFeed: _wstETHScalingPriceFeed.address };
   },
