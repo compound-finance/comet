@@ -48,7 +48,7 @@ scenario(
     const { albert } = actors;
 
     const stETH = await context.world.deploymentManager.hre.ethers.getContractAt('ERC20', MAINNET_STETH_ADDRESS) as ERC20;
-    const wstETH = await context.world.deploymentManager.contract('wstETH') as IWstETH;
+    const wstETH = await context.world.deploymentManager.hre.ethers.getContractAt('IWstETH', MAINNET_WSTETH_ADDRESS) as IWstETH;
 
     console.log({ wstETH })
 
@@ -104,7 +104,7 @@ scenario(
     const { albert } = actors;
 
     const stETH = await context.world.deploymentManager.hre.ethers.getContractAt('ERC20', MAINNET_STETH_ADDRESS) as ERC20;
-    const wstETH = await context.world.deploymentManager.getContractOrThrow('wstETH');
+    const wstETH = await context.world.deploymentManager.hre.ethers.getContractAt('IWstETH', MAINNET_WSTETH_ADDRESS) as IWstETH;
 
     await albert.allow(bulker.address, true);
 
@@ -158,7 +158,7 @@ scenario(
     const { albert } = actors;
 
     const stETH = await context.world.deploymentManager.hre.ethers.getContractAt('ERC20', MAINNET_STETH_ADDRESS) as ERC20;
-    const wstETH = await context.world.deploymentManager.contract('wstETH') as IWstETH;
+    const wstETH = await context.world.deploymentManager.hre.ethers.getContractAt('IWstETH', MAINNET_WSTETH_ADDRESS) as IWstETH;
 
     await albert.allow(bulker.address, true);
 
