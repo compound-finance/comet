@@ -50,8 +50,6 @@ scenario(
     const stETH = await context.world.deploymentManager.hre.ethers.getContractAt('ERC20', MAINNET_STETH_ADDRESS) as ERC20;
     const wstETH = await context.world.deploymentManager.hre.ethers.getContractAt('IWstETH', MAINNET_WSTETH_ADDRESS) as IWstETH;
 
-    console.log({ wstETH })
-
     const toSupplyStEth = exp(.1, 18);
 
     await context.sourceTokens(toSupplyStEth, new CometAsset(stETH), albert);
