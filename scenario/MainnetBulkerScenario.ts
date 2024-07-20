@@ -26,16 +26,16 @@ async function getWstETHIndex(context: any): Promise<number> {
 }
 
 async function hasWstETH(context: any): Promise<boolean> {
-  return(await getWstETHIndex(context) > -1);
+  return (await getWstETHIndex(context) > -1);
 }
 
 scenario(
   'MainnetBulker > wraps stETH before supplying',
   {
-    filter: async (ctx) => await hasWstETH(ctx) && await isBulkerSupported(ctx) && matchesDeployment(ctx, [{network: 'mainnet'}]),
+    filter: async (ctx) => await hasWstETH(ctx) && await isBulkerSupported(ctx) && matchesDeployment(ctx, [{ network: 'mainnet' }]),
     supplyCaps: async (ctx) => (
       {
-        [`$asset${await getWstETHIndex(ctx)}`] : 1,
+        [`$asset${await getWstETHIndex(ctx)}`]: 1,
       }
     ),
     tokenBalances: async (ctx) => (
@@ -49,6 +49,8 @@ scenario(
 
     const stETH = await context.world.deploymentManager.hre.ethers.getContractAt('ERC20', MAINNET_STETH_ADDRESS) as ERC20;
     const wstETH = await context.world.deploymentManager.contract('wstETH') as IWstETH;
+
+    console.log({ wstETH })
 
     const toSupplyStEth = exp(.1, 18);
 
@@ -80,10 +82,10 @@ scenario(
 scenario(
   'MainnetBulker > unwraps wstETH before withdrawing',
   {
-    filter: async (ctx) => await hasWstETH(ctx) && await isBulkerSupported(ctx) && matchesDeployment(ctx, [{network: 'mainnet'}]),
+    filter: async (ctx) => await hasWstETH(ctx) && await isBulkerSupported(ctx) && matchesDeployment(ctx, [{ network: 'mainnet' }]),
     supplyCaps: async (ctx) => (
       {
-        [`$asset${await getWstETHIndex(ctx)}`] : 2,
+        [`$asset${await getWstETHIndex(ctx)}`]: 2,
       }
     ),
     tokenBalances: async (ctx) => (
@@ -134,10 +136,10 @@ scenario(
 scenario(
   'MainnetBulker > withdraw max stETH leaves no dust',
   {
-    filter: async (ctx) => await hasWstETH(ctx) && await isBulkerSupported(ctx) && matchesDeployment(ctx, [{network: 'mainnet'}]),
+    filter: async (ctx) => await hasWstETH(ctx) && await isBulkerSupported(ctx) && matchesDeployment(ctx, [{ network: 'mainnet' }]),
     supplyCaps: async (ctx) => (
       {
-        [`$asset${await getWstETHIndex(ctx)}`] : 2,
+        [`$asset${await getWstETHIndex(ctx)}`]: 2,
       }
     ),
     tokenBalances: async (ctx) => (
@@ -182,7 +184,7 @@ scenario(
 scenario(
   'MainnetBulker > it reverts when passed an action that does not exist',
   {
-    filter: async (ctx) => await hasWstETH(ctx) && await isBulkerSupported(ctx) && matchesDeployment(ctx, [{network: 'mainnet'}]),
+    filter: async (ctx) => await hasWstETH(ctx) && await isBulkerSupported(ctx) && matchesDeployment(ctx, [{ network: 'mainnet' }]),
   },
   async ({ comet, actors }) => {
     const { betty } = actors;
