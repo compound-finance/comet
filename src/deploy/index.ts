@@ -135,7 +135,8 @@ export const WHALES = {
   ],
   optimism: [
     '0x2A82Ae142b2e62Cb7D10b55E323ACB1Cab663a26', // OP whale
-    '0x8af3827a41c26c7f32c81e93bb66e837e0210d5c' // USDC whale
+    '0x8af3827a41c26c7f32c81e93bb66e837e0210d5c', // USDC whale
+    '0xc45A479877e1e9Dfe9FcD4056c699575a1045dAA', // wstETH whale
   ]
 };
 
