@@ -12,7 +12,7 @@ const LIQUIDATION_FACTOR = exp(0.95, 18);
 const SUPPLY_CAP = exp(2100, 18);
 
 const ETHX_ADDRESS = '0xA35b1B31Ce002FBF2058D22F30f95D405200A15b';
-const ETHX_PRICE_FEED_ADDRESS = '0xdd487947c579af433AeeF038Bf1573FdBB68d2d3';
+const ETHX_PRICE_FEED_ADDRESS = '0x8e0fb51a7383d3894b97169922bdf8c2e88b43eb';
 
 export default migration('1715192704_add_ethx_collateral', {
   prepare: async (deploymentManager: DeploymentManager) => {
