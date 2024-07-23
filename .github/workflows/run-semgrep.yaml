@@ -19,6 +19,9 @@ jobs:
       INFURA_KEY: ${{ secrets.INFURA_KEY }}
       POLYGONSCAN_KEY: ${{ secrets.POLYGONSCAN_KEY }}
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
+      SCROLLSCAN_KEY: ${{ secrets.SCROLLSCAN_KEY }}
+      BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
+      SCROLL_RPC_URL: ${{ secrets.SCROLL_RPC_URL }}
     container:
       # A Docker image with Semgrep installed. Do not change this.
       image: returntocorp/semgrep
