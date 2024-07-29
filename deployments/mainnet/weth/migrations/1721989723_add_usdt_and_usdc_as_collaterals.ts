@@ -115,7 +115,7 @@ export default migration('1721989723_add_usdt_and_usdc_as_collaterals', {
       },
     ];
 
-    const description = 'DESCRIPTION';
+    const description = '# Add USDT and USDC as collaterals into cWETHv3 on Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes to add USDT and USDC into cWETHv3 on Ethereum network. This proposal takes the governance steps recommended and necessary to update a Compound III WETH market on Ethereum. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/add-dai-usdc-and-usdt-as-collaterals-to-weth-comets-on-mainnet-and-arbitrum/5415/2).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/893) and [forum discussion](https://www.comp.xyz/t/add-dai-usdc-and-usdt-as-collaterals-to-weth-comets-on-mainnet-and-arbitrum/5415).\n\n\n## Proposal Actions\n\nThe first proposal action sets new factory that supports USDT non-standard interface.\n\nThe second proposal action adds USDT asset as collateral with corresponding configurations.\n\nThe third proposal action adds USDC asset as collateral with corresponding configurations.\n\nThe fourth action deploys and upgrades Comet to a new version.';
     const txn = await deploymentManager.retry(async () =>
       trace(
         await governor.propose(...(await proposal(mainnetActions, description)))
