@@ -61,7 +61,7 @@ const {
   OPTIMISMSCAN_KEY,
   INFURA_KEY,
   QUICKNODE_KEY,
-  MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
+  MNEMONIC = '',
   REPORT_GAS = 'false',
   NETWORK_PROVIDER = '',
   GOV_NETWORK_PROVIDER = '',
@@ -107,7 +107,7 @@ const networkConfigs: NetworkConfig[] = [
   { network: 'ropsten', chainId: 3 },
   { network: 'rinkeby', chainId: 4 },
   { network: 'goerli', chainId: 5 },
-  { network: 'sepolia', chainId: 11155111 },
+  { network: 'sepolia', chainId: 11155111, url: `https://eth-sepolia.g.alchemy.com/v2/wUdYz77ad_bx5C_95iAERCYCQ7NtCKKl`},
   {
     network: 'polygon',
     chainId: 137,

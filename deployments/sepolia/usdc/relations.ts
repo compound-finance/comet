@@ -3,15 +3,15 @@ import baseRelationConfig from '../../relations';
 export default {
   ...baseRelationConfig,
   // USDC / USD price feed
-  '0xa2f78ab2355fe2f984d808b5cee7fd0a93d5270e': {
+  '0x683Ae71AFB633385e64a7968435210d1aadbe29D': {
     artifact: 'contracts/IPriceFeed.sol:IPriceFeed'
   },
   // WBTC / USD price feed
-  '0x1b44f3514812d835eb1bdb0acb33d3fa3351ee43': {
+  '0x5EF17889992f6d9daCEb03db9822AA5b6fDd6713': {
     artifact: 'contracts/IPriceFeed.sol:IPriceFeed'
   },
   // WETH / USD price feed
-  '0x694aa1769357215de4fac081bf1f309adc325306': {
+  '0x132e2459498CFfb3f767d508066bf1dF0549D59C': {
     artifact: 'contracts/IPriceFeed.sol:IPriceFeed'
   },
   fxRoot: {
