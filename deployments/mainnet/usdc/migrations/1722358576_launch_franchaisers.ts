@@ -6,11 +6,11 @@ import { expect } from 'chai';
 const FRANCHAISER_FACTORY = '0xcd94088b74391dc0a22f0a9611a66dc44f70da72';
 
 const chosenAddresses = [
-  '0x123ab195dd38b1b40510d467a6a359b201af056f',
-  '0x321ab195dd38b1b40510d467a6a359b201af056f',
-  '0x456ab195dd38b1b40510d467a6a359b201af056f',
-  '0x654ab195dd38b1b40510d467a6a359b201af056f',
-  '0x789ab195dd38b1b40510d467a6a359b201af056f',
+  '0x4Ac0Dbce527bcb60787CEF10053348B146C6b5e3',
+  '0xE13C54214267675428Adf7E0af9DA433F5Ead460',
+  '0xb55a948763e0d386b6dEfcD8070a522216AE42b1',
+  '0x3FB19771947072629C8EEE7995a2eF23B72d4C8A',
+  '0x7B3c54e17d618CC94daDFe7671c1e2F50C4Ecc33',
 ];
 
 const amounts = [
@@ -20,6 +20,8 @@ const amounts = [
   exp(20_000, 18),
   exp(25_000, 18),
 ];
+
+const votesBefore: bigint[] = [];
 
 export default migration('1722358576_launch_franchaisers', {
   prepare: async () => {
@@ -68,6 +70,7 @@ export default migration('1722358576_launch_franchaisers', {
       },
     ];
     const description = 'DESCRIPTION';
+
     const txn = await deploymentManager.retry(
       async () => trace((await governor.propose(...await proposal(actions, description))))
     );
@@ -102,6 +105,11 @@ export default migration('1722358576_launch_franchaisers', {
       );
       expect(franchaiserAddress).to.be.not.equal(ethers.constants.AddressZero);
       expect(await COMP.balanceOf(franchaiserAddress)).to.be.equal(amounts[i]);
+      expect(
+        await COMP.getCurrentVotes(
+          chosenAddresses[i]
+        )
+      ).to.be.equal(ethers.BigNumber.from(votesBefore[i]).add(amounts[i]));
     }
 
   },
