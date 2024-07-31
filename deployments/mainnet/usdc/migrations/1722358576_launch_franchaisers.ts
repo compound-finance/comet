@@ -75,6 +75,12 @@ export default migration('1722358576_launch_franchaisers', {
       async () => trace((await governor.propose(...await proposal(actions, description))))
     );
 
+    for (let i = 0; i < chosenAddresses.length; i++) {
+      votesBefore.push(await COMP.getCurrentVotes(
+        chosenAddresses[i]
+      ));
+    }
+
     const event = txn.events.find(event => event.event === 'ProposalCreated');
     const [proposalId] = event.args;
 
@@ -96,7 +102,7 @@ export default migration('1722358576_launch_franchaisers', {
         'function fundMany(address[] calldata delegatees, uint256[] calldata amounts) external returns(address[] memory franchisers)',
         'function getFranchiser(address,address) external view returns(address)',
       ],
-      ethers.getDefaultProvider(1)
+      ethers.getDefaultProvider()
     );
 
     for (let i = 0; i < chosenAddresses.length; i++) {
