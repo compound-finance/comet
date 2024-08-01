@@ -30,14 +30,12 @@ export default migration('1719910152_configurate_and_ens', {
       COMP,
       DAI,
       governor,
-      timelock
     } = await deploymentManager.getContracts();
 
     const cometFactory = await deploymentManager.fromDep(
       'cometFactory',
       'mainnet',
-      // 'usdt' // Uncomment this line after deployment of the cUSDTv3 will be finished
-      'usdc' // Comment this line after deployment of the cUSDTv3 will be finished
+      'usdt' // Uncomment this line after deployment of the cUSDTv3 will be finished
     );
     const configuration = await getConfigurationStruct(deploymentManager);
 
@@ -46,12 +44,6 @@ export default migration('1719910152_configurate_and_ens', {
     const currentChainId = 1;
     const newMarketObject = { baseSymbol: 'DAI', cometAddress: comet.address };
     const officialMarketsJSON = JSON.parse(await ENSResolver.text(subdomainHash, ENSTextRecordKey));
-
-    // add mainnet-usdt comet (0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840)
-    // mainnet chain id is 1
-    if (!(officialMarketsJSON[1].find(market => market.baseSymbol === 'USDT'))) {
-      officialMarketsJSON[1].push({ baseSymbol: 'USDT', cometAddress: '0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840'});
-    }
 
     if (officialMarketsJSON[currentChainId]) {
       officialMarketsJSON[currentChainId].push(newMarketObject);
