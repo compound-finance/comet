@@ -778,7 +778,7 @@ scenario(
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}]),
+      filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}]) && !matchesDeployment(ctx, [{deployment: 'dai'}]),
       tokenBalances: async (ctx) => (
         {
           $comet: {

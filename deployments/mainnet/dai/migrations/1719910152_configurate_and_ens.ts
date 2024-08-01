@@ -202,6 +202,10 @@ export default migration('1719910152_configurate_and_ens', {
         {
           baseSymbol: 'USDT',
           cometAddress: '0x995E394b8B2437aC8Ce61Ee0bC610D617962B214'
+        },
+        {
+          baseSymbol: 'WETH',
+          cometAddress: '0xE36A30D249f7761327fd973001A32010b521b6Fd'
         }
       ],
       137: [
