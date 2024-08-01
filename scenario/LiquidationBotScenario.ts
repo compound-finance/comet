@@ -22,7 +22,7 @@ const sharedAddresses = {
   uniswapV3Factory: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
 };
 
-const addresses: {[chain: string]: LiquidationAddresses} = {
+const addresses: { [chain: string]: LiquidationAddresses } = {
   mainnet: {
     ...sharedAddresses,
     sushiswapRouter: '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F',
@@ -74,8 +74,9 @@ async function canBeLiquidatedByBot(ctx: CometContext, assetNum: number): Promis
     // Reason: Most liquidity lives in MATICX / MATIC pools, which the liquidation bot cannot use if the base asset is not MATIC
     MaticX: {
       network: 'polygon',
-      deployments: ['usdc']
-    }
+      deployments: ['usdc', 'usdt']
+    },
+
   };
   const comet = await ctx.getComet();
   const assetInfo = await comet.getAssetInfo(assetNum);
@@ -98,7 +99,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       usdc: 2250000
     },
     arbitrum: {
-      'usdc.e': 10000000, 
+      'usdc.e': 10000000,
       usdc: 10000000,
       usdt: 10000000
     }
@@ -146,7 +147,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         ' == 500',
         // WBTC
         ' == 50'
-      ], 
+      ],
       usdc: [
         // ARB
         ' == 500000',
@@ -166,7 +167,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]) && canBeLiquidatedByBot(ctx, i),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }]) && canBeLiquidatedByBot(ctx, i),
       tokenBalances: async (ctx) => (
         {
           $comet: {
@@ -284,7 +285,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       usdc: 3000000
     },
     arbitrum: {
-      'usdc.e': 10000000, 
+      'usdc.e': 10000000,
       usdc: 10000000,
       usdt: 10000000
     }
@@ -332,7 +333,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         ' == 5000',
         // WBTC
         ' == 300'
-      ], 
+      ],
       usdc: [
         // ARB
         ' == 1000000',
@@ -400,7 +401,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
         exp(500, 18),
         // WBTC
         exp(50, 8),
-      ], 
+      ],
       usdc: [
         // ARB
         exp(300000, 18),
@@ -432,7 +433,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]) && canBeLiquidatedByBot(ctx, i),
+      filter: async (ctx) => await isValidAssetIndex(ctx, i) && matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }]) && canBeLiquidatedByBot(ctx, i),
       tokenBalances: async (ctx) => (
         {
           $comet: {
@@ -536,7 +537,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when value is beneath liquidationThreshold`,
   {
-    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
+    filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }]),
     tokenBalances: {
       $comet: { $base: 100000 },
     },
@@ -618,7 +619,7 @@ scenario(
     expect(event(tx, 3)).to.deep.equal({
       Absorb: {
         initiator: betty.address,
-        accounts: [ albert.address ]
+        accounts: [albert.address]
       }
     });
 
@@ -647,7 +648,7 @@ scenario(
 scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when maxAmountToPurchase=0`,
   {
-    filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}, {network: 'polygon'}, {network: 'arbitrum'}]),
+    filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }]),
     tokenBalances: {
       $comet: { $base: 100000 },
     },
@@ -729,7 +730,7 @@ scenario(
     expect(event(tx, 3)).to.deep.equal({
       Absorb: {
         initiator: betty.address,
-        accounts: [ albert.address ]
+        accounts: [albert.address]
       }
     });
 
@@ -759,13 +760,15 @@ scenario(
   const baseTokenBalances = {
     mainnet: {
       usdc: 2250000,
-      weth: 20
+      weth: 20,
+      usdt: 2250000
     },
   };
   const assetAmounts = {
     mainnet: {
       usdc: ' == 5000', // COMP
       weth: ' == 7000', // CB_ETH
+      usdt: ' == 5000', // COMP
     },
   };
 
@@ -775,7 +778,7 @@ scenario(
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}]) && !matchesDeployment(ctx, [{deployment: 'dai'}]),
+      filter: async (ctx) => matchesDeployment(ctx, [{network: 'mainnet'}]),
       tokenBalances: async (ctx) => (
         {
           $comet: {
