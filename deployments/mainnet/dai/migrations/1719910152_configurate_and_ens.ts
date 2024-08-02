@@ -12,6 +12,7 @@ const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 
 const cDAIAddress = '0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643';
+const NEW_FACTORY_ADDRESS = '0x698A949f3b4f7a5DdE236106F25Fa0eAcA0FcEF1';
 const DAIAmount = ethers.BigNumber.from(exp(200_000, 18));
 
 export default migration('1719910152_configurate_and_ens', {
@@ -32,15 +33,10 @@ export default migration('1719910152_configurate_and_ens', {
       governor,
     } = await deploymentManager.getContracts();
 
-    const cometFactory = await deploymentManager.fromDep(
-      'cometFactory',
-      'mainnet',
-      'usdt' // Uncomment this line after deployment of the cUSDTv3 will be finished
-    );
     const configuration = await getConfigurationStruct(deploymentManager);
 
     const ENSResolver = await deploymentManager.existing('ENSResolver', ENSResolverAddress);
-    const subdomainHash = deploymentManager.hre.ethers.utils.namehash(ENSSubdomain);
+    const subdomainHash = ethers.utils.namehash(ENSSubdomain);
     const currentChainId = 1;
     const newMarketObject = { baseSymbol: 'DAI', cometAddress: comet.address };
     const officialMarketsJSON = JSON.parse(await ENSResolver.text(subdomainHash, ENSTextRecordKey));
@@ -61,7 +57,7 @@ export default migration('1719910152_configurate_and_ens', {
       {
         contract: configurator,
         signature: 'setFactory(address,address)',
-        args: [comet.address, cometFactory.address],
+        args: [comet.address, NEW_FACTORY_ADDRESS],
       },
       // 2. Set the Comet configuration
       {
