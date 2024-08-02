@@ -767,7 +767,7 @@ scenario(
   const assetAmounts = {
     mainnet: {
       usdc: ' == 5000', // COMP
-      weth: ' == 7000', // CB_ETH
+      weth: ' == 6500', // CB_ETH
       usdt: ' == 5000', // COMP
     },
   };
