@@ -127,7 +127,6 @@ export default migration('1721989723_add_usdt_and_usdc_as_collaterals', {
     );
     const [proposalId] = event.args;
     trace(`Created proposal ${proposalId}.`);
-    // second proposal 
   },
 
   async enacted(): Promise<boolean> {
