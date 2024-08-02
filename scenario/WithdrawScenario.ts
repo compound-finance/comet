@@ -10,7 +10,6 @@ async function testWithdrawCollateral(context: CometContext, assetNum: number): 
   const collateralAsset = context.getAssetByAddress(assetAddress);
   const scale = scaleBN.toBigInt();
 
-  console.log('charles.address:', charles.address);
   expect(await collateralAsset.balanceOf(charles.address)).to.be.equal(0n);
   expect(await comet.collateralBalanceOf(charles.address, collateralAsset.address)).to.be.equal(100n * scale);
 
