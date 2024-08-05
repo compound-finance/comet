@@ -4,23 +4,23 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { exp, proposal } from '../../../../src/deploy';
 
 const RSWETH_ADDRESS = '0xFAe103DC9cf190eD75350761e95403b7b8aFa6c0';
-const RSWETH_PRICE_FEED_ADDRESS = '0xb613CfebD0b6e95abDDe02677d6bC42394FdB857';
 let newPriceFeedAddress: string;
 
-export default migration('1720695274_add_rsweth_as_collateral', {
+export default migration('1722853005_add_rsweth_as_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
-    const _rswETHScalingPriceFeed = await deploymentManager.deploy(
+    const _rswETHPriceFeed = await deploymentManager.deploy(
       'rswETH:priceFeed',
-      'pricefeeds/ScalingPriceFeed.sol',
+      'pricefeeds/RswETHExchangePriceFeed.sol',
       [
-        RSWETH_PRICE_FEED_ADDRESS, // rswETH / ETH price feed
-        8                          // decimals
+        RSWETH_ADDRESS,          // rswETH / ETH price feed
+        8,                       // decimals
+        'rswETH/ETH price feed', // description
       ]
     );
-    return { rswETHScalingPriceFeed: _rswETHScalingPriceFeed.address };
+    return { rswETHPriceFeed: _rswETHPriceFeed.address };
   },
 
-  async enact(deploymentManager: DeploymentManager, _, { rswETHScalingPriceFeed }) {
+  async enact(deploymentManager: DeploymentManager, _, { rswETHPriceFeed }) {
 
     const trace = deploymentManager.tracer();
 
@@ -32,7 +32,7 @@ export default migration('1720695274_add_rsweth_as_collateral', {
     );
     const rswEthPricefeed = await deploymentManager.existing(
       'rswETH:priceFeed',
-      rswETHScalingPriceFeed,
+      rswETHPriceFeed,
       'mainnet'
     );
 
@@ -111,46 +111,21 @@ export default migration('1720695274_add_rsweth_as_collateral', {
     };
 
     // 1. Compare rswETH asset config with Comet and Configurator asset info
-    const cometRswETHAssetInfo = await comet.getAssetInfoByAddress(
-      RSWETH_ADDRESS
-    );
+    const cometRswETHAssetInfo = await comet.getAssetInfoByAddress(RSWETH_ADDRESS);
     expect(rswETHAssetIndex).to.be.equal(cometRswETHAssetInfo.offset);
     expect(rswETHAssetConfig.asset).to.be.equal(cometRswETHAssetInfo.asset);
-    expect(exp(1, rswETHAssetConfig.decimals)).to.be.equal(
-      cometRswETHAssetInfo.scale
-    );
-    expect(rswETHAssetConfig.borrowCollateralFactor).to.be.equal(
-      cometRswETHAssetInfo.borrowCollateralFactor
-    );
-    expect(rswETHAssetConfig.liquidateCollateralFactor).to.be.equal(
-      cometRswETHAssetInfo.liquidateCollateralFactor
-    );
-    expect(rswETHAssetConfig.liquidationFactor).to.be.equal(
-      cometRswETHAssetInfo.liquidationFactor
-    );
-    expect(rswETHAssetConfig.supplyCap).to.be.equal(
-      cometRswETHAssetInfo.supplyCap
-    );
-    const configuratorRswETHAssetConfig = (
-      await configurator.getConfiguration(comet.address)
-    ).assetConfigs[rswETHAssetIndex];
-    expect(rswETHAssetConfig.asset).to.be.equal(
-      configuratorRswETHAssetConfig.asset
-    );
-    expect(rswETHAssetConfig.decimals).to.be.equal(
-      configuratorRswETHAssetConfig.decimals
-    );
-    expect(rswETHAssetConfig.borrowCollateralFactor).to.be.equal(
-      configuratorRswETHAssetConfig.borrowCollateralFactor
-    );
-    expect(rswETHAssetConfig.liquidateCollateralFactor).to.be.equal(
-      configuratorRswETHAssetConfig.liquidateCollateralFactor
-    );
-    expect(rswETHAssetConfig.liquidationFactor).to.be.equal(
-      configuratorRswETHAssetConfig.liquidationFactor
-    );
-    expect(rswETHAssetConfig.supplyCap).to.be.equal(
-      configuratorRswETHAssetConfig.supplyCap
-    );
+    expect(exp(1, rswETHAssetConfig.decimals)).to.be.equal(cometRswETHAssetInfo.scale);
+    expect(rswETHAssetConfig.borrowCollateralFactor).to.be.equal(cometRswETHAssetInfo.borrowCollateralFactor);
+    expect(rswETHAssetConfig.liquidateCollateralFactor).to.be.equal(cometRswETHAssetInfo.liquidateCollateralFactor);
+    expect(rswETHAssetConfig.liquidationFactor).to.be.equal(cometRswETHAssetInfo.liquidationFactor);
+    expect(rswETHAssetConfig.supplyCap).to.be.equal(cometRswETHAssetInfo.supplyCap);
+
+    const configuratorRswETHAssetConfig = (await configurator.getConfiguration(comet.address)).assetConfigs[rswETHAssetIndex];
+    expect(rswETHAssetConfig.asset).to.be.equal(configuratorRswETHAssetConfig.asset);
+    expect(rswETHAssetConfig.decimals).to.be.equal(configuratorRswETHAssetConfig.decimals);
+    expect(rswETHAssetConfig.borrowCollateralFactor).to.be.equal(configuratorRswETHAssetConfig.borrowCollateralFactor);
+    expect(rswETHAssetConfig.liquidateCollateralFactor).to.be.equal(configuratorRswETHAssetConfig.liquidateCollateralFactor);
+    expect(rswETHAssetConfig.liquidationFactor).to.be.equal(configuratorRswETHAssetConfig.liquidationFactor);
+    expect(rswETHAssetConfig.supplyCap).to.be.equal(configuratorRswETHAssetConfig.supplyCap);
   },
 });
