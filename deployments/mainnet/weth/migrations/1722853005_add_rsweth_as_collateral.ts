@@ -10,10 +10,11 @@ export default migration('1722853005_add_rsweth_as_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
     const _rswETHPriceFeed = await deploymentManager.deploy(
       'rswETH:priceFeed',
-      'pricefeeds/RswETHExchangePriceFeed.sol',
+      'pricefeeds/RateBasedScalingPriceFeed.sol',
       [
         RSWETH_ADDRESS,          // rswETH / ETH price feed
         8,                       // decimals
+        18,                      // oracleDecimals
         'rswETH/ETH price feed', // description
       ]
     );
