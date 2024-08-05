@@ -14,7 +14,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'pricefeeds/WBTCPriceFeed.sol',
     [
       '0xfdFD9C85aD200c506Cf9e21F1FD8dd01932FBB23', // WBTC / BTC price feed
-      '0xdeb288F737066589598e9214E782fa5A8eD689e8', // BTC / USD price feed
+      '0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c', // BTC / USD price feed
       8                                             // decimals
     ]
   );
