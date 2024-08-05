@@ -70,7 +70,7 @@ export default migration('1720623615_add_wsteth_as_collateral', {
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
