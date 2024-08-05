@@ -69,7 +69,7 @@ contract RswETHExchangePriceFeed is IPriceFeed {
     ) {
         uint256 rate = IRswETH(underlyingPriceFeed).rswETHToETHRate();
         // protocol uses only the answer value. Other data fields are not provided by the underlying pricefeed and are not used in Comet protocol
-        // https://etherscan.io/address/0x387dBc0fB00b26fb085aa658527D5BE98302c84C#readProxyContract
+        // https://etherscan.io/address/0xFAe103DC9cf190eD75350761e95403b7b8aFa6c0#readProxyContract#F14
         return (1, scalePrice(signed256(rate)), block.timestamp, block.timestamp, 1);
     }
 
