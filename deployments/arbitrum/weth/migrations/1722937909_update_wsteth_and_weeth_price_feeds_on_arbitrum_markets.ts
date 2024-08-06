@@ -22,7 +22,7 @@ let newWstETHToETHPriceFeed: string;
 let newWeETHToETHPriceFeed: string;
 let newWstETHToUSDPriceFeed: string;
 
-export default migration('1722937909_update_wsteth_and_weeth_price_feeds', {
+export default migration('1722937909_update_wsteth_and_weeth_price_feeds_on_arbitrum_markets', {
   async prepare(deploymentManager: DeploymentManager) {
     const _wstETHToUSDPriceFeed = await deploymentManager.deploy(
       'wstETH:priceFeed',
