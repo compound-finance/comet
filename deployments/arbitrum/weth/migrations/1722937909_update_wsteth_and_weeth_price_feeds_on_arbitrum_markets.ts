@@ -213,7 +213,7 @@ export default migration('1722937909_update_wsteth_and_weeth_price_feeds_on_arbi
       },
     ];
 
-    const description = 'DESCRIPTION';
+    const description = '# Update Price Feeds on Arbitrum for LSTs\n\n## Proposal summary\n\nWOOF team suggests to update price feeds for LSTs on Arbitrum markets:\n\n\t-\twstETH on WETH Arbitrum market from market rate to exchange rate\n\t-\tweETH on WETH Arbitrum market from market rate to exchange rate\n\t-\twstETH on USDT Arbitrum market from market rate to exchange rate\n\t-\twstETH on USDC Arbitrum market from market rate to exchange rate\n\nSimulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). Further detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/903).\n\n\n## Proposal Actions\n\nThe proposal contains only 1 action on Mainnet - send message to arbitrum. There are 7 actions on the Arbitrum side: four first ones are update price feeds and three last actions make comet update to new version.';
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
