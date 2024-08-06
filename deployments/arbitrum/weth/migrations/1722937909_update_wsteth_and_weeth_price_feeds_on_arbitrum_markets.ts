@@ -225,8 +225,8 @@ export default migration('1722937909_update_wsteth_and_weeth_price_feeds_on_arbi
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(): Promise<boolean> {
-    return false;
+  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+    return true;
   }, 
 
   async verify(deploymentManager: DeploymentManager) {
