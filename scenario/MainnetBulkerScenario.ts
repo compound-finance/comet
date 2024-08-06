@@ -10,22 +10,45 @@ import {
 import { exp } from '../test/helpers';
 import { expectApproximately, isBulkerSupported, matchesDeployment } from './utils';
 
+const MAINNET_WSTETH_ADDRESS = '0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0';
+const MAINNET_STETH_ADDRESS = '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84';
+
+async function getWstETHIndex(context: any): Promise<number> {
+  const comet = await context.getComet();
+  const totalAssets = await comet.numAssets();
+  for (let i = 0; i < totalAssets; i++) {
+    const asset = await comet.getAssetInfo(i);
+    if (asset.asset.toLowerCase() === MAINNET_WSTETH_ADDRESS) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+async function hasWstETH(context: any): Promise<boolean> {
+  return (await getWstETHIndex(context) > -1);
+}
+
 scenario(
   'MainnetBulker > wraps stETH before supplying',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
-    supplyCaps: {
-      $asset1: 1,
-    },
-    tokenBalances: {
-      albert: { $asset1: '== 0' },
-    },
+    filter: async (ctx) => await hasWstETH(ctx) && await isBulkerSupported(ctx) && matchesDeployment(ctx, [{ network: 'mainnet' }]),
+    supplyCaps: async (ctx) => (
+      {
+        [`$asset${await getWstETHIndex(ctx)}`]: 1,
+      }
+    ),
+    tokenBalances: async (ctx) => (
+      {
+        albert: { [`$asset${await getWstETHIndex(ctx)}`]: '== 0' },
+      }
+    ),
   },
   async ({ comet, actors, bulker }, context) => {
     const { albert } = actors;
 
-    const stETH = await context.world.deploymentManager.contract('stETH') as ERC20;
-    const wstETH = await context.world.deploymentManager.contract('wstETH') as IWstETH;
+    const stETH = await context.world.deploymentManager.hre.ethers.getContractAt('ERC20', MAINNET_STETH_ADDRESS) as ERC20;
+    const wstETH = await context.world.deploymentManager.hre.ethers.getContractAt('IWstETH', MAINNET_WSTETH_ADDRESS) as IWstETH;
 
     const toSupplyStEth = exp(.1, 18);
 
@@ -57,23 +80,29 @@ scenario(
 scenario(
   'MainnetBulker > unwraps wstETH before withdrawing',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
-    supplyCaps: {
-      $asset1: 2,
-    },
-    tokenBalances: {
-      albert: { $asset1: 2 },
-      $comet: { $asset1: 5 },
-    },
-    cometBalances: {
-      albert: { $asset1: 1 }
-    }
+    filter: async (ctx) => await hasWstETH(ctx) && await isBulkerSupported(ctx) && matchesDeployment(ctx, [{ network: 'mainnet' }]),
+    supplyCaps: async (ctx) => (
+      {
+        [`$asset${await getWstETHIndex(ctx)}`]: 2,
+      }
+    ),
+    tokenBalances: async (ctx) => (
+      {
+        albert: { [`$asset${await getWstETHIndex(ctx)}`]: 2 },
+        $comet: { [`$asset${await getWstETHIndex(ctx)}`]: 5 },
+      }
+    ),
+    cometBalances: async (ctx) => (
+      {
+        albert: { [`$asset${await getWstETHIndex(ctx)}`]: 1 }
+      }
+    )
   },
   async ({ comet, actors, bulker }, context) => {
     const { albert } = actors;
 
-    const stETH = await context.world.deploymentManager.getContractOrThrow('stETH');
-    const wstETH = await context.world.deploymentManager.getContractOrThrow('wstETH');
+    const stETH = await context.world.deploymentManager.hre.ethers.getContractAt('ERC20', MAINNET_STETH_ADDRESS) as ERC20;
+    const wstETH = await context.world.deploymentManager.hre.ethers.getContractAt('IWstETH', MAINNET_WSTETH_ADDRESS) as IWstETH;
 
     await albert.allow(bulker.address, true);
 
@@ -105,23 +134,29 @@ scenario(
 scenario(
   'MainnetBulker > withdraw max stETH leaves no dust',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
-    supplyCaps: {
-      $asset1: 2,
-    },
-    tokenBalances: {
-      albert: { $asset1: 2 },
-      $comet: { $asset1: 5 },
-    },
-    cometBalances: {
-      albert: { $asset1: 1 }
-    }
+    filter: async (ctx) => await hasWstETH(ctx) && await isBulkerSupported(ctx) && matchesDeployment(ctx, [{ network: 'mainnet' }]),
+    supplyCaps: async (ctx) => (
+      {
+        [`$asset${await getWstETHIndex(ctx)}`]: 2,
+      }
+    ),
+    tokenBalances: async (ctx) => (
+      {
+        albert: { [`$asset${await getWstETHIndex(ctx)}`]: 2 },
+        $comet: { [`$asset${await getWstETHIndex(ctx)}`]: 5 },
+      }
+    ),
+    cometBalances: async (ctx) => (
+      {
+        albert: { [`$asset${await getWstETHIndex(ctx)}`]: 1 }
+      }
+    )
   },
   async ({ comet, actors, bulker }, context) => {
     const { albert } = actors;
 
-    const stETH = await context.world.deploymentManager.contract('stETH') as ERC20;
-    const wstETH = await context.world.deploymentManager.contract('wstETH') as IWstETH;
+    const stETH = await context.world.deploymentManager.hre.ethers.getContractAt('ERC20', MAINNET_STETH_ADDRESS) as ERC20;
+    const wstETH = await context.world.deploymentManager.hre.ethers.getContractAt('IWstETH', MAINNET_WSTETH_ADDRESS) as IWstETH;
 
     await albert.allow(bulker.address, true);
 
@@ -147,7 +182,7 @@ scenario(
 scenario(
   'MainnetBulker > it reverts when passed an action that does not exist',
   {
-    filter: async (ctx) => await isBulkerSupported(ctx) && matchesDeployment(ctx, [{network: 'mainnet', deployment: 'weth'}]),
+    filter: async (ctx) => await hasWstETH(ctx) && await isBulkerSupported(ctx) && matchesDeployment(ctx, [{ network: 'mainnet' }]),
   },
   async ({ comet, actors }) => {
     const { betty } = actors;
