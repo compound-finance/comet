@@ -36,6 +36,16 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     ]
   );
 
+  // Deploy scaling price feed for ETHx
+  const ethxScalingPriceFeed = await deploymentManager.deploy(
+    'ETHX:priceFeed',
+    'ScalingPriceFeed.sol',
+    [
+      '0xdd487947c579af433AeeF038Bf1573FdBB68d2d3', // ETHX / ETH price feed
+      8                                             // decimals
+    ]
+  );
+
   // Import shared contracts from cUSDCv3
   const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'mainnet', 'usdc');
   const cometFactory = await deploymentManager.fromDep('cometFactory', 'mainnet', 'usdc');
