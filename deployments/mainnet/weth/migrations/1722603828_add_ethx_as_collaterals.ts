@@ -4,7 +4,7 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { exp, proposal } from '../../../../src/deploy';
 
 const ETHX_ADDRESS = '0xA35b1B31Ce002FBF2058D22F30f95D405200A15b';
-const ETHX_PRICE_FEED_ADDRESS = '0xC5f8c4aB091Be1A899214c0C3636ca33DcA0C547';
+const ETHX_PRICE_FEED_ADDRESS = '0xdd487947c579af433AeeF038Bf1573FdBB68d2d3';
 
 export default migration('1722603828_add_ethx_as_collaterals', {
   async prepare(deploymentManager: DeploymentManager) {
