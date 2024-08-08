@@ -327,8 +327,8 @@ export async function fetchLogs(
   }
 }
 
-async function redeployRenzoOracle(dm: DeploymentManager) {
-  if (dm.network === 'mainnet' && dm.deployment === 'weth') {
+async function redeployRenzoOracle(dm: DeploymentManager){
+  if(dm.network === 'mainnet' && dm.deployment === 'weth') {
     // renzo admin 	0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A
     const renzoOracle = new Contract(
       '0x5a12796f7e7EBbbc8a402667d266d2e65A814042',
@@ -337,7 +337,7 @@ async function redeployRenzoOracle(dm: DeploymentManager) {
       ],
       dm.hre.ethers.provider
     );
-
+    
     const admin = await impersonateAddress(dm, '0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A');
     // set balance
     await dm.hre.ethers.provider.send('hardhat_setBalance', [

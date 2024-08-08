@@ -6,6 +6,9 @@ export default {
     artifact:
       'contracts/bridges/optimism/OptimismBridgeReceiver.sol:OptimismBridgeReceiver',
   },
+  Proxy: {
+    artifact: 'contracts/ERC20.sol:ERC20',
+  },
 
   l2CrossDomainMessenger: {
     delegates: {
@@ -25,6 +28,12 @@ export default {
     },
   },
 
+  // rETH
+  L2StandardERC20: {
+    artifact: 'contracts/ERC20.sol:ERC20'
+  },
+
+  // wstETH
   OssifiableProxy: {
     artifact: 'contracts/ERC20.sol:ERC20',
     delegates: {
@@ -32,5 +41,10 @@ export default {
         slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
       }
     }
+  },
+
+  // WBTC
+  WBTC: {
+    artifact: 'contracts/ERC20.sol:ERC20'
   },
 };
