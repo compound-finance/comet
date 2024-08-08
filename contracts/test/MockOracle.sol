@@ -9,6 +9,7 @@ import "../vendor/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface
  * @author Compound
  */
 contract MockOracle {
+
     /// @notice Number of decimals for returned prices
     uint8 public immutable decimals;
 
