@@ -74,7 +74,7 @@ export default migration('1719835184_update_rseth_and_weth_pricefeed', {
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager) {
