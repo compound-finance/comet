@@ -119,6 +119,8 @@ export async function deployNetworkComet(
     rewardTokenAddress
   } = await getConfiguration(deploymentManager, configOverrides);
 
+  const assetListFactory = await deploymentManager.deploy('assetListFactory', 'AssetListFactory.sol', [], maybeForce());
+
   /* Deploy contracts */
 
   const cometAdmin = await deploymentManager.deploy(
@@ -135,7 +137,7 @@ export async function deployNetworkComet(
   const cometExt = await deploymentManager.deploy(
     'comet:implementation:implementation',
     'CometExt.sol',
-    [extConfiguration],
+    [extConfiguration, assetListFactory.address],
     maybeForce(deploySpec.cometExt)
   );
 

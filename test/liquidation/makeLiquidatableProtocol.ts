@@ -5,7 +5,8 @@ import {
   CometExt__factory,
   CometHarness__factory,
   CometHarnessInterface,
-  OnChainLiquidator__factory
+  OnChainLiquidator__factory,
+  AssetListFactory__factory,
 } from '../../build/types';
 import {
   BALANCER_VAULT,
@@ -51,11 +52,15 @@ export enum Exchange {
 }
 
 export async function makeProtocol() {
+  const AssetListFactory = (await ethers.getContractFactory('AssetListFactory')) as AssetListFactory__factory;
+  const assetListFactory = await AssetListFactory.deploy();
+  await assetListFactory.deployed();
+
   // build Comet
   const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
   const name32 = ethers.utils.formatBytes32String('Compound Comet');
   const symbol32 = ethers.utils.formatBytes32String('📈BASE');
-  const extensionDelegate = await CometExtFactory.deploy({ name32, symbol32 });
+  const extensionDelegate = await CometExtFactory.deploy({ name32, symbol32 }, assetListFactory.address);
   await extensionDelegate.deployed();
 
   const CometFactory = (await ethers.getContractFactory('CometHarness')) as CometHarness__factory;
