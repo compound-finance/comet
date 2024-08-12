@@ -7,7 +7,7 @@ import {
   BaseBulker,
   BaseBulker__factory,
   CometExt,
-  CometExt__factory,
+  CometExtAssetList__factory,
   CometHarness__factory,
   CometHarnessInterface as Comet,
   CometRewards,
@@ -282,7 +282,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
   let extensionDelegate = opts.extensionDelegate;
   if (extensionDelegate === undefined) {
-    const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
+    const CometExtFactory = (await ethers.getContractFactory('CometExtAssetList')) as CometExtAssetList__factory;
     extensionDelegate = await CometExtFactory.deploy({ name32, symbol32 }, assetListFactory.address);
     await extensionDelegate.deployed();
   }

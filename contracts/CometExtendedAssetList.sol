@@ -5,6 +5,7 @@ import "./CometMainInterface.sol";
 import "./IERC20NonStandard.sol";
 import "./IPriceFeed.sol";
 import "./IAssetListFactory.sol";
+import "./IAssetListFactoryHolder.sol";
 import "./IAssetList.sol";
 
 /**
@@ -155,7 +156,7 @@ contract CometExtendedAssetList is CometMainInterface {
         // Set asset info
         numAssets = uint8(config.assetConfigs.length);
 
-        assetList = IAssetListFactory(IAssetListFactory(extensionDelegate).assetListFactory()).createAssetList(config.assetConfigs);
+        assetList = IAssetListFactory(IAssetListFactoryHolder(extensionDelegate).assetListFactory()).createAssetList(config.assetConfigs);
     }
 
     /**

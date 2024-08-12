@@ -1,5 +1,11 @@
 import { expect, exp, makeConfigurator, ONE } from './helpers';
-import { SimplePriceFeed__factory, FaucetToken__factory, CometExt__factory, CometExtendedAssetList__factory, AssetListFactory__factory } from '../build/types';
+import {
+  SimplePriceFeed__factory,
+  FaucetToken__factory,
+  CometExtAssetList__factory,
+  CometExtendedAssetList__factory,
+  AssetListFactory__factory
+} from '../build/types';
 
 import { ethers } from 'hardhat';
 describe('asset info', function () {
@@ -105,7 +111,7 @@ describe('asset info', function () {
     const assetListFactory = await AssetListFactory.deploy();
     await assetListFactory.deployed();
 
-    const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
+    const CometExtFactory = (await ethers.getContractFactory('CometExtAssetList')) as CometExtAssetList__factory;
     const extensionDelegate = await CometExtFactory.deploy({ name32, symbol32 }, assetListFactory.address);
     await extensionDelegate.deployed();
     

@@ -4,7 +4,6 @@ import {
   CometHarness__factory,
   FaucetToken__factory,
   SimplePriceFeed__factory,
-  AssetListFactory__factory,
 } from '../build/types';
 
 describe('constructor', function () {
@@ -17,16 +16,12 @@ describe('constructor', function () {
 
   it('verifies asset scales', async function () {
     const [governor, pauseGuardian] = await ethers.getSigners();
-    const AssetListFactory = (await ethers.getContractFactory('AssetListFactory')) as AssetListFactory__factory;
-    const assetListFactory = await AssetListFactory.deploy();
-    await assetListFactory.deployed();
-  
     // extension delegate
     const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
     const extensionDelegate = await CometExtFactory.deploy({
       name32: ethers.utils.formatBytes32String('Compound Comet'),
       symbol32: ethers.utils.formatBytes32String('📈BASE'),
-    }, assetListFactory.address);
+    });
     await extensionDelegate.deployed();
 
     // tokens

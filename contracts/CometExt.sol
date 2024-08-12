@@ -29,16 +29,13 @@ contract CometExt is CometExtInterface {
     /// @dev The ERC20 symbol for wrapped base token
     bytes32 internal immutable symbol32;
 
-    address immutable public assetListFactory;
-
     /**
      * @notice Construct a new protocol instance
      * @param config The mapping of initial/constant parameters
      **/
-    constructor(ExtConfiguration memory config, address assetListFactoryAddress) {
+    constructor(ExtConfiguration memory config) {
         name32 = config.name32;
         symbol32 = config.symbol32;
-        assetListFactory = assetListFactoryAddress;
     }
 
     /** External getters for internal constants **/

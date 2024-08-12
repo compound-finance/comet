@@ -8,6 +8,4 @@ import "./CometCore.sol";
  */
 interface IAssetListFactory {
     function createAssetList(CometCore.AssetConfig[] memory assetConfigs) external returns (address assetList);
-    // add it here to save space in Comet
-    function assetListFactory() external view returns (address);
 }

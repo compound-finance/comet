@@ -20,14 +20,28 @@ export default migration('1723198576_update_comet_to_support_more_collaterals', 
       'CometFactoryExtendedAssetList.sol',
       []
     );
+    const {
+      comet
+    } = await deploymentManager.getContracts();
+
+    const extensionDelegate = new Contract(
+      await comet.extensionDelegate(),
+      [
+        'function name() external view returns (string)',
+        'function symbol() external view returns (string)',
+      ],
+      deploymentManager.hre.ethers.provider
+    );
+    const name = await extensionDelegate.name();
+    const symbol = await extensionDelegate.symbol();
 
     const _newCometExt = await deploymentManager.deploy(
-      'CometExt',
-      'CometExt.sol',
+      'CometExtAssetList',
+      'CometExtAssetList.sol',
       [
         {
-          name32: ethers.utils.formatBytes32String('Compound WETH'),
-          symbol32: ethers.utils.formatBytes32String('cWETHv3')
+          name32: ethers.utils.formatBytes32String(name),
+          symbol32: ethers.utils.formatBytes32String(symbol)
         },
         _assetListFactory.address
       ]
