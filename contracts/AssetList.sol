@@ -28,8 +28,9 @@ contract AssetList {
     uint8 public immutable numAssets;
     
     constructor(CometConfiguration.AssetConfig[] memory assetConfigs) {
-        numAssets = uint8(assetConfigs.length);
-        for (uint i = 0; i < assetConfigs.length; i++) {
+        uint8 _numAssets = uint8(assetConfigs.length);
+        numAssets = _numAssets;
+        for (uint i = 0; i < _numAssets; i++) {
             (uint256 asset_a, uint256 asset_b) = getPackedAssetInternal(assetConfigs, i);
             assets_a.push(asset_a);
             assets_b.push(asset_b);
