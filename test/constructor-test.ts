@@ -16,11 +16,12 @@ describe('constructor', function () {
 
   it('verifies asset scales', async function () {
     const [governor, pauseGuardian] = await ethers.getSigners();
+
     // extension delegate
     const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
     const extensionDelegate = await CometExtFactory.deploy({
       name32: ethers.utils.formatBytes32String('Compound Comet'),
-      symbol32: ethers.utils.formatBytes32String('📈BASE'),
+      symbol32: ethers.utils.formatBytes32String('📈BASE')
     });
     await extensionDelegate.deployed();
 
