@@ -32,10 +32,11 @@ contract AssetList {
         numAssets = _numAssets;
         uint256[] memory _assets_a = new uint256[](_numAssets);
         uint256[] memory _assets_b = new uint256[](_numAssets);
-        for (uint i = 0; i < _numAssets; i++) {
+        for (uint i = 0; i < _numAssets; )  {
             (uint256 asset_a, uint256 asset_b) = getPackedAssetInternal(assetConfigs, i);
             _assets_a[i] = asset_a;
             _assets_b[i] = asset_b;
+            unchecked { i++; }
         }
         assets_a = _assets_a;
         assets_b = _assets_b;
