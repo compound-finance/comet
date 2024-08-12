@@ -5,6 +5,7 @@ import "./CometExt.sol";
 
 contract CometExtAssetList is CometExt {
 
+    /// @notice The address of the asset list factory
     address immutable public assetListFactory;
 
     /**
