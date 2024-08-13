@@ -21,9 +21,9 @@
   },
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": "34722222222",
+    "baseSupplySpeed": "0",
     "baseBorrowSpeed": "0",
-    "baseMinForRewards": "TBD"
+    "baseMinForRewards": "10000e18"
   },
   "rewardTokenAddress": "0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c",
   "assets": {
