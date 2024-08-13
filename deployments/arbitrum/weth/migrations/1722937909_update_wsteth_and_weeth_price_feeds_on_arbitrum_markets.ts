@@ -226,7 +226,7 @@ export default migration('1722937909_update_wsteth_and_weeth_price_feeds_on_arbi
   },
 
   async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
+    return false;
   }, 
 
   async verify(deploymentManager: DeploymentManager) {
