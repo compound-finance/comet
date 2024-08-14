@@ -54,10 +54,10 @@ export default migration('1723630908_add_weeth_as_collateral', {
       asset: weETH.address,
       priceFeed: weETHPricefeed.address,
       decimals: await weETH.decimals(),
-      borrowCollateralFactor: exp(0.80, 18),
-      liquidateCollateralFactor: exp(0.85, 18),
-      liquidationFactor: exp(0.90, 18),
-      supplyCap: exp(600, 18),
+      borrowCollateralFactor: exp(0.90, 18),
+      liquidateCollateralFactor: exp(0.93, 18),
+      liquidationFactor: exp(0.96, 18),
+      supplyCap: exp(400, 18),
     };
 
     newPriceFeedAddress = weETHPricefeed.address;
@@ -119,10 +119,10 @@ export default migration('1723630908_add_weeth_as_collateral', {
       asset: WEETH_ADDRESS,
       priceFeed: newPriceFeedAddress,
       decimals: 18,
-      borrowCollateralFactor: exp(0.80, 18),
-      liquidateCollateralFactor: exp(0.85, 18),
-      liquidationFactor: exp(0.90, 18),
-      supplyCap: exp(600, 18),
+      borrowCollateralFactor: exp(0.90, 18),
+      liquidateCollateralFactor: exp(0.93, 18),
+      liquidationFactor: exp(0.96, 18),
+      supplyCap: exp(400, 18),
     };
 
     // 1. Compare proposed asset config with Comet asset info
