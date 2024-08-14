@@ -34,6 +34,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     bulker,
     fxChild,
     rewards,
-    COMP
+    COMP,
+    localTimelock
   };
 }
