@@ -1,0 +1,40 @@
+{
+  "name": "Compound WMATIC",
+  "symbol": "cWMATICv3",
+  "baseToken": "WMATIC",
+  "baseTokenAddress": "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+  "baseTokenPriceFeed": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
+  "borrowMin": "1e18",
+  "governor": "0xCC3E7c85Bb0EE4f09380e041fee95a0caeDD4a02",
+  "pauseGuardian": "0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5",
+  "storeFrontPriceFactor": "TBD",
+  "targetReserves": "TBD",
+  "rates": {
+    "supplyKink": 0.9,
+    "supplySlopeLow": 0.025,
+    "supplySlopeHigh": 3,
+    "supplyBase": 0,
+    "borrowKink": 0.9,
+    "borrowSlopeLow": 0.035,
+    "borrowSlopeHigh": 3.5,
+    "borrowBase": 0.005
+  },
+  "tracking": {
+    "indexScale": "1e15",
+    "baseSupplySpeed": "0",
+    "baseBorrowSpeed": "0",
+    "baseMinForRewards": "10000e18"
+  },
+  "rewardTokenAddress": "0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c",
+  "assets": {
+    "MaticX": {
+      "address": "0xfa68FB4628DFF1028CFEc22b4162FCcd0d45efb6",
+      "priceFeed": "0x5d37E4b374E6907de8Fc7fb33EE3b0af403C7403",
+      "decimals": "18",
+      "borrowCF": 0.80,
+      "liquidateCF": 0.85,
+      "liquidationFactor": 0.90,
+      "supplyCap": "0"
+    }
+  }
+}
