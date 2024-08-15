@@ -115,7 +115,11 @@ export const WHALES = {
   ],
   base: [
     '0x6D3c5a4a7aC4B1428368310E4EC3bB1350d01455', // USDbC whale
-    '0x07CFA5Df24fB17486AF0CBf6C910F24253a674D3'  // cbETH whale TODO: need to update this whale, not enough
+    '0x07CFA5Df24fB17486AF0CBf6C910F24253a674D3', // cbETH whale TODO: need to update this whale, not enough
+    '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb', // cbETH whale
+    '0x3bf93770f2d4a794c3d9EBEfBAeBAE2a8f09A5E5', // cbETH whale
+    '0xcf3D55c10DB69f28fD1A75Bd73f3D8A2d9c595ad', // cbETH whale
+    '0xb125E6687d4313864e53df431d5425969c15Eb2F', // cbETH whale
   ],
   scroll: [
     '0xaaaaAAAACB71BF2C8CaE522EA5fa455571A74106'  // USDC whale
