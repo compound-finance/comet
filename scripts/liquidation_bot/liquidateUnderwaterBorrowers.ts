@@ -39,6 +39,8 @@ const addresses = {
     WETH9: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     CB_ETH: '0xBe9895146f7AF43049ca1c1AE358B0541Ea49704',
     WST_ETH: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
+    // WE_ETH: '0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee',
+    // RS_ETH: '0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7',
     USDT: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
   },
   goerli: {
@@ -67,7 +69,8 @@ const addresses = {
 const liquidationThresholds = {
   mainnet: {
     'usdc': 10e6,
-    'weth': 1e18
+    'weth': 1e18,
+    // 'wsteth': 1e18,
   },
   goerli: {
     'usdc': 10e6
@@ -94,7 +97,11 @@ export const flashLoanPools = {
     usdt: {
       tokenAddress: addresses.mainnet.DAI,
       poolFee: 100
-    }
+    },
+    // wsteth: {
+    //   tokenAddress: addresses.mainnet.WE_ETH,
+    //   poolFee: 500
+    // },
   },
   goerli: {
     usdc: {
@@ -196,6 +203,13 @@ export function getPoolConfig(tokenAddress: string) {
         balancerPoolId: '0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080'
       }
     },
+    // [addresses.mainnet.RS_ETH.toLowerCase()]: {
+    //   ...defaultPoolConfig,
+    //   ...{
+    //     exchange: Exchange.Balancer,
+    //     balancerPoolId: '0x58aadfb1afac0ad7fca1148f3cde6aedf5236b6d00000000000000000000067f'
+    //   }
+    // },
     [addresses.polygon.WMATIC.toLowerCase()]: {
       ...defaultPoolConfig,
       ...{

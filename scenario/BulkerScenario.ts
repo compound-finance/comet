@@ -1,8 +1,21 @@
-import { scenario } from './context/CometContext';
+import { CometContext, scenario } from './context/CometContext';
 import { constants, utils } from 'ethers';
 import { expect } from 'chai';
 import { expectBase, isRewardSupported, isBulkerSupported, getExpectedBaseBalance, matchesDeployment } from './utils';
 import { exp } from '../test/helpers';
+
+async function hasWETHAsCollateral(ctx: CometContext): Promise<boolean> {
+  const comet = await ctx.getComet();
+  const bulker = await ctx.getBulker();
+  const wrappedNativeToken = await bulker.wrappedNativeToken();
+  const numAssets = await comet.numAssets();
+  for (let i = 0; i < numAssets; i++) {
+    const { asset } = await comet.getAssetInfo(i);
+    if (asset.toLowerCase() === wrappedNativeToken.toLowerCase()) {
+      return true;
+    }
+  }
+}
 
 // XXX properly handle cases where asset0 is WETH
 scenario(
@@ -59,17 +72,21 @@ scenario(
     const calldata = [
       supplyAssetCalldata,
       withdrawAssetCalldata,
-      transferAssetCalldata,
-      supplyEthCalldata,
-      withdrawEthCalldata
+      transferAssetCalldata
     ];
     const actions = [
       await bulker.ACTION_SUPPLY_ASSET(),
       await bulker.ACTION_WITHDRAW_ASSET(),
-      await bulker.ACTION_TRANSFER_ASSET(),
-      await bulker.ACTION_SUPPLY_NATIVE_TOKEN(),
-      await bulker.ACTION_WITHDRAW_NATIVE_TOKEN(),
+      await bulker.ACTION_TRANSFER_ASSET()
     ];
+
+    if(await hasWETHAsCollateral(context)){
+      calldata.push(supplyEthCalldata);
+      calldata.push(withdrawEthCalldata);
+      actions.push(await bulker.ACTION_SUPPLY_NATIVE_TOKEN());
+      actions.push(await bulker.ACTION_WITHDRAW_NATIVE_TOKEN());
+    }
+
     const txn = await albert.invoke({ actions, calldata }, { value: toSupplyEth });
 
     // Final expectations
@@ -77,7 +94,7 @@ scenario(
     const baseSupplyIndex = (await comet.totalsBasic()).baseSupplyIndex.toBigInt();
     const baseTransferred = getExpectedBaseBalance(toTransferBase, baseIndexScale, baseSupplyIndex);
     expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupplyCollateral);
-    expect(await comet.collateralBalanceOf(albert.address, wrappedNativeToken)).to.be.equal(toSupplyEth - toWithdrawEth);
+    if(await hasWETHAsCollateral(context)) expect(await comet.collateralBalanceOf(albert.address, wrappedNativeToken)).to.be.equal(toSupplyEth - toWithdrawEth);
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(toBorrowBase);
     expectBase((await comet.balanceOf(betty.address)).toBigInt(), baseTransferred);
     expectBase((await comet.borrowBalanceOf(albert.address)).toBigInt(), toBorrowBase + toTransferBase);
@@ -135,17 +152,21 @@ scenario(
     const calldata = [
       supplyAssetCalldata,
       withdrawAssetCalldata,
-      transferAssetCalldata,
-      supplyNativeTokenCalldata,
-      withdrawNativeTokenCalldata
+      transferAssetCalldata
     ];
     const actions = [
       await bulker.ACTION_SUPPLY_ASSET(),
       await bulker.ACTION_WITHDRAW_ASSET(),
-      await bulker.ACTION_TRANSFER_ASSET(),
-      await bulker.ACTION_SUPPLY_NATIVE_TOKEN(),
-      await bulker.ACTION_WITHDRAW_NATIVE_TOKEN(),
+      await bulker.ACTION_TRANSFER_ASSET()
     ];
+
+    if(await hasWETHAsCollateral(context)){
+      calldata.push(supplyNativeTokenCalldata);
+      calldata.push(withdrawNativeTokenCalldata);
+      actions.push(await bulker.ACTION_SUPPLY_NATIVE_TOKEN());
+      actions.push(await bulker.ACTION_WITHDRAW_NATIVE_TOKEN());
+    }
+
     const txn = await albert.invoke({ actions, calldata }, { value: toSupplyEth });
 
     // Final expectations
@@ -155,7 +176,7 @@ scenario(
     expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupplyCollateral);
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(toBorrowBase);
     expectBase((await comet.balanceOf(betty.address)).toBigInt(), baseTransferred);
-    expectBase((await comet.borrowBalanceOf(albert.address)).toBigInt(), toBorrowBase + toTransferBase - (toSupplyEth - toWithdrawEth));
+    expectBase((await comet.borrowBalanceOf(albert.address)).toBigInt(), toBorrowBase + toTransferBase - (await hasWETHAsCollateral(context)?(toSupplyEth - toWithdrawEth):0n));
 
     return txn; // return txn to measure gas
   }
@@ -232,18 +253,22 @@ scenario(
       supplyAssetCalldata,
       withdrawAssetCalldata,
       transferAssetCalldata,
-      supplyEthCalldata,
-      withdrawEthCalldata,
       claimRewardCalldata
     ];
     const actions = [
       await bulker.ACTION_SUPPLY_ASSET(),
       await bulker.ACTION_WITHDRAW_ASSET(),
       await bulker.ACTION_TRANSFER_ASSET(),
-      await bulker.ACTION_SUPPLY_NATIVE_TOKEN(),
-      await bulker.ACTION_WITHDRAW_NATIVE_TOKEN(),
       await bulker.ACTION_CLAIM_REWARD(),
     ];
+
+    if(await hasWETHAsCollateral(context)){
+      calldata.push(supplyEthCalldata);
+      calldata.push(withdrawEthCalldata);
+      actions.push(await bulker.ACTION_SUPPLY_NATIVE_TOKEN());
+      actions.push(await bulker.ACTION_WITHDRAW_NATIVE_TOKEN());
+    }
+
     const txn = await albert.invoke({ actions, calldata }, { value: toSupplyEth });
 
     // Final expectations
@@ -252,7 +277,7 @@ scenario(
     const baseTransferred = getExpectedBaseBalance(toTransferBase, baseIndexScale, baseSupplyIndex);
     expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(toSupplyCollateral);
     expect(await baseAsset.balanceOf(albert.address)).to.be.equal(toBorrowBase);
-    expect(await comet.collateralBalanceOf(albert.address, wrappedNativeToken)).to.be.equal(toSupplyEth - toWithdrawEth);
+    if(await hasWETHAsCollateral(context)) expect(await comet.collateralBalanceOf(albert.address, wrappedNativeToken)).to.be.equal(toSupplyEth - toWithdrawEth);
     expect(await albert.getErc20Balance(rewardTokenAddress)).to.be.equal(expectedFinalRewardBalance);
     expectBase((await comet.balanceOf(betty.address)).toBigInt(), baseTransferred);
     expectBase((await comet.borrowBalanceOf(albert.address)).toBigInt(), toBorrowBase + toTransferBase);
@@ -326,18 +351,22 @@ scenario(
       supplyAssetCalldata,
       withdrawAssetCalldata,
       transferAssetCalldata,
-      supplyNativeTokenCalldata,
-      withdrawNativeTokenCalldata,
       claimRewardCalldata
     ];
     const actions = [
       await bulker.ACTION_SUPPLY_ASSET(),
       await bulker.ACTION_WITHDRAW_ASSET(),
       await bulker.ACTION_TRANSFER_ASSET(),
-      await bulker.ACTION_SUPPLY_NATIVE_TOKEN(),
-      await bulker.ACTION_WITHDRAW_NATIVE_TOKEN(),
       await bulker.ACTION_CLAIM_REWARD(),
     ];
+
+    if(await hasWETHAsCollateral(context)){
+      calldata.push(supplyNativeTokenCalldata);
+      calldata.push(withdrawNativeTokenCalldata);
+      actions.push(await bulker.ACTION_SUPPLY_NATIVE_TOKEN());
+      actions.push(await bulker.ACTION_WITHDRAW_NATIVE_TOKEN());
+    }
+
     const txn = await albert.invoke({ actions, calldata }, { value: toSupplyEth });
 
     // Final expectations
