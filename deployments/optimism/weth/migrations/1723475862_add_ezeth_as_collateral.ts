@@ -14,7 +14,7 @@ export default migration('1723475862_add_ezeth_as_collateral', {
       'ezETH:priceFeed',
       'pricefeeds/ScalingPriceFeed.sol',
       [
-        EZETH_ETH_PRICE_FEED_ADDRESS, // rETH / ETH price feed
+        EZETH_ETH_PRICE_FEED_ADDRESS, // ezETH / ETH price feed
         8                                             // decimals
       ]
     );
