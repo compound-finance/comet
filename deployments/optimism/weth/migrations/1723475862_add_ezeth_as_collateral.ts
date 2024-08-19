@@ -11,7 +11,7 @@ let newPriceFeedAddress: string;
 export default migration('1723475862_add_ezeth_as_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
     const _ezETHScalingPriceFeed = await deploymentManager.deploy(
-      'rETH:priceFeed',
+      'ezETH:priceFeed',
       'pricefeeds/ScalingPriceFeed.sol',
       [
         EZETH_ETH_PRICE_FEED_ADDRESS, // rETH / ETH price feed
