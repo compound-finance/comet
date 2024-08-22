@@ -2,22 +2,20 @@
 pragma solidity 0.8.17;
 
 import "@api3/contracts/api3-server-v1/proxies/interfaces/IProxy.sol";
-import "../IPriceFeed.sol";
+import "./IPriceFeed.sol";
 
-contract EACAggregatorProxy is IPriceFeed {  
+contract EACAggregatorProxy is IPriceFeed {
 
    // Updating the proxy address is a security-critical action which is why
    // we have made it immutable.
    address public immutable proxy;
-   string public constant override description;
 
-   constructor(address _proxy, string memory _description) {
+   constructor(address _proxy) {
        proxy = _proxy;
-       description = _description;
    }
    
    function description() external pure override returns (string memory) {
-       return string(description);
+       return "API3 Adapter";
    }
 
    function aggregator() external view returns (address) {

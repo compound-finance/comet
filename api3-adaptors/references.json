@@ -1,0 +1,34 @@
+{
+  "assets": [
+    {
+      "assetSymbol": "COMP",
+      "assetAddress": "0x0c40790C84b00cf3777C1E14f5131FF89663CD53",
+      "pairName": "COMP/USD",
+      "decimals": 18,
+      "EACAggregatorProxy": "0x7c2d63B204411b701C36A42D8bd0af93A9C37c41"
+    },
+    {
+      "assetSymbol": "WBTC",
+      "assetAddress": "0xb804327083644DC96256f78329F374c514DCd98f",
+      "pairName": "WBTC/USD",
+      "decimals": 8,
+      "EACAggregatorProxy": "0x2af9360Fdc7b007A4bd30223f5fF1F61CaFfF799"
+    },
+    {
+      "assetSymbol": "WETH",
+      "assetAddress": "0xC8f47A14ae57019cD86Db353D3689258A0F31cC3",
+      "pairName": "WETH/USD",
+      "decimals": 18,
+      "EACAggregatorProxy": "0xCe6521eeF26ea10B65813Ac6BDF490538ccC0516"
+    },
+    {
+      "assetSymbol": "ARB",
+      "assetAddress": "0x89361A2764531E07B0e9A05d2dD3c74B3147928d",
+      "pairName": "ARB/USD",
+      "decimals": 18,
+      "EACAggregatorProxy": "0x74AC3E57ac5CEFF475fBAcBC37d12a62dD8407B9"
+    }
+  ],
+  "USDC": "0xd2305c3b14D15c06F2aAd553a963eaDB03CcC208",
+  "EACAggregatorProxyUSDC": "0x2E7386CAd957f897df081Dc0a6D7eB1AcD47Bb15"
+}

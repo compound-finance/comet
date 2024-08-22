@@ -1,26 +1,37 @@
 {
     "assets": [
         {
+            "assetName": "Compound",
+            "assetSymbol": "COMP",
+            "pairName": "COMP/USD",
+            "proxyAddress": "0xe3ECd26173d9E08261db4DE2e8690AA303b0339c",
+            "description": "COMP/USD Price Feed",
+            "decimals": 18
+        },
+        {
             "assetName": "Wrapped Bitcoin",
             "assetSymbol": "WBTC",
-            "pairName": "WBTC/USDC",
+            "pairName": "WBTC/USD",
             "proxyAddress": "0x73AB44615772a0d31dB48A87d7F4F81a3601BceB",
-            "description": "WBTC/USD Price Feed"
+            "description": "WBTC/USD Price Feed",
+            "decimals": 8
   
         },
         {
-            "assetName": "Compound",
-            "assetSymbol": "COMP",
-            "pairName": "COMP/USDC",
-            "proxyAddress": "",
-            "description": "COMP/USD Price Feed"
+            "assetName": "Wrapped Etherereum",
+            "assetSymbol": "WETH",
+            "pairName": "WETH/USD",
+            "proxyAddress": "0xa47Fd122b11CdD7aad7c3e8B740FB91D83Ce43D1",
+            "description": "WETH/USD Price Feed",
+            "decimals": 18
         },
         {
             "assetName": "Mock Arb",
             "assetSymbol": "ARB",
-            "pairName": "ARB/USDC",
+            "pairName": "ARB/USD",
             "proxyAddress": "0x10D9b183FCcFDA464e9fbfC2D373A70f6AA3B1Fe",
-            "description": "ARB/USD Price Feed"
+            "description": "ARB/USD Price Feed",
+            "decimals": 18
         }
     ],
     "EthUsdProxyAddress": "0xa47Fd122b11CdD7aad7c3e8B740FB91D83Ce43D1",

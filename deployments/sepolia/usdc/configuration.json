@@ -2,8 +2,8 @@
   "name": "Compound USDC",
   "symbol": "cUSDCv3",
   "baseToken": "USDC",
-  "baseTokenAddress": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-  "baseTokenPriceFeed": "0x683Ae71AFB633385e64a7968435210d1aadbe29D",
+  "baseTokenAddress": "0xd2305c3b14D15c06F2aAd553a963eaDB03CcC208",
+  "baseTokenPriceFeed": "0x2E7386CAd957f897df081Dc0a6D7eB1AcD47Bb15",
   "pauseGuardian": "0x008a4C5448ac1Df676d6F39A0C6F13b21b189389",
   "borrowMin": "1e0",
   "storeFrontPriceFactor": 0.5,
@@ -27,28 +27,40 @@
   "rewardToken": "COMP",
   "assets": {
     "COMP": {
-      "priceFeed": "0x302C053a2139Ee9028b500E7da056B6b4169B4Fa",
-      "decimals": "18",
-      "borrowCF": 0.65,
-      "liquidateCF": 0.7,
-      "liquidationFactor": 0.92,
-      "supplyCap": "500000e18"
+      "address": "0x0c40790C84b00cf3777C1E14f5131FF89663CD53",
+      "priceFeed": "0x7c2d63B204411b701C36A42D8bd0af93A9C37c41",
+      "decimals": 18,
+      "borrowCF": 0.75,
+      "liquidateCF": 0.81,
+      "liquidationFactor": 0.93,
+      "supplyCap": "0e18"
     },
     "WBTC": {
-      "priceFeed": "0x5EF17889992f6d9daCEb03db9822AA5b6fDd6713",
-      "decimals": "8",
-      "borrowCF": 0.7,
-      "liquidateCF": 0.75,
+      "address": "0xb804327083644DC96256f78329F374c514DCd98f",
+      "priceFeed": "0x2af9360Fdc7b007A4bd30223f5fF1F61CaFfF799",
+      "decimals": 8,
+      "borrowCF": 0.75,
+      "liquidateCF": 0.81,
       "liquidationFactor": 0.93,
-      "supplyCap": "35000e8"
+      "supplyCap": "0e18"
     },
     "WETH": {
-      "priceFeed": "0x132e2459498CFfb3f767d508066bf1dF0549D59C",
-      "decimals": "18",
-      "borrowCF": 0.82,
-      "liquidateCF": 0.85,
+      "address": "0xC8f47A14ae57019cD86Db353D3689258A0F31cC3",
+      "priceFeed": "0xCe6521eeF26ea10B65813Ac6BDF490538ccC0516",
+      "decimals": 18,
+      "borrowCF": 0.75,
+      "liquidateCF": 0.81,
       "liquidationFactor": 0.93,
-      "supplyCap": "1000000e18"
+      "supplyCap": "0e18"
+    },
+    "ARB": {
+      "address": "0x89361A2764531E07B0e9A05d2dD3c74B3147928d",
+      "priceFeed": "0x74AC3E57ac5CEFF475fBAcBC37d12a62dD8407B9",
+      "decimals": 18,
+      "borrowCF": 0.75,
+      "liquidateCF": 0.81,
+      "liquidationFactor": 0.93,
+      "supplyCap": "0e18"
     }
   }
 }

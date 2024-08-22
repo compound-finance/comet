@@ -1,0 +1,2 @@
+- add tokens to config.json
+- add proxy addresses from API3 Market to config.json

@@ -19,7 +19,7 @@ module.exports = async () => {
         // Deploy the ERC20 asset and mint some tokens.
         const ERC20 = await hre.deployments.deploy("ERC20Token", {
             // Pass in the name and symbol of your asset here
-            args: [asset.assetName, asset.assetSymbol],
+            args: [asset.assetName, asset.assetSymbol, asset.decimals],
             from: (await hre.getUnnamedAccounts())[0],
             log: true,
         });
@@ -27,7 +27,7 @@ module.exports = async () => {
 
         // Deploy the EACAggregatorProxy dAPI adaptor for the asset.
         const EACAggregatorProxy = await hre.deployments.deploy("EACAggregatorProxy", {
-            args: [asset.proxyAddress, asset.description],
+            args: [asset.proxyAddress],
             from: (await hre.getUnnamedAccounts())[0],
             log: true,
         });
@@ -35,34 +35,36 @@ module.exports = async () => {
 
         deploymentsConfig.assets.push({
             assetSymbol: asset.assetSymbol,
+            assetAddress: ERC20.address,
             pairName: asset.pairName,
+            decimals: asset.decimals,
             EACAggregatorProxy: EACAggregatorProxy.address
         });
     }
 
-    // // Deploy USDC With Faucet
-    // const USDCWithFaucet = await hre.deployments.deploy("USDCTOKEN", {
-    //     args: [],
-    //     from: (await hre.getUnnamedAccounts())[0],
-    //     log: true,
-    // });
-    // deploymentsConfig['USDCWithFaucet'] = USDCWithFaucet.address;
+    // Deploy USDC
+    const USDC = await hre.deployments.deploy("ERC20Token", {
+        args: ["USDC", "USDC", 6],
+        from: (await hre.getUnnamedAccounts())[0],
+        log: true,
+    });
+    deploymentsConfig['USDC'] = USDC.address;
 
     // Deploy EACAggregatorProxyUSDC
     const EACAggregatorProxyUSDC = await hre.deployments.deploy("EACAggregatorProxy", {
-        args: [config.UsdcUsdProxyAddress, "Price Feed Adaptor For USDC/USD"],
+        args: [config.UsdcUsdProxyAddress],
         from: (await hre.getUnnamedAccounts())[0],
         log: true,
     });
     deploymentsConfig['EACAggregatorProxyUSDC'] = EACAggregatorProxyUSDC.address;
 
-    // // Deploy Api3AggregatorAdaptor for WETH/USD
-    // const Api3AggregatorAdaptorWETH = await hre.deployments.deploy("Api3AggregatorAdaptor", {
-    //     args: [config.EthUsdProxyAddress, config.UsdcUsdProxyAddress, "WETH/USDC"],
+    // // Deploy EACAggregatorProxyWETH for WETH/USD
+    // const EACAggregatorProxyWETH = await hre.deployments.deploy("EACAggregatorProxy", {
+    //     args: [config.EthUsdProxyAddress],
     //     from: (await hre.getUnnamedAccounts())[0],
     //     log: true,
     // });
-    // deploymentsConfig['Api3AggregatorAdaptorWETH'] = Api3AggregatorAdaptorWETH.address;
+    // deploymentsConfig['EACAggregatorProxyWETH'] = EACAggregatorProxyWETH.address;
 
     // const MockWETH = await hre.deployments.deploy("MockWETH", {
     //     args: ["Mock Wrapped ETH", "WETH10"],
