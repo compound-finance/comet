@@ -42,7 +42,12 @@
     "audit:vendor": "vendoza contracts/vendor/manifest.json",
     "slither:fn-clashes": "slither-check-upgradeability contracts/Configurator.sol Configurator --proxy-filename contracts/ConfiguratorProxy.sol --proxy-name ConfiguratorProxy",
     "liquidation-bot": "hardhat run scripts/liquidation_bot/index.ts",
-    "deploy:sepolia": "hardhat deploy --network sepolia --deployment usdc --no-verify-impl && node generateFrontendConfiguration.js"
+    "deploy:sepolia": "hardhat deploy --network sepolia --deployment usdc --no-verify-impl && node generateFrontendConfiguration.js",
+    "frontend:codegen": "git clone -b compound-v3 https://github.com/api3-ecosystem/api3-aave-ui.git  && node generateFrontendConfiguration.js",
+    "frontend:dev": "cd api3-aave-ui && yarn && yarn dev",
+    "frontend:build": "cd api3-aave-ui && yarn && yarn build",
+    "frontend:update": "cd api3-aave-ui && git stash && git pull && yarn && cd .. && node generateFrontendConfiguration.js",
+    "frontend:clean": "rm -rf api3-aave-ui"
   },
   "keywords": [],
   "author": "Compound Finance",
