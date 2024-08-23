@@ -12,10 +12,10 @@ export default migration('1722853005_add_rsweth_as_collateral', {
       'rswETH:priceFeed',
       'pricefeeds/RateBasedScalingPriceFeed.sol',
       [
-        RSWETH_ADDRESS,          // rswETH / ETH price feed
-        8,                       // decimals
-        18,                      // oracleDecimals
-        'rswETH/ETH price feed', // description
+        RSWETH_ADDRESS,                        // rswETH / ETH price feed
+        8,                                     // decimals
+        18,                                    // oracleDecimals
+        'rswETH/ETH exchange rate price feed', // description
       ]
     );
     return { rswETHPriceFeed: _rswETHPriceFeed.address };
