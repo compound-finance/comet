@@ -11,7 +11,7 @@ const ETH_TO_USD_PRICE_FEED_ADDRESS = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba61
 
 let newPriceFeed: string;
 
-export default migration('1723541797_add_ezeth_as_collateral', {
+export default migration('1723551632_add_ezeth_as_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
     const _ezETHPriceFeed = await deploymentManager.deploy(
       'ezETH:priceFeed',
@@ -62,10 +62,10 @@ export default migration('1723541797_add_ezeth_as_collateral', {
       asset: ezETH.address,
       priceFeed: ezETHPriceFeed.address,
       decimals: 18n,
-      borrowCollateralFactor: exp(0.88, 18),
-      liquidateCollateralFactor: exp(0.91, 18),
-      liquidationFactor: exp(0.94, 18),
-      supplyCap: exp(2500, 18),
+      borrowCollateralFactor: exp(0.80, 18),
+      liquidateCollateralFactor: exp(0.85, 18),
+      liquidationFactor: exp(0.90, 18),
+      supplyCap: exp(500, 18),
     };
 
     const addAssetCalldata = ethers.utils.defaultAbiCoder.encode(
@@ -171,10 +171,10 @@ export default migration('1723541797_add_ezeth_as_collateral', {
       asset: ezETH.address,
       priceFeed: newPriceFeed,
       decimals: 18n,
-      borrowCollateralFactor: exp(0.88, 18),
-      liquidateCollateralFactor: exp(0.91, 18),
-      liquidationFactor: exp(0.94, 18),
-      supplyCap: exp(2500, 18),
+      borrowCollateralFactor: exp(0.80, 18),
+      liquidateCollateralFactor: exp(0.85, 18),
+      liquidationFactor: exp(0.90, 18),
+      supplyCap: exp(500, 18),
     };
 
     // 1. & 2. Compare ezETH asset config with Comet and Configurator asset info
