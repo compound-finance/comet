@@ -67,7 +67,7 @@ const addresses = {
 const liquidationThresholds = {
   mainnet: {
     'usdc': 10e6,
-    'weth': 1e18,
+    'weth': 1e18
   },
   goerli: {
     'usdc': 10e6
@@ -94,7 +94,7 @@ export const flashLoanPools = {
     usdt: {
       tokenAddress: addresses.mainnet.DAI,
       poolFee: 100
-    },
+    }
   },
   goerli: {
     usdc: {
