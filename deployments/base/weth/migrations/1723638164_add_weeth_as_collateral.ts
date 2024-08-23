@@ -9,7 +9,7 @@ const WEETH_STETH_PRICE_FEED_ADDRESS = '0x35e9D7001819Ea3B39Da906aE6b06A62cfe2c1
 
 let newPriceFeedAddress: string;
 
-export default migration('1723630908_add_weeth_as_collateral', {
+export default migration('1723638164_add_weeth_as_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
     const _weETHPriceFeed = await deploymentManager.deploy(
       'weETH:priceFeed',
@@ -32,13 +32,13 @@ export default migration('1723630908_add_weeth_as_collateral', {
     const weETH = await deploymentManager.existing(
       'weETH',
       WEETH_ADDRESS,
-      'optimism',
+      'base',
       'contracts/ERC20.sol:ERC20'
     );
     const weETHPricefeed = await deploymentManager.existing(
       'weETH:priceFeed',
       weETHPriceFeedAddress,
-      'optimism'
+      'base'
     );
 
     const {
