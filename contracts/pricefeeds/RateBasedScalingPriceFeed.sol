@@ -88,7 +88,7 @@ contract RateBasedScalingPriceFeed is IPriceFeed {
     }
 
     /**
-     * @notice Contract version
+     * @notice Current version of the price feed
      * @return The version of the price feed contract
      **/
     function version() external pure returns (uint256) {

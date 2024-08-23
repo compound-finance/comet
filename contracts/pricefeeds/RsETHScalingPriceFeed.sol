@@ -10,7 +10,7 @@ import "../IPriceFeed.sol";
  * @notice A custom price feed that scales up or down the price received from an underlying Kelp price feed and returns the result
  * @author Compound
  */
-contract rsETHScalingPriceFeed is IPriceFeed {
+contract RsETHScalingPriceFeed is IPriceFeed {
     /** Custom errors **/
     error InvalidInt256();
     error BadDecimals();
@@ -69,7 +69,7 @@ contract rsETHScalingPriceFeed is IPriceFeed {
         uint80 answeredInRound
     ) {
         int256 price = signed256(ILRTOracle(underlyingPriceFeed).rsETHPrice());
-        return (1, scalePrice(price), block.timestamp, block.timestamp, 1);        
+        return (1, scalePrice(price), block.timestamp, block.timestamp, 1);
     }
 
     function signed256(uint256 n) internal pure returns (int256) {
@@ -86,9 +86,9 @@ contract rsETHScalingPriceFeed is IPriceFeed {
         }
         return scaledPrice;
     }
-
+    
     /**
-     * @notice Contract version
+     * @notice Current version of the price feed
      * @return The version of the price feed contract
      **/
     function version() external pure returns (uint256) {
