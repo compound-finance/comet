@@ -106,7 +106,7 @@ jobs:
           run_id: ${{ github.event.inputs.run_id }}
           name: ${{ github.event.inputs.network }}-${{ github.event.inputs.deployment }}-${{ github.event.inputs.migration }}
           path: deployments/${{ github.event.inputs.network }}/${{ github.event.inputs.deployment }}/artifacts/
-        if: github.event.inputs.run_id != '' || github.event.inputs.run_id != '0'
+        if: github.event.inputs.run_id != '' || github.event.inputs.run_id != 0
 
       - name: Run Enact Migration
         run: |
@@ -129,7 +129,7 @@ jobs:
           GOV_NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8685"]')[github.event.inputs.eth_pk == '' && env.GOV_NETWORK != ''] }}
           GOV_NETWORK: ${{ env.GOV_NETWORK }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
-        if: github.event.inputs.impersonateAccount != '' && github.event.inputs.run_id != '0'
+        if: github.event.inputs.impersonateAccount != '' && github.event.inputs.run_id != 0
       - name: Run Prepare and Enact Migration (impersonate)
         run: |
           yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --prepare --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }}
@@ -140,7 +140,7 @@ jobs:
           GOV_NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8685"]')[github.event.inputs.eth_pk == '' && env.GOV_NETWORK != ''] }}
           GOV_NETWORK: ${{ env.GOV_NETWORK }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
-        if: github.event.inputs.impersonateAccount != '' && github.event.inputs.run_id == '0'
+        if: github.event.inputs.impersonateAccount != '' && github.event.inputs.run_id == 0
       - name: Commit changes
         if: ${{ github.event.inputs.simulate == 'false' }}
         run: |
