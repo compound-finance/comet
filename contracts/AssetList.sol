@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import "./CometConfiguration.sol";
 import "./IPriceFeed.sol";
 import "./IERC20NonStandard.sol";
 import "./CometMainInterface.sol";
