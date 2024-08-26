@@ -106,7 +106,7 @@ jobs:
           run_id: ${{ github.event.inputs.run_id }}
           name: ${{ github.event.inputs.network }}-${{ github.event.inputs.deployment }}-${{ github.event.inputs.migration }}
           path: deployments/${{ github.event.inputs.network }}/${{ github.event.inputs.deployment }}/artifacts/
-        if: github.event.inputs.run_id != '' || github.event.inputs.run_id != 0
+        if: github.event.inputs.run_id != '' && github.event.inputs.run_id != 0
 
       - name: Run Enact Migration
         run: |
