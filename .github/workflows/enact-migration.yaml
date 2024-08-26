@@ -119,7 +119,6 @@ jobs:
           GOV_NETWORK: ${{ env.GOV_NETWORK }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
         if: github.event.inputs.impersonateAccount == ''
-
       - name: Run Enact Migration (impersonate)
         run: |
           yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }}
@@ -139,7 +138,6 @@ jobs:
           git add deployments/${{ github.event.inputs.network }}/${{ github.event.inputs.deployment }}/migrations/${{ github.event.inputs.migration }}.ts
           git commit -m "Modified migration from GitHub Actions" || echo "No changes to commit"
           git push origin
-
       - name: Run Prepare and Enact Migration (impersonate)
       run: |
           yarn hardhat migrate --network ${{ github.event.inputs.network }} --deployment ${{ github.event.inputs.deployment }} --prepare --enact --overwrite ${{ fromJSON('["", "--simulate"]')[github.event.inputs.simulate == 'true'] }} ${{ fromJSON('["", "--no-enacted"]')[github.event.inputs.no_enacted == 'true'] }} ${{ github.event.inputs.migration }} --impersonate ${{ github.event.inputs.impersonateAccount }}
@@ -151,11 +149,3 @@ jobs:
           GOV_NETWORK: ${{ env.GOV_NETWORK }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
         if: github.event.inputs.impersonateAccount != '' && github.event.inputs.simulate == 'true' && github.event.inputs.run_id == '0'
-      - name: Commit changes
-        if: ${{ github.event.inputs.simulate == 'false' }}
-        run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "<>"
-          git add deployments/${{ github.event.inputs.network }}/${{ github.event.inputs.deployment }}/migrations/${{ github.event.inputs.migration }}.ts
-          git commit -m "Modified migration from GitHub Actions" || echo "No changes to commit"
-          git push origin
