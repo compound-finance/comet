@@ -5,19 +5,19 @@ import { ContractReceipt } from 'ethers';
 
 async function testWithdrawCollateral(context: CometContext, assetNum: number): Promise<void | ContractReceipt> {
   const comet = await context.getComet();
-  const { charles } = context.actors;
+  const { albert } = context.actors;
   const { asset: assetAddress, scale: scaleBN } = await comet.getAssetInfo(assetNum);
   const collateralAsset = context.getAssetByAddress(assetAddress);
   const scale = scaleBN.toBigInt();
 
-  expect(await collateralAsset.balanceOf(charles.address)).to.be.equal(0n);
-  expect(await comet.collateralBalanceOf(charles.address, collateralAsset.address)).to.be.equal(100n * scale);
+  expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(0n);
+  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(100n * scale);
 
-  // Charles withdraws 100 units of collateral from Comet
-  const txn = await charles.withdrawAsset({ asset: collateralAsset.address, amount: 100n * scale });
+  // Albert withdraws 100 units of collateral from Comet
+  const txn = await albert.withdrawAsset({ asset: collateralAsset.address, amount: 100n * scale });
 
-  expect(await collateralAsset.balanceOf(charles.address)).to.be.equal(100n * scale);
-  expect(await comet.collateralBalanceOf(charles.address, collateralAsset.address)).to.be.equal(0n);
+  expect(await collateralAsset.balanceOf(albert.address)).to.be.equal(100n * scale);
+  expect(await comet.collateralBalanceOf(albert.address, collateralAsset.address)).to.be.equal(0n);
 
   return txn; // return txn to measure gas
 }
@@ -50,7 +50,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
     {
       filter: async (ctx) => await isValidAssetIndex(ctx, i) && await isTriviallySourceable(ctx, i, amountToWithdraw),
       cometBalances: {
-        charles: { [`$asset${i}`]: amountToWithdraw },
+        albert: { [`$asset${i}`]: amountToWithdraw },
       },
     },
     async (_properties, context) => {
