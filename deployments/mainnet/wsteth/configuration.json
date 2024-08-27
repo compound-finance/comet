@@ -41,14 +41,6 @@
       "liquidateCF": 0.91,
       "liquidationFactor": 0.94,
       "supplyCap": "0e18"
-    },
-    "weETH": {
-      "address": "0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee",
-      "decimals": "18",
-      "borrowCF": 0.90,
-      "liquidateCF": 0.93,
-      "liquidationFactor": 0.96,
-      "supplyCap": "0e18"
     }
   }
 }
