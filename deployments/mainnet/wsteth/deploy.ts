@@ -46,20 +46,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     true
   );
 
-  // Deploy reverse multiplicative price feed for weETH
-  const weETHScalingPriceFeed = await deploymentManager.deploy(
-    'weETH:priceFeed',
-    'pricefeeds/ReverseMultiplicativePriceFeed.sol',
-    [
-      weETHToETHPriceFeed.address,  // weETH / ETH price feed
-      wstETHToETHPriceFeed.address, // wstETH / ETH price feed (reversed)
-      8,                            // decimals
-      'weETH / wstETH price feed'   // description
-    ],
-    true
-  );
-
-
   // Import shared contracts from cUSDCv3
   const cometAdmin = await deploymentManager.fromDep('cometAdmin', 'mainnet', 'usdc');
   const cometFactory = await deploymentManager.fromDep('cometFactory', 'mainnet', 'usdt');

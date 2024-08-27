@@ -116,18 +116,15 @@ export default migration('1723732097_configurate_and_ens', {
       timelock,
       COMP,
       // rsETH,
-      // ezETH,
-      // weETH
+      // ezETH
     } = await deploymentManager.getContracts();
 
     // 1. & 2. & 3.
     // const rsETHInfo = await comet.getAssetInfoByAddress(rsETH.address);
     // const ezETHInfo = await comet.getAssetInfoByAddress(ezETH.address);
-    // const weETHInfo = await comet.getAssetInfoByAddress(weETH.address);
 
     // expect(rsETHInfo.supplyCap).to.be.eq(exp(10_000, 18));
     // expect(ezETHInfo.supplyCap).to.be.eq(exp(15_000, 18));
-    // expect(weETHInfo.supplyCap).to.be.eq(exp(15_000, 18));
 
     // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(70 / 86400, 15, 18));
     // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(50 / 86400, 15, 18));
