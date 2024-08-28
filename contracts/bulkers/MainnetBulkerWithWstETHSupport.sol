@@ -91,7 +91,8 @@ contract MainnetBulkerWithWstETHSupport is BaseBulker {
      */
     function deposit(address comet) external payable {
         (bool success, ) = payable(wsteth).call{value: msg.value}(new bytes(0));
-        require(success, 'transfer failed');
+        if(!success) revert TransferOutFailed();
+
         uint wstETHAmount = ERC20(wsteth).balanceOf(address(this));
         lastValue=wstETHAmount;
         doTransferOut(wsteth, comet, wstETHAmount);
