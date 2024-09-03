@@ -5,7 +5,7 @@ import { calldata, exp, proposal } from '../../../../src/deploy';
 import { utils } from 'ethers';
 
 const WRSETH_ADDRESS = '0xEDfa23602D0EC14714057867A78d01e94176BEA0';
-const WRSETHETH_ETH_PRICE_FEED_ADDRESS = '0x99DAf760d2CFB770cc17e883dF45454FE421616b';
+const WRSETHETH_ETH_PRICE_FEED_ADDRESS = '0xe8dD07CCf5BC4922424140E44Eb970F5950725ef';
 let newPriceFeedAddress: string;
 
 export default migration('1724852274_add_wrseth_as_collateral', {
