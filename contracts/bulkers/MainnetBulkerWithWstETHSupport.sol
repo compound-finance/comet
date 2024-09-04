@@ -26,6 +26,10 @@ contract MainnetBulkerWithWstETHSupport is BaseBulker {
     /// @notice The action for withdrawing staked ETH from Comet
     bytes32 public constant ACTION_WITHDRAW_STETH = "ACTION_WITHDRAW_STETH";
 
+    /** Custom errors **/
+
+    error UnsupportedBaseAsset();
+
     /**
      * @notice Construct a new MainnetBulker instance
      * @param admin_ The admin of the Bulker contract
@@ -59,12 +63,17 @@ contract MainnetBulkerWithWstETHSupport is BaseBulker {
     /**
      * @notice Wraps stETH to wstETH and supplies to a user in Comet
      * @dev Note: This contract must have permission to manage msg.sender's Comet account
-     * @dev Note: wstETH base asset is NOT supported
+     * @dev Note: Supports `stETHAmount` of `uint256.max` to fully repay the wstETH debt
+     * @dev Note: Only for the cwstETHv3 market
      */
     function supplyStEthTo(address comet, address to, uint stETHAmount) internal {
-        doTransferIn(steth, msg.sender, stETHAmount);
-        ERC20(steth).approve(wsteth, stETHAmount);
-        uint wstETHAmount = IWstETH(wsteth).wrap(stETHAmount);
+        if(CometInterface(comet).baseToken() != wsteth) revert UnsupportedBaseAsset();
+        uint256 _stETHAmount = stETHAmount == type(uint256).max
+            ? IWstETH(wsteth).getStETHByWstETH(CometInterface(comet).borrowBalanceOf(msg.sender))
+            : stETHAmount;
+        doTransferIn(steth, msg.sender, _stETHAmount);
+        ERC20(steth).approve(wsteth, _stETHAmount);
+        uint wstETHAmount = IWstETH(wsteth).wrap(_stETHAmount);
         ERC20(wsteth).approve(comet, wstETHAmount);
         CometInterface(comet).supplyFrom(address(this), to, wsteth, wstETHAmount);
     }
@@ -72,29 +81,29 @@ contract MainnetBulkerWithWstETHSupport is BaseBulker {
     /**
      * @notice Withdraws wstETH from Comet, unwraps it to stETH, and transfers it to a user
      * @dev Note: This contract must have permission to manage msg.sender's Comet account
-     * @dev Note: wstETH base asset is NOT supported
      * @dev Note: Supports `amount` of `uint256.max` to withdraw all wstETH from Comet
+     * @dev Note: Only for the cwstETHv3 market
      */
     function withdrawStEthTo(address comet, address to, uint stETHAmount) internal {
+        if(CometInterface(comet).baseToken() != wsteth) revert UnsupportedBaseAsset();
         uint wstETHAmount = stETHAmount == type(uint256).max
-            ? CometInterface(comet).collateralBalanceOf(msg.sender, wsteth)
+            ? CometInterface(comet).balanceOf(msg.sender)
             : IWstETH(wsteth).getWstETHByStETH(stETHAmount);
         CometInterface(comet).withdrawFrom(msg.sender, address(this), wsteth, wstETHAmount);
         uint unwrappedStETHAmount = IWstETH(wsteth).unwrap(wstETHAmount);
         doTransferOut(steth, to, unwrappedStETHAmount);
     }
     
-    uint256 public lastValue = 1;
-
     /**
      * @notice Submits received ether to get stETH and wraps it to wstETH, received wstETH is transferred to Comet
      */
     function deposit(address comet) external payable {
+        if(msg.sender != admin) revert Unauthorized();
+        if(CometInterface(comet).baseToken() != wsteth) revert UnsupportedBaseAsset();
         (bool success, ) = payable(wsteth).call{value: msg.value}(new bytes(0));
         if(!success) revert TransferOutFailed();
 
         uint wstETHAmount = ERC20(wsteth).balanceOf(address(this));
-        lastValue=wstETHAmount;
         doTransferOut(wsteth, comet, wstETHAmount);
     }
 }
