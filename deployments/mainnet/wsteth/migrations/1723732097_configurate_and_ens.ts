@@ -10,7 +10,7 @@ const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 
-const wstETHAmount = ethers.BigNumber.from(exp(100, 18));
+const wstETHAmount = ethers.BigNumber.from(exp(20, 18));
 
 export default migration('1723732097_configurate_and_ens', {
   async prepare() {
