@@ -94,7 +94,7 @@ export default migration('1723732097_configurate_and_ens', {
       }
     ];
 
-    const description = '# Initialize cwstETHv3 on Ethereum Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Mainnet network. This proposal takes the governance steps recommended and necessary to initialize a Compound III wstETH market on Mainnet; upon execution, cwstETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/gauntlet-dai-v3-comet-on-mainnet-recommendation/5380/1).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/911), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/gauntlet-dai-v3-comet-on-mainnet-recommendation/5380).\n\n\n## Proposal Actions\n\nThe first proposal action sets the CometFactory for the new Comet instance in the existing Configurator.\n\nThe second action configures the Comet instance in the Configurator.\n\nThe third action deploys an instance of the newly configured factory and upgrades the Comet instance to use that implementation.\n\nThe fourth action configures the existing rewards contract for the newly deployed Comet instance.\n\nThe fifth action converts ether to wstETH and transfers it to the Comet to seed the reserves.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ethereum Mainnet cwstETHv3 market.';
+    const description = '# Initialize cwstETHv3 on Ethereum Mainnet\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Mainnet network. This proposal takes the governance steps recommended and necessary to initialize a Compound III wstETH market on Mainnet; upon execution, cwstETHv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/add-wsteth-market-on-mainnet/5504/4).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/911), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/add-wsteth-market-on-mainnet/5504).\n\n\n## Proposal Actions\n\nThe first proposal action sets the CometFactory for the new Comet instance in the existing Configurator.\n\nThe second action configures the Comet instance in the Configurator.\n\nThe third action deploys an instance of the newly configured factory and upgrades the Comet instance to use that implementation.\n\nThe fourth action configures the existing rewards contract for the newly deployed Comet instance.\n\nThe fifth action converts ether to wstETH and transfers it to the Comet to seed the reserves.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ethereum Mainnet cwstETHv3 market.';
     const txn = await deploymentManager.retry(
       async () => trace((await governor.propose(...await proposal(actions, description))))
     );
@@ -126,8 +126,8 @@ export default migration('1723732097_configurate_and_ens', {
     // expect(rsETHInfo.supplyCap).to.be.eq(exp(10_000, 18));
     // expect(ezETHInfo.supplyCap).to.be.eq(exp(15_000, 18));
 
-    // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(70 / 86400, 15, 18));
-    // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(50 / 86400, 15, 18));
+    // expect(await comet.baseTrackingSupplySpeed()).to.be.equal(exp(8 / 86400, 15, 18));   // 92592592592
+    // expect(await comet.baseTrackingBorrowSpeed()).to.be.equal(exp(4 / 86400, 15, 18));   // 46296296296
 
     // 4
     const config = await rewards.rewardConfig(comet.address);
@@ -138,7 +138,7 @@ export default migration('1723732097_configurate_and_ens', {
     expect((await comet.pauseGuardian()).toLowerCase()).to.be.eq('0xbbf3f1421d886e9b2c5d716b5192ac998af2012c');
 
     // 5. & 6.
-    // expect reserves to be close to wstETHAmount +- 0.05
+    // expect reserves to be close to wstETHAmount +- 0.1
     expect(await comet.getReserves()).to.be.closeTo(wstETHAmount, exp(1, 17));
 
     // 7.
