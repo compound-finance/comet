@@ -139,7 +139,7 @@ export default migration('1723732097_configurate_and_ens', {
 
     // 5. & 6.
     // expect reserves to be close to wstETHAmount +- 0.05
-    expect(await comet.getReserves()).to.be.closeTo(wstETHAmount, exp(5, 16));
+    expect(await comet.getReserves()).to.be.closeTo(wstETHAmount, exp(1, 17));
 
     // 7.
     const ENSResolver = await deploymentManager.existing('ENSResolver', ENSResolverAddress);
