@@ -20,8 +20,8 @@
   },
   "tracking": {
     "indexScale": "1e15",
-    "baseSupplySpeed": "0e15",
-    "baseBorrowSpeed": "0e15",
+    "baseSupplySpeed": "92592592592e0",
+    "baseBorrowSpeed": "46296296296e0",
     "baseMinForRewards": "10e18"
   },
   "rewardTokenAddress": "0xc00e94cb662c3520282e6f5717214004a7f26888",
@@ -32,7 +32,7 @@
       "borrowCF": 0.88,
       "liquidateCF": 0.91,
       "liquidationFactor": 0.96,
-      "supplyCap": "0e18"
+      "supplyCap": "10_000e18"
     },
     "ezETH": {
       "address": "0xbf5495Efe5DB9ce00f80364C8B423567e58d2110",
@@ -40,7 +40,7 @@
       "borrowCF": 0.88,
       "liquidateCF": 0.91,
       "liquidationFactor": 0.94,
-      "supplyCap": "0e18"
+      "supplyCap": "15_000e18"
     }
   }
 }
