@@ -24,4 +24,14 @@ contract ConfiguratorStorage is CometConfiguration {
 
     /// @notice Mapping of Comet proxy addresses to their Comet factory contracts
     mapping(address => address) public factory;
+
+    /// @notice The address of the market admin. This will be the address of a timelock contract.
+    address public marketAdmin;
+    
+    /// @notice Pause flag for the market admin
+    bool public marketAdminPaused = false;
+
+    /// @notice address of the market admin pause guardian. We don't use `pauseGuardian` role because we have `setPauseGuardian` already which sets the pauseGuardian on comet.
+    address public marketAdminPauseGuardian;
+
 }

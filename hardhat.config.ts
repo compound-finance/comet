@@ -233,6 +233,16 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
       hardfork: 'shanghai'
     },
+    localhost: {
+      url: 'http://127.0.0.1:8545',
+      loggingEnabled: true,
+      gas: 120000000,
+      gasPrice: 'auto',
+      blockGasLimit: 120000000,
+      accounts:  { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
+      // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
+      allowUnlimitedContractSize: true,
+    },
   },
 
   // See https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#multiple-api-keys-and-alternative-block-explorers

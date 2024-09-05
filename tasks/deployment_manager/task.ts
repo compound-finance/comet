@@ -93,7 +93,7 @@ task('deploy', 'Deploys market')
 
     const verify = noVerify ? false : !simulate;
     const desc = verify ? 'Verify' : 'Would verify';
-    if (noVerify && simulate) {
+    if (noVerify || simulate) {
       // Don't even print if --no-verify is set with --simulate
     } else {
       await dm.verifyContracts(async (address, args) => {
