@@ -33,5 +33,4 @@ contract ConfiguratorStorage is CometConfiguration {
 
     /// @notice address of the market admin pause guardian. We don't use `pauseGuardian` role because we have `setPauseGuardian` already which sets the pauseGuardian on comet.
     address public marketAdminPauseGuardian;
-
 }

@@ -4,7 +4,7 @@ pragma solidity 0.8.15;
 import "./vendor/proxy/transparent/ProxyAdmin.sol";
 
 interface Deployable {
-    function deploy(address cometProxy) external returns (address);
+  function deploy(address cometProxy) external returns (address);
 }
 
 contract CometProxyAdmin is ProxyAdmin {
@@ -118,7 +118,7 @@ contract CometProxyAdmin is ProxyAdmin {
     }
 
     /**
-  * @dev Custom upgrade function that allows owner and marketUpdateAdmin to call it
+     * @dev Custom upgrade function that allows owner and marketUpdateAdmin to call it
      */
     function _upgrade(TransparentUpgradeableProxy proxy, address implementation) private ownerOrMarketAdmin {
         proxy.upgradeTo(implementation);

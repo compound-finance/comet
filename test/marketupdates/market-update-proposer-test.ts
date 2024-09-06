@@ -1,4 +1,4 @@
-import { makeMarketAdmin } from './market-updates-helper';
+import { makeMarketAdmin, advanceTimeAndMineBlock } from './market-updates-helper';
 import { expect, makeConfigurator, ethers, wait, event } from '../helpers';
 
 describe('MarketUpdateProposer', function() {
@@ -231,10 +231,21 @@ describe('MarketUpdateProposer', function() {
         proposalDescription
       );
 
+    // Get the timelock address from the MarketUpdateProposer contract
+    const timelockAddress = await marketUpdateProposer.timelock();
+
+    // Create a contract instance for the timelock using its interface
+    const timelockContract = await ethers.getContractAt(
+      'ITimelock',
+      timelockAddress
+    );
+
+    // Now call the delay function from the timelock contract
+    const delay = (await timelockContract.delay()).toNumber();
+
     // Fast forward time by more than the GRACE_PERIOD
     const GRACE_PERIOD = 14 * 24 * 60 * 60; // 14 days in seconds
-    await ethers.provider.send('evm_increaseTime', [GRACE_PERIOD + 1]); // Increase by 14 days + 1 second
-    await ethers.provider.send('evm_mine', []); // Mine the next block to apply the time increase
+    await advanceTimeAndMineBlock(GRACE_PERIOD + delay + 1);// Increase by 14 days(GRACE_PERIOD) + timelock delay + 1 second
 
     expect(await marketUpdateProposer.state(proposalId)).to.equal(3); // Proposal should be expired
 

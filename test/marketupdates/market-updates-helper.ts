@@ -41,7 +41,7 @@ export async function makeMarketAdmin() {
 
   const marketUpdateTimelock = await marketAdminTimelockFactory.deploy(
     governorTimelock.address,
-    0
+    2 * 24 * 60 * 60 // This is 2 days in seconds
   );
   const marketUpdateTimelockAddress = await marketUpdateTimelock.deployed();
 
@@ -104,4 +104,9 @@ export async function initializeAndFundGovernorTimelock() {
   // Get the signer from the impersonated account
   const governorTimelockSigner = await ethers.getSigner(governorTimelock.address);
   return { originalSigner: gov, governorTimelockSigner, governorTimelock };
+}
+
+export async function advanceTimeAndMineBlock(delay: number) {
+  await ethers.provider.send('evm_increaseTime', [delay + 10]);
+  await ethers.provider.send('evm_mine', []); // Mine a new block to apply the time increase
 }

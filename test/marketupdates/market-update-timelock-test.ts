@@ -1,4 +1,4 @@
-import { makeMarketAdmin } from './market-updates-helper';
+import { makeMarketAdmin, advanceTimeAndMineBlock } from './market-updates-helper';
 import { expect, makeConfigurator, ethers } from '../helpers';
 
 describe('MarketUpdateTimelock', function() {
@@ -49,10 +49,14 @@ describe('MarketUpdateTimelock', function() {
       users: [bob],
     } = await makeConfigurator();
 
+    // Get the delay from the contract
+    const delay = (await marketUpdateTimelock.delay()).toNumber(); // Example: 172800 for 2 days
+
     const latestBlock = await ethers.provider.getBlock('latest');
     const currentTimestamp = latestBlock.timestamp;
 
-    const eta = currentTimestamp + 5; // Ensure eta is in the future
+    // Ensure eta is sufficiently in the future
+    const eta = currentTimestamp + delay + 5; // eta is current timestamp + delay + a few seconds
 
     // ensuring that main gover-timelock can queue transactions
     await marketUpdateTimelock
@@ -122,10 +126,13 @@ describe('MarketUpdateTimelock', function() {
     configuratorAsProxy.transferGovernor(marketUpdateTimelock.address);
     const proposalId = 1n;
 
+    // Get the delay from the contract
+    const delay = (await marketUpdateTimelock.delay()).toNumber(); // Example: 172800 for 2 days
+
     let latestBlock = await ethers.provider.getBlock('latest');
     let currentTimestamp = latestBlock.timestamp;
 
-    let eta = currentTimestamp + 5; // Ensure eta is in the future
+    let eta = currentTimestamp + delay + 5; // Ensure eta is in the future
 
     // ensuring that main gover-timelock can execute transactions
     await marketUpdateTimelock
@@ -141,9 +148,8 @@ describe('MarketUpdateTimelock', function() {
         eta
       );
 
-    // Fast-forward time by 5 seconds to surpass the eta
-    await ethers.provider.send('evm_increaseTime', [5]);
-    await ethers.provider.send('evm_mine', []); // Mine a new block to apply the time increase
+    // Fast-forward time by delay + few seconds to surpass the eta
+    await advanceTimeAndMineBlock(delay);
 
     await marketUpdateTimelock
       .connect(governorTimelockSigner)
@@ -174,6 +180,9 @@ describe('MarketUpdateTimelock', function() {
         'Setting supply kink to 100'
       );
 
+    // Fast-forward time by delay + seconds to surpass the eta
+    await advanceTimeAndMineBlock(delay);
+
     await marketUpdateProposer
       .connect(marketUpdateMultiSig)
       .execute(proposalId);
@@ -184,7 +193,7 @@ describe('MarketUpdateTimelock', function() {
     latestBlock = await ethers.provider.getBlock('latest');
     currentTimestamp = latestBlock.timestamp;
 
-    eta = currentTimestamp + 5; // Ensure eta is in the future
+    eta = currentTimestamp + delay + 5; // Ensure eta is in the future
 
     // ensuring that MarketUpdateProposer can execute transactions
     await marketUpdateTimelock
@@ -200,9 +209,8 @@ describe('MarketUpdateTimelock', function() {
         eta
       );
 
-    // Fast-forward time by 5 seconds to surpass the eta
-    await ethers.provider.send('evm_increaseTime', [5]);
-    await ethers.provider.send('evm_mine', []); // Mine a new block to apply the time increase
+    // Fast-forward time by delay + few seconds to surpass the eta
+    await advanceTimeAndMineBlock(delay);
 
     await expect(
       marketUpdateTimelock
@@ -242,12 +250,15 @@ describe('MarketUpdateTimelock', function() {
 
     const proposalId = 1n;
 
+    // Get the delay from the contract
+    const delay = (await marketUpdateTimelock.delay()).toNumber(); // Example: 172800 for 2 days
+
     let latestBlock = await ethers.provider.getBlock('latest');
     let currentTimestamp = latestBlock.timestamp;
 
-    let eta = currentTimestamp + 5; // Ensure eta is in the future
+    let eta = currentTimestamp + delay + 5; // Ensure eta is in the future
 
-    // ensuring that main gover-timelock can cancel transactions
+    // ensuring that main governor-timelock can cancel transactions
     await marketUpdateTimelock
       .connect(governorTimelockSigner)
       .queueTransaction(
@@ -274,7 +285,7 @@ describe('MarketUpdateTimelock', function() {
         eta
       );
 
-    // ensuring that MarketUpdateProposer can cacnel transactions
+    // ensuring that MarketUpdateProposer can cancel transactions
     await marketUpdateProposer
       .connect(marketUpdateMultiSig)
       .propose(
@@ -319,7 +330,7 @@ describe('MarketUpdateTimelock', function() {
     latestBlock = await ethers.provider.getBlock('latest');
     currentTimestamp = latestBlock.timestamp;
 
-    eta = currentTimestamp + 5; // Ensure eta is in the future
+    eta = currentTimestamp + delay + 5; // Ensure eta is in the future
 
     // ensuring that MarketUpdateProposer can execute transactions
     await marketUpdateTimelock

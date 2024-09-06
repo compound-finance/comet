@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.10;
 
-import "./SafeMath.sol";
-
 /*
 
 Right now admin and marketUpdateProposer can cancel one another's transactions, but
@@ -10,7 +8,6 @@ this is not a realistic scenario as admin is a main-governor-timelock which will
 queuing, executing, or cancelling transactions. So we are not handling or testing it.
 */
 contract MarketUpdateTimelock {
-    using SafeMath for uint;
 
     event NewAdmin(address indexed oldAdmin, address indexed newAdmin);
     event NewMarketUpdateProposer(address indexed oldMarketAdmin, address indexed newMarketAdmin);
@@ -20,7 +17,7 @@ contract MarketUpdateTimelock {
     event QueueTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta);
 
     uint public constant GRACE_PERIOD = 14 days;
-    uint public constant MINIMUM_DELAY = 0 days;
+    uint public constant MINIMUM_DELAY = 2 days;
     uint public constant MAXIMUM_DELAY = 30 days;
 
     address public admin;
@@ -69,7 +66,7 @@ contract MarketUpdateTimelock {
     }
 
     function queueTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public adminOrMarketUpdater returns (bytes32) {
-        require(eta >= getBlockTimestamp().add(delay), "MarketUpdateTimelock::queueTransaction: Estimated execution block must satisfy delay.");
+        require(eta >= getBlockTimestamp() + delay, "MarketUpdateTimelock::queueTransaction: Estimated execution block must satisfy delay.");
 
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         queuedTransactions[txHash] = true;
@@ -89,7 +86,7 @@ contract MarketUpdateTimelock {
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         require(queuedTransactions[txHash], "MarketUpdateTimelock::executeTransaction: Transaction hasn't been queued.");
         require(getBlockTimestamp() >= eta, "MarketUpdateTimelock::executeTransaction: Transaction hasn't surpassed time lock.");
-        require(getBlockTimestamp() <= eta.add(GRACE_PERIOD), "MarketUpdateTimelock::executeTransaction: Transaction is stale.");
+        require(getBlockTimestamp() <= eta + GRACE_PERIOD, "MarketUpdateTimelock::executeTransaction: Transaction is stale.");
 
         queuedTransactions[txHash] = false;
 

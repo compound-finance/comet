@@ -1,6 +1,9 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { event, expect, wait } from './../helpers';
-import { initializeAndFundGovernorTimelock } from './market-updates-helper';
+import { expect } from './../helpers';
+import {
+  initializeAndFundGovernorTimelock,
+  advanceTimeAndMineBlock,
+} from './market-updates-helper';
 import {
   CometFactory__factory,
   CometProxyAdmin__factory,
@@ -137,7 +140,7 @@ describe('MarketUpdateDeployment', function() {
     // 3) Deploy MarketUpdateTimelock with Governor Timelock as the owner
     const marketUpdateTimelock = await marketAdminTimelockFactory.deploy(
       governorTimelock.address,
-      0
+      2 * 24 * 60 * 60 // This is 2 days in seconds
     );
 
     // Fund the impersonated account
@@ -294,6 +297,8 @@ describe('MarketUpdateDeployment', function() {
         'Test market update'
       );
 
+    await advanceTimeAndMineBlock(2 * 24 * 60 * 60 + 10); // Fast forward by 2 days + a few seconds to surpass the eta
+
     await marketUpdateProposer.connect(marketUpdateMultiSig).execute(1);
 
     expect(
@@ -307,7 +312,7 @@ describe('MarketUpdateDeployment', function() {
     governorTimelockSigner: SignerWithAddress;
     originalSigner: SignerWithAddress;
   }) {
-    const { governorTimelock, governorTimelockSigner } = input;
+    const { governorTimelockSigner } = input;
     const opts: any = {};
 
     const {
