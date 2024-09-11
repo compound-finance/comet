@@ -39,6 +39,7 @@ const addresses = {
     WETH9: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     CB_ETH: '0xBe9895146f7AF43049ca1c1AE358B0541Ea49704',
     WST_ETH: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
+    LBTC: '0x8236a87084f8B84306f72007F36F2618A5634494',
     USDT: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
   },
   goerli: {
@@ -94,6 +95,10 @@ export const flashLoanPools = {
     usdt: {
       tokenAddress: addresses.mainnet.DAI,
       poolFee: 100
+    },
+    wbtc: {
+      tokenAddress: addresses.mainnet.WETH9,
+      poolFee: 3000
     }
   },
   goerli: {
@@ -194,6 +199,14 @@ export function getPoolConfig(tokenAddress: string) {
       ...{
         exchange: Exchange.Balancer,
         balancerPoolId: '0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080'
+      }
+    },
+    [addresses.mainnet.LBTC.toLowerCase()]: {
+      ...defaultPoolConfig,
+      ...{
+        exchange: Exchange.Uniswap,
+        swapViaWeth: false,
+        uniswapPoolFee: 500
       }
     },
     [addresses.polygon.WMATIC.toLowerCase()]: {

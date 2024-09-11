@@ -5,6 +5,7 @@ import { ethers, event, exp, wait } from '../test/helpers';
 import CometActor from './context/CometActor';
 import { CometInterface, OnChainLiquidator } from '../build/types';
 import { getPoolConfig, flashLoanPools } from '../scripts/liquidation_bot/liquidateUnderwaterBorrowers';
+import { getConfigForScenario } from './utils/scenarioHelper';
 
 interface LiquidationAddresses {
   balancerVault: string;
@@ -538,15 +539,19 @@ scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when value is beneath liquidationThreshold`,
   {
     filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }]),
-    tokenBalances: {
-      $comet: { $base: 100000 },
-    },
-    cometBalances: {
-      albert: {
-        $asset0: ' == 200',
-      },
-      betty: { $base: 1000 },
-    },
+    tokenBalances: async (ctx) =>  (
+      {
+        $comet: { $base: getConfigForScenario(ctx).liquidationBase },
+      }
+    ),
+    cometBalances: async (ctx) =>  (
+      {
+        albert: {
+          $asset0: ` == ${getConfigForScenario(ctx).liquidationAsset}`,
+        },
+        betty: { $base: getConfigForScenario(ctx).liquidationBase1 },
+      }
+    )
   },
   async ({ comet, actors }, _context, world) => {
     const { albert, betty } = actors;
@@ -649,15 +654,19 @@ scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when maxAmountToPurchase=0`,
   {
     filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }]),
-    tokenBalances: {
-      $comet: { $base: 100000 },
-    },
-    cometBalances: {
-      albert: {
-        $asset0: ' == 200',
-      },
-      betty: { $base: 1000 },
-    },
+    tokenBalances: async (ctx) => (
+      {
+        $comet: { $base: getConfigForScenario(ctx).liquidationBase },
+      }
+    ),
+    cometBalances: async (ctx) => (
+      {
+        albert: {
+          $asset0: ` == ${getConfigForScenario(ctx).liquidationAsset}}`,
+        },
+        betty: { $base: getConfigForScenario(ctx).liquidationBase1 },
+      }
+    )
   },
   async ({ comet, actors }, _context, world) => {
     const { albert, betty } = actors;
@@ -761,7 +770,7 @@ scenario(
     mainnet: {
       usdc: 2250000,
       weth: 20,
-      usdt: 2250000
+      usdt: 2250000,
     },
   };
   const assetAmounts = {
@@ -778,7 +787,7 @@ scenario(
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }]),
+      filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }]) && !matchesDeployment(ctx, [{ deployment: 'wbtc' }]),
       tokenBalances: async (ctx) => (
         {
           $comet: {
