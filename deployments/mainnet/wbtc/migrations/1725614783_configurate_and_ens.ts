@@ -77,13 +77,13 @@ export default migration('1725614783_configurate_and_ens', {
         signature: 'setRewardConfig(address,address)',
         args: [comet.address, COMP.address],
       },
-      // 5. Get USDT reserves from cUSDT contract
+      // 5. Get WBTC reserves from cWBTC contract
       {
         target: cWBTCAddress,
         signature: '_reduceReserves(uint256)',
         calldata: _reduceReservesCalldata
       },
-      // 6. Transfer USDT to the Comet contract
+      // 6. Transfer WBTC to the Comet contract
       {
         contract: WBTC,
         signature: 'transfer(address,uint256)',
