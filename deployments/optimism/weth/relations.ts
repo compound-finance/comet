@@ -56,7 +56,7 @@ export default {
   WBTC: {
     artifact: 'contracts/ERC20.sol:ERC20'
   },
-
+  
   // weETH
   TransparentUpgradeableProxy: {
     artifact: 'contracts/ERC20.sol:ERC20',
