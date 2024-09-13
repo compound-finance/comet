@@ -31,7 +31,7 @@ export default {
     }
   },
 
-  TransparentUpgradeableProxy: {
+  OssifiableProxy: {
     artifact: 'contracts/ERC20.sol:ERC20',
     delegates: {
       field: {
@@ -40,7 +40,7 @@ export default {
     }
   },
 
-  OssifiableProxy: {
+  TransparentUpgradeableProxy: {
     artifact: 'contracts/ERC20.sol:ERC20',
     delegates: {
       field: {
