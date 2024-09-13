@@ -57,7 +57,7 @@ jobs:
       - uses: actions/upload-artifact@v4 # upload scenario results
         if: success() || failure() # run this step even if previous step failed
         with:
-          name: scenario-results
+          name: scenario-results-${{ matrix.bases }}
           path: scenario-results.json
 
       - uses: dorny/test-reporter@v1
