@@ -85,9 +85,9 @@ jobs:
         if: github.event.inputs.eth_pk == '' && env.GOV_NETWORK != ''
 
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v4
         with:
           node-version: '16'
 
