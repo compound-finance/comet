@@ -54,7 +54,7 @@ jobs:
       - name: Run scenarios
         run: yarn scenario --bases ${{ matrix.bases }}
 
-      - uses: actions/upload-artifact@v2 # upload scenario results
+      - uses: actions/upload-artifact@v4 # upload scenario results
         if: success() || failure() # run this step even if previous step failed
         with:
           name: scenario-results
