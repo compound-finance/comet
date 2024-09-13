@@ -80,6 +80,7 @@ jobs:
       - uses: actions/upload-artifact@v4 # upload test results
         if: success() || failure() # run this step even if previous step failed
         with:
+          merge-multiple: true
           name: ${{ github.event.inputs.network }}-${{ github.event.inputs.deployment }}-verify-args
           path: deployments/${{ github.event.inputs.network }}/${{ github.event.inputs.deployment }}/verify/args.json
 
