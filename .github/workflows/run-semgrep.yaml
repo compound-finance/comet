@@ -28,16 +28,16 @@ jobs:
 
     steps:
       # Fetch project source with GitHub Actions Checkout.
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       # Fetch generic rules
       - name: Fetch generic semgrep rules
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: decurity/semgrep-smart-contracts
           path: rules
       # Fetch Compound rules
       - name: Fetch Compound semgrep rules
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: decurity/compound-semgrep-rules
           path: compound
