@@ -2,11 +2,11 @@ import { makeMarketAdmin, advanceTimeAndMineBlock } from './market-updates-helpe
 import { expect, makeConfigurator, ethers } from '../helpers';
 
 describe('MarketUpdateTimelock', function() {
-  it('is created properly with main-governor-timelock as admin', async () => {
-    const { marketUpdateTimelock, governorTimelock } = await makeMarketAdmin();
+  it('is created properly with main-governor-timelock as governor', async () => {
+    const { marketUpdateTimelock, governorTimelockSigner } = await makeMarketAdmin();
 
-    expect(await marketUpdateTimelock.admin()).to.equal(
-      governorTimelock.address
+    expect(await marketUpdateTimelock.governor()).to.equal(
+      governorTimelockSigner.address
     );
   });
 
@@ -31,7 +31,7 @@ describe('MarketUpdateTimelock', function() {
     await expect(
       marketUpdateTimelock.connect(bob).setMarketUpdateProposer(bob.address)
     ).to.be.revertedWith(
-      'MarketUpdateTimelock::setMarketUpdateProposer: Call must come from admin.'
+      'MarketUpdateTimelock::setMarketUpdateProposer: Call must come from governor.'
     );
   });
 
@@ -103,7 +103,7 @@ describe('MarketUpdateTimelock', function() {
           eta
         )
     ).to.be.revertedWith(
-      'MarketUpdateTimelock::Unauthorized: call must come from admin or marketAdmin'
+      'MarketUpdateTimelock::Unauthorized: call must come from governor or marketAdmin'
     );
   });
 
@@ -226,7 +226,7 @@ describe('MarketUpdateTimelock', function() {
           eta
         )
     ).to.be.revertedWith(
-      'MarketUpdateTimelock::Unauthorized: call must come from admin or marketAdmin'
+      'MarketUpdateTimelock::Unauthorized: call must come from governor or marketAdmin'
     );
   });
 
@@ -360,11 +360,11 @@ describe('MarketUpdateTimelock', function() {
           eta
         )
     ).to.be.revertedWith(
-      'MarketUpdateTimelock::Unauthorized: call must come from admin or marketAdmin'
+      'MarketUpdateTimelock::Unauthorized: call must come from governor or marketAdmin'
     );
   });
 
-  it('only main-governor-timelock can set new admin', async () => {
+  it('only main-governor-timelock can set new governor', async () => {
     const {
       marketUpdateTimelock,
       governorTimelockSigner,
@@ -376,14 +376,14 @@ describe('MarketUpdateTimelock', function() {
 
     await marketUpdateTimelock
       .connect(governorTimelockSigner)
-      .setAdmin(alice.address);
+      .setGovernor(alice.address);
 
-    expect(await marketUpdateTimelock.admin()).to.equal(alice.address);
+    expect(await marketUpdateTimelock.governor()).to.equal(alice.address);
 
     await expect(
-      marketUpdateTimelock.connect(bob).setAdmin(bob.address)
+      marketUpdateTimelock.connect(bob).setGovernor(bob.address)
     ).to.be.revertedWith(
-      'MarketUpdateTimelock::setAdmin: Call must come from admin.'
+      'MarketUpdateTimelock::setGovernor: Call must come from governor.'
     );
   });
 
@@ -402,7 +402,7 @@ describe('MarketUpdateTimelock', function() {
         .connect(marketUpdateMultiSig)
         .setMarketUpdateProposer(bob.address)
     ).to.be.revertedWith(
-      'MarketUpdateTimelock::setMarketUpdateProposer: Call must come from admin.'
+      'MarketUpdateTimelock::setMarketUpdateProposer: Call must come from governor.'
     );
   });
 
@@ -417,9 +417,9 @@ describe('MarketUpdateTimelock', function() {
     } = await makeConfigurator();
 
     await expect(
-      marketUpdateTimelock.connect(marketUpdateMultiSig).setAdmin(bob.address)
+      marketUpdateTimelock.connect(marketUpdateMultiSig).setGovernor(bob.address)
     ).to.be.revertedWith(
-      'MarketUpdateTimelock::setAdmin: Call must come from admin.'
+      'MarketUpdateTimelock::setGovernor: Call must come from governor.'
     );
   });
 });

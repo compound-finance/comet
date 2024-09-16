@@ -29,7 +29,7 @@ contract ConfiguratorStorage is CometConfiguration {
     address public marketAdmin;
     
     /// @notice Pause flag for the market admin
-    bool public marketAdminPaused = false;
+    bool public marketAdminPaused;
 
     /// @notice address of the market admin pause guardian. We don't use `pauseGuardian` role because we have `setPauseGuardian` already which sets the pauseGuardian on comet.
     address public marketAdminPauseGuardian;

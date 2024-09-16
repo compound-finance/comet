@@ -9,7 +9,7 @@ interface Deployable {
 
 contract CometProxyAdmin is ProxyAdmin {
     /// @notice Pause flag for the market update admin
-    bool public marketAdminPaused = false;
+    bool public marketAdminPaused;
 
     /// @notice The address of the market update admin. This will be the address of a timelock contract.
     address public marketAdmin;
@@ -33,11 +33,9 @@ contract CometProxyAdmin is ProxyAdmin {
      */
     modifier ownerOrMarketAdmin() {
         // using revert instead of require to keep it consistent with other calls
-        if (owner() != _msgSender() && marketAdmin != _msgSender())
-            revert Unauthorized();
+        if (owner() != _msgSender() && marketAdmin != _msgSender()) revert Unauthorized();
         // If the sender is the marketAdmin, check that the marketAdmin is not paused
-        if (_msgSender() == marketAdmin && marketAdminPaused)
-            revert MarketAdminIsPaused();
+        if (_msgSender() == marketAdmin && marketAdminPaused) revert MarketAdminIsPaused();
         _;
     }
 
@@ -64,8 +62,7 @@ contract CometProxyAdmin is ProxyAdmin {
      */
     function pauseMarketAdmin() external {
         if (marketAdminPaused) revert AlreadyPaused();
-        if (msg.sender != owner() && msg.sender != marketAdminPauseGuardian)
-            revert Unauthorized();
+        if (msg.sender != owner() && msg.sender != marketAdminPauseGuardian) revert Unauthorized();
         marketAdminPaused = true;
         emit MarketAdminPaused(msg.sender, true);
     }

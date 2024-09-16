@@ -9,38 +9,19 @@ import { ethers, expect } from './../helpers';
 export async function makeMarketAdmin() {
   const {
     governorTimelockSigner: governorTimelockSigner,
-    governorTimelock: governorTimelock,
   } = await initializeAndFundGovernorTimelock();
 
   const signers = await ethers.getSigners();
 
-  const marketUpdateMultiSig = signers[3];
-
-  const marketUpdaterProposerFactory = (await ethers.getContractFactory(
-    'MarketUpdateProposer'
-  )) as MarketUpdateProposer__factory;
-
-  // Fund the impersonated account
-  await signers[0].sendTransaction({
-    to: marketUpdateMultiSig.address,
-    value: ethers.utils.parseEther('1.0'), // Sending 1 Ether to cover gas fees
-  });
-
-  // This sets the owner of the MarketUpdateProposer to the marketUpdateMultiSig
-  const marketUpdateProposer = await marketUpdaterProposerFactory
-    .connect(marketUpdateMultiSig)
-    .deploy();
-
-  expect(await marketUpdateProposer.owner()).to.be.equal(
-    marketUpdateMultiSig.address
-  );
-
+  const marketUpdateMultiSig = signers[10];
+  const pauseGuardianSigner = signers[11];
+  
   const marketAdminTimelockFactory = (await ethers.getContractFactory(
     'MarketUpdateTimelock'
   )) as MarketUpdateTimelock__factory;
 
   const marketUpdateTimelock = await marketAdminTimelockFactory.deploy(
-    governorTimelock.address,
+    governorTimelockSigner.address,
     2 * 24 * 60 * 60 // This is 2 days in seconds
   );
   const marketUpdateTimelockAddress = await marketUpdateTimelock.deployed();
@@ -62,9 +43,23 @@ export async function makeMarketAdmin() {
     marketUpdateTimelockAddress.address
   );
 
-  marketUpdateProposer
-    .connect(marketUpdateMultiSig)
-    .initialize(marketUpdateTimelock.address);
+  const marketUpdaterProposerFactory = (await ethers.getContractFactory(
+    'MarketUpdateProposer'
+  )) as MarketUpdateProposer__factory;
+
+  // Fund the impersonated account
+  await signers[0].sendTransaction({
+    to: marketUpdateMultiSig.address,
+    value: ethers.utils.parseEther('1.0'), // Sending 1 Ether to cover gas fees
+  });
+
+  // This sets the owner of the MarketUpdateProposer to the marketUpdateMultiSig
+  const marketUpdateProposer = await marketUpdaterProposerFactory
+    .deploy(governorTimelockSigner.address, marketUpdateMultiSig.address, pauseGuardianSigner.address, marketUpdateTimelock.address);
+
+  expect(await marketUpdateProposer.governor()).to.be.equal(
+    governorTimelockSigner.address
+  );
 
   await marketUpdateTimelock
     .connect(governorTimelockSigner)
@@ -72,8 +67,8 @@ export async function makeMarketAdmin() {
 
   return {
     governorTimelockSigner,
-    governorTimelock,
     marketUpdateMultiSig,
+    pauseGuardianSigner,
     marketUpdateTimelock,
     marketUpdateTimelockSigner,
     marketUpdateProposer,

@@ -1,5 +1,6 @@
 import { makeMarketAdmin, advanceTimeAndMineBlock } from './market-updates-helper';
 import { expect, makeConfigurator, ethers, wait, event } from '../helpers';
+import { MarketUpdateProposer__factory } from '../../build/types';
 
 describe('MarketUpdateProposer', function() {
   // We are not checking market updates here. we are just checking interaction
@@ -16,49 +17,67 @@ describe('MarketUpdateProposer', function() {
     );
   });
 
-  it('throw error if MarketUpdateProposer is initialized twice', async () => {
-    const {
-      marketUpdateProposer,
-      marketUpdateTimelock,
-    } = await makeMarketAdmin();
-
-    await expect(
-      marketUpdateProposer.initialize(marketUpdateTimelock.address)
-    ).to.be.revertedWithCustomError(marketUpdateProposer, 'AlreadyInitialized');
-  });
-
-  it('MarketUpdateMultisig is set as the owner of MarketUpdateProposer', async () => {
+  it('MarketUpdateMultisig is set as the marketAdmin of MarketUpdateProposer', async () => {
     const {
       marketUpdateProposer,
       marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
-    expect(await marketUpdateProposer.owner()).to.equal(
+    expect(await marketUpdateProposer.marketAdmin()).to.equal(
       marketUpdateMultiSig.address
     );
   });
 
-  it('MarketUpdateMultisig can set a new owner for MarketUpdateProposer', async () => {
+  it('only GovernorTimelock can set a new governor for MarketUpdateProposer', async () => {
     const {
+      governorTimelockSigner,
       marketUpdateProposer,
-      marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
     const {
-      users: [alice],
+      users: [alice, bob],
     } = await makeConfigurator();
 
-    expect(await marketUpdateProposer.owner()).to.equal(
-      marketUpdateMultiSig.address
+    expect(await marketUpdateProposer.governor()).to.equal(
+      governorTimelockSigner.address
     );
 
     await marketUpdateProposer
-      .connect(marketUpdateMultiSig)
-      .transferOwnership(alice.address);
+      .connect(governorTimelockSigner)
+      .setGovernor(alice.address);
 
-    expect(await marketUpdateProposer.owner()).to.equal(alice.address);
+    expect(await marketUpdateProposer.governor()).to.equal(alice.address);
+    
+    await expect(
+      marketUpdateProposer.connect(bob).setGovernor(alice.address)
+    ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
   });
+  
+  it('only GovernorTimelock can set a new pause guardian for MarketUpdateProposer', async () => {
+    const {
+      governorTimelockSigner,
+      marketUpdateProposer,
+    } = await makeMarketAdmin();
 
+    const {
+      users: [alice, bob],
+    } = await makeConfigurator();
+
+    expect(await marketUpdateProposer.governor()).to.equal(
+      governorTimelockSigner.address
+    );
+
+    await marketUpdateProposer
+      .connect(governorTimelockSigner)
+      .setPauseGuardian(alice.address);
+
+    expect(await marketUpdateProposer.pauseGuardian()).to.equal(alice.address);
+    
+    await expect(
+      marketUpdateProposer.connect(bob).setPauseGuardian(alice.address)
+    ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
+  });
+  
   it('only allows MarketUpdateMultisig to create proposal', async () => {
     const {
       marketUpdateProposer,
@@ -115,7 +134,7 @@ describe('MarketUpdateProposer', function() {
           [setSupplyKinkCalldata],
           proposalDescription
         )
-    ).to.be.revertedWith('Ownable: caller is not the owner');
+    ).to.be.revertedWithCustomError(marketUpdateProposer,'Unauthorized');
   });
 
   it('keeps track of all the proposals', async () => {
@@ -254,5 +273,347 @@ describe('MarketUpdateProposer', function() {
     ).to.be.revertedWith(
       'MarketUpdateProposer::execute: proposal can only be executed if it is queued'
     );
+  });
+
+  describe('MarketUpdateProposer::permissions', function () {
+    it('should ensure the addresses are not zero while creating the contract(constructor validation)', async () => {
+      const {
+        governorTimelockSigner,
+        marketUpdateMultiSig,
+        pauseGuardianSigner,
+        marketUpdateTimelock
+      } = await makeMarketAdmin();
+      
+      const marketUpdaterProposerFactory = (await ethers.getContractFactory(
+        'MarketUpdateProposer'
+      )) as MarketUpdateProposer__factory;
+    
+      // Governor as zero address
+      await expect(marketUpdaterProposerFactory
+        .deploy(ethers.constants.AddressZero, marketUpdateMultiSig.address, pauseGuardianSigner.address, marketUpdateTimelock.address))
+        .to.be.revertedWithCustomError(marketUpdaterProposerFactory, 'InvalidAddress');
+        
+      // Market admin as zero address
+      await expect(marketUpdaterProposerFactory
+        .deploy(governorTimelockSigner.address, ethers.constants.AddressZero, pauseGuardianSigner.address, marketUpdateTimelock.address))
+        .to.be.revertedWithCustomError(marketUpdaterProposerFactory, 'InvalidAddress');
+        
+      await expect(marketUpdaterProposerFactory
+        .deploy(governorTimelockSigner.address, marketUpdateMultiSig.address, pauseGuardianSigner.address, ethers.constants.AddressZero))
+        .to.be.revertedWithCustomError(marketUpdaterProposerFactory, 'InvalidAddress');
+        
+      const marketUpdateProposer = await marketUpdaterProposerFactory
+        .deploy(governorTimelockSigner.address, marketUpdateMultiSig.address, pauseGuardianSigner.address, marketUpdateTimelock.address);
+        
+      expect(await marketUpdateProposer.governor()).to.be.equal(governorTimelockSigner.address);
+      expect(await marketUpdateProposer.marketAdmin()).to.be.equal(marketUpdateMultiSig.address);
+      expect(await marketUpdateProposer.pauseGuardian()).to.be.equal(pauseGuardianSigner.address);
+      expect(await marketUpdateProposer.timelock()).to.be.equal(marketUpdateTimelock.address);
+      
+    });
+
+    it('only governor can update a governor', async () => {
+      // include checks for pauseGuardian, marketAdmin, and nonGovernor for failure scenario
+      const {
+        governorTimelockSigner,
+        marketUpdateProposer,
+        marketUpdateMultiSig,
+        pauseGuardianSigner,
+      } = await makeMarketAdmin();
+  
+      const {
+        users: [alice, bob],
+      } = await makeConfigurator();
+      
+      expect(await marketUpdateProposer.governor()).to.be.equal(governorTimelockSigner.address);
+  
+      // Ensure only the governor can set a new governor
+      await marketUpdateProposer
+        .connect(governorTimelockSigner)
+        .setGovernor(alice.address);
+  
+      expect(await marketUpdateProposer.governor()).to.equal(alice.address);
+  
+      // failure case: market admin cannot update the governor
+      await expect(
+        marketUpdateProposer.connect(marketUpdateMultiSig).setGovernor(alice.address)
+      ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
+      
+      // failure case: pause guardian cannot update the governor
+      await expect(
+        marketUpdateProposer.connect(pauseGuardianSigner).setGovernor(alice.address)
+      ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
+      
+      // failure case: Non-governor cannot update the governor
+      await expect(
+        marketUpdateProposer.connect(bob).setGovernor(alice.address)
+      ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
+    });
+    it('only governor can update a marketAdmin', async () => {
+      // include checks for pauseGuardian, marketAdmin, and nonGovernor for failure scenario
+      const {
+        governorTimelockSigner,
+        marketUpdateProposer,
+        marketUpdateMultiSig,
+        pauseGuardianSigner,
+      } = await makeMarketAdmin();
+  
+      const {
+        users: [alice, bob],
+      } = await makeConfigurator();
+      
+      expect(await marketUpdateProposer.governor()).to.be.equal(governorTimelockSigner.address);
+  
+      // Ensure only the governor can set a new market admin
+      await marketUpdateProposer
+        .connect(governorTimelockSigner)
+        .setMarketAdmin(alice.address);
+  
+      expect(await marketUpdateProposer.marketAdmin()).to.equal(alice.address);
+  
+      // failure case: market admin cannot update the market admin
+      await expect(
+        marketUpdateProposer.connect(marketUpdateMultiSig).setMarketAdmin(alice.address)
+      ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
+      
+      // failure case: pause guardian cannot update the market admin
+      await expect(
+        marketUpdateProposer.connect(pauseGuardianSigner).setMarketAdmin(alice.address)
+      ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
+      
+      // failure case: Non-governor cannot update the market admin
+      await expect(
+        marketUpdateProposer.connect(bob).setGovernor(alice.address)
+      ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
+    });
+    it('only governor can update a pauseGuardian', async () => {
+      // include checks for pauseGuardian, marketAdmin, and nonGovernor for failure scenario
+      const {
+        governorTimelockSigner,
+        marketUpdateProposer,
+        marketUpdateMultiSig,
+      } = await makeMarketAdmin();
+  
+      const {
+        users: [alice, bob, john],
+      } = await makeConfigurator();
+      
+      expect(await marketUpdateProposer.governor()).to.be.equal(governorTimelockSigner.address);
+  
+      // Ensure only the governor can set a new pause guardian
+      await marketUpdateProposer
+        .connect(governorTimelockSigner)
+        .setPauseGuardian(alice.address);
+  
+      expect(await marketUpdateProposer.pauseGuardian()).to.equal(alice.address);
+  
+      // failure case: market admin cannot update the pause guardian
+      await expect(
+        marketUpdateProposer.connect(marketUpdateMultiSig).setPauseGuardian(bob.address)
+      ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
+      
+      // failure case: pause guardian cannot update the pause guardian
+      // alice is the pause guardian by the above governor call
+      await expect(
+        marketUpdateProposer.connect(alice).setPauseGuardian(bob.address)
+      ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
+      
+      // failure case: Non-governor cannot update the pause guardian
+      await expect(
+        marketUpdateProposer.connect(john).setGovernor(alice.address)
+      ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
+    });
+
+    it('only marketAdmin can create a proposal', async () => {
+      // include checks for pauseGuardian, and governor, and anonymous address
+      const {
+        governorTimelockSigner,
+        marketUpdateProposer,
+        marketUpdateMultiSig,
+        pauseGuardianSigner
+      } = await makeMarketAdmin();
+  
+      const { configuratorProxy, cometProxy, users: [alice] } = await makeConfigurator();
+      
+      expect(await marketUpdateProposer.marketAdmin()).to.be.equal(
+        marketUpdateMultiSig.address
+      );
+  
+      let setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
+        ['address', 'uint64'],
+        [cometProxy.address, 100]
+      );
+  
+      const proposalDescription = 'Test Proposal';
+  
+      // only MarketAdmin can create a proposal
+      await marketUpdateProposer
+        .connect(marketUpdateMultiSig)
+        .propose(
+          [configuratorProxy.address],
+          [0],
+          ['setSupplyKink(address,uint64)'],
+          [setSupplyKinkCalldata],
+          proposalDescription
+        );
+  
+      // Failure case: Governor cannot create a proposal
+      await expect(
+        marketUpdateProposer
+          .connect(governorTimelockSigner)
+          .propose(
+            [configuratorProxy.address],
+            [0],
+            ['setSupplyKink(address,uint64)'],
+            [setSupplyKinkCalldata],
+            proposalDescription
+          )
+      ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
+      
+      // Failure case: Pause guardian cannot create a proposal
+      await expect(
+        marketUpdateProposer
+          .connect(pauseGuardianSigner)
+          .propose(
+            [configuratorProxy.address],
+            [0],
+            ['setSupplyKink(address,uint64)'],
+            [setSupplyKinkCalldata],
+            proposalDescription
+          )
+      ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
+      
+      // Failure case: anonymous cannot create a proposal
+      await expect(
+        marketUpdateProposer
+          .connect(alice)
+          .propose(
+            [configuratorProxy.address],
+            [0],
+            ['setSupplyKink(address,uint64)'],
+            [setSupplyKinkCalldata],
+            proposalDescription
+          )
+      ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
+    });
+
+    it('only marketAdmin can execute a proposal', async () => {
+      // include checks for pauseGuardian, marketAdmin, and governor, and anonymous address
+      const {
+        governorTimelockSigner,
+        marketUpdateProposer,
+        marketUpdateMultiSig,
+        marketUpdateTimelock,
+        pauseGuardianSigner
+      } = await makeMarketAdmin();
+
+      const {
+        configuratorProxy,
+        configurator,
+        cometProxy,
+        users: [bob],
+      } = await makeConfigurator(
+        {governor: governorTimelockSigner}
+      );
+      
+      expect(await marketUpdateProposer.marketAdmin()).to.be.equal(
+        marketUpdateMultiSig.address
+      );
+  
+      let setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
+        ['address', 'uint64'],
+        [cometProxy.address, 100]
+      );
+  
+      const proposalDescription = 'Test Proposal';
+  
+      // only MarketAdmin can create a proposal
+      await marketUpdateProposer
+        .connect(marketUpdateMultiSig)
+        .propose(
+          [configuratorProxy.address],
+          [0],
+          ['setSupplyKink(address,uint64)'],
+          [setSupplyKinkCalldata],
+          proposalDescription
+        );
+        
+      const delay = (await marketUpdateTimelock.delay()).toNumber(); // Example: 172800 for 2 days
+      // Fast-forward time by delay + few seconds to surpass the eta
+      await advanceTimeAndMineBlock(delay);
+      
+      const proposalId = 1n;
+      
+      // Failure case: Governor cannot execute the proposal
+      await expect(
+        marketUpdateProposer.connect(governorTimelockSigner).execute(proposalId)
+      ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized'); 
+      
+      // Failure case: Pause guardian cannot execute the proposal
+      await expect(
+        marketUpdateProposer.connect(pauseGuardianSigner).execute(proposalId)
+      ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized'); 
+      
+      // Failure case: anonymous cannot execute the proposal
+      await expect(
+        marketUpdateProposer.connect(bob).execute(proposalId)
+      ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized'); 
+      
+      // Success case: only MarketAdmin can execute the proposal
+      const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+      await configuratorAsProxy.connect(governorTimelockSigner).setMarketAdmin(marketUpdateTimelock.address);
+      expect (await configuratorAsProxy.marketAdmin()).to.be.equal(marketUpdateTimelock.address);
+      await marketUpdateProposer.connect(marketUpdateMultiSig).execute(proposalId);
+    });
+    
+    it('only marketAdmin, pauseGuardian, or governor can cancel a proposal', async () => {
+      // include checks for pauseGuardian, marketAdmin, and governor, and anonymous address
+      const {
+        governorTimelockSigner,
+        marketUpdateProposer,
+        marketUpdateMultiSig,
+        pauseGuardianSigner
+      } = await makeMarketAdmin();
+  
+      const { configuratorProxy, cometProxy, users: [bob] } = await makeConfigurator();
+      
+      expect(await marketUpdateProposer.marketAdmin()).to.be.equal(
+        marketUpdateMultiSig.address
+      );
+  
+      let setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
+        ['address', 'uint64'],
+        [cometProxy.address, 100]
+      );
+  
+      const proposalDescription = 'Test Proposal';
+  
+      // only MarketAdmin can create a proposal
+      await marketUpdateProposer
+        .connect(marketUpdateMultiSig)
+        .propose(
+          [configuratorProxy.address],
+          [0],
+          ['setSupplyKink(address,uint64)'],
+          [setSupplyKinkCalldata],
+          proposalDescription
+        );
+      const proposalId = 1n;
+      
+      // Success case: Governor can cancel the proposal
+      expect(await marketUpdateProposer.connect(governorTimelockSigner).cancel(proposalId)); 
+      
+      // Success case: MarketAdmin can cancel the proposal
+      await marketUpdateProposer.connect(marketUpdateMultiSig).cancel(proposalId);
+      
+      // Success case: Pause guardian can cancel the proposal
+      expect(await marketUpdateProposer.connect(pauseGuardianSigner).cancel(proposalId)); 
+      
+      // Failure case: anonymous cannot cancel the proposal
+      await expect(
+        marketUpdateProposer.connect(bob).cancel(proposalId)
+      ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized'); 
+      
+    });
   });
 });
