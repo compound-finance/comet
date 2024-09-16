@@ -85,9 +85,9 @@ jobs:
         if: github.event.inputs.eth_pk == '' && env.GOV_NETWORK != ''
 
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v4
         with:
           node-version: '16'
 
@@ -100,7 +100,7 @@ jobs:
       - name: Check types
         run: yarn tsc
 
-      - uses: dawidd6/action-download-artifact@v2
+      - uses: dawidd6/action-download-artifact@v4
         with:
           workflow: prepare-migration.yml
           run_id: ${{ github.event.inputs.run_id }}
