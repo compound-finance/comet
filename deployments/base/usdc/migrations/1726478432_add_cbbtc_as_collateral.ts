@@ -5,7 +5,7 @@ import { calldata, exp, proposal } from '../../../../src/deploy';
 import { utils } from 'ethers';
 
 const CBBTC_ADDRESS = '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf';
-const CBBTC_USD_PRICE_FEED_ADDRESS = '0xCCADC697c55bbB68dc5bCdf8d3CBe83CdD4E071E';
+const CBBTC_USD_PRICE_FEED_ADDRESS = '0x07DA0E54543a844a80ABE69c8A12F22B3aA59f9D';
 let newPriceFeedAddress: string;
 
 export default migration('1726478432_add_cbbtc_as_collateral', {
@@ -34,7 +34,7 @@ export default migration('1726478432_add_cbbtc_as_collateral', {
       'base',
       'contracts/ERC20.sol:ERC20'
     );
-    const cbBTCPricefeed = await deploymentManager.existing(
+    const cbBTCPriceFeed = await deploymentManager.existing(
       'cbBTC:priceFeed',
       cbBTCPriceFeedAddress,
       'base'
@@ -51,7 +51,7 @@ export default migration('1726478432_add_cbbtc_as_collateral', {
 
     const newAssetConfig = {
       asset: cbBTC.address,
-      priceFeed: cbBTCPricefeed.address,
+      priceFeed: cbBTCPriceFeed.address,
       decimals: await cbBTC.decimals(),
       borrowCollateralFactor: exp(0.80, 18),
       liquidateCollateralFactor: exp(0.85, 18),
@@ -59,7 +59,7 @@ export default migration('1726478432_add_cbbtc_as_collateral', {
       supplyCap: exp(45, 8),
     };
 
-    newPriceFeedAddress = cbBTCPricefeed.address;
+    newPriceFeedAddress = cbBTCPriceFeed.address;
 
     const addAssetCalldata = await calldata(
       configurator.populateTransaction.addAsset(comet.address, newAssetConfig)
