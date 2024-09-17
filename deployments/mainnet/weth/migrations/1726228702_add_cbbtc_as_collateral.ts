@@ -4,15 +4,27 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { exp, proposal } from '../../../../src/deploy';
 
 const CBBTC_ADDRESS = '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf';
+const CBBTC_USD_PRICE_FEED = '0x2665701293fCbEB223D11A08D826563EDcCE423A';
+const ETH_USD_PRICE_FEED_ADDRESS = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
 
 let priceFeedAddress: string;
 
 export default migration('1726228702_add_cbbtc_as_collateral', {
-  async prepare() {
-    return {};
+  async prepare(deploymentManager: DeploymentManager) {
+    const _cbBTCPriceFeed = await deploymentManager.deploy(
+      'cbBTC:priceFeed',
+      'pricefeeds/ReverseMultiplicativePriceFeed.sol',
+      [
+        CBBTC_USD_PRICE_FEED,         // cbBTC / USD price feed
+        ETH_USD_PRICE_FEED_ADDRESS,   // USD / ETH price feed 
+        8,                            // decimals
+        'cbBTC / ETH price feed',     // description
+      ]
+    );
+    return { cbBTCPriceFeedAddress: _cbBTCPriceFeed.address };
   },
 
-  enact: async (deploymentManager: DeploymentManager) => {
+  enact: async (deploymentManager: DeploymentManager, _, { cbBTCPriceFeedAddress }) => {
     const trace = deploymentManager.tracer();
 
     const cbBTC = await deploymentManager.existing(
@@ -21,8 +33,12 @@ export default migration('1726228702_add_cbbtc_as_collateral', {
       'mainnet',
       'contracts/ERC20.sol:ERC20'
     );
-    const cbBTCPricefeed = await deploymentManager.fromDep('WBTC:priceFeed', 'mainnet', 'weth');
-    priceFeedAddress = cbBTCPricefeed.address;
+    const cbBTCPriceFeed = await deploymentManager.existing(
+      'cbBTC:priceFeed',
+      cbBTCPriceFeedAddress,
+      'mainnet'
+    );
+    priceFeedAddress = cbBTCPriceFeed.address;
     const {
       governor,
       comet,
@@ -32,7 +48,7 @@ export default migration('1726228702_add_cbbtc_as_collateral', {
 
     const newAssetConfig = {
       asset: cbBTC.address,
-      priceFeed: cbBTCPricefeed.address,
+      priceFeed: cbBTCPriceFeed.address,
       decimals: await cbBTC.decimals(),
       borrowCollateralFactor: exp(0.8, 18),
       liquidateCollateralFactor: exp(0.85, 18),
