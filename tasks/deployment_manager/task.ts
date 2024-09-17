@@ -215,6 +215,12 @@ task('migrate', 'Runs migration')
         governanceDm._signers.unshift(signer);
       }
 
+      if(simulate) {
+        console.log('Simulating migration without verification');
+        dm.setVerificationStrategy('lazy');
+        governanceDm.setVerificationStrategy('lazy');
+      }
+
       const migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
       const [migration] = await loadMigrations([migrationPath]);
       if (!migration) {
