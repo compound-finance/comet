@@ -100,7 +100,7 @@ jobs:
       - name: Check types
         run: yarn tsc
 
-      - uses: dawidd6/action-download-artifact@v2
+      - uses: dawidd6/action-download-artifact@v4
         with:
           workflow: prepare-migration.yml
           run_id: ${{ github.event.inputs.run_id }}
