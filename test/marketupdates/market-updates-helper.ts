@@ -14,7 +14,7 @@ export async function makeMarketAdmin() {
   const signers = await ethers.getSigners();
 
   const marketUpdateMultiSig = signers[10];
-  const pauseGuardianSigner = signers[11];
+  const proposalGuardianSigner = signers[11];
   
   const marketAdminTimelockFactory = (await ethers.getContractFactory(
     'MarketUpdateTimelock'
@@ -54,8 +54,12 @@ export async function makeMarketAdmin() {
   });
 
   // This sets the owner of the MarketUpdateProposer to the marketUpdateMultiSig
-  const marketUpdateProposer = await marketUpdaterProposerFactory
-    .deploy(governorTimelockSigner.address, marketUpdateMultiSig.address, pauseGuardianSigner.address, marketUpdateTimelock.address);
+  const marketUpdateProposer = await marketUpdaterProposerFactory.deploy(
+    governorTimelockSigner.address,
+    marketUpdateMultiSig.address,
+    proposalGuardianSigner.address,
+    marketUpdateTimelock.address
+  );
 
   expect(await marketUpdateProposer.governor()).to.be.equal(
     governorTimelockSigner.address
@@ -68,7 +72,7 @@ export async function makeMarketAdmin() {
   return {
     governorTimelockSigner,
     marketUpdateMultiSig,
-    pauseGuardianSigner,
+    proposalGuardianSigner,
     marketUpdateTimelock,
     marketUpdateTimelockSigner,
     marketUpdateProposer,

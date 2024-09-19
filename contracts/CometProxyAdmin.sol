@@ -17,8 +17,8 @@ contract CometProxyAdmin is ProxyAdmin {
     /// @notice address of the market admin pause guardian. We don't use `pauseGuardian` because we have `setPauseGuardian` which sets the pauseGuardian on comet.
     address public marketAdminPauseGuardian;
 
-    event SetMarketAdmin(address indexed oldAdmin, address indexed newAdmin);
     event MarketAdminPaused(address indexed caller, bool isMarketAdminPaused);
+    event SetMarketAdmin(address indexed oldAdmin, address indexed newAdmin);
     event SetMarketAdminPauseGuardian(
         address indexed oldPauseGuardian,
         address indexed newPauseGuardian
@@ -56,6 +56,21 @@ contract CometProxyAdmin is ProxyAdmin {
     }
 
     /**
+     * @notice Sets a new market admin pause guardian.
+     * @dev Can only be called by the owner. Reverts with Unauthorized if the caller is not the owner.
+     * @param newPauseGuardian The address of the new market admin pause guardian.
+     * Note that there is no enforced zero address check on `newPauseGuadian` as it may be a deliberate choice
+     * to assign the zero address in certain scenarios. This design allows flexibility if the zero address
+     * is intended to represent a specific state, such as temporarily disabling the pause guadian.
+     */
+    function setMarketAdminPauseGuardian(address newPauseGuardian) external {
+        if (msg.sender != owner()) revert Unauthorized();
+        address oldPauseGuardian = marketAdminPauseGuardian;
+        marketAdminPauseGuardian = newPauseGuardian;
+        emit SetMarketAdminPauseGuardian(oldPauseGuardian, newPauseGuardian);
+    }
+
+    /**
      * @notice Pauses the market admin role.
      * @dev Can only be called by the owner or the market admin pause guardian.
      * Reverts with Unauthorized if the caller is neither.
@@ -77,21 +92,6 @@ contract CometProxyAdmin is ProxyAdmin {
         if (msg.sender != owner()) revert Unauthorized();
         marketAdminPaused = false;
         emit MarketAdminPaused(msg.sender, false);
-    }
-
-    /**
-     * @notice Sets a new market admin pause guardian.
-     * @dev Can only be called by the owner. Reverts with Unauthorized if the caller is not the owner.
-     * @param newPauseGuardian The address of the new market admin pause guardian.
-     * Note that there is no enforced zero address check on `newPauseGuadian` as it may be a deliberate choice
-     * to assign the zero address in certain scenarios. This design allows flexibility if the zero address
-     * is intended to represent a specific state, such as temporarily disabling the pause guadian.
-     */
-    function setMarketAdminPauseGuardian(address newPauseGuardian) external {
-        if (msg.sender != owner()) revert Unauthorized();
-        address oldPauseGuardian = marketAdminPauseGuardian;
-        marketAdminPauseGuardian = newPauseGuardian;
-        emit SetMarketAdminPauseGuardian(oldPauseGuardian, newPauseGuardian);
     }
 
     /**

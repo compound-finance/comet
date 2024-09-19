@@ -35,7 +35,8 @@ describe('MarketUpdateTimelock', function() {
     );
   });
 
-  it('only MarketUpdateProposer or main-governor-timelock can queue transactions', async () => {
+  it('only MarketUpdateProposer can queue transactions', async () => {
+    // include checks for marketAdmin, governor, and anonymous address
     const {
       marketUpdateTimelock,
       governorTimelockSigner,
@@ -58,21 +59,7 @@ describe('MarketUpdateTimelock', function() {
     // Ensure eta is sufficiently in the future
     const eta = currentTimestamp + delay + 5; // eta is current timestamp + delay + a few seconds
 
-    // ensuring that main gover-timelock can queue transactions
-    await marketUpdateTimelock
-      .connect(governorTimelockSigner)
-      .queueTransaction(
-        configuratorProxy.address,
-        0,
-        'setSupplyKink(address, uint64)',
-        ethers.utils.defaultAbiCoder.encode(
-          ['address', 'uint64'],
-          [cometProxy.address, 100]
-        ),
-        eta
-      );
-
-    // ensuring that market update proposer can queue transactions
+    // Success case: market update proposer can queue transactions
     await marketUpdateProposer
       .connect(marketUpdateMultiSig)
       .propose(
@@ -88,7 +75,25 @@ describe('MarketUpdateTimelock', function() {
         'Setting supply kink to 100'
       );
 
-    // ensuring that none other than the main-governor-timelock or MarketUpdateProposer can queue transactions
+    // Failure case: Main Governor Timelock cannot queue transactions
+    await expect(
+      marketUpdateTimelock
+        .connect(governorTimelockSigner)
+        .queueTransaction(
+          configuratorProxy.address,
+          0,
+          'setSupplyKink(address, uint64)',
+          ethers.utils.defaultAbiCoder.encode(
+            ['address', 'uint64'],
+            [cometProxy.address, 100]
+          ),
+          eta
+        )
+    ).to.be.revertedWith(
+      'MarketUpdateTimelock::queueTransaction: Call must come from marketUpdateProposer.'
+    );
+
+    // Failure case: none other than MarketUpdateProposer can queue transactions
     await expect(
       marketUpdateTimelock
         .connect(bob)
@@ -103,11 +108,11 @@ describe('MarketUpdateTimelock', function() {
           eta
         )
     ).to.be.revertedWith(
-      'MarketUpdateTimelock::Unauthorized: call must come from governor or marketAdmin'
+      'MarketUpdateTimelock::queueTransaction: Call must come from marketUpdateProposer.'
     );
   });
 
-  it('only MarketUpdateProposer or main-governor-timelock can execute transactions', async () => {
+  it('only MarketUpdateProposer can execute transactions', async () => {
     const {
       marketUpdateTimelock,
       governorTimelockSigner,
@@ -134,37 +139,7 @@ describe('MarketUpdateTimelock', function() {
 
     let eta = currentTimestamp + delay + 5; // Ensure eta is in the future
 
-    // ensuring that main gover-timelock can execute transactions
-    await marketUpdateTimelock
-      .connect(governorTimelockSigner)
-      .queueTransaction(
-        configuratorProxy.address,
-        0,
-        'setSupplyKink(address,uint64)',
-        ethers.utils.defaultAbiCoder.encode(
-          ['address', 'uint64'],
-          [cometProxy.address, 100000]
-        ),
-        eta
-      );
-
-    // Fast-forward time by delay + few seconds to surpass the eta
-    await advanceTimeAndMineBlock(delay);
-
-    await marketUpdateTimelock
-      .connect(governorTimelockSigner)
-      .executeTransaction(
-        configuratorProxy.address,
-        0,
-        'setSupplyKink(address,uint64)',
-        ethers.utils.defaultAbiCoder.encode(
-          ['address', 'uint64'],
-          [cometProxy.address, 100000]
-        ),
-        eta
-      );
-
-    // ensuring that market update proposer can queue transactions
+    // Success case: market update proposer can execute transactions
     await marketUpdateProposer
       .connect(marketUpdateMultiSig)
       .propose(
@@ -187,18 +162,34 @@ describe('MarketUpdateTimelock', function() {
       .connect(marketUpdateMultiSig)
       .execute(proposalId);
 
-    // ensuring that none other than the main-governor-timelock or MarketUpdateProposer can execute transactions
+    // Failure case: Main Governor Timelock cannot execute transactions
 
-    // first queuing a transaction
     latestBlock = await ethers.provider.getBlock('latest');
     currentTimestamp = latestBlock.timestamp;
 
     eta = currentTimestamp + delay + 5; // Ensure eta is in the future
 
-    // ensuring that MarketUpdateProposer can execute transactions
-    await marketUpdateTimelock
+    await marketUpdateProposer
+      .connect(marketUpdateMultiSig)
+      .propose(
+        [configuratorProxy.address],
+        [0],
+        ['setSupplyKink(address,uint64)'],
+        [
+          ethers.utils.defaultAbiCoder.encode(
+            ['address', 'uint64'],
+            [cometProxy.address, 100]
+          ),
+        ],
+        'Setting supply kink to 100'
+      );
+
+    // Fast-forward time by delay + few seconds to surpass the eta
+    await advanceTimeAndMineBlock(delay);
+
+    await expect(marketUpdateTimelock
       .connect(governorTimelockSigner)
-      .queueTransaction(
+      .executeTransaction(
         configuratorProxy.address,
         0,
         'setSupplyKink(address,uint64)',
@@ -207,6 +198,29 @@ describe('MarketUpdateTimelock', function() {
           [cometProxy.address, 100000]
         ),
         eta
+      )).to.be.revertedWith('MarketUpdateTimelock::executeTransaction: Call must come from marketUpdateProposer.');
+
+    // Failure case: none other than MarketUpdateProposer can execute transactions
+
+    // first queuing a transaction
+    latestBlock = await ethers.provider.getBlock('latest');
+    currentTimestamp = latestBlock.timestamp;
+
+    eta = currentTimestamp + delay + 5; // Ensure eta is in the future
+
+    await marketUpdateProposer
+      .connect(marketUpdateMultiSig)
+      .propose(
+        [configuratorProxy.address],
+        [0],
+        ['setSupplyKink(address,uint64)'],
+        [
+          ethers.utils.defaultAbiCoder.encode(
+            ['address', 'uint64'],
+            [cometProxy.address, 100]
+          ),
+        ],
+        'Setting supply kink to 100'
       );
 
     // Fast-forward time by delay + few seconds to surpass the eta
@@ -226,11 +240,11 @@ describe('MarketUpdateTimelock', function() {
           eta
         )
     ).to.be.revertedWith(
-      'MarketUpdateTimelock::Unauthorized: call must come from governor or marketAdmin'
+      'MarketUpdateTimelock::executeTransaction: Call must come from marketUpdateProposer.'
     );
   });
 
-  it('only MarketUpdateProposer or main-governor-timelock can cancel transactions', async () => {
+  it('only MarketUpdateProposer can cancel transactions', async () => {
     const {
       marketUpdateTimelock,
       governorTimelockSigner,
@@ -258,34 +272,7 @@ describe('MarketUpdateTimelock', function() {
 
     let eta = currentTimestamp + delay + 5; // Ensure eta is in the future
 
-    // ensuring that main governor-timelock can cancel transactions
-    await marketUpdateTimelock
-      .connect(governorTimelockSigner)
-      .queueTransaction(
-        configuratorProxy.address,
-        0,
-        'setSupplyKink(address,uint64)',
-        ethers.utils.defaultAbiCoder.encode(
-          ['address', 'uint64'],
-          [cometProxy.address, 100000]
-        ),
-        eta
-      );
-
-    await marketUpdateTimelock
-      .connect(governorTimelockSigner)
-      .cancelTransaction(
-        configuratorProxy.address,
-        0,
-        'setSupplyKink(address,uint64)',
-        ethers.utils.defaultAbiCoder.encode(
-          ['address', 'uint64'],
-          [cometProxy.address, 100000]
-        ),
-        eta
-      );
-
-    // ensuring that MarketUpdateProposer can cancel transactions
+    // Success case: MarketUpdateProposer can cancel transactions
     await marketUpdateProposer
       .connect(marketUpdateMultiSig)
       .propose(
@@ -324,18 +311,25 @@ describe('MarketUpdateTimelock', function() {
       false
     );
 
-    // ensuring that none other than the main-governor-timelock or MarketUpdateProposer can execute transactions
+    // Failure case: Main Governor Timelock cannot cancel transactions
+    await marketUpdateProposer
+      .connect(marketUpdateMultiSig)
+      .propose(
+        [configuratorProxy.address],
+        [0],
+        ['setSupplyKink(address,uint64)'],
+        [
+          ethers.utils.defaultAbiCoder.encode(
+            ['address', 'uint64'],
+            [cometProxy.address, 100]
+          ),
+        ],
+        'Setting supply kink to 100'
+      );
 
-    // first queuing a transaction
-    latestBlock = await ethers.provider.getBlock('latest');
-    currentTimestamp = latestBlock.timestamp;
-
-    eta = currentTimestamp + delay + 5; // Ensure eta is in the future
-
-    // ensuring that MarketUpdateProposer can execute transactions
-    await marketUpdateTimelock
+    await expect(marketUpdateTimelock
       .connect(governorTimelockSigner)
-      .queueTransaction(
+      .cancelTransaction(
         configuratorProxy.address,
         0,
         'setSupplyKink(address,uint64)',
@@ -344,6 +338,29 @@ describe('MarketUpdateTimelock', function() {
           [cometProxy.address, 100000]
         ),
         eta
+      )).to.be.revertedWith('MarketUpdateTimelock::cancelTransaction: Call must come from marketUpdateProposer.');
+
+    // Failure case: none other than MarketUpdateProposer can execute transactions
+
+    // first queuing a transaction
+    latestBlock = await ethers.provider.getBlock('latest');
+    currentTimestamp = latestBlock.timestamp;
+
+    eta = currentTimestamp + delay + 5; // Ensure eta is in the future
+
+    await marketUpdateProposer
+      .connect(marketUpdateMultiSig)
+      .propose(
+        [configuratorProxy.address],
+        [0],
+        ['setSupplyKink(address,uint64)'],
+        [
+          ethers.utils.defaultAbiCoder.encode(
+            ['address', 'uint64'],
+            [cometProxy.address, 100]
+          ),
+        ],
+        'Setting supply kink to 100'
       );
 
     await expect(
@@ -360,7 +377,7 @@ describe('MarketUpdateTimelock', function() {
           eta
         )
     ).to.be.revertedWith(
-      'MarketUpdateTimelock::Unauthorized: call must come from governor or marketAdmin'
+      'MarketUpdateTimelock::cancelTransaction: Call must come from marketUpdateProposer.'
     );
   });
 

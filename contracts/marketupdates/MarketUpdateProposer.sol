@@ -7,12 +7,15 @@ import "./../ITimelock.sol";
 * @title MarketUpdateProposer
 * @notice This contract allows for the creation of proposals that can be executed by the timelock
 * @dev This contract is used to propose market updates
-* Here owner will be the market update multi-sig. The owner can set the new owner by calling `transferOwnership`.
-* If multi-sig is compromised, the new owner will only be able to call timelock. marketUpdatePauseGuardian in
-* Configurator or CometProxyAdmin can pause these updated.
+* Few important points to note:
+* 1) The marketAdmin can propose updates. The marketAdmin can be set by the governor. marketAdmin will be a multi-sig.
+* 2) Here governor is the main-governor-timelock. This terminology(using governor as variable for timelock) is for
+*    consistency with Configurator.sol.
+* 3) If marketAdmin/multi-sig is compromised, the new marketAdmin can be set by the governor.
+* 4) While the marketAdmin/multi-sig is compromised, the new marketAdmin can propose updates. But those updates will be
+*    sent to timelock and can be paused by the marketAdminPauseGuardian Configurator and CometProxyAdmin.
+* 5) The proposalGuardian can also be used for the same purpose and can cancel the proposal.
 *
-* Other logic can be that only main-governor-timelock can update the owner of this contract, but that logic can be an
-* overkill
 *
 */
 contract MarketUpdateProposer {
@@ -55,7 +58,7 @@ contract MarketUpdateProposer {
     }
 
     address public governor;
-    address public pauseGuardian;
+    address public proposalGuardian;
     address public marketAdmin;
     ITimelock public timelock;
 
@@ -64,31 +67,31 @@ contract MarketUpdateProposer {
     /// @notice The total number of proposals
     uint public proposalCount;
 
-    /// @notice Initial proposal id set at become
+    /// @notice The initial proposal ID, set when the contract is deployed
     uint public initialProposalId = 0;
 
     /// @notice An event emitted when a new proposal is created
     event MarketUpdateProposalCreated(uint id, address proposer, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, string description);
     event MarketUpdateProposalExecuted(uint id);
     event MarketUpdateProposalCancelled(uint id);
-    event SetPauseGuardian(address indexed oldPauseGuardian, address indexed newPauseGuardian);
+    event SetProposalGuardian(address indexed oldProposalGuardian, address indexed newProposalGuardian);
     event SetMarketAdmin(address indexed oldAdmin, address indexed newAdmin);
     event SetGovernor(address indexed oldGovernor, address indexed newGovernor);
 
     error Unauthorized();
     error InvalidAddress();
 
-    constructor(address governor_, address marketAdmin_, address pauseGuardian_, ITimelock timelock_) public {
+    constructor(address governor_, address marketAdmin_, address proposalGuardian_, ITimelock timelock_) public {
         if (address(governor_) == address(0) || address(marketAdmin_) == address(0) || address(timelock_) == address(0)) revert InvalidAddress();
         governor = governor_;
         marketAdmin = marketAdmin_;
-        pauseGuardian = pauseGuardian_;
+        proposalGuardian = proposalGuardian_;
         timelock = timelock_;
     }
     
     /**
      * @notice Transfers the governor rights to a new address
-     * @dev Can only be called by the governor. Reverts with Unauthorized if the caller is not the owner.
+     * @dev Can only be called by the governor. Reverts with Unauthorized if the caller is not the governor.
      * Emits an event with the old and new governor addresses.
      * @param newGovernor The address of the new governor.
      */
@@ -102,19 +105,19 @@ contract MarketUpdateProposer {
     }
     
     /**
-     * @notice Sets a new pause guardian.
+     * @notice Sets a new proposalGuardian.
      * @dev Can only be called by the governor. Reverts with Unauthorized if the caller is not the owner.
-     * Emits an event with the old and new pause guardian addresses.
-     * Note that there is no enforced zero address check on `newPauseGuadian` as it may be a deliberate choice
+     * Emits an event with the old and new proposalGuardian addresses.
+     * Note that there is no enforced zero address check on `newProposalGuardian` as it may be a deliberate choice
      * to assign the zero address in certain scenarios. This design allows flexibility if the zero address
-     * is intended to represent a specific state, such as temporarily disabling the pause guadian.
-     * @param newPauseGuardian The address of the new market admin pause guardian.
+     * is intended to represent a specific state, such as temporarily disabling the proposalGuardian.
+     * @param newProposalGuardian The address of the new market admin proposalGuardian.
      */
-    function setPauseGuardian(address newPauseGuardian) external {
+    function setProposalGuardian(address newProposalGuardian) external {
         if (msg.sender != governor) revert Unauthorized();
-        address oldPauseGuardian = pauseGuardian;
-        pauseGuardian = newPauseGuardian;
-        emit SetPauseGuardian(oldPauseGuardian, newPauseGuardian);
+        address oldProposalGuardian = proposalGuardian;
+        proposalGuardian = newProposalGuardian;
+        emit SetProposalGuardian(oldProposalGuardian, newProposalGuardian);
     }
 
     /**
@@ -188,11 +191,11 @@ contract MarketUpdateProposer {
     }
 
     /**
-      * @notice Cancels a proposal only if sender is the proposer, or proposer delegates dropped below proposal threshold
+      * @notice Cancels a proposal only if sender is the proposer, proposalGuardian, or marketAdmin, and the proposal is not already executed
       * @param proposalId The id of the proposal to cancel
       */
     function cancel(uint proposalId) external {
-        if (msg.sender != governor && msg.sender != pauseGuardian && msg.sender != marketAdmin) revert Unauthorized();
+        if (msg.sender != governor && msg.sender != proposalGuardian && msg.sender != marketAdmin) revert Unauthorized();
         require(state(proposalId) != ProposalState.Executed, "MarketUpdateProposer::cancel: cannot cancel executed proposal");
 
         MarketUpdateProposal storage proposal = proposals[proposalId];
@@ -226,31 +229,31 @@ contract MarketUpdateProposer {
     }
 
     function getProposal(uint proposalId) public view
-    returns (
-        uint id,
-        address proposer,
-        uint eta,
-        address[] memory targets,
-        uint[] memory values,
-        string[] memory signatures,
-        bytes[] memory calldatas,
-        string memory description,
-        bool canceled,
-        bool executed
-            )
-        {
-            MarketUpdateProposal storage proposal = proposals[proposalId];
-            return (
-                proposal.id,
-                proposal.proposer,
-                proposal.eta,
-                proposal.targets,
-                proposal.values,
-                proposal.signatures,
-                proposal.calldatas,
-                proposal.description,
-                proposal.canceled,
-                proposal.executed
-            );
-        }
+        returns (
+            uint id,
+            address proposer,
+            uint eta,
+            address[] memory targets,
+            uint[] memory values,
+            string[] memory signatures,
+            bytes[] memory calldatas,
+            string memory description,
+            bool canceled,
+            bool executed
+        )
+    {
+        MarketUpdateProposal storage proposal = proposals[proposalId];
+        return (
+            proposal.id,
+            proposal.proposer,
+            proposal.eta,
+            proposal.targets,
+            proposal.values,
+            proposal.signatures,
+            proposal.calldatas,
+            proposal.description,
+            proposal.canceled,
+            proposal.executed
+        );
+    }
 }
