@@ -106,6 +106,8 @@ contract CometExtendedAssetList is CometMainInterface {
     /// @notice The address of the asset list
     address immutable public assetList;
 
+    uint8 internal constant MAX_ASSETS_FOR_ASSET_LIST = 24;
+
     /**
      * @notice Construct a new protocol instance
      * @param config The mapping of initial/constant parameters
@@ -115,6 +117,7 @@ contract CometExtendedAssetList is CometMainInterface {
         uint8 decimals_ = IERC20NonStandard(config.baseToken).decimals();
         if (decimals_ > MAX_BASE_DECIMALS) revert BadDecimals();
         if (config.storeFrontPriceFactor > FACTOR_SCALE) revert BadDiscount();
+        if (config.assetConfigs.length > MAX_ASSETS_FOR_ASSET_LIST) revert TooManyAssets();
         if (config.baseMinForRewards == 0) revert BadMinimum();
         if (IPriceFeed(config.baseTokenPriceFeed).decimals() != PRICE_FEED_DECIMALS) revert BadDecimals();
 
@@ -377,6 +380,7 @@ contract CometExtendedAssetList is CometMainInterface {
         }
 
         uint16 assetsIn = userBasic[account].assetsIn;
+        uint8 _reserved = userBasic[account]._reserved;
         int liquidity = signedMulPrice(
             presentValue(principal),
             getPrice(baseTokenPriceFeed),
@@ -384,7 +388,7 @@ contract CometExtendedAssetList is CometMainInterface {
         );
 
         for (uint8 i = 0; i < numAssets; ) {
-            if (isInAsset(assetsIn, i)) {
+            if (isInAsset(assetsIn, i, _reserved)) {
                 if (liquidity >= 0) {
                     return true;
                 }
@@ -419,6 +423,7 @@ contract CometExtendedAssetList is CometMainInterface {
         }
 
         uint16 assetsIn = userBasic[account].assetsIn;
+        uint8 _reserved = userBasic[account]._reserved;
         int liquidity = signedMulPrice(
             presentValue(principal),
             getPrice(baseTokenPriceFeed),
@@ -426,7 +431,7 @@ contract CometExtendedAssetList is CometMainInterface {
         );
 
         for (uint8 i = 0; i < numAssets; ) {
-            if (isInAsset(assetsIn, i)) {
+            if (isInAsset(assetsIn, i, _reserved)) {
                 if (liquidity >= 0) {
                     return false;
                 }
@@ -580,9 +585,17 @@ contract CometExtendedAssetList is CometMainInterface {
 
     /**
      * @dev Whether user has a non-zero balance of an asset, given assetsIn flags
+     * @dev _reserved is used to check bits 16-23 of assetsIn
      */
-    function isInAsset(uint16 assetsIn, uint8 assetOffset) internal pure returns (bool) {
-        return (assetsIn & (uint16(1) << assetOffset) != 0);
+    function isInAsset(uint16 assetsIn, uint8 assetOffset, uint8 _reserved) internal pure returns (bool) {
+        if (assetOffset < 16) {
+            // check bit in assetsIn (for bits 0-15)
+            return (assetsIn & (uint16(1) << assetOffset)) != 0;
+        } else if (assetOffset < 24) {
+            // check bit in reserved (for bits 16-23)
+            return (_reserved & (uint8(1) << (assetOffset - 16))) != 0;
+        }
+        return false; // if assetOffset >= 24 (should not happen)
     }
 
     /**
@@ -596,10 +609,22 @@ contract CometExtendedAssetList is CometMainInterface {
     ) internal {
         if (initialUserBalance == 0 && finalUserBalance != 0) {
             // set bit for asset
-            userBasic[account].assetsIn |= (uint16(1) << assetInfo.offset);
+            if (assetInfo.offset < 16) {
+                // set bit in assetsIn for bits 0-15
+                userBasic[account].assetsIn |= (uint16(1) << assetInfo.offset);
+            } else if (assetInfo.offset < 24) {
+                // set bit in _reserved for bits 16-23
+                userBasic[account]._reserved |= (uint8(1) << (assetInfo.offset - 16));
+            }
         } else if (initialUserBalance != 0 && finalUserBalance == 0) {
             // clear bit for asset
-            userBasic[account].assetsIn &= ~(uint16(1) << assetInfo.offset);
+            if (assetInfo.offset < 16) {
+                // clear bit in assetsIn for bits 0-15
+                userBasic[account].assetsIn &= ~(uint16(1) << assetInfo.offset);
+            } else if (assetInfo.offset < 24) {
+                // clear bit in _reserved for bits 16-23
+                userBasic[account]._reserved &= ~(uint8(1) << (assetInfo.offset - 16));
+            }
         }
     }
 
@@ -1035,12 +1060,13 @@ contract CometExtendedAssetList is CometMainInterface {
         int104 oldPrincipal = accountUser.principal;
         int256 oldBalance = presentValue(oldPrincipal);
         uint16 assetsIn = accountUser.assetsIn;
+        uint8 _reserved = accountUser._reserved;
 
         uint256 basePrice = getPrice(baseTokenPriceFeed);
         uint256 deltaValue = 0;
 
         for (uint8 i = 0; i < numAssets; ) {
-            if (isInAsset(assetsIn, i)) {
+            if (isInAsset(assetsIn, i, _reserved)) {
                 AssetInfo memory assetInfo = getAssetInfo(i);
                 address asset = assetInfo.asset;
                 uint128 seizeAmount = userCollateral[account][asset].balance;
@@ -1067,6 +1093,7 @@ contract CometExtendedAssetList is CometMainInterface {
 
         // reset assetsIn
         userBasic[account].assetsIn = 0;
+        userBasic[account]._reserved = 0;
 
         (uint104 repayAmount, uint104 supplyAmount) = repayAndSupplyAmount(oldPrincipal, newPrincipal);
 
