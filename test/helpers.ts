@@ -7,6 +7,7 @@ import {
   BaseBulker,
   BaseBulker__factory,
   CometExt,
+  CometExt__factory,
   CometExtAssetList__factory,
   CometHarness__factory,
   CometHarnessInterface as Comet,
@@ -282,8 +283,8 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
   let extensionDelegate = opts.extensionDelegate;
   if (extensionDelegate === undefined) {
-    const CometExtFactory = (await ethers.getContractFactory('CometExtAssetList')) as CometExtAssetList__factory;
-    extensionDelegate = await CometExtFactory.deploy({ name32, symbol32 }, assetListFactory.address);
+    const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
+    extensionDelegate = await CometExtFactory.deploy({ name32, symbol32 });
     await extensionDelegate.deployed();
   }
 
@@ -310,7 +311,7 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     baseBorrowMin,
     targetReserves,
     assetConfigs: Object.entries(assets).reduce((acc, [symbol, config], _i) => {
-      if (symbol != base && _i < 12) {
+      if (symbol != base && _i <= 12) {
         acc.push({
           asset: tokens[symbol].address,
           priceFeed: priceFeeds[symbol].address,
@@ -341,7 +342,13 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     }
     return acc;
   }, []);
-
+  let extensionDelegateAssetList = opts.extensionDelegate;
+  if (extensionDelegateAssetList === undefined) {
+    const CometExtFactory = (await ethers.getContractFactory('CometExtAssetList')) as CometExtAssetList__factory;
+    extensionDelegateAssetList = await CometExtFactory.deploy({ name32, symbol32 }, assetListFactory.address);
+    await extensionDelegateAssetList.deployed();
+  }
+  config.extensionDelegate = extensionDelegateAssetList.address;
   const CometFactoryExtendedAssetList = (await ethers.getContractFactory('CometHarnessExtendedAssetList')) as CometHarnessExtendedAssetList__factory;
 
   const cometExtendedAssetList = await CometFactoryExtendedAssetList.deploy(config);
