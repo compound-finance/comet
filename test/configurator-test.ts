@@ -1,5 +1,10 @@
 import { annualize, defactor, defaultAssets, ethers, event, exp, expect, factor, makeConfigurator, Numeric, truncateDecimals, wait } from './helpers';
-import { CometModifiedFactory__factory, SimplePriceFeed__factory, SimpleTimelock__factory } from '../build/types';
+import {
+  CometModifiedFactory__factory,
+  MarketAdminPermissionChecker__factory,
+  SimplePriceFeed__factory,
+  SimpleTimelock__factory
+} from '../build/types';
 import { AssetInfoStructOutput } from '../build/types/CometHarnessInterface';
 import { ConfigurationStructOutput } from '../build/types/Configurator';
 import { BigNumber } from 'ethers';
@@ -97,7 +102,17 @@ describe('configurator', function () {
   it('reverts if deploy is called from non-governor', async () => {
     const { configuratorProxy, proxyAdmin, cometProxy, users: [alice] } = await makeConfigurator();
 
-    await expect(proxyAdmin.connect(alice).deployAndUpgradeTo(configuratorProxy.address, cometProxy.address)).to.be.revertedWith('Ownable: caller is not the owner');
+    const MarketAdminPermissionCheckerFactory = (await ethers.getContractFactory(
+      'MarketAdminPermissionChecker'
+    )) as MarketAdminPermissionChecker__factory;
+
+
+    const marketAdminPermissionCheckerContract =  await MarketAdminPermissionCheckerFactory.deploy(
+      ethers.constants.AddressZero,
+      ethers.constants.AddressZero
+    );
+
+    await expect(proxyAdmin.connect(alice).deployAndUpgradeTo(configuratorProxy.address, cometProxy.address)).to.be.revertedWithCustomError(marketAdminPermissionCheckerContract, 'Unauthorized');
   });
 
   it('e2e governance actions from timelock', async () => {

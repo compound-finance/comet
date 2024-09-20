@@ -6,7 +6,6 @@ import {
   wait,
   getConfiguration,
   sameAddress,
-  COMP_WHALES,
   getConfigurationStruct
 } from '../../../src/deploy';
 import '@nomiclabs/hardhat-ethers';
@@ -43,7 +42,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const signer = await deploymentManager.getSigner();
   const ethers = deploymentManager.hre.ethers;
   const admin = signer;
-  const voterAddress = COMP_WHALES.testnet[0];
 
   // Deploy governance contracts
   const clone = {
@@ -383,28 +381,23 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 
   const signers = await ethers.getSigners();
 
-  // 1) Deploy the address of MarketAdminMultiSig
-  const marketUpdateMultiSig = signers[3];
-
-  const marketUpdateProposer = await deploymentManager.deploy(
-    'marketUpdateProposer',
-    'marketupdates/MarketUpdateProposer.sol',
-    [],
-    maybeForce()
-  ) as MarketUpdateProposer;
-
-
-
-  const marketUpdateTimelock = await deploymentManager.deploy(
+  const marketUpdateTimelock = (await deploymentManager.deploy(
     'marketUpdateTimelock',
     'marketupdates/MarketUpdateTimelock.sol',
     [governor, 2 * 24 * 60 * 60],
     maybeForce()
-  ) as MarketUpdateTimelock;
+  )) as MarketUpdateTimelock;
 
-  await marketUpdateProposer.initialize(marketUpdateTimelock.address);
+  // 1) Deploy the address of MarketAdminMultiSig
+  const marketUpdateMultiSig = signers[3];
+  const proposalGuardian = signers[11];
 
-  await marketUpdateProposer.transferOwnership(marketUpdateMultiSig.address);
+  const marketUpdateProposer = await deploymentManager.deploy(
+    'marketUpdateProposer',
+    'marketupdates/MarketUpdateProposer.sol',
+    [governor, marketUpdateMultiSig.address, proposalGuardian.address, marketUpdateTimelock.address],
+    maybeForce()
+  ) as MarketUpdateProposer;
 
   const cometProxyAdminNew = await deploymentManager.deploy(
     'cometProxyAdminNew',
@@ -422,37 +415,74 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     maybeForce()
   );
 
+  const marketAdminPermissionChecker = await deploymentManager.deploy(
+    'marketAdminPermissionChecker',
+    'marketupdates/MarketAdminPermissionChecker.sol',
+    [ethers.constants.AddressZero, ethers.constants.AddressZero],
+    maybeForce()
+  );
+
+  await marketAdminPermissionChecker.transferOwnership(
+    governor
+  );
+
   const newSupplyKinkByGovernorTimelock = 300n;
 
   trace('Trigger updates to enable market admin');
-  const firstProposalTxn = await governorBravo.connect(admin).propose(
-    [
-      cometProxyAdminOld.address,
-      cometProxyAdminOld.address,
-      cometProxyAdminNew.address,
-      configuratorProxyContract.address,
-      cometProxyAdminNew.address,
-      marketUpdateTimelock.address
-    ],
-    [0, 0, 0, 0, 0, 0],
-    [
-      'changeProxyAdmin(address,address)',
-      'changeProxyAdmin(address,address)',
-      'upgrade(address,address)',
-      'setMarketAdmin(address)',
-      'setMarketAdmin(address)',
-      'setMarketUpdateProposer(address)',
-    ],
-    [
-      ethers.utils.defaultAbiCoder.encode(['address', 'address'], [configuratorProxyContract.address, cometProxyAdminNew.address]),
-      ethers.utils.defaultAbiCoder.encode(['address', 'address'], [cometProxy.address, cometProxyAdminNew.address]),
-      ethers.utils.defaultAbiCoder.encode(['address', 'address'], [configuratorProxyContract.address, configuratorNew.address]),
-      ethers.utils.defaultAbiCoder.encode(['address'], [marketUpdateTimelock.address]),
-      ethers.utils.defaultAbiCoder.encode(['address'], [marketUpdateTimelock.address]),
-      ethers.utils.defaultAbiCoder.encode(['address'], [marketUpdateProposer.address])
-    ],
-    'Proposal to trigger updates for market admin'
-  );
+  const firstProposalTxn = await governorBravo
+    .connect(admin)
+    .propose(
+      [
+        cometProxyAdminOld.address,
+        cometProxyAdminOld.address,
+        cometProxyAdminNew.address,
+        marketAdminPermissionChecker.address,
+        configuratorProxyContract.address,
+        cometProxyAdminNew.address,
+        marketUpdateTimelock.address,
+      ],
+      [0, 0, 0, 0, 0, 0, 0],
+      [
+        'changeProxyAdmin(address,address)',
+        'changeProxyAdmin(address,address)',
+        'upgrade(address,address)',
+        'setMarketAdmin(address)',
+        'setMarketAdminPermissionChecker(address)',
+        'setMarketAdminPermissionChecker(address)',
+        'setMarketUpdateProposer(address)',
+      ],
+      [
+        ethers.utils.defaultAbiCoder.encode(
+          ['address', 'address'],
+          [configuratorProxyContract.address, cometProxyAdminNew.address]
+        ),
+        ethers.utils.defaultAbiCoder.encode(
+          ['address', 'address'],
+          [cometProxy.address, cometProxyAdminNew.address]
+        ),
+        ethers.utils.defaultAbiCoder.encode(
+          ['address', 'address'],
+          [configuratorProxyContract.address, configuratorNew.address]
+        ),
+        ethers.utils.defaultAbiCoder.encode(
+          ['address'],
+          [marketUpdateTimelock.address]
+        ),
+        ethers.utils.defaultAbiCoder.encode(
+          ['address'],
+          [marketAdminPermissionChecker.address]
+        ),
+        ethers.utils.defaultAbiCoder.encode(
+          ['address'],
+          [marketAdminPermissionChecker.address]
+        ),
+        ethers.utils.defaultAbiCoder.encode(
+          ['address'],
+          [marketUpdateProposer.address]
+        ),
+      ],
+      'Proposal to trigger updates for market admin'
+    );
   const firstProposalReceipt = await firstProposalTxn.wait();
 
   const firstProposalID = firstProposalReceipt.events.find( 

@@ -68,7 +68,7 @@ contract MarketUpdateProposer {
     uint public proposalCount;
 
     /// @notice The initial proposal ID, set when the contract is deployed
-    uint public initialProposalId = 0;
+    uint public initialProposalId;
 
     /// @notice An event emitted when a new proposal is created
     event MarketUpdateProposalCreated(uint id, address proposer, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, string description);

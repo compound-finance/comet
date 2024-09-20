@@ -32,6 +32,7 @@ import {
   CometInterface,
   NonStandardFaucetFeeToken,
   NonStandardFaucetFeeToken__factory,
+  MarketAdminPermissionChecker, MarketAdminPermissionChecker__factory,
 } from '../build/types';
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
@@ -87,6 +88,7 @@ export type ProtocolOpts = {
   baseBorrowMin?: Numeric;
   targetReserves?: Numeric;
   baseTokenBalance?: Numeric;
+  marketAdminPermissionCheckerContract?: MarketAdminPermissionChecker;
 };
 
 export type Protocol = {
@@ -470,11 +472,29 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     initializeCalldata,
   );
   await configuratorProxy.deployed();
-  
+
   // Set the initial factory and configuration for Comet in Configurator
   const configuratorAsProxy = configurator.attach(configuratorProxy.address);
   await configuratorAsProxy.connect(governor).setConfiguration(cometProxy.address, configuration);
   await configuratorAsProxy.connect(governor).setFactory(cometProxy.address, cometFactory.address);
+
+  if(opts.marketAdminPermissionCheckerContract) {
+    await configuratorAsProxy.connect(governor).setMarketAdminPermissionChecker(opts.marketAdminPermissionCheckerContract.address);
+    await proxyAdmin.connect(governor).setMarketAdminPermissionChecker(opts.marketAdminPermissionCheckerContract.address);
+  } else {
+    const MarketAdminPermissionCheckerFactory = (await ethers.getContractFactory(
+      'MarketAdminPermissionChecker'
+    )) as MarketAdminPermissionChecker__factory;
+
+    const marketAdminPermissionCheckerContract =  await MarketAdminPermissionCheckerFactory.deploy(
+      ethers.constants.AddressZero,
+      ethers.constants.AddressZero
+    );
+
+    await configuratorAsProxy.connect(governor).setMarketAdminPermissionChecker(marketAdminPermissionCheckerContract.address);
+    await proxyAdmin.connect(governor).setMarketAdminPermissionChecker(marketAdminPermissionCheckerContract.address);
+  }
+
   return {
     opts,
     governor,

@@ -2,6 +2,7 @@
 pragma solidity 0.8.15;
 
 import "./CometConfiguration.sol";
+import "./marketupdates/MarketAdminPermissionCheckerInterface.sol";
 
 /**
  * @title Compound's Comet Configuration Storage Interface
@@ -25,12 +26,6 @@ contract ConfiguratorStorage is CometConfiguration {
     /// @notice Mapping of Comet proxy addresses to their Comet factory contracts
     mapping(address => address) public factory;
 
-    /// @notice The address of the market admin. This will be the address of a timelock contract.
-    address public marketAdmin;
-    
-    /// @notice Pause flag for the market admin
-    bool public marketAdminPaused;
-
-    /// @notice address of the market admin pause guardian. We don't use `pauseGuardian` role because we have `setPauseGuardian` already which sets the pauseGuardian on comet.
-    address public marketAdminPauseGuardian;
+    /// @notice MarketAdminPermissionChecker contract which is used to check if the caller has permission to perform market updates
+    MarketAdminPermissionCheckerInterface public marketAdminPermissionChecker;
 }

@@ -36,8 +36,8 @@ describe('CometProxyAdmin', function() {
   it('market admin cannot transferOwnership of CometProxyAdmin', async () => {
     const {
       governorTimelockSigner,
-      marketUpdateTimelock,
       marketUpdateTimelockSigner,
+      marketAdminPermissionCheckerContract
     } = await makeMarketAdmin();
 
     const {
@@ -45,15 +45,12 @@ describe('CometProxyAdmin', function() {
       users: [alice],
     } = await makeConfigurator({
       governor: governorTimelockSigner,
+      marketAdminPermissionCheckerContract
     });
 
-    await proxyAdmin
-      .connect(governorTimelockSigner)
-      .setMarketAdmin(marketUpdateTimelock.address);
+    expect(await proxyAdmin.marketAdminPermissionChecker()).to.be.equal(marketAdminPermissionCheckerContract.address);
+    expect(await marketAdminPermissionCheckerContract.marketAdmin()).to.be.equal(marketUpdateTimelockSigner.address);
 
-    expect(await proxyAdmin.marketAdmin()).to.be.equal(
-      marketUpdateTimelock.address
-    );
 
     await expect(
       proxyAdmin
@@ -62,183 +59,12 @@ describe('CometProxyAdmin', function() {
     ).to.be.revertedWith('Ownable: caller is not the owner');
   });
 
-  it('only main-governor-timelock can set or update marketAdminPauseGuardian', async () => {
-    const {
-      governorTimelockSigner,
-      marketUpdateTimelock,
-      marketUpdateMultiSig,
-      marketUpdateTimelockSigner,
-    } = await makeMarketAdmin();
 
-    const {
-      proxyAdmin,
-      users: [alice],
-    } = await makeConfigurator({
-      governor: governorTimelockSigner,
-    });
-
-    const oldMarketAdminPauseGuardian = await proxyAdmin.marketAdminPauseGuardian();
-    expect(oldMarketAdminPauseGuardian).to.be.equal(
-      ethers.constants.AddressZero
-    );
-
-    const txn = await wait(
-      proxyAdmin
-        .connect(governorTimelockSigner)
-        .setMarketAdminPauseGuardian(alice.address)
-    );
-    expect(event(txn, 0)).to.be.deep.equal({
-      SetMarketAdminPauseGuardian: {
-        oldPauseGuardian: oldMarketAdminPauseGuardian,
-        newPauseGuardian: alice.address,
-      },
-    });
-    const newMarketAdminPauseGuardian = await proxyAdmin.marketAdminPauseGuardian();
-    expect(newMarketAdminPauseGuardian).to.be.equal(alice.address);
-    expect(newMarketAdminPauseGuardian).to.be.not.equal(
-      oldMarketAdminPauseGuardian
-    );
-    await expect(
-      proxyAdmin
-        .connect(marketUpdateMultiSig)
-        .setMarketAdminPauseGuardian(marketUpdateTimelock.address)
-    ).to.be.revertedWithCustomError(proxyAdmin, 'Unauthorized');
-
-    await expect(
-      proxyAdmin
-        .connect(marketUpdateTimelockSigner)
-        .setMarketAdminPauseGuardian(marketUpdateTimelock.address)
-    ).to.be.revertedWithCustomError(proxyAdmin, 'Unauthorized');
-  });
-
-  it('main-governor-timelock can pause and unpause market admin', async () => {
-    const { governorTimelockSigner } = await makeMarketAdmin();
-    const { proxyAdmin } = await makeConfigurator({
-      governor: governorTimelockSigner,
-    });
-
-    expect(await proxyAdmin.marketAdminPaused()).to.be.false;
-
-    const txnOfPause = await wait(
-      proxyAdmin.connect(governorTimelockSigner).pauseMarketAdmin()
-    );
-
-    expect(event(txnOfPause, 0)).to.be.deep.equal({
-      MarketAdminPaused: {
-        isMarketAdminPaused: true,
-      },
-    });
-    expect(await proxyAdmin.marketAdminPaused()).to.be.true;
-
-    const txnOfUnpause = await wait(
-      proxyAdmin.connect(governorTimelockSigner).unpauseMarketAdmin()
-    );
-
-    expect(event(txnOfUnpause, 0)).to.be.deep.equal({
-      MarketAdminPaused: {
-        isMarketAdminPaused: false,
-      },
-    });
-    expect(await proxyAdmin.marketAdminPaused()).to.be.false;
-  });
-
-  it('marketAdminPauseGuardian can pause market admin', async () => {
-    const {
-      governorTimelockSigner,
-      marketUpdateTimelock,
-      marketUpdateMultiSig,
-      marketUpdateProposer,
-    } = await makeMarketAdmin();
-
-    const {
-      configuratorProxy,
-      cometProxy,
-      proxyAdmin,
-      users: [alice],
-    } = await makeConfigurator({
-      governor: governorTimelockSigner,
-    });
-
-    expect(await proxyAdmin.marketAdminPaused()).to.be.false;
-
-    await proxyAdmin
-      .connect(governorTimelockSigner)
-      .setMarketAdminPauseGuardian(alice.address);
-
-    expect(await proxyAdmin.marketAdminPauseGuardian()).to.be.equal(
-      alice.address
-    );
-
-    const txn = await wait(proxyAdmin.connect(alice).pauseMarketAdmin());
-
-    expect(event(txn, 0)).to.be.deep.equal({
-      MarketAdminPaused: {
-        isMarketAdminPaused: true,
-      },
-    });
-    expect(await proxyAdmin.marketAdminPaused()).to.be.true;
-
-    await proxyAdmin
-      .connect(governorTimelockSigner)
-      .setMarketAdmin(marketUpdateTimelock.address);
-
-    expect(await proxyAdmin.marketAdmin()).to.be.equal(
-      marketUpdateTimelock.address
-    );
-
-    const proposalId = 1n;
-
-    await marketUpdateProposer
-      .connect(marketUpdateMultiSig)
-      .propose(
-        [proxyAdmin.address],
-        [0],
-        ['deployAndUpgradeTo(address,address)'],
-        [
-          ethers.utils.defaultAbiCoder.encode(
-            ['address', 'address'],
-            [configuratorProxy.address, cometProxy.address]
-          ),
-        ],
-        'Upgrading comet proxy admin implementation'
-      );
-
-    await expect(
-      marketUpdateProposer.connect(marketUpdateMultiSig).execute(proposalId)
-    ).to.be.rejectedWith(
-      'MarketUpdateTimelock::executeTransaction: Transaction execution reverted.'
-    );
-  });
-
-  it('marketAdminPauseGuardian cannot unpause market admin', async () => {
-    const { governorTimelockSigner } = await makeMarketAdmin();
-
-    const {
-      proxyAdmin,
-      users: [alice],
-    } = await makeConfigurator({
-      governor: governorTimelockSigner,
-    });
-
-    expect(await proxyAdmin.marketAdminPaused()).to.be.false;
-
-    await proxyAdmin
-      .connect(governorTimelockSigner)
-      .setMarketAdminPauseGuardian(alice.address);
-
-    expect(await proxyAdmin.marketAdminPauseGuardian()).to.be.equal(
-      alice.address
-    );
-
-    await expect(
-      proxyAdmin.connect(alice).unpauseMarketAdmin()
-    ).to.be.revertedWithCustomError(proxyAdmin, 'Unauthorized');
-  });
 
   it('deployAndUpgradeTo can be called by main-governor-timelock or market-admin', async () => {
     const {
       governorTimelockSigner,
-      marketUpdateTimelock,
+      marketAdminPermissionCheckerContract,
       marketUpdateTimelockSigner,
     } = await makeMarketAdmin();
 
@@ -248,6 +74,7 @@ describe('CometProxyAdmin', function() {
       proxyAdmin,
     } = await makeConfigurator({
       governor: governorTimelockSigner,
+      marketAdminPermissionCheckerContract
     });
 
     const abi = [
@@ -279,13 +106,9 @@ describe('CometProxyAdmin', function() {
     expect(eventsForGovernorTimelock[0].name).to.be.equal('CometDeployed');
     expect(eventsForGovernorTimelock[1].name).to.be.equal('Upgraded');
 
-    await proxyAdmin
-      .connect(governorTimelockSigner)
-      .setMarketAdmin(marketUpdateTimelock.address);
+    expect(await proxyAdmin.marketAdminPermissionChecker()).to.be.equal(marketAdminPermissionCheckerContract.address);
+    expect(await marketAdminPermissionCheckerContract.marketAdmin()).to.be.equal(marketUpdateTimelockSigner.address);
 
-    expect(await proxyAdmin.marketAdmin()).to.be.equal(
-      marketUpdateTimelock.address
-    );
 
     const txnForMarketAdmin = (await wait(
       proxyAdmin
@@ -312,7 +135,7 @@ describe('CometProxyAdmin', function() {
   it('deployUpgradeToAndCall can be called by main-governor-timelock or market-admin', async () => {
     const {
       governorTimelockSigner,
-      marketUpdateTimelock,
+      marketAdminPermissionCheckerContract,
       marketUpdateTimelockSigner,
     } = await makeMarketAdmin();
 
@@ -322,6 +145,7 @@ describe('CometProxyAdmin', function() {
       proxyAdmin,
     } = await makeConfigurator({
       governor: governorTimelockSigner,
+      marketAdminPermissionCheckerContract,
     });
 
     const functionAbi = new ethers.utils.Interface(['function getReserves()']);
@@ -360,13 +184,9 @@ describe('CometProxyAdmin', function() {
     expect(eventsForGovernorTimelock[0].name).to.be.equal('CometDeployed');
     expect(eventsForGovernorTimelock[1].name).to.be.equal('Upgraded');
 
-    await proxyAdmin
-      .connect(governorTimelockSigner)
-      .setMarketAdmin(marketUpdateTimelock.address);
+    expect(await proxyAdmin.marketAdminPermissionChecker()).to.be.equal(marketAdminPermissionCheckerContract.address);
+    expect(await marketAdminPermissionCheckerContract.marketAdmin()).to.be.equal(marketUpdateTimelockSigner.address);
 
-    expect(await proxyAdmin.marketAdmin()).to.be.equal(
-      marketUpdateTimelock.address
-    );
 
     const txnForMarketAdmin = (await wait(
       proxyAdmin
@@ -395,7 +215,7 @@ describe('CometProxyAdmin', function() {
   });
 
   it('no other address can call deployAndUpgradeTo', async () => {
-    const { governorTimelockSigner } = await makeMarketAdmin();
+    const { governorTimelockSigner, marketAdminPermissionCheckerContract } = await makeMarketAdmin();
 
     const {
       configuratorProxy,
@@ -404,19 +224,20 @@ describe('CometProxyAdmin', function() {
       users: [alice],
     } = await makeConfigurator({
       governor: governorTimelockSigner,
+      marketAdminPermissionCheckerContract
     });
 
     await expect(
       proxyAdmin
         .connect(alice)
         .deployAndUpgradeTo(configuratorProxy.address, cometProxy.address)
-    ).to.be.revertedWith(
-      'Unauthorized: caller is not owner or market update admin'
+    ).to.be.revertedWithCustomError(
+      marketAdminPermissionCheckerContract, 'Unauthorized'
     );
   });
 
   it('no other address can call deployUpgradeToAndCall', async () => {
-    const { governorTimelockSigner } = await makeMarketAdmin();
+    const { governorTimelockSigner, marketAdminPermissionCheckerContract } = await makeMarketAdmin();
 
     const {
       configuratorProxy,
@@ -425,6 +246,7 @@ describe('CometProxyAdmin', function() {
       users: [alice],
     } = await makeConfigurator({
       governor: governorTimelockSigner,
+      marketAdminPermissionCheckerContract
     });
 
     const callData = '0x';
@@ -437,8 +259,9 @@ describe('CometProxyAdmin', function() {
           cometProxy.address,
           callData
         )
-    ).to.be.revertedWith(
-      'Unauthorized: caller is not owner or market update admin'
+    ).to.be.revertedWithCustomError(
+      marketAdminPermissionCheckerContract,
+      'Unauthorized'
     );
   });
 
@@ -470,7 +293,7 @@ describe('CometProxyAdmin', function() {
   it('a new comet implementation gets deployed when market admin calls deployAndUpgradeTo', async () => {
     const {
       governorTimelockSigner,
-      marketUpdateTimelock,
+      marketAdminPermissionCheckerContract,
       marketUpdateTimelockSigner,
     } = await makeMarketAdmin();
 
@@ -480,15 +303,12 @@ describe('CometProxyAdmin', function() {
       proxyAdmin,
     } = await makeConfigurator({
       governor: governorTimelockSigner,
+      marketAdminPermissionCheckerContract
     });
 
-    await proxyAdmin
-      .connect(governorTimelockSigner)
-      .setMarketAdmin(marketUpdateTimelock.address);
+    expect(await proxyAdmin.marketAdminPermissionChecker()).to.be.equal(marketAdminPermissionCheckerContract.address);
+    expect(await marketAdminPermissionCheckerContract.marketAdmin()).to.be.equal(marketUpdateTimelockSigner.address);
 
-    expect(await proxyAdmin.marketAdmin()).to.be.equal(
-      marketUpdateTimelock.address
-    );
 
     const oldCometImplementation = await proxyAdmin.getProxyImplementation(
       cometProxy.address

@@ -3,16 +3,16 @@ import { expect, makeConfigurator, ethers } from '../helpers';
 
 describe('MarketUpdateTimelock', function() {
   it('is created properly with main-governor-timelock as governor', async () => {
-    const { marketUpdateTimelock, governorTimelockSigner } = await makeMarketAdmin();
+    const { marketUpdateTimelockContract, governorTimelockSigner } = await makeMarketAdmin();
 
-    expect(await marketUpdateTimelock.governor()).to.equal(
+    expect(await marketUpdateTimelockContract.governor()).to.equal(
       governorTimelockSigner.address
     );
   });
 
   it('only allows main-governor-timelock to set MarketUpdateProposer', async () => {
     const {
-      marketUpdateTimelock,
+      marketUpdateTimelockContract,
       governorTimelockSigner,
     } = await makeMarketAdmin();
 
@@ -20,16 +20,16 @@ describe('MarketUpdateTimelock', function() {
       users: [alice, bob],
     } = await makeConfigurator();
 
-    await marketUpdateTimelock
+    await marketUpdateTimelockContract
       .connect(governorTimelockSigner)
       .setMarketUpdateProposer(alice.address);
 
-    expect(await marketUpdateTimelock.marketUpdateProposer()).to.equal(
+    expect(await marketUpdateTimelockContract.marketUpdateProposer()).to.equal(
       alice.address
     );
 
     await expect(
-      marketUpdateTimelock.connect(bob).setMarketUpdateProposer(bob.address)
+      marketUpdateTimelockContract.connect(bob).setMarketUpdateProposer(bob.address)
     ).to.be.revertedWith(
       'MarketUpdateTimelock::setMarketUpdateProposer: Call must come from governor.'
     );
@@ -38,9 +38,9 @@ describe('MarketUpdateTimelock', function() {
   it('only MarketUpdateProposer can queue transactions', async () => {
     // include checks for marketAdmin, governor, and anonymous address
     const {
-      marketUpdateTimelock,
+      marketUpdateTimelockContract,
       governorTimelockSigner,
-      marketUpdateProposer,
+      marketUpdateProposerContract,
       marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
@@ -51,7 +51,7 @@ describe('MarketUpdateTimelock', function() {
     } = await makeConfigurator();
 
     // Get the delay from the contract
-    const delay = (await marketUpdateTimelock.delay()).toNumber(); // Example: 172800 for 2 days
+    const delay = (await marketUpdateTimelockContract.delay()).toNumber(); // Example: 172800 for 2 days
 
     const latestBlock = await ethers.provider.getBlock('latest');
     const currentTimestamp = latestBlock.timestamp;
@@ -60,7 +60,7 @@ describe('MarketUpdateTimelock', function() {
     const eta = currentTimestamp + delay + 5; // eta is current timestamp + delay + a few seconds
 
     // Success case: market update proposer can queue transactions
-    await marketUpdateProposer
+    await marketUpdateProposerContract
       .connect(marketUpdateMultiSig)
       .propose(
         [configuratorProxy.address],
@@ -77,7 +77,7 @@ describe('MarketUpdateTimelock', function() {
 
     // Failure case: Main Governor Timelock cannot queue transactions
     await expect(
-      marketUpdateTimelock
+      marketUpdateTimelockContract
         .connect(governorTimelockSigner)
         .queueTransaction(
           configuratorProxy.address,
@@ -95,7 +95,7 @@ describe('MarketUpdateTimelock', function() {
 
     // Failure case: none other than MarketUpdateProposer can queue transactions
     await expect(
-      marketUpdateTimelock
+      marketUpdateTimelockContract
         .connect(bob)
         .queueTransaction(
           configuratorProxy.address,
@@ -114,9 +114,9 @@ describe('MarketUpdateTimelock', function() {
 
   it('only MarketUpdateProposer can execute transactions', async () => {
     const {
-      marketUpdateTimelock,
+      marketUpdateTimelockContract,
       governorTimelockSigner,
-      marketUpdateProposer,
+      marketUpdateProposerContract,
       marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
@@ -128,11 +128,11 @@ describe('MarketUpdateTimelock', function() {
     } = await makeConfigurator();
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-    configuratorAsProxy.transferGovernor(marketUpdateTimelock.address);
+    configuratorAsProxy.transferGovernor(marketUpdateTimelockContract.address);
     const proposalId = 1n;
 
     // Get the delay from the contract
-    const delay = (await marketUpdateTimelock.delay()).toNumber(); // Example: 172800 for 2 days
+    const delay = (await marketUpdateTimelockContract.delay()).toNumber(); // Example: 172800 for 2 days
 
     let latestBlock = await ethers.provider.getBlock('latest');
     let currentTimestamp = latestBlock.timestamp;
@@ -140,7 +140,7 @@ describe('MarketUpdateTimelock', function() {
     let eta = currentTimestamp + delay + 5; // Ensure eta is in the future
 
     // Success case: market update proposer can execute transactions
-    await marketUpdateProposer
+    await marketUpdateProposerContract
       .connect(marketUpdateMultiSig)
       .propose(
         [configuratorProxy.address],
@@ -158,7 +158,7 @@ describe('MarketUpdateTimelock', function() {
     // Fast-forward time by delay + seconds to surpass the eta
     await advanceTimeAndMineBlock(delay);
 
-    await marketUpdateProposer
+    await marketUpdateProposerContract
       .connect(marketUpdateMultiSig)
       .execute(proposalId);
 
@@ -169,7 +169,7 @@ describe('MarketUpdateTimelock', function() {
 
     eta = currentTimestamp + delay + 5; // Ensure eta is in the future
 
-    await marketUpdateProposer
+    await marketUpdateProposerContract
       .connect(marketUpdateMultiSig)
       .propose(
         [configuratorProxy.address],
@@ -187,7 +187,7 @@ describe('MarketUpdateTimelock', function() {
     // Fast-forward time by delay + few seconds to surpass the eta
     await advanceTimeAndMineBlock(delay);
 
-    await expect(marketUpdateTimelock
+    await expect(marketUpdateTimelockContract
       .connect(governorTimelockSigner)
       .executeTransaction(
         configuratorProxy.address,
@@ -208,7 +208,7 @@ describe('MarketUpdateTimelock', function() {
 
     eta = currentTimestamp + delay + 5; // Ensure eta is in the future
 
-    await marketUpdateProposer
+    await marketUpdateProposerContract
       .connect(marketUpdateMultiSig)
       .propose(
         [configuratorProxy.address],
@@ -227,7 +227,7 @@ describe('MarketUpdateTimelock', function() {
     await advanceTimeAndMineBlock(delay);
 
     await expect(
-      marketUpdateTimelock
+      marketUpdateTimelockContract
         .connect(bob)
         .executeTransaction(
           configuratorProxy.address,
@@ -246,9 +246,9 @@ describe('MarketUpdateTimelock', function() {
 
   it('only MarketUpdateProposer can cancel transactions', async () => {
     const {
-      marketUpdateTimelock,
+      marketUpdateTimelockContract,
       governorTimelockSigner,
-      marketUpdateProposer,
+      marketUpdateProposerContract,
       marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
@@ -260,12 +260,12 @@ describe('MarketUpdateTimelock', function() {
     } = await makeConfigurator();
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-    await configuratorAsProxy.transferGovernor(marketUpdateTimelock.address);
+    await configuratorAsProxy.transferGovernor(marketUpdateTimelockContract.address);
 
     const proposalId = 1n;
 
     // Get the delay from the contract
-    const delay = (await marketUpdateTimelock.delay()).toNumber(); // Example: 172800 for 2 days
+    const delay = (await marketUpdateTimelockContract.delay()).toNumber(); // Example: 172800 for 2 days
 
     let latestBlock = await ethers.provider.getBlock('latest');
     let currentTimestamp = latestBlock.timestamp;
@@ -273,7 +273,7 @@ describe('MarketUpdateTimelock', function() {
     let eta = currentTimestamp + delay + 5; // Ensure eta is in the future
 
     // Success case: MarketUpdateProposer can cancel transactions
-    await marketUpdateProposer
+    await marketUpdateProposerContract
       .connect(marketUpdateMultiSig)
       .propose(
         [configuratorProxy.address],
@@ -288,7 +288,7 @@ describe('MarketUpdateTimelock', function() {
         'Setting supply kink to 100'
       );
 
-    await marketUpdateProposer.connect(marketUpdateMultiSig).cancel(proposalId);
+    await marketUpdateProposerContract.connect(marketUpdateMultiSig).cancel(proposalId);
 
     // Checking the state of the transaction using the txHash
     const txHash = ethers.utils.keccak256(
@@ -307,12 +307,12 @@ describe('MarketUpdateTimelock', function() {
       )
     );
 
-    expect(await marketUpdateTimelock.queuedTransactions(txHash)).to.equal(
+    expect(await marketUpdateTimelockContract.queuedTransactions(txHash)).to.equal(
       false
     );
 
     // Failure case: Main Governor Timelock cannot cancel transactions
-    await marketUpdateProposer
+    await marketUpdateProposerContract
       .connect(marketUpdateMultiSig)
       .propose(
         [configuratorProxy.address],
@@ -327,7 +327,7 @@ describe('MarketUpdateTimelock', function() {
         'Setting supply kink to 100'
       );
 
-    await expect(marketUpdateTimelock
+    await expect(marketUpdateTimelockContract
       .connect(governorTimelockSigner)
       .cancelTransaction(
         configuratorProxy.address,
@@ -348,7 +348,7 @@ describe('MarketUpdateTimelock', function() {
 
     eta = currentTimestamp + delay + 5; // Ensure eta is in the future
 
-    await marketUpdateProposer
+    await marketUpdateProposerContract
       .connect(marketUpdateMultiSig)
       .propose(
         [configuratorProxy.address],
@@ -364,7 +364,7 @@ describe('MarketUpdateTimelock', function() {
       );
 
     await expect(
-      marketUpdateTimelock
+      marketUpdateTimelockContract
         .connect(bob)
         .cancelTransaction(
           configuratorProxy.address,
@@ -383,7 +383,7 @@ describe('MarketUpdateTimelock', function() {
 
   it('only main-governor-timelock can set new governor', async () => {
     const {
-      marketUpdateTimelock,
+      marketUpdateTimelockContract,
       governorTimelockSigner,
     } = await makeMarketAdmin();
 
@@ -391,14 +391,14 @@ describe('MarketUpdateTimelock', function() {
       users: [alice, bob],
     } = await makeConfigurator();
 
-    await marketUpdateTimelock
+    await marketUpdateTimelockContract
       .connect(governorTimelockSigner)
       .setGovernor(alice.address);
 
-    expect(await marketUpdateTimelock.governor()).to.equal(alice.address);
+    expect(await marketUpdateTimelockContract.governor()).to.equal(alice.address);
 
     await expect(
-      marketUpdateTimelock.connect(bob).setGovernor(bob.address)
+      marketUpdateTimelockContract.connect(bob).setGovernor(bob.address)
     ).to.be.revertedWith(
       'MarketUpdateTimelock::setGovernor: Call must come from governor.'
     );
@@ -406,7 +406,7 @@ describe('MarketUpdateTimelock', function() {
 
   it('MarketUpdateProposer cannot set or update MarketUpdateProposer', async () => {
     const {
-      marketUpdateTimelock,
+      marketUpdateTimelockContract,
       marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
@@ -415,7 +415,7 @@ describe('MarketUpdateTimelock', function() {
     } = await makeConfigurator();
 
     await expect(
-      marketUpdateTimelock
+      marketUpdateTimelockContract
         .connect(marketUpdateMultiSig)
         .setMarketUpdateProposer(bob.address)
     ).to.be.revertedWith(
@@ -425,7 +425,7 @@ describe('MarketUpdateTimelock', function() {
 
   it('MarketUpdateProposer cannot set or update main-governor-timelock', async () => {
     const {
-      marketUpdateTimelock,
+      marketUpdateTimelockContract,
       marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
@@ -434,7 +434,7 @@ describe('MarketUpdateTimelock', function() {
     } = await makeConfigurator();
 
     await expect(
-      marketUpdateTimelock.connect(marketUpdateMultiSig).setGovernor(bob.address)
+      marketUpdateTimelockContract.connect(marketUpdateMultiSig).setGovernor(bob.address)
     ).to.be.revertedWith(
       'MarketUpdateTimelock::setGovernor: Call must come from governor.'
     );

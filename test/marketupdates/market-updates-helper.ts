@@ -1,7 +1,7 @@
 import {
   SimpleTimelock__factory,
   MarketUpdateTimelock__factory,
-  MarketUpdateProposer__factory,
+  MarketUpdateProposer__factory, MarketAdminPermissionChecker__factory,
 } from './../../build/types';
 import hre from 'hardhat';
 import { ethers, expect } from './../helpers';
@@ -14,17 +14,18 @@ export async function makeMarketAdmin() {
   const signers = await ethers.getSigners();
 
   const marketUpdateMultiSig = signers[10];
-  const proposalGuardianSigner = signers[11];
-  
+  const marketUpdateProposalGuardianSigner = signers[11];
+  const marketAdminPauseGuardianSigner = signers[9];
+
   const marketAdminTimelockFactory = (await ethers.getContractFactory(
     'MarketUpdateTimelock'
   )) as MarketUpdateTimelock__factory;
 
-  const marketUpdateTimelock = await marketAdminTimelockFactory.deploy(
+  const marketUpdateTimelockContract = await marketAdminTimelockFactory.deploy(
     governorTimelockSigner.address,
     2 * 24 * 60 * 60 // This is 2 days in seconds
   );
-  const marketUpdateTimelockAddress = await marketUpdateTimelock.deployed();
+  const marketUpdateTimelockAddress = await marketUpdateTimelockContract.deployed();
 
   // Impersonate the account
   await hre.network.provider.request({
@@ -34,7 +35,7 @@ export async function makeMarketAdmin() {
 
   // Fund the impersonated account
   await signers[0].sendTransaction({
-    to: marketUpdateTimelock.address,
+    to: marketUpdateTimelockContract.address,
     value: ethers.utils.parseEther('1.0'), // Sending 1 Ether to cover gas fees
   });
 
@@ -54,28 +55,47 @@ export async function makeMarketAdmin() {
   });
 
   // This sets the owner of the MarketUpdateProposer to the marketUpdateMultiSig
-  const marketUpdateProposer = await marketUpdaterProposerFactory.deploy(
+  const marketUpdateProposerContract = await marketUpdaterProposerFactory.deploy(
     governorTimelockSigner.address,
     marketUpdateMultiSig.address,
-    proposalGuardianSigner.address,
-    marketUpdateTimelock.address
+    marketUpdateProposalGuardianSigner.address,
+    marketUpdateTimelockContract.address
   );
 
-  expect(await marketUpdateProposer.governor()).to.be.equal(
+  expect(await marketUpdateProposerContract.governor()).to.be.equal(
     governorTimelockSigner.address
   );
 
-  await marketUpdateTimelock
+  await marketUpdateTimelockContract
     .connect(governorTimelockSigner)
-    .setMarketUpdateProposer(marketUpdateProposer.address);
+    .setMarketUpdateProposer(marketUpdateProposerContract.address);
+
+  const MarketAdminPermissionCheckerFactory = (await ethers.getContractFactory(
+    'MarketAdminPermissionChecker'
+  )) as MarketAdminPermissionChecker__factory;
+
+
+  const marketAdminPermissionCheckerContract =  await MarketAdminPermissionCheckerFactory.deploy(
+    marketUpdateTimelockContract.address,
+    marketAdminPauseGuardianSigner.address
+  );
+  await marketAdminPermissionCheckerContract.transferOwnership(governorTimelockSigner.address);
+
+  await marketUpdateTimelockContract
+    .connect(governorTimelockSigner)
+    .setMarketUpdateProposer(marketUpdateProposerContract.address);
 
   return {
-    governorTimelockSigner,
-    marketUpdateMultiSig,
-    proposalGuardianSigner,
-    marketUpdateTimelock,
-    marketUpdateTimelockSigner,
-    marketUpdateProposer,
+    marketUpdateProposerContract,
+    marketAdminPermissionCheckerContract,
+    marketUpdateTimelockContract,
+
+    governorTimelockSigner, // used to impersonate the main governor timelock
+
+    marketUpdateMultiSig, // used to impersonate the market update multisig
+    marketAdminPauseGuardianSigner, // used to impersonate the market admin pause guardian
+    marketUpdateProposalGuardianSigner, // used to impersonate the market update proposal guardian
+    marketUpdateTimelockSigner, // used to impersonate the market update timelock
   };
 }
 
@@ -108,4 +128,18 @@ export async function initializeAndFundGovernorTimelock() {
 export async function advanceTimeAndMineBlock(delay: number) {
   await ethers.provider.send('evm_increaseTime', [delay + 10]);
   await ethers.provider.send('evm_mine', []); // Mine a new block to apply the time increase
+}
+
+
+export async function createRandomWallet() {
+  const signers = await ethers.getSigners();
+  const gov = signers[0];
+  const random = ethers.Wallet.createRandom({});
+  random.connect(ethers.providers.getDefaultProvider());
+
+  await gov.sendTransaction({
+    to: random.address,
+    value: ethers.utils.parseEther('100.0'), // Sending 1 Ether to cover gas fees
+  });
+  return random.connect(gov.provider);
 }
