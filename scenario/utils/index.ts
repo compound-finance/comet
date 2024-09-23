@@ -328,7 +328,7 @@ export async function fetchLogs(
 }
 
 async function redeployRenzoOracle(dm: DeploymentManager){
-  if(dm.network === 'mainnet' && dm.deployment === 'weth') {
+  if(dm.network === 'mainnet') {
     // renzo admin 	0xD1e6626310fD54Eceb5b9a51dA2eC329D6D4B68A
     const renzoOracle = new Contract(
       '0x5a12796f7e7EBbbc8a402667d266d2e65A814042',
