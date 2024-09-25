@@ -175,6 +175,10 @@ export default migration('1725614783_configurate_and_ens', {
           cometAddress: '0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840',
         },
         {
+          baseSymbol: 'wstETH',
+          cometAddress: '0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3'
+        },
+        {
           baseSymbol: 'WBTC',
           cometAddress: comet.address,
         }

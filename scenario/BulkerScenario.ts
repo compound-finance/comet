@@ -4,21 +4,6 @@ import { expect } from 'chai';
 import { expectBase, isRewardSupported, isBulkerSupported, getExpectedBaseBalance, matchesDeployment } from './utils';
 import { exp } from '../test/helpers';
 import { getConfigForScenario } from './utils/scenarioHelper';
-import { CometContext } from './context/CometContext';
-
-async function hasWETHAsCollateralOrBase(ctx: CometContext): Promise<boolean> {
-  const comet = await ctx.getComet();
-  const bulker = await ctx.getBulker();
-  const wrappedNativeToken = await bulker.wrappedNativeToken();
-  if((await comet.baseToken()).toLowerCase() === wrappedNativeToken.toLowerCase()) return true;
-  const numAssets = await comet.numAssets();
-  for (let i = 0; i < numAssets; i++) {
-    const { asset } = await comet.getAssetInfo(i);
-    if (asset.toLowerCase() === wrappedNativeToken.toLowerCase()) {
-      return true;
-    }
-  }
-}
 
 async function hasWETHAsCollateralOrBase(ctx: CometContext): Promise<boolean> {
   const comet = await ctx.getComet();
@@ -132,10 +117,16 @@ scenario(
       $asset0: 5000,
       $asset1: 5000,
     },
-    tokenBalances: {
-      albert: { $base: '== 0', $asset0: 5000, $asset1: 5000 },
-      $comet: { $base: 5000 },
-    },
+    tokenBalances: async (ctx) =>  (
+      {
+        albert: {
+          $base: '== 0',
+          $asset0: getConfigForScenario(ctx).bulkerAsset,
+          $asset1: getConfigForScenario(ctx).bulkerAsset
+        },
+        $comet: { $base: getConfigForScenario(ctx).bulkerComet },
+      }
+    ),
   },
   async ({ comet, actors, bulker }, context) => {
     const { albert, betty } = actors;
@@ -149,9 +140,9 @@ scenario(
     const { asset: collateralAssetAddress, scale: scaleBN } = asset0 === wrappedNativeToken ? { asset: asset1, scale: scale1 } : { asset: asset0, scale: scale0 };
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const collateralScale = scaleBN.toBigInt();
-    const toSupplyCollateral = 5000n * collateralScale;
-    const toBorrowBase = 1000n * baseScale;
-    const toTransferBase = 500n * baseScale;
+    const toSupplyCollateral = BigInt(getConfigForScenario(context).bulkerAsset) * collateralScale;
+    const toBorrowBase = BigInt(getConfigForScenario(context).bulkerBorrowBase) * baseScale;
+    const toTransferBase = BigInt(getConfigForScenario(context).bulkerBorrowAsset) * baseScale;
     const toSupplyEth = exp(0.01, 18);
     const toWithdrawEth = exp(0.005, 18);
 
@@ -406,10 +397,16 @@ scenario(
       $asset0: 5000,
       $asset1: 5000,
     },
-    tokenBalances: {
-      albert: { $base: '== 1000000', $asset0: 5000, $asset1: 5000 },
-      $comet: { $base: 5000 },
-    }
+    tokenBalances: async (ctx) =>  (
+      {
+        albert: {
+          $base: `== ${getConfigForScenario(ctx).bulkerBase}`,
+          $asset0: getConfigForScenario(ctx).bulkerAsset,
+          $asset1: getConfigForScenario(ctx).bulkerAsset
+        },
+        $comet: { $base: getConfigForScenario(ctx).bulkerComet },
+      }
+    ),
   },
   async ({ comet, actors, rewards, bulker }, context, world) => {
     const { albert, betty } = actors;
@@ -424,10 +421,10 @@ scenario(
     const collateralAsset = context.getAssetByAddress(collateralAssetAddress);
     const collateralScale = scaleBN.toBigInt();
     const [rewardTokenAddress] = await rewards.rewardConfig(comet.address);
-    const toSupplyBase = 1_000_000n * baseScale;
-    const toSupplyCollateral = 5000n * collateralScale;
-    const toBorrowBase = 1000n * baseScale;
-    const toTransferBase = 500n * baseScale;
+    const toSupplyBase = BigInt(getConfigForScenario(context).bulkerBase) * baseScale;
+    const toSupplyCollateral = BigInt(getConfigForScenario(context).bulkerAsset) * collateralScale;
+    const toBorrowBase = BigInt(getConfigForScenario(context).bulkerBorrowBase) * baseScale;
+    const toTransferBase = BigInt(getConfigForScenario(context).bulkerBorrowAsset) * baseScale;
     const toSupplyEth = exp(0.01, 18);
     const toWithdrawEth = exp(0.005, 18);
 

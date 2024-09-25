@@ -535,7 +535,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
   );
 }
 
-scenario.only(
+scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when value is beneath liquidationThreshold`,
   {
     filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }]),
@@ -650,7 +650,7 @@ scenario.only(
   }
 );
 
-scenario.only(
+scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when maxAmountToPurchase=0`,
   {
     filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }]),
