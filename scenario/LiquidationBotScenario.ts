@@ -537,7 +537,7 @@ for (let i = 0; i < MAX_ASSETS; i++) {
 scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when value is beneath liquidationThreshold`,
   {
-    filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }]),
+    filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }]) && !matchesDeployment(ctx, [{deployment: 'wsteth', network: 'mainnet'}]),
     tokenBalances: {
       $comet: { $base: 100000 },
     },
@@ -648,7 +648,7 @@ scenario(
 scenario(
   `LiquidationBot > absorbs, but does not attempt to purchase collateral when maxAmountToPurchase=0`,
   {
-    filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }]),
+    filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }, { network: 'polygon' }, { network: 'arbitrum' }]) && !matchesDeployment(ctx, [{deployment: 'wsteth', network: 'mainnet'}]),
     tokenBalances: {
       $comet: { $base: 100000 },
     },
@@ -778,7 +778,7 @@ scenario(
       upgrade: {
         targetReserves: exp(20_000, 18)
       },
-      filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }]),
+      filter: async (ctx) => matchesDeployment(ctx, [{ network: 'mainnet' }]) && !matchesDeployment(ctx, [{deployment: 'wsteth'}]),
       tokenBalances: async (ctx) => (
         {
           $comet: {

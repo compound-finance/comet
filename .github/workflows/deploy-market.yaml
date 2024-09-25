@@ -53,9 +53,9 @@ jobs:
         if: github.event.inputs.eth_pk == ''
 
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v4
         with:
           node-version: '16'
 
@@ -77,7 +77,7 @@ jobs:
           NETWORK_PROVIDER: ${{ fromJSON('["", "http://localhost:8585"]')[github.event.inputs.eth_pk == ''] }}
           REMOTE_ACCOUNTS: ${{ fromJSON('["", "true"]')[github.event.inputs.eth_pk == ''] }}
 
-      - uses: actions/upload-artifact@v2 # upload test results
+      - uses: actions/upload-artifact@v4 # upload test results
         if: success() || failure() # run this step even if previous step failed
         with:
           name: ${{ github.event.inputs.network }}-${{ github.event.inputs.deployment }}-verify-args
