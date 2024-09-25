@@ -231,3 +231,124 @@ task('migrate', 'Runs migration')
       }
     }
   );
+
+task('deploy_and_migrate', 'Runs deploy and migration')
+  .addPositionalParam('migration', 'name of migration')
+  .addOptionalParam('impersonate', 'the governor will impersonate the passed account for proposals [only when simulating]')
+  .addFlag('simulate', 'only simulates the blockchain effects')
+  .addFlag('noDeploy', 'skip the actual deploy step')
+  .addFlag('noVerify', 'do not verify any contracts')
+  .addFlag('noVerifyImpl', 'do not verify the impl contract')
+  .addFlag('overwrite', 'overwrites cache')
+  .addFlag('prepare', 'runs preparation [defaults to true if enact not specified]')
+  .addFlag('enact', 'enacts migration [implies prepare]')
+  .addFlag('noEnacted', 'do not write enacted to the migration script')
+  .addParam('deployment', 'The deployment to deploy')
+  .setAction(
+    async ({ migration: migrationName, prepare, enact, noEnacted, simulate, overwrite, deployment, impersonate, noDeploy, noVerify, noVerifyImpl }, env) => {
+      const maybeForkEnv = simulate ? getForkEnv(env, deployment) : env;
+      const network = env.network.name;
+      const tag = `${network}/${deployment}`;
+      const dm = new DeploymentManager(
+        network,
+        deployment,
+        maybeForkEnv,
+        {
+          writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
+          verificationStrategy: 'lazy',
+        }
+      );
+
+      if (noDeploy) {
+      // Don't run the deploy script
+      } else {
+        try {
+          const overrides = undefined; // TODO: pass through cli args
+          const delta = await dm.runDeployScript(overrides ?? { allMissing: true });
+          console.log(`[${tag}] Deployed ${dm.counter} contracts, spent ${dm.spent} Ξ`);
+          console.log(`[${tag}]\n${dm.diffDelta(delta)}`);
+        } catch (e) {
+          console.log(`[${tag}] Failed to deploy with error: ${e}`);
+        }
+      }
+
+      const verify = noVerify ? false : !simulate;
+      const desc = verify ? 'Verify' : 'Would verify';
+      if (noVerify && simulate) {
+      // Don't even print if --no-verify is set with --simulate
+      } else {
+        await dm.verifyContracts(async (address, args) => {
+          if (args.via === 'buildfile') {
+            const { contract: _, ...rest } = args;
+            console.log(`[${tag}] ${desc} ${address}:`, rest);
+          } else {
+            console.log(`[${tag}] ${desc} ${address}:`, args);
+          }
+          return verify;
+        });
+
+        if (noVerifyImpl) {
+        // Don't even try if --no-verify-impl
+        } else {
+        // Maybe verify the comet impl too
+          const comet = await dm.contract('comet');
+          const cometImpl = await dm.contract('comet:implementation');
+          const configurator = await dm.contract('configurator');
+          const config = await configurator.getConfiguration(comet.address);
+          const args: VerifyArgs = {
+            via: 'artifacts',
+            address: cometImpl.address,
+            constructorArguments: [config]
+          };
+          console.log(`[${tag}] ${desc} ${cometImpl.address}:`, args);
+          if (verify) {
+            await dm.verifyContract(args);
+          }
+        }
+      }
+      await dm.spider();
+
+      let governanceDm: DeploymentManager;
+      const base = env.config.scenario.bases.find(b => b.network === network && b.deployment === deployment);
+      const isBridgedDeployment = base.auxiliaryBase !== undefined;
+      const governanceBase = isBridgedDeployment ? env.config.scenario.bases.find(b => b.name === base.auxiliaryBase) : undefined;
+
+      if (governanceBase) {
+        const governanceEnv = hreForBase(governanceBase, simulate);
+        governanceDm = new DeploymentManager(
+          governanceBase.network,
+          governanceBase.deployment,
+          governanceEnv,
+          {
+            writeCacheToDisk: !simulate || overwrite, // Don't write to disk when simulating, unless overwrite is set
+            verificationStrategy: 'eager', // We use eager here to verify contracts right after they are deployed
+          }
+        );
+        await governanceDm.spider();
+      } else {
+        governanceDm = dm;
+      }
+
+      if (impersonate && !simulate) {
+        throw new Error('Cannot impersonate an address if not simulating a migration. Please specify --simulate to simulate.');
+      } else if (impersonate && simulate) {
+        const signer = await impersonateAddress(governanceDm, impersonate, 10n ** 18n);
+        governanceDm._signers.unshift(signer);
+      }
+
+      const migrationPath = `${__dirname}/../../deployments/${network}/${deployment}/migrations/${migrationName}.ts`;
+      const [migration] = await loadMigrations([migrationPath]);
+      if (!migration) {
+        throw new Error(`Unknown migration for network ${network}/${deployment}: \`${migrationName}\`.`);
+      }
+      if (!prepare && !enact) {
+        prepare = true;
+      }
+
+      await runMigration(dm, governanceDm, prepare, enact, migration, overwrite);
+
+      if (enact && !noEnacted) {
+        await writeEnacted(migration, dm, true);
+      }
+
+    });

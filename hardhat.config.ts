@@ -27,6 +27,7 @@ import mainnetRelationConfigMap from './deployments/mainnet/usdc/relations';
 import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
 import mainnetUsdtRelationConfigMap from './deployments/mainnet/usdt/relations';
 import mainnetWbtcRelationConfigMap from './deployments/mainnet/wbtc/relations';
+import mainnetWstETHRelationConfigMap from './deployments/mainnet/wsteth/relations';
 import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
 import polygonUsdtRelationConfigMap from './deployments/polygon/usdt/relations';
 import arbitrumBridgedUsdcRelationConfigMap from './deployments/arbitrum/usdc.e/relations';
@@ -355,7 +356,8 @@ const config: HardhatUserConfig = {
         usdc: mainnetRelationConfigMap,
         weth: mainnetWethRelationConfigMap,
         usdt: mainnetUsdtRelationConfigMap,
-        wbtc: mainnetWbtcRelationConfigMap
+        wbtc: mainnetWbtcRelationConfigMap,
+        wsteth: mainnetWstETHRelationConfigMap
       },
       polygon: {
         usdc: polygonRelationConfigMap,
@@ -419,6 +421,11 @@ const config: HardhatUserConfig = {
         name: 'mainnet-wbtc',
         network: 'mainnet',
         deployment: 'wbtc'
+      },
+      {
+        name: 'mainnet-wsteth',
+        network: 'mainnet',
+        deployment: 'wsteth'
       },
       {
         name: 'development',

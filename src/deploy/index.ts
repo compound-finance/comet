@@ -94,6 +94,7 @@ export const WHALES = {
     '0x38D43a6Cb8DA0E855A42fB6b0733A0498531d774', // swBTC whale
     '0x42a856dbEBB97AbC1269EAB32f3bb40C15102819', // uniBTC whale
     '0xBDE752ef69880c00a795D88438040b8f737Eb254', // uniBTC whale
+    '0x3c22ec75ea5D745c78fc84762F7F1E6D82a2c5BF',
     '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b'
   ],
   polygon: [
