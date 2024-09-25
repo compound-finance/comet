@@ -9,6 +9,7 @@ const config = {
   liquidationBase: 100000,
   liquidationBase1: 1000,
   liquidationAsset: 200,
+  liquidationDenominator: 90,
   rewardsAsset: 10000,
   rewardsBase: 1000,
   transferBase: 1000,
@@ -30,5 +31,12 @@ export function getConfigForScenario(ctx: CometContext) {
     config.transferBase = 100;
     config.transferAsset = 500;
   }
+  if(ctx.world.base.network === 'mainnet' && ctx.world.base.deployment === 'wsteth') {
+    config.liquidationBase = 10000;
+    config.liquidationBase1 = 1000;
+    config.liquidationAsset = 100;
+    config.liquidationDenominator = 84;
+  }
+
   return config;
 }
