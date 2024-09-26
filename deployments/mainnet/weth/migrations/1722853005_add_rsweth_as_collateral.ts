@@ -86,7 +86,7 @@ export default migration('1722853005_add_rsweth_as_collateral', {
   },
 
   async enacted(): Promise<boolean> {
-    return false;
+    return true;
   }, 
 
   async verify(deploymentManager: DeploymentManager) {
