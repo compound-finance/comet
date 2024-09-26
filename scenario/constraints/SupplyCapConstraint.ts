@@ -7,7 +7,10 @@ import { ComparisonOp, getAssetFromName, parseAmount } from '../utils';
 
 export class SupplyCapConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, _initialContext: T) {
-    const supplyCaps = requirements.supplyCaps;
+    let supplyCaps = requirements.supplyCaps;
+    if (typeof supplyCaps === 'function') {
+      supplyCaps = await supplyCaps(_initialContext);
+    }
     if (supplyCaps !== undefined) {
       const solutions: Solution<T>[] = [];
       solutions.push(async function barelyMeet(context: T) {
