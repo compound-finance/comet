@@ -164,7 +164,7 @@ async function crawl(
     return alias;
   }
 
-  const addressConfig = relations[address.toLowerCase()];
+  const addressConfig = relations[address];
   if (addressConfig) {
     //trace(` ... has an address config (${address})`);
     if (addressConfig.artifact) {
