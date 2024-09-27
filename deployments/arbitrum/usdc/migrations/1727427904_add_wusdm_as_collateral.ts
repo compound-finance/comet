@@ -15,11 +15,12 @@ export default migration('1727427904_add_wusdm_as_collateral', {
   async prepare(deploymentManager: DeploymentManager) {
     const _wUSDMPriceFeed = await deploymentManager.deploy(
       'wUSDM:priceFeed',
-      'pricefeeds/WUSDMPriceFeed.sol',
+      'pricefeeds/PriceFeedWith4626Support.sol',
       [
         WUSDM_TO_USDM_PRICE_FEED_ADDRESS, // wUSDM / USDM price feed
         USDM_TO_USD_PRICE_FEED_ADDRESS,   // USDM / USD price feed
-        8                                 // decimals
+        8,                                // decimals
+        'wUSDM/USD price feed'            // description
       ]
     );
     return { wUSDMPriceFeedAddress: _wUSDMPriceFeed.address };
