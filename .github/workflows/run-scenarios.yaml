@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bases: [ development, mainnet, mainnet-weth, mainnet-usdt, goerli, goerli-weth, sepolia-usdc, sepolia-weth, fuji, mumbai, polygon, polygon-usdt, arbitrum-usdc.e, arbitrum-usdc, arbitrum-weth, arbitrum-usdt, arbitrum-goerli-usdc, arbitrum-goerli-usdc.e, base-usdbc, base-weth, base-usdc, base-goerli, base-goerli-weth, linea-goerli, optimism-usdc, optimism-usdt, optimism-weth, scroll-goerli, scroll-usdc]
+        bases: [ development, mainnet, mainnet-weth, mainnet-usdt, mainnet-wsteth, goerli, goerli-weth, sepolia-usdc, sepolia-weth, fuji, mumbai, polygon, polygon-usdt, arbitrum-usdc.e, arbitrum-usdc, arbitrum-weth, arbitrum-usdt, arbitrum-goerli-usdc, arbitrum-goerli-usdc.e, base-usdbc, base-weth, base-usdc, base-goerli, base-goerli-weth, linea-goerli, optimism-usdc, optimism-usdt, optimism-weth, scroll-goerli, scroll-usdc]
     name: Run scenarios
     env:
       ETHERSCAN_KEY: ${{ secrets.ETHERSCAN_KEY }}
@@ -22,17 +22,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v4
         with:
           cache: 'yarn'
           node-version: '16'
 
       - name: Cache Deployments
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: |
             deployments/*/.contracts
@@ -54,10 +54,10 @@ jobs:
       - name: Run scenarios
         run: yarn scenario --bases ${{ matrix.bases }}
 
-      - uses: actions/upload-artifact@v2 # upload scenario results
+      - uses: actions/upload-artifact@v4 # upload scenario results
         if: success() || failure() # run this step even if previous step failed
         with:
-          name: scenario-results
+          name: scenario-results-${{ matrix.bases }}
           path: scenario-results.json
 
       - uses: dorny/test-reporter@v1
