@@ -19,6 +19,7 @@ jobs:
       BASESCAN_KEY: ${{ secrets.BASESCAN_KEY }}
       LINEASCAN_KEY: ${{ secrets.LINEASCAN_KEY }}
       OPTIMISMSCAN_KEY: ${{ secrets.OPTIMISMSCAN_KEY }}
+      MANTLESCAN_KEY: ${{ secrets.MANTLESCAN_KEY }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

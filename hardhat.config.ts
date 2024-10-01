@@ -44,6 +44,7 @@ import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relati
 import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
 import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations';
 import optimismWethRelationConfigMap from './deployments/optimism/weth/relations';
+import mantleRelationConfigMap from './deployments/mantle/usde/relations';
 import scrollGoerliRelationConfigMap from './deployments/scroll-goerli/usdc/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
 
@@ -62,6 +63,7 @@ const {
   BASESCAN_KEY,
   LINEASCAN_KEY,
   OPTIMISMSCAN_KEY,
+  MANTLESCAN_KEY,
   INFURA_KEY,
   QUICKNODE_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
@@ -93,7 +95,8 @@ export function requireEnv(varName, msg?: string): string {
   'POLYGONSCAN_KEY',
   'ARBISCAN_KEY',
   'LINEASCAN_KEY',
-  'OPTIMISMSCAN_KEY'
+  'OPTIMISMSCAN_KEY',
+  'MANTLESCAN_KEY',
 ].map((v) => requireEnv(v));
 
 // Networks
@@ -120,6 +123,11 @@ const networkConfigs: NetworkConfig[] = [
     network: 'optimism',
     chainId: 10,
     url: `https://optimism-mainnet.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
+    network: 'mantle',
+    chainId: 43113,
+    url: `https://mantle-mainnet.infura.io/v3/${INFURA_KEY}`,
   },
   {
     network: 'base',
@@ -263,6 +271,8 @@ const config: HardhatUserConfig = {
       'linea-goerli': LINEASCAN_KEY,
       optimism: OPTIMISMSCAN_KEY,
       optimisticEthereum: OPTIMISMSCAN_KEY,
+      // Mantle
+      mantle: MANTLESCAN_KEY,
       // Scroll Testnet
       'scroll-goerli': ETHERSCAN_KEY,
       // Scroll
@@ -387,6 +397,9 @@ const config: HardhatUserConfig = {
         usdc: optimismRelationConfigMap,
         usdt: optimismUsdtRelationConfigMap,
         weth: optimismWethRelationConfigMap
+      },
+      'mantle': {
+        'usdc.e': mantleRelationConfigMap
       },
       'scroll-goerli': {
         usdc: scrollGoerliRelationConfigMap
@@ -556,6 +569,12 @@ const config: HardhatUserConfig = {
         name: 'optimism-weth',
         network: 'optimism',
         deployment: 'weth',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'mantle-usdc.e',
+        network: 'mantle',
+        deployment: 'usdc.e',
         auxiliaryBase: 'mainnet'
       },
       {

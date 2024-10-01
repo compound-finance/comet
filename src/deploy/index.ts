@@ -142,7 +142,11 @@ export const WHALES = {
     '0x2A82Ae142b2e62Cb7D10b55E323ACB1Cab663a26', // OP whale
     '0x8af3827a41c26c7f32c81e93bb66e837e0210d5c', // USDC whale
     '0xc45A479877e1e9Dfe9FcD4056c699575a1045dAA', // wstETH whale
-  ]
+  ],
+  mantle: [
+    '0x588846213A30fd36244e0ae0eBB2374516dA836C', // USDe whale
+    '0x88a1493366D48225fc3cEFbdae9eBb23E323Ade3', // mETH whale
+  ],
 };
 
 export async function calldata(req: Promise<PopulatedTransaction>): Promise<string> {

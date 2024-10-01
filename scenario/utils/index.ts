@@ -550,6 +550,20 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
       calldata.push(sendMessageCalldata);
       break;
     }
+    case 'mantle': {
+      const sendMessageCalldata = utils.defaultAbiCoder.encode(
+        ['address', 'bytes', 'uint256'],
+        [bridgeReceiver.address, l2ProposalData, 2_500_000]
+      );
+      const mantleL1CrossDomainMessenger = await govDeploymentManager.getContractOrThrow(
+        'mantleL1CrossDomainMessenger'
+      );
+      targets.push(mantleL1CrossDomainMessenger.address);
+      values.push(0);
+      signatures.push('sendMessage(address,bytes,uint256)');
+      calldata.push(sendMessageCalldata);
+      break;
+    }
     case 'scroll': 
     case 'scroll-goerli': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
