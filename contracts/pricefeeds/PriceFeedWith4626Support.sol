@@ -16,7 +16,7 @@ contract PriceFeedWith4626Support is IPriceFeed {
     error InvalidInt256();
 
     /// @notice Version of the price feed
-    uint public constant override version = 1;
+    uint public constant VERSION = 1;
 
     /// @notice Description of the price feed
     string public override description;
@@ -83,5 +83,13 @@ contract PriceFeedWith4626Support is IPriceFeed {
     function signed256(uint256 n) internal pure returns (int256) {
         if (n > uint256(type(int256).max)) revert InvalidInt256();
         return int256(n);
+    }
+    
+    /**
+     * @notice Price for the latest round
+     * @return The version of the price feed contract
+     **/
+    function version() external pure returns (uint256) {
+        return VERSION;
     }
 }
