@@ -126,8 +126,8 @@ const networkConfigs: NetworkConfig[] = [
   },
   {
     network: 'mantle',
-    chainId: 43113,
-    url: `https://mantle-mainnet.infura.io/v3/${INFURA_KEY}`,
+    chainId: 5000,
+    url: `https://fluent-prettiest-scion.mantle-mainnet.quiknode.pro/${QUICKNODE_KEY}`,
   },
   {
     network: 'base',
@@ -572,9 +572,9 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'mainnet'
       },
       {
-        name: 'mantle-usdc.e',
+        name: 'mantle-usde',
         network: 'mantle',
-        deployment: 'usdc.e',
+        deployment: 'usde',
         auxiliaryBase: 'mainnet'
       },
       {

@@ -3,7 +3,7 @@
     "symbol": "cUSDev3",
     "baseToken": "USDe",
     "baseTokenAddress": "0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34",
-    "baseTokenPriceFeed": "0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3",
+    "baseTokenPriceFeed": "0x3DFA26B9A15D37190bB8e50aE093730DcA88973E",
     "borrowMin": "100e6",
     "pauseGuardian": "0x78E6317DD6D43DdbDa00Dce32C2CbaFc99361a9d",
     "storeFrontPriceFactor": 0.8,
@@ -26,8 +26,7 @@
     },
     "assets": {
       "mETH": {
-        "address": "0x74db2eb31d4b5a0522d3c2eb6dbd87aac21745f9",
-        "priceFeed": "0xb2A824043730FE05F3DA2efaFa1CBbe83fa548D6",
+        "address": "0xcDA86A272531e8640cD7F1a92c01839911B90bb0",
         "decimals": "18",
         "borrowCF": 0.55,
         "liquidateCF": 0.60,
@@ -36,21 +35,12 @@
       },
       "WETH": {
         "address": "0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111",
-        "priceFeed": "0xDB98056FecFff59D032aB628337A4887110df3dB",
+        "priceFeed": "0xFc34806fbD673c21c1AEC26d69AA247F1e69a2C6",
         "decimals": "18",
         "borrowCF": 0.40,
         "liquidateCF": 0.45,
         "liquidationFactor": 0.93,
         "supplyCap": "50000e18"
-      },
-      "FBTC": {
-        "address": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
-        "priceFeed": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
-        "decimals": "18",
-        "borrowCF": 0.78,
-        "liquidateCF": 0.85,
-        "liquidationFactor": 0.95,
-        "supplyCap": "5000e18"
       }
     }
 }

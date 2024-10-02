@@ -23,7 +23,7 @@ const opCOMPAddress = '0x7e7d4467112689329f7E06571eD0E8CbAd4910eE';
 
 const USDC_ADDRESS = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
 const USDE_MAINNET = '0x4c9EDD5852cd905f086C759E8383e09bff1E68B3';
-const CURVE_USDE_USDC_POOL = '0x02950460E2b9529D0E00284A5fA2d7bDF3fA4d72';
+const CURVE_MAINNET_USDE_USDC_POOL = '0x02950460E2b9529D0E00284A5fA2d7bDF3fA4d72';
 
 const COMPAmountToBridge = exp(3_600, 18);
 const USDEAmountToBridge = exp(10_000, 18);
@@ -80,14 +80,6 @@ export default migration('1727774346_configurate_and_ens', {
 
     const configuration = await getConfigurationStruct(deploymentManager);
 
-    const curvePool = new Contract(
-      CURVE_USDE_USDC_POOL,
-      ['function get_dx(int128, int128, uint256) view returns (uint256)'],
-      deploymentManager.hre.ethers.provider
-    );
-
-    const amountToSwap = await curvePool.get_dx(1, 0, USDEAmountToBridge * 105n / 100n);
-
     const setConfigurationCalldata = await calldata(
       configurator.populateTransaction.setConfiguration(
         comet.address,
@@ -126,6 +118,14 @@ export default migration('1727774346_configurate_and_ens', {
       ]
     );
 
+    const curvePool = new Contract(
+      CURVE_MAINNET_USDE_USDC_POOL,
+      ['function get_dx(int128, int128, uint256) view returns (uint256)'],
+      govDeploymentManager.hre.ethers.provider
+    );
+
+    const amountToSwap = await curvePool.get_dx(1, 0, USDEAmountToBridge * 105n / 100n);
+
     const actions = [
       // 1. Set Comet configuration + deployAndUpgradeTo new Comet and set reward config on Mantle.
       {
@@ -139,12 +139,12 @@ export default migration('1727774346_configurate_and_ens', {
         signature: 'approve(address,uint256)',
         calldata: ethers.utils.defaultAbiCoder.encode(
           ['address', 'uint256'],
-          [CURVE_USDE_USDC_POOL, amountToSwap]
+          [CURVE_MAINNET_USDE_USDC_POOL, amountToSwap]
         ),
       },
       // 3. Swap USDC to USDe on Curve pool to bridge
       {
-        target: CURVE_USDE_USDC_POOL,
+        target: CURVE_MAINNET_USDE_USDC_POOL,
         signature: 'exchange(int128,int128,uint256,uint256)',
         calldata: ethers.utils.defaultAbiCoder.encode(
           ['int128', 'int128', 'uint256', 'uint256'],
@@ -229,9 +229,6 @@ export default migration('1727774346_configurate_and_ens', {
       },
       wETH: {
         supplyCap: exp(1_300, 18)
-      },
-      FBTC: {
-        supplyCap: exp(60, 8)
       },
       baseTrackingSupplySpeed: exp(4 / 86400, 15, 18), // 46296296296
       baseTrackingBorrowSpeed: exp(3 / 86400, 15, 18), // 34722222222
