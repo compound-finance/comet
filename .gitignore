@@ -27,3 +27,5 @@ scenario-results.json
 *.iml
 
 deployments/localhost/dai/roots.json
+forge/Makefile
+.envrc

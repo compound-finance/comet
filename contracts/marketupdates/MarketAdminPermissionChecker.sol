@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import "../vendor/access/Ownable.sol";
+import "./../vendor/access/Ownable.sol";
 import "./MarketAdminPermissionCheckerInterface.sol";
 
 contract MarketAdminPermissionChecker is MarketAdminPermissionCheckerInterface, Ownable {
@@ -22,10 +22,11 @@ contract MarketAdminPermissionChecker is MarketAdminPermissionCheckerInterface, 
      * @notice Construct a new MarketAdminPermissionChecker contract.
      * Not adding any checks for zero address as it may be a deliberate choice to assign the zero address i.e. keep the
      * market updates disabled.
+     * @param initialOwner The address of the owner.
      * @param marketAdmin_ The address of the market admin.
      * @param marketAdminPauseGuardian_ The address of the market admin pause guardian.
      */
-    constructor(address marketAdmin_, address marketAdminPauseGuardian_) {
+    constructor(address initialOwner, address marketAdmin_, address marketAdminPauseGuardian_) Ownable(initialOwner) {
         marketAdmin = marketAdmin_;
         marketAdminPauseGuardian = marketAdminPauseGuardian_;
     }

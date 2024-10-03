@@ -26,6 +26,12 @@ contract CometProxyAdmin is ProxyAdmin {
     }
 
     /**
+     * @dev Initializes the contract setting the specified address as the initial owner.
+     * @param initialOwner The address to set as the owner of the contract.
+     */
+    constructor(address initialOwner) ProxyAdmin(initialOwner) {}
+
+    /**
      * @dev Deploy a new Comet and upgrade the implementation of the Comet proxy
      *  Requirements:
      *   - This contract must be the admin of `CometProxy`

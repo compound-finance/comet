@@ -11,6 +11,13 @@ interface Deployable {
  * @dev This contract is just to simulate the full deployment process of market updates. Should be deleted after the market updates are deployed.
  */
 contract CometProxyAdminOld is ProxyAdmin {
+
+    /**
+     * @dev Initializes the contract setting the specified address as the initial owner.
+     * @param initialOwner The address to set as the owner of the contract.
+     */
+    constructor(address initialOwner) ProxyAdmin(initialOwner) {}
+
     /**
      * @dev Deploy a new Comet and upgrade the implementation of the Comet proxy
      *  Requirements:
