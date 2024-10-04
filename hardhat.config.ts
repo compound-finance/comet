@@ -127,7 +127,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'mantle',
     chainId: 5000,
-    url: `https://fluent-prettiest-scion.mantle-mainnet.quiknode.pro/${QUICKNODE_KEY}`,
+    url: `https://mantle-mainnet.infura.io/v3/${INFURA_KEY}`,
   },
   {
     network: 'base',
@@ -399,7 +399,7 @@ const config: HardhatUserConfig = {
         weth: optimismWethRelationConfigMap
       },
       'mantle': {
-        'usdc.e': mantleRelationConfigMap
+        'usde': mantleRelationConfigMap
       },
       'scroll-goerli': {
         usdc: scrollGoerliRelationConfigMap

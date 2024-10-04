@@ -553,7 +553,7 @@ export async function createCrossChainProposal(context: CometContext, l2Proposal
     case 'mantle': {
       const sendMessageCalldata = utils.defaultAbiCoder.encode(
         ['address', 'bytes', 'uint256'],
-        [bridgeReceiver.address, l2ProposalData, 2_500_000]
+        [bridgeReceiver.address, l2ProposalData, 7_500_000]
       );
       const mantleL1CrossDomainMessenger = await govDeploymentManager.getContractOrThrow(
         'mantleL1CrossDomainMessenger'

@@ -25,6 +25,12 @@ async function deployContracts(
 ): Promise<Deployed> {
   const trace = deploymentManager.tracer();
 
+  const COMP = await deploymentManager.existing(
+    'COMP',
+    '0x52b7D8851d6CcBC6342ba0855Be65f7B82A3F17f',
+    'mantle'
+  );
+
   const methPriceFeed = await deploymentManager.deploy(
     'mETH:priceFeed',
     'pricefeeds/MultiplicativePriceFeed.sol',
@@ -76,7 +82,8 @@ async function deployContracts(
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
     'bridges/optimism/OptimismBridgeReceiver.sol',
-    [l2CrossDomainMessenger.address]
+    [l2CrossDomainMessenger.address],
+    true
   );
 
   // Deploy Local Timelock
@@ -89,7 +96,8 @@ async function deployContracts(
       14 * DAY,   // grace period
       12 * HOUR,  // minimum delay
       30 * DAY,   // maxiumum delay
-    ]
+    ],
+    true
   );
 
   // Initialize OptimismBridgeReceiver
@@ -125,5 +133,6 @@ async function deployContracts(
     l2CrossDomainMessenger, // TODO: don't have to part of roots. can be pulled via relations
     l2StandardBridge,
     bulker,
+    COMP,
   };
 }

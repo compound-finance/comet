@@ -46,8 +46,9 @@ export default async function relayMantleMessage(
         target,
         0,
         0,
+        gasLimit,
         message,
-        { gasPrice: 0, gasLimit }
+        { gasPrice: 0, gasLimit: 7_500_000 }
       )
     ).wait();
 
