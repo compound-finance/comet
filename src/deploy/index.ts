@@ -89,7 +89,8 @@ export const WHALES = {
     '0x2775b1c75658be0f640272ccb8c72ac986009e38',
     '0x1a9c8182c09f50c8318d769245bea52c32be35bc',
     '0x3c22ec75ea5D745c78fc84762F7F1E6D82a2c5BF',
-    '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b'
+    '0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b',
+    '0x426c4966fC76Bf782A663203c023578B744e4C5E', // wUSDM whale
   ],
   polygon: [
     '0x2093b4281990a568c9d588b8bce3bfd7a1557ebd', // WETH whale
