@@ -4,7 +4,6 @@ import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
 import { expect } from 'chai';
 
-const SECONDS_PER_YEAR = 31_536_000n;
 const ENSName = 'compound-community-licenses.eth';
 const ENSResolverAddress = '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41';
 const ENSRegistryAddress = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
@@ -15,15 +14,15 @@ const baseCOMPAddress = '0x9e1028F5F1D5eDE59748FFceE5532509976840E0';
 
 export default migration('1728096598_configurate_and_ens', {
   prepare: async (deploymentManager: DeploymentManager) => {
-    return {};
+    const cometFactory = await deploymentManager.deploy('cometFactory', 'CometFactory.sol', [], true);
+    return { newFactoryAddress: cometFactory.address };
   },
 
-  enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager) => {
+  enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, { newFactoryAddress }) => {
     const trace = deploymentManager.tracer();
     const ethers = deploymentManager.hre.ethers;
     const { utils } = ethers;
 
-    const cometFactory = await deploymentManager.fromDep('cometFactory', 'base', 'usdbc');
     const {
       bridgeReceiver,
       timelock: localTimelock,
@@ -56,7 +55,7 @@ export default migration('1728096598_configurate_and_ens', {
 
     const configuration = await getConfigurationStruct(deploymentManager);
     const setFactoryCalldata = await calldata(
-      configurator.populateTransaction.setFactory(comet.address, cometFactory.address)
+      configurator.populateTransaction.setFactory(comet.address, newFactoryAddress)
     );
     const setConfigurationCalldata = await calldata(
       configurator.populateTransaction.setConfiguration(comet.address, configuration)
@@ -104,7 +103,7 @@ export default migration('1728096598_configurate_and_ens', {
       },
     ];
 
-    const description = "DESCRIPTION";
+    const description = "# Initialize cAEROv3 on Base network\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Base network. This proposal takes the governance steps recommended and necessary to initialize a Compound III AERO market on Base; upon execution, cAEROv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/gauntlet-base-aero-comet-recommendations/5790).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/937), [deploy market GitHub action run]() and [forum discussion](https://www.comp.xyz/t/gauntlet-base-aero-comet-recommendations/5790).\n\n\n## Proposal Actions\n\nThe first proposal action sets the CometFactory for the new Comet instance in the existing Configurator.\n\nThe second action configures the Comet instance in the Configurator.\n\nThe third action deploys an instance of the newly configured factory and upgrades the Comet instance to use that implementation.\n\nThe fourth action configures the existing rewards contract for the newly deployed Comet instance.\n\nTODO: Seed reserves.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ethereum Mainnet cwstETHv3 market.";
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(actions, description))))
     );
@@ -127,9 +126,6 @@ export default migration('1728096598_configurate_and_ens', {
       rewards,
       COMP,
     } = await deploymentManager.getContracts();
-
-    console.log({ COMP })
-    console.log({ address: COMP.address })
 
     const {
       timelock

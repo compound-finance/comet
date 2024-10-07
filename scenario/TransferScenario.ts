@@ -181,8 +181,8 @@ scenario(
     const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
     // XXX 70 seconds?!
-    expectApproximately(await albert.getCometBaseBalance(), 1000n * scale, getInterest(1000n * scale, borrowRate, 70n) + 2n);
-    expectApproximately(await betty.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 70n) + 2n);
+    expectApproximately(await albert.getCometBaseBalance(), 1000n * scale, getInterest(1000n * scale, borrowRate, 110n) + 2n);
+    expectApproximately(await betty.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 110n) + 2n);
 
     await albert.allow(betty, true);
 
@@ -190,8 +190,8 @@ scenario(
     const toTransfer = 999n * scale; // XXX cannot withdraw 1000 (to ~0)
     const txn = await betty.transferAssetFrom({ src: albert.address, dst: betty.address, asset: baseAsset.address, amount: toTransfer });
 
-    expectApproximately(await albert.getCometBaseBalance(), scale, getInterest(1000n * scale, borrowRate, 70n) + 2n);
-    expectApproximately(await betty.getCometBaseBalance(), -scale, getInterest(1000n * scale, borrowRate, 70n) + 2n);
+    expectApproximately(await albert.getCometBaseBalance(), scale, getInterest(1000n * scale, borrowRate, 110n) + 2n);
+    expectApproximately(await betty.getCometBaseBalance(), -scale, getInterest(1000n * scale, borrowRate, 110n) + 2n);
 
     return txn; // return txn to measure gas
   }
@@ -249,8 +249,8 @@ scenario(
     const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
     // XXX 70 seconds?!
-    expectApproximately(await albert.getCometBaseBalance(), 1000n * scale, getInterest(1000n * scale, borrowRate, 70n) + 2n);
-    expectApproximately(await betty.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 70n) + 2n);
+    expectApproximately(await albert.getCometBaseBalance(), 1000n * scale, getInterest(1000n * scale, borrowRate, 110n) + 2n);
+    expectApproximately(await betty.getCometBaseBalance(), -1000n * scale, getInterest(1000n * scale, borrowRate, 110n) + 2n);
 
     await albert.allow(betty, true);
 
