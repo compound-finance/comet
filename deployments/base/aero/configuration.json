@@ -6,7 +6,7 @@
   "borrowMin": "1e18",
   "pauseGuardian": "0x3cb4653f3b45f448d9100b118b75a1503281d2ee",
   "storeFrontPriceFactor": 0.6,
-  "targetReserves": "5000000e18",
+  "targetReserves": "50000000e18",
   "rates": {
     "supplyKink": 0.85,
     "supplySlopeLow": 0.08,
