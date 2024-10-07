@@ -20,12 +20,15 @@ const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 
-const USDC_ADDRESS = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
-const USDE_MAINNET = '0x4c9EDD5852cd905f086C759E8383e09bff1E68B3';
-const CURVE_MAINNET_USDE_USDC_POOL = '0x02950460E2b9529D0E00284A5fA2d7bDF3fA4d72';
+const USDE_ADDRESS = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+const USDT_MAINNET = '0xdac17f958d2ee523a2206206994597c13d831ec7';
+const cUSDTAddress = '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9';
+
+const USDT_MANTLE = '0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840';
+const MANTLE_USDT_USDE_SWAP_POOL = '0x7ccD8a769d466340Fff36c6e10fFA8cf9077D988';
 
 const COMPAmountToBridge = exp(3_600, 18);
-const USDEAmountToBridge = exp(10_000, 18);
+const USDEAmountToSeed = exp(10_000, 18);
 
 let mantleCOMP: string;
 
@@ -46,8 +49,8 @@ export default migration('1727774346_configurate_and_ens', {
       cometAdmin,
       configurator,
       rewards,
-      USDe,
       COMP,
+      timelock,
     } =
       await deploymentManager.getContracts();
 
@@ -81,6 +84,18 @@ export default migration('1727774346_configurate_and_ens', {
 
     const configuration = await getConfigurationStruct(deploymentManager);
 
+    const swapPool = new Contract(
+      MANTLE_USDT_USDE_SWAP_POOL,
+      [
+        'function getSwapIn(uint128 amountOut, bool swapForY) external view returns(uint128 amountIn, uint128 amountOutLeft, uint128 fee)',
+        'function swap(bool swapForY, address to) external returns (bytes32 amountsOut)',
+      ],
+      deploymentManager.hre.ethers.provider
+    );
+
+    const amountToSwap = (await swapPool.getSwapIn(USDEAmountToSeed, false)).amountIn;
+
+
     const setConfigurationCalldata = await calldata(
       configurator.populateTransaction.setConfiguration(
         comet.address,
@@ -95,6 +110,17 @@ export default migration('1727774346_configurate_and_ens', {
       ['address', 'address'],
       [comet.address, COMP.address]
     );
+
+    const transferUSDTCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'uint256'],
+      [MANTLE_USDT_USDE_SWAP_POOL, amountToSwap]
+    );
+
+    const swapCalldata = utils.defaultAbiCoder.encode(
+      ['bool', 'address'],
+      [false, comet.address]
+    );
+
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
@@ -102,8 +128,12 @@ export default migration('1727774346_configurate_and_ens', {
           configurator.address,
           cometAdmin.address,
           rewards.address,
+          USDT_MANTLE,
+          MANTLE_USDT_USDE_SWAP_POOL,
         ],
         [
+          0,
+          0,
           0,
           0,
           0,
@@ -112,22 +142,28 @@ export default migration('1727774346_configurate_and_ens', {
           'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
           'deployAndUpgradeTo(address,address)',
           'setRewardConfig(address,address)',
+          'transfer(address,uint256)',
+          'swap(bool,address)',
         ],
         [
           setConfigurationCalldata,
           deployAndUpgradeToCalldata,
-          setRewardConfigCalldata
+          setRewardConfigCalldata,
+          transferUSDTCalldata,
+          swapCalldata,
         ],
       ]
     );
 
-    const curvePool = new Contract(
-      CURVE_MAINNET_USDE_USDC_POOL,
-      ['function get_dx(int128, int128, uint256) view returns (uint256)'],
-      govDeploymentManager.hre.ethers.provider
+    const _reduceReservesCalldata = utils.defaultAbiCoder.encode(
+      ['uint256'],
+      [amountToSwap]
     );
 
-    const amountToSwap = await curvePool.get_dx(1, 0, USDEAmountToBridge * 105n / 100n);
+    const approveCalldata = utils.defaultAbiCoder.encode(
+      ['address', 'uint256'],
+      [mantleL1StandardBridge.address, amountToSwap]
+    );
 
     const actions = [
       // 1. Set Comet configuration + deployAndUpgradeTo new Comet and set reward config on Mantle.
@@ -136,32 +172,32 @@ export default migration('1727774346_configurate_and_ens', {
         signature: 'sendMessage(address,bytes,uint32)',
         args: [bridgeReceiver.address, l2ProposalData, 2_500_000],
       },
-      // 2. Approve USDC to Curve pool
+      // 2. Get USDT reserves from cUSDT contract
       {
-        target: USDC_ADDRESS,
-        signature: 'approve(address,uint256)',
-        calldata: utils.defaultAbiCoder.encode(
-          ['address', 'uint256'],
-          [CURVE_MAINNET_USDE_USDC_POOL, amountToSwap]
-        ),
+        target: cUSDTAddress,
+        signature: '_reduceReserves(uint256)',
+        calldata: _reduceReservesCalldata
       },
-      // 3. Swap USDC to USDe on Curve pool to bridge
+      // 3. Approve USDT to L1StandardBridge
       {
-        target: CURVE_MAINNET_USDE_USDC_POOL,
-        signature: 'exchange(int128,int128,uint256,uint256)',
-        calldata: utils.defaultAbiCoder.encode(
-          ['int128', 'int128', 'uint256', 'uint256'],
-          [1, 0, amountToSwap, USDEAmountToBridge]
-        ),
-      },
-      // 4. Approve Ethereum's L1StandardBridge to take Timelock's USDe (for bridging)
-      {
-        target: USDE_MAINNET,
+        target: USDT_MAINNET,
         signature: 'approve(address,uint256)',
-        calldata: utils.defaultAbiCoder.encode(
-          ['address', 'uint256'],
-          [mantleL1StandardBridge.address, USDEAmountToBridge]
-        ),
+        calldata: approveCalldata,
+      },
+      // 4. Bridge USDT from Ethereum to Mantle Timelock using L1StandardBridge
+      {
+        contract: mantleL1StandardBridge,
+        // function depositERC20To(address _l1Token, address _l2Token, address _to, uint256 _amount, uint32 _l2Gas,bytes calldata _data)
+        signature:
+          'depositERC20To(address,address,address,uint256,uint32,bytes)',
+        args: [
+          USDT_MAINNET,
+          USDT_MANTLE,
+          timelock.address,
+          amountToSwap,
+          200_000,
+          '0x',
+        ],
       },
       // 5. Approve Ethereum's L1StandardBridge to take Timelock's COMP (for bridging)
       {
@@ -169,7 +205,7 @@ export default migration('1727774346_configurate_and_ens', {
         signature: 'approve(address,uint256)',
         args: [mantleL1StandardBridge.address, COMPAmountToBridge],
       },
-      // 6. Bridge COMP from Ethereum to OP Rewards using L1StandardBridge
+      // 6. Bridge COMP from Ethereum to Mantle Rewards using L1StandardBridge
       {
         contract: mantleL1StandardBridge,
         // function depositERC20To(address _l1Token, address _l2Token, address _to, uint256 _amount, uint32 _l2Gas,bytes calldata _data)
@@ -249,7 +285,7 @@ export default migration('1727774346_configurate_and_ens', {
     expect(config.shouldUpscale).to.be.equal(true);
 
     // 2. & 3.
-    expect(await USDe.balanceOf(comet.address)).to.be.equal(USDEAmountToBridge);
+    expect(await USDe.balanceOf(comet.address)).to.be.equal(USDEAmountToSeed);
 
     // 4. & 5.
     expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(3_600, 18));
