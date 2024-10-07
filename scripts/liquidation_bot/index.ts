@@ -7,15 +7,18 @@ import {
 import {
   arbitragePurchaseableCollateral,
   liquidateUnderwaterBorrowers,
+  getUniqueAddresses,
   getAssets,
   Asset
 } from './liquidateUnderwaterBorrowers';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import { Signer, Wallet } from 'ethers';
 import googleCloudLog, { LogSeverity } from './googleCloudLog';
+import { Sleuth } from '@compound-finance/sleuth';
+import * as liquidatableQuerySol from '../../artifacts/contracts/LiquidatableQuery.sol/LiquidatableQuery.json';
 
-const loopDelay = 5000;
-const loopsUntilUpdateAssets = 1000;
+const loopDelay = 20000;
+const loopsUntilDataRefresh = 1000;
 let assets: Asset[] = [];
 
 async function main() {
@@ -54,6 +57,7 @@ async function main() {
   // Flashbots provider requires passing in a standard provider
   let flashbotsProvider: FlashbotsBundleProvider;
   let signer: Signer;
+
   if (useFlashbots && useFlashbots.toLowerCase() === 'true') {
     // XXX use a designated auth signer
     // `authSigner` is an Ethereum private key that does NOT store funds and is NOT your bot's primary key.
@@ -90,50 +94,58 @@ async function main() {
     throw new Error(`no deployed Comet found for ${network}/${deployment}`);
   }
 
+  let sleuth = new Sleuth(hre.ethers.provider);
+  // Hardhat's output seems to not match Forge's, but it's a small tweak
+  let liquidatableQuerySolFixed = {
+    ...liquidatableQuerySol,
+    evm: { bytecode: { object: liquidatableQuerySol.bytecode } }
+  };
+  let liquidatableQuery = await Sleuth.querySol<[string, string[]], [string[]]>(liquidatableQuerySolFixed);
+
   const liquidator = await hre.ethers.getContractAt(
     'OnChainLiquidator',
     liquidatorAddress,
     signer
   ) as OnChainLiquidator;
 
-  let lastBlockNumber: number;
-  let loops = 0;
-  while (true) {
-    if (assets.length == 0 || loops >= loopsUntilUpdateAssets) {
+  let lastAddressRefresh: number | undefined;
+  let uniqueAddresses: Set<string> = new Set();
+
+  for (let loops = 0; true; loops++) {
+    if (assets.length == 0 || loops >= loopsUntilDataRefresh) {
       googleCloudLog(LogSeverity.INFO, 'Updating assets');
       assets = await getAssets(comet);
+
+      googleCloudLog(LogSeverity.INFO, `Updating unique addresses`);
+      uniqueAddresses = await getUniqueAddresses(comet);
+
       loops = 0;
     }
 
-    const currentBlockNumber = await hre.ethers.provider.getBlockNumber();
+    // Note, the first time is effectively a nop
+    const [blockNumber, liquidationAttempted] = await liquidateUnderwaterBorrowers(
+      uniqueAddresses,
+      sleuth,
+      liquidatableQuery,
+      comet,
+      liquidator,
+      signerWithFlashbots,
+      network,
+      deployment
+    );
 
-    googleCloudLog(LogSeverity.INFO, `currentBlockNumber: ${currentBlockNumber}`);
-
-    if (currentBlockNumber !== lastBlockNumber) {
-      lastBlockNumber = currentBlockNumber;
-      const liquidationAttempted = await liquidateUnderwaterBorrowers(
+    if (!liquidationAttempted) {
+      await arbitragePurchaseableCollateral(
         comet,
         liquidator,
+        assets,
         signerWithFlashbots,
         network,
         deployment
       );
-      if (!liquidationAttempted) {
-        await arbitragePurchaseableCollateral(
-          comet,
-          liquidator,
-          assets,
-          signerWithFlashbots,
-          network,
-          deployment
-        );
-      }
-    } else {
-      googleCloudLog(LogSeverity.INFO, `block already checked; waiting ${loopDelay}ms`);
-      await new Promise(resolve => setTimeout(resolve, loopDelay));
     }
 
-    loops += 1;
+    await new Promise(resolve => setTimeout(resolve, loopDelay));
   }
 }
 
