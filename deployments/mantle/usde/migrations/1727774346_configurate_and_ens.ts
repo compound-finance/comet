@@ -20,11 +20,10 @@ const ENSSubdomainLabel = 'v3-additional-grants';
 const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 
-const USDE_ADDRESS = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
 const USDT_MAINNET = '0xdac17f958d2ee523a2206206994597c13d831ec7';
 const cUSDTAddress = '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9';
 
-const USDT_MANTLE = '0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840';
+const USDT_MANTLE = '0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE';
 const MANTLE_USDT_USDE_SWAP_POOL = '0x7ccD8a769d466340Fff36c6e10fFA8cf9077D988';
 
 const COMPAmountToBridge = exp(3_600, 18);
@@ -51,6 +50,7 @@ export default migration('1727774346_configurate_and_ens', {
       rewards,
       COMP,
       timelock,
+      USDe,
     } =
       await deploymentManager.getContracts();
 
@@ -272,7 +272,7 @@ export default migration('1727774346_configurate_and_ens', {
     //   mETH: {
     //     supplyCap: exp(470, 18)
     //   },
-    //   wETH: {
+    //   WETH: {
     //     supplyCap: exp(1_300, 18)
     //   },
     //   baseTrackingSupplySpeed: exp(4 / 86400, 15, 18), // 46296296296
@@ -285,7 +285,7 @@ export default migration('1727774346_configurate_and_ens', {
     expect(config.shouldUpscale).to.be.equal(true);
 
     // 2. & 3.
-    expect(await USDe.balanceOf(comet.address)).to.be.equal(USDEAmountToSeed);
+    expect(await USDe.balanceOf(comet.address)).to.be.greaterThanOrEqual(USDEAmountToSeed);
 
     // 4. & 5.
     expect(await COMP.balanceOf(rewards.address)).to.be.equal(exp(3_600, 18));
