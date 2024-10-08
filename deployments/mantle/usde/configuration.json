@@ -20,8 +20,8 @@
     },
     "tracking": {
       "indexScale": "1e15",
-      "baseSupplySpeed": "46296296296e0",
-      "baseBorrowSpeed": "46296296296e0",
+      "baseSupplySpeed": "0e0",
+      "baseBorrowSpeed": "0e0",
       "baseMinForRewards": "1000e18"
     },
     "assets": {
@@ -31,7 +31,7 @@
         "borrowCF": 0.8,
         "liquidateCF": 0.85,
         "liquidationFactor": 0.90,
-        "supplyCap": "3000e18"
+        "supplyCap": "0e18"
       },
       "WETH": {
         "address": "0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111",
@@ -40,7 +40,7 @@
         "borrowCF": 0.82,
         "liquidateCF": 0.87,
         "liquidationFactor": 0.93,
-        "supplyCap": "2800e18"
+        "supplyCap": "0e18"
       }
     }
 }
