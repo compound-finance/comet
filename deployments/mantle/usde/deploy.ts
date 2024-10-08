@@ -8,9 +8,10 @@ const HOUR = 60 * 60;
 const DAY = 24 * HOUR;
 
 const MAINNET_TIMELOCK = '0x6d903f6003cca6255d85cca4d3b5e5146dc33925';
-const METH_TO_ETH_PRICE_FEED_ADDRESS = '0x9b2C948dbA5952A1f5Ab6fA16101c1392b8da1ab';
-const ETH_TO_USD_PRICE_FEED_ADDRESS = '0xFc34806fbD673c21c1AEC26d69AA247F1e69a2C6';
- 
+const USDE_TO_USD_PRICE_FEED_ADDRESS = '0xc49E06B50FCA57751155DA78803DCa691AfcDB22';
+const METH_TO_ETH_PRICE_FEED_ADDRESS = '0xBeaa52edFeB12da4F026b38eD6203938a9936EDF';
+const ETH_TO_USD_PRICE_FEED_ADDRESS = '0x61A31634B4Bb4B9C2556611f563Ed86cE2D4643B';
+
 export default async function deploy(
   deploymentManager: DeploymentManager,
   deploySpec: DeploySpec
@@ -25,10 +26,29 @@ async function deployContracts(
 ): Promise<Deployed> {
   const trace = deploymentManager.tracer();
 
+  // pre-deployed OptimismMintableERC20
   const COMP = await deploymentManager.existing(
     'COMP',
     '0x52b7D8851d6CcBC6342ba0855Be65f7B82A3F17f',
     'mantle'
+  );
+
+  const usdePriceFeed = await deploymentManager.deploy(
+    'USDe:priceFeed',
+    'pricefeeds/ScalingPriceFeed.sol',
+    [
+      USDE_TO_USD_PRICE_FEED_ADDRESS,   // USDe / USD price feed
+      8,                                // decimals
+    ]
+  );
+
+  const wethPriceFeed = await deploymentManager.deploy(
+    'WETH:priceFeed',
+    'pricefeeds/ScalingPriceFeed.sol',
+    [
+      ETH_TO_USD_PRICE_FEED_ADDRESS,   // ETH / USD price feed
+      8,                                // decimals
+    ]
   );
 
   const methPriceFeed = await deploymentManager.deploy(
@@ -123,6 +143,7 @@ async function deployContracts(
   const { comet } = deployed;
 
   // Deploy Bulker
+  // It won't be used, as we do not have MNT as a base and as a collateral 
   const bulker = await deploymentManager.deploy(
     'bulker',
     'bulkers/BaseBulker.sol',

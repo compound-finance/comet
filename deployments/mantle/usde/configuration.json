@@ -35,7 +35,6 @@
       },
       "WETH": {
         "address": "0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111",
-        "priceFeed": "0xFc34806fbD673c21c1AEC26d69AA247F1e69a2C6",
         "decimals": "18",
         "borrowCF": 0.82,
         "liquidateCF": 0.87,
