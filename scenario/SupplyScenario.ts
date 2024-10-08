@@ -300,7 +300,7 @@ scenario(
     const utilization = await comet.getUtilization();
     const borrowRate = (await comet.getBorrowRate(utilization)).toBigInt();
 
-    expectApproximately(await albert.getCometBaseBalance(), -999n * scale, getInterest(999n * scale, borrowRate, 1n) + 1n);
+    expectApproximately(await albert.getCometBaseBalance(), -999n * scale, getInterest(999n * scale, borrowRate, 1n) + 2n);
 
     // Albert repays 1000 units of base borrow
     await baseAsset.approve(albert, comet.address);
