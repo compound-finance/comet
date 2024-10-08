@@ -74,7 +74,7 @@ const {
   REMOTE_ACCOUNTS = ''
 } = process.env;
 
-function *deriveAccounts(pk: string, n: number = 10) {
+function* deriveAccounts(pk: string, n: number = 10) {
   for (let i = 0; i < n; i++)
     yield (BigInt('0x' + pk) + BigInt(i)).toString(16);
 }
@@ -196,7 +196,7 @@ function setupDefaultNetworkProviders(hardhatConfig: HardhatUserConfig) {
         getDefaultProviderURL(netConfig.network),
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
-      accounts: REMOTE_ACCOUNTS ? 'remote' : ( ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC } ),
+      accounts: REMOTE_ACCOUNTS ? 'remote' : (ETH_PK ? [...deriveAccounts(ETH_PK)] : { mnemonic: MNEMONIC }),
     };
   }
 }
@@ -337,6 +337,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: 'https://api.scrollscan.com/api',
           browserURL: 'https://scrollscan.com/'
+        }
+      },
+      {
+        network: 'mantle',
+        chainId: 5000,
+        urls: {
+          apiURL: 'https://explorer.mantle.xyz/api',
+          browserURL: 'https://explorer.mantle.xyz/'
         }
       }
     ]
