@@ -39,7 +39,10 @@ contract MarketUpdateTimelock {
 
     fallback() external payable { }
 
-
+    /**
+     * @notice Sets a new delay for executing transactions
+     * @param delay_ The new delay in seconds
+     */
     function setDelay(uint delay_) public {
         require(msg.sender == governor, "MarketUpdateTimelock::setDelay: Call must come from the Main Governor Timelock.");
         require(delay_ >= MINIMUM_DELAY, "MarketUpdateTimelock::setDelay: Delay must exceed minimum delay.");
@@ -49,6 +52,10 @@ contract MarketUpdateTimelock {
         emit SetDelay(delay);
     }
 
+    /**
+     * @notice Transfers governor role to a new address
+     * @param newGovernor The address of the new governor
+     */
     function setGovernor(address newGovernor) public {
         require(msg.sender == governor, "MarketUpdateTimelock::setGovernor: Call must come from governor.");
         address oldGovernor = governor;
@@ -56,6 +63,10 @@ contract MarketUpdateTimelock {
         emit SetGovernor(oldGovernor, newGovernor);
     }
 
+    /**
+     * @notice Sets a new market update proposer
+     * @param newMarketUpdateProposer The address of the new proposer
+     */
     function setMarketUpdateProposer(address newMarketUpdateProposer) external {
         require(msg.sender == governor, "MarketUpdateTimelock::setMarketUpdateProposer: Call must come from governor.");
         address oldMarketUpdateProposer = marketUpdateProposer;
@@ -63,6 +74,15 @@ contract MarketUpdateTimelock {
         emit SetMarketUpdateProposer(oldMarketUpdateProposer, newMarketUpdateProposer);
     }
 
+    /**
+     * @notice Queues a transaction for execution
+     * @param target The address of the target contract
+     * @param value The ETH value to send with the transaction
+     * @param signature The function signature to call
+     * @param data The calldata for the function call
+     * @param eta The time when the transaction can be executed
+     * @return The hash of the queued transaction
+     */
     function queueTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public returns (bytes32) {
         require(msg.sender == marketUpdateProposer, "MarketUpdateTimelock::queueTransaction: Call must come from marketUpdateProposer.");
         require(eta >= getBlockTimestamp() + delay, "MarketUpdateTimelock::queueTransaction: Estimated execution block must satisfy delay.");
@@ -74,6 +94,14 @@ contract MarketUpdateTimelock {
         return txHash;
     }
 
+    /**
+     * @notice Cancels a previously queued transaction
+     * @param target The address of the target contract
+     * @param value The ETH value sent with the transaction
+     * @param signature The function signature
+     * @param data The calldata for the function
+     * @param eta The time when the transaction was scheduled to execute
+     */
     function cancelTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public {
         require(msg.sender == marketUpdateProposer, "MarketUpdateTimelock::cancelTransaction: Call must come from marketUpdateProposer.");
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
@@ -82,6 +110,15 @@ contract MarketUpdateTimelock {
         emit CancelTransaction(txHash, target, value, signature, data, eta);
     }
 
+    /**
+     * @notice Executes a queued transaction
+     * @param target The address of the target contract
+     * @param value The ETH value to send with the transaction
+     * @param signature The function signature to call
+     * @param data The calldata for the function call
+     * @param eta The time when the transaction was scheduled to execute
+     * @return The return data from the executed transaction
+     */
     function executeTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public payable returns (bytes memory) {
         require(msg.sender == marketUpdateProposer, "MarketUpdateTimelock::executeTransaction: Call must come from marketUpdateProposer.");
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));

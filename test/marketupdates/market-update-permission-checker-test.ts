@@ -39,13 +39,13 @@ describe('MarketUpdatePermissionChecker', () => {
       marketAdminPermissionCheckerContract
         .connect(marketUpdateMultiSig)
         .setMarketAdmin(newMarketAdminWallet.address)
-    ).to.be.revertedWith('Ownable: caller is not the owner');
+    ).to.be.revertedWithCustomError(marketAdminPermissionCheckerContract,'OwnableUnauthorizedAccount');
 
     await expect(
       marketAdminPermissionCheckerContract
         .connect(marketUpdateTimelockSigner)
         .setMarketAdmin(newMarketAdminWallet.address)
-    ).to.be.revertedWith('Ownable: caller is not the owner');
+    ).to.be.revertedWithCustomError(marketAdminPermissionCheckerContract,'OwnableUnauthorizedAccount');
   });
 
   it('only the owner can set the market admin pause guardian', async () => {
@@ -84,13 +84,13 @@ describe('MarketUpdatePermissionChecker', () => {
       marketAdminPermissionCheckerContract
         .connect(marketUpdateMultiSig)
         .setMarketAdminPauseGuardian(marketUpdateTimelockSigner.address)
-    ).to.be.revertedWith('Ownable: caller is not the owner');
+    ).to.be.revertedWithCustomError(marketAdminPermissionCheckerContract,'OwnableUnauthorizedAccount');
 
     await expect(
       marketAdminPermissionCheckerContract
         .connect(marketUpdateTimelockSigner)
         .setMarketAdminPauseGuardian(marketUpdateTimelockSigner.address)
-    ).to.be.revertedWith('Ownable: caller is not the owner');
+    ).to.be.revertedWithCustomError(marketAdminPermissionCheckerContract,'OwnableUnauthorizedAccount');
 
   });
 

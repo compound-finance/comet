@@ -1,6 +1,6 @@
-import { expect, makeConfigurator, event, wait } from './../helpers';
-import { makeMarketAdmin } from './market-updates-helper';
-import { ethers } from 'hardhat';
+import {ethers} from 'hardhat';
+import {event, expect, makeConfigurator, wait} from './../helpers';
+import {makeMarketAdmin} from './market-updates-helper';
 
 describe('CometProxyAdmin', function() {
   it('only main-governor-timelock can transferOwnership of CometProxyAdmin as it is the owner', async () => {
@@ -30,7 +30,7 @@ describe('CometProxyAdmin', function() {
 
     await expect(
       proxyAdmin.connect(bob).transferOwnership(alice.address)
-    ).to.be.revertedWith('Ownable: caller is not the owner');
+    ).to.be.revertedWithCustomError(proxyAdmin,'OwnableUnauthorizedAccount');
   });
 
   it('market admin cannot transferOwnership of CometProxyAdmin', async () => {
@@ -56,7 +56,7 @@ describe('CometProxyAdmin', function() {
       proxyAdmin
         .connect(marketUpdateTimelockSigner)
         .transferOwnership(alice.address)
-    ).to.be.revertedWith('Ownable: caller is not the owner');
+    ).to.be.revertedWithCustomError(proxyAdmin,'OwnableUnauthorizedAccount');
   });
 
 

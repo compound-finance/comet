@@ -167,12 +167,11 @@ describe('MarketUpdateProposer', function() {
     // Checks the proposal
     const proposal = await marketUpdateProposerContract.getProposal(proposalId);
 
-    expect(proposal.id).to.equal(proposalId);
-    expect(proposal.proposer).to.equal(marketUpdateMultiSig.address);
-    expect(proposal.targets[0]).to.equal(configuratorProxy.address);
-    expect(proposal.signatures[0]).to.equal('setSupplyKink(address,uint64)');
-    expect(proposal.calldatas[0]).to.equal(setSupplyKinkCalldata);
-    expect(proposal.description).to.equal(proposalDescription);
+    expect(proposal[0]).to.equal(proposalId);
+    expect(proposal[1]).to.equal(marketUpdateMultiSig.address);
+    expect(proposal[3][0]).to.equal(configuratorProxy.address);
+    expect(proposal[5][0]).to.equal('setSupplyKink(address,uint64)');
+    expect(proposal[6][0]).to.equal(setSupplyKinkCalldata);
   });
 
   it('can cancel the proposal', async () => {

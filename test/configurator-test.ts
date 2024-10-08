@@ -100,7 +100,7 @@ describe('configurator', function () {
   });
 
   it('reverts if deploy is called from non-governor', async () => {
-    const { configuratorProxy, proxyAdmin, cometProxy, users: [alice] } = await makeConfigurator();
+    const { configuratorProxy, proxyAdmin, cometProxy, users: [alice], governor } = await makeConfigurator();
 
     const MarketAdminPermissionCheckerFactory = (await ethers.getContractFactory(
       'MarketAdminPermissionChecker'
@@ -108,6 +108,7 @@ describe('configurator', function () {
 
 
     const marketAdminPermissionCheckerContract =  await MarketAdminPermissionCheckerFactory.deploy(
+      governor.address,
       ethers.constants.AddressZero,
       ethers.constants.AddressZero
     );

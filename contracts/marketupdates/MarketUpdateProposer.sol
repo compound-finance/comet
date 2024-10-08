@@ -41,8 +41,6 @@ contract MarketUpdateProposer {
         /// @notice The ordered list of calldata to be passed to each call
         bytes[] calldatas;
 
-        string description;
-
         /// @notice Flag marking whether the proposal has been canceled
         bool canceled;
 
@@ -68,7 +66,10 @@ contract MarketUpdateProposer {
     uint public proposalCount;
 
     /// @notice The initial proposal ID, set when the contract is deployed
-    uint public initialProposalId;
+    uint public constant INITIAL_PROPOSAL_ID = 0;
+    
+    /// @notice The maximum number of actions that can be included in a proposal
+    uint public constant PROPOSAL_MAX_OPERATIONS = 20; // 20 actions
 
     /// @notice An event emitted when a new proposal is created
     event MarketUpdateProposalCreated(uint id, address proposer, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, string description);
@@ -82,7 +83,7 @@ contract MarketUpdateProposer {
     error InvalidAddress();
 
     constructor(address governor_, address marketAdmin_, address proposalGuardian_, ITimelock timelock_) public {
-        if (address(governor_) == address(0) || address(marketAdmin_) == address(0) || address(timelock_) == address(0)) revert InvalidAddress();
+        if (governor_ == address(0) || marketAdmin_ == address(0) || address(timelock_) == address(0)) revert InvalidAddress();
         governor = governor_;
         marketAdmin = marketAdmin_;
         proposalGuardian = proposalGuardian_;
@@ -136,17 +137,30 @@ contract MarketUpdateProposer {
         emit SetMarketAdmin(oldMarketAdmin, newMarketAdmin);
     }
     
+    /**
+     * @notice Function used to propose a new proposal for market updates
+     * @dev Can only be called by the market admin. Reverts with Unauthorized if the caller is not the market admin
+     * The function requires the provided arrays to have the same length and at least one action
+     * Emits a MarketUpdateProposalCreated event with the proposal details
+     * @param targets Target addresses for proposal calls
+     * @param values Eth values for proposal calls
+     * @param signatures Function signatures for proposal calls
+     * @param calldatas Calldatas for proposal calls
+     * @param description String description of the proposal
+     * @return Proposal id of new proposal
+     */
     function propose(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint) {
         if (msg.sender != marketAdmin) revert Unauthorized();
         require(targets.length == values.length && targets.length == signatures.length && targets.length == calldatas.length, "MarketUpdateProposer::propose: proposal function information arity mismatch");
         require(targets.length != 0, "MarketUpdateProposer::propose: must provide actions");
-
+        require(targets.length <= PROPOSAL_MAX_OPERATIONS, "MarketUpdateProposer::propose: too many actions");
+        
         proposalCount++;
         uint newProposalID = proposalCount;
         MarketUpdateProposal storage newProposal = proposals[newProposalID];
 
         require(newProposal.id == 0, "MarketUpdateProposer::propose: ProposalID collision");
-        uint eta = add256(block.timestamp, timelock.delay());
+        uint eta = block.timestamp + timelock.delay();
         newProposal.id = newProposalID;
         newProposal.proposer = msg.sender;
         newProposal.eta = eta;
@@ -154,11 +168,8 @@ contract MarketUpdateProposer {
         newProposal.values = values;
         newProposal.signatures = signatures;
         newProposal.calldatas = calldatas;
-        newProposal.description = description;
         newProposal.canceled = false;
         newProposal.executed = false;
-
-        proposals[newProposal.id] = newProposal;
 
         emit MarketUpdateProposalCreated(newProposal.id, msg.sender, targets, values, signatures, calldatas, description);
 
@@ -167,7 +178,6 @@ contract MarketUpdateProposer {
         }
 
         return newProposal.id;
-
     }
 
     function queueOrRevertInternal(address target, uint value, string memory signature, bytes memory data, uint eta) internal {
@@ -208,38 +218,50 @@ contract MarketUpdateProposer {
         emit MarketUpdateProposalCancelled(proposalId);
     }
 
+    /**
+     * @notice Gets the state of a proposal
+     * @param proposalId The id of the proposal
+     * @return Proposal state
+     */
     function state(uint proposalId) public view returns (ProposalState) {
-        require(proposalCount >= proposalId && proposalId > initialProposalId, "MarketUpdateProposer::state: invalid proposal id");
+        require(proposalCount >= proposalId && proposalId > INITIAL_PROPOSAL_ID, "MarketUpdateProposer::state: invalid proposal id");
         MarketUpdateProposal storage proposal = proposals[proposalId];
         if (proposal.canceled) {
             return ProposalState.Canceled;
         } else if (proposal.executed) {
             return ProposalState.Executed;
-        } else if (block.timestamp >= add256(proposal.eta, timelock.GRACE_PERIOD())) {
+        } else if (block.timestamp >= (proposal.eta + timelock.GRACE_PERIOD())) {
             return ProposalState.Expired;
         } else {
             return ProposalState.Queued;
         }
     }
 
-    function add256(uint256 a, uint256 b) internal pure returns (uint) {
-        uint c = a + b;
-        require(c >= a, "addition overflow");
-        return c;
-    }
 
+    /**
+     * @notice Get details of a proposal by its id
+     * @param proposalId The id of the proposal
+     * @return id The id of the proposal
+     * @return proposer The address of the proposer
+     * @return eta The estimated time at which the proposal can be executed
+     * @return targets targets of the proposal actions
+     * @return values ETH values of the proposal actions
+     * @return signatures signatures of the proposal actions
+     * @return calldatas calldatas of the proposal actions
+     * @return canceled boolean indicating whether the proposal has been canceled
+     * @return executed boolean indicating whether the proposal has been executed
+     */
     function getProposal(uint proposalId) public view
         returns (
-            uint id,
-            address proposer,
+            uint,
+            address,
             uint eta,
-            address[] memory targets,
-            uint[] memory values,
-            string[] memory signatures,
-            bytes[] memory calldatas,
-            string memory description,
-            bool canceled,
-            bool executed
+            address[] memory,
+            uint[] memory,
+            string[] memory,
+            bytes[] memory,
+            bool,
+            bool
         )
     {
         MarketUpdateProposal storage proposal = proposals[proposalId];
@@ -251,7 +273,6 @@ contract MarketUpdateProposer {
             proposal.values,
             proposal.signatures,
             proposal.calldatas,
-            proposal.description,
             proposal.canceled,
             proposal.executed
         );

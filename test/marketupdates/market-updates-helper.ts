@@ -13,7 +13,7 @@ export async function makeMarketAdmin() {
 
   const signers = await ethers.getSigners();
 
-  const marketUpdateMultiSig = signers[10];
+  const marketUpdateMultiSig = signers[8];
   const marketUpdateProposalGuardianSigner = signers[11];
   const marketAdminPauseGuardianSigner = signers[9];
 
@@ -76,10 +76,11 @@ export async function makeMarketAdmin() {
 
 
   const marketAdminPermissionCheckerContract =  await MarketAdminPermissionCheckerFactory.deploy(
+    governorTimelockSigner.address,
     marketUpdateTimelockContract.address,
     marketAdminPauseGuardianSigner.address
   );
-  await marketAdminPermissionCheckerContract.transferOwnership(governorTimelockSigner.address);
+  // await marketAdminPermissionCheckerContract.transferOwnership(governorTimelockSigner.address);
 
   await marketUpdateTimelockContract
     .connect(governorTimelockSigner)

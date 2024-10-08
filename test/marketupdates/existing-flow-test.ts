@@ -241,7 +241,7 @@ describe('configurator', function() {
     const ProxyAdmin = (await ethers.getContractFactory(
       'CometProxyAdmin'
     )) as CometProxyAdmin__factory;
-    const proxyAdminTemp = await ProxyAdmin.connect(bob).deploy();
+    const proxyAdminTemp = await ProxyAdmin.connect(bob).deploy(bob.address);
     await proxyAdminTemp.deployed();
 
     // Deploy Comet proxy

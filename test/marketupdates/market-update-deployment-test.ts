@@ -158,7 +158,7 @@ describe('MarketUpdateDeployment', function() {
     )) as CometProxyAdmin__factory;
     const proxyAdminNew = await ProxyAdmin.connect(
       marketUpdateMultiSig
-    ).deploy();
+    ).deploy(marketUpdateMultiSig.address);
 
     // 5) Set MainGovernorTimelock as the owner of new CometProxyAdmin by calling transferOwnership
     await proxyAdminNew
@@ -182,14 +182,10 @@ describe('MarketUpdateDeployment', function() {
 
     const marketAdminPermissionCheckerContract =
       await MarketAdminPermissionCheckerFactory.deploy(
+        governorTimelock.address,
         ethers.constants.AddressZero,
         ethers.constants.AddressZero
       );
-
-    // 8) Transfer the ownership of MarketAdminPermissionChecker to Governor Timelock
-    await marketAdminPermissionCheckerContract.transferOwnership(
-      governorTimelock.address
-    );
 
     // -------   Update Existing Contracts -----------
     console.log('Updating the existing contracts');
@@ -382,7 +378,7 @@ describe('MarketUpdateDeployment', function() {
 
     // Deploy ProxyAdmin
     const ProxyAdmin = (await ethers.getContractFactory('CometProxyAdminOld')) as CometProxyAdminOld__factory;
-    const proxyAdmin = await ProxyAdmin.connect(governorTimelockSigner).deploy();
+    const proxyAdmin = await ProxyAdmin.connect(governorTimelockSigner).deploy(governorTimelockSigner.address);
 
     // Deploy Comet proxy
     const CometProxy = (await ethers.getContractFactory('TransparentUpgradeableProxy')) as TransparentUpgradeableProxy__factory;

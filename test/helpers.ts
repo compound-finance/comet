@@ -431,7 +431,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
 
   // Deploy ProxyAdmin
   const ProxyAdmin = (await ethers.getContractFactory('CometProxyAdmin')) as CometProxyAdmin__factory;
-  const proxyAdmin = await ProxyAdmin.connect(governor).deploy();
+  const proxyAdmin = await ProxyAdmin.connect(governor).deploy(governor.address);
   await proxyAdmin.deployed();
 
   // Deploy Comet proxy
@@ -487,6 +487,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     )) as MarketAdminPermissionChecker__factory;
 
     const marketAdminPermissionCheckerContract =  await MarketAdminPermissionCheckerFactory.deploy(
+      governor.address,
       ethers.constants.AddressZero,
       ethers.constants.AddressZero
     );
