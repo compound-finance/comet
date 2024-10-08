@@ -27,7 +27,7 @@ const USDT_MANTLE = '0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE';
 const MANTLE_USDT_USDE_SWAP_POOL = '0x7ccD8a769d466340Fff36c6e10fFA8cf9077D988';
 
 const COMPAmountToBridge = exp(3_600, 18);
-const USDEAmountToSeed = exp(10_000, 18);
+const USDEAmountToSeed = exp(75_000, 18);
 
 let mantleCOMP: string;
 
@@ -50,7 +50,6 @@ export default migration('1727774346_configurate_and_ens', {
       rewards,
       COMP,
       timelock,
-      USDe,
     } =
       await deploymentManager.getContracts();
 
@@ -83,7 +82,6 @@ export default migration('1727774346_configurate_and_ens', {
     }
 
     const configuration = await getConfigurationStruct(deploymentManager);
-
     const swapPool = new Contract(
       MANTLE_USDT_USDE_SWAP_POOL,
       [
@@ -93,7 +91,7 @@ export default migration('1727774346_configurate_and_ens', {
       deploymentManager.hre.ethers.provider
     );
 
-    const amountToSwap = (await swapPool.getSwapIn(USDEAmountToSeed, false)).amountIn;
+    const amountToSwap = (await swapPool.getSwapIn(USDEAmountToSeed * 102n / 100n, false)).amountIn;
 
 
     const setConfigurationCalldata = await calldata(
@@ -231,7 +229,7 @@ export default migration('1727774346_configurate_and_ens', {
       },
     ];
 
-    const description = 'DESCRIPTION'; 
+    const description = '# Initialize cUSDEv3 on Mantle\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes deployment of Compound III to Mantle network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDe market on Mantle; upon execution, cUSDEv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-mantle-network/5774/6).\n\nFurther detailed information can be found on the corresponding [pull request](<>), [deploy market GitHub action run](<>) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-mantle-network/5774).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration, deploys a new Comet implementation on Mantle and swaps received ETH for USDe via Merchant Moe’s [pool](https://mantlescan.info/address/0x7ccD8a769d466340Fff36c6e10fFA8cf9077D988). This sends the encoded `setConfiguration`, `deployAndUpgradeTo`, `transfer` and `swap` calls across the bridge to the governance receiver on Mantle. It also calls `setRewardConfig` on the Mantle rewards contract, to establish Mantle’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 4 COMP/day and borrow speed to be 4 COMP/day.\n\nThe second action reduces Compound’s [cUSDT](https://etherscan.io/address/0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9) reserves and transfers it to Timelock, in order to swap it for USDe and then seed the market reserves for the cUSDEv3 Comet.\n\nThe third action approves Mantle’s [L1StandardBridge](https://etherscan.io/address/0x95fC37A27a2f68e3A647CDc081F0A89bb47c3012) to take USDT, in order to then swap it for USDe./n/nThe fourth action deposits USDT  from mainnet to the Mantle L1StandardBridge contract to bridge to Timelock which will swap it for USDe to seed the reserves.\n\nThe fifth action approves Mantle’s [L1StandardBridge](https://etherscan.io/address/0x95fC37A27a2f68e3A647CDc081F0A89bb47c3012) to take Timelock's COMP, in order to seed the rewards contract through the bridge.\n\nThe sixth action deposits 3.6K COMP from mainnet to the Mantle L1StandardBridge contract to bridge to CometRewards.\n\nThe seventh action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Mantle cUSDEv3 market.'; 
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(actions, description))))
     );
@@ -270,13 +268,13 @@ export default migration('1727774346_configurate_and_ens', {
     );
     // expect(stateChanges).to.deep.equal({
     //   mETH: {
-    //     supplyCap: exp(470, 18)
+    //     supplyCap: exp(3000, 18)
     //   },
     //   WETH: {
-    //     supplyCap: exp(1_300, 18)
+    //     supplyCap: exp(2800, 18)
     //   },
     //   baseTrackingSupplySpeed: exp(4 / 86400, 15, 18), // 46296296296
-    //   baseTrackingBorrowSpeed: exp(3 / 86400, 15, 18), // 34722222222
+    //   baseTrackingBorrowSpeed: exp(4 / 86400, 15, 18), // 46296296296
     // });
 
     const config = await rewards.rewardConfig(comet.address);

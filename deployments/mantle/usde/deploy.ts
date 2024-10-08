@@ -43,6 +43,11 @@ async function deployContracts(
   );
 
   // Pull in existing assets
+  const USDe = await deploymentManager.existing(
+    'USDe',
+    '0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34',
+    'mantle'
+  );
   const mETH = await deploymentManager.existing(
     'mETH',
     '0xcDA86A272531e8640cD7F1a92c01839911B90bb0',
@@ -54,7 +59,7 @@ async function deployContracts(
     'mantle'
   );
   const WMANTLE = await deploymentManager.existing(
-    'wMANTLE',
+    'WMANTLE',
     '0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8',
     'mantle'
   );
@@ -130,7 +135,7 @@ async function deployContracts(
   return {
     ...deployed,
     bridgeReceiver,
-    l2CrossDomainMessenger, // TODO: don't have to part of roots. can be pulled via relations
+    l2CrossDomainMessenger,
     l2StandardBridge,
     bulker,
     COMP,
