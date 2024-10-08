@@ -28,7 +28,8 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
             vm,
             MarketAddresses.MAINNET_USDC_MARKET, 
             ChainAddresses.MAINNET_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin, 
+            deployedContracts.newCometProxyAdmin,
+            deployedContracts.marketUpdateProposer,
             "USDC"
         );
     }
@@ -40,7 +41,8 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
             vm,
             MarketAddresses.MAINNET_USDT_MARKET, 
             ChainAddresses.MAINNET_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin, 
+            deployedContracts.newCometProxyAdmin,
+            deployedContracts.marketUpdateProposer,
             "USDT"
         );
     }
@@ -52,7 +54,8 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
             vm,
             MarketAddresses.MAINNET_ETH_MARKET, 
             ChainAddresses.MAINNET_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin, 
+            deployedContracts.newCometProxyAdmin,
+            deployedContracts.marketUpdateProposer,
             "ETH"
         );
     }
@@ -64,7 +67,8 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
             vm,
             MarketAddresses.MAINNET_WST_ETH_MARKET, 
             ChainAddresses.MAINNET_CONFIGURATOR_PROXY,
-            deployedContracts.newCometProxyAdmin, 
+            deployedContracts.newCometProxyAdmin,
+            deployedContracts.marketUpdateProposer,
             "WST_ETH"
         );
     }

@@ -95,7 +95,8 @@ abstract contract MarketUpdateDeploymentBaseTest {
         Vm vm,
         address cometProxy, 
         address configuratorProxy, 
-        address cometProxyAdminNew, 
+        address cometProxyAdminNew,
+        address marketUpdateProposer,
         string memory marketName
         ) public {
             
@@ -140,7 +141,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
         calldatas[0] = abi.encode(cometProxy, newSupplyKinkByMarketAdmin);
 
         description = string(abi.encodePacked("Proposal to update Supply Kink for ", marketName, " Market by Market Admin"));
-        GovernanceHelper.createAndPassMarketUpdateProposal(vm, proposalRequest, description);
+        GovernanceHelper.createAndPassMarketUpdateProposal(vm, proposalRequest, description, marketUpdateProposer);
 
         uint256 newSupplyKinkAfterMarketAdminUpdate = Comet(payable(cometProxy)).supplyKink();
         assert(newSupplyKinkAfterMarketAdminUpdate == newSupplyKinkByMarketAdmin);
