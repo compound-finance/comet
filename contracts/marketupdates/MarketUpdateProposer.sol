@@ -255,7 +255,7 @@ contract MarketUpdateProposer {
         returns (
             uint,
             address,
-            uint eta,
+            uint,
             address[] memory,
             uint[] memory,
             string[] memory,
