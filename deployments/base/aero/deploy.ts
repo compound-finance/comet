@@ -10,6 +10,31 @@ async function deployContracts(
   deploymentManager: DeploymentManager,
   deploySpec: DeploySpec
 ): Promise<Deployed> {
+  const aero = await deploymentManager.existing(
+    'AERO',
+    '0x940181a94A35A4569E4529A3CDfB74e38FD98631',
+    'base'
+  );
+  const weth = await deploymentManager.existing(
+    'WETH',
+    '0x4200000000000000000000000000000000000006',
+    'base'
+  );
+  const usdc = await deploymentManager.existing(
+    'USDC',
+    '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    'base'
+  );
+  const wstETH = await deploymentManager.existing(
+    'wstETH',
+    '0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452',
+    'base'
+  );
+  const cbETH = await deploymentManager.existing(
+    'cbETH',
+    '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf',
+    'base'
+  );
   // AERO 
   // AERO -> USD
   const aeroUsdPriceFeed = await deploymentManager.deploy(

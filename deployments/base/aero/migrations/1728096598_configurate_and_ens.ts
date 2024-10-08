@@ -3,6 +3,7 @@ import { diffState, getCometConfig } from '../../../../plugins/deployment_manage
 import { migration } from '../../../../plugins/deployment_manager/Migration';
 import { calldata, exp, getConfigurationStruct, proposal } from '../../../../src/deploy';
 import { expect } from 'chai';
+import { ethers } from 'ethers';
 
 const ENSName = 'compound-community-licenses.eth';
 const ENSResolverAddress = '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41';
@@ -12,6 +13,11 @@ const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 const baseCOMPAddress = '0x9e1028F5F1D5eDE59748FFceE5532509976840E0';
 
+const SWAP_ROUTER_ADDRESS = '0x2626664c2603336E57B271c5C0b26F421741e481';
+const QUOTER_ADDRESS = '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a';
+
+const aeroAmountToSeed = exp(25_000, 18);
+
 export default migration('1728096598_configurate_and_ens', {
   prepare: async (deploymentManager: DeploymentManager) => {
     const cometFactory = await deploymentManager.deploy('cometFactory', 'CometFactory.sol', [], true);
@@ -20,7 +26,6 @@ export default migration('1728096598_configurate_and_ens', {
 
   enact: async (deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, { newFactoryAddress }) => {
     const trace = deploymentManager.tracer();
-    const ethers = deploymentManager.hre.ethers;
     const { utils } = ethers;
 
     const {
@@ -30,21 +35,21 @@ export default migration('1728096598_configurate_and_ens', {
       cometAdmin,
       configurator,
       rewards,
-      WETH
+      WETH,
+      AERO,
     } = await deploymentManager.getContracts();
 
     const {
       baseL1CrossDomainMessenger,
       baseL1StandardBridge,
       governor,
-      comptrollerV2
     } = await govDeploymentManager.getContracts();
 
     // ENS Setup
     // See also: https://docs.ens.domains/contract-api-reference/name-processing
     const ENSResolver = await govDeploymentManager.existing('ENSResolver', ENSResolverAddress);
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
-    const baseChainId = (await deploymentManager.hre.ethers.provider.getNetwork()).chainId.toString();
+    const baseChainId = 8453;
     const newMarketObject = { baseSymbol: 'AERO', cometAddress: comet.address };
     const officialMarketsJSON = JSON.parse(await ENSResolver.text(subdomainHash, ENSTextRecordKey));
     if (officialMarketsJSON[baseChainId]) {
@@ -68,19 +73,80 @@ export default migration('1728096598_configurate_and_ens', {
       ['address', 'address'],
       [comet.address, baseCOMPAddress]
     );
+    
+    const quoter = new ethers.Contract(
+      QUOTER_ADDRESS,
+      [
+        'function quoteExactOutputSingle((address tokenIn, address tokenOut, uint256 amount, uint24 fee, uint160 sqrtPriceLimitX96)) external view returns (uint256 amountOut)',
+      ],
+      deploymentManager.hre.ethers.provider
+    );
+
+    const amountEthNeeded = await quoter.callStatic.quoteExactOutputSingle({
+      tokenIn: WETH.address,
+      tokenOut: AERO.address,
+      amount: aeroAmountToSeed,
+      fee: 3000,
+      sqrtPriceLimitX96: 0
+    });
+
+    const amountEthWithSlippage = amountEthNeeded.mul(130).div(100).toBigInt();
+
+    const swapCalldata = utils.defaultAbiCoder.encode(
+      ['tuple(address,address,uint24,address,uint256,uint256,uint160)'],
+      [
+        [
+          WETH.address,
+          AERO.address,
+          3000,
+          comet.address,
+          aeroAmountToSeed,
+          amountEthWithSlippage,
+          0
+        ]
+      ]
+    );
+    const approveCalldata = await calldata(WETH.populateTransaction.approve(SWAP_ROUTER_ADDRESS, amountEthWithSlippage));
 
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
-        [configurator.address, configurator.address, cometAdmin.address, rewards.address],
-        [0, 0, 0, 0],
+        [
+          configurator.address,
+          configurator.address,
+          cometAdmin.address,
+          rewards.address,
+          WETH.address,
+          WETH.address,
+          SWAP_ROUTER_ADDRESS
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          amountEthWithSlippage,
+          0,
+          0
+        ],
         [
           'setFactory(address,address)',
           'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
           'deployAndUpgradeTo(address,address)',
-          'setRewardConfig(address,address)'
+          'setRewardConfig(address,address)',
+          'deposit()',
+          'approve(address,uint256)',
+          'exactOutputSingle((address,address,uint24,address,uint256,uint256,uint160))'
         ],
-        [setFactoryCalldata, setConfigurationCalldata, deployAndUpgradeToCalldata, setRewardConfigCalldata]
+        [
+          setFactoryCalldata,
+          setConfigurationCalldata,
+          deployAndUpgradeToCalldata,
+          setRewardConfigCalldata,
+          '0x',
+          approveCalldata,
+          swapCalldata,
+        ]
       ]
     );
 
@@ -91,7 +157,13 @@ export default migration('1728096598_configurate_and_ens', {
         signature: 'sendMessage(address,bytes,uint32)',
         args: [bridgeReceiver.address, l2ProposalData, 3_000_000]
       },
-
+      // 2. Bridge ETH to the L2 timelock
+      {
+        contract: baseL1StandardBridge,
+        value: amountEthWithSlippage,
+        signature: 'depositETHTo(address,uint32,bytes)',
+        args: [localTimelock.address, 200_000, '0x']
+      },
       // 2. Update the list of official markets
       {
         target: ENSResolverAddress,
@@ -103,7 +175,7 @@ export default migration('1728096598_configurate_and_ens', {
       },
     ];
 
-    const description = "# Initialize cAEROv3 on Base network\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Base network. This proposal takes the governance steps recommended and necessary to initialize a Compound III AERO market on Base; upon execution, cAEROv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/gauntlet-base-aero-comet-recommendations/5790).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/937), [deploy market GitHub action run]() and [forum discussion](https://www.comp.xyz/t/gauntlet-base-aero-comet-recommendations/5790).\n\n\n## Proposal Actions\n\nThe first proposal action sets the CometFactory for the new Comet instance in the existing Configurator.\n\nThe second action configures the Comet instance in the Configurator.\n\nThe third action deploys an instance of the newly configured factory and upgrades the Comet instance to use that implementation.\n\nThe fourth action configures the existing rewards contract for the newly deployed Comet instance.\n\nTODO: Seed reserves.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ethereum Mainnet cwstETHv3 market.";
+    const description = '# Initialize cAEROv3 on Base network\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Base network. This proposal takes the governance steps recommended and necessary to initialize a Compound III AERO market on Base; upon execution, cAEROv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/gauntlet-base-aero-comet-recommendations/5790).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/937), [deploy market GitHub action run]() and [forum discussion](https://www.comp.xyz/t/gauntlet-base-aero-comet-recommendations/5790).\n\n\n## Proposal Actions\n\nThe first proposal action sets the CometFactory for the new Comet instance in the existing Configurator.\n\nThe second action configures the Comet instance in the Configurator.\n\nThe third action deploys an instance of the newly configured factory and upgrades the Comet instance to use that implementation.\n\nThe fourth action configures the existing rewards contract for the newly deployed Comet instance.\n\nTODO: Seed reserves.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ethereum Mainnet cwstETHv3 market.';
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(actions, description))))
     );
@@ -114,12 +186,11 @@ export default migration('1728096598_configurate_and_ens', {
     trace(`Created proposal ${proposalId}.`);
   },
 
-  async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
+  async enacted(): Promise<boolean> {
     return false;
   },
 
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
-    const ethers = deploymentManager.hre.ethers;
 
     const {
       comet,
@@ -127,9 +198,6 @@ export default migration('1728096598_configurate_and_ens', {
       COMP,
     } = await deploymentManager.getContracts();
 
-    const {
-      timelock
-    } = await govDeploymentManager.getContracts();
 
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
 
@@ -157,11 +225,11 @@ export default migration('1728096598_configurate_and_ens', {
     expect(config.shouldUpscale).to.be.equal(true);
 
     // 2. & 3 & 4.
-    // expect(await comet.getReserves()).to.be.equal(USDTAmountToBridge);
+    expect(await comet.getReserves()).to.be.equal(aeroAmountToSeed);
 
     // 5.
     const ENSResolver = await govDeploymentManager.existing(
-      "ENSResolver",
+      'ENSResolver',
       ENSResolverAddress
     );
     const subdomainHash = ethers.utils.namehash(ENSSubdomain);
