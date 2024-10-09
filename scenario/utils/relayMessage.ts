@@ -4,6 +4,7 @@ import { relayArbitrumMessage, relayCCTPMint } from './relayArbitrumMessage';
 import relayBaseMessage from './relayBaseMessage';
 import relayLineaMessage from './relayLineaMessage';
 import relayOptimismMessage from './relayOptimismMessage';
+import relayMantleMessage from './relayMantleMessage';
 import relayScrollMessage from './relayScrollMessage';
 
 export default async function relayMessage(
@@ -23,6 +24,13 @@ export default async function relayMessage(
       break;
     case 'optimism':
       await relayOptimismMessage(
+        governanceDeploymentManager,
+        bridgeDeploymentManager,
+        startingBlockNumber
+      );
+      break;
+    case 'mantle':
+      await relayMantleMessage(
         governanceDeploymentManager,
         bridgeDeploymentManager,
         startingBlockNumber
