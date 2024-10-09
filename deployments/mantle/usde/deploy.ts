@@ -26,6 +26,28 @@ async function deployContracts(
 ): Promise<Deployed> {
   const trace = deploymentManager.tracer();
 
+  // Pull in existing assets
+  const USDe = await deploymentManager.existing(
+    'USDe',
+    '0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34',
+    'mantle'
+  );
+  const mETH = await deploymentManager.existing(
+    'mETH',
+    '0xcDA86A272531e8640cD7F1a92c01839911B90bb0',
+    'mantle'
+  );
+  const WETH = await deploymentManager.existing(
+    'WETH',
+    '0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111',
+    'mantle'
+  );
+  const WMANTLE = await deploymentManager.existing(
+    'WMNT',
+    '0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8',
+    'mantle'
+  );
+
   // pre-deployed OptimismMintableERC20
   const COMP = await deploymentManager.existing(
     'COMP',
@@ -60,28 +82,6 @@ async function deployContracts(
       8,                                // decimals
       'mETH / USD price feed'           // description
     ]
-  );
-
-  // Pull in existing assets
-  const USDe = await deploymentManager.existing(
-    'USDe',
-    '0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34',
-    'mantle'
-  );
-  const mETH = await deploymentManager.existing(
-    'mETH',
-    '0xcDA86A272531e8640cD7F1a92c01839911B90bb0',
-    'mantle'
-  );
-  const WETH = await deploymentManager.existing(
-    'WETH',
-    '0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111',
-    'mantle'
-  );
-  const WMANTLE = await deploymentManager.existing(
-    'WMNT',
-    '0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8',
-    'mantle'
   );
 
 

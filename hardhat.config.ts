@@ -127,7 +127,8 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'mantle',
     chainId: 5000,
-    url: `https://mantle-mainnet.infura.io/v3/${INFURA_KEY}`,
+    // url: `https://yolo-side-wildflower.mantle-mainnet.quiknode.pro/${QUICKNODE_KEY}`,
+    url: `https://rpc.mantle.xyz`,
   },
   {
     network: 'base',
@@ -269,7 +270,7 @@ const config: HardhatUserConfig = {
       'base-goerli': BASESCAN_KEY,
       // Linea
       'linea-goerli': LINEASCAN_KEY,
-      optimism: OPTIMISMSCAN_KEY,
+      // optimism: OPTIMISMSCAN_KEY,
       optimisticEthereum: OPTIMISMSCAN_KEY,
       // Mantle
       mantle: MANTLESCAN_KEY,
@@ -343,8 +344,11 @@ const config: HardhatUserConfig = {
         network: 'mantle',
         chainId: 5000,
         urls: {
-          apiURL: 'https://explorer.mantle.xyz/api',
-          browserURL: 'https://explorer.mantle.xyz/'
+          // apiURL: 'https://rpc.mantle.xyz',
+          // apiURL: 'https://explorer.mantle.xyz/api',
+          // browserURL: 'https://explorer.mantle.xyz/'
+          apiURL: 'https://api.mantlescan.xyz/api',
+          browserURL: 'https://mantlescan.xyz/'
         }
       }
     ]
