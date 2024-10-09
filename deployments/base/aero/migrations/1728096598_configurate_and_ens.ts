@@ -114,7 +114,7 @@ export default migration('1728096598_configurate_and_ens', {
       },
     ];
 
-    const description = '# Initialize cAEROv3 on Base network\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Base network. This proposal takes the governance steps recommended and necessary to initialize a Compound III AERO market on Base; upon execution, cAEROv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/gauntlet-base-aero-comet-recommendations/5790).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/937), [deploy market GitHub action run]() and [forum discussion](https://www.comp.xyz/t/gauntlet-base-aero-comet-recommendations/5790).\n\n\n## Proposal Actions\n\nThe first proposal action sets the CometFactory for the new Comet instance in the existing Configurator.\n\nThe second action configures the Comet instance in the Configurator.\n\nThe third action deploys an instance of the newly configured factory and upgrades the Comet instance to use that implementation.\n\nThe fourth action configures the existing rewards contract for the newly deployed Comet instance.\n\nTODO: Seed reserves.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ethereum Mainnet cwstETHv3 market.';
+    const description = '# Initialize cAEROv3 on Base network\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Base network. This proposal takes the governance steps recommended and necessary to initialize a Compound III AERO market on Base; upon execution, cAEROv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based off of the [recommendations from Gauntlet](https://www.comp.xyz/t/gauntlet-base-aero-comet-recommendations/5790).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/937), [deploy market GitHub action run](https://github.com/woof-software/comet/actions/runs/11259792818) and [forum discussion](https://www.comp.xyz/t/gauntlet-base-aero-comet-recommendations/5790).\n\n\n## Proposal Actions\n\nThe first proposal action sets the CometFactory for the new Comet instance in the existing Configurator.\n\nThe second action configures the Comet instance in the Configurator.\n\nThe third action deploys an instance of the newly configured factory and upgrades the Comet instance to use that implementation.\n\nThe fourth action configures the existing rewards contract for the newly deployed Comet instance.\n\nTODO: Seed reserves.\n\nThe sixth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Ethereum Mainnet cwstETHv3 market.';
     const txn = await govDeploymentManager.retry(async () =>
       trace(await governor.propose(...(await proposal(actions, description))))
     );
@@ -141,22 +141,22 @@ export default migration('1728096598_configurate_and_ens', {
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
 
     // uncomment on on-chain proposal PR
-    // expect(stateChanges).to.deep.equal({
-    //   USDC: {
-    //     supplyCap: exp(30000000, 6)
-    //   },
-    //   WETH: {
-    //     supplyCap: exp(7500, 18)
-    //   },
-    //   wstETH: {
-    //     supplyCap: exp(5000, 18)
-    //   },
-    //   cbBTC: {
-    //     supplyCap: exp(150, 8)
-    //   },
-    //   baseTrackingSupplySpeed: exp(15 / 86400, 15, 18), // 173611111111
-    //   baseTrackingBorrowSpeed: exp(15 / 86400, 15, 18), // 173611111111
-    // });
+    expect(stateChanges).to.deep.equal({
+      USDC: {
+        supplyCap: exp(30000000, 6)
+      },
+      WETH: {
+        supplyCap: exp(7500, 18)
+      },
+      wstETH: {
+        supplyCap: exp(5000, 18)
+      },
+      cbBTC: {
+        supplyCap: exp(150, 8)
+      },
+      baseTrackingSupplySpeed: exp(15 / 86400, 15, 18), // 173611111111
+      baseTrackingBorrowSpeed: exp(15 / 86400, 15, 18), // 173611111111
+    });
 
     const config = await rewards.rewardConfig(comet.address);
     expect(config.token).to.be.equal(COMP.address);
