@@ -13,10 +13,6 @@ const ENSSubdomain = `${ENSSubdomainLabel}.${ENSName}`;
 const ENSTextRecordKey = 'v3-official-markets';
 const baseCOMPAddress = '0x9e1028F5F1D5eDE59748FFceE5532509976840E0';
 
-const SWAP_ROUTER_ADDRESS = '0x2626664c2603336E57B271c5C0b26F421741e481';
-const QUOTER_ADDRESS = '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a';
-
-const aeroAmountToSeed = exp(25_000, 18);
 
 export default migration('1728096598_configurate_and_ens', {
   prepare: async (deploymentManager: DeploymentManager) => {
@@ -30,18 +26,14 @@ export default migration('1728096598_configurate_and_ens', {
 
     const {
       bridgeReceiver,
-      timelock: localTimelock,
       comet,
       cometAdmin,
       configurator,
       rewards,
-      WETH,
-      AERO,
     } = await deploymentManager.getContracts();
 
     const {
       baseL1CrossDomainMessenger,
-      baseL1StandardBridge,
       governor,
     } = await govDeploymentManager.getContracts();
 
@@ -73,40 +65,6 @@ export default migration('1728096598_configurate_and_ens', {
       ['address', 'address'],
       [comet.address, baseCOMPAddress]
     );
-    
-    const quoter = new ethers.Contract(
-      QUOTER_ADDRESS,
-      [
-        'function quoteExactOutputSingle((address tokenIn, address tokenOut, uint256 amount, uint24 fee, uint160 sqrtPriceLimitX96)) external view returns (uint256 amountOut)',
-      ],
-      deploymentManager.hre.ethers.provider
-    );
-
-    const amountEthNeeded = await quoter.callStatic.quoteExactOutputSingle({
-      tokenIn: WETH.address,
-      tokenOut: AERO.address,
-      amount: aeroAmountToSeed,
-      fee: 3000,
-      sqrtPriceLimitX96: 0
-    });
-
-    const amountEthWithSlippage = amountEthNeeded.mul(130).div(100).toBigInt();
-
-    const swapCalldata = utils.defaultAbiCoder.encode(
-      ['tuple(address,address,uint24,address,uint256,uint256,uint160)'],
-      [
-        [
-          WETH.address,
-          AERO.address,
-          3000,
-          comet.address,
-          aeroAmountToSeed,
-          amountEthWithSlippage,
-          0
-        ]
-      ]
-    );
-    const approveCalldata = await calldata(WETH.populateTransaction.approve(SWAP_ROUTER_ADDRESS, amountEthWithSlippage));
 
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
@@ -116,36 +74,24 @@ export default migration('1728096598_configurate_and_ens', {
           configurator.address,
           cometAdmin.address,
           rewards.address,
-          WETH.address,
-          WETH.address,
-          SWAP_ROUTER_ADDRESS
         ],
         [
           0,
           0,
           0,
           0,
-          amountEthWithSlippage,
-          0,
-          0
         ],
         [
           'setFactory(address,address)',
           'setConfiguration(address,(address,address,address,address,address,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint104,uint104,uint104,(address,address,uint8,uint64,uint64,uint64,uint128)[]))',
           'deployAndUpgradeTo(address,address)',
           'setRewardConfig(address,address)',
-          'deposit()',
-          'approve(address,uint256)',
-          'exactOutputSingle((address,address,uint24,address,uint256,uint256,uint160))'
         ],
         [
           setFactoryCalldata,
           setConfigurationCalldata,
           deployAndUpgradeToCalldata,
           setRewardConfigCalldata,
-          '0x',
-          approveCalldata,
-          swapCalldata,
         ]
       ]
     );
@@ -156,13 +102,6 @@ export default migration('1728096598_configurate_and_ens', {
         contract: baseL1CrossDomainMessenger,
         signature: 'sendMessage(address,bytes,uint32)',
         args: [bridgeReceiver.address, l2ProposalData, 3_000_000]
-      },
-      // 2. Bridge ETH to the L2 timelock
-      {
-        contract: baseL1StandardBridge,
-        value: amountEthWithSlippage,
-        signature: 'depositETHTo(address,uint32,bytes)',
-        args: [localTimelock.address, 200_000, '0x']
       },
       // 2. Update the list of official markets
       {
@@ -224,8 +163,6 @@ export default migration('1728096598_configurate_and_ens', {
     expect(config.rescaleFactor).to.be.equal(exp(1, 12));
     expect(config.shouldUpscale).to.be.equal(true);
 
-    // 2. & 3 & 4.
-    expect(await comet.getReserves()).to.be.equal(aeroAmountToSeed);
 
     // 5.
     const ENSResolver = await govDeploymentManager.existing(
