@@ -32,6 +32,8 @@ import {
   Configurator__factory,
   CometHarnessInterface,
   CometInterface,
+  NonStandardFaucetFeeToken,
+  NonStandardFaucetFeeToken__factory,
 } from '../build/types';
 import { BigNumber, BigNumberish } from 'ethers';
 import {
@@ -53,6 +55,7 @@ export enum ReentryAttack {
   TransferFrom = 0,
   WithdrawFrom = 1,
   SupplyFrom = 2,
+  BuyCollateral = 3,
 }
 
 export type ProtocolOpts = {
@@ -68,7 +71,7 @@ export type ProtocolOpts = {
       supplyCap?: Numeric;
       initialPrice?: number;
       priceFeedDecimals?: number;
-      factory?: FaucetToken__factory | EvilToken__factory | FaucetWETH__factory;
+      factory?: FaucetToken__factory | EvilToken__factory | FaucetWETH__factory | NonStandardFaucetFeeToken__factory;
     };
   };
   name?: string;
@@ -106,7 +109,7 @@ export type Protocol = {
   reward: string;
   comet: Comet;
   tokens: {
-    [symbol: string]: FaucetToken;
+    [symbol: string]: FaucetToken | NonStandardFaucetFeeToken;
   };
   unsupportedToken: FaucetToken;
   priceFeeds: {
@@ -124,7 +127,7 @@ export type ConfiguratorAndProtocol = {
 
 export type RewardsOpts = {
   governor?: SignerWithAddress;
-  configs?: [Comet, FaucetToken, Numeric?][];
+  configs?: [Comet, FaucetToken | NonStandardFaucetFeeToken, Numeric?][];
 };
 
 export type RewardsV2Opts = {

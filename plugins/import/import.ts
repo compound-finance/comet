@@ -83,12 +83,36 @@ async function getEtherscanApiData(network: string, address: string, apiKey: str
   };
 }
 
+async function scrapeContractCreationCodeFromEtherscanApi(network: string, address: string) {
+  const params = {
+    module: 'proxy',
+    action: 'eth_getCode',
+    address,
+    apikey: getEtherscanApiKey(network)
+  };
+  const url = `${getEtherscanApiUrl(network)}?${paramString(params)}`;
+  const debugUrl = `${getEtherscanApiUrl(network)}?${paramString({ ...params, ...{ apikey: '[API_KEY]'}})}`;
+
+  debug(`Attempting to pull Contract Creation code from API at ${debugUrl}`);
+  const result = await get(url, {});
+  const contractCreationCode = result.result;
+  if (!contractCreationCode) {
+    throw new Error(`Unable to find Contract Creation code from API at ${debugUrl}`);
+  }
+  debug(`Creation Code found in first tx at ${debugUrl}`);
+  return contractCreationCode.slice(2);
+}
+
+/**
+ * @description Does not work for 0x566511a1A09561e2896F8c0fD77E8544E59bFDB0 as etherscan starts using some firewall
+ */
 async function scrapeContractCreationCodeFromEtherscan(network: string, address: string) {
   const url = `${getEtherscanUrl(network)}/address/${address}#code`;
   debug(`Attempting to scrape Contract Creation code at ${url}`);
   const result = <string>await get(url, {});
   const regex = /<div id='verifiedbytecode2'>[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
-  const matches = [...result.matchAll(regex)];
+  const regexDoubleQuotes = /<div id="verifiedbytecode2">[\s\r\n]*([0-9a-fA-F]*)[\s\r\n]*<\/div>/g;
+  const matches = [...result.matchAll(regex), ...result.matchAll(regexDoubleQuotes)];
   if (matches.length === 0) {
     if (result.match(/request throttled/i) || result.match(/try again later/i)) {
       throw new Error(`Request throttled: ${url}`);
@@ -132,7 +156,8 @@ async function pullFirstTransactionForContract(network: string, address: string)
 async function getContractCreationCode(network: string, address: string) {
   const strategies = [
     scrapeContractCreationCodeFromEtherscan,
-    pullFirstTransactionForContract
+    scrapeContractCreationCodeFromEtherscanApi,
+    pullFirstTransactionForContract,
   ];
   let errors = [];
   for (const strategy of strategies) {

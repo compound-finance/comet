@@ -3,6 +3,17 @@ import baseRelationConfig from '../../relations';
 
 export default {
   ...baseRelationConfig,
+  'wstETH': {
+    artifact: 'contracts/bulkers/IWstETH.sol',
+    relations: {
+      stETH: {
+        field: async (wstETH) => wstETH.stETH()
+      }
+    }
+  },
+  'AppProxyUpgradeable': {
+    artifact: 'contracts/ERC20.sol:ERC20',
+  },
   fxRoot: {
     relations: {
       stateSender: {
@@ -39,6 +50,19 @@ export default {
     delegates: {
       field: {
         slot: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      }
+    }
+  },
+  opL1CrossDomainMessenger: {
+    delegates: {
+      field: async () => '0x2150Bc3c64cbfDDbaC9815EF615D6AB8671bfe43'
+    }
+  },
+  opL1StandardBridge: {
+    delegates: {
+      field: {
+        slot:
+          '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
       }
     }
   },

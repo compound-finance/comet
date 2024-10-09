@@ -1,0 +1,54 @@
+{
+    "name": "Compound WETH",
+    "symbol": "cWETHv3",
+    "baseToken": "WETH",
+    "baseTokenAddress": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+    "borrowMin": "0.1e18",
+    "governor": "0x3fB4d38ea7EC20D91917c09591490Eeda38Cf88A",
+    "pauseGuardian": "0x78E6317DD6D43DdbDa00Dce32C2CbaFc99361a9d",
+    "rewardTokenAddress": "0x354A6dA3fcde098F8389cad84b0182725c6C91dE",
+    "storeFrontPriceFactor": 0.7,
+    "targetReserves": "5000e18",
+    "rates": {
+      "supplyKink": 0.85,
+      "supplySlopeLow": 0.0185,
+      "supplySlopeHigh": 1,
+      "supplyBase": 0,
+      "borrowKink": 0.85,
+      "borrowSlopeLow": 0.014,
+      "borrowSlopeHigh": 1.15,
+      "borrowBase": 0.01
+    },
+    "tracking": {
+      "indexScale": "1e15",
+      "baseSupplySpeed": "69444444444e0",
+      "baseBorrowSpeed": "46296296296e0",
+      "baseMinForRewards": "1000e18"
+    },
+    "assets": {
+      "weETH": {
+        "address": "0x35751007a407ca6FEFfE80b3cB397736D2cf4dbe",
+        "decimals": "18",
+        "borrowCF": 0.82,
+        "liquidateCF": 0.87,
+        "liquidationFactor": 0.92,
+        "supplyCap": "550e18"
+      },
+      "rETH": {
+        "address": "0xEC70Dcb4A1EFa46b8F2D97C310C9c4790ba5ffA8",
+        "decimals": "18",
+        "borrowCF": 0.90,
+        "liquidateCF": 0.93,
+        "liquidationFactor": 0.97,
+        "supplyCap": "800e18"
+      },
+      "wstETH": {
+        "address": "0x5979D7b546E38E414F7E9822514be443A4800529",
+        "decimals": "18",
+        "borrowCF": 0.88,
+        "liquidateCF": 0.93,
+        "liquidationFactor": 0.97,
+        "supplyCap": "2000e18"
+      }
+    }
+}

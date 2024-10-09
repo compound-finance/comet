@@ -26,20 +26,27 @@ import sepoliaWethRelationConfigMap from './deployments/sepolia/weth/relations';
 import mumbaiRelationConfigMap from './deployments/mumbai/usdc/relations';
 import mainnetRelationConfigMap from './deployments/mainnet/usdc/relations';
 import mainnetWethRelationConfigMap from './deployments/mainnet/weth/relations';
+import mainnetUsdtRelationConfigMap from './deployments/mainnet/usdt/relations';
+import mainnetWstETHRelationConfigMap from './deployments/mainnet/wsteth/relations';
 import polygonRelationConfigMap from './deployments/polygon/usdc/relations';
+import polygonUsdtRelationConfigMap from './deployments/polygon/usdt/relations';
 import arbitrumBridgedUsdcRelationConfigMap from './deployments/arbitrum/usdc.e/relations';
 import arbitrumNativeUsdcRelationConfigMap from './deployments/arbitrum/usdc/relations';
+import arbitrumWETHRelationConfigMap from './deployments/arbitrum/weth/relations';
 import arbitrumBridgedUsdcGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc.e/relations';
 import arbitrumGoerliNativeUsdcRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
+import arbitrumUsdtRelationConfigMap from './deployments/arbitrum/usdt/relations';
 import baseUsdbcRelationConfigMap from './deployments/base/usdbc/relations';
 import baseWethRelationConfigMap from './deployments/base/weth/relations';
 import baseUsdcRelationConfigMap from './deployments/base/usdc/relations';
 import baseGoerliRelationConfigMap from './deployments/base-goerli/usdc/relations';
 import baseGoerliWethRelationConfigMap from './deployments/base-goerli/weth/relations';
 import lineaGoerliRelationConfigMap from './deployments/linea-goerli/usdc/relations';
+import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
+import optimismUsdtRelationConfigMap from './deployments/optimism/usdt/relations';
+import optimismWethRelationConfigMap from './deployments/optimism/weth/relations';
 import scrollGoerliRelationConfigMap from './deployments/scroll-goerli/usdc/relations';
 import scrollRelationConfigMap from './deployments/scroll/usdc/relations';
-
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -55,6 +62,7 @@ const {
   ARBISCAN_KEY,
   BASESCAN_KEY,
   LINEASCAN_KEY,
+  OPTIMISMSCAN_KEY,
   INFURA_KEY,
   QUICKNODE_KEY,
   MNEMONIC = 'myth like bonus scare over problem client lizard pioneer submit female collect',
@@ -85,8 +93,9 @@ export function requireEnv(varName, msg?: string): string {
   'INFURA_KEY',
   'POLYGONSCAN_KEY',
   'ARBISCAN_KEY',
-  'LINEASCAN_KEY'
-].map(v => requireEnv(v));
+  'LINEASCAN_KEY',
+  'OPTIMISMSCAN_KEY'
+].map((v) => requireEnv(v));
 
 // Networks
 interface NetworkConfig {
@@ -109,9 +118,14 @@ const networkConfigs: NetworkConfig[] = [
     url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
   },
   {
+    network: 'optimism',
+    chainId: 10,
+    url: `https://optimism-mainnet.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
     network: 'base',
     chainId: 8453,
-    url: `https://clean-spring-wind.base-mainnet.discover.quiknode.pro/${QUICKNODE_KEY}`,
+    url: `https://fluent-prettiest-scion.base-mainnet.quiknode.pro/${QUICKNODE_KEY}`,
   },
   {
     network: 'arbitrum',
@@ -248,6 +262,8 @@ const config: HardhatUserConfig = {
       'base-goerli': BASESCAN_KEY,
       // Linea
       'linea-goerli': LINEASCAN_KEY,
+      optimism: OPTIMISMSCAN_KEY,
+      optimisticEthereum: OPTIMISMSCAN_KEY,
       // Scroll Testnet
       'scroll-goerli': ETHERSCAN_KEY,
       // Scroll
@@ -338,14 +354,19 @@ const config: HardhatUserConfig = {
       },
       mainnet: {
         usdc: mainnetRelationConfigMap,
-        weth: mainnetWethRelationConfigMap
+        weth: mainnetWethRelationConfigMap,
+        usdt: mainnetUsdtRelationConfigMap,
+        wsteth: mainnetWstETHRelationConfigMap
       },
       polygon: {
-        usdc: polygonRelationConfigMap
+        usdc: polygonRelationConfigMap,
+        usdt: polygonUsdtRelationConfigMap
       },
       arbitrum: {
         'usdc.e': arbitrumBridgedUsdcRelationConfigMap,
-        usdc: arbitrumNativeUsdcRelationConfigMap
+        usdc: arbitrumNativeUsdcRelationConfigMap,
+        usdt: arbitrumUsdtRelationConfigMap,
+        weth: arbitrumWETHRelationConfigMap
       },
       'arbitrum-goerli': {
         'usdc.e': arbitrumBridgedUsdcGoerliRelationConfigMap,
@@ -362,6 +383,11 @@ const config: HardhatUserConfig = {
       },
       'linea-goerli': {
         usdc: lineaGoerliRelationConfigMap
+      },
+      optimism: {
+        usdc: optimismRelationConfigMap,
+        usdt: optimismUsdtRelationConfigMap,
+        weth: optimismWethRelationConfigMap
       },
       'scroll-goerli': {
         usdc: scrollGoerliRelationConfigMap
@@ -384,6 +410,16 @@ const config: HardhatUserConfig = {
         name: 'mainnet-weth',
         network: 'mainnet',
         deployment: 'weth',
+      },
+      {
+        name: 'mainnet-usdt',
+        network: 'mainnet',
+        deployment: 'usdt'
+      },
+      {
+        name: 'mainnet-wsteth',
+        network: 'mainnet',
+        deployment: 'wsteth'
       },
       {
         name: 'development',
@@ -428,15 +464,33 @@ const config: HardhatUserConfig = {
         auxiliaryBase: 'mainnet'
       },
       {
+        name: 'polygon-usdt',
+        network: 'polygon',
+        deployment: 'usdt',
+        auxiliaryBase: 'mainnet'
+      },
+      {
         name: 'arbitrum-usdc.e',
         network: 'arbitrum',
         deployment: 'usdc.e',
         auxiliaryBase: 'mainnet'
       },
       {
+        name: 'arbitrum-usdt',
+        network: 'arbitrum',
+        deployment: 'usdt',
+        auxiliaryBase: 'mainnet'
+      },
+      {
         name: 'arbitrum-usdc',
         network: 'arbitrum',
         deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'arbitrum-weth',
+        network: 'arbitrum',
+        deployment: 'weth',
         auxiliaryBase: 'mainnet'
       },
       {
@@ -486,6 +540,24 @@ const config: HardhatUserConfig = {
         network: 'linea-goerli',
         deployment: 'usdc',
         auxiliaryBase: 'goerli'
+      },
+      {
+        name: 'optimism-usdc',
+        network: 'optimism',
+        deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
+      },
+      {
+        name: 'optimism-usdt',
+        network: 'optimism',
+        deployment: 'usdt',
+        auxiliaryBase: 'mainnet',
+      },
+      {
+        name: 'optimism-weth',
+        network: 'optimism',
+        deployment: 'weth',
+        auxiliaryBase: 'mainnet'
       },
       {
         name: 'scroll-goerli',
