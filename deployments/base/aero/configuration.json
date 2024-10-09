@@ -1,0 +1,60 @@
+{
+  "name": "Compound AERO",
+  "symbol": "cAEROv3",
+  "baseToken": "AERO",
+  "baseTokenAddress": "0x940181a94A35A4569E4529A3CDfB74e38FD98631",
+  "borrowMin": "1e18",
+  "pauseGuardian": "0x3cb4653f3b45f448d9100b118b75a1503281d2ee",
+  "storeFrontPriceFactor": 0.6,
+  "targetReserves": "50000000e18",
+  "rates": {
+    "supplyKink": 0.85,
+    "supplySlopeLow": 0.08,
+    "supplySlopeHigh": 11,
+    "supplyBase": 0,
+    "borrowKink": 0.85,
+    "borrowSlopeLow": 0.0706,
+    "borrowSlopeHigh": 15,
+    "borrowBase": 0.04
+  },
+  "tracking": {
+    "indexScale": "1e15",
+    "baseSupplySpeed": "173611111111e0",
+    "baseBorrowSpeed": "173611111111e0",
+    "baseMinForRewards": "1000e18"
+  },
+  "assets": {
+    "WETH": {
+      "address": "0x4200000000000000000000000000000000000006",
+      "decimals": "18",
+      "borrowCF": 0.6,
+      "liquidateCF": 0.65,
+      "liquidationFactor": 0.75,
+      "supplyCap": "7500e18"
+    },
+    "USDC": {
+      "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "decimals": "6",
+      "borrowCF": 0.65,
+      "liquidateCF": 0.7,
+      "liquidationFactor": 0.8,
+      "supplyCap": "30000000e6"
+    },
+    "wstETH": {
+      "address": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
+      "decimals": "18",
+      "borrowCF": 0.6,
+      "liquidateCF": 0.65,
+      "liquidationFactor": 0.75,
+      "supplyCap": "5000e18"
+    },
+    "cbBTC": {
+      "address": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+      "decimals": "8",
+      "borrowCF": 0.6,
+      "liquidateCF": 0.65,
+      "liquidationFactor": 0.75,
+      "supplyCap": "150e8"
+    }
+  }
+}

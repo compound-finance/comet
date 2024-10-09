@@ -126,7 +126,7 @@ export default migration('1713012100_configurate_and_ens', {
       mainnetUSDTAddress,
       [
         'function balanceOf(address account) external view returns (uint256)',
-        'function approve(address,uint256) external'        
+        'function approve(address,uint256) external'
       ],
       govDeploymentManager.hre.ethers.provider
     );
@@ -184,10 +184,10 @@ export default migration('1713012100_configurate_and_ens', {
         ),
       },
     ];
-    
+
     // the description has speeds. speeds will be set up on on-chain proposal
     const description = "# Initialize cUSDTv3 on Optimism\n\n## Proposal summary\n\nCompound Growth Program [AlphaGrowth] proposes the deployment of Compound III to the Optimism network. This proposal takes the governance steps recommended and necessary to initialize a Compound III USDT market on Optimism; upon execution, cUSDTv3 will be ready for use. Simulations have confirmed the market’s readiness, as much as possible, using the [Comet scenario suite](https://github.com/compound-finance/comet/tree/main/scenario). The new parameters include setting the risk parameters based on the [recommendations from Gauntlet](https://www.comp.xyz/t/deploy-compound-iii-on-optimism/4975/6).\n\nFurther detailed information can be found on the corresponding [proposal pull request](https://github.com/compound-finance/comet/pull/848) and [forum discussion](https://www.comp.xyz/t/deploy-compound-iii-on-optimism/4975).\n\n\n## Proposal Actions\n\nThe first proposal action sets the Comet configuration and deploys a new Comet implementation on Optimism. This sends the encoded `setFactory`, `setConfiguration` and `deployAndUpgradeTo` calls across the bridge to the governance receiver on Optimism. It also calls `setRewardConfig` on the Optimism rewards contract, to establish Optimism’s bridged version of COMP as the reward token for the deployment and set the initial supply speed to be 5 COMP/day and borrow speed to be 5 COMP/day.\n\nThe second action reduces Compound [cUSDT](https://etherscan.io/address/0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9) reserves to Timelock, in order to seed the market reserves through the Optimism L1StandardBridge.\n\nThe third action approves Optimism’s [L1StandardBridge](https://etherscan.io/address/0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1) to take Timelock's USDT, in order to seed the reserves through the bridge.\n\nThe fourth action deposits 10K USDT from mainnet to the Optimism L1StandardBridge contract to bridge to Comet.\n\nThe fifth action updates the ENS TXT record `v3-official-markets` on `v3-additional-grants.compound-community-licenses.eth`, updating the official markets JSON to include the new Optimism cUSDTv3 market";
-    const txn = await govDeploymentManager.retry(async () =>{
+    const txn = await govDeploymentManager.retry(async () => {
       return trace(await governor.propose(...(await proposal(actions, description))));
     }
     );
@@ -199,7 +199,7 @@ export default migration('1713012100_configurate_and_ens', {
   },
 
   async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return false;
+    return true;
   },
 
   async verify(deploymentManager: DeploymentManager, govDeploymentManager: DeploymentManager, preMigrationBlockNumber: number) {
@@ -219,7 +219,7 @@ export default migration('1713012100_configurate_and_ens', {
     } = await govDeploymentManager.getContracts();
 
     const stateChanges = await diffState(comet, getCometConfig, preMigrationBlockNumber);
-    
+
     // uncomment on on-chain proposal PR
     // expect(stateChanges).to.deep.equal({
     //   WBTC: {
