@@ -107,8 +107,7 @@ async function deployContracts(
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
     'bridges/optimism/OptimismBridgeReceiver.sol',
-    [l2CrossDomainMessenger.address],
-    true
+    [l2CrossDomainMessenger.address]
   );
 
   // Deploy Local Timelock
@@ -121,8 +120,7 @@ async function deployContracts(
       14 * DAY,   // grace period
       12 * HOUR,  // minimum delay
       30 * DAY,   // maxiumum delay
-    ],
-    true
+    ]
   );
 
   // Initialize OptimismBridgeReceiver
