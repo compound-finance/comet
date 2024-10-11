@@ -132,7 +132,7 @@ export type RewardsOpts = {
 
 export type RewardsV2Opts = {
   governor?: SignerWithAddress;
-  configs?: [Comet, FaucetToken[], Numeric[]?][];
+  configs?: [Comet, (FaucetToken | NonStandardFaucetFeeToken)[], Numeric[]?][];
   accountsPrepared?: [string, string][];
 };
 
@@ -153,8 +153,8 @@ export type RewardsV2 = {
 export type GetRewardsOwed = {
   comet: Comet;
   accountPrepared: AccountPrepared;
-  tokens: FaucetToken[];
-  config: (CometHarnessInterface | FaucetToken[] | bigint[])[][];
+  tokens: (FaucetToken | NonStandardFaucetFeeToken)[];
+  config: (CometHarnessInterface | (FaucetToken | NonStandardFaucetFeeToken)[] | bigint[])[][];
   claimed?: BigNumberish[];
 };
 
@@ -720,7 +720,7 @@ export async function makeRewardsV2(
         _tokens.push(token.address);
       }
 
-      await wait(rewardsV2.setCompaign(comet.address, tree.root, _tokens));
+      await wait(rewardsV2.setNewCampaign(comet.address, tree.root, _tokens, 604800));
     } else {
       if(tokens.length !== multipliers.length) throw new Error('Arrays length mismatch');
       let assets: TokenMultiplierStruct[] = [];
@@ -729,7 +729,7 @@ export async function makeRewardsV2(
         assets.push({ token: tokens[i].address, multiplier: multipliers[i].toString()});
       }
 
-      await wait(rewardsV2.setCompaignExt(comet.address, tree.root, assets));
+      await wait(rewardsV2.setNewCampaignWithCustomTokenMultiplier(comet.address, tree.root, assets, 604800));
     }
   }
 
