@@ -793,7 +793,7 @@ export async function makeBulker(opts: BulkerOpts): Promise<BulkerInfo> {
 }
 export async function bumpTotalsCollateral(
   comet: CometHarnessInterface,
-  token: FaucetToken,
+  token: FaucetToken | NonStandardFaucetFeeToken,
   delta: bigint
 ): Promise<TotalsCollateralStructOutput> {
   const t0 = await comet.totalsCollateral(token.address);
