@@ -444,6 +444,17 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
     const baseToken = tokens[base];
     await wait(baseToken.allocateTo(comet.address, baseTokenBalance));
   }
+  const sortedSigners = users.slice(0, 3).sort((a, b) => {
+    const addressA = BigInt(a.address);
+    const addressB = BigInt(b.address);
+  
+    if (addressA > addressB) return 1;
+    if (addressA < addressB) return -1;
+    return 0;
+  });
+  users[0] = sortedSigners[0];
+  users[1] = sortedSigners[1];
+  users[2] = sortedSigners[2];
 
   return {
     opts,
