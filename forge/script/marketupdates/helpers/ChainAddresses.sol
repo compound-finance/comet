@@ -7,6 +7,8 @@ library ChainAddresses {
         address governorTimelockAddress;
         address configuratorProxyAddress;
         address cometProxyAdminAddress;
+        address marketUpdatePauseGuardian;
+        address marketUpdateProposalGuardian;
     }
 
     enum Chain {
@@ -15,7 +17,9 @@ library ChainAddresses {
         ARBITRUM,
         BASE,
         SCROLL,
-        OPTIMISM
+        OPTIMISM,
+        MAINNET_SEPOLIA,
+        OP_SEPOLIA
     }
 
 
@@ -59,37 +63,65 @@ library ChainAddresses {
             return ChainAddressesStruct({
                 governorTimelockAddress: MAINNET_GOVERNOR_TIMELOCK,
                 configuratorProxyAddress: MAINNET_CONFIGURATOR_PROXY,
-                cometProxyAdminAddress: MAINNET_COMET_PROXY_ADMIN
+                cometProxyAdminAddress: MAINNET_COMET_PROXY_ADMIN,
+                marketUpdatePauseGuardian: address(0),
+                marketUpdateProposalGuardian: address(0)
             });
         } else if (chain == Chain.POLYGON) {
             return ChainAddressesStruct({
                 governorTimelockAddress: POLYGON_LOCAL_TIMELOCK,
                 configuratorProxyAddress: POLYGON_CONFIGURATOR_PROXY,
-                cometProxyAdminAddress: POLYGON_COMET_PROXY_ADMIN
+                cometProxyAdminAddress: POLYGON_COMET_PROXY_ADMIN,
+                marketUpdatePauseGuardian: address(0),
+                marketUpdateProposalGuardian: address(0)
             });
         } else if (chain == Chain.ARBITRUM) {
             return ChainAddressesStruct({
                 governorTimelockAddress: ARBITRUM_LOCAL_TIMELOCK,
                 configuratorProxyAddress: ARBITRUM_CONFIGURATOR_PROXY,
-                cometProxyAdminAddress: ARBITRUM_COMET_PROXY_ADMIN
+                cometProxyAdminAddress: ARBITRUM_COMET_PROXY_ADMIN,
+                marketUpdatePauseGuardian: address(0),
+                marketUpdateProposalGuardian: address(0)
             });
         } else if (chain == Chain.BASE) {
             return ChainAddressesStruct({
                 governorTimelockAddress: BASE_LOCAL_TIMELOCK,
                 configuratorProxyAddress: BASE_CONFIGURATOR_PROXY,
-                cometProxyAdminAddress: BASE_COMET_PROXY_ADMIN
+                cometProxyAdminAddress: BASE_COMET_PROXY_ADMIN,
+                marketUpdatePauseGuardian: address(0),
+                marketUpdateProposalGuardian: address(0)
             });
         } else if (chain == Chain.SCROLL) {
             return ChainAddressesStruct({
                 governorTimelockAddress: SCROLL_LOCAL_TIMELOCK,
                 configuratorProxyAddress: SCROLL_CONFIGURATOR_PROXY,
-                cometProxyAdminAddress: SCROLL_COMET_PROXY_ADMIN
+                cometProxyAdminAddress: SCROLL_COMET_PROXY_ADMIN,
+                marketUpdatePauseGuardian: address(0),
+                marketUpdateProposalGuardian: address(0)
             });
         } else if (chain == Chain.OPTIMISM) {
             return ChainAddressesStruct({
                 governorTimelockAddress: OPTIMISM_LOCAL_TIMELOCK,
                 configuratorProxyAddress: OPTIMISM_CONFIGURATOR_PROXY,
-                cometProxyAdminAddress: OPTIMISM_COMET_PROXY_ADMIN
+                cometProxyAdminAddress: OPTIMISM_COMET_PROXY_ADMIN,
+                marketUpdatePauseGuardian: address(0),
+                marketUpdateProposalGuardian: address(0)
+            });
+        }  else if (chain == Chain.OP_SEPOLIA) {
+            return ChainAddressesStruct({
+                governorTimelockAddress: OPTIMISM_LOCAL_TIMELOCK,
+                configuratorProxyAddress: OPTIMISM_CONFIGURATOR_PROXY,
+                cometProxyAdminAddress: OPTIMISM_COMET_PROXY_ADMIN,
+                marketUpdatePauseGuardian: address(0),
+                marketUpdateProposalGuardian: address(0)
+            });
+        }  else if (chain == Chain.MAINNET_SEPOLIA) {
+            return ChainAddressesStruct({
+                governorTimelockAddress: MAINNET_GOVERNOR_TIMELOCK,
+                configuratorProxyAddress: MAINNET_CONFIGURATOR_PROXY,
+                cometProxyAdminAddress: MAINNET_COMET_PROXY_ADMIN,
+                marketUpdatePauseGuardian: address(0),
+                marketUpdateProposalGuardian: address(0)
             });
         } else {
             revert("MarketUpdateAddresses: Chain not supported");
@@ -109,6 +141,28 @@ library ChainAddresses {
             return SCROLL_LOCAL_TIMELOCK;
         } else if (chain == Chain.OPTIMISM) {
             return OPTIMISM_LOCAL_TIMELOCK;
+        } else {
+            revert("MarketUpdateAddresses: Chain not supported");
+        }
+    }
+
+    function getChainBasedOnChainId(uint chainId) public pure returns (Chain) {
+        if(chainId == 1) {
+            return Chain.ETHEREUM;
+        } else if(chainId == 137) {
+            return Chain.POLYGON;
+        } else if(chainId == 42161) {
+            return Chain.ARBITRUM;
+        } else if(chainId == 8453) {
+            return Chain.BASE;
+        } else if(chainId == 534352) {
+            return Chain.SCROLL;
+        } else if(chainId == 10) {
+            return Chain.OPTIMISM;
+        } else if(chainId == 11155420) {
+            return Chain.OP_SEPOLIA;
+        } else if(chainId == 11155111) {
+            return Chain.MAINNET_SEPOLIA;
         } else {
             revert("MarketUpdateAddresses: Chain not supported");
         }

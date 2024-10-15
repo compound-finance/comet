@@ -77,7 +77,7 @@ export const COMP_WHALES = {
     '0x54A37d93E57c5DA659F508069Cf65A381b61E189'
   ],
 
-  testnet: ['0xbbfe34e868343e6f4f5e8b5308de980d7bd88c46']
+  testnet: ['0x0579A616689f7ed748dC07692A3F150D44b0CA09']
 };
 
 export const WHALES = {

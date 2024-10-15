@@ -254,7 +254,16 @@ const config: HardhatUserConfig = {
         : { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
       // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,
-      hardfork: 'shanghai'
+      hardfork: 'shanghai',
+      chains: {
+        534352: {
+          hardforkHistory: {
+            london: 0,
+            berlin: 0,
+            shanghai: 0,
+          }
+        }
+      }
     },
     localhost: {
       url: 'http://127.0.0.1:8545',

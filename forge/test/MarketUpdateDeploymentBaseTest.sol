@@ -8,6 +8,7 @@ import "../script/marketupdates/helpers/MarketUpdateAddresses.sol";
 import "../script/marketupdates/helpers/ChainAddresses.sol";
 import "../script/marketupdates/helpers/MarketUpdateContractsDeployer.sol";
 import "../script/marketupdates/helpers/BridgeHelper.sol";
+import "@forge-std/src/console.sol";
 
 abstract contract MarketUpdateDeploymentBaseTest {
 
@@ -17,6 +18,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
         bytes32 salt = keccak256(abi.encodePacked("Salt-31"));
         
         MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer.deployContracts(
+            vm,
             salt,
             MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS,
             MarketUpdateAddresses.MARKET_ADMIN_PAUSE_GUARDIAN_ADDRESS,
@@ -63,6 +65,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
         address localTimelock = ChainAddresses.getLocalTimelockAddress(chain);
 
         MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer.deployContracts(
+            vm,
             salt,
             MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS,
             MarketUpdateAddresses.MARKET_ADMIN_PAUSE_GUARDIAN_ADDRESS,

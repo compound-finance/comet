@@ -29,3 +29,5 @@ scenario-results.json
 deployments/localhost/dai/roots.json
 forge/Makefile
 .envrc
+
+broadcast/
